@@ -1,0 +1,225 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{6e213f6b-b843-4469-bc8c-56c1ffe7f195}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include">
+      <UniqueIdentifier>{29082261-e6cd-40b2-b30c-c4cb70f23339}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\application">
+      <UniqueIdentifier>{3a703e42-6f06-4ab1-8e46-0dfb07407d9e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\boosting">
+      <UniqueIdentifier>{43be32f9-227b-4a15-9c0e-38dbf9747aeb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\io">
+      <UniqueIdentifier>{6fcdaf19-880a-45b0-80db-344be9498017}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\metric">
+      <UniqueIdentifier>{8bacb16c-7f31-494f-94df-8ccc6c3e3894}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\network">
+      <UniqueIdentifier>{93db474b-4ab8-406b-99ec-eb8e40f97593}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\objective">
+      <UniqueIdentifier>{34d576af-dec6-4cad-90bd-f8d0e95ec614}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\treelearner">
+      <UniqueIdentifier>{16638c37-41bd-4124-8b80-befbca2f969f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\LightGBM">
+      <UniqueIdentifier>{37b41659-26e2-4b2f-ac0c-7b52d8bd53da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\LightGBM\utils">
+      <UniqueIdentifier>{bf66b9f7-015e-404d-8098-4353abc46956}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\boosting\gbdt.h">
+      <Filter>src\boosting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\network\linkers.h">
+      <Filter>src\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\treelearner\parallel_tree_learner.h">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\treelearner\serial_tree_learner.h">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\application\predictor.hpp">
+      <Filter>src\application</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\boosting\score_updater.hpp">
+      <Filter>src\boosting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\io\dense_bin.hpp">
+      <Filter>src\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\io\ordered_sparse_bin.hpp">
+      <Filter>src\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\io\parser.hpp">
+      <Filter>src\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\io\sparse_bin.hpp">
+      <Filter>src\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\metric\binary_metric.hpp">
+      <Filter>src\metric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\metric\rank_metric.hpp">
+      <Filter>src\metric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\metric\regression_metric.hpp">
+      <Filter>src\metric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\network\socket_wrapper.hpp">
+      <Filter>src\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\objective\binary_objective.hpp">
+      <Filter>src\objective</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\objective\rank_objective.hpp">
+      <Filter>src\objective</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\objective\regression_objective.hpp">
+      <Filter>src\objective</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\treelearner\data_partition.hpp">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\treelearner\feature_histogram.hpp">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\treelearner\leaf_splits.hpp">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\treelearner\split_info.hpp">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\application.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\bin.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\boosting.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\config.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\dataset.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\feature.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\meta.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\metric.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\network.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\objective_function.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\tree.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\tree_learner.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\array_args.h">
+      <Filter>include\LightGBM\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\common.h">
+      <Filter>include\LightGBM\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\log.h">
+      <Filter>include\LightGBM\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\pipeline_reader.h">
+      <Filter>include\LightGBM\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\random.h">
+      <Filter>include\LightGBM\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\text_reader.h">
+      <Filter>include\LightGBM\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\threading.h">
+      <Filter>include\LightGBM\utils</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\application\application.cpp">
+      <Filter>src\application</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\network\linkers_socket.cpp">
+      <Filter>src\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\network\linkers_mpi.cpp">
+      <Filter>src\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\treelearner\serial_tree_learner.cpp">
+      <Filter>src\treelearner</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\treelearner\tree_learner.cpp">
+      <Filter>src\treelearner</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Boosting\gbdt.cpp">
+      <Filter>src\boosting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\io\dataset.cpp">
+      <Filter>src\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\io\bin.cpp">
+      <Filter>src\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\io\tree.cpp">
+      <Filter>src\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\objective\objective_function.cpp">
+      <Filter>src\objective</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Boosting\boosting.cpp">
+      <Filter>src\boosting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\io\parser.cpp">
+      <Filter>src\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\metric\metric.cpp">
+      <Filter>src\metric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\treelearner\data_parallel_tree_learner.cpp">
+      <Filter>src\treelearner</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\treelearner\feature_parallel_tree_learner.cpp">
+      <Filter>src\treelearner</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\network\linker_topo.cpp">
+      <Filter>src\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\network\network.cpp">
+      <Filter>src\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\io\config.cpp">
+      <Filter>src\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\metric\dcg_calculator.cpp">
+      <Filter>src\metric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\io\metadata.cpp">
+      <Filter>src\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

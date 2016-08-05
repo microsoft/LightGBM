@@ -1,0 +1,221 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="Projectconfigurations">
+    <ProjectConfiguration Include="Debug_mpi|x64">
+      <Configuration>Debug_mpi</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release_mpi|x64">
+      <Configuration>Release_mpi</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{F31C0B5D-715E-4953-AA1B-8D2AEEE4344C}</ProjectGuid>
+    <RootNamespace>LightGBM</RootNamespace>
+    <SccProjectName>SAK</SccProjectName>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccProvider>SAK</SccProvider>
+    <ProjectName>LightGBM</ProjectName>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug_mpi|x64'">
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release_mpi|x64'">
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>..\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(configuration)|$(Platform)'=='Debug_mpi|x64'">
+    <IncludePath>$(MSMPI_INC);..\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <LibraryPath>$(MSMPI_LIB64);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>..\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(configuration)|$(Platform)'=='Release_mpi|x64'">
+    <IncludePath>$(MSMPI_INC);..\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <LibraryPath>$(MSMPI_LIB64);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_mpi|x64'">
+    <ClCompile>
+      <PreprocessorDefinitions>USE_MPI</PreprocessorDefinitions>
+      <WarningLevel>Level4</WarningLevel>
+      <OpenMPSupport>true</OpenMPSupport>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <Optimization>Disabled</Optimization>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+    </Link>
+    <Link>
+      <AdditionalDependencies>msmpi.lib</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PreprocessorDefinitions>USE_SOCKET</PreprocessorDefinitions>
+      <WarningLevel>Level4</WarningLevel>
+      <OpenMPSupport>true</OpenMPSupport>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <Optimization>Disabled</Optimization>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(configuration)|$(Platform)'=='Release_mpi|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>USE_MPI;_MBCS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <OpenMPSupport>true</OpenMPSupport>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <OmitFramePointers>true</OmitFramePointers>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+    </Link>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msmpi.lib</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PreprocessorDefinitions>USE_SOCKET;_MBCS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level4</WarningLevel>
+      <OpenMPSupport>true</OpenMPSupport>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <OmitFramePointers>true</OmitFramePointers>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies />
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\include\LightGBM\application.h" />
+    <ClInclude Include="..\include\LightGBM\bin.h" />
+    <ClInclude Include="..\include\LightGBM\boosting.h" />
+    <ClInclude Include="..\include\LightGBM\config.h" />
+    <ClInclude Include="..\include\LightGBM\dataset.h" />
+    <ClInclude Include="..\include\LightGBM\feature.h" />
+    <ClInclude Include="..\include\LightGBM\meta.h" />
+    <ClInclude Include="..\include\LightGBM\metric.h" />
+    <ClInclude Include="..\include\LightGBM\network.h" />
+    <ClInclude Include="..\include\LightGBM\objective_function.h" />
+    <ClInclude Include="..\include\LightGBM\tree.h" />
+    <ClInclude Include="..\include\LightGBM\tree_learner.h" />
+    <ClInclude Include="..\include\LightGBM\utils\array_args.h" />
+    <ClInclude Include="..\include\LightGBM\utils\common.h" />
+    <ClInclude Include="..\include\LightGBM\utils\log.h" />
+    <ClInclude Include="..\include\LightGBM\utils\pipeline_reader.h" />
+    <ClInclude Include="..\include\LightGBM\utils\random.h" />
+    <ClInclude Include="..\include\LightGBM\utils\text_reader.h" />
+    <ClInclude Include="..\include\LightGBM\utils\threading.h" />
+    <ClInclude Include="..\src\application\predictor.hpp" />
+    <ClInclude Include="..\src\boosting\gbdt.h" />
+    <ClInclude Include="..\src\boosting\score_updater.hpp" />
+    <ClInclude Include="..\src\io\dense_bin.hpp" />
+    <ClInclude Include="..\src\io\ordered_sparse_bin.hpp" />
+    <ClInclude Include="..\src\io\parser.hpp" />
+    <ClInclude Include="..\src\io\sparse_bin.hpp" />
+    <ClInclude Include="..\src\metric\binary_metric.hpp" />
+    <ClInclude Include="..\src\metric\rank_metric.hpp" />
+    <ClInclude Include="..\src\metric\regression_metric.hpp" />
+    <ClInclude Include="..\src\network\linkers.h" />
+    <ClInclude Include="..\src\network\socket_wrapper.hpp" />
+    <ClInclude Include="..\src\objective\binary_objective.hpp" />
+    <ClInclude Include="..\src\objective\rank_objective.hpp" />
+    <ClInclude Include="..\src\objective\regression_objective.hpp" />
+    <ClInclude Include="..\src\treelearner\data_partition.hpp" />
+    <ClInclude Include="..\src\treelearner\feature_histogram.hpp" />
+    <ClInclude Include="..\src\treelearner\leaf_splits.hpp" />
+    <ClInclude Include="..\src\treelearner\parallel_tree_learner.h" />
+    <ClInclude Include="..\src\treelearner\serial_tree_learner.h" />
+    <ClInclude Include="..\src\treelearner\split_info.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\application\application.cpp" />
+    <ClCompile Include="..\src\boosting\boosting.cpp" />
+    <ClCompile Include="..\src\boosting\gbdt.cpp" />
+    <ClCompile Include="..\src\io\bin.cpp" />
+    <ClCompile Include="..\src\io\config.cpp" />
+    <ClCompile Include="..\src\io\dataset.cpp" />
+    <ClCompile Include="..\src\io\metadata.cpp" />
+    <ClCompile Include="..\src\io\parser.cpp" />
+    <ClCompile Include="..\src\io\tree.cpp" />
+    <ClCompile Include="..\src\metric\dcg_calculator.cpp" />
+    <ClCompile Include="..\src\metric\metric.cpp" />
+    <ClCompile Include="..\src\network\network.cpp" />
+    <ClCompile Include="..\src\network\linkers_mpi.cpp" />
+    <ClCompile Include="..\src\network\linkers_socket.cpp" />
+    <ClCompile Include="..\src\network\linker_topo.cpp" />
+    <ClCompile Include="..\src\objective\objective_function.cpp" />
+    <ClCompile Include="..\src\main.cpp" />
+    <ClCompile Include="..\src\treelearner\data_parallel_tree_learner.cpp" />
+    <ClCompile Include="..\src\treelearner\feature_parallel_tree_learner.cpp" />
+    <ClCompile Include="..\src\treelearner\serial_tree_learner.cpp" />
+    <ClCompile Include="..\src\treelearner\tree_learner.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
