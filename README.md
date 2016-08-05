@@ -1,4 +1,4 @@
-LightGBM, Light Gradient Boosting
+LightGBM, Light Gradient Boosting Machine
 ==========
 
 
