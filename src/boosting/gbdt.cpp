@@ -298,7 +298,7 @@ void GBDT::ModelsFromString(const std::string& model_str, int num_used_model) {
       int end = static_cast<int>(i);
       std::string tree_str = Common::Join(lines, start, end, '\n');
       models_.push_back(new Tree(tree_str));
-      if (num_used_model > 0 && models_.size() >= num_used_model) {
+      if (num_used_model > 0 && models_.size() >= static_cast<size_t>(num_used_model)) {
         break;
       }
     } else {

@@ -264,5 +264,5 @@ private:
 
 }  // namespace LightGBM
 
-#endif #endif  // LightGBM_UTILS_TEXT_READER_H_
+#endif   // LightGBM_UTILS_TEXT_READER_H_
 

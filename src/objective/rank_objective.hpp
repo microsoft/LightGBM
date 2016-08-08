@@ -233,4 +233,4 @@ private:
 };
 
 }  // namespace LightGBM
-#endif  #endif  // LightGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_
+#endif   // LightGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_

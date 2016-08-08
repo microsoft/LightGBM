@@ -128,4 +128,4 @@ private:
 
 }  // namespace LightGBM
 
-#endif  #endif  // LightGBM_FEATURE_H_
+#endif   // LightGBM_FEATURE_H_

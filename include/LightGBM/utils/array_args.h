@@ -112,5 +112,5 @@ public:
 
 }  // namespace LightGBM
 
-#endif #endif  // LightGBM_UTILS_ARRAY_AGRS_H_
+#endif   // LightGBM_UTILS_ARRAY_AGRS_H_
 

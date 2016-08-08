@@ -255,4 +255,4 @@ inline void Linkers::SendRecv(int send_rank, char* send_data, int send_len,
 
 #endif  // USE_MPI
 }  // namespace LightGBM
-#endif  #endif  // LightGBM_NETWORK_LINKERS_H_
+#endif   // LightGBM_NETWORK_LINKERS_H_

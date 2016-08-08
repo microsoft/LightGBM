@@ -118,4 +118,4 @@ private:
 }  // namespace LightGBM
 
 
-#endif  #endif  // LightGBM_METRIC_H_
+#endif   // LightGBM_METRIC_H_

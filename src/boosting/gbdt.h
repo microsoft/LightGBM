@@ -158,4 +158,4 @@ private:
 };
 
 }  // namespace LightGBM
-#endif  #endif  // LightGBM_BOOSTING_GBDT_H_
+#endif   // LightGBM_BOOSTING_GBDT_H_

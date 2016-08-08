@@ -35,4 +35,4 @@ public:
 
 }   // namespace LightGBM
 
-#endif #endif  // LightGBM_UTILS_THREADING_H_
+#endif   // LightGBM_UTILS_THREADING_H_

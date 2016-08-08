@@ -27,4 +27,4 @@ using ReduceFunction = std::function<void(const char*, char*, int)>;
 
 }  // namespace LightGBM
 
-#endif   #endif  // LightGBM_META_H_
+#endif   // LightGBM_META_H_

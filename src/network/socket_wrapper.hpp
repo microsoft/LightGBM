@@ -260,4 +260,4 @@ private:
 
 }  // namespace LightGBM
 #endif  // USE_SOCKET
-#endif  #endif  // LightGBM_NETWORK_SOCKET_WRAPPER_HPP_
+#endif   // LightGBM_NETWORK_SOCKET_WRAPPER_HPP_

@@ -184,4 +184,4 @@ inline void SerialTreeLearner::FindBestSplitForLeaf(LeafSplits* leaf_splits) {
 }
 
 }  // namespace LightGBM
-#endif   #endif  // LightGBM_TREELEARNER_SERIAL_TREE_LEARNER_H_
+#endif   // LightGBM_TREELEARNER_SERIAL_TREE_LEARNER_H_

@@ -163,4 +163,4 @@ private:
 
 }  // namespace LightGBM
 
-#endif  #endif  // LightGBM_METRIC_RANK_METRIC_HPP_
+#endif   // LightGBM_METRIC_RANK_METRIC_HPP_

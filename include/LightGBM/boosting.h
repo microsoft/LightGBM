@@ -95,4 +95,4 @@ public:
 
 }  // namespace LightGBM
 
-#endif  #endif  // LightGBM_BOOSTING_H_
+#endif   // LightGBM_BOOSTING_H_

@@ -50,4 +50,4 @@ public:
 
 }  // namespace LightGBM
 
-#endif  #endif  // LightGBM_OBJECTIVE_FUNCTION_H_
+#endif   // LightGBM_OBJECTIVE_FUNCTION_H_

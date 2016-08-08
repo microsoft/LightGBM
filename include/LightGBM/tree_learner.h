@@ -60,4 +60,4 @@ public:
 
 }  // namespace LightGBM
 
-#endif  #endif  // LightGBM_TREE_LEARNER_H_
+#endif   // LightGBM_TREE_LEARNER_H_

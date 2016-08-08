@@ -201,4 +201,4 @@ private:
 };
 
 }  // namespace LightGBM
-#endif  #endif  // LightGBM_TREELEARNER_DATA_PARTITION_HPP_
+#endif   // LightGBM_TREELEARNER_DATA_PARTITION_HPP_

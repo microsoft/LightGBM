@@ -264,4 +264,4 @@ static inline int64_t Pow2RoundUp(int64_t x) {
 
 }  // namespace LightGBM
 
-#endif #endif  // LightGBM_UTILS_COMMON_FUN_H_
+#endif   // LightGBM_UTILS_COMMON_FUN_H_

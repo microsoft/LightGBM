@@ -89,4 +89,4 @@ inline void Application::Run() {
 
 }  // namespace LightGBM
 
-#endif  #endif  // LightGBM_APPLICATION_H_
+#endif   // LightGBM_APPLICATION_H_

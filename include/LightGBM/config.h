@@ -329,4 +329,4 @@ struct ParameterAlias {
 
 }   // namespace LightGBM
 
-#endif  #endif  // LightGBM_CONFIG_H_
+#endif   // LightGBM_CONFIG_H_

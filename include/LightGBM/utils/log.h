@@ -46,4 +46,4 @@ public:
      " at %s, line %d .\n", __FILE__,  __LINE__);
 
 }  // namespace LightGBM
-#endif #endif  // LightGBM_UTILS_LOG_H_
+#endif   // LightGBM_UTILS_LOG_H_

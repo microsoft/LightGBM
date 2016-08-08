@@ -154,4 +154,4 @@ private:
 };
 
 }  // namespace LightGBM
-#endif  #endif  // LightGBM_TREELEARNER_LEAF_SPLITS_HPP_
+#endif   // LightGBM_TREELEARNER_LEAF_SPLITS_HPP_

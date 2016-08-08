@@ -102,4 +102,4 @@ public:
   }
 };
 }  // namespace LightGBM
-#endif  #endif  // LightGBM_IO_PARSER_HPP_
+#endif   // LightGBM_IO_PARSER_HPP_

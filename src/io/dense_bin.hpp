@@ -169,4 +169,4 @@ BinIterator* DenseBin<VAL_T>::GetIterator(data_size_t) const {
   return new DenseBinIterator<VAL_T>(this);
 }
 }  // namespace LightGBM
-#endif  #endif  // LightGBM_IO_DENSE_BIN_HPP_
+#endif   // LightGBM_IO_DENSE_BIN_HPP_

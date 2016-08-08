@@ -184,4 +184,4 @@ inline int Network::num_machines() {
 
 }  // namespace LightGBM
 
-#endif   #endif  // LightGBM_NETWORK_H_
+#endif   // LightGBM_NETWORK_H_

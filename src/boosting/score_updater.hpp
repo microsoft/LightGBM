@@ -77,4 +77,4 @@ private:
 };
 
 }  // namespace LightGBM
-#endif  #endif  // LightGBM_BOOSTING_SCORE_UPDATER_HPP_
+#endif   // LightGBM_BOOSTING_SCORE_UPDATER_HPP_

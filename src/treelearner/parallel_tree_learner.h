@@ -89,5 +89,5 @@ private:
 
 
 }  // namespace LightGBM
-#endif  #endif  // LightGBM_TREELEARNER_PARALLEL_TREE_LEARNER_H_
+#endif   // LightGBM_TREELEARNER_PARALLEL_TREE_LEARNER_H_
 

@@ -252,4 +252,4 @@ private:
 };
 
 }  // namespace LightGBM
-#endif  #endif  // LightGBM_TREELEARNER_FEATURE_HISTOGRAM_HPP_
+#endif   // LightGBM_TREELEARNER_FEATURE_HISTOGRAM_HPP_

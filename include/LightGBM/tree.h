@@ -173,4 +173,4 @@ inline int Tree::GetLeaf(const double* feature_values) const {
 
 }  // namespace LightGBM
 
-#endif  #endif  // LightGBM_TREE_H_
+#endif   // LightGBM_TREE_H_

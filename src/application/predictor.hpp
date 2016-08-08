@@ -184,4 +184,4 @@ private:
 
 }  // namespace LightGBM
 
-#endif  #endif  // LightGBM_PREDICTOR_HPP_
+#endif   // LightGBM_PREDICTOR_HPP_

@@ -112,4 +112,4 @@ public:
 };
 
 }  // namespace LightGBM
-#endif  #endif  // LightGBM_METRIC_REGRESSION_METRIC_HPP_
+#endif   // LightGBM_METRIC_REGRESSION_METRIC_HPP_

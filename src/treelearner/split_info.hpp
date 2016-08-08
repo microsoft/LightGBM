@@ -104,4 +104,4 @@ inline bool SplitInfo::operator > (const SplitInfo& si) const {
 }
 
 }  // namespace LightGBM
-#endif  #endif  // LightGBM_TREELEARNER_SPLIT_INFO_HPP_
+#endif   // LightGBM_TREELEARNER_SPLIT_INFO_HPP_

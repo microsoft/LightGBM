@@ -275,4 +275,4 @@ BinIterator* SparseBin<VAL_T>::GetIterator(data_size_t start_idx) const {
 }
 
 }  // namespace LightGBM
-#endif  #endif  // LightGBM_IO_SPARSE_BIN_HPP_
+#endif   // LightGBM_IO_SPARSE_BIN_HPP_

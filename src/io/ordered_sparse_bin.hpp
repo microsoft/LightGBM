@@ -129,4 +129,4 @@ private:
   std::vector<data_size_t> leaf_cnt_;
 };
 }  // namespace LightGBM
-#endif  #endif  // LightGBM_IO_ORDERED_SPARSE_BIN_HPP_
+#endif   // LightGBM_IO_ORDERED_SPARSE_BIN_HPP_

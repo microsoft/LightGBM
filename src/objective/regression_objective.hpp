@@ -53,4 +53,4 @@ private:
 };
 
 }  // namespace LightGBM
-#endif  #endif  // LightGBM_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_
+#endif   // LightGBM_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_

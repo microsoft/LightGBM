@@ -102,4 +102,4 @@ private:
 };
 
 }  // namespace LightGBM
-#endif  #endif  // LightGBM_OBJECTIVE_BINARY_OBJECTIVE_HPP_
+#endif   // LightGBM_OBJECTIVE_BINARY_OBJECTIVE_HPP_

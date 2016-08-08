@@ -306,4 +306,4 @@ inline unsigned int BinMapper::ValueToBin(double value) const {
 
 }  // namespace LightGBM
 
-#endif  #endif  // LightGBM_BIN_H_
+#endif   // LightGBM_BIN_H_

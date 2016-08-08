@@ -395,4 +395,4 @@ private:
 
 }  // namespace LightGBM
 
-#endif  #endif  // LightGBM_DATA_H_
+#endif   // LightGBM_DATA_H_

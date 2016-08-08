@@ -74,4 +74,4 @@ private:
 
 }  // namespace LightGBM
 
-#endif #endif  // LightGBM_UTILS_RANDOM_H_
+#endif   // LightGBM_UTILS_RANDOM_H_
