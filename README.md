@@ -4,7 +4,7 @@ LightGBM, Light Gradient Boosting Machine
 
 
 
-LightGBM is a gradient boosting framework that using histogram based tree learning algorithm. It can outperform existing boosting tools on both learning speed and accuracy. Our [experiments](https://github.com/Microsoft/LightGBM/wiki/Experiments#comparison-experiment) shows it is about 6x faster than xgboost with much better prediction accuracy.
+LightGBM is a gradient boosting framework that using histogram based tree learning algorithm. It can outperform existing boosting tools on both learning speed and accuracy. Our [experiments](https://github.com/Microsoft/LightGBM/wiki/Experiments#comparison-experiment) shows it is better both on speed and accuracy than other boosting tools.
 
 LightGBM can be run on multiple machines, Our [experiments](https://github.com/Microsoft/LightGBM/wiki/Experiments#parallel-experiment) shows it can perform linear speed up in parallel learning. 
 
