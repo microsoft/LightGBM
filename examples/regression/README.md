@@ -8,13 +8,13 @@ Here is an example for LightGBM to run regression task.
 
 For windows, by running following command in this folder:
 ```
-LightGBM.exe config=train.conf
+lightgbm.exe config=train.conf
 ```
 
 
 For linux, by running following command in this folder:
 ```
-./LightGBM config=train.conf
+./lightgbm config=train.conf
 ```
 
 #### Prediction
@@ -23,11 +23,11 @@ You should finish training first.
 
 For windows, by running following command in this folder:
 ```
-LightGBM.exe config=predict.conf
+lightgbm.exe config=predict.conf
 ```
 
 For linux, by running following command in this folder:
 ```
-./LightGBM config=predict.conf
+./lightgbm config=predict.conf
 ```
 

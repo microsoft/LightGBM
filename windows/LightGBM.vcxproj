@@ -54,18 +54,22 @@
   <PropertyGroup Condition="'$(configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>..\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);</LibraryPath>
+    <TargetName>lightgbm</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(configuration)|$(Platform)'=='Debug_mpi|x64'">
     <IncludePath>$(MSMPI_INC);..\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>$(MSMPI_LIB64);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);</LibraryPath>
+    <TargetName>lightgbm</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>..\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);</LibraryPath>
+    <TargetName>lightgbm</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(configuration)|$(Platform)'=='Release_mpi|x64'">
     <IncludePath>$(MSMPI_INC);..\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>$(MSMPI_LIB64);$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);</LibraryPath>
+    <TargetName>lightgbm</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_mpi|x64'">
     <ClCompile>
