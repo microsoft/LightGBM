@@ -37,7 +37,7 @@ public:
   virtual Tree* Train(const score_t* gradients, const score_t* hessians) = 0;
 
   /*!
-  * \brief SetLabelAt bagging data
+  * \brief Set bagging data
   * \param used_indices Used data indices
   * \param num_data Number of used data
   */
