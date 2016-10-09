@@ -1,21 +1,21 @@
 LightGBM, Light Gradient Boosting Machine
 ==========
 
-LightGBM is a gradient boosting framework that using tree based learning algorithms. It is designed to be distributed and high performance, and has following advantages:
+LightGBM is a gradient boosting framework that using tree based learning algorithms. It is designed to be distributed and efficient with following advantages:
 
-- Fast training speed
-- Low memory consumption
+- Fast training efficency
+- Low memory usage
 - Better accuracy
-- Efficient parallel learning
-- Can learn from very big data
+- parallel learning supported
+- deal with large scale of data
 
-For the details about these advantages, please refer to [Feature Highlight](https://github.com/Microsoft/LightGBM/wiki/Feature-Highlight).
+For the details, please refer to [Feature Highlights](https://github.com/Microsoft/LightGBM/wiki/Feature-Highlight).
 
-The [experiments](https://github.com/Microsoft/LightGBM/wiki/Experiments#comparison-experiment) on real data also show LightGBM can outperform other existing boosting tools on both learning efficiency and accuracy, with much lower memory consumption. And LightGBM can achieve linear speed-up for parallel learning in our [experiments](https://github.com/Microsoft/LightGBM/wiki/Experiments#parallel-experiment).
+The [experiments](https://github.com/Microsoft/LightGBM/wiki/Experiments#comparison-experiment) on the public data also shows that LightGBM can outperform other existing boosting tools on both learning efficiency and accuracy, with significant lower memory consumption. What's more, the [experiments](https://github.com/Microsoft/LightGBM/wiki/Experiments#parallel-experiment) shows that LightGBM can achieve linear speed-up by using multiple machines for training in specific settings. 
 
 Get Started
 ------------
-To quick start,  please refer to [Installation](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide) and [Quick Start](https://github.com/Microsoft/LightGBM/wiki/Quick-Start).
+For a quick start,  please follow the [Installation Guide](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide) and [Quick Start](https://github.com/Microsoft/LightGBM/wiki/Quick-Start).
 
 Documents
 ------------
