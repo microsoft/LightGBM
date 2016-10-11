@@ -15,7 +15,7 @@ namespace LightGBM {
 class CSVParser: public Parser {
 public:
   inline void ParseOneLine(const char* str,
-                           std::vector<std::pair<int, double>>* out_features) const override {
+    std::vector<std::pair<int, double>>* out_features) const override {
     int idx = 0;
     double val = 0.0;
     while (*str != '\0') {
@@ -30,16 +30,14 @@ public:
     }
   }
   inline void ParseOneLine(const char* str, std::vector<std::pair<int, double>>* out_features,
-                                                           double* out_label) const override {
+    double* out_label) const override {
     // first column is label
     str = Common::Atof(str, out_label);
-
-	if (*str == ',') {
-		++str;
-	} else if (*str != '\0') {
-		Log::Stderr("input format error, should be CSV");
-	}
-
+    if (*str == ',') {
+      ++str;
+    } else if (*str != '\0') {
+      Log::Stderr("input format error, should be CSV");
+    }
     return ParseOneLine(str, out_features);
   }
 };
@@ -61,16 +59,14 @@ public:
     }
   }
   inline void ParseOneLine(const char* str, std::vector<std::pair<int, double>>* out_features,
-                                                           double* out_label) const override{
+    double* out_label) const override {
     // first column is label
     str = Common::Atof(str, out_label);
-
-	if (*str == '\t') {
-		++str;
-	} else if (*str != '\0') {
-		Log::Stderr("input format error, should be TSV");
-	}
-
+    if (*str == '\t') {
+      ++str;
+    } else if (*str != '\0') {
+      Log::Stderr("input format error, should be TSV");
+    }
     return ParseOneLine(str, out_features);
   }
 };
@@ -94,7 +90,7 @@ public:
     }
   }
   inline void ParseOneLine(const char* str, std::vector<std::pair<int, double>>* out_features,
-                                                            double* out_label) const override{
+    double* out_label) const override {
     // first column is label
     str = Common::Atof(str, out_label);
     str = Common::SkipSpaceAndTab(str);

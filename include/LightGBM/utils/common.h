@@ -80,6 +80,7 @@ inline static const char* Atoi(const char* p, int* out) {
 inline static const char* Atof(const char* p, double* out) {
   int frac;
   double sign, value, scale;
+
   // Skip leading white space, if any.
   while (*p == ' ') {
     ++p;
@@ -95,51 +96,85 @@ inline static const char* Atof(const char* p, double* out) {
     ++p;
   }
 
-  // Get digits before decimal point or exponent, if any.
-  for (value = 0.0; *p >= '0' && *p <= '9'; ++p) {
-    value = value * 10.0 + (*p - '0');
+  // is a number
+  if ((*p >= '0' && *p <= '9') || *p == '.' || *p == 'e' || *p == 'E') {
+    // Get digits before decimal point or exponent, if any.
+    for (value = 0.0; *p >= '0' && *p <= '9'; ++p) {
+      value = value * 10.0 + (*p - '0');
+    }
+
+    // Get digits after decimal point, if any.
+    if (*p == '.') {
+      double pow10 = 10.0;
+      ++p;
+      while (*p >= '0' && *p <= '9') {
+        value += (*p - '0') / pow10;
+        pow10 *= 10.0;
+        ++p;
+      }
+    }
+
+    // Handle exponent, if any.
+    frac = 0;
+    scale = 1.0;
+    if ((*p == 'e') || (*p == 'E')) {
+      unsigned int expon;
+      // Get sign of exponent, if any.
+      ++p;
+      if (*p == '-') {
+        frac = 1;
+        ++p;
+      } else if (*p == '+') {
+        ++p;
+      }
+      // Get digits of exponent, if any.
+      for (expon = 0; *p >= '0' && *p <= '9'; ++p) {
+        expon = expon * 10 + (*p - '0');
+      }
+      if (expon > 308) expon = 308;
+      // Calculate scaling factor.
+      while (expon >= 50) { scale *= 1E50; expon -= 50; }
+      while (expon >= 8) { scale *= 1E8;  expon -= 8; }
+      while (expon > 0) { scale *= 10.0; expon -= 1; }
+    }
+    // Return signed and scaled floating point result.
+    *out = sign * (frac ? (value / scale) : (value * scale));
+  } else {
+    if (*p == 'n' || *p == 'N') {
+      ++p;
+      if (!(*p == 'a' || *p == 'A')) {
+        Log::Stderr("meet error while parsing string to float, expect a nan here");
+      }
+      ++p;
+      if (!(*p == 'n' || *p == 'N')) {
+        Log::Stderr("meet error while parsing string to float, expect a nan here");
+      }
+      ++p;
+      // default convert nan to 0
+      *out = 0;
+    } else if (*p == 'i' || *p == 'I') {
+      ++p;
+      if (!(*p == 'n' || *p == 'N')) {
+        Log::Stderr("meet error while parsing string to float, expect a inf here");
+      }
+      ++p;
+      if (!(*p == 'f' || *p == 'F')) {
+        Log::Stderr("meet error while parsing string to float, expect a inf here");
+      }
+      ++p;
+      // default inf
+      *out = sign * 1e308;
+    } else {
+      if (*p != '\0') {
+        Log::Stderr("Meet unknow characters while parsing string to float");
+      }
+    }
   }
 
-  // Get digits after decimal point, if any.
-  if (*p == '.') {
-    double pow10 = 10.0;
-    ++p;
-    while (*p >= '0' && *p <= '9') {
-      value += (*p - '0') / pow10;
-      pow10 *= 10.0;
-      ++p;
-    }
-  }
-
-  // Handle exponent, if any.
-  frac = 0;
-  scale = 1.0;
-  if ((*p == 'e') || (*p == 'E')) {
-    unsigned int expon;
-    // Get sign of exponent, if any.
-    ++p;
-    if (*p == '-') {
-      frac = 1;
-      ++p;
-    }
-    else if (*p == '+') {
-      ++p;
-    }
-    // Get digits of exponent, if any.
-    for (expon = 0; *p >= '0' && *p <= '9'; ++p) {
-      expon = expon * 10 + (*p - '0');
-    }
-    if (expon > 308) expon = 308;
-    // Calculate scaling factor.
-    while (expon >= 50) { scale *= 1E50; expon -= 50; }
-    while (expon >= 8) { scale *= 1E8;  expon -= 8; }
-    while (expon > 0) { scale *= 10.0; expon -= 1; }
-  }
-  // Return signed and scaled floating point result.
-  *out = sign * (frac ? (value / scale) : (value * scale));
   while (*p == ' ') {
     ++p;
   }
+
   return p;
 }
 

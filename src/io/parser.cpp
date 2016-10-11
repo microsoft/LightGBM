@@ -5,7 +5,7 @@
 
 namespace LightGBM {
 
-void GetStatistic(const char* str, int* comma_cnt, int* tab_cnt, int *colon_cnt) {
+void GetStatistic(const char* str, int* comma_cnt, int* tab_cnt, int* colon_cnt) {
   *comma_cnt = 0;
   *tab_cnt = 0;
   *colon_cnt = 0;
