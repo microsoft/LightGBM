@@ -58,7 +58,7 @@ Application::~Application() {
 
 void Application::LoadParameters(int argc, char** argv) {
   std::unordered_map<std::string, std::string> params;
-  for (int i = 0; i < argc; ++i) {
+  for (int i = 1; i < argc; ++i) {
     std::vector<std::string> tmp_strs = Common::Split(argv[i], '=');
     if (tmp_strs.size() == 2) {
       std::string key = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[0]));
@@ -67,6 +67,9 @@ void Application::LoadParameters(int argc, char** argv) {
         continue;
       }
       params[key] = value;
+    }
+    else {
+      Log::Stdout("Warning: unknown parameter in command line: %s", argv[i]);
     }
   }
   // check for alias
@@ -77,9 +80,12 @@ void Application::LoadParameters(int argc, char** argv) {
     config_reader.ReadAllLines();
     if (config_reader.Lines().size() > 0) {
       for (auto& line : config_reader.Lines()) {
+        // remove str after #
+        if (line.size() > 0 && std::string::npos != line.find_first_of("#")) {
+          line.erase(line.find_first_of("#"));
+        }
         line = Common::Trim(line);
-        // skip comment
-        if (line.size() == 0 || line[0] == '#') {
+        if (line.size() == 0) {
           continue;
         }
         std::vector<std::string> tmp_strs = Common::Split(line.c_str(), '=');
@@ -93,6 +99,9 @@ void Application::LoadParameters(int argc, char** argv) {
           if (params.count(key) == 0) {
             params[key] = value;
           }
+        }
+        else {
+          Log::Stdout("Warning: unknown parameter in config file: %s", line.c_str());
         }
       }
     } else {
