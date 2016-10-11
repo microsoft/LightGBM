@@ -34,6 +34,15 @@ inline static std::string& Trim(std::string& str) {
   return str;
 }
 
+inline static std::string& RemoveQuotationSymbol(std::string& str) {
+  if (str.size() <= 0) {
+    return str;
+  }
+  str.erase(str.find_last_not_of("'\"") + 1);
+  str.erase(0, str.find_first_not_of("'\""));
+  return str;
+}
+
 inline static std::vector<std::string> Split(const char* str, char delimiter) {
   std::stringstream ss(str);
   std::string tmp_str;

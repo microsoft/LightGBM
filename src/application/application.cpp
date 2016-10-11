@@ -61,8 +61,8 @@ void Application::LoadParameters(int argc, char** argv) {
   for (int i = 0; i < argc; ++i) {
     std::vector<std::string> tmp_strs = Common::Split(argv[i], '=');
     if (tmp_strs.size() == 2) {
-      std::string key = Common::Trim(tmp_strs[0]);
-      std::string value = Common::Trim(tmp_strs[1]);
+      std::string key = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[0]));
+      std::string value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
       if (key.size() <= 0) {
         continue;
       }
@@ -84,8 +84,8 @@ void Application::LoadParameters(int argc, char** argv) {
         }
         std::vector<std::string> tmp_strs = Common::Split(line.c_str(), '=');
         if (tmp_strs.size() == 2) {
-          std::string key = Common::Trim(tmp_strs[0]);
-          std::string value = Common::Trim(tmp_strs[1]);
+          std::string key = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[0]));
+          std::string value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
           if (key.size() <= 0) {
             continue;
           }
