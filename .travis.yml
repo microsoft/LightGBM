@@ -1,0 +1,25 @@
+language: cpp
+sudo: required
+dist: trusty
+
+before_install:
+- test -n $CC  && unset CC
+- test -n $CXX && unset CXX
+
+install:
+- sudo apt-get install -y libopenmpi-dev openmpi-bin build-essential
+
+
+script:
+- cd $TRAVIS_BUILD_DIR
+- mkdir build && cd build && cmake .. && make -j
+- cd $TRAVIS_BUILD_DIR
+- rm -rf build && mkdir build && cd build && cmake -DUSE_MPI=ON ..&& make -j
+
+notifications:
+  email: false
+
+matrix:
+  include:
+    - compiler: gcc
+    - compiler: clang
