@@ -210,9 +210,8 @@ void MetricConfig::Set(const std::unordered_map<std::string, std::string>& param
 
 void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "min_data_in_leaf", &min_data_in_leaf);
-  CHECK(min_data_in_leaf > 0);
   GetDouble(params, "min_sum_hessian_in_leaf", &min_sum_hessian_in_leaf);
-  CHECK(min_sum_hessian_in_leaf >= 0.0);
+  CHECK(min_sum_hessian_in_leaf > 1.0f || min_data_in_leaf > 0);
   GetInt(params, "num_leaves", &num_leaves);
   CHECK(num_leaves > 0);
   GetInt(params, "feature_fraction_seed", &feature_fraction_seed);
