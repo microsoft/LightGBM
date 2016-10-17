@@ -2,7 +2,7 @@ LightGBM, Light Gradient Boosting Machine
 ==========
 [![Build Status](https://travis-ci.org/Microsoft/LightGBM.svg?branch=master)](https://travis-ci.org/Microsoft/LightGBM)
 
-LightGBM is a gradient boosting framework that using tree based learning algorithms. It is designed to be distributed and efficient with following advantages:
+LightGBM is a gradient boosting framework that is using tree based learning algorithms. It is designed to be distributed and efficient with following advantages:
 
 - Fast training efficiency
 - Low memory usage
