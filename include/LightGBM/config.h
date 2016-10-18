@@ -88,7 +88,6 @@ public:
   int max_bin = 255;
   int data_random_seed = 1;
   std::string data_filename = "";
-  bool data_has_label = true;
   std::vector<std::string> valid_data_filenames;
   std::string output_model = "LightGBM_model.txt";
   std::string output_result = "LightGBM_predict_result.txt";
@@ -274,8 +273,6 @@ struct ParameterAlias {
       { "app", "objective" },
       { "train_data", "data" },
       { "train", "data" },
-      { "has_label", "data_has_label" },
-      { "is_data_has_label", "data_has_label" },
       { "model_output", "output_model" },
       { "model_out", "output_model" },
       { "model_input", "input_model" },

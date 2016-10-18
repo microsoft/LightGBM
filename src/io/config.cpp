@@ -15,11 +15,6 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
   GetInt(params, "num_threads", &num_threads);
   GetTaskType(params);
 
-  // prediction task, default not has label
-  if (task_type == TaskType::kPredict) {
-    io_config.data_has_label = false;
-  }
-
   GetBoostingType(params);
   GetObjectiveType(params);
   GetMetricType(params);
@@ -125,11 +120,6 @@ void OverallConfig::CheckParamConflict() {
                                                  TreeLearnerType::kDataParallelTreeLearner) {
     is_parallel_find_bin = true;
   }
-
-  if (task_type == TaskType::kTrain && io_config.data_has_label == false) {
-    Log::Stderr("Data should have label in training task");
-  }
-
 }
 
 void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
@@ -141,7 +131,6 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
     Log::Stderr("No training/prediction data, application quit");
   }
   GetInt(params, "num_model_predict", &num_model_predict);
-  GetBool(params, "data_has_label", &data_has_label);
   GetBool(params, "is_pre_partition", &is_pre_partition);
   GetBool(params, "is_enable_sparse", &is_enable_sparse);
   GetBool(params, "use_two_round_loading", &use_two_round_loading);

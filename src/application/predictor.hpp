@@ -96,7 +96,7 @@ public:
   * \param has_label True if this data contains label
   * \param result_filename Filename of output result
   */
-  void Predict(const char* data_filename, bool has_label, const char* result_filename) {
+  void Predict(const char* data_filename, const char* result_filename) {
     FILE* result_file;
 
 #ifdef _MSC_VER
@@ -108,8 +108,8 @@ public:
     if (result_file == NULL) {
       Log::Stderr("predition result file %s doesn't exists", data_filename);
     }
-
-    Parser* parser = Parser::CreateParser(data_filename);
+    bool has_label = false;
+    Parser* parser = Parser::CreateParser(data_filename, num_features_, &has_label);
 
     if (parser == nullptr) {
       Log::Stderr("can regonise input data format, filename %s", data_filename);

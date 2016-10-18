@@ -29,7 +29,7 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
     // load weight, query information and initilize score
     metadata_.Init(data_filename, init_score_filename);
     // create text parser
-    parser_ = Parser::CreateParser(data_filename_);
+    parser_ = Parser::CreateParser(data_filename_, 0, nullptr);
     if (parser_ == nullptr) {
       Log::Stderr("cannot recognise input data format, filename: %s", data_filename_);
     }
@@ -189,7 +189,7 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
 
   // -1 means doesn't use this feature
   used_feature_map_ = std::vector<int>(sample_values.size(), -1);
-
+  num_total_features_ = sample_values.size();
   // start find bins
   if (num_machines == 1) {
     std::vector<BinMapper*> bin_mappers(sample_values.size());
@@ -209,6 +209,7 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
                                              num_data_, is_enable_sparse_));
       } else {
         // if feature is trival(only 1 bin), free spaces
+        Log::Stdout("Warning: feture %d only contains one value, will ignore it", i);
         delete bin_mappers[i];
       }
     }

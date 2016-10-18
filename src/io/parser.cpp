@@ -20,7 +20,38 @@ void GetStatistic(const char* str, int* comma_cnt, int* tab_cnt, int* colon_cnt)
   }
 }
 
-Parser* Parser::CreateParser(const char* filename) {
+bool CheckHasLabelForLibsvm(std::string& str) {
+  str = Common::Trim(str);
+  auto pos_space = str.find_first_of(" \f\n\r\t\v");
+  auto pos_colon = str.find_first_of(":");
+  if (pos_colon == std::string::npos || pos_colon > pos_space) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool CheckHasLabelForTSV(std::string& str, int num_features) {
+  str = Common::Trim(str);
+  auto tokens = Common::Split(str.c_str(), '\t');
+  if (tokens.size() == num_features) {
+    return false;
+  } else {
+    return true;
+  }
+}
+
+bool CheckHasLabelForCSV(std::string& str, int num_features) {
+  str = Common::Trim(str);
+  auto tokens = Common::Split(str.c_str(), ',');
+  if (tokens.size() == num_features) {
+    return false;
+  } else {
+    return true;
+  }
+}
+
+Parser* Parser::CreateParser(const char* filename, int num_features, bool* has_label) {
   std::ifstream tmp_file;
   tmp_file.open(filename);
   if (!tmp_file.is_open()) {
@@ -44,29 +75,45 @@ Parser* Parser::CreateParser(const char* filename) {
   // Get some statistic from 2 line
   GetStatistic(line1.c_str(), &comma_cnt, &tab_cnt, &colon_cnt);
   GetStatistic(line2.c_str(), &comma_cnt2, &tab_cnt2, &colon_cnt2);
+  Parser* ret = nullptr;
   if (line2.size() == 0) {
     // if only have one line on file
     if (colon_cnt > 0) {
-      return new LibSVMParser();
+      ret =  new LibSVMParser();
+      if (num_features > 0 && has_label != nullptr) {
+        *has_label = CheckHasLabelForLibsvm(line1);
+      }
     } else if (tab_cnt > 0) {
-      return new TSVParser();
+      ret = new TSVParser();
+      if (num_features > 0 && has_label != nullptr) {
+        *has_label = CheckHasLabelForTSV(line1, num_features);
+      }
     } else if (comma_cnt > 0) {
-      return new CSVParser();
-    } else {
-      return nullptr;
-    }
+      ret = new CSVParser();
+      if (num_features > 0 && has_label != nullptr) {
+        *has_label = CheckHasLabelForCSV(line1, num_features);
+      }
+    } 
   } else {
     if (colon_cnt > 0 || colon_cnt2 > 0) {
-      return new LibSVMParser();
+      ret = new LibSVMParser();
+      if (num_features > 0 && has_label != nullptr) {
+        *has_label = CheckHasLabelForLibsvm(line1);
+      }
     }
     else if (tab_cnt == tab_cnt2 && tab_cnt > 0) {
-      return new TSVParser();
+      ret = new TSVParser();
+      if (num_features > 0 && has_label != nullptr) {
+        *has_label = CheckHasLabelForTSV(line1, num_features);
+      }
     } else if (comma_cnt == comma_cnt2 && comma_cnt > 0) {
-      return new CSVParser();
-    } else {
-      return nullptr;
+      ret = new CSVParser();
+      if (num_features > 0 && has_label != nullptr) {
+        *has_label = CheckHasLabelForCSV(line1, num_features);
+      }
     }
   }
+  return ret;
 }
 
 }  // namespace LightGBM

@@ -60,10 +60,7 @@ void GBDT::Init(const Dataset* train_data, const ObjectiveFunction* object_funct
   hessians_ = new score_t[num_data_];
 
   // get max feature index
-  for (int i = 0; i < train_data->num_features(); ++i) {
-    max_feature_idx_ = Common::Max<int>(max_feature_idx_,
-              train_data->FeatureAt(i)->feature_index());
-  }
+  max_feature_idx_ = train_data_->num_total_features() - 1;
 
   // if need bagging, create buffer
   if (gbdt_config_->bagging_fraction < 1.0 && gbdt_config_->bagging_freq > 0) {

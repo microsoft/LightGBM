@@ -253,8 +253,7 @@ void Application::Train() {
 void Application::Predict() {
   // create predictor
   Predictor predictor(boosting_, config_.io_config.is_sigmoid);
-  predictor.Predict(config_.io_config.data_filename.c_str(),
-    config_.io_config.data_has_label, config_.io_config.output_result.c_str());
+  predictor.Predict(config_.io_config.data_filename.c_str(), config_.io_config.output_result.c_str());
   Log::Stdout("finish predict");
 }
 

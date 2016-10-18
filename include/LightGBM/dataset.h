@@ -208,9 +208,11 @@ public:
   /*!
   * \brief Create a object of parser, will auto choose the format depend on file
   * \param filename One Filename of data
+  * \param num_features Pass num_features of this data file if you know, <=0 means don't know
+  * \param has_label output, if num_features > 0, will output this data has label or not
   * \return Object of parser
   */
-  static Parser* CreateParser(const char* filename);
+  static Parser* CreateParser(const char* filename, int num_features, bool* has_label);
 };
 
 using PredictFunction =
@@ -299,6 +301,9 @@ public:
   /*! \brief Get Number of used features */
   inline int num_features() const { return num_features_; }
 
+  /*! \brief Get Number of total features */
+  inline int num_total_features() const { return num_total_features_; }
+
   /*! \brief Get Number of data */
   inline data_size_t num_data() const { return num_data_; }
 
@@ -373,6 +378,8 @@ private:
   std::vector<int> used_feature_map_;
   /*! \brief Number of used features*/
   int num_features_;
+  /*! \brief Number of total features*/
+  int num_total_features_;
   /*! \brief Number of total data*/
   data_size_t num_data_;
   /*! \brief Store some label level data*/
