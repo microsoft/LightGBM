@@ -16,10 +16,17 @@ namespace LightGBM {
 template <typename VAL_T>
 class DenseBin: public Bin {
 public:
-  explicit DenseBin(data_size_t num_data)
+  explicit DenseBin(data_size_t num_data, int default_bin)
     : num_data_(num_data) {
     data_ = new VAL_T[num_data_];
-    std::memset(data_, 0, sizeof(VAL_T)*num_data_);
+    if (default_bin == 0) {
+      std::memset(data_, 0, sizeof(VAL_T)*num_data_);
+    } else {
+      VAL_T default_bin_T = static_cast<VAL_T>(default_bin);
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        data_[i] = default_bin_T;
+      }
+    }
   }
 
   ~DenseBin() {

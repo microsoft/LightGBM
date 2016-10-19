@@ -34,7 +34,7 @@ bool CheckHasLabelForLibsvm(std::string& str) {
 bool CheckHasLabelForTSV(std::string& str, int num_features) {
   str = Common::Trim(str);
   auto tokens = Common::Split(str.c_str(), '\t');
-  if (tokens.size() == num_features) {
+  if (static_cast<int>(tokens.size()) == num_features) {
     return false;
   } else {
     return true;
@@ -44,7 +44,7 @@ bool CheckHasLabelForTSV(std::string& str, int num_features) {
 bool CheckHasLabelForCSV(std::string& str, int num_features) {
   str = Common::Trim(str);
   auto tokens = Common::Split(str.c_str(), ',');
-  if (tokens.size() == num_features) {
+  if (static_cast<int>(tokens.size()) == num_features) {
     return false;
   } else {
     return true;

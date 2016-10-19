@@ -267,27 +267,30 @@ public:
   * \param sparse_rate Sparse rate of this bins( num_bin0/num_data )
   * \param is_enable_sparse True if enable sparse feature
   * \param is_sparse Will set to true if this bin is sparse
+  * \param default_bin Default bin for zeros value
   * \return The bin data object
   */
   static Bin* CreateBin(data_size_t num_data, int num_bin,
-    double sparse_rate, bool is_enable_sparse, bool* is_sparse);
+    double sparse_rate, bool is_enable_sparse, bool* is_sparse, int default_bin);
 
   /*!
   * \brief Create object for bin data of one feature, used for dense feature
   * \param num_data Total number of data
   * \param num_bin Number of bin
+  * \param default_bin Default bin for zeros value
   * \return The bin data object
   */
-  static Bin* CreateDenseBin(data_size_t num_data, int num_bin);
+  static Bin* CreateDenseBin(data_size_t num_data, int num_bin, int default_bin);
 
   /*!
   * \brief Create object for bin data of one feature, used for sparse feature
   * \param num_data Total number of data
   * \param num_bin Number of bin
+  * \param default_bin Default bin for zeros value
   * \return The bin data object
   */
   static Bin* CreateSparseBin(data_size_t num_data,
-    int num_bin);
+    int num_bin, int default_bin);
 };
 
 inline unsigned int BinMapper::ValueToBin(double value) const {
