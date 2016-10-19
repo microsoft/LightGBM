@@ -248,7 +248,6 @@ std::string GBDT::ModelsToString() const {
 
 void GBDT::ModelsFromString(const std::string& model_str, int num_used_model) {
   // use serialized string to restore this object
-  // deseialize string to object????
   models_.clear();
   std::vector<std::string> lines = Common::Split(model_str.c_str(), '\n');
   size_t i = 0;
