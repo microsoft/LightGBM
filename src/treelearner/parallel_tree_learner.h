@@ -14,8 +14,8 @@ namespace LightGBM {
 
 /*!
 * \brief Feature parallel learning algorithm.
-* Different machine will find best split on different features, then sync global best split
-* When #data is small or #feature is large, you can use this to have better speed-up
+*        Different machine will find best split on different features, then sync global best split
+*        It is recommonded used when #data is small or #feature is large
 */
 class FeatureParallelTreeLearner: public SerialTreeLearner {
 public:
@@ -39,8 +39,8 @@ private:
 
 /*!
 * \brief Data parallel learning algorithm.
-* Workers use local data to construct histograms locally, then sync up global histograms.
-* When #data is large or #feature is small, you can use this to have better speed-up
+*        Workers use local data to construct histograms locally, then sync up global histograms.
+*        It is recommonded used when #data is large or #feature is small
 */
 class DataParallelTreeLearner: public SerialTreeLearner {
 public:
