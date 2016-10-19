@@ -24,7 +24,7 @@ public:
   */
   ~GBDT();
   /*!
-  * \brief Initial logic
+  * \brief Initialization logic
   * \param config Config for boosting
   * \param train_data Training data
   * \param object_function Training objective function
@@ -36,9 +36,9 @@ public:
                                               const char* output_model_filename)
                                                                        override;
   /*!
-  * \brief Add a validation data
-  * \param valid_data Validation data
-  * \param valid_metrics Metrics for validation data
+  * \brief Adding a validation dataset
+  * \param valid_data Validation dataset
+  * \param valid_metrics Metrics for validation dataset
   */
   void AddDataset(const Dataset* valid_data,
        const std::vector<const Metric*>& valid_metrics) override;
@@ -47,14 +47,14 @@ public:
   */
   void Train() override;
   /*!
-  * \brief Predtion for one record, not use sigmoid
+  * \brief Predtion for one record without sigmoid transformation
   * \param feature_values Feature value on this record
   * \return Prediction result for this record
   */
   double PredictRaw(const double * feature_values) const override;
 
   /*!
-  * \brief Predtion for one record, will use sigmoid transform if needed
+  * \brief Predtion for one record with sigmoid transformation if enabled
   * \param feature_values Feature value on this record
   * \return Prediction result for this record
   */
@@ -87,8 +87,8 @@ private:
   */
   void Bagging(int iter);
   /*!
-  * \brief update score for out-of-bag data.
-  * It is necessary for this update, since we may re-bagging data on training
+  * \brief updating score for out-of-bag data.
+  *        Data should be update since we may re-bagging data on training
   * \param tree Trained tree of this iteration
   */
   void UpdateScoreOutOfBag(const Tree* tree);
@@ -97,12 +97,12 @@ private:
   */
   void Boosting();
   /*!
-  * \brief train one tree
+  * \brief training one tree
   * \return Trained tree of this iteration
   */
   Tree* TrainOneTree();
   /*!
-  * \brief update score after tree trained
+  * \brief updating score after tree was trained
   * \param tree Trained tree of this iteration
   */
   void UpdateScore(const Tree* tree);

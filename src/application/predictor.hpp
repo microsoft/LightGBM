@@ -54,7 +54,7 @@ public:
   }
 
   /*!
-  * \brief prediction for one record, only raw result(not sigmoid transform)
+  * \brief prediction for one record, only raw result(without sigmoid transformation)
   * \param features Feature for this record
   * \return Prediction result
   */
@@ -68,13 +68,13 @@ public:
         features_[tid][p.first] = p.second;
       }
     }
-    // get result without sigmoid transform
+    // get result without sigmoid transformation
     return boosting_->PredictRaw(features_[tid]);
   }
 
   /*!
-  * \brief prediction for one record, will use sigmoid transform if needed(only needs in binary classification now)
-  * \param features Feature for this record
+  * \brief prediction for one record, will use sigmoid transformation if needed(only enabled for binary classification noe)
+  * \param features Feature of this record
   * \return Prediction result
   */
   double PredictOneLine(const std::vector<std::pair<int, double>>& features) {
@@ -91,7 +91,7 @@ public:
     return boosting_->Predict(features_[tid]);
   }
   /*!
-  * \brief prediction for a data, and save result
+  * \brief predicting on data, then saving result to disk
   * \param data_filename Filename of data
   * \param has_label True if this data contains label
   * \param result_filename Filename of output result
@@ -112,7 +112,7 @@ public:
     Parser* parser = Parser::CreateParser(data_filename, num_features_, &has_label);
 
     if (parser == nullptr) {
-      Log::Stderr("can regonise input data format, filename %s", data_filename);
+      Log::Stderr("recongnizing input data format failed, filename %s", data_filename);
     }
 
     // function for parse data

@@ -9,7 +9,6 @@ namespace LightGBM {
 
 /*!
 * \brief The interface of Objective Function.
-* Objective function is used to get gradients
 */
 class ObjectiveFunction {
 public:
@@ -24,8 +23,8 @@ public:
   virtual void Init(const Metadata& metadata, data_size_t num_data) = 0;
 
   /*!
-  * \brief calculate first order derivative of loss function
-  * \param score Current prediction score
+  * \brief calculating first order derivative of loss function
+  * \param score prediction score in this round
   * \gradients Output gradients
   * \hessians Output hessians
   */
@@ -34,7 +33,7 @@ public:
 
   /*!
   * \brief Get sigmoid param for this objective if has. 
-  * This function is used for prediction task, if has sigmoid param, the prediction value will be transform by sigmoid function.
+  *        This function is used for prediction task, if has sigmoid param, the prediction value will be transform by sigmoid function.
   * \return Sigmoid param, if <=0.0 means don't use sigmoid transform on this objective.
   */
   virtual double GetSigmoid() const = 0;

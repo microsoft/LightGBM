@@ -13,12 +13,12 @@
 namespace LightGBM {
 
 /*!
-* \brief Ordered bin for sparse feature . efficient for construct histogram, especally for sparse bin
-* There are 2 advantages for using ordered bin.
-* 1. group the data by leaf, improve the cache hit.
-* 2. only store the non-zero bin, which can speed up the histogram cconsturction for sparse feature.
-* But it has a additional cost, it need re-order the bins after leaf split, which will cost much for dense feature.
-* So we only use ordered bin for sparse features now.
+* \brief Interface for ordered bin data. efficient for construct histogram, especially for sparse bin
+*        There are 2 advantages by using ordered bin.
+*        1. group the data by leafs to improve the cache hit.
+*        2. only store the non-zero bin, which can speed up the histogram consturction for sparse features.
+*        However it brings additional cost: it need re-order the bins after every split, which will cost much for dense feature.
+*        So we only using ordered bin for sparse situations.
 */
 template <typename VAL_T>
 class OrderedSparseBin:public OrderedBin {

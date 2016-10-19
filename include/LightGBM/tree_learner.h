@@ -22,14 +22,13 @@ public:
   virtual ~TreeLearner() {}
 
   /*!
-  * \brief Init tree learner with training data set and tree config
+  * \brief Initialize tree learner with training dataset and configs
   * \param train_data The used training data
-  * \param tree_config The tree setting
   */
   virtual void Init(const Dataset* train_data) = 0;
 
   /*!
-  * \brief fit train data set and return a trained tree
+  * \brief training tree model on dataset 
   * \param gradients The first order gradients
   * \param hessians The second order gradients
   * \return A trained tree
@@ -45,7 +44,7 @@ public:
     data_size_t num_data) = 0;
 
   /*!
-  * \brief Use last trained tree to predition training score, and add to out_score;
+  * \brief Using last trained tree to predict score then adding to out_score;
   * \param out_score output score
   */
   virtual void AddPredictionToScore(score_t *out_score) const = 0;

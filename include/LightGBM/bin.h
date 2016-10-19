@@ -291,7 +291,7 @@ public:
 };
 
 inline unsigned int BinMapper::ValueToBin(double value) const {
-  // use binary search to find bin
+  // binary search to find bin
   int l = 0;
   int r = num_bin_ - 1;
   while (l < r) {

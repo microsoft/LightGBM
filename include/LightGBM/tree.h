@@ -31,9 +31,9 @@ public:
   ~Tree();
 
   /*!
-  * \brief Split a tree leave, 
-  * \param leaf Index of leaf that want to split
-  * \param feature Index of feature, the converted index after remove useless features
+  * \brief Performing a split on tree leaves.
+  * \param leaf Index of leaf to be split
+  * \param feature Index of feature; the converted index after removing useless features
   * \param threshold Threshold(bin) of split
   * \param real_feature Index of feature, the original index on data
   * \param threshold_double Threshold on feature value
@@ -50,7 +50,7 @@ public:
   inline score_t LeafOutput(int leaf) const { return leaf_value_[leaf]; }
 
   /*!
-  * \brief Add prediction of this tree model to score
+  * \brief Adding prediction value of this tree model to scores
   * \param data The dataset
   * \param num_data Number of total data
   * \param score Will add prediction to score
@@ -59,18 +59,18 @@ public:
                                                        score_t* score) const;
 
   /*!
-  * \brief Add prediction of this tree model to score
+  * \brief Adding prediction value of this tree model to scorese
   * \param data The dataset
   * \param used_data_indices Indices of used data
   * \param num_data Number of total data
   * \param score Will add prediction to score
   */
   void AddPredictionToScore(const Dataset* data,
-           const data_size_t* used_data_indices,
-           data_size_t num_data, score_t* score) const;
+                            const data_size_t* used_data_indices,
+                            data_size_t num_data, score_t* score) const;
 
   /*!
-  * \brief Prediction for one record 
+  * \brief Prediction on one record 
   * \param feature_values Feature value of this record
   * \return Prediction result
   */
@@ -81,6 +81,7 @@ public:
 
   /*!
   * \brief Shrinkage for the tree's output
+  *        shrinkage rate (a.k.a learning rate) is used to tune the traning process
   * \param rate The factor of shrinkage
   */
   inline void Shrinkage(double rate) {
@@ -98,7 +99,7 @@ public:
   Tree(const Tree&) = delete;
 private:
   /*!
-  * \brief Find leaf index that this record belongs
+  * \brief Find leaf index of which record belongs by data
   * \param data The dataset
   * \param data_idx Index of record
   * \return Leaf index
@@ -107,7 +108,7 @@ private:
                                            data_size_t data_idx) const;
 
   /*!
-  * \brief Find leaf index that this record belongs
+  * \brief Find leaf index of which record belongs by features
   * \param feature_values Feature value of this record
   * \return Leaf index
   */

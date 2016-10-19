@@ -12,7 +12,7 @@
 
 namespace LightGBM {
 
-/*! \brief Used to store data and provide some operations on one feature*/
+/*! \brief Using to store data and providing some operations on one feature*/
 class Feature {
 public:
   /*!

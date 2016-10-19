@@ -28,7 +28,7 @@ public:
     const Metadata& metadata, data_size_t num_data) = 0;
 
   /*!
-  * \brief Calcalute and print metric result
+  * \brief Calcaluting and printing metric result
   * \param iter Current iteration
   * \param score Current prediction score
   */
@@ -55,7 +55,7 @@ public:
 
   /*!
   * \brief Calculate the DCG score at position k
-  * \param k The position want to eval at
+  * \param k The position to evaluate
   * \param label Pointer of label
   * \param score Pointer of score
   * \param num_data Number of data
@@ -66,7 +66,7 @@ public:
 
   /*!
   * \brief Calculate the DCG score at multi position
-  * \param ks The positions want to eval at
+  * \param ks The positions to evaluate
   * \param label Pointer of label
   * \param score Pointer of score
   * \param num_data Number of data
