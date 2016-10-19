@@ -16,6 +16,7 @@ template<typename PointWiseLossCalculator>
 class RegressionMetric: public Metric {
 public:
   explicit RegressionMetric(const MetricConfig& config) {
+    early_stopping_round_ = config.early_stopping_round;
     output_freq_ = config.output_freq;
     the_bigger_the_better = false;
   }
@@ -42,7 +43,7 @@ public:
   }
   
   void Print(int iter, const score_t* score, score_t& loss) const override {
-    if (output_freq_ > 0 && iter % output_freq_ == 0) {
+    if (early_stopping_round_ > 0 || output_freq_ > 0 && iter % output_freq_ == 0) {
       score_t sum_loss = 0.0;
       if (weights_ == nullptr) {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
@@ -58,7 +59,9 @@ public:
         }
       }
       loss = PointWiseLossCalculator::AverageLoss(sum_loss, sum_weights_);
-      Log::Stdout("Iteration:%d, %s's %s : %f", iter, name, PointWiseLossCalculator::Name(), loss);
+      if (output_freq_ > 0 && iter % output_freq_ == 0){
+        Log::Stdout("Iteration:%d, %s's %s : %f", iter, name, PointWiseLossCalculator::Name(), loss);
+      }
     }
   }
 

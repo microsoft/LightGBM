@@ -167,6 +167,7 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
 
 
 void MetricConfig::Set(const std::unordered_map<std::string, std::string>& params) {
+  GetInt(params, "early_stopping_round", &early_stopping_round);
   GetInt(params, "metric_freq", &output_freq);
   CHECK(output_freq >= 0);
   GetDouble(params, "sigmoid", &sigmoid);

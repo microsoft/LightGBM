@@ -16,6 +16,7 @@ namespace LightGBM {
 class NDCGMetric:public Metric {
 public:
   explicit NDCGMetric(const MetricConfig& config) {
+    early_stopping_round_ = config.early_stopping_round;
     output_freq_ = config.output_freq;
     the_bigger_the_better = true;
     // get eval position
@@ -75,7 +76,7 @@ public:
   }
 
   void Print(int iter, const score_t* score, score_t& loss) const override {
-    if (output_freq_ > 0 && iter % output_freq_ == 0) {
+    if (early_stopping_round_ > 0 || output_freq_ > 0 && iter % output_freq_ == 0) {
       // some buffers for multi-threading sum up
       std::vector<std::vector<double>> result_buffer_;
       for (int i = 0; i < num_threads_; ++i) {
@@ -134,7 +135,9 @@ public:
         result_ss << "NDCG@" << eval_at_[j] << ":" << result[j] << "\t";
       }
       loss = result[0];
-      Log::Stdout("Iteration:%d, Test:%s, %s ", iter, name, result_ss.str().c_str());
+      if (output_freq_ > 0 && iter % output_freq_ == 0){
+        Log::Stdout("Iteration:%d, Test:%s, %s ", iter, name, result_ss.str().c_str());
+      }
     }
   }
 

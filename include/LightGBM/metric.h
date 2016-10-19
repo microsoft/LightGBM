@@ -42,6 +42,7 @@ public:
   static Metric* CreateMetric(const std::string& type, const MetricConfig& config);
 
   bool the_bigger_the_better = false;
+  int early_stopping_round_ = 0;
 };
 
 /*!

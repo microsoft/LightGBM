@@ -120,6 +120,7 @@ public:
 struct MetricConfig: public ConfigBase {
 public:
   virtual ~MetricConfig() {}
+  int early_stopping_round = 0;
   int output_freq = 1;
   double sigmoid = 1;
   bool is_provide_training_metric = false;

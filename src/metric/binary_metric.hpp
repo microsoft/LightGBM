@@ -18,6 +18,7 @@ template<typename PointWiseLossCalculator>
 class BinaryMetric: public Metric {
 public:
   explicit BinaryMetric(const MetricConfig& config) {
+    early_stopping_round_ = config.early_stopping_round;
     output_freq_ = config.output_freq;
     the_bigger_the_better = false;
     sigmoid_ = static_cast<score_t>(config.sigmoid);
@@ -51,7 +52,7 @@ public:
 
   void Print(int iter, const score_t* score, score_t& loss) const override {
     score_t sum_loss = 0.0f;
-    if (output_freq_ > 0 && iter % output_freq_ == 0) {
+    if (early_stopping_round_ > 0 || output_freq_ > 0 && iter % output_freq_ == 0) {
       if (weights_ == nullptr) {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
@@ -70,7 +71,9 @@ public:
         }
       }
       loss = sum_loss / sum_weights_;
-      Log::Stdout("Iteration:%d, %s's %s: %f", iter, name, PointWiseLossCalculator::Name(), loss);
+      if (output_freq_ > 0 && iter % output_freq_ == 0){
+        Log::Stdout("Iteration:%d, %s's %s: %f", iter, name, PointWiseLossCalculator::Name(), loss);
+      }
     }
   }
 
@@ -141,6 +144,7 @@ public:
 class AUCMetric: public Metric {
 public:
   explicit AUCMetric(const MetricConfig& config) {
+    early_stopping_round_ = config.early_stopping_round;
     output_freq_ = config.output_freq;
     the_bigger_the_better = true;
   }
@@ -167,7 +171,7 @@ public:
   }
 
   void Print(int iter, const score_t* score, score_t& loss) const override {
-    if (output_freq_ > 0 && iter % output_freq_ == 0) {
+    if (early_stopping_round_ > 0 || output_freq_ > 0 && iter % output_freq_ == 0) {
       // get indices sorted by score, descent order
       std::vector<data_size_t> sorted_idx;
       for (data_size_t i = 0; i < num_data_; ++i) {
@@ -224,7 +228,9 @@ public:
         auc = accum / (sum_pos *(sum_weights_ - sum_pos));
       }
       loss = auc;
-      Log::Stdout("iteration:%d, %s's %s: %f", iter, name, "auc", loss);
+      if (output_freq_ > 0 && iter % output_freq_ == 0){
+        Log::Stdout("iteration:%d, %s's %s: %f", iter, name, "auc", loss);
+      }
     }
   }
 
