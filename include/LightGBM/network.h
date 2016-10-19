@@ -37,7 +37,7 @@ public:
 
 /*!
 * \brief node type on recursive halving algorithm
-* When number of machines is not power of 2, need group maiches into power of 2 group.
+* When number of machines is not power of 2, need group machines into power of 2 group.
 * And we can let each group has at most 2 machines.
 * if the group only has 1 machine. this machine is the normal node
 * if the grou has 2 machines, this group will have two type of nodes, one is the leader.

@@ -152,7 +152,7 @@ void GBDT::Bagging(int iter) {
 }
 
 void GBDT::UpdateScoreOutOfBag(const Tree* tree) {
-  // we need to predict out-of-bag data's socres for boosing
+  // we need to predict out-of-bag socres of data for boosting
   if (out_of_bag_data_indices_ != nullptr) {
     train_score_updater_->
       AddScore(tree, out_of_bag_data_indices_, out_of_bag_data_cnt_);
@@ -169,12 +169,12 @@ void GBDT::Train() {
     Bagging(iter);
     // train a new tree
     Tree * new_tree = TrainOneTree();
-    // if cannon learn a new tree, stop
+    // if cannot learn a new tree, then stop
     if (new_tree->num_leaves() <= 1) {
       Log::Stdout("Cannot do any boosting for tree cannot split");
       break;
     }
-    // Shrinkage by learning rate
+    // shrinkage by learning rate
     new_tree->Shrinkage(gbdt_config_->learning_rate);
     // update score
     UpdateScore(new_tree);
@@ -183,12 +183,12 @@ void GBDT::Train() {
     OutputMetric(iter + 1);
     // add model
     models_.push_back(new_tree);
-    // write model to file on every iteration
+    // save model to file per iteration
     fprintf(output_model_file, "Tree=%d\n", iter);
     fprintf(output_model_file, "%s\n", new_tree->ToString().c_str());
     fflush(output_model_file);
     auto end_time = std::chrono::high_resolution_clock::now();
-    // output used time on each iteration
+    // output used time per iteration
     Log::Stdout("%f seconds elapsed, finished %d iteration", std::chrono::duration<double,
                                      std::milli>(end_time - start_time) * 1e-3, iter + 1);
   }
@@ -223,7 +223,7 @@ void GBDT::OutputMetric(int iter) {
 }
 
 void GBDT::Boosting() {
-  // objective function will calculation gradients and hessians
+  // objective function will calculate gradients and hessians
   object_function_->
     GetGradients(train_score_updater_->score(), gradients_, hessians_);
 }

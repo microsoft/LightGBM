@@ -15,10 +15,10 @@ class Metric;
 
 /*!
 * \brief The main entrance of LightGBM. this application has two tasks:
-* Train and Predict.
-* Train task will train a new model
-* Predict task will predicting the scores of test data using exsiting model,
-* and saving the score to disk.
+*        Train and Predict.
+*        Train task will train a new model
+*        Predict task will predicting the scores of test data using exsiting model,
+*        and saving the score to disk.
 */
 class Application {
 public:

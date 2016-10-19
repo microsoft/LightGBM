@@ -255,7 +255,7 @@ public:
   virtual OrderedBin* CreateOrderedBin() const = 0;
 
   /*!
-  * \brief After pushed all feature data, should call this to have better refactor for bin data
+  * \brief After pushed all feature data, call this could have better refactor for bin data
   */
   virtual void FinishLoad() = 0;
 
@@ -263,7 +263,7 @@ public:
   * \brief Create object for bin data of one feature, will call CreateDenseBin or CreateSparseBin according to "is_sparse"
   * \param num_data Total number of data
   * \param num_bin Number of bin
-  * \param is_sparse True if this feature is saprese
+  * \param is_sparse True if this feature is sparse
   * \param sparse_rate Sparse rate of this bins( num_bin0/num_data )
   * \param is_enable_sparse True if enable sparse feature
   * \param is_sparse Will set to true if this bin is sparse
