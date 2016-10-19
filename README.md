@@ -4,11 +4,11 @@ LightGBM, Light Gradient Boosting Machine
 
 LightGBM is a gradient boosting framework that is using tree based learning algorithms. It is designed to be distributed and efficient with following advantages:
 
-- Fast training efficiency
-- Low memory usage
+- Fast training speed and high efficiency
+- Lower memory usage
 - Better accuracy
 - Parallel learning supported
-- Deal with large scale of data
+- Capacity of handeling large scale data
 
 For more details, please refer to [Features](https://github.com/Microsoft/LightGBM/wiki/Features).
 
