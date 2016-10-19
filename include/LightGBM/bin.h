@@ -20,7 +20,7 @@ public:
   data_size_t cnt = 0;
 
   /*!
-  * \brief Sum up reduce function for histogram bin
+  * \brief Sum up (reducers) functions for histogram bin
   */
   inline static void SumReducer(const char *src, char *dst, int len) {
     const int type_size = sizeof(HistogramBinEntry);
@@ -42,8 +42,8 @@ public:
   }
 };
 
-/*! \brief This class used to convert featrue value to bin,
-* and store some meta infomartion for bin*/
+/*! \brief This class used to convert feature values into bin,
+*          and store some meta information for bin*/
 class BinMapper {
 public:
   BinMapper();
@@ -53,9 +53,9 @@ public:
 
   /*! \brief Get number of bins */
   inline int num_bin() const { return num_bin_; }
-  /*! \brief True if bin is trival(only contain one bin) */
+  /*! \brief True if bin is trival (contains only one bin) */
   inline bool is_trival() const { return is_trival_; }
-  /*! \brief Sparse rate of this bins( num_zero_bins / num_data ) */
+  /*! \brief Sparsity of this bin ( num_zero_bins / num_data ) */
   inline double sparse_rate() const { return sparse_rate_; }
   /*!
   * \brief Save binary data to file
@@ -63,9 +63,9 @@ public:
   */
   void SaveBinaryToFile(FILE* file) const;
   /*!
-  * \brief Map bin to feature value
+  * \brief Mapping bin into feature value
   * \param bin
-  * \return Feature value for this bin
+  * \return Feature value of this bin
   */
   inline double BinToValue(unsigned int bin) const {
     return bin_upper_bound_[bin];
@@ -75,7 +75,7 @@ public:
   */
   size_t SizesInByte() const;
   /*!
-  * \brief Map feature value to bin
+  * \brief Mapping feature value into bin 
   * \param value
   * \return bin for this feature value
   */
@@ -96,13 +96,13 @@ public:
   static int SizeForSpecificBin(int bin);
 
   /*!
-  * \brief Copy this object to buffer
+  * \brief Seirilizing this object to buffer
   * \param buffer The destination
   */
   void CopyTo(char* buffer);
 
   /*!
-  * \brief Restore this object from buffer
+  * \brief Deserilizing this object from buffer
   * \param buffer The source
   */
   void CopyFrom(const char* buffer);
@@ -119,12 +119,12 @@ private:
 };
 
 /*!
-* \brief Interface for ordered bin data. efficient for construct histogram, especally for sparse bin
-* There are 2 advantages for using ordered bin.
-* 1. group the data by leaf, improve the cache hit.
-* 2. only store the non-zero bin, which can speed up the histogram cconsturction for sparse feature.
-* But it has a additional cost, it need re-order the bins after leaf split, which will cost much for dense feature.
-* So we only use ordered bin for sparse features now.
+* \brief Interface for ordered bin data. efficient for construct histogram, especially for sparse bin
+*        There are 2 advantages by using ordered bin.
+*        1. group the data by leafs to improve the cache hit.
+*        2. only store the non-zero bin, which can speed up the histogram consturction for sparse features.
+*        However it brings additional cost: it need re-order the bins after every split, which will cost much for dense feature.
+*        So we only using ordered bin for sparse situations.
 */
 class OrderedBin {
 public:
@@ -132,16 +132,17 @@ public:
   virtual ~OrderedBin() {}
 
   /*!
-  * \brief Initial logic, call before train one tree.
-  * \param used_indices If used_indices==nullptr means using all data, otherwise, used_indices[i] != 0 means i-th data is used(for bagging logic)
-  * \param num_leavas Number of leveas on this iteration
+  * \brief Initialization logic.
+  * \param used_indices If used_indices==nullptr means using all data, otherwise, used_indices[i] != 0 means i-th data is used
+           (this logic was build for bagging logic)
+  * \param num_leaves Number of leaves on this iteration
   */
-  virtual void Init(const char* used_indices, data_size_t num_leavas) = 0;
+  virtual void Init(const char* used_indices, data_size_t num_leaves) = 0;
 
   /*!
   * \brief Construct histogram by using this bin
-  * Note: Unlike Bin, OrderedBin doesn't use ordered gradients and ordered hessians.
-  * Because it is hard to know the relative index in one leaf for sparse bin, since we skipped zero bins.
+  *        Note: Unlike Bin, OrderedBin doesn't use ordered gradients and ordered hessians.
+  *        Because it is hard to know the relative index in one leaf for sparse bin, since we skipped zero bins.
   * \param leaf Using which leaf's data to construct
   * \param gradients Gradients, Note:non-oredered by leaf
   * \param hessians Hessians, Note:non-oredered by leaf
@@ -172,9 +173,9 @@ public:
 
 /*!
 * \brief Interface for bin data. This class will store bin data for one feature.
-* unlike OrderedBin, this class will store data by original order.
-* Though it may have many cache miss when construct histogram,
-* but it doesn't need to re-order operation, So it is still faster than OrderedBin for dense feature
+*        unlike OrderedBin, this class will store data by original order.
+*        Note that it may cause cache misses when construct histogram,
+*        but it doesn't need to re-order operation, So it will be faster than OrderedBin for dense feature
 */
 class Bin {
 public:
@@ -218,10 +219,11 @@ public:
 
   /*!
   * \brief Construct histogram of this feature,
-  * Note: here use ordered_gradients and ordered_hessians to improve cache hit chance
-  * The navie solution is use gradients[data_indices[i]] for data_indices[i] to get gradients, which is not cache friendly, since the access of memory is not continuous.
-  * ordered_gradients and ordered_hessians are preprocessed, they are re-ordered by data_indices.
-  * It uses ordered_gradients[i] for data_indices[i]'s gradients (same for ordered_hessians).
+  *        Note: We use ordered_gradients and ordered_hessians to improve cache hit chance
+  *        The navie solution is use gradients[data_indices[i]] for data_indices[i] to get gradients, 
+           which is not cache friendly, since the access of memory is not continuous.
+  *        ordered_gradients and ordered_hessians are preprocessed, and they are re-ordered by data_indices.
+  *        Ordered_gradients[i] is aligned with data_indices[i]'s gradients (same for ordered_hessians).
   * \param data_indices Used data indices in current leaf
   * \param num_data Number of used data
   * \param ordered_gradients Pointer to gradients, the data_indices[i]-th data's gradient is ordered_gradients[i]
@@ -282,7 +284,6 @@ public:
   * \brief Create object for bin data of one feature, used for sparse feature
   * \param num_data Total number of data
   * \param num_bin Number of bin
-  * \param sparse_rate Sparse rate of this bins( num_bin0/num_data )
   * \return The bin data object
   */
   static Bin* CreateSparseBin(data_size_t num_data,
