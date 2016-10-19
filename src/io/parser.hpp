@@ -20,7 +20,9 @@ public:
     double val = 0.0;
     while (*str != '\0') {
       str = Common::Atof(str, &val);
-      out_features->emplace_back(idx, val);
+      if (fabs(val) > 1e-10) {
+        out_features->emplace_back(idx, val);
+      }
       ++idx;
       if (*str == ',') {
         ++str;
@@ -49,7 +51,9 @@ public:
     double val = 0.0;
     while (*str != '\0') {
       str = Common::Atof(str, &val);
-      out_features->emplace_back(idx, val);
+      if (fabs(val) > 1e-10) {
+        out_features->emplace_back(idx, val);
+      }
       ++idx;
       if (*str == '\t') {
         ++str;
