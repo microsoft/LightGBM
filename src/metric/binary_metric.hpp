@@ -19,6 +19,7 @@ class BinaryMetric: public Metric {
 public:
   explicit BinaryMetric(const MetricConfig& config) {
     output_freq_ = config.output_freq;
+    the_bigger_the_better = false;
     sigmoid_ = static_cast<score_t>(config.sigmoid);
     if (sigmoid_ <= 0.0f) {
       Log::Stderr("sigmoid param %f should greater than zero", sigmoid_);
@@ -48,7 +49,7 @@ public:
     }
   }
 
-  void Print(int iter, const score_t* score) const override {
+  void Print(int iter, const score_t* score, score_t& loss) const override {
     score_t sum_loss = 0.0f;
     if (output_freq_ > 0 && iter % output_freq_ == 0) {
       if (weights_ == nullptr) {
@@ -68,7 +69,8 @@ public:
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob) * weights_[i];
         }
       }
-      Log::Stdout("Iteration:%d, %s's %s: %f", iter, name, PointWiseLossCalculator::Name(), sum_loss / sum_weights_);
+      loss = sum_loss / sum_weights_;
+      Log::Stdout("Iteration:%d, %s's %s: %f", iter, name, PointWiseLossCalculator::Name(), loss);
     }
   }
 
@@ -140,6 +142,7 @@ class AUCMetric: public Metric {
 public:
   explicit AUCMetric(const MetricConfig& config) {
     output_freq_ = config.output_freq;
+    the_bigger_the_better = true;
   }
 
   virtual ~AUCMetric() {
@@ -163,7 +166,7 @@ public:
     }
   }
 
-  void Print(int iter, const score_t* score) const override {
+  void Print(int iter, const score_t* score, score_t& loss) const override {
     if (output_freq_ > 0 && iter % output_freq_ == 0) {
       // get indices sorted by score, descent order
       std::vector<data_size_t> sorted_idx;
@@ -220,7 +223,8 @@ public:
       if (sum_pos > 0.0f && sum_pos != sum_weights_) {
         auc = accum / (sum_pos *(sum_weights_ - sum_pos));
       }
-      Log::Stdout("iteration:%d, %s's %s: %f", iter, name, "auc", auc);
+      loss = auc;
+      Log::Stdout("iteration:%d, %s's %s: %f", iter, name, "auc", loss);
     }
   }
 

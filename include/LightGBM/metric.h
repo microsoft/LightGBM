@@ -32,7 +32,7 @@ public:
   * \param iter Current iteration
   * \param score Current prediction score
   */
-  virtual void Print(int iter, const score_t* score) const = 0;
+  virtual void Print(int iter, const score_t* score, score_t& loss) const = 0;
 
   /*!
   * \brief Create object of metrics
@@ -40,6 +40,8 @@ public:
   * \param config Config for metric
   */
   static Metric* CreateMetric(const std::string& type, const MetricConfig& config);
+
+  bool the_bigger_the_better = false;
 };
 
 /*!

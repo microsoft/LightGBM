@@ -17,6 +17,7 @@ class RegressionMetric: public Metric {
 public:
   explicit RegressionMetric(const MetricConfig& config) {
     output_freq_ = config.output_freq;
+    the_bigger_the_better = false;
   }
 
   virtual ~RegressionMetric() {
@@ -39,8 +40,8 @@ public:
       }
     }
   }
-
-  void Print(int iter, const score_t* score) const override {
+  
+  void Print(int iter, const score_t* score, score_t& loss) const override {
     if (output_freq_ > 0 && iter % output_freq_ == 0) {
       score_t sum_loss = 0.0;
       if (weights_ == nullptr) {
@@ -56,7 +57,8 @@ public:
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i]) * weights_[i];
         }
       }
-      Log::Stdout("Iteration:%d, %s's %s : %f", iter, name, PointWiseLossCalculator::Name(), PointWiseLossCalculator::AverageLoss(sum_loss, sum_weights_));
+      loss = PointWiseLossCalculator::AverageLoss(sum_loss, sum_weights_);
+      Log::Stdout("Iteration:%d, %s's %s : %f", iter, name, PointWiseLossCalculator::Name(), loss);
     }
   }
 

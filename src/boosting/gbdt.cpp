@@ -22,6 +22,7 @@ GBDT::GBDT(const BoostingConfig* config)
   out_of_bag_data_indices_(nullptr), bag_data_indices_(nullptr) {
   max_feature_idx_ = 0;
   gbdt_config_ = dynamic_cast<const GBDTConfig*>(config);
+  early_stopping_round_ = gbdt_config_->early_stopping_round;
 }
 
 GBDT::~GBDT() {
@@ -92,8 +93,12 @@ void GBDT::AddDataset(const Dataset* valid_data,
   // for a validation dataset, we need its score and metric
   valid_score_updater_.push_back(new ScoreUpdater(valid_data));
   valid_metrics_.emplace_back();
+  best_iter_.emplace_back();
+  best_score_.emplace_back();
   for (const auto& metric : valid_metrics) {
     valid_metrics_.back().push_back(metric);
+    best_iter_.back().push_back(0);
+    best_score_.back().push_back(-1);
   }
 }
 
@@ -180,7 +185,7 @@ void GBDT::Train() {
     UpdateScore(new_tree);
     UpdateScoreOutOfBag(new_tree);
     // print message for metric
-    OutputMetric(iter + 1);
+    if (OutputMetric(iter + 1)) return;
     // add model
     models_.push_back(new_tree);
     // save model to file per iteration
@@ -209,17 +214,32 @@ void GBDT::UpdateScore(const Tree* tree) {
   }
 }
 
-void GBDT::OutputMetric(int iter) {
+bool GBDT::OutputMetric(int iter) {
+  score_t train_score_ = 0, test_score_ = 0; 
+  bool ret = false;
   // print training metric
   for (auto& sub_metric : training_metrics_) {
-    sub_metric->Print(iter, train_score_updater_->score());
+    sub_metric->Print(iter, train_score_updater_->score(), train_score_);
   }
   // print validation metric
   for (size_t i = 0; i < valid_metrics_.size(); ++i) {
-    for (auto& sub_metric : valid_metrics_[i]) {
-      sub_metric->Print(iter, valid_score_updater_[i]->score());
+    for (size_t j = 0; j < valid_metrics_[i].size(); ++j) {
+      valid_metrics_[i][j]->Print(iter, valid_score_updater_[i]->score(), test_score_);
+      if (!ret && early_stopping_round_ > 0){
+        bool the_bigger_the_better_ = valid_metrics_[i][j]->the_bigger_the_better;
+        if (best_score_[i][j] < 0 
+            || (!the_bigger_the_better_ && test_score_ < best_score_[i][j])
+            || ( the_bigger_the_better_ && test_score_ > best_score_[i][j])){
+            best_score_[i][j] = test_score_;
+            best_iter_[i][j] = iter;
+        }
+        else {
+          if (iter - best_iter_[i][j] >= early_stopping_round_) ret = true;
+        }
+      }
     }
   }
+  return ret;
 }
 
 void GBDT::Boosting() {
@@ -303,7 +323,7 @@ void GBDT::ModelsFromString(const std::string& model_str, int num_used_model) {
     }
   }
 
-  Log::Stdout("Loaded %d modles\n", models_.size());
+  Log::Stdout("Loaded %d models\n", models_.size());
 }
 
 double GBDT::PredictRaw(const double* value) const {

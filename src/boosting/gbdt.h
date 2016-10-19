@@ -110,8 +110,10 @@ private:
   * \brief Print Metric result of current iteration
   * \param iter Current interation
   */
-  void OutputMetric(int iter);
-
+  bool OutputMetric(int iter);
+  
+  int early_stopping_round_;
+  
   /*! \brief Pointer to training data */
   const Dataset* train_data_;
   /*! \brief Config of gbdt */
@@ -128,6 +130,9 @@ private:
   std::vector<ScoreUpdater*> valid_score_updater_;
   /*! \brief Metric for validation data */
   std::vector<std::vector<const Metric*>> valid_metrics_;
+  /*! \brief Best score(s) for early stopping */
+  std::vector<std::vector<int>> best_iter_;
+  std::vector<std::vector<score_t>> best_score_;
   /*! \brief Trained models(trees) */
   std::vector<Tree*> models_;
   /*! \brief Max feature index of training data*/

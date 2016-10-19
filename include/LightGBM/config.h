@@ -155,6 +155,7 @@ public:
   double bagging_fraction = 1.0;
   int bagging_seed = 3;
   int bagging_freq = 0;
+  int early_stopping_round = 0;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 

@@ -17,6 +17,7 @@ class NDCGMetric:public Metric {
 public:
   explicit NDCGMetric(const MetricConfig& config) {
     output_freq_ = config.output_freq;
+    the_bigger_the_better = true;
     // get eval position
     for (auto k : config.eval_at) {
       eval_at_.push_back(static_cast<data_size_t>(k));
@@ -73,7 +74,7 @@ public:
     }
   }
 
-  void Print(int iter, const score_t* score) const override {
+  void Print(int iter, const score_t* score, score_t& loss) const override {
     if (output_freq_ > 0 && iter % output_freq_ == 0) {
       // some buffers for multi-threading sum up
       std::vector<std::vector<double>> result_buffer_;
@@ -132,6 +133,7 @@ public:
         result[j] /= sum_query_weights_;
         result_ss << "NDCG@" << eval_at_[j] << ":" << result[j] << "\t";
       }
+      loss = result[0];
       Log::Stdout("Iteration:%d, Test:%s, %s ", iter, name, result_ss.str().c_str());
     }
   }
