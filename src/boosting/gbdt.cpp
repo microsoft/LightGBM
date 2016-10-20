@@ -202,16 +202,16 @@ void GBDT::Train() {
         fprintf(output_model_file, "%s\n", new_tree->ToString().c_str());
         fflush(output_model_file);
     }
+    auto end_time = std::chrono::high_resolution_clock::now();
+    // output used time per iteration
+    Log::Stdout("%f seconds elapsed, finished %d iteration", std::chrono::duration<double,
+                                     std::milli>(end_time - start_time) * 1e-3, iter + 1);
     if (is_early_stopping) {
         // close file with an early-stopping message
         Log::Stdout("early stopping at iteration %d, the best iteration round is %d", iter + 1, iter + 1 - early_stopping_round_);
         fclose(output_model_file);
         return;
     }
-    auto end_time = std::chrono::high_resolution_clock::now();
-    // output used time per iteration
-    Log::Stdout("%f seconds elapsed, finished %d iteration", std::chrono::duration<double,
-                                     std::milli>(end_time - start_time) * 1e-3, iter + 1);
   }
   // close file
   if (early_stopping_round_ > 0) {
