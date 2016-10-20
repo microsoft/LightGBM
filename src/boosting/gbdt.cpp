@@ -12,7 +12,6 @@
 #include <chrono>
 #include <string>
 #include <vector>
-#include <queue>
 
 namespace LightGBM {
 
@@ -190,6 +189,7 @@ void GBDT::Train() {
     models_.push_back(new_tree);
     // save model to file per iteration
     if (early_stopping_round_ > 0){
+        // if use early stopping, save previous model at (iter - early_stopping_round_) iteration
         if (iter >= early_stopping_round_){
             fprintf(output_model_file, "Tree=%d\n", iter - early_stopping_round_);
             Tree * printing_tree = models_.at(iter - early_stopping_round_);
@@ -203,6 +203,7 @@ void GBDT::Train() {
         fflush(output_model_file);
     }
     if (is_early_stopping) {
+        // close file with an early-stopping message
         Log::Stdout("early stopping at iteration %d, the best iteration round is %d", iter + 1, iter + 1 - early_stopping_round_);
         fclose(output_model_file);
         return;
@@ -214,6 +215,7 @@ void GBDT::Train() {
   }
   // close file
   if (early_stopping_round_ > 0) {
+      // save remaining models
       for (int iter = gbdt_config_->num_iterations - early_stopping_round_; iter < models_.size(); ++iter){
         fprintf(output_model_file, "Tree=%d\n", iter);
         fprintf(output_model_file, "%s\n", models_.at(iter)->ToString().c_str());
