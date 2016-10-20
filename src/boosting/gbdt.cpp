@@ -12,7 +12,7 @@
 #include <chrono>
 #include <string>
 #include <vector>
-
+#include <queue>
 
 namespace LightGBM {
 
@@ -185,19 +185,41 @@ void GBDT::Train() {
     UpdateScore(new_tree);
     UpdateScoreOutOfBag(new_tree);
     // print message for metric
-    if (OutputMetric(iter + 1)) return;
+    bool is_early_stopping = OutputMetric(iter + 1);
     // add model
     models_.push_back(new_tree);
     // save model to file per iteration
-    fprintf(output_model_file, "Tree=%d\n", iter);
-    fprintf(output_model_file, "%s\n", new_tree->ToString().c_str());
-    fflush(output_model_file);
+    if (early_stopping_round_ > 0){
+        if (iter >= early_stopping_round_){
+            fprintf(output_model_file, "Tree=%d\n", iter - early_stopping_round_);
+            Tree * printing_tree = models_.at(iter - early_stopping_round_);
+            fprintf(output_model_file, "%s\n", printing_tree->ToString().c_str());
+            fflush(output_model_file);
+        }
+    }
+    else{
+        fprintf(output_model_file, "Tree=%d\n", iter);
+        fprintf(output_model_file, "%s\n", new_tree->ToString().c_str());
+        fflush(output_model_file);
+    }
+    if (is_early_stopping) {
+        Log::Stdout("early stopping at iteration %d, the best iteration round is %d", iter + 1, iter + 1 - early_stopping_round_);
+        fclose(output_model_file);
+        return;
+    }
     auto end_time = std::chrono::high_resolution_clock::now();
     // output used time per iteration
     Log::Stdout("%f seconds elapsed, finished %d iteration", std::chrono::duration<double,
                                      std::milli>(end_time - start_time) * 1e-3, iter + 1);
   }
   // close file
+  if (early_stopping_round_ > 0) {
+      for (int iter = gbdt_config_->num_iterations - early_stopping_round_; iter < models_.size(); ++iter){
+        fprintf(output_model_file, "Tree=%d\n", iter);
+        fprintf(output_model_file, "%s\n", models_.at(iter)->ToString().c_str());
+      }
+      fflush(output_model_file);
+  }
   fclose(output_model_file);
 }
 

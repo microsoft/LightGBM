@@ -310,7 +310,9 @@ struct ParameterAlias {
       { "two_round", "use_two_round_loading" },
       { "mlist", "machine_list_file" },
       { "is_save_binary", "is_save_binary_file" },
-      { "save_binary", "is_save_binary_file" }
+      { "save_binary", "is_save_binary_file" },
+      { "early_stopping_rounds", "early_stopping_round"},
+      { "early_stopping", "early_stopping_round"}
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {

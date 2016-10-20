@@ -76,7 +76,7 @@ public:
   }
 
   void Print(int iter, const score_t* score, score_t& loss) const override {
-    if (early_stopping_round_ > 0 || output_freq_ > 0 && iter % output_freq_ == 0) {
+    if (early_stopping_round_ > 0 || (output_freq_ > 0 && iter % output_freq_ == 0)) {
       // some buffers for multi-threading sum up
       std::vector<std::vector<double>> result_buffer_;
       for (int i = 0; i < num_threads_; ++i) {

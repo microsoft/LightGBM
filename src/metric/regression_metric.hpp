@@ -43,7 +43,7 @@ public:
   }
   
   void Print(int iter, const score_t* score, score_t& loss) const override {
-    if (early_stopping_round_ > 0 || output_freq_ > 0 && iter % output_freq_ == 0) {
+    if (early_stopping_round_ > 0 || (output_freq_ > 0 && iter % output_freq_ == 0)) {
       score_t sum_loss = 0.0;
       if (weights_ == nullptr) {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
