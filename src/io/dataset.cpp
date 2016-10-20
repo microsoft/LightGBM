@@ -209,7 +209,7 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
                                              num_data_, is_enable_sparse_));
       } else {
         // if feature is trival(only 1 bin), free spaces
-        Log::Stdout("Warning: feture %d only contains one value, will ignore it", i);
+        Log::Stdout("Warning: feature %d only contains one value, will ignore it", i);
         delete bin_mappers[i];
       }
     }

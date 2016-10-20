@@ -120,6 +120,7 @@ public:
 struct MetricConfig: public ConfigBase {
 public:
   virtual ~MetricConfig() {}
+  int early_stopping_round = 0;
   int output_freq = 1;
   double sigmoid = 1;
   bool is_provide_training_metric = false;
@@ -155,6 +156,7 @@ public:
   double bagging_fraction = 1.0;
   int bagging_seed = 3;
   int bagging_freq = 0;
+  int early_stopping_round = 0;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 

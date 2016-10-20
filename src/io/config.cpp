@@ -167,6 +167,7 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
 
 
 void MetricConfig::Set(const std::unordered_map<std::string, std::string>& params) {
+  GetInt(params, "early_stopping_round", &early_stopping_round);
   GetInt(params, "metric_freq", &output_freq);
   CHECK(output_freq >= 0);
   GetDouble(params, "sigmoid", &sigmoid);
@@ -219,6 +220,8 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   CHECK(bagging_fraction > 0.0 && bagging_fraction <= 1.0);
   GetDouble(params, "learning_rate", &learning_rate);
   CHECK(learning_rate > 0.0);
+  GetInt(params, "early_stopping_round", &early_stopping_round);
+  CHECK(early_stopping_round >= 0);
 }
 
 void GBDTConfig::GetTreeLearnerType(const std::unordered_map<std::string, std::string>& params) {
