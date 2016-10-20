@@ -52,7 +52,7 @@ public:
 
   void Print(int iter, const score_t* score, score_t& loss) const override {
     score_t sum_loss = 0.0f;
-    if (early_stopping_round_ > 0 || output_freq_ > 0 && iter % output_freq_ == 0) {
+    if (early_stopping_round_ > 0 || (output_freq_ > 0 && iter % output_freq_ == 0)) {
       if (weights_ == nullptr) {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
@@ -171,7 +171,7 @@ public:
   }
 
   void Print(int iter, const score_t* score, score_t& loss) const override {
-    if (early_stopping_round_ > 0 || output_freq_ > 0 && iter % output_freq_ == 0) {
+    if (early_stopping_round_ > 0 || (output_freq_ > 0 && iter % output_freq_ == 0)) {
       // get indices sorted by score, descent order
       std::vector<data_size_t> sorted_idx;
       for (data_size_t i = 0; i < num_data_; ++i) {
