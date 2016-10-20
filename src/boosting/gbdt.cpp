@@ -239,16 +239,15 @@ void GBDT::UpdateScore(const Tree* tree) {
 }
 
 bool GBDT::OutputMetric(int iter) {
-  score_t train_score_ = 0, test_score_ = 0; 
   bool ret = false;
   // print training metric
   for (auto& sub_metric : training_metrics_) {
-    sub_metric->Print(iter, train_score_updater_->score(), train_score_);
+    sub_metric->PrintAndGetLoss(iter, train_score_updater_->score());
   }
   // print validation metric
   for (size_t i = 0; i < valid_metrics_.size(); ++i) {
     for (size_t j = 0; j < valid_metrics_[i].size(); ++j) {
-      valid_metrics_[i][j]->Print(iter, valid_score_updater_[i]->score(), test_score_);
+      score_t test_score_ = valid_metrics_[i][j]->PrintAndGetLoss(iter, valid_score_updater_[i]->score());
       if (!ret && early_stopping_round_ > 0){
         bool the_bigger_the_better_ = valid_metrics_[i][j]->the_bigger_the_better;
         if (best_score_[i][j] < 0 
