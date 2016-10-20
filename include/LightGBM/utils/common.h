@@ -148,17 +148,19 @@ inline static const char* Atof(const char* p, double* out) {
       && *(p + cnt) != ':')  {
       ++cnt;
     }
-    std::string tmp_str(p, cnt);
-    std::transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(), ::tolower);
-    if (tmp_str == std::string("na") || tmp_str == std::string("nan")) {
-      *out = 0;
-    } else if( tmp_str == std::string("inf") || tmp_str == std::string("infinity")) {
-      *out = sign * 1e308;
+    if(cnt > 0){
+      std::string tmp_str(p, cnt);
+      std::transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(), ::tolower);
+      if (tmp_str == std::string("na") || tmp_str == std::string("nan")) {
+        *out = 0;
+      } else if( tmp_str == std::string("inf") || tmp_str == std::string("infinity")) {
+        *out = sign * 1e308;
+      }
+      else {
+        Log::Stderr("Unknow token %s in data file", tmp_str.c_str());
+      }
+      p += cnt;
     }
-    else {
-      Log::Stderr("Unknow token %s in data file", tmp_str.c_str());
-    }
-    p += cnt;
   }
 
   while (*p == ' ') {
