@@ -197,7 +197,6 @@
     <ClInclude Include="..\src\treelearner\split_info.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\include\LightGBM\utils\log.cpp" />
     <ClCompile Include="..\src\application\application.cpp" />
     <ClCompile Include="..\src\boosting\boosting.cpp" />
     <ClCompile Include="..\src\boosting\gbdt.cpp" />
@@ -219,6 +218,7 @@
     <ClCompile Include="..\src\treelearner\feature_parallel_tree_learner.cpp" />
     <ClCompile Include="..\src\treelearner\serial_tree_learner.cpp" />
     <ClCompile Include="..\src\treelearner\tree_learner.cpp" />
+    <ClCompile Include="..\src\util\log.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
