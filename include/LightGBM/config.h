@@ -313,7 +313,9 @@ struct ParameterAlias {
       { "mlist", "machine_list_file" },
       { "is_save_binary", "is_save_binary_file" },
       { "save_binary", "is_save_binary_file" },
-      { "verbose", "verbosity" }
+      { "early_stopping_rounds", "early_stopping_round"},
+      { "early_stopping", "early_stopping_round"},
+      { "verbosity", "verbose" }
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {

@@ -50,14 +50,14 @@ public:
     }
   }
 
-  void Print(int iter, const score_t* score, score_t& loss) const override {
+  score_t PrintAndGetLoss(int iter, const score_t* score) const override {
     score_t sum_loss = 0.0f;
-    if (early_stopping_round_ > 0 || output_freq_ > 0 && iter % output_freq_ == 0) {
+    if (early_stopping_round_ > 0 || (output_freq_ > 0 && iter % output_freq_ == 0)) {
       if (weights_ == nullptr) {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // sigmoid transform
-          score_t prob = 1.0f / (1.0f + std::exp(-sigmoid_ * score[i]));
+          score_t prob = 1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * score[i]));
           // add loss
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob);
         }
@@ -65,16 +65,18 @@ public:
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // sigmoid transform
-          score_t prob = 1.0f / (1.0f + std::exp(-sigmoid_ * score[i]));
+          score_t prob = 1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * score[i]));
           // add loss
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob) * weights_[i];
         }
       }
-      loss = sum_loss / sum_weights_;
+      score_t loss = sum_loss / sum_weights_;
       if (output_freq_ > 0 && iter % output_freq_ == 0){
         Log::Info("Iteration:%d, %s's %s: %f\n", iter, name, PointWiseLossCalculator::Name(), loss);
       }
+      return loss;
     }
+    return 0.0f;
   }
 
 private:
@@ -170,8 +172,8 @@ public:
     }
   }
 
-  void Print(int iter, const score_t* score, score_t& loss) const override {
-    if (early_stopping_round_ > 0 || output_freq_ > 0 && iter % output_freq_ == 0) {
+  score_t PrintAndGetLoss(int iter, const score_t* score) const override {
+    if (early_stopping_round_ > 0 || (output_freq_ > 0 && iter % output_freq_ == 0)) {
       // get indices sorted by score, descent order
       std::vector<data_size_t> sorted_idx;
       for (data_size_t i = 0; i < num_data_; ++i) {
@@ -227,11 +229,12 @@ public:
       if (sum_pos > 0.0f && sum_pos != sum_weights_) {
         auc = accum / (sum_pos *(sum_weights_ - sum_pos));
       }
-      loss = auc;
       if (output_freq_ > 0 && iter % output_freq_ == 0){
         Log::Info("Iteration:%d, %s's %s: %f\n", iter, name, "auc", loss);
       }
+      return auc;
     }
+    return 0.0f;
   }
 
 private:

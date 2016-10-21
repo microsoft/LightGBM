@@ -42,8 +42,8 @@ public:
     }
   }
   
-  void Print(int iter, const score_t* score, score_t& loss) const override {
-    if (early_stopping_round_ > 0 || output_freq_ > 0 && iter % output_freq_ == 0) {
+  score_t PrintAndGetLoss(int iter, const score_t* score) const override {
+    if (early_stopping_round_ > 0 || (output_freq_ > 0 && iter % output_freq_ == 0)) {
       score_t sum_loss = 0.0;
       if (weights_ == nullptr) {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
@@ -58,11 +58,13 @@ public:
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i]) * weights_[i];
         }
       }
-      loss = PointWiseLossCalculator::AverageLoss(sum_loss, sum_weights_);
+      score_t loss = PointWiseLossCalculator::AverageLoss(sum_loss, sum_weights_);
       if (output_freq_ > 0 && iter % output_freq_ == 0){
         Log::Info("Iteration:%d, %s's %s : %f", iter, name, PointWiseLossCalculator::Name(), loss);
       }
+      return loss;
     }
+    return 0.0f;
   }
 
   inline static score_t AverageLoss(score_t sum_loss, score_t sum_weights) {
