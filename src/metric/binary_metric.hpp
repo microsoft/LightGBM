@@ -230,7 +230,7 @@ public:
         auc = accum / (sum_pos *(sum_weights_ - sum_pos));
       }
       if (output_freq_ > 0 && iter % output_freq_ == 0){
-        Log::Info("Iteration:%d, %s's %s: %f\n", iter, name, "auc", loss);
+        Log::Info("Iteration:%d, %s's %s: %f\n", iter, name, "auc", auc);
       }
       return auc;
     }
