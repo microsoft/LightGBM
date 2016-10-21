@@ -35,14 +35,18 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
   // check for conflicts
   CheckParamConflict();
 
-  if (io_config.verbosity == 1)
+  if (io_config.verbosity == 1) {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);
-  else if (io_config.verbosity == 0)
+  }
+  else if (io_config.verbosity == 0) {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Error);
-  else if (io_config.verbosity >= 2)
+  }
+  else if (io_config.verbosity >= 2) {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Debug);
-  else 
+  }
+  else {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
+  }
 }
 
 void OverallConfig::GetBoostingType(const std::unordered_map<std::string, std::string>& params) {

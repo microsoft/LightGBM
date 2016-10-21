@@ -218,7 +218,6 @@
     <ClCompile Include="..\src\treelearner\feature_parallel_tree_learner.cpp" />
     <ClCompile Include="..\src\treelearner\serial_tree_learner.cpp" />
     <ClCompile Include="..\src\treelearner\tree_learner.cpp" />
-    <ClCompile Include="..\src\util\log.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
