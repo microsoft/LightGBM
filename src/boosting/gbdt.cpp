@@ -216,7 +216,7 @@ void GBDT::Train() {
   // close file
   if (early_stopping_round_ > 0) {
       // save remaining models
-      for (int iter = gbdt_config_->num_iterations - early_stopping_round_; iter < models_.size(); ++iter){
+      for (int iter = gbdt_config_->num_iterations - early_stopping_round_; iter < static_cast<int>(models_.size()); ++iter){
         fprintf(output_model_file, "Tree=%d\n", iter);
         fprintf(output_model_file, "%s\n", models_.at(iter)->ToString().c_str());
       }
