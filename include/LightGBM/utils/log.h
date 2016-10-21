@@ -21,8 +21,7 @@ namespace LightGBM {
   if ((pointer) == nullptr) LightGBM::Log::Fatal(#pointer " Can't be NULL");
 #endif
 
-// A enumeration type of log message levels. The values are ordered:
-// Debug < Info < Error < Fatal.
+
 enum class LogLevel: int {
   Fatal = -1,
   Error = 0,
@@ -32,9 +31,7 @@ enum class LogLevel: int {
 
 
 /*!
-* \brief The Log class is a static wrapper of a global Logger instance in
-*        the scope of a process. Users can write logging messages easily
-*        with the static methods.
+* \brief A static Log class 
 */
 class Log {
 public:
