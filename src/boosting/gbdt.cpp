@@ -364,7 +364,7 @@ double GBDT::Predict(const double* value) const {
   }
   // if need sigmoid transform
   if (sigmoid_ > 0) {
-    ret = 1.0 / (1.0 + std::exp(-sigmoid_ * ret));
+    ret = 1.0 / (1.0 + std::exp(- 2.0f * sigmoid_ * ret));
   }
   return ret;
 }

@@ -57,7 +57,7 @@ public:
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // sigmoid transform
-          score_t prob = 1.0f / (1.0f + std::exp(-sigmoid_ * score[i]));
+          score_t prob = 1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * score[i]));
           // add loss
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob);
         }
@@ -65,7 +65,7 @@ public:
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // sigmoid transform
-          score_t prob = 1.0f / (1.0f + std::exp(-sigmoid_ * score[i]));
+          score_t prob = 1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * score[i]));
           // add loss
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob) * weights_[i];
         }
