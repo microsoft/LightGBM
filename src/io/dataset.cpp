@@ -21,7 +21,7 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
 
   CheckCanLoadFromBin();
   if (is_loading_from_binfile_ && predict_fun != nullptr) {
-    Log::Info("Cannot performing initialization of prediction by using binary file, using text file instead\n");
+    Log::Info("Cannot performing initialization of prediction by using binary file, using text file instead");
     is_loading_from_binfile_ = false;
   }
 
@@ -38,7 +38,7 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
   } else {
     // only need to load initilize score, other meta data will load from bin flie
     metadata_.Init(init_score_filename);
-    Log::Info("Loading data set from binary file\n");
+    Log::Info("Loading data set from binary file");
     parser_ = nullptr;
     text_reader_ = nullptr;
   }
@@ -209,7 +209,7 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
                                              num_data_, is_enable_sparse_));
       } else {
         // if feature is trival(only 1 bin), free spaces
-        Log::Error("Feature %d only contains one value, will be ignored\n", i);
+        Log::Error("Feature %d only contains one value, will be ignored", i);
         delete bin_mappers[i];
       }
     }
@@ -489,7 +489,7 @@ void Dataset::SaveBinaryFile() {
       Log::Fatal("Cannot write binary data to %s ", bin_filename.c_str());
     }
 
-    Log::Info("Saving data to binary file: %s\n", data_filename_);
+    Log::Info("Saving data to binary file: %s", data_filename_);
 
     // get size of header
     size_t size_of_header = sizeof(global_num_data_) + sizeof(is_enable_sparse_)

@@ -28,7 +28,7 @@ public:
     : num_data_(num_data) {
     default_bin_ = static_cast<VAL_T>(default_bin);
     if (default_bin_ != 0) {
-      Log::Info("Warning: Having sparse feature with negative values. Will let negative values equal zero as well\n");
+      Log::Info("Warning: Having sparse feature with negative values. Will let negative values equal zero as well");
     }
     #pragma omp parallel
     #pragma omp master

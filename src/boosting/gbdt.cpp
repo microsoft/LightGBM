@@ -149,7 +149,7 @@ void GBDT::Bagging(int iter) {
       bag_data_cnt_ = cur_left_cnt;
       out_of_bag_data_cnt_ = num_data_ - bag_data_cnt_;
     }
-    Log::Info("re-bagging, using %d data to train\n", bag_data_cnt_);
+    Log::Info("re-bagging, using %d data to train", bag_data_cnt_);
     // set bagging data to tree learner
     tree_learner_->SetBaggingData(bag_data_indices_, bag_data_cnt_);
   }
@@ -175,7 +175,7 @@ void GBDT::Train() {
     Tree * new_tree = TrainOneTree();
     // if cannot learn a new tree, then stop
     if (new_tree->num_leaves() <= 1) {
-      Log::Info("Can't training anymore, there isn't any leaf meets split requirements.\n");
+      Log::Info("Can't training anymore, there isn't any leaf meets split requirements.");
       break;
     }
     // shrinkage by learning rate
@@ -204,11 +204,11 @@ void GBDT::Train() {
     }
     auto end_time = std::chrono::high_resolution_clock::now();
     // output used time per iteration
-    Log::Info("%f seconds elapsed, finished %d iteration\n", std::chrono::duration<double,
+    Log::Info("%f seconds elapsed, finished %d iteration", std::chrono::duration<double,
                                      std::milli>(end_time - start_time) * 1e-3, iter + 1);
     if (is_early_stopping) {
         // close file with an early-stopping message
-        Log::Info("Early stopping at iteration %d, the best iteration round is %d\n", iter + 1, iter + 1 - early_stopping_round_);
+        Log::Info("Early stopping at iteration %d, the best iteration round is %d", iter + 1, iter + 1 - early_stopping_round_);
         fclose(output_model_file);
         return;
     }
@@ -307,7 +307,7 @@ void GBDT::ModelsFromString(const std::string& model_str, int num_used_model) {
     }
   }
   if (i == lines.size()) {
-    Log::Fatal("Model file doesn't contain max_feature_idx\n");
+    Log::Fatal("Model file doesn't contain max_feature_idx");
     return;
   }
   // get sigmoid parameter
@@ -346,7 +346,7 @@ void GBDT::ModelsFromString(const std::string& model_str, int num_used_model) {
     }
   }
 
-  Log::Info("%d models has been loaded\n\n", models_.size());
+  Log::Info("%d models has been loaded\n", models_.size());
 }
 
 double GBDT::PredictRaw(const double* value) const {

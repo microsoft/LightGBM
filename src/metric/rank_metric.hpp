@@ -135,7 +135,7 @@ public:
         result_ss << "NDCG@" << eval_at_[j] << ":" << result[j] << "\t";
       }
       if (output_freq_ > 0 && iter % output_freq_ == 0){
-        Log::Info("Iteration:%d, Test:%s, %s \n", iter, name, result_ss.str().c_str());
+        Log::Info("Iteration:%d, Test:%s, %s ", iter, name, result_ss.str().c_str());
       }
       return result[0];
     }

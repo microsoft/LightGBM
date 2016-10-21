@@ -124,14 +124,14 @@ public:
       (const char* buffer, std::vector<std::pair<int, double>>* feature) {
         parser->ParseOneLine(buffer, feature, &tmp_label);
       };
-      Log::Info("Start prediction for data %s with labels\n", data_filename);
+      Log::Info("Start prediction for data %s with labels", data_filename);
     } else {
       // parse function without label
       parser_fun = [this, &parser]
       (const char* buffer, std::vector<std::pair<int, double>>* feature) {
         parser->ParseOneLine(buffer, feature);
       };
-      Log::Info("Start prediction for data %s without label\n", data_filename);
+      Log::Info("Start prediction for data %s without label", data_filename);
     }
     std::function<double(const std::vector<std::pair<int, double>>&)> predict_fun;
     if (is_simgoid_) {

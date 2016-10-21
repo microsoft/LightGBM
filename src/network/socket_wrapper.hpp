@@ -60,7 +60,7 @@ public:
   TcpSocket() {
     sockfd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (sockfd_ == INVALID_SOCKET) {
-      Log::Fatal("Socket construct error\n");
+      Log::Fatal("Socket construct error");
       return;
     }
     ConfigSocket();
@@ -69,7 +69,7 @@ public:
   explicit TcpSocket(SOCKET socket) {
     sockfd_ = socket;
     if (sockfd_ == INVALID_SOCKET) {
-      Log::Fatal("Passed socket error\n");
+      Log::Fatal("Passed socket error");
       return;
     }
     ConfigSocket();
@@ -97,11 +97,11 @@ public:
 #if defined(_WIN32)
     WSADATA wsa_data;
     if (WSAStartup(MAKEWORD(2, 2), &wsa_data) == -1) {
-      Log::Fatal("Socket error: WSAStart up error\n");
+      Log::Fatal("Socket error: WSAStart up error");
     }
     if (LOBYTE(wsa_data.wVersion) != 2 || HIBYTE(wsa_data.wVersion) != 2) {
       WSACleanup();
-      Log::Fatal("Socket error: Winsock.dll version error\n");
+      Log::Fatal("Socket error: Winsock.dll version error");
     }
 #else
 #endif
@@ -128,7 +128,7 @@ public:
     char buffer[512];
     // get hostName
     if (gethostname(buffer, sizeof(buffer)) == SOCKET_ERROR) {
-      Log::Fatal("Error code: %d, when getting local host name.\n", WSAGetLastError());
+      Log::Fatal("Error code: %d, when getting local host name.", WSAGetLastError());
     }
     // push local ip
     PIP_ADAPTER_INFO pAdapterInfo;
@@ -137,7 +137,7 @@ public:
     ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
     pAdapterInfo = (IP_ADAPTER_INFO *)MALLOC(sizeof(IP_ADAPTER_INFO));
     if (pAdapterInfo == NULL) {
-      Log::Fatal("GetAdaptersinfo error: allocating memory \n");
+      Log::Fatal("GetAdaptersinfo error: allocating memory ");
     }
     // Make an initial call to GetAdaptersInfo to get
     // the necessary size into the ulOutBufLen variable
@@ -145,7 +145,7 @@ public:
       FREE(pAdapterInfo);
       pAdapterInfo = (IP_ADAPTER_INFO *)MALLOC(ulOutBufLen);
       if (pAdapterInfo == NULL) {
-        Log::Fatal("GetAdaptersinfo error: allocating memory \n");
+        Log::Fatal("GetAdaptersinfo error: allocating memory ");
       }
     }
     if ((dwRetVal = GetAdaptersInfo(pAdapterInfo, &ulOutBufLen)) == NO_ERROR) {
@@ -155,7 +155,7 @@ public:
         pAdapter = pAdapter->Next;
       }
     } else {
-      Log::Error("GetAdaptersinfo error: code %d \n", dwRetVal);
+      Log::Error("GetAdaptersinfo error: code %d ", dwRetVal);
     }
     if (pAdapterInfo)
       FREE(pAdapterInfo);

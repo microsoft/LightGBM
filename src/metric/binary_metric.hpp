@@ -72,7 +72,7 @@ public:
       }
       score_t loss = sum_loss / sum_weights_;
       if (output_freq_ > 0 && iter % output_freq_ == 0){
-        Log::Info("Iteration:%d, %s's %s: %f\n", iter, name, PointWiseLossCalculator::Name(), loss);
+        Log::Info("Iteration:%d, %s's %s: %f", iter, name, PointWiseLossCalculator::Name(), loss);
       }
       return loss;
     }
@@ -230,7 +230,7 @@ public:
         auc = accum / (sum_pos *(sum_weights_ - sum_pos));
       }
       if (output_freq_ > 0 && iter % output_freq_ == 0){
-        Log::Info("Iteration:%d, %s's %s: %f\n", iter, name, "auc", auc);
+        Log::Info("Iteration:%d, %s's %s: %f", iter, name, "auc", auc);
       }
       return auc;
     }

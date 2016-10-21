@@ -18,7 +18,7 @@ namespace LightGBM {
 
 #ifndef CHECK_NOTNULL
 #define CHECK_NOTNULL(pointer)                             \
-  if ((pointer) == nullptr) LightGBM::Log::Fatal(#pointer " Can't be NULL\n");
+  if ((pointer) == nullptr) LightGBM::Log::Fatal(#pointer " Can't be NULL");
 #endif
 
 // A enumeration type of log message levels. The values are ordered:
@@ -67,8 +67,12 @@ public:
   static void Fatal(const char *format, ...) {
     va_list val;
     va_start(val, format);
-    Write(LogLevel::Fatal, "Fatal", format, val);
+    fprintf(stderr, "[LightGBM] [Fatel] ");
+    vfprintf(stderr, format, val);
+    fprintf(stderr, "\n");
+    fflush(stderr);
     va_end(val);
+    exit(1);
   }
 
 private:
@@ -78,11 +82,8 @@ private:
       // write to STDOUT
       printf("[LightGBM] [%s] ", level_str);
       vprintf(format, val);
+      printf("\n");
       fflush(stdout);
-
-      if (level == LogLevel::Fatal) {
-        exit(1);
-      }
     }
   }
 
