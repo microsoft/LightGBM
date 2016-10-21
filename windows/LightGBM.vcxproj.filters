@@ -221,5 +221,8 @@
     <ClCompile Include="..\src\main.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\include\LightGBM\utils\log.cpp">
+      <Filter>include\LightGBM\utils</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

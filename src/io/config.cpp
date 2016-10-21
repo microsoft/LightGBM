@@ -43,7 +43,7 @@ void OverallConfig::GetBoostingType(const std::unordered_map<std::string, std::s
     if (value == std::string("gbdt") || value == std::string("gbrt")) {
       boosting_type = BoostingType::kGBDT;
     } else {
-      Log::Stderr("boosting type %s error", value.c_str());
+      Log::Error("boosting type %s error", value.c_str());
     }
   }
 }
@@ -91,7 +91,7 @@ void OverallConfig::GetTaskType(const std::unordered_map<std::string, std::strin
       || value == std::string("test")) {
       task_type = TaskType::kPredict;
     } else {
-      Log::Stderr("task type error");
+      Log::Error("task type error");
     }
   }
 }
@@ -128,7 +128,7 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "data_random_seed", &data_random_seed);
 
   if (!GetString(params, "data", &data_filename)) {
-    Log::Stderr("No training/prediction data, application quit");
+    Log::Error("No training/prediction data, application quit");
   }
   GetInt(params, "num_model_predict", &num_model_predict);
   GetBool(params, "is_pre_partition", &is_pre_partition);
@@ -236,7 +236,7 @@ void GBDTConfig::GetTreeLearnerType(const std::unordered_map<std::string, std::s
       tree_learner_type = TreeLearnerType::kDataParallelTreeLearner;
     }
     else {
-      Log::Stderr("tree learner type error");
+      Log::Error("tree learner type error");
     }
   }
 }

@@ -23,7 +23,7 @@ public:
     the_bigger_the_better = false;
     sigmoid_ = static_cast<score_t>(config.sigmoid);
     if (sigmoid_ <= 0.0f) {
-      Log::Stderr("sigmoid param %f should greater than zero", sigmoid_);
+      Log::Error("sigmoid param %f should greater than zero", sigmoid_);
     }
   }
 
@@ -72,7 +72,7 @@ public:
       }
       loss = sum_loss / sum_weights_;
       if (output_freq_ > 0 && iter % output_freq_ == 0){
-        Log::Stdout("Iteration:%d, %s's %s: %f", iter, name, PointWiseLossCalculator::Name(), loss);
+        Log::Info("Iteration:%d, %s's %s: %f", iter, name, PointWiseLossCalculator::Name(), loss);
       }
     }
   }
@@ -229,7 +229,7 @@ public:
       }
       loss = auc;
       if (output_freq_ > 0 && iter % output_freq_ == 0){
-        Log::Stdout("iteration:%d, %s's %s: %f", iter, name, "auc", loss);
+        Log::Info("iteration:%d, %s's %s: %f", iter, name, "auc", loss);
       }
     }
   }

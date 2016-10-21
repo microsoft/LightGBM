@@ -27,7 +27,7 @@ public:
       if (*str == ',') {
         ++str;
       } else if (*str != '\0') {
-        Log::Stderr("input format error, should be CSV");
+        Log::Error("input format error, should be CSV");
       }
     }
   }
@@ -38,7 +38,7 @@ public:
     if (*str == ',') {
       ++str;
     } else if (*str != '\0') {
-      Log::Stderr("input format error, should be CSV");
+      Log::Error("input format error, should be CSV");
     }
     return ParseOneLine(str, out_features);
   }
@@ -58,7 +58,7 @@ public:
       if (*str == '\t') {
         ++str;
       } else if (*str != '\0') {
-        Log::Stderr("input format error, should be TSV");
+        Log::Error("input format error, should be TSV");
       }
     }
   }
@@ -69,7 +69,7 @@ public:
     if (*str == '\t') {
       ++str;
     } else if (*str != '\0') {
-      Log::Stderr("input format error, should be TSV");
+      Log::Error("input format error, should be TSV");
     }
     return ParseOneLine(str, out_features);
   }
@@ -88,7 +88,7 @@ public:
         str = Common::Atof(str, &val);
         out_features->emplace_back(idx, val);
       } else {
-        Log::Stderr("input format error, should be LibSVM");
+        Log::Error("input format error, should be LibSVM");
       }
       str = Common::SkipSpaceAndTab(str);
     }

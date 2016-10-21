@@ -197,6 +197,7 @@
     <ClInclude Include="..\src\treelearner\split_info.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\include\LightGBM\utils\log.cpp" />
     <ClCompile Include="..\src\application\application.cpp" />
     <ClCompile Include="..\src\boosting\boosting.cpp" />
     <ClCompile Include="..\src\boosting\gbdt.cpp" />

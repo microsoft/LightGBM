@@ -30,7 +30,7 @@ void Network::Init(NetworkConfig config) {
   block_len_ = new int[num_machines_];
   buffer_size_ = 1024 * 1024;
   buffer_ = new char[buffer_size_];
-  Log::Stdout("local rank %d, total number of machines %d", rank_, num_machines_);
+  Log::Info("local rank %d, total number of machines %d", rank_, num_machines_);
 }
 
 void Network::Dispose() {

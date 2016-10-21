@@ -69,7 +69,7 @@ void Application::LoadParameters(int argc, char** argv) {
       params[key] = value;
     }
     else {
-      Log::Stdout("Warning: unknown parameter in command line: %s", argv[i]);
+      Log::Info("Warning: unknown parameter in command line: %s", argv[i]);
     }
   }
   // check for alias
@@ -101,11 +101,11 @@ void Application::LoadParameters(int argc, char** argv) {
           }
         }
         else {
-          Log::Stdout("Warning: unknown parameter in config file: %s", line.c_str());
+          Log::Info("Warning: unknown parameter in config file: %s", line.c_str());
         }
       }
     } else {
-      Log::Stdout("config file: %s doesn't exist, will ignore",
+      Log::Info("config file: %s doesn't exist, will ignore",
                                 params["config_file"].c_str());
     }
   }
@@ -113,7 +113,7 @@ void Application::LoadParameters(int argc, char** argv) {
   ParameterAlias::KeyAliasTransform(&params);
   // load configs
   config_.Set(params);
-  Log::Stdout("finished load parameters");
+  Log::Info("finished load parameters");
 }
 
 void Application::LoadData() {
@@ -201,7 +201,7 @@ void Application::LoadData() {
   }
   auto end_time = std::chrono::high_resolution_clock::now();
   // output used time on each iteration
-  Log::Stdout("Finish loading data, use %f seconds ",
+  Log::Info("Finish loading data, use %f seconds ",
     std::chrono::duration<double, std::milli>(end_time - start_time) * 1e-3);
 }
 
@@ -209,7 +209,7 @@ void Application::InitTrain() {
   if (config_.is_parallel) {
     // need init network
     Network::Init(config_.network_config);
-    Log::Stdout("finish network initialization");
+    Log::Info("finish network initialization");
     // sync global random seed for feature patition
     if (config_.boosting_type == BoostingType::kGBDT) {
       GBDTConfig* gbdt_config =
@@ -240,13 +240,13 @@ void Application::InitTrain() {
     boosting_->AddDataset(valid_datas_[i],
       ConstPtrInVectorWarpper<Metric>(valid_metrics_[i]));
   }
-  Log::Stdout("finish training init");
+  Log::Info("finish training init");
 }
 
 void Application::Train() {
-  Log::Stdout("start train");
+  Log::Info("start train");
   boosting_->Train();
-  Log::Stdout("finish train");
+  Log::Info("finish train");
 }
 
 
@@ -254,14 +254,14 @@ void Application::Predict() {
   // create predictor
   Predictor predictor(boosting_, config_.io_config.is_sigmoid);
   predictor.Predict(config_.io_config.data_filename.c_str(), config_.io_config.output_result.c_str());
-  Log::Stdout("finish predict");
+  Log::Info("finish predict");
 }
 
 void Application::InitPredict() {
   boosting_ =
     Boosting::CreateBoosting(config_.boosting_type, config_.boosting_config);
   LoadModel();
-  Log::Stdout("finish predict init");
+  Log::Info("finish predict init");
 }
 
 void Application::LoadModel() {

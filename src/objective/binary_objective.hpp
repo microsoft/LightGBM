@@ -16,7 +16,7 @@ public:
     is_unbalance_ = config.is_unbalance;
     sigmoid_ = static_cast<score_t>(config.sigmoid);
     if (sigmoid_ <= 0.0) {
-      Log::Stderr("sigmoid param %f should greater than zero", sigmoid_);
+      Log::Error("sigmoid param %f should greater than zero", sigmoid_);
     }
   }
   ~BinaryLogloss() {}
@@ -34,10 +34,10 @@ public:
         ++cnt_negative;
       }
     }
-    Log::Stdout("number of postive:%d number of negative:%d", cnt_positive, cnt_negative);
+    Log::Info("number of postive:%d number of negative:%d", cnt_positive, cnt_negative);
     // cannot continue if all sample are same class
     if (cnt_positive == 0 || cnt_negative == 0) {
-      Log::Stderr("input training data only contain one class");
+      Log::Error("input training data only contain one class");
     }
     // use -1 for negative class, and 1 for positive class
     label_val_[0] = -1;

@@ -150,7 +150,7 @@ void GBDT::Bagging(int iter) {
       bag_data_cnt_ = cur_left_cnt;
       out_of_bag_data_cnt_ = num_data_ - bag_data_cnt_;
     }
-    Log::Stdout("re-bagging, using %d data to train", bag_data_cnt_);
+    Log::Info("re-bagging, using %d data to train", bag_data_cnt_);
     // set bagging data to tree learner
     tree_learner_->SetBaggingData(bag_data_indices_, bag_data_cnt_);
   }
@@ -176,7 +176,7 @@ void GBDT::Train() {
     Tree * new_tree = TrainOneTree();
     // if cannot learn a new tree, then stop
     if (new_tree->num_leaves() <= 1) {
-      Log::Stdout("Cannot do any boosting for tree cannot split");
+      Log::Info("Cannot do any boosting for tree cannot split");
       break;
     }
     // shrinkage by learning rate
@@ -194,7 +194,7 @@ void GBDT::Train() {
     fflush(output_model_file);
     auto end_time = std::chrono::high_resolution_clock::now();
     // output used time per iteration
-    Log::Stdout("%f seconds elapsed, finished %d iteration", std::chrono::duration<double,
+    Log::Info("%f seconds elapsed, finished %d iteration", std::chrono::duration<double,
                                      std::milli>(end_time - start_time) * 1e-3, iter + 1);
   }
   // close file
@@ -284,7 +284,7 @@ void GBDT::ModelsFromString(const std::string& model_str, int num_used_model) {
     }
   }
   if (i == lines.size()) {
-    Log::Stderr("The model doesn't contain max_feature_idx");
+    Log::Error("The model doesn't contain max_feature_idx");
     return;
   }
   // get sigmoid parameter
@@ -323,7 +323,7 @@ void GBDT::ModelsFromString(const std::string& model_str, int num_used_model) {
     }
   }
 
-  Log::Stdout("Loaded %d models\n", models_.size());
+  Log::Info("Loaded %d models\n", models_.size());
 }
 
 double GBDT::PredictRaw(const double* value) const {

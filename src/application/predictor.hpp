@@ -106,13 +106,13 @@ public:
 #endif
 
     if (result_file == NULL) {
-      Log::Stderr("predition result file %s doesn't exists", data_filename);
+      Log::Error("predition result file %s doesn't exists", data_filename);
     }
     bool has_label = false;
     Parser* parser = Parser::CreateParser(data_filename, num_features_, &has_label);
 
     if (parser == nullptr) {
-      Log::Stderr("recongnizing input data format failed, filename %s", data_filename);
+      Log::Error("recongnizing input data format failed, filename %s", data_filename);
     }
 
     // function for parse data
@@ -124,14 +124,14 @@ public:
       (const char* buffer, std::vector<std::pair<int, double>>* feature) {
         parser->ParseOneLine(buffer, feature, &tmp_label);
       };
-      Log::Stdout("start prediction for data %s, and data has label", data_filename);
+      Log::Info("start prediction for data %s, and data has label", data_filename);
     } else {
       // parse function without label
       parser_fun = [this, &parser]
       (const char* buffer, std::vector<std::pair<int, double>>* feature) {
         parser->ParseOneLine(buffer, feature);
       };
-      Log::Stdout("start prediction for data %s, and data doesn't has label", data_filename);
+      Log::Info("start prediction for data %s, and data doesn't has label", data_filename);
     }
     std::function<double(const std::vector<std::pair<int, double>>&)> predict_fun;
     if (is_simgoid_) {
