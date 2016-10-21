@@ -32,7 +32,7 @@ public:
   * \param iter Current iteration
   * \param score Current prediction score
   */
-  virtual void Print(int iter, const score_t* score, score_t& loss) const = 0;
+  virtual score_t PrintAndGetLoss(int iter, const score_t* score) const = 0;
 
   /*!
   * \brief Create object of metrics

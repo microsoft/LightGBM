@@ -75,7 +75,7 @@ public:
     }
   }
 
-  void Print(int iter, const score_t* score, score_t& loss) const override {
+  score_t PrintAndGetLoss(int iter, const score_t* score) const override {
     if (early_stopping_round_ > 0 || (output_freq_ > 0 && iter % output_freq_ == 0)) {
       // some buffers for multi-threading sum up
       std::vector<std::vector<double>> result_buffer_;
@@ -134,11 +134,12 @@ public:
         result[j] /= sum_query_weights_;
         result_ss << "NDCG@" << eval_at_[j] << ":" << result[j] << "\t";
       }
-      loss = result[0];
       if (output_freq_ > 0 && iter % output_freq_ == 0){
         Log::Stdout("Iteration:%d, Test:%s, %s ", iter, name, result_ss.str().c_str());
       }
+      return result[0];
     }
+    return 0.0f;
   }
 
 private:
