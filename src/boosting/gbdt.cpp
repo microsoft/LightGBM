@@ -208,7 +208,7 @@ void GBDT::Train() {
                                      std::milli>(end_time - start_time) * 1e-3, iter + 1);
     if (is_early_stopping) {
         // close file with an early-stopping message
-        Log::Info("Early stopping at iteration %d, the best iteration round is %d\d", iter + 1, iter + 1 - early_stopping_round_);
+        Log::Info("Early stopping at iteration %d, the best iteration round is %d\n", iter + 1, iter + 1 - early_stopping_round_);
         fclose(output_model_file);
         return;
     }

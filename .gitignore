@@ -267,3 +267,4 @@ _Pvt_Extensions
 *.out
 *.app
 /windows/LightGBM.VC.db
+lightgbm
