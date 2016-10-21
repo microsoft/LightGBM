@@ -60,7 +60,7 @@ public:
   TcpSocket() {
     sockfd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (sockfd_ == INVALID_SOCKET) {
-      Log::Error("socket construct error");
+      Log::Fatal("Socket construct error\n");
       return;
     }
     ConfigSocket();
@@ -69,7 +69,7 @@ public:
   explicit TcpSocket(SOCKET socket) {
     sockfd_ = socket;
     if (sockfd_ == INVALID_SOCKET) {
-      Log::Error("passed socket error");
+      Log::Fatal("Passed socket error\n");
       return;
     }
     ConfigSocket();
@@ -97,11 +97,11 @@ public:
 #if defined(_WIN32)
     WSADATA wsa_data;
     if (WSAStartup(MAKEWORD(2, 2), &wsa_data) == -1) {
-      Log::Error("socket error: start up error");
+      Log::Fatal("Socket error: WSAStart up error\n");
     }
     if (LOBYTE(wsa_data.wVersion) != 2 || HIBYTE(wsa_data.wVersion) != 2) {
       WSACleanup();
-      Log::Error("socket error: Winsock.dll version error");
+      Log::Fatal("Socket error: Winsock.dll version error\n");
     }
 #else
 #endif
@@ -128,7 +128,7 @@ public:
     char buffer[512];
     // get hostName
     if (gethostname(buffer, sizeof(buffer)) == SOCKET_ERROR) {
-      Log::Error("Error code: %d, when getting local host name.", WSAGetLastError());
+      Log::Fatal("Error code: %d, when getting local host name.\n", WSAGetLastError());
     }
     // push local ip
     PIP_ADAPTER_INFO pAdapterInfo;
@@ -137,7 +137,7 @@ public:
     ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
     pAdapterInfo = (IP_ADAPTER_INFO *)MALLOC(sizeof(IP_ADAPTER_INFO));
     if (pAdapterInfo == NULL) {
-      Log::Error("Error allocating memory needed to call GetAdaptersinfo\n");
+      Log::Fatal("GetAdaptersinfo error: allocating memory \n");
     }
     // Make an initial call to GetAdaptersInfo to get
     // the necessary size into the ulOutBufLen variable
@@ -145,7 +145,7 @@ public:
       FREE(pAdapterInfo);
       pAdapterInfo = (IP_ADAPTER_INFO *)MALLOC(ulOutBufLen);
       if (pAdapterInfo == NULL) {
-        Log::Error("Error allocating memory needed to call GetAdaptersinfo\n");
+        Log::Fatal("GetAdaptersinfo error: allocating memory \n");
       }
     }
     if ((dwRetVal = GetAdaptersInfo(pAdapterInfo, &ulOutBufLen)) == NO_ERROR) {
@@ -155,7 +155,7 @@ public:
         pAdapter = pAdapter->Next;
       }
     } else {
-      printf("GetAdaptersInfo failed with error: %d\n", dwRetVal);
+      Log::Error("GetAdaptersinfo error: code %d \n", dwRetVal);
     }
     if (pAdapterInfo)
       FREE(pAdapterInfo);
@@ -218,7 +218,7 @@ public:
   inline TcpSocket Accept() {
     SOCKET newfd = accept(sockfd_, NULL, NULL);
     if (newfd == INVALID_SOCKET) {
-      Log::Error("socket accept error,error code: %d", GetLastError());
+      Log::Fatal("Socket accept error, code: %d", GetLastError());
     }
     return TcpSocket(newfd);
   }
@@ -226,7 +226,7 @@ public:
   inline int Send(const char *buf_, int len, int flag = 0) {
     int cur_cnt = send(sockfd_, buf_, len, flag);
     if (cur_cnt == SOCKET_ERROR) {
-      Log::Error("socket send error, error code: %d", GetLastError());
+      Log::Fatal("Socket send error, code: %d", GetLastError());
     }
     return cur_cnt;
   }
@@ -234,7 +234,7 @@ public:
   inline int Recv(char *buf_, int len, int flags = 0) {
     int cur_cnt = recv(sockfd_, buf_ , len , flags);
     if (cur_cnt == SOCKET_ERROR) {
-      Log::Error("socket recv error, error code: %d", GetLastError());
+      Log::Fatal("Socket recv error, code: %d", GetLastError());
     }
     return cur_cnt;
   }

@@ -57,7 +57,7 @@ void DCGCalculator::CalMaxDCG(const std::vector<data_size_t>& ks,
   std::vector<data_size_t> label_cnt(label_gain_.size(), 0);
   // counts for all labels
   for (data_size_t i = 0; i < num_data; ++i) {
-    if (static_cast<size_t>(label[i]) >= label_cnt.size()) { Log::Error("label excel %d\n", label[i]); }
+    if (static_cast<size_t>(label[i]) >= label_cnt.size()) { Log::Fatal("label excel %d\n", label[i]); }
     ++label_cnt[static_cast<int>(label[i])];
   }
   double cur_result = 0.0;

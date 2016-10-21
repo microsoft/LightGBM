@@ -95,7 +95,7 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
   if (has_ordered_bin_) {
     is_data_in_leaf_ = new char[num_data_];
   }
-  Log::Info("#data:%d #feature:%d\n", num_data_, num_features_);
+  Log::Info("Number of data:%d, Number of features:%d\n", num_data_, num_features_);
 }
 
 

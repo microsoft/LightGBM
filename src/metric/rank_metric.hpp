@@ -43,7 +43,7 @@ public:
     // get query boundaries
     query_boundaries_ = metadata.query_boundaries();
     if (query_boundaries_ == nullptr) {
-      Log::Error("For NDCG metric, should have query information");
+      Log::Fatal("For NDCG metric, there should be query information");
     }
     num_queries_ = metadata.num_queries();
     // get query weights
@@ -136,7 +136,7 @@ public:
       }
       loss = result[0];
       if (output_freq_ > 0 && iter % output_freq_ == 0){
-        Log::Info("Iteration:%d, Test:%s, %s ", iter, name, result_ss.str().c_str());
+        Log::Info("Iteration:%d, Test:%s, %s \n", iter, name, result_ss.str().c_str());
       }
     }
   }

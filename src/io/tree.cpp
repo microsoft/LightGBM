@@ -140,7 +140,7 @@ Tree::Tree(const std::string& str) {
     || key_vals.count("split_gain") <= 0 || key_vals.count("threshold") <= 0
     || key_vals.count("left_child") <= 0 || key_vals.count("right_child") <= 0
     || key_vals.count("leaf_parent") <= 0 || key_vals.count("leaf_value") <= 0) {
-    Log::Error("tree model string format error");
+    Log::Fatal("tree model string format error");
   }
 
   Common::Atoi(key_vals["num_leaves"].c_str(), &num_leaves_);

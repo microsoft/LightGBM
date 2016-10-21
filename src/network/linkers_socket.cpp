@@ -44,7 +44,7 @@ Linkers::Linkers(NetworkConfig config) {
     }
   }
   if (rank_ == -1) {
-    Log::Error("machine list file doesn't contain local machine, app quit");
+    Log::Fatal("Machine list file doesn't contain local machine");
   }
   // construct listener
   listener_ = new TcpSocket();
@@ -73,14 +73,14 @@ Linkers::~Linkers() {
     }
   }
   TcpSocket::Finalize();
-  Log::Info("network used %f seconds", network_time_ * 1e-3);
+  Log::Info("Network using %f seconds\n", network_time_ * 1e-3);
 }
 
 void Linkers::ParseMachineList(const char * filename) {
   TextReader<size_t> machine_list_reader(filename);
   machine_list_reader.ReadAllLines();
   if (machine_list_reader.Lines().size() <= 0) {
-    Log::Error("machine list file:%s doesn't exist", filename);
+    Log::Fatal("Machine list file:%s doesn't exist", filename);
   }
 
   for (auto& line : machine_list_reader.Lines()) {
@@ -95,7 +95,7 @@ void Linkers::ParseMachineList(const char * filename) {
       continue;
     }
     if (client_ips_.size() >= static_cast<size_t>(num_machines_)) {
-      Log::Info("The #machine in machine list is larger than parameter num_machines, will ignore rest");
+      Log::Error("The #machine in machine_list is larger than parameter num_machines, the redundant will ignored\n");
       break;
     }
     str_after_split[0] = Common::Trim(str_after_split[0]);
@@ -104,17 +104,17 @@ void Linkers::ParseMachineList(const char * filename) {
     client_ports_.push_back(atoi(str_after_split[1].c_str()));
   }
   if (client_ips_.size() != static_cast<size_t>(num_machines_)) {
-    Log::Info("The world size is bigger the #machine in machine list, change world size to %d .", client_ips_.size());
+    Log::Error("The world size is bigger the #machine in machine list, change world size to %d .\n", client_ips_.size());
     num_machines_ = static_cast<int>(client_ips_.size());
   }
 }
 
 void Linkers::TryBind(int port) {
-  Log::Info("try to bind port %d.", port);
+  Log::Info("try to bind port %d.\n", port);
   if (listener_->Bind(port)) {
-    Log::Info("bind port %d success.", port);
+    Log::Info("Binding port %d success.\n", port);
   } else {
-    Log::Error("bind port %d failed.", port);
+    Log::Fatal("Binding port %d failed.\n", port);
   }
 }
 
@@ -125,7 +125,7 @@ void Linkers::SetLinker(int rank, const TcpSocket& socket) {
 }
 
 void Linkers::ListenThread(int incoming_cnt) {
-  Log::Info("Listening...");
+  Log::Info("Listening...\n");
   char buffer[100];
   int connected_cnt = 0;
   while (connected_cnt < incoming_cnt) {
@@ -192,7 +192,7 @@ void Linkers::Construct() {
         if (cur_socket.Connect(client_ips_[out_rank].c_str(), client_ports_[out_rank])) {
           break;
         } else {
-          Log::Info("connect to rank %d failed, wait for %d milliseconds", out_rank, connect_fail_delay_time);
+          Log::Error("Connect to rank %d failed, wait for %d milliseconds\n", out_rank, connect_fail_delay_time);
           std::this_thread::sleep_for(std::chrono::milliseconds(connect_fail_delay_time));
         }
       }
@@ -217,7 +217,7 @@ bool Linkers::CheckLinker(int rank) {
 void Linkers::PrintLinkers() {
   for (int i = 0; i < num_machines_; ++i) {
     if (CheckLinker(i)) {
-      Log::Info("Connected to rank %d.", i);
+      Log::Info("Connected to rank %d.\n", i);
     }
   }
 }

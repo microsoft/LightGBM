@@ -34,6 +34,15 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
   metric_config.Set(params);
   // check for conflicts
   CheckParamConflict();
+
+  if (io_config.verbosity == 1)
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);
+  else if (io_config.verbosity == 0)
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Error);
+  else if (io_config.verbosity >= 2)
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Debug);
+  else 
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
 }
 
 void OverallConfig::GetBoostingType(const std::unordered_map<std::string, std::string>& params) {
@@ -43,7 +52,7 @@ void OverallConfig::GetBoostingType(const std::unordered_map<std::string, std::s
     if (value == std::string("gbdt") || value == std::string("gbrt")) {
       boosting_type = BoostingType::kGBDT;
     } else {
-      Log::Error("boosting type %s error", value.c_str());
+      Log::Fatal("Boosting type %s error", value.c_str());
     }
   }
 }
@@ -91,7 +100,7 @@ void OverallConfig::GetTaskType(const std::unordered_map<std::string, std::strin
       || value == std::string("test")) {
       task_type = TaskType::kPredict;
     } else {
-      Log::Error("task type error");
+      Log::Fatal("Task type error");
     }
   }
 }
@@ -128,8 +137,9 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "data_random_seed", &data_random_seed);
 
   if (!GetString(params, "data", &data_filename)) {
-    Log::Error("No training/prediction data, application quit");
+    Log::Fatal("No training/prediction data, application quit");
   }
+  GetInt(params, "verbose", &verbosity);
   GetInt(params, "num_model_predict", &num_model_predict);
   GetBool(params, "is_pre_partition", &is_pre_partition);
   GetBool(params, "is_enable_sparse", &is_enable_sparse);
@@ -140,6 +150,7 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetString(params, "input_model", &input_model);
   GetString(params, "output_result", &output_result);
   GetString(params, "input_init_score", &input_init_score);
+  GetString(params, "log_file", &log_file);
   std::string tmp_str = "";
   if (GetString(params, "valid_data", &tmp_str)) {
     valid_data_filenames = Common::Split(tmp_str.c_str(), ',');
@@ -236,7 +247,7 @@ void GBDTConfig::GetTreeLearnerType(const std::unordered_map<std::string, std::s
       tree_learner_type = TreeLearnerType::kDataParallelTreeLearner;
     }
     else {
-      Log::Error("tree learner type error");
+      Log::Fatal("Tree learner type error");
     }
   }
 }

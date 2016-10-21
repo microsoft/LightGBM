@@ -93,6 +93,8 @@ public:
   std::string output_result = "LightGBM_predict_result.txt";
   std::string input_model = "";
   std::string input_init_score = "";
+  int verbosity = 0;
+  std::string log_file = "";
   int num_model_predict = -1;
   bool is_pre_partition = false;
   bool is_enable_sparse = true;
@@ -310,7 +312,8 @@ struct ParameterAlias {
       { "two_round", "use_two_round_loading" },
       { "mlist", "machine_list_file" },
       { "is_save_binary", "is_save_binary_file" },
-      { "save_binary", "is_save_binary_file" }
+      { "save_binary", "is_save_binary_file" },
+      { "verbose", "verbosity" }
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {

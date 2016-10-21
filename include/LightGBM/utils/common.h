@@ -157,7 +157,7 @@ inline static const char* Atof(const char* p, double* out) {
         *out = sign * 1e308;
       }
       else {
-        Log::Error("Unknow token %s in data file", tmp_str.c_str());
+        Log::Fatal("Unknow token %s in data file", tmp_str.c_str());
       }
       p += cnt;
     }
@@ -201,7 +201,7 @@ inline static std::string ArrayToString(const T* arr, int n, char delimiter) {
 inline static void StringToIntArray(const std::string& str, char delimiter, size_t n, int* out) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   if (strs.size() != n) {
-    Log::Error("StringToIntArray error, size don't equal.");
+    Log::Fatal("StringToIntArray error, size doesn't matched.");
   }
   for (size_t i = 0; i < strs.size(); ++i) {
     strs[i] = Trim(strs[i]);
@@ -212,7 +212,7 @@ inline static void StringToIntArray(const std::string& str, char delimiter, size
 inline static void StringToDoubleArray(const std::string& str, char delimiter, size_t n, double* out) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   if (strs.size() != n) {
-    Log::Error("StringToDoubleArray error, size don't equal");
+    Log::Fatal("StringToDoubleArray error, size doesn't matched.");
   }
   for (size_t i = 0; i < strs.size(); ++i) {
     strs[i] = Trim(strs[i]);
@@ -223,7 +223,7 @@ inline static void StringToDoubleArray(const std::string& str, char delimiter, s
 inline static void StringToDoubleArray(const std::string& str, char delimiter, size_t n, float* out) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   if (strs.size() != n) {
-    Log::Error("StringToDoubleArray error, size don't equal");
+    Log::Fatal("StringToDoubleArray error, size doesn't matched.");
   }
   double tmp;
   for (size_t i = 0; i < strs.size(); ++i) {
