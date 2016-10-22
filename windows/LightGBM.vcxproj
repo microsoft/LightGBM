@@ -170,6 +170,7 @@
     <ClInclude Include="..\include\LightGBM\utils\array_args.h" />
     <ClInclude Include="..\include\LightGBM\utils\common.h" />
     <ClInclude Include="..\include\LightGBM\utils\log.h" />
+    <ClInclude Include="..\include\LightGBM\utils\lru_pool.h" />
     <ClInclude Include="..\include\LightGBM\utils\pipeline_reader.h" />
     <ClInclude Include="..\include\LightGBM\utils\random.h" />
     <ClInclude Include="..\include\LightGBM\utils\text_reader.h" />
