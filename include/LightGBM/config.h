@@ -93,6 +93,8 @@ public:
   std::string output_result = "LightGBM_predict_result.txt";
   std::string input_model = "";
   std::string input_init_score = "";
+  int verbosity = 1;
+  std::string log_file = "";
   int num_model_predict = -1;
   bool is_pre_partition = false;
   bool is_enable_sparse = true;
@@ -191,6 +193,7 @@ public:
   int num_threads = 0;
   bool is_parallel = false;
   bool is_parallel_find_bin = false;
+  bool predict_leaf_index = false;
   IOConfig io_config;
   BoostingType boosting_type = BoostingType::kGBDT;
   BoostingConfig* boosting_config;
@@ -312,7 +315,8 @@ struct ParameterAlias {
       { "is_save_binary", "is_save_binary_file" },
       { "save_binary", "is_save_binary_file" },
       { "early_stopping_rounds", "early_stopping_round"},
-      { "early_stopping", "early_stopping_round"}
+      { "early_stopping", "early_stopping_round"},
+      { "verbosity", "verbose" }
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {

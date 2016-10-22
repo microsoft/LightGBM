@@ -60,7 +60,7 @@ public:
       }
       score_t loss = PointWiseLossCalculator::AverageLoss(sum_loss, sum_weights_);
       if (output_freq_ > 0 && iter % output_freq_ == 0){
-        Log::Stdout("Iteration:%d, %s's %s : %f", iter, name, PointWiseLossCalculator::Name(), loss);
+        Log::Info("Iteration:%d, %s's %s : %f", iter, name, PointWiseLossCalculator::Name(), loss);
       }
       return loss;
     }

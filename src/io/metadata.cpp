@@ -61,7 +61,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
   if (used_data_indices.size() == 0) {
     // check weights
     if (weights_ != nullptr && num_weights_ != num_data_) {
-      Log::Stdout("init weight size doesn't equal with data file, will ignore");
+      Log::Error("Initial weight size doesn't equal to data, weights will be ignored");
       delete[] weights_;
       num_weights_ = 0;
       weights_ = nullptr;
@@ -69,7 +69,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
 
     // check query boundries
     if (query_boundaries_ != nullptr && query_boundaries_[num_queries_] != num_data_) {
-      Log::Stdout("init query size doesn't equal with data file, will ignore");
+      Log::Error("Initial query size doesn't equal to data, queies will be ignored");
       delete[] query_boundaries_;
       num_queries_ = 0;
       query_boundaries_ = nullptr;
@@ -78,21 +78,21 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     // contain initial score file
     if (init_score_ != nullptr && num_init_score_ != num_data_) {
       delete[] init_score_;
-      Log::Stdout("init score size doesn't equal with data file, will ignore");
+      Log::Error("Initial score size doesn't equal to data, score file will be ignored");
       num_init_score_ = 0;
     }
   } else {
     data_size_t num_used_data = static_cast<data_size_t>(used_data_indices.size());
     // check weights
     if (weights_ != nullptr && num_weights_ != num_all_data) {
-      Log::Stdout("init weight size doesn't equal with data file, will ignore");
+      Log::Error("Initial weights size doesn't equal to data, weights will be ignored");
       delete[] weights_;
       num_weights_ = 0;
       weights_ = nullptr;
     }
     // check query boundries
     if (query_boundaries_ != nullptr && query_boundaries_[num_queries_] != num_all_data) {
-      Log::Stdout("init query size doesn't equal with data file, will ignore");
+      Log::Error("Initial query size doesn't equal to data , queries will be ignored");
       delete[] query_boundaries_;
       num_queries_ = 0;
       query_boundaries_ = nullptr;
@@ -100,7 +100,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
 
     // contain initial score file
     if (init_score_ != nullptr && num_init_score_ != num_all_data) {
-      Log::Stdout("init score size doesn't equal with data file, will ignore");
+      Log::Error("Initial score size doesn't equal to data , initial scores will be ignored");
       delete[] init_score_;
       num_init_score_ = 0;
     }
@@ -131,10 +131,10 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
             used_query.push_back(qid);
             data_idx += len;
           } else {
-            Log::Stderr("data partition error, not according to query");
+            Log::Fatal("Data partition error, data didn't match queies");
           }
         } else {
-          Log::Stderr("data partition error, not according to query");
+          Log::Fatal("Data partition error, data didn't match queies");
         }
       }
       data_size_t * old_query_boundaries = query_boundaries_;
@@ -182,7 +182,7 @@ void Metadata::LoadWeights() {
   if (reader.Lines().size() <= 0) {
     return;
   }
-  Log::Stdout("Start to load weights");
+  Log::Info("Start loading weights");
   num_weights_ = static_cast<data_size_t>(reader.Lines().size());
   weights_ = new float[num_weights_];
   for (data_size_t i = 0; i < num_weights_; ++i) {
@@ -198,7 +198,7 @@ void Metadata::LoadInitialScore() {
   TextReader<size_t> reader(init_score_filename_);
   reader.ReadAllLines();
 
-  Log::Stdout("Start to load initial score");
+  Log::Info("Start loading initial scores");
   num_init_score_ = static_cast<data_size_t>(reader.Lines().size());
   init_score_ = new score_t[num_init_score_];
   double tmp = 0.0f;
@@ -218,7 +218,7 @@ void Metadata::LoadQueryBoundaries() {
   if (reader.Lines().size() <= 0) {
     return;
   }
-  Log::Stdout("Start to load query boundries");
+  Log::Info("Start loading query boundries");
   query_boundaries_ = new data_size_t[reader.Lines().size() + 1];
   num_queries_ = static_cast<data_size_t>(reader.Lines().size());
   query_boundaries_[0] = 0;
@@ -233,7 +233,7 @@ void Metadata::LoadQueryWeights() {
   if (weights_ == nullptr || query_boundaries_ == nullptr) {
     return;
   }
-  Log::Stdout("Start to load query weights");
+  Log::Info("Start loading query weights");
   query_weights_ = new float[num_queries_];
   for (data_size_t i = 0; i < num_queries_; ++i) {
     query_weights_[i] = 0.0f;

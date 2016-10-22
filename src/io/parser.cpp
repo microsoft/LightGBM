@@ -55,18 +55,18 @@ Parser* Parser::CreateParser(const char* filename, int num_features, bool* has_l
   std::ifstream tmp_file;
   tmp_file.open(filename);
   if (!tmp_file.is_open()) {
-    Log::Stderr("Data file: %s doesn't exist", filename);
+    Log::Fatal("Data file: %s doesn't exist", filename);
   }
   std::string line1, line2;
   if (!tmp_file.eof()) {
     std::getline(tmp_file, line1);
   } else {
-    Log::Stderr("Data file: %s at least should have one line", filename);
+    Log::Fatal("Data file: %s at least should have one line", filename);
   }
   if (!tmp_file.eof()) {
     std::getline(tmp_file, line2);
   } else {
-    Log::Stdout("Data file: %s only have one line", filename);
+    Log::Error("Data file: %s only have one line", filename);
   }
   tmp_file.close();
   int comma_cnt = 0, comma_cnt2 = 0;

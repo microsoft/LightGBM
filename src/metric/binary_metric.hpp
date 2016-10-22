@@ -23,7 +23,7 @@ public:
     the_bigger_the_better = false;
     sigmoid_ = static_cast<score_t>(config.sigmoid);
     if (sigmoid_ <= 0.0f) {
-      Log::Stderr("sigmoid param %f should greater than zero", sigmoid_);
+      Log::Fatal("Sigmoid param %f should greater than zero", sigmoid_);
     }
   }
 
@@ -57,7 +57,7 @@ public:
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // sigmoid transform
-          score_t prob = 1.0f / (1.0f + std::exp(-sigmoid_ * score[i]));
+          score_t prob = 1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * score[i]));
           // add loss
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob);
         }
@@ -65,14 +65,14 @@ public:
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // sigmoid transform
-          score_t prob = 1.0f / (1.0f + std::exp(-sigmoid_ * score[i]));
+          score_t prob = 1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * score[i]));
           // add loss
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob) * weights_[i];
         }
       }
       score_t loss = sum_loss / sum_weights_;
       if (output_freq_ > 0 && iter % output_freq_ == 0){
-        Log::Stdout("Iteration:%d, %s's %s: %f", iter, name, PointWiseLossCalculator::Name(), loss);
+        Log::Info("Iteration:%d, %s's %s: %f", iter, name, PointWiseLossCalculator::Name(), loss);
       }
       return loss;
     }
@@ -230,7 +230,7 @@ public:
         auc = accum / (sum_pos *(sum_weights_ - sum_pos));
       }
       if (output_freq_ > 0 && iter % output_freq_ == 0){
-        Log::Stdout("iteration:%d, %s's %s: %f", iter, name, "auc", auc);
+        Log::Info("Iteration:%d, %s's %s: %f", iter, name, "auc", auc);
       }
       return auc;
     }

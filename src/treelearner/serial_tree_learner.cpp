@@ -79,7 +79,7 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
       break;
     }
   }
-  // initialize  splits for leaf
+  // initialize splits for leaf
   smaller_leaf_splits_ = new LeafSplits(train_data_->num_features(), train_data_->num_data());
   larger_leaf_splits_ = new LeafSplits(train_data_->num_features(), train_data_->num_data());
 
@@ -95,7 +95,7 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
   if (has_ordered_bin_) {
     is_data_in_leaf_ = new char[num_data_];
   }
-  Log::Stdout("#data:%d #feature:%d\n", num_data_, num_features_);
+  Log::Info("Number of data:%d, Number of features:%d", num_data_, num_features_);
 }
 
 
@@ -123,7 +123,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
     const SplitInfo& best_leaf_SplitInfo = best_split_per_leaf_[best_leaf];
     // cannot split, quit
     if (best_leaf_SplitInfo.gain <= 0.0) {
-      Log::Stdout("cannot find more split with gain = %f , current #leaves=%d\n",
+      Log::Info("cannot find more split with gain = %f , current #leaves=%d",
                    best_leaf_SplitInfo.gain, split + 1);
       break;
     }

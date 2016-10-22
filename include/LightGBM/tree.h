@@ -75,6 +75,7 @@ public:
   * \return Prediction result
   */
   inline score_t Predict(const double* feature_values) const;
+  inline int PredictLeafIndex(const double* feature_values) const;
 
   /*! \brief Get Number of leaves*/
   inline int num_leaves() const { return num_leaves_; }
@@ -141,9 +142,14 @@ private:
 };
 
 
-inline score_t Tree::Predict(const double* feature_values)const {
+inline score_t Tree::Predict(const double* feature_values) const {
   int leaf = GetLeaf(feature_values);
   return LeafOutput(leaf);
+}
+
+inline int Tree::PredictLeafIndex(const double* feature_values) const {
+  int leaf = GetLeaf(feature_values);
+  return leaf;
 }
 
 inline int Tree::GetLeaf(const std::vector<BinIterator*>& iterators,
