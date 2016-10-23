@@ -140,7 +140,7 @@ public:
   int num_leaves = 127;
   int feature_fraction_seed = 2;
   double feature_fraction = 1.0;
-  // max cache size(unit:GB) for historical histogram. < 0 means not limit
+  // max cache size(unit:MB) for historical histogram. < 0 means not limit
   double histogram_pool_size = -1;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };

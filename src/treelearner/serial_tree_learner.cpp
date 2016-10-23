@@ -55,8 +55,7 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
     for (int i = 0; i < train_data_->num_features(); ++i) {
       total_histogram_size += sizeof(HistogramBinEntry) * train_data_->FeatureAt(i)->num_bin();
     }
-    max_cache_size = static_cast<int>(histogram_pool_size_ * 1024 * 1024 * 1024 / total_histogram_size);
-    
+    max_cache_size = static_cast<int>(histogram_pool_size_ * 1024 * 1024 / total_histogram_size);
   }
   // at least need 2 leaves
   max_cache_size = Common::Max(2, max_cache_size);

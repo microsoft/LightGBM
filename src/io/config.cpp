@@ -130,7 +130,7 @@ void OverallConfig::CheckParamConflict() {
     is_parallel_find_bin = true;
     if (gbdt_config->tree_config.histogram_pool_size >= 0) {
       Log::Error("Histogram LRU queue was enabled (histogram_pool_size=%f). Will disable this for reducing communication cost."
-                 , tree_config.histogram_pool_size);
+                 , gbdt_config->tree_config.histogram_pool_size);
       // Change pool size to -1(not limit) when using data parallel for reducing communication cost
       gbdt_config->tree_config.histogram_pool_size = -1;
     }
