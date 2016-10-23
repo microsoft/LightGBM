@@ -154,26 +154,31 @@ public:
       Log::Info("Start prediction for data %s without label", data_filename);
     }
     std::function<std::string(const std::vector<std::pair<int, double>>&)> predict_fun;
-    predict_fun = [this](const std::vector<std::pair<int, double>>& features) {
-        if (predict_leaf_index){
-          std::vector<int> predicted_leaf_index = PredictLeafIndexOneLine(features);
-          std::stringstream result_ss;
-          for (size_t i = 0; i < predicted_leaf_index.size(); ++i){
-            if (i > 0) {
-              result_ss << '\t';
-            }
-            result_ss << predicted_leaf_index[i];
+    if (predict_leaf_index) {
+      predict_fun = [this](const std::vector<std::pair<int, double>>& features){
+        std::vector<int> predicted_leaf_index = PredictLeafIndexOneLine(features);
+        std::stringstream result_ss;
+        for (size_t i = 0; i < predicted_leaf_index.size(); ++i){
+          if (i > 0) {
+            result_ss << '\t';
           }
-          return result_ss.str();
+          result_ss << predicted_leaf_index[i];
         }
-        else{
-          if (is_simgoid_) {
-            return std::to_string(PredictOneLine(features));
-          } else {
-            return std::to_string(PredictRawOneLine(features));
-          }
-        }
-    };
+        return result_ss.str();  
+      };
+    }
+    else {
+      if (is_simgoid_) {
+        predict_fun = [this](const std::vector<std::pair<int, double>>& features){
+          return std::to_string(PredictOneLine(features));
+        };
+      } 
+      else {
+        predict_fun = [this](const std::vector<std::pair<int, double>>& features){
+          return std::to_string(PredictRawOneLine(features));
+        };
+      } 
+    }
     std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
       [this, &parser_fun, &predict_fun, &result_file]
     (data_size_t, const std::vector<std::string>& lines) {
