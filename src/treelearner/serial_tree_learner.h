@@ -3,6 +3,7 @@
 
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/array_args.h>
+#include <LightGBM/utils/lru_pool.h>
 
 #include <LightGBM/tree_learner.h>
 #include <LightGBM/dataset.h>
@@ -122,8 +123,8 @@ protected:
   Random random_;
   /*! \brief used for sub feature training, is_feature_used_[i] = falase means don't used feature i */
   bool* is_feature_used_;
-  /*! \brief cache historical histogram to speed up */
-  FeatureHistogram** historical_histogram_array_;
+  /*! \brief pointer to histograms array of parent of current leaves */
+  FeatureHistogram* parent_leaf_histogram_array_;
   /*! \brief pointer to histograms array of smaller leaf */
   FeatureHistogram* smaller_leaf_histogram_array_;
   /*! \brief pointer to histograms array of larger leaf */
@@ -143,15 +144,25 @@ protected:
   score_t* ordered_hessians_;
 
   /*! \brief Pointer to ordered_gradients_, use this to avoid copy at BeforeTrain */
-  const score_t* ptr_to_ordered_gradients_;
+  const score_t* ptr_to_ordered_gradients_smaller_leaf_;
   /*! \brief Pointer to ordered_hessians_, use this to avoid copy at BeforeTrain*/
-  const score_t* ptr_to_ordered_hessians_;
+  const score_t* ptr_to_ordered_hessians_smaller_leaf_;
+
+  /*! \brief Pointer to ordered_gradients_, use this to avoid copy at BeforeTrain */
+  const score_t* ptr_to_ordered_gradients_larger_leaf_;
+  /*! \brief Pointer to ordered_hessians_, use this to avoid copy at BeforeTrain*/
+  const score_t* ptr_to_ordered_hessians_larger_leaf_;
+
   /*! \brief Store ordered bin */
   std::vector<OrderedBin*> ordered_bins_;
   /*! \brief True if has ordered bin */
   bool has_ordered_bin_ = false;
   /*! \brief  is_data_in_leaf_[i] != 0 means i-th data is marked */
   char* is_data_in_leaf_;
+  /*! \brief  max cache size(unit:GB) for historical histogram. < 0 means not limit */
+  double histogram_pool_size_;
+  /*! \brief used to cache historical histogram to speed up*/
+  LRUPool<FeatureHistogram*> histogram_pool_;
 };
 
 
