@@ -129,8 +129,9 @@ void OverallConfig::CheckParamConflict() {
   } else if (gbdt_config->tree_learner_type == TreeLearnerType::kDataParallelTreeLearner) {
     is_parallel_find_bin = true;
     if (gbdt_config->tree_config.histogram_pool_size >= 0) {
-      Log::Error("Auto set histogram_pool_size to non-limit, to reduce communication cost");
-      // To reduce communication cost, not limit pool size when using data parallel
+      Log::Error("Histogram LRU queue was enabled (histogram_pool_size=%f). Will disable this for reducing communication cost."
+                 , tree_config.histogram_pool_size);
+      // Change pool size to -1(not limit) when using data parallel for reducing communication cost
       gbdt_config->tree_config.histogram_pool_size = -1;
     }
 
