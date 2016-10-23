@@ -88,7 +88,7 @@ public:
         features_[tid][p.first] = p.second;
       }
     }
-    // get result without sigmoid transformation
+    // get result for leaf index
     return boosting_->PredictLeafIndex(features_[tid]);
   }
 

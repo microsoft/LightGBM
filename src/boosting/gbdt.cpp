@@ -372,7 +372,9 @@ double GBDT::Predict(const double* value) const {
 std::string GBDT::PredictLeafIndex(const double* value) const {
   std::stringstream result_ss;
   for (size_t i = 0; i < models_.size(); ++i) {
-    if (i) result_ss << '\t';
+    if (i > 0) {
+        result_ss << '\t';
+    }
     result_ss << models_[i]->PredictLeafIndex(value);
   }
   return result_ss.str();
