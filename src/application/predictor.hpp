@@ -78,7 +78,7 @@ public:
   * \param features Feature for this record
   * \return Predictied leaf index
   */
-  std::string PredictLeafIndexOneLine(const std::vector<std::pair<int, double>>& features) {
+  std::vector<int> PredictLeafIndexOneLine(const std::vector<std::pair<int, double>>& features) {
     const int tid = omp_get_thread_num();
     // init feature value
     std::memset(features_[tid], 0, sizeof(double)*num_features_);
@@ -89,15 +89,7 @@ public:
       }
     }
     // get result for leaf index
-    std::vector<int> predicted_leaf_index = boosting_->PredictLeafIndex(features_[tid]);
-    std::stringstream result_ss;
-    for (size_t i = 0; i < predicted_leaf_index.size(); ++i){
-        if (i > 0) {
-            result_ss << '\t';
-        }
-        result_ss << predicted_leaf_index[i];
-    }
-    return result_ss.str();
+    return boosting_->PredictLeafIndex(features_[tid]);
   }
 
   /*!
@@ -161,64 +153,47 @@ public:
       };
       Log::Info("Start prediction for data %s without label", data_filename);
     }
-    if (predict_leaf_index) {
-        std::function<std::string(const std::vector<std::pair<int, double>>&)> predict_fun;
-        predict_fun = [this](const std::vector<std::pair<int, double>>& features) {
-            return PredictLeafIndexOneLine(features);
-        };
-        std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
-          [this, &parser_fun, &predict_fun, &result_file]
-        (data_size_t, const std::vector<std::string>& lines) {
-          std::vector<std::pair<int, double>> oneline_features;
-          std::vector<std::string> pred_result(lines.size(), "");
-    #pragma omp parallel for schedule(static) private(oneline_features)
-          for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); i++) {
-            oneline_features.clear();
-            // parser
-            parser_fun(lines[i].c_str(), &oneline_features);
-            // predict
-            pred_result[i] = predict_fun(oneline_features);
+    std::function<std::string(const std::vector<std::pair<int, double>>&)> predict_fun;
+    predict_fun = [this](const std::vector<std::pair<int, double>>& features) {
+        if (predict_leaf_index){
+          std::vector<int> predicted_leaf_index = PredictLeafIndexOneLine(features);
+          std::stringstream result_ss;
+          for (size_t i = 0; i < predicted_leaf_index.size(); ++i){
+            if (i > 0) {
+              result_ss << '\t';
+            }
+            result_ss << predicted_leaf_index[i];
           }
-
-          for (size_t i = 0; i < pred_result.size(); ++i) {
-            fprintf(result_file, "%s\n", pred_result[i].c_str());
-          }
-        };
-        TextReader<data_size_t> predict_data_reader(data_filename);
-        predict_data_reader.ReadAllAndProcessParallel(process_fun);
-    }
-    else {
-        std::function<double(const std::vector<std::pair<int, double>>&)> predict_fun;
-        if (is_simgoid_) {
-          predict_fun = [this](const std::vector<std::pair<int, double>>& features) {
-            return PredictOneLine(features);
-          };
-        } else {
-          predict_fun = [this](const std::vector<std::pair<int, double>>& features) {
-            return PredictRawOneLine(features);
-          };
+          return result_ss.str();
         }
-        std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
-          [this, &parser_fun, &predict_fun, &result_file]
-        (data_size_t, const std::vector<std::string>& lines) {
-          std::vector<std::pair<int, double>> oneline_features;
-          std::vector<double> pred_result(lines.size(), 0.0f);
-    #pragma omp parallel for schedule(static) private(oneline_features)
-          for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); i++) {
-            oneline_features.clear();
-            // parser
-            parser_fun(lines[i].c_str(), &oneline_features);
-            // predict
-            pred_result[i] = predict_fun(oneline_features);
+        else{
+          if (is_simgoid_) {
+            return std::to_string(PredictOneLine(features));
+          } else {
+            return std::to_string(PredictRawOneLine(features));
           }
+        }
+    };
+    std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
+      [this, &parser_fun, &predict_fun, &result_file]
+    (data_size_t, const std::vector<std::string>& lines) {
+      std::vector<std::pair<int, double>> oneline_features;
+      std::vector<std::string> pred_result(lines.size(), "");
+#pragma omp parallel for schedule(static) private(oneline_features)
+      for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); i++) {
+        oneline_features.clear();
+        // parser
+        parser_fun(lines[i].c_str(), &oneline_features);
+        // predict
+        pred_result[i] = predict_fun(oneline_features);
+      }
 
-          for (size_t i = 0; i < pred_result.size(); ++i) {
-            fprintf(result_file, "%f\n", pred_result[i]);
-          }
-        };
-        TextReader<data_size_t> predict_data_reader(data_filename);
-        predict_data_reader.ReadAllAndProcessParallel(process_fun);
-    }
+      for (size_t i = 0; i < pred_result.size(); ++i) {
+        fprintf(result_file, "%s\n", pred_result[i].c_str());
+      }
+    };
+    TextReader<data_size_t> predict_data_reader(data_filename);
+    predict_data_reader.ReadAllAndProcessParallel(process_fun);
 
     fclose(result_file);
     delete parser;
