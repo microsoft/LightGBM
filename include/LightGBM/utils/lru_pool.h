@@ -25,20 +25,8 @@ public:
   * \brief Destructor
   */
   ~LRUPool() {
-    if (pool_ != nullptr) {
-      delete[] pool_;
-    }
-    if (mapper_ != nullptr) {
-      delete[] mapper_;
-    }
-    if (inverse_mapper_ != nullptr) {
-      delete[] inverse_mapper_;
-    }
-    if (last_used_time_ != nullptr) {
-      delete[] last_used_time_;
-    }
+    FreeAll();
   }
-
   /*!
   * \brief Reset pool size
   * \param cache_size Max cache size
@@ -46,19 +34,7 @@ public:
   */
   void ResetSize(int cache_size, int total_size) {
     // free old memory
-    if (pool_ != nullptr) {
-      delete[] pool_;
-    }
-    if (mapper_ != nullptr) {
-      delete[] mapper_;
-    }
-    if (inverse_mapper_ != nullptr) {
-      delete[] inverse_mapper_;
-    }
-    if (last_used_time_ != nullptr) {
-      delete[] last_used_time_;
-    }
-
+    FreeAll();
     cache_size_ = cache_size;
     // at least need 2 bucket to store smaller leaf and larger leaf
     CHECK(cache_size_ >= 2);
@@ -146,6 +122,20 @@ public:
     inverse_mapper_[slot] = dst_idx;
   }
 private:
+  void FreeAll(){
+    if (pool_ != nullptr) {
+      delete[] pool_;
+    }
+    if (mapper_ != nullptr) {
+      delete[] mapper_;
+    }
+    if (inverse_mapper_ != nullptr) {
+      delete[] inverse_mapper_;
+    }
+    if (last_used_time_ != nullptr) {
+      delete[] last_used_time_;
+    }
+  }
   T* pool_ = nullptr;
   int cache_size_;
   int total_size_;
