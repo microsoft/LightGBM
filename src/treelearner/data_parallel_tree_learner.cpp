@@ -143,8 +143,8 @@ void DataParallelTreeLearner::FindBestThresholds() {
                                                              smaller_leaf_splits_->num_data_in_leaf(),
                                                              smaller_leaf_splits_->sum_gradients(),
                                                              smaller_leaf_splits_->sum_hessians(),
-                                                             ptr_to_ordered_gradients_,
-                                                             ptr_to_ordered_hessians_);
+                                                             ptr_to_ordered_gradients_smaller_leaf_,
+                                                             ptr_to_ordered_hessians_smaller_leaf_);
     } else {
       smaller_leaf_histogram_array_[feature_index].Construct(ordered_bins_[feature_index],
                                                              smaller_leaf_splits_->LeafIndex(),

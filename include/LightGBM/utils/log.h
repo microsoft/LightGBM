@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <cstdarg>
 #include <cstring>
-#include <fstream>
 
 namespace LightGBM {
 

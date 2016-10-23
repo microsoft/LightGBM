@@ -112,28 +112,31 @@ void OverallConfig::GetTaskType(const std::unordered_map<std::string, std::strin
 }
 
 void OverallConfig::CheckParamConflict() {
+  GBDTConfig* gbdt_config = dynamic_cast<GBDTConfig*>(boosting_config);
   if (network_config.num_machines > 1) {
     is_parallel = true;
   } else {
     is_parallel = false;
-    dynamic_cast<GBDTConfig*>(boosting_config)->tree_learner_type =
-                                                TreeLearnerType::kSerialTreeLearner;
+    gbdt_config->tree_learner_type = TreeLearnerType::kSerialTreeLearner;
   }
 
-  if (dynamic_cast<GBDTConfig*>(boosting_config)->tree_learner_type ==
-                                                TreeLearnerType::kSerialTreeLearner) {
+  if (gbdt_config->tree_learner_type == TreeLearnerType::kSerialTreeLearner) {
     is_parallel = false;
     network_config.num_machines = 1;
   }
 
-  if (dynamic_cast<GBDTConfig*>(boosting_config)->tree_learner_type ==
-                                                 TreeLearnerType::kSerialTreeLearner ||
-    dynamic_cast<GBDTConfig*>(boosting_config)->tree_learner_type ==
-                                                 TreeLearnerType::kFeatureParallelTreelearner) {
+  if (gbdt_config->tree_learner_type == TreeLearnerType::kSerialTreeLearner ||
+    gbdt_config->tree_learner_type == TreeLearnerType::kFeatureParallelTreelearner) {
     is_parallel_find_bin = false;
-  } else if (dynamic_cast<GBDTConfig*>(boosting_config)->tree_learner_type ==
-                                                 TreeLearnerType::kDataParallelTreeLearner) {
+  } else if (gbdt_config->tree_learner_type == TreeLearnerType::kDataParallelTreeLearner) {
     is_parallel_find_bin = true;
+    if (gbdt_config->tree_config.histogram_pool_size >= 0) {
+      Log::Error("Histogram LRU queue was enabled (histogram_pool_size=%f). Will disable this for reducing communication cost."
+                 , gbdt_config->tree_config.histogram_pool_size);
+      // Change pool size to -1(not limit) when using data parallel for reducing communication cost
+      gbdt_config->tree_config.histogram_pool_size = -1;
+    }
+
   }
 }
 
@@ -220,10 +223,11 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   GetDouble(params, "min_sum_hessian_in_leaf", &min_sum_hessian_in_leaf);
   CHECK(min_sum_hessian_in_leaf > 1.0f || min_data_in_leaf > 0);
   GetInt(params, "num_leaves", &num_leaves);
-  CHECK(num_leaves > 0);
+  CHECK(num_leaves > 1);
   GetInt(params, "feature_fraction_seed", &feature_fraction_seed);
   GetDouble(params, "feature_fraction", &feature_fraction);
   CHECK(feature_fraction > 0.0 && feature_fraction <= 1.0);
+  GetDouble(params, "histogram_pool_size", &histogram_pool_size);
 }
 
 
