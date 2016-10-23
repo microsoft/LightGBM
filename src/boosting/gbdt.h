@@ -65,7 +65,7 @@ public:
   * \param feature_values Feature value on this record
   * \return Predicted leaf index for this record
   */
-  std::string PredictLeafIndex(const double* value) const override;
+ std::vector<int> PredictLeafIndex(const double* value) const override;
   
   /*!
   * \brief Serialize models by string

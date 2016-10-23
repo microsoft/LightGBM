@@ -65,7 +65,7 @@ public:
   * \param feature_values Feature value on this record
   * \return Predicted leaf index for this record
   */
-  virtual std::string PredictLeafIndex(const double * feature_values) const = 0;
+  virtual std::vector<int> PredictLeafIndex(const double * feature_values) const = 0;
   
   /*!
   * \brief Serialize models by string

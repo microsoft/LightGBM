@@ -89,7 +89,15 @@ public:
       }
     }
     // get result for leaf index
-    return boosting_->PredictLeafIndex(features_[tid]);
+    std::vector<int> predicted_leaf_index = boosting_->PredictLeafIndex(features_[tid]);
+    std::stringstream result_ss;
+    for (size_t i = 0; i < predicted_leaf_index.size(); ++i){
+        if (i > 0) {
+            result_ss << '\t';
+        }
+        result_ss << predicted_leaf_index[i];
+    }
+    return result_ss.str();
   }
 
   /*!
