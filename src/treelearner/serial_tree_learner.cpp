@@ -94,7 +94,7 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
       break;
     }
   }
-  // initialize  splits for leaf
+  // initialize splits for leaf
   smaller_leaf_splits_ = new LeafSplits(train_data_->num_features(), train_data_->num_data());
   larger_leaf_splits_ = new LeafSplits(train_data_->num_features(), train_data_->num_data());
 

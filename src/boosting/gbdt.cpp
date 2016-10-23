@@ -369,4 +369,12 @@ double GBDT::Predict(const double* value) const {
   return ret;
 }
 
+std::vector<int> GBDT::PredictLeafIndex(const double* value) const {
+  std::vector<int> ret;
+  for (size_t i = 0; i < models_.size(); ++i) {
+    ret.push_back(models_[i]->PredictLeafIndex(value));
+  }
+  return ret;
+}
+
 }  // namespace LightGBM

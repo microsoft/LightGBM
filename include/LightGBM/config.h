@@ -195,6 +195,7 @@ public:
   int num_threads = 0;
   bool is_parallel = false;
   bool is_parallel_find_bin = false;
+  bool predict_leaf_index = false;
   IOConfig io_config;
   BoostingType boosting_type = BoostingType::kGBDT;
   BoostingConfig* boosting_config;

@@ -125,7 +125,7 @@ void Application::LoadData() {
   if (config_.io_config.input_model.size() > 0) {
     LoadModel();
     if (boosting_->NumberOfSubModels() > 0) {
-      predictor = new Predictor(boosting_, config_.io_config.is_sigmoid);
+      predictor = new Predictor(boosting_, config_.io_config.is_sigmoid, config_.predict_leaf_index);
       predict_fun =
         [&predictor](const std::vector<std::pair<int, double>>& features) {
         return predictor->PredictRawOneLine(features);
@@ -252,7 +252,7 @@ void Application::Train() {
 
 void Application::Predict() {
   // create predictor
-  Predictor predictor(boosting_, config_.io_config.is_sigmoid);
+  Predictor predictor(boosting_, config_.io_config.is_sigmoid, config_.predict_leaf_index);
   predictor.Predict(config_.io_config.data_filename.c_str(), config_.io_config.output_result.c_str());
   Log::Info("Finish predict.");
 }

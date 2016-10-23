@@ -14,6 +14,8 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
   // load main config types
   GetInt(params, "num_threads", &num_threads);
   GetTaskType(params);
+  
+  GetBool(params, "predict_leaf_index", &predict_leaf_index);
 
   GetBoostingType(params);
   GetObjectiveType(params);

@@ -59,6 +59,14 @@ public:
   * \return Prediction result for this record
   */
   double Predict(const double * feature_values) const override;
+  
+  /*!
+  * \brief Predtion for one record with leaf index
+  * \param feature_values Feature value on this record
+  * \return Predicted leaf index for this record
+  */
+ std::vector<int> PredictLeafIndex(const double* value) const override;
+  
   /*!
   * \brief Serialize models by string
   * \return String output of tranined model

@@ -63,7 +63,7 @@ public:
   static void Fatal(const char *format, ...) {
     va_list val;
     va_start(val, format);
-    fprintf(stderr, "[LightGBM] [Fatel] ");
+    fprintf(stderr, "[LightGBM] [Fatal] ");
     vfprintf(stderr, format, val);
     fprintf(stderr, "\n");
     fflush(stderr);

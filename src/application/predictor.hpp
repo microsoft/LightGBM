@@ -26,9 +26,10 @@ public:
   * \brief Constructor
   * \param boosting Input boosting model
   * \param is_sigmoid True if need to predict result with sigmoid transform(if needed, like binary classification)
+  * \param predict_leaf_index True if output leaf index instead of prediction score
   */
-  Predictor(const Boosting* boosting, bool is_simgoid)
-    : is_simgoid_(is_simgoid) {
+  Predictor(const Boosting* boosting, bool is_simgoid, bool predict_leaf_index)
+    : is_simgoid_(is_simgoid), predict_leaf_index(predict_leaf_index) {
     boosting_ = boosting;
     num_features_ = boosting_->MaxFeatureIdx() + 1;
 #pragma omp parallel
@@ -70,6 +71,25 @@ public:
     }
     // get result without sigmoid transformation
     return boosting_->PredictRaw(features_[tid]);
+  }
+  
+  /*!
+  * \brief prediction for one record, only raw result(without sigmoid transformation)
+  * \param features Feature for this record
+  * \return Predictied leaf index
+  */
+  std::vector<int> PredictLeafIndexOneLine(const std::vector<std::pair<int, double>>& features) {
+    const int tid = omp_get_thread_num();
+    // init feature value
+    std::memset(features_[tid], 0, sizeof(double)*num_features_);
+    // put feature value
+    for (const auto& p : features) {
+      if (p.first < num_features_) {
+        features_[tid][p.first] = p.second;
+      }
+    }
+    // get result for leaf index
+    return boosting_->PredictLeafIndex(features_[tid]);
   }
 
   /*!
@@ -133,21 +153,37 @@ public:
       };
       Log::Info("Start prediction for data %s without label", data_filename);
     }
-    std::function<double(const std::vector<std::pair<int, double>>&)> predict_fun;
-    if (is_simgoid_) {
-      predict_fun = [this](const std::vector<std::pair<int, double>>& features) {
-        return PredictOneLine(features);
+    std::function<std::string(const std::vector<std::pair<int, double>>&)> predict_fun;
+    if (predict_leaf_index) {
+      predict_fun = [this](const std::vector<std::pair<int, double>>& features){
+        std::vector<int> predicted_leaf_index = PredictLeafIndexOneLine(features);
+        std::stringstream result_ss;
+        for (size_t i = 0; i < predicted_leaf_index.size(); ++i){
+          if (i > 0) {
+            result_ss << '\t';
+          }
+          result_ss << predicted_leaf_index[i];
+        }
+        return result_ss.str();  
       };
-    } else {
-      predict_fun = [this](const std::vector<std::pair<int, double>>& features) {
-        return PredictRawOneLine(features);
-      };
+    }
+    else {
+      if (is_simgoid_) {
+        predict_fun = [this](const std::vector<std::pair<int, double>>& features){
+          return std::to_string(PredictOneLine(features));
+        };
+      } 
+      else {
+        predict_fun = [this](const std::vector<std::pair<int, double>>& features){
+          return std::to_string(PredictRawOneLine(features));
+        };
+      } 
     }
     std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
       [this, &parser_fun, &predict_fun, &result_file]
     (data_size_t, const std::vector<std::string>& lines) {
       std::vector<std::pair<int, double>> oneline_features;
-      std::vector<double> pred_result(lines.size(), 0.0f);
+      std::vector<std::string> pred_result(lines.size(), "");
 #pragma omp parallel for schedule(static) private(oneline_features)
       for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); i++) {
         oneline_features.clear();
@@ -158,10 +194,9 @@ public:
       }
 
       for (size_t i = 0; i < pred_result.size(); ++i) {
-        fprintf(result_file, "%f\n", pred_result[i]);
+        fprintf(result_file, "%s\n", pred_result[i].c_str());
       }
     };
-
     TextReader<data_size_t> predict_data_reader(data_filename);
     predict_data_reader.ReadAllAndProcessParallel(process_fun);
 
@@ -180,6 +215,8 @@ private:
   bool is_simgoid_;
   /*! \brief Number of threads */
   int num_threads_;
+  /*! \brief True if output leaf index instead of prediction score */
+  bool predict_leaf_index;
 };
 
 }  // namespace LightGBM
