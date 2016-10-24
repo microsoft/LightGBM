@@ -21,7 +21,7 @@ void DCGCalculator::Init(std::vector<double> input_label_gain) {
   label_gain_ = input_label_gain;
   discount_.clear();
   for (data_size_t i = 0; i < kMaxPosition; ++i) {
-    discount_.emplace_back(1.0 / std::log(2.0 + i));
+    discount_.emplace_back(1.0 / std::log2(2.0 + i));
   }
   is_inited_ = true;
 }
