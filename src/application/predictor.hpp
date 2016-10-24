@@ -60,15 +60,7 @@ public:
   * \return Prediction result
   */
   double PredictRawOneLine(const std::vector<std::pair<int, double>>& features) {
-    const int tid = omp_get_thread_num();
-    // init feature value
-    std::memset(features_[tid], 0, sizeof(double)*num_features_);
-    // put feature value
-    for (const auto& p : features) {
-      if (p.first < num_features_) {
-        features_[tid][p.first] = p.second;
-      }
-    }
+    const int tid = PutFeatureValuesToBuffer(features);
     // get result without sigmoid transformation
     return boosting_->PredictRaw(features_[tid]);
   }
@@ -79,15 +71,7 @@ public:
   * \return Predictied leaf index
   */
   std::vector<int> PredictLeafIndexOneLine(const std::vector<std::pair<int, double>>& features) {
-    const int tid = omp_get_thread_num();
-    // init feature value
-    std::memset(features_[tid], 0, sizeof(double)*num_features_);
-    // put feature value
-    for (const auto& p : features) {
-      if (p.first < num_features_) {
-        features_[tid][p.first] = p.second;
-      }
-    }
+    const int tid = PutFeatureValuesToBuffer(features);
     // get result for leaf index
     return boosting_->PredictLeafIndex(features_[tid]);
   }
@@ -98,16 +82,8 @@ public:
   * \return Prediction result
   */
   double PredictOneLine(const std::vector<std::pair<int, double>>& features) {
-    const int tid = omp_get_thread_num();
-    // init feature value
-    std::memset(features_[tid], 0, sizeof(double)*num_features_);
-    // put feature value
-    for (const auto& p : features) {
-      if (p.first < num_features_) {
-        features_[tid][p.first] = p.second;
-      }
-    }
-    // get result with sigmoid transform
+    const int tid = PutFeatureValuesToBuffer(features);
+    // get result with sigmoid transform if needed
     return boosting_->Predict(features_[tid]);
   }
   /*!
@@ -205,6 +181,18 @@ public:
   }
 
 private:
+  int PutFeatureValuesToBuffer(const std::vector<std::pair<int, double>>& features) {
+    int tid = omp_get_thread_num();
+    // init feature value
+    std::memset(features_[tid], 0, sizeof(double)*num_features_);
+    // put feature value
+    for (const auto& p : features) {
+      if (p.first < num_features_) {
+        features_[tid][p.first] = p.second;
+      }
+    }
+    return tid;
+  }
   /*! \brief Boosting model */
   const Boosting* boosting_;
   /*! \brief Buffer for feature values */
