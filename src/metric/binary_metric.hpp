@@ -225,7 +225,7 @@ public:
   }
 
 private:
-  /*! \brief Output frequently */
+  /*! \brief Output frequency */
   int output_freq_;
   /*! \brief Number of data */
   data_size_t num_data_;
