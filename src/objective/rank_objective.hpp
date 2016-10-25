@@ -50,7 +50,7 @@ public:
       Log::Stderr("For NDCG metric, should have query information");
     }
     num_queries_ = metadata.num_queries();
-    // cache inverse max DCG, avoid compution many times
+    // cache inverse max DCG, avoid computation many times
     inverse_max_dcgs_ = new score_t[num_queries_];
     for (data_size_t i = 0; i < num_queries_; ++i) {
       inverse_max_dcgs_[i] = static_cast<score_t>(

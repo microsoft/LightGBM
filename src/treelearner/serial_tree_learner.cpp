@@ -239,16 +239,16 @@ bool SerialTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
     larger_leaf_histogram_array_ = nullptr;
   } else if (num_data_in_left_child < num_data_in_right_child) {
     smaller_leaf = left_leaf;
-    // put parent(left) leaf's histograms into larger leaf's histgrams
+    // put parent(left) leaf's histograms into larger leaf's histograms
     larger_leaf_histogram_array_ = historical_histogram_array_[left_leaf];
     smaller_leaf_histogram_array_ = historical_histogram_array_[right_leaf];
 
     // We will construc histograms for smaller leaf, and smaller_leaf=left_leaf = parent.
-    // if we don't swap the cache, we will overwrite the parent's hisogram cache.
+    // if we don't swap the cache, we will overwrite the parent's histogram cache.
     std::swap(historical_histogram_array_[left_leaf], historical_histogram_array_[right_leaf]);
   } else {
     smaller_leaf = right_leaf;
-    // put parent(left) leaf's histograms to larger leaf's histgrams
+    // put parent(left) leaf's histograms to larger leaf's histograms
     larger_leaf_histogram_array_ = historical_histogram_array_[left_leaf];
     smaller_leaf_histogram_array_ = historical_histogram_array_[right_leaf];
   }

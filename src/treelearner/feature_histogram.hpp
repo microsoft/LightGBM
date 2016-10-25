@@ -40,7 +40,7 @@ public:
   * \brief Construct a histogram
   * \param num_data number of data in current leaf
   * \param sum_gradients sum of gradients of current leaf
-  * \param sum_hessians sum of hissians of current leaf
+  * \param sum_hessians sum of hessians of current leaf
   * \param ordered_gradients Orederd gradients
   * \param ordered_hessians  Ordered hessians
   * \param data_indices data indices of current leaf
@@ -59,7 +59,7 @@ public:
   * \param leaf current leaf
   * \param num_data number of data in current leaf
   * \param sum_gradients sum of gradients of current leaf
-  * \param sum_hessians sum of hissians of current leaf
+  * \param sum_hessians sum of hessians of current leaf
   * \param gradients
   * \param hessian
   */
@@ -76,7 +76,7 @@ public:
   * \brief Set sumup information for current histogram
   * \param num_data number of data in current leaf
   * \param sum_gradients sum of gradients of current leaf
-  * \param sum_hessians sum of hissians of current leaf
+  * \param sum_hessians sum of hessians of current leaf
   */
   void SetSumup(data_size_t num_data, score_t sum_gradients, score_t sum_hessians) {
     num_data_ = num_data;
