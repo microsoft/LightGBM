@@ -91,7 +91,7 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
   // initialize ordered gradients and hessians
   ordered_gradients_ = new score_t[num_data_];
   ordered_hessians_ = new score_t[num_data_];
-  // if has ordered bin, need allocata a buffer to fast split
+  // if has ordered bin, need allocate a buffer to fast split
   if (has_ordered_bin_) {
     is_data_in_leaf_ = new char[num_data_];
   }
@@ -239,16 +239,16 @@ bool SerialTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
     larger_leaf_histogram_array_ = nullptr;
   } else if (num_data_in_left_child < num_data_in_right_child) {
     smaller_leaf = left_leaf;
-    // put parent(left) leaf's histograms into larger leaf's histgrams
+    // put parent(left) leaf's histograms into larger leaf's histograms
     larger_leaf_histogram_array_ = historical_histogram_array_[left_leaf];
     smaller_leaf_histogram_array_ = historical_histogram_array_[right_leaf];
 
     // We will construc histograms for smaller leaf, and smaller_leaf=left_leaf = parent.
-    // if we don't swap the cache, we will overwrite the parent's hisogram cache.
+    // if we don't swap the cache, we will overwrite the parent's histogram cache.
     std::swap(historical_histogram_array_[left_leaf], historical_histogram_array_[right_leaf]);
   } else {
     smaller_leaf = right_leaf;
-    // put parent(left) leaf's histograms to larger leaf's histgrams
+    // put parent(left) leaf's histograms to larger leaf's histograms
     larger_leaf_histogram_array_ = historical_histogram_array_[left_leaf];
     smaller_leaf_histogram_array_ = historical_histogram_array_[right_leaf];
   }
@@ -331,7 +331,7 @@ void SerialTreeLearner::FindBestThresholds() {
     // only has root leaf
     if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->LeafIndex() < 0) continue;
 
-    // construct histgroms for large leaf, we initialize larger leaf as the parent,
+    // construct histograms for large leaf, we initialize larger leaf as the parent,
     // so we can just subtract the smaller leaf's histograms
     larger_leaf_histogram_array_[feature_index].Subtract(smaller_leaf_histogram_array_[feature_index]);
 

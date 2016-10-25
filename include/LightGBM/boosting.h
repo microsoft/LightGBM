@@ -47,14 +47,14 @@ public:
   virtual void Train() = 0;
 
   /*!
-  * \brief Predtion for one record, not sigmoid transform
+  * \brief Prediction for one record, not sigmoid transform
   * \param feature_values Feature value on this record
   * \return Prediction result for this record
   */
   virtual double PredictRaw(const double * feature_values) const = 0;
 
   /*!
-  * \brief Predtion for one record, will use sigmoid transform if needed
+  * \brief Prediction for one record, will use sigmoid transform if needed
   * \param feature_values Feature value on this record
   * \return Prediction result for this record
   */

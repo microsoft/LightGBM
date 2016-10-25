@@ -120,7 +120,7 @@ protected:
   DataPartition* data_partition_;
   /*! \brief used for generate used features */
   Random random_;
-  /*! \brief used for sub feature training, is_feature_used_[i] = falase means don't used feature i */
+  /*! \brief used for sub feature training, is_feature_used_[i] = false means don't used feature i */
   bool* is_feature_used_;
   /*! \brief cache historical histogram to speed up */
   FeatureHistogram** historical_histogram_array_;

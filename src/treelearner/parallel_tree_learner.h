@@ -77,9 +77,9 @@ private:
   int* block_start_;
   /*! \brief Block size for reduce scatter */
   int* block_len_;
-  /*! \brief Write positions for feature histgrams */
+  /*! \brief Write positions for feature histograms */
   int* buffer_write_start_pos_;
-  /*! \brief Read positions for local feature histgrams */
+  /*! \brief Read positions for local feature histograms */
   int* buffer_read_start_pos_;
   /*! \brief Size for reduce scatter */
   int reduce_scatter_size_;

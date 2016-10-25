@@ -26,7 +26,7 @@ public:
   }
 
   /*!
-  * \brief Init splits on current leaf, don't need to travesal all data
+  * \brief Init splits on current leaf, don't need to traverse all data
   * \param leaf Index of current leaf
   * \param data_partition current data partition
   * \param sum_gradients
@@ -43,7 +43,7 @@ public:
   }
 
   /*!
-  * \brief Init splits on current leaf, need to travesal all data to sum up
+  * \brief Init splits on current leaf, need to traverse all data to sum up
   * \param gradients
   * \param hessians
   */
