@@ -23,8 +23,8 @@ public:
   virtual ~Boosting() {}
 
   /*!
-  * \brief Initial logic
-  * \param config Config for boosting
+  * \brief Initialization logic
+  * \param config Configs for boosting
   * \param train_data Training data
   * \param object_function Training objective function
   * \param training_metrics Training metric
@@ -54,12 +54,19 @@ public:
   virtual double PredictRaw(const double * feature_values) const = 0;
 
   /*!
-  * \brief Prediction for one record, will use sigmoid transform if needed
+  * \brief Prediction for one record, sigmoid transformation will be used if needed
   * \param feature_values Feature value on this record
   * \return Prediction result for this record
   */
   virtual double Predict(const double * feature_values) const = 0;
-
+  
+  /*!
+  * \brief Predtion for one record with leaf index
+  * \param feature_values Feature value on this record
+  * \return Predicted leaf index for this record
+  */
+  virtual std::vector<int> PredictLeafIndex(const double * feature_values) const = 0;
+  
   /*!
   * \brief Serialize models by string
   * \return String output of tranined model

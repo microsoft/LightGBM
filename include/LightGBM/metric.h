@@ -28,11 +28,11 @@ public:
     const Metadata& metadata, data_size_t num_data) = 0;
 
   /*!
-  * \brief Calcalute and print metric result
+  * \brief Calcaluting and printing metric result
   * \param iter Current iteration
   * \param score Current prediction score
   */
-  virtual void Print(int iter, const score_t* score) const = 0;
+  virtual score_t PrintAndGetLoss(int iter, const score_t* score) const = 0;
 
   /*!
   * \brief Create object of metrics
@@ -40,6 +40,9 @@ public:
   * \param config Config for metric
   */
   static Metric* CreateMetric(const std::string& type, const MetricConfig& config);
+
+  bool the_bigger_the_better = false;
+  int early_stopping_round_ = 0;
 };
 
 /*!
@@ -55,7 +58,7 @@ public:
 
   /*!
   * \brief Calculate the DCG score at position k
-  * \param k The position want to eval at
+  * \param k The position to evaluate
   * \param label Pointer of label
   * \param score Pointer of score
   * \param num_data Number of data
@@ -66,7 +69,7 @@ public:
 
   /*!
   * \brief Calculate the DCG score at multi position
-  * \param ks The positions want to eval at
+  * \param ks The positions to evaluate
   * \param label Pointer of label
   * \param score Pointer of score
   * \param num_data Number of data

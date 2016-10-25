@@ -24,8 +24,12 @@ class SparseBin:public Bin {
 public:
   friend class SparseBinIterator<VAL_T>;
 
-  explicit SparseBin(data_size_t num_data)
+  explicit SparseBin(data_size_t num_data, int default_bin)
     : num_data_(num_data) {
+    default_bin_ = static_cast<VAL_T>(default_bin);
+    if (default_bin_ != 0) {
+      Log::Info("Warning: Having sparse feature with negative values. Will let negative values equal zero as well");
+    }
     #pragma omp parallel
     #pragma omp master
     {
@@ -41,7 +45,7 @@ public:
 
   void Push(int tid, data_size_t idx, uint32_t value) override {
     // not store zero data
-    if (value == 0) { return; }
+    if (value <= default_bin_) { return; }
     push_buffers_[tid].emplace_back(idx, static_cast<VAL_T>(value));
   }
 
@@ -50,7 +54,7 @@ public:
   void ConstructHistogram(data_size_t*, data_size_t , const score_t* ,
                  const score_t* , HistogramBinEntry*) const override {
     // Will use OrderedSparseBin->ConstructHistogram() instead
-    Log::Stderr("Should use OrderedSparseBin->ConstructHistogram() instead");
+    Log::Info("Should use OrderedSparseBin->ConstructHistogram() instead");
   }
 
   data_size_t Split(unsigned int threshold, data_size_t* data_indices, data_size_t num_data,
@@ -240,6 +244,7 @@ private:
   std::vector<std::vector<std::pair<data_size_t, VAL_T>>> push_buffers_;
   std::vector<std::pair<data_size_t, data_size_t>> fast_index_;
   data_size_t fast_index_shift_;
+  VAL_T default_bin_;
 };
 
 template <typename VAL_T>

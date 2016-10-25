@@ -20,14 +20,14 @@ class Feature;
 * \brief This class is used to store some meta(non-feature) data for training data,
 *        e.g. labels, weights, initial scores, qurey level informations.
 *
-* Some details:
-* 1. Label, used for traning.
-* 2. Weights, weighs of record, optional
-* 3. Query Boundaries, necessary for lambdarank.
-*    The documents of i-th query is in [ query_boundarise[i], query_boundarise[i+1] )
-* 4. Query Weights, auto calculate by weights and query_boundarise(if both of them are existed)
-*    the weight for i-th query is sum(query_boundarise[i] , .., query_boundarise[i+1]) / (query_boundarise[i + 1] -  query_boundarise[i+1])
-* 5. Initial score. optional. if exsitng, the model will boost from this score, otherwise will start from 0.
+*        Some details:
+*        1. Label, used for traning.
+*        2. Weights, weighs of records, optional
+*        3. Query Boundaries, necessary for lambdarank.
+*           The documents of i-th query is in [ query_boundarise[i], query_boundarise[i+1] )
+*        4. Query Weights, auto calculate by weights and query_boundarise(if both of them are existed)
+*           the weight for i-th query is sum(query_boundarise[i] , .., query_boundarise[i+1]) / (query_boundarise[i + 1] -  query_boundarise[i+1])
+*        5. Initial score. optional. if exsitng, the model will boost from this score, otherwise will start from 0.
 */
 class Metadata {
 public:
@@ -36,7 +36,7 @@ public:
   */
   Metadata();
   /*!
-  * \brief Initialize, will load qurey level informations, since it is need for sampling data
+  * \brief Initialization will load qurey level informations, since it is need for sampling data
   * \param data_filename Filename of data
   * \param init_score_filename Filename of initial score
   * \param is_int_label True if label is int type

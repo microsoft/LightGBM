@@ -69,7 +69,7 @@ void Application::LoadParameters(int argc, char** argv) {
       params[key] = value;
     }
     else {
-      Log::Stdout("Warning: unknown parameter in command line: %s", argv[i]);
+      Log::Error("Unknown parameter in command line: %s", argv[i]);
     }
   }
   // check for alias
@@ -101,11 +101,11 @@ void Application::LoadParameters(int argc, char** argv) {
           }
         }
         else {
-          Log::Stdout("Warning: unknown parameter in config file: %s", line.c_str());
+          Log::Error("Unknown parameter in config file: %s", line.c_str());
         }
       }
     } else {
-      Log::Stdout("config file: %s doesn't exist, will ignore",
+      Log::Error("Config file: %s doesn't exist, will ignore",
                                 params["config_file"].c_str());
     }
   }
@@ -113,7 +113,7 @@ void Application::LoadParameters(int argc, char** argv) {
   ParameterAlias::KeyAliasTransform(&params);
   // load configs
   config_.Set(params);
-  Log::Stdout("finished load parameters");
+  Log::Info("Loading parameters .. finished");
 }
 
 void Application::LoadData() {
@@ -125,7 +125,7 @@ void Application::LoadData() {
   if (config_.io_config.input_model.size() > 0) {
     LoadModel();
     if (boosting_->NumberOfSubModels() > 0) {
-      predictor = new Predictor(boosting_, config_.io_config.is_sigmoid);
+      predictor = new Predictor(boosting_, config_.io_config.is_sigmoid, config_.predict_leaf_index);
       predict_fun =
         [&predictor](const std::vector<std::pair<int, double>>& features) {
         return predictor->PredictRawOneLine(features);
@@ -201,7 +201,7 @@ void Application::LoadData() {
   }
   auto end_time = std::chrono::high_resolution_clock::now();
   // output used time on each iteration
-  Log::Stdout("Finish loading data, use %f seconds ",
+  Log::Info("Finish loading data, use %f seconds",
     std::chrono::duration<double, std::milli>(end_time - start_time) * 1e-3);
 }
 
@@ -209,7 +209,7 @@ void Application::InitTrain() {
   if (config_.is_parallel) {
     // need init network
     Network::Init(config_.network_config);
-    Log::Stdout("finish network initialization");
+    Log::Info("Finish network initialization");
     // sync global random seed for feature patition
     if (config_.boosting_type == BoostingType::kGBDT) {
       GBDTConfig* gbdt_config =
@@ -240,28 +240,28 @@ void Application::InitTrain() {
     boosting_->AddDataset(valid_datas_[i],
       ConstPtrInVectorWarpper<Metric>(valid_metrics_[i]));
   }
-  Log::Stdout("finish training init");
+  Log::Info("Finish training initilization.");
 }
 
 void Application::Train() {
-  Log::Stdout("start train");
+  Log::Info("Start train");
   boosting_->Train();
-  Log::Stdout("finish train");
+  Log::Info("Finish train");
 }
 
 
 void Application::Predict() {
   // create predictor
-  Predictor predictor(boosting_, config_.io_config.is_sigmoid);
+  Predictor predictor(boosting_, config_.io_config.is_sigmoid, config_.predict_leaf_index);
   predictor.Predict(config_.io_config.data_filename.c_str(), config_.io_config.output_result.c_str());
-  Log::Stdout("finish predict");
+  Log::Info("Finish predict.");
 }
 
 void Application::InitPredict() {
   boosting_ =
     Boosting::CreateBoosting(config_.boosting_type, config_.boosting_config);
   LoadModel();
-  Log::Stdout("finish predict init");
+  Log::Info("Finish predict initilization.");
 }
 
 void Application::LoadModel() {

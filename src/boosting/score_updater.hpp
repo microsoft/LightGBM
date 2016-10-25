@@ -37,25 +37,25 @@ public:
     delete[] score_;
   }
   /*!
-  * \brief Use tree model to get prediction, then add to score for all data
-  * Note: this function generally will be used for validation data.
+  * \brief Using tree model to get prediction number, then adding to scores for all data
+  *        Note: this function generally will be used on validation data too.
   * \param tree Trained tree model
   */
   inline void AddScore(const Tree* tree) {
     tree->AddPredictionToScore(data_, num_data_, score_);
   }
   /*!
-  * \brief Add prediction score, only used for training data.
-  * After trained a tree, the training data is partitioned into tree leaves. 
-  * We can get prediction by faster speed based on this.
+  * \brief Adding prediction score, only used for training data.
+  *        The training data is partitioned into tree leaves after training
+  *        Based on which We can get prediction quckily.
   * \param tree_learner
   */
   inline void AddScore(const TreeLearner* tree_learner) {
     tree_learner->AddPredictionToScore(score_);
   }
   /*!
-  * \brief Like AddScore(const Tree* tree), but only for part of data
-  * Used for prediction of training out-of-bad data
+  * \brief Using tree model to get prediction number, then adding to scores for parts of data
+  *        Used for prediction of training out-of-bag data
   * \param tree Trained tree model
   * \param data_indices Indices of data that will be proccessed
   * \param data_cnt Number of data that will be proccessed

@@ -8,6 +8,7 @@
 #include <vector>
 #include <sstream>
 #include <cstdint>
+#include <algorithm>
 
 namespace LightGBM {
 
@@ -80,7 +81,7 @@ inline static const char* Atoi(const char* p, int* out) {
 inline static const char* Atof(const char* p, double* out) {
   int frac;
   double sign, value, scale;
-
+  *out = 0;
   // Skip leading white space, if any.
   while (*p == ' ') {
     ++p;
@@ -140,34 +141,25 @@ inline static const char* Atof(const char* p, double* out) {
     // Return signed and scaled floating point result.
     *out = sign * (frac ? (value / scale) : (value * scale));
   } else {
-    if (*p == 'n' || *p == 'N') {
-      ++p;
-      if (!(*p == 'a' || *p == 'A')) {
-        Log::Stderr("meet error while parsing string to float, expect a nan here");
+    size_t cnt = 0;
+    while (*(p + cnt) != '\0' && *(p + cnt) != ' ' 
+      && *(p + cnt) != '\t' && *(p + cnt) != ','
+      && *(p + cnt) != '\n' && *(p + cnt) != '\r'
+      && *(p + cnt) != ':')  {
+      ++cnt;
+    }
+    if(cnt > 0){
+      std::string tmp_str(p, cnt);
+      std::transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(), ::tolower);
+      if (tmp_str == std::string("na") || tmp_str == std::string("nan")) {
+        *out = 0;
+      } else if( tmp_str == std::string("inf") || tmp_str == std::string("infinity")) {
+        *out = sign * 1e308;
       }
-      ++p;
-      if (!(*p == 'n' || *p == 'N')) {
-        Log::Stderr("meet error while parsing string to float, expect a nan here");
+      else {
+        Log::Fatal("Unknow token %s in data file", tmp_str.c_str());
       }
-      ++p;
-      // default convert nan to 0
-      *out = 0;
-    } else if (*p == 'i' || *p == 'I') {
-      ++p;
-      if (!(*p == 'n' || *p == 'N')) {
-        Log::Stderr("meet error while parsing string to float, expect a inf here");
-      }
-      ++p;
-      if (!(*p == 'f' || *p == 'F')) {
-        Log::Stderr("meet error while parsing string to float, expect a inf here");
-      }
-      ++p;
-      // default inf
-      *out = sign * 1e308;
-    } else {
-      if (*p != '\0') {
-        Log::Stderr("Meet unknow characters while parsing string to float");
-      }
+      p += cnt;
     }
   }
 
@@ -209,7 +201,7 @@ inline static std::string ArrayToString(const T* arr, int n, char delimiter) {
 inline static void StringToIntArray(const std::string& str, char delimiter, size_t n, int* out) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   if (strs.size() != n) {
-    Log::Stderr("StringToIntArray error, size don't equal.");
+    Log::Fatal("StringToIntArray error, size doesn't matched.");
   }
   for (size_t i = 0; i < strs.size(); ++i) {
     strs[i] = Trim(strs[i]);
@@ -220,7 +212,7 @@ inline static void StringToIntArray(const std::string& str, char delimiter, size
 inline static void StringToDoubleArray(const std::string& str, char delimiter, size_t n, double* out) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   if (strs.size() != n) {
-    Log::Stderr("StringToDoubleArray error, size don't equal");
+    Log::Fatal("StringToDoubleArray error, size doesn't matched.");
   }
   for (size_t i = 0; i < strs.size(); ++i) {
     strs[i] = Trim(strs[i]);
@@ -231,7 +223,7 @@ inline static void StringToDoubleArray(const std::string& str, char delimiter, s
 inline static void StringToDoubleArray(const std::string& str, char delimiter, size_t n, float* out) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   if (strs.size() != n) {
-    Log::Stderr("StringToDoubleArray error, size don't equal");
+    Log::Fatal("StringToDoubleArray error, size doesn't matched.");
   }
   double tmp;
   for (size_t i = 0; i < strs.size(); ++i) {

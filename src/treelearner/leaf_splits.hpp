@@ -10,7 +10,7 @@
 namespace LightGBM {
 
 /*!
-* \brief used to find splits candidates for a leaf
+* \brief used to find split candidates for a leaf
 */
 class LeafSplits {
 public:
@@ -26,7 +26,8 @@ public:
   }
 
   /*!
-  * \brief Init splits on current leaf, don't need to traverse all data
+
+  * \brief Init split on current leaf on partial data. 
   * \param leaf Index of current leaf
   * \param data_partition current data partition
   * \param sum_gradients
@@ -43,7 +44,7 @@ public:
   }
 
   /*!
-  * \brief Init splits on current leaf, need to traverse all data to sum up
+  * \brief Init splits on current leaf, it will traverse all data to sum up the results
   * \param gradients
   * \param hessians
   */
@@ -66,7 +67,7 @@ public:
   }
 
   /*!
-  * \brief Init splits on current leaf, need to travesal all data to sum up
+  * \brief Init splits on current leaf of partial data.
   * \param leaf Index of current leaf
   * \param data_partition current data partition
   * \param gradients

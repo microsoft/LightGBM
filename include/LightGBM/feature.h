@@ -12,7 +12,7 @@
 
 namespace LightGBM {
 
-/*! \brief Used to store data and provide some operations on one feature*/
+/*! \brief Using to store data and providing some operations on one feature*/
 class Feature {
 public:
   /*!
@@ -27,7 +27,7 @@ public:
     :bin_mapper_(bin_mapper) {
     feature_index_ = feature_idx;
     bin_data_ = Bin::CreateBin(num_data, bin_mapper_->num_bin(),
-      bin_mapper_->sparse_rate(), is_enable_sparse, &is_sparse_);
+      bin_mapper_->sparse_rate(), is_enable_sparse, &is_sparse_, bin_mapper_->ValueToBin(0));
   }
   /*!
   * \brief Constructor from memory
@@ -52,9 +52,9 @@ public:
       num_data = static_cast<data_size_t>(local_used_indices.size());
     }
     if (is_sparse_) {
-      bin_data_ = Bin::CreateSparseBin(num_data, bin_mapper_->num_bin());
+      bin_data_ = Bin::CreateSparseBin(num_data, bin_mapper_->num_bin(), bin_mapper_->ValueToBin(0));
     } else {
-      bin_data_ = Bin::CreateDenseBin(num_data, bin_mapper_->num_bin());
+      bin_data_ = Bin::CreateDenseBin(num_data, bin_mapper_->num_bin(), bin_mapper_->ValueToBin(0));
     }
     // get bin data
     bin_data_->LoadFromMemory(memory_ptr, local_used_indices);

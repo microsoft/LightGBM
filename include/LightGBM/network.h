@@ -14,7 +14,7 @@ namespace LightGBM {
 /*! \brief forward declaration */
 class Linkers;
 
-/*! \brief The network structure for all gather */
+/*! \brief The network structure for all_gather */
 class BruckMap {
 public:
   /*! \brief The communication times for one all gather operation */
@@ -37,11 +37,11 @@ public:
 
 /*!
 * \brief node type on recursive halving algorithm
-* When number of machines is not power of 2, need group machines into power of 2 group.
-* And we can let each group has at most 2 machines.
-* if the group only has 1 machine. this machine is the normal node
-* if the grou has 2 machines, this group will have two type of nodes, one is the leader.
-* leader will represent this group and communication with others.
+*        When number of machines is not power of 2, need group machines into power of 2 group.
+*        And we can let each group has at most 2 machines.
+*        if the group only has 1 machine. this machine is the normal node
+*        if the grou has 2 machines, this group will have two type of nodes, one is the leader.
+*        leader will represent this group and communication with others.
 */
 enum RecursiveHalvingNodeType {
   Normal,  // normal node, 1 group only have 1 machine
@@ -98,7 +98,7 @@ public:
   static inline int num_machines();
 
   /*!
-  * \brief Perform all reduce. if data size is small,
+  * \brief Perform all_reduce. if data size is small,
            will perform AllreduceByAllGather, else with call ReduceScatter followed allgather
   * \param input Input data
   * \param input_size The size of input data
@@ -110,7 +110,7 @@ public:
     char* output, const ReduceFunction& reducer);
 
   /*!
-  * \brief Perform all reduce, use all gather. When data is small, can use this to reduce communication times
+  * \brief Perform all_reduce by using all_gather. it can be use to reduce communication time when data is small
   * \param input Input data
   * \param input_size The size of input data
   * \param output Output result
@@ -120,8 +120,9 @@ public:
     const ReduceFunction& reducer);
 
   /*!
-  * \brief Perform all gather, use bruck algorithm. Communication times is O(log(n)), and communication cost is O(send_size * number_machine)
-  * if all machine have same input size, can call this function
+  * \brief Performing all_gather by using bruck algorithm. 
+           Communication times is O(log(n)), and communication cost is O(send_size * number_machine)
+  *        It can be used when all nodes have same input size.
   * \param input Input data
   * \param send_size The size of input data
   * \param output Output result
@@ -129,8 +130,9 @@ public:
   static void Allgather(char* input, int send_size, char* output);
 
   /*!
-  * \brief Perform all gather, use bruck algorithm. Communication times is O(log(n)), and communication cost is O(all_size)
-  * if all machine have different input size, can call this function
+  * \brief Performing all_gather by using bruck algorithm. 
+           Communication times is O(log(n)), and communication cost is O(all_size)
+  *        It can be used when nodes have different input size.
   * \param input Input data
   * \param all_size The size of input data
   * \param block_start The block start for different machines
@@ -141,7 +143,8 @@ public:
     int* block_len, char* output);
 
   /*!
-  * \brief Perform reduce scatter, use recursive halving algorithm. Communication times is O(log(n)), and communication cost is O(input_size)
+  * \brief Perform reduce scatter by using recursive halving algorithm. 
+           Communication times is O(log(n)), and communication cost is O(input_size)
   * \param input Input data
   * \param input_size The size of input data
   * \param block_start The block start for different machines

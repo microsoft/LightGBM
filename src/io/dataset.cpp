@@ -21,7 +21,7 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
 
   CheckCanLoadFromBin();
   if (is_loading_from_binfile_ && predict_fun != nullptr) {
-    Log::Stdout("cannot perform initial prediction for binary file, will use text file instead");
+    Log::Info("Cannot performing initialization of prediction by using binary file, using text file instead");
     is_loading_from_binfile_ = false;
   }
 
@@ -31,14 +31,14 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
     // create text parser
     parser_ = Parser::CreateParser(data_filename_, 0, nullptr);
     if (parser_ == nullptr) {
-      Log::Stderr("cannot recognize input data format, filename: %s", data_filename_);
+      Log::Fatal("Cannot recognising input data format, filename: %s", data_filename_);
     }
     // create text reader
     text_reader_ = new TextReader<data_size_t>(data_filename);
   } else {
     // only need to load initilize score, other meta data will be loaded from bin flie
     metadata_.Init(init_score_filename);
-    Log::Stdout("will load data set from binary file");
+    Log::Info("Loading data set from binary file");
     parser_ = nullptr;
     text_reader_ = nullptr;
   }
@@ -82,7 +82,7 @@ void Dataset::LoadDataToMemory(int rank, int num_machines, bool is_pre_partition
         [this, rank, num_machines, &qid, &query_boundaries, &is_query_used, num_queries]
       (data_size_t line_idx) {
         if (qid >= num_queries) {
-          Log::Stderr("current query is exceed the range of query file, please ensure your query file is correct");
+          Log::Fatal("Current query is exceed the range of query file, please ensure your query file is correct");
         }
         if (line_idx >= query_boundaries[qid + 1]) {
           // if is new query
@@ -139,7 +139,7 @@ void Dataset::SampleDataFromFile(int rank, int num_machines, bool is_pre_partiti
         [this, rank, num_machines, &qid, &query_boundaries, &is_query_used, num_queries]
       (data_size_t line_idx) {
         if (qid >= num_queries) {
-          Log::Stderr("current query is exceed the range of query file, \
+          Log::Fatal("Query id is exceed the range of query file, \
                              please ensure your query file is correct");
         }
         if (line_idx >= query_boundaries[qid + 1]) {
@@ -189,7 +189,7 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
 
   // -1 means doesn't use this feature
   used_feature_map_ = std::vector<int>(sample_values.size(), -1);
-  num_total_features_ = sample_values.size();
+  num_total_features_ = static_cast<int>(sample_values.size());
   // start find bins
   if (num_machines == 1) {
     std::vector<BinMapper*> bin_mappers(sample_values.size());
@@ -209,7 +209,7 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
                                              num_data_, is_enable_sparse_));
       } else {
         // if feature is trival(only 1 bin), free spaces
-        Log::Stdout("Warning: feture %d only contains one value, will ignore it", i);
+        Log::Error("Feature %d only contains one value, will be ignored", i);
         delete bin_mappers[i];
       }
     }
@@ -486,10 +486,10 @@ void Dataset::SaveBinaryFile() {
     file = fopen(bin_filename.c_str(), "wb");
     #endif
     if (file == NULL) {
-      Log::Stderr("cannot write binary data to %s ", bin_filename.c_str());
+      Log::Fatal("Cannot write binary data to %s ", bin_filename.c_str());
     }
 
-    Log::Stdout("start save binary file for data %s", data_filename_);
+    Log::Info("Saving data to binary file: %s", data_filename_);
 
     // get size of header
     size_t size_of_header = sizeof(global_num_data_) + sizeof(is_enable_sparse_)
@@ -556,7 +556,7 @@ void Dataset::LoadDataFromBinFile(int rank, int num_machines, bool is_pre_partit
   #endif
 
   if (file == NULL) {
-    Log::Stderr("cannot read binary data from %s", bin_filename.c_str());
+    Log::Fatal("Cannot read binary data from %s", bin_filename.c_str());
   }
 
   // buffer to read binary file
@@ -567,7 +567,7 @@ void Dataset::LoadDataFromBinFile(int rank, int num_machines, bool is_pre_partit
   size_t read_cnt = fread(buffer, sizeof(size_t), 1, file);
 
   if (read_cnt != 1) {
-    Log::Stderr("binary file format error at header size");
+    Log::Fatal("Binary file format error at header size");
   }
 
   size_t size_of_head = *(reinterpret_cast<size_t*>(buffer));
@@ -582,7 +582,7 @@ void Dataset::LoadDataFromBinFile(int rank, int num_machines, bool is_pre_partit
   read_cnt = fread(buffer, 1, size_of_head, file);
 
   if (read_cnt != size_of_head) {
-    Log::Stderr("binary file format error at header");
+    Log::Fatal("Binary file format error at header");
   }
   // get header 
   const char* mem_ptr = buffer;
@@ -608,7 +608,7 @@ void Dataset::LoadDataFromBinFile(int rank, int num_machines, bool is_pre_partit
   read_cnt = fread(buffer, sizeof(size_t), 1, file);
 
   if (read_cnt != 1) {
-    Log::Stderr("binary file format error at size of meta data");
+    Log::Fatal("Binary file format error: wrong size of meta data");
   }
 
   size_t size_of_metadata = *(reinterpret_cast<size_t*>(buffer));
@@ -623,7 +623,7 @@ void Dataset::LoadDataFromBinFile(int rank, int num_machines, bool is_pre_partit
   read_cnt = fread(buffer, 1, size_of_metadata, file);
 
   if (read_cnt != size_of_metadata) {
-    Log::Stderr("binary file format error at meta data");
+    Log::Fatal("Binary file format error: wrong size of meta data");
   }
   // load meta data
   metadata_.LoadFromMemory(buffer);
@@ -647,7 +647,7 @@ void Dataset::LoadDataFromBinFile(int rank, int num_machines, bool is_pre_partit
       bool is_query_used = false;
       for (data_size_t i = 0; i < num_data_; i++) {
         if (qid >= num_queries) {
-          Log::Stderr("current query is exceed the range of query file, please ensure your query file is correct");
+          Log::Fatal("current query is exceed the range of query file, please ensure your query file is correct");
         }
         if (i >= query_boundaries[qid + 1]) {
           // if is new query
@@ -670,7 +670,7 @@ void Dataset::LoadDataFromBinFile(int rank, int num_machines, bool is_pre_partit
     // read feature size
     read_cnt = fread(buffer, sizeof(size_t), 1, file);
     if (read_cnt != 1) {
-      Log::Stderr("binary file format error at feature %d's size", i);
+      Log::Fatal("Binary file format error at feature %d's size", i);
     }
     size_t size_of_feature = *(reinterpret_cast<size_t*>(buffer));
     // re-allocate space if not enough
@@ -683,7 +683,7 @@ void Dataset::LoadDataFromBinFile(int rank, int num_machines, bool is_pre_partit
     read_cnt = fread(buffer, 1, size_of_feature, file);
 
     if (read_cnt != size_of_feature) {
-      Log::Stderr("binary file format error at feature %d loading , read count %d", i, read_cnt);
+      Log::Fatal("Binary file format error at feature %d loading , read count %d", i, read_cnt);
     }
     features_.push_back(new Feature(buffer, static_cast<data_size_t>(global_num_data_), used_data_indices_));
   }
@@ -693,10 +693,10 @@ void Dataset::LoadDataFromBinFile(int rank, int num_machines, bool is_pre_partit
 
 void Dataset::CheckDataset() {
   if (num_data_ <= 0) {
-    Log::Stderr("data size of %s is zero", data_filename_);
+    Log::Fatal("Data file %s is empty", data_filename_);
   }
   if (features_.size() <= 0) {
-    Log::Stderr("not useful feature of data %s", data_filename_);
+    Log::Fatal("Usable feature of data %s is null", data_filename_);
   }
 }
 

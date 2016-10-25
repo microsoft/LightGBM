@@ -16,7 +16,9 @@ namespace LightGBM {
 class NDCGMetric:public Metric {
 public:
   explicit NDCGMetric(const MetricConfig& config) {
+    early_stopping_round_ = config.early_stopping_round;
     output_freq_ = config.output_freq;
+    the_bigger_the_better = true;
     // get eval position
     for (auto k : config.eval_at) {
       eval_at_.push_back(static_cast<data_size_t>(k));
@@ -41,7 +43,7 @@ public:
     // get query boundaries
     query_boundaries_ = metadata.query_boundaries();
     if (query_boundaries_ == nullptr) {
-      Log::Stderr("For NDCG metric, should have query information");
+      Log::Fatal("For NDCG metric, there should be query information");
     }
     num_queries_ = metadata.num_queries();
     // get query weights
@@ -73,8 +75,8 @@ public:
     }
   }
 
-  void Print(int iter, const score_t* score) const override {
-    if (output_freq_ > 0 && iter % output_freq_ == 0) {
+  score_t PrintAndGetLoss(int iter, const score_t* score) const override {
+    if (early_stopping_round_ > 0 || (output_freq_ > 0 && iter % output_freq_ == 0)) {
       // some buffers for multi-threading sum up
       std::vector<std::vector<double>> result_buffer_;
       for (int i = 0; i < num_threads_; ++i) {
@@ -132,8 +134,12 @@ public:
         result[j] /= sum_query_weights_;
         result_ss << "NDCG@" << eval_at_[j] << ":" << result[j] << "\t";
       }
-      Log::Stdout("Iteration:%d, Test:%s, %s ", iter, name, result_ss.str().c_str());
+      if (output_freq_ > 0 && iter % output_freq_ == 0){
+        Log::Info("Iteration:%d, Test:%s, %s ", iter, name, result_ss.str().c_str());
+      }
+      return result[0];
     }
+    return 0.0f;
   }
 
 private:

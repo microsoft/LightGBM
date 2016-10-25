@@ -93,6 +93,8 @@ public:
   std::string output_result = "LightGBM_predict_result.txt";
   std::string input_model = "";
   std::string input_init_score = "";
+  int verbosity = 1;
+  std::string log_file = "";
   int num_model_predict = -1;
   bool is_pre_partition = false;
   bool is_enable_sparse = true;
@@ -120,6 +122,7 @@ public:
 struct MetricConfig: public ConfigBase {
 public:
   virtual ~MetricConfig() {}
+  int early_stopping_round = 0;
   int output_freq = 1;
   double sigmoid = 1;
   bool is_provide_training_metric = false;
@@ -134,9 +137,17 @@ struct TreeConfig: public ConfigBase {
 public:
   int min_data_in_leaf = 100;
   double min_sum_hessian_in_leaf = 10.0f;
+  // should > 1, only one leaf means not need to learning
   int num_leaves = 127;
   int feature_fraction_seed = 2;
   double feature_fraction = 1.0;
+  // max cache size(unit:MB) for historical histogram. < 0 means not limit
+  double histogram_pool_size = -1;
+  // max depth of tree model. 
+  // Still grow tree by leaf-wise, but limit the max depth to avoid over-fitting
+  // And the max leaves will be min(num_leaves, pow(2, max_depth - 1)) 
+  // max_depth < 0 means not limit
+  int max_depth = -1;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -155,6 +166,7 @@ public:
   double bagging_fraction = 1.0;
   int bagging_seed = 3;
   int bagging_freq = 0;
+  int early_stopping_round = 0;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -189,6 +201,7 @@ public:
   int num_threads = 0;
   bool is_parallel = false;
   bool is_parallel_find_bin = false;
+  bool predict_leaf_index = false;
   IOConfig io_config;
   BoostingType boosting_type = BoostingType::kGBDT;
   BoostingConfig* boosting_config;
@@ -308,7 +321,10 @@ struct ParameterAlias {
       { "two_round", "use_two_round_loading" },
       { "mlist", "machine_list_file" },
       { "is_save_binary", "is_save_binary_file" },
-      { "save_binary", "is_save_binary_file" }
+      { "save_binary", "is_save_binary_file" },
+      { "early_stopping_rounds", "early_stopping_round"},
+      { "early_stopping", "early_stopping_round"},
+      { "verbosity", "verbose" }
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {

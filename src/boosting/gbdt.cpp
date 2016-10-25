@@ -13,7 +13,6 @@
 #include <string>
 #include <vector>
 
-
 namespace LightGBM {
 
 GBDT::GBDT(const BoostingConfig* config)
@@ -22,6 +21,7 @@ GBDT::GBDT(const BoostingConfig* config)
   out_of_bag_data_indices_(nullptr), bag_data_indices_(nullptr) {
   max_feature_idx_ = 0;
   gbdt_config_ = dynamic_cast<const GBDTConfig*>(config);
+  early_stopping_round_ = gbdt_config_->early_stopping_round;
 }
 
 GBDT::~GBDT() {
@@ -92,8 +92,12 @@ void GBDT::AddDataset(const Dataset* valid_data,
   // for a validation dataset, we need its score and metric
   valid_score_updater_.push_back(new ScoreUpdater(valid_data));
   valid_metrics_.emplace_back();
+  best_iter_.emplace_back();
+  best_score_.emplace_back();
   for (const auto& metric : valid_metrics) {
     valid_metrics_.back().push_back(metric);
+    best_iter_.back().push_back(0);
+    best_score_.back().push_back(-1);
   }
 }
 
@@ -145,7 +149,7 @@ void GBDT::Bagging(int iter) {
       bag_data_cnt_ = cur_left_cnt;
       out_of_bag_data_cnt_ = num_data_ - bag_data_cnt_;
     }
-    Log::Stdout("re-bagging, using %d data to train", bag_data_cnt_);
+    Log::Info("re-bagging, using %d data to train", bag_data_cnt_);
     // set bagging data to tree learner
     tree_learner_->SetBaggingData(bag_data_indices_, bag_data_cnt_);
   }
@@ -171,7 +175,7 @@ void GBDT::Train() {
     Tree * new_tree = TrainOneTree();
     // if cannot learn a new tree, then stop
     if (new_tree->num_leaves() <= 1) {
-      Log::Stdout("Cannot do any boosting for tree cannot split");
+      Log::Info("Can't training anymore, there isn't any leaf meets split requirements.");
       break;
     }
     // shrinkage by learning rate
@@ -180,19 +184,44 @@ void GBDT::Train() {
     UpdateScore(new_tree);
     UpdateScoreOutOfBag(new_tree);
     // print message for metric
-    OutputMetric(iter + 1);
+    bool is_early_stopping = OutputMetric(iter + 1);
     // add model
     models_.push_back(new_tree);
     // save model to file per iteration
-    fprintf(output_model_file, "Tree=%d\n", iter);
-    fprintf(output_model_file, "%s\n", new_tree->ToString().c_str());
-    fflush(output_model_file);
+    if (early_stopping_round_ > 0){
+        // if use early stopping, save previous model at (iter - early_stopping_round_) iteration
+        if (iter >= early_stopping_round_){
+            fprintf(output_model_file, "Tree=%d\n", iter - early_stopping_round_);
+            Tree * printing_tree = models_.at(iter - early_stopping_round_);
+            fprintf(output_model_file, "%s\n", printing_tree->ToString().c_str());
+            fflush(output_model_file);
+        }
+    }
+    else{
+        fprintf(output_model_file, "Tree=%d\n", iter);
+        fprintf(output_model_file, "%s\n", new_tree->ToString().c_str());
+        fflush(output_model_file);
+    }
     auto end_time = std::chrono::high_resolution_clock::now();
     // output used time per iteration
-    Log::Stdout("%f seconds elapsed, finished %d iteration", std::chrono::duration<double,
+    Log::Info("%f seconds elapsed, finished %d iteration", std::chrono::duration<double,
                                      std::milli>(end_time - start_time) * 1e-3, iter + 1);
+    if (is_early_stopping) {
+        // close file with an early-stopping message
+        Log::Info("Early stopping at iteration %d, the best iteration round is %d", iter + 1, iter + 1 - early_stopping_round_);
+        fclose(output_model_file);
+        return;
+    }
   }
   // close file
+  if (early_stopping_round_ > 0) {
+      // save remaining models
+      for (int iter = gbdt_config_->num_iterations - early_stopping_round_; iter < static_cast<int>(models_.size()); ++iter){
+        fprintf(output_model_file, "Tree=%d\n", iter);
+        fprintf(output_model_file, "%s\n", models_.at(iter)->ToString().c_str());
+      }
+      fflush(output_model_file);
+  }
   fclose(output_model_file);
 }
 
@@ -209,17 +238,31 @@ void GBDT::UpdateScore(const Tree* tree) {
   }
 }
 
-void GBDT::OutputMetric(int iter) {
+bool GBDT::OutputMetric(int iter) {
+  bool ret = false;
   // print training metric
   for (auto& sub_metric : training_metrics_) {
-    sub_metric->Print(iter, train_score_updater_->score());
+    sub_metric->PrintAndGetLoss(iter, train_score_updater_->score());
   }
   // print validation metric
   for (size_t i = 0; i < valid_metrics_.size(); ++i) {
-    for (auto& sub_metric : valid_metrics_[i]) {
-      sub_metric->Print(iter, valid_score_updater_[i]->score());
+    for (size_t j = 0; j < valid_metrics_[i].size(); ++j) {
+      score_t test_score_ = valid_metrics_[i][j]->PrintAndGetLoss(iter, valid_score_updater_[i]->score());
+      if (!ret && early_stopping_round_ > 0){
+        bool the_bigger_the_better_ = valid_metrics_[i][j]->the_bigger_the_better;
+        if (best_score_[i][j] < 0 
+            || (!the_bigger_the_better_ && test_score_ < best_score_[i][j])
+            || ( the_bigger_the_better_ && test_score_ > best_score_[i][j])){
+            best_score_[i][j] = test_score_;
+            best_iter_[i][j] = iter;
+        }
+        else {
+          if (iter - best_iter_[i][j] >= early_stopping_round_) ret = true;
+        }
+      }
     }
   }
+  return ret;
 }
 
 void GBDT::Boosting() {
@@ -264,7 +307,7 @@ void GBDT::ModelsFromString(const std::string& model_str, int num_used_model) {
     }
   }
   if (i == lines.size()) {
-    Log::Stderr("The model doesn't contain max_feature_idx");
+    Log::Fatal("Model file doesn't contain max_feature_idx");
     return;
   }
   // get sigmoid parameter
@@ -303,7 +346,7 @@ void GBDT::ModelsFromString(const std::string& model_str, int num_used_model) {
     }
   }
 
-  Log::Stdout("Loaded %d modles\n", models_.size());
+  Log::Info("%d models has been loaded\n", models_.size());
 }
 
 double GBDT::PredictRaw(const double* value) const {
@@ -321,7 +364,15 @@ double GBDT::Predict(const double* value) const {
   }
   // if need sigmoid transform
   if (sigmoid_ > 0) {
-    ret = 1.0 / (1.0 + std::exp(-sigmoid_ * ret));
+    ret = 1.0 / (1.0 + std::exp(- 2.0f * sigmoid_ * ret));
+  }
+  return ret;
+}
+
+std::vector<int> GBDT::PredictLeafIndex(const double* value) const {
+  std::vector<int> ret;
+  for (size_t i = 0; i < models_.size(); ++i) {
+    ret.push_back(models_[i]->PredictLeafIndex(value));
   }
   return ret;
 }

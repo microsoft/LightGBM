@@ -8,17 +8,17 @@
 
 namespace LightGBM {
 
-/*! \brief forward declaration */
 class Dataset;
 class Boosting;
 class ObjectiveFunction;
 class Metric;
 
 /*!
-* \brief The entrance of LightGBM. this application has two tasks:
-* Train and Predict.
-* Train task will train a new model
-* Predict task will predict the scores of test data and save the score to local disk
+* \brief The main entrance of LightGBM. this application has two tasks:
+*        Train and Predict.
+*        Train task will train a new model
+*        Predict task will predicting the scores of test data using exsiting model,
+*        and saving the score to disk.
 */
 class Application {
 public:
@@ -32,9 +32,9 @@ public:
 
 private:
   /*! 
-  * \brief Global Sync by minimal, will return minimal of global
+  * \brief Global Sync by minimal, will return minimal T across nodes
   * \param local Local data
-  * \return Global minimal data
+  * \return minimal values across nodes 
   */
   template<typename T>
   T GlobalSyncUpByMin(T& local);
@@ -45,19 +45,19 @@ private:
   /*! \brief Load data, including training data and validation data*/
   void LoadData();
 
-  /*! \brief Some initial works before training*/
+  /*! \brief Initialization before training*/
   void InitTrain();
 
-  /*! \brief The training logic */
+  /*! \brief Main Training logic */
   void Train();
 
-  /*! \brief Initialize the enviroment needed by prediction */
+  /*! \brief Initializations before prediction */
   void InitPredict();
 
-  /*! \brief Load model */
+  /*! \brief Load model from local disk */
   void LoadModel();
 
-  /*! \brief The prediction logic */
+  /*! \brief Main predicting logic */
   void Predict();
 
   /*! \brief All configs */

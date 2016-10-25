@@ -87,7 +87,7 @@ public:
     });
     // if last line of file doesn't contain end of line
     if (last_line_.size() > 0) {
-      Log::Stdout("Warning: last line of file %s doesn't contain end of line, application will still use this line", filename_);
+      Log::Info("Warning: last line of file %s doesn't contain end of line, application will still use this line", filename_);
       process_fun(total_cnt, last_line_.c_str(), last_line_.size());
       ++total_cnt;
       last_line_ = "";
@@ -224,7 +224,7 @@ public:
     });
     // if last line of file doesn't contain end of line
     if (last_line_.size() > 0) {
-      Log::Stdout("Warning: last line of file %s doesn't contain end of line, application will still use this line", filename_);
+      Log::Info("Warning: last line of file %s doesn't contain end of line, application will still use this line", filename_);
       if (filter_fun(used_cnt, total_cnt)) {
         lines_.push_back(last_line_);
         process_fun(used_cnt, lines_);
