@@ -115,7 +115,7 @@ private:
   */
   void UpdateScore(const Tree* tree);
   /*!
-  * \brief Print Metric result of current iteration
+  * \brief Print metric result of current iteration
   * \param iter Current interation
   */
   bool OutputMetric(int iter);
@@ -126,11 +126,11 @@ private:
   const Dataset* train_data_;
   /*! \brief Config of gbdt */
   const GBDTConfig* gbdt_config_;
-  /*! \brief Tree learner, will use tihs class to learn trees */
+  /*! \brief Tree learner, will use this class to learn trees */
   TreeLearner* tree_learner_;
   /*! \brief Objective function */
   const ObjectiveFunction* object_function_;
-  /*! \brief Store and update traning data's score */
+  /*! \brief Store and update training data's score */
   ScoreUpdater* train_score_updater_;
   /*! \brief Metrics for training data */
   std::vector<const Metric*> training_metrics_;

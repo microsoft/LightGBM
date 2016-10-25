@@ -107,7 +107,7 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
   // initialize ordered gradients and hessians
   ordered_gradients_ = new score_t[num_data_];
   ordered_hessians_ = new score_t[num_data_];
-  // if has ordered bin, need allocata a buffer to fast split
+  // if has ordered bin, need allocate a buffer to fast split
   if (has_ordered_bin_) {
     is_data_in_leaf_ = new char[num_data_];
   }
@@ -269,14 +269,14 @@ bool SerialTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
   } else if (num_data_in_left_child < num_data_in_right_child) {
     smaller_leaf = left_leaf;
     larger_leaf = right_leaf;
-    // put parent(left) leaf's histograms into larger leaf's histgrams
+    // put parent(left) leaf's histograms into larger leaf's histograms
     if (histogram_pool_.Get(left_leaf, &larger_leaf_histogram_array_)) { parent_leaf_histogram_array_ = larger_leaf_histogram_array_; }
     histogram_pool_.Move(left_leaf, right_leaf);
     histogram_pool_.Get(left_leaf, &smaller_leaf_histogram_array_);
   } else {
     smaller_leaf = right_leaf;
     larger_leaf = left_leaf;
-    // put parent(left) leaf's histograms to larger leaf's histgrams
+    // put parent(left) leaf's histograms to larger leaf's histograms
     if (histogram_pool_.Get(left_leaf, &larger_leaf_histogram_array_)) { parent_leaf_histogram_array_ = larger_leaf_histogram_array_; }
     histogram_pool_.Get(right_leaf, &smaller_leaf_histogram_array_);
   }

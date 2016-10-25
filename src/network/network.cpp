@@ -9,7 +9,7 @@
 
 namespace LightGBM {
 
-// static member defination
+// static member definition
 int Network::num_machines_;
 int Network::rank_;
 Linkers* Network::linkers_;
@@ -141,7 +141,7 @@ void Network::ReduceScatter(char* input, int input_size, int* block_start, int* 
       // send local data to neighbor first
       linkers_->Send(recursive_halving_map_.neighbor, input, input_size);
     } else if (recursive_halving_map_.type == RecursiveHalvingNodeType::GroupLeader) {
-      // recieve neighbor data first
+      // receive neighbor data first
       int need_recv_cnt = input_size;
       linkers_->Recv(recursive_halving_map_.neighbor, output, need_recv_cnt);
       // reduce

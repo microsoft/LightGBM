@@ -26,6 +26,7 @@ public:
   }
 
   /*!
+
   * \brief Init split on current leaf on partial data. 
   * \param leaf Index of current leaf
   * \param data_partition current data partition
@@ -43,7 +44,7 @@ public:
   }
 
   /*!
-  * \brief Init splits on current leaf, it will travese all data to sum up the results
+  * \brief Init splits on current leaf, it will traverse all data to sum up the results
   * \param gradients
   * \param hessians
   */

@@ -57,8 +57,8 @@ public:
   * \brief Using tree model to get prediction number, then adding to scores for parts of data
   *        Used for prediction of training out-of-bag data
   * \param tree Trained tree model
-  * \param data_indices Indices of data that want proccess to
-  * \param data_cnt Number of data that want proccess to
+  * \param data_indices Indices of data that will be proccessed
+  * \param data_cnt Number of data that will be proccessed
   */
   inline void AddScore(const Tree* tree, const data_size_t* data_indices,
                                                   data_size_t data_cnt) {

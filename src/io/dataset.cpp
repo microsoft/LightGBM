@@ -36,7 +36,7 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
     // create text reader
     text_reader_ = new TextReader<data_size_t>(data_filename);
   } else {
-    // only need to load initilize score, other meta data will load from bin flie
+    // only need to load initilize score, other meta data will be loaded from bin flie
     metadata_.Init(init_score_filename);
     Log::Info("Loading data set from binary file");
     parser_ = nullptr;
@@ -613,7 +613,7 @@ void Dataset::LoadDataFromBinFile(int rank, int num_machines, bool is_pre_partit
 
   size_t size_of_metadata = *(reinterpret_cast<size_t*>(buffer));
 
-  // re-allocmate space if not enough
+  // re-allocate space if not enough
   if (size_of_metadata > buffer_size) {
     delete[] buffer;
     buffer_size = size_of_metadata;
@@ -673,7 +673,7 @@ void Dataset::LoadDataFromBinFile(int rank, int num_machines, bool is_pre_partit
       Log::Fatal("Binary file format error at feature %d's size", i);
     }
     size_t size_of_feature = *(reinterpret_cast<size_t*>(buffer));
-    // re-allocmate space if not enough
+    // re-allocate space if not enough
     if (size_of_feature > buffer_size) {
       delete[] buffer;
       buffer_size = size_of_feature;

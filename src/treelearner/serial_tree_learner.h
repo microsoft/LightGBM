@@ -121,7 +121,7 @@ protected:
   DataPartition* data_partition_;
   /*! \brief used for generate used features */
   Random random_;
-  /*! \brief used for sub feature training, is_feature_used_[i] = falase means don't used feature i */
+  /*! \brief used for sub feature training, is_feature_used_[i] = false means don't used feature i */
   bool* is_feature_used_;
   /*! \brief pointer to histograms array of parent of current leaves */
   FeatureHistogram* parent_leaf_histogram_array_;
