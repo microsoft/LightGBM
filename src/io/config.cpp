@@ -228,6 +228,8 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   GetDouble(params, "feature_fraction", &feature_fraction);
   CHECK(feature_fraction > 0.0 && feature_fraction <= 1.0);
   GetDouble(params, "histogram_pool_size", &histogram_pool_size);
+  GetInt(params, "max_depth", &max_depth);
+  CHECK(max_depth > 1 || max_depth < 0);
 }
 
 

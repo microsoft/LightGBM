@@ -28,6 +28,9 @@ Tree::Tree(int max_leaves)
 
   leaf_parent_ = new int[max_leaves_];
   leaf_value_ = new score_t[max_leaves_];
+  leaf_depth_ = new int[max_leaves_];
+  // root is in the depth 1
+  leaf_depth_[0] = 1;
   num_leaves_ = 1;
   leaf_parent_[0] = -1;
 }
@@ -41,6 +44,7 @@ Tree::~Tree() {
   if (threshold_ != nullptr) { delete[] threshold_; }
   if (split_gain_ != nullptr) { delete[] split_gain_; }
   if (leaf_value_ != nullptr) { delete[] leaf_value_; }
+  if (leaf_depth_ != nullptr) { delete[] leaf_depth_; }
 }
 
 int Tree::Split(int leaf, int feature, unsigned int threshold_bin, int real_feature,
@@ -70,9 +74,11 @@ int Tree::Split(int leaf, int feature, unsigned int threshold_bin, int real_feat
   leaf_parent_[num_leaves_] = new_node_idx;
   leaf_value_[leaf] = left_value;
   leaf_value_[num_leaves_] = right_value;
+  // update leaf depth
+  leaf_depth_[num_leaves_] = leaf_depth_[leaf] + 1;
+  leaf_depth_[leaf]++;
 
   ++num_leaves_;
-
   return num_leaves_ - 1;
 }
 
@@ -155,6 +161,7 @@ Tree::Tree(const std::string& str) {
 
   split_feature_ = nullptr;
   threshold_in_bin_ = nullptr;
+  leaf_depth_ = nullptr;
 
   Common::StringToIntArray(key_vals["split_feature"], ' ',
                      num_leaves_ - 1, split_feature_real_);

@@ -80,6 +80,9 @@ public:
   /*! \brief Get Number of leaves*/
   inline int num_leaves() const { return num_leaves_; }
 
+  /*! \brief Get depth of specific leaf*/
+  inline int leaf_depth(int leaf_idx) const { return leaf_depth_[leaf_idx]; }
+
   /*!
   * \brief Shrinkage for the tree's output
   *        shrinkage rate (a.k.a learning rate) is used to tune the traning process
@@ -139,6 +142,8 @@ private:
   int* leaf_parent_;
   /*! \brief Output of leaves */
   score_t* leaf_value_;
+  /*! \brief Depth for leaves */
+  int* leaf_depth_;
 };
 
 

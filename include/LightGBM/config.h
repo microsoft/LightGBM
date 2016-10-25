@@ -137,11 +137,17 @@ struct TreeConfig: public ConfigBase {
 public:
   int min_data_in_leaf = 100;
   double min_sum_hessian_in_leaf = 10.0f;
+  // should > 1, only one leaf means not need to learning
   int num_leaves = 127;
   int feature_fraction_seed = 2;
   double feature_fraction = 1.0;
   // max cache size(unit:MB) for historical histogram. < 0 means not limit
   double histogram_pool_size = -1;
+  // max depth of tree model. 
+  // Still grow tree by leaf-wise, but limit the max depth to avoid over-fitting
+  // And the max leaves will be min(num_leaves, pow(2, max_depth - 1)) 
+  // max_depth < 0 means not limit
+  int max_depth = -1;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 

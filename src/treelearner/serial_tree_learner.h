@@ -163,6 +163,8 @@ protected:
   double histogram_pool_size_;
   /*! \brief used to cache historical histogram to speed up*/
   LRUPool<FeatureHistogram*> histogram_pool_;
+  /*! \brief  max depth of tree model */
+  int max_depth_;
 };
 
 
