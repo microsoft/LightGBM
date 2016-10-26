@@ -10,7 +10,7 @@
 namespace LightGBM {
 
 /*!
-* \brief Used to Store bins for dense feature
+* \brief Used to store bins for dense feature
 * Use template to reduce memory cost
 */
 template <typename VAL_T>
