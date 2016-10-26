@@ -80,7 +80,7 @@ void Application::LoadParameters(int argc, char** argv) {
     config_reader.ReadAllLines();
     if (config_reader.Lines().size() > 0) {
       for (auto& line : config_reader.Lines()) {
-        // remove str after #
+        // remove str after "#"
         if (line.size() > 0 && std::string::npos != line.find_first_of("#")) {
           line.erase(line.find_first_of("#"));
         }
