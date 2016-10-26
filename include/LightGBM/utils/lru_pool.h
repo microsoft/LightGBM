@@ -38,31 +38,31 @@ public:
     cache_size_ = cache_size;
     // at least need 2 bucket to store smaller leaf and larger leaf
     CHECK(cache_size_ >= 2);
-
     total_size_ = total_size;
-
-    pool_ = new T[cache_size];
-    mapper_ = new int[total_size_];
-    inverse_mapper_ = new int[cache_size_];
-    last_used_time_ = new int[cache_size_];
-    ResetMap();
+    if (cache_size_ > total_size_) {
+      cache_size_ = total_size_;
+    }
+    is_enough_ = (cache_size_ == total_size_);
+    pool_ = new T[cache_size_];
+    if (!is_enough_) {
+      mapper_ = new int[total_size_];
+      inverse_mapper_ = new int[cache_size_];
+      last_used_time_ = new int[cache_size_];
+      ResetMap();
+    }
   }
 
-  /*!
-  * \brief Return true if this pool is enough to store all data
-  */
-  bool IsEnough() {
-    return cache_size_ == total_size_;
-  }
 
   /*!
   * \brief Reset mapper
   */
   void ResetMap() {
-    cur_time_ = 0;
-    memset(mapper_, -1, sizeof(int)*total_size_);
-    memset(inverse_mapper_, -1, sizeof(int)*cache_size_);
-    memset(last_used_time_, 0, sizeof(int)*cache_size_);
+    if (!is_enough_) {
+      cur_time_ = 0;
+      memset(mapper_, -1, sizeof(int)*total_size_);
+      memset(inverse_mapper_, -1, sizeof(int)*cache_size_);
+      memset(last_used_time_, 0, sizeof(int)*cache_size_);
+    }
   }
 
   /*!
@@ -81,7 +81,11 @@ public:
   * \return True if this index is in the pool, False if this index is not in the pool
   */
   bool Get(int idx, T* out) {
-    if (mapper_[idx] >= 0) {
+    if (is_enough_) {
+      *out = pool_[idx];
+      return true;
+    }
+    else if (mapper_[idx] >= 0) {
       int slot = mapper_[idx];
       *out = pool_[slot];
       last_used_time_[slot] = ++cur_time_;
@@ -108,6 +112,10 @@ public:
   * \param dst_idx 
   */
   void Move(int src_idx, int dst_idx) {
+    if (is_enough_) {
+      std::swap(pool_[src_idx], pool_[dst_idx]);
+      return;
+    }
     if (mapper_[src_idx] < 0) {
       return;
     }
@@ -122,6 +130,7 @@ public:
     inverse_mapper_[slot] = dst_idx;
   }
 private:
+
   void FreeAll(){
     if (pool_ != nullptr) {
       delete[] pool_;
@@ -139,6 +148,7 @@ private:
   T* pool_ = nullptr;
   int cache_size_;
   int total_size_;
+  bool is_enough_ = false;
   int* mapper_ = nullptr;
   int* inverse_mapper_ = nullptr;
   int* last_used_time_ = nullptr;
