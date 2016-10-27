@@ -78,6 +78,11 @@ public:
   */
   void ModelsFromString(const std::string& model_str, int num_used_model) override;
   /*!
+  * \brief Calculate feature importances
+  * \param last_iter Last tree use to calculate
+  */
+  std::string FeatureImportance(int last_iter) const override;
+  /*!
   * \brief Get max feature index of this model
   * \return Max feature index of this model
   */
