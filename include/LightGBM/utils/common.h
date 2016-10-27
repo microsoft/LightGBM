@@ -44,13 +44,17 @@ inline static std::string& RemoveQuotationSymbol(std::string& str) {
   return str;
 }
 
-inline static std::vector<std::string> Split(const char* str, char delimiter) {
-  std::stringstream ss(str);
-  std::string tmp_str;
+inline static std::vector<std::string> Split(const char* c_str, char delimiter) {
   std::vector<std::string> ret;
-  while (std::getline(ss, tmp_str, delimiter)) {
-    ret.push_back(tmp_str);
+  std::string str(c_str);
+  size_t i = 0;
+  size_t pos = str.find(delimiter);
+  while (pos != std::string::npos) {
+    ret.push_back(str.substr(i, pos - i));
+    i = ++pos;
+    pos = str.find(delimiter, pos);
   }
+  ret.push_back(str.substr(i));
   return ret;
 }
 
