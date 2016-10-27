@@ -5,6 +5,7 @@
 #include <LightGBM/utils/log.h>
 
 #include <cstring>
+#include <functional>
 
 namespace LightGBM {
 
@@ -66,12 +67,13 @@ public:
   }
 
   /*!
-  * \brief Set data for the pool for specific index
-  * \param idx which index want to set to
-  * \param data
+  * \brief Fill the pool
+  * \param obj_create_fun that used to generate object
   */
-  void Set(int idx, const T& data) {
-    pool_[idx] = data;
+  void Fill(std::function<T()> obj_create_fun) {
+    for (int i = 0; i < cache_size_; ++i) {
+      pool_[i] = obj_create_fun();
+    }
   }
 
   /*!

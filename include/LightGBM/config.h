@@ -94,7 +94,6 @@ public:
   std::string input_model = "";
   std::string input_init_score = "";
   int verbosity = 1;
-  std::string log_file = "";
   int num_model_predict = -1;
   bool is_pre_partition = false;
   bool is_enable_sparse = true;
