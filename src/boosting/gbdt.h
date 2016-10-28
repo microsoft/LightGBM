@@ -119,8 +119,11 @@ private:
   * \param iter Current interation
   */
   bool OutputMetric(int iter);
-  
-  int early_stopping_round_;
+  /*!
+  * \brief Calculate feature importances
+  * \param last_iter Last tree use to calculate
+  */
+  void FeatureImportance(const int last_iter);
   
   /*! \brief Pointer to training data */
   const Dataset* train_data_;
@@ -138,6 +141,8 @@ private:
   std::vector<ScoreUpdater*> valid_score_updater_;
   /*! \brief Metric for validation data */
   std::vector<std::vector<const Metric*>> valid_metrics_;
+  /*! \brief Number of rounds for early stopping */
+  int early_stopping_round_;
   /*! \brief Best score(s) for early stopping */
   std::vector<std::vector<int>> best_iter_;
   std::vector<std::vector<score_t>> best_score_;
