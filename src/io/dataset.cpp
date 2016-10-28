@@ -11,6 +11,7 @@
 #include <vector>
 #include <utility>
 #include <string>
+#include <sstream>
 
 namespace LightGBM {
 
@@ -36,8 +37,8 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
     if (io_config.has_header) {
       std::string first_line = text_reader_->first_line();
       feature_names_ = Common::Split(first_line.c_str(), "\t ,");
-      for (int i = 0; i < feature_names_.size(); ++i) {
-        name2idx[feature_names_[i]] = i;
+      for (size_t i = 0; i < feature_names_.size(); ++i) {
+        name2idx[feature_names_[i]] = static_cast<int>(i);
       }
     }
     std::string name_prefix("name:");
@@ -48,14 +49,25 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
         std::string name = io_config.label_column.substr(name_prefix.size());
         if (name2idx.count(name) > 0) {
           label_idx_ = name2idx[name];
+          Log::Info("use %s column as label", name.c_str());
         } else {
           Log::Fatal("cannot find label column: %s in data file", name.c_str());
         }
       } else {
-        Common::Atoi(io_config.label_column.c_str(), &label_idx_);
+        size_t pos = 0;
+        label_idx_ = std::stoi(io_config.label_column, &pos);
+        if (pos != io_config.label_column.size()) {
+          Log::Fatal("label_column is not a number, \
+                      if you want to use column name, \
+                      please add prefix \"name:\" before column name");
+        }
+        Log::Info("use %d-th column as label", label_idx_);
       }
     }
-
+    if (feature_names_.size() > 0) {
+      // erase label column name
+      feature_names_.erase(feature_names_.begin() + label_idx_);
+    }
     // load ignore columns
     if (io_config.ignore_column.size() > 0) {
       if (Common::StartsWith(io_config.ignore_column, name_prefix)) {
@@ -72,8 +84,13 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
         }
       } else {
         for (auto token : Common::Split(io_config.ignore_column.c_str(), ',')) {
-          int tmp = 0;
-          Common::Atoi(token.c_str(), &tmp);
+          size_t pos = 0;
+          int tmp = std::stoi(token, &pos);
+          if (pos != token.size()) {
+            Log::Fatal("ignore_column is not a number, \
+                      if you want to use column name, \
+                      please add prefix \"name:\" before column name");
+          }
           // skip for label column
           if (tmp > label_idx_) { tmp -= 1; }
           ignore_features_.emplace(tmp);
@@ -88,11 +105,19 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
         std::string name = io_config.weight_column.substr(name_prefix.size());
         if (name2idx.count(name) > 0) {
           weight_idx_ = name2idx[name];
+          Log::Info("use %s column as weight", name.c_str());
         } else {
           Log::Fatal("cannot find weight column: %s in data file", name.c_str());
         }
       } else {
-        Common::Atoi(io_config.weight_column.c_str(), &weight_idx_);
+        size_t pos = 0;
+        weight_idx_ = std::stoi(io_config.weight_column, &pos);
+        if (pos != io_config.weight_column.size()) {
+          Log::Fatal("weight_column is not a number, \
+                      if you want to use column name, \
+                      please add prefix \"name:\" before column name");
+        }
+        Log::Info("use %d-th column as weight", weight_idx_);
       }
       // skip for label column
       if (weight_idx_ > label_idx_) {
@@ -106,11 +131,19 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
         std::string name = io_config.group_column.substr(name_prefix.size());
         if (name2idx.count(name) > 0) {
           group_idx_ = name2idx[name];
+          Log::Info("use %s column as group/query id", name.c_str());
         } else {
           Log::Fatal("cannot find group/query column: %s in data file", name.c_str());
         }
       } else {
-        Common::Atoi(io_config.group_column.c_str(), &group_idx_);
+        size_t pos = 0;
+        group_idx_ = std::stoi(io_config.group_column, &pos);
+        if (pos != io_config.group_column.size()) {
+          Log::Fatal("group_column is not a number, \
+                      if you want to use column name, \
+                      please add prefix \"name:\" before column name");
+        }
+        Log::Info("use %d-th column as group/query id", group_idx_);
       }
       // skip for label column
       if (group_idx_ > label_idx_) {
@@ -279,6 +312,21 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
   // -1 means doesn't use this feature
   used_feature_map_ = std::vector<int>(sample_values.size(), -1);
   num_total_features_ = static_cast<int>(sample_values.size());
+
+  // check the range of label_idx, weight_idx and group_idx
+  CHECK(label_idx_ >= 0 && label_idx_ <= num_total_features_);
+  CHECK(weight_idx_ < 0 || weight_idx_ < num_total_features_);
+  CHECK(group_idx_ < 0 || group_idx_ < num_total_features_);
+
+  // fill feature_names_ if not header
+  if (feature_names_.size() <= 0) {
+    for (int i = 0; i < num_total_features_; ++i) {
+      std::stringstream str_buf;
+      str_buf << "Column_" << i;
+      feature_names_.push_back(str_buf.str());
+    }
+  }
+
   // start find bins
   if (num_machines == 1) {
     std::vector<BinMapper*> bin_mappers(sample_values.size());
@@ -295,7 +343,7 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
 
     for (size_t i = 0; i < sample_values.size(); ++i) {
       if (bin_mappers[i] == nullptr) {
-        Log::Error("Ignore Feature %d ", i);
+        Log::Error("Ignore Feature %s ", feature_names_[i].c_str());
       }
       else if (!bin_mappers[i]->is_trival()) {
         // map real feature index to used feature index
@@ -305,7 +353,7 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
                                              num_data_, is_enable_sparse_));
       } else {
         // if feature is trival(only 1 bin), free spaces
-        Log::Error("Feature %d only contains one value, will be ignored", i);
+        Log::Error("Feature %s only contains one value, will be ignored", feature_names_[i].c_str());
         delete bin_mappers[i];
       }
     }
@@ -353,7 +401,7 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
     // restore features bins from buffer
     for (int i = 0; i < total_num_feature; ++i) {
       if (ignore_features_.count(i) > 0) {
-        Log::Error("Ignore Feature %d ", i);
+        Log::Error("Ignore Feature %s ", feature_names_[i].c_str());
         continue;
       }
       BinMapper* bin_mapper = new BinMapper();
@@ -362,7 +410,7 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
         used_feature_map_[i] = static_cast<int>(features_.size());
         features_.push_back(new Feature(static_cast<int>(i), bin_mapper, num_data_, is_enable_sparse_));
       } else {
-        Log::Error("Feature %d only contains one value, will be ignored", i);
+        Log::Error("Feature %s only contains one value, will be ignored", feature_names_[i].c_str());
         delete bin_mapper;
       }
     }
@@ -377,7 +425,7 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
 
 
 void Dataset::LoadTrainData(int rank, int num_machines, bool is_pre_partition, bool use_two_round_loading) {
-  // don't support query id in data file when training parallel
+  // don't support query id in data file when training in parallel
   if (num_machines > 1 && !is_pre_partition) {
     if (group_idx_ > 0) {
       Log::Fatal("Don't support query id in data file when training parallel without pre-partition. \

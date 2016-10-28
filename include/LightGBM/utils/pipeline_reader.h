@@ -38,12 +38,13 @@ public:
     char* buffer_process = new char[buffer_size];
     // buffer used for the file reading
     char* buffer_read = new char[buffer_size];
+    size_t read_cnt = 0;
     if (skip_bytes > 0) {
       // skip first k bytes
-      fread(buffer_process, 1, skip_bytes, file);
+      read_cnt = fread(buffer_process, 1, skip_bytes, file);
     }
     // read first block
-    size_t read_cnt = fread(buffer_process, 1, buffer_size, file);
+    read_cnt = fread(buffer_process, 1, buffer_size, file);
     size_t last_read_cnt = 0;
     while (read_cnt > 0) {
       // strat read thread

@@ -275,21 +275,21 @@ void GBDT::Boosting() {
 
 std::string GBDT::ModelsToString() const {
   // serialize this object to string
-  std::stringstream ss;
+  std::stringstream str_buf;
   // output label index
-  ss << "label_index=" << label_idx_ << std::endl;
+  str_buf << "label_index=" << label_idx_ << std::endl;
   // output max_feature_idx
-  ss << "max_feature_idx=" << max_feature_idx_ << std::endl;
+  str_buf << "max_feature_idx=" << max_feature_idx_ << std::endl;
   // output sigmoid parameter
-  ss << "sigmoid=" << object_function_->GetSigmoid() << std::endl;
-  ss << std::endl;
+  str_buf << "sigmoid=" << object_function_->GetSigmoid() << std::endl;
+  str_buf << std::endl;
 
   // output tree models
   for (size_t i = 0; i < models_.size(); ++i) {
-    ss << "Tree=" << i << std::endl;
-    ss << models_[i]->ToString() << std::endl;
+    str_buf << "Tree=" << i << std::endl;
+    str_buf << models_[i]->ToString() << std::endl;
   }
-  return ss.str();
+  return str_buf.str();
 }
 
 void GBDT::ModelsFromString(const std::string& model_str, int num_used_model) {

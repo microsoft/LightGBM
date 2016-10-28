@@ -34,7 +34,7 @@ public:
 #else
       file = fopen(filename, "r");
 #endif
-      std::stringstream ss;
+      std::stringstream str_buf;
       int read_c = -1;
       read_c = fgetc(file);
       while (read_c != EOF) {
@@ -42,7 +42,7 @@ public:
         if (tmp_ch == '\n' || tmp_ch == '\r') {
           break;
         }
-        ss << tmp_ch;
+        str_buf << tmp_ch;
         ++skip_bytes_;
         read_c = fgetc(file);
       }
@@ -55,7 +55,7 @@ public:
         ++skip_bytes_;
       }
       fclose(file);
-      first_line_ = ss.str();
+      first_line_ = str_buf.str();
       Log::Info("skip header:\"%s\" in file %s", first_line_.c_str(), filename_);
     }
   }

@@ -192,8 +192,6 @@ private:
   int16_t* label_int_;
   /*! \brief Weights data */
   float* weights_;
-  /*! \brief Queries data */
-  data_size_t* queries_;
   /*! \brief Query boundaries */
   data_size_t* query_boundaries_;
   /*! \brief Query weights */
@@ -204,6 +202,8 @@ private:
   data_size_t num_init_score_;
   /*! \brief Initial score */
   score_t* init_score_;
+  /*! \brief Queries data */
+  data_size_t* queries_;
 };
 
 
