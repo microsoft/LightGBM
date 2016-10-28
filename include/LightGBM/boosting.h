@@ -80,12 +80,6 @@ public:
   virtual void ModelsFromString(const std::string& model_str, int num_used_model) = 0;
 
   /*!
-  * \brief Calculate feature importances
-  * \param last_iter Last tree use to calculate
-  */
-  virtual std::string FeatureImportance(int last_iter) const = 0;
-
-  /*!
   * \brief Get max feature index of this model
   * \return Max feature index of this model
   */

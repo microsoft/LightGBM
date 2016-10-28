@@ -209,8 +209,7 @@ void GBDT::Train() {
     if (is_early_stopping) {
         // close file with an early-stopping message
         Log::Info("Early stopping at iteration %d, the best iteration round is %d", iter + 1, iter + 1 - early_stopping_round_);
-        fprintf(output_model_file, "feature importances=%s\n", FeatureImportance(iter + 1 - early_stopping_round_).c_str());
-        fflush(output_model_file);
+        FeatureImportance(iter - early_stopping_round_ + 1);
         fclose(output_model_file);
         return;
     }
@@ -224,8 +223,7 @@ void GBDT::Train() {
       }
       fflush(output_model_file);
   }
-  fprintf(output_model_file, "feature importances=%s\n", FeatureImportance(models_.size()).c_str());
-  fflush(output_model_file);
+  FeatureImportance(models_.size());
   fclose(output_model_file);
 }
 
@@ -353,7 +351,7 @@ void GBDT::ModelsFromString(const std::string& model_str, int num_used_model) {
   Log::Info("%d models has been loaded\n", models_.size());
 }
 
-std::string GBDT::FeatureImportance(int last_iter) const {
+void GBDT::FeatureImportance(const int last_iter) {
     size_t* feature_importances = new size_t[max_feature_idx_ + 1]{0};
     for (int iter = 0; iter < last_iter; ++iter) {
         for (int split_idx = 0; split_idx < models_.at(iter)->num_leaves() - 1; ++split_idx) {
@@ -361,8 +359,9 @@ std::string GBDT::FeatureImportance(int last_iter) const {
         }
     }
     std::string ret = Common::ArrayToString(feature_importances, max_feature_idx_ + 1, ' ');
+    fprintf(output_model_file, "feature importances=%s\n", ret.c_str());
+    fflush(output_model_file);
     delete[] feature_importances;
-    return ret;
 }
 
 double GBDT::PredictRaw(const double* value) const {
