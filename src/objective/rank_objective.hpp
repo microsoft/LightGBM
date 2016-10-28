@@ -47,7 +47,7 @@ public:
     // get boundries
     query_boundaries_ = metadata.query_boundaries();
     if (query_boundaries_ == nullptr) {
-      Log::Fatal("For NDCG metric, should have query information");
+      Log::Fatal("For lambdarank tasks, should have query information");
     }
     num_queries_ = metadata.num_queries();
     // cache inverse max DCG, avoid computation many times

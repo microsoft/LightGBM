@@ -86,6 +86,12 @@ public:
   virtual int MaxFeatureIdx() const = 0;
 
   /*!
+  * \brief Get index of label column
+  * \return index of label column
+  */
+  virtual int LabelIdx() const = 0;
+
+  /*!
   * \brief Get number of weak sub-models
   * \return Number of weak sub-models
   */

@@ -21,7 +21,7 @@ public:
   * \param filename Filename of data
   * \process_fun Process function
   */
-  static size_t Read(const char* filename, const std::function<size_t (const char*, size_t)>& process_fun) {
+  static size_t Read(const char* filename, int skip_bytes, const std::function<size_t (const char*, size_t)>& process_fun) {
     FILE* file;
 
 #ifdef _MSC_VER
@@ -38,6 +38,10 @@ public:
     char* buffer_process = new char[buffer_size];
     // buffer used for the file reading
     char* buffer_read = new char[buffer_size];
+    if (skip_bytes > 0) {
+      // skip first k bytes
+      fread(buffer_process, 1, skip_bytes, file);
+    }
     // read first block
     size_t read_cnt = fread(buffer_process, 1, buffer_size, file);
     size_t last_read_cnt = 0;

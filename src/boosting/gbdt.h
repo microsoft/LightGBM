@@ -82,6 +82,13 @@ public:
   * \return Max feature index of this model
   */
   inline int MaxFeatureIdx() const override { return max_feature_idx_; }
+
+  /*!
+  * \brief Get index of label column
+  * \return index of label column
+  */
+  inline int LabelIdx() const override { return label_idx_; }
+
   /*!
   * \brief Get number of weak sub-models
   * \return Number of weak sub-models
@@ -168,6 +175,9 @@ private:
   *          if > 0 meas output score will transform by sigmoid function
   */
   double sigmoid_;
+
+  /*! \brief Index of label column */
+  data_size_t label_idx_;
 };
 
 }  // namespace LightGBM

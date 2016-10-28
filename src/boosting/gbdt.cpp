@@ -61,7 +61,8 @@ void GBDT::Init(const Dataset* train_data, const ObjectiveFunction* object_funct
 
   // get max feature index
   max_feature_idx_ = train_data_->num_total_features() - 1;
-
+  // get label index
+  label_idx_ = train_data_->label_idx();
   // if need bagging, create buffer
   if (gbdt_config_->bagging_fraction < 1.0 && gbdt_config_->bagging_freq > 0) {
     out_of_bag_data_indices_ = new data_size_t[num_data_];
@@ -275,6 +276,8 @@ void GBDT::Boosting() {
 std::string GBDT::ModelsToString() const {
   // serialize this object to string
   std::stringstream ss;
+  // output label index
+  ss << "label_index=" << label_idx_ << std::endl;
   // output max_feature_idx
   ss << "max_feature_idx=" << max_feature_idx_ << std::endl;
   // output sigmoid parameter
@@ -294,7 +297,26 @@ void GBDT::ModelsFromString(const std::string& model_str, int num_used_model) {
   models_.clear();
   std::vector<std::string> lines = Common::Split(model_str.c_str(), '\n');
   size_t i = 0;
+
+  // get index of label
+  while (i < lines.size()) {
+    size_t find_pos = lines[i].find("label_index=");
+    if (find_pos != std::string::npos) {
+      std::vector<std::string> strs = Common::Split(lines[i].c_str(), '=');
+      Common::Atoi(strs[1].c_str(), &label_idx_);
+      ++i;
+      break;
+    } else {
+      ++i;
+    }
+  }
+  if (i == lines.size()) {
+    Log::Fatal("Model file doesn't contain label index");
+    return;
+  }
+
   // get max_feature_idx first
+  i = 0;
   while (i < lines.size()) {
     size_t find_pos = lines[i].find("max_feature_idx=");
     if (find_pos != std::string::npos) {

@@ -6,6 +6,7 @@
 #include <LightGBM/utils/random.h>
 
 #include <cstdio>
+#include <sstream>
 
 #include <vector>
 #include <string>
@@ -22,9 +23,41 @@ public:
   /*!
   * \brief Constructor
   * \param filename Filename of data
+  * \param is_skip_first_line True if need to skip header
   */
-  TextReader(const char* filename):
-    filename_(filename){
+  TextReader(const char* filename, bool is_skip_first_line):
+    filename_(filename), is_skip_first_line_(is_skip_first_line){
+    if (is_skip_first_line_) {
+      FILE* file;
+#ifdef _MSC_VER
+      fopen_s(&file, filename, "r");
+#else
+      file = fopen(filename, "r");
+#endif
+      std::stringstream ss;
+      int read_c = -1;
+      read_c = fgetc(file);
+      while (read_c != EOF) {
+        char tmp_ch = static_cast<char>(read_c);
+        if (tmp_ch == '\n' || tmp_ch == '\r') {
+          break;
+        }
+        ss << tmp_ch;
+        ++skip_bytes_;
+        read_c = fgetc(file);
+      }
+      if (static_cast<char>(read_c) == '\r') {
+        read_c = fgetc(file);
+        ++skip_bytes_;
+      }
+      if (static_cast<char>(read_c) == '\n') {
+        read_c = fgetc(file);
+        ++skip_bytes_;
+      }
+      fclose(file);
+      first_line_ = ss.str();
+      Log::Info("skip header:\"%s\" in file %s", first_line_.c_str(), filename_);
+    }
   }
   /*!
   * \brief Destructor
@@ -40,6 +73,12 @@ public:
     lines_.shrink_to_fit();
   }
   /*!
+  * \brief return first line of data
+  */
+  inline std::string first_line() {
+    return first_line_;
+  }
+  /*!
   * \brief Get text data that read from file
   * \return Text data, store in std::vector by line
   */
@@ -48,7 +87,7 @@ public:
   INDEX_T ReadAllAndProcess(const std::function<void(INDEX_T, const char*, size_t)>& process_fun) {
     last_line_ = "";
     INDEX_T total_cnt = 0;
-    PipelineReader::Read(filename_,
+    PipelineReader::Read(filename_, skip_bytes_,
       [this, &total_cnt, &process_fun]
     (const char* buffer_process, size_t read_cnt) {
       size_t cnt = 0;
@@ -176,7 +215,7 @@ public:
     last_line_ = "";
     INDEX_T total_cnt = 0;
     INDEX_T used_cnt = 0;
-    PipelineReader::Read(filename_,
+    PipelineReader::Read(filename_, skip_bytes_,
       [this, &total_cnt, &process_fun,&used_cnt, &filter_fun]
     (const char* buffer_process, size_t read_cnt) {
       size_t cnt = 0;
@@ -260,6 +299,12 @@ private:
   std::vector<std::string> lines_;
   /*! \brief Buffer for last line */
   std::string last_line_;
+  /*! \brief first line */
+  std::string first_line_="";
+  /*! \brief is skip first line */
+  bool is_skip_first_line_ = false;
+  /*! \brief is skip first line */
+  int skip_bytes_ = 0;
 };
 
 }  // namespace LightGBM

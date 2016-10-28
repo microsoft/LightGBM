@@ -51,13 +51,18 @@ bool CheckHasLabelForCSV(std::string& str, int num_features) {
   }
 }
 
-Parser* Parser::CreateParser(const char* filename, int num_features, bool* has_label) {
+Parser* Parser::CreateParser(const char* filename, bool has_header, int num_features, int label_idx) {
   std::ifstream tmp_file;
   tmp_file.open(filename);
   if (!tmp_file.is_open()) {
     Log::Fatal("Data file: %s doesn't exist", filename);
   }
   std::string line1, line2;
+  if (has_header) {
+    if (!tmp_file.eof()) {
+      std::getline(tmp_file, line1);
+    }
+  }
   if (!tmp_file.eof()) {
     std::getline(tmp_file, line1);
   } else {
@@ -76,42 +81,46 @@ Parser* Parser::CreateParser(const char* filename, int num_features, bool* has_l
   GetStatistic(line1.c_str(), &comma_cnt, &tab_cnt, &colon_cnt);
   GetStatistic(line2.c_str(), &comma_cnt2, &tab_cnt2, &colon_cnt2);
   Parser* ret = nullptr;
+  bool has_label = true;
   if (line2.size() == 0) {
     // if only have one line on file
     if (colon_cnt > 0) {
-      ret =  new LibSVMParser();
-      if (num_features > 0 && has_label != nullptr) {
-        *has_label = CheckHasLabelForLibsvm(line1);
+      if (num_features > 0) {
+        has_label = CheckHasLabelForLibsvm(line1);
       }
+      ret = new LibSVMParser(has_label ? label_idx : -1);
     } else if (tab_cnt > 0) {
-      ret = new TSVParser();
-      if (num_features > 0 && has_label != nullptr) {
-        *has_label = CheckHasLabelForTSV(line1, num_features);
+      if (num_features > 0 ) {
+        has_label = CheckHasLabelForTSV(line1, num_features);
       }
+      ret = new TSVParser(has_label ? label_idx : -1);
     } else if (comma_cnt > 0) {
-      ret = new CSVParser();
-      if (num_features > 0 && has_label != nullptr) {
-        *has_label = CheckHasLabelForCSV(line1, num_features);
+      if (num_features > 0) {
+        has_label = CheckHasLabelForCSV(line1, num_features);
       }
+      ret = new CSVParser(has_label ? label_idx : -1);
     } 
   } else {
     if (colon_cnt > 0 || colon_cnt2 > 0) {
-      ret = new LibSVMParser();
-      if (num_features > 0 && has_label != nullptr) {
-        *has_label = CheckHasLabelForLibsvm(line1);
+      if (num_features > 0) {
+        has_label = CheckHasLabelForLibsvm(line1);
       }
+      ret = new LibSVMParser(has_label ? label_idx : -1);
     }
     else if (tab_cnt == tab_cnt2 && tab_cnt > 0) {
-      ret = new TSVParser();
-      if (num_features > 0 && has_label != nullptr) {
-        *has_label = CheckHasLabelForTSV(line1, num_features);
+      if (num_features > 0) {
+        has_label = CheckHasLabelForTSV(line1, num_features);
       }
+      ret = new TSVParser(has_label ? label_idx : -1);
     } else if (comma_cnt == comma_cnt2 && comma_cnt > 0) {
-      ret = new CSVParser();
-      if (num_features > 0 && has_label != nullptr) {
-        *has_label = CheckHasLabelForCSV(line1, num_features);
+      if (num_features > 0) {
+        has_label = CheckHasLabelForCSV(line1, num_features);
       }
+      ret = new CSVParser(has_label ? label_idx : -1);
     }
+  }
+  if (!has_label) {
+    Log::Info("Data file: %s doesn't contain label column", filename);
   }
   return ret;
 }

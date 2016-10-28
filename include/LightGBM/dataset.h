@@ -5,11 +5,13 @@
 #include <LightGBM/utils/text_reader.h>
 
 #include <LightGBM/meta.h>
+#include <LightGBM/config.h>
 
 #include <vector>
 #include <utility>
 #include <functional>
 #include <string>
+#include <unordered_set>
 
 namespace LightGBM {
 
@@ -56,10 +58,12 @@ public:
   ~Metadata();
 
   /*!
-  * \brief Initial work, will auto load weight, inital scores
+  * \brief Initial work, will allocate space for label, weight(if exists) and query(if exists)
   * \param num_data Number of training data
+  * \param weight_idx Index of weight column, < 0 means doesn't exists
+  * \param query_idx Index of query id column, < 0 means doesn't exists
   */
-  void InitLabel(data_size_t num_data);
+  void Init(data_size_t num_data, int weight_idx, int query_idx);
 
   /*!
   * \brief Partition label by used indices
@@ -107,6 +111,26 @@ public:
   inline void SetLabelAt(data_size_t idx, double value)
   {
     label_[idx] = static_cast<float>(value);
+  }
+
+  /*!
+  * \brief Set Weight for one record
+  * \param idx Index of this record
+  * \param value Weight value of this record
+  */
+  inline void SetWeightAt(data_size_t idx, double value)
+  {
+    weights_[idx] = static_cast<float>(value);
+  }
+
+  /*!
+  * \brief Set Query Id for one record
+  * \param idx Index of this record
+  * \param value Query Id value of this record
+  */
+  inline void SetQueryAt(data_size_t idx, double value)
+  {
+    queries_[idx] = static_cast<data_size_t>(value);
   }
 
   /*!
@@ -168,6 +192,8 @@ private:
   int16_t* label_int_;
   /*! \brief Weights data */
   float* weights_;
+  /*! \brief Queries data */
+  data_size_t* queries_;
   /*! \brief Query boundaries */
   data_size_t* query_boundaries_;
   /*! \brief Query weights */
@@ -184,35 +210,27 @@ private:
 /*! \brief Interface for Parser */
 class Parser {
 public:
+
   /*! \brief virtual destructor */
   virtual ~Parser() {}
-  /*!
-  * \brief Parse one line with label
-  * \param str One line record, string format, should end with '\0'
-  * \param out_features Output features, store in (feature_idx, feature_value)
-  * \param out_label Output label
-  */
-  virtual void ParseOneLine(const char* str,
-    std::vector<std::pair<int, double>>* out_features,
-    double* out_label) const = 0;
 
   /*!
   * \brief Parse one line with label
   * \param str One line record, string format, should end with '\0'
-  * \param out_features Output features, store in (feature_idx, feature_value)
-  * \param out_label Output label
+  * \param out_features Output columns, store in (column_idx, values)
+  * \param out_label Label will store to this if exists
   */
   virtual void ParseOneLine(const char* str,
-    std::vector<std::pair<int, double>>* out_features) const = 0;
+    std::vector<std::pair<int, double>>* out_features, double* out_label) const = 0;
 
   /*!
   * \brief Create a object of parser, will auto choose the format depend on file
   * \param filename One Filename of data
   * \param num_features Pass num_features of this data file if you know, <=0 means don't know
-  * \param has_label output, if num_features > 0, will output this data has label or not
+  * \param label_idx index of label column
   * \return Object of parser
   */
-  static Parser* CreateParser(const char* filename, int num_features, bool* has_label);
+  static Parser* CreateParser(const char* filename, bool has_header, int num_features, int label_idx);
 };
 
 using PredictFunction =
@@ -227,29 +245,21 @@ public:
   * \brief Constructor
   * \param data_filename Filename of dataset
   * \param init_score_filename Filename of initial score
-  * \param is_int_label True if label is int type
-  * \param max_bin The maximal number of bin that feature values will bucket in
-  * \param random_seed The seed for random generator
-  * \param is_enable_sparse True for sparse feature
+  * \param io_config configs for IO
   * \param predict_fun Used for initial model, will give a prediction score based on this function, then set as initial score
   */
   Dataset(const char* data_filename, const char* init_score_filename,
-    int max_bin, int random_seed, bool is_enable_sparse, const PredictFunction& predict_fun);
+    const IOConfig& io_config, const PredictFunction& predict_fun);
 
   /*!
   * \brief Constructor
   * \param data_filename Filename of dataset
-  * \param is_int_label True if label is int type
-  * \param max_bin The maximal number of bin that feature values will bucket in
-  * \param random_seed The seed for random generator
-  * \param is_enable_sparse True for sparse feature
+  * \param io_config configs for IO
   * \param predict_fun Used for initial model, will give a prediction score based on this function, then set as initial score
   */
   Dataset(const char* data_filename,
-    int max_bin, int random_seed, bool is_enable_sparse,
-                     const PredictFunction& predict_fun)
-    : Dataset(data_filename, "", max_bin, random_seed,
-                                    is_enable_sparse, predict_fun) {
+    const IOConfig& io_config, const PredictFunction& predict_fun)
+    : Dataset(data_filename, "", io_config, predict_fun) {
   }
 
   /*! \brief Destructor */
@@ -303,6 +313,12 @@ public:
 
   /*! \brief Get Number of total features */
   inline int num_total_features() const { return num_total_features_; }
+
+  /*! \brief Get the index of label column */
+  inline int label_idx() const { return label_idx_; }
+
+  /*! \brief Get names of current data set */
+  inline std::vector<std::string> feature_names() const { return feature_names_; }
 
   /*! \brief Get Number of data */
   inline data_size_t num_data() const { return num_data_; }
@@ -394,10 +410,20 @@ private:
   bool is_loading_from_binfile_;
   /*! \brief Number of global data, used for distributed learning */
   size_t global_num_data_ = 0;
-  // used to local used data indices
+  /*! \brief used to local used data indices */
   std::vector<data_size_t> used_data_indices_;
-  // prediction function for initial model
+  /*! \brief prediction function for initial model */
   const PredictFunction& predict_fun_;
+  /*! \brief index of label column */
+  int label_idx_ = 0;
+  /*! \brief index of weight column */
+  int weight_idx_ = -1;
+  /*! \brief index of group column */
+  int group_idx_ = -1;
+  /*! \brief Mapper from real feature index to used index*/
+  std::unordered_set<int> ignore_features_;
+  /*! \brief store feature names */
+  std::vector<std::string> feature_names_;
 };
 
 }  // namespace LightGBM

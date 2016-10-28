@@ -43,7 +43,13 @@ inline static std::string& RemoveQuotationSymbol(std::string& str) {
   str.erase(0, str.find_first_not_of("'\""));
   return str;
 }
-
+inline static bool StartsWith(const std::string& str, const std::string prefix) {
+  if (str.substr(0, prefix.size()) == prefix) {
+    return true;
+  } else {
+    return false;
+  }
+}
 inline static std::vector<std::string> Split(const char* c_str, char delimiter) {
   std::vector<std::string> ret;
   std::string str(c_str);
@@ -53,6 +59,21 @@ inline static std::vector<std::string> Split(const char* c_str, char delimiter) 
     ret.push_back(str.substr(i, pos - i));
     i = ++pos;
     pos = str.find(delimiter, pos);
+  }
+  ret.push_back(str.substr(i));
+  return ret;
+}
+
+inline static std::vector<std::string> Split(const char* c_str, const char* delimiters) {
+  // will split when met any chars in delimiters
+  std::vector<std::string> ret;
+  std::string str(c_str);
+  size_t i = 0;
+  size_t pos = str.find_first_of(delimiters);
+  while (pos != std::string::npos) {
+    ret.push_back(str.substr(i, pos - i));
+    i = ++pos;
+    pos = str.find_first_of(delimiters, pos);
   }
   ret.push_back(str.substr(i));
   return ret;
