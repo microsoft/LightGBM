@@ -223,7 +223,7 @@ void GBDT::Train() {
       }
       fflush(output_model_file);
   }
-  FeatureImportance(models_.size());
+  FeatureImportance(static_cast<int>(models_.size()));
   fclose(output_model_file);
 }
 
@@ -355,7 +355,7 @@ void GBDT::FeatureImportance(const int last_iter) {
     size_t* feature_importances = new size_t[max_feature_idx_ + 1]{0};
     for (int iter = 0; iter < last_iter; ++iter) {
         for (int split_idx = 0; split_idx < models_.at(iter)->num_leaves() - 1; ++split_idx) {
-            ++feature_importances[models_.at(iter)->split_feature(split_idx)];
+            ++feature_importances[models_.at(iter)->split_feature_real(split_idx)];
         }
     }
     std::string ret = Common::ArrayToString(feature_importances, max_feature_idx_ + 1, ' ');

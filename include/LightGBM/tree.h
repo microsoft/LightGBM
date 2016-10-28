@@ -84,7 +84,7 @@ public:
   inline int leaf_depth(int leaf_idx) const { return leaf_depth_[leaf_idx]; }
 
   /*! \brief Get feature of specific split*/
-  inline int split_feature(int split_idx) const { return split_feature_[split_idx]; }
+  inline int split_feature_real(int split_idx) const { return split_feature_real_[split_idx]; }
 
   /*!
   * \brief Shrinkage for the tree's output
