@@ -163,6 +163,11 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   if (GetString(params, "valid_data", &tmp_str)) {
     valid_data_filenames = Common::Split(tmp_str.c_str(), ',');
   }
+  GetBool(params, "has_header", &has_header);
+  GetString(params, "label_column", &label_column);
+  GetString(params, "weight_column", &weight_column);
+  GetString(params, "group_column", &group_column);
+  GetString(params, "ignore_column", &ignore_column);
 }
 
 

@@ -11,13 +11,14 @@
 #include <vector>
 #include <utility>
 #include <string>
+#include <sstream>
 
 namespace LightGBM {
 
 Dataset::Dataset(const char* data_filename, const char* init_score_filename,
-                 int max_bin, int random_seed, bool is_enable_sparse, const PredictFunction& predict_fun)
-  :data_filename_(data_filename), random_(random_seed),
-  max_bin_(max_bin), is_enable_sparse_(is_enable_sparse), predict_fun_(predict_fun) {
+  const IOConfig& io_config, const PredictFunction& predict_fun)
+  :data_filename_(data_filename), random_(io_config.data_random_seed),
+  max_bin_(io_config.max_bin), is_enable_sparse_(io_config.is_enable_sparse), predict_fun_(predict_fun) {
 
   CheckCanLoadFromBin();
   if (is_loading_from_binfile_ && predict_fun != nullptr) {
@@ -28,13 +29,134 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
   if (!is_loading_from_binfile_) {
     // load weight, query information and initilize score
     metadata_.Init(data_filename, init_score_filename);
+    // create text reader
+    text_reader_ = new TextReader<data_size_t>(data_filename, io_config.has_header);
+
+    std::unordered_map<std::string, int> name2idx;
+    // get column names
+    if (io_config.has_header) {
+      std::string first_line = text_reader_->first_line();
+      feature_names_ = Common::Split(first_line.c_str(), "\t ,");
+      for (size_t i = 0; i < feature_names_.size(); ++i) {
+        name2idx[feature_names_[i]] = static_cast<int>(i);
+      }
+    }
+    std::string name_prefix("name:");
+
+    // load label idx
+    if (io_config.label_column.size() > 0) {
+      if (Common::StartsWith(io_config.label_column, name_prefix)) {
+        std::string name = io_config.label_column.substr(name_prefix.size());
+        if (name2idx.count(name) > 0) {
+          label_idx_ = name2idx[name];
+          Log::Info("use %s column as label", name.c_str());
+        } else {
+          Log::Fatal("cannot find label column: %s in data file", name.c_str());
+        }
+      } else {
+        size_t pos = 0;
+        label_idx_ = std::stoi(io_config.label_column, &pos);
+        if (pos != io_config.label_column.size()) {
+          Log::Fatal("label_column is not a number, \
+                      if you want to use column name, \
+                      please add prefix \"name:\" before column name");
+        }
+        Log::Info("use %d-th column as label", label_idx_);
+      }
+    }
+    if (feature_names_.size() > 0) {
+      // erase label column name
+      feature_names_.erase(feature_names_.begin() + label_idx_);
+    }
+    // load ignore columns
+    if (io_config.ignore_column.size() > 0) {
+      if (Common::StartsWith(io_config.ignore_column, name_prefix)) {
+        std::string names = io_config.ignore_column.substr(name_prefix.size());
+        for (auto name : Common::Split(names.c_str(), ',')) {
+          if (name2idx.count(name) > 0) {
+            int tmp = name2idx[name];
+            // skip for label column
+            if (tmp > label_idx_) { tmp -= 1; }
+            ignore_features_.emplace(tmp);
+          } else {
+            Log::Fatal("cannot find column: %s in data file", name.c_str());
+          }
+        }
+      } else {
+        for (auto token : Common::Split(io_config.ignore_column.c_str(), ',')) {
+          size_t pos = 0;
+          int tmp = std::stoi(token, &pos);
+          if (pos != token.size()) {
+            Log::Fatal("ignore_column is not a number, \
+                      if you want to use column name, \
+                      please add prefix \"name:\" before column name");
+          }
+          // skip for label column
+          if (tmp > label_idx_) { tmp -= 1; }
+          ignore_features_.emplace(tmp);
+        }
+      }
+
+    }
+
+    // load weight idx
+    if (io_config.weight_column.size() > 0) {
+      if (Common::StartsWith(io_config.weight_column, name_prefix)) {
+        std::string name = io_config.weight_column.substr(name_prefix.size());
+        if (name2idx.count(name) > 0) {
+          weight_idx_ = name2idx[name];
+          Log::Info("use %s column as weight", name.c_str());
+        } else {
+          Log::Fatal("cannot find weight column: %s in data file", name.c_str());
+        }
+      } else {
+        size_t pos = 0;
+        weight_idx_ = std::stoi(io_config.weight_column, &pos);
+        if (pos != io_config.weight_column.size()) {
+          Log::Fatal("weight_column is not a number, \
+                      if you want to use column name, \
+                      please add prefix \"name:\" before column name");
+        }
+        Log::Info("use %d-th column as weight", weight_idx_);
+      }
+      // skip for label column
+      if (weight_idx_ > label_idx_) {
+        weight_idx_ -= 1;
+      }
+      ignore_features_.emplace(weight_idx_);
+    }
+
+    if (io_config.group_column.size() > 0) {
+      if (Common::StartsWith(io_config.group_column, name_prefix)) {
+        std::string name = io_config.group_column.substr(name_prefix.size());
+        if (name2idx.count(name) > 0) {
+          group_idx_ = name2idx[name];
+          Log::Info("use %s column as group/query id", name.c_str());
+        } else {
+          Log::Fatal("cannot find group/query column: %s in data file", name.c_str());
+        }
+      } else {
+        size_t pos = 0;
+        group_idx_ = std::stoi(io_config.group_column, &pos);
+        if (pos != io_config.group_column.size()) {
+          Log::Fatal("group_column is not a number, \
+                      if you want to use column name, \
+                      please add prefix \"name:\" before column name");
+        }
+        Log::Info("use %d-th column as group/query id", group_idx_);
+      }
+      // skip for label column
+      if (group_idx_ > label_idx_) {
+        group_idx_ -= 1;
+      }
+      ignore_features_.emplace(group_idx_);
+    }
+
     // create text parser
-    parser_ = Parser::CreateParser(data_filename_, 0, nullptr);
+    parser_ = Parser::CreateParser(data_filename_, io_config.has_header, 0, label_idx_);
     if (parser_ == nullptr) {
       Log::Fatal("Cannot recognising input data format, filename: %s", data_filename_);
     }
-    // create text reader
-    text_reader_ = new TextReader<data_size_t>(data_filename);
   } else {
     // only need to load initilize score, other meta data will be loaded from bin flie
     metadata_.Init(init_score_filename);
@@ -190,18 +312,40 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
   // -1 means doesn't use this feature
   used_feature_map_ = std::vector<int>(sample_values.size(), -1);
   num_total_features_ = static_cast<int>(sample_values.size());
+
+  // check the range of label_idx, weight_idx and group_idx
+  CHECK(label_idx_ >= 0 && label_idx_ <= num_total_features_);
+  CHECK(weight_idx_ < 0 || weight_idx_ < num_total_features_);
+  CHECK(group_idx_ < 0 || group_idx_ < num_total_features_);
+
+  // fill feature_names_ if not header
+  if (feature_names_.size() <= 0) {
+    for (int i = 0; i < num_total_features_; ++i) {
+      std::stringstream str_buf;
+      str_buf << "Column_" << i;
+      feature_names_.push_back(str_buf.str());
+    }
+  }
+
   // start find bins
   if (num_machines == 1) {
     std::vector<BinMapper*> bin_mappers(sample_values.size());
     // if only 1 machines, find bin locally
     #pragma omp parallel for schedule(guided)
     for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
+      if (ignore_features_.count(i) > 0) {
+        bin_mappers[i] = nullptr;
+        continue;
+      }
       bin_mappers[i] = new BinMapper();
       bin_mappers[i]->FindBin(&sample_values[i], max_bin_);
     }
 
     for (size_t i = 0; i < sample_values.size(); ++i) {
-      if (!bin_mappers[i]->is_trival()) {
+      if (bin_mappers[i] == nullptr) {
+        Log::Error("Ignore Feature %s ", feature_names_[i].c_str());
+      }
+      else if (!bin_mappers[i]->is_trival()) {
         // map real feature index to used feature index
         used_feature_map_[i] = static_cast<int>(features_.size());
         // push new feature
@@ -209,7 +353,7 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
                                              num_data_, is_enable_sparse_));
       } else {
         // if feature is trival(only 1 bin), free spaces
-        Log::Error("Feature %d only contains one value, will be ignored", i);
+        Log::Error("Feature %s only contains one value, will be ignored", feature_names_[i].c_str());
         delete bin_mappers[i];
       }
     }
@@ -256,12 +400,17 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
     Network::Allgather(input_buffer, buffer_size, start, len, output_buffer);
     // restore features bins from buffer
     for (int i = 0; i < total_num_feature; ++i) {
+      if (ignore_features_.count(i) > 0) {
+        Log::Error("Ignore Feature %s ", feature_names_[i].c_str());
+        continue;
+      }
       BinMapper* bin_mapper = new BinMapper();
       bin_mapper->CopyFrom(output_buffer + i * type_size);
       if (!bin_mapper->is_trival()) {
         used_feature_map_[i] = static_cast<int>(features_.size());
         features_.push_back(new Feature(static_cast<int>(i), bin_mapper, num_data_, is_enable_sparse_));
       } else {
+        Log::Error("Feature %s only contains one value, will be ignored", feature_names_[i].c_str());
         delete bin_mapper;
       }
     }
@@ -276,6 +425,13 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
 
 
 void Dataset::LoadTrainData(int rank, int num_machines, bool is_pre_partition, bool use_two_round_loading) {
+  // don't support query id in data file when training in parallel
+  if (num_machines > 1 && !is_pre_partition) {
+    if (group_idx_ > 0) {
+      Log::Fatal("Don't support query id in data file when training parallel without pre-partition. \
+                  Please use an additional query file or pre-partition your data");
+    }
+  }
   used_data_indices_.clear();
   if (!is_loading_from_binfile_ ) {
     if (!use_two_round_loading) {
@@ -287,7 +443,7 @@ void Dataset::LoadTrainData(int rank, int num_machines, bool is_pre_partition, b
       // construct feature bin mappers
       ConstructBinMappers(rank, num_machines, sample_data);
       // initialize label
-      metadata_.InitLabel(num_data_);
+      metadata_.Init(num_data_, weight_idx_, group_idx_);
       // extract features
       ExtractFeaturesFromMemory();
     } else {
@@ -297,7 +453,7 @@ void Dataset::LoadTrainData(int rank, int num_machines, bool is_pre_partition, b
       // construct feature bin mappers
       ConstructBinMappers(rank, num_machines, sample_data);
       // initialize label
-      metadata_.InitLabel(num_data_);
+      metadata_.Init(num_data_, weight_idx_, group_idx_);
 
       // extract features
       ExtractFeaturesFromFile();
@@ -322,7 +478,7 @@ void Dataset::LoadValidationData(const Dataset* train_set, bool use_two_round_lo
       // read data in memory
       LoadDataToMemory(0, 1, false);
       // initialize label
-      metadata_.InitLabel(num_data_);
+      metadata_.Init(num_data_, weight_idx_, group_idx_);
       features_.clear();
       // copy feature bin mapper data
       for (Feature* feature : train_set->features_) {
@@ -336,7 +492,7 @@ void Dataset::LoadValidationData(const Dataset* train_set, bool use_two_round_lo
       // Get number of lines of data file
       num_data_ = static_cast<data_size_t>(text_reader_->CountLine());
       // initialize label
-      metadata_.InitLabel(num_data_);
+      metadata_.Init(num_data_, weight_idx_, group_idx_);
       features_.clear();
       // copy feature bin mapper data
       for (Feature* feature : train_set->features_) {
@@ -381,6 +537,13 @@ void Dataset::ExtractFeaturesFromMemory() {
           // if is used feature
           features_[feature_idx]->PushData(tid, i, inner_data.second);
         }
+        else {
+          if (inner_data.first == weight_idx_) {
+            metadata_.SetWeightAt(i, inner_data.second);
+          } else if (inner_data.first == group_idx_) {
+            metadata_.SetQueryAt(i, inner_data.second);
+          }
+        }
       }
     }
   } else {
@@ -406,6 +569,13 @@ void Dataset::ExtractFeaturesFromMemory() {
         if (feature_idx >= 0) {
           // if is used feature
           features_[feature_idx]->PushData(tid, i, inner_data.second);
+        }
+        else {
+          if (inner_data.first == weight_idx_) {
+            metadata_.SetWeightAt(i, inner_data.second);
+          } else if (inner_data.first == group_idx_) {
+            metadata_.SetQueryAt(i, inner_data.second);
+          }
         }
       }
     }
@@ -450,6 +620,13 @@ void Dataset::ExtractFeaturesFromFile() {
         if (feature_idx >= 0) {
           // if is used feature
           features_[feature_idx]->PushData(tid, start_idx + i, inner_data.second);
+        }
+        else {
+          if (inner_data.first == weight_idx_) {
+            metadata_.SetWeightAt(start_idx + i, inner_data.second);
+          } else if (inner_data.first == group_idx_) {
+            metadata_.SetQueryAt(start_idx + i, inner_data.second);
+          }
         }
       }
     }

@@ -100,6 +100,20 @@ public:
   bool use_two_round_loading = false;
   bool is_save_binary_file = false;
   bool is_sigmoid = true;
+
+  bool has_header = false;
+  /*! \brief Index or column name of label, default is the first column
+   * And add an prefix "name:" while using column name */
+  std::string label_column = "";
+  /*! \brief Index or column name of weight, < 0 means not used
+  * And add an prefix "name:" while using column name */
+  std::string weight_column = "";
+  /*! \brief Index or column name of group, < 0 means not used */
+  std::string group_column = "";
+  /*! \brief ignored features, separate by ','
+  * e.g. name:column_name1,column_name2  */
+  std::string ignore_column = "";
+
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -323,7 +337,15 @@ struct ParameterAlias {
       { "save_binary", "is_save_binary_file" },
       { "early_stopping_rounds", "early_stopping_round"},
       { "early_stopping", "early_stopping_round"},
-      { "verbosity", "verbose" }
+      { "verbosity", "verbose" },
+      { "header", "has_header" },
+      { "label", "label_column" },
+      { "weight", "weight_column" },
+      { "group", "group_column" },
+      { "query", "group_column" },
+      { "query_column", "group_column" },
+      { "ignore_feature", "ignore_column" },
+      { "blacklist", "ignore_column" }
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {

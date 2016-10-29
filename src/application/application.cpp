@@ -76,7 +76,7 @@ void Application::LoadParameters(int argc, char** argv) {
   ParameterAlias::KeyAliasTransform(&params);
   // read parameters from config file
   if (params.count("config_file") > 0) {
-    TextReader<size_t> config_reader(params["config_file"].c_str());
+    TextReader<size_t> config_reader(params["config_file"].c_str(), false);
     config_reader.ReadAllLines();
     if (config_reader.Lines().size() > 0) {
       for (auto& line : config_reader.Lines()) {
@@ -139,9 +139,7 @@ void Application::LoadData() {
   }
   train_data_ = new Dataset(config_.io_config.data_filename.c_str(),
                          config_.io_config.input_init_score.c_str(),
-                                          config_.io_config.max_bin,
-                                 config_.io_config.data_random_seed,
-                                 config_.io_config.is_enable_sparse,
+                                                  config_.io_config,
                                                        predict_fun);
   // load Training data
   if (config_.is_parallel_find_bin) {
@@ -173,9 +171,7 @@ void Application::LoadData() {
     // add
     valid_datas_.push_back(
       new Dataset(config_.io_config.valid_data_filenames[i].c_str(),
-                                          config_.io_config.max_bin,
-                                 config_.io_config.data_random_seed,
-                                 config_.io_config.is_enable_sparse,
+                                                  config_.io_config,
                                                       predict_fun));
     // load validation data like train data
     valid_datas_.back()->LoadValidationData(train_data_,
@@ -253,7 +249,8 @@ void Application::Train() {
 void Application::Predict() {
   // create predictor
   Predictor predictor(boosting_, config_.io_config.is_sigmoid, config_.predict_leaf_index);
-  predictor.Predict(config_.io_config.data_filename.c_str(), config_.io_config.output_result.c_str());
+  predictor.Predict(config_.io_config.data_filename.c_str(), 
+    config_.io_config.output_result.c_str(), config_.io_config.has_header);
   Log::Info("Finish predict.");
 }
 
@@ -265,7 +262,7 @@ void Application::InitPredict() {
 }
 
 void Application::LoadModel() {
-  TextReader<size_t> model_reader(config_.io_config.input_model.c_str());
+  TextReader<size_t> model_reader(config_.io_config.input_model.c_str(), false);
   model_reader.ReadAllLines();
   std::stringstream ss;
   for (auto& line : model_reader.Lines()) {

@@ -92,7 +92,7 @@ public:
   * \param has_label True if this data contains label
   * \param result_filename Filename of output result
   */
-  void Predict(const char* data_filename, const char* result_filename) {
+  void Predict(const char* data_filename, const char* result_filename, bool has_header) {
     FILE* result_file;
 
 #ifdef _MSC_VER
@@ -104,8 +104,7 @@ public:
     if (result_file == NULL) {
       Log::Fatal("Predition result file %s doesn't exists", data_filename);
     }
-    bool has_label = false;
-    Parser* parser = Parser::CreateParser(data_filename, num_features_, &has_label);
+    Parser* parser = Parser::CreateParser(data_filename, has_header, num_features_, boosting_->LabelIdx());
 
     if (parser == nullptr) {
       Log::Fatal("Recongnizing input data format failed, filename %s", data_filename);
@@ -114,21 +113,12 @@ public:
     // function for parse data
     std::function<void(const char*, std::vector<std::pair<int, double>>*)> parser_fun;
     double tmp_label;
-    if (has_label) {
-      // parse function with label
-      parser_fun = [this, &parser, &tmp_label]
-      (const char* buffer, std::vector<std::pair<int, double>>* feature) {
-        parser->ParseOneLine(buffer, feature, &tmp_label);
-      };
-      Log::Info("Start prediction for data %s with labels", data_filename);
-    } else {
-      // parse function without label
-      parser_fun = [this, &parser]
-      (const char* buffer, std::vector<std::pair<int, double>>* feature) {
-        parser->ParseOneLine(buffer, feature);
-      };
-      Log::Info("Start prediction for data %s without label", data_filename);
-    }
+
+    parser_fun = [this, &parser, &tmp_label]
+    (const char* buffer, std::vector<std::pair<int, double>>* feature) {
+      parser->ParseOneLine(buffer, feature, &tmp_label);
+    };
+
     std::function<std::string(const std::vector<std::pair<int, double>>&)> predict_fun;
     if (predict_leaf_index) {
       predict_fun = [this](const std::vector<std::pair<int, double>>& features){
@@ -173,7 +163,7 @@ public:
         fprintf(result_file, "%s\n", pred_result[i].c_str());
       }
     };
-    TextReader<data_size_t> predict_data_reader(data_filename);
+    TextReader<data_size_t> predict_data_reader(data_filename, has_header);
     predict_data_reader.ReadAllAndProcessParallel(process_fun);
 
     fclose(result_file);
