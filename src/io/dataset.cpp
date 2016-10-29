@@ -54,9 +54,7 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
           Log::Fatal("cannot find label column: %s in data file", name.c_str());
         }
       } else {
-        size_t pos = 0;
-        label_idx_ = std::stoi(io_config.label_column, &pos);
-        if (pos != io_config.label_column.size()) {
+        if (!Common::AtoiAndCheck(io_config.label_column.c_str(), &label_idx_)) {
           Log::Fatal("label_column is not a number, \
                       if you want to use column name, \
                       please add prefix \"name:\" before column name");
@@ -84,9 +82,8 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
         }
       } else {
         for (auto token : Common::Split(io_config.ignore_column.c_str(), ',')) {
-          size_t pos = 0;
-          int tmp = std::stoi(token, &pos);
-          if (pos != token.size()) {
+          int tmp = 0;
+          if (!Common::AtoiAndCheck(token.c_str(), &tmp)) {
             Log::Fatal("ignore_column is not a number, \
                       if you want to use column name, \
                       please add prefix \"name:\" before column name");
@@ -110,9 +107,7 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
           Log::Fatal("cannot find weight column: %s in data file", name.c_str());
         }
       } else {
-        size_t pos = 0;
-        weight_idx_ = std::stoi(io_config.weight_column, &pos);
-        if (pos != io_config.weight_column.size()) {
+        if (!Common::AtoiAndCheck(io_config.weight_column.c_str(), &weight_idx_)) {
           Log::Fatal("weight_column is not a number, \
                       if you want to use column name, \
                       please add prefix \"name:\" before column name");
@@ -136,9 +131,7 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
           Log::Fatal("cannot find group/query column: %s in data file", name.c_str());
         }
       } else {
-        size_t pos = 0;
-        group_idx_ = std::stoi(io_config.group_column, &pos);
-        if (pos != io_config.group_column.size()) {
+        if (!Common::AtoiAndCheck(io_config.group_column.c_str(), &group_idx_)) {
           Log::Fatal("group_column is not a number, \
                       if you want to use column name, \
                       please add prefix \"name:\" before column name");

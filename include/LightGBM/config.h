@@ -254,7 +254,10 @@ inline bool ConfigBase::GetInt(
   const std::unordered_map<std::string, std::string>& params,
   const std::string& name, int* out) {
   if (params.count(name) > 0) {
-    Common::Atoi(params.at(name).c_str(), out);
+    if (!Common::AtoiAndCheck(params.at(name).c_str(), out)) {
+      Log::Fatal("Parameter %s should be int type, passed is [%s]", 
+        name.c_str(), params.at(name).c_str());
+    }
     return true;
   }
   return false;
@@ -264,7 +267,10 @@ inline bool ConfigBase::GetDouble(
   const std::unordered_map<std::string, std::string>& params,
   const std::string& name, double* out) {
   if (params.count(name) > 0) {
-    Common::Atof(params.at(name).c_str(), out);
+    if (!Common::AtofAndCheck(params.at(name).c_str(), out)) {
+      Log::Fatal("Parameter %s should be float type, passed is [%s]",
+        name.c_str(), params.at(name).c_str());
+    }
     return true;
   }
   return false;
@@ -276,10 +282,13 @@ inline bool ConfigBase::GetBool(
   if (params.count(name) > 0) {
     std::string value = params.at(name);
     std::transform(value.begin(), value.end(), value.begin(), ::tolower);
-    if (value == std::string("false")) {
+    if (value == std::string("false") || value == std::string("-")) {
       *out = false;
-    } else {
+    } else if (value == std::string("true") || value == std::string("+")) {
       *out = true;
+    } else {
+      Log::Fatal("Parameter %s should be \"true\"/\"+\" or \"false\"/\"-\", passed is [%s]",
+        name.c_str(), params.at(name).c_str());
     }
     return true;
   }

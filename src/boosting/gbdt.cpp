@@ -12,6 +12,7 @@
 #include <chrono>
 #include <string>
 #include <vector>
+#include <utility>
 
 namespace LightGBM {
 
@@ -374,16 +375,30 @@ void GBDT::ModelsFromString(const std::string& model_str, int num_used_model) {
 }
 
 void GBDT::FeatureImportance(const int last_iter) {
-    size_t* feature_importances = new size_t[max_feature_idx_ + 1]{0};
+  std::vector<size_t> feature_importances(max_feature_idx_ + 1, 0);
     for (int iter = 0; iter < last_iter; ++iter) {
-        for (int split_idx = 0; split_idx < models_.at(iter)->num_leaves() - 1; ++split_idx) {
-            ++feature_importances[models_.at(iter)->split_feature_real(split_idx)];
+        for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
+            ++feature_importances[models_[iter]->split_feature_real(split_idx)];
         }
     }
-    std::string ret = Common::ArrayToString(feature_importances, max_feature_idx_ + 1, ' ');
-    fprintf(output_model_file, "feature importances=%s\n", ret.c_str());
+    // store the importance first
+    std::vector<std::pair<size_t, std::string>> pairs;
+    for (size_t i = 0; i < feature_importances.size(); ++i) {
+      pairs.emplace_back(feature_importances[i], train_data_->feature_names()[i]);
+    }
+    // sort the importance
+    std::sort(pairs.begin(), pairs.end(),
+      [](const std::pair<size_t, std::string>& lhs,
+        const std::pair<size_t, std::string>& rhs) {
+      return lhs.first > rhs.first; 
+    });
+    // write to model file
+    fprintf(output_model_file, "\nfeature importances:\n");
+    for (size_t i = 0; i < pairs.size(); ++i) {
+      fprintf(output_model_file, "%s=%s\n", pairs[i].second.c_str(),
+        std::to_string(pairs[i].first).c_str());
+    }
     fflush(output_model_file);
-    delete[] feature_importances;
 }
 
 double GBDT::PredictRaw(const double* value) const {

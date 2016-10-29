@@ -195,6 +195,22 @@ inline static const char* Atof(const char* p, double* out) {
   return p;
 }
 
+inline bool AtoiAndCheck(const char* p, int* out) {
+  const char* after = Atoi(p, out);
+  if (*after != '\0') {
+    return false;
+  }
+  return true;
+}
+
+inline bool AtofAndCheck(const char* p, double* out) {
+  const char* after = Atof(p, out);
+  if (*after != '\0') {
+    return false;
+  }
+  return true;
+}
+
 inline static const char* SkipSpaceAndTab(const char* p) {
   while (*p == ' ' || *p == '\t') {
     ++p;
