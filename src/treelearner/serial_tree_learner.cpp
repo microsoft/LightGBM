@@ -63,16 +63,17 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
   max_cache_size = Common::Min(max_cache_size, num_leaves_);
   histogram_pool_.ResetSize(max_cache_size, num_leaves_);
 
-  for (int i = 0; i < max_cache_size; ++i) {
+  auto histogram_create_function = [this]() {
     FeatureHistogram* tmp_histogram_array = new FeatureHistogram[train_data_->num_features()];
     for (int j = 0; j < train_data_->num_features(); ++j) {
       tmp_histogram_array[j].Init(train_data_->FeatureAt(j),
-                                             j, min_num_data_one_leaf_,
-                                             min_sum_hessian_one_leaf_);
+        j, min_num_data_one_leaf_,
+        min_sum_hessian_one_leaf_);
     }
-    // set data at i-th position
-    histogram_pool_.Set(i, tmp_histogram_array);
-  }
+    return tmp_histogram_array;
+  };
+  histogram_pool_.Fill(histogram_create_function);
+
   // push split information for all leaves
   for (int i = 0; i < num_leaves_; ++i) {
     best_split_per_leaf_.push_back(SplitInfo());

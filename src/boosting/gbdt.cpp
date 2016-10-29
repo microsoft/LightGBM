@@ -12,6 +12,7 @@
 #include <chrono>
 #include <string>
 #include <vector>
+#include <utility>
 
 namespace LightGBM {
 
@@ -61,7 +62,8 @@ void GBDT::Init(const Dataset* train_data, const ObjectiveFunction* object_funct
 
   // get max feature index
   max_feature_idx_ = train_data_->num_total_features() - 1;
-
+  // get label index
+  label_idx_ = train_data_->label_idx();
   // if need bagging, create buffer
   if (gbdt_config_->bagging_fraction < 1.0 && gbdt_config_->bagging_freq > 0) {
     out_of_bag_data_indices_ = new data_size_t[num_data_];
@@ -215,15 +217,15 @@ void GBDT::Train() {
     }
   }
   // close file
-  if (early_stopping_round_ > 0) {
-      // save remaining models
-      for (int iter = gbdt_config_->num_iterations - early_stopping_round_; iter < static_cast<int>(models_.size()); ++iter){
+  int remaining_models = gbdt_config_->num_iterations - early_stopping_round_;
+  if (early_stopping_round_ > 0 && remaining_models > 0) {
+      for (int iter = remaining_models; iter < static_cast<int>(models_.size()); ++iter){
         fprintf(output_model_file, "Tree=%d\n", iter);
         fprintf(output_model_file, "%s\n", models_.at(iter)->ToString().c_str());
       }
       fflush(output_model_file);
   }
-  FeatureImportance(models_.size());
+  FeatureImportance(static_cast<int>(models_.size()));
   fclose(output_model_file);
 }
 
@@ -252,7 +254,7 @@ bool GBDT::OutputMetric(int iter) {
       score_t test_score_ = valid_metrics_[i][j]->PrintAndGetLoss(iter, valid_score_updater_[i]->score());
       if (!ret && early_stopping_round_ > 0){
         bool the_bigger_the_better_ = valid_metrics_[i][j]->the_bigger_the_better;
-        if (best_score_[i][j] < 0 
+        if (best_score_[i][j] < 0
             || (!the_bigger_the_better_ && test_score_ < best_score_[i][j])
             || ( the_bigger_the_better_ && test_score_ > best_score_[i][j])){
             best_score_[i][j] = test_score_;
@@ -276,19 +278,21 @@ void GBDT::Boosting() {
 
 std::string GBDT::ModelsToString() const {
   // serialize this object to string
-  std::stringstream ss;
+  std::stringstream str_buf;
+  // output label index
+  str_buf << "label_index=" << label_idx_ << std::endl;
   // output max_feature_idx
-  ss << "max_feature_idx=" << max_feature_idx_ << std::endl;
+  str_buf << "max_feature_idx=" << max_feature_idx_ << std::endl;
   // output sigmoid parameter
-  ss << "sigmoid=" << object_function_->GetSigmoid() << std::endl;
-  ss << std::endl;
+  str_buf << "sigmoid=" << object_function_->GetSigmoid() << std::endl;
+  str_buf << std::endl;
 
   // output tree models
   for (size_t i = 0; i < models_.size(); ++i) {
-    ss << "Tree=" << i << std::endl;
-    ss << models_[i]->ToString() << std::endl;
+    str_buf << "Tree=" << i << std::endl;
+    str_buf << models_[i]->ToString() << std::endl;
   }
-  return ss.str();
+  return str_buf.str();
 }
 
 void GBDT::ModelsFromString(const std::string& model_str, int num_used_model) {
@@ -296,7 +300,26 @@ void GBDT::ModelsFromString(const std::string& model_str, int num_used_model) {
   models_.clear();
   std::vector<std::string> lines = Common::Split(model_str.c_str(), '\n');
   size_t i = 0;
+
+  // get index of label
+  while (i < lines.size()) {
+    size_t find_pos = lines[i].find("label_index=");
+    if (find_pos != std::string::npos) {
+      std::vector<std::string> strs = Common::Split(lines[i].c_str(), '=');
+      Common::Atoi(strs[1].c_str(), &label_idx_);
+      ++i;
+      break;
+    } else {
+      ++i;
+    }
+  }
+  if (i == lines.size()) {
+    Log::Fatal("Model file doesn't contain label index");
+    return;
+  }
+
   // get max_feature_idx first
+  i = 0;
   while (i < lines.size()) {
     size_t find_pos = lines[i].find("max_feature_idx=");
     if (find_pos != std::string::npos) {
@@ -352,16 +375,30 @@ void GBDT::ModelsFromString(const std::string& model_str, int num_used_model) {
 }
 
 void GBDT::FeatureImportance(const int last_iter) {
-    size_t* feature_importances = new size_t[max_feature_idx_ + 1]{0};
+  std::vector<size_t> feature_importances(max_feature_idx_ + 1, 0);
     for (int iter = 0; iter < last_iter; ++iter) {
-        for (int split_idx = 0; split_idx < models_.at(iter)->num_leaves() - 1; ++split_idx) {
-            ++feature_importances[models_.at(iter)->split_feature(split_idx)];
+        for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
+            ++feature_importances[models_[iter]->split_feature_real(split_idx)];
         }
     }
-    std::string ret = Common::ArrayToString(feature_importances, max_feature_idx_ + 1, ' ');
-    fprintf(output_model_file, "feature importances=%s\n", ret.c_str());
+    // store the importance first
+    std::vector<std::pair<size_t, std::string>> pairs;
+    for (size_t i = 0; i < feature_importances.size(); ++i) {
+      pairs.emplace_back(feature_importances[i], train_data_->feature_names()[i]);
+    }
+    // sort the importance
+    std::sort(pairs.begin(), pairs.end(),
+      [](const std::pair<size_t, std::string>& lhs,
+        const std::pair<size_t, std::string>& rhs) {
+      return lhs.first > rhs.first;
+    });
+    // write to model file
+    fprintf(output_model_file, "\nfeature importances:\n");
+    for (size_t i = 0; i < pairs.size(); ++i) {
+      fprintf(output_model_file, "%s=%s\n", pairs[i].second.c_str(),
+        std::to_string(pairs[i].first).c_str());
+    }
     fflush(output_model_file);
-    delete[] feature_importances;
 }
 
 double GBDT::PredictRaw(const double* value) const {

@@ -94,13 +94,26 @@ public:
   std::string input_model = "";
   std::string input_init_score = "";
   int verbosity = 1;
-  std::string log_file = "";
   int num_model_predict = -1;
   bool is_pre_partition = false;
   bool is_enable_sparse = true;
   bool use_two_round_loading = false;
   bool is_save_binary_file = false;
   bool is_sigmoid = true;
+
+  bool has_header = false;
+  /*! \brief Index or column name of label, default is the first column
+   * And add an prefix "name:" while using column name */
+  std::string label_column = "";
+  /*! \brief Index or column name of weight, < 0 means not used
+  * And add an prefix "name:" while using column name */
+  std::string weight_column = "";
+  /*! \brief Index or column name of group, < 0 means not used */
+  std::string group_column = "";
+  /*! \brief ignored features, separate by ','
+  * e.g. name:column_name1,column_name2  */
+  std::string ignore_column = "";
+
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -241,7 +254,10 @@ inline bool ConfigBase::GetInt(
   const std::unordered_map<std::string, std::string>& params,
   const std::string& name, int* out) {
   if (params.count(name) > 0) {
-    Common::Atoi(params.at(name).c_str(), out);
+    if (!Common::AtoiAndCheck(params.at(name).c_str(), out)) {
+      Log::Fatal("Parameter %s should be int type, passed is [%s]", 
+        name.c_str(), params.at(name).c_str());
+    }
     return true;
   }
   return false;
@@ -251,7 +267,10 @@ inline bool ConfigBase::GetDouble(
   const std::unordered_map<std::string, std::string>& params,
   const std::string& name, double* out) {
   if (params.count(name) > 0) {
-    Common::Atof(params.at(name).c_str(), out);
+    if (!Common::AtofAndCheck(params.at(name).c_str(), out)) {
+      Log::Fatal("Parameter %s should be float type, passed is [%s]",
+        name.c_str(), params.at(name).c_str());
+    }
     return true;
   }
   return false;
@@ -263,10 +282,13 @@ inline bool ConfigBase::GetBool(
   if (params.count(name) > 0) {
     std::string value = params.at(name);
     std::transform(value.begin(), value.end(), value.begin(), ::tolower);
-    if (value == std::string("false")) {
+    if (value == std::string("false") || value == std::string("-")) {
       *out = false;
-    } else {
+    } else if (value == std::string("true") || value == std::string("+")) {
       *out = true;
+    } else {
+      Log::Fatal("Parameter %s should be \"true\"/\"+\" or \"false\"/\"-\", passed is [%s]",
+        name.c_str(), params.at(name).c_str());
     }
     return true;
   }
@@ -324,7 +346,15 @@ struct ParameterAlias {
       { "save_binary", "is_save_binary_file" },
       { "early_stopping_rounds", "early_stopping_round"},
       { "early_stopping", "early_stopping_round"},
-      { "verbosity", "verbose" }
+      { "verbosity", "verbose" },
+      { "header", "has_header" },
+      { "label", "label_column" },
+      { "weight", "weight_column" },
+      { "group", "group_column" },
+      { "query", "group_column" },
+      { "query_column", "group_column" },
+      { "ignore_feature", "ignore_column" },
+      { "blacklist", "ignore_column" }
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {

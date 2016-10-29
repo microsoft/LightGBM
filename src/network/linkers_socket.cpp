@@ -77,7 +77,7 @@ Linkers::~Linkers() {
 }
 
 void Linkers::ParseMachineList(const char * filename) {
-  TextReader<size_t> machine_list_reader(filename);
+  TextReader<size_t> machine_list_reader(filename, false);
   machine_list_reader.ReadAllLines();
   if (machine_list_reader.Lines().size() <= 0) {
     Log::Fatal("Machine list file:%s doesn't exist", filename);

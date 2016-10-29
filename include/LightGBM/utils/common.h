@@ -43,14 +43,39 @@ inline static std::string& RemoveQuotationSymbol(std::string& str) {
   str.erase(0, str.find_first_not_of("'\""));
   return str;
 }
-
-inline static std::vector<std::string> Split(const char* str, char delimiter) {
-  std::stringstream ss(str);
-  std::string tmp_str;
-  std::vector<std::string> ret;
-  while (std::getline(ss, tmp_str, delimiter)) {
-    ret.push_back(tmp_str);
+inline static bool StartsWith(const std::string& str, const std::string prefix) {
+  if (str.substr(0, prefix.size()) == prefix) {
+    return true;
+  } else {
+    return false;
   }
+}
+inline static std::vector<std::string> Split(const char* c_str, char delimiter) {
+  std::vector<std::string> ret;
+  std::string str(c_str);
+  size_t i = 0;
+  size_t pos = str.find(delimiter);
+  while (pos != std::string::npos) {
+    ret.push_back(str.substr(i, pos - i));
+    i = ++pos;
+    pos = str.find(delimiter, pos);
+  }
+  ret.push_back(str.substr(i));
+  return ret;
+}
+
+inline static std::vector<std::string> Split(const char* c_str, const char* delimiters) {
+  // will split when met any chars in delimiters
+  std::vector<std::string> ret;
+  std::string str(c_str);
+  size_t i = 0;
+  size_t pos = str.find_first_of(delimiters);
+  while (pos != std::string::npos) {
+    ret.push_back(str.substr(i, pos - i));
+    i = ++pos;
+    pos = str.find_first_of(delimiters, pos);
+  }
+  ret.push_back(str.substr(i));
   return ret;
 }
 
@@ -168,6 +193,22 @@ inline static const char* Atof(const char* p, double* out) {
   }
 
   return p;
+}
+
+inline bool AtoiAndCheck(const char* p, int* out) {
+  const char* after = Atoi(p, out);
+  if (*after != '\0') {
+    return false;
+  }
+  return true;
+}
+
+inline bool AtofAndCheck(const char* p, double* out) {
+  const char* after = Atof(p, out);
+  if (*after != '\0') {
+    return false;
+  }
+  return true;
 }
 
 inline static const char* SkipSpaceAndTab(const char* p) {
