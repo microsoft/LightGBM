@@ -17,7 +17,6 @@
 namespace LightGBM {
 
 GBDT::GBDT(const BoostingConfig* config)
-//  : tree_learner_(nullptr), train_score_updater_(nullptr),
   : train_score_updater_(nullptr),
   gradients_(nullptr), hessians_(nullptr),
   out_of_bag_data_indices_(nullptr), bag_data_indices_(nullptr) {
@@ -25,9 +24,7 @@ GBDT::GBDT(const BoostingConfig* config)
   gbdt_config_ = dynamic_cast<const GBDTConfig*>(config);
   early_stopping_round_ = gbdt_config_->early_stopping_round;
   num_class_ = config->num_class;
-  for (int i = 0; i <  num_class_; ++i){
-      tree_learner_.emplace_back(nullptr);
-  }
+  tree_learner_ = std::vector<TreeLearner*>(num_class_, nullptr);
 }
 
 GBDT::~GBDT() {
@@ -52,7 +49,7 @@ void GBDT::Init(const Dataset* train_data, const ObjectiveFunction* object_funct
   train_data_ = train_data;
   for (int i = 0; i < num_class_; ++i){
     // create tree learner
-      tree_learner_[i] =
+    tree_learner_[i] =
     TreeLearner::CreateTreeLearner(gbdt_config_->tree_learner_type, gbdt_config_->tree_config);
     // init tree learner
     tree_learner_[i]->Init(train_data_);
@@ -228,7 +225,7 @@ void GBDT::Train() {
     if (is_early_stopping) {
         // close file with an early-stopping message
         Log::Info("Early stopping at iteration %d, the best iteration round is %d", iter + 1, iter + 1 - early_stopping_round_);
-        FeatureImportance((iter - early_stopping_round_) * num_class_ + 1);
+        FeatureImportance((iter - early_stopping_round_ + 1) * num_class_);
         fclose(output_model_file);
         return;
     }

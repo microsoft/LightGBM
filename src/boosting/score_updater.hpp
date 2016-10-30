@@ -72,9 +72,9 @@ private:
   data_size_t num_data_;
   /*! \brief Pointer of data set */
   const Dataset* data_;
-  /*! \brief scores for data set */
+  /*! \brief Scores for data set */
   score_t* score_;
-  
+  /*! \brief Number of classes */
   int num_class_;
 };
 
