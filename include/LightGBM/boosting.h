@@ -46,6 +46,12 @@ public:
   /*! \brief Training logic */
   virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) = 0;
 
+  /*! \brief Get eval result */
+  virtual std::vector<std::string> EvalCurrent(bool is_eval_train) const = 0 ;
+
+  /*! \brief Get prediction result */
+  virtual const std::vector<const score_t*> PredictCurrent(bool is_predict_train) const = 0;
+
   /*!
   * \brief Prediction for one record, not sigmoid transform
   * \param feature_values Feature value on this record
@@ -102,6 +108,11 @@ public:
   * \return Number of weak sub-models
   */
   virtual int NumberOfSubModels() const = 0;
+
+  /*!
+  * \brief Get Type name of this boosting object
+  */
+  virtual const char* Name() const = 0;
 
   /*!
   * \brief Create boosting object

@@ -211,11 +211,7 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
 
 
 void MetricConfig::Set(const std::unordered_map<std::string, std::string>& params) {
-  GetInt(params, "early_stopping_round", &early_stopping_round);
-  GetInt(params, "metric_freq", &output_freq);
-  CHECK(output_freq >= 0);
   GetFloat(params, "sigmoid", &sigmoid);
-  GetBool(params, "is_training_metric", &is_provide_training_metric);
   std::string tmp_str = "";
   if (GetString(params, "label_gain", &tmp_str)) {
     label_gain = Common::StringToFloatArray(tmp_str, ',');
@@ -269,6 +265,9 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   CHECK(learning_rate > 0.0);
   GetInt(params, "early_stopping_round", &early_stopping_round);
   CHECK(early_stopping_round >= 0);
+  GetInt(params, "metric_freq", &output_freq);
+  CHECK(output_freq >= 0);
+  GetBool(params, "is_training_metric", &is_provide_training_metric);
 }
 
 void GBDTConfig::GetTreeLearnerType(const std::unordered_map<std::string, std::string>& params) {

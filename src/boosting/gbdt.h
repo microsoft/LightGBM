@@ -45,6 +45,13 @@ public:
   * \brief one training iteration
   */
   bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override;
+
+  /*! \brief Get eval result */
+  std::vector<std::string> EvalCurrent(bool is_eval_train) const override;
+
+  /*! \brief Get prediction result */
+  const std::vector<const score_t*> PredictCurrent(bool is_predict_train) const override;
+
   /*!
   * \brief Predtion for one record without sigmoid transformation
   * \param feature_values Feature value on this record
@@ -95,6 +102,11 @@ public:
   * \return Number of weak sub-models
   */
   inline int NumberOfSubModels() const override { return static_cast<int>(models_.size()); }
+
+  /*!
+  * \brief Get Type name of this boosting object
+  */
+  const char* Name() const override { return "gbdt"; }
 
 private:
   /*!

@@ -11,7 +11,7 @@ namespace LightGBM {
 
 /*!
 * \brief The interface of metric.
-*        Metric is used to calculate and output metric result on training / validation data.
+*        Metric is used to calculate metric result
 */
 class Metric {
 public:
@@ -27,12 +27,14 @@ public:
   virtual void Init(const char* test_name,
     const Metadata& metadata, data_size_t num_data) = 0;
 
+  virtual const char* GetName() const = 0;
+
+  virtual bool is_bigger_better() const = 0;
   /*!
   * \brief Calcaluting and printing metric result
-  * \param iter Current iteration
   * \param score Current prediction score
   */
-  virtual score_t PrintAndGetLoss(int iter, const score_t* score) const = 0;
+  virtual std::vector<float> Eval(const score_t* score) const = 0;
 
   /*!
   * \brief Create object of metrics
@@ -41,8 +43,6 @@ public:
   */
   static Metric* CreateMetric(const std::string& type, const MetricConfig& config);
 
-  bool the_bigger_the_better = false;
-  int early_stopping_round_ = 0;
 };
 
 /*!

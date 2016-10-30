@@ -189,7 +189,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
   ++iter_;
   if (is_met_early_stopping) {
     Log::Info("Early stopping at iteration %d, the best iteration round is %d",
-      iter_ + 1, iter_ + 1 - early_stopping_round_);
+      iter_, iter_ - early_stopping_round_);
     // pop last early_stopping_round_ models
     for (int i = 0; i < early_stopping_round_; ++i) {
       delete models_.back();
@@ -212,26 +212,72 @@ void GBDT::UpdateScore(const Tree* tree) {
 bool GBDT::OutputMetric(int iter) {
   bool ret = false;
   // print training metric
-  for (auto& sub_metric : training_metrics_) {
-    sub_metric->PrintAndGetLoss(iter, train_score_updater_->score());
+  if ((iter % gbdt_config_->output_freq) == 0) {
+    for (auto& sub_metric : training_metrics_) {
+      auto name = sub_metric->GetName();
+      auto scores = sub_metric->Eval(train_score_updater_->score());
+      Log::Info("Iteration:%d, %s : %s", iter, name, Common::ArrayToString<float>(scores, ' ').c_str());
+    }
   }
   // print validation metric
-  for (size_t i = 0; i < valid_metrics_.size(); ++i) {
-    for (size_t j = 0; j < valid_metrics_[i].size(); ++j) {
-      score_t test_score_ = valid_metrics_[i][j]->PrintAndGetLoss(iter, valid_score_updater_[i]->score());
-      if (!ret && early_stopping_round_ > 0){
-        bool the_bigger_the_better_ = valid_metrics_[i][j]->the_bigger_the_better;
-        if (best_score_[i][j] < 0
-            || (!the_bigger_the_better_ && test_score_ < best_score_[i][j])
-            || ( the_bigger_the_better_ && test_score_ > best_score_[i][j])){
-            best_score_[i][j] = test_score_;
-            best_iter_[i][j] = iter;
+  if ((iter % gbdt_config_->output_freq) == 0 || early_stopping_round_ > 0) {
+    for (size_t i = 0; i < valid_metrics_.size(); ++i) {
+      for (size_t j = 0; j < valid_metrics_[i].size(); ++j) {
+        auto test_scores = valid_metrics_[i][j]->Eval(valid_score_updater_[i]->score());
+        if ((iter % gbdt_config_->output_freq) == 0) {
+          auto name = valid_metrics_[i][j]->GetName();
+          Log::Info("Iteration:%d, %s : %s", iter, name, Common::ArrayToString<float>(test_scores, ' ').c_str());
         }
-        else {
-          if (iter - best_iter_[i][j] >= early_stopping_round_) ret = true;
+        if (!ret && early_stopping_round_ > 0) {
+          bool the_bigger_the_better = valid_metrics_[i][j]->is_bigger_better();
+          if (best_score_[i][j] < 0
+            || (!the_bigger_the_better && test_scores.back() < best_score_[i][j])
+            || (the_bigger_the_better && test_scores.back() > best_score_[i][j])) {
+            best_score_[i][j] = test_scores.back();
+            best_iter_[i][j] = iter;
+          } else {
+            if (iter - best_iter_[i][j] >= early_stopping_round_) ret = true;
+          }
         }
       }
     }
+  }
+  return ret;
+}
+
+/*! \brief Get eval result */
+std::vector<std::string> GBDT::EvalCurrent(bool is_eval_train) const {
+  std::vector<std::string> ret;
+  if (is_eval_train) {
+    for (auto& sub_metric : training_metrics_) {
+      auto name = sub_metric->GetName();
+      auto scores = sub_metric->Eval(train_score_updater_->score());
+      std::stringstream str_buf;
+      str_buf << name << " : " << Common::ArrayToString<float>(scores, ' ');
+      ret.emplace_back(str_buf.str());
+    }
+  }
+
+  for (size_t i = 0; i < valid_metrics_.size(); ++i) {
+    for (size_t j = 0; j < valid_metrics_[i].size(); ++j) {
+      auto name = valid_metrics_[i][j]->GetName();
+      auto test_scores = valid_metrics_[i][j]->Eval(valid_score_updater_[i]->score());
+      std::stringstream str_buf;
+      str_buf << name << " : " << Common::ArrayToString<float>(test_scores, ' ');
+      ret.emplace_back(str_buf.str());
+    }
+  }
+  return ret;
+}
+
+/*! \brief Get prediction result */
+const std::vector<const score_t*> GBDT::PredictCurrent(bool is_predict_train) const {
+  std::vector<const score_t*> ret;
+  if (is_predict_train) {
+    ret.push_back(train_score_updater_->score());
+  }
+  for (size_t i = 0; i < valid_metrics_.size(); ++i) {
+    ret.push_back(valid_score_updater_[i]->score());
   }
   return ret;
 }

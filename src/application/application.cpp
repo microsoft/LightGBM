@@ -153,7 +153,7 @@ void Application::LoadData() {
     train_data_->SaveBinaryFile();
   }
   // create training metric
-  if (config_.metric_config.is_provide_training_metric) {
+  if (config_.boosting_config->is_provide_training_metric) {
     for (auto metric_type : config_.metric_types) {
       Metric* metric =
         Metric::CreateMetric(metric_type, config_.metric_config);

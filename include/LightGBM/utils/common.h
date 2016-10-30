@@ -237,6 +237,20 @@ inline static std::string ArrayToString(const T* arr, int n, char delimiter) {
   return ss.str();
 }
 
+template<typename T>
+inline static std::string ArrayToString(std::vector<T> arr, char delimiter) {
+  if (arr.size() <= 0) {
+    return std::string("");
+  }
+  std::stringstream ss;
+  ss << arr[0];
+  for (size_t i = 1; i < arr.size(); ++i) {
+    ss << delimiter;
+    ss << arr[i];
+  }
+  return ss.str();
+}
+
 inline static void StringToIntArray(const std::string& str, char delimiter, size_t n, int* out) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   if (strs.size() != n) {
@@ -264,7 +278,7 @@ inline static std::vector<float> StringToFloatArray(const std::string& str, char
   std::vector<float> ret;
   for (size_t i = 0; i < strs.size(); ++i) {
     strs[i] = Trim(strs[i]);
-    float val = 0.0;
+    float val = 0.0f;
     Atof(strs[i].c_str(), &val);
     ret.push_back(val);
   }

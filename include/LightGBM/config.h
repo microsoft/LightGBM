@@ -121,7 +121,7 @@ public:
 struct ObjectiveConfig: public ConfigBase {
 public:
   virtual ~ObjectiveConfig() {}
-  float sigmoid = 1;
+  float sigmoid = 1.0f;
   // for lambdarank
   std::vector<float> label_gain;
   // for lambdarank
@@ -135,10 +135,7 @@ public:
 struct MetricConfig: public ConfigBase {
 public:
   virtual ~MetricConfig() {}
-  int early_stopping_round = 0;
-  int output_freq = 1;
-  float sigmoid = 1;
-  bool is_provide_training_metric = false;
+  float sigmoid = 1.0f;
   std::vector<float> label_gain;
   std::vector<int> eval_at;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
@@ -153,9 +150,9 @@ public:
   // should > 1, only one leaf means not need to learning
   int num_leaves = 127;
   int feature_fraction_seed = 2;
-  float feature_fraction = 1.0;
+  float feature_fraction = 1.0f;
   // max cache size(unit:MB) for historical histogram. < 0 means not limit
-  float histogram_pool_size = -1;
+  float histogram_pool_size = -1.0f;
   // max depth of tree model. 
   // Still grow tree by leaf-wise, but limit the max depth to avoid over-fitting
   // And the max leaves will be min(num_leaves, pow(2, max_depth - 1)) 
@@ -174,6 +171,8 @@ enum TreeLearnerType {
 struct BoostingConfig: public ConfigBase {
 public:
   virtual ~BoostingConfig() {}
+  int output_freq = 1;
+  bool is_provide_training_metric = false;
   int num_iterations = 10;
   float learning_rate = 0.1f;
   float bagging_fraction = 1.0f;
