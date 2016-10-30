@@ -125,7 +125,7 @@ void Application::LoadData() {
   if (boosting_->NumberOfSubModels() > 0) {
     predictor = new Predictor(boosting_, config_.io_config.is_sigmoid, config_.predict_leaf_index, -1);
     predict_fun =
-      [&predictor](const std::vector<std::pair<int, double>>& features) {
+      [&predictor](const std::vector<std::pair<int, float>>& features) {
       return predictor->PredictRawOneLine(features);
     };
   }
@@ -210,7 +210,7 @@ void Application::InitTrain() {
       gbdt_config->tree_config.feature_fraction_seed =
         GlobalSyncUpByMin<int>(gbdt_config->tree_config.feature_fraction_seed);
       gbdt_config->tree_config.feature_fraction =
-        GlobalSyncUpByMin<double>(gbdt_config->tree_config.feature_fraction);
+        GlobalSyncUpByMin<float>(gbdt_config->tree_config.feature_fraction);
     }
   }
   // create boosting

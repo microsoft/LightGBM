@@ -52,7 +52,7 @@ public:
   * \param num_used_model Number of used model
   * \return Prediction result for this record
   */
-  virtual double PredictRaw(const double* feature_values, 
+  virtual float PredictRaw(const float* feature_values,
     size_t num_used_model) const = 0;
 
   /*!
@@ -61,7 +61,7 @@ public:
   * \param num_used_model Number of used model
   * \return Prediction result for this record
   */
-  virtual double Predict(const double * feature_values, 
+  virtual float Predict(const float* feature_values, 
     size_t num_used_model) const = 0;
   
   /*!
@@ -71,7 +71,7 @@ public:
   * \return Predicted leaf index for this record
   */
   virtual std::vector<int> PredictLeafIndex(
-    const double * feature_values, 
+    const float* feature_values,
     size_t num_used_model) const = 0;
   
   /*!

@@ -108,9 +108,9 @@ public:
   * \param idx Index of this record
   * \param value Label value of this record
   */
-  inline void SetLabelAt(data_size_t idx, double value)
+  inline void SetLabelAt(data_size_t idx, float value)
   {
-    label_[idx] = static_cast<float>(value);
+    label_[idx] = value;
   }
 
   /*!
@@ -118,9 +118,9 @@ public:
   * \param idx Index of this record
   * \param value Weight value of this record
   */
-  inline void SetWeightAt(data_size_t idx, double value)
+  inline void SetWeightAt(data_size_t idx, float value)
   {
-    weights_[idx] = static_cast<float>(value);
+    weights_[idx] = value;
   }
 
   /*!
@@ -128,7 +128,7 @@ public:
   * \param idx Index of this record
   * \param value Query Id value of this record
   */
-  inline void SetQueryAt(data_size_t idx, double value)
+  inline void SetQueryAt(data_size_t idx, float value)
   {
     queries_[idx] = static_cast<data_size_t>(value);
   }
@@ -221,7 +221,7 @@ public:
   * \param out_label Label will store to this if exists
   */
   virtual void ParseOneLine(const char* str,
-    std::vector<std::pair<int, double>>* out_features, double* out_label) const = 0;
+    std::vector<std::pair<int, float>>* out_features, float* out_label) const = 0;
 
   /*!
   * \brief Create a object of parser, will auto choose the format depend on file
@@ -234,7 +234,7 @@ public:
 };
 
 using PredictFunction =
-  std::function<double(const std::vector<std::pair<int, double>>&)>;
+  std::function<float(const std::vector<std::pair<int, float>>&)>;
 
 /*! \brief The main class of data set,
 *          which are used to traning or validation

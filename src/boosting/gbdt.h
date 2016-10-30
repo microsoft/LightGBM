@@ -51,7 +51,7 @@ public:
   * \param num_used_model Number of used model
   * \return Prediction result for this record
   */
-  double PredictRaw(const double * feature_values, size_t num_used_model) const override;
+  float PredictRaw(const float* feature_values, size_t num_used_model) const override;
 
   /*!
   * \brief Predtion for one record with sigmoid transformation if enabled
@@ -59,7 +59,7 @@ public:
   * \param num_used_model Number of used model
   * \return Prediction result for this record
   */
-  double Predict(const double * feature_values, size_t num_used_model) const override;
+  float Predict(const float* feature_values, size_t num_used_model) const override;
   
   /*!
   * \brief Predtion for one record with leaf index
@@ -67,7 +67,7 @@ public:
   * \param num_used_model Number of used model
   * \return Predicted leaf index for this record
   */
- std::vector<int> PredictLeafIndex(const double* value, size_t num_used_model) const override;
+ std::vector<int> PredictLeafIndex(const float* value, size_t num_used_model) const override;
   
   /*!
   * \brief Serialize models by string
@@ -174,7 +174,7 @@ private:
   *   \brief Sigmoid parameter, used for prediction.
   *          if > 0 meas output score will transform by sigmoid function
   */
-  double sigmoid_;
+  float sigmoid_;
   /*! \brief Index of label column */
   data_size_t label_idx_;
   /*! \brief Saved number of models */

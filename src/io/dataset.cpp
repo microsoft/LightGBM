@@ -274,10 +274,10 @@ void Dataset::SampleDataFromFile(int rank, int num_machines, bool is_pre_partiti
 
 void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<std::string>& sample_data) {
   // sample_values[i][j], means the value of j-th sample on i-th feature
-  std::vector<std::vector<double>> sample_values;
+  std::vector<std::vector<float>> sample_values;
   // temp buffer for one line features and label
-  std::vector<std::pair<int, double>> oneline_features;
-  double label;
+  std::vector<std::pair<int, float>> oneline_features;
+  float label;
   for (size_t i = 0; i < sample_data.size(); ++i) {
     oneline_features.clear();
     // parse features
@@ -286,13 +286,13 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
     for (auto& feature_values : sample_values) {
       feature_values.push_back(0.0);
     }
-    for (std::pair<int, double>& inner_data : oneline_features) {
+    for (std::pair<int, float>& inner_data : oneline_features) {
       if (static_cast<size_t>(inner_data.first) >= sample_values.size()) {
         // if need expand feature set
         size_t need_size = inner_data.first - sample_values.size() + 1;
         for (size_t j = 0; j < need_size; ++j) {
           // push i+1 0
-          sample_values.emplace_back(i + 1, 0.0);
+          sample_values.emplace_back(i + 1, 0.0f);
         }
       }
       // edit the feature value
@@ -507,8 +507,8 @@ void Dataset::LoadValidationData(const Dataset* train_set, bool use_two_round_lo
 }
 
 void Dataset::ExtractFeaturesFromMemory() {
-  std::vector<std::pair<int, double>> oneline_features;
-  double tmp_label = 0.0;
+  std::vector<std::pair<int, float>> oneline_features;
+  float tmp_label = 0.0;
   if (predict_fun_ == nullptr) {
     // if doesn't need to prediction with initial model
     #pragma omp parallel for schedule(guided) private(oneline_features) firstprivate(tmp_label)
@@ -593,8 +593,8 @@ void Dataset::ExtractFeaturesFromFile() {
   std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
     [this, &init_score]
   (data_size_t start_idx, const std::vector<std::string>& lines) {
-    std::vector<std::pair<int, double>> oneline_features;
-    double tmp_label = 0.0;
+    std::vector<std::pair<int, float>> oneline_features;
+    float tmp_label = 0.0;
     #pragma omp parallel for schedule(static) private(oneline_features) firstprivate(tmp_label)
     for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); i++) {
       const int tid = omp_get_thread_num();

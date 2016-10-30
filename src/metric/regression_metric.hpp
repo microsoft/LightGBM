@@ -33,7 +33,7 @@ public:
     // get weights
     weights_ = metadata.weights();
     if (weights_ == nullptr) {
-      sum_weights_ = static_cast<double>(num_data_);
+      sum_weights_ = static_cast<float>(num_data_);
     } else {
       sum_weights_ = 0.0f;
       for (data_size_t i = 0; i < num_data_; ++i) {
@@ -44,7 +44,7 @@ public:
   
   score_t PrintAndGetLoss(int iter, const score_t* score) const override {
     if (early_stopping_round_ > 0 || (output_freq_ > 0 && iter % output_freq_ == 0)) {
-      score_t sum_loss = 0.0;
+      score_t sum_loss = 0.0f;
       if (weights_ == nullptr) {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
@@ -81,7 +81,7 @@ private:
   /*! \brief Pointer of weighs */
   const float* weights_;
   /*! \brief Sum weights */
-  double sum_weights_;
+  float sum_weights_;
   /*! \brief Name of this test set */
   const char* name;
 };

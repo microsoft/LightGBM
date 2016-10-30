@@ -103,9 +103,9 @@ inline static const char* Atoi(const char* p, int* out) {
 }
 
 //ref to http://www.leapsecond.com/tools/fast_atof.c
-inline static const char* Atof(const char* p, double* out) {
+inline static const char* Atof(const char* p, float* out) {
   int frac;
-  double sign, value, scale;
+  float sign, value, scale;
   *out = 0;
   // Skip leading white space, if any.
   while (*p == ' ') {
@@ -113,9 +113,9 @@ inline static const char* Atof(const char* p, double* out) {
   }
 
   // Get sign, if any.
-  sign = 1.0;
+  sign = 1.0f;
   if (*p == '-') {
-    sign = -1.0;
+    sign = -1.0f;
     ++p;
   }
   else if (*p == '+') {
@@ -125,24 +125,24 @@ inline static const char* Atof(const char* p, double* out) {
   // is a number
   if ((*p >= '0' && *p <= '9') || *p == '.' || *p == 'e' || *p == 'E') {
     // Get digits before decimal point or exponent, if any.
-    for (value = 0.0; *p >= '0' && *p <= '9'; ++p) {
-      value = value * 10.0 + (*p - '0');
+    for (value = 0.0f; *p >= '0' && *p <= '9'; ++p) {
+      value = value * 10.0f + (*p - '0');
     }
 
     // Get digits after decimal point, if any.
     if (*p == '.') {
-      double pow10 = 10.0;
+      float pow10 = 10.0f;
       ++p;
       while (*p >= '0' && *p <= '9') {
         value += (*p - '0') / pow10;
-        pow10 *= 10.0;
+        pow10 *= 10.0f;
         ++p;
       }
     }
 
     // Handle exponent, if any.
     frac = 0;
-    scale = 1.0;
+    scale = 1.0f;
     if ((*p == 'e') || (*p == 'E')) {
       unsigned int expon;
       // Get sign of exponent, if any.
@@ -157,11 +157,9 @@ inline static const char* Atof(const char* p, double* out) {
       for (expon = 0; *p >= '0' && *p <= '9'; ++p) {
         expon = expon * 10 + (*p - '0');
       }
-      if (expon > 308) expon = 308;
-      // Calculate scaling factor.
-      while (expon >= 50) { scale *= 1E50; expon -= 50; }
+      if (expon > 38) expon = 38;
       while (expon >= 8) { scale *= 1E8;  expon -= 8; }
-      while (expon > 0) { scale *= 10.0; expon -= 1; }
+      while (expon > 0) { scale *= 10.0f; expon -= 1; }
     }
     // Return signed and scaled floating point result.
     *out = sign * (frac ? (value / scale) : (value * scale));
@@ -177,9 +175,9 @@ inline static const char* Atof(const char* p, double* out) {
       std::string tmp_str(p, cnt);
       std::transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(), ::tolower);
       if (tmp_str == std::string("na") || tmp_str == std::string("nan")) {
-        *out = 0;
+        *out = 0.0f;
       } else if( tmp_str == std::string("inf") || tmp_str == std::string("infinity")) {
-        *out = sign * 1e308;
+        *out = sign * static_cast<float>(1e38);
       }
       else {
         Log::Fatal("Unknow token %s in data file", tmp_str.c_str());
@@ -203,7 +201,7 @@ inline bool AtoiAndCheck(const char* p, int* out) {
   return true;
 }
 
-inline bool AtofAndCheck(const char* p, double* out) {
+inline bool AtofAndCheck(const char* p, float* out) {
   const char* after = Atof(p, out);
   if (*after != '\0') {
     return false;
@@ -250,10 +248,10 @@ inline static void StringToIntArray(const std::string& str, char delimiter, size
   }
 }
 
-inline static void StringToDoubleArray(const std::string& str, char delimiter, size_t n, double* out) {
+inline static void StringToFloatArray(const std::string& str, char delimiter, size_t n, float* out) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   if (strs.size() != n) {
-    Log::Fatal("StringToDoubleArray error, size doesn't matched.");
+    Log::Fatal("StringToFloatArray error, size doesn't matched.");
   }
   for (size_t i = 0; i < strs.size(); ++i) {
     strs[i] = Trim(strs[i]);
@@ -261,25 +259,12 @@ inline static void StringToDoubleArray(const std::string& str, char delimiter, s
   }
 }
 
-inline static void StringToDoubleArray(const std::string& str, char delimiter, size_t n, float* out) {
+inline static std::vector<float> StringToFloatArray(const std::string& str, char delimiter) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
-  if (strs.size() != n) {
-    Log::Fatal("StringToDoubleArray error, size doesn't matched.");
-  }
-  double tmp;
+  std::vector<float> ret;
   for (size_t i = 0; i < strs.size(); ++i) {
     strs[i] = Trim(strs[i]);
-    Atof(strs[i].c_str(), &tmp);
-    out[i] = static_cast<float>(tmp);
-  }
-}
-
-inline static std::vector<double> StringToDoubleArray(const std::string& str, char delimiter) {
-  std::vector<std::string> strs = Split(str.c_str(), delimiter);
-  std::vector<double> ret;
-  for (size_t i = 0; i < strs.size(); ++i) {
-    strs[i] = Trim(strs[i]);
-    double val = 0.0;
+    float val = 0.0;
     Atof(strs[i].c_str(), &val);
     ret.push_back(val);
   }

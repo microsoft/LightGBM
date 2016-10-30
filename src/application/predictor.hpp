@@ -38,9 +38,9 @@ public:
     {
       num_threads_ = omp_get_num_threads();
     }
-    features_ = new double*[num_threads_];
+    features_ = new float*[num_threads_];
     for (int i = 0; i < num_threads_; ++i) {
-      features_[i] = new double[num_features_];
+      features_[i] = new float[num_features_];
     }
   }
   /*!
@@ -60,7 +60,7 @@ public:
   * \param features Feature for this record
   * \return Prediction result
   */
-  double PredictRawOneLine(const std::vector<std::pair<int, double>>& features) {
+  float PredictRawOneLine(const std::vector<std::pair<int, float>>& features) {
     const int tid = PutFeatureValuesToBuffer(features);
     // get result without sigmoid transformation
     return boosting_->PredictRaw(features_[tid], num_used_model_);
@@ -71,7 +71,7 @@ public:
   * \param features Feature for this record
   * \return Predictied leaf index
   */
-  std::vector<int> PredictLeafIndexOneLine(const std::vector<std::pair<int, double>>& features) {
+  std::vector<int> PredictLeafIndexOneLine(const std::vector<std::pair<int, float>>& features) {
     const int tid = PutFeatureValuesToBuffer(features);
     // get result for leaf index
     return boosting_->PredictLeafIndex(features_[tid], num_used_model_);
@@ -82,7 +82,7 @@ public:
   * \param features Feature of this record
   * \return Prediction result
   */
-  double PredictOneLine(const std::vector<std::pair<int, double>>& features) {
+  float PredictOneLine(const std::vector<std::pair<int, float>>& features) {
     const int tid = PutFeatureValuesToBuffer(features);
     // get result with sigmoid transform if needed
     return boosting_->Predict(features_[tid], num_used_model_);
@@ -112,17 +112,16 @@ public:
     }
 
     // function for parse data
-    std::function<void(const char*, std::vector<std::pair<int, double>>*)> parser_fun;
-    double tmp_label;
-
+    std::function<void(const char*, std::vector<std::pair<int, float>>*)> parser_fun;
+    float tmp_label;
     parser_fun = [this, &parser, &tmp_label]
-    (const char* buffer, std::vector<std::pair<int, double>>* feature) {
+    (const char* buffer, std::vector<std::pair<int, float>>* feature) {
       parser->ParseOneLine(buffer, feature, &tmp_label);
     };
 
-    std::function<std::string(const std::vector<std::pair<int, double>>&)> predict_fun;
+    std::function<std::string(const std::vector<std::pair<int, float>>&)> predict_fun;
     if (is_predict_leaf_index_) {
-      predict_fun = [this](const std::vector<std::pair<int, double>>& features){
+      predict_fun = [this](const std::vector<std::pair<int, float>>& features){
         std::vector<int> predicted_leaf_index = PredictLeafIndexOneLine(features);
         std::stringstream result_ss;
         for (size_t i = 0; i < predicted_leaf_index.size(); ++i){
@@ -136,12 +135,12 @@ public:
     }
     else {
       if (is_simgoid_) {
-        predict_fun = [this](const std::vector<std::pair<int, double>>& features){
+        predict_fun = [this](const std::vector<std::pair<int, float>>& features){
           return std::to_string(PredictOneLine(features));
         };
       } 
       else {
-        predict_fun = [this](const std::vector<std::pair<int, double>>& features){
+        predict_fun = [this](const std::vector<std::pair<int, float>>& features){
           return std::to_string(PredictRawOneLine(features));
         };
       } 
@@ -149,7 +148,7 @@ public:
     std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
       [this, &parser_fun, &predict_fun, &result_file]
     (data_size_t, const std::vector<std::string>& lines) {
-      std::vector<std::pair<int, double>> oneline_features;
+      std::vector<std::pair<int, float>> oneline_features;
       std::vector<std::string> pred_result(lines.size(), "");
 #pragma omp parallel for schedule(static) private(oneline_features)
       for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); i++) {
@@ -172,10 +171,10 @@ public:
   }
 
 private:
-  int PutFeatureValuesToBuffer(const std::vector<std::pair<int, double>>& features) {
+  int PutFeatureValuesToBuffer(const std::vector<std::pair<int, float>>& features) {
     int tid = omp_get_thread_num();
     // init feature value
-    std::memset(features_[tid], 0, sizeof(double)*num_features_);
+    std::memset(features_[tid], 0, sizeof(float)*num_features_);
     // put feature value
     for (const auto& p : features) {
       if (p.first < num_features_) {
@@ -187,7 +186,7 @@ private:
   /*! \brief Boosting model */
   const Boosting* boosting_;
   /*! \brief Buffer for feature values */
-  double** features_;
+  float** features_;
   /*! \brief Number of features */
   int num_features_;
   /*! \brief True if need to predict result with sigmoid transform */

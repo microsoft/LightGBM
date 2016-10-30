@@ -41,7 +41,7 @@ public:
     weights_ = metadata.weights();
 
     if (weights_ == nullptr) {
-      sum_weights_ = static_cast<double>(num_data_);
+      sum_weights_ = static_cast<float>(num_data_);
     } else {
       sum_weights_ = 0.0f;
       for (data_size_t i = 0; i < num_data; ++i) {
@@ -89,7 +89,7 @@ private:
   /*! \brief Pointer of weighs */
   const float* weights_;
   /*! \brief Sum weights */
-  double sum_weights_;
+  float sum_weights_;
   /*! \brief Name of test set */
   const char* name;
   /*! \brief Sigmoid parameter */
@@ -163,7 +163,7 @@ public:
     weights_ = metadata.weights();
 
     if (weights_ == nullptr) {
-      sum_weights_ = static_cast<double>(num_data_);
+      sum_weights_ = static_cast<float>(num_data_);
     } else {
       sum_weights_ = 0.0f;
       for (data_size_t i = 0; i < num_data; ++i) {
@@ -181,13 +181,13 @@ public:
       }
       std::sort(sorted_idx.begin(), sorted_idx.end(), [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
       // temp sum of postive label
-      double cur_pos = 0.0;
+      float cur_pos = 0.0f;
       // total sum of postive label
-      double sum_pos = 0.0;
+      float sum_pos = 0.0f;
       // accumlate of auc
-      double accum = 0.0;
+      float accum = 0.0f;
       // temp sum of negative label
-      double cur_neg = 0.0;
+      float cur_neg = 0.0f;
       score_t threshold = score[sorted_idx[0]];
       if (weights_ == nullptr) {  // not weights
         for (data_size_t i = 0; i < num_data_; ++i) {
@@ -197,12 +197,12 @@ public:
           if (cur_score != threshold) {
             threshold = cur_score;
             // accmulate
-            accum += cur_neg*(cur_pos * 0.5 + sum_pos);
+            accum += cur_neg*(cur_pos * 0.5f + sum_pos);
             sum_pos += cur_pos;
             // reset
-            cur_neg = cur_pos = 0.0;
+            cur_neg = cur_pos = 0.0f;
           }
-          cur_neg += 1.0 - cur_label;
+          cur_neg += 1.0f - cur_label;
           cur_pos += cur_label;
         }
       } else {  // has weights
@@ -214,18 +214,18 @@ public:
           if (cur_score != threshold) {
             threshold = cur_score;
             // accmulate
-            accum += cur_neg*(cur_pos * 0.5 + sum_pos);
+            accum += cur_neg*(cur_pos * 0.5f + sum_pos);
             sum_pos += cur_pos;
             // reset
-            cur_neg = cur_pos = 0.0;
+            cur_neg = cur_pos = 0.0f;
           }
-          cur_neg += (1.0 - cur_label)*cur_weight;
+          cur_neg += (1.0f - cur_label)*cur_weight;
           cur_pos += cur_label*cur_weight;
         }
       }
-      accum += cur_neg*(cur_pos * 0.5 + sum_pos);
+      accum += cur_neg*(cur_pos * 0.5f + sum_pos);
       sum_pos += cur_pos;
-      double auc = 1.0;
+      float auc = 1.0f;
       if (sum_pos > 0.0f && sum_pos != sum_weights_) {
         auc = accum / (sum_pos *(sum_weights_ - sum_pos));
       }
@@ -247,7 +247,7 @@ private:
   /*! \brief Pointer of weighs */
   const float* weights_;
   /*! \brief Sum weights */
-  double sum_weights_;
+  float sum_weights_;
   /*! \brief Name of test set */
   const char* name;
 };

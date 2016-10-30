@@ -49,7 +49,7 @@ public:
     // get query weights
     query_weights_ = metadata.query_weights();
     if (query_weights_ == nullptr) {
-      sum_query_weights_ = static_cast<double>(num_queries_);
+      sum_query_weights_ = static_cast<float>(num_queries_);
     } else {
       sum_query_weights_ = 0.0f;
       for (data_size_t i = 0; i < num_queries_; ++i) {
@@ -58,18 +58,18 @@ public:
     }
     // cache the inverse max DCG for all querys, used to calculate NDCG
     for (data_size_t i = 0; i < num_queries_; ++i) {
-      inverse_max_dcgs_.emplace_back(eval_at_.size(), 0.0);
+      inverse_max_dcgs_.emplace_back(eval_at_.size(), 0.0f);
       DCGCalculator::CalMaxDCG(eval_at_, label_ + query_boundaries_[i],
                                query_boundaries_[i + 1] - query_boundaries_[i],
                                &inverse_max_dcgs_[i]);
       for (size_t j = 0; j < inverse_max_dcgs_[i].size(); ++j) {
-        if (inverse_max_dcgs_[i][j] > 0.0) {
-          inverse_max_dcgs_[i][j] = 1.0 / inverse_max_dcgs_[i][j];
+        if (inverse_max_dcgs_[i][j] > 0.0f) {
+          inverse_max_dcgs_[i][j] = 1.0f / inverse_max_dcgs_[i][j];
         }
         else {
           // marking negative for all negative querys.
           // if one meet this query, it's ndcg will be set as -1.
-          inverse_max_dcgs_[i][j] = -1.0;
+          inverse_max_dcgs_[i][j] = -1.0f;
         }
       }
     }
@@ -78,19 +78,19 @@ public:
   score_t PrintAndGetLoss(int iter, const score_t* score) const override {
     if (early_stopping_round_ > 0 || (output_freq_ > 0 && iter % output_freq_ == 0)) {
       // some buffers for multi-threading sum up
-      std::vector<std::vector<double>> result_buffer_;
+      std::vector<std::vector<float>> result_buffer_;
       for (int i = 0; i < num_threads_; ++i) {
-        result_buffer_.emplace_back(eval_at_.size(), 0.0);
+        result_buffer_.emplace_back(eval_at_.size(), 0.0f);
       }
-      std::vector<double> tmp_dcg(eval_at_.size(), 0.0);
+      std::vector<float> tmp_dcg(eval_at_.size(), 0.0f);
       if (query_weights_ == nullptr) {
         #pragma omp parallel for schedule(guided) firstprivate(tmp_dcg)
         for (data_size_t i = 0; i < num_queries_; ++i) {
           const int tid = omp_get_thread_num();
           // if all doc in this query are all negative, let its NDCG=1
-          if (inverse_max_dcgs_[i][0] <= 0.0) {
+          if (inverse_max_dcgs_[i][0] <= 0.0f) {
             for (size_t j = 0; j < eval_at_.size(); ++j) {
-              result_buffer_[tid][j] += 1.0;
+              result_buffer_[tid][j] += 1.0f;
             }
           } else {
             // calculate DCG
@@ -108,9 +108,9 @@ public:
         for (data_size_t i = 0; i < num_queries_; ++i) {
           const int tid = omp_get_thread_num();
           // if all doc in this query are all negative, let its NDCG=1
-          if (inverse_max_dcgs_[i][0] <= 0.0) {
+          if (inverse_max_dcgs_[i][0] <= 0.0f) {
             for (size_t j = 0; j < eval_at_.size(); ++j) {
-              result_buffer_[tid][j] += 1.0;
+              result_buffer_[tid][j] += 1.0f;
             }
           } else {
             // calculate DCG
@@ -125,7 +125,7 @@ public:
         }
       }
       // Get final average NDCG
-      std::vector<double> result(eval_at_.size(), 0.0);
+      std::vector<float> result(eval_at_.size(), 0.0f);
       std::stringstream result_ss;
       for (size_t j = 0; j < result.size(); ++j) {
         for (int i = 0; i < num_threads_; ++i) {
@@ -158,11 +158,11 @@ private:
   /*! \brief Weights of queries */
   const float* query_weights_;
   /*! \brief Sum weights of queries */
-  double sum_query_weights_;
+  float sum_query_weights_;
   /*! \brief Evaluate position of NDCG */
   std::vector<data_size_t> eval_at_;
   /*! \brief Cache the inverse max dcg for all queries */
-  std::vector<std::vector<double>> inverse_max_dcgs_;
+  std::vector<std::vector<float>> inverse_max_dcgs_;
   /*! \brief Number of threads */
   int num_threads_;
 };

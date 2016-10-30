@@ -390,33 +390,33 @@ std::string GBDT::FeatureImportance() const {
     return str_buf.str();
 }
 
-double GBDT::PredictRaw(const double* value, size_t num_used_model) const {
+float GBDT::PredictRaw(const float* value, size_t num_used_model) const {
   if (num_used_model < 0) {
     num_used_model = models_.size();
   }
-  double ret = 0.0;
+  float ret = 0.0;
   for (size_t i = 0; i < num_used_model; ++i) {
     ret += models_[i]->Predict(value);
   }
   return ret;
 }
 
-double GBDT::Predict(const double* value, size_t num_used_model) const {
+float GBDT::Predict(const float* value, size_t num_used_model) const {
   if (num_used_model < 0) {
     num_used_model = models_.size();
   }
-  double ret = 0.0;
+  float ret = 0.0;
   for (size_t i = 0; i < num_used_model; ++i) {
     ret += models_[i]->Predict(value);
   }
   // if need sigmoid transform
   if (sigmoid_ > 0) {
-    ret = 1.0 / (1.0 + std::exp(- 2.0f * sigmoid_ * ret));
+    ret = 1.0f / (1.0f + std::exp(- 2.0f * sigmoid_ * ret));
   }
   return ret;
 }
 
-std::vector<int> GBDT::PredictLeafIndex(const double* value, size_t num_used_model) const {
+std::vector<int> GBDT::PredictLeafIndex(const float* value, size_t num_used_model) const {
   if (num_used_model < 0) {
     num_used_model = models_.size();
   }

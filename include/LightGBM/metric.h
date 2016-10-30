@@ -54,7 +54,7 @@ public:
   * \brief Initial logic
   * \param label_gain Gain for labels, default is 2^i - 1
   */
-  static void Init(std::vector<double> label_gain);
+  static void Init(std::vector<float> label_gain);
 
   /*!
   * \brief Calculate the DCG score at position k
@@ -64,7 +64,7 @@ public:
   * \param num_data Number of data
   * \return The DCG score
   */
-  static double CalDCGAtK(data_size_t k, const float* label,
+  static float CalDCGAtK(data_size_t k, const float* label,
     const score_t* score, data_size_t num_data);
 
   /*!
@@ -77,7 +77,7 @@ public:
   */
   static void CalDCG(const std::vector<data_size_t>& ks,
     const float* label, const score_t* score,
-    data_size_t num_data, std::vector<double>* out);
+    data_size_t num_data, std::vector<float>* out);
 
   /*!
   * \brief Calculate the Max DCG score at position k
@@ -86,7 +86,7 @@ public:
   * \param num_data Number of data
   * \return The max DCG score
   */
-  static double CalMaxDCGAtK(data_size_t k,
+  static float CalMaxDCGAtK(data_size_t k,
     const float* label, data_size_t num_data);
 
   /*!
@@ -97,22 +97,22 @@ public:
   * \param out Output result
   */
   static void CalMaxDCG(const std::vector<data_size_t>& ks,
-    const float* label, data_size_t num_data, std::vector<double>* out);
+    const float* label, data_size_t num_data, std::vector<float>* out);
 
   /*!
   * \brief Get discount score of position k
   * \param k The position
   * \return The discount of this position
   */
-  inline static double GetDiscount(data_size_t k) { return discount_[k]; }
+  inline static float GetDiscount(data_size_t k) { return discount_[k]; }
 
 private:
   /*! \brief True if inited, avoid init multi times */
   static bool is_inited_;
   /*! \brief store gains for different label */
-  static std::vector<double> label_gain_;
+  static std::vector<float> label_gain_;
   /*! \brief store discount score for different position */
-  static std::vector<double> discount_;
+  static std::vector<float> discount_;
   /*! \brief max position for eval */
   static const data_size_t kMaxPosition;
 };
