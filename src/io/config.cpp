@@ -10,6 +10,26 @@
 
 namespace LightGBM {
 
+void OverallConfig::LoadFromString(const char* str) {
+  std::unordered_map<std::string, std::string> params;
+  auto args = Common::Split(str, " \t\n\r");
+  for (auto arg : args) {
+    std::vector<std::string> tmp_strs = Common::Split(arg.c_str(), '=');
+    if (tmp_strs.size() == 2) {
+      std::string key = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[0]));
+      std::string value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
+      if (key.size() <= 0) {
+        continue;
+      }
+      params[key] = value;
+    } else {
+      Log::Error("Unknown parameter %s", arg.c_str());
+    }
+  }
+  ParameterAlias::KeyAliasTransform(&params);
+  Set(params);
+}
+
 void OverallConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   // load main config types
   GetInt(params, "num_threads", &num_threads);

@@ -226,7 +226,7 @@ public:
     delete boosting_config;
   }
   void Set(const std::unordered_map<std::string, std::string>& params) override;
-
+  void LoadFromString(const char* str);
 private:
   void GetBoostingType(const std::unordered_map<std::string, std::string>& params);
 
