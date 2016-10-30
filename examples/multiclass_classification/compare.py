@@ -9,7 +9,7 @@ params = {
 	'eta': 0.1,
 	'objective': 'multi:softmax',
 	'eval_metric': 'mlogloss',
-	'num_class': 3,
+	'num_class': 5,
 	'silent': 1,
 	'seed':42
 }
