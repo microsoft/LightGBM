@@ -214,7 +214,7 @@ void GBDT::Train() {
             }
         }
         else{
-            fprintf(output_model_file, "Tree=%d\n", iter);
+            fprintf(output_model_file, "Tree=%d\n", iter*num_class_+num_class);
             fprintf(output_model_file, "%s\n", models_[iter*num_class_+num_class]->ToString().c_str());
             fflush(output_model_file);
         }
