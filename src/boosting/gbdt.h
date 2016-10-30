@@ -67,6 +67,11 @@ public:
   */
  std::vector<int> PredictLeafIndex(const double* value) const override;
  
+ /*!
+  * \brief Predtion for multiclass classification
+  * \param feature_values Feature value on this record
+  * \return Prediction result, num_class numbers per line
+  */
  std::vector<double> PredictMulticlass(const double* value) const override;
   
   /*!

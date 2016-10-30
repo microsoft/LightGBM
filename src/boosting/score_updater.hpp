@@ -21,13 +21,13 @@ public:
   explicit ScoreUpdater(const Dataset* data, int num_class)
     :data_(data), num_class_(num_class) {
     num_data_ = data->num_data();
-    score_ = new score_t[num_data_*num_class_];
+    score_ = new score_t[num_data_ * num_class_];
     // default start score is zero
-    std::memset(score_, 0, sizeof(score_t)*num_data_*num_class_);
+    std::memset(score_, 0, sizeof(score_t) * num_data_ * num_class_);
     const score_t* init_score = data->metadata().init_score();
     // if exists initial score, will start from it
     if (init_score != nullptr) {
-      for (data_size_t i = 0; i < num_data_*num_class_; ++i) {
+      for (data_size_t i = 0; i < num_data_; ++i) {
         score_[i] = init_score[i];
       }
     }

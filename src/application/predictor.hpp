@@ -88,6 +88,11 @@ public:
     return boosting_->Predict(features_[tid]);
   }
   
+  /*!
+  * \brief prediction for multiclass classification
+  * \param features Feature of this record
+  * \return Prediction result
+  */
   std::vector<double> PredictMulticlassOneLine(const std::vector<std::pair<int, double>>& features) {
     const int tid = PutFeatureValuesToBuffer(features);
     // get result with sigmoid transform if needed

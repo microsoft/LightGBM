@@ -119,12 +119,11 @@ public:
   explicit MultiLoglossMetric(const MetricConfig& config) :MulticlassMetric<MultiLoglossMetric>(config) {}
 
   inline static score_t LossOnPoint(float label, std::vector<score_t> score) {
-    const float eps = 1e-16f;
     size_t k = static_cast<size_t>(label);
-    if (score[k] > eps) {
+    if (score[k] > kEpsilon) {
       return -std::log(score[k]);
     } else {
-      return -std::log(eps);
+      return -std::log(kEpsilon);
     }
   }
   

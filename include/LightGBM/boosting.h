@@ -67,7 +67,11 @@ public:
   */
   virtual std::vector<int> PredictLeafIndex(const double * feature_values) const = 0;
   
-  
+  /*!
+  * \brief Predtion for multiclass classification
+  * \param feature_values Feature value on this record
+  * \return Prediction result, num_class numbers per line
+  */
   virtual std::vector<double> PredictMulticlass(const double* value) const = 0; 
   
   /*!
