@@ -25,7 +25,15 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
   if (boosting_type == BoostingType::kGBDT) {
     boosting_config = new GBDTConfig();
   }
-
+  
+  bool objective_type_multiclass = (objective_type == "multiclass");
+  for (std::string metric_type : metric_types){
+        bool metric_type_multiclass = ( metric_type == "multi_logloss" || metric_type == "multi_error");
+        if ((objective_type_multiclass && !metric_type_multiclass) 
+            || (!objective_type_multiclass && metric_type_multiclass)){
+            Log::Fatal("Objective and metrics don't match.");    
+        }
+  }
 
   // sub-config setup
   network_config.Set(params);
@@ -176,6 +184,8 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
   GetDouble(params, "sigmoid", &sigmoid);
   GetInt(params, "max_position", &max_position);
   CHECK(max_position > 0);
+  GetInt(params, "num_class", &num_class);
+  CHECK(num_class > 1);
   std::string tmp_str = "";
   if (GetString(params, "label_gain", &tmp_str)) {
     label_gain = Common::StringToDoubleArray(tmp_str, ',');
@@ -194,6 +204,8 @@ void MetricConfig::Set(const std::unordered_map<std::string, std::string>& param
   GetInt(params, "early_stopping_round", &early_stopping_round);
   GetInt(params, "metric_freq", &output_freq);
   CHECK(output_freq >= 0);
+  GetInt(params, "num_class", &num_class);
+  CHECK(num_class > 1);
   GetDouble(params, "sigmoid", &sigmoid);
   GetBool(params, "is_training_metric", &is_provide_training_metric);
   std::string tmp_str = "";
@@ -249,6 +261,8 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   CHECK(learning_rate > 0.0);
   GetInt(params, "early_stopping_round", &early_stopping_round);
   CHECK(early_stopping_round >= 0);
+  GetInt(params, "num_class", &num_class);
+  CHECK(num_class > 1);
 }
 
 void GBDTConfig::GetTreeLearnerType(const std::unordered_map<std::string, std::string>& params) {

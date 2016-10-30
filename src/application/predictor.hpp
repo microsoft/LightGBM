@@ -32,6 +32,7 @@ public:
     : is_simgoid_(is_simgoid), predict_leaf_index(predict_leaf_index) {
     boosting_ = boosting;
     num_features_ = boosting_->MaxFeatureIdx() + 1;
+    num_class_ = boosting_->NumberOfClass();
 #pragma omp parallel
 #pragma omp master
     {
@@ -86,6 +87,13 @@ public:
     // get result with sigmoid transform if needed
     return boosting_->Predict(features_[tid]);
   }
+  
+  std::vector<double> PredictMulticlassOneLine(const std::vector<std::pair<int, double>>& features) {
+    const int tid = PutFeatureValuesToBuffer(features);
+    // get result with sigmoid transform if needed
+    return boosting_->PredictMulticlass(features_[tid]);
+  }
+  
   /*!
   * \brief predicting on data, then saving result to disk
   * \param data_filename Filename of data
@@ -120,7 +128,20 @@ public:
     };
 
     std::function<std::string(const std::vector<std::pair<int, double>>&)> predict_fun;
-    if (predict_leaf_index) {
+    if (num_class_ > 1) {
+      predict_fun = [this](const std::vector<std::pair<int, double>>& features){
+        std::vector<double> prediction = PredictMulticlassOneLine(features);
+        std::stringstream result_ss;
+        for (size_t i = 0; i < prediction.size(); ++i){
+          if (i > 0) {
+            result_ss << '\t';
+          }
+          result_ss << prediction[i];
+        }
+        return result_ss.str();  
+      };  
+    }
+    else if (predict_leaf_index) {
       predict_fun = [this](const std::vector<std::pair<int, double>>& features){
         std::vector<int> predicted_leaf_index = PredictLeafIndexOneLine(features);
         std::stringstream result_ss;
@@ -189,6 +210,8 @@ private:
   double** features_;
   /*! \brief Number of features */
   int num_features_;
+  /*! \brief Number of classes */
+  int num_class_;
   /*! \brief True if need to predict result with sigmoid transform */
   bool is_simgoid_;
   /*! \brief Number of threads */

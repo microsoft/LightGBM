@@ -128,6 +128,8 @@ public:
   int max_position = 20;
   // for binary
   bool is_unbalance = false;
+  // for multiclass
+  int num_class = 1;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -138,6 +140,7 @@ public:
   int early_stopping_round = 0;
   int output_freq = 1;
   double sigmoid = 1;
+  int num_class = 1;
   bool is_provide_training_metric = false;
   std::vector<double> label_gain;
   std::vector<int> eval_at;
@@ -180,6 +183,7 @@ public:
   int bagging_seed = 3;
   int bagging_freq = 0;
   int early_stopping_round = 0;
+  int num_class = 1;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 

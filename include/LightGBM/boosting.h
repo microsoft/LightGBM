@@ -67,6 +67,9 @@ public:
   */
   virtual std::vector<int> PredictLeafIndex(const double * feature_values) const = 0;
   
+  
+  virtual std::vector<double> PredictMulticlass(const double* value) const = 0; 
+  
   /*!
   * \brief Serialize models by string
   * \return String output of tranined model
@@ -96,6 +99,12 @@ public:
   * \return Number of weak sub-models
   */
   virtual int NumberOfSubModels() const = 0;
+  
+  /*!
+  * \brief Get number of classes
+  * \return Number of classes
+  */
+  virtual int NumberOfClass() const = 0;
 
   /*!
   * \brief Create boosting object

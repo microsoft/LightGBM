@@ -18,16 +18,16 @@ public:
   * \brief Constructor, will pass a const pointer of dataset
   * \param data This class will bind with this data set
   */
-  explicit ScoreUpdater(const Dataset* data)
-    :data_(data) {
+  explicit ScoreUpdater(const Dataset* data, int num_class)
+    :data_(data), num_class_(num_class) {
     num_data_ = data->num_data();
-    score_ = new score_t[num_data_];
+    score_ = new score_t[num_data_*num_class_];
     // default start score is zero
-    std::memset(score_, 0, sizeof(score_t)*num_data_);
+    std::memset(score_, 0, sizeof(score_t)*num_data_*num_class_);
     const score_t* init_score = data->metadata().init_score();
     // if exists initial score, will start from it
     if (init_score != nullptr) {
-      for (data_size_t i = 0; i < num_data_; ++i) {
+      for (data_size_t i = 0; i < num_data_*num_class_; ++i) {
         score_[i] = init_score[i];
       }
     }
@@ -41,8 +41,8 @@ public:
   *        Note: this function generally will be used on validation data too.
   * \param tree Trained tree model
   */
-  inline void AddScore(const Tree* tree) {
-    tree->AddPredictionToScore(data_, num_data_, score_);
+  inline void AddScore(const Tree* tree, int num_class) {
+    tree->AddPredictionToScore(data_, num_data_, score_ + num_class * num_data_);
   }
   /*!
   * \brief Adding prediction score, only used for training data.
@@ -50,8 +50,8 @@ public:
   *        Based on which We can get prediction quckily.
   * \param tree_learner
   */
-  inline void AddScore(const TreeLearner* tree_learner) {
-    tree_learner->AddPredictionToScore(score_);
+  inline void AddScore(const TreeLearner* tree_learner, int num_class) {
+    tree_learner->AddPredictionToScore(score_ + num_class * num_data_);
   }
   /*!
   * \brief Using tree model to get prediction number, then adding to scores for parts of data
@@ -61,8 +61,8 @@ public:
   * \param data_cnt Number of data that will be proccessed
   */
   inline void AddScore(const Tree* tree, const data_size_t* data_indices,
-                                                  data_size_t data_cnt) {
-    tree->AddPredictionToScore(data_, data_indices, data_cnt, score_);
+                                                  data_size_t data_cnt, int num_class) {
+    tree->AddPredictionToScore(data_, data_indices, data_cnt, score_ + num_class * num_data_);
   }
   /*! \brief Pointer of score */
   inline const score_t * score() { return score_; }
@@ -74,6 +74,8 @@ private:
   const Dataset* data_;
   /*! \brief scores for data set */
   score_t* score_;
+  
+  int num_class_;
 };
 
 }  // namespace LightGBM

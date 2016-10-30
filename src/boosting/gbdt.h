@@ -66,6 +66,8 @@ public:
   * \return Predicted leaf index for this record
   */
  std::vector<int> PredictLeafIndex(const double* value) const override;
+ 
+ std::vector<double> PredictMulticlass(const double* value) const override;
   
   /*!
   * \brief Serialize models by string
@@ -95,18 +97,24 @@ public:
   */
   inline int NumberOfSubModels() const override { return static_cast<int>(models_.size()); }
 
+  /*!
+  * \brief Get number of classes
+  * \return Number of classes
+  */
+  inline int NumberOfClass() const override { return num_class_; }
+
 private:
   /*!
   * \brief Implement bagging logic
   * \param iter Current interation
   */
-  void Bagging(int iter);
+  void Bagging(int iter, int num_class);
   /*!
   * \brief updating score for out-of-bag data.
   *        Data should be update since we may re-bagging data on training
   * \param tree Trained tree of this iteration
   */
-  void UpdateScoreOutOfBag(const Tree* tree);
+  void UpdateScoreOutOfBag(const Tree* tree, int num_class);
   /*!
   * \brief calculate the object function
   */
@@ -115,12 +123,12 @@ private:
   * \brief training one tree
   * \return Trained tree of this iteration
   */
-  Tree* TrainOneTree();
+  Tree* TrainOneTree(int num_class);
   /*!
   * \brief updating score after tree was trained
   * \param tree Trained tree of this iteration
   */
-  void UpdateScore(const Tree* tree);
+  void UpdateScore(const Tree* tree, int num_class);
   /*!
   * \brief Print metric result of current iteration
   * \param iter Current interation
@@ -134,10 +142,13 @@ private:
   
   /*! \brief Pointer to training data */
   const Dataset* train_data_;
+  
+  /*! \brief Number of classes in data */
+  int num_class_;
   /*! \brief Config of gbdt */
   const GBDTConfig* gbdt_config_;
   /*! \brief Tree learner, will use this class to learn trees */
-  TreeLearner* tree_learner_;
+  std::vector<TreeLearner*> tree_learner_;
   /*! \brief Objective function */
   const ObjectiveFunction* object_function_;
   /*! \brief Store and update training data's score */
