@@ -27,9 +27,9 @@ public:
 
   void GetGradients(const score_t* score, score_t* gradients, score_t* hessians) const override {
     if (weights_ == nullptr) {
-      std::vector<score_t> rec(num_class_);
-      //#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
+        std::vector<score_t> rec(num_class_);
         int ilabel = static_cast<int>(label_[i]);  
         if (ilabel < 0 || ilabel >= num_class_) {
             Log::Fatal("Label must be in [0, num_class)");
@@ -49,9 +49,9 @@ public:
         }  
       }
     } else {
-      std::vector<score_t> rec(num_class_);
-      //#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
+        std::vector<score_t> rec(num_class_);
         int ilabel = static_cast<int>(label_[i]);  
         if (ilabel < 0 || ilabel >= num_class_) {
             Log::Fatal("Label must be in [0, num_class)");
