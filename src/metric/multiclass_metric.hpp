@@ -47,9 +47,9 @@ public:
     if (early_stopping_round_ > 0 || (output_freq_ > 0 && iter % output_freq_ == 0)) {
       score_t sum_loss = 0.0;
       if (weights_ == nullptr) {
-        std::vector<score_t> rec(num_class_, 0.0f);
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
+          std::vector<score_t> rec(num_class_);
           for (int k = 0; k < num_class_; ++k) {
               rec[k] = score[k * num_data_ + i];
           }
@@ -57,9 +57,9 @@ public:
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec);
         }
       } else {
-        std::vector<score_t> rec(num_class_, 0.0f);
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
+          std::vector<score_t> rec(num_class_);
           for (int k = 0; k < num_class_; ++k) {
               rec[k] = score[k * num_data_ + i];
           }
@@ -113,7 +113,7 @@ public:
   }
 };
 
-/*! \brief logloss for multiclass task */
+/*! \brief Logloss for multiclass task */
 class MultiLoglossMetric: public MulticlassMetric<MultiLoglossMetric> {
 public:
   explicit MultiLoglossMetric(const MetricConfig& config) :MulticlassMetric<MultiLoglossMetric>(config) {}
