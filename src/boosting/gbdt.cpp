@@ -200,43 +200,47 @@ void GBDT::Train() {
         // add model
         models_.push_back(new_tree);
      }
-     for (int num_class = 0; num_class < num_class_ ; ++ num_class) {
-        // print message for metric
-        is_early_stopping = is_early_stopping || OutputMetric(iter + 1);
-        // save model to file per iteration
-        if (early_stopping_round_ > 0){
-            // if use early stopping, save previous model at (iter - early_stopping_round_) iteration
-            if (iter >= early_stopping_round_){
-                fprintf(output_model_file, "Tree=%d\n", iter - early_stopping_round_);
-                Tree * printing_tree = models_[(iter - early_stopping_round_)*num_class_+num_class];
+     // print message for metric
+     is_early_stopping = is_early_stopping || OutputMetric(iter + 1);
+    // save model to file per iteration
+    if (early_stopping_round_ > 0){
+        // if use early stopping, save previous model at (iter - early_stopping_round_) iteration
+        if (iter >= early_stopping_round_){
+            for (int num_class = 0; num_class < num_class_ ; ++ num_class){
+                fprintf(output_model_file, "Tree=%d\n", (iter - early_stopping_round_) * num_class_ + num_class);
+                Tree * printing_tree = models_[(iter - early_stopping_round_) * num_class_ + num_class];
                 fprintf(output_model_file, "%s\n", printing_tree->ToString().c_str());
                 fflush(output_model_file);
             }
         }
-        else{
-            fprintf(output_model_file, "Tree=%d\n", iter*num_class_+num_class);
-            fprintf(output_model_file, "%s\n", models_[iter*num_class_+num_class]->ToString().c_str());
+    }
+    else{
+        for (int num_class = 0; num_class < num_class_ ; ++ num_class){
+            fprintf(output_model_file, "Tree=%d\n", iter * num_class_ + num_class);
+            fprintf(output_model_file, "%s\n", models_[iter * num_class_ + num_class]->ToString().c_str());
             fflush(output_model_file);
         }
-        auto end_time = std::chrono::high_resolution_clock::now();
-        // output used time per iteration
-        Log::Info("%f seconds elapsed, finished %d iteration", std::chrono::duration<double,
-                                         std::milli>(end_time - start_time) * 1e-3, iter + 1);
-        if (is_early_stopping) {
-            // close file with an early-stopping message
-            Log::Info("Early stopping at iteration %d, the best iteration round is %d", iter + 1, iter + 1 - early_stopping_round_);
-            FeatureImportance(iter - early_stopping_round_ + 1);
-            fclose(output_model_file);
-            return;
-        }
+    }
+    auto end_time = std::chrono::high_resolution_clock::now();
+    // output used time per iteration
+    Log::Info("%f seconds elapsed, finished %d iteration", std::chrono::duration<double,
+                                     std::milli>(end_time - start_time) * 1e-3, iter + 1);
+    if (is_early_stopping) {
+        // close file with an early-stopping message
+        Log::Info("Early stopping at iteration %d, the best iteration round is %d", iter + 1, iter + 1 - early_stopping_round_);
+        FeatureImportance((iter - early_stopping_round_) * num_class_ + 1);
+        fclose(output_model_file);
+        return;
     }
   }
   // close file
   int remaining_models = gbdt_config_->num_iterations - early_stopping_round_;
   if (early_stopping_round_ > 0 && remaining_models > 0) {
       for (int iter = remaining_models; iter < static_cast<int>(models_.size()); ++iter){
-        fprintf(output_model_file, "Tree=%d\n", iter);
-        fprintf(output_model_file, "%s\n", models_.at(iter)->ToString().c_str());
+        for (int num_class = 0; num_class < num_class_ ; ++ num_class){
+          fprintf(output_model_file, "Tree=%d\n", iter * num_class_ + num_class);
+          fprintf(output_model_file, "%s\n", models_[iter * num_class_ + num_class]->ToString().c_str());
+        }
       }
       fflush(output_model_file);
   }

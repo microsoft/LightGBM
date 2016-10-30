@@ -27,6 +27,18 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
   }
   
   bool objective_type_multiclass = (objective_type == "multiclass");
+  int num_class_test = 1;
+  GetInt(params, "num_class", &num_class_test);
+  if (objective_type_multiclass){
+      if (num_class_test <= 1){
+          Log::Fatal("You should specify number of class(>=2) for multiclass training.");
+      }
+  }
+  else {
+      if (task_type == TaskType::kTrain && num_class_test != 1){
+          Log::Fatal("Number of class must be 1 for non-multiclass training.");
+      }      
+  }
   for (std::string metric_type : metric_types){
         bool metric_type_multiclass = ( metric_type == "multi_logloss" || metric_type == "multi_error");
         if ((objective_type_multiclass && !metric_type_multiclass) 
