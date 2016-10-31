@@ -5,7 +5,7 @@
 
 namespace LightGBM {
 /*!
-* \brief Objective funtion for regression
+* \brief Objective function for regression
 */
 class RegressionL2loss: public ObjectiveFunction {
 public:

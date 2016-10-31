@@ -14,7 +14,7 @@
 
 namespace LightGBM {
 /*!
-* \brief Objective funtion for Lambdrank with NDCG
+* \brief Objective function for Lambdrank with NDCG
 */
 class LambdarankNDCG: public ObjectiveFunction {
 public:

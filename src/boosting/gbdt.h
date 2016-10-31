@@ -132,13 +132,13 @@ private:
   * \brief Implement bagging logic
   * \param iter Current interation
   */
-  void Bagging(int iter);
+  void Bagging(int iter, const int curr_class);
   /*!
   * \brief updating score for out-of-bag data.
   *        Data should be update since we may re-bagging data on training
   * \param tree Trained tree of this iteration
   */
-  void UpdateScoreOutOfBag(const Tree* tree);
+  void UpdateScoreOutOfBag(const Tree* tree, const int curr_class);
   /*!
   * \brief calculate the object function
   */
@@ -147,7 +147,7 @@ private:
   * \brief updating score after tree was trained
   * \param tree Trained tree of this iteration
   */
-  void UpdateScore(const Tree* tree);
+  void UpdateScore(const Tree* tree, const int curr_class);
   /*!
   * \brief Print metric result of current iteration
   * \param iter Current interation
@@ -201,8 +201,6 @@ private:
   data_size_t num_data_;
   /*! \brief Number of classes */
   int num_class_;
-  /*! \brief Current class */
-  int curr_class_;
   /*! \brief Random generator, used for bagging */
   Random random_;
   /*!

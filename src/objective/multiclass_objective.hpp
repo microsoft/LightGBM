@@ -8,24 +8,27 @@
 
 namespace LightGBM {
 /*!
-* \brief Objective funtion for multiclass classification
+* \brief Objective function for multiclass classification
 */
 class MulticlassLogloss: public ObjectiveFunction {
 public:
-  explicit MulticlassLogloss(const ObjectiveConfig& config) {
+  explicit MulticlassLogloss(const ObjectiveConfig& config)
+        :label_int_(nullptr) {
     num_class_ = config.num_class;
   }
   
-  ~MulticlassLogloss() {}
+  ~MulticlassLogloss() {
+    if (label_int_ != nullptr) { delete[] label_int_; }    
+  }
   
   void Init(const Metadata& metadata, data_size_t num_data) override {
     num_data_ = num_data;
     label_ = metadata.label();
     weights_ = metadata.weights();
-    ilabel_ = new int[num_data_];
+    label_int_ = new int[num_data_];
     for (int i = 0; i < num_data_; ++i){
-        ilabel_[i] = static_cast<int>(label_[i]); 
-        if (ilabel_[i] < 0 || ilabel_[i] >= num_class_) {
+        label_int_[i] = static_cast<int>(label_[i]); 
+        if (label_int_[i] < 0 || label_int_[i] >= num_class_) {
             Log::Fatal("Label must be in [0, num_class)");
         }
     }
@@ -42,7 +45,7 @@ public:
         Common::Softmax(&rec);  
         for (int k = 0; k < num_class_; ++k) {
           score_t p = rec[k];
-          if (ilabel_[i] == k) {
+          if (label_int_[i] == k) {
             gradients[k * num_data_ + i] = p - 1.0f;
           } else {
             gradients[k * num_data_ + i] = p;
@@ -60,7 +63,7 @@ public:
         Common::Softmax(&rec);
         for (int k = 0; k < num_class_; ++k) {
           float p = rec[k];
-          if (ilabel_[i] == k) {
+          if (label_int_[i] == k) {
             gradients[k * num_data_ + i] = (p - 1.0f) * weights_[i];
           } else {
             gradients[k * num_data_ + i] = p * weights_[i];
@@ -83,7 +86,7 @@ private:
   /*! \brief Pointer of label */
   const float* label_;
   /*! \brief Corresponding integers of label_ */
-  int* ilabel_;
+  int* label_int_;
   /*! \brief Weights for data */
   const float* weights_;
 };

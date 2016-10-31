@@ -103,7 +103,7 @@ void GBDT::AddDataset(const Dataset* valid_data,
 }
 
 
-void GBDT::Bagging(int iter) {
+void GBDT::Bagging(int iter, const int curr_class) {
   // if need bagging
   if (out_of_bag_data_indices_ != nullptr && iter % gbdt_config_->bagging_freq == 0) {
     // if doesn't have query data
@@ -152,15 +152,15 @@ void GBDT::Bagging(int iter) {
     }
     Log::Info("re-bagging, using %d data to train", bag_data_cnt_);
     // set bagging data to tree learner
-    tree_learner_[curr_class_]->SetBaggingData(bag_data_indices_, bag_data_cnt_);
+    tree_learner_[curr_class]->SetBaggingData(bag_data_indices_, bag_data_cnt_);
   }
 }
 
-void GBDT::UpdateScoreOutOfBag(const Tree* tree) {
+void GBDT::UpdateScoreOutOfBag(const Tree* tree, const int curr_class) {
   // we need to predict out-of-bag socres of data for boosting
   if (out_of_bag_data_indices_ != nullptr) {
     train_score_updater_->
-      AddScore(tree, out_of_bag_data_indices_, out_of_bag_data_cnt_, curr_class_);
+      AddScore(tree, out_of_bag_data_indices_, out_of_bag_data_cnt_, curr_class);
   }
 }
 
@@ -173,12 +173,12 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
       hessian = hessians_;
     }
     
-    for (curr_class_ = 0; curr_class_ < num_class_; ++curr_class_){
+    for (int curr_class = 0; curr_class < num_class_; ++curr_class){
       // bagging logic
-      Bagging(iter_);
+      Bagging(iter_, curr_class);
       
       // train a new tree
-      Tree * new_tree = tree_learner_[curr_class_]->Train(gradient + curr_class_ * num_data_, hessian+ curr_class_ * num_data_);
+      Tree * new_tree = tree_learner_[curr_class]->Train(gradient + curr_class * num_data_, hessian+ curr_class * num_data_);
       // if cannot learn a new tree, then stop
       if (new_tree->num_leaves() <= 1) {
         Log::Info("Can't training anymore, there isn't any leaf meets split requirements.");
@@ -188,8 +188,8 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
       // shrinkage by learning rate
       new_tree->Shrinkage(gbdt_config_->learning_rate);
       // update score
-      UpdateScore(new_tree);
-      UpdateScoreOutOfBag(new_tree);
+      UpdateScore(new_tree, curr_class);
+      UpdateScoreOutOfBag(new_tree, curr_class);
       
       // add model
       models_.push_back(new_tree);
@@ -214,12 +214,12 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
   
 }
 
-void GBDT::UpdateScore(const Tree* tree) {
+void GBDT::UpdateScore(const Tree* tree, const int curr_class) {
   // update training score
-  train_score_updater_->AddScore(tree_learner_[curr_class_], curr_class_);
+  train_score_updater_->AddScore(tree_learner_[curr_class], curr_class);
   // update validation score
   for (auto& score_tracker : valid_score_updater_) {
-    score_tracker->AddScore(tree, curr_class_);
+    score_tracker->AddScore(tree, curr_class);
   }
 }
 

@@ -74,7 +74,7 @@ public:
       }
     }
     score_t loss = sum_loss / sum_weights_;
-    return std::vector<score_t>(1, loss);;
+    return std::vector<score_t>(1, loss);
   }
 
 private:

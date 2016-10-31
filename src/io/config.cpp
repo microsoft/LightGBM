@@ -45,27 +45,6 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
   if (boosting_type == BoostingType::kGBDT) {
     boosting_config = new GBDTConfig();
   }
-  
-  bool objective_type_multiclass = (objective_type == "multiclass");
-  int num_class_test = 1;
-  GetInt(params, "num_class", &num_class_test);
-  if (objective_type_multiclass){
-      if (num_class_test <= 1){
-          Log::Fatal("You should specify number of class(>=2) for multiclass training.");
-      }
-  }
-  else {
-      if (task_type == TaskType::kTrain && num_class_test != 1){
-          Log::Fatal("Number of class must be 1 for non-multiclass training.");
-      }      
-  }
-  for (std::string metric_type : metric_types){
-        bool metric_type_multiclass = ( metric_type == "multi_logloss" || metric_type == "multi_error");
-        if ((objective_type_multiclass && !metric_type_multiclass) 
-            || (!objective_type_multiclass && metric_type_multiclass)){
-            Log::Fatal("Objective and metrics don't match.");    
-        }
-  }
 
   // sub-config setup
   network_config.Set(params);
@@ -152,7 +131,29 @@ void OverallConfig::GetTaskType(const std::unordered_map<std::string, std::strin
 }
 
 void OverallConfig::CheckParamConflict() {
-  GBDTConfig* gbdt_config = dynamic_cast<GBDTConfig*>(boosting_config);
+  GBDTConfig* gbdt_config = dynamic_cast<GBDTConfig*>(boosting_config);  
+    
+  // check if objective_type, metric_type, and num_class match
+  bool objective_type_multiclass = (objective_type == std::string("multiclass"));
+  int num_class_check = gbdt_config->num_class;
+  if (objective_type_multiclass){
+      if (num_class_check <= 1){
+          Log::Fatal("You should specify number of class(>=2) for multiclass training.");
+      }
+  }
+  else {
+      if (task_type == TaskType::kTrain && num_class_check != 1){
+          Log::Fatal("Number of class must be 1 for non-multiclass training.");
+      }      
+  }
+  for (std::string metric_type : metric_types){
+        bool metric_type_multiclass = ( metric_type == std::string("multi_logloss") || metric_type == std::string("multi_error"));
+        if ((objective_type_multiclass && !metric_type_multiclass) 
+            || (!objective_type_multiclass && metric_type_multiclass)){
+            Log::Fatal("Objective and metrics don't match.");    
+        }
+  }  
+
   if (network_config.num_machines > 1) {
     is_parallel = true;
   } else {
