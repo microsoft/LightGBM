@@ -112,7 +112,7 @@ public:
           ++i;
           ++total_cnt;
           // skip end of line
-          while (buffer_process[i] == '\n' || buffer_process[i] == '\r') { ++i; }
+          while ((buffer_process[i] == '\n' || buffer_process[i] == '\r') && i < read_cnt) { ++i; }
           last_i = i;
         }
         else {
@@ -247,7 +247,7 @@ public:
           ++i;
           ++total_cnt;
           // skip end of line
-          while (buffer_process[i] == '\n' || buffer_process[i] == '\r') { ++i; }
+          while ((buffer_process[i] == '\n' || buffer_process[i] == '\r') && i < read_cnt) { ++i; }
           last_i = i;
         }
         else {
@@ -281,7 +281,7 @@ public:
   }
 
   INDEX_T ReadPartAndProcessParallel(const std::vector<INDEX_T>& used_data_indices, const std::function<void(INDEX_T, const std::vector<std::string>&)>& process_fun) {
-    return ReadAllAndProcessParallelWithFilter(process_fun, 
+    return ReadAllAndProcessParallelWithFilter(process_fun,
       [&used_data_indices](INDEX_T used_cnt ,INDEX_T total_cnt) {
       if (used_cnt < used_data_indices.size() && total_cnt == used_data_indices[used_cnt]) {
         return true;
