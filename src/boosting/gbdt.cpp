@@ -165,7 +165,6 @@ void GBDT::UpdateScoreOutOfBag(const Tree* tree, const int curr_class) {
 }
 
 bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) {
-    
     // boosting first
     if (gradient == nullptr || hessian == nullptr) {
       Boosting();

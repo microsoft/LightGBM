@@ -131,12 +131,14 @@ private:
   /*!
   * \brief Implement bagging logic
   * \param iter Current interation
+  * \param curr_class Current class for multiclass training
   */
   void Bagging(int iter, const int curr_class);
   /*!
   * \brief updating score for out-of-bag data.
   *        Data should be update since we may re-bagging data on training
   * \param tree Trained tree of this iteration
+  * \param curr_class Current class for multiclass training
   */
   void UpdateScoreOutOfBag(const Tree* tree, const int curr_class);
   /*!
@@ -146,6 +148,7 @@ private:
   /*!
   * \brief updating score after tree was trained
   * \param tree Trained tree of this iteration
+  * \param curr_class Current class for multiclass training
   */
   void UpdateScore(const Tree* tree, const int curr_class);
   /*!

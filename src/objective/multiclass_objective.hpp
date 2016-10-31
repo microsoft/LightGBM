@@ -29,7 +29,7 @@ public:
     for (int i = 0; i < num_data_; ++i){
         label_int_[i] = static_cast<int>(label_[i]); 
         if (label_int_[i] < 0 || label_int_[i] >= num_class_) {
-            Log::Fatal("Label must be in [0, num_class)");
+            Log::Fatal("Label must be in [0, %d), but find %d in label", num_class_, label_int_[i]);
         }
     }
   }
