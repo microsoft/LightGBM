@@ -234,30 +234,30 @@ DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
 /*!
 * \brief get evaluation for training data and validation datas
 * \param handle handle
-* \param is_eval_train >0 means need to eval trainig data
+* \param data 0:training data, 1: 1st valid data, 2:2nd valid data ...
 * \param out_result the string containing evaluation statistics
 * \return 0 when success, -1 when failure happens
 */
-DllExport int LGBM_BoosterEvalCurrent(BoosterHandle handle,
-  int is_eval_train,
-  const char*** out_result);
+DllExport int LGBM_BoosterEval(BoosterHandle handle,
+  int data,
+  const char** out_result);
 
 /*!
 * \brief make prediction for training data and validation datas
 this can be used to support customized eval function
 * \param handle handle
+* \param data 0:training data, 1: 1st valid data, 2:2nd valid data ...
 * \param predict_type
 *          0:raw score
 *          1:with sigmoid transform(if needed)
 *          2:leaf index
-* \param is_predict_train >0 means need to predict for training result
 * \param out_result used to set a pointer to array
 * \return 0 when success, -1 when failure happens
 */
-DllExport int LGBM_BoosterPredictCurrent(BoosterHandle handle,
+DllExport int LGBM_BoosterPredict(BoosterHandle handle,
+  int data,
   int predict_type,
-  int is_predict_train,
-  const float*** out_result);
+  const float** out_result);
 
 /*!
 * \brief make prediction for an new data set
