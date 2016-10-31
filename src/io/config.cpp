@@ -10,6 +10,26 @@
 
 namespace LightGBM {
 
+void OverallConfig::LoadFromString(const char* str) {
+  std::unordered_map<std::string, std::string> params;
+  auto args = Common::Split(str, " \t\n\r");
+  for (auto arg : args) {
+    std::vector<std::string> tmp_strs = Common::Split(arg.c_str(), '=');
+    if (tmp_strs.size() == 2) {
+      std::string key = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[0]));
+      std::string value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
+      if (key.size() <= 0) {
+        continue;
+      }
+      params[key] = value;
+    } else {
+      Log::Error("Unknown parameter %s", arg.c_str());
+    }
+  }
+  ParameterAlias::KeyAliasTransform(&params);
+  Set(params);
+}
+
 void OverallConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   // load main config types
   GetInt(params, "num_threads", &num_threads);
@@ -173,38 +193,34 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
 
 void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetBool(params, "is_unbalance", &is_unbalance);
-  GetDouble(params, "sigmoid", &sigmoid);
+  GetFloat(params, "sigmoid", &sigmoid);
   GetInt(params, "max_position", &max_position);
   CHECK(max_position > 0);
   std::string tmp_str = "";
   if (GetString(params, "label_gain", &tmp_str)) {
-    label_gain = Common::StringToDoubleArray(tmp_str, ',');
+    label_gain = Common::StringToFloatArray(tmp_str, ',');
   } else {
     // label_gain = 2^i - 1, may overflow, so we use 31 here
     const int max_label = 31;
-    label_gain.push_back(0.0);
+    label_gain.push_back(0.0f);
     for (int i = 1; i < max_label; ++i) {
-      label_gain.push_back((1 << i) - 1);
+      label_gain.push_back(static_cast<float>((1 << i) - 1));
     }
   }
 }
 
 
 void MetricConfig::Set(const std::unordered_map<std::string, std::string>& params) {
-  GetInt(params, "early_stopping_round", &early_stopping_round);
-  GetInt(params, "metric_freq", &output_freq);
-  CHECK(output_freq >= 0);
-  GetDouble(params, "sigmoid", &sigmoid);
-  GetBool(params, "is_training_metric", &is_provide_training_metric);
+  GetFloat(params, "sigmoid", &sigmoid);
   std::string tmp_str = "";
   if (GetString(params, "label_gain", &tmp_str)) {
-    label_gain = Common::StringToDoubleArray(tmp_str, ',');
+    label_gain = Common::StringToFloatArray(tmp_str, ',');
   } else {
     // label_gain = 2^i - 1, may overflow, so we use 31 here
     const int max_label = 31;
-    label_gain.push_back(0.0);
+    label_gain.push_back(0.0f);
     for (int i = 1; i < max_label; ++i) {
-      label_gain.push_back((1 << i) - 1);
+      label_gain.push_back(static_cast<float>((1 << i) - 1));
     }
   }
   if (GetString(params, "ndcg_eval_at", &tmp_str)) {
@@ -224,14 +240,14 @@ void MetricConfig::Set(const std::unordered_map<std::string, std::string>& param
 
 void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "min_data_in_leaf", &min_data_in_leaf);
-  GetDouble(params, "min_sum_hessian_in_leaf", &min_sum_hessian_in_leaf);
+  GetFloat(params, "min_sum_hessian_in_leaf", &min_sum_hessian_in_leaf);
   CHECK(min_sum_hessian_in_leaf > 1.0f || min_data_in_leaf > 0);
   GetInt(params, "num_leaves", &num_leaves);
   CHECK(num_leaves > 1);
   GetInt(params, "feature_fraction_seed", &feature_fraction_seed);
-  GetDouble(params, "feature_fraction", &feature_fraction);
-  CHECK(feature_fraction > 0.0 && feature_fraction <= 1.0);
-  GetDouble(params, "histogram_pool_size", &histogram_pool_size);
+  GetFloat(params, "feature_fraction", &feature_fraction);
+  CHECK(feature_fraction > 0.0f && feature_fraction <= 1.0f);
+  GetFloat(params, "histogram_pool_size", &histogram_pool_size);
   GetInt(params, "max_depth", &max_depth);
   CHECK(max_depth > 1 || max_depth < 0);
 }
@@ -243,12 +259,15 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   GetInt(params, "bagging_seed", &bagging_seed);
   GetInt(params, "bagging_freq", &bagging_freq);
   CHECK(bagging_freq >= 0);
-  GetDouble(params, "bagging_fraction", &bagging_fraction);
-  CHECK(bagging_fraction > 0.0 && bagging_fraction <= 1.0);
-  GetDouble(params, "learning_rate", &learning_rate);
-  CHECK(learning_rate > 0.0);
+  GetFloat(params, "bagging_fraction", &bagging_fraction);
+  CHECK(bagging_fraction > 0.0f && bagging_fraction <= 1.0f);
+  GetFloat(params, "learning_rate", &learning_rate);
+  CHECK(learning_rate > 0.0f);
   GetInt(params, "early_stopping_round", &early_stopping_round);
   CHECK(early_stopping_round >= 0);
+  GetInt(params, "metric_freq", &output_freq);
+  CHECK(output_freq >= 0);
+  GetBool(params, "is_training_metric", &is_provide_training_metric);
 }
 
 void GBDTConfig::GetTreeLearnerType(const std::unordered_map<std::string, std::string>& params) {

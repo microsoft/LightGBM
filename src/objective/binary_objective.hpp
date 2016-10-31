@@ -80,7 +80,7 @@ public:
     }
   }
 
-  double GetSigmoid() const override {
+  float GetSigmoid() const override {
     return sigmoid_;
   }
 

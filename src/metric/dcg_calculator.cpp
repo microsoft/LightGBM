@@ -11,23 +11,23 @@ namespace LightGBM {
 
 /*! \brief Declaration for some static members */
 bool DCGCalculator::is_inited_ = false;
-std::vector<double> DCGCalculator::label_gain_;
-std::vector<double> DCGCalculator::discount_;
+std::vector<float> DCGCalculator::label_gain_;
+std::vector<float> DCGCalculator::discount_;
 const data_size_t DCGCalculator::kMaxPosition = 10000;
 
-void DCGCalculator::Init(std::vector<double> input_label_gain) {
+void DCGCalculator::Init(std::vector<float> input_label_gain) {
   //  only inited one time
   if (is_inited_) { return; }
   label_gain_ = input_label_gain;
   discount_.clear();
   for (data_size_t i = 0; i < kMaxPosition; ++i) {
-    discount_.emplace_back(1.0 / std::log2(2.0 + i));
+    discount_.emplace_back(1.0f / std::log2(2.0f + i));
   }
   is_inited_ = true;
 }
 
-double DCGCalculator::CalMaxDCGAtK(data_size_t k, const float* label, data_size_t num_data) {
-  double ret = 0.0;
+float DCGCalculator::CalMaxDCGAtK(data_size_t k, const float* label, data_size_t num_data) {
+  float ret = 0.0f;
   // counts for all labels
   std::vector<data_size_t> label_cnt(label_gain_.size(), 0);
   for (data_size_t i = 0; i < num_data; ++i) {
@@ -53,14 +53,14 @@ double DCGCalculator::CalMaxDCGAtK(data_size_t k, const float* label, data_size_
 void DCGCalculator::CalMaxDCG(const std::vector<data_size_t>& ks,
                               const float* label,
                               data_size_t num_data,
-                              std::vector<double>* out) {
+                              std::vector<float>* out) {
   std::vector<data_size_t> label_cnt(label_gain_.size(), 0);
   // counts for all labels
   for (data_size_t i = 0; i < num_data; ++i) {
     if (static_cast<size_t>(label[i]) >= label_cnt.size()) { Log::Fatal("label excel %d", label[i]); }
     ++label_cnt[static_cast<int>(label[i])];
   }
-  double cur_result = 0.0;
+  float cur_result = 0.0f;
   data_size_t cur_left = 0;
   size_t top_label = label_gain_.size() - 1;
   // calculate k Max DCG by one pass
@@ -83,7 +83,7 @@ void DCGCalculator::CalMaxDCG(const std::vector<data_size_t>& ks,
 }
 
 
-double DCGCalculator::CalDCGAtK(data_size_t k, const float* label,
+float DCGCalculator::CalDCGAtK(data_size_t k, const float* label,
                                 const score_t* score, data_size_t num_data) {
   // get sorted indices by score
   std::vector<data_size_t> sorted_idx;
@@ -94,7 +94,7 @@ double DCGCalculator::CalDCGAtK(data_size_t k, const float* label,
            [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
 
   if (k > num_data) { k = num_data; }
-  double dcg = 0.0;
+  float dcg = 0.0f;
   // calculate dcg
   for (data_size_t i = 0; i < k; ++i) {
     data_size_t idx = sorted_idx[i];
@@ -104,7 +104,7 @@ double DCGCalculator::CalDCGAtK(data_size_t k, const float* label,
 }
 
 void DCGCalculator::CalDCG(const std::vector<data_size_t>& ks, const float* label,
-                           const score_t * score, data_size_t num_data, std::vector<double>* out) {
+                           const score_t * score, data_size_t num_data, std::vector<float>* out) {
   // get sorted indices by score
   std::vector<data_size_t> sorted_idx;
   for (data_size_t i = 0; i < num_data; ++i) {
@@ -113,7 +113,7 @@ void DCGCalculator::CalDCG(const std::vector<data_size_t>& ks, const float* labe
   std::sort(sorted_idx.begin(), sorted_idx.end(),
             [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
 
-  double cur_result = 0.0;
+  float cur_result = 0.0f;
   data_size_t cur_left = 0;
   // calculate multi dcg by one pass
   for (size_t i = 0; i < ks.size(); ++i) {

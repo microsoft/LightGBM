@@ -18,9 +18,9 @@ public:
     :label_idx_(label_idx) {
   }
   inline void ParseOneLine(const char* str,
-    std::vector<std::pair<int, double>>* out_features, double* out_label) const override {
+    std::vector<std::pair<int, float>>* out_features, float* out_label) const override {
     int idx = 0;
-    double val = 0.0;
+    float val = 0.0f;
     int bias = 0;
     *out_label = 0.0f;
     while (*str != '\0') {
@@ -50,9 +50,9 @@ public:
     :label_idx_(label_idx) {
   }
   inline void ParseOneLine(const char* str, 
-    std::vector<std::pair<int, double>>* out_features, double* out_label) const override {
+    std::vector<std::pair<int, float>>* out_features, float* out_label) const override {
     int idx = 0;
-    double val = 0.0;
+    float val = 0.0f;
     int bias = 0;
     while (*str != '\0') {
       str = Common::Atof(str, &val);
@@ -83,9 +83,9 @@ public:
     }
   }
   inline void ParseOneLine(const char* str, 
-    std::vector<std::pair<int, double>>* out_features, double* out_label) const override {
+    std::vector<std::pair<int, float>>* out_features, float* out_label) const override {
     int idx = 0;
-    double val = 0.0;
+    float val = 0.0f;
     if (label_idx_ == 0) {
       str = Common::Atof(str, &val);
       *out_label = val;

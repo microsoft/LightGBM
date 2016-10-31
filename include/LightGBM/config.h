@@ -49,15 +49,15 @@ public:
     const std::string& name, int* out);
 
   /*!
-  * \brief Get double value by specific name of key
+  * \brief Get float value by specific name of key
   * \param params Store the key and value for params
   * \param name Name of key
   * \param out Value will assign to out if key exists
   * \return True if key exists
   */
-  inline bool GetDouble(
+  inline bool GetFloat(
     const std::unordered_map<std::string, std::string>& params,
-    const std::string& name, double* out);
+    const std::string& name, float* out);
 
   /*!
   * \brief Get bool value by specific name of key
@@ -73,7 +73,7 @@ public:
 
 /*! \brief Types of boosting */
 enum BoostingType {
-  kGBDT
+  kGBDT, kUnknow
 };
 
 
@@ -121,9 +121,9 @@ public:
 struct ObjectiveConfig: public ConfigBase {
 public:
   virtual ~ObjectiveConfig() {}
-  double sigmoid = 1;
+  float sigmoid = 1.0f;
   // for lambdarank
-  std::vector<double> label_gain;
+  std::vector<float> label_gain;
   // for lambdarank
   int max_position = 20;
   // for binary
@@ -135,11 +135,8 @@ public:
 struct MetricConfig: public ConfigBase {
 public:
   virtual ~MetricConfig() {}
-  int early_stopping_round = 0;
-  int output_freq = 1;
-  double sigmoid = 1;
-  bool is_provide_training_metric = false;
-  std::vector<double> label_gain;
+  float sigmoid = 1.0f;
+  std::vector<float> label_gain;
   std::vector<int> eval_at;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
@@ -149,13 +146,13 @@ public:
 struct TreeConfig: public ConfigBase {
 public:
   int min_data_in_leaf = 100;
-  double min_sum_hessian_in_leaf = 10.0f;
+  float min_sum_hessian_in_leaf = 10.0f;
   // should > 1, only one leaf means not need to learning
   int num_leaves = 127;
   int feature_fraction_seed = 2;
-  double feature_fraction = 1.0;
+  float feature_fraction = 1.0f;
   // max cache size(unit:MB) for historical histogram. < 0 means not limit
-  double histogram_pool_size = -1;
+  float histogram_pool_size = -1.0f;
   // max depth of tree model. 
   // Still grow tree by leaf-wise, but limit the max depth to avoid over-fitting
   // And the max leaves will be min(num_leaves, pow(2, max_depth - 1)) 
@@ -174,9 +171,11 @@ enum TreeLearnerType {
 struct BoostingConfig: public ConfigBase {
 public:
   virtual ~BoostingConfig() {}
+  int output_freq = 1;
+  bool is_provide_training_metric = false;
   int num_iterations = 10;
-  double learning_rate = 0.1;
-  double bagging_fraction = 1.0;
+  float learning_rate = 0.1f;
+  float bagging_fraction = 1.0f;
   int bagging_seed = 3;
   int bagging_freq = 0;
   int early_stopping_round = 0;
@@ -226,7 +225,7 @@ public:
     delete boosting_config;
   }
   void Set(const std::unordered_map<std::string, std::string>& params) override;
-
+  void LoadFromString(const char* str);
 private:
   void GetBoostingType(const std::unordered_map<std::string, std::string>& params);
 
@@ -263,9 +262,9 @@ inline bool ConfigBase::GetInt(
   return false;
 }
 
-inline bool ConfigBase::GetDouble(
+inline bool ConfigBase::GetFloat(
   const std::unordered_map<std::string, std::string>& params,
-  const std::string& name, double* out) {
+  const std::string& name, float* out) {
   if (params.count(name) > 0) {
     if (!Common::AtofAndCheck(params.at(name).c_str(), out)) {
       Log::Fatal("Parameter %s should be float type, passed is [%s]",
