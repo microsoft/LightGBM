@@ -59,7 +59,7 @@ public:
   * \return Prediction result for this record
   */
   virtual float PredictRaw(const float* feature_values,
-    size_t num_used_model) const = 0;
+    int num_used_model) const = 0;
 
   /*!
   * \brief Prediction for one record, sigmoid transformation will be used if needed
@@ -68,7 +68,7 @@ public:
   * \return Prediction result for this record
   */
   virtual float Predict(const float* feature_values, 
-    size_t num_used_model) const = 0;
+    int num_used_model) const = 0;
   
   /*!
   * \brief Predtion for one record with leaf index
@@ -78,7 +78,7 @@ public:
   */
   virtual std::vector<int> PredictLeafIndex(
     const float* feature_values,
-    size_t num_used_model) const = 0;
+    int num_used_model) const = 0;
   
   /*!
   * \brief save model to file

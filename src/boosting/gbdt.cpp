@@ -297,7 +297,7 @@ void GBDT::SaveModelToFile(bool is_finish, const char* filename) {
   if (saved_model_size_ == -1) {
     model_output_file_.open(filename);
     // output model type
-    model_output_file_ << "gbdt" << label_idx_ << std::endl;
+    model_output_file_ << "gbdt" << std::endl;
     // output label index
     model_output_file_ << "label_index=" << label_idx_ << std::endl;
     // output max_feature_idx
@@ -436,23 +436,23 @@ std::string GBDT::FeatureImportance() const {
     return str_buf.str();
 }
 
-float GBDT::PredictRaw(const float* value, size_t num_used_model) const {
+float GBDT::PredictRaw(const float* value, int num_used_model) const {
   if (num_used_model < 0) {
-    num_used_model = models_.size();
+    num_used_model = static_cast<int>(models_.size());
   }
   float ret = 0.0;
-  for (size_t i = 0; i < num_used_model; ++i) {
+  for (int i = 0; i < num_used_model; ++i) {
     ret += models_[i]->Predict(value);
   }
   return ret;
 }
 
-float GBDT::Predict(const float* value, size_t num_used_model) const {
+float GBDT::Predict(const float* value, int num_used_model) const {
   if (num_used_model < 0) {
-    num_used_model = models_.size();
+    num_used_model = static_cast<int>(models_.size());
   }
   float ret = 0.0;
-  for (size_t i = 0; i < num_used_model; ++i) {
+  for (int i = 0; i < num_used_model; ++i) {
     ret += models_[i]->Predict(value);
   }
   // if need sigmoid transform
@@ -462,12 +462,12 @@ float GBDT::Predict(const float* value, size_t num_used_model) const {
   return ret;
 }
 
-std::vector<int> GBDT::PredictLeafIndex(const float* value, size_t num_used_model) const {
+std::vector<int> GBDT::PredictLeafIndex(const float* value, int num_used_model) const {
   if (num_used_model < 0) {
-    num_used_model = models_.size();
+    num_used_model = static_cast<int>(models_.size());
   }
   std::vector<int> ret;
-  for (size_t i = 0; i < num_used_model; ++i) {
+  for (int i = 0; i < num_used_model; ++i) {
     ret.push_back(models_[i]->PredictLeafIndex(value));
   }
   return ret;

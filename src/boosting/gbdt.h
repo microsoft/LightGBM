@@ -58,7 +58,7 @@ public:
   * \param num_used_model Number of used model
   * \return Prediction result for this record
   */
-  float PredictRaw(const float* feature_values, size_t num_used_model) const override;
+  float PredictRaw(const float* feature_values, int num_used_model) const override;
 
   /*!
   * \brief Predtion for one record with sigmoid transformation if enabled
@@ -66,7 +66,7 @@ public:
   * \param num_used_model Number of used model
   * \return Prediction result for this record
   */
-  float Predict(const float* feature_values, size_t num_used_model) const override;
+  float Predict(const float* feature_values, int num_used_model) const override;
   
   /*!
   * \brief Predtion for one record with leaf index
@@ -74,7 +74,7 @@ public:
   * \param num_used_model Number of used model
   * \return Predicted leaf index for this record
   */
- std::vector<int> PredictLeafIndex(const float* value, size_t num_used_model) const override;
+ std::vector<int> PredictLeafIndex(const float* value, int num_used_model) const override;
   
   /*!
   * \brief Serialize models by string

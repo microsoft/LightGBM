@@ -196,7 +196,7 @@ private:
   /*! \brief True if output leaf index instead of prediction score */
   bool is_predict_leaf_index_;
   /*! \brief Number of used model */
-  size_t num_used_model_;
+  int num_used_model_;
 };
 
 }  // namespace LightGBM
