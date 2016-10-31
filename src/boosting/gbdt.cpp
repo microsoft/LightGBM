@@ -325,7 +325,7 @@ void GBDT::SaveModelToFile(bool is_finish, const char* filename) {
   if (!model_output_file_.is_open()) {
     return;
   }
-  int rest = static_cast<int>(models_.size()) - early_stopping_round_;
+  int rest = (iter_ - early_stopping_round_) * num_class_;
   // output tree models
   for (int i = saved_model_size_; i < rest; ++i) {
     model_output_file_ << "Tree=" << i << std::endl;
