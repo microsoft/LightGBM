@@ -24,7 +24,9 @@ public:
   }
 
   void Init(const char* test_name, const Metadata& metadata, data_size_t num_data) override {
-    name_ = test_name;
+    std::stringstream str_buf;
+    str_buf << test_name << "'s " << PointWiseLossCalculator::Name();
+    name_ = str_buf.str();
     num_data_ = num_data;
     // get label
     label_ = metadata.label();
@@ -119,6 +121,7 @@ public:
 
   inline static score_t LossOnPoint(float label, std::vector<score_t> score) {
     size_t k = static_cast<size_t>(label);
+    Common::Softmax(&score);
     if (score[k] > kEpsilon) {
       return -std::log(score[k]);
     } else {

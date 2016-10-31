@@ -19,11 +19,11 @@ public:
   * \param data This class will bind with this data set
   */
   explicit ScoreUpdater(const Dataset* data, int num_class)
-    :data_(data), num_class_(num_class) {
+    :data_(data) {
     num_data_ = data->num_data();
-    score_ = new score_t[num_data_ * num_class_];
+    score_ = new score_t[num_data_ * num_class];
     // default start score is zero
-    std::memset(score_, 0, sizeof(score_t) * num_data_ * num_class_);
+    std::memset(score_, 0, sizeof(score_t) * num_data_ * num_class);
     const score_t* init_score = data->metadata().init_score();
     // if exists initial score, will start from it
     if (init_score != nullptr) {
@@ -74,8 +74,6 @@ private:
   const Dataset* data_;
   /*! \brief Scores for data set */
   score_t* score_;
-  /*! \brief Number of classes */
-  int num_class_;
 };
 
 }  // namespace LightGBM

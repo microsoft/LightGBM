@@ -136,27 +136,27 @@ public:
     if (num_class_ > 1) {
       predict_fun = [this](const std::vector<std::pair<int, float>>& features){
         std::vector<float> prediction = PredictMulticlassOneLine(features);
-        std::stringstream result_ss;
+        std::stringstream result_stream_buf;
         for (size_t i = 0; i < prediction.size(); ++i){
           if (i > 0) {
-            result_ss << '\t';
+            result_stream_buf << '\t';
           }
-          result_ss << prediction[i];
+          result_stream_buf << prediction[i];
         }
-        return result_ss.str();  
+        return result_stream_buf.str();  
       };  
     }
     else if (is_predict_leaf_index_) {
       predict_fun = [this](const std::vector<std::pair<int, float>>& features){
         std::vector<int> predicted_leaf_index = PredictLeafIndexOneLine(features);
-        std::stringstream result_ss;
+        std::stringstream result_stream_buf;
         for (size_t i = 0; i < predicted_leaf_index.size(); ++i){
           if (i > 0) {
-            result_ss << '\t';
+            result_stream_buf << '\t';
           }
-          result_ss << predicted_leaf_index[i];
+          result_stream_buf << predicted_leaf_index[i];
         }
-        return result_ss.str();  
+        return result_stream_buf.str();  
       };
     }
     else {
