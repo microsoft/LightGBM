@@ -325,16 +325,14 @@ void GBDT::SaveModelToFile(bool is_finish, const char* filename) {
   if (!model_output_file_.is_open()) {
     return;
   }
-  int rest = (iter_ - early_stopping_round_) * num_class_;
+  int rest = static_cast<int>(models_.size()) - early_stopping_round_ * num_class_;
   // output tree models
   for (int i = saved_model_size_; i < rest; ++i) {
     model_output_file_ << "Tree=" << i << std::endl;
     model_output_file_ << models_[i]->ToString() << std::endl;
   }
 
-  if (rest > 0) {
-    saved_model_size_ = rest;
-  }
+  saved_model_size_ = Common::Max(saved_model_size_, rest);
 
   model_output_file_.flush();
   // training finished, can close file
