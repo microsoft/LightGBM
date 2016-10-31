@@ -85,10 +85,10 @@ int Tree::Split(int leaf, int feature, unsigned int threshold_bin, int real_feat
 void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, score_t* score) const {
   Threading::For<data_size_t>(0, num_data, [this, data, score](int, data_size_t start, data_size_t end) {
     std::vector<BinIterator*> iterators;
-    for (int i = 0; i < data->num_features(); i++) {
+    for (int i = 0; i < data->num_features(); ++i) {
       iterators.push_back(data->FeatureAt(i)->bin_data()->GetIterator(start));
     }
-    for (data_size_t i = start; i < end; i++) {
+    for (data_size_t i = start; i < end; ++i) {
       score[i] += leaf_value_[GetLeaf(iterators, i)];
     }
   });
@@ -99,10 +99,10 @@ void Tree::AddPredictionToScore(const Dataset* data, const data_size_t* used_dat
   Threading::For<data_size_t>(0, num_data,
       [this, data, used_data_indices, score](int, data_size_t start, data_size_t end) {
     std::vector<BinIterator*> iterators;
-    for (int i = 0; i < data->num_features(); i++) {
+    for (int i = 0; i < data->num_features(); ++i) {
       iterators.push_back(data->FeatureAt(i)->bin_data()->GetIterator(used_data_indices[start]));
     }
-    for (data_size_t i = start; i < end; i++) {
+    for (data_size_t i = start; i < end; ++i) {
       score[used_data_indices[i]] += leaf_value_[GetLeaf(iterators, used_data_indices[i])];
     }
   });

@@ -151,7 +151,7 @@ public:
       std::vector<std::pair<int, float>> oneline_features;
       std::vector<std::string> pred_result(lines.size(), "");
 #pragma omp parallel for schedule(static) private(oneline_features)
-      for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); i++) {
+      for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); ++i) {
         oneline_features.clear();
         // parser
         parser_fun(lines[i].c_str(), &oneline_features);

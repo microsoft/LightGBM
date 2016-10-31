@@ -197,7 +197,7 @@ public:
     // temp sum of negative label
     float cur_neg = 0.0f;
     score_t threshold = score[sorted_idx[0]];
-    if (weights_ == nullptr) {  // not weights
+    if (weights_ == nullptr) {  // no weights
       for (data_size_t i = 0; i < num_data_; ++i) {
         const float cur_label = label_[sorted_idx[i]];
         const score_t cur_score = score[sorted_idx[i]];

@@ -508,7 +508,7 @@ void Dataset::LoadValidationData(const Dataset* train_set, bool use_two_round_lo
 
 void Dataset::ExtractFeaturesFromMemory() {
   std::vector<std::pair<int, float>> oneline_features;
-  float tmp_label = 0.0;
+  float tmp_label = 0.0f;
   if (predict_fun_ == nullptr) {
     // if doesn't need to prediction with initial model
     #pragma omp parallel for schedule(guided) private(oneline_features) firstprivate(tmp_label)
@@ -577,7 +577,7 @@ void Dataset::ExtractFeaturesFromMemory() {
   }
 
   #pragma omp parallel for schedule(guided)
-  for (int i = 0; i < num_features_; i++) {
+  for (int i = 0; i < num_features_; ++i) {
     features_[i]->FinishLoad();
   }
   // text data can be free after loaded feature values
@@ -594,9 +594,9 @@ void Dataset::ExtractFeaturesFromFile() {
     [this, &init_score]
   (data_size_t start_idx, const std::vector<std::string>& lines) {
     std::vector<std::pair<int, float>> oneline_features;
-    float tmp_label = 0.0;
+    float tmp_label = 0.0f;
     #pragma omp parallel for schedule(static) private(oneline_features) firstprivate(tmp_label)
-    for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); i++) {
+    for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); ++i) {
       const int tid = omp_get_thread_num();
       oneline_features.clear();
       // parser
@@ -639,7 +639,7 @@ void Dataset::ExtractFeaturesFromFile() {
   }
 
   #pragma omp parallel for schedule(guided)
-  for (int i = 0; i < num_features_; i++) {
+  for (int i = 0; i < num_features_; ++i) {
     features_[i]->FinishLoad();
   }
 }
@@ -805,7 +805,7 @@ void Dataset::LoadDataFromBinFile(int rank, int num_machines, bool is_pre_partit
     const data_size_t* query_boundaries = metadata_.query_boundaries();
     if (query_boundaries == nullptr) {
       // if not contain query file, minimal sample unit is one record
-      for (data_size_t i = 0; i < num_data_; i++) {
+      for (data_size_t i = 0; i < num_data_; ++i) {
         if (random_.NextInt(0, num_machines) == rank) {
           used_data_indices_.push_back(i);
         } 
@@ -815,7 +815,7 @@ void Dataset::LoadDataFromBinFile(int rank, int num_machines, bool is_pre_partit
       data_size_t num_queries = metadata_.num_queries();
       data_size_t qid = -1;
       bool is_query_used = false;
-      for (data_size_t i = 0; i < num_data_; i++) {
+      for (data_size_t i = 0; i < num_data_; ++i) {
         if (qid >= num_queries) {
           Log::Fatal("current query is exceed the range of query file, please ensure your query file is correct");
         }

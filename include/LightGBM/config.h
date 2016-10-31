@@ -73,7 +73,7 @@ public:
 
 /*! \brief Types of boosting */
 enum BoostingType {
-  kGBDT
+  kGBDT, kUnknow
 };
 
 

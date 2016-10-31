@@ -202,7 +202,7 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
   } else {
     // label_gain = 2^i - 1, may overflow, so we use 31 here
     const int max_label = 31;
-    label_gain.push_back(0.0);
+    label_gain.push_back(0.0f);
     for (int i = 1; i < max_label; ++i) {
       label_gain.push_back(static_cast<float>((1 << i) - 1));
     }
@@ -218,7 +218,7 @@ void MetricConfig::Set(const std::unordered_map<std::string, std::string>& param
   } else {
     // label_gain = 2^i - 1, may overflow, so we use 31 here
     const int max_label = 31;
-    label_gain.push_back(0.0);
+    label_gain.push_back(0.0f);
     for (int i = 1; i < max_label; ++i) {
       label_gain.push_back(static_cast<float>((1 << i) - 1));
     }
@@ -246,7 +246,7 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   CHECK(num_leaves > 1);
   GetInt(params, "feature_fraction_seed", &feature_fraction_seed);
   GetFloat(params, "feature_fraction", &feature_fraction);
-  CHECK(feature_fraction > 0.0 && feature_fraction <= 1.0);
+  CHECK(feature_fraction > 0.0f && feature_fraction <= 1.0f);
   GetFloat(params, "histogram_pool_size", &histogram_pool_size);
   GetInt(params, "max_depth", &max_depth);
   CHECK(max_depth > 1 || max_depth < 0);
@@ -260,9 +260,9 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   GetInt(params, "bagging_freq", &bagging_freq);
   CHECK(bagging_freq >= 0);
   GetFloat(params, "bagging_fraction", &bagging_fraction);
-  CHECK(bagging_fraction > 0.0 && bagging_fraction <= 1.0);
+  CHECK(bagging_fraction > 0.0f && bagging_fraction <= 1.0f);
   GetFloat(params, "learning_rate", &learning_rate);
-  CHECK(learning_rate > 0.0);
+  CHECK(learning_rate > 0.0f);
   GetInt(params, "early_stopping_round", &early_stopping_round);
   CHECK(early_stopping_round >= 0);
   GetInt(params, "metric_freq", &output_freq);

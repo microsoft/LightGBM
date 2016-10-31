@@ -228,13 +228,13 @@ inline static std::string ArrayToString(const T* arr, int n, char delimiter) {
   if (n <= 0) {
     return std::string("");
   }
-  std::stringstream ss;
-  ss << arr[0];
+  std::stringstream str_buf;
+  str_buf << arr[0];
   for (int i = 1; i < n; ++i) {
-    ss << delimiter;
-    ss << arr[i];
+    str_buf << delimiter;
+    str_buf << arr[i];
   }
-  return ss.str();
+  return str_buf.str();
 }
 
 template<typename T>
@@ -242,13 +242,13 @@ inline static std::string ArrayToString(std::vector<T> arr, char delimiter) {
   if (arr.size() <= 0) {
     return std::string("");
   }
-  std::stringstream ss;
-  ss << arr[0];
+  std::stringstream str_buf;
+  str_buf << arr[0];
   for (size_t i = 1; i < arr.size(); ++i) {
-    ss << delimiter;
-    ss << arr[i];
+    str_buf << delimiter;
+    str_buf << arr[i];
   }
-  return ss.str();
+  return str_buf.str();
 }
 
 inline static void StringToIntArray(const std::string& str, char delimiter, size_t n, int* out) {

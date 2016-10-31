@@ -440,7 +440,7 @@ float GBDT::PredictRaw(const float* value, int num_used_model) const {
   if (num_used_model < 0) {
     num_used_model = static_cast<int>(models_.size());
   }
-  float ret = 0.0;
+  float ret = 0.0f;
   for (int i = 0; i < num_used_model; ++i) {
     ret += models_[i]->Predict(value);
   }
@@ -451,7 +451,7 @@ float GBDT::Predict(const float* value, int num_used_model) const {
   if (num_used_model < 0) {
     num_used_model = static_cast<int>(models_.size());
   }
-  float ret = 0.0;
+  float ret = 0.0f;
   for (int i = 0; i < num_used_model; ++i) {
     ret += models_[i]->Predict(value);
   }
