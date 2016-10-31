@@ -285,6 +285,83 @@ void Dataset::SampleDataFromFile(int rank, int num_machines, bool is_pre_partiti
   }
 }
 
+void Dataset::InitByBinMapper(std::vector<const BinMapper*> bin_mappers, data_size_t num_data) {
+  num_data_ = num_data;
+  global_num_data_ = num_data_;
+  // initialize label
+  metadata_.Init(num_data_, -1, -1);
+  // free old memory
+  for (auto& feature : features_) {
+    delete feature;
+  }
+  features_.clear();
+  used_feature_map_ = std::vector<int>(bin_mappers.size(), -1);
+  for (size_t i = 0; i < bin_mappers.size(); ++i) {
+    if (bin_mappers[i] != nullptr) {
+      features_.push_back(new Feature(static_cast<int>(i), new BinMapper(bin_mappers[i]), num_data_, is_enable_sparse_));
+      used_feature_map_[i] = static_cast<int>(features_.size());
+    }
+  }
+  num_features_ = static_cast<int>(features_.size());
+}
+
+std::vector<const BinMapper*> Dataset::GetBinMappers() const {
+  std::vector<const BinMapper*> ret(num_total_features_, nullptr);
+  for (const auto feature : features_) {
+    ret[feature->feature_index()] = feature->bin_mapper();
+  }
+  return ret;
+}
+
+void Dataset::PushData(const std::vector<std::vector<std::pair<int, float>>>& datas, data_size_t start_idx, bool is_finished) {
+  // if doesn't need to prediction with initial model
+#pragma omp parallel for schedule(guided) 
+  for (data_size_t i = 0; i < static_cast<int>(datas.size()); ++i) {
+    const int tid = omp_get_thread_num();
+    for (auto& inner_data : datas[i]) {
+      int feature_idx = used_feature_map_[inner_data.first];
+      if (feature_idx >= 0) {
+        // if is used feature
+        features_[feature_idx]->PushData(tid, start_idx + i, inner_data.second);
+      } 
+    }
+  }
+  if (is_finished) {
+#pragma omp parallel for schedule(guided)
+    for (int i = 0; i < num_features_; ++i) {
+      features_[i]->FinishLoad();
+    }
+  }
+}
+
+void Dataset::SetField(const char* field_name, const void* field_data, data_size_t num_element, int type) {
+  std::string name(field_name);
+  name = Common::Trim(name);
+  if (name == std::string("label") || name == std::string("target")) {
+    if (type != 0) {
+      Log::Fatal("type of label should be float");
+    }
+    metadata_.SetLabel(static_cast<const float*>(field_data), num_element);
+  }else if (name == std::string("weight") || name == std::string("weights")) {
+    if (type != 0) {
+      Log::Fatal("type of weights should be float");
+    }
+    metadata_.SetWeights(static_cast<const float*>(field_data), num_element);
+  } else if (name == std::string("init_score")) {
+    if (type != 0) {
+      Log::Fatal("type of init_score should be float");
+    }
+    metadata_.SetInitScore(static_cast<const float*>(field_data), num_element);
+  } else if (name == std::string("query") || name == std::string("group")) {
+    if (type != 1) {
+      Log::Fatal("type of init_score should be int");
+    }
+    metadata_.SetQueryBoundaries(static_cast<const data_size_t*>(field_data), num_element);
+  } else {
+    Log::Fatal("unknow field name: %s", field_name);
+  }
+}
+
 void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<std::string>& sample_data) {
   // sample_values[i][j], means the value of j-th sample on i-th feature
   std::vector<std::vector<float>> sample_values;

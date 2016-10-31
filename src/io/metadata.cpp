@@ -8,7 +8,7 @@
 namespace LightGBM {
 
 Metadata::Metadata()
-  :label_(nullptr), label_int_(nullptr), weights_(nullptr), 
+  :label_(nullptr), weights_(nullptr), 
   query_boundaries_(nullptr),
   query_weights_(nullptr), init_score_(nullptr), queries_(nullptr){
 
@@ -224,6 +224,48 @@ void Metadata::SetInitScore(const float* init_score, data_size_t len) {
     init_score_[i] = init_score[i];
   }
 }
+
+void Metadata::SetLabel(const float* label, data_size_t len) {
+  if (num_data_ != len) {
+    Log::Fatal("len of label is not same with #data");
+  }
+  if (label_ != nullptr) { delete[] label_; }
+  label_ = new float[num_data_];
+  for (data_size_t i = 0; i < num_data_; ++i) {
+    label_[i] = label[i];
+  }
+}
+
+void Metadata::SetWeights(const float* weights, data_size_t len) {
+  if (num_data_ != len) {
+    Log::Fatal("len of weights is not same with #data");
+  }
+  if (weights_ != nullptr) { delete[] weights_; }
+  num_weights_ = num_data_;
+  weights_ = new float[num_weights_];
+  for (data_size_t i = 0; i < num_weights_; ++i) {
+    weights_[i] = weights[i];
+  }
+  LoadQueryWeights();
+}
+
+void Metadata::SetQueryBoundaries(const data_size_t* query_boundaries, data_size_t len) {
+  data_size_t sum = 0;
+  for (data_size_t i = 0; i < len; ++i) {
+    sum += query_boundaries[i];
+  }
+  if (num_data_ != sum) {
+    Log::Fatal("sum of query counts is not same with #data");
+  }
+  if (query_boundaries_ != nullptr) { delete[] query_boundaries_; }
+  num_queries_ = len;
+  query_boundaries_ = new data_size_t[num_queries_];
+  for (data_size_t i = 0; i < num_queries_; ++i) {
+    query_boundaries_[i] = query_boundaries[i];
+  }
+  LoadQueryWeights();
+}
+
 
 void Metadata::LoadWeights() {
   num_weights_ = 0;

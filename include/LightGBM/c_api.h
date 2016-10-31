@@ -142,7 +142,7 @@ DllExport int LGBM_DatasetSaveBinary(DatesetHandle handle,
 DllExport int LGBM_DatasetSetField(DatesetHandle handle,
   const char* field_name,
   const void* field_data,
-  uint64_t field_len,
+  uint64_t num_element,
   int type);
 
 /*!

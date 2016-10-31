@@ -17,6 +17,7 @@ namespace LightGBM {
 
 /*! \brief forward declaration */
 class Feature;
+class BinMapper;
 
 /*!
 * \brief This class is used to store some meta(non-feature) data for training data,
@@ -78,6 +79,13 @@ public:
   */
   void CheckOrPartition(data_size_t num_all_data,
     const std::vector<data_size_t>& used_data_indices);
+
+
+  void SetLabel(const float* label, data_size_t len);
+
+  void SetWeights(const float* weights, data_size_t len);
+
+  void SetQueryBoundaries(const data_size_t* QueryBoundaries, data_size_t len);
 
   /*!
   * \brief Set initial scores
@@ -188,8 +196,6 @@ private:
   data_size_t num_weights_;
   /*! \brief Label data */
   float* label_;
-  /*! \brief Label data, int type */
-  int16_t* label_int_;
   /*! \brief Weights data */
   float* weights_;
   /*! \brief Query boundaries */
@@ -272,6 +278,14 @@ public:
   /*! \brief Destructor */
   ~Dataset();
 
+  /*! \brief Init Dataset with specific binmapper */
+  void InitByBinMapper(std::vector<const BinMapper*> bin_mappers, data_size_t num_data);
+
+  /*! \brief push raw data into dataset */
+  void PushData(const std::vector<std::vector<std::pair<int, float>>>& datas, data_size_t start_idx, bool is_finished);
+
+  void SetField(const char* field_name, const void* field_data, data_size_t num_element, int type);
+
   /*!
   * \brief Load training data on parallel training
   * \param rank Rank of local machine
@@ -310,6 +324,8 @@ public:
   * \brief Save current dataset into binary file, will save to "filename.bin"
   */
   void SaveBinaryFile(const char* bin_filename);
+
+  std::vector<const BinMapper*> GetBinMappers() const;
 
   /*!
   * \brief Get a feature pointer for specific index
