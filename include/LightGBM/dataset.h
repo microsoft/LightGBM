@@ -262,6 +262,13 @@ public:
     : Dataset(data_filename, "", io_config, predict_fun) {
   }
 
+  /*!
+  * \brief Constructor, without filename, used to load data from memory 
+  * \param io_config configs for IO
+  * \param predict_fun Used for initial model, will give a prediction score based on this function, then set as initial score
+  */
+  Dataset(const IOConfig& io_config, const PredictFunction& predict_fun);
+
   /*! \brief Destructor */
   ~Dataset();
 
@@ -291,9 +298,18 @@ public:
   void LoadValidationData(const Dataset* train_set, bool use_two_round_loading);
 
   /*!
+  * \brief Load data set from binary file
+  * \param bin_filename filename of bin data 
+  * \param rank Rank of local machine
+  * \param num_machines Total number of all machines
+  * \param is_pre_partition True if data file is pre-partitioned
+  */
+  void LoadDataFromBinFile(const char* bin_filename, int rank, int num_machines, bool is_pre_partition);
+
+  /*!
   * \brief Save current dataset into binary file, will save to "filename.bin"
   */
-  void SaveBinaryFile();
+  void SaveBinaryFile(const char* bin_filename);
 
   /*!
   * \brief Get a feature pointer for specific index
@@ -371,14 +387,6 @@ private:
   /*! \brief Check can load from binary file */
   void CheckCanLoadFromBin();
 
-  /*!
-  * \brief Load data set from binary file
-  * \param rank Rank of local machine
-  * \param num_machines Total number of all machines
-  * \param is_pre_partition True if data file is pre-partitioned
-  */
-  void LoadDataFromBinFile(int rank, int num_machines, bool is_pre_partition);
-
   /*! \brief Check this data set is null or not */
   void CheckDataset();
 
@@ -424,6 +432,8 @@ private:
   std::unordered_set<int> ignore_features_;
   /*! \brief store feature names */
   std::vector<std::string> feature_names_;
+  /*! \brief store feature names */
+  int bin_construct_sample_cnt_;
 };
 
 }  // namespace LightGBM

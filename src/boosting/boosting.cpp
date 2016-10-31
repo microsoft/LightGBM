@@ -25,7 +25,7 @@ void LoadFileToBoosting(Boosting* boosting, const char* filename) {
 }
 
 Boosting* Boosting::CreateBoosting(BoostingType type, const char* filename) {
-  if (filename[0] == '\0') {
+  if (filename == nullptr || filename[0] == '\0') {
     if (type == BoostingType::kGBDT) {
       return new GBDT();
     } else {

@@ -150,7 +150,7 @@ void Application::LoadData() {
   }
   // need save binary file
   if (config_.io_config.is_save_binary_file) {
-    train_data_->SaveBinaryFile();
+    train_data_->SaveBinaryFile(nullptr);
   }
   // create training metric
   if (config_.boosting_config->is_provide_training_metric) {
@@ -175,7 +175,7 @@ void Application::LoadData() {
                 config_.io_config.use_two_round_loading);
     // need save binary file
     if (config_.io_config.is_save_binary_file) {
-      valid_datas_.back()->SaveBinaryFile();
+      valid_datas_.back()->SaveBinaryFile(nullptr);
     }
 
     // add metric for validation data

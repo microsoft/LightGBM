@@ -99,6 +99,8 @@ public:
   bool is_enable_sparse = true;
   bool use_two_round_loading = false;
   bool is_save_binary_file = false;
+  bool enable_load_from_binary_file = true;
+  int bin_construct_sample_cnt = 50000;
   bool is_sigmoid = true;
 
   bool has_header = false;

@@ -30,9 +30,7 @@ DllExport const char* LGBM_GetLastError();
 
 /*!
 * \brief load data set from file like the command_line LightGBM do
-* \param parameters additional parameters:
-has_header, label_column, weight_column, group_column, ignore_column
-use format like 'has_header=true label_column=1 '..
+* \param parameters additional parameters
 * \param filename the name of the file
 * \param reference used to align bin mapper with other dataset, nullptr means don't used
 * \param out a loaded dataset
@@ -60,6 +58,7 @@ DllExport int LGBM_CreateDatasetFromBinaryFile(const char* filename,
 * \param nindptr number of rows in the matix + 1
 * \param nelem number of nonzero elements in the matrix
 * \param num_col number of columns; when it's set to 0, then guess from data
+* \param parameters additional parameters
 * \param reference used to align bin mapper with other dataset, nullptr means don't used
 * \param out created dataset
 * \return 0 when success, -1 when failure happens
@@ -70,6 +69,7 @@ DllExport int LGBM_CreateDatasetFromCSR(const uint64_t* indptr,
   uint64_t nindptr,
   uint64_t nelem,
   uint64_t num_col,
+  const char* parameters,
   const DatesetHandle* reference,
   DatesetHandle* out);
 
@@ -81,6 +81,7 @@ DllExport int LGBM_CreateDatasetFromCSR(const uint64_t* indptr,
 * \param nindptr number of rows in the matix + 1
 * \param nelem number of nonzero elements in the matrix
 * \param num_row number of rows; when it's set to 0, then guess from data
+* \param parameters additional parameters
 * \param reference used to align bin mapper with other dataset, nullptr means don't used
 * \param out created dataset
 * \return 0 when success, -1 when failure happens
@@ -91,6 +92,7 @@ DllExport int LGBM_CreateDatasetFromCSC(const uint64_t* col_ptr,
   uint64_t nindptr,
   uint64_t nelem,
   uint64_t num_row,
+  const char* parameters,
   const DatesetHandle* reference,
   DatesetHandle* out);
 
@@ -100,6 +102,7 @@ DllExport int LGBM_CreateDatasetFromCSC(const uint64_t* col_ptr,
 * \param nrow number of rows
 * \param ncol number columns
 * \param missing which value to represent missing value
+* \param parameters additional parameters
 * \param reference used to align bin mapper with other dataset, nullptr means don't used
 * \param out created dataset
 * \return 0 when success, -1 when failure happens
@@ -108,6 +111,7 @@ DllExport int LGBM_CreateDatasetFromMat(const float* data,
   uint64_t nrow,
   uint64_t ncol,
   float missing,
+  const char* parameters,
   const DatesetHandle* reference,
   DatesetHandle* out);
 
