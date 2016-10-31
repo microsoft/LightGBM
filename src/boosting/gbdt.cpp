@@ -473,9 +473,12 @@ float GBDT::Predict(const float* value, int num_used_model) const {
   return ret;
 }
 
-std::vector<float> GBDT::PredictMulticlass(const float* value) const {
+std::vector<float> GBDT::PredictMulticlass(const float* value, int num_used_model) const {
   std::vector<float> ret(num_class_, 0.0f);
-  for (size_t i = 0; i < models_.size()/num_class_; ++i) {
+  if (num_used_model < 0) {
+      num_used_model = static_cast<int>(models_.size()) / num_class_;
+  }
+  for (int i = 0; i < num_used_model; ++i) {
     for (int j = 0; j < num_class_; ++j){
         ret[j] += models_[i * num_class_ + j] -> Predict(value);
     }

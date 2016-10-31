@@ -97,7 +97,7 @@ public:
   std::vector<float> PredictMulticlassOneLine(const std::vector<std::pair<int, float>>& features) {
     const int tid = PutFeatureValuesToBuffer(features);
     // get result with sigmoid transform if needed
-    return boosting_->PredictMulticlass(features_[tid]);
+    return boosting_->PredictMulticlass(features_[tid], num_used_model_);
   }
   
   /*!

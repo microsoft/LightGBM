@@ -85,7 +85,7 @@ public:
   * \param feature_values Feature value on this record
   * \return Prediction result, num_class numbers per line
   */
-  virtual std::vector<float> PredictMulticlass(const float* value) const = 0; 
+  virtual std::vector<float> PredictMulticlass(const float* value, int num_used_model) const = 0; 
   
   /*!
   * \brief save model to file

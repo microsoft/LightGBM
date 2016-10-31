@@ -73,7 +73,7 @@ public:
   * \param feature_values Feature value on this record
   * \return Prediction result, num_class numbers per line
   */
-  std::vector<float> PredictMulticlass(const float* value) const override;
+  std::vector<float> PredictMulticlass(const float* value, int num_used_model) const override;
   
   /*!
   * \brief Predtion for one record with leaf index
