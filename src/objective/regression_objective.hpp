@@ -38,9 +38,9 @@ public:
     }
   }
 
-  double GetSigmoid() const override {
+  float GetSigmoid() const override {
     // not sigmoid transform, return -1
-    return -1.0;
+    return -1.0f;
   }
 
 private:

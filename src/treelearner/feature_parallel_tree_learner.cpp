@@ -47,11 +47,11 @@ void FeatureParallelTreeLearner::FindBestSplitsForLeaves() {
   int smaller_best_feature = -1, larger_best_feature = -1;
   SplitInfo smaller_best, larger_best;
   // get best split at smaller leaf
-  std::vector<double> gains;
+  std::vector<float> gains;
   for (size_t i = 0; i < smaller_leaf_splits_->BestSplitPerFeature().size(); ++i) {
     gains.push_back(smaller_leaf_splits_->BestSplitPerFeature()[i].gain);
   }
-  smaller_best_feature = static_cast<int>(ArrayArgs<double>::ArgMax(gains));
+  smaller_best_feature = static_cast<int>(ArrayArgs<float>::ArgMax(gains));
   smaller_best = smaller_leaf_splits_->BestSplitPerFeature()[smaller_best_feature];
   // get best split at larger leaf
   if (larger_leaf_splits_->LeafIndex() >= 0) {
@@ -59,7 +59,7 @@ void FeatureParallelTreeLearner::FindBestSplitsForLeaves() {
     for (size_t i = 0; i < larger_leaf_splits_->BestSplitPerFeature().size(); ++i) {
       gains.push_back(larger_leaf_splits_->BestSplitPerFeature()[i].gain);
     }
-    larger_best_feature = static_cast<int>(ArrayArgs<double>::ArgMax(gains));
+    larger_best_feature = static_cast<int>(ArrayArgs<float>::ArgMax(gains));
     larger_best = larger_leaf_splits_->BestSplitPerFeature()[larger_best_feature];
   }
   // sync global best info

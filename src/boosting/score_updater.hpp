@@ -41,8 +41,8 @@ public:
   *        Note: this function generally will be used on validation data too.
   * \param tree Trained tree model
   */
-  inline void AddScore(const Tree* tree, int num_class) {
-    tree->AddPredictionToScore(data_, num_data_, score_ + num_class * num_data_);
+  inline void AddScore(const Tree* tree, int curr_class) {
+    tree->AddPredictionToScore(data_, num_data_, score_ + curr_class * num_data_);
   }
   /*!
   * \brief Adding prediction score, only used for training data.
@@ -50,8 +50,8 @@ public:
   *        Based on which We can get prediction quckily.
   * \param tree_learner
   */
-  inline void AddScore(const TreeLearner* tree_learner, int num_class) {
-    tree_learner->AddPredictionToScore(score_ + num_class * num_data_);
+  inline void AddScore(const TreeLearner* tree_learner, int curr_class) {
+    tree_learner->AddPredictionToScore(score_ + curr_class * num_data_);
   }
   /*!
   * \brief Using tree model to get prediction number, then adding to scores for parts of data
@@ -61,8 +61,8 @@ public:
   * \param data_cnt Number of data that will be proccessed
   */
   inline void AddScore(const Tree* tree, const data_size_t* data_indices,
-                                                  data_size_t data_cnt, int num_class) {
-    tree->AddPredictionToScore(data_, data_indices, data_cnt, score_ + num_class * num_data_);
+                                                  data_size_t data_cnt, int curr_class) {
+    tree->AddPredictionToScore(data_, data_indices, data_cnt, score_ + curr_class * num_data_);
   }
   /*! \brief Pointer of score */
   inline const score_t * score() { return score_; }

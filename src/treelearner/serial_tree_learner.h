@@ -41,11 +41,11 @@ public:
   void AddPredictionToScore(score_t *out_score) const override {
     #pragma omp parallel for schedule(guided)
     for (int i = 0; i < data_partition_->num_leaves(); ++i) {
-      double output = last_trained_tree_->LeafOutput(i);
+      score_t output = last_trained_tree_->LeafOutput(i);
       data_size_t* tmp_idx = nullptr;
       data_size_t cnt_leaf_data = data_partition_->GetIndexOnLeaf(i, &tmp_idx);
       for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
-        out_score[tmp_idx[j]] += static_cast<score_t>(output);
+        out_score[tmp_idx[j]] += output;
       }
     }
   }
@@ -116,7 +116,7 @@ protected:
   /*! \brief mininal sum hessian on one leaf */
   score_t min_sum_hessian_one_leaf_;
   /*! \brief sub-feature fraction rate */
-  double feature_fraction_;
+  float feature_fraction_;
   /*! \brief training data partition on leaves */
   DataPartition* data_partition_;
   /*! \brief used for generate used features */
@@ -160,7 +160,7 @@ protected:
   /*! \brief  is_data_in_leaf_[i] != 0 means i-th data is marked */
   char* is_data_in_leaf_;
   /*! \brief  max cache size(unit:GB) for historical histogram. < 0 means not limit */
-  double histogram_pool_size_;
+  float histogram_pool_size_;
   /*! \brief used to cache historical histogram to speed up*/
   LRUPool<FeatureHistogram*> histogram_pool_;
   /*! \brief  max depth of tree model */
@@ -186,11 +186,11 @@ inline void SerialTreeLearner::FindBestSplitForLeaf(LeafSplits* leaf_splits) {
   if (leaf_splits == nullptr || leaf_splits->LeafIndex() < 0) {
     return;
   }
-  std::vector<double> gains;
+  std::vector<float> gains;
   for (size_t i = 0; i < leaf_splits->BestSplitPerFeature().size(); ++i) {
     gains.push_back(leaf_splits->BestSplitPerFeature()[i].gain);
   }
-  int best_feature = static_cast<int>(ArrayArgs<double>::ArgMax(gains));
+  int best_feature = static_cast<int>(ArrayArgs<float>::ArgMax(gains));
   int leaf = leaf_splits->LeafIndex();
   best_split_per_leaf_[leaf] = leaf_splits->BestSplitPerFeature()[best_feature];
   best_split_per_leaf_[leaf].feature = best_feature;

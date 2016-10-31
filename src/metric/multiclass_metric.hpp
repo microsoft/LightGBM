@@ -16,10 +16,7 @@ template<typename PointWiseLossCalculator>
 class MulticlassMetric: public Metric {
 public:
   explicit MulticlassMetric(const MetricConfig& config) {
-    early_stopping_round_ = config.early_stopping_round;
-    output_freq_ = config.output_freq;
-    num_class_ = config.num_class;
-    the_bigger_the_better = false;
+      num_class_ = config.num_class;
   }
 
   virtual ~MulticlassMetric() {
@@ -27,14 +24,14 @@ public:
   }
 
   void Init(const char* test_name, const Metadata& metadata, data_size_t num_data) override {
-    name = test_name;
+    name_ = test_name;
     num_data_ = num_data;
     // get label
     label_ = metadata.label();
     // get weights
     weights_ = metadata.weights();
     if (weights_ == nullptr) {
-      sum_weights_ = static_cast<double>(num_data_);
+      sum_weights_ = static_cast<float>(num_data_);
     } else {
       sum_weights_ = 0.0f;
       for (data_size_t i = 0; i < num_data_; ++i) {
@@ -43,37 +40,39 @@ public:
     }
   }
   
-  score_t PrintAndGetLoss(int iter, const score_t* score) const override {
-    if (early_stopping_round_ > 0 || (output_freq_ > 0 && iter % output_freq_ == 0)) {
-      score_t sum_loss = 0.0;
-      if (weights_ == nullptr) {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
-        for (data_size_t i = 0; i < num_data_; ++i) {
-          std::vector<score_t> rec(num_class_);
-          for (int k = 0; k < num_class_; ++k) {
-              rec[k] = score[k * num_data_ + i];
-          }
-          // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec);
+  const char* GetName() const override {
+    return name_.c_str();
+  }
+
+  bool is_bigger_better() const override {
+    return false;
+  }
+  
+  std::vector<score_t> Eval(const score_t* score) const override {
+    score_t sum_loss = 0.0;
+    if (weights_ == nullptr) {
+      #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        std::vector<score_t> rec(num_class_);
+        for (int k = 0; k < num_class_; ++k) {
+          rec[k] = score[k * num_data_ + i];
         }
-      } else {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
-        for (data_size_t i = 0; i < num_data_; ++i) {
-          std::vector<score_t> rec(num_class_);
-          for (int k = 0; k < num_class_; ++k) {
-              rec[k] = score[k * num_data_ + i];
-          }
-          // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec) * weights_[i];
+        // add loss
+        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec);
+      }
+    } else {
+      #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        std::vector<score_t> rec(num_class_);
+        for (int k = 0; k < num_class_; ++k) {
+          rec[k] = score[k * num_data_ + i];
         }
+        // add loss
+        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec) * weights_[i];
       }
-      score_t loss = sum_loss / sum_weights_;
-      if (output_freq_ > 0 && iter % output_freq_ == 0){
-        Log::Info("Iteration:%d, %s's %s : %f", iter, name, PointWiseLossCalculator::Name(), loss);
-      }
-      return loss;
     }
-    return 0.0f;
+    score_t loss = sum_loss / sum_weights_;
+    return std::vector<score_t>(1, loss);;
   }
 
 private:
@@ -88,9 +87,9 @@ private:
   /*! \brief Pointer of weighs */
   const float* weights_;
   /*! \brief Sum weights */
-  double sum_weights_;
+  float sum_weights_;
   /*! \brief Name of this test set */
-  const char* name;
+  std::string name_;
 };
 
 /*! \brief L2 loss for multiclass task */

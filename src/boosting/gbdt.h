@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <vector>
 #include <string>
+#include <fstream>
 
 namespace LightGBM {
 /*!
@@ -16,9 +17,8 @@ class GBDT: public Boosting {
 public:
   /*!
   * \brief Constructor
-  * \param config Config of GBDT
   */
-  explicit GBDT(const BoostingConfig* config);
+  GBDT();
   /*!
   * \brief Destructor
   */
@@ -31,9 +31,8 @@ public:
   * \param training_metrics Training metrics
   * \param output_model_filename Filename of output model
   */
-  void Init(const Dataset* train_data, const ObjectiveFunction* object_function,
-                             const std::vector<const Metric*>& training_metrics,
-                                              const char* output_model_filename)
+  void Init(const BoostingConfig* gbdt_config, const Dataset* train_data, const ObjectiveFunction* object_function,
+                             const std::vector<const Metric*>& training_metrics)
                                                                        override;
   /*!
   * \brief Adding a validation dataset
@@ -45,45 +44,54 @@ public:
   /*!
   * \brief one training iteration
   */
-  void Train() override;
+  bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override;
+
+  /*! \brief Get eval result */
+  std::vector<std::string> EvalCurrent(bool is_eval_train) const override;
+
+  /*! \brief Get prediction result */
+  const std::vector<const score_t*> PredictCurrent(bool is_predict_train) const override;
+
   /*!
   * \brief Predtion for one record without sigmoid transformation
   * \param feature_values Feature value on this record
+  * \param num_used_model Number of used model
   * \return Prediction result for this record
   */
-  double PredictRaw(const double * feature_values) const override;
+  float PredictRaw(const float* feature_values, int num_used_model) const override;
 
   /*!
   * \brief Predtion for one record with sigmoid transformation if enabled
   * \param feature_values Feature value on this record
+  * \param num_used_model Number of used model
   * \return Prediction result for this record
   */
-  double Predict(const double * feature_values) const override;
+  float Predict(const float* feature_values, int num_used_model) const override;
   
   /*!
-  * \brief Predtion for one record with leaf index
-  * \param feature_values Feature value on this record
-  * \return Predicted leaf index for this record
-  */
- std::vector<int> PredictLeafIndex(const double* value) const override;
- 
- /*!
   * \brief Predtion for multiclass classification
   * \param feature_values Feature value on this record
   * \return Prediction result, num_class numbers per line
   */
- std::vector<double> PredictMulticlass(const double* value) const override;
+  std::vector<float> PredictMulticlass(const float* value) const override;
+  
+  /*!
+  * \brief Predtion for one record with leaf index
+  * \param feature_values Feature value on this record
+  * \param num_used_model Number of used model
+  * \return Predicted leaf index for this record
+  */
+  std::vector<int> PredictLeafIndex(const float* value, int num_used_model) const override;
   
   /*!
   * \brief Serialize models by string
   * \return String output of tranined model
   */
-  std::string ModelsToString() const override;
+  void SaveModelToFile(bool is_finish, const char* filename) override;
   /*!
   * \brief Restore from a serialized string
-  * \param model_str The string of model
   */
-  void ModelsFromString(const std::string& model_str, int num_used_model) override;
+  void ModelsFromString(const std::string& model_str) override;
   /*!
   * \brief Get max feature index of this model
   * \return Max feature index of this model
@@ -107,33 +115,39 @@ public:
   * \return Number of classes
   */
   inline int NumberOfClass() const override { return num_class_; }
+  
+  /*!
+  * \brief Get number of classes
+  * \return Number of classes
+  */
+  inline void SetNumberOfClass(int num_class) override { num_class_ = num_class; }
+
+  /*!
+  * \brief Get Type name of this boosting object
+  */
+  const char* Name() const override { return "gbdt"; }
 
 private:
   /*!
   * \brief Implement bagging logic
   * \param iter Current interation
   */
-  void Bagging(int iter, int num_class);
+  void Bagging(int iter);
   /*!
   * \brief updating score for out-of-bag data.
   *        Data should be update since we may re-bagging data on training
   * \param tree Trained tree of this iteration
   */
-  void UpdateScoreOutOfBag(const Tree* tree, int num_class);
+  void UpdateScoreOutOfBag(const Tree* tree);
   /*!
   * \brief calculate the object function
   */
   void Boosting();
   /*!
-  * \brief training one tree
-  * \return Trained tree of this iteration
-  */
-  Tree* TrainOneTree(int num_class);
-  /*!
   * \brief updating score after tree was trained
   * \param tree Trained tree of this iteration
   */
-  void UpdateScore(const Tree* tree, int num_class);
+  void UpdateScore(const Tree* tree);
   /*!
   * \brief Print metric result of current iteration
   * \param iter Current interation
@@ -143,13 +157,11 @@ private:
   * \brief Calculate feature importances
   * \param last_iter Last tree use to calculate
   */
-  void FeatureImportance(const int last_iter);
-  
+  std::string FeatureImportance() const;
+  /*! \brief current iteration */
+  int iter_;
   /*! \brief Pointer to training data */
   const Dataset* train_data_;
-  
-  /*! \brief Number of classes in data */
-  int num_class_;
   /*! \brief Config of gbdt */
   const GBDTConfig* gbdt_config_;
   /*! \brief Tree learner, will use this class to learn trees */
@@ -187,18 +199,23 @@ private:
   data_size_t bag_data_cnt_;
   /*! \brief Number of traning data */
   data_size_t num_data_;
+  /*! \brief Number of classes */
+  int num_class_;
+  /*! \brief Current class */
+  int curr_class_;
   /*! \brief Random generator, used for bagging */
   Random random_;
-  /*! \brief The filename that the models will save to */
-  FILE * output_model_file;
   /*!
   *   \brief Sigmoid parameter, used for prediction.
   *          if > 0 meas output score will transform by sigmoid function
   */
-  double sigmoid_;
-
+  float sigmoid_;
   /*! \brief Index of label column */
   data_size_t label_idx_;
+  /*! \brief Saved number of models */
+  int saved_model_size_ = -1;
+  /*! \brief File to write models */
+  std::ofstream model_output_file_;
 };
 
 }  // namespace LightGBM

@@ -73,7 +73,7 @@ public:
     }
   }
 
-  double GetSigmoid() const override {
+  float GetSigmoid() const override {
     return -1.0;
   }
 

@@ -15,7 +15,7 @@ SerialTreeLearner::SerialTreeLearner(const TreeConfig& tree_config)
   // initialize with nullptr
   num_leaves_ = tree_config.num_leaves;
   min_num_data_one_leaf_ = static_cast<data_size_t>(tree_config.min_data_in_leaf);
-  min_sum_hessian_one_leaf_ = static_cast<float>(tree_config.min_sum_hessian_in_leaf);
+  min_sum_hessian_one_leaf_ = static_cast<score_t>(tree_config.min_sum_hessian_in_leaf);
   feature_fraction_ = tree_config.feature_fraction;
   random_ = Random(tree_config.feature_fraction_seed);
   histogram_pool_size_ = tree_config.histogram_pool_size;

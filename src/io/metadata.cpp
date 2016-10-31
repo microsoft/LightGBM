@@ -231,9 +231,9 @@ void Metadata::LoadWeights() {
   num_weights_ = static_cast<data_size_t>(reader.Lines().size());
   weights_ = new float[num_weights_];
   for (data_size_t i = 0; i < num_weights_; ++i) {
-    double tmp_weight = 0.0f;
+    float tmp_weight = 0.0f;
     Common::Atof(reader.Lines()[i].c_str(), &tmp_weight);
-    weights_[i] = static_cast<float>(tmp_weight);
+    weights_[i] = tmp_weight;
   }
 }
 
@@ -246,7 +246,7 @@ void Metadata::LoadInitialScore() {
   Log::Info("Start loading initial scores");
   num_init_score_ = static_cast<data_size_t>(reader.Lines().size());
   init_score_ = new score_t[num_init_score_];
-  double tmp = 0.0f;
+  float tmp = 0.0f;
   for (data_size_t i = 0; i < num_init_score_; ++i) {
     Common::Atof(reader.Lines()[i].c_str(), &tmp);
     init_score_[i] = static_cast<score_t>(tmp);

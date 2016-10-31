@@ -56,7 +56,7 @@ public:
       }
       fclose(file);
       first_line_ = str_buf.str();
-      Log::Info("skip header:\"%s\" in file %s", first_line_.c_str(), filename_);
+      Log::Debug("skip header:\"%s\" in file %s", first_line_.c_str(), filename_);
     }
   }
   /*!
