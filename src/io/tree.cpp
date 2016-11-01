@@ -27,7 +27,7 @@ Tree::Tree(int max_leaves)
   split_gain_ = new float[max_leaves_ - 1];
 
   leaf_parent_ = new int[max_leaves_];
-  leaf_value_ = new score_t[max_leaves_];
+  leaf_value_ = new float[max_leaves_];
   leaf_depth_ = new int[max_leaves_];
   // root is in the depth 1
   leaf_depth_[0] = 1;
@@ -48,7 +48,7 @@ Tree::~Tree() {
 }
 
 int Tree::Split(int leaf, int feature, unsigned int threshold_bin, int real_feature,
-  float threshold, score_t left_value, score_t right_value, float gain) {
+  float threshold, float left_value, float right_value, float gain) {
   int new_node_idx = num_leaves_ - 1;
   // update parent info
   int parent = leaf_parent_[leaf];
@@ -124,7 +124,7 @@ std::string Tree::ToString() {
   ss << "leaf_parent="
     << Common::ArrayToString<int>(leaf_parent_, num_leaves_, ' ') << std::endl;
   ss << "leaf_value="
-    << Common::ArrayToString<score_t>(leaf_value_, num_leaves_, ' ') << std::endl;
+    << Common::ArrayToString<float>(leaf_value_, num_leaves_, ' ') << std::endl;
   ss << std::endl;
   return ss.str();
 }
@@ -157,7 +157,7 @@ Tree::Tree(const std::string& str) {
   threshold_ = new float[num_leaves_ - 1];
   split_gain_ = new float[num_leaves_ - 1];
   leaf_parent_ = new int[num_leaves_];
-  leaf_value_ = new score_t[num_leaves_];
+  leaf_value_ = new float[num_leaves_];
 
   split_feature_ = nullptr;
   threshold_in_bin_ = nullptr;

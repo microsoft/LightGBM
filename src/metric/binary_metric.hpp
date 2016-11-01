@@ -58,7 +58,7 @@ public:
     return false;
   }
 
-  std::vector<score_t> Eval(const score_t* score) const override {
+  std::vector<float> Eval(const score_t* score) const override {
     score_t sum_loss = 0.0f;
     if (weights_ == nullptr) {
 #pragma omp parallel for schedule(static) reduction(+:sum_loss)
@@ -78,7 +78,7 @@ public:
       }
     }
     score_t loss = sum_loss / sum_weights_;
-    return std::vector<score_t>(1, loss);
+    return std::vector<float>(1, static_cast<float>(loss));
   }
 
 private:
@@ -181,7 +181,7 @@ public:
     }
   }
 
-  std::vector<score_t> Eval(const score_t* score) const override {
+  std::vector<float> Eval(const score_t* score) const override {
     // get indices sorted by score, descent order
     std::vector<data_size_t> sorted_idx;
     for (data_size_t i = 0; i < num_data_; ++i) {
@@ -189,13 +189,13 @@ public:
     }
     std::sort(sorted_idx.begin(), sorted_idx.end(), [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
     // temp sum of postive label
-    float cur_pos = 0.0f;
+    score_t cur_pos = 0.0f;
     // total sum of postive label
-    float sum_pos = 0.0f;
+    score_t sum_pos = 0.0f;
     // accumlate of auc
-    float accum = 0.0f;
+    score_t accum = 0.0f;
     // temp sum of negative label
-    float cur_neg = 0.0f;
+    score_t cur_neg = 0.0f;
     score_t threshold = score[sorted_idx[0]];
     if (weights_ == nullptr) {  // no weights
       for (data_size_t i = 0; i < num_data_; ++i) {
@@ -233,11 +233,11 @@ public:
     }
     accum += cur_neg*(cur_pos * 0.5f + sum_pos);
     sum_pos += cur_pos;
-    float auc = 1.0f;
+    score_t auc = 1.0f;
     if (sum_pos > 0.0f && sum_pos != sum_weights_) {
       auc = accum / (sum_pos *(sum_weights_ - sum_pos));
     }
-    return std::vector<score_t>(1, auc);
+    return std::vector<float>(1, static_cast<float>(auc));
   }
 
 private:

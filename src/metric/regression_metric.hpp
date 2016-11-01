@@ -67,7 +67,7 @@ public:
       }
     }
     score_t loss = PointWiseLossCalculator::AverageLoss(sum_loss, sum_weights_);
-    return std::vector<float>(1, loss);
+    return std::vector<float>(1, static_cast<float>(loss));
 
   }
 

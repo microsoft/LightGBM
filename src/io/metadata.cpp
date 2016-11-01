@@ -196,9 +196,9 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
 
     // get local initial scores
     if (init_score_ != nullptr) {
-      score_t* old_scores = init_score_;
+      float* old_scores = init_score_;
       num_init_score_ = num_data_;
-      init_score_ = new score_t[num_init_score_];
+      init_score_ = new float[num_init_score_];
       for (size_t i = 0; i < used_data_indices.size(); ++i) {
         init_score_[i] = old_scores[used_data_indices[i]];
       }
@@ -211,10 +211,16 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
 }
 
 
-void Metadata::SetInitScore(score_t* init_score) {
+void Metadata::SetInitScore(const float* init_score, data_size_t len) {
+  if (num_data_ != len) {
+    Log::Fatal("len of initial score is not same with #data");
+  }
   if (init_score_ != nullptr) { delete[] init_score_; }
   num_init_score_ = num_data_;
-  init_score_ = init_score;
+  init_score_ = new float[num_init_score_];
+  for (data_size_t i = 0; i < num_init_score_; ++i) {
+    init_score_[i] = init_score[i];
+  }
 }
 
 void Metadata::LoadWeights() {
@@ -245,11 +251,11 @@ void Metadata::LoadInitialScore() {
 
   Log::Info("Start loading initial scores");
   num_init_score_ = static_cast<data_size_t>(reader.Lines().size());
-  init_score_ = new score_t[num_init_score_];
+  init_score_ = new float[num_init_score_];
   float tmp = 0.0f;
   for (data_size_t i = 0; i < num_init_score_; ++i) {
     Common::Atof(reader.Lines()[i].c_str(), &tmp);
-    init_score_[i] = static_cast<score_t>(tmp);
+    init_score_[i] = tmp;
   }
 }
 

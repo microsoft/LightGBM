@@ -83,7 +83,7 @@ public:
   * \brief Set initial scores
   * \param init_score Initial scores, this class will manage memory for init_score.
   */
-  void SetInitScore(score_t* init_score);
+  void SetInitScore(const float* init_score, data_size_t len);
 
 
   /*!
@@ -166,7 +166,7 @@ public:
   * \brief Get initial scores, if not exists, will return nullptr
   * \return Pointer of initial scores
   */
-  inline const score_t* init_score() const { return init_score_; }
+  inline const float* init_score() const { return init_score_; }
 
   /*! \brief Load initial scores from file */
   void LoadInitialScore();
@@ -201,7 +201,7 @@ private:
   /*! \brief Number of Initial score, used to check correct weight file */
   data_size_t num_init_score_;
   /*! \brief Initial score */
-  score_t* init_score_;
+  float* init_score_;
   /*! \brief Queries data */
   data_size_t* queries_;
 };

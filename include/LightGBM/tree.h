@@ -43,11 +43,11 @@ public:
   * \return The index of new leaf.
   */
   int Split(int leaf, int feature, unsigned int threshold, int real_feature,
-    float threshold_float, score_t left_value,
-            score_t right_value, float gain);
+    float threshold_float, float left_value,
+    float right_value, float gain);
 
   /*! \brief Get the output of one leave */
-  inline score_t LeafOutput(int leaf) const { return leaf_value_[leaf]; }
+  inline float LeafOutput(int leaf) const { return leaf_value_[leaf]; }
 
   /*!
   * \brief Adding prediction value of this tree model to scores
@@ -74,7 +74,7 @@ public:
   * \param feature_values Feature value of this record
   * \return Prediction result
   */
-  inline score_t Predict(const float* feature_values) const;
+  inline float Predict(const float* feature_values) const;
   inline int PredictLeafIndex(const float* feature_values) const;
 
   /*! \brief Get Number of leaves*/
@@ -93,7 +93,7 @@ public:
   */
   inline void Shrinkage(float rate) {
     for (int i = 0; i < num_leaves_; ++i) {
-      leaf_value_[i] = static_cast<score_t>(leaf_value_[i] * rate);
+      leaf_value_[i] = leaf_value_[i] * rate;
     }
   }
 
@@ -144,13 +144,13 @@ private:
   /*! \brief The parent of leaf */
   int* leaf_parent_;
   /*! \brief Output of leaves */
-  score_t* leaf_value_;
+  float* leaf_value_;
   /*! \brief Depth for leaves */
   int* leaf_depth_;
 };
 
 
-inline score_t Tree::Predict(const float* feature_values) const {
+inline float Tree::Predict(const float* feature_values) const {
   int leaf = GetLeaf(feature_values);
   return LeafOutput(leaf);
 }

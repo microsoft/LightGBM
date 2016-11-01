@@ -15,7 +15,7 @@ SerialTreeLearner::SerialTreeLearner(const TreeConfig& tree_config)
   // initialize with nullptr
   num_leaves_ = tree_config.num_leaves;
   min_num_data_one_leaf_ = static_cast<data_size_t>(tree_config.min_data_in_leaf);
-  min_sum_hessian_one_leaf_ = static_cast<score_t>(tree_config.min_sum_hessian_in_leaf);
+  min_sum_hessian_one_leaf_ = static_cast<double>(tree_config.min_sum_hessian_in_leaf);
   feature_fraction_ = tree_config.feature_fraction;
   random_ = Random(tree_config.feature_fraction_seed);
   histogram_pool_size_ = tree_config.histogram_pool_size;
@@ -415,7 +415,9 @@ void SerialTreeLearner::Split(Tree* tree, int best_Leaf, int* left_leaf, int* ri
   *right_leaf = tree->Split(best_Leaf, best_split_info.feature, best_split_info.threshold,
     train_data_->FeatureAt(best_split_info.feature)->feature_index(),
     train_data_->FeatureAt(best_split_info.feature)->BinToValue(best_split_info.threshold),
-    best_split_info.left_output, best_split_info.right_output, best_split_info.gain);
+    static_cast<float>(best_split_info.left_output),
+    static_cast<float>(best_split_info.right_output),
+    static_cast<float>(best_split_info.gain));
 
   // split data partition
   data_partition_->Split(best_Leaf, train_data_->FeatureAt(best_split_info.feature)->bin_data(),

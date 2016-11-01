@@ -541,7 +541,7 @@ void Dataset::ExtractFeaturesFromMemory() {
     }
   } else {
     // if need to prediction with initial model
-    score_t* init_score = new score_t[num_data_];
+    float* init_score = new float[num_data_];
     #pragma omp parallel for schedule(guided) private(oneline_features) firstprivate(tmp_label)
     for (data_size_t i = 0; i < num_data_; ++i) {
       const int tid = omp_get_thread_num();
@@ -549,7 +549,7 @@ void Dataset::ExtractFeaturesFromMemory() {
       // parser
       parser_->ParseOneLine(text_reader_->Lines()[i].c_str(), &oneline_features, &tmp_label);
       // set initial score
-      init_score[i] = static_cast<score_t>(predict_fun_(oneline_features));
+      init_score[i] = static_cast<float>(predict_fun_(oneline_features));
       // set label
       metadata_.SetLabelAt(i, tmp_label);
       // free processed line:
@@ -573,7 +573,8 @@ void Dataset::ExtractFeaturesFromMemory() {
       }
     }
     // metadata_ will manage space of init_score
-    metadata_.SetInitScore(init_score);
+    metadata_.SetInitScore(init_score, num_data_);
+    delete[] init_score;
   }
 
   #pragma omp parallel for schedule(guided)
@@ -586,9 +587,9 @@ void Dataset::ExtractFeaturesFromMemory() {
 
 
 void Dataset::ExtractFeaturesFromFile() {
-  score_t* init_score = nullptr;
+  float* init_score = nullptr;
   if (predict_fun_ != nullptr) {
-    init_score = new score_t[num_data_];
+    init_score = new float[num_data_];
   }
   std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
     [this, &init_score]
@@ -603,7 +604,7 @@ void Dataset::ExtractFeaturesFromFile() {
       parser_->ParseOneLine(lines[i].c_str(), &oneline_features, &tmp_label);
       // set initial score
       if (init_score != nullptr) {
-        init_score[start_idx + i] = static_cast<score_t>(predict_fun_(oneline_features));
+        init_score[start_idx + i] = static_cast<float>(predict_fun_(oneline_features));
       }
       // set label
       metadata_.SetLabelAt(start_idx + i, tmp_label);
@@ -635,7 +636,8 @@ void Dataset::ExtractFeaturesFromFile() {
 
   // metadata_ will manage space of init_score
   if (init_score != nullptr) {
-    metadata_.SetInitScore(init_score);
+    metadata_.SetInitScore(init_score, num_data_);
+    delete[] init_score;
   }
 
   #pragma omp parallel for schedule(guided)

@@ -50,14 +50,14 @@ public:
     return false;
   }
   
-  std::vector<score_t> Eval(const score_t* score) const override {
+  std::vector<float> Eval(const score_t* score) const override {
     score_t sum_loss = 0.0;
     if (weights_ == nullptr) {
       #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        std::vector<score_t> rec(num_class_);
+        std::vector<float> rec(num_class_);
         for (int k = 0; k < num_class_; ++k) {
-          rec[k] = score[k * num_data_ + i];
+          rec[k] = static_cast<float>(score[k * num_data_ + i]);
         }
         // add loss
         sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec);
@@ -65,16 +65,16 @@ public:
     } else {
       #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        std::vector<score_t> rec(num_class_);
+        std::vector<float> rec(num_class_);
         for (int k = 0; k < num_class_; ++k) {
-          rec[k] = score[k * num_data_ + i];
+          rec[k] = static_cast<float>(score[k * num_data_ + i]);
         }
         // add loss
         sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec) * weights_[i];
       }
     }
     score_t loss = sum_loss / sum_weights_;
-    return std::vector<score_t>(1, loss);
+    return std::vector<float>(1, static_cast<float>(loss));
   }
 
 private:
@@ -99,7 +99,7 @@ class MultiErrorMetric: public MulticlassMetric<MultiErrorMetric> {
 public:
   explicit MultiErrorMetric(const MetricConfig& config) :MulticlassMetric<MultiErrorMetric>(config) {}
 
-  inline static score_t LossOnPoint(float label, std::vector<score_t> score) {
+  inline static score_t LossOnPoint(float label, std::vector<float> score) {
     size_t k = static_cast<size_t>(label);
     for (size_t i = 0; i < score.size(); ++i){
         if (i != k && score[i] > score[k]) {
@@ -119,7 +119,7 @@ class MultiLoglossMetric: public MulticlassMetric<MultiLoglossMetric> {
 public:
   explicit MultiLoglossMetric(const MetricConfig& config) :MulticlassMetric<MultiLoglossMetric>(config) {}
 
-  inline static score_t LossOnPoint(float label, std::vector<score_t> score) {
+  inline static score_t LossOnPoint(float label, std::vector<float> score) {
     size_t k = static_cast<size_t>(label);
     Common::Softmax(&score);
     if (score[k] > kEpsilon) {

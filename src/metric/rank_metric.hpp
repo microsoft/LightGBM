@@ -84,7 +84,7 @@ public:
     return true;
   }
 
-  std::vector<score_t> Eval(const score_t* score) const override {
+  std::vector<float> Eval(const score_t* score) const override {
     // some buffers for multi-threading sum up
     std::vector<std::vector<float>> result_buffer_;
     for (int i = 0; i < num_threads_; ++i) {

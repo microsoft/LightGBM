@@ -41,7 +41,7 @@ public:
   void AddPredictionToScore(score_t *out_score) const override {
     #pragma omp parallel for schedule(guided)
     for (int i = 0; i < data_partition_->num_leaves(); ++i) {
-      score_t output = last_trained_tree_->LeafOutput(i);
+      float output = last_trained_tree_->LeafOutput(i);
       data_size_t* tmp_idx = nullptr;
       data_size_t cnt_leaf_data = data_partition_->GetIndexOnLeaf(i, &tmp_idx);
       for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
@@ -114,7 +114,7 @@ protected:
   /*! \brief mininal data on one leaf */
   data_size_t min_num_data_one_leaf_;
   /*! \brief mininal sum hessian on one leaf */
-  score_t min_sum_hessian_one_leaf_;
+  double min_sum_hessian_one_leaf_;
   /*! \brief sub-feature fraction rate */
   float feature_fraction_;
   /*! \brief training data partition on leaves */
@@ -186,11 +186,11 @@ inline void SerialTreeLearner::FindBestSplitForLeaf(LeafSplits* leaf_splits) {
   if (leaf_splits == nullptr || leaf_splits->LeafIndex() < 0) {
     return;
   }
-  std::vector<float> gains;
+  std::vector<double> gains;
   for (size_t i = 0; i < leaf_splits->BestSplitPerFeature().size(); ++i) {
     gains.push_back(leaf_splits->BestSplitPerFeature()[i].gain);
   }
-  int best_feature = static_cast<int>(ArrayArgs<float>::ArgMax(gains));
+  int best_feature = static_cast<int>(ArrayArgs<double>::ArgMax(gains));
   int leaf = leaf_splits->LeafIndex();
   best_split_per_leaf_[leaf] = leaf_splits->BestSplitPerFeature()[best_feature];
   best_split_per_leaf_[leaf].feature = best_feature;

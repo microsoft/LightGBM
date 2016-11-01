@@ -14,7 +14,7 @@ class BinaryLogloss: public ObjectiveFunction {
 public:
   explicit BinaryLogloss(const ObjectiveConfig& config) {
     is_unbalance_ = config.is_unbalance;
-    sigmoid_ = static_cast<score_t>(config.sigmoid);
+    sigmoid_ = static_cast<float>(config.sigmoid);
     if (sigmoid_ <= 0.0) {
       Log::Fatal("Sigmoid parameter %f :should greater than zero", sigmoid_);
     }
@@ -92,11 +92,11 @@ private:
   /*! \brief True if using unbalance training */
   bool is_unbalance_;
   /*! \brief Sigmoid parameter */
-  score_t sigmoid_;
+  float sigmoid_;
   /*! \brief Values for positive and negative labels */
   int label_val_[2];
   /*! \brief Weights for positive and negative labels */
-  score_t label_weights_[2];
+  float label_weights_[2];
   /*! \brief Weights for data */
   const float* weights_;
 };

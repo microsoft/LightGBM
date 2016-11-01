@@ -103,19 +103,19 @@ void DataParallelTreeLearner::BeforeTrain() {
   }
 
   // sync global data sumup info
-  std::tuple<data_size_t, score_t, score_t> data(smaller_leaf_splits_->num_data_in_leaf(),
+  std::tuple<data_size_t, double, double> data(smaller_leaf_splits_->num_data_in_leaf(),
              smaller_leaf_splits_->sum_gradients(), smaller_leaf_splits_->sum_hessians());
   int size = sizeof(data);
   std::memcpy(input_buffer_, &data, size);
   // global sumup reduce
   Network::Allreduce(input_buffer_, size, size, output_buffer_, [](const char *src, char *dst, int len) {
     int used_size = 0;
-    int type_size = sizeof(std::tuple<data_size_t, score_t, score_t>);
-    const std::tuple<data_size_t, score_t, score_t> *p1;
-    std::tuple<data_size_t, score_t, score_t> *p2;
+    int type_size = sizeof(std::tuple<data_size_t, double, double>);
+    const std::tuple<data_size_t, double, double> *p1;
+    std::tuple<data_size_t, double, double> *p2;
     while (used_size < len) {
-      p1 = reinterpret_cast<const std::tuple<data_size_t, score_t, score_t> *>(src);
-      p2 = reinterpret_cast<std::tuple<data_size_t, score_t, score_t> *>(dst);
+      p1 = reinterpret_cast<const std::tuple<data_size_t, double, double> *>(src);
+      p2 = reinterpret_cast<std::tuple<data_size_t, double, double> *>(dst);
       std::get<0>(*p2) = std::get<0>(*p2) + std::get<0>(*p1);
       std::get<1>(*p2) = std::get<1>(*p2) + std::get<1>(*p1);
       std::get<2>(*p2) = std::get<2>(*p2) + std::get<2>(*p1);
@@ -200,12 +200,12 @@ void DataParallelTreeLearner::FindBestThresholds() {
 void DataParallelTreeLearner::FindBestSplitsForLeaves() {
   int smaller_best_feature = -1, larger_best_feature = -1;
   SplitInfo smaller_best, larger_best;
-  std::vector<float> gains;
+  std::vector<double> gains;
   // find local best split for smaller leaf
   for (size_t i = 0; i < smaller_leaf_splits_->BestSplitPerFeature().size(); ++i) {
     gains.push_back(smaller_leaf_splits_->BestSplitPerFeature()[i].gain);
   }
-  smaller_best_feature = static_cast<int>(ArrayArgs<float>::ArgMax(gains));
+  smaller_best_feature = static_cast<int>(ArrayArgs<double>::ArgMax(gains));
   smaller_best = smaller_leaf_splits_->BestSplitPerFeature()[smaller_best_feature];
   // find local best split for larger leaf
   if (larger_leaf_splits_->LeafIndex() >= 0) {
@@ -213,7 +213,7 @@ void DataParallelTreeLearner::FindBestSplitsForLeaves() {
     for (size_t i = 0; i < larger_leaf_splits_->BestSplitPerFeature().size(); ++i) {
       gains.push_back(larger_leaf_splits_->BestSplitPerFeature()[i].gain);
     }
-    larger_best_feature = static_cast<int>(ArrayArgs<float>::ArgMax(gains));
+    larger_best_feature = static_cast<int>(ArrayArgs<double>::ArgMax(gains));
     larger_best = larger_leaf_splits_->BestSplitPerFeature()[larger_best_feature];
   }
 

@@ -13,9 +13,9 @@ namespace LightGBM {
 struct HistogramBinEntry {
 public:
   /*! \brief Sum of gradients on this bin */
-  score_t sum_gradients = 0.0;
+  double sum_gradients = 0.0;
   /*! \brief Sum of hessians on this bin */
-  score_t sum_hessians = 0.0;
+  double sum_hessians = 0.0;
   /*! \brief Number of data on this bin */
   data_size_t cnt = 0;
 

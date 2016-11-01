@@ -217,8 +217,8 @@ void GBDT::UpdateScore(const Tree* tree, const int curr_class) {
   // update training score
   train_score_updater_->AddScore(tree_learner_[curr_class], curr_class);
   // update validation score
-  for (auto& score_tracker : valid_score_updater_) {
-    score_tracker->AddScore(tree, curr_class);
+  for (auto& score_updater : valid_score_updater_) {
+    score_updater->AddScore(tree, curr_class);
   }
 }
 

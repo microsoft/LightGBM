@@ -19,7 +19,7 @@ namespace LightGBM {
 class LambdarankNDCG: public ObjectiveFunction {
 public:
   explicit LambdarankNDCG(const ObjectiveConfig& config) {
-    sigmoid_ = static_cast<score_t>(config.sigmoid);
+    sigmoid_ = static_cast<float>(config.sigmoid);
     // initialize DCG calculator
     DCGCalculator::Init(config.label_gain);
     // copy lable gain to local
@@ -207,7 +207,7 @@ private:
   /*! \brief Cache inverse max DCG, speed up calculation */
   score_t* inverse_max_dcgs_;
   /*! \brief Simgoid param */
-  score_t sigmoid_;
+  float sigmoid_;
   /*! \brief Optimized NDCG@ */
   int optimize_pos_at_;
   /*! \brief Number of queries */
