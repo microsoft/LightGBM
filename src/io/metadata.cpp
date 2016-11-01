@@ -124,6 +124,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     if (init_score_ != nullptr && num_init_score_ != num_data_) {
       delete[] init_score_;
       Log::Error("Initial score size doesn't equal to data, score file will be ignored");
+      init_score_ = nullptr;
       num_init_score_ = 0;
     }
   } else {
@@ -148,6 +149,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
       Log::Error("Initial score size doesn't equal to data , initial scores will be ignored");
       delete[] init_score_;
       num_init_score_ = 0;
+      init_score_ = nullptr;
     }
 
     // get local weights
