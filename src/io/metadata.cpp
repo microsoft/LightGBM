@@ -106,7 +106,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     }
     // check weights
     if (weights_ != nullptr && num_weights_ != num_data_) {
-      Log::Error("Initial weight size doesn't equal to data, weights will be ignored");
+      Log::Fatal("Initial weight size doesn't equal to data");
       delete[] weights_;
       num_weights_ = 0;
       weights_ = nullptr;
@@ -114,7 +114,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
 
     // check query boundries
     if (query_boundaries_ != nullptr && query_boundaries_[num_queries_] != num_data_) {
-      Log::Error("Initial query size doesn't equal to data, queies will be ignored");
+      Log::Fatal("Initial query size doesn't equal to data");
       delete[] query_boundaries_;
       num_queries_ = 0;
       query_boundaries_ = nullptr;
@@ -123,7 +123,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     // contain initial score file
     if (init_score_ != nullptr && num_init_score_ != num_data_) {
       delete[] init_score_;
-      Log::Error("Initial score size doesn't equal to data, score file will be ignored");
+      Log::Fatal("Initial score size doesn't equal to data");
       init_score_ = nullptr;
       num_init_score_ = 0;
     }
@@ -131,14 +131,14 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     data_size_t num_used_data = static_cast<data_size_t>(used_data_indices.size());
     // check weights
     if (weights_ != nullptr && num_weights_ != num_all_data) {
-      Log::Error("Initial weights size doesn't equal to data, weights will be ignored");
+      Log::Fatal("Initial weights size doesn't equal to data");
       delete[] weights_;
       num_weights_ = 0;
       weights_ = nullptr;
     }
     // check query boundries
     if (query_boundaries_ != nullptr && query_boundaries_[num_queries_] != num_all_data) {
-      Log::Error("Initial query size doesn't equal to data , queries will be ignored");
+      Log::Fatal("Initial query size doesn't equal to data");
       delete[] query_boundaries_;
       num_queries_ = 0;
       query_boundaries_ = nullptr;
@@ -146,7 +146,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
 
     // contain initial score file
     if (init_score_ != nullptr && num_init_score_ != num_all_data) {
-      Log::Error("Initial score size doesn't equal to data , initial scores will be ignored");
+      Log::Fatal("Initial score size doesn't equal to data");
       delete[] init_score_;
       num_init_score_ = 0;
       init_score_ = nullptr;
