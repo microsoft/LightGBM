@@ -46,7 +46,6 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
     boosting_config = new GBDTConfig();
   }
 
-
   // sub-config setup
   network_config.Set(params);
   io_config.Set(params);
@@ -132,7 +131,29 @@ void OverallConfig::GetTaskType(const std::unordered_map<std::string, std::strin
 }
 
 void OverallConfig::CheckParamConflict() {
-  GBDTConfig* gbdt_config = dynamic_cast<GBDTConfig*>(boosting_config);
+  GBDTConfig* gbdt_config = dynamic_cast<GBDTConfig*>(boosting_config);  
+    
+  // check if objective_type, metric_type, and num_class match
+  bool objective_type_multiclass = (objective_type == std::string("multiclass"));
+  int num_class_check = gbdt_config->num_class;
+  if (objective_type_multiclass){
+      if (num_class_check <= 1){
+          Log::Fatal("You should specify number of class(>=2) for multiclass training.");
+      }
+  }
+  else {
+      if (task_type == TaskType::kTrain && num_class_check != 1){
+          Log::Fatal("Number of class must be 1 for non-multiclass training.");
+      }      
+  }
+  for (std::string metric_type : metric_types){
+        bool metric_type_multiclass = ( metric_type == std::string("multi_logloss") || metric_type == std::string("multi_error"));
+        if ((objective_type_multiclass && !metric_type_multiclass) 
+            || (!objective_type_multiclass && metric_type_multiclass)){
+            Log::Fatal("Objective and metrics don't match.");    
+        }
+  }  
+
   if (network_config.num_machines > 1) {
     is_parallel = true;
   } else {
@@ -196,6 +217,8 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
   GetFloat(params, "sigmoid", &sigmoid);
   GetInt(params, "max_position", &max_position);
   CHECK(max_position > 0);
+  GetInt(params, "num_class", &num_class);
+  CHECK(num_class >= 1);
   std::string tmp_str = "";
   if (GetString(params, "label_gain", &tmp_str)) {
     label_gain = Common::StringToFloatArray(tmp_str, ',');
@@ -212,6 +235,8 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
 
 void MetricConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetFloat(params, "sigmoid", &sigmoid);
+  GetInt(params, "num_class", &num_class);
+  CHECK(num_class >= 1);
   std::string tmp_str = "";
   if (GetString(params, "label_gain", &tmp_str)) {
     label_gain = Common::StringToFloatArray(tmp_str, ',');
@@ -268,6 +293,8 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   GetInt(params, "metric_freq", &output_freq);
   CHECK(output_freq >= 0);
   GetBool(params, "is_training_metric", &is_provide_training_metric);
+  GetInt(params, "num_class", &num_class);
+  CHECK(num_class >= 1);
 }
 
 void GBDTConfig::GetTreeLearnerType(const std::unordered_map<std::string, std::string>& params) {

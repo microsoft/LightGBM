@@ -81,6 +81,13 @@ public:
     int num_used_model) const = 0;
   
   /*!
+  * \brief Predtion for multiclass classification
+  * \param feature_values Feature value on this record
+  * \return Prediction result, num_class numbers per line
+  */
+  virtual std::vector<float> PredictMulticlass(const float* value, int num_used_model) const = 0; 
+  
+  /*!
   * \brief save model to file
   */
   virtual void SaveModelToFile(bool is_finish, const char* filename) = 0;
@@ -108,7 +115,13 @@ public:
   * \return Number of weak sub-models
   */
   virtual int NumberOfSubModels() const = 0;
-
+  
+  /*!
+  * \brief Get number of classes
+  * \return Number of classes
+  */
+  virtual int NumberOfClass() const = 0;
+  
   /*!
   * \brief Get Type name of this boosting object
   */

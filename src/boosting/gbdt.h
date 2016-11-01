@@ -69,12 +69,19 @@ public:
   float Predict(const float* feature_values, int num_used_model) const override;
   
   /*!
+  * \brief Predtion for multiclass classification
+  * \param feature_values Feature value on this record
+  * \return Prediction result, num_class numbers per line
+  */
+  std::vector<float> PredictMulticlass(const float* value, int num_used_model) const override;
+  
+  /*!
   * \brief Predtion for one record with leaf index
   * \param feature_values Feature value on this record
   * \param num_used_model Number of used model
   * \return Predicted leaf index for this record
   */
- std::vector<int> PredictLeafIndex(const float* value, int num_used_model) const override;
+  std::vector<int> PredictLeafIndex(const float* value, int num_used_model) const override;
   
   /*!
   * \brief Serialize models by string
@@ -104,6 +111,12 @@ public:
   inline int NumberOfSubModels() const override { return static_cast<int>(models_.size()); }
 
   /*!
+  * \brief Get number of classes
+  * \return Number of classes
+  */
+  inline int NumberOfClass() const override { return num_class_; }
+  
+  /*!
   * \brief Get Type name of this boosting object
   */
   const char* Name() const override { return "gbdt"; }
@@ -112,14 +125,16 @@ private:
   /*!
   * \brief Implement bagging logic
   * \param iter Current interation
+  * \param curr_class Current class for multiclass training
   */
-  void Bagging(int iter);
+  void Bagging(int iter, const int curr_class);
   /*!
   * \brief updating score for out-of-bag data.
   *        Data should be update since we may re-bagging data on training
   * \param tree Trained tree of this iteration
+  * \param curr_class Current class for multiclass training
   */
-  void UpdateScoreOutOfBag(const Tree* tree);
+  void UpdateScoreOutOfBag(const Tree* tree, const int curr_class);
   /*!
   * \brief calculate the object function
   */
@@ -127,8 +142,9 @@ private:
   /*!
   * \brief updating score after tree was trained
   * \param tree Trained tree of this iteration
+  * \param curr_class Current class for multiclass training
   */
-  void UpdateScore(const Tree* tree);
+  void UpdateScore(const Tree* tree, const int curr_class);
   /*!
   * \brief Print metric result of current iteration
   * \param iter Current interation
@@ -146,7 +162,7 @@ private:
   /*! \brief Config of gbdt */
   const GBDTConfig* gbdt_config_;
   /*! \brief Tree learner, will use this class to learn trees */
-  TreeLearner* tree_learner_;
+  std::vector<TreeLearner*> tree_learner_;
   /*! \brief Objective function */
   const ObjectiveFunction* object_function_;
   /*! \brief Store and update training data's score */
@@ -180,6 +196,8 @@ private:
   data_size_t bag_data_cnt_;
   /*! \brief Number of traning data */
   data_size_t num_data_;
+  /*! \brief Number of classes */
+  int num_class_;
   /*! \brief Random generator, used for bagging */
   Random random_;
   /*!

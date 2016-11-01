@@ -336,6 +336,26 @@ static inline int64_t Pow2RoundUp(int64_t x) {
   return 0;
 }
 
+/*!
+ * \brief Do inplace softmax transformaton on p_rec
+ * \param p_rec The input/output vector of the values.
+ */
+inline void Softmax(std::vector<float>* p_rec) {
+  std::vector<float> &rec = *p_rec;
+  float wmax = rec[0];
+  for (size_t i = 1; i < rec.size(); ++i) {
+    wmax = std::max(rec[i], wmax);
+  }
+  float wsum = 0.0f;
+  for (size_t i = 0; i < rec.size(); ++i) {
+    rec[i] = std::exp(rec[i] - wmax);
+    wsum += rec[i];
+  }
+  for (size_t i = 0; i < rec.size(); ++i) {
+    rec[i] /= static_cast<float>(wsum);
+  }
+}
+
 }  // namespace Common
 
 }  // namespace LightGBM

@@ -33,6 +33,7 @@ public:
       num_used_model_(num_used_model) {
     boosting_ = boosting;
     num_features_ = boosting_->MaxFeatureIdx() + 1;
+    num_class_ = boosting_->NumberOfClass();
 #pragma omp parallel
 #pragma omp master
     {
@@ -87,6 +88,18 @@ public:
     // get result with sigmoid transform if needed
     return boosting_->Predict(features_[tid], num_used_model_);
   }
+  
+  /*!
+  * \brief prediction for multiclass classification
+  * \param features Feature of this record
+  * \return Prediction result
+  */
+  std::vector<float> PredictMulticlassOneLine(const std::vector<std::pair<int, float>>& features) {
+    const int tid = PutFeatureValuesToBuffer(features);
+    // get result with sigmoid transform if needed
+    return boosting_->PredictMulticlass(features_[tid], num_used_model_);
+  }
+  
   /*!
   * \brief predicting on data, then saving result to disk
   * \param data_filename Filename of data
@@ -120,17 +133,30 @@ public:
     };
 
     std::function<std::string(const std::vector<std::pair<int, float>>&)> predict_fun;
-    if (is_predict_leaf_index_) {
+    if (num_class_ > 1) {
+      predict_fun = [this](const std::vector<std::pair<int, float>>& features){
+        std::vector<float> prediction = PredictMulticlassOneLine(features);
+        std::stringstream result_stream_buf;
+        for (size_t i = 0; i < prediction.size(); ++i){
+          if (i > 0) {
+            result_stream_buf << '\t';
+          }
+          result_stream_buf << prediction[i];
+        }
+        return result_stream_buf.str();  
+      };  
+    }
+    else if (is_predict_leaf_index_) {
       predict_fun = [this](const std::vector<std::pair<int, float>>& features){
         std::vector<int> predicted_leaf_index = PredictLeafIndexOneLine(features);
-        std::stringstream result_ss;
+        std::stringstream result_stream_buf;
         for (size_t i = 0; i < predicted_leaf_index.size(); ++i){
           if (i > 0) {
-            result_ss << '\t';
+            result_stream_buf << '\t';
           }
-          result_ss << predicted_leaf_index[i];
+          result_stream_buf << predicted_leaf_index[i];
         }
-        return result_ss.str();  
+        return result_stream_buf.str();  
       };
     }
     else {
@@ -189,6 +215,8 @@ private:
   float** features_;
   /*! \brief Number of features */
   int num_features_;
+  /*! \brief Number of classes */
+  int num_class_;
   /*! \brief True if need to predict result with sigmoid transform */
   bool is_simgoid_;
   /*! \brief Number of threads */

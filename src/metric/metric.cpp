@@ -2,6 +2,7 @@
 #include "regression_metric.hpp"
 #include "binary_metric.hpp"
 #include "rank_metric.hpp"
+#include "multiclass_metric.hpp"
 
 namespace LightGBM {
 
@@ -18,6 +19,10 @@ Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config
     return new AUCMetric(config);
   } else if (type == "ndcg") {
     return new NDCGMetric(config);
+  } else if (type == "multi_logloss"){
+    return new MultiLoglossMetric(config);
+  } else if (type == "multi_error"){
+    return new MultiErrorMetric(config);
   }
   return nullptr;
 }

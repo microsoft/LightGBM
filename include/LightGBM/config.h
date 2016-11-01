@@ -128,6 +128,8 @@ public:
   int max_position = 20;
   // for binary
   bool is_unbalance = false;
+  // for multiclass
+  int num_class = 1;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -135,6 +137,7 @@ public:
 struct MetricConfig: public ConfigBase {
 public:
   virtual ~MetricConfig() {}
+  int num_class = 1;
   float sigmoid = 1.0f;
   std::vector<float> label_gain;
   std::vector<int> eval_at;
@@ -179,6 +182,7 @@ public:
   int bagging_seed = 3;
   int bagging_freq = 0;
   int early_stopping_round = 0;
+  int num_class = 1;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
