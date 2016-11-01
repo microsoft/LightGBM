@@ -114,15 +114,12 @@ void BinMapper::FindBin(std::vector<float>* values, int max_bin) {
     Common::SortForPair<float, float>(lower_bounds, upper_bounds, 0, false);
     // update bin upper bound
     bin_upper_bound_ = new float[bin_cnt];
+    num_bin_ = bin_cnt;
     for (int i = 0; i < bin_cnt - 1; ++i) {
       bin_upper_bound_[i] = (upper_bounds[i] + lower_bounds[i + 1]) / 2.0f;
     }
-
     // last bin upper bound
     bin_upper_bound_[bin_cnt - 1] = std::numeric_limits<float>::infinity();
-    
-    CHECK(bin_cnt <= max_bin);
-
   }
   // check trival(num_bin_ == 1) feature
   if (num_bin_ <= 1) {
