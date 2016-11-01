@@ -9,6 +9,7 @@
 #include <sstream>
 #include <cstdint>
 #include <algorithm>
+#include <cmath>
 
 namespace LightGBM {
 
