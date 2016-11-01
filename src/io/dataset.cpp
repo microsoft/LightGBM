@@ -18,9 +18,11 @@ namespace LightGBM {
 Dataset::Dataset(const char* data_filename, const char* init_score_filename,
   const IOConfig& io_config, const PredictFunction& predict_fun)
   :data_filename_(data_filename), random_(io_config.data_random_seed),
-  max_bin_(io_config.max_bin), is_enable_sparse_(io_config.is_enable_sparse), predict_fun_(predict_fun) {
-
-  CheckCanLoadFromBin();
+  max_bin_(io_config.max_bin), is_enable_sparse_(io_config.is_enable_sparse), 
+  predict_fun_(predict_fun), bin_construct_sample_cnt_(io_config.bin_construct_sample_cnt) {
+  if (io_config.enable_load_from_binary_file) {
+    CheckCanLoadFromBin();
+  }
   if (is_loading_from_binfile_ && predict_fun != nullptr) {
     Log::Info("Cannot performing initialization of prediction by using binary file, using text file instead");
     is_loading_from_binfile_ = false;
@@ -160,6 +162,17 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
 
 }
 
+Dataset::Dataset(const IOConfig& io_config, const PredictFunction& predict_fun)
+  :data_filename_(""), random_(io_config.data_random_seed),
+  max_bin_(io_config.max_bin), is_enable_sparse_(io_config.is_enable_sparse),
+  predict_fun_(predict_fun), bin_construct_sample_cnt_(io_config.bin_construct_sample_cnt) {
+
+  parser_ = nullptr;
+  text_reader_ = nullptr;
+}
+
+
+
 Dataset::~Dataset() {
   if (parser_ != nullptr) { delete parser_; }
   if (text_reader_ != nullptr) { delete text_reader_; }
@@ -216,7 +229,7 @@ void Dataset::LoadDataToMemory(int rank, int num_machines, bool is_pre_partition
 }
 
 void Dataset::SampleDataFromMemory(std::vector<std::string>* out_data) {
-  const size_t sample_cnt = static_cast<size_t>(num_data_ < 50000 ? num_data_ : 50000);
+  const size_t sample_cnt = static_cast<size_t>(num_data_ < bin_construct_sample_cnt_ ? num_data_ : bin_construct_sample_cnt_);
   std::vector<size_t> sample_indices = random_.Sample(num_data_, sample_cnt);
   out_data->clear();
   for (size_t i = 0; i < sample_indices.size(); ++i) {
@@ -228,7 +241,7 @@ void Dataset::SampleDataFromMemory(std::vector<std::string>* out_data) {
 void Dataset::SampleDataFromFile(int rank, int num_machines, bool is_pre_partition,
                                              std::vector<std::string>* out_data) {
   used_data_indices_.clear();
-  const size_t sample_cnt = 50000;
+  const data_size_t sample_cnt = static_cast<data_size_t>(bin_construct_sample_cnt_);
   if (num_machines == 1 || is_pre_partition) {
     num_data_ = static_cast<data_size_t>(text_reader_->SampleFromFile(random_, sample_cnt, out_data));
     global_num_data_ = num_data_;
@@ -269,6 +282,83 @@ void Dataset::SampleDataFromFile(int rank, int num_machines, bool is_pre_partiti
       }, &used_data_indices_, random_, sample_cnt, out_data);
     }
     num_data_ = static_cast<data_size_t>(used_data_indices_.size());
+  }
+}
+
+void Dataset::InitByBinMapper(std::vector<const BinMapper*> bin_mappers, data_size_t num_data) {
+  num_data_ = num_data;
+  global_num_data_ = num_data_;
+  // initialize label
+  metadata_.Init(num_data_, -1, -1);
+  // free old memory
+  for (auto& feature : features_) {
+    delete feature;
+  }
+  features_.clear();
+  used_feature_map_ = std::vector<int>(bin_mappers.size(), -1);
+  for (size_t i = 0; i < bin_mappers.size(); ++i) {
+    if (bin_mappers[i] != nullptr) {
+      features_.push_back(new Feature(static_cast<int>(i), new BinMapper(bin_mappers[i]), num_data_, is_enable_sparse_));
+      used_feature_map_[i] = static_cast<int>(features_.size());
+    }
+  }
+  num_features_ = static_cast<int>(features_.size());
+}
+
+std::vector<const BinMapper*> Dataset::GetBinMappers() const {
+  std::vector<const BinMapper*> ret(num_total_features_, nullptr);
+  for (const auto feature : features_) {
+    ret[feature->feature_index()] = feature->bin_mapper();
+  }
+  return ret;
+}
+
+void Dataset::PushData(const std::vector<std::vector<std::pair<int, float>>>& datas, data_size_t start_idx, bool is_finished) {
+  // if doesn't need to prediction with initial model
+#pragma omp parallel for schedule(guided) 
+  for (data_size_t i = 0; i < static_cast<int>(datas.size()); ++i) {
+    const int tid = omp_get_thread_num();
+    for (auto& inner_data : datas[i]) {
+      int feature_idx = used_feature_map_[inner_data.first];
+      if (feature_idx >= 0) {
+        // if is used feature
+        features_[feature_idx]->PushData(tid, start_idx + i, inner_data.second);
+      } 
+    }
+  }
+  if (is_finished) {
+#pragma omp parallel for schedule(guided)
+    for (int i = 0; i < num_features_; ++i) {
+      features_[i]->FinishLoad();
+    }
+  }
+}
+
+void Dataset::SetField(const char* field_name, const void* field_data, data_size_t num_element, int type) {
+  std::string name(field_name);
+  name = Common::Trim(name);
+  if (name == std::string("label") || name == std::string("target")) {
+    if (type != 0) {
+      Log::Fatal("type of label should be float");
+    }
+    metadata_.SetLabel(static_cast<const float*>(field_data), num_element);
+  }else if (name == std::string("weight") || name == std::string("weights")) {
+    if (type != 0) {
+      Log::Fatal("type of weights should be float");
+    }
+    metadata_.SetWeights(static_cast<const float*>(field_data), num_element);
+  } else if (name == std::string("init_score")) {
+    if (type != 0) {
+      Log::Fatal("type of init_score should be float");
+    }
+    metadata_.SetInitScore(static_cast<const float*>(field_data), num_element);
+  } else if (name == std::string("query") || name == std::string("group")) {
+    if (type != 1) {
+      Log::Fatal("type of init_score should be int");
+    }
+    metadata_.SetQueryBoundaries(static_cast<const data_size_t*>(field_data), num_element);
+  } else {
+    Log::Fatal("unknow field name: %s", field_name);
   }
 }
 
@@ -452,8 +542,10 @@ void Dataset::LoadTrainData(int rank, int num_machines, bool is_pre_partition, b
       ExtractFeaturesFromFile();
     }
   } else {
+    std::string bin_filename(data_filename_);
+    bin_filename.append(".bin");
     // load data from binary file
-    LoadDataFromBinFile(rank, num_machines, is_pre_partition);
+    LoadDataFromBinFile(bin_filename.c_str(), rank, num_machines, is_pre_partition);
   }
   // check meta data
   metadata_.CheckOrPartition(static_cast<data_size_t>(global_num_data_), used_data_indices_);
@@ -497,8 +589,10 @@ void Dataset::LoadValidationData(const Dataset* train_set, bool use_two_round_lo
       ExtractFeaturesFromFile();
     }
   } else {
+    std::string bin_filename(data_filename_);
+    bin_filename.append(".bin");
     // load from binary file
-    LoadDataFromBinFile(0, 1, false);
+    LoadDataFromBinFile(bin_filename.c_str(), 0, 1, false);
   }
   // not need to check validation data
   // check meta data
@@ -646,19 +740,23 @@ void Dataset::ExtractFeaturesFromFile() {
   }
 }
 
-void Dataset::SaveBinaryFile() {
-  // if is loaded from binary file, not need to save 
+void Dataset::SaveBinaryFile(const char* bin_filename) {
+  
   if (!is_loading_from_binfile_) {
-    std::string bin_filename(data_filename_);
-    bin_filename.append(".bin");
+    // if not pass a filename, just append ".bin" of original file
+    if (bin_filename == nullptr || bin_filename[0] == '\0') {
+      std::string bin_filename_str(data_filename_);
+      bin_filename_str.append(".bin");
+      bin_filename = bin_filename_str.c_str();
+    }
     FILE* file;
     #ifdef _MSC_VER
-    fopen_s(&file, bin_filename.c_str(), "wb");
+    fopen_s(&file, bin_filename, "wb");
     #else
-    file = fopen(bin_filename.c_str(), "wb");
+    file = fopen(bin_filename, "wb");
     #endif
     if (file == NULL) {
-      Log::Fatal("Cannot write binary data to %s ", bin_filename.c_str());
+      Log::Fatal("Cannot write binary data to %s ", bin_filename);
     }
 
     Log::Info("Saving data to binary file: %s", data_filename_);
@@ -715,20 +813,18 @@ void Dataset::CheckCanLoadFromBin() {
   }
 }
 
-void Dataset::LoadDataFromBinFile(int rank, int num_machines, bool is_pre_partition) {
-  std::string bin_filename(data_filename_);
-  bin_filename.append(".bin");
+void Dataset::LoadDataFromBinFile(const char* bin_filename, int rank, int num_machines, bool is_pre_partition) {
 
   FILE* file;
 
   #ifdef _MSC_VER
-  fopen_s(&file, bin_filename.c_str(), "rb");
+  fopen_s(&file, bin_filename, "rb");
   #else
-  file = fopen(bin_filename.c_str(), "rb");
+  file = fopen(bin_filename, "rb");
   #endif
 
   if (file == NULL) {
-    Log::Fatal("Cannot read binary data from %s", bin_filename.c_str());
+    Log::Fatal("Cannot read binary data from %s", bin_filename);
   }
 
   // buffer to read binary file

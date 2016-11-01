@@ -159,6 +159,7 @@
     <ClInclude Include="..\include\LightGBM\bin.h" />
     <ClInclude Include="..\include\LightGBM\boosting.h" />
     <ClInclude Include="..\include\LightGBM\config.h" />
+    <ClInclude Include="..\include\LightGBM\c_api.h" />
     <ClInclude Include="..\include\LightGBM\dataset.h" />
     <ClInclude Include="..\include\LightGBM\feature.h" />
     <ClInclude Include="..\include\LightGBM\meta.h" />
@@ -203,6 +204,7 @@
     <ClCompile Include="..\src\application\application.cpp" />
     <ClCompile Include="..\src\boosting\boosting.cpp" />
     <ClCompile Include="..\src\boosting\gbdt.cpp" />
+    <ClCompile Include="..\src\c_api.cpp" />
     <ClCompile Include="..\src\io\bin.cpp" />
     <ClCompile Include="..\src\io\config.cpp" />
     <ClCompile Include="..\src\io\dataset.cpp" />

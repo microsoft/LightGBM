@@ -54,7 +54,7 @@ public:
   void ConstructHistogram(data_size_t*, data_size_t , const score_t* ,
                  const score_t* , HistogramBinEntry*) const override {
     // Will use OrderedSparseBin->ConstructHistogram() instead
-    Log::Info("Should use OrderedSparseBin->ConstructHistogram() instead");
+    Log::Fatal("Should use OrderedSparseBin->ConstructHistogram() instead");
   }
 
   data_size_t Split(unsigned int threshold, data_size_t* data_indices, data_size_t num_data,
