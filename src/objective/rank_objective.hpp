@@ -14,7 +14,7 @@
 
 namespace LightGBM {
 /*!
-* \brief Objective funtion for Lambdrank with NDCG
+* \brief Objective function for Lambdrank with NDCG
 */
 class LambdarankNDCG: public ObjectiveFunction {
 public:
@@ -23,7 +23,7 @@ public:
     // initialize DCG calculator
     DCGCalculator::Init(config.label_gain);
     // copy lable gain to local
-    std::vector<double> label_gain = config.label_gain;
+    std::vector<float> label_gain = config.label_gain;
     for (auto gain : label_gain) {
       label_gain_.push_back(static_cast<score_t>(gain));
     }
@@ -194,7 +194,7 @@ public:
     }
   }
 
-  double GetSigmoid() const override {
+  float GetSigmoid() const override {
     // though we use sigmoid transform on objective
     // for the prediction, we actually don't need to transform by sigmoid.
     // since we only need the ranking score.

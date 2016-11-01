@@ -64,7 +64,7 @@ public:
     data_size_t cur_pos = fast_pair.second;
     data_size_t lte_count = 0;
     data_size_t gt_count = 0;
-    for (data_size_t i = 0; i < num_data; i++) {
+    for (data_size_t i = 0; i < num_data; ++i) {
       const data_size_t idx = data_indices[i];
       while (cur_pos < idx && j < num_vals_) {
         ++j;
@@ -92,12 +92,12 @@ public:
   void FinishLoad() override {
     // get total non zero size
     size_t non_zero_size = 0;
-    for (size_t i = 0; i < push_buffers_.size(); i++) {
+    for (size_t i = 0; i < push_buffers_.size(); ++i) {
       non_zero_size += push_buffers_[i].size();
     }
     // merge
     non_zero_pair_.reserve(non_zero_size);
-    for (size_t i = 0; i < push_buffers_.size(); i++) {
+    for (size_t i = 0; i < push_buffers_.size(); ++i) {
       non_zero_pair_.insert(non_zero_pair_.end(), push_buffers_[i].begin(), push_buffers_[i].end());
       push_buffers_[i].clear();
       push_buffers_[i].shrink_to_fit();
@@ -122,7 +122,7 @@ public:
     // transform to delta array
     const uint8_t kMaxDelta = 255;
     data_size_t last_idx = 0;
-    for (size_t i = 0; i < non_zero_pair.size(); i++) {
+    for (size_t i = 0; i < non_zero_pair.size(); ++i) {
       const data_size_t cur_idx = non_zero_pair[i].first;
       const VAL_T bin = non_zero_pair[i].second;
       data_size_t cur_delta = cur_idx - last_idx;
@@ -198,7 +198,7 @@ public:
       delta_.clear();
       vals_.clear();
       num_vals_ = tmp_num_vals;
-      for (data_size_t i = 0; i < num_vals_; i++) {
+      for (data_size_t i = 0; i < num_vals_; ++i) {
         delta_.push_back(tmp_delta[i]);
         vals_.push_back(tmp_vals[i]);
       }

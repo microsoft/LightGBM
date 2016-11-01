@@ -8,7 +8,7 @@
 
 namespace LightGBM {
 /*!
-* \brief Objective funtion for binary classification
+* \brief Objective function for binary classification
 */
 class BinaryLogloss: public ObjectiveFunction {
 public:
@@ -80,7 +80,7 @@ public:
     }
   }
 
-  double GetSigmoid() const override {
+  float GetSigmoid() const override {
     return sigmoid_;
   }
 

@@ -28,10 +28,10 @@ int GetLabelIdxForLibsvm(std::string& str, int num_features, int label_idx) {
   str = Common::Trim(str);
   auto pos_space = str.find_first_of(" \f\n\r\t\v");
   auto pos_colon = str.find_first_of(":");
-  if (pos_colon == std::string::npos || pos_colon > pos_space) {
-    return -1;
-  } else {
+  if (pos_space == std::string::npos || pos_space < pos_colon) {
     return label_idx;
+  } else {
+    return -1;
   }
 }
 

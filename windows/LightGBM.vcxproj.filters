@@ -75,6 +75,9 @@
     <ClInclude Include="..\src\metric\regression_metric.hpp">
       <Filter>src\metric</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\metric\multiclass_metric.hpp">
+      <Filter>src\metric</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\network\socket_wrapper.hpp">
       <Filter>src\network</Filter>
     </ClInclude>
@@ -85,6 +88,9 @@
       <Filter>src\objective</Filter>
     </ClInclude>
     <ClInclude Include="..\src\objective\regression_objective.hpp">
+      <Filter>src\objective</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\objective\multiclass_objective.hpp">
       <Filter>src\objective</Filter>
     </ClInclude>
     <ClInclude Include="..\src\treelearner\data_partition.hpp">

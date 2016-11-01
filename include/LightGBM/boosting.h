@@ -28,12 +28,12 @@ public:
   * \param train_data Training data
   * \param object_function Training objective function
   * \param training_metrics Training metric
-  * \param output_model_filename Filename of output model
   */
-  virtual void Init(const Dataset* train_data,
+  virtual void Init(
+    const BoostingConfig* config,
+    const Dataset* train_data,
     const ObjectiveFunction* object_function,
-    const std::vector<const Metric*>& training_metrics,
-    const char* output_model_filename) = 0;
+    const std::vector<const Metric*>& training_metrics) = 0;
 
   /*!
   * \brief Add a validation data
@@ -44,40 +44,59 @@ public:
     const std::vector<const Metric*>& valid_metrics) = 0;
 
   /*! \brief Training logic */
-  virtual void Train() = 0;
+  virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) = 0;
+
+  /*! \brief Get eval result */
+  virtual std::vector<std::string> EvalCurrent(bool is_eval_train) const = 0 ;
+
+  /*! \brief Get prediction result */
+  virtual const std::vector<const score_t*> PredictCurrent(bool is_predict_train) const = 0;
 
   /*!
   * \brief Prediction for one record, not sigmoid transform
   * \param feature_values Feature value on this record
+  * \param num_used_model Number of used model
   * \return Prediction result for this record
   */
-  virtual double PredictRaw(const double * feature_values) const = 0;
+  virtual float PredictRaw(const float* feature_values,
+    int num_used_model) const = 0;
 
   /*!
   * \brief Prediction for one record, sigmoid transformation will be used if needed
   * \param feature_values Feature value on this record
+  * \param num_used_model Number of used model
   * \return Prediction result for this record
   */
-  virtual double Predict(const double * feature_values) const = 0;
+  virtual float Predict(const float* feature_values, 
+    int num_used_model) const = 0;
   
   /*!
   * \brief Predtion for one record with leaf index
   * \param feature_values Feature value on this record
+  * \param num_used_model Number of used model
   * \return Predicted leaf index for this record
   */
-  virtual std::vector<int> PredictLeafIndex(const double * feature_values) const = 0;
+  virtual std::vector<int> PredictLeafIndex(
+    const float* feature_values,
+    int num_used_model) const = 0;
   
   /*!
-  * \brief Serialize models by string
-  * \return String output of tranined model
+  * \brief Predtion for multiclass classification
+  * \param feature_values Feature value on this record
+  * \return Prediction result, num_class numbers per line
   */
-  virtual std::string ModelsToString() const = 0;
+  virtual std::vector<float> PredictMulticlass(const float* value, int num_used_model) const = 0; 
+  
+  /*!
+  * \brief save model to file
+  */
+  virtual void SaveModelToFile(bool is_finish, const char* filename) = 0;
 
   /*!
   * \brief Restore from a serialized string
   * \param model_str The string of model
   */
-  virtual void ModelsFromString(const std::string& model_str, int num_used_model) = 0;
+  virtual void ModelsFromString(const std::string& model_str) = 0;
 
   /*!
   * \brief Get max feature index of this model
@@ -96,14 +115,34 @@ public:
   * \return Number of weak sub-models
   */
   virtual int NumberOfSubModels() const = 0;
+  
+  /*!
+  * \brief Get number of classes
+  * \return Number of classes
+  */
+  virtual int NumberOfClass() const = 0;
+  
+  /*!
+  * \brief Get Type name of this boosting object
+  */
+  virtual const char* Name() const = 0;
 
   /*!
   * \brief Create boosting object
   * \param type Type of boosting
+  * \param config config for boosting
+  * \param filename name of model file, if existing will continue to train from this model
   * \return The boosting object
   */
-  static Boosting* CreateBoosting(BoostingType type,
-    const BoostingConfig* config);
+  static Boosting* CreateBoosting(BoostingType type, const char* filename);
+
+  /*!
+  * \brief Create boosting object from model file
+  * \param filename name of model file
+  * \return The boosting object
+  */
+  static Boosting* CreateBoosting(const char* filename);
+
 };
 
 }  // namespace LightGBM
