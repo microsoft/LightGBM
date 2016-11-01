@@ -9,6 +9,7 @@
 #include <sstream>
 #include <cstdint>
 #include <algorithm>
+#include <cmath>
 
 namespace LightGBM {
 
@@ -165,7 +166,7 @@ inline static const char* Atof(const char* p, float* out) {
     *out = sign * (frac ? (value / scale) : (value * scale));
   } else {
     size_t cnt = 0;
-    while (*(p + cnt) != '\0' && *(p + cnt) != ' ' 
+    while (*(p + cnt) != '\0' && *(p + cnt) != ' '
       && *(p + cnt) != '\t' && *(p + cnt) != ','
       && *(p + cnt) != '\n' && *(p + cnt) != '\r'
       && *(p + cnt) != ':')  {
