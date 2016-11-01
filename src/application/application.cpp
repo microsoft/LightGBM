@@ -269,7 +269,6 @@ void Application::Predict() {
 void Application::InitPredict() {
   boosting_ =
     Boosting::CreateBoosting(config_.io_config.input_model.c_str());
-  boosting_ -> SetNumberOfClass(config_.boosting_config->num_class);
   Log::Info("Finish predict initilization.");
 }
 

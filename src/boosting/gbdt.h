@@ -117,12 +117,6 @@ public:
   inline int NumberOfClass() const override { return num_class_; }
   
   /*!
-  * \brief Get number of classes
-  * \return Number of classes
-  */
-  inline void SetNumberOfClass(int num_class) override { num_class_ = num_class; }
-
-  /*!
   * \brief Get Type name of this boosting object
   */
   const char* Name() const override { return "gbdt"; }

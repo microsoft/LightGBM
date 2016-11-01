@@ -123,11 +123,6 @@ public:
   virtual int NumberOfClass() const = 0;
   
   /*!
-  * \brief Set number of classes
-  */
-  virtual void SetNumberOfClass(int num_class) = 0;
-
-  /*!
   * \brief Get Type name of this boosting object
   */
   virtual const char* Name() const = 0;

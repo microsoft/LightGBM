@@ -311,6 +311,8 @@ void GBDT::SaveModelToFile(bool is_finish, const char* filename) {
     model_output_file_.open(filename);
     // output model type
     model_output_file_ << "gbdt" << std::endl;
+    // output number of class
+    model_output_file_ << "num_class=" << num_class_ << std::endl;
     // output label index
     model_output_file_ << "label_index=" << label_idx_ << std::endl;
     // output max_feature_idx
@@ -350,8 +352,26 @@ void GBDT::ModelsFromString(const std::string& model_str) {
   models_.clear();
   std::vector<std::string> lines = Common::Split(model_str.c_str(), '\n');
   size_t i = 0;
+  
+  // get number of class
+  while (i < lines.size()) {
+    size_t find_pos = lines[i].find("num_class=");
+    if (find_pos != std::string::npos) {
+      std::vector<std::string> strs = Common::Split(lines[i].c_str(), '=');
+      Common::Atoi(strs[1].c_str(), &num_class_);
+      ++i;
+      break;
+    } else {
+      ++i;
+    }
+  }
+  if (i == lines.size()) {
+    Log::Fatal("Model file doesn't contain number of class");
+    return;
+  }
 
   // get index of label
+  i = 0;
   while (i < lines.size()) {
     size_t find_pos = lines[i].find("label_index=");
     if (find_pos != std::string::npos) {
@@ -474,10 +494,10 @@ float GBDT::Predict(const float* value, int num_used_model) const {
 }
 
 std::vector<float> GBDT::PredictMulticlass(const float* value, int num_used_model) const {
-  std::vector<float> ret(num_class_, 0.0f);
   if (num_used_model < 0) {
       num_used_model = static_cast<int>(models_.size()) / num_class_;
   }
+  std::vector<float> ret(num_class_, 0.0f);
   for (int i = 0; i < num_used_model; ++i) {
     for (int j = 0; j < num_class_; ++j){
         ret[j] += models_[i * num_class_ + j] -> Predict(value);
