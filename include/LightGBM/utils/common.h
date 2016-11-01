@@ -88,8 +88,7 @@ inline static const char* Atoi(const char* p, int* out) {
   if (*p == '-') {
     sign = -1;
     ++p;
-  }
-  else if (*p == '+') {
+  } else if (*p == '+') {
     ++p;
   }
   for (value = 0; *p >= '0' && *p <= '9'; ++p) {
@@ -117,8 +116,7 @@ inline static const char* Atof(const char* p, float* out) {
   if (*p == '-') {
     sign = -1.0f;
     ++p;
-  }
-  else if (*p == '+') {
+  } else if (*p == '+') {
     ++p;
   }
 
@@ -165,21 +163,20 @@ inline static const char* Atof(const char* p, float* out) {
     *out = sign * (frac ? (value / scale) : (value * scale));
   } else {
     size_t cnt = 0;
-    while (*(p + cnt) != '\0' && *(p + cnt) != ' ' 
+    while (*(p + cnt) != '\0' && *(p + cnt) != ' '
       && *(p + cnt) != '\t' && *(p + cnt) != ','
       && *(p + cnt) != '\n' && *(p + cnt) != '\r'
-      && *(p + cnt) != ':')  {
+      && *(p + cnt) != ':') {
       ++cnt;
     }
-    if(cnt > 0){
+    if (cnt > 0) {
       std::string tmp_str(p, cnt);
       std::transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(), ::tolower);
       if (tmp_str == std::string("na") || tmp_str == std::string("nan")) {
         *out = 0.0f;
-      } else if( tmp_str == std::string("inf") || tmp_str == std::string("infinity")) {
+      } else if (tmp_str == std::string("inf") || tmp_str == std::string("infinity")) {
         *out = sign * static_cast<float>(1e38);
-      }
-      else {
+      } else {
         Log::Fatal("Unknow token %s in data file", tmp_str.c_str());
       }
       p += cnt;
@@ -354,6 +351,28 @@ inline void Softmax(std::vector<float>* p_rec) {
   for (size_t i = 0; i < rec.size(); ++i) {
     rec[i] /= static_cast<float>(wsum);
   }
+}
+
+template<typename T1, typename T2>
+inline void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, size_t start, bool is_reverse = false) {
+  std::vector<std::pair<T1, T2>> arr;
+  for (size_t i = start; i < keys.size(); ++i) {
+    arr.emplace_back(keys[i], values[i]);
+  }
+  if (!is_reverse) {
+    std::sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
+      return a.first < b.first;
+    });
+  } else {
+    std::sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
+      return a.first > b.first;
+    });
+  }
+  for (size_t i = start; i < arr.size(); ++i) {
+    keys[i] = arr[i].first;
+    values[i] = arr[i].second;
+  }
+
 }
 
 }  // namespace Common

@@ -1,3 +1,4 @@
+#include <LightGBM/utils/common.h>
 #include <LightGBM/bin.h>
 
 #include "dense_bin.hpp"
@@ -39,23 +40,24 @@ BinMapper::~BinMapper() {
 }
 
 void BinMapper::FindBin(std::vector<float>* values, int max_bin) {
+  std::vector<float>& ref_values = (*values);
   size_t sample_size = values->size();
   // find distinct_values first
-  float* distinct_values = new float[sample_size];
-  int *counts = new int[sample_size];
-  int num_values = 1;
-  std::sort(values->begin(), values->end());
-  distinct_values[0] = (*values)[0];
-  counts[0] = 1;
-  for (size_t i = 1; i < values->size(); ++i) {
-    if ((*values)[i] != (*values)[i - 1]) {
-      distinct_values[num_values] = (*values)[i];
-      counts[num_values] = 1;
-      ++num_values;
+  std::vector<float> distinct_values;
+  std::vector<int> counts;
+  
+  std::sort(ref_values.begin(), ref_values.end());
+  distinct_values.push_back(ref_values[0]);
+  counts.push_back(1);
+  for (size_t i = 1; i < ref_values.size(); ++i) {
+    if (ref_values[i] != ref_values[i - 1]) {
+      distinct_values.push_back(ref_values[i]);
+      counts.push_back(1);
     } else {
-      ++counts[num_values - 1];
+      ++counts.back();
     }
   }
+  int num_values = static_cast<int>(distinct_values.size());
   int cnt_in_bin0 = 0;
 
   if (num_values <= max_bin) {
@@ -68,54 +70,60 @@ void BinMapper::FindBin(std::vector<float>* values, int max_bin) {
     cnt_in_bin0 = counts[0];
     bin_upper_bound_[num_values - 1] = std::numeric_limits<float>::infinity();
   } else {
-    // need find bins
-    num_bin_ = max_bin;
-    bin_upper_bound_ = new float[max_bin];
-    float * bin_lower_bound = new float[max_bin];
     // mean size for one bin
     float mean_bin_size = sample_size / static_cast<float>(max_bin);
     int rest_sample_cnt = static_cast<int>(sample_size);
-    int cur_cnt_inbin = 0;
     int bin_cnt = 0;
-    bin_lower_bound[0] = distinct_values[0];
-    for (int i = 0; i < num_values - 1; ++i) {
-      rest_sample_cnt -= counts[i];
-      cur_cnt_inbin += counts[i];
-      // need a new bin
-      if (cur_cnt_inbin >= mean_bin_size) {
-        bin_upper_bound_[bin_cnt] = distinct_values[i];
-        if (bin_cnt == 0) { cnt_in_bin0 = cur_cnt_inbin; }
-        ++bin_cnt;
-        bin_lower_bound[bin_cnt] = distinct_values[i + 1];
-        cur_cnt_inbin = 0;
-        mean_bin_size = rest_sample_cnt / static_cast<float>(max_bin - bin_cnt);
-      }
+
+    num_bin_ = max_bin;
+    std::vector<float> upper_bounds(max_bin, std::numeric_limits<float>::infinity());
+    std::vector<float> lower_bounds(max_bin, std::numeric_limits<float>::infinity());
+    // sort by count, descent
+    Common::SortForPair(counts, distinct_values, 0, true);
+    // fetch big slot as unique bin 
+    while (counts[bin_cnt] > mean_bin_size) {
+      upper_bounds[bin_cnt] = distinct_values[bin_cnt];
+      lower_bounds[bin_cnt] = distinct_values[bin_cnt];
+      rest_sample_cnt -= counts[bin_cnt];
+      ++bin_cnt;
     }
-    cur_cnt_inbin += counts[num_values - 1];
-    // update bin upper bound
-    for (int i = 0; i < bin_cnt; ++i) {
-      bin_upper_bound_[i] = (bin_upper_bound_[i] + bin_lower_bound[i + 1]) / 2.0f;
-    }
-    // last bin upper bound
-    bin_upper_bound_[bin_cnt] = std::numeric_limits<float>::infinity();
-    ++bin_cnt;
-    delete[] bin_lower_bound;
-    // if no so much bin
+    // process reminder bins
     if (bin_cnt < max_bin) {
-      // old bin data
-      float* tmp_bin_upper_bound = bin_upper_bound_;
-      num_bin_ = bin_cnt;
-      bin_upper_bound_ = new float[num_bin_];
-      // copy back
-      for (int i = 0; i < num_bin_; ++i) {
-        bin_upper_bound_[i] = tmp_bin_upper_bound[i];
+      // sort rest by values
+      Common::SortForPair<float, int>(distinct_values, counts, bin_cnt, false);
+      mean_bin_size = rest_sample_cnt / static_cast<float>(max_bin - bin_cnt);
+      lower_bounds[bin_cnt] = distinct_values[bin_cnt];
+      int cur_cnt_inbin = 0;
+      for (int i = bin_cnt; i < num_values - 1; ++i) {
+        rest_sample_cnt -= counts[i];
+        cur_cnt_inbin += counts[i];
+        // need a new bin
+        if (cur_cnt_inbin >= mean_bin_size) {
+          upper_bounds[bin_cnt] = distinct_values[i];
+          if (bin_cnt == 0) { cnt_in_bin0 = cur_cnt_inbin; }
+          ++bin_cnt;
+          lower_bounds[bin_cnt] = distinct_values[i + 1];
+          if (bin_cnt >= max_bin - 1) break;
+          cur_cnt_inbin = 0;
+          mean_bin_size = rest_sample_cnt / static_cast<float>(max_bin - bin_cnt);
+        }
       }
-      // free old space
-      delete[] tmp_bin_upper_bound;
+      cur_cnt_inbin += counts[num_values - 1];
+      
     }
+    Common::SortForPair<float, float>(lower_bounds, upper_bounds, 0, false);
+    // update bin upper bound
+    bin_upper_bound_ = new float[bin_cnt];
+    for (int i = 0; i < bin_cnt - 1; ++i) {
+      bin_upper_bound_[i] = (upper_bounds[i] + lower_bounds[i + 1]) / 2.0f;
+    }
+
+    // last bin upper bound
+    bin_upper_bound_[bin_cnt - 1] = std::numeric_limits<float>::infinity();
+    
+    CHECK(bin_cnt <= max_bin);
+
   }
-  delete[] distinct_values;
-  delete[] counts;
   // check trival(num_bin_ == 1) feature
   if (num_bin_ <= 1) {
     is_trival_ = true;
