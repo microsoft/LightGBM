@@ -13,9 +13,9 @@ namespace LightGBM {
 struct HistogramBinEntry {
 public:
   /*! \brief Sum of gradients on this bin */
-  score_t sum_gradients = 0.0;
+  double sum_gradients = 0.0;
   /*! \brief Sum of hessians on this bin */
-  score_t sum_hessians = 0.0;
+  double sum_hessians = 0.0;
   /*! \brief Number of data on this bin */
   data_size_t cnt = 0;
 
@@ -56,7 +56,7 @@ public:
   /*! \brief True if bin is trival (contains only one bin) */
   inline bool is_trival() const { return is_trival_; }
   /*! \brief Sparsity of this bin ( num_zero_bins / num_data ) */
-  inline double sparse_rate() const { return sparse_rate_; }
+  inline float sparse_rate() const { return sparse_rate_; }
   /*!
   * \brief Save binary data to file
   * \param file File want to write
@@ -67,7 +67,7 @@ public:
   * \param bin
   * \return Feature value of this bin
   */
-  inline double BinToValue(unsigned int bin) const {
+  inline float BinToValue(unsigned int bin) const {
     return bin_upper_bound_[bin];
   }
   /*!
@@ -79,14 +79,14 @@ public:
   * \param value
   * \return bin for this feature value
   */
-  inline unsigned int ValueToBin(double value) const;
+  inline unsigned int ValueToBin(float value) const;
 
   /*!
   * \brief Construct feature value to bin mapper according feature values
   * \param values (Sampled) values of this feature
   * \param max_bin The maximal number of bin
   */
-  void FindBin(std::vector<double>* values, int max_bin);
+  void FindBin(std::vector<float>* values, int max_bin);
 
   /*!
   * \brief Use specific number of bin to calculate the size of this class
@@ -111,11 +111,11 @@ private:
   /*! \brief Number of bins */
   int num_bin_;
   /*! \brief Store upper bound for each bin */
-  double* bin_upper_bound_;
+  float* bin_upper_bound_;
   /*! \brief True if this feature is trival */
   bool is_trival_;
   /*! \brief Sparse rate of this bins( num_bin0/num_data ) */
-  double sparse_rate_;
+  float sparse_rate_;
 };
 
 /*!
@@ -271,7 +271,7 @@ public:
   * \return The bin data object
   */
   static Bin* CreateBin(data_size_t num_data, int num_bin,
-    double sparse_rate, bool is_enable_sparse, bool* is_sparse, int default_bin);
+    float sparse_rate, bool is_enable_sparse, bool* is_sparse, int default_bin);
 
   /*!
   * \brief Create object for bin data of one feature, used for dense feature
@@ -293,7 +293,7 @@ public:
     int num_bin, int default_bin);
 };
 
-inline unsigned int BinMapper::ValueToBin(double value) const {
+inline unsigned int BinMapper::ValueToBin(float value) const {
   // binary search to find bin
   int l = 0;
   int r = num_bin_ - 1;

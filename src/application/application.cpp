@@ -76,7 +76,7 @@ void Application::LoadParameters(int argc, char** argv) {
   ParameterAlias::KeyAliasTransform(&params);
   // read parameters from config file
   if (params.count("config_file") > 0) {
-    TextReader<size_t> config_reader(params["config_file"].c_str());
+    TextReader<size_t> config_reader(params["config_file"].c_str(), false);
     config_reader.ReadAllLines();
     if (config_reader.Lines().size() > 0) {
       for (auto& line : config_reader.Lines()) {
@@ -121,16 +121,13 @@ void Application::LoadData() {
   // predition is needed if using input initial model(continued train)
   PredictFunction predict_fun = nullptr;
   Predictor* predictor = nullptr;
-  // load init model
-  if (config_.io_config.input_model.size() > 0) {
-    LoadModel();
-    if (boosting_->NumberOfSubModels() > 0) {
-      predictor = new Predictor(boosting_, config_.io_config.is_sigmoid, config_.predict_leaf_index);
-      predict_fun =
-        [&predictor](const std::vector<std::pair<int, double>>& features) {
-        return predictor->PredictRawOneLine(features);
-      };
-    }
+  // need to continue train
+  if (boosting_->NumberOfSubModels() > 0) {
+    predictor = new Predictor(boosting_, config_.io_config.is_sigmoid, config_.predict_leaf_index, -1);
+    predict_fun =
+      [&predictor](const std::vector<std::pair<int, float>>& features) {
+      return predictor->PredictRawOneLine(features);
+    };
   }
   // sync up random seed for data partition
   if (config_.is_parallel_find_bin) {
@@ -139,9 +136,7 @@ void Application::LoadData() {
   }
   train_data_ = new Dataset(config_.io_config.data_filename.c_str(),
                          config_.io_config.input_init_score.c_str(),
-                                          config_.io_config.max_bin,
-                                 config_.io_config.data_random_seed,
-                                 config_.io_config.is_enable_sparse,
+                                                  config_.io_config,
                                                        predict_fun);
   // load Training data
   if (config_.is_parallel_find_bin) {
@@ -158,7 +153,7 @@ void Application::LoadData() {
     train_data_->SaveBinaryFile();
   }
   // create training metric
-  if (config_.metric_config.is_provide_training_metric) {
+  if (config_.boosting_config->is_provide_training_metric) {
     for (auto metric_type : config_.metric_types) {
       Metric* metric =
         Metric::CreateMetric(metric_type, config_.metric_config);
@@ -173,9 +168,7 @@ void Application::LoadData() {
     // add
     valid_datas_.push_back(
       new Dataset(config_.io_config.valid_data_filenames[i].c_str(),
-                                          config_.io_config.max_bin,
-                                 config_.io_config.data_random_seed,
-                                 config_.io_config.is_enable_sparse,
+                                                  config_.io_config,
                                                       predict_fun));
     // load validation data like train data
     valid_datas_.back()->LoadValidationData(train_data_,
@@ -217,12 +210,13 @@ void Application::InitTrain() {
       gbdt_config->tree_config.feature_fraction_seed =
         GlobalSyncUpByMin<int>(gbdt_config->tree_config.feature_fraction_seed);
       gbdt_config->tree_config.feature_fraction =
-        GlobalSyncUpByMin<double>(gbdt_config->tree_config.feature_fraction);
+        GlobalSyncUpByMin<float>(gbdt_config->tree_config.feature_fraction);
     }
   }
   // create boosting
   boosting_ =
-    Boosting::CreateBoosting(config_.boosting_type, config_.boosting_config);
+    Boosting::CreateBoosting(config_.boosting_type, 
+      config_.io_config.input_model.c_str());
   // create objective function
   objective_fun_ =
     ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
@@ -232,9 +226,8 @@ void Application::InitTrain() {
   // initialize the objective function
   objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
   // initialize the boosting
-  boosting_->Init(train_data_, objective_fun_,
-    ConstPtrInVectorWarpper<Metric>(train_metric_),
-            config_.io_config.output_model.c_str());
+  boosting_->Init(config_.boosting_config, train_data_, objective_fun_,
+    ConstPtrInVectorWarpper<Metric>(train_metric_));
   // add validation data into boosting
   for (size_t i = 0; i < valid_datas_.size(); ++i) {
     boosting_->AddDataset(valid_datas_[i],
@@ -244,34 +237,39 @@ void Application::InitTrain() {
 }
 
 void Application::Train() {
-  Log::Info("Start train");
-  boosting_->Train();
-  Log::Info("Finish train");
+  Log::Info("Start train ...");
+  int total_iter = config_.boosting_config->num_iterations;
+  bool is_finished = false;
+  bool need_eval = true;
+  auto start_time = std::chrono::high_resolution_clock::now();
+  for (int iter = 0; iter < total_iter && !is_finished; ++iter) {
+    is_finished = boosting_->TrainOneIter(nullptr, nullptr, need_eval);
+    auto end_time = std::chrono::high_resolution_clock::now();
+    // output used time per iteration
+    Log::Info("%f seconds elapsed, finished %d iteration", std::chrono::duration<double,
+      std::milli>(end_time - start_time) * 1e-3, iter + 1);
+    boosting_->SaveModelToFile(is_finished, config_.io_config.output_model.c_str());
+  }
+  is_finished = true;
+  // save model to file
+  boosting_->SaveModelToFile(is_finished, config_.io_config.output_model.c_str());
+  Log::Info("Finished train");
 }
 
 
 void Application::Predict() {
   // create predictor
-  Predictor predictor(boosting_, config_.io_config.is_sigmoid, config_.predict_leaf_index);
-  predictor.Predict(config_.io_config.data_filename.c_str(), config_.io_config.output_result.c_str());
+  Predictor predictor(boosting_, config_.io_config.is_sigmoid, 
+    config_.predict_leaf_index, config_.io_config.num_model_predict);
+  predictor.Predict(config_.io_config.data_filename.c_str(), 
+    config_.io_config.output_result.c_str(), config_.io_config.has_header);
   Log::Info("Finish predict.");
 }
 
 void Application::InitPredict() {
   boosting_ =
-    Boosting::CreateBoosting(config_.boosting_type, config_.boosting_config);
-  LoadModel();
+    Boosting::CreateBoosting(config_.io_config.input_model.c_str());
   Log::Info("Finish predict initilization.");
-}
-
-void Application::LoadModel() {
-  TextReader<size_t> model_reader(config_.io_config.input_model.c_str());
-  model_reader.ReadAllLines();
-  std::stringstream ss;
-  for (auto& line : model_reader.Lines()) {
-    ss << line << '\n';
-  }
-  boosting_->ModelsFromString(ss.str(), config_.io_config.num_model_predict);
 }
 
 template<typename T>

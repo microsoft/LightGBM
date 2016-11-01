@@ -14,16 +14,16 @@
 
 namespace LightGBM {
 /*!
-* \brief Objective funtion for Lambdrank with NDCG
+* \brief Objective function for Lambdrank with NDCG
 */
 class LambdarankNDCG: public ObjectiveFunction {
 public:
   explicit LambdarankNDCG(const ObjectiveConfig& config) {
-    sigmoid_ = static_cast<score_t>(config.sigmoid);
+    sigmoid_ = static_cast<float>(config.sigmoid);
     // initialize DCG calculator
     DCGCalculator::Init(config.label_gain);
     // copy lable gain to local
-    std::vector<double> label_gain = config.label_gain;
+    std::vector<float> label_gain = config.label_gain;
     for (auto gain : label_gain) {
       label_gain_.push_back(static_cast<score_t>(gain));
     }
@@ -47,10 +47,10 @@ public:
     // get boundries
     query_boundaries_ = metadata.query_boundaries();
     if (query_boundaries_ == nullptr) {
-      Log::Fatal("For NDCG metric, should have query information");
+      Log::Fatal("For lambdarank tasks, should have query information");
     }
     num_queries_ = metadata.num_queries();
-    // cache inverse max DCG, avoid compution many times
+    // cache inverse max DCG, avoid computation many times
     inverse_max_dcgs_ = new score_t[num_queries_];
     for (data_size_t i = 0; i < num_queries_; ++i) {
       inverse_max_dcgs_[i] = static_cast<score_t>(
@@ -194,7 +194,7 @@ public:
     }
   }
 
-  double GetSigmoid() const override {
+  float GetSigmoid() const override {
     // though we use sigmoid transform on objective
     // for the prediction, we actually don't need to transform by sigmoid.
     // since we only need the ranking score.
@@ -207,7 +207,7 @@ private:
   /*! \brief Cache inverse max DCG, speed up calculation */
   score_t* inverse_max_dcgs_;
   /*! \brief Simgoid param */
-  score_t sigmoid_;
+  float sigmoid_;
   /*! \brief Optimized NDCG@ */
   int optimize_pos_at_;
   /*! \brief Number of queries */

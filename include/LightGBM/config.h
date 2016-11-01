@@ -49,15 +49,15 @@ public:
     const std::string& name, int* out);
 
   /*!
-  * \brief Get double value by specific name of key
+  * \brief Get float value by specific name of key
   * \param params Store the key and value for params
   * \param name Name of key
   * \param out Value will assign to out if key exists
   * \return True if key exists
   */
-  inline bool GetDouble(
+  inline bool GetFloat(
     const std::unordered_map<std::string, std::string>& params,
-    const std::string& name, double* out);
+    const std::string& name, float* out);
 
   /*!
   * \brief Get bool value by specific name of key
@@ -73,7 +73,7 @@ public:
 
 /*! \brief Types of boosting */
 enum BoostingType {
-  kGBDT
+  kGBDT, kUnknow
 };
 
 
@@ -94,13 +94,26 @@ public:
   std::string input_model = "";
   std::string input_init_score = "";
   int verbosity = 1;
-  std::string log_file = "";
   int num_model_predict = -1;
   bool is_pre_partition = false;
   bool is_enable_sparse = true;
   bool use_two_round_loading = false;
   bool is_save_binary_file = false;
   bool is_sigmoid = true;
+
+  bool has_header = false;
+  /*! \brief Index or column name of label, default is the first column
+   * And add an prefix "name:" while using column name */
+  std::string label_column = "";
+  /*! \brief Index or column name of weight, < 0 means not used
+  * And add an prefix "name:" while using column name */
+  std::string weight_column = "";
+  /*! \brief Index or column name of group, < 0 means not used */
+  std::string group_column = "";
+  /*! \brief ignored features, separate by ','
+  * e.g. name:column_name1,column_name2  */
+  std::string ignore_column = "";
+
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -108,13 +121,15 @@ public:
 struct ObjectiveConfig: public ConfigBase {
 public:
   virtual ~ObjectiveConfig() {}
-  double sigmoid = 1;
+  float sigmoid = 1.0f;
   // for lambdarank
-  std::vector<double> label_gain;
+  std::vector<float> label_gain;
   // for lambdarank
   int max_position = 20;
   // for binary
   bool is_unbalance = false;
+  // for multiclass
+  int num_class = 1;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -122,11 +137,9 @@ public:
 struct MetricConfig: public ConfigBase {
 public:
   virtual ~MetricConfig() {}
-  int early_stopping_round = 0;
-  int output_freq = 1;
-  double sigmoid = 1;
-  bool is_provide_training_metric = false;
-  std::vector<double> label_gain;
+  int num_class = 1;
+  float sigmoid = 1.0f;
+  std::vector<float> label_gain;
   std::vector<int> eval_at;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
@@ -136,12 +149,18 @@ public:
 struct TreeConfig: public ConfigBase {
 public:
   int min_data_in_leaf = 100;
-  double min_sum_hessian_in_leaf = 10.0f;
+  float min_sum_hessian_in_leaf = 10.0f;
+  // should > 1, only one leaf means not need to learning
   int num_leaves = 127;
   int feature_fraction_seed = 2;
-  double feature_fraction = 1.0;
+  float feature_fraction = 1.0f;
   // max cache size(unit:MB) for historical histogram. < 0 means not limit
-  double histogram_pool_size = -1;
+  float histogram_pool_size = -1.0f;
+  // max depth of tree model. 
+  // Still grow tree by leaf-wise, but limit the max depth to avoid over-fitting
+  // And the max leaves will be min(num_leaves, pow(2, max_depth - 1)) 
+  // max_depth < 0 means not limit
+  int max_depth = -1;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -155,12 +174,15 @@ enum TreeLearnerType {
 struct BoostingConfig: public ConfigBase {
 public:
   virtual ~BoostingConfig() {}
+  int output_freq = 1;
+  bool is_provide_training_metric = false;
   int num_iterations = 10;
-  double learning_rate = 0.1;
-  double bagging_fraction = 1.0;
+  float learning_rate = 0.1f;
+  float bagging_fraction = 1.0f;
   int bagging_seed = 3;
   int bagging_freq = 0;
   int early_stopping_round = 0;
+  int num_class = 1;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -207,7 +229,7 @@ public:
     delete boosting_config;
   }
   void Set(const std::unordered_map<std::string, std::string>& params) override;
-
+  void LoadFromString(const char* str);
 private:
   void GetBoostingType(const std::unordered_map<std::string, std::string>& params);
 
@@ -235,17 +257,23 @@ inline bool ConfigBase::GetInt(
   const std::unordered_map<std::string, std::string>& params,
   const std::string& name, int* out) {
   if (params.count(name) > 0) {
-    Common::Atoi(params.at(name).c_str(), out);
+    if (!Common::AtoiAndCheck(params.at(name).c_str(), out)) {
+      Log::Fatal("Parameter %s should be int type, passed is [%s]", 
+        name.c_str(), params.at(name).c_str());
+    }
     return true;
   }
   return false;
 }
 
-inline bool ConfigBase::GetDouble(
+inline bool ConfigBase::GetFloat(
   const std::unordered_map<std::string, std::string>& params,
-  const std::string& name, double* out) {
+  const std::string& name, float* out) {
   if (params.count(name) > 0) {
-    Common::Atof(params.at(name).c_str(), out);
+    if (!Common::AtofAndCheck(params.at(name).c_str(), out)) {
+      Log::Fatal("Parameter %s should be float type, passed is [%s]",
+        name.c_str(), params.at(name).c_str());
+    }
     return true;
   }
   return false;
@@ -257,10 +285,13 @@ inline bool ConfigBase::GetBool(
   if (params.count(name) > 0) {
     std::string value = params.at(name);
     std::transform(value.begin(), value.end(), value.begin(), ::tolower);
-    if (value == std::string("false")) {
+    if (value == std::string("false") || value == std::string("-")) {
       *out = false;
-    } else {
+    } else if (value == std::string("true") || value == std::string("+")) {
       *out = true;
+    } else {
+      Log::Fatal("Parameter %s should be \"true\"/\"+\" or \"false\"/\"-\", passed is [%s]",
+        name.c_str(), params.at(name).c_str());
     }
     return true;
   }
@@ -318,7 +349,15 @@ struct ParameterAlias {
       { "save_binary", "is_save_binary_file" },
       { "early_stopping_rounds", "early_stopping_round"},
       { "early_stopping", "early_stopping_round"},
-      { "verbosity", "verbose" }
+      { "verbosity", "verbose" },
+      { "header", "has_header" },
+      { "label", "label_column" },
+      { "weight", "weight_column" },
+      { "group", "group_column" },
+      { "query", "group_column" },
+      { "query_column", "group_column" },
+      { "ignore_feature", "ignore_column" },
+      { "blacklist", "ignore_column" }
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {

@@ -185,11 +185,13 @@
     <ClInclude Include="..\src\metric\binary_metric.hpp" />
     <ClInclude Include="..\src\metric\rank_metric.hpp" />
     <ClInclude Include="..\src\metric\regression_metric.hpp" />
+    <ClInclude Include="..\src\metric\multiclass_metric.hpp" />
     <ClInclude Include="..\src\network\linkers.h" />
     <ClInclude Include="..\src\network\socket_wrapper.hpp" />
     <ClInclude Include="..\src\objective\binary_objective.hpp" />
     <ClInclude Include="..\src\objective\rank_objective.hpp" />
     <ClInclude Include="..\src\objective\regression_objective.hpp" />
+    <ClInclude Include="..\src\objective\multiclass_objective.hpp" />
     <ClInclude Include="..\src\treelearner\data_partition.hpp" />
     <ClInclude Include="..\src\treelearner\feature_histogram.hpp" />
     <ClInclude Include="..\src\treelearner\leaf_splits.hpp" />

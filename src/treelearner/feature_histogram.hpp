@@ -26,7 +26,7 @@ public:
   * \param min_num_data_one_leaf minimal number of data in one leaf
   */
   void Init(const Feature* feature, int feature_idx, data_size_t min_num_data_one_leaf,
-    score_t min_sum_hessian_one_leaf) {
+    double min_sum_hessian_one_leaf) {
     feature_idx_ = feature_idx;
     min_num_data_one_leaf_ = min_num_data_one_leaf;
     min_sum_hessian_one_leaf_ = min_sum_hessian_one_leaf;
@@ -40,13 +40,13 @@ public:
   * \brief Construct a histogram
   * \param num_data number of data in current leaf
   * \param sum_gradients sum of gradients of current leaf
-  * \param sum_hessians sum of hissians of current leaf
+  * \param sum_hessians sum of hessians of current leaf
   * \param ordered_gradients Orederd gradients
   * \param ordered_hessians  Ordered hessians
   * \param data_indices data indices of current leaf
   */
-  void Construct(data_size_t* data_indices, data_size_t num_data, score_t sum_gradients,
-                        score_t sum_hessians, const score_t* ordered_gradients, const score_t* ordered_hessians) {
+  void Construct(data_size_t* data_indices, data_size_t num_data, double sum_gradients,
+    double sum_hessians, const score_t* ordered_gradients, const score_t* ordered_hessians) {
     std::memset(data_, 0, sizeof(HistogramBinEntry)* num_bins_);
     num_data_ = num_data;
     sum_gradients_ = sum_gradients;
@@ -59,12 +59,12 @@ public:
   * \param leaf current leaf
   * \param num_data number of data in current leaf
   * \param sum_gradients sum of gradients of current leaf
-  * \param sum_hessians sum of hissians of current leaf
+  * \param sum_hessians sum of hessians of current leaf
   * \param gradients
   * \param hessian
   */
-  void Construct(const OrderedBin* ordered_bin, int leaf, data_size_t num_data, score_t sum_gradients,
-                        score_t sum_hessians, const score_t* gradients, const score_t* hessians) {
+  void Construct(const OrderedBin* ordered_bin, int leaf, data_size_t num_data, double sum_gradients,
+    double sum_hessians, const score_t* gradients, const score_t* hessians) {
     std::memset(data_, 0, sizeof(HistogramBinEntry)* num_bins_);
     num_data_ = num_data;
     sum_gradients_ = sum_gradients;
@@ -76,9 +76,9 @@ public:
   * \brief Set sumup information for current histogram
   * \param num_data number of data in current leaf
   * \param sum_gradients sum of gradients of current leaf
-  * \param sum_hessians sum of hissians of current leaf
+  * \param sum_hessians sum of hessians of current leaf
   */
-  void SetSumup(data_size_t num_data, score_t sum_gradients, score_t sum_hessians) {
+  void SetSumup(data_size_t num_data, double sum_gradients, double sum_hessians) {
     num_data_ = num_data;
     sum_gradients_ = sum_gradients;
     sum_hessians_ = sum_hessians + 2 * kEpsilon;
@@ -104,15 +104,15 @@ public:
   * \param output The best split result
   */
   void FindBestThreshold(SplitInfo* output) {
-    score_t best_sum_left_gradient = NAN;
-    score_t best_sum_left_hessian = NAN;
-    score_t best_gain = kMinScore;
+    double best_sum_left_gradient = NAN;
+    double best_sum_left_hessian = NAN;
+    double best_gain = kMinScore;
     data_size_t best_left_count = 0;
     unsigned int best_threshold = static_cast<unsigned int>(num_bins_);
-    score_t sum_right_gradient = 0.0f;
-    score_t sum_right_hessian = kEpsilon;
+    double sum_right_gradient = 0.0f;
+    double sum_right_hessian = kEpsilon;
     data_size_t right_count = 0;
-    score_t gain_shift = GetLeafSplitGain(sum_gradients_, sum_hessians_);
+    double gain_shift = GetLeafSplitGain(sum_gradients_, sum_hessians_);
     is_splittable_ = false;
     // from right to left, and we don't need data in bin0
     for (unsigned int t = num_bins_ - 1; t > 0; --t) {
@@ -125,14 +125,14 @@ public:
       // if data not enough
       if (left_count < min_num_data_one_leaf_) break;
 
-      score_t sum_left_hessian = sum_hessians_ - sum_right_hessian;
+      double sum_left_hessian = sum_hessians_ - sum_right_hessian;
       // if sum hessian too small
       if (sum_left_hessian < min_sum_hessian_one_leaf_) {
         break;
       }
-      score_t sum_left_gradient = sum_gradients_ - sum_right_gradient;
+      double sum_left_gradient = sum_gradients_ - sum_right_gradient;
       // current split gain
-      score_t current_gain = GetLeafSplitGain(sum_left_gradient, sum_left_hessian) + GetLeafSplitGain(sum_right_gradient, sum_right_hessian);
+      double current_gain = GetLeafSplitGain(sum_left_gradient, sum_left_hessian) + GetLeafSplitGain(sum_right_gradient, sum_right_hessian);
       // gain is worst than no perform split
       if (current_gain < gain_shift) {
         continue;
@@ -195,7 +195,7 @@ public:
   /*!
   * \brief Set min sum hessian in one leaf
   */
-  void SetMinSumHessianOneLeaf(score_t new_val) {
+  void SetMinSumHessianOneLeaf(double new_val) {
     min_sum_hessian_one_leaf_ = new_val;
   }
 
@@ -216,7 +216,7 @@ private:
   * \param sum_hessians
   * \return split gain
   */
-  score_t GetLeafSplitGain(score_t sum_gradients, score_t sum_hessians) const {
+  double GetLeafSplitGain(double sum_gradients, double sum_hessians) const {
     return (sum_gradients * sum_gradients) / (sum_hessians);
   }
 
@@ -226,7 +226,7 @@ private:
   * \param sum_hessians
   * \return leaf output
   */
-  score_t CalculateSplittedLeafOutput(score_t sum_gradients, score_t sum_hessians) const {
+  double CalculateSplittedLeafOutput(double sum_gradients, double sum_hessians) const {
     return -(sum_gradients) / (sum_hessians);
   }
 
@@ -234,7 +234,7 @@ private:
   /*! \brief minimal number of data in one leaf */
   data_size_t min_num_data_one_leaf_;
   /*! \brief minimal sum hessian of data in one leaf */
-  score_t min_sum_hessian_one_leaf_;
+  double min_sum_hessian_one_leaf_;
   /*! \brief the bin data of current feature */
   const Bin* bin_data_;
   /*! \brief number of bin of histogram */
@@ -244,9 +244,9 @@ private:
   /*! \brief number of all data */
   data_size_t num_data_;
   /*! \brief sum of gradient of current leaf */
-  score_t sum_gradients_;
+  double sum_gradients_;
   /*! \brief sum of hessians of current leaf */
-  score_t sum_hessians_;
+  double sum_hessians_;
   /*! \brief False if this histogram cannot split */
   bool is_splittable_ = true;
 };

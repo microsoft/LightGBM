@@ -54,9 +54,6 @@ private:
   /*! \brief Initializations before prediction */
   void InitPredict();
 
-  /*! \brief Load model from local disk */
-  void LoadModel();
-
   /*! \brief Main predicting logic */
   void Predict();
 

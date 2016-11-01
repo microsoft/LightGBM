@@ -43,14 +43,39 @@ inline static std::string& RemoveQuotationSymbol(std::string& str) {
   str.erase(0, str.find_first_not_of("'\""));
   return str;
 }
-
-inline static std::vector<std::string> Split(const char* str, char delimiter) {
-  std::stringstream ss(str);
-  std::string tmp_str;
-  std::vector<std::string> ret;
-  while (std::getline(ss, tmp_str, delimiter)) {
-    ret.push_back(tmp_str);
+inline static bool StartsWith(const std::string& str, const std::string prefix) {
+  if (str.substr(0, prefix.size()) == prefix) {
+    return true;
+  } else {
+    return false;
   }
+}
+inline static std::vector<std::string> Split(const char* c_str, char delimiter) {
+  std::vector<std::string> ret;
+  std::string str(c_str);
+  size_t i = 0;
+  size_t pos = str.find(delimiter);
+  while (pos != std::string::npos) {
+    ret.push_back(str.substr(i, pos - i));
+    i = ++pos;
+    pos = str.find(delimiter, pos);
+  }
+  ret.push_back(str.substr(i));
+  return ret;
+}
+
+inline static std::vector<std::string> Split(const char* c_str, const char* delimiters) {
+  // will split when met any chars in delimiters
+  std::vector<std::string> ret;
+  std::string str(c_str);
+  size_t i = 0;
+  size_t pos = str.find_first_of(delimiters);
+  while (pos != std::string::npos) {
+    ret.push_back(str.substr(i, pos - i));
+    i = ++pos;
+    pos = str.find_first_of(delimiters, pos);
+  }
+  ret.push_back(str.substr(i));
   return ret;
 }
 
@@ -78,9 +103,9 @@ inline static const char* Atoi(const char* p, int* out) {
 }
 
 //ref to http://www.leapsecond.com/tools/fast_atof.c
-inline static const char* Atof(const char* p, double* out) {
+inline static const char* Atof(const char* p, float* out) {
   int frac;
-  double sign, value, scale;
+  float sign, value, scale;
   *out = 0;
   // Skip leading white space, if any.
   while (*p == ' ') {
@@ -88,9 +113,9 @@ inline static const char* Atof(const char* p, double* out) {
   }
 
   // Get sign, if any.
-  sign = 1.0;
+  sign = 1.0f;
   if (*p == '-') {
-    sign = -1.0;
+    sign = -1.0f;
     ++p;
   }
   else if (*p == '+') {
@@ -100,24 +125,24 @@ inline static const char* Atof(const char* p, double* out) {
   // is a number
   if ((*p >= '0' && *p <= '9') || *p == '.' || *p == 'e' || *p == 'E') {
     // Get digits before decimal point or exponent, if any.
-    for (value = 0.0; *p >= '0' && *p <= '9'; ++p) {
-      value = value * 10.0 + (*p - '0');
+    for (value = 0.0f; *p >= '0' && *p <= '9'; ++p) {
+      value = value * 10.0f + (*p - '0');
     }
 
     // Get digits after decimal point, if any.
     if (*p == '.') {
-      double pow10 = 10.0;
+      float pow10 = 10.0f;
       ++p;
       while (*p >= '0' && *p <= '9') {
         value += (*p - '0') / pow10;
-        pow10 *= 10.0;
+        pow10 *= 10.0f;
         ++p;
       }
     }
 
     // Handle exponent, if any.
     frac = 0;
-    scale = 1.0;
+    scale = 1.0f;
     if ((*p == 'e') || (*p == 'E')) {
       unsigned int expon;
       // Get sign of exponent, if any.
@@ -132,11 +157,9 @@ inline static const char* Atof(const char* p, double* out) {
       for (expon = 0; *p >= '0' && *p <= '9'; ++p) {
         expon = expon * 10 + (*p - '0');
       }
-      if (expon > 308) expon = 308;
-      // Calculate scaling factor.
-      while (expon >= 50) { scale *= 1E50; expon -= 50; }
+      if (expon > 38) expon = 38;
       while (expon >= 8) { scale *= 1E8;  expon -= 8; }
-      while (expon > 0) { scale *= 10.0; expon -= 1; }
+      while (expon > 0) { scale *= 10.0f; expon -= 1; }
     }
     // Return signed and scaled floating point result.
     *out = sign * (frac ? (value / scale) : (value * scale));
@@ -152,9 +175,9 @@ inline static const char* Atof(const char* p, double* out) {
       std::string tmp_str(p, cnt);
       std::transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(), ::tolower);
       if (tmp_str == std::string("na") || tmp_str == std::string("nan")) {
-        *out = 0;
+        *out = 0.0f;
       } else if( tmp_str == std::string("inf") || tmp_str == std::string("infinity")) {
-        *out = sign * 1e308;
+        *out = sign * static_cast<float>(1e38);
       }
       else {
         Log::Fatal("Unknow token %s in data file", tmp_str.c_str());
@@ -168,6 +191,22 @@ inline static const char* Atof(const char* p, double* out) {
   }
 
   return p;
+}
+
+inline bool AtoiAndCheck(const char* p, int* out) {
+  const char* after = Atoi(p, out);
+  if (*after != '\0') {
+    return false;
+  }
+  return true;
+}
+
+inline bool AtofAndCheck(const char* p, float* out) {
+  const char* after = Atof(p, out);
+  if (*after != '\0') {
+    return false;
+  }
+  return true;
 }
 
 inline static const char* SkipSpaceAndTab(const char* p) {
@@ -189,13 +228,27 @@ inline static std::string ArrayToString(const T* arr, int n, char delimiter) {
   if (n <= 0) {
     return std::string("");
   }
-  std::stringstream ss;
-  ss << arr[0];
+  std::stringstream str_buf;
+  str_buf << arr[0];
   for (int i = 1; i < n; ++i) {
-    ss << delimiter;
-    ss << arr[i];
+    str_buf << delimiter;
+    str_buf << arr[i];
   }
-  return ss.str();
+  return str_buf.str();
+}
+
+template<typename T>
+inline static std::string ArrayToString(std::vector<T> arr, char delimiter) {
+  if (arr.size() <= 0) {
+    return std::string("");
+  }
+  std::stringstream str_buf;
+  str_buf << arr[0];
+  for (size_t i = 1; i < arr.size(); ++i) {
+    str_buf << delimiter;
+    str_buf << arr[i];
+  }
+  return str_buf.str();
 }
 
 inline static void StringToIntArray(const std::string& str, char delimiter, size_t n, int* out) {
@@ -209,10 +262,10 @@ inline static void StringToIntArray(const std::string& str, char delimiter, size
   }
 }
 
-inline static void StringToDoubleArray(const std::string& str, char delimiter, size_t n, double* out) {
+inline static void StringToFloatArray(const std::string& str, char delimiter, size_t n, float* out) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   if (strs.size() != n) {
-    Log::Fatal("StringToDoubleArray error, size doesn't matched.");
+    Log::Fatal("StringToFloatArray error, size doesn't matched.");
   }
   for (size_t i = 0; i < strs.size(); ++i) {
     strs[i] = Trim(strs[i]);
@@ -220,25 +273,12 @@ inline static void StringToDoubleArray(const std::string& str, char delimiter, s
   }
 }
 
-inline static void StringToDoubleArray(const std::string& str, char delimiter, size_t n, float* out) {
+inline static std::vector<float> StringToFloatArray(const std::string& str, char delimiter) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
-  if (strs.size() != n) {
-    Log::Fatal("StringToDoubleArray error, size doesn't matched.");
-  }
-  double tmp;
+  std::vector<float> ret;
   for (size_t i = 0; i < strs.size(); ++i) {
     strs[i] = Trim(strs[i]);
-    Atof(strs[i].c_str(), &tmp);
-    out[i] = static_cast<float>(tmp);
-  }
-}
-
-inline static std::vector<double> StringToDoubleArray(const std::string& str, char delimiter) {
-  std::vector<std::string> strs = Split(str.c_str(), delimiter);
-  std::vector<double> ret;
-  for (size_t i = 0; i < strs.size(); ++i) {
-    strs[i] = Trim(strs[i]);
-    double val = 0.0;
+    float val = 0.0f;
     Atof(strs[i].c_str(), &val);
     ret.push_back(val);
   }
@@ -294,6 +334,26 @@ static inline int64_t Pow2RoundUp(int64_t x) {
     t <<= 1;
   }
   return 0;
+}
+
+/*!
+ * \brief Do inplace softmax transformaton on p_rec
+ * \param p_rec The input/output vector of the values.
+ */
+inline void Softmax(std::vector<float>* p_rec) {
+  std::vector<float> &rec = *p_rec;
+  float wmax = rec[0];
+  for (size_t i = 1; i < rec.size(); ++i) {
+    wmax = std::max(rec[i], wmax);
+  }
+  float wsum = 0.0f;
+  for (size_t i = 0; i < rec.size(); ++i) {
+    rec[i] = std::exp(rec[i] - wmax);
+    wsum += rec[i];
+  }
+  for (size_t i = 0; i < rec.size(); ++i) {
+    rec[i] /= static_cast<float>(wsum);
+  }
 }
 
 }  // namespace Common

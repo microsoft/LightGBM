@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <sstream>
 
 namespace LightGBM {
 
@@ -18,9 +19,6 @@ template<typename PointWiseLossCalculator>
 class BinaryMetric: public Metric {
 public:
   explicit BinaryMetric(const MetricConfig& config) {
-    early_stopping_round_ = config.early_stopping_round;
-    output_freq_ = config.output_freq;
-    the_bigger_the_better = false;
     sigmoid_ = static_cast<score_t>(config.sigmoid);
     if (sigmoid_ <= 0.0f) {
       Log::Fatal("Sigmoid param %f should greater than zero", sigmoid_);
@@ -32,7 +30,9 @@ public:
   }
 
   void Init(const char* test_name, const Metadata& metadata, data_size_t num_data) override {
-    name = test_name;
+    std::stringstream str_buf;
+    str_buf << test_name << "'s " << PointWiseLossCalculator::Name();
+    name_ = str_buf.str();
     num_data_ = num_data;
     // get label
     label_ = metadata.label();
@@ -41,7 +41,7 @@ public:
     weights_ = metadata.weights();
 
     if (weights_ == nullptr) {
-      sum_weights_ = static_cast<double>(num_data_);
+      sum_weights_ = static_cast<float>(num_data_);
     } else {
       sum_weights_ = 0.0f;
       for (data_size_t i = 0; i < num_data; ++i) {
@@ -50,38 +50,38 @@ public:
     }
   }
 
-  score_t PrintAndGetLoss(int iter, const score_t* score) const override {
+  const char* GetName() const override {
+    return name_.c_str();
+  }
+
+  bool is_bigger_better() const override {
+    return false;
+  }
+
+  std::vector<float> Eval(const score_t* score) const override {
     score_t sum_loss = 0.0f;
-    if (early_stopping_round_ > 0 || (output_freq_ > 0 && iter % output_freq_ == 0)) {
-      if (weights_ == nullptr) {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
-        for (data_size_t i = 0; i < num_data_; ++i) {
-          // sigmoid transform
-          score_t prob = 1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * score[i]));
-          // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob);
-        }
-      } else {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
-        for (data_size_t i = 0; i < num_data_; ++i) {
-          // sigmoid transform
-          score_t prob = 1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * score[i]));
-          // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob) * weights_[i];
-        }
+    if (weights_ == nullptr) {
+#pragma omp parallel for schedule(static) reduction(+:sum_loss)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        // sigmoid transform
+        score_t prob = 1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * score[i]));
+        // add loss
+        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob);
       }
-      score_t loss = sum_loss / sum_weights_;
-      if (output_freq_ > 0 && iter % output_freq_ == 0){
-        Log::Info("Iteration:%d, %s's %s: %f", iter, name, PointWiseLossCalculator::Name(), loss);
+    } else {
+#pragma omp parallel for schedule(static) reduction(+:sum_loss)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        // sigmoid transform
+        score_t prob = 1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * score[i]));
+        // add loss
+        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob) * weights_[i];
       }
-      return loss;
     }
-    return 0.0f;
+    score_t loss = sum_loss / sum_weights_;
+    return std::vector<float>(1, static_cast<float>(loss));
   }
 
 private:
-  /*! \brief Output frequently */
-  int output_freq_;
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
@@ -89,9 +89,9 @@ private:
   /*! \brief Pointer of weighs */
   const float* weights_;
   /*! \brief Sum weights */
-  double sum_weights_;
+  float sum_weights_;
   /*! \brief Name of test set */
-  const char* name;
+  std::string name_;
   /*! \brief Sigmoid parameter */
   score_t sigmoid_;
 };
@@ -145,17 +145,26 @@ public:
 */
 class AUCMetric: public Metric {
 public:
-  explicit AUCMetric(const MetricConfig& config) {
-    early_stopping_round_ = config.early_stopping_round;
-    output_freq_ = config.output_freq;
-    the_bigger_the_better = true;
+  explicit AUCMetric(const MetricConfig&) {
+
   }
 
   virtual ~AUCMetric() {
   }
 
+  const char* GetName() const override {
+    return name_.c_str();
+  }
+
+  bool is_bigger_better() const override {
+    return true;
+  }
+
   void Init(const char* test_name, const Metadata& metadata, data_size_t num_data) override {
-    name = test_name;
+    std::stringstream str_buf;
+    str_buf << test_name << "'s AUC";
+    name_ = str_buf.str();
+
     num_data_ = num_data;
     // get label
     label_ = metadata.label();
@@ -163,7 +172,7 @@ public:
     weights_ = metadata.weights();
 
     if (weights_ == nullptr) {
-      sum_weights_ = static_cast<double>(num_data_);
+      sum_weights_ = static_cast<float>(num_data_);
     } else {
       sum_weights_ = 0.0f;
       for (data_size_t i = 0; i < num_data; ++i) {
@@ -172,74 +181,66 @@ public:
     }
   }
 
-  score_t PrintAndGetLoss(int iter, const score_t* score) const override {
-    if (early_stopping_round_ > 0 || (output_freq_ > 0 && iter % output_freq_ == 0)) {
-      // get indices sorted by score, descent order
-      std::vector<data_size_t> sorted_idx;
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        sorted_idx.emplace_back(i);
-      }
-      std::sort(sorted_idx.begin(), sorted_idx.end(), [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
-      // temp sum of postive label
-      double cur_pos = 0.0;
-      // total sum of postive label
-      double sum_pos = 0.0;
-      // accumlate of auc
-      double accum = 0.0;
-      // temp sum of negative label
-      double cur_neg = 0.0;
-      score_t threshold = score[sorted_idx[0]];
-      if (weights_ == nullptr) {  // not weights
-        for (data_size_t i = 0; i < num_data_; ++i) {
-          const float cur_label = label_[sorted_idx[i]];
-          const score_t cur_score = score[sorted_idx[i]];
-          // new threshold
-          if (cur_score != threshold) {
-            threshold = cur_score;
-            // accmulate
-            accum += cur_neg*(cur_pos * 0.5 + sum_pos);
-            sum_pos += cur_pos;
-            // reset
-            cur_neg = cur_pos = 0.0;
-          }
-          cur_neg += 1.0 - cur_label;
-          cur_pos += cur_label;
-        }
-      } else {  // has weights
-        for (data_size_t i = 0; i < num_data_; ++i) {
-          const float cur_label = label_[sorted_idx[i]];
-          const score_t cur_score = score[sorted_idx[i]];
-          const float cur_weight = weights_[sorted_idx[i]];
-          // new threshold
-          if (cur_score != threshold) {
-            threshold = cur_score;
-            // accmulate
-            accum += cur_neg*(cur_pos * 0.5 + sum_pos);
-            sum_pos += cur_pos;
-            // reset
-            cur_neg = cur_pos = 0.0;
-          }
-          cur_neg += (1.0 - cur_label)*cur_weight;
-          cur_pos += cur_label*cur_weight;
-        }
-      }
-      accum += cur_neg*(cur_pos * 0.5 + sum_pos);
-      sum_pos += cur_pos;
-      double auc = 1.0;
-      if (sum_pos > 0.0f && sum_pos != sum_weights_) {
-        auc = accum / (sum_pos *(sum_weights_ - sum_pos));
-      }
-      if (output_freq_ > 0 && iter % output_freq_ == 0){
-        Log::Info("Iteration:%d, %s's %s: %f", iter, name, "auc", auc);
-      }
-      return auc;
+  std::vector<float> Eval(const score_t* score) const override {
+    // get indices sorted by score, descent order
+    std::vector<data_size_t> sorted_idx;
+    for (data_size_t i = 0; i < num_data_; ++i) {
+      sorted_idx.emplace_back(i);
     }
-    return 0.0f;
+    std::sort(sorted_idx.begin(), sorted_idx.end(), [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
+    // temp sum of postive label
+    score_t cur_pos = 0.0f;
+    // total sum of postive label
+    score_t sum_pos = 0.0f;
+    // accumlate of auc
+    score_t accum = 0.0f;
+    // temp sum of negative label
+    score_t cur_neg = 0.0f;
+    score_t threshold = score[sorted_idx[0]];
+    if (weights_ == nullptr) {  // no weights
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        const float cur_label = label_[sorted_idx[i]];
+        const score_t cur_score = score[sorted_idx[i]];
+        // new threshold
+        if (cur_score != threshold) {
+          threshold = cur_score;
+          // accmulate
+          accum += cur_neg*(cur_pos * 0.5f + sum_pos);
+          sum_pos += cur_pos;
+          // reset
+          cur_neg = cur_pos = 0.0f;
+        }
+        cur_neg += 1.0f - cur_label;
+        cur_pos += cur_label;
+      }
+    } else {  // has weights
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        const float cur_label = label_[sorted_idx[i]];
+        const score_t cur_score = score[sorted_idx[i]];
+        const float cur_weight = weights_[sorted_idx[i]];
+        // new threshold
+        if (cur_score != threshold) {
+          threshold = cur_score;
+          // accmulate
+          accum += cur_neg*(cur_pos * 0.5f + sum_pos);
+          sum_pos += cur_pos;
+          // reset
+          cur_neg = cur_pos = 0.0f;
+        }
+        cur_neg += (1.0f - cur_label)*cur_weight;
+        cur_pos += cur_label*cur_weight;
+      }
+    }
+    accum += cur_neg*(cur_pos * 0.5f + sum_pos);
+    sum_pos += cur_pos;
+    score_t auc = 1.0f;
+    if (sum_pos > 0.0f && sum_pos != sum_weights_) {
+      auc = accum / (sum_pos *(sum_weights_ - sum_pos));
+    }
+    return std::vector<float>(1, static_cast<float>(auc));
   }
 
 private:
-  /*! \brief Output frequently */
-  int output_freq_;
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
@@ -247,9 +248,9 @@ private:
   /*! \brief Pointer of weighs */
   const float* weights_;
   /*! \brief Sum weights */
-  double sum_weights_;
+  float sum_weights_;
   /*! \brief Name of test set */
-  const char* name;
+  std::string name_;
 };
 
 }  // namespace LightGBM

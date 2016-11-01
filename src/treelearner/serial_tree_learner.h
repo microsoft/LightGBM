@@ -41,11 +41,11 @@ public:
   void AddPredictionToScore(score_t *out_score) const override {
     #pragma omp parallel for schedule(guided)
     for (int i = 0; i < data_partition_->num_leaves(); ++i) {
-      double output = last_trained_tree_->LeafOutput(i);
+      float output = last_trained_tree_->LeafOutput(i);
       data_size_t* tmp_idx = nullptr;
       data_size_t cnt_leaf_data = data_partition_->GetIndexOnLeaf(i, &tmp_idx);
       for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
-        out_score[tmp_idx[j]] += static_cast<score_t>(output);
+        out_score[tmp_idx[j]] += output;
       }
     }
   }
@@ -114,14 +114,14 @@ protected:
   /*! \brief mininal data on one leaf */
   data_size_t min_num_data_one_leaf_;
   /*! \brief mininal sum hessian on one leaf */
-  score_t min_sum_hessian_one_leaf_;
+  double min_sum_hessian_one_leaf_;
   /*! \brief sub-feature fraction rate */
-  double feature_fraction_;
+  float feature_fraction_;
   /*! \brief training data partition on leaves */
   DataPartition* data_partition_;
   /*! \brief used for generate used features */
   Random random_;
-  /*! \brief used for sub feature training, is_feature_used_[i] = falase means don't used feature i */
+  /*! \brief used for sub feature training, is_feature_used_[i] = false means don't used feature i */
   bool* is_feature_used_;
   /*! \brief pointer to histograms array of parent of current leaves */
   FeatureHistogram* parent_leaf_histogram_array_;
@@ -160,9 +160,11 @@ protected:
   /*! \brief  is_data_in_leaf_[i] != 0 means i-th data is marked */
   char* is_data_in_leaf_;
   /*! \brief  max cache size(unit:GB) for historical histogram. < 0 means not limit */
-  double histogram_pool_size_;
+  float histogram_pool_size_;
   /*! \brief used to cache historical histogram to speed up*/
   LRUPool<FeatureHistogram*> histogram_pool_;
+  /*! \brief  max depth of tree model */
+  int max_depth_;
 };
 
 

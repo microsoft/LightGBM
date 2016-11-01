@@ -155,7 +155,7 @@ public:
         pAdapter = pAdapter->Next;
       }
     } else {
-      Log::Error("GetAdaptersinfo error: code %d ", dwRetVal);
+      Log::Fatal("GetAdaptersinfo error: code %d ", dwRetVal);
     }
     if (pAdapterInfo)
       FREE(pAdapterInfo);

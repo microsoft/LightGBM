@@ -23,11 +23,14 @@ Tree::Tree(int max_leaves)
   split_feature_ = new int[max_leaves_ - 1];
   split_feature_real_ = new int[max_leaves_ - 1];
   threshold_in_bin_ = new unsigned int[max_leaves_ - 1];
-  threshold_ = new double[max_leaves_ - 1];
-  split_gain_ = new double[max_leaves_ - 1];
+  threshold_ = new float[max_leaves_ - 1];
+  split_gain_ = new float[max_leaves_ - 1];
 
   leaf_parent_ = new int[max_leaves_];
-  leaf_value_ = new score_t[max_leaves_];
+  leaf_value_ = new float[max_leaves_];
+  leaf_depth_ = new int[max_leaves_];
+  // root is in the depth 1
+  leaf_depth_[0] = 1;
   num_leaves_ = 1;
   leaf_parent_[0] = -1;
 }
@@ -41,10 +44,11 @@ Tree::~Tree() {
   if (threshold_ != nullptr) { delete[] threshold_; }
   if (split_gain_ != nullptr) { delete[] split_gain_; }
   if (leaf_value_ != nullptr) { delete[] leaf_value_; }
+  if (leaf_depth_ != nullptr) { delete[] leaf_depth_; }
 }
 
 int Tree::Split(int leaf, int feature, unsigned int threshold_bin, int real_feature,
-           double threshold, score_t left_value, score_t right_value, double gain) {
+  float threshold, float left_value, float right_value, float gain) {
   int new_node_idx = num_leaves_ - 1;
   // update parent info
   int parent = leaf_parent_[leaf];
@@ -70,19 +74,21 @@ int Tree::Split(int leaf, int feature, unsigned int threshold_bin, int real_feat
   leaf_parent_[num_leaves_] = new_node_idx;
   leaf_value_[leaf] = left_value;
   leaf_value_[num_leaves_] = right_value;
+  // update leaf depth
+  leaf_depth_[num_leaves_] = leaf_depth_[leaf] + 1;
+  leaf_depth_[leaf]++;
 
   ++num_leaves_;
-
   return num_leaves_ - 1;
 }
 
 void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, score_t* score) const {
   Threading::For<data_size_t>(0, num_data, [this, data, score](int, data_size_t start, data_size_t end) {
     std::vector<BinIterator*> iterators;
-    for (int i = 0; i < data->num_features(); i++) {
+    for (int i = 0; i < data->num_features(); ++i) {
       iterators.push_back(data->FeatureAt(i)->bin_data()->GetIterator(start));
     }
-    for (data_size_t i = start; i < end; i++) {
+    for (data_size_t i = start; i < end; ++i) {
       score[i] += leaf_value_[GetLeaf(iterators, i)];
     }
   });
@@ -93,10 +99,10 @@ void Tree::AddPredictionToScore(const Dataset* data, const data_size_t* used_dat
   Threading::For<data_size_t>(0, num_data,
       [this, data, used_data_indices, score](int, data_size_t start, data_size_t end) {
     std::vector<BinIterator*> iterators;
-    for (int i = 0; i < data->num_features(); i++) {
+    for (int i = 0; i < data->num_features(); ++i) {
       iterators.push_back(data->FeatureAt(i)->bin_data()->GetIterator(used_data_indices[start]));
     }
-    for (data_size_t i = start; i < end; i++) {
+    for (data_size_t i = start; i < end; ++i) {
       score[used_data_indices[i]] += leaf_value_[GetLeaf(iterators, used_data_indices[i])];
     }
   });
@@ -108,9 +114,9 @@ std::string Tree::ToString() {
   ss << "split_feature="
     << Common::ArrayToString<int>(split_feature_real_, num_leaves_ - 1, ' ') << std::endl;
   ss << "split_gain="
-    << Common::ArrayToString<double>(split_gain_, num_leaves_ - 1, ' ') << std::endl;
+    << Common::ArrayToString<float>(split_gain_, num_leaves_ - 1, ' ') << std::endl;
   ss << "threshold="
-    << Common::ArrayToString<double>(threshold_, num_leaves_ - 1, ' ') << std::endl;
+    << Common::ArrayToString<float>(threshold_, num_leaves_ - 1, ' ') << std::endl;
   ss << "left_child="
     << Common::ArrayToString<int>(left_child_, num_leaves_ - 1, ' ') << std::endl;
   ss << "right_child="
@@ -118,7 +124,7 @@ std::string Tree::ToString() {
   ss << "leaf_parent="
     << Common::ArrayToString<int>(leaf_parent_, num_leaves_, ' ') << std::endl;
   ss << "leaf_value="
-    << Common::ArrayToString<score_t>(leaf_value_, num_leaves_, ' ') << std::endl;
+    << Common::ArrayToString<float>(leaf_value_, num_leaves_, ' ') << std::endl;
   ss << std::endl;
   return ss.str();
 }
@@ -148,19 +154,20 @@ Tree::Tree(const std::string& str) {
   left_child_ = new int[num_leaves_ - 1];
   right_child_ = new int[num_leaves_ - 1];
   split_feature_real_ = new int[num_leaves_ - 1];
-  threshold_ = new double[num_leaves_ - 1];
-  split_gain_ = new double[num_leaves_ - 1];
+  threshold_ = new float[num_leaves_ - 1];
+  split_gain_ = new float[num_leaves_ - 1];
   leaf_parent_ = new int[num_leaves_];
-  leaf_value_ = new score_t[num_leaves_];
+  leaf_value_ = new float[num_leaves_];
 
   split_feature_ = nullptr;
   threshold_in_bin_ = nullptr;
+  leaf_depth_ = nullptr;
 
   Common::StringToIntArray(key_vals["split_feature"], ' ',
                      num_leaves_ - 1, split_feature_real_);
-  Common::StringToDoubleArray(key_vals["split_gain"], ' ',
+  Common::StringToFloatArray(key_vals["split_gain"], ' ',
                              num_leaves_ - 1, split_gain_);
-  Common::StringToDoubleArray(key_vals["threshold"], ' ',
+  Common::StringToFloatArray(key_vals["threshold"], ' ',
                                num_leaves_ - 1, threshold_);
   Common::StringToIntArray(key_vals["left_child"], ' ',
                          num_leaves_ - 1, left_child_);
@@ -168,7 +175,7 @@ Tree::Tree(const std::string& str) {
                          num_leaves_ - 1, right_child_);
   Common::StringToIntArray(key_vals["leaf_parent"], ' ',
                              num_leaves_ , leaf_parent_);
-  Common::StringToDoubleArray(key_vals["leaf_value"], ' ',
+  Common::StringToFloatArray(key_vals["leaf_value"], ' ',
                                num_leaves_ , leaf_value_);
 }
 
