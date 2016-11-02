@@ -336,7 +336,7 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
 
     for (size_t i = 0; i < sample_values.size(); ++i) {
       if (bin_mappers[i] == nullptr) {
-        Log::Error("Ignore Feature %s ", feature_names_[i].c_str());
+        Log::Warning("Ignore Feature %s ", feature_names_[i].c_str());
       }
       else if (!bin_mappers[i]->is_trival()) {
         // map real feature index to used feature index
@@ -346,7 +346,7 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
                                              num_data_, is_enable_sparse_));
       } else {
         // if feature is trival(only 1 bin), free spaces
-        Log::Error("Feature %s only contains one value, will be ignored", feature_names_[i].c_str());
+        Log::Warning("Feature %s only contains one value, will be ignored", feature_names_[i].c_str());
         delete bin_mappers[i];
       }
     }
@@ -394,7 +394,7 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
     // restore features bins from buffer
     for (int i = 0; i < total_num_feature; ++i) {
       if (ignore_features_.count(i) > 0) {
-        Log::Error("Ignore Feature %s ", feature_names_[i].c_str());
+        Log::Warning("Ignore Feature %s ", feature_names_[i].c_str());
         continue;
       }
       BinMapper* bin_mapper = new BinMapper();
@@ -403,7 +403,7 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
         used_feature_map_[i] = static_cast<int>(features_.size());
         features_.push_back(new Feature(static_cast<int>(i), bin_mapper, num_data_, is_enable_sparse_));
       } else {
-        Log::Error("Feature %s only contains one value, will be ignored", feature_names_[i].c_str());
+        Log::Warning("Feature %s only contains one value, will be ignored", feature_names_[i].c_str());
         delete bin_mapper;
       }
     }

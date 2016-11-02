@@ -88,7 +88,7 @@ Parser* Parser::CreateParser(const char* filename, bool has_header, int num_feat
   if (!tmp_file.eof()) {
     std::getline(tmp_file, line2);
   } else {
-    Log::Error("Data file: %s only have one line", filename);
+    Log::Warning("Data file: %s only have one line", filename);
   }
   tmp_file.close();
   int comma_cnt = 0, comma_cnt2 = 0;
