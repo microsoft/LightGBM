@@ -20,6 +20,8 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
   :data_filename_(data_filename), random_(io_config.data_random_seed),
   max_bin_(io_config.max_bin), is_enable_sparse_(io_config.is_enable_sparse), predict_fun_(predict_fun) {
 
+  num_class_ = io_config.num_class;    
+      
   CheckCanLoadFromBin();
   if (is_loading_from_binfile_ && predict_fun != nullptr) {
     Log::Info("Cannot performing initialization of prediction by using binary file, using text file instead");
@@ -28,7 +30,7 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
 
   if (!is_loading_from_binfile_) {
     // load weight, query information and initilize score
-    metadata_.Init(data_filename, init_score_filename);
+    metadata_.Init(data_filename, init_score_filename, num_class_);
     // create text reader
     text_reader_ = new TextReader<data_size_t>(data_filename, io_config.has_header);
 
@@ -152,7 +154,7 @@ Dataset::Dataset(const char* data_filename, const char* init_score_filename,
     }
   } else {
     // only need to load initilize score, other meta data will be loaded from bin flie
-    metadata_.Init(init_score_filename);
+    metadata_.Init(init_score_filename, num_class_);
     Log::Info("Loading data set from binary file");
     parser_ = nullptr;
     text_reader_ = nullptr;
@@ -436,7 +438,7 @@ void Dataset::LoadTrainData(int rank, int num_machines, bool is_pre_partition, b
       // construct feature bin mappers
       ConstructBinMappers(rank, num_machines, sample_data);
       // initialize label
-      metadata_.Init(num_data_, weight_idx_, group_idx_);
+      metadata_.Init(num_data_, num_class_, weight_idx_, group_idx_);
       // extract features
       ExtractFeaturesFromMemory();
     } else {
@@ -446,7 +448,7 @@ void Dataset::LoadTrainData(int rank, int num_machines, bool is_pre_partition, b
       // construct feature bin mappers
       ConstructBinMappers(rank, num_machines, sample_data);
       // initialize label
-      metadata_.Init(num_data_, weight_idx_, group_idx_);
+      metadata_.Init(num_data_, num_class_, weight_idx_, group_idx_);
 
       // extract features
       ExtractFeaturesFromFile();
@@ -471,7 +473,7 @@ void Dataset::LoadValidationData(const Dataset* train_set, bool use_two_round_lo
       // read data in memory
       LoadDataToMemory(0, 1, false);
       // initialize label
-      metadata_.Init(num_data_, weight_idx_, group_idx_);
+      metadata_.Init(num_data_, num_class_, weight_idx_, group_idx_);
       features_.clear();
       // copy feature bin mapper data
       for (Feature* feature : train_set->features_) {
@@ -487,7 +489,7 @@ void Dataset::LoadValidationData(const Dataset* train_set, bool use_two_round_lo
       // Get number of lines of data file
       num_data_ = static_cast<data_size_t>(text_reader_->CountLine());
       // initialize label
-      metadata_.Init(num_data_, weight_idx_, group_idx_);
+      metadata_.Init(num_data_, num_class_, weight_idx_, group_idx_);
       features_.clear();
       // copy feature bin mapper data
       for (Feature* feature : train_set->features_) {
@@ -545,7 +547,7 @@ void Dataset::ExtractFeaturesFromMemory() {
     }
   } else {
     // if need to prediction with initial model
-    float* init_score = new float[num_data_];
+    float* init_score = new float[num_data_ * num_class_];
     #pragma omp parallel for schedule(guided) private(oneline_features) firstprivate(tmp_label)
     for (data_size_t i = 0; i < num_data_; ++i) {
       const int tid = omp_get_thread_num();
@@ -553,7 +555,9 @@ void Dataset::ExtractFeaturesFromMemory() {
       // parser
       parser_->ParseOneLine(text_reader_->Lines()[i].c_str(), &oneline_features, &tmp_label);
       // set initial score
-      init_score[i] = static_cast<float>(predict_fun_(oneline_features));
+      for (int k = 0; k < num_class_; ++k){
+        init_score[k * num_data_ + i] = static_cast<float>(predict_fun_(oneline_features)[k]);    
+      }
       // set label
       metadata_.SetLabelAt(i, static_cast<float>(tmp_label));
       // free processed line:
@@ -577,7 +581,7 @@ void Dataset::ExtractFeaturesFromMemory() {
       }
     }
     // metadata_ will manage space of init_score
-    metadata_.SetInitScore(init_score, num_data_);
+    metadata_.SetInitScore(init_score, num_data_ * num_class_);
     delete[] init_score;
   }
 
@@ -593,7 +597,7 @@ void Dataset::ExtractFeaturesFromMemory() {
 void Dataset::ExtractFeaturesFromFile() {
   float* init_score = nullptr;
   if (predict_fun_ != nullptr) {
-    init_score = new float[num_data_];
+    init_score = new float[num_data_ * num_class_];
   }
   std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
     [this, &init_score]
@@ -608,7 +612,9 @@ void Dataset::ExtractFeaturesFromFile() {
       parser_->ParseOneLine(lines[i].c_str(), &oneline_features, &tmp_label);
       // set initial score
       if (init_score != nullptr) {
-        init_score[start_idx + i] = static_cast<float>(predict_fun_(oneline_features));
+        for (int k = 0; k < num_class_; ++k){
+            init_score[k * num_class_ + start_idx + i] = static_cast<float>(predict_fun_(oneline_features)[k]);
+        }
       }
       // set label
       metadata_.SetLabelAt(start_idx + i, static_cast<float>(tmp_label));
@@ -640,7 +646,7 @@ void Dataset::ExtractFeaturesFromFile() {
 
   // metadata_ will manage space of init_score
   if (init_score != nullptr) {
-    metadata_.SetInitScore(init_score, num_data_);
+    metadata_.SetInitScore(init_score, num_data_ * num_class_);
     delete[] init_score;
   }
 

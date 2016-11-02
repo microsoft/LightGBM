@@ -14,9 +14,10 @@ Metadata::Metadata()
 
 }
 
-void Metadata::Init(const char * data_filename, const char* init_score_filename) {
+void Metadata::Init(const char * data_filename, const char* init_score_filename, const int num_class) {
   data_filename_ = data_filename;
   init_score_filename_ = init_score_filename;
+  num_class_ = num_class;
   // for lambdarank, it needs query data for partition data in parallel learning
   LoadQueryBoundaries();
   LoadWeights();
@@ -24,8 +25,9 @@ void Metadata::Init(const char * data_filename, const char* init_score_filename)
   LoadInitialScore();
 }
 
-void Metadata::Init(const char* init_score_filename) {
+void Metadata::Init(const char* init_score_filename, const int num_class) {
   init_score_filename_ = init_score_filename;
+  num_class_ = num_class;
   LoadInitialScore();
 }
 
@@ -40,8 +42,9 @@ Metadata::~Metadata() {
 }
 
 
-void Metadata::Init(data_size_t num_data, int weight_idx, int query_idx) {
+void Metadata::Init(data_size_t num_data, int num_class, int weight_idx, int query_idx) {
   num_data_ = num_data;
+  num_class_ = num_class;
   label_ = new float[num_data_];
   if (weight_idx >= 0) {
     if (weights_ != nullptr) {
@@ -216,17 +219,14 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
 
 
 void Metadata::SetInitScore(const float* init_score, data_size_t len) {
-  if (num_data_ == 0 || len % num_data_ != 0) {
-    Log::Fatal("len of initial score is not same with #data");
+  if (len != num_data_ * num_class_) {
+    Log::Fatal("Length of initial score is not same with number of data");
   }
   if (init_score_ != nullptr) { delete[] init_score_; }
   num_init_score_ = num_data_;
-  num_class_ = len / num_data_;
   init_score_ = new float[len];
-  for (int k = 0; k < num_class_; ++k){
-    for (data_size_t i = 0; i < num_init_score_; ++i) {
-        init_score_[i] = init_score[k * num_data_ + i];
-    }
+  for (data_size_t i = 0; i < len; ++i) {
+    init_score_[i] = init_score[i];
   }
 }
 
@@ -264,7 +264,9 @@ void Metadata::LoadInitialScore() {
   }
   
   std::vector<std::string> oneline_init_score = Common::Split(reader.Lines()[0].c_str(), '\t');
-  num_class_ = static_cast<int>(oneline_init_score.size());
+  if (num_class_ != static_cast<int>(oneline_init_score.size())) {
+    Log::Fatal("Number of classes in configuration and initial score file do not match.");    
+  }
   
   init_score_ = new score_t[num_init_score_ * num_class_];
   double tmp = 0.0f;
@@ -274,8 +276,7 @@ void Metadata::LoadInitialScore() {
         Common::Atof(reader.Lines()[i].c_str(), &tmp);
         init_score_[i] = static_cast<score_t>(tmp);
       }
-  }
-  else {
+  } else {
       // first line
       for (int k = 0; k < num_class_; ++k) {
           Common::Atof(oneline_init_score[k].c_str(), &tmp);
