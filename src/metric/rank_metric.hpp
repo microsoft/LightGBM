@@ -51,7 +51,7 @@ public:
     // get query weights
     query_weights_ = metadata.query_weights();
     if (query_weights_ == nullptr) {
-      sum_query_weights_ = static_cast<float>(num_queries_);
+      sum_query_weights_ = static_cast<double>(num_queries_);
     } else {
       sum_query_weights_ = 0.0f;
       for (data_size_t i = 0; i < num_queries_; ++i) {
@@ -84,13 +84,13 @@ public:
     return true;
   }
 
-  std::vector<float> Eval(const score_t* score) const override {
+  std::vector<double> Eval(const score_t* score) const override {
     // some buffers for multi-threading sum up
-    std::vector<std::vector<float>> result_buffer_;
+    std::vector<std::vector<double>> result_buffer_;
     for (int i = 0; i < num_threads_; ++i) {
       result_buffer_.emplace_back(eval_at_.size(), 0.0f);
     }
-    std::vector<float> tmp_dcg(eval_at_.size(), 0.0f);
+    std::vector<score_t> tmp_dcg(eval_at_.size(), 0.0f);
     if (query_weights_ == nullptr) {
 #pragma omp parallel for schedule(guided) firstprivate(tmp_dcg)
       for (data_size_t i = 0; i < num_queries_; ++i) {
@@ -133,7 +133,7 @@ public:
       }
     }
     // Get final average NDCG
-    std::vector<float> result(eval_at_.size(), 0.0f);
+    std::vector<double> result(eval_at_.size(), 0.0f);
     for (size_t j = 0; j < result.size(); ++j) {
       for (int i = 0; i < num_threads_; ++i) {
         result[j] += result_buffer_[i][j];
@@ -157,11 +157,11 @@ private:
   /*! \brief Weights of queries */
   const float* query_weights_;
   /*! \brief Sum weights of queries */
-  float sum_query_weights_;
+  double sum_query_weights_;
   /*! \brief Evaluate position of NDCG */
   std::vector<data_size_t> eval_at_;
   /*! \brief Cache the inverse max dcg for all queries */
-  std::vector<std::vector<float>> inverse_max_dcgs_;
+  std::vector<std::vector<score_t>> inverse_max_dcgs_;
   /*! \brief Number of threads */
   int num_threads_;
 };

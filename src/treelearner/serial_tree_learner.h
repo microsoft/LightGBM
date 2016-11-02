@@ -38,10 +38,10 @@ public:
     data_partition_->SetUsedDataIndices(used_indices, num_data);
   }
 
-  void AddPredictionToScore(score_t *out_score) const override {
+  void AddPredictionToScore(score_t* out_score) const override {
     #pragma omp parallel for schedule(guided)
     for (int i = 0; i < data_partition_->num_leaves(); ++i) {
-      float output = last_trained_tree_->LeafOutput(i);
+      score_t output = static_cast<score_t>(last_trained_tree_->LeafOutput(i));
       data_size_t* tmp_idx = nullptr;
       data_size_t cnt_leaf_data = data_partition_->GetIndexOnLeaf(i, &tmp_idx);
       for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
@@ -116,7 +116,7 @@ protected:
   /*! \brief mininal sum hessian on one leaf */
   double min_sum_hessian_one_leaf_;
   /*! \brief sub-feature fraction rate */
-  float feature_fraction_;
+  double feature_fraction_;
   /*! \brief training data partition on leaves */
   DataPartition* data_partition_;
   /*! \brief used for generate used features */
@@ -160,7 +160,7 @@ protected:
   /*! \brief  is_data_in_leaf_[i] != 0 means i-th data is marked */
   char* is_data_in_leaf_;
   /*! \brief  max cache size(unit:GB) for historical histogram. < 0 means not limit */
-  float histogram_pool_size_;
+  double histogram_pool_size_;
   /*! \brief used to cache historical histogram to speed up*/
   LRUPool<FeatureHistogram*> histogram_pool_;
   /*! \brief  max depth of tree model */
