@@ -34,6 +34,9 @@ public:
 #else
       file = fopen(filename, "r");
 #endif
+      if (file == NULL) {
+        Log::Fatal("failed to open file %s", filename);
+      }
       std::stringstream str_buf;
       int read_c = -1;
       read_c = fgetc(file);
