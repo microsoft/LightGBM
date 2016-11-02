@@ -36,18 +36,18 @@ public:
   * \param feature Index of feature; the converted index after removing useless features
   * \param threshold Threshold(bin) of split
   * \param real_feature Index of feature, the original index on data
-  * \param threshold_float Threshold on feature value
+  * \param threshold_double Threshold on feature value
   * \param left_value Model Left child output
   * \param right_value Model Right child output
   * \param gain Split gain
   * \return The index of new leaf.
   */
   int Split(int leaf, int feature, unsigned int threshold, int real_feature,
-    float threshold_float, float left_value,
-    float right_value, float gain);
+    double threshold_double, double left_value,
+    double right_value, double gain);
 
   /*! \brief Get the output of one leave */
-  inline float LeafOutput(int leaf) const { return leaf_value_[leaf]; }
+  inline double LeafOutput(int leaf) const { return leaf_value_[leaf]; }
 
   /*!
   * \brief Adding prediction value of this tree model to scores
@@ -74,8 +74,8 @@ public:
   * \param feature_values Feature value of this record
   * \return Prediction result
   */
-  inline float Predict(const float* feature_values) const;
-  inline int PredictLeafIndex(const float* feature_values) const;
+  inline double Predict(const double* feature_values) const;
+  inline int PredictLeafIndex(const double* feature_values) const;
 
   /*! \brief Get Number of leaves*/
   inline int num_leaves() const { return num_leaves_; }
@@ -91,7 +91,7 @@ public:
   *        shrinkage rate (a.k.a learning rate) is used to tune the traning process
   * \param rate The factor of shrinkage
   */
-  inline void Shrinkage(float rate) {
+  inline void Shrinkage(double rate) {
     for (int i = 0; i < num_leaves_; ++i) {
       leaf_value_[i] = leaf_value_[i] * rate;
     }
@@ -119,7 +119,7 @@ private:
   * \param feature_values Feature value of this record
   * \return Leaf index
   */
-  inline int GetLeaf(const float* feature_values) const;
+  inline int GetLeaf(const double* feature_values) const;
 
   /*! \brief Number of max leaves*/
   int max_leaves_;
@@ -137,25 +137,25 @@ private:
   /*! \brief A non-leaf node's split threshold in bin */
   unsigned int* threshold_in_bin_;
   /*! \brief A non-leaf node's split threshold in feature value */
-  float* threshold_;
+  double* threshold_;
   /*! \brief A non-leaf node's split gain */
-  float* split_gain_;
+  double* split_gain_;
   // used for leaf node
   /*! \brief The parent of leaf */
   int* leaf_parent_;
   /*! \brief Output of leaves */
-  float* leaf_value_;
+  double* leaf_value_;
   /*! \brief Depth for leaves */
   int* leaf_depth_;
 };
 
 
-inline float Tree::Predict(const float* feature_values) const {
+inline double Tree::Predict(const double* feature_values) const {
   int leaf = GetLeaf(feature_values);
   return LeafOutput(leaf);
 }
 
-inline int Tree::PredictLeafIndex(const float* feature_values) const {
+inline int Tree::PredictLeafIndex(const double* feature_values) const {
   int leaf = GetLeaf(feature_values);
   return leaf;
 }
@@ -174,7 +174,7 @@ inline int Tree::GetLeaf(const std::vector<BinIterator*>& iterators,
   return ~node;
 }
 
-inline int Tree::GetLeaf(const float* feature_values) const {
+inline int Tree::GetLeaf(const double* feature_values) const {
   int node = 0;
   while (node >= 0) {
     if (feature_values[split_feature_real_[node]] <= threshold_[node]) {

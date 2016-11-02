@@ -415,9 +415,9 @@ void SerialTreeLearner::Split(Tree* tree, int best_Leaf, int* left_leaf, int* ri
   *right_leaf = tree->Split(best_Leaf, best_split_info.feature, best_split_info.threshold,
     train_data_->FeatureAt(best_split_info.feature)->feature_index(),
     train_data_->FeatureAt(best_split_info.feature)->BinToValue(best_split_info.threshold),
-    static_cast<float>(best_split_info.left_output),
-    static_cast<float>(best_split_info.right_output),
-    static_cast<float>(best_split_info.gain));
+    static_cast<double>(best_split_info.left_output),
+    static_cast<double>(best_split_info.right_output),
+    static_cast<double>(best_split_info.gain));
 
   // split data partition
   data_partition_->Split(best_Leaf, train_data_->FeatureAt(best_split_info.feature)->bin_data(),

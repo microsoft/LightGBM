@@ -49,15 +49,15 @@ public:
     const std::string& name, int* out);
 
   /*!
-  * \brief Get float value by specific name of key
+  * \brief Get double value by specific name of key
   * \param params Store the key and value for params
   * \param name Name of key
   * \param out Value will assign to out if key exists
   * \return True if key exists
   */
-  inline bool GetFloat(
+  inline bool GetDouble(
     const std::unordered_map<std::string, std::string>& params,
-    const std::string& name, float* out);
+    const std::string& name, double* out);
 
   /*!
   * \brief Get bool value by specific name of key
@@ -123,9 +123,9 @@ public:
 struct ObjectiveConfig: public ConfigBase {
 public:
   virtual ~ObjectiveConfig() {}
-  float sigmoid = 1.0f;
+  double sigmoid = 1.0f;
   // for lambdarank
-  std::vector<float> label_gain;
+  std::vector<double> label_gain;
   // for lambdarank
   int max_position = 20;
   // for binary
@@ -140,8 +140,8 @@ struct MetricConfig: public ConfigBase {
 public:
   virtual ~MetricConfig() {}
   int num_class = 1;
-  float sigmoid = 1.0f;
-  std::vector<float> label_gain;
+  double sigmoid = 1.0f;
+  std::vector<double> label_gain;
   std::vector<int> eval_at;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
@@ -151,13 +151,13 @@ public:
 struct TreeConfig: public ConfigBase {
 public:
   int min_data_in_leaf = 100;
-  float min_sum_hessian_in_leaf = 10.0f;
+  double min_sum_hessian_in_leaf = 10.0f;
   // should > 1, only one leaf means not need to learning
   int num_leaves = 127;
   int feature_fraction_seed = 2;
-  float feature_fraction = 1.0f;
+  double feature_fraction = 1.0f;
   // max cache size(unit:MB) for historical histogram. < 0 means not limit
-  float histogram_pool_size = -1.0f;
+  double histogram_pool_size = -1.0f;
   // max depth of tree model. 
   // Still grow tree by leaf-wise, but limit the max depth to avoid over-fitting
   // And the max leaves will be min(num_leaves, pow(2, max_depth - 1)) 
@@ -179,8 +179,8 @@ public:
   int output_freq = 1;
   bool is_provide_training_metric = false;
   int num_iterations = 10;
-  float learning_rate = 0.1f;
-  float bagging_fraction = 1.0f;
+  double learning_rate = 0.1f;
+  double bagging_fraction = 1.0f;
   int bagging_seed = 3;
   int bagging_freq = 0;
   int early_stopping_round = 0;
@@ -268,12 +268,12 @@ inline bool ConfigBase::GetInt(
   return false;
 }
 
-inline bool ConfigBase::GetFloat(
+inline bool ConfigBase::GetDouble(
   const std::unordered_map<std::string, std::string>& params,
-  const std::string& name, float* out) {
+  const std::string& name, double* out) {
   if (params.count(name) > 0) {
     if (!Common::AtofAndCheck(params.at(name).c_str(), out)) {
-      Log::Fatal("Parameter %s should be float type, passed is [%s]",
+      Log::Fatal("Parameter %s should be double type, passed is [%s]",
         name.c_str(), params.at(name).c_str());
     }
     return true;

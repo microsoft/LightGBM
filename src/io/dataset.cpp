@@ -364,10 +364,10 @@ void Dataset::SetField(const char* field_name, const void* field_data, data_size
 
 void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<std::string>& sample_data) {
   // sample_values[i][j], means the value of j-th sample on i-th feature
-  std::vector<std::vector<float>> sample_values;
+  std::vector<std::vector<double>> sample_values;
   // temp buffer for one line features and label
-  std::vector<std::pair<int, float>> oneline_features;
-  float label;
+  std::vector<std::pair<int, double>> oneline_features;
+  double label;
   for (size_t i = 0; i < sample_data.size(); ++i) {
     oneline_features.clear();
     // parse features
@@ -376,7 +376,7 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
     for (auto& feature_values : sample_values) {
       feature_values.push_back(0.0);
     }
-    for (std::pair<int, float>& inner_data : oneline_features) {
+    for (std::pair<int, double>& inner_data : oneline_features) {
       if (static_cast<size_t>(inner_data.first) >= sample_values.size()) {
         // if need expand feature set
         size_t need_size = inner_data.first - sample_values.size() + 1;
@@ -571,6 +571,8 @@ void Dataset::LoadValidationData(const Dataset* train_set, bool use_two_round_lo
       }
       used_feature_map_ = train_set->used_feature_map_;
       num_features_ = static_cast<int>(features_.size());
+      num_total_features_ = train_set->num_total_features_;
+      feature_names_ = train_set->feature_names_;
       // extract features
       ExtractFeaturesFromMemory();
     } else {
@@ -585,6 +587,8 @@ void Dataset::LoadValidationData(const Dataset* train_set, bool use_two_round_lo
       }
       used_feature_map_ = train_set->used_feature_map_;
       num_features_ = static_cast<int>(features_.size());
+      num_total_features_ = train_set->num_total_features_;
+      feature_names_ = train_set->feature_names_;
       // extract features
       ExtractFeaturesFromFile();
     }
@@ -601,8 +605,8 @@ void Dataset::LoadValidationData(const Dataset* train_set, bool use_two_round_lo
 }
 
 void Dataset::ExtractFeaturesFromMemory() {
-  std::vector<std::pair<int, float>> oneline_features;
-  float tmp_label = 0.0f;
+  std::vector<std::pair<int, double>> oneline_features;
+  double tmp_label = 0.0f;
   if (predict_fun_ == nullptr) {
     // if doesn't need to prediction with initial model
     #pragma omp parallel for schedule(guided) private(oneline_features) firstprivate(tmp_label)
@@ -612,7 +616,7 @@ void Dataset::ExtractFeaturesFromMemory() {
       // parser
       parser_->ParseOneLine(text_reader_->Lines()[i].c_str(), &oneline_features, &tmp_label);
       // set label
-      metadata_.SetLabelAt(i, tmp_label);
+      metadata_.SetLabelAt(i, static_cast<float>(tmp_label));
       // free processed line:
       text_reader_->Lines()[i].clear();
       // shrink_to_fit will be very slow in linux, and seems not free memory, disable for now
@@ -626,9 +630,9 @@ void Dataset::ExtractFeaturesFromMemory() {
         }
         else {
           if (inner_data.first == weight_idx_) {
-            metadata_.SetWeightAt(i, inner_data.second);
+            metadata_.SetWeightAt(i, static_cast<float>(inner_data.second));
           } else if (inner_data.first == group_idx_) {
-            metadata_.SetQueryAt(i, inner_data.second);
+            metadata_.SetQueryAt(i, static_cast<float>(inner_data.second));
           }
         }
       }
@@ -645,7 +649,7 @@ void Dataset::ExtractFeaturesFromMemory() {
       // set initial score
       init_score[i] = static_cast<float>(predict_fun_(oneline_features));
       // set label
-      metadata_.SetLabelAt(i, tmp_label);
+      metadata_.SetLabelAt(i, static_cast<float>(tmp_label));
       // free processed line:
       text_reader_->Lines()[i].clear();
       // shrink_to_fit will be very slow in linux, and seems not free memory, disable for now
@@ -659,9 +663,9 @@ void Dataset::ExtractFeaturesFromMemory() {
         }
         else {
           if (inner_data.first == weight_idx_) {
-            metadata_.SetWeightAt(i, inner_data.second);
+            metadata_.SetWeightAt(i, static_cast<float>(inner_data.second));
           } else if (inner_data.first == group_idx_) {
-            metadata_.SetQueryAt(i, inner_data.second);
+            metadata_.SetQueryAt(i, static_cast<float>(inner_data.second));
           }
         }
       }
@@ -688,8 +692,8 @@ void Dataset::ExtractFeaturesFromFile() {
   std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
     [this, &init_score]
   (data_size_t start_idx, const std::vector<std::string>& lines) {
-    std::vector<std::pair<int, float>> oneline_features;
-    float tmp_label = 0.0f;
+    std::vector<std::pair<int, double>> oneline_features;
+    double tmp_label = 0.0f;
     #pragma omp parallel for schedule(static) private(oneline_features) firstprivate(tmp_label)
     for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); ++i) {
       const int tid = omp_get_thread_num();
@@ -701,7 +705,7 @@ void Dataset::ExtractFeaturesFromFile() {
         init_score[start_idx + i] = static_cast<float>(predict_fun_(oneline_features));
       }
       // set label
-      metadata_.SetLabelAt(start_idx + i, tmp_label);
+      metadata_.SetLabelAt(start_idx + i, static_cast<float>(tmp_label));
       // push data
       for (auto& inner_data : oneline_features) {
         int feature_idx = used_feature_map_[inner_data.first];
@@ -711,9 +715,9 @@ void Dataset::ExtractFeaturesFromFile() {
         }
         else {
           if (inner_data.first == weight_idx_) {
-            metadata_.SetWeightAt(start_idx + i, inner_data.second);
+            metadata_.SetWeightAt(start_idx + i, static_cast<float>(inner_data.second));
           } else if (inner_data.first == group_idx_) {
-            metadata_.SetQueryAt(start_idx + i, inner_data.second);
+            metadata_.SetQueryAt(start_idx + i, static_cast<float>(inner_data.second));
           }
         }
       }
@@ -763,7 +767,11 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
 
     // get size of header
     size_t size_of_header = sizeof(global_num_data_) + sizeof(is_enable_sparse_)
-      + sizeof(max_bin_) + sizeof(num_data_) + sizeof(num_features_) + sizeof(size_t) + sizeof(int) * used_feature_map_.size();
+      + sizeof(max_bin_) + sizeof(num_data_) + sizeof(num_features_) + sizeof(num_total_features_) +sizeof(size_t) + sizeof(int) * used_feature_map_.size();
+    // size of feature names
+    for (int i = 0; i < num_total_features_; ++i) {
+      size_of_header += feature_names_[i].size() + sizeof(int);
+    }
     fwrite(&size_of_header, sizeof(size_of_header), 1, file);
     // write header
     fwrite(&global_num_data_, sizeof(global_num_data_), 1, file);
@@ -771,9 +779,18 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     fwrite(&max_bin_, sizeof(max_bin_), 1, file);
     fwrite(&num_data_, sizeof(num_data_), 1, file);
     fwrite(&num_features_, sizeof(num_features_), 1, file);
+    fwrite(&num_total_features_, sizeof(num_features_), 1, file);
     size_t num_used_feature_map = used_feature_map_.size();
     fwrite(&num_used_feature_map, sizeof(num_used_feature_map), 1, file);
     fwrite(used_feature_map_.data(), sizeof(int), num_used_feature_map, file);
+
+    // write feature names
+    for (int i = 0; i < num_total_features_; ++i) {
+      int str_len = static_cast<int>(feature_names_[i].size());
+      fwrite(&str_len, sizeof(int), 1, file);
+      const char* c_str = feature_names_[i].c_str();
+      fwrite(c_str, sizeof(char), str_len, file);
+    }
 
     // get size of meta data
     size_t size_of_metadata = metadata_.SizesInByte();
@@ -864,12 +881,29 @@ void Dataset::LoadDataFromBinFile(const char* bin_filename, int rank, int num_ma
   mem_ptr += sizeof(num_data_);
   num_features_ = *(reinterpret_cast<const int*>(mem_ptr));
   mem_ptr += sizeof(num_features_);
+  num_total_features_ = *(reinterpret_cast<const int*>(mem_ptr));
+  mem_ptr += sizeof(num_total_features_);
   size_t num_used_feature_map = *(reinterpret_cast<const size_t*>(mem_ptr));
   mem_ptr += sizeof(num_used_feature_map);
   const int* tmp_feature_map = reinterpret_cast<const int*>(mem_ptr);
   used_feature_map_.clear();
   for (size_t i = 0; i < num_used_feature_map; ++i) {
     used_feature_map_.push_back(tmp_feature_map[i]);
+  }
+  mem_ptr += sizeof(int) * num_used_feature_map;
+  // get feature names
+  feature_names_.clear();
+  // write feature names
+  for (int i = 0; i < num_total_features_; ++i) {
+    int str_len = *(reinterpret_cast<const int*>(mem_ptr));
+    mem_ptr += sizeof(int);
+    std::stringstream str_buf;
+    for (int j = 0; j < str_len; ++j) {
+      char tmp_char = *(reinterpret_cast<const char*>(mem_ptr));
+      mem_ptr += sizeof(char);
+      str_buf << tmp_char;
+    }
+    feature_names_.emplace_back(str_buf.str());
   }
 
   // read size of meta data

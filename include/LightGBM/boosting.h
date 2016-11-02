@@ -58,7 +58,7 @@ public:
   * \param num_used_model Number of used model
   * \return Prediction result for this record
   */
-  virtual float PredictRaw(const float* feature_values,
+  virtual double PredictRaw(const double* feature_values,
     int num_used_model) const = 0;
 
   /*!
@@ -67,7 +67,7 @@ public:
   * \param num_used_model Number of used model
   * \return Prediction result for this record
   */
-  virtual float Predict(const float* feature_values, 
+  virtual double Predict(const double* feature_values,
     int num_used_model) const = 0;
   
   /*!
@@ -77,7 +77,7 @@ public:
   * \return Predicted leaf index for this record
   */
   virtual std::vector<int> PredictLeafIndex(
-    const float* feature_values,
+    const double* feature_values,
     int num_used_model) const = 0;
   
   /*!
@@ -85,7 +85,7 @@ public:
   * \param feature_values Feature value on this record
   * \return Prediction result, num_class numbers per line
   */
-  virtual std::vector<float> PredictMulticlass(const float* value, int num_used_model) const = 0; 
+  virtual std::vector<double> PredictMulticlass(const double* value, int num_used_model) const = 0;
   
   /*!
   * \brief save model to file

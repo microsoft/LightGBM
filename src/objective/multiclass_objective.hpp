@@ -38,9 +38,9 @@ public:
     if (weights_ == nullptr) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        std::vector<float> rec(num_class_);
+        std::vector<double> rec(num_class_);
         for (int k = 0; k < num_class_; ++k){
-          rec[k] = static_cast<float>(score[k * num_data_ + i]);
+          rec[k] = static_cast<double>(score[k * num_data_ + i]);
         }
         Common::Softmax(&rec);  
         for (int k = 0; k < num_class_; ++k) {
@@ -56,9 +56,9 @@ public:
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        std::vector<float> rec(num_class_);
+        std::vector<double> rec(num_class_);
         for (int k = 0; k < num_class_; ++k){
-          rec[k] = static_cast<float>(score[k * num_data_ + i]);
+          rec[k] = static_cast<double>(score[k * num_data_ + i]);
         }  
         Common::Softmax(&rec);
         for (int k = 0; k < num_class_; ++k) {
@@ -74,7 +74,7 @@ public:
     }
   }
 
-  float GetSigmoid() const override {
+  score_t GetSigmoid() const override {
     return -1.0f;
   }
 
