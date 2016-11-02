@@ -27,7 +27,10 @@ public:
     const float* init_score = data->metadata().init_score();
     // if exists initial score, will start from it
     if (init_score != nullptr) {
-      for (data_size_t i = 0; i < num_data_; ++i) {
+      if (data->metadata().num_class() != num_class) {
+        Log::Fatal("Number of classes in configuration and initial scores do not match.");
+      }
+      for (data_size_t i = 0; i < num_data_ * num_class; ++i) {
         score_[i] = init_score[i];
       }
     }

@@ -167,6 +167,12 @@ public:
   * \return Pointer of initial scores
   */
   inline const float* init_score() const { return init_score_; }
+  
+  /*!
+  * \brief Get number of classes
+  * \return Number of classes
+  */
+  inline const int num_class() const { return num_class_; }
 
   /*! \brief Load initial scores from file */
   void LoadInitialScore();
@@ -184,6 +190,8 @@ private:
   const char* init_score_filename_;
   /*! \brief Number of data */
   data_size_t num_data_;
+  /*! \brief Number of classes */
+  int num_class_;
   /*! \brief Number of weights, used to check correct weight file */
   data_size_t num_weights_;
   /*! \brief Label data */
