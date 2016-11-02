@@ -69,7 +69,7 @@ void Application::LoadParameters(int argc, char** argv) {
       params[key] = value;
     }
     else {
-      Log::Error("Unknown parameter in command line: %s", argv[i]);
+      Log::Warning("Unknown parameter in command line: %s", argv[i]);
     }
   }
   // check for alias
@@ -101,11 +101,11 @@ void Application::LoadParameters(int argc, char** argv) {
           }
         }
         else {
-          Log::Error("Unknown parameter in config file: %s", line.c_str());
+          Log::Warning("Unknown parameter in config file: %s", line.c_str());
         }
       }
     } else {
-      Log::Error("Config file: %s doesn't exist, will ignore",
+      Log::Warning("Config file: %s doesn't exist, will ignore",
                                 params["config_file"].c_str());
     }
   }

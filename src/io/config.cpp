@@ -23,7 +23,7 @@ void OverallConfig::LoadFromString(const char* str) {
       }
       params[key] = value;
     } else {
-      Log::Error("Unknown parameter %s", arg.c_str());
+      Log::Warning("Unknown parameter %s", arg.c_str());
     }
   }
   ParameterAlias::KeyAliasTransform(&params);
@@ -60,7 +60,7 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);
   }
   else if (io_config.verbosity == 0) {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Error);
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Warning);
   }
   else if (io_config.verbosity >= 2) {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Debug);
@@ -172,7 +172,7 @@ void OverallConfig::CheckParamConflict() {
   } else if (gbdt_config->tree_learner_type == TreeLearnerType::kDataParallelTreeLearner) {
     is_parallel_find_bin = true;
     if (gbdt_config->tree_config.histogram_pool_size >= 0) {
-      Log::Error("Histogram LRU queue was enabled (histogram_pool_size=%f). Will disable this for reducing communication cost."
+      Log::Warning("Histogram LRU queue was enabled (histogram_pool_size=%f). Will disable this for reducing communication cost."
                  , gbdt_config->tree_config.histogram_pool_size);
       // Change pool size to -1(not limit) when using data parallel for reducing communication cost
       gbdt_config->tree_config.histogram_pool_size = -1;

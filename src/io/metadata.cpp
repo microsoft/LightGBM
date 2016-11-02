@@ -352,7 +352,7 @@ void Metadata::LoadFromMemory(const void* memory) {
   if (label_ != nullptr) { delete[] label_; }
   label_ = new float[num_data_];
   std::memcpy(label_, mem_ptr, sizeof(float)*num_data_);
-  mem_ptr += sizeof(float)*num_weights_;
+  mem_ptr += sizeof(float)*num_data_;
 
   if (num_weights_ > 0) {
     if (weights_ != nullptr) { delete[] weights_; }
