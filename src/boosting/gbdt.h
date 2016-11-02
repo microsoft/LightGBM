@@ -58,7 +58,7 @@ public:
   * \param num_used_model Number of used model
   * \return Prediction result for this record
   */
-  float PredictRaw(const float* feature_values, int num_used_model) const override;
+  double PredictRaw(const double* feature_values, int num_used_model) const override;
 
   /*!
   * \brief Predtion for one record with sigmoid transformation if enabled
@@ -66,14 +66,14 @@ public:
   * \param num_used_model Number of used model
   * \return Prediction result for this record
   */
-  float Predict(const float* feature_values, int num_used_model) const override;
+  double Predict(const double* feature_values, int num_used_model) const override;
   
   /*!
   * \brief Predtion for multiclass classification
   * \param feature_values Feature value on this record
   * \return Prediction result, num_class numbers per line
   */
-  std::vector<float> PredictMulticlass(const float* value, int num_used_model) const override;
+  std::vector<double> PredictMulticlass(const double* value, int num_used_model) const override;
   
   /*!
   * \brief Predtion for one record with leaf index
@@ -81,7 +81,7 @@ public:
   * \param num_used_model Number of used model
   * \return Predicted leaf index for this record
   */
-  std::vector<int> PredictLeafIndex(const float* value, int num_used_model) const override;
+  std::vector<int> PredictLeafIndex(const double* value, int num_used_model) const override;
   
   /*!
   * \brief Serialize models by string
@@ -177,7 +177,7 @@ private:
   int early_stopping_round_;
   /*! \brief Best score(s) for early stopping */
   std::vector<std::vector<int>> best_iter_;
-  std::vector<std::vector<score_t>> best_score_;
+  std::vector<std::vector<double>> best_score_;
   /*! \brief Trained models(trees) */
   std::vector<Tree*> models_;
   /*! \brief Max feature index of training data*/
@@ -204,7 +204,7 @@ private:
   *   \brief Sigmoid parameter, used for prediction.
   *          if > 0 meas output score will transform by sigmoid function
   */
-  float sigmoid_;
+  double sigmoid_;
   /*! \brief Index of label column */
   data_size_t label_idx_;
   /*! \brief Saved number of models */

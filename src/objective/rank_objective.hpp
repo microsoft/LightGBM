@@ -19,11 +19,11 @@ namespace LightGBM {
 class LambdarankNDCG: public ObjectiveFunction {
 public:
   explicit LambdarankNDCG(const ObjectiveConfig& config) {
-    sigmoid_ = static_cast<float>(config.sigmoid);
+    sigmoid_ = static_cast<score_t>(config.sigmoid);
     // initialize DCG calculator
     DCGCalculator::Init(config.label_gain);
     // copy lable gain to local
-    std::vector<float> label_gain = config.label_gain;
+    std::vector<double> label_gain = config.label_gain;
     for (auto gain : label_gain) {
       label_gain_.push_back(static_cast<score_t>(gain));
     }
@@ -53,10 +53,9 @@ public:
     // cache inverse max DCG, avoid computation many times
     inverse_max_dcgs_ = new score_t[num_queries_];
     for (data_size_t i = 0; i < num_queries_; ++i) {
-      inverse_max_dcgs_[i] = static_cast<score_t>(
-        DCGCalculator::CalMaxDCGAtK(optimize_pos_at_,
+      inverse_max_dcgs_[i] = DCGCalculator::CalMaxDCGAtK(optimize_pos_at_,
         label_ + query_boundaries_[i],
-        query_boundaries_[i + 1] - query_boundaries_[i]));
+        query_boundaries_[i + 1] - query_boundaries_[i]);
 
       if (inverse_max_dcgs_[i] > 0.0) {
         inverse_max_dcgs_[i] = 1.0f / inverse_max_dcgs_[i];
@@ -113,8 +112,7 @@ public:
       const score_t high_score = score[high];
       if (high_score == kMinScore) { continue; }
       const score_t high_label_gain = label_gain_[high_label];
-      const score_t high_discount =
-        static_cast<score_t>(DCGCalculator::GetDiscount(i));
+      const score_t high_discount = DCGCalculator::GetDiscount(i);
       score_t high_sum_lambda = 0.0;
       score_t high_sum_hessian = 0.0;
       for (data_size_t j = 0; j < cnt; ++j) {
@@ -130,8 +128,7 @@ public:
         const score_t delta_score = high_score - low_score;
 
         const score_t low_label_gain = label_gain_[low_label];
-        const score_t low_discount =
-          static_cast<score_t>(DCGCalculator::GetDiscount(j));
+        const score_t low_discount = DCGCalculator::GetDiscount(j);
         // get dcg gap
         const score_t dcg_gap = high_label_gain - low_label_gain;
         // get discount of this pair
@@ -194,11 +191,11 @@ public:
     }
   }
 
-  float GetSigmoid() const override {
+  score_t GetSigmoid() const override {
     // though we use sigmoid transform on objective
     // for the prediction, we actually don't need to transform by sigmoid.
     // since we only need the ranking score.
-    return -1.0;
+    return -1.0f;
   }
 
 private:
@@ -207,7 +204,7 @@ private:
   /*! \brief Cache inverse max DCG, speed up calculation */
   score_t* inverse_max_dcgs_;
   /*! \brief Simgoid param */
-  float sigmoid_;
+  score_t sigmoid_;
   /*! \brief Optimized NDCG@ */
   int optimize_pos_at_;
   /*! \brief Number of queries */

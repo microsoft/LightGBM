@@ -33,7 +33,7 @@ public:
     // get weights
     weights_ = metadata.weights();
     if (weights_ == nullptr) {
-      sum_weights_ = static_cast<float>(num_data_);
+      sum_weights_ = static_cast<double>(num_data_);
     } else {
       sum_weights_ = 0.0f;
       for (data_size_t i = 0; i < num_data_; ++i) {
@@ -50,14 +50,14 @@ public:
     return false;
   }
   
-  std::vector<float> Eval(const score_t* score) const override {
-    score_t sum_loss = 0.0;
+  std::vector<double> Eval(const score_t* score) const override {
+    double sum_loss = 0.0;
     if (weights_ == nullptr) {
       #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        std::vector<float> rec(num_class_);
+        std::vector<double> rec(num_class_);
         for (int k = 0; k < num_class_; ++k) {
-          rec[k] = static_cast<float>(score[k * num_data_ + i]);
+          rec[k] = static_cast<double>(score[k * num_data_ + i]);
         }
         // add loss
         sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec);
@@ -65,16 +65,16 @@ public:
     } else {
       #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        std::vector<float> rec(num_class_);
+        std::vector<double> rec(num_class_);
         for (int k = 0; k < num_class_; ++k) {
-          rec[k] = static_cast<float>(score[k * num_data_ + i]);
+          rec[k] = static_cast<double>(score[k * num_data_ + i]);
         }
         // add loss
         sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec) * weights_[i];
       }
     }
-    score_t loss = sum_loss / sum_weights_;
-    return std::vector<float>(1, static_cast<float>(loss));
+    double loss = sum_loss / sum_weights_;
+    return std::vector<double>(1, loss);
   }
 
 private:
@@ -89,7 +89,7 @@ private:
   /*! \brief Pointer of weighs */
   const float* weights_;
   /*! \brief Sum weights */
-  float sum_weights_;
+  double sum_weights_;
   /*! \brief Name of this test set */
   std::string name_;
 };
@@ -99,7 +99,7 @@ class MultiErrorMetric: public MulticlassMetric<MultiErrorMetric> {
 public:
   explicit MultiErrorMetric(const MetricConfig& config) :MulticlassMetric<MultiErrorMetric>(config) {}
 
-  inline static score_t LossOnPoint(float label, std::vector<float> score) {
+  inline static score_t LossOnPoint(float label, std::vector<double> score) {
     size_t k = static_cast<size_t>(label);
     for (size_t i = 0; i < score.size(); ++i){
         if (i != k && score[i] > score[k]) {
@@ -119,11 +119,11 @@ class MultiLoglossMetric: public MulticlassMetric<MultiLoglossMetric> {
 public:
   explicit MultiLoglossMetric(const MetricConfig& config) :MulticlassMetric<MultiLoglossMetric>(config) {}
 
-  inline static score_t LossOnPoint(float label, std::vector<float> score) {
+  inline static score_t LossOnPoint(float label, std::vector<double> score) {
     size_t k = static_cast<size_t>(label);
     Common::Softmax(&score);
     if (score[k] > kEpsilon) {
-      return -std::log(score[k]);
+      return static_cast<score_t>(-std::log(score[k]));
     } else {
       return -std::log(kEpsilon);
     }
