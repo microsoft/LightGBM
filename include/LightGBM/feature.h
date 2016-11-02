@@ -71,7 +71,7 @@ public:
   * \param idx Index of record
   * \param value feature value of record
   */
-  inline void PushData(int tid, data_size_t line_idx, float value) {
+  inline void PushData(int tid, data_size_t line_idx, double value) {
     unsigned int bin = bin_mapper_->ValueToBin(value);
     bin_data_->Push(tid, line_idx, bin);
   }
@@ -89,7 +89,7 @@ public:
   * \param bin
   * \return Feature value of this bin
   */
-  inline float BinToValue(unsigned int bin)
+  inline double BinToValue(unsigned int bin)
     const { return bin_mapper_->BinToValue(bin); }
 
   /*!

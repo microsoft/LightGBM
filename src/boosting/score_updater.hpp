@@ -24,7 +24,7 @@ public:
     score_ = new score_t[num_data_ * num_class];
     // default start score is zero
     std::memset(score_, 0, sizeof(score_t) * num_data_ * num_class);
-    const score_t* init_score = data->metadata().init_score();
+    const float* init_score = data->metadata().init_score();
     // if exists initial score, will start from it
     if (init_score != nullptr) {
       for (data_size_t i = 0; i < num_data_; ++i) {

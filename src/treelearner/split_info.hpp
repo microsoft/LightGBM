@@ -21,23 +21,23 @@ public:
   /*! \brief Split threshold */
   unsigned int threshold;
   /*! \brief Left output after split */
-  score_t left_output;
+  double left_output;
   /*! \brief Right output after split */
-  score_t right_output;
+  double right_output;
   /*! \brief Split gain */
-  score_t gain;
+  double gain;
   /*! \brief Left number of data after split */
   data_size_t left_count;
   /*! \brief Right number of data after split */
   data_size_t right_count;
   /*! \brief Left sum gradient after split */
-  score_t left_sum_gradient;
+  double left_sum_gradient;
   /*! \brief Left sum hessian after split */
-  score_t left_sum_hessian;
+  double left_sum_hessian;
   /*! \brief Right sum gradient after split */
-  score_t right_sum_gradient;
+  double right_sum_gradient;
   /*! \brief Right sum hessian after split */
-  score_t right_sum_hessian;
+  double right_sum_hessian;
 
   SplitInfo() {
     // initilize with -1 and -inf gain
@@ -75,8 +75,8 @@ public:
 
 
 inline bool SplitInfo::operator > (const SplitInfo& si) const {
-  score_t local_gain = this->gain;
-  score_t other_gain = si.gain;
+  double local_gain = this->gain;
+  double other_gain = si.gain;
   // replace nan with -inf
   if (local_gain == NAN) {
     local_gain = kMinScore;

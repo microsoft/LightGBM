@@ -106,7 +106,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     }
     // check weights
     if (weights_ != nullptr && num_weights_ != num_data_) {
-      Log::Error("Initial weight size doesn't equal to data, weights will be ignored");
+      Log::Fatal("Initial weight size doesn't equal to data");
       delete[] weights_;
       num_weights_ = 0;
       weights_ = nullptr;
@@ -114,7 +114,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
 
     // check query boundries
     if (query_boundaries_ != nullptr && query_boundaries_[num_queries_] != num_data_) {
-      Log::Error("Initial query size doesn't equal to data, queies will be ignored");
+      Log::Fatal("Initial query size doesn't equal to data");
       delete[] query_boundaries_;
       num_queries_ = 0;
       query_boundaries_ = nullptr;
@@ -123,21 +123,22 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     // contain initial score file
     if (init_score_ != nullptr && num_init_score_ != num_data_) {
       delete[] init_score_;
-      Log::Error("Initial score size doesn't equal to data, score file will be ignored");
+      Log::Fatal("Initial score size doesn't equal to data");
+      init_score_ = nullptr;
       num_init_score_ = 0;
     }
   } else {
     data_size_t num_used_data = static_cast<data_size_t>(used_data_indices.size());
     // check weights
     if (weights_ != nullptr && num_weights_ != num_all_data) {
-      Log::Error("Initial weights size doesn't equal to data, weights will be ignored");
+      Log::Fatal("Initial weights size doesn't equal to data");
       delete[] weights_;
       num_weights_ = 0;
       weights_ = nullptr;
     }
     // check query boundries
     if (query_boundaries_ != nullptr && query_boundaries_[num_queries_] != num_all_data) {
-      Log::Error("Initial query size doesn't equal to data , queries will be ignored");
+      Log::Fatal("Initial query size doesn't equal to data");
       delete[] query_boundaries_;
       num_queries_ = 0;
       query_boundaries_ = nullptr;
@@ -145,9 +146,10 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
 
     // contain initial score file
     if (init_score_ != nullptr && num_init_score_ != num_all_data) {
-      Log::Error("Initial score size doesn't equal to data , initial scores will be ignored");
+      Log::Fatal("Initial score size doesn't equal to data");
       delete[] init_score_;
       num_init_score_ = 0;
+      init_score_ = nullptr;
     }
 
     // get local weights
@@ -196,9 +198,9 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
 
     // get local initial scores
     if (init_score_ != nullptr) {
-      score_t* old_scores = init_score_;
+      float* old_scores = init_score_;
       num_init_score_ = num_data_;
-      init_score_ = new score_t[num_init_score_];
+      init_score_ = new float[num_init_score_];
       for (size_t i = 0; i < used_data_indices.size(); ++i) {
         init_score_[i] = old_scores[used_data_indices[i]];
       }
@@ -211,10 +213,16 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
 }
 
 
-void Metadata::SetInitScore(score_t* init_score) {
+void Metadata::SetInitScore(const float* init_score, data_size_t len) {
+  if (num_data_ != len) {
+    Log::Fatal("len of initial score is not same with #data");
+  }
   if (init_score_ != nullptr) { delete[] init_score_; }
   num_init_score_ = num_data_;
-  init_score_ = init_score;
+  init_score_ = new float[num_init_score_];
+  for (data_size_t i = 0; i < num_init_score_; ++i) {
+    init_score_[i] = init_score[i];
+  }
 }
 
 void Metadata::LoadWeights() {
@@ -231,9 +239,9 @@ void Metadata::LoadWeights() {
   num_weights_ = static_cast<data_size_t>(reader.Lines().size());
   weights_ = new float[num_weights_];
   for (data_size_t i = 0; i < num_weights_; ++i) {
-    float tmp_weight = 0.0f;
+    double tmp_weight = 0.0f;
     Common::Atof(reader.Lines()[i].c_str(), &tmp_weight);
-    weights_[i] = tmp_weight;
+    weights_[i] = static_cast<float>(tmp_weight);
   }
 }
 
@@ -245,11 +253,11 @@ void Metadata::LoadInitialScore() {
 
   Log::Info("Start loading initial scores");
   num_init_score_ = static_cast<data_size_t>(reader.Lines().size());
-  init_score_ = new score_t[num_init_score_];
-  float tmp = 0.0f;
+  init_score_ = new float[num_init_score_];
+  double tmp = 0.0f;
   for (data_size_t i = 0; i < num_init_score_; ++i) {
     Common::Atof(reader.Lines()[i].c_str(), &tmp);
-    init_score_[i] = static_cast<score_t>(tmp);
+    init_score_[i] = static_cast<float>(tmp);
   }
 }
 

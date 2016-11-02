@@ -38,7 +38,7 @@ public:
     }
   }
 
-  float GetSigmoid() const override {
+  score_t GetSigmoid() const override {
     // not sigmoid transform, return -1
     return -1.0f;
   }

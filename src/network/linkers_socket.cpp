@@ -95,7 +95,7 @@ void Linkers::ParseMachineList(const char * filename) {
       continue;
     }
     if (client_ips_.size() >= static_cast<size_t>(num_machines_)) {
-      Log::Error("The #machine in machine_list is larger than parameter num_machines, the redundant will ignored");
+      Log::Warning("The #machine in machine_list is larger than parameter num_machines, the redundant will ignored");
       break;
     }
     str_after_split[0] = Common::Trim(str_after_split[0]);
@@ -104,7 +104,7 @@ void Linkers::ParseMachineList(const char * filename) {
     client_ports_.push_back(atoi(str_after_split[1].c_str()));
   }
   if (client_ips_.size() != static_cast<size_t>(num_machines_)) {
-    Log::Error("The world size is bigger the #machine in machine list, change world size to %d .", client_ips_.size());
+    Log::Warning("The world size is bigger the #machine in machine list, change world size to %d .", client_ips_.size());
     num_machines_ = static_cast<int>(client_ips_.size());
   }
 }
@@ -192,7 +192,7 @@ void Linkers::Construct() {
         if (cur_socket.Connect(client_ips_[out_rank].c_str(), client_ports_[out_rank])) {
           break;
         } else {
-          Log::Error("Connect to rank %d failed, wait for %d milliseconds", out_rank, connect_fail_delay_time);
+          Log::Warning("Connect to rank %d failed, wait for %d milliseconds", out_rank, connect_fail_delay_time);
           std::this_thread::sleep_for(std::chrono::milliseconds(connect_fail_delay_time));
         }
       }

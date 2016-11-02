@@ -217,8 +217,8 @@ void GBDT::UpdateScore(const Tree* tree, const int curr_class) {
   // update training score
   train_score_updater_->AddScore(tree_learner_[curr_class], curr_class);
   // update validation score
-  for (auto& score_tracker : valid_score_updater_) {
-    score_tracker->AddScore(tree, curr_class);
+  for (auto& score_updater : valid_score_updater_) {
+    score_updater->AddScore(tree, curr_class);
   }
 }
 
@@ -229,7 +229,7 @@ bool GBDT::OutputMetric(int iter) {
     for (auto& sub_metric : training_metrics_) {
       auto name = sub_metric->GetName();
       auto scores = sub_metric->Eval(train_score_updater_->score());
-      Log::Info("Iteration:%d, %s : %s", iter, name, Common::ArrayToString<float>(scores, ' ').c_str());
+      Log::Info("Iteration:%d, %s : %s", iter, name, Common::ArrayToString<double>(scores, ' ').c_str());
     }
   }
   // print validation metric
@@ -239,7 +239,7 @@ bool GBDT::OutputMetric(int iter) {
         auto test_scores = valid_metrics_[i][j]->Eval(valid_score_updater_[i]->score());
         if ((iter % gbdt_config_->output_freq) == 0) {
           auto name = valid_metrics_[i][j]->GetName();
-          Log::Info("Iteration:%d, %s : %s", iter, name, Common::ArrayToString<float>(test_scores, ' ').c_str());
+          Log::Info("Iteration:%d, %s : %s", iter, name, Common::ArrayToString<double>(test_scores, ' ').c_str());
         }
         if (!ret && early_stopping_round_ > 0) {
           bool the_bigger_the_better = valid_metrics_[i][j]->is_bigger_better();
@@ -266,7 +266,7 @@ std::vector<std::string> GBDT::EvalCurrent(bool is_eval_train) const {
       auto name = sub_metric->GetName();
       auto scores = sub_metric->Eval(train_score_updater_->score());
       std::stringstream str_buf;
-      str_buf << name << " : " << Common::ArrayToString<float>(scores, ' ');
+      str_buf << name << " : " << Common::ArrayToString<double>(scores, ' ');
       ret.emplace_back(str_buf.str());
     }
   }
@@ -276,7 +276,7 @@ std::vector<std::string> GBDT::EvalCurrent(bool is_eval_train) const {
       auto name = valid_metrics_[i][j]->GetName();
       auto test_scores = valid_metrics_[i][j]->Eval(valid_score_updater_[i]->score());
       std::stringstream str_buf;
-      str_buf << name << " : " << Common::ArrayToString<float>(test_scores, ' ');
+      str_buf << name << " : " << Common::ArrayToString<double>(test_scores, ' ');
       ret.emplace_back(str_buf.str());
     }
   }
@@ -420,7 +420,7 @@ void GBDT::ModelsFromString(const std::string& model_str) {
   }
   // if sigmoid doesn't exists
   if (i == lines.size()) {
-    sigmoid_ = -1.0;
+    sigmoid_ = -1.0f;
   }
   // get tree models
   i = 0;
@@ -467,22 +467,22 @@ std::string GBDT::FeatureImportance() const {
     return str_buf.str();
 }
 
-float GBDT::PredictRaw(const float* value, int num_used_model) const {
+double GBDT::PredictRaw(const double* value, int num_used_model) const {
   if (num_used_model < 0) {
     num_used_model = static_cast<int>(models_.size());
   }
-  float ret = 0.0f;
+  double ret = 0.0f;
   for (int i = 0; i < num_used_model; ++i) {
     ret += models_[i]->Predict(value);
   }
   return ret;
 }
 
-float GBDT::Predict(const float* value, int num_used_model) const {
+double GBDT::Predict(const double* value, int num_used_model) const {
   if (num_used_model < 0) {
     num_used_model = static_cast<int>(models_.size());
   }
-  float ret = 0.0f;
+  double ret = 0.0f;
   for (int i = 0; i < num_used_model; ++i) {
     ret += models_[i]->Predict(value);
   }
@@ -493,11 +493,11 @@ float GBDT::Predict(const float* value, int num_used_model) const {
   return ret;
 }
 
-std::vector<float> GBDT::PredictMulticlass(const float* value, int num_used_model) const {
+std::vector<double> GBDT::PredictMulticlass(const double* value, int num_used_model) const {
   if (num_used_model < 0) {
       num_used_model = static_cast<int>(models_.size()) / num_class_;
   }
-  std::vector<float> ret(num_class_, 0.0f);
+  std::vector<double> ret(num_class_, 0.0f);
   for (int i = 0; i < num_used_model; ++i) {
     for (int j = 0; j < num_class_; ++j){
         ret[j] += models_[i * num_class_ + j] -> Predict(value);
@@ -507,7 +507,7 @@ std::vector<float> GBDT::PredictMulticlass(const float* value, int num_used_mode
   return ret;
 }
 
-std::vector<int> GBDT::PredictLeafIndex(const float* value, int num_used_model) const {
+std::vector<int> GBDT::PredictLeafIndex(const double* value, int num_used_model) const {
   if (num_used_model < 0) {
     num_used_model = static_cast<int>(models_.size());
   }

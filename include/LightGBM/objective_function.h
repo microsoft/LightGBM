@@ -36,7 +36,7 @@ public:
   *        This function is used for prediction task, if has sigmoid param, the prediction value will be transform by sigmoid function.
   * \return Sigmoid param, if <=0.0 means don't use sigmoid transform on this objective.
   */
-  virtual float GetSigmoid() const = 0;
+  virtual score_t GetSigmoid() const = 0;
 
   /*!
   * \brief Create object of objective function

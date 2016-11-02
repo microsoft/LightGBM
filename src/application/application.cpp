@@ -69,7 +69,7 @@ void Application::LoadParameters(int argc, char** argv) {
       params[key] = value;
     }
     else {
-      Log::Error("Unknown parameter in command line: %s", argv[i]);
+      Log::Warning("Unknown parameter in command line: %s", argv[i]);
     }
   }
   // check for alias
@@ -101,11 +101,11 @@ void Application::LoadParameters(int argc, char** argv) {
           }
         }
         else {
-          Log::Error("Unknown parameter in config file: %s", line.c_str());
+          Log::Warning("Unknown parameter in config file: %s", line.c_str());
         }
       }
     } else {
-      Log::Error("Config file: %s doesn't exist, will ignore",
+      Log::Warning("Config file: %s doesn't exist, will ignore",
                                 params["config_file"].c_str());
     }
   }
@@ -125,7 +125,7 @@ void Application::LoadData() {
   if (boosting_->NumberOfSubModels() > 0) {
     predictor = new Predictor(boosting_, config_.io_config.is_sigmoid, config_.predict_leaf_index, -1);
     predict_fun =
-      [&predictor](const std::vector<std::pair<int, float>>& features) {
+      [&predictor](const std::vector<std::pair<int, double>>& features) {
       return predictor->PredictRawOneLine(features);
     };
   }
@@ -210,7 +210,7 @@ void Application::InitTrain() {
       gbdt_config->tree_config.feature_fraction_seed =
         GlobalSyncUpByMin<int>(gbdt_config->tree_config.feature_fraction_seed);
       gbdt_config->tree_config.feature_fraction =
-        GlobalSyncUpByMin<float>(gbdt_config->tree_config.feature_fraction);
+        GlobalSyncUpByMin<double>(gbdt_config->tree_config.feature_fraction);
     }
   }
   // create boosting

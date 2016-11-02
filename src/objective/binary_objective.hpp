@@ -47,8 +47,8 @@ public:
     label_weights_[1] = 1.0f;
     // if using unbalance, change the labels weight
     if (is_unbalance_) {
-      label_weights_[1] = 1.0f / cnt_positive;
-      label_weights_[0] = 1.0f / cnt_negative;
+      label_weights_[1] = 1.0f;
+      label_weights_[0] = static_cast<score_t>(cnt_positive) / cnt_negative;
     }
   }
 
@@ -80,7 +80,7 @@ public:
     }
   }
 
-  float GetSigmoid() const override {
+  score_t GetSigmoid() const override {
     return sigmoid_;
   }
 

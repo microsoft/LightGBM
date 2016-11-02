@@ -42,7 +42,7 @@ public:
     // get weights
     weights_ = metadata.weights();
     if (weights_ == nullptr) {
-      sum_weights_ = static_cast<float>(num_data_);
+      sum_weights_ = static_cast<double>(num_data_);
     } else {
       sum_weights_ = 0.0f;
       for (data_size_t i = 0; i < num_data_; ++i) {
@@ -51,8 +51,8 @@ public:
     }
   }
 
-  std::vector<float> Eval(const score_t* score) const override {
-    score_t sum_loss = 0.0f;
+  std::vector<double> Eval(const score_t* score) const override {
+    double sum_loss = 0.0f;
     if (weights_ == nullptr) {
 #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
@@ -66,12 +66,12 @@ public:
         sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i]) * weights_[i];
       }
     }
-    score_t loss = PointWiseLossCalculator::AverageLoss(sum_loss, sum_weights_);
-    return std::vector<float>(1, loss);
+    double loss = PointWiseLossCalculator::AverageLoss(sum_loss, sum_weights_);
+    return std::vector<double>(1, loss);
 
   }
 
-  inline static score_t AverageLoss(score_t sum_loss, score_t sum_weights) {
+  inline static double AverageLoss(double sum_loss, double sum_weights) {
     return sum_loss / sum_weights;
   }
 
@@ -83,7 +83,7 @@ private:
   /*! \brief Pointer of weighs */
   const float* weights_;
   /*! \brief Sum weights */
-  float sum_weights_;
+  double sum_weights_;
   /*! \brief Name of this test set */
   std::string name_;
 };
@@ -97,7 +97,7 @@ public:
     return (score - label)*(score - label);
   }
 
-  inline static score_t AverageLoss(score_t sum_loss, score_t sum_weights) {
+  inline static double AverageLoss(double sum_loss, double sum_weights) {
     // need sqrt the result for L2 loss
     return std::sqrt(sum_loss / sum_weights);
   }

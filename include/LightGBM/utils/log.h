@@ -23,7 +23,7 @@ namespace LightGBM {
 
 enum class LogLevel: int {
   Fatal = -1,
-  Error = 0,
+  Warning = 0,
   Info = 1,
   Debug = 2,
 };
@@ -54,10 +54,10 @@ public:
     Write(LogLevel::Info, "Info", format, val);
     va_end(val);
   }
-  static void Error(const char *format, ...) {
+  static void Warning(const char *format, ...) {
     va_list val;
     va_start(val, format);
-    Write(LogLevel::Error, "Error", format, val);
+    Write(LogLevel::Warning, "Warning", format, val);
     va_end(val);
   }
   static void Fatal(const char *format, ...) {
