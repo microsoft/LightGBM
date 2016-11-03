@@ -124,10 +124,17 @@ void Application::LoadData() {
   // need to continue train
   if (boosting_->NumberOfSubModels() > 0) {
     predictor = new Predictor(boosting_, config_.io_config.is_sigmoid, config_.predict_leaf_index, -1);
-    predict_fun =
-      [&predictor](const std::vector<std::pair<int, double>>& features) {
-      return predictor->PredictRawOneLine(features);
-    };
+    if (config_.io_config.num_class == 1){
+      predict_fun =
+        [&predictor](const std::vector<std::pair<int, double>>& features) {
+        return predictor->PredictRawOneLine(features);
+      };    
+    } else {
+      predict_fun =
+        [&predictor](const std::vector<std::pair<int, double>>& features) {
+        return predictor->PredictMulticlassOneLine(features);
+      };  
+    }
   }
   // sync up random seed for data partition
   if (config_.is_parallel_find_bin) {

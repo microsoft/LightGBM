@@ -184,6 +184,7 @@ void OverallConfig::CheckParamConflict() {
 void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "max_bin", &max_bin);
   CHECK(max_bin > 0);
+  GetInt(params, "num_class", &num_class);
   GetInt(params, "data_random_seed", &data_random_seed);
 
   if (!GetString(params, "data", &data_filename)) {
@@ -236,7 +237,6 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
 void MetricConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetDouble(params, "sigmoid", &sigmoid);
   GetInt(params, "num_class", &num_class);
-  CHECK(num_class >= 1);
   std::string tmp_str = "";
   if (GetString(params, "label_gain", &tmp_str)) {
     label_gain = Common::StringToDoubleArray(tmp_str, ',');
@@ -294,7 +294,6 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   CHECK(output_freq >= 0);
   GetBool(params, "is_training_metric", &is_provide_training_metric);
   GetInt(params, "num_class", &num_class);
-  CHECK(num_class >= 1);
 }
 
 void GBDTConfig::GetTreeLearnerType(const std::unordered_map<std::string, std::string>& params) {

@@ -86,6 +86,7 @@ enum TaskType {
 struct IOConfig: public ConfigBase {
 public:
   int max_bin = 256;
+  int num_class = 1;
   int data_random_seed = 1;
   std::string data_filename = "";
   std::vector<std::string> valid_data_filenames;

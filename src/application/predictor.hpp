@@ -61,10 +61,10 @@ public:
   * \param features Feature for this record
   * \return Prediction result
   */
-  double PredictRawOneLine(const std::vector<std::pair<int, double>>& features) {
+  std::vector<double> PredictRawOneLine(const std::vector<std::pair<int, double>>& features) {
     const int tid = PutFeatureValuesToBuffer(features);
     // get result without sigmoid transformation
-    return boosting_->PredictRaw(features_[tid], num_used_model_);
+    return std::vector<double>(1, boosting_->PredictRaw(features_[tid], num_used_model_));
   }
   
   /*!
@@ -83,10 +83,10 @@ public:
   * \param features Feature of this record
   * \return Prediction result
   */
-  double PredictOneLine(const std::vector<std::pair<int, double>>& features) {
+  std::vector<double> PredictOneLine(const std::vector<std::pair<int, double>>& features) {
     const int tid = PutFeatureValuesToBuffer(features);
     // get result with sigmoid transform if needed
-    return boosting_->Predict(features_[tid], num_used_model_);
+    return std::vector<double>(1, boosting_->Predict(features_[tid], num_used_model_));
   }
   
   /*!
@@ -136,6 +136,7 @@ public:
     if (num_class_ > 1) {
       predict_fun = [this](const std::vector<std::pair<int, double>>& features){
         std::vector<double> prediction = PredictMulticlassOneLine(features);
+        Common::Softmax(&prediction);
         std::stringstream result_stream_buf;
         for (size_t i = 0; i < prediction.size(); ++i){
           if (i > 0) {
@@ -162,12 +163,12 @@ public:
     else {
       if (is_simgoid_) {
         predict_fun = [this](const std::vector<std::pair<int, double>>& features){
-          return std::to_string(PredictOneLine(features));
+          return std::to_string(PredictOneLine(features)[0]);
         };
       } 
       else {
         predict_fun = [this](const std::vector<std::pair<int, double>>& features){
-          return std::to_string(PredictRawOneLine(features));
+          return std::to_string(PredictRawOneLine(features)[0]);
         };
       } 
     }
