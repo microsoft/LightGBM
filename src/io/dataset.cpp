@@ -538,7 +538,7 @@ void Dataset::ExtractFeaturesFromMemory() {
           if (inner_data.first == weight_idx_) {
             metadata_.SetWeightAt(i, static_cast<float>(inner_data.second));
           } else if (inner_data.first == group_idx_) {
-            metadata_.SetQueryAt(i, static_cast<float>(inner_data.second));
+            metadata_.SetQueryAt(i, static_cast<data_size_t>(inner_data.second));
           }
         }
       }
@@ -571,7 +571,7 @@ void Dataset::ExtractFeaturesFromMemory() {
           if (inner_data.first == weight_idx_) {
             metadata_.SetWeightAt(i, static_cast<float>(inner_data.second));
           } else if (inner_data.first == group_idx_) {
-            metadata_.SetQueryAt(i, static_cast<float>(inner_data.second));
+            metadata_.SetQueryAt(i, static_cast<data_size_t>(inner_data.second));
           }
         }
       }
@@ -623,7 +623,7 @@ void Dataset::ExtractFeaturesFromFile() {
           if (inner_data.first == weight_idx_) {
             metadata_.SetWeightAt(start_idx + i, static_cast<float>(inner_data.second));
           } else if (inner_data.first == group_idx_) {
-            metadata_.SetQueryAt(start_idx + i, static_cast<float>(inner_data.second));
+            metadata_.SetQueryAt(start_idx + i, static_cast<data_size_t>(inner_data.second));
           }
         }
       }
