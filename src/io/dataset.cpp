@@ -555,8 +555,9 @@ void Dataset::ExtractFeaturesFromMemory() {
       // parser
       parser_->ParseOneLine(text_reader_->Lines()[i].c_str(), &oneline_features, &tmp_label);
       // set initial score
+      std::vector<double> oneline_init_score = predict_fun_(oneline_features);  
       for (int k = 0; k < num_class_; ++k){
-        init_score[k * num_data_ + i] = static_cast<float>(predict_fun_(oneline_features)[k]);    
+        init_score[k * num_data_ + i] = static_cast<float>(oneline_init_score[k]);    
       }
       // set label
       metadata_.SetLabelAt(i, static_cast<float>(tmp_label));
@@ -612,8 +613,9 @@ void Dataset::ExtractFeaturesFromFile() {
       parser_->ParseOneLine(lines[i].c_str(), &oneline_features, &tmp_label);
       // set initial score
       if (init_score != nullptr) {
+        std::vector<double> oneline_init_score = predict_fun_(oneline_features);  
         for (int k = 0; k < num_class_; ++k){
-            init_score[k * num_class_ + start_idx + i] = static_cast<float>(predict_fun_(oneline_features)[k]);
+            init_score[k * num_data_ + start_idx + i] = static_cast<float>(oneline_init_score[k]);
         }
       }
       // set label

@@ -503,7 +503,6 @@ std::vector<double> GBDT::PredictMulticlass(const double* value, int num_used_mo
         ret[j] += models_[i * num_class_ + j] -> Predict(value);
     }
   }
-  Common::Softmax(&ret);
   return ret;
 }
 

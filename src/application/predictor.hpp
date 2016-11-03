@@ -136,6 +136,7 @@ public:
     if (num_class_ > 1) {
       predict_fun = [this](const std::vector<std::pair<int, double>>& features){
         std::vector<double> prediction = PredictMulticlassOneLine(features);
+        Common::Softmax(&prediction);
         std::stringstream result_stream_buf;
         for (size_t i = 0; i < prediction.size(); ++i){
           if (i > 0) {

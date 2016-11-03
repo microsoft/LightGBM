@@ -258,39 +258,25 @@ void Metadata::LoadInitialScore() {
 
   Log::Info("Start loading initial scores");
   num_init_score_ = static_cast<data_size_t>(reader.Lines().size());
-
-  if (num_init_score_ <= 0){
-      return ;
-  }
   
-  std::vector<std::string> oneline_init_score = Common::Split(reader.Lines()[0].c_str(), '\t');
-  if (num_class_ != static_cast<int>(oneline_init_score.size())) {
-    Log::Fatal("Number of classes in configuration and initial score file do not match.");    
-  }
-  
-  init_score_ = new score_t[num_init_score_ * num_class_];
+  init_score_ = new float[num_init_score_ * num_class_];
   double tmp = 0.0f;
   
   if (num_class_ == 1){
       for (data_size_t i = 0; i < num_init_score_; ++i) {
         Common::Atof(reader.Lines()[i].c_str(), &tmp);
-        init_score_[i] = static_cast<score_t>(tmp);
+        init_score_[i] = static_cast<float>(tmp);
       }
   } else {
-      // first line
-      for (int k = 0; k < num_class_; ++k) {
-          Common::Atof(oneline_init_score[k].c_str(), &tmp);
-          init_score_[k * num_data_] = static_cast<score_t>(tmp);
-      }
-      // remaining lines
-      for (data_size_t i = 1; i < num_init_score_; ++i) {
+      std::vector<std::string> oneline_init_score;
+      for (data_size_t i = 0; i < num_init_score_; ++i) {
         oneline_init_score = Common::Split(reader.Lines()[i].c_str(), '\t');  
         if (static_cast<int>(oneline_init_score.size()) != num_class_){
             Log::Fatal("Invalid initial score file. Redundant or insufficient columns.");
         }
         for (int k = 0; k < num_class_; ++k) {
           Common::Atof(oneline_init_score[k].c_str(), &tmp);
-          init_score_[k * num_data_ + i] = static_cast<score_t>(tmp);
+          init_score_[k * num_init_score_ + i] = static_cast<float>(tmp);
         }
       }
   }
