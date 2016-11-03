@@ -31,7 +31,7 @@ public:
     optimize_pos_at_ = config.max_position;
     sigmoid_table_ = nullptr;
     if (sigmoid_ <= 0.0) {
-      Log::Fatal("sigmoid param %f should greater than zero", sigmoid_);
+      Log::Fatal("Sigmoid param %f should be greater than zero", sigmoid_);
     }
   }
   ~LambdarankNDCG() {
@@ -47,7 +47,7 @@ public:
     // get boundries
     query_boundaries_ = metadata.query_boundaries();
     if (query_boundaries_ == nullptr) {
-      Log::Fatal("For lambdarank tasks, should have query information");
+      Log::Fatal("Lambdarank tasks require query information");
     }
     num_queries_ = metadata.num_queries();
     // cache inverse max DCG, avoid computation many times
