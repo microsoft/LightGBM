@@ -19,7 +19,8 @@ namespace LightGBM {
 GBDT::GBDT()
   : train_score_updater_(nullptr),
   gradients_(nullptr), hessians_(nullptr),
-  out_of_bag_data_indices_(nullptr), bag_data_indices_(nullptr) {
+  out_of_bag_data_indices_(nullptr), bag_data_indices_(nullptr),
+  saved_model_size_(-1), num_used_model_(0) {
 }
 
 GBDT::~GBDT() {
@@ -43,6 +44,7 @@ void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const O
      const std::vector<const Metric*>& training_metrics) {
   gbdt_config_ = dynamic_cast<const GBDTConfig*>(config);
   iter_ = 0;
+  saved_model_size_ = -1;
   max_feature_idx_ = 0;
   early_stopping_round_ = gbdt_config_->early_stopping_round;
   train_data_ = train_data;
@@ -438,6 +440,7 @@ void GBDT::ModelsFromString(const std::string& model_str) {
     }
   }
   Log::Info("%d models has been loaded\n", models_.size());
+  num_used_model_ = static_cast<int>(models_.size()) / num_class_;
 }
 
 std::string GBDT::FeatureImportance() const {
@@ -467,23 +470,17 @@ std::string GBDT::FeatureImportance() const {
     return str_buf.str();
 }
 
-double GBDT::PredictRaw(const double* value, int num_used_model) const {
-  if (num_used_model < 0) {
-    num_used_model = static_cast<int>(models_.size());
-  }
+double GBDT::PredictRaw(const double* value) const {
   double ret = 0.0f;
-  for (int i = 0; i < num_used_model; ++i) {
+  for (int i = 0; i < num_used_model_; ++i) {
     ret += models_[i]->Predict(value);
   }
   return ret;
 }
 
-double GBDT::Predict(const double* value, int num_used_model) const {
-  if (num_used_model < 0) {
-    num_used_model = static_cast<int>(models_.size());
-  }
+double GBDT::Predict(const double* value) const {
   double ret = 0.0f;
-  for (int i = 0; i < num_used_model; ++i) {
+  for (int i = 0; i < num_used_model_; ++i) {
     ret += models_[i]->Predict(value);
   }
   // if need sigmoid transform
@@ -493,12 +490,9 @@ double GBDT::Predict(const double* value, int num_used_model) const {
   return ret;
 }
 
-std::vector<double> GBDT::PredictMulticlass(const double* value, int num_used_model) const {
-  if (num_used_model < 0) {
-      num_used_model = static_cast<int>(models_.size()) / num_class_;
-  }
+std::vector<double> GBDT::PredictMulticlass(const double* value) const {
   std::vector<double> ret(num_class_, 0.0f);
-  for (int i = 0; i < num_used_model; ++i) {
+  for (int i = 0; i < num_used_model_; ++i) {
     for (int j = 0; j < num_class_; ++j){
         ret[j] += models_[i * num_class_ + j] -> Predict(value);
     }
@@ -506,12 +500,9 @@ std::vector<double> GBDT::PredictMulticlass(const double* value, int num_used_mo
   return ret;
 }
 
-std::vector<int> GBDT::PredictLeafIndex(const double* value, int num_used_model) const {
-  if (num_used_model < 0) {
-    num_used_model = static_cast<int>(models_.size());
-  }
+std::vector<int> GBDT::PredictLeafIndex(const double* value) const {
   std::vector<int> ret;
-  for (int i = 0; i < num_used_model; ++i) {
+  for (int i = 0; i < num_used_model_; ++i) {
     ret.push_back(models_[i]->PredictLeafIndex(value));
   }
   return ret;

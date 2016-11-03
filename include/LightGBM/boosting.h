@@ -55,37 +55,31 @@ public:
   /*!
   * \brief Prediction for one record, not sigmoid transform
   * \param feature_values Feature value on this record
-  * \param num_used_model Number of used model
   * \return Prediction result for this record
   */
-  virtual double PredictRaw(const double* feature_values,
-    int num_used_model) const = 0;
+  virtual double PredictRaw(const double* feature_values) const = 0;
 
   /*!
   * \brief Prediction for one record, sigmoid transformation will be used if needed
   * \param feature_values Feature value on this record
-  * \param num_used_model Number of used model
   * \return Prediction result for this record
   */
-  virtual double Predict(const double* feature_values,
-    int num_used_model) const = 0;
+  virtual double Predict(const double* feature_values) const = 0;
   
   /*!
   * \brief Predtion for one record with leaf index
   * \param feature_values Feature value on this record
-  * \param num_used_model Number of used model
   * \return Predicted leaf index for this record
   */
   virtual std::vector<int> PredictLeafIndex(
-    const double* feature_values,
-    int num_used_model) const = 0;
+    const double* feature_values) const = 0;
   
   /*!
   * \brief Predtion for multiclass classification
   * \param feature_values Feature value on this record
   * \return Prediction result, num_class numbers per line
   */
-  virtual std::vector<double> PredictMulticlass(const double* value, int num_used_model) const = 0;
+  virtual std::vector<double> PredictMulticlass(const double* value) const = 0;
   
   /*!
   * \brief save model to file
@@ -121,6 +115,11 @@ public:
   * \return Number of classes
   */
   virtual int NumberOfClass() const = 0;
+
+  /*!
+  * \brief Set number of used model for prediction
+  */
+  virtual void SetNumUsedModel(int num_used_model) = 0;
   
   /*!
   * \brief Get Type name of this boosting object

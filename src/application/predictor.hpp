@@ -28,9 +28,8 @@ public:
   * \param is_sigmoid True if need to predict result with sigmoid transform(if needed, like binary classification)
   * \param predict_leaf_index True if output leaf index instead of prediction score
   */
-  Predictor(const Boosting* boosting, bool is_simgoid, bool is_predict_leaf_index, int num_used_model)
-    : is_simgoid_(is_simgoid), is_predict_leaf_index_(is_predict_leaf_index),
-      num_used_model_(num_used_model) {
+  Predictor(const Boosting* boosting, bool is_simgoid, bool is_predict_leaf_index)
+    : is_simgoid_(is_simgoid), is_predict_leaf_index_(is_predict_leaf_index) {
     boosting_ = boosting;
     num_features_ = boosting_->MaxFeatureIdx() + 1;
     num_class_ = boosting_->NumberOfClass();
@@ -64,7 +63,7 @@ public:
   std::vector<double> PredictRawOneLine(const std::vector<std::pair<int, double>>& features) {
     const int tid = PutFeatureValuesToBuffer(features);
     // get result without sigmoid transformation
-    return std::vector<double>(1, boosting_->PredictRaw(features_[tid], num_used_model_));
+    return std::vector<double>(1, boosting_->PredictRaw(features_[tid]));
   }
   
   /*!
@@ -75,7 +74,7 @@ public:
   std::vector<int> PredictLeafIndexOneLine(const std::vector<std::pair<int, double>>& features) {
     const int tid = PutFeatureValuesToBuffer(features);
     // get result for leaf index
-    return boosting_->PredictLeafIndex(features_[tid], num_used_model_);
+    return boosting_->PredictLeafIndex(features_[tid]);
   }
 
   /*!
@@ -86,7 +85,7 @@ public:
   std::vector<double> PredictOneLine(const std::vector<std::pair<int, double>>& features) {
     const int tid = PutFeatureValuesToBuffer(features);
     // get result with sigmoid transform if needed
-    return std::vector<double>(1, boosting_->Predict(features_[tid], num_used_model_));
+    return std::vector<double>(1, boosting_->Predict(features_[tid]));
   }
   
   /*!
@@ -97,7 +96,7 @@ public:
   std::vector<double> PredictMulticlassOneLine(const std::vector<std::pair<int, double>>& features) {
     const int tid = PutFeatureValuesToBuffer(features);
     // get result with sigmoid transform if needed
-    return boosting_->PredictMulticlass(features_[tid], num_used_model_);
+    return boosting_->PredictMulticlass(features_[tid]);
   }
   
   /*!
@@ -224,8 +223,6 @@ private:
   int num_threads_;
   /*! \brief True if output leaf index instead of prediction score */
   bool is_predict_leaf_index_;
-  /*! \brief Number of used model */
-  int num_used_model_;
 };
 
 }  // namespace LightGBM

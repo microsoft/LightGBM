@@ -123,7 +123,7 @@ void Application::LoadData() {
   Predictor* predictor = nullptr;
   // need to continue train
   if (boosting_->NumberOfSubModels() > 0) {
-    predictor = new Predictor(boosting_, config_.io_config.is_sigmoid, config_.predict_leaf_index, -1);
+    predictor = new Predictor(boosting_, config_.io_config.is_sigmoid, config_.predict_leaf_index);
     if (config_.io_config.num_class == 1){
       predict_fun =
         [&predictor](const std::vector<std::pair<int, double>>& features) {
@@ -265,9 +265,10 @@ void Application::Train() {
 
 
 void Application::Predict() {
+  boosting_->SetNumUsedModel(config_.io_config.num_model_predict);
   // create predictor
   Predictor predictor(boosting_, config_.io_config.is_sigmoid, 
-    config_.predict_leaf_index, config_.io_config.num_model_predict);
+    config_.predict_leaf_index);
   predictor.Predict(config_.io_config.data_filename.c_str(), 
     config_.io_config.output_result.c_str(), config_.io_config.has_header);
   Log::Info("Finish predict.");
