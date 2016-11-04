@@ -25,7 +25,7 @@ public:
   /*!
   * \brief Constructor
   * \param boosting Input boosting model
-  * \param is_sigmoid True if need to predict result with sigmoid transform(if needed, like binary classification)
+  * \param is_sigmoid True if need to predict result with sigmoid transform (if needed, like binary classification)
   * \param predict_leaf_index True if output leaf index instead of prediction score
   */
   Predictor(const Boosting* boosting, bool is_simgoid, bool is_predict_leaf_index)
@@ -56,7 +56,7 @@ public:
   }
 
   /*!
-  * \brief prediction for one record, only raw result(without sigmoid transformation)
+  * \brief prediction for one record, only raw result (without sigmoid transformation)
   * \param features Feature for this record
   * \return Prediction result
   */
@@ -65,9 +65,9 @@ public:
     // get result without sigmoid transformation
     return std::vector<double>(1, boosting_->PredictRaw(features_[tid]));
   }
-  
+
   /*!
-  * \brief prediction for one record, only raw result(without sigmoid transformation)
+  * \brief prediction for one record, only raw result (without sigmoid transformation)
   * \param features Feature for this record
   * \return Predictied leaf index
   */
@@ -78,7 +78,7 @@ public:
   }
 
   /*!
-  * \brief prediction for one record, will use sigmoid transformation if needed(only enabled for binary classification noe)
+  * \brief prediction for one record, will use sigmoid transformation if needed (only enabled for binary classification noe)
   * \param features Feature of this record
   * \return Prediction result
   */
@@ -87,7 +87,7 @@ public:
     // get result with sigmoid transform if needed
     return std::vector<double>(1, boosting_->Predict(features_[tid]));
   }
-  
+
   /*!
   * \brief prediction for multiclass classification
   * \param features Feature of this record
@@ -98,7 +98,7 @@ public:
     // get result with sigmoid transform if needed
     return boosting_->PredictMulticlass(features_[tid]);
   }
-  
+
   /*!
   * \brief predicting on data, then saving result to disk
   * \param data_filename Filename of data
@@ -115,12 +115,12 @@ public:
 #endif
 
     if (result_file == NULL) {
-      Log::Fatal("Predition result file %s doesn't exists", data_filename);
+      Log::Fatal("Prediction results file %s doesn't exist", data_filename);
     }
     Parser* parser = Parser::CreateParser(data_filename, has_header, num_features_, boosting_->LabelIdx());
 
     if (parser == nullptr) {
-      Log::Fatal("Recongnizing input data format failed, filename %s", data_filename);
+      Log::Fatal("Could not recognize the data format of data file %s", data_filename);
     }
 
     // function for parse data
@@ -143,8 +143,8 @@ public:
           }
           result_stream_buf << prediction[i];
         }
-        return result_stream_buf.str();  
-      };  
+        return result_stream_buf.str();
+      };
     }
     else if (is_predict_leaf_index_) {
       predict_fun = [this](const std::vector<std::pair<int, double>>& features){
@@ -156,7 +156,7 @@ public:
           }
           result_stream_buf << predicted_leaf_index[i];
         }
-        return result_stream_buf.str();  
+        return result_stream_buf.str();
       };
     }
     else {
@@ -164,12 +164,12 @@ public:
         predict_fun = [this](const std::vector<std::pair<int, double>>& features){
           return std::to_string(PredictOneLine(features)[0]);
         };
-      } 
+      }
       else {
         predict_fun = [this](const std::vector<std::pair<int, double>>& features){
           return std::to_string(PredictRawOneLine(features)[0]);
         };
-      } 
+      }
     }
     std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
       [this, &parser_fun, &predict_fun, &result_file]

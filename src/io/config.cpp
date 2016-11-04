@@ -34,7 +34,7 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
   // load main config types
   GetInt(params, "num_threads", &num_threads);
   GetTaskType(params);
-  
+
   GetBool(params, "predict_leaf_index", &predict_leaf_index);
 
   GetBoostingType(params);
@@ -77,7 +77,7 @@ void OverallConfig::GetBoostingType(const std::unordered_map<std::string, std::s
     if (value == std::string("gbdt") || value == std::string("gbrt")) {
       boosting_type = BoostingType::kGBDT;
     } else {
-      Log::Fatal("Boosting type %s error", value.c_str());
+      Log::Fatal("Unknown boosting type %s", value.c_str());
     }
   }
 }
@@ -125,34 +125,34 @@ void OverallConfig::GetTaskType(const std::unordered_map<std::string, std::strin
       || value == std::string("test")) {
       task_type = TaskType::kPredict;
     } else {
-      Log::Fatal("Task type error");
+      Log::Fatal("Unknown task type %s", value.c_str());
     }
   }
 }
 
 void OverallConfig::CheckParamConflict() {
-  GBDTConfig* gbdt_config = dynamic_cast<GBDTConfig*>(boosting_config);  
-    
+  GBDTConfig* gbdt_config = dynamic_cast<GBDTConfig*>(boosting_config);
+
   // check if objective_type, metric_type, and num_class match
   bool objective_type_multiclass = (objective_type == std::string("multiclass"));
   int num_class_check = gbdt_config->num_class;
   if (objective_type_multiclass){
       if (num_class_check <= 1){
-          Log::Fatal("You should specify number of class(>=2) for multiclass training.");
+          Log::Fatal("Number of classes should be specified and greater than 1 for multiclass training");
       }
   }
   else {
       if (task_type == TaskType::kTrain && num_class_check != 1){
-          Log::Fatal("Number of class must be 1 for non-multiclass training.");
-      }      
+          Log::Fatal("Number of classes must be 1 for non-multiclass training");
+      }
   }
   for (std::string metric_type : metric_types){
         bool metric_type_multiclass = ( metric_type == std::string("multi_logloss") || metric_type == std::string("multi_error"));
-        if ((objective_type_multiclass && !metric_type_multiclass) 
+        if ((objective_type_multiclass && !metric_type_multiclass)
             || (!objective_type_multiclass && metric_type_multiclass)){
-            Log::Fatal("Objective and metrics don't match.");    
+            Log::Fatal("Objective and metrics don't match");
         }
-  }  
+  }
 
   if (network_config.num_machines > 1) {
     is_parallel = true;
@@ -172,9 +172,9 @@ void OverallConfig::CheckParamConflict() {
   } else if (gbdt_config->tree_learner_type == TreeLearnerType::kDataParallelTreeLearner) {
     is_parallel_find_bin = true;
     if (gbdt_config->tree_config.histogram_pool_size >= 0) {
-      Log::Warning("Histogram LRU queue was enabled (histogram_pool_size=%f). Will disable this for reducing communication cost."
+      Log::Warning("Histogram LRU queue was enabled (histogram_pool_size=%f). Will disable this to reduce communication costs"
                  , gbdt_config->tree_config.histogram_pool_size);
-      // Change pool size to -1(not limit) when using data parallel for reducing communication cost
+      // Change pool size to -1 (not limit) when using data parallel to reduce communication costs
       gbdt_config->tree_config.histogram_pool_size = -1;
     }
 
@@ -308,7 +308,7 @@ void GBDTConfig::GetTreeLearnerType(const std::unordered_map<std::string, std::s
       tree_learner_type = TreeLearnerType::kDataParallelTreeLearner;
     }
     else {
-      Log::Fatal("Tree learner type error");
+      Log::Fatal("Unknown tree learner type %s", value.c_str());
     }
   }
 }

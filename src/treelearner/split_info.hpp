@@ -40,13 +40,13 @@ public:
   double right_sum_hessian;
 
   SplitInfo() {
-    // initilize with -1 and -inf gain
+    // initialize with -1 and -inf gain
     feature = -1;
     gain = kMinScore;
   }
 
   inline void Reset() {
-    // initilize with -1 and -inf gain
+    // initialize with -1 and -inf gain
     feature = -1;
     gain = kMinScore;
   }

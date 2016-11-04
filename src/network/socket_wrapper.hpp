@@ -60,7 +60,7 @@ public:
   TcpSocket() {
     sockfd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (sockfd_ == INVALID_SOCKET) {
-      Log::Fatal("Socket construct error");
+      Log::Fatal("Socket construction error");
       return;
     }
     ConfigSocket();
@@ -97,7 +97,7 @@ public:
 #if defined(_WIN32)
     WSADATA wsa_data;
     if (WSAStartup(MAKEWORD(2, 2), &wsa_data) == -1) {
-      Log::Fatal("Socket error: WSAStart up error");
+      Log::Fatal("Socket error: WSAStartup error");
     }
     if (LOBYTE(wsa_data.wVersion) != 2 || HIBYTE(wsa_data.wVersion) != 2) {
       WSACleanup();
@@ -128,7 +128,7 @@ public:
     char buffer[512];
     // get hostName
     if (gethostname(buffer, sizeof(buffer)) == SOCKET_ERROR) {
-      Log::Fatal("Error code: %d, when getting local host name.", WSAGetLastError());
+      Log::Fatal("Error code %d, when getting local host name", WSAGetLastError());
     }
     // push local ip
     PIP_ADAPTER_INFO pAdapterInfo;
@@ -137,7 +137,7 @@ public:
     ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
     pAdapterInfo = (IP_ADAPTER_INFO *)MALLOC(sizeof(IP_ADAPTER_INFO));
     if (pAdapterInfo == NULL) {
-      Log::Fatal("GetAdaptersinfo error: allocating memory ");
+      Log::Fatal("GetAdaptersinfo error: allocating memory");
     }
     // Make an initial call to GetAdaptersInfo to get
     // the necessary size into the ulOutBufLen variable
@@ -145,7 +145,7 @@ public:
       FREE(pAdapterInfo);
       pAdapterInfo = (IP_ADAPTER_INFO *)MALLOC(ulOutBufLen);
       if (pAdapterInfo == NULL) {
-        Log::Fatal("GetAdaptersinfo error: allocating memory ");
+        Log::Fatal("GetAdaptersinfo error: allocating memory");
       }
     }
     if ((dwRetVal = GetAdaptersInfo(pAdapterInfo, &ulOutBufLen)) == NO_ERROR) {
@@ -155,7 +155,7 @@ public:
         pAdapter = pAdapter->Next;
       }
     } else {
-      Log::Fatal("GetAdaptersinfo error: code %d ", dwRetVal);
+      Log::Fatal("GetAdaptersinfo error: code %d", dwRetVal);
     }
     if (pAdapterInfo)
       FREE(pAdapterInfo);
