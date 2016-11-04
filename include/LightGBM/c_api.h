@@ -2,6 +2,15 @@
 #define LIGHTGBM_C_API_H_
 #include<cstdint>
 
+
+/*!
+* To avoid type conversion on large data, most of our expose interface support both for float_32 and float_64.
+* Except following:
+* 1. gradients and hessians. 
+* 2. Get current score for training data and validation
+* The reason is becaused they are called frequently, the type-conversion on them maybe time cost. 
+*/
+
 #ifdef __cplusplus
 #define DLL_EXTERN_C extern "C"
 #else
@@ -55,6 +64,7 @@ DllExport int LGBM_CreateDatasetFromBinaryFile(const char* filename,
 * \param indptr pointer to row headers
 * \param indices findex
 * \param data fvalue
+* \param float_type 0 for float_32 1 for float_64
 * \param nindptr number of rows in the matix + 1
 * \param nelem number of nonzero elements in the matrix
 * \param num_col number of columns; when it's set to 0, then guess from data
@@ -63,9 +73,10 @@ DllExport int LGBM_CreateDatasetFromBinaryFile(const char* filename,
 * \param out created dataset
 * \return 0 when success, -1 when failure happens
 */
-DllExport int LGBM_CreateDatasetFromCSR(const uint64_t* indptr,
-  const unsigned* indices,
-  const float* data,
+DllExport int LGBM_CreateDatasetFromCSR(const uint32_t* indptr,
+  const uint32_t* indices,
+  const void* data,
+  int float_type,
   uint64_t nindptr,
   uint64_t nelem,
   uint64_t num_col,
@@ -78,6 +89,7 @@ DllExport int LGBM_CreateDatasetFromCSR(const uint64_t* indptr,
 * \param col_ptr pointer to col headers
 * \param indices findex
 * \param data fvalue
+* \param float_type 0 for float_32 1 for float_64
 * \param nindptr number of rows in the matix + 1
 * \param nelem number of nonzero elements in the matrix
 * \param num_row number of rows; when it's set to 0, then guess from data
@@ -86,9 +98,10 @@ DllExport int LGBM_CreateDatasetFromCSR(const uint64_t* indptr,
 * \param out created dataset
 * \return 0 when success, -1 when failure happens
 */
-DllExport int LGBM_CreateDatasetFromCSC(const uint64_t* col_ptr,
-  const unsigned* indices,
-  const float* data,
+DllExport int LGBM_CreateDatasetFromCSC(const uint32_t* col_ptr,
+  const uint32_t* indices,
+  const void* data,
+  int float_type,
   uint64_t nindptr,
   uint64_t nelem,
   uint64_t num_row,
@@ -99,18 +112,22 @@ DllExport int LGBM_CreateDatasetFromCSC(const uint64_t* col_ptr,
 /*!
 * \brief create dataset from dense matrix
 * \param data pointer to the data space
+* \param float_type 0 for float_32 1 for float_64
 * \param nrow number of rows
 * \param ncol number columns
+* \param is_row_major 1 for row major, 0 for column major
 * \param missing which value to represent missing value
 * \param parameters additional parameters
 * \param reference used to align bin mapper with other dataset, nullptr means don't used
 * \param out created dataset
 * \return 0 when success, -1 when failure happens
 */
-DllExport int LGBM_CreateDatasetFromMat(const float* data,
+DllExport int LGBM_CreateDatasetFromMat(const void* data,
+  int float_type,
   uint64_t nrow,
   uint64_t ncol,
-  float missing,
+  int is_row_major,
+  double missing,
   const char* parameters,
   const DatesetHandle* reference,
   DatesetHandle* out);
@@ -134,9 +151,9 @@ DllExport int LGBM_DatasetSaveBinary(DatesetHandle handle,
 * \brief set vector to a content in info
 * \param handle a instance of dataset
 * \param field_name field name, can be label, weight, group
-* \param field_data pointer to float vector
+* \param field_data pointer to vector
 * \param field_len number of element in field_data
-* \param type float:0, int:1
+* \param type float_32:0, uint32_t:1
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_DatasetSetField(DatesetHandle handle,
@@ -146,12 +163,12 @@ DllExport int LGBM_DatasetSetField(DatesetHandle handle,
   int type);
 
 /*!
-* \brief get float info vector from dataset
+* \brief get info vector from dataset
 * \param handle a instance of data matrix
 * \param field_name field name
 * \param out_len used to set result length
 * \param out_ptr pointer to the result
-* \param out_type float:0, int:1
+* \param out_type  float_32:0, uint32_t:1
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_DatasetGetField(DatesetHandle handle,
@@ -227,6 +244,7 @@ DllExport int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished);
 * \param handle handle
 * \param grad gradient statistics
 * \param hess second order gradient statistics
+* \param float_type 0 for float_32, 1 for float_64
 * \param is_finished 1 means finised
 * \return 0 when success, -1 when failure happens
 */
@@ -253,7 +271,7 @@ this can be used to support customized eval function
 * \param data 0:training data, 1: 1st valid data, 2:2nd valid data ...
 * \param predict_type
 *          0:raw score
-*          1:with sigmoid transform(if needed)
+*          1:with sigmoid/softmax transform(if needed)
 *          2:leaf index
 * \param out_result used to set a pointer to array
 * \return 0 when success, -1 when failure happens
@@ -281,15 +299,16 @@ DllExport int LGBM_BoosterPredict(BoosterHandle handle,
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
-  const uint64_t* indptr,
-  const unsigned* indices,
-  const float* data,
+  const uint32_t* indptr,
+  const uint32_t* indices,
+  const void* data,
+  int float_type,
   uint64_t nindptr,
   uint64_t nelem,
   uint64_t num_col,
   int predict_type,
   uint64_t n_used_trees,
-  const float** out_result);
+  const double** out_result);
 
 /*!
 * \brief make prediction for an new data set
@@ -309,15 +328,16 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_BoosterPredictForCSC(BoosterHandle handle,
-  const uint64_t* col_ptr,
-  const unsigned* indices,
-  const float* data,
+  const uint32_t* col_ptr,
+  const uint32_t* indices,
+  const void* data,
+  int float_type,
   uint64_t nindptr,
   uint64_t nelem,
   uint64_t num_row,
   int predict_type,
   uint64_t n_used_trees,
-  const float** out_result);
+  const double** out_result);
 
 /*!
 * \brief make prediction for an new data set
@@ -335,13 +355,14 @@ DllExport int LGBM_BoosterPredictForCSC(BoosterHandle handle,
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
-  const float* data,
+  const void* data,
+  int float_type,
   uint64_t nrow,
   uint64_t ncol,
-  float missing,
+  double missing,
   int predict_type,
   uint64_t n_used_trees,
-  const float** out_result);
+  const double** out_result);
 
 /*!
 * \brief save model into file
