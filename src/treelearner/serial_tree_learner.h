@@ -111,10 +111,14 @@ protected:
   const score_t* hessians_;
   /*! \brief number of total leaves */
   int num_leaves_;
-  /*! \brief mininal data on one leaf */
+  /*! \brief minimal data on one leaf */
   data_size_t min_num_data_one_leaf_;
-  /*! \brief mininal sum hessian on one leaf */
+  /*! \brief minimal sum hessian on one leaf */
   double min_sum_hessian_one_leaf_;
+  /*! \brief lambda L2 weights regularization */
+  double reg_lambda_;
+  /*! \brief minimal loss reduction to split */
+  double reg_gamma_;
   /*! \brief sub-feature fraction rate */
   double feature_fraction_;
   /*! \brief training data partition on leaves */
