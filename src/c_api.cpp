@@ -1,4 +1,3 @@
-
 #include <LightGBM/c_api.h>
 #include <LightGBM/dataset.h>
 #include <LightGBM/boosting.h>
@@ -10,6 +9,7 @@
 #include <vector>
 #include <string>
 #include <cstring>
+#include <memory>
 
 namespace LightGBM {
 
@@ -100,3 +100,6 @@ private:
 };
 
 }
+
+using namespace LightGBM;
+

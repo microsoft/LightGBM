@@ -14,9 +14,8 @@ Metadata::Metadata()
 
 }
 
-void Metadata::Init(const char * data_filename, const char* init_score_filename, const int num_class) {
+void Metadata::Init(const char * data_filename, const int num_class) {
   data_filename_ = data_filename;
-  init_score_filename_ = init_score_filename;
   num_class_ = num_class;
   // for lambdarank, it needs query data for partition data in parallel learning
   LoadQueryBoundaries();
@@ -25,11 +24,6 @@ void Metadata::Init(const char * data_filename, const char* init_score_filename,
   LoadInitialScore();
 }
 
-void Metadata::Init(const char* init_score_filename, const int num_class) {
-  init_score_filename_ = init_score_filename;
-  num_class_ = num_class;
-  LoadInitialScore();
-}
 
 
 Metadata::~Metadata() {
@@ -294,10 +288,14 @@ void Metadata::LoadWeights() {
 
 void Metadata::LoadInitialScore() {
   num_init_score_ = 0;
-  if (init_score_filename_[0] == '\0') { return; }
-  TextReader<size_t> reader(init_score_filename_, false);
+  std::string init_score_filename(data_filename_);
+  // default weight file name
+  init_score_filename.append(".init");
+  TextReader<size_t> reader(init_score_filename.c_str(), false);
   reader.ReadAllLines();
-
+  if (reader.Lines().size() <= 0) {
+    return;
+  }
   Log::Info("Loading initial scores...");
   num_init_score_ = static_cast<data_size_t>(reader.Lines().size());
 

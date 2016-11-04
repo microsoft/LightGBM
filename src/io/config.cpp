@@ -202,7 +202,6 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetString(params, "output_model", &output_model);
   GetString(params, "input_model", &input_model);
   GetString(params, "output_result", &output_result);
-  GetString(params, "input_init_score", &input_init_score);
   std::string tmp_str = "";
   if (GetString(params, "valid_data", &tmp_str)) {
     valid_data_filenames = Common::Split(tmp_str.c_str(), ',');

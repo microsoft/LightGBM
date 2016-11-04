@@ -168,6 +168,9 @@
     <ClInclude Include="..\include\LightGBM\c_api.h">
       <Filter>include\LightGBM</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\LightGBM\dataset_loader.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp">
@@ -235,6 +238,9 @@
     </ClCompile>
     <ClCompile Include="..\src\c_api.cpp">
       <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\io\dataset_loader.cpp">
+      <Filter>src\io</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

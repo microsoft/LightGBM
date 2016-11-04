@@ -5,6 +5,7 @@
 
 #include <LightGBM/network.h>
 #include <LightGBM/dataset.h>
+#include <LightGBM/dataset_loader.h>
 #include <LightGBM/boosting.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/metric.h>
@@ -26,7 +27,7 @@
 namespace LightGBM {
 
 Application::Application(int argc, char** argv)
-  :train_data_(nullptr), boosting_(nullptr), objective_fun_(nullptr) {
+  :dataset_loader_(nullptr), train_data_(nullptr), boosting_(nullptr), objective_fun_(nullptr) {
   LoadParameters(argc, argv);
   // set number of threads for openmp
   if (config_.num_threads > 0) {
@@ -35,6 +36,7 @@ Application::Application(int argc, char** argv)
 }
 
 Application::~Application() {
+  if (dataset_loader_ != nullptr) { delete dataset_loader_; }
   if (train_data_ != nullptr) { delete train_data_; }
   for (auto& data : valid_datas_) {
     if (data != nullptr) { delete data; }
@@ -141,19 +143,17 @@ void Application::LoadData() {
     config_.io_config.data_random_seed =
        GlobalSyncUpByMin<int>(config_.io_config.data_random_seed);
   }
-  train_data_ = new Dataset(config_.io_config.data_filename.c_str(),
-                         config_.io_config.input_init_score.c_str(),
-                                                  config_.io_config,
-                                                       predict_fun);
+
+  dataset_loader_ = new DatasetLoader(config_.io_config, predict_fun);
+  dataset_loader_->SetHeadder(config_.io_config.data_filename.c_str());
   // load Training data
   if (config_.is_parallel_find_bin) {
     // load data for parallel training
-    train_data_->LoadTrainData(Network::rank(), Network::num_machines(),
-                                     config_.io_config.is_pre_partition,
-                               config_.io_config.use_two_round_loading);
+    train_data_ = dataset_loader_->LoadFromFile(config_.io_config.data_filename.c_str(),
+      Network::rank(), Network::num_machines());
   } else {
     // load data for single machine
-    train_data_->LoadTrainData(config_.io_config.use_two_round_loading);
+    train_data_ = dataset_loader_->LoadFromFile(config_.io_config.data_filename.c_str(), 0, 1);
   }
   // need save binary file
   if (config_.io_config.is_save_binary_file) {
@@ -173,13 +173,8 @@ void Application::LoadData() {
   // Add validation data, if it exists
   for (size_t i = 0; i < config_.io_config.valid_data_filenames.size(); ++i) {
     // add
-    valid_datas_.push_back(
-      new Dataset(config_.io_config.valid_data_filenames[i].c_str(),
-                                                  config_.io_config,
-                                                      predict_fun));
-    // load validation data like train data
-    valid_datas_.back()->LoadValidationData(train_data_,
-                config_.io_config.use_two_round_loading);
+    valid_datas_.push_back(dataset_loader_->LoadFromFileLikeOthers(config_.io_config.valid_data_filenames[i].c_str(),
+      train_data_));
     // need save binary file
     if (config_.io_config.is_save_binary_file) {
       valid_datas_.back()->SaveBinaryFile(nullptr);

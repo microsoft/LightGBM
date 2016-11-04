@@ -93,7 +93,6 @@ public:
   std::string output_model = "LightGBM_model.txt";
   std::string output_result = "LightGBM_predict_result.txt";
   std::string input_model = "";
-  std::string input_init_score = "";
   int verbosity = 1;
   int num_model_predict = -1;
   bool is_pre_partition = false;
@@ -318,7 +317,6 @@ struct ParameterAlias {
       { "model_out", "output_model" },
       { "model_input", "input_model" },
       { "model_in", "input_model" },
-      { "init_score", "input_init_score"},
       { "predict_result", "output_result" },
       { "prediction_result", "output_result" },
       { "valid", "valid_data" },

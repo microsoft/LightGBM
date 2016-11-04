@@ -1,5 +1,5 @@
-#ifndef LIGHTGBM_DATA_H_
-#define LIGHTGBM_DATA_H_
+#ifndef LIGHTGBM_DATASET_H_
+#define LIGHTGBM_DATASET_H_
 
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/text_reader.h>
@@ -18,6 +18,7 @@ namespace LightGBM {
 /*! \brief forward declaration */
 class Feature;
 class BinMapper;
+class DatasetLoader;
 
 /*!
 * \brief This class is used to store some meta(non-feature) data for training data,
@@ -44,13 +45,7 @@ public:
   * \param init_score_filename Filename of initial score
   * \param num_class Number of classes
   */
-  void Init(const char* data_filename, const char* init_score_filename, const int num_class);
-  /*!
-  * \brief Initialize, only load initial score
-  * \param init_score_filename Filename of initial score
-  * \param num_class Number of classes
-  */
-  void Init(const char* init_score_filename, const int num_class);
+  void Init(const char* data_filename, const int num_class);
   /*!
   * \brief Initial with binary memory
   * \param memory Pointer to memory
@@ -177,11 +172,10 @@ public:
   * \return Pointer of initial scores
   */
   inline const float* init_score() const { return init_score_; }
-  
-  /*! \brief Load initial scores from file */
-  void LoadInitialScore();
 
 private:
+  /*! \brief Load initial scores from file */
+  void LoadInitialScore();
   /*! \brief Load wights from file */
   void LoadWeights();
   /*! \brief Load query boundaries from file */
@@ -190,8 +184,6 @@ private:
   void LoadQueryWeights();
   /*! \brief Filename of current data */
   const char* data_filename_;
-  /*! \brief Filename of initial scores */
-  const char* init_score_filename_;
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Number of classes */
@@ -251,78 +243,15 @@ using PredictFunction =
 */
 class Dataset {
 public:
-  /*!
-  * \brief Constructor
-  * \param data_filename Filename of dataset
-  * \param init_score_filename Filename of initial score
-  * \param io_config configs for IO
-  * \param predict_fun Used for initial model, will give a prediction score based on this function, then set as initial score
-  */
-  Dataset(const char* data_filename, const char* init_score_filename,
-    const IOConfig& io_config, const PredictFunction& predict_fun);
+  friend DatasetLoader;
 
-  /*!
-  * \brief Constructor
-  * \param data_filename Filename of dataset
-  * \param io_config configs for IO
-  * \param predict_fun Used for initial model, will give a prediction score based on this function, then set as initial score
-  */
-  Dataset(const char* data_filename,
-    const IOConfig& io_config, const PredictFunction& predict_fun)
-    : Dataset(data_filename, "", io_config, predict_fun) {
-  }
-
-  /*!
-  * \brief Constructor, without filename, used to load data from memory 
-  * \param io_config configs for IO
-  * \param predict_fun Used for initial model, will give a prediction score based on this function, then set as initial score
-  */
-  Dataset(const IOConfig& io_config, const PredictFunction& predict_fun);
+  Dataset();
 
   /*! \brief Destructor */
   ~Dataset();
 
-  /*! \brief Init Dataset with specific binmapper */
-  void InitByBinMapper(std::vector<const BinMapper*> bin_mappers, data_size_t num_data);
-
-  /*! \brief push raw data into dataset */
-  void PushData(const std::vector<std::vector<std::pair<int, float>>>& datas, data_size_t start_idx, bool is_finished);
 
   void SetField(const char* field_name, const void* field_data, data_size_t num_element, int type);
-
-  /*!
-  * \brief Load training data on parallel training
-  * \param rank Rank of local machine
-  * \param num_machines Total number of all machines
-  * \param is_pre_partition True if data file is pre-partitioned
-  * \param use_two_round_loading True if need to use two round loading
-  */
-  void LoadTrainData(int rank, int num_machines, bool is_pre_partition,
-                                           bool use_two_round_loading);
-
-  /*!
-  * \brief Load training data on single machine training
-  * \param use_two_round_loading True if need to use two round loading
-  */
-  inline void LoadTrainData(bool use_two_round_loading) {
-    LoadTrainData(0, 1, false, use_two_round_loading);
-  }
-
-  /*!
-  * \brief Load data and use bin mapper from other data set, general this function is used to extract feature for validation data
-  * \param train_set Other loaded data set
-  * \param use_two_round_loading True if need to use two round loading
-  */
-  void LoadValidationData(const Dataset* train_set, bool use_two_round_loading);
-
-  /*!
-  * \brief Load data set from binary file
-  * \param bin_filename filename of bin data 
-  * \param rank Rank of local machine
-  * \param num_machines Total number of all machines
-  * \param is_pre_partition True if data file is pre-partitioned
-  */
-  void LoadDataFromBinFile(const char* bin_filename, int rank, int num_machines, bool is_pre_partition);
 
   /*!
   * \brief Save current dataset into binary file, will save to "filename.bin"
@@ -330,6 +259,8 @@ public:
   void SaveBinaryFile(const char* bin_filename);
 
   std::vector<const BinMapper*> GetBinMappers() const;
+
+  void CopyFeatureMetadataTo(Dataset *dataset, bool is_enable_sparse) const;
 
   /*!
   * \brief Get a feature pointer for specific index
@@ -365,57 +296,7 @@ public:
   Dataset(const Dataset&) = delete;
 
 private:
-  /*!
-  * \brief Load data content on memory. if num_machines > 1 and !is_pre_partition, will partition data
-  * \param rank Rank of local machine
-  * \param num_machines Total number of all machines
-  * \param is_pre_partition True if data file is pre-partitioned
-  */
-  void LoadDataToMemory(int rank, int num_machines, bool is_pre_partition);
-
-  /*!
-  * \brief Sample data from memory, need load data to memory first
-  * \param out_data Store the sampled data
-  */
-  void SampleDataFromMemory(std::vector<std::string>* out_data);
-
-  /*!
-  * \brief Sample data from file
-  * \param rank Rank of local machine
-  * \param num_machines Total number of all machines
-  * \param is_pre_partition True if data file is pre-partitioned
-  * \param out_data Store the sampled data
-  */
-  void SampleDataFromFile(int rank, int num_machines,
-    bool is_pre_partition, std::vector<std::string>* out_data);
-
-  /*!
-  * \brief Get feature bin mapper from sampled data.
-  * if num_machines > 1, differnt machines will construct bin mapper for different features, then have a global sync up
-  * \param rank Rank of local machine
-  * \param num_machines Total number of all machines
-  */
-  void ConstructBinMappers(int rank, int num_machines,
-         const std::vector<std::string>& sample_data);
-
-  /*! \brief Extract local features from memory */
-  void ExtractFeaturesFromMemory();
-
-  /*! \brief Extract local features from file */
-  void ExtractFeaturesFromFile();
-
-  /*! \brief Check can load from binary file */
-  void CheckCanLoadFromBin();
-
-  /*! \brief Check this data set is null or not */
-  void CheckDataset();
-
-  /*! \brief Filename of data */
   const char* data_filename_;
-  /*! \brief A reader class that can read text data */
-  TextReader<data_size_t>* text_reader_;
-  /*! \brief A parser class that can parse data */
-  Parser* parser_;
   /*! \brief Store used features */
   std::vector<Feature*> features_;
   /*! \brief Mapper from real feature index to used index*/
@@ -430,32 +311,12 @@ private:
   int num_class_;
   /*! \brief Store some label level data*/
   Metadata metadata_;
-  /*! \brief Random generator*/
-  Random random_;
-  /*! \brief The maximal number of bin that feature values will bucket in */
-  int max_bin_;
-  /*! \brief True if enable sparse */
-  bool is_enable_sparse_;
   /*! \brief True if dataset is loaded from binary file */
   bool is_loading_from_binfile_;
-  /*! \brief Number of global data, used for distributed learning */
-  size_t global_num_data_ = 0;
-  /*! \brief used to local used data indices */
-  std::vector<data_size_t> used_data_indices_;
-  /*! \brief prediction function for initial model */
-  const PredictFunction& predict_fun_;
   /*! \brief index of label column */
   int label_idx_ = 0;
-  /*! \brief index of weight column */
-  int weight_idx_ = -1;
-  /*! \brief index of group column */
-  int group_idx_ = -1;
-  /*! \brief Mapper from real feature index to used index*/
-  std::unordered_set<int> ignore_features_;
   /*! \brief store feature names */
   std::vector<std::string> feature_names_;
-  /*! \brief store feature names */
-  int bin_construct_sample_cnt_;
 };
 
 }  // namespace LightGBM

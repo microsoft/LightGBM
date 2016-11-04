@@ -161,6 +161,7 @@
     <ClInclude Include="..\include\LightGBM\config.h" />
     <ClInclude Include="..\include\LightGBM\c_api.h" />
     <ClInclude Include="..\include\LightGBM\dataset.h" />
+    <ClInclude Include="..\include\LightGBM\dataset_loader.h" />
     <ClInclude Include="..\include\LightGBM\feature.h" />
     <ClInclude Include="..\include\LightGBM\meta.h" />
     <ClInclude Include="..\include\LightGBM\metric.h" />
@@ -208,6 +209,7 @@
     <ClCompile Include="..\src\io\bin.cpp" />
     <ClCompile Include="..\src\io\config.cpp" />
     <ClCompile Include="..\src\io\dataset.cpp" />
+    <ClCompile Include="..\src\io\dataset_loader.cpp" />
     <ClCompile Include="..\src\io\metadata.cpp" />
     <ClCompile Include="..\src\io\parser.cpp" />
     <ClCompile Include="..\src\io\tree.cpp" />
