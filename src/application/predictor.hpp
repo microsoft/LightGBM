@@ -25,12 +25,11 @@ public:
   /*!
   * \brief Constructor
   * \param boosting Input boosting model
-  * \param is_sigmoid True if need to predict result with sigmoid transform(if needed, like binary classification)
+  * \param is_sigmoid True if need to predict result with sigmoid transform (if needed, like binary classification)
   * \param predict_leaf_index True if output leaf index instead of prediction score
   */
-  Predictor(const Boosting* boosting, bool is_simgoid, bool is_predict_leaf_index, int num_used_model)
-    : is_simgoid_(is_simgoid), is_predict_leaf_index_(is_predict_leaf_index),
-      num_used_model_(num_used_model) {
+  Predictor(const Boosting* boosting, bool is_simgoid, bool is_predict_leaf_index)
+    : is_simgoid_(is_simgoid), is_predict_leaf_index_(is_predict_leaf_index) {
     boosting_ = boosting;
     num_features_ = boosting_->MaxFeatureIdx() + 1;
     num_class_ = boosting_->NumberOfClass();
@@ -57,38 +56,38 @@ public:
   }
 
   /*!
-  * \brief prediction for one record, only raw result(without sigmoid transformation)
+  * \brief prediction for one record, only raw result (without sigmoid transformation)
   * \param features Feature for this record
   * \return Prediction result
   */
-  double PredictRawOneLine(const std::vector<std::pair<int, double>>& features) {
+  std::vector<double> PredictRawOneLine(const std::vector<std::pair<int, double>>& features) {
     const int tid = PutFeatureValuesToBuffer(features);
     // get result without sigmoid transformation
-    return boosting_->PredictRaw(features_[tid], num_used_model_);
+    return std::vector<double>(1, boosting_->PredictRaw(features_[tid]));
   }
-  
+
   /*!
-  * \brief prediction for one record, only raw result(without sigmoid transformation)
+  * \brief prediction for one record, only raw result (without sigmoid transformation)
   * \param features Feature for this record
   * \return Predictied leaf index
   */
   std::vector<int> PredictLeafIndexOneLine(const std::vector<std::pair<int, double>>& features) {
     const int tid = PutFeatureValuesToBuffer(features);
     // get result for leaf index
-    return boosting_->PredictLeafIndex(features_[tid], num_used_model_);
+    return boosting_->PredictLeafIndex(features_[tid]);
   }
 
   /*!
-  * \brief prediction for one record, will use sigmoid transformation if needed(only enabled for binary classification noe)
+  * \brief prediction for one record, will use sigmoid transformation if needed (only enabled for binary classification noe)
   * \param features Feature of this record
   * \return Prediction result
   */
-  double PredictOneLine(const std::vector<std::pair<int, double>>& features) {
+  std::vector<double> PredictOneLine(const std::vector<std::pair<int, double>>& features) {
     const int tid = PutFeatureValuesToBuffer(features);
     // get result with sigmoid transform if needed
-    return boosting_->Predict(features_[tid], num_used_model_);
+    return std::vector<double>(1, boosting_->Predict(features_[tid]));
   }
-  
+
   /*!
   * \brief prediction for multiclass classification
   * \param features Feature of this record
@@ -97,9 +96,9 @@ public:
   std::vector<double> PredictMulticlassOneLine(const std::vector<std::pair<int, double>>& features) {
     const int tid = PutFeatureValuesToBuffer(features);
     // get result with sigmoid transform if needed
-    return boosting_->PredictMulticlass(features_[tid], num_used_model_);
+    return boosting_->PredictMulticlass(features_[tid]);
   }
-  
+
   /*!
   * \brief predicting on data, then saving result to disk
   * \param data_filename Filename of data
@@ -116,12 +115,12 @@ public:
 #endif
 
     if (result_file == NULL) {
-      Log::Fatal("Predition result file %s doesn't exists", data_filename);
+      Log::Fatal("Prediction results file %s doesn't exist", data_filename);
     }
     Parser* parser = Parser::CreateParser(data_filename, has_header, num_features_, boosting_->LabelIdx());
 
     if (parser == nullptr) {
-      Log::Fatal("Recongnizing input data format failed, filename %s", data_filename);
+      Log::Fatal("Could not recognize the data format of data file %s", data_filename);
     }
 
     // function for parse data
@@ -136,6 +135,7 @@ public:
     if (num_class_ > 1) {
       predict_fun = [this](const std::vector<std::pair<int, double>>& features){
         std::vector<double> prediction = PredictMulticlassOneLine(features);
+        Common::Softmax(&prediction);
         std::stringstream result_stream_buf;
         for (size_t i = 0; i < prediction.size(); ++i){
           if (i > 0) {
@@ -143,8 +143,8 @@ public:
           }
           result_stream_buf << prediction[i];
         }
-        return result_stream_buf.str();  
-      };  
+        return result_stream_buf.str();
+      };
     }
     else if (is_predict_leaf_index_) {
       predict_fun = [this](const std::vector<std::pair<int, double>>& features){
@@ -156,20 +156,20 @@ public:
           }
           result_stream_buf << predicted_leaf_index[i];
         }
-        return result_stream_buf.str();  
+        return result_stream_buf.str();
       };
     }
     else {
       if (is_simgoid_) {
         predict_fun = [this](const std::vector<std::pair<int, double>>& features){
-          return std::to_string(PredictOneLine(features));
+          return std::to_string(PredictOneLine(features)[0]);
         };
-      } 
+      }
       else {
         predict_fun = [this](const std::vector<std::pair<int, double>>& features){
-          return std::to_string(PredictRawOneLine(features));
+          return std::to_string(PredictRawOneLine(features)[0]);
         };
-      } 
+      }
     }
     std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
       [this, &parser_fun, &predict_fun, &result_file]
@@ -223,8 +223,6 @@ private:
   int num_threads_;
   /*! \brief True if output leaf index instead of prediction score */
   bool is_predict_leaf_index_;
-  /*! \brief Number of used model */
-  int num_used_model_;
 };
 
 }  // namespace LightGBM

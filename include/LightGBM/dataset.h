@@ -42,14 +42,15 @@ public:
   * \brief Initialization will load qurey level informations, since it is need for sampling data
   * \param data_filename Filename of data
   * \param init_score_filename Filename of initial score
-  * \param is_int_label True if label is int type
+  * \param num_class Number of classes
   */
-  void Init(const char* data_filename, const char* init_score_filename);
+  void Init(const char* data_filename, const char* init_score_filename, const int num_class);
   /*!
   * \brief Initialize, only load initial score
   * \param init_score_filename Filename of initial score
+  * \param num_class Number of classes
   */
-  void Init(const char* init_score_filename);
+  void Init(const char* init_score_filename, const int num_class);
   /*!
   * \brief Initial with binary memory
   * \param memory Pointer to memory
@@ -61,10 +62,11 @@ public:
   /*!
   * \brief Initial work, will allocate space for label, weight(if exists) and query(if exists)
   * \param num_data Number of training data
+  * \param num_class Number of classes
   * \param weight_idx Index of weight column, < 0 means doesn't exists
   * \param query_idx Index of query id column, < 0 means doesn't exists
   */
-  void Init(data_size_t num_data, int weight_idx, int query_idx);
+  void Init(data_size_t num_data, int num_class, int weight_idx, int query_idx);
 
   /*!
   * \brief Partition label by used indices
@@ -136,7 +138,7 @@ public:
   * \param idx Index of this record
   * \param value Query Id value of this record
   */
-  inline void SetQueryAt(data_size_t idx, float value)
+  inline void SetQueryAt(data_size_t idx, data_size_t value)
   {
     queries_[idx] = static_cast<data_size_t>(value);
   }
@@ -175,7 +177,7 @@ public:
   * \return Pointer of initial scores
   */
   inline const float* init_score() const { return init_score_; }
-
+  
   /*! \brief Load initial scores from file */
   void LoadInitialScore();
 
@@ -192,6 +194,8 @@ private:
   const char* init_score_filename_;
   /*! \brief Number of data */
   data_size_t num_data_;
+  /*! \brief Number of classes */
+  int num_class_;
   /*! \brief Number of weights, used to check correct weight file */
   data_size_t num_weights_;
   /*! \brief Label data */
@@ -240,7 +244,7 @@ public:
 };
 
 using PredictFunction =
-  std::function<double(const std::vector<std::pair<int, double>>&)>;
+  std::function<std::vector<double>(const std::vector<std::pair<int, double>>&)>;
 
 /*! \brief The main class of data set,
 *          which are used to traning or validation
@@ -422,6 +426,8 @@ private:
   int num_total_features_;
   /*! \brief Number of total data*/
   data_size_t num_data_;
+  /*! \brief Number of classes*/
+  int num_class_;
   /*! \brief Store some label level data*/
   Metadata metadata_;
   /*! \brief Random generator*/

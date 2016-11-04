@@ -27,7 +27,7 @@ public:
     config_.LoadFromString(parameters);
     // create boosting
     if (config_.io_config.input_model.size() > 0) {
-      Log::Error("continued train from model is not support for c_api, \
+      Log::Warning("continued train from model is not support for c_api, \
         please use continued train with input score");
     }
     boosting_ = Boosting::CreateBoosting(config_.boosting_type, "");

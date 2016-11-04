@@ -28,7 +28,7 @@ public:
     : num_data_(num_data) {
     default_bin_ = static_cast<VAL_T>(default_bin);
     if (default_bin_ != 0) {
-      Log::Info("Warning: Having sparse feature with negative values. Will let negative values equal zero as well");
+      Log::Info("Warning: sparse feature with negative values, treating negative values as zero");
     }
     #pragma omp parallel
     #pragma omp master
@@ -54,7 +54,7 @@ public:
   void ConstructHistogram(data_size_t*, data_size_t , const score_t* ,
                  const score_t* , HistogramBinEntry*) const override {
     // Will use OrderedSparseBin->ConstructHistogram() instead
-    Log::Fatal("Should use OrderedSparseBin->ConstructHistogram() instead");
+    Log::Fatal("Using OrderedSparseBin->ConstructHistogram() instead");
   }
 
   data_size_t Split(unsigned int threshold, data_size_t* data_indices, data_size_t num_data,
@@ -261,7 +261,7 @@ public:
       ++i_delta_;
       cur_pos_ += bin_data_->delta_[i_delta_];
     }
-    if (idx == cur_pos_ && i_delta_ >= 0 
+    if (idx == cur_pos_ && i_delta_ >= 0
       && i_delta_ < bin_data_->vals_.size()) {
       return bin_data_->vals_[i_delta_];
     } else { return 0; }

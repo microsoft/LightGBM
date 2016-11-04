@@ -72,7 +72,7 @@ Parser* Parser::CreateParser(const char* filename, bool has_header, int num_feat
   std::ifstream tmp_file;
   tmp_file.open(filename);
   if (!tmp_file.is_open()) {
-    Log::Fatal("Data file: %s doesn't exist", filename);
+    Log::Fatal("Data file %s doesn't exist'", filename);
   }
   std::string line1, line2;
   if (has_header) {
@@ -83,12 +83,12 @@ Parser* Parser::CreateParser(const char* filename, bool has_header, int num_feat
   if (!tmp_file.eof()) {
     std::getline(tmp_file, line1);
   } else {
-    Log::Fatal("Data file: %s at least should have one line", filename);
+    Log::Fatal("Data file %s should have at least one line", filename);
   }
   if (!tmp_file.eof()) {
     std::getline(tmp_file, line2);
   } else {
-    Log::Warning("Data file: %s only have one line", filename);
+    Log::Warning("Data file %s only has one line", filename);
   }
   tmp_file.close();
   int comma_cnt = 0, comma_cnt2 = 0;
@@ -97,8 +97,8 @@ Parser* Parser::CreateParser(const char* filename, bool has_header, int num_feat
   // Get some statistic from 2 line
   GetStatistic(line1.c_str(), &comma_cnt, &tab_cnt, &colon_cnt);
   GetStatistic(line2.c_str(), &comma_cnt2, &tab_cnt2, &colon_cnt2);
-  
-  
+
+
 
   DataType type = DataType::INVALID;
   if (line2.size() == 0) {
@@ -120,7 +120,7 @@ Parser* Parser::CreateParser(const char* filename, bool has_header, int num_feat
     }
   }
   if (type == DataType::INVALID) {
-    Log::Fatal("Unkown format of training data");
+    Log::Fatal("Unknown format of training data");
   }
   Parser* ret = nullptr;
   if (type == DataType::LIBSVM) {
@@ -137,7 +137,7 @@ Parser* Parser::CreateParser(const char* filename, bool has_header, int num_feat
   }
 
   if (label_idx < 0) {
-    Log::Info("Data file: %s doesn't contain label column", filename);
+    Log::Info("Data file %s doesn't contain a label column", filename);
   }
   return ret;
 }

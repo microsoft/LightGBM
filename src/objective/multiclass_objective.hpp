@@ -16,20 +16,20 @@ public:
         :label_int_(nullptr) {
     num_class_ = config.num_class;
   }
-  
+
   ~MulticlassLogloss() {
-    if (label_int_ != nullptr) { delete[] label_int_; }    
+    if (label_int_ != nullptr) { delete[] label_int_; }
   }
-  
+
   void Init(const Metadata& metadata, data_size_t num_data) override {
     num_data_ = num_data;
     label_ = metadata.label();
     weights_ = metadata.weights();
     label_int_ = new int[num_data_];
     for (int i = 0; i < num_data_; ++i){
-        label_int_[i] = static_cast<int>(label_[i]); 
+        label_int_[i] = static_cast<int>(label_[i]);
         if (label_int_[i] < 0 || label_int_[i] >= num_class_) {
-            Log::Fatal("Label must be in [0, %d), but find %d in label", num_class_, label_int_[i]);
+            Log::Fatal("Label must be in [0, %d), but found %d in label", num_class_, label_int_[i]);
         }
     }
   }
@@ -42,7 +42,7 @@ public:
         for (int k = 0; k < num_class_; ++k){
           rec[k] = static_cast<double>(score[k * num_data_ + i]);
         }
-        Common::Softmax(&rec);  
+        Common::Softmax(&rec);
         for (int k = 0; k < num_class_; ++k) {
           score_t p = static_cast<score_t>(rec[k]);
           if (label_int_[i] == k) {
@@ -51,7 +51,7 @@ public:
             gradients[k * num_data_ + i] = p;
           }
           hessians[k * num_data_ + i] = 2.0f * p * (1.0f - p);
-        }  
+        }
       }
     } else {
       #pragma omp parallel for schedule(static)
@@ -59,7 +59,7 @@ public:
         std::vector<double> rec(num_class_);
         for (int k = 0; k < num_class_; ++k){
           rec[k] = static_cast<double>(score[k * num_data_ + i]);
-        }  
+        }
         Common::Softmax(&rec);
         for (int k = 0; k < num_class_; ++k) {
           score_t p = static_cast<score_t>(rec[k]);

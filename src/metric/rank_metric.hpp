@@ -45,7 +45,7 @@ public:
     // get query boundaries
     query_boundaries_ = metadata.query_boundaries();
     if (query_boundaries_ == nullptr) {
-      Log::Fatal("For NDCG metric, there should be query information");
+      Log::Fatal("The NDCG metric requires query information");
     }
     num_queries_ = metadata.num_queries();
     // get query weights

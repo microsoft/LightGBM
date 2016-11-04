@@ -36,7 +36,7 @@ public:
       if (*str == ',') {
         ++str;
       } else if (*str != '\0') {
-        Log::Fatal("input format error, should be CSV");
+        Log::Fatal("Input format error when parsing as CSV");
       }
     }
   }
@@ -49,7 +49,7 @@ public:
   explicit TSVParser(int label_idx)
     :label_idx_(label_idx) {
   }
-  inline void ParseOneLine(const char* str, 
+  inline void ParseOneLine(const char* str,
     std::vector<std::pair<int, double>>* out_features, double* out_label) const override {
     int idx = 0;
     double val = 0.0f;
@@ -66,7 +66,7 @@ public:
       if (*str == '\t') {
         ++str;
       } else if (*str != '\0') {
-        Log::Fatal("input format error, should be TSV");
+        Log::Fatal("Input format error when parsing as TSV");
       }
     }
   }
@@ -79,10 +79,10 @@ public:
   explicit LibSVMParser(int label_idx)
     :label_idx_(label_idx) {
     if (label_idx > 0) {
-      Log::Fatal("label should be the first column in Libsvm file");
+      Log::Fatal("Label should be the first column in a LibSVM file");
     }
   }
-  inline void ParseOneLine(const char* str, 
+  inline void ParseOneLine(const char* str,
     std::vector<std::pair<int, double>>* out_features, double* out_label) const override {
     int idx = 0;
     double val = 0.0f;
@@ -99,7 +99,7 @@ public:
         str = Common::Atof(str, &val);
         out_features->emplace_back(idx, val);
       } else {
-        Log::Fatal("input format error, should be LibSVM");
+        Log::Fatal("Input format error when parsing as LibSVM");
       }
       str = Common::SkipSpaceAndTab(str);
     }

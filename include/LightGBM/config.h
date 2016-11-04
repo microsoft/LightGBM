@@ -86,6 +86,7 @@ enum TaskType {
 struct IOConfig: public ConfigBase {
 public:
   int max_bin = 256;
+  int num_class = 1;
   int data_random_seed = 1;
   std::string data_filename = "";
   std::vector<std::string> valid_data_filenames;
@@ -158,9 +159,9 @@ public:
   double feature_fraction = 1.0f;
   // max cache size(unit:MB) for historical histogram. < 0 means not limit
   double histogram_pool_size = -1.0f;
-  // max depth of tree model. 
+  // max depth of tree model.
   // Still grow tree by leaf-wise, but limit the max depth to avoid over-fitting
-  // And the max leaves will be min(num_leaves, pow(2, max_depth - 1)) 
+  // And the max leaves will be min(num_leaves, pow(2, max_depth - 1))
   // max_depth < 0 means not limit
   int max_depth = -1;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
@@ -260,7 +261,7 @@ inline bool ConfigBase::GetInt(
   const std::string& name, int* out) {
   if (params.count(name) > 0) {
     if (!Common::AtoiAndCheck(params.at(name).c_str(), out)) {
-      Log::Fatal("Parameter %s should be int type, passed is [%s]", 
+      Log::Fatal("Parameter %s should be of type int, got [%s]",
         name.c_str(), params.at(name).c_str());
     }
     return true;
@@ -273,7 +274,7 @@ inline bool ConfigBase::GetDouble(
   const std::string& name, double* out) {
   if (params.count(name) > 0) {
     if (!Common::AtofAndCheck(params.at(name).c_str(), out)) {
-      Log::Fatal("Parameter %s should be double type, passed is [%s]",
+      Log::Fatal("Parameter %s should be of type double, got [%s]",
         name.c_str(), params.at(name).c_str());
     }
     return true;
@@ -292,7 +293,7 @@ inline bool ConfigBase::GetBool(
     } else if (value == std::string("true") || value == std::string("+")) {
       *out = true;
     } else {
-      Log::Fatal("Parameter %s should be \"true\"/\"+\" or \"false\"/\"-\", passed is [%s]",
+      Log::Fatal("Parameter %s should be \"true\"/\"+\" or \"false\"/\"-\", got [%s]",
         name.c_str(), params.at(name).c_str());
     }
     return true;
