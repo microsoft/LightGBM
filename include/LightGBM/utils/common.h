@@ -381,13 +381,14 @@ inline void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, size_t s
 
 }
 
-inline std::function<std::vector<double>(const void* data, int num_row, int num_col, int row_idx)>
-GetRowFunctionFromMat(int float_type, int is_row_major) {
+inline std::function<std::vector<double>(int row_idx)>
+GetRowFunctionFromMat(const void* data, int num_row, int num_col, int float_type, int is_row_major) {
   if (float_type == 0) {
+    const float* dptr = reinterpret_cast<const float*>(data);
     if (is_row_major) {
-      return [](const void* data, int, int num_col, int row_idx) {
+      return [&dptr, &num_col, &num_row](int row_idx) {
+        CHECK(row_idx < num_row);
         std::vector<double> ret;
-        const float* dptr = reinterpret_cast<const float*>(data);
         dptr += num_col * row_idx;
         for (int i = 0; i < num_col; ++i) {
           ret.push_back(static_cast<double>(*(dptr + i)));
@@ -395,9 +396,9 @@ GetRowFunctionFromMat(int float_type, int is_row_major) {
         return ret;
       };
     } else {
-      return [](const void* data, int num_row, int num_col, int row_idx) {
+      return [&dptr, &num_col, &num_row](int row_idx) {
+        CHECK(row_idx < num_row);
         std::vector<double> ret;
-        const float* dptr = reinterpret_cast<const float*>(data);
         for (int i = 0; i < num_col; ++i) {
           ret.push_back(static_cast<double>(*(dptr + num_row * i + row_idx)));
         }
@@ -405,10 +406,11 @@ GetRowFunctionFromMat(int float_type, int is_row_major) {
       };
     }
   } else {
+    const double* dptr = reinterpret_cast<const double*>(data);
     if (is_row_major) {
-      return [](const void* data, int, int num_col, int row_idx) {
+      return [&dptr, &num_col, &num_row](int row_idx) {
+        CHECK(row_idx < num_row);
         std::vector<double> ret;
-        const double* dptr = reinterpret_cast<const double*>(data);
         dptr += num_col * row_idx;
         for (int i = 0; i < num_col; ++i) {
           ret.push_back(static_cast<double>(*(dptr + i)));
@@ -416,9 +418,9 @@ GetRowFunctionFromMat(int float_type, int is_row_major) {
         return ret;
       };
     } else {
-      return [](const void* data, int num_row, int num_col, int row_idx) {
+      return [&dptr, &num_col, &num_row](int row_idx) {
+        CHECK(row_idx < num_row);
         std::vector<double> ret;
-        const double* dptr = reinterpret_cast<const double*>(data);
         for (int i = 0; i < num_col; ++i) {
           ret.push_back(static_cast<double>(*(dptr + num_row * i + row_idx)));
         }
@@ -427,6 +429,39 @@ GetRowFunctionFromMat(int float_type, int is_row_major) {
     }
   }
 }
+
+
+inline std::function<std::vector<std::pair<int, double>>(int idx)>
+GetRowFunctionFromCSR(const int32_t* indptr, const int32_t* indices, const void* data, int float_type, uint64_t nindptr, uint64_t nelem) {
+  if (float_type == 0) {
+    const float* dptr = reinterpret_cast<const float*>(data);
+    return [&indptr, &indices, &dptr, &nindptr, &nelem](int idx) {
+      CHECK(idx + 1 < nindptr);
+      std::vector<std::pair<int, double>> ret;
+      int32_t start = indptr[idx];
+      int32_t end = indptr[idx + 1];
+      CHECK(start >= 0 && end < nelem);
+      for (int32_t i = start; i < end; ++i) {
+        ret.emplace_back(indices[i], dptr[i]);
+      }
+      return ret;
+    };
+  } else {
+    const double* dptr = reinterpret_cast<const double*>(data);
+    return [&indptr, &indices, &dptr, &nindptr, &nelem](int idx) {
+      CHECK(idx + 1 < nindptr);
+      std::vector<std::pair<int, double>> ret;
+      int32_t start = indptr[idx];
+      int32_t end = indptr[idx + 1];
+      CHECK(start >= 0 && end < nelem);
+      for (int32_t i = start; i < end; ++i) {
+        ret.emplace_back(indices[i], dptr[i]);
+      }
+      return ret;
+    };
+  }
+}
+
 
 }  // namespace Common
 

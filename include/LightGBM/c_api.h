@@ -79,32 +79,6 @@ DllExport int LGBM_CreateDatasetFromCSR(const int32_t* indptr,
   int float_type,
   uint64_t nindptr,
   uint64_t nelem,
-  uint64_t num_col,
-  const char* parameters,
-  const DatesetHandle* reference,
-  DatesetHandle* out);
-
-/*!
-* \brief create a dataset from CSC format
-* \param col_ptr pointer to col headers
-* \param indices findex
-* \param data fvalue
-* \param float_type 0 for float_32 1 for float_64
-* \param nindptr number of rows in the matix + 1
-* \param nelem number of nonzero elements in the matrix
-* \param num_row number of rows; when it's set to 0, then guess from data
-* \param parameters additional parameters
-* \param reference used to align bin mapper with other dataset, nullptr means don't used
-* \param out created dataset
-* \return 0 when success, -1 when failure happens
-*/
-DllExport int LGBM_CreateDatasetFromCSC(const int32_t* col_ptr,
-  const int32_t* indices,
-  const void* data,
-  int float_type,
-  uint64_t nindptr,
-  uint64_t nelem,
-  uint64_t num_row,
   const char* parameters,
   const DatesetHandle* reference,
   DatesetHandle* out);

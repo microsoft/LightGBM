@@ -258,6 +258,15 @@ public:
     }
   }
 
+  inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<std::pair<int, double>>& feature_values) {
+    for (auto& inner_data : feature_values) {
+      int feature_idx = used_feature_map_[inner_data.first];
+      if (feature_idx >= 0) {
+        features_[feature_idx]->PushData(tid, row_idx, inner_data.second);
+      }
+    }
+  }
+
   inline void SetNumData(data_size_t num_data) {
     num_data_ = num_data;
   }
@@ -265,6 +274,8 @@ public:
   void FinishLoad();
 
   void SetField(const char* field_name, const void* field_data, data_size_t num_element, int type);
+
+  void GetField(const char* field_name, uint64_t* out_len, const void** out_ptr, int* out_type);
 
   /*!
   * \brief Save current dataset into binary file, will save to "filename.bin"
