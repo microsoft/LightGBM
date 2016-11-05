@@ -95,7 +95,7 @@ void Application::LoadParameters(int argc, char** argv) {
           if (key.size() <= 0) {
             continue;
           }
-          // Command line have higher priority
+          // Command-line has higher priority
           if (params.count(key) == 0) {
             params[key] = value;
           }
@@ -105,7 +105,7 @@ void Application::LoadParameters(int argc, char** argv) {
         }
       }
     } else {
-      Log::Warning("Config file: %s doesn't exist, will ignore",
+      Log::Warning("Config file %s doesn't exist, will ignore",
                                 params["config_file"].c_str());
     }
   }
@@ -113,27 +113,27 @@ void Application::LoadParameters(int argc, char** argv) {
   ParameterAlias::KeyAliasTransform(&params);
   // load configs
   config_.Set(params);
-  Log::Info("Loading parameters .. finished");
+  Log::Info("Finished loading parameters");
 }
 
 void Application::LoadData() {
   auto start_time = std::chrono::high_resolution_clock::now();
-  // predition is needed if using input initial model(continued train)
+  // prediction is needed if using input initial model(continued train)
   PredictFunction predict_fun = nullptr;
   Predictor* predictor = nullptr;
-  // need to continue train
+  // need to continue training
   if (boosting_->NumberOfSubModels() > 0) {
-    predictor = new Predictor(boosting_, config_.io_config.is_sigmoid, config_.predict_leaf_index, -1);
+    predictor = new Predictor(boosting_, config_.io_config.is_sigmoid, config_.predict_leaf_index);
     if (config_.io_config.num_class == 1){
       predict_fun =
         [&predictor](const std::vector<std::pair<int, double>>& features) {
         return predictor->PredictRawOneLine(features);
-      };    
+      };
     } else {
       predict_fun =
         [&predictor](const std::vector<std::pair<int, double>>& features) {
         return predictor->PredictMulticlassOneLine(features);
-      };  
+      };
     }
   }
   // sync up random seed for data partition
@@ -170,7 +170,7 @@ void Application::LoadData() {
       train_metric_.push_back(metric);
     }
   }
-  // Add validation data, if exists
+  // Add validation data, if it exists
   for (size_t i = 0; i < config_.io_config.valid_data_filenames.size(); ++i) {
     // add
     valid_datas_.push_back(
@@ -201,7 +201,7 @@ void Application::LoadData() {
   }
   auto end_time = std::chrono::high_resolution_clock::now();
   // output used time on each iteration
-  Log::Info("Finish loading data, use %f seconds",
+  Log::Info("Finished loading data in %f seconds",
     std::chrono::duration<double, std::milli>(end_time - start_time) * 1e-3);
 }
 
@@ -209,7 +209,7 @@ void Application::InitTrain() {
   if (config_.is_parallel) {
     // need init network
     Network::Init(config_.network_config);
-    Log::Info("Finish network initialization");
+    Log::Info("Finished initializing network");
     // sync global random seed for feature patition
     if (config_.boosting_type == BoostingType::kGBDT || config_.boosting_type == BoostingType::kDART) {
       GBDTConfig* gbdt_config =
@@ -222,7 +222,7 @@ void Application::InitTrain() {
   }
   // create boosting
   boosting_ =
-    Boosting::CreateBoosting(config_.boosting_type, 
+    Boosting::CreateBoosting(config_.boosting_type,
       config_.io_config.input_model.c_str());
   // create objective function
   objective_fun_ =
@@ -240,11 +240,11 @@ void Application::InitTrain() {
     boosting_->AddDataset(valid_datas_[i],
       ConstPtrInVectorWarpper<Metric>(valid_metrics_[i]));
   }
-  Log::Info("Finish training initilization.");
+  Log::Info("Finished initializing training");
 }
 
 void Application::Train() {
-  Log::Info("Start train ...");
+  Log::Info("Started training...");
   int total_iter = config_.boosting_config->num_iterations;
   bool is_finished = false;
   bool need_eval = true;
@@ -254,7 +254,7 @@ void Application::Train() {
     is_finished = boosting_->TrainOneIter(nullptr, nullptr, need_eval);
     auto end_time = std::chrono::high_resolution_clock::now();
     // output used time per iteration
-    Log::Info("%f seconds elapsed, finished %d iteration", std::chrono::duration<double,
+    Log::Info("%f seconds elapsed, finished iteration %d", std::chrono::duration<double,
       std::milli>(end_time - start_time) * 1e-3, iter + 1);
     if (save_model_during_training) {
         boosting_->SaveModelToFile(is_finished, config_.io_config.output_model.c_str());
@@ -263,30 +263,31 @@ void Application::Train() {
   is_finished = true;
   // save model to file
   boosting_->SaveModelToFile(is_finished, config_.io_config.output_model.c_str());
-  Log::Info("Finished train");
+  Log::Info("Finished training");
 }
 
 
 void Application::Predict() {
+  boosting_->SetNumUsedModel(config_.io_config.num_model_predict);
   // create predictor
-  Predictor predictor(boosting_, config_.io_config.is_sigmoid, 
-    config_.predict_leaf_index, config_.io_config.num_model_predict);
-  predictor.Predict(config_.io_config.data_filename.c_str(), 
+  Predictor predictor(boosting_, config_.io_config.is_sigmoid,
+    config_.predict_leaf_index);
+  predictor.Predict(config_.io_config.data_filename.c_str(),
     config_.io_config.output_result.c_str(), config_.io_config.has_header);
-  Log::Info("Finish predict.");
+  Log::Info("Finished prediction");
 }
 
 void Application::InitPredict() {
   boosting_ =
     Boosting::CreateBoosting(config_.io_config.input_model.c_str());
-  Log::Info("Finish predict initilization.");
+  Log::Info("Finished initializing prediction");
 }
 
 template<typename T>
 T Application::GlobalSyncUpByMin(T& local) {
   T global = local;
   if (!config_.is_parallel) {
-    // not need to sync if not parallel learning
+    // no need to sync if not parallel learning
     return global;
   }
   Network::Allreduce(reinterpret_cast<char*>(&local),

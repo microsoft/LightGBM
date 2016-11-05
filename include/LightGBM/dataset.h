@@ -130,7 +130,7 @@ public:
   * \param idx Index of this record
   * \param value Query Id value of this record
   */
-  inline void SetQueryAt(data_size_t idx, float value)
+  inline void SetQueryAt(data_size_t idx, data_size_t value)
   {
     queries_[idx] = static_cast<data_size_t>(value);
   }

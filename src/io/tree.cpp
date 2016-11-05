@@ -146,7 +146,7 @@ Tree::Tree(const std::string& str) {
     || key_vals.count("split_gain") <= 0 || key_vals.count("threshold") <= 0
     || key_vals.count("left_child") <= 0 || key_vals.count("right_child") <= 0
     || key_vals.count("leaf_parent") <= 0 || key_vals.count("leaf_value") <= 0) {
-    Log::Fatal("tree model string format error");
+    Log::Fatal("Tree model string format error");
   }
 
   Common::Atoi(key_vals["num_leaves"].c_str(), &num_leaves_);
@@ -164,19 +164,19 @@ Tree::Tree(const std::string& str) {
   leaf_depth_ = nullptr;
 
   Common::StringToIntArray(key_vals["split_feature"], ' ',
-                     num_leaves_ - 1, split_feature_real_);
+                           num_leaves_ - 1, split_feature_real_);
   Common::StringToDoubleArray(key_vals["split_gain"], ' ',
-                             num_leaves_ - 1, split_gain_);
+                              num_leaves_ - 1, split_gain_);
   Common::StringToDoubleArray(key_vals["threshold"], ' ',
-                               num_leaves_ - 1, threshold_);
+                              num_leaves_ - 1, threshold_);
   Common::StringToIntArray(key_vals["left_child"], ' ',
-                         num_leaves_ - 1, left_child_);
+                           num_leaves_ - 1, left_child_);
   Common::StringToIntArray(key_vals["right_child"], ' ',
-                         num_leaves_ - 1, right_child_);
+                           num_leaves_ - 1, right_child_);
   Common::StringToIntArray(key_vals["leaf_parent"], ' ',
-                             num_leaves_ , leaf_parent_);
+                           num_leaves_ , leaf_parent_);
   Common::StringToDoubleArray(key_vals["leaf_value"], ' ',
-                               num_leaves_ , leaf_value_);
+                              num_leaves_ , leaf_value_);
 }
 
 }  // namespace LightGBM

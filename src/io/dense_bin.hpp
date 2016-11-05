@@ -112,7 +112,7 @@ public:
   }
 
   data_size_t Split(unsigned int threshold, data_size_t* data_indices, data_size_t num_data,
-                         data_size_t* lte_indices, data_size_t* gt_indices) const override {
+                    data_size_t* lte_indices, data_size_t* gt_indices) const override {
     data_size_t lte_count = 0;
     data_size_t gt_count = 0;
     for (data_size_t i = 0; i < num_data; ++i) {

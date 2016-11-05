@@ -55,33 +55,30 @@ public:
   /*!
   * \brief Predtion for one record without sigmoid transformation
   * \param feature_values Feature value on this record
-  * \param num_used_model Number of used model
   * \return Prediction result for this record
   */
-  double PredictRaw(const double* feature_values, int num_used_model) const override;
+  double PredictRaw(const double* feature_values) const override;
 
   /*!
   * \brief Predtion for one record with sigmoid transformation if enabled
   * \param feature_values Feature value on this record
-  * \param num_used_model Number of used model
   * \return Prediction result for this record
   */
-  double Predict(const double* feature_values, int num_used_model) const override;
+  double Predict(const double* feature_values) const override;
   
   /*!
   * \brief Predtion for multiclass classification
   * \param feature_values Feature value on this record
   * \return Prediction result, num_class numbers per line
   */
-  std::vector<double> PredictMulticlass(const double* value, int num_used_model) const override;
+  std::vector<double> PredictMulticlass(const double* value) const override;
   
   /*!
   * \brief Predtion for one record with leaf index
   * \param feature_values Feature value on this record
-  * \param num_used_model Number of used model
   * \return Predicted leaf index for this record
   */
-  std::vector<int> PredictLeafIndex(const double* value, int num_used_model) const override;
+  std::vector<int> PredictLeafIndex(const double* value) const override;
   
   /*!
   * \brief Serialize models by string
@@ -115,6 +112,16 @@ public:
   * \return Number of classes
   */
   inline int NumberOfClass() const override { return num_class_; }
+
+  /*!
+  * \brief Set number of used model for prediction
+  */
+  inline void SetNumUsedModel(int num_used_model) {
+    if (num_used_model >= 0) {
+      num_used_model_ = static_cast<int>(num_used_model / num_class_);
+    }
+  }
+
   
   /*!
   * \brief Get Type name of this boosting object
@@ -208,9 +215,11 @@ protected:
   /*! \brief Index of label column */
   data_size_t label_idx_;
   /*! \brief Saved number of models */
-  int saved_model_size_ = -1;
+  int saved_model_size_;
   /*! \brief File to write models */
   std::ofstream model_output_file_;
+  /*! \brief number of used model */
+  int num_used_model_;
 };
 
 }  // namespace LightGBM

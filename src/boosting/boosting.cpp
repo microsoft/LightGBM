@@ -47,7 +47,7 @@ Boosting* Boosting::CreateBoosting(BoostingType type, const char* filename) {
       }
       LoadFileToBoosting(ret, filename);
     } else {
-      Log::Fatal("Boosting type in parameter is not same with the type in model file");
+      Log::Fatal("Boosting type in parameter is not the same as the type in the model file");
     }
     return ret;
   }

@@ -35,7 +35,7 @@ public:
       file = fopen(filename, "r");
 #endif
       if (file == NULL) {
-        Log::Fatal("failed to open file %s", filename);
+        Log::Fatal("Could not open %s", filename);
       }
       std::stringstream str_buf;
       int read_c = -1;
@@ -59,7 +59,7 @@ public:
       }
       fclose(file);
       first_line_ = str_buf.str();
-      Log::Debug("skip header:\"%s\" in file %s", first_line_.c_str(), filename_);
+      Log::Debug("Skipped header \"%s\" in file %s", first_line_.c_str(), filename_);
     }
   }
   /*!
@@ -129,7 +129,7 @@ public:
     });
     // if last line of file doesn't contain end of line
     if (last_line_.size() > 0) {
-      Log::Info("Warning: last line of file %s doesn't contain end of line, application will still use this line", filename_);
+      Log::Info("Warning: last line of %s has no end of line, still using this line", filename_);
       process_fun(total_cnt, last_line_.c_str(), last_line_.size());
       ++total_cnt;
       last_line_ = "";
@@ -266,7 +266,7 @@ public:
     });
     // if last line of file doesn't contain end of line
     if (last_line_.size() > 0) {
-      Log::Info("Warning: last line of file %s doesn't contain end of line, application will still use this line", filename_);
+      Log::Info("Warning: last line of %s has no end of line, still using this line", filename_);
       if (filter_fun(used_cnt, total_cnt)) {
         lines_.push_back(last_line_);
         process_fun(used_cnt, lines_);
