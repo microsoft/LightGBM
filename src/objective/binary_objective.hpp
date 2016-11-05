@@ -47,8 +47,13 @@ public:
     label_weights_[1] = 1.0f;
     // if using unbalance, change the labels weight
     if (is_unbalance_) {
-      label_weights_[1] = 1.0f;
-      label_weights_[0] = static_cast<score_t>(cnt_positive) / cnt_negative;
+      if (cnt_positive > cnt_negative) {
+        label_weights_[1] = 1.0f;
+        label_weights_[0] = static_cast<score_t>(cnt_positive) / cnt_negative;
+      } else {
+        label_weights_[1] = static_cast<score_t>(cnt_negative) / cnt_positive;
+        label_weights_[0] = 1.0f;
+      }
     }
   }
 
