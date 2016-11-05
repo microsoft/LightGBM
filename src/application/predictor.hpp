@@ -132,7 +132,20 @@ public:
     };
 
     std::function<std::string(const std::vector<std::pair<int, double>>&)> predict_fun;
-    if (num_class_ > 1) {
+    if (is_predict_leaf_index_) {
+      predict_fun = [this](const std::vector<std::pair<int, double>>& features){
+        std::vector<int> predicted_leaf_index = PredictLeafIndexOneLine(features);
+        std::stringstream result_stream_buf;
+        for (size_t i = 0; i < predicted_leaf_index.size(); ++i){
+          if (i > 0) {
+            result_stream_buf << '\t';
+          }
+          result_stream_buf << predicted_leaf_index[i];
+        }
+        return result_stream_buf.str();
+      };
+    }
+    else if (num_class_ > 1) {
       predict_fun = [this](const std::vector<std::pair<int, double>>& features){
         std::vector<double> prediction = PredictMulticlassOneLine(features);
         Common::Softmax(&prediction);
@@ -142,19 +155,6 @@ public:
             result_stream_buf << '\t';
           }
           result_stream_buf << prediction[i];
-        }
-        return result_stream_buf.str();
-      };
-    }
-    else if (is_predict_leaf_index_) {
-      predict_fun = [this](const std::vector<std::pair<int, double>>& features){
-        std::vector<int> predicted_leaf_index = PredictLeafIndexOneLine(features);
-        std::stringstream result_stream_buf;
-        for (size_t i = 0; i < predicted_leaf_index.size(); ++i){
-          if (i > 0) {
-            result_stream_buf << '\t';
-          }
-          result_stream_buf << predicted_leaf_index[i];
         }
         return result_stream_buf.str();
       };

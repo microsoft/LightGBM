@@ -54,9 +54,8 @@ private:
   void UpdateScore(const Tree* tree, const int curr_class) override;
   /*!
   * \brief select dropping tree and normailize
-  * \param curr_class Current class for multiclass training
   */
-  double SelectDroppingTreesAndNormalize(int curr_class);
+  double SelectDroppingTreesAndNormalize();
   /*! \brief Dropping rate */
   double drop_rate_;
   /*! \brief Random generator, used to select dropping trees */

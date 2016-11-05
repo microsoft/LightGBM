@@ -32,35 +32,37 @@ void DART::Init(const BoostingConfig* config, const Dataset* train_data, const O
 }
 
 bool DART::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) {
-    // boosting first
-    if (gradient == nullptr || hessian == nullptr) {
-      Boosting();
-      gradient = gradients_;
-      hessian = hessians_;
+  // boosting first
+  if (gradient == nullptr || hessian == nullptr) {
+    Boosting();
+    gradient = gradients_;
+    hessian = hessians_;
+  }
+
+  for (int curr_class = 0; curr_class < num_class_; ++curr_class){
+    // bagging logic
+    Bagging(iter_, curr_class);
+    // train a new tree
+    Tree * new_tree = tree_learner_[curr_class]->Train(gradient + curr_class * num_data_, hessian+ curr_class * num_data_);
+    // if cannot learn a new tree, then stop
+    if (new_tree->num_leaves() <= 1) {
+      Log::Info("Can't training anymore, there isn't any leaf meets split requirements.");
+      return true;
     }
+    // add model
+    models_.push_back(new_tree);
+  }
+
+  // select dropping trees and normalize once in one iteration
+  double new_tree_shrinkage_rate = SelectDroppingTreesAndNormalize();
+  size_t len = models_.size();
     
-    for (int curr_class = 0; curr_class < num_class_; ++curr_class){
-      // bagging logic
-      Bagging(iter_, curr_class);
-      
-      // train a new tree
-      Tree * new_tree = tree_learner_[curr_class]->Train(gradient + curr_class * num_data_, hessian+ curr_class * num_data_);
-      // if cannot learn a new tree, then stop
-      if (new_tree->num_leaves() <= 1) {
-        Log::Info("Can't training anymore, there isn't any leaf meets split requirements.");
-        return true;
-      }
-      
-      double new_tree_shrinkage_rate = SelectDroppingTreesAndNormalize(curr_class);
-      
-      // shrinkage by learning rate
-      new_tree->Shrinkage(new_tree_shrinkage_rate);
-      // update score
-      UpdateScore(new_tree, curr_class);
-      
-      // add model
-      models_.push_back(new_tree);
-    }
+  for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
+    // shrinkage by learning rate
+    models_[len - 1 - curr_class]->Shrinkage(new_tree_shrinkage_rate);
+    // update score
+    UpdateScore(models_[len - 1 - curr_class], curr_class);
+  }
   
   bool is_met_early_stopping = false;
   // print message for metric
@@ -89,10 +91,14 @@ void DART::UpdateScore(const Tree* tree, const int curr_class) {
   }
 }
 
-double DART::SelectDroppingTreesAndNormalize(int curr_class){
+double DART::SelectDroppingTreesAndNormalize(){
+    // if drop rate is too small, treat it as a standard gbdt
+    if (drop_rate_ < kEpsilon) {
+        return gbdt_config_->learning_rate;
+    }
     // select dropping tree indexes based on drop_rate
-    std::vector<size_t> drop_index;
-    for (size_t i = 0; i < models_.size(); ++i){
+    std::vector<int> drop_index;
+    for (int i = 0; i < iter_; ++i){
         if (random_for_drop_.NextDouble() < drop_rate_) {
             drop_index.push_back(i);
         }
@@ -108,9 +114,12 @@ double DART::SelectDroppingTreesAndNormalize(int curr_class){
     double k = static_cast<double>(drop_index.size());
     double new_tree_shrinkage_rate = 1.0 / (1.0 + k);
     for (int i: drop_index){
-        models_[i]->Shrinkage(-new_tree_shrinkage_rate);
-        UpdateScore(models_[i], curr_class);
-        models_[i]->Shrinkage(-k);
+      for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
+        int curr_tree = i * num_class_ + curr_class;
+        models_[curr_tree]->Shrinkage(-new_tree_shrinkage_rate);
+        UpdateScore(models_[curr_tree], curr_class);
+        models_[curr_tree]->Shrinkage(-k);
+      }
     }
     return new_tree_shrinkage_rate;
 }
