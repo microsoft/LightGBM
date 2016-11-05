@@ -6,6 +6,7 @@
 
 #include <LightGBM/meta.h>
 #include <LightGBM/config.h>
+#include <LightGBM/feature.h>
 
 #include <vector>
 #include <utility>
@@ -16,8 +17,6 @@
 namespace LightGBM {
 
 /*! \brief forward declaration */
-class Feature;
-class BinMapper;
 class DatasetLoader;
 
 /*!
@@ -250,6 +249,20 @@ public:
   /*! \brief Destructor */
   ~Dataset();
 
+  inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<double>& feature_values) {
+    for (size_t i = 0; i < feature_values.size(); ++i) {
+      int feature_idx = used_feature_map_[i];
+      if (feature_idx >= 0) {
+        features_[feature_idx]->PushData(tid, row_idx, feature_values[i]);
+      }
+    }
+  }
+
+  inline void SetNumData(data_size_t num_data) {
+    num_data_ = num_data;
+  }
+
+  void FinishLoad();
 
   void SetField(const char* field_name, const void* field_data, data_size_t num_element, int type);
 

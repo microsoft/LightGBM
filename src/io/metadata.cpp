@@ -103,50 +103,50 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     }
     // check weights
     if (weights_ != nullptr && num_weights_ != num_data_) {
-      Log::Fatal("Weights size doesn't match data size");
       delete[] weights_;
       num_weights_ = 0;
       weights_ = nullptr;
+      Log::Fatal("Weights size doesn't match data size");
     }
 
     // check query boundries
     if (query_boundaries_ != nullptr && query_boundaries_[num_queries_] != num_data_) {
-      Log::Fatal("Query size doesn't match data size");
       delete[] query_boundaries_;
       num_queries_ = 0;
       query_boundaries_ = nullptr;
+      Log::Fatal("Query size doesn't match data size");
     }
 
     // contain initial score file
     if (init_score_ != nullptr && num_init_score_ != num_data_) {
       delete[] init_score_;
-      Log::Fatal("Initial score size doesn't match data size");
       init_score_ = nullptr;
       num_init_score_ = 0;
+      Log::Fatal("Initial score size doesn't match data size");
     }
   } else {
     data_size_t num_used_data = static_cast<data_size_t>(used_data_indices.size());
     // check weights
     if (weights_ != nullptr && num_weights_ != num_all_data) {
-      Log::Fatal("Weights size doesn't match data size");
       delete[] weights_;
       num_weights_ = 0;
       weights_ = nullptr;
+      Log::Fatal("Weights size doesn't match data size");
     }
     // check query boundries
     if (query_boundaries_ != nullptr && query_boundaries_[num_queries_] != num_all_data) {
-      Log::Fatal("Query size doesn't match data size");
       delete[] query_boundaries_;
       num_queries_ = 0;
       query_boundaries_ = nullptr;
+      Log::Fatal("Query size doesn't match data size");
     }
 
     // contain initial score file
     if (init_score_ != nullptr && num_init_score_ != num_all_data) {
-      Log::Fatal("Initial score size doesn't match data size");
       delete[] init_score_;
       num_init_score_ = 0;
       init_score_ = nullptr;
+      Log::Fatal("Initial score size doesn't match data size");
     }
 
     // get local weights

@@ -73,8 +73,8 @@ DllExport int LGBM_CreateDatasetFromBinaryFile(const char* filename,
 * \param out created dataset
 * \return 0 when success, -1 when failure happens
 */
-DllExport int LGBM_CreateDatasetFromCSR(const uint32_t* indptr,
-  const uint32_t* indices,
+DllExport int LGBM_CreateDatasetFromCSR(const int32_t* indptr,
+  const int32_t* indices,
   const void* data,
   int float_type,
   uint64_t nindptr,
@@ -98,8 +98,8 @@ DllExport int LGBM_CreateDatasetFromCSR(const uint32_t* indptr,
 * \param out created dataset
 * \return 0 when success, -1 when failure happens
 */
-DllExport int LGBM_CreateDatasetFromCSC(const uint32_t* col_ptr,
-  const uint32_t* indices,
+DllExport int LGBM_CreateDatasetFromCSC(const int32_t* col_ptr,
+  const int32_t* indices,
   const void* data,
   int float_type,
   uint64_t nindptr,
@@ -124,10 +124,9 @@ DllExport int LGBM_CreateDatasetFromCSC(const uint32_t* col_ptr,
 */
 DllExport int LGBM_CreateDatasetFromMat(const void* data,
   int float_type,
-  uint64_t nrow,
-  uint64_t ncol,
+  int32_t nrow,
+  int32_t ncol,
   int is_row_major,
-  double missing,
   const char* parameters,
   const DatesetHandle* reference,
   DatesetHandle* out);
@@ -299,8 +298,8 @@ DllExport int LGBM_BoosterPredict(BoosterHandle handle,
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
-  const uint32_t* indptr,
-  const uint32_t* indices,
+  const int32_t* indptr,
+  const int32_t* indices,
   const void* data,
   int float_type,
   uint64_t nindptr,
@@ -328,8 +327,8 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_BoosterPredictForCSC(BoosterHandle handle,
-  const uint32_t* col_ptr,
-  const uint32_t* indices,
+  const int32_t* col_ptr,
+  const int32_t* indices,
   const void* data,
   int float_type,
   uint64_t nindptr,
@@ -357,9 +356,8 @@ DllExport int LGBM_BoosterPredictForCSC(BoosterHandle handle,
 DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
   const void* data,
   int float_type,
-  uint64_t nrow,
-  uint64_t ncol,
-  double missing,
+  int32_t nrow,
+  int32_t ncol,
   int predict_type,
   uint64_t n_used_trees,
   const double** out_result);

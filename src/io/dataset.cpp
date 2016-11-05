@@ -1,7 +1,6 @@
 #include <LightGBM/dataset.h>
 
 #include <LightGBM/feature.h>
-#include <LightGBM/network.h>
 
 #include <omp.h>
 
@@ -29,6 +28,12 @@ Dataset::~Dataset() {
   features_.clear();
 }
 
+void Dataset::FinishLoad() {
+#pragma omp parallel for schedule(guided)
+  for (int i = 0; i < num_features_; ++i) {
+    features_[i]->FinishLoad();
+  }
+}
 
 void Dataset::CopyFeatureMetadataTo(Dataset *dataset, bool is_enable_sparse) const {
   dataset->features_.clear();

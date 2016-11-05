@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <algorithm>
 #include <cmath>
+#include <functional>
 
 namespace LightGBM {
 
@@ -378,6 +379,53 @@ inline void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, size_t s
     values[i] = arr[i].second;
   }
 
+}
+
+inline std::function<std::vector<double>(const void* data, int num_row, int num_col, int row_idx)>
+GetRowFunctionFromMat(int float_type, int is_row_major) {
+  if (float_type == 0) {
+    if (is_row_major) {
+      return [](const void* data, int, int num_col, int row_idx) {
+        std::vector<double> ret;
+        const float* dptr = reinterpret_cast<const float*>(data);
+        dptr += num_col * row_idx;
+        for (int i = 0; i < num_col; ++i) {
+          ret.push_back(static_cast<double>(*(dptr + i)));
+        }
+        return ret;
+      };
+    } else {
+      return [](const void* data, int num_row, int num_col, int row_idx) {
+        std::vector<double> ret;
+        const float* dptr = reinterpret_cast<const float*>(data);
+        for (int i = 0; i < num_col; ++i) {
+          ret.push_back(static_cast<double>(*(dptr + num_row * i + row_idx)));
+        }
+        return ret;
+      };
+    }
+  } else {
+    if (is_row_major) {
+      return [](const void* data, int, int num_col, int row_idx) {
+        std::vector<double> ret;
+        const double* dptr = reinterpret_cast<const double*>(data);
+        dptr += num_col * row_idx;
+        for (int i = 0; i < num_col; ++i) {
+          ret.push_back(static_cast<double>(*(dptr + i)));
+        }
+        return ret;
+      };
+    } else {
+      return [](const void* data, int num_row, int num_col, int row_idx) {
+        std::vector<double> ret;
+        const double* dptr = reinterpret_cast<const double*>(data);
+        for (int i = 0; i < num_col; ++i) {
+          ret.push_back(static_cast<double>(*(dptr + num_row * i + row_idx)));
+        }
+        return ret;
+      };
+    }
+  }
 }
 
 }  // namespace Common

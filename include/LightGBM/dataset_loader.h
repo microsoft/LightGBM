@@ -17,13 +17,14 @@ public:
   Dataset* LoadFromFile(const char* filename, int rank, int num_machines);
 
   Dataset* LoadFromFile(const char* filename) {
-    LoadFromFile(filename, 0, 1);
+    return LoadFromFile(filename, 0, 1);
   }
 
   Dataset* LoadFromFileLikeOthers(const char* filename, const Dataset* other);
 
   Dataset* LoadFromBinFile(const char* bin_filename, int rank, int num_machines);
 
+  Dataset* CostructFromSampleData(std::vector<std::vector<double>>& sample_values, data_size_t num_data);
 
   /*! \brief Disable copy */
   DatasetLoader& operator=(const DatasetLoader&) = delete;

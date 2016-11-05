@@ -303,7 +303,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* bin_filename, int rank, int 
   }
   mem_ptr += sizeof(int) * num_used_feature_map;
   // get feature names
-  feature_names_.clear();
+  dataset->feature_names_.clear();
   // write feature names
   for (int i = 0; i < dataset->num_total_features_; ++i) {
     int str_len = *(reinterpret_cast<const int*>(mem_ptr));
@@ -314,7 +314,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* bin_filename, int rank, int 
       mem_ptr += sizeof(char);
       str_buf << tmp_char;
     }
-    feature_names_.emplace_back(str_buf.str());
+    dataset->feature_names_.emplace_back(str_buf.str());
   }
 
   // read size of meta data
@@ -406,6 +406,37 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* bin_filename, int rank, int 
   return dataset;
 }
 
+Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>& sample_values, data_size_t num_data) {
+  std::vector<BinMapper*> bin_mappers(sample_values.size());
+#pragma omp parallel for schedule(guided)
+  for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
+    bin_mappers[i] = new BinMapper();
+    bin_mappers[i]->FindBin(&sample_values[i], io_config_.max_bin);
+  }
+
+  Dataset* dataset = new Dataset();
+
+  dataset->features_.clear();
+  dataset->num_data_ = num_data;
+  // -1 means doesn't use this feature
+  dataset->used_feature_map_ = std::vector<int>(bin_mappers.size(), -1);
+  dataset->num_total_features_ = static_cast<int>(bin_mappers.size());
+
+  for (size_t i = 0; i < bin_mappers.size(); ++i) {
+    if (!bin_mappers[i]->is_trival()) {
+      // map real feature index to used feature index
+      dataset->used_feature_map_[i] = static_cast<int>(dataset->features_.size());
+      // push new feature
+      dataset->features_.push_back(new Feature(static_cast<int>(i), bin_mappers[i],
+        dataset->num_data_, io_config_.is_enable_sparse));
+    } else {
+      // if feature is trival(only 1 bin), free spaces
+      Log::Warning("Ignoring Column_%d , only has one value", i);
+      delete bin_mappers[i];
+    }
+  }
+  return dataset;
+}
 
 
 // ---- private functions ----
@@ -738,11 +769,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
     dataset->metadata_.SetInitScore(init_score, dataset->num_data_ * dataset->num_class_);
     delete[] init_score;
   }
-
-#pragma omp parallel for schedule(guided)
-  for (int i = 0; i < dataset->num_features_; ++i) {
-    dataset->features_[i]->FinishLoad();
-  }
+  dataset->FinishLoad();
   // text data can be free after loaded feature values
   text_data.clear();
 }
@@ -803,11 +830,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
     dataset->metadata_.SetInitScore(init_score, dataset->num_data_ * dataset->num_class_);
     delete[] init_score;
   }
-
-#pragma omp parallel for schedule(guided)
-  for (int i = 0; i < dataset->num_features_; ++i) {
-    dataset->features_[i]->FinishLoad();
-  }
+  dataset->FinishLoad();
 }
 
 /*! \brief Check can load from binary file */

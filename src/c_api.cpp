@@ -1,4 +1,9 @@
+#include <omp.h>
+
+#include <LightGBM/utils/common.h>
+#include <LightGBM/utils/random.h>
 #include <LightGBM/c_api.h>
+#include <LightGBM/dataset_loader.h>
 #include <LightGBM/dataset.h>
 #include <LightGBM/boosting.h>
 #include <LightGBM/objective_function.h>
@@ -103,3 +108,81 @@ private:
 
 using namespace LightGBM;
 
+
+DllExport const char* LGBM_GetLastError() {
+  return "Not error msg now, will support soon";
+}
+
+
+
+DllExport int LGBM_CreateDatasetFromFile(const char* filename,
+  const char* parameters,
+  const DatesetHandle* reference,
+  DatesetHandle* out) {
+
+  OverallConfig config;
+  config.LoadFromString(parameters);
+  DatasetLoader loader(config.io_config, nullptr);
+  if (reference == nullptr) {
+    *out = loader.LoadFromFile(filename);
+  } else {
+    *out = loader.LoadFromFileLikeOthers(filename, reinterpret_cast<const Dataset*>(*reference));
+  }
+  return 0;
+}
+
+
+DllExport int LGBM_CreateDatasetFromBinaryFile(const char* filename,
+  DatesetHandle* out) {
+
+  OverallConfig config;
+  DatasetLoader loader(config.io_config, nullptr);
+  *out = loader.LoadFromBinFile(filename, 0, 1);
+  return 0;
+}
+
+DllExport int LGBM_CreateDatasetFromMat(const void* data,
+  int float_type,
+  int32_t nrow,
+  int32_t ncol,
+  int is_row_major,
+  const char* parameters,
+  const DatesetHandle* reference,
+  DatesetHandle* out) {
+
+  OverallConfig config;
+  config.LoadFromString(parameters);
+  DatasetLoader loader(config.io_config, nullptr);
+  Dataset* ret = nullptr;
+  auto get_row_fun = Common::GetRowFunctionFromMat(float_type, is_row_major);
+  if (reference == nullptr) {
+    // sample data first
+    Random rand(config.io_config.data_random_seed);
+    const size_t sample_cnt = static_cast<size_t>(nrow < config.io_config.bin_construct_sample_cnt ? nrow : config.io_config.bin_construct_sample_cnt);
+    auto sample_indices = rand.Sample(nrow, sample_cnt);
+    std::vector<std::vector<double>> sample_data(ncol);
+    for (size_t i = 0; i < sample_indices.size(); i++) {
+      auto idx = sample_indices[i];
+      auto row = get_row_fun(data, nrow, ncol, static_cast<int>(idx));
+      for (size_t j = 0; j < row.size(); j++) {
+        sample_data[j].push_back(row[j]);
+      }
+    }
+    ret = loader.CostructFromSampleData(sample_data, nrow);
+  } else {
+    ret = new Dataset();
+    // need to set num_data first
+    ret->SetNumData(nrow);
+    reinterpret_cast<const Dataset*>(*reference)->CopyFeatureMetadataTo(ret, config.io_config.is_enable_sparse);
+  }
+
+#pragma omp parallel for schedule(guided)
+  for (int i = 0; i < nrow; ++i) {
+    const int tid = omp_get_thread_num();
+    auto one_row = get_row_fun(data, nrow, ncol, i);
+    ret->PushOneRow(tid, i, one_row);
+  }
+  ret->FinishLoad();
+  *out = ret;
+  return 1;
+}
