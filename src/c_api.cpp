@@ -193,6 +193,7 @@ DllExport int LGBM_CreateDatasetFromCSR(const int32_t* indptr,
   int float_type,
   uint64_t nindptr,
   uint64_t nelem,
+  uint64_t num_col,
   const char* parameters,
   const DatesetHandle* reference,
   DatesetHandle* out) {
@@ -229,6 +230,7 @@ DllExport int LGBM_CreateDatasetFromCSR(const int32_t* indptr,
         sample_values[inner_data.first][i] = inner_data.second;
       }
     }
+    CHECK(num_col >= sample_values.size());
     ret = loader.CostructFromSampleData(sample_values, nrow);
   } else {
     ret = new Dataset();
@@ -246,6 +248,54 @@ DllExport int LGBM_CreateDatasetFromCSR(const int32_t* indptr,
   ret->FinishLoad();
   *out = ret;
 
+  return 0;
+}
+
+
+DllExport int LGBM_CreateDatasetFromCSC(const int32_t* col_ptr,
+  const int32_t* indices,
+  const void* data,
+  int float_type,
+  uint64_t ncol_ptr,
+  uint64_t nelem,
+  uint64_t num_row,
+  const char* parameters,
+  const DatesetHandle* reference,
+  DatesetHandle* out) {
+  OverallConfig config;
+  config.LoadFromString(parameters);
+  DatasetLoader loader(config.io_config, nullptr);
+  Dataset* ret = nullptr;
+  auto get_col_fun = Common::GetColFunctionFromCSC(col_ptr, indices, data, float_type, ncol_ptr, nelem);
+  int32_t nrow = static_cast<int32_t>(num_row);
+  if (reference == nullptr) {
+    Log::Warning("Construct from CSC format is not efficient");
+    // sample data first
+    Random rand(config.io_config.data_random_seed);
+    const size_t sample_cnt = static_cast<size_t>(nrow < config.io_config.bin_construct_sample_cnt ? nrow : config.io_config.bin_construct_sample_cnt);
+    auto sample_indices = rand.Sample(nrow, sample_cnt);
+    std::vector<std::vector<double>> sample_values(ncol_ptr - 1);
+#pragma omp parallel for schedule(guided)
+    for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
+      auto cur_col = get_col_fun(i);
+      sample_values[i] = Common::SampleFromOneColumn(cur_col, sample_indices);
+    }
+    ret = loader.CostructFromSampleData(sample_values, nrow);
+  } else {
+    ret = new Dataset();
+    // need to set num_data first
+    ret->SetNumData(nrow);
+    reinterpret_cast<const Dataset*>(*reference)->CopyFeatureMetadataTo(ret, config.io_config.is_enable_sparse);
+  }
+
+#pragma omp parallel for schedule(guided)
+  for (int i = 0; i < ncol_ptr - 1; ++i) {
+    const int tid = omp_get_thread_num();
+    auto one_col = get_col_fun(i);
+    ret->PushOneCol(tid, i, one_col);
+  }
+  ret->FinishLoad();
+  *out = ret;
   return 0;
 }
 
@@ -268,7 +318,7 @@ DllExport int LGBM_DatasetSetField(DatesetHandle handle,
   uint64_t num_element,
   int type) {
   auto dataset = reinterpret_cast<Dataset*>(handle);
-  dataset->SetField(field_name, field_data, num_element, type);
+  dataset->SetField(field_name, field_data, static_cast<int32_t>(num_element), type);
   return 0;
 }
 

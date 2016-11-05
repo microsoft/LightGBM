@@ -267,6 +267,15 @@ public:
     }
   }
 
+  inline void PushOneCol(int tid, data_size_t col_idx, const std::vector<std::pair<int, double>>& feature_values) {
+    int feature_idx = used_feature_map_[col_idx];
+    if (feature_idx >= 0) {
+      for (auto& inner_data : feature_values) {
+        features_[feature_idx]->PushData(tid, inner_data.first, inner_data.second);
+      }
+    }
+  }
+
   inline void SetNumData(data_size_t num_data) {
     num_data_ = num_data;
   }

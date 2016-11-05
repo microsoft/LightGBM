@@ -462,6 +462,52 @@ GetRowFunctionFromCSR(const int32_t* indptr, const int32_t* indices, const void*
   }
 }
 
+inline std::function<std::vector<std::pair<int, double>>(int idx)>
+GetColFunctionFromCSC(const int32_t* col_ptr, const int32_t* indices, const void* data, int float_type, uint64_t ncol_ptr, uint64_t nelem) {
+  if (float_type == 0) {
+    const float* dptr = reinterpret_cast<const float*>(data);
+    return [&col_ptr, &indices, &dptr, &ncol_ptr, &nelem](int idx) {
+      CHECK(idx + 1 < ncol_ptr);
+      std::vector<std::pair<int, double>> ret;
+      int32_t start = col_ptr[idx];
+      int32_t end = col_ptr[idx + 1];
+      CHECK(start >= 0 && end < nelem);
+      for (int32_t i = start; i < end; ++i) {
+        ret.emplace_back(indices[i], dptr[i]);
+      }
+      return ret;
+    };
+  } else {
+    const double* dptr = reinterpret_cast<const double*>(data);
+    return [&col_ptr, &indices, &dptr, &ncol_ptr, &nelem](int idx) {
+      CHECK(idx + 1 < ncol_ptr);
+      std::vector<std::pair<int, double>> ret;
+      int32_t start = col_ptr[idx];
+      int32_t end = col_ptr[idx + 1];
+      CHECK(start >= 0 && end < nelem);
+      for (int32_t i = start; i < end; ++i) {
+        ret.emplace_back(indices[i], dptr[i]);
+      }
+      return ret;
+    };
+  }
+}
+
+inline std::vector<double> SampleFromOneColumn(const std::vector<std::pair<int, double>>& data, const std::vector<size_t>& indices) {
+  size_t j = 0;
+  std::vector<double> ret;
+  for (auto row_idx : indices) {
+    while (j < data.size() && data[j].first < row_idx) {
+      ++j;
+    }
+    if (j < data.size() && data[j].first == row_idx) {
+      ret.push_back(data[j].second);
+    } else {
+      ret.push_back(0);
+    }
+  }
+  return ret;
+}
 
 }  // namespace Common
 
