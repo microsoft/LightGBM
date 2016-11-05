@@ -1,5 +1,6 @@
 #include <LightGBM/boosting.h>
 #include "gbdt.h"
+#include "dart.h"
 
 namespace LightGBM {
 
@@ -8,6 +9,8 @@ BoostingType GetBoostingTypeFromModelFile(const char* filename) {
   std::string type = model_reader.first_line();
   if (type == std::string("gbdt")) {
     return BoostingType::kGBDT;
+  } else if (type == std::string("dart")) {
+    return BoostingType::kDART;
   }
   return BoostingType::kUnknow;
 }
@@ -28,6 +31,8 @@ Boosting* Boosting::CreateBoosting(BoostingType type, const char* filename) {
   if (filename[0] == '\0') {
     if (type == BoostingType::kGBDT) {
       return new GBDT();
+    } else if (type == BoostingType::kDART) {
+      return new DART();
     } else {
       return nullptr;
     }
@@ -37,6 +42,8 @@ Boosting* Boosting::CreateBoosting(BoostingType type, const char* filename) {
     if (type_in_file == type) {
       if (type == BoostingType::kGBDT) {
         ret = new GBDT();
+      } else if (type == BoostingType::kDART) {
+        ret = new DART();
       }
       LoadFileToBoosting(ret, filename);
     } else {
@@ -51,6 +58,8 @@ Boosting* Boosting::CreateBoosting(const char* filename) {
   Boosting* ret = nullptr;
   if (type == BoostingType::kGBDT) {
     ret = new GBDT();
+  } else if (type == BoostingType::kDART) {
+    ret = new DART();
   }
   LoadFileToBoosting(ret, filename);
   return ret;

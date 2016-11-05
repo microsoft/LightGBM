@@ -211,7 +211,7 @@ void Application::InitTrain() {
     Network::Init(config_.network_config);
     Log::Info("Finish network initialization");
     // sync global random seed for feature patition
-    if (config_.boosting_type == BoostingType::kGBDT) {
+    if (config_.boosting_type == BoostingType::kGBDT || config_.boosting_type == BoostingType::kDART) {
       GBDTConfig* gbdt_config =
         dynamic_cast<GBDTConfig*>(config_.boosting_config);
       gbdt_config->tree_config.feature_fraction_seed =
@@ -248,6 +248,7 @@ void Application::Train() {
   int total_iter = config_.boosting_config->num_iterations;
   bool is_finished = false;
   bool need_eval = true;
+  bool save_model_during_training = (config_.boosting_type != BoostingType::kDART);
   auto start_time = std::chrono::high_resolution_clock::now();
   for (int iter = 0; iter < total_iter && !is_finished; ++iter) {
     is_finished = boosting_->TrainOneIter(nullptr, nullptr, need_eval);
@@ -255,7 +256,9 @@ void Application::Train() {
     // output used time per iteration
     Log::Info("%f seconds elapsed, finished %d iteration", std::chrono::duration<double,
       std::milli>(end_time - start_time) * 1e-3, iter + 1);
-    boosting_->SaveModelToFile(is_finished, config_.io_config.output_model.c_str());
+    if (save_model_during_training) {
+        boosting_->SaveModelToFile(is_finished, config_.io_config.output_model.c_str());
+    }
   }
   is_finished = true;
   // save model to file

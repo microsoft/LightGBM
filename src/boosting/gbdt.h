@@ -44,7 +44,7 @@ public:
   /*!
   * \brief one training iteration
   */
-  bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override;
+  virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override;
 
   /*! \brief Get eval result */
   std::vector<std::string> EvalCurrent(bool is_eval_train) const override;
@@ -119,9 +119,9 @@ public:
   /*!
   * \brief Get Type name of this boosting object
   */
-  const char* Name() const override { return "gbdt"; }
+  virtual const char* Name() const override { return "gbdt"; }
 
-private:
+protected:
   /*!
   * \brief Implement bagging logic
   * \param iter Current interation
@@ -144,7 +144,7 @@ private:
   * \param tree Trained tree of this iteration
   * \param curr_class Current class for multiclass training
   */
-  void UpdateScore(const Tree* tree, const int curr_class);
+  virtual void UpdateScore(const Tree* tree, const int curr_class);
   /*!
   * \brief Print metric result of current iteration
   * \param iter Current interation

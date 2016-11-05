@@ -42,7 +42,7 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
   GetMetricType(params);
 
   // construct boosting configs
-  if (boosting_type == BoostingType::kGBDT) {
+  if (boosting_type == BoostingType::kGBDT || boosting_type == BoostingType::kDART) {
     boosting_config = new GBDTConfig();
   }
 
@@ -76,6 +76,8 @@ void OverallConfig::GetBoostingType(const std::unordered_map<std::string, std::s
     std::transform(value.begin(), value.end(), value.begin(), ::tolower);
     if (value == std::string("gbdt") || value == std::string("gbrt")) {
       boosting_type = BoostingType::kGBDT;
+    } else if (value == std::string("dart")) {
+      boosting_type = BoostingType::kDART;
     } else {
       Log::Fatal("Boosting type %s error", value.c_str());
     }
@@ -294,6 +296,9 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   CHECK(output_freq >= 0);
   GetBool(params, "is_training_metric", &is_provide_training_metric);
   GetInt(params, "num_class", &num_class);
+  GetInt(params, "dropping_seed", &dropping_seed);
+  GetDouble(params, "drop_rate", &drop_rate);
+  CHECK(drop_rate <= 1.0 && drop_rate >= 0.0);
 }
 
 void GBDTConfig::GetTreeLearnerType(const std::unordered_map<std::string, std::string>& params) {
