@@ -112,7 +112,7 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
   if (has_ordered_bin_) {
     is_data_in_leaf_ = new char[num_data_];
   }
-  Log::Info("Number of data:%d, Number of features:%d", num_data_, num_features_);
+  Log::Info("Number of data: %d, number of features: %d", num_data_, num_features_);
 }
 
 
@@ -142,7 +142,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
     const SplitInfo& best_leaf_SplitInfo = best_split_per_leaf_[best_leaf];
     // cannot split, quit
     if (best_leaf_SplitInfo.gain <= 0.0) {
-      Log::Info("cannot find more split with gain = %f , current #leaves=%d",
+      Log::Info("No further splits with positive gain, best gain: %f, leaves: %d",
                    best_leaf_SplitInfo.gain, split + 1);
       break;
     }
@@ -266,7 +266,7 @@ bool SerialTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
   if (right_leaf < 0) {
     histogram_pool_.Get(left_leaf, &smaller_leaf_histogram_array_);
     larger_leaf_histogram_array_ = nullptr;
-    
+
   } else if (num_data_in_left_child < num_data_in_right_child) {
     smaller_leaf = left_leaf;
     larger_leaf = right_leaf;

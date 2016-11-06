@@ -21,7 +21,7 @@ public:
   explicit BinaryMetric(const MetricConfig& config) {
     sigmoid_ = static_cast<score_t>(config.sigmoid);
     if (sigmoid_ <= 0.0f) {
-      Log::Fatal("Sigmoid param %f should greater than zero", sigmoid_);
+      Log::Fatal("Sigmoid parameter %f should greater than zero", sigmoid_);
     }
   }
 
