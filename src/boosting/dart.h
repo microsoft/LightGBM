@@ -53,9 +53,15 @@ private:
   */
   void UpdateScore(const Tree* tree, const int curr_class) override;
   /*!
-  * \brief select dropping tree and normailize
+  * \brief drop trees based on drop_rate
   */
-  double SelectDroppingTreesAndNormalize();
+  double DroppingTrees();
+  /*!
+  * \brief normailize based on shrinkage_rate
+  */
+  void Normailize(double shrinkage_rate);
+  /*! \brief The indexes of dropping trees */
+  std::vector<size_t> drop_index_;
   /*! \brief Dropping rate */
   double drop_rate_;
   /*! \brief Random generator, used to select dropping trees */

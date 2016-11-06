@@ -38,7 +38,10 @@ bool DART::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
     gradient = gradients_;
     hessian = hessians_;
   }
-
+  
+  // drop trees
+  double shrinkage_rate = DroppingTrees();
+  
   for (int curr_class = 0; curr_class < num_class_; ++curr_class){
     // bagging logic
     Bagging(iter_, curr_class);
@@ -49,20 +52,16 @@ bool DART::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
       Log::Info("Can't training anymore, there isn't any leaf meets split requirements.");
       return true;
     }
+    // shrink new tree
+    new_tree->Shrinkage(shrinkage_rate);
+    // update score
+    UpdateScore(new_tree, curr_class);
     // add model
     models_.push_back(new_tree);
   }
 
-  // select dropping trees and normalize once in one iteration
-  double new_tree_shrinkage_rate = SelectDroppingTreesAndNormalize();
-  size_t len = models_.size();
-    
-  for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-    // shrinkage by learning rate
-    models_[len - 1 - curr_class]->Shrinkage(new_tree_shrinkage_rate);
-    // update score
-    UpdateScore(models_[len - 1 - curr_class], curr_class);
-  }
+  // normailize
+  Normailize(shrinkage_rate);
   
   bool is_met_early_stopping = false;
   // print message for metric
@@ -91,37 +90,41 @@ void DART::UpdateScore(const Tree* tree, const int curr_class) {
   }
 }
 
-double DART::SelectDroppingTreesAndNormalize(){
-    // if drop rate is too small, treat it as a standard gbdt
-    if (drop_rate_ < kEpsilon) {
-        return gbdt_config_->learning_rate;
-    }
-    // select dropping tree indexes based on drop_rate
-    std::vector<int> drop_index;
-    for (int i = 0; i < iter_; ++i){
-        if (random_for_drop_.NextDouble() < drop_rate_) {
-            drop_index.push_back(i);
-        }
-    }
-    /*
-     * according to the paper, assume number of dropping trees is k:
-     * new_tree_shrinkage_rate is n = 1 / (1 + k)
-     * drop_tree_shrinkage_rate is m = k / (1 + k)
-     * first, shrink the dropping trees to m - 1 = -n
-     * update the score, the dropping trees will weight 1 + (m - 1) = m
-     * then, shrink the dropping trees to m / (m - 1) = -k
-     */
-    double k = static_cast<double>(drop_index.size());
-    double new_tree_shrinkage_rate = 1.0 / (1.0 + k);
-    for (int i: drop_index){
-      for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-        int curr_tree = i * num_class_ + curr_class;
-        models_[curr_tree]->Shrinkage(-new_tree_shrinkage_rate);
-        UpdateScore(models_[curr_tree], curr_class);
-        models_[curr_tree]->Shrinkage(-k);
+double DART::DroppingTrees(){
+  drop_index_.clear();
+  // select dropping tree indexes based on drop_rate
+  // if drop rate is too small, skip this step, drop one tree randomly
+  if (drop_rate_ > kEpsilon) {
+    for (size_t i = 0; i < static_cast<size_t>(iter_); ++i){
+      if (random_for_drop_.NextDouble() < drop_rate_) {
+        drop_index_.push_back(i);
       }
     }
-    return new_tree_shrinkage_rate;
+  }
+  // binomial-plus-one, at least one tree will be dropped
+  if (drop_index_.empty()){
+    drop_index_ = random_for_drop_.Sample(iter_, 1);
+  }
+  // drop trees
+  for (int i: drop_index_){
+    for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
+      int curr_tree = i * num_class_ + curr_class;
+      models_[curr_tree]->Shrinkage(-1);
+      UpdateScore(models_[curr_tree], curr_class);
+    }
+  }
+  return 1.0 / (1.0 + drop_index_.size());
+}
+
+void DART::Normailize(double shrinkage_rate) {
+  double k = static_cast<double>(drop_index_.size());
+  for (int i: drop_index_){
+    for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
+      int curr_tree = i * num_class_ + curr_class;
+      models_[curr_tree]->Shrinkage(-k * shrinkage_rate);
+      UpdateScore(models_[curr_tree], curr_class);
+    }
+  }
 }
 
 }  // namespace LightGBM
