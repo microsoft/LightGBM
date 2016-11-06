@@ -197,7 +197,8 @@ void Dataset::LoadDataToMemory(int rank, int num_machines, bool is_pre_partition
         [this, rank, num_machines, &qid, &query_boundaries, &is_query_used, num_queries]
       (data_size_t line_idx) {
         if (qid >= num_queries) {
-          Log::Fatal("Current query is exceed the range of query file, please ensure your query file is correct");
+          Log::Fatal("Current query exceed the range of query file, \
+                      please ensure your query file is correct");
         }
         if (line_idx >= query_boundaries[qid + 1]) {
           // if is new query
