@@ -81,14 +81,14 @@ inline static std::vector<std::string> Split(const char* c_str, const char* deli
   return ret;
 }
 
-template<typename T>
-inline std::string Join(const std::vector<T>& data, char delimiters) {
-  std::stringstream result_stream_buf;
-  result_stream_buf << data[0];
-  for (size_t i = 1; i < data.size(); ++i) {
-    result_stream_buf << delimiters << data[i];
+inline static std::string FindFromLines(const std::vector<std::string>& lines, const char* key_word) {
+  for (auto& line : lines) {
+    size_t find_pos = line.find(key_word);
+    if (find_pos != std::string::npos) {
+      return line;
+    }
   }
-  return result_stream_buf.str();
+  return "";
 }
 
 inline static const char* Atoi(const char* p, int* out) {
@@ -310,7 +310,8 @@ inline static std::vector<int> StringToIntArray(const std::string& str, char del
   return ret;
 }
 
-inline static std::string Join(const std::vector<std::string>& strs, char delimiter) {
+template<typename T>
+inline static std::string Join(const std::vector<T>& strs, char delimiter) {
   if (strs.size() <= 0) {
     return std::string("");
   }
@@ -323,7 +324,8 @@ inline static std::string Join(const std::vector<std::string>& strs, char delimi
   return ss.str();
 }
 
-inline static std::string Join(const std::vector<std::string>& strs, size_t start, size_t end, char delimiter) {
+template<typename T>
+inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end, char delimiter) {
   if (end - start <= 0) {
     return std::string("");
   }

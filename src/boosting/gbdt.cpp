@@ -403,79 +403,40 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
   // use serialized string to restore this object
   models_.clear();
   std::vector<std::string> lines = Common::Split(model_str.c_str(), '\n');
-  size_t i = 0;
 
   // get number of classes
-  while (i < lines.size()) {
-    size_t find_pos = lines[i].find("num_class=");
-    if (find_pos != std::string::npos) {
-      std::vector<std::string> strs = Common::Split(lines[i].c_str(), '=');
-      Common::Atoi(strs[1].c_str(), &num_class_);
-      ++i;
-      break;
-    } else {
-      ++i;
-    }
-  }
-  if (i == lines.size()) {
+  auto line = Common::FindFromLines(lines, "num_class=");
+  if (line.size() > 0) {
+    Common::Atoi(Common::Split(line.c_str(), '=')[1].c_str(), &num_class_);
+  } else {
     Log::Fatal("Model file doesn't specify the number of classes");
     return;
   }
-
   // get index of label
-  i = 0;
-  while (i < lines.size()) {
-    size_t find_pos = lines[i].find("label_index=");
-    if (find_pos != std::string::npos) {
-      std::vector<std::string> strs = Common::Split(lines[i].c_str(), '=');
-      Common::Atoi(strs[1].c_str(), &label_idx_);
-      ++i;
-      break;
-    } else {
-      ++i;
-    }
-  }
-  if (i == lines.size()) {
+  line = Common::FindFromLines(lines, "label_index=");
+  if (line.size() > 0) {
+    Common::Atoi(Common::Split(line.c_str(), '=')[1].c_str(), &label_idx_);
+  } else {
     Log::Fatal("Model file doesn't specify the label index");
     return;
   }
-
   // get max_feature_idx first
-  i = 0;
-  while (i < lines.size()) {
-    size_t find_pos = lines[i].find("max_feature_idx=");
-    if (find_pos != std::string::npos) {
-      std::vector<std::string> strs = Common::Split(lines[i].c_str(), '=');
-      Common::Atoi(strs[1].c_str(), &max_feature_idx_);
-      ++i;
-      break;
-    } else {
-      ++i;
-    }
-  }
-  if (i == lines.size()) {
+  line = Common::FindFromLines(lines, "max_feature_idx=");
+  if (line.size() > 0) {
+    Common::Atoi(Common::Split(line.c_str(), '=')[1].c_str(), &max_feature_idx_);
+  } else {
     Log::Fatal("Model file doesn't specify max_feature_idx");
     return;
   }
   // get sigmoid parameter
-  i = 0;
-  while (i < lines.size()) {
-    size_t find_pos = lines[i].find("sigmoid=");
-    if (find_pos != std::string::npos) {
-      std::vector<std::string> strs = Common::Split(lines[i].c_str(), '=');
-      Common::Atof(strs[1].c_str(), &sigmoid_);
-      ++i;
-      break;
-    } else {
-      ++i;
-    }
-  }
-  // if sigmoid doesn't exists
-  if (i == lines.size()) {
+  line = Common::FindFromLines(lines, "sigmoid=");
+  if (line.size() > 0) {
+    Common::Atof(Common::Split(line.c_str(), '=')[1].c_str(), &sigmoid_);
+  } else {
     sigmoid_ = -1.0f;
   }
   // get tree models
-  i = 0;
+  size_t i = 0;
   while (i < lines.size()) {
     size_t find_pos = lines[i].find("Tree=");
     if (find_pos != std::string::npos) {
@@ -483,7 +444,7 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
       int start = static_cast<int>(i);
       while (i < lines.size() && lines[i].find("Tree=") == std::string::npos) { ++i; }
       int end = static_cast<int>(i);
-      std::string tree_str = Common::Join(lines, start, end, '\n');
+      std::string tree_str = Common::Join<std::string>(lines, start, end, '\n');
       models_.push_back(new Tree(tree_str));
     } else {
       ++i;
