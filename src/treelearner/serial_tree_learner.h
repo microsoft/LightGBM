@@ -115,6 +115,8 @@ protected:
   data_size_t min_num_data_one_leaf_;
   /*! \brief minimal sum hessian on one leaf */
   double min_sum_hessian_one_leaf_;
+  /*! \brief lambda of the L1 weights regularization */
+  double lambda_l1_;
   /*! \brief lambda of the L2 weights regularization */
   double lambda_l2_;
   /*! \brief minimal gain (loss reduction) to split */
