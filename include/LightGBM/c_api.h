@@ -262,7 +262,7 @@ DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
 DllExport int LGBM_BoosterEval(BoosterHandle handle,
   int data,
   uint64_t* out_len,
-  double* out_results);
+  float* out_results);
 
 /*!
 * \brief get raw score for training data, used to calculate gradients outside
@@ -287,7 +287,7 @@ this can be used to support customized eval function
 DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
   int data,
   uint64_t* out_len,
-  const float** out_result);
+  float* out_result);
 
 /*!
 * \brief make prediction for an new data set
@@ -322,40 +322,11 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
 /*!
 * \brief make prediction for an new data set
 * \param handle handle
-* \param col_ptr pointer to col headers
-* \param indices findex
-* \param data fvalue
-* \param float_type 0:float_32 1:float64
-* \param ncol_ptr number of rows in the matix + 1
-* \param nelem number of nonzero elements in the matrix
-* \param num_row number of rows; when it's set to 0, then guess from data
-* \param predict_type
-*          0:raw score
-*          1:with transform(if needed)
-*          2:leaf index
-* \param n_used_trees number of used tree
-* \param out_result used to set a pointer to array
-* \return 0 when success, -1 when failure happens
-*/
-DllExport int LGBM_BoosterPredictForCSC(BoosterHandle handle,
-  const int32_t* col_ptr,
-  const int32_t* indices,
-  const void* data,
-  int float_type,
-  uint64_t ncol_ptr,
-  uint64_t nelem,
-  uint64_t num_row,
-  int predict_type,
-  uint64_t n_used_trees,
-  double* out_result);
-
-/*!
-* \brief make prediction for an new data set
-* \param handle handle
 * \param data pointer to the data space
 * \param float_type 0:float_32 1:float64
 * \param nrow number of rows
 * \param ncol number columns
+* \param is_row_major 1 for row major, 0 for column major
 * \param predict_type
 *          0:raw score
 *          1:with transform(if needed)
@@ -369,6 +340,7 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
   int float_type,
   int32_t nrow,
   int32_t ncol,
+  int is_row_major,
   int predict_type,
   uint64_t n_used_trees,
   double* out_result);

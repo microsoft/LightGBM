@@ -16,19 +16,21 @@
 #include <cstring>
 #include <memory>
 
+#include "./application/predictor.hpp"
+
 namespace LightGBM {
 
 class Booster {
 public:
   explicit Booster(const char* filename):
-    boosting_(Boosting::CreateBoosting(filename)) {
+    boosting_(Boosting::CreateBoosting(filename)), predictor_(nullptr) {
   }
 
   Booster(const Dataset* train_data, 
     std::vector<const Dataset*> valid_data, 
     std::vector<std::string> valid_names,
     const char* parameters)
-    :train_data_(train_data), valid_datas_(valid_data) {
+    :train_data_(train_data), valid_datas_(valid_data), predictor_(nullptr) {
     config_.LoadFromString(parameters);
     // create boosting
     if (config_.io_config.input_model.size() > 0) {
@@ -87,6 +89,7 @@ public:
     valid_metrics_.clear();
     if (boosting_ != nullptr) { delete boosting_; }
     if (objective_fun_ != nullptr) { delete objective_fun_; }
+    if (predictor_ != nullptr) { delete predictor_; }
   }
 
   bool TrainOneIter() {
@@ -99,13 +102,31 @@ public:
 
   void PrepareForPrediction(int num_used_model, int predict_type) {
     boosting_->SetNumUsedModel(num_used_model);
+    if (predictor_ != nullptr) { delete predictor_; }
+    bool is_predict_leaf = false;
+    bool is_raw_score = false;
+    if (predict_type == 2) {
+      is_predict_leaf = true;
+    } else if (predict_type == 1) {
+      is_raw_score = false;
+    } else {
+      is_raw_score = true;
+    }
+    predictor_ = new Predictor(boosting_, is_raw_score, is_predict_leaf);
   }
 
+  std::vector<double> Predict(const std::vector<std::pair<int, double>>& features) {
+    return predictor_->GetPredictFunction()(features);
+  }
+
+  void SaveModelToFile(int num_used_model, const char* filename) {
+    boosting_->SaveModelToFile(num_used_model, true, filename);
+  }
   const Boosting* GetBoosting() const { return boosting_; }
 
-private:
+  const inline int NumberOfClass() const { return boosting_->NumberOfClass(); }
 
-  std::function<std::vector<double>(const std::vector<std::pair<int, double>>&)> predict_fun;
+private:
 
   Boosting* boosting_;
   /*! \brief All configs */
@@ -120,6 +141,8 @@ private:
   std::vector<std::vector<Metric*>> valid_metrics_;
   /*! \brief Training objective function */
   ObjectiveFunction* objective_fun_;
+  /*! \brief Using predictor for prediction task */
+  Predictor* predictor_;
 
 };
 
@@ -421,14 +444,14 @@ DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
 DllExport int LGBM_BoosterEval(BoosterHandle handle,
   int data,
   uint64_t* out_len,
-  double* out_results) {
+  float* out_results) {
 
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto boosting = ref_booster->GetBoosting();
   auto result_buf = boosting->GetEvalAt(data);
   *out_len = static_cast<uint64_t>(result_buf.size());
   for (size_t i = 0; i < result_buf.size(); ++i) {
-    (out_results)[i] = result_buf[i];
+    (out_results)[i] = static_cast<float>(result_buf[i]);
   }
   return 0;
 }
@@ -446,6 +469,19 @@ DllExport int LGBM_BoosterGetScore(BoosterHandle handle,
   return 0;
 }
 
+DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
+  int data,
+  uint64_t* out_len,
+  float* out_result) {
+
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  auto boosting = ref_booster->GetBoosting();
+  int len = 0;
+  boosting->GetPredict(data, out_result, &len);
+  *out_len = static_cast<uint64_t>(len);
+  return 0;
+}
+
 DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   const int32_t* indptr,
   const int32_t* indices,
@@ -453,63 +489,53 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   int float_type,
   uint64_t nindptr,
   uint64_t nelem,
-  uint64_t num_col,
+  uint64_t,
   int predict_type,
   uint64_t n_used_trees,
-  double* out_result);
+  double* out_result) {
 
-/*!
-* \brief make prediction for an new data set
-* \param handle handle
-* \param col_ptr pointer to col headers
-* \param indices findex
-* \param data fvalue
-* \param nindptr number of rows in the matix + 1
-* \param nelem number of nonzero elements in the matrix
-* \param num_row number of rows; when it's set to 0, then guess from data
-* \param predict_type
-*          0:raw score
-*          1:with sigmoid transform(if needed)
-*          2:leaf index
-* \param n_used_trees number of used tree
-* \param out_result used to set a pointer to array
-* \return 0 when success, -1 when failure happens
-*/
-DllExport int LGBM_BoosterPredictForCSC(BoosterHandle handle,
-  const int32_t* col_ptr,
-  const int32_t* indices,
-  const void* data,
-  int float_type,
-  uint64_t nindptr,
-  uint64_t nelem,
-  uint64_t num_row,
-  int predict_type,
-  uint64_t n_used_trees,
-  double* out_result);
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  ref_booster->PrepareForPrediction(static_cast<int>(n_used_trees), predict_type);
 
-/*!
-* \brief make prediction for an new data set
-* \param handle handle
-* \param data pointer to the data space
-* \param nrow number of rows
-* \param ncol number columns
-* \param missing which value to represent missing value
-* \param predict_type
-*          0:raw score
-*          1:with sigmoid transform(if needed)
-*          2:leaf index
-* \param n_used_trees number of used tree
-* \param out_result used to set a pointer to array
-* \return 0 when success, -1 when failure happens
-*/
+  auto get_row_fun = Common::RowFunctionFromCSR(indptr, indices, data, float_type, nindptr, nelem);
+  int num_class = ref_booster->NumberOfClass();
+  int nrow = static_cast<int>(nindptr - 1);
+#pragma omp parallel for schedule(guided)
+  for (int i = 0; i < nrow; ++i) {
+    auto one_row = get_row_fun(i);
+    auto predicton_result = ref_booster->Predict(one_row);
+    for (int j = 0; j < num_class; j++) {
+      out_result[i * num_class + j] = predicton_result[j];
+    }
+  }
+  return 0;
+}
+
 DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
   const void* data,
   int float_type,
   int32_t nrow,
   int32_t ncol,
+  int is_row_major,
   int predict_type,
   uint64_t n_used_trees,
-  double* out_result);
+  double* out_result) {
+
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  ref_booster->PrepareForPrediction(static_cast<int>(n_used_trees), predict_type);
+
+  auto get_row_fun = Common::RowPairFunctionFromDenseMatric(data, nrow, ncol, float_type, is_row_major);
+  int num_class = ref_booster->NumberOfClass();
+#pragma omp parallel for schedule(guided)
+  for (int i = 0; i < nrow; ++i) {
+    auto one_row = get_row_fun(i);
+    auto predicton_result = ref_booster->Predict(one_row);
+    for (int j = 0; j < num_class; j++) {
+      out_result[i * num_class + j] = predicton_result[j];
+    }
+  }
+  return 0;
+}
 
 /*!
 * \brief save model into file
@@ -520,4 +546,9 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
 */
 DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
   int num_used_model,
-  const char* filename);
+  const char* filename) {
+
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  ref_booster->SaveModelToFile(num_used_model, filename);
+  return 0;
+}

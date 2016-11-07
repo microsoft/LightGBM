@@ -293,10 +293,52 @@ std::vector<double> GBDT::GetEvalAt(int data_idx) const {
   return ret;
 }
 
-/*! \brief Get prediction result */
+/*! \brief Get training scores result */
 const score_t* GBDT::GetTrainingScore(data_size_t* out_len) const {
   *out_len = train_score_updater_->num_data() * num_class_;
   return train_score_updater_->score();
+}
+
+void GBDT::GetPredict(int data_idx, score_t* out_result, data_size_t* out_len) const {
+  CHECK(data_idx >= 0 && data_idx <= static_cast<int>(valid_metrics_.size()));
+  std::vector<double> ret;
+
+  const score_t* raw_scores = nullptr;
+  data_size_t num_data = 0;
+  if (data_idx == 0) {
+    raw_scores = train_score_updater_->score();
+    num_data = train_score_updater_->num_data();
+  } else {
+    auto used_idx = data_idx - 1;
+    raw_scores = valid_score_updater_[used_idx]->score();
+    num_data = valid_score_updater_[used_idx]->num_data();
+  }
+  *out_len = num_data * num_class_;
+
+  if (num_class_ > 1) {
+#pragma omp parallel for schedule(guided)
+    for (data_size_t i = 0; i < num_data; ++i) {
+      std::vector<double> tmp_result;
+      for (int j = 0; j < num_class_; ++j) {
+        tmp_result.push_back(raw_scores[j * num_data + i]);
+      }
+      Common::Softmax(&tmp_result);
+      for (int j = 0; j < num_class_; ++j) {
+        out_result[j * num_data + i] = static_cast<score_t>(tmp_result[i]);
+      }
+    }
+  } else if(sigmoid_ > 0){
+#pragma omp parallel for schedule(guided)
+    for (data_size_t i = 0; i < num_data; ++i) {
+      out_result[i] = static_cast<score_t>(1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * raw_scores[i])));
+    }
+  } else {
+#pragma omp parallel for schedule(guided)
+    for (data_size_t i = 0; i < num_data; ++i) {
+      out_result[i] = raw_scores[i];
+    }
+  }
+
 }
 
 void GBDT::Boosting() {
@@ -304,14 +346,15 @@ void GBDT::Boosting() {
     Log::Fatal("No object function provided");
   }
   // objective function will calculate gradients and hessians
+  int num_score = 0;
   object_function_->
-    GetGradients(train_score_updater_->score(), gradients_, hessians_);
+    GetGradients(GetTrainingScore(&num_score), gradients_, hessians_);
 }
 
-void GBDT::SaveModelToFile(bool is_finish, const char* filename) {
+void GBDT::SaveModelToFile(int num_used_model, bool is_finish, const char* filename) {
 
   // first time to this function, open file
-  if (saved_model_size_ == -1) {
+  if (saved_model_size_ < 0) {
     model_output_file_.open(filename);
     // output model type
     model_output_file_ << "gbdt" << std::endl;
@@ -330,7 +373,12 @@ void GBDT::SaveModelToFile(bool is_finish, const char* filename) {
   if (!model_output_file_.is_open()) {
     return;
   }
-  int rest = static_cast<int>(models_.size()) - early_stopping_round_ * num_class_;
+  if (num_used_model_ == NO_LIMIT) {
+    num_used_model = static_cast<int>(models_.size());
+  } else {
+    num_used_model = num_used_model * num_class_;
+  }
+  int rest = num_used_model - early_stopping_round_ * num_class_;
   // output tree models
   for (int i = saved_model_size_; i < rest; ++i) {
     model_output_file_ << "Tree=" << i << std::endl;
@@ -342,7 +390,7 @@ void GBDT::SaveModelToFile(bool is_finish, const char* filename) {
   model_output_file_.flush();
   // training finished, can close file
   if (is_finish) {
-    for (int i = saved_model_size_; i < static_cast<int>(models_.size()); ++i) {
+    for (int i = saved_model_size_; i < num_used_model; ++i) {
       model_output_file_ << "Tree=" << i << std::endl;
       model_output_file_ << models_[i]->ToString() << std::endl;
     }

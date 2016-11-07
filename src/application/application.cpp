@@ -125,11 +125,8 @@ void Application::LoadData() {
   Predictor* predictor = nullptr;
   // need to continue training
   if (boosting_->NumberOfSubModels() > 0) {
-    predictor = new Predictor(boosting_, config_.io_config.is_raw_score, config_.predict_leaf_index);
-    predict_fun =
-      [&predictor](const std::vector<std::pair<int, double>>& features) {
-      return predictor->PredictRawOneLine(features);
-    };
+    predictor = new Predictor(boosting_, true, false);
+    predict_fun = predictor->GetPredictFunction();
   }
 
   // sync up random seed for data partition
@@ -244,11 +241,11 @@ void Application::Train() {
     // output used time per iteration
     Log::Info("%f seconds elapsed, finished iteration %d", std::chrono::duration<double,
       std::milli>(end_time - start_time) * 1e-3, iter + 1);
-    boosting_->SaveModelToFile(is_finished, config_.io_config.output_model.c_str());
+    boosting_->SaveModelToFile(NO_LIMIT, is_finished, config_.io_config.output_model.c_str());
   }
   is_finished = true;
   // save model to file
-  boosting_->SaveModelToFile(is_finished, config_.io_config.output_model.c_str());
+  boosting_->SaveModelToFile(NO_LIMIT, is_finished, config_.io_config.output_model.c_str());
   Log::Info("Finished training");
 }
 

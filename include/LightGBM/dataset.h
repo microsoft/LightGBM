@@ -234,9 +234,6 @@ public:
   static Parser* CreateParser(const char* filename, bool has_header, int num_features, int label_idx);
 };
 
-using PredictFunction =
-  std::function<std::vector<double>(const std::vector<std::pair<int, double>>&)>;
-
 /*! \brief The main class of data set,
 *          which are used to traning or validation
 */

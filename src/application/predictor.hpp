@@ -41,6 +41,28 @@ public:
     for (int i = 0; i < num_threads_; ++i) {
       features_[i] = new double[num_features_];
     }
+
+    if (is_predict_leaf_index_) {
+      predict_fun_ = [this](const std::vector<std::pair<int, double>>& features) {
+        const int tid = PutFeatureValuesToBuffer(features);
+        // get result for leaf index
+        auto result = boosting_->PredictLeafIndex(features_[tid]);
+        return std::vector<double>(result.begin(), result.end());
+      };
+    } else {
+      if (is_raw_score_) {
+        predict_fun_ = [this](const std::vector<std::pair<int, double>>& features) {
+          const int tid = PutFeatureValuesToBuffer(features);
+          // get result without sigmoid transformation
+          return boosting_->PredictRaw(features_[tid]);
+        };
+      } else {
+        predict_fun_ = [this](const std::vector<std::pair<int, double>>& features) {
+          const int tid = PutFeatureValuesToBuffer(features);
+          return boosting_->Predict(features_[tid]);
+        };
+      }
+    }
   }
   /*!
   * \brief Destructor
@@ -54,37 +76,8 @@ public:
     }
   }
 
-  /*!
-  * \brief prediction for one record, only raw result (without sigmoid transformation)
-  * \param features Feature for this record
-  * \return Prediction result
-  */
-  std::vector<double> PredictRawOneLine(const std::vector<std::pair<int, double>>& features) {
-    const int tid = PutFeatureValuesToBuffer(features);
-    // get result without sigmoid transformation
-    return boosting_->PredictRaw(features_[tid]);
-  }
-
-  /*!
-  * \brief prediction for one record, only raw result (without sigmoid transformation)
-  * \param features Feature for this record
-  * \return Predictied leaf index
-  */
-  std::vector<int> PredictLeafIndexOneLine(const std::vector<std::pair<int, double>>& features) {
-    const int tid = PutFeatureValuesToBuffer(features);
-    // get result for leaf index
-    return boosting_->PredictLeafIndex(features_[tid]);
-  }
-
-  /*!
-  * \brief prediction for one record, will use sigmoid transformation if needed (only enabled for binary classification noe)
-  * \param features Feature of this record
-  * \return Prediction result
-  */
-  std::vector<double> PredictOneLine(const std::vector<std::pair<int, double>>& features) {
-    const int tid = PutFeatureValuesToBuffer(features);
-    // get result with sigmoid transform if needed
-    return boosting_->Predict(features_[tid]);
+  inline const PredictFunction& GetPredictFunction() {
+    return predict_fun_;
   }
 
   /*!
@@ -119,26 +112,8 @@ public:
       parser->ParseOneLine(buffer, feature, &tmp_label);
     };
 
-    std::function<std::string(const std::vector<std::pair<int, double>>&)> predict_fun;
-    if (is_predict_leaf_index_) {
-      predict_fun = [this](const std::vector<std::pair<int, double>>& features){
-        return Common::Join<int>(PredictLeafIndexOneLine(features), '\t');
-      };
-    }
-    else {
-      if (is_raw_score_) {
-        predict_fun = [this](const std::vector<std::pair<int, double>>& features){
-          return Common::Join<double>(PredictRawOneLine(features), '\t');
-        };
-      }
-      else {
-        predict_fun = [this](const std::vector<std::pair<int, double>>& features){
-          return Common::Join<double>(PredictOneLine(features), '\t');
-        };
-      }
-    }
     std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
-      [this, &parser_fun, &predict_fun, &result_file]
+      [this, &parser_fun, &result_file]
     (data_size_t, const std::vector<std::string>& lines) {
       std::vector<std::pair<int, double>> oneline_features;
       std::vector<std::string> pred_result(lines.size(), "");
@@ -148,7 +123,7 @@ public:
         // parser
         parser_fun(lines[i].c_str(), &oneline_features);
         // predict
-        pred_result[i] = predict_fun(oneline_features);
+        pred_result[i] = Common::Join<double>(predict_fun_(oneline_features), '\t');
       }
 
       for (size_t i = 0; i < pred_result.size(); ++i) {
@@ -187,6 +162,8 @@ private:
   int num_threads_;
   /*! \brief True if output leaf index instead of prediction score */
   bool is_predict_leaf_index_;
+  /*! \brief function for prediction */
+  PredictFunction predict_fun_;
 };
 
 }  // namespace LightGBM

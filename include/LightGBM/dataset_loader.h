@@ -59,9 +59,9 @@ private:
   /*! \brief index of label column */
   int label_idx_ = 0;
   /*! \brief index of weight column */
-  int weight_idx_ = -1;
+  int weight_idx_ = NO_SPECIFIC;
   /*! \brief index of group column */
-  int group_idx_ = -1;
+  int group_idx_ = NO_SPECIFIC;
   /*! \brief Mapper from real feature index to used index*/
   std::unordered_set<int> ignore_features_;
   /*! \brief store feature names */

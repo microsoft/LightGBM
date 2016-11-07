@@ -50,6 +50,8 @@ public:
 
   virtual const score_t* GetTrainingScore(data_size_t* out_len) const = 0;
 
+  virtual void GetPredict(int data_idx, score_t* out_result, data_size_t* out_len) const = 0;
+
   /*!
   * \brief Prediction for one record, not sigmoid transform
   * \param feature_values Feature value on this record
@@ -75,7 +77,7 @@ public:
   /*!
   * \brief save model to file
   */
-  virtual void SaveModelToFile(bool is_finish, const char* filename) = 0;
+  virtual void SaveModelToFile(int num_used_model, bool is_finish, const char* filename) = 0;
 
   /*!
   * \brief Restore from a serialized string

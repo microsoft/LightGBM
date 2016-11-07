@@ -52,6 +52,8 @@ public:
   /*! \brief Get prediction result */
   const score_t* GetTrainingScore(data_size_t* out_len) const override;
 
+  void GetPredict(int data_idx, score_t* out_result, data_size_t* out_len) const override;
+
   /*!
   * \brief Predtion for one record without sigmoid transformation
   * \param feature_values Feature value on this record
@@ -77,7 +79,7 @@ public:
   * \brief Serialize models by string
   * \return String output of tranined model
   */
-  void SaveModelToFile(bool is_finish, const char* filename) override;
+  void SaveModelToFile(int num_used_model, bool is_finish, const char* filename) override;
   /*!
   * \brief Restore from a serialized string
   */

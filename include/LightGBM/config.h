@@ -4,6 +4,8 @@
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 
+#include <LightGBM/meta.h>
+
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -94,7 +96,7 @@ public:
   std::string output_result = "LightGBM_predict_result.txt";
   std::string input_model = "";
   int verbosity = 1;
-  int num_model_predict = -1;
+  int num_model_predict = NO_LIMIT;
   bool is_pre_partition = false;
   bool is_enable_sparse = true;
   bool use_two_round_loading = false;
@@ -157,12 +159,12 @@ public:
   int feature_fraction_seed = 2;
   double feature_fraction = 1.0f;
   // max cache size(unit:MB) for historical histogram. < 0 means not limit
-  double histogram_pool_size = -1.0f;
+  double histogram_pool_size = NO_LIMIT;
   // max depth of tree model.
   // Still grow tree by leaf-wise, but limit the max depth to avoid over-fitting
   // And the max leaves will be min(num_leaves, pow(2, max_depth - 1))
   // max_depth < 0 means not limit
-  int max_depth = -1;
+  int max_depth = NO_LIMIT;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
