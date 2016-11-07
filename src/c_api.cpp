@@ -434,14 +434,13 @@ DllExport int LGBM_BoosterEval(BoosterHandle handle,
 }
 
 DllExport int LGBM_BoosterGetScore(BoosterHandle handle,
-  int data,
   uint64_t* out_len,
   const float** out_result) {
 
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto boosting = ref_booster->GetBoosting();
   int len = 0;
-  *out_result = boosting->GetScoreAt(data, &len);
+  *out_result = boosting->GetTrainingScore(&len);
   *out_len = static_cast<uint64_t>(len);
 
   return 0;

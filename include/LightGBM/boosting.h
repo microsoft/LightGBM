@@ -48,7 +48,7 @@ public:
 
   virtual std::vector<double> GetEvalAt(int data_idx) const = 0;
 
-  virtual const score_t* GetScoreAt(int data_idx, data_size_t* out_len) const = 0;
+  virtual const score_t* GetTrainingScore(data_size_t* out_len) const = 0;
 
   /*!
   * \brief Prediction for one record, not sigmoid transform

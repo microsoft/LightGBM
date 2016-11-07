@@ -294,16 +294,9 @@ std::vector<double> GBDT::GetEvalAt(int data_idx) const {
 }
 
 /*! \brief Get prediction result */
-const score_t* GBDT::GetScoreAt(int data_idx, data_size_t* out_len) const {
-  CHECK(data_idx >= 0 && data_idx <= static_cast<int>(valid_score_updater_.size()));
-  if (data_idx == 0) {
-    *out_len = train_score_updater_->num_data() * num_class_;
-    return train_score_updater_->score();
-  } else {
-    auto used_idx = data_idx - 1;
-    *out_len = valid_score_updater_[used_idx]->num_data() * num_class_;
-    return valid_score_updater_[used_idx]->score();
-  }
+const score_t* GBDT::GetTrainingScore(data_size_t* out_len) const {
+  *out_len = train_score_updater_->num_data() * num_class_;
+  return train_score_updater_->score();
 }
 
 void GBDT::Boosting() {

@@ -50,7 +50,7 @@ public:
   std::vector<double> GetEvalAt(int data_idx) const override;
 
   /*! \brief Get prediction result */
-  const score_t* GetScoreAt(int data_idx, data_size_t* out_len) const override;
+  const score_t* GetTrainingScore(data_size_t* out_len) const override;
 
   /*!
   * \brief Predtion for one record without sigmoid transformation
