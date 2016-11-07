@@ -21,10 +21,11 @@ Dataset::Dataset() {
   is_loading_from_binfile_ = false;
 }
 
-Dataset::Dataset(data_size_t num_data) {
-  num_class_ = 1;
+Dataset::Dataset(data_size_t num_data, int num_class) {
+  num_class_ = num_class;
   num_data_ = num_data;
   is_loading_from_binfile_ = false;
+  metadata_.Init(num_data_, num_class_, -1, -1);
 }
 
 Dataset::~Dataset() {

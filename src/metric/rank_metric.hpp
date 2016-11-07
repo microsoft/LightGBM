@@ -33,12 +33,12 @@ public:
   ~NDCGMetric() {
   }
   void Init(const char* test_name, const Metadata& metadata, data_size_t num_data) override {
-    std::stringstream str_buf;
-    str_buf << test_name << "'s ";
     for (auto k : eval_at_) {
+      std::stringstream str_buf;
+      str_buf << test_name << "'s : ";
       str_buf << "NDCG@" + std::to_string(k) + " ";
+      name_.emplace_back(str_buf.str());
     }
-    name_ = str_buf.str();
     num_data_ = num_data;
     // get label
     label_ = metadata.label();
@@ -76,12 +76,12 @@ public:
     }
   }
 
-  const char* GetName() const override {
-    return name_.c_str();
+  std::vector<std::string> GetName() const override {
+    return name_;
   }
 
-  bool is_bigger_better() const override {
-    return true;
+  score_t factor_to_bigger_better() const override {
+    return 1.0f;
   }
 
   std::vector<double> Eval(const score_t* score) const override {
@@ -149,7 +149,7 @@ private:
   /*! \brief Pointer of label */
   const float* label_;
   /*! \brief Name of test set */
-  std::string name_;
+  std::vector<std::string> name_;
   /*! \brief Query boundaries information */
   const data_size_t* query_boundaries_;
   /*! \brief Number of queries */

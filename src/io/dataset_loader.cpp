@@ -437,6 +437,7 @@ Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>&
       delete bin_mappers[i];
     }
   }
+  dataset->metadata_.Init(dataset->num_data_, dataset->num_class_, -1, -1);
   return dataset;
 }
 

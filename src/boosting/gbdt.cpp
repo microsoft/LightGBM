@@ -92,15 +92,22 @@ void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const O
 
 void GBDT::AddDataset(const Dataset* valid_data,
          const std::vector<const Metric*>& valid_metrics) {
+  if (iter_ > 0) {
+    Log::Fatal("Cannot add validation data after training started");
+  }
   // for a validation dataset, we need its score and metric
   valid_score_updater_.push_back(new ScoreUpdater(valid_data, num_class_));
   valid_metrics_.emplace_back();
-  best_iter_.emplace_back();
-  best_score_.emplace_back();
+  if (early_stopping_round_ > 0) {
+    best_iter_.emplace_back();
+    best_score_.emplace_back();
+  }
   for (const auto& metric : valid_metrics) {
     valid_metrics_.back().push_back(metric);
-    best_iter_.back().push_back(0);
-    best_score_.back().push_back(-1);
+    if (early_stopping_round_ > 0) {
+      best_iter_.back().push_back(0);
+      best_score_.back().push_back(kMinScore);
+    }
   }
 }
 
@@ -231,7 +238,9 @@ bool GBDT::OutputMetric(int iter) {
     for (auto& sub_metric : training_metrics_) {
       auto name = sub_metric->GetName();
       auto scores = sub_metric->Eval(train_score_updater_->score());
-      Log::Info("Iteration: %d, %s: %s", iter, name, Common::ArrayToString<double>(scores, ' ').c_str());
+      for (size_t k = 0; k < name.size(); k++) {
+        Log::Info("Iteration: %d, %s : %f", iter, name[k].c_str(), scores[k]);
+      }
     }
   }
   // print validation metric
@@ -241,17 +250,17 @@ bool GBDT::OutputMetric(int iter) {
         auto test_scores = valid_metrics_[i][j]->Eval(valid_score_updater_[i]->score());
         if ((iter % gbdt_config_->output_freq) == 0) {
           auto name = valid_metrics_[i][j]->GetName();
-          Log::Info("Iteration: %d, %s: %s", iter, name, Common::ArrayToString<double>(test_scores, ' ').c_str());
+          for (size_t k = 0; k < name.size(); k++) {
+            Log::Info("Iteration: %d, %s : %f", iter, name[k].c_str(), test_scores[k]);
+          }
         }
         if (!ret && early_stopping_round_ > 0) {
-          bool the_bigger_the_better = valid_metrics_[i][j]->is_bigger_better();
-          if (best_score_[i][j] < 0
-            || (!the_bigger_the_better && test_scores.back() < best_score_[i][j])
-            || (the_bigger_the_better && test_scores.back() > best_score_[i][j])) {
-            best_score_[i][j] = test_scores.back();
+          auto cur_score = valid_metrics_[i][j]->factor_to_bigger_better() * test_scores.back();
+          if (cur_score > best_score_[i][j]) {
+            best_score_[i][j] = cur_score;
             best_iter_[i][j] = iter;
           } else {
-            if (iter - best_iter_[i][j] >= early_stopping_round_) ret = true;
+            if (iter - best_iter_[i][j] >= early_stopping_round_) { ret = true; }
           }
         }
       }
@@ -261,40 +270,40 @@ bool GBDT::OutputMetric(int iter) {
 }
 
 /*! \brief Get eval result */
-std::vector<std::string> GBDT::EvalCurrent(bool is_eval_train) const {
-  std::vector<std::string> ret;
-  if (is_eval_train) {
+std::vector<double> GBDT::GetEvalAt(int data_idx) const {
+  CHECK(data_idx >= 0 && data_idx <= static_cast<int>(valid_metrics_.size()));
+  std::vector<double> ret;
+  if (data_idx == 0) {
     for (auto& sub_metric : training_metrics_) {
-      auto name = sub_metric->GetName();
       auto scores = sub_metric->Eval(train_score_updater_->score());
-      std::stringstream str_buf;
-      str_buf << name << " : " << Common::ArrayToString<double>(scores, ' ');
-      ret.emplace_back(str_buf.str());
+      for (auto score : scores) {
+        ret.push_back(score);
+      }
     }
   }
-
-  for (size_t i = 0; i < valid_metrics_.size(); ++i) {
-    for (size_t j = 0; j < valid_metrics_[i].size(); ++j) {
-      auto name = valid_metrics_[i][j]->GetName();
-      auto test_scores = valid_metrics_[i][j]->Eval(valid_score_updater_[i]->score());
-      std::stringstream str_buf;
-      str_buf << name << " : " << Common::ArrayToString<double>(test_scores, ' ');
-      ret.emplace_back(str_buf.str());
+  else {
+    auto used_idx = data_idx - 1;
+    for (size_t j = 0; j < valid_metrics_[used_idx].size(); ++j) {
+      auto test_scores = valid_metrics_[used_idx][j]->Eval(valid_score_updater_[used_idx]->score());
+      for (auto score : test_scores) {
+        ret.push_back(score);
+      }
     }
   }
   return ret;
 }
 
 /*! \brief Get prediction result */
-const std::vector<const score_t*> GBDT::PredictCurrent(bool is_predict_train) const {
-  std::vector<const score_t*> ret;
-  if (is_predict_train) {
-    ret.push_back(train_score_updater_->score());
+const score_t* GBDT::GetScoreAt(int data_idx, data_size_t* out_len) const {
+  CHECK(data_idx >= 0 && data_idx <= static_cast<int>(valid_score_updater_.size()));
+  if (data_idx == 0) {
+    *out_len = train_score_updater_->num_data() * num_class_;
+    return train_score_updater_->score();
+  } else {
+    auto used_idx = data_idx - 1;
+    *out_len = valid_score_updater_[used_idx]->num_data() * num_class_;
+    return valid_score_updater_[used_idx]->score();
   }
-  for (size_t i = 0; i < valid_metrics_.size(); ++i) {
-    ret.push_back(valid_score_updater_[i]->score());
-  }
-  return ret;
 }
 
 void GBDT::Boosting() {
@@ -470,32 +479,28 @@ std::string GBDT::FeatureImportance() const {
     return str_buf.str();
 }
 
-double GBDT::PredictRaw(const double* value) const {
-  double ret = 0.0f;
-  for (int i = 0; i < num_used_model_; ++i) {
-    ret += models_[i]->Predict(value);
-  }
-  return ret;
-}
-
-double GBDT::Predict(const double* value) const {
-  double ret = 0.0f;
-  for (int i = 0; i < num_used_model_; ++i) {
-    ret += models_[i]->Predict(value);
-  }
-  // if need sigmoid transform
-  if (sigmoid_ > 0) {
-    ret = 1.0f / (1.0f + std::exp(- 2.0f * sigmoid_ * ret));
-  }
-  return ret;
-}
-
-std::vector<double> GBDT::PredictMulticlass(const double* value) const {
+std::vector<double> GBDT::PredictRaw(const double* value) const {
   std::vector<double> ret(num_class_, 0.0f);
   for (int i = 0; i < num_used_model_; ++i) {
-    for (int j = 0; j < num_class_; ++j){
-        ret[j] += models_[i * num_class_ + j] -> Predict(value);
+    for (int j = 0; j < num_class_; ++j) {
+      ret[j] += models_[i * num_class_ + j]->Predict(value);
     }
+  }
+  return ret;
+}
+
+std::vector<double> GBDT::Predict(const double* value) const {
+  std::vector<double> ret(num_class_, 0.0f);
+  for (int i = 0; i < num_used_model_; ++i) {
+    for (int j = 0; j < num_class_; ++j) {
+      ret[j] += models_[i * num_class_ + j]->Predict(value);
+    }
+  }
+  // if need sigmoid transform
+  if (sigmoid_ > 0 && num_class_ == 1) {
+    ret[0] = 1.0f / (1.0f + std::exp(- 2.0f * sigmoid_ * ret[0]));
+  } else if (num_class_ > 1) {
+    Common::Softmax(&ret);
   }
   return ret;
 }
@@ -503,7 +508,9 @@ std::vector<double> GBDT::PredictMulticlass(const double* value) const {
 std::vector<int> GBDT::PredictLeafIndex(const double* value) const {
   std::vector<int> ret;
   for (int i = 0; i < num_used_model_; ++i) {
-    ret.push_back(models_[i]->PredictLeafIndex(value));
+    for (int j = 0; j < num_class_; ++j) {
+      ret.push_back(models_[i * num_class_ + j]->PredictLeafIndex(value));
+    }
   }
   return ret;
 }

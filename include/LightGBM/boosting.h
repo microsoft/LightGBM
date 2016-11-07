@@ -46,25 +46,23 @@ public:
   /*! \brief Training logic */
   virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) = 0;
 
-  /*! \brief Get eval result */
-  virtual std::vector<std::string> EvalCurrent(bool is_eval_train) const = 0 ;
+  virtual std::vector<double> GetEvalAt(int data_idx) const = 0;
 
-  /*! \brief Get prediction result */
-  virtual const std::vector<const score_t*> PredictCurrent(bool is_predict_train) const = 0;
+  virtual const score_t* GetScoreAt(int data_idx, data_size_t* out_len) const = 0;
 
   /*!
   * \brief Prediction for one record, not sigmoid transform
   * \param feature_values Feature value on this record
   * \return Prediction result for this record
   */
-  virtual double PredictRaw(const double* feature_values) const = 0;
+  virtual std::vector<double> PredictRaw(const double* feature_values) const = 0;
 
   /*!
   * \brief Prediction for one record, sigmoid transformation will be used if needed
   * \param feature_values Feature value on this record
   * \return Prediction result for this record
   */
-  virtual double Predict(const double* feature_values) const = 0;
+  virtual std::vector<double> Predict(const double* feature_values) const = 0;
   
   /*!
   * \brief Predtion for one record with leaf index
@@ -73,14 +71,7 @@ public:
   */
   virtual std::vector<int> PredictLeafIndex(
     const double* feature_values) const = 0;
-  
-  /*!
-  * \brief Predtion for multiclass classification
-  * \param feature_values Feature value on this record
-  * \return Prediction result, num_class numbers per line
-  */
-  virtual std::vector<double> PredictMulticlass(const double* value) const = 0;
-  
+
   /*!
   * \brief save model to file
   */

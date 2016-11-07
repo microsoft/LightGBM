@@ -30,9 +30,11 @@ public:
   }
 
   void Init(const char* test_name, const Metadata& metadata, data_size_t num_data) override {
+
     std::stringstream str_buf;
-    str_buf << test_name << "'s " << PointWiseLossCalculator::Name();
-    name_ = str_buf.str();
+    str_buf << test_name << "'s : " << PointWiseLossCalculator::Name();
+    name_.emplace_back(str_buf.str());
+
     num_data_ = num_data;
     // get label
     label_ = metadata.label();
@@ -50,12 +52,12 @@ public:
     }
   }
 
-  const char* GetName() const override {
-    return name_.c_str();
+  std::vector<std::string> GetName() const override {
+    return name_;
   }
 
-  bool is_bigger_better() const override {
-    return false;
+  score_t factor_to_bigger_better() const override {
+    return -1.0f;
   }
 
   std::vector<double> Eval(const score_t* score) const override {
@@ -91,7 +93,7 @@ private:
   /*! \brief Sum weights */
   double sum_weights_;
   /*! \brief Name of test set */
-  std::string name_;
+  std::vector<std::string> name_;
   /*! \brief Sigmoid parameter */
   score_t sigmoid_;
 };
@@ -152,18 +154,18 @@ public:
   virtual ~AUCMetric() {
   }
 
-  const char* GetName() const override {
-    return name_.c_str();
+  std::vector<std::string> GetName() const override {
+    return name_;
   }
 
-  bool is_bigger_better() const override {
-    return true;
+  score_t factor_to_bigger_better() const override {
+    return 1.0f;
   }
 
   void Init(const char* test_name, const Metadata& metadata, data_size_t num_data) override {
     std::stringstream str_buf;
-    str_buf << test_name << "'s AUC";
-    name_ = str_buf.str();
+    str_buf << test_name << "'s : AUC";
+    name_.emplace_back(str_buf.str());
 
     num_data_ = num_data;
     // get label
@@ -250,7 +252,7 @@ private:
   /*! \brief Sum weights */
   double sum_weights_;
   /*! \brief Name of test set */
-  std::string name_;
+  std::vector<std::string> name_;
 };
 
 }  // namespace LightGBM

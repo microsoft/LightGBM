@@ -101,7 +101,7 @@ public:
   bool is_save_binary_file = false;
   bool enable_load_from_binary_file = true;
   int bin_construct_sample_cnt = 50000;
-  bool is_sigmoid = true;
+  bool is_raw_score = true;
 
   bool has_header = false;
   /*! \brief Index or column name of label, default is the first column

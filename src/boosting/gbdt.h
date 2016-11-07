@@ -46,32 +46,25 @@ public:
   */
   bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override;
 
-  /*! \brief Get eval result */
-  std::vector<std::string> EvalCurrent(bool is_eval_train) const override;
+
+  std::vector<double> GetEvalAt(int data_idx) const override;
 
   /*! \brief Get prediction result */
-  const std::vector<const score_t*> PredictCurrent(bool is_predict_train) const override;
+  const score_t* GetScoreAt(int data_idx, data_size_t* out_len) const override;
 
   /*!
   * \brief Predtion for one record without sigmoid transformation
   * \param feature_values Feature value on this record
   * \return Prediction result for this record
   */
-  double PredictRaw(const double* feature_values) const override;
+  std::vector<double>  PredictRaw(const double* feature_values) const override;
 
   /*!
   * \brief Predtion for one record with sigmoid transformation if enabled
   * \param feature_values Feature value on this record
   * \return Prediction result for this record
   */
-  double Predict(const double* feature_values) const override;
-  
-  /*!
-  * \brief Predtion for multiclass classification
-  * \param feature_values Feature value on this record
-  * \return Prediction result, num_class numbers per line
-  */
-  std::vector<double> PredictMulticlass(const double* value) const override;
+  std::vector<double>  Predict(const double* feature_values) const override;
   
   /*!
   * \brief Predtion for one record with leaf index

@@ -246,7 +246,7 @@ public:
 
   Dataset();
 
-  explicit Dataset(data_size_t num_data);
+  explicit Dataset(data_size_t num_data, int num_class);
 
   /*! \brief Destructor */
   ~Dataset();

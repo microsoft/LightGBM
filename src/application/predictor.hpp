@@ -25,14 +25,13 @@ public:
   /*!
   * \brief Constructor
   * \param boosting Input boosting model
-  * \param is_sigmoid True if need to predict result with sigmoid transform (if needed, like binary classification)
+  * \param is_raw_score True if need to predict result with raw score
   * \param predict_leaf_index True if output leaf index instead of prediction score
   */
-  Predictor(const Boosting* boosting, bool is_simgoid, bool is_predict_leaf_index)
-    : is_simgoid_(is_simgoid), is_predict_leaf_index_(is_predict_leaf_index) {
+  Predictor(const Boosting* boosting, bool is_raw_score, bool is_predict_leaf_index)
+    : is_raw_score_(is_raw_score), is_predict_leaf_index_(is_predict_leaf_index) {
     boosting_ = boosting;
     num_features_ = boosting_->MaxFeatureIdx() + 1;
-    num_class_ = boosting_->NumberOfClass();
 #pragma omp parallel
 #pragma omp master
     {
@@ -63,7 +62,7 @@ public:
   std::vector<double> PredictRawOneLine(const std::vector<std::pair<int, double>>& features) {
     const int tid = PutFeatureValuesToBuffer(features);
     // get result without sigmoid transformation
-    return std::vector<double>(1, boosting_->PredictRaw(features_[tid]));
+    return boosting_->PredictRaw(features_[tid]);
   }
 
   /*!
@@ -85,18 +84,7 @@ public:
   std::vector<double> PredictOneLine(const std::vector<std::pair<int, double>>& features) {
     const int tid = PutFeatureValuesToBuffer(features);
     // get result with sigmoid transform if needed
-    return std::vector<double>(1, boosting_->Predict(features_[tid]));
-  }
-
-  /*!
-  * \brief prediction for multiclass classification
-  * \param features Feature of this record
-  * \return Prediction result
-  */
-  std::vector<double> PredictMulticlassOneLine(const std::vector<std::pair<int, double>>& features) {
-    const int tid = PutFeatureValuesToBuffer(features);
-    // get result with sigmoid transform if needed
-    return boosting_->PredictMulticlass(features_[tid]);
+    return boosting_->Predict(features_[tid]);
   }
 
   /*!
@@ -132,42 +120,20 @@ public:
     };
 
     std::function<std::string(const std::vector<std::pair<int, double>>&)> predict_fun;
-    if (num_class_ > 1) {
+    if (is_predict_leaf_index_) {
       predict_fun = [this](const std::vector<std::pair<int, double>>& features){
-        std::vector<double> prediction = PredictMulticlassOneLine(features);
-        Common::Softmax(&prediction);
-        std::stringstream result_stream_buf;
-        for (size_t i = 0; i < prediction.size(); ++i){
-          if (i > 0) {
-            result_stream_buf << '\t';
-          }
-          result_stream_buf << prediction[i];
-        }
-        return result_stream_buf.str();
-      };
-    }
-    else if (is_predict_leaf_index_) {
-      predict_fun = [this](const std::vector<std::pair<int, double>>& features){
-        std::vector<int> predicted_leaf_index = PredictLeafIndexOneLine(features);
-        std::stringstream result_stream_buf;
-        for (size_t i = 0; i < predicted_leaf_index.size(); ++i){
-          if (i > 0) {
-            result_stream_buf << '\t';
-          }
-          result_stream_buf << predicted_leaf_index[i];
-        }
-        return result_stream_buf.str();
+        return Common::Join<int>(PredictLeafIndexOneLine(features), '\t');
       };
     }
     else {
-      if (is_simgoid_) {
+      if (is_raw_score_) {
         predict_fun = [this](const std::vector<std::pair<int, double>>& features){
-          return std::to_string(PredictOneLine(features)[0]);
+          return Common::Join<double>(PredictRawOneLine(features), '\t');
         };
       }
       else {
         predict_fun = [this](const std::vector<std::pair<int, double>>& features){
-          return std::to_string(PredictRawOneLine(features)[0]);
+          return Common::Join<double>(PredictOneLine(features), '\t');
         };
       }
     }
@@ -215,10 +181,8 @@ private:
   double** features_;
   /*! \brief Number of features */
   int num_features_;
-  /*! \brief Number of classes */
-  int num_class_;
   /*! \brief True if need to predict result with sigmoid transform */
-  bool is_simgoid_;
+  bool is_raw_score_;
   /*! \brief Number of threads */
   int num_threads_;
   /*! \brief True if output leaf index instead of prediction score */

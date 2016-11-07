@@ -88,7 +88,25 @@ public:
     if (boosting_ != nullptr) { delete boosting_; }
     if (objective_fun_ != nullptr) { delete objective_fun_; }
   }
+
+  bool TrainOneIter() {
+    return boosting_->TrainOneIter(nullptr, nullptr, false);
+  }
+
+  bool TrainOneIter(const float* gradients, const float* hessians) {
+    return boosting_->TrainOneIter(gradients, hessians, false);
+  }
+
+  void PrepareForPrediction(int num_used_model, int predict_type) {
+    boosting_->SetNumUsedModel(num_used_model);
+  }
+
+  const Boosting* GetBoosting() const { return boosting_; }
+
 private:
+
+  std::function<std::vector<double>(const std::vector<std::pair<int, double>>&)> predict_fun;
+
   Boosting* boosting_;
   /*! \brief All configs */
   OverallConfig config_;
@@ -102,6 +120,7 @@ private:
   std::vector<std::vector<Metric*>> valid_metrics_;
   /*! \brief Training objective function */
   ObjectiveFunction* objective_fun_;
+
 };
 
 }
@@ -170,7 +189,7 @@ DllExport int LGBM_CreateDatasetFromMat(const void* data,
     }
     ret = loader.CostructFromSampleData(sample_values, nrow);
   } else {
-    ret = new Dataset(nrow);
+    ret = new Dataset(nrow, config.io_config.num_class);
     reinterpret_cast<const Dataset*>(*reference)->CopyFeatureBinMapperTo(ret, config.io_config.is_enable_sparse);
   }
 
@@ -231,7 +250,7 @@ DllExport int LGBM_CreateDatasetFromCSR(const int32_t* indptr,
     CHECK(num_col >= sample_values.size());
     ret = loader.CostructFromSampleData(sample_values, nrow);
   } else {
-    ret = new Dataset(nrow);
+    ret = new Dataset(nrow, config.io_config.num_class);
     reinterpret_cast<const Dataset*>(*reference)->CopyFeatureBinMapperTo(ret, config.io_config.is_enable_sparse);
   }
 
@@ -278,7 +297,7 @@ DllExport int LGBM_CreateDatasetFromCSC(const int32_t* col_ptr,
     }
     ret = loader.CostructFromSampleData(sample_values, nrow);
   } else {
-    ret = new Dataset(nrow);
+    ret = new Dataset(nrow, config.io_config.num_class);
     reinterpret_cast<const Dataset*>(*reference)->CopyFeatureBinMapperTo(ret, config.io_config.is_enable_sparse);
   }
 
@@ -341,3 +360,165 @@ DllExport int LGBM_DatasetGetNumFeature(DatesetHandle handle,
   *out = dataset->num_total_features();
   return 0;
 }
+
+
+// ---- start of booster
+
+DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
+  const DatesetHandle valid_datas[],
+  const char* valid_names[],
+  int n_valid_datas,
+  const char* parameters,
+  BoosterHandle* out) {
+  const Dataset* p_train_data = reinterpret_cast<const Dataset*>(train_data);
+  std::vector<const Dataset*> p_valid_datas;
+  std::vector<std::string> p_valid_names;
+  for (int i = 0; i < n_valid_datas; ++i) {
+    p_valid_datas.emplace_back(reinterpret_cast<const Dataset*>(valid_datas[i]));
+    p_valid_names.emplace_back(valid_names[i]);
+  }
+  *out = new Booster(p_train_data, p_valid_datas, p_valid_names, parameters);
+  return 0;
+}
+
+DllExport int LGBM_BoosterLoadFromModelfile(
+  const char* filename,
+  BoosterHandle* out) {
+  *out = new Booster(filename);
+  return 0;
+}
+
+DllExport int LGBM_BoosterFree(BoosterHandle handle) {
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  delete ref_booster;
+  return 0;
+}
+
+
+DllExport int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished) {
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  if (ref_booster->TrainOneIter()) {
+    *is_finished = 1;
+  } else {
+    *is_finished = 0;
+  }
+  return 0;
+}
+
+DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
+  const float* grad,
+  const float* hess,
+  int* is_finished) {
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  if (ref_booster->TrainOneIter(grad, hess)) {
+    *is_finished = 1;
+  } else {
+    *is_finished = 0;
+  }
+  return 0;
+}
+
+DllExport int LGBM_BoosterEval(BoosterHandle handle,
+  int data,
+  uint64_t* out_len,
+  double* out_results) {
+
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  auto boosting = ref_booster->GetBoosting();
+  auto result_buf = boosting->GetEvalAt(data);
+  *out_len = static_cast<uint64_t>(result_buf.size());
+  for (size_t i = 0; i < result_buf.size(); ++i) {
+    (out_results)[i] = result_buf[i];
+  }
+  return 0;
+}
+
+DllExport int LGBM_BoosterGetScore(BoosterHandle handle,
+  int data,
+  uint64_t* out_len,
+  const float** out_result) {
+
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  auto boosting = ref_booster->GetBoosting();
+  int len = 0;
+  *out_result = boosting->GetScoreAt(data, &len);
+  *out_len = static_cast<uint64_t>(len);
+
+  return 0;
+}
+
+DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
+  const int32_t* indptr,
+  const int32_t* indices,
+  const void* data,
+  int float_type,
+  uint64_t nindptr,
+  uint64_t nelem,
+  uint64_t num_col,
+  int predict_type,
+  uint64_t n_used_trees,
+  double* out_result);
+
+/*!
+* \brief make prediction for an new data set
+* \param handle handle
+* \param col_ptr pointer to col headers
+* \param indices findex
+* \param data fvalue
+* \param nindptr number of rows in the matix + 1
+* \param nelem number of nonzero elements in the matrix
+* \param num_row number of rows; when it's set to 0, then guess from data
+* \param predict_type
+*          0:raw score
+*          1:with sigmoid transform(if needed)
+*          2:leaf index
+* \param n_used_trees number of used tree
+* \param out_result used to set a pointer to array
+* \return 0 when success, -1 when failure happens
+*/
+DllExport int LGBM_BoosterPredictForCSC(BoosterHandle handle,
+  const int32_t* col_ptr,
+  const int32_t* indices,
+  const void* data,
+  int float_type,
+  uint64_t nindptr,
+  uint64_t nelem,
+  uint64_t num_row,
+  int predict_type,
+  uint64_t n_used_trees,
+  double* out_result);
+
+/*!
+* \brief make prediction for an new data set
+* \param handle handle
+* \param data pointer to the data space
+* \param nrow number of rows
+* \param ncol number columns
+* \param missing which value to represent missing value
+* \param predict_type
+*          0:raw score
+*          1:with sigmoid transform(if needed)
+*          2:leaf index
+* \param n_used_trees number of used tree
+* \param out_result used to set a pointer to array
+* \return 0 when success, -1 when failure happens
+*/
+DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
+  const void* data,
+  int float_type,
+  int32_t nrow,
+  int32_t ncol,
+  int predict_type,
+  uint64_t n_used_trees,
+  double* out_result);
+
+/*!
+* \brief save model into file
+* \param handle handle
+* \param num_used_model
+* \param filename file name
+* \return 0 when success, -1 when failure happens
+*/
+DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
+  int num_used_model,
+  const char* filename);

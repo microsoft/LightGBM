@@ -206,8 +206,8 @@ DllExport int LGBM_DatasetGetNumFeature(DatesetHandle handle,
 * \prama out handle of created Booster
 * \return 0 when success, -1 when failure happens
 */
-DllExport int LGBM_BoosterCreate(DatesetHandle train_data,
-  DatesetHandle valid_datas[],
+DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
+  const DatesetHandle valid_datas[],
   const char* valid_names[],
   int n_valid_datas,
   const char* parameters,
@@ -248,8 +248,8 @@ DllExport int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished);
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
-  float* grad,
-  float* hess,
+  const float* grad,
+  const float* hess,
   int* is_finished);
 
 /*!
@@ -261,23 +261,20 @@ DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
 */
 DllExport int LGBM_BoosterEval(BoosterHandle handle,
   int data,
-  const char** out_result);
+  uint64_t* out_len,
+  double* out_results);
 
 /*!
 * \brief make prediction for training data and validation datas
-this can be used to support customized eval function
+this can be used to support customized eval function / and gradients calculation
 * \param handle handle
 * \param data 0:training data, 1: 1st valid data, 2:2nd valid data ...
-* \param predict_type
-*          0:raw score
-*          1:with sigmoid/softmax transform(if needed)
-*          2:leaf index
 * \param out_result used to set a pointer to array
 * \return 0 when success, -1 when failure happens
 */
-DllExport int LGBM_BoosterPredict(BoosterHandle handle,
+DllExport int LGBM_BoosterGetScore(BoosterHandle handle,
   int data,
-  int predict_type,
+  uint64_t* out_len,
   const float** out_result);
 
 /*!
@@ -307,7 +304,7 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   uint64_t num_col,
   int predict_type,
   uint64_t n_used_trees,
-  const double** out_result);
+  double* out_result);
 
 /*!
 * \brief make prediction for an new data set
@@ -336,7 +333,7 @@ DllExport int LGBM_BoosterPredictForCSC(BoosterHandle handle,
   uint64_t num_row,
   int predict_type,
   uint64_t n_used_trees,
-  const double** out_result);
+  double* out_result);
 
 /*!
 * \brief make prediction for an new data set
@@ -360,17 +357,17 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
   int32_t ncol,
   int predict_type,
   uint64_t n_used_trees,
-  const double** out_result);
+  double* out_result);
 
 /*!
 * \brief save model into file
 * \param handle handle
-* \param is_finished 1 means finised
+* \param num_used_model
 * \param filename file name
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
-  int is_finished,
+  int num_used_model,
   const char* filename);
 
 #endif // LIGHTGBM_C_API_H_

@@ -125,19 +125,13 @@ void Application::LoadData() {
   Predictor* predictor = nullptr;
   // need to continue training
   if (boosting_->NumberOfSubModels() > 0) {
-    predictor = new Predictor(boosting_, config_.io_config.is_sigmoid, config_.predict_leaf_index);
-    if (config_.io_config.num_class == 1){
-      predict_fun =
-        [&predictor](const std::vector<std::pair<int, double>>& features) {
-        return predictor->PredictRawOneLine(features);
-      };
-    } else {
-      predict_fun =
-        [&predictor](const std::vector<std::pair<int, double>>& features) {
-        return predictor->PredictMulticlassOneLine(features);
-      };
-    }
+    predictor = new Predictor(boosting_, config_.io_config.is_raw_score, config_.predict_leaf_index);
+    predict_fun =
+      [&predictor](const std::vector<std::pair<int, double>>& features) {
+      return predictor->PredictRawOneLine(features);
+    };
   }
+
   // sync up random seed for data partition
   if (config_.is_parallel_find_bin) {
     config_.io_config.data_random_seed =
@@ -262,7 +256,7 @@ void Application::Train() {
 void Application::Predict() {
   boosting_->SetNumUsedModel(config_.io_config.num_model_predict);
   // create predictor
-  Predictor predictor(boosting_, config_.io_config.is_sigmoid,
+  Predictor predictor(boosting_, config_.io_config.is_raw_score,
     config_.predict_leaf_index);
   predictor.Predict(config_.io_config.data_filename.c_str(),
     config_.io_config.output_result.c_str(), config_.io_config.has_header);

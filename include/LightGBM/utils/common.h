@@ -81,6 +81,16 @@ inline static std::vector<std::string> Split(const char* c_str, const char* deli
   return ret;
 }
 
+template<typename T>
+inline std::string Join(const std::vector<T>& data, char delimiters) {
+  std::stringstream result_stream_buf;
+  result_stream_buf << data[0];
+  for (size_t i = 1; i < data.size(); ++i) {
+    result_stream_buf << delimiters << data[i];
+  }
+  return result_stream_buf.str();
+}
+
 inline static const char* Atoi(const char* p, int* out) {
   int sign, value;
   while (*p == ' ') {
@@ -430,6 +440,54 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int float
   }
 }
 
+inline std::function<std::vector<std::pair<int, double>>(int row_idx)>
+RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int float_type, int is_row_major) {
+  if (float_type == 0) {
+    const float* dptr = reinterpret_cast<const float*>(data);
+    if (is_row_major) {
+      return [&dptr, &num_col, &num_row](int row_idx) {
+        CHECK(row_idx < num_row);
+        std::vector<std::pair<int, double>> ret;
+        dptr += num_col * row_idx;
+        for (int i = 0; i < num_col; ++i) {
+          ret.emplace_back(i, static_cast<double>(*(dptr + i)));
+        }
+        return ret;
+      };
+    } else {
+      return [&dptr, &num_col, &num_row](int row_idx) {
+        CHECK(row_idx < num_row);
+        std::vector<std::pair<int, double>> ret;
+        for (int i = 0; i < num_col; ++i) {
+          ret.emplace_back(i, static_cast<double>(*(dptr + num_row * i + row_idx)));
+        }
+        return ret;
+      };
+    }
+  } else {
+    const double* dptr = reinterpret_cast<const double*>(data);
+    if (is_row_major) {
+      return [&dptr, &num_col, &num_row](int row_idx) {
+        CHECK(row_idx < num_row);
+        std::vector<std::pair<int, double>> ret;
+        dptr += num_col * row_idx;
+        for (int i = 0; i < num_col; ++i) {
+          ret.emplace_back(i, static_cast<double>(*(dptr + i)));
+        }
+        return ret;
+      };
+    } else {
+      return [&dptr, &num_col, &num_row](int row_idx) {
+        CHECK(row_idx < num_row);
+        std::vector<std::pair<int, double>> ret;
+        for (int i = 0; i < num_col; ++i) {
+          ret.emplace_back(i, static_cast<double>(*(dptr + num_row * i + row_idx)));
+        }
+        return ret;
+      };
+    }
+  }
+}
 
 inline std::function<std::vector<std::pair<int, double>>(int idx)>
 RowFunctionFromCSR(const int32_t* indptr, const int32_t* indices, const void* data, int float_type, uint64_t nindptr, uint64_t nelem) {
