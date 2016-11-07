@@ -246,6 +246,8 @@ public:
 
   Dataset();
 
+  explicit Dataset(data_size_t num_data);
+
   /*! \brief Destructor */
   ~Dataset();
 
@@ -267,17 +269,13 @@ public:
     }
   }
 
-  inline void PushOneCol(int tid, data_size_t col_idx, const std::vector<std::pair<int, double>>& feature_values) {
+  inline void PushOneColumn(int tid, data_size_t col_idx, const std::vector<std::pair<int, double>>& feature_values) {
     int feature_idx = used_feature_map_[col_idx];
     if (feature_idx >= 0) {
       for (auto& inner_data : feature_values) {
         features_[feature_idx]->PushData(tid, inner_data.first, inner_data.second);
       }
     }
-  }
-
-  inline void SetNumData(data_size_t num_data) {
-    num_data_ = num_data;
   }
 
   void FinishLoad();
@@ -293,7 +291,7 @@ public:
 
   std::vector<const BinMapper*> GetBinMappers() const;
 
-  void CopyFeatureMetadataTo(Dataset *dataset, bool is_enable_sparse) const;
+  void CopyFeatureBinMapperTo(Dataset *dataset, bool is_enable_sparse) const;
 
   /*!
   * \brief Get a feature pointer for specific index

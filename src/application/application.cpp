@@ -145,7 +145,7 @@ void Application::LoadData() {
   }
 
   dataset_loader_ = new DatasetLoader(config_.io_config, predict_fun);
-  dataset_loader_->SetHeadder(config_.io_config.data_filename.c_str());
+  dataset_loader_->SetHeader(config_.io_config.data_filename.c_str());
   // load Training data
   if (config_.is_parallel_find_bin) {
     // load data for parallel training
@@ -173,7 +173,7 @@ void Application::LoadData() {
   // Add validation data, if it exists
   for (size_t i = 0; i < config_.io_config.valid_data_filenames.size(); ++i) {
     // add
-    valid_datas_.push_back(dataset_loader_->LoadFromFileLikeOthers(config_.io_config.valid_data_filenames[i].c_str(),
+    valid_datas_.push_back(dataset_loader_->LoadFromFileAlignWithOtherDataset(config_.io_config.valid_data_filenames[i].c_str(),
       train_data_));
     // need save binary file
     if (config_.io_config.is_save_binary_file) {

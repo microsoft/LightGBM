@@ -126,7 +126,7 @@ DllExport int LGBM_CreateDatasetFromFile(const char* filename,
   if (reference == nullptr) {
     *out = loader.LoadFromFile(filename);
   } else {
-    *out = loader.LoadFromFileLikeOthers(filename, reinterpret_cast<const Dataset*>(*reference));
+    *out = loader.LoadFromFileAlignWithOtherDataset(filename, reinterpret_cast<const Dataset*>(*reference));
   }
   return 0;
 }
@@ -154,7 +154,7 @@ DllExport int LGBM_CreateDatasetFromMat(const void* data,
   config.LoadFromString(parameters);
   DatasetLoader loader(config.io_config, nullptr);
   Dataset* ret = nullptr;
-  auto get_row_fun = Common::GetRowFunctionFromMat(data, nrow, ncol, float_type, is_row_major);
+  auto get_row_fun = Common::RowFunctionFromDenseMatric(data, nrow, ncol, float_type, is_row_major);
   if (reference == nullptr) {
     // sample data first
     Random rand(config.io_config.data_random_seed);
@@ -170,10 +170,8 @@ DllExport int LGBM_CreateDatasetFromMat(const void* data,
     }
     ret = loader.CostructFromSampleData(sample_values, nrow);
   } else {
-    ret = new Dataset();
-    // need to set num_data first
-    ret->SetNumData(nrow);
-    reinterpret_cast<const Dataset*>(*reference)->CopyFeatureMetadataTo(ret, config.io_config.is_enable_sparse);
+    ret = new Dataset(nrow);
+    reinterpret_cast<const Dataset*>(*reference)->CopyFeatureBinMapperTo(ret, config.io_config.is_enable_sparse);
   }
 
 #pragma omp parallel for schedule(guided)
@@ -202,7 +200,7 @@ DllExport int LGBM_CreateDatasetFromCSR(const int32_t* indptr,
   config.LoadFromString(parameters);
   DatasetLoader loader(config.io_config, nullptr);
   Dataset* ret = nullptr;
-  auto get_row_fun = Common::GetRowFunctionFromCSR(indptr, indices, data, float_type, nindptr, nelem);
+  auto get_row_fun = Common::RowFunctionFromCSR(indptr, indices, data, float_type, nindptr, nelem);
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
   if (reference == nullptr) {
     // sample data first
@@ -233,10 +231,8 @@ DllExport int LGBM_CreateDatasetFromCSR(const int32_t* indptr,
     CHECK(num_col >= sample_values.size());
     ret = loader.CostructFromSampleData(sample_values, nrow);
   } else {
-    ret = new Dataset();
-    // need to set num_data first
-    ret->SetNumData(nrow);
-    reinterpret_cast<const Dataset*>(*reference)->CopyFeatureMetadataTo(ret, config.io_config.is_enable_sparse);
+    ret = new Dataset(nrow);
+    reinterpret_cast<const Dataset*>(*reference)->CopyFeatureBinMapperTo(ret, config.io_config.is_enable_sparse);
   }
 
 #pragma omp parallel for schedule(guided)
@@ -266,7 +262,7 @@ DllExport int LGBM_CreateDatasetFromCSC(const int32_t* col_ptr,
   config.LoadFromString(parameters);
   DatasetLoader loader(config.io_config, nullptr);
   Dataset* ret = nullptr;
-  auto get_col_fun = Common::GetColFunctionFromCSC(col_ptr, indices, data, float_type, ncol_ptr, nelem);
+  auto get_col_fun = Common::ColumnFunctionFromCSC(col_ptr, indices, data, float_type, ncol_ptr, nelem);
   int32_t nrow = static_cast<int32_t>(num_row);
   if (reference == nullptr) {
     Log::Warning("Construct from CSC format is not efficient");
@@ -282,17 +278,15 @@ DllExport int LGBM_CreateDatasetFromCSC(const int32_t* col_ptr,
     }
     ret = loader.CostructFromSampleData(sample_values, nrow);
   } else {
-    ret = new Dataset();
-    // need to set num_data first
-    ret->SetNumData(nrow);
-    reinterpret_cast<const Dataset*>(*reference)->CopyFeatureMetadataTo(ret, config.io_config.is_enable_sparse);
+    ret = new Dataset(nrow);
+    reinterpret_cast<const Dataset*>(*reference)->CopyFeatureBinMapperTo(ret, config.io_config.is_enable_sparse);
   }
 
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < ncol_ptr - 1; ++i) {
     const int tid = omp_get_thread_num();
     auto one_col = get_col_fun(i);
-    ret->PushOneCol(tid, i, one_col);
+    ret->PushOneColumn(tid, i, one_col);
   }
   ret->FinishLoad();
   *out = ret;

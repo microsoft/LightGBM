@@ -21,6 +21,12 @@ Dataset::Dataset() {
   is_loading_from_binfile_ = false;
 }
 
+Dataset::Dataset(data_size_t num_data) {
+  num_class_ = 1;
+  num_data_ = num_data;
+  is_loading_from_binfile_ = false;
+}
+
 Dataset::~Dataset() {
   for (auto& feature : features_) {
     delete feature;
@@ -35,13 +41,14 @@ void Dataset::FinishLoad() {
   }
 }
 
-void Dataset::CopyFeatureMetadataTo(Dataset *dataset, bool is_enable_sparse) const {
+void Dataset::CopyFeatureBinMapperTo(Dataset* dataset, bool is_enable_sparse) const {
   dataset->features_.clear();
   // copy feature bin mapper data
   for (Feature* feature : features_) {
     dataset->features_.push_back(new Feature(feature->feature_index(),
       new BinMapper(*feature->bin_mapper()), dataset->num_data_, is_enable_sparse));
   }
+  dataset->num_class_ = num_class_;
   dataset->used_feature_map_ = used_feature_map_;
   dataset->num_features_ = static_cast<int>(dataset->features_.size());
   dataset->num_total_features_ = num_total_features_;
@@ -131,7 +138,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     Log::Info("Saving data to binary file %s", data_filename_);
 
     // get size of header
-    size_t size_of_header = sizeof(num_data_) + sizeof(num_features_) + sizeof(num_total_features_) 
+    size_t size_of_header = sizeof(num_data_) + sizeof(num_class_) + sizeof(num_features_) + sizeof(num_total_features_) 
       + sizeof(size_t) + sizeof(int) * used_feature_map_.size();
     // size of feature names
     for (int i = 0; i < num_total_features_; ++i) {
@@ -140,6 +147,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     fwrite(&size_of_header, sizeof(size_of_header), 1, file);
     // write header
     fwrite(&num_data_, sizeof(num_data_), 1, file);
+    fwrite(&num_class_, sizeof(num_class_), 1, file);
     fwrite(&num_features_, sizeof(num_features_), 1, file);
     fwrite(&num_total_features_, sizeof(num_features_), 1, file);
     size_t num_used_feature_map = used_feature_map_.size();

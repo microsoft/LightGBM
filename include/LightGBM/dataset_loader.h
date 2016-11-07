@@ -12,7 +12,7 @@ public:
 
   ~DatasetLoader();
 
-  void SetHeadder(const char* filename);
+  void SetHeader(const char* filename);
 
   Dataset* LoadFromFile(const char* filename, int rank, int num_machines);
 
@@ -20,7 +20,7 @@ public:
     return LoadFromFile(filename, 0, 1);
   }
 
-  Dataset* LoadFromFileLikeOthers(const char* filename, const Dataset* other);
+  Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data);
 
   Dataset* LoadFromBinFile(const char* bin_filename, int rank, int num_machines);
 
@@ -50,7 +50,6 @@ private:
 
   /*! \brief Check can load from binary file */
   bool CheckCanLoadFromBin(const char* filename);
-
 
   const IOConfig& io_config_;
   /*! \brief Random generator*/

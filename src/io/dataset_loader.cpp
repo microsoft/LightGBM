@@ -17,7 +17,7 @@ DatasetLoader::~DatasetLoader() {
 
 }
 
-void DatasetLoader::SetHeadder(const char* filename) {
+void DatasetLoader::SetHeader(const char* filename) {
   TextReader<data_size_t> text_reader(filename, io_config_.has_header);
   std::unordered_map<std::string, int> name2idx;
 
@@ -200,7 +200,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
 
 
 
-Dataset* DatasetLoader::LoadFromFileLikeOthers(const char* filename, const Dataset* other) {
+Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data) {
   auto parser = Parser::CreateParser(filename, io_config_.has_header, 0, label_idx_);
   if (parser == nullptr) {
     Log::Fatal("Could not recognize data format of %s", filename);
@@ -219,7 +219,7 @@ Dataset* DatasetLoader::LoadFromFileLikeOthers(const char* filename, const Datas
       dataset->num_data_ = static_cast<data_size_t>(text_data.size());
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, dataset->num_class_, weight_idx_, group_idx_);
-      other->CopyFeatureMetadataTo(dataset, io_config_.is_enable_sparse);
+      train_data->CopyFeatureBinMapperTo(dataset, io_config_.is_enable_sparse);
       // extract features
       ExtractFeaturesFromMemory(text_data, parser, dataset);
       text_data.clear();
@@ -230,7 +230,7 @@ Dataset* DatasetLoader::LoadFromFileLikeOthers(const char* filename, const Datas
       num_global_data = dataset->num_data_;
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, dataset->num_class_, weight_idx_, group_idx_);
-      other->CopyFeatureMetadataTo(dataset, io_config_.is_enable_sparse);
+      train_data->CopyFeatureBinMapperTo(dataset, io_config_.is_enable_sparse);
       // extract features
       ExtractFeaturesFromFile(filename, parser, used_data_indices, dataset);
     }
@@ -290,6 +290,8 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* bin_filename, int rank, int 
   const char* mem_ptr = buffer;
   dataset->num_data_ = *(reinterpret_cast<const data_size_t*>(mem_ptr));
   mem_ptr += sizeof(dataset->num_data_);
+  dataset->num_class_ = *(reinterpret_cast<const int*>(mem_ptr));
+  mem_ptr += sizeof(dataset->num_class_);
   dataset->num_features_ = *(reinterpret_cast<const int*>(mem_ptr));
   mem_ptr += sizeof(dataset->num_features_);
   dataset->num_total_features_ = *(reinterpret_cast<const int*>(mem_ptr));
@@ -415,7 +417,7 @@ Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>&
   }
 
   Dataset* dataset = new Dataset();
-
+  dataset->num_class_ = io_config_.num_class;
   dataset->features_.clear();
   dataset->num_data_ = num_data;
   // -1 means doesn't use this feature

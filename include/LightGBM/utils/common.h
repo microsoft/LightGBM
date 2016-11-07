@@ -382,7 +382,7 @@ inline void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, size_t s
 }
 
 inline std::function<std::vector<double>(int row_idx)>
-GetRowFunctionFromMat(const void* data, int num_row, int num_col, int float_type, int is_row_major) {
+RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int float_type, int is_row_major) {
   if (float_type == 0) {
     const float* dptr = reinterpret_cast<const float*>(data);
     if (is_row_major) {
@@ -432,7 +432,7 @@ GetRowFunctionFromMat(const void* data, int num_row, int num_col, int float_type
 
 
 inline std::function<std::vector<std::pair<int, double>>(int idx)>
-GetRowFunctionFromCSR(const int32_t* indptr, const int32_t* indices, const void* data, int float_type, uint64_t nindptr, uint64_t nelem) {
+RowFunctionFromCSR(const int32_t* indptr, const int32_t* indices, const void* data, int float_type, uint64_t nindptr, uint64_t nelem) {
   if (float_type == 0) {
     const float* dptr = reinterpret_cast<const float*>(data);
     return [&indptr, &indices, &dptr, &nindptr, &nelem](int idx) {
@@ -463,7 +463,7 @@ GetRowFunctionFromCSR(const int32_t* indptr, const int32_t* indices, const void*
 }
 
 inline std::function<std::vector<std::pair<int, double>>(int idx)>
-GetColFunctionFromCSC(const int32_t* col_ptr, const int32_t* indices, const void* data, int float_type, uint64_t ncol_ptr, uint64_t nelem) {
+ColumnFunctionFromCSC(const int32_t* col_ptr, const int32_t* indices, const void* data, int float_type, uint64_t ncol_ptr, uint64_t nelem) {
   if (float_type == 0) {
     const float* dptr = reinterpret_cast<const float*>(data);
     return [&col_ptr, &indices, &dptr, &ncol_ptr, &nelem](int idx) {
