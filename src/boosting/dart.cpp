@@ -32,15 +32,15 @@ void DART::Init(const BoostingConfig* config, const Dataset* train_data, const O
 }
 
 bool DART::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) {
+  // drop trees
+  double shrinkage_rate = DroppingTrees();
+
   // boosting first
   if (gradient == nullptr || hessian == nullptr) {
     Boosting();
     gradient = gradients_;
     hessian = hessians_;
   }
-  
-  // drop trees
-  double shrinkage_rate = DroppingTrees();
   
   for (int curr_class = 0; curr_class < num_class_; ++curr_class){
     // bagging logic
