@@ -28,8 +28,7 @@ public:
   * \param is_raw_score True if need to predict result with raw score
   * \param predict_leaf_index True if output leaf index instead of prediction score
   */
-  Predictor(const Boosting* boosting, bool is_raw_score, bool is_predict_leaf_index)
-    : is_raw_score_(is_raw_score), is_predict_leaf_index_(is_predict_leaf_index) {
+  Predictor(const Boosting* boosting, bool is_raw_score, bool is_predict_leaf_index) {
     boosting_ = boosting;
     num_features_ = boosting_->MaxFeatureIdx() + 1;
 #pragma omp parallel
@@ -42,7 +41,7 @@ public:
       features_[i] = new double[num_features_];
     }
 
-    if (is_predict_leaf_index_) {
+    if (is_predict_leaf_index) {
       predict_fun_ = [this](const std::vector<std::pair<int, double>>& features) {
         const int tid = PutFeatureValuesToBuffer(features);
         // get result for leaf index
@@ -50,7 +49,7 @@ public:
         return std::vector<double>(result.begin(), result.end());
       };
     } else {
-      if (is_raw_score_) {
+      if (is_raw_score) {
         predict_fun_ = [this](const std::vector<std::pair<int, double>>& features) {
           const int tid = PutFeatureValuesToBuffer(features);
           // get result without sigmoid transformation
@@ -156,12 +155,8 @@ private:
   double** features_;
   /*! \brief Number of features */
   int num_features_;
-  /*! \brief True if need to predict result with sigmoid transform */
-  bool is_raw_score_;
   /*! \brief Number of threads */
   int num_threads_;
-  /*! \brief True if output leaf index instead of prediction score */
-  bool is_predict_leaf_index_;
   /*! \brief function for prediction */
   PredictFunction predict_fun_;
 };

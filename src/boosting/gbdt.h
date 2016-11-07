@@ -42,17 +42,35 @@ public:
   void AddDataset(const Dataset* valid_data,
        const std::vector<const Metric*>& valid_metrics) override;
   /*!
-  * \brief one training iteration
+  * \brief Training logic
+  * \param gradient nullptr for using default objective, otherwise use self-defined boosting
+  * \param hessian nullptr for using default objective, otherwise use self-defined boosting
+  * \param is_eval true if need evalulation or early stop
+  * \return True if meet early stopping or cannot boosting
   */
   bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override;
 
-
+  /*!
+  * \brief Get evaluation result at data_idx data
+  * \param data_idx 0: training data, 1: 1st validation data
+  * \return evaluation result
+  */
   std::vector<double> GetEvalAt(int data_idx) const override;
 
-  /*! \brief Get prediction result */
+  /*!
+  * \brief Get current training score
+  * \param out_len lenght of returned score
+  * \return training score
+  */
   const score_t* GetTrainingScore(data_size_t* out_len) const override;
 
-  void GetPredict(int data_idx, score_t* out_result, data_size_t* out_len) const override;
+  /*!
+  * \brief Get prediction result at data_idx data
+  * \param data_idx 0: training data, 1: 1st validation data
+  * \param result used to store prediction result, should allocate memory before call this function
+  * \param out_len lenght of returned score
+  */
+  void GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len) const override;
 
   /*!
   * \brief Predtion for one record without sigmoid transformation
@@ -83,7 +101,7 @@ public:
   /*!
   * \brief Restore from a serialized string
   */
-  void ModelsFromString(const std::string& model_str) override;
+  void LoadModelFromString(const std::string& model_str) override;
   /*!
   * \brief Get max feature index of this model
   * \return Max feature index of this model
@@ -106,7 +124,7 @@ public:
   * \brief Get number of classes
   * \return Number of classes
   */
-  inline int NumberOfClass() const override { return num_class_; }
+  inline int NumberOfClasses() const override { return num_class_; }
 
   /*!
   * \brief Set number of used model for prediction

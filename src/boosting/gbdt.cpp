@@ -238,7 +238,7 @@ bool GBDT::OutputMetric(int iter) {
     for (auto& sub_metric : training_metrics_) {
       auto name = sub_metric->GetName();
       auto scores = sub_metric->Eval(train_score_updater_->score());
-      for (size_t k = 0; k < name.size(); k++) {
+      for (size_t k = 0; k < name.size(); ++k) {
         Log::Info("Iteration: %d, %s : %f", iter, name[k].c_str(), scores[k]);
       }
     }
@@ -250,7 +250,7 @@ bool GBDT::OutputMetric(int iter) {
         auto test_scores = valid_metrics_[i][j]->Eval(valid_score_updater_[i]->score());
         if ((iter % gbdt_config_->output_freq) == 0) {
           auto name = valid_metrics_[i][j]->GetName();
-          for (size_t k = 0; k < name.size(); k++) {
+          for (size_t k = 0; k < name.size(); ++k) {
             Log::Info("Iteration: %d, %s : %f", iter, name[k].c_str(), test_scores[k]);
           }
         }
@@ -299,7 +299,7 @@ const score_t* GBDT::GetTrainingScore(data_size_t* out_len) const {
   return train_score_updater_->score();
 }
 
-void GBDT::GetPredict(int data_idx, score_t* out_result, data_size_t* out_len) const {
+void GBDT::GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len) const {
   CHECK(data_idx >= 0 && data_idx <= static_cast<int>(valid_metrics_.size()));
   std::vector<double> ret;
 
@@ -373,7 +373,7 @@ void GBDT::SaveModelToFile(int num_used_model, bool is_finish, const char* filen
   if (!model_output_file_.is_open()) {
     return;
   }
-  if (num_used_model_ == NO_LIMIT) {
+  if (num_used_model == NO_LIMIT) {
     num_used_model = static_cast<int>(models_.size());
   } else {
     num_used_model = num_used_model * num_class_;
@@ -399,7 +399,7 @@ void GBDT::SaveModelToFile(int num_used_model, bool is_finish, const char* filen
   }
 }
 
-void GBDT::ModelsFromString(const std::string& model_str) {
+void GBDT::LoadModelFromString(const std::string& model_str) {
   // use serialized string to restore this object
   models_.clear();
   std::vector<std::string> lines = Common::Split(model_str.c_str(), '\n');

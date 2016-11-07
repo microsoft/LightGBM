@@ -43,14 +43,36 @@ public:
   virtual void AddDataset(const Dataset* valid_data,
     const std::vector<const Metric*>& valid_metrics) = 0;
 
-  /*! \brief Training logic */
+  /*!
+  * \brief Training logic
+  * \param gradient nullptr for using default objective, otherwise use self-defined boosting
+  * \param hessian nullptr for using default objective, otherwise use self-defined boosting
+  * \param is_eval true if need evalulation or early stop
+  * \return True if meet early stopping or cannot boosting
+  */
   virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) = 0;
 
+  /*!
+  * \brief Get evaluation result at data_idx data
+  * \param data_idx 0: training data, 1: 1st validation data
+  * \return evaluation result
+  */
   virtual std::vector<double> GetEvalAt(int data_idx) const = 0;
 
+  /*!
+  * \brief Get current training score
+  * \param out_len lenght of returned score
+  * \return training score
+  */
   virtual const score_t* GetTrainingScore(data_size_t* out_len) const = 0;
 
-  virtual void GetPredict(int data_idx, score_t* out_result, data_size_t* out_len) const = 0;
+  /*!
+  * \brief Get prediction result at data_idx data
+  * \param data_idx 0: training data, 1: 1st validation data
+  * \param result used to store prediction result, should allocate memory before call this function
+  * \param out_len lenght of returned score
+  */
+  virtual void GetPredictAt(int data_idx, score_t* result, data_size_t* out_len) const = 0;
 
   /*!
   * \brief Prediction for one record, not sigmoid transform
@@ -83,7 +105,7 @@ public:
   * \brief Restore from a serialized string
   * \param model_str The string of model
   */
-  virtual void ModelsFromString(const std::string& model_str) = 0;
+  virtual void LoadModelFromString(const std::string& model_str) = 0;
 
   /*!
   * \brief Get max feature index of this model
@@ -107,7 +129,7 @@ public:
   * \brief Get number of classes
   * \return Number of classes
   */
-  virtual int NumberOfClass() const = 0;
+  virtual int NumberOfClasses() const = 0;
 
   /*!
   * \brief Set number of used model for prediction

@@ -124,7 +124,7 @@ public:
   }
   const Boosting* GetBoosting() const { return boosting_; }
 
-  const inline int NumberOfClass() const { return boosting_->NumberOfClass(); }
+  const inline int NumberOfClasses() const { return boosting_->NumberOfClasses(); }
 
 private:
 
@@ -203,10 +203,10 @@ DllExport int LGBM_CreateDatasetFromMat(const void* data,
     const size_t sample_cnt = static_cast<size_t>(nrow < config.io_config.bin_construct_sample_cnt ? nrow : config.io_config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
     std::vector<std::vector<double>> sample_values(ncol);
-    for (size_t i = 0; i < sample_indices.size(); i++) {
+    for (size_t i = 0; i < sample_indices.size(); ++i) {
       auto idx = sample_indices[i];
       auto row = get_row_fun(static_cast<int>(idx));
-      for (size_t j = 0; j < row.size(); j++) {
+      for (size_t j = 0; j < row.size(); ++j) {
         sample_values[j].push_back(row[j]);
       }
     }
@@ -477,7 +477,7 @@ DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto boosting = ref_booster->GetBoosting();
   int len = 0;
-  boosting->GetPredict(data, out_result, &len);
+  boosting->GetPredictAt(data, out_result, &len);
   *out_len = static_cast<uint64_t>(len);
   return 0;
 }
@@ -498,13 +498,13 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   ref_booster->PrepareForPrediction(static_cast<int>(n_used_trees), predict_type);
 
   auto get_row_fun = Common::RowFunctionFromCSR(indptr, indices, data, float_type, nindptr, nelem);
-  int num_class = ref_booster->NumberOfClass();
+  int num_class = ref_booster->NumberOfClasses();
   int nrow = static_cast<int>(nindptr - 1);
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < nrow; ++i) {
     auto one_row = get_row_fun(i);
     auto predicton_result = ref_booster->Predict(one_row);
-    for (int j = 0; j < num_class; j++) {
+    for (int j = 0; j < num_class; ++j) {
       out_result[i * num_class + j] = predicton_result[j];
     }
   }
@@ -525,25 +525,18 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
   ref_booster->PrepareForPrediction(static_cast<int>(n_used_trees), predict_type);
 
   auto get_row_fun = Common::RowPairFunctionFromDenseMatric(data, nrow, ncol, float_type, is_row_major);
-  int num_class = ref_booster->NumberOfClass();
+  int num_class = ref_booster->NumberOfClasses();
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < nrow; ++i) {
     auto one_row = get_row_fun(i);
     auto predicton_result = ref_booster->Predict(one_row);
-    for (int j = 0; j < num_class; j++) {
+    for (int j = 0; j < num_class; ++j) {
       out_result[i * num_class + j] = predicton_result[j];
     }
   }
   return 0;
 }
 
-/*!
-* \brief save model into file
-* \param handle handle
-* \param num_used_model
-* \param filename file name
-* \return 0 when success, -1 when failure happens
-*/
 DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
   int num_used_model,
   const char* filename) {

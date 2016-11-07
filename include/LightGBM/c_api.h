@@ -256,7 +256,7 @@ DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
 * \param handle handle
 * \param data 0:training data, 1: 1st valid data, 2:2nd valid data ...
 * \param out_len len of output result
-* \param out_result the string containing evaluation statistics
+* \param out_result the string containing evaluation statistics, should allocate memory before call this function
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_BoosterEval(BoosterHandle handle,
@@ -281,7 +281,7 @@ this can be used to support customized eval function
 * \param handle handle
 * \param data 0:training data, 1: 1st valid data, 2:2nd valid data ...
 * \param out_len len of output result
-* \param out_result used to set a pointer to array
+* \param out_result used to set a pointer to array, should allocate memory before call this function
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
@@ -304,7 +304,7 @@ DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
 *          1:with transform(if needed)
 *          2:leaf index
 * \param n_used_trees number of used tree
-* \param out_result used to set a pointer to array
+* \param out_result used to set a pointer to array, should allocate memory before call this function
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
@@ -332,7 +332,7 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
 *          1:with transform(if needed)
 *          2:leaf index
 * \param n_used_trees number of used tree
-* \param out_result used to set a pointer to array
+* \param out_result used to set a pointer to array, should allocate memory before call this function
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
