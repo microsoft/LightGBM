@@ -115,10 +115,10 @@ protected:
   data_size_t min_num_data_one_leaf_;
   /*! \brief minimal sum hessian on one leaf */
   double min_sum_hessian_one_leaf_;
-  /*! \brief lambda L2 weights regularization */
-  double reg_lambda_;
-  /*! \brief minimal loss reduction to split */
-  double reg_gamma_;
+  /*! \brief lambda of the L2 weights regularization */
+  double lambda_l2_;
+  /*! \brief minimal gain (loss reduction) to split */
+  double min_gain_to_split_;
   /*! \brief sub-feature fraction rate */
   double feature_fraction_;
   /*! \brief training data partition on leaves */

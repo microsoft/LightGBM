@@ -26,12 +26,12 @@ public:
   * \param min_num_data_one_leaf minimal number of data in one leaf
   */
   void Init(const Feature* feature, int feature_idx, data_size_t min_num_data_one_leaf,
-    double min_sum_hessian_one_leaf, double reg_lambda, double reg_gamma) {
+    double min_sum_hessian_one_leaf, double lambda_l2, double min_gain_to_split) {
     feature_idx_ = feature_idx;
     min_num_data_one_leaf_ = min_num_data_one_leaf;
     min_sum_hessian_one_leaf_ = min_sum_hessian_one_leaf;
-    reg_lambda_ = reg_lambda;
-    reg_gamma_ = reg_gamma;
+    lambda_l2_ = lambda_l2;
+    min_gain_to_split_ = min_gain_to_split;
     bin_data_ = feature->bin_data();
     num_bins_ = feature->num_bin();
     data_ = new HistogramBinEntry[num_bins_];
@@ -136,7 +136,7 @@ public:
       // current split gain
       double current_gain = GetLeafSplitGain(sum_left_gradient, sum_left_hessian) + GetLeafSplitGain(sum_right_gradient, sum_right_hessian);
       // gain with split is worse than without split
-      if (current_gain < gain_shift + 2 * reg_gamma_) {
+      if (current_gain < gain_shift + 2 * min_gain_to_split_) {
         continue;
       }
       // mark to is splittable
@@ -219,7 +219,7 @@ private:
   * \return split gain
   */
   double GetLeafSplitGain(double sum_gradients, double sum_hessians) const {
-    return (sum_gradients * sum_gradients) / (sum_hessians + reg_lambda_);
+    return (sum_gradients * sum_gradients) / (sum_hessians + lambda_l2_);
   }
 
   /*!
@@ -229,7 +229,7 @@ private:
   * \return leaf output
   */
   double CalculateSplittedLeafOutput(double sum_gradients, double sum_hessians) const {
-    return -(sum_gradients) / (sum_hessians + reg_lambda_);
+    return -(sum_gradients) / (sum_hessians + lambda_l2_);
   }
 
   int feature_idx_;
@@ -237,10 +237,10 @@ private:
   data_size_t min_num_data_one_leaf_;
   /*! \brief minimal sum hessian of data in one leaf */
   double min_sum_hessian_one_leaf_;
-  /*! \brief lambda L2 weights regularization */
-  double reg_lambda_;
-  /*! \brief minimal loss reduction to split */
-  double reg_gamma_;
+  /*! \brief lambda of the L2 weights regularization */
+  double lambda_l2_;
+  /*! \brief minimal gain (loss reduction) to split */
+  double min_gain_to_split_;
   /*! \brief the bin data of current feature */
   const Bin* bin_data_;
   /*! \brief number of bin of histogram */

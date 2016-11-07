@@ -267,10 +267,10 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   GetInt(params, "min_data_in_leaf", &min_data_in_leaf);
   GetDouble(params, "min_sum_hessian_in_leaf", &min_sum_hessian_in_leaf);
   CHECK(min_sum_hessian_in_leaf > 1.0f || min_data_in_leaf > 0);
-  GetDouble(params, "reg_lambda", &reg_lambda);
-  CHECK(reg_lambda >= 0.0f)
-  GetDouble(params, "reg_gamma", &reg_gamma);
-  CHECK(reg_gamma >= 0.0f)
+  GetDouble(params, "lambda_l2", &lambda_l2);
+  CHECK(lambda_l2 >= 0.0f)
+  GetDouble(params, "min_gain_to_split", &min_gain_to_split);
+  CHECK(min_gain_to_split >= 0.0f)
   GetInt(params, "num_leaves", &num_leaves);
   CHECK(num_leaves > 1);
   GetInt(params, "feature_fraction_seed", &feature_fraction_seed);
