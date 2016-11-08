@@ -213,41 +213,35 @@ public:
 
 private:
   /*!
-  * \brief Return the L1 regularized sum_gradients
-  * \param sum_gradients
-  * \return regularized sum_gradients
-  */
-  double L1RegularizedGradients(double sum_gradients) const {
-  if (sum_gradients > lambda_l1_) return sum_gradients - lambda_l1_;
-  if (sum_gradients < -lambda_l1_) return sum_gradients + lambda_l1_;
-  return 0.0f;
-  }
-
-  /*!
-  * \brief Calculate the split gain based on sum_gradients and sum_hessians
+  * \brief Calculate the split gain based on regularized sum_gradients and sum_hessians
   * \param sum_gradients
   * \param sum_hessians
   * \return split gain
   */
   double GetLeafSplitGain(double sum_gradients, double sum_hessians) const {
-    if (lambda_l1_ != 0.0f) {
-      double reg_sum_gradients = L1RegularizedGradients(sum_gradients);
+    if (sum_gradients < -lambda_l1_) {
+      double reg_sum_gradients = sum_gradients + lambda_l1_;
+      return (reg_sum_gradients * reg_sum_gradients) / (sum_hessians + lambda_l2_);
+    } else if (sum_gradients > lambda_l1_) {
+      double reg_sum_gradients = sum_gradients - lambda_l1_;
       return (reg_sum_gradients * reg_sum_gradients) / (sum_hessians + lambda_l2_);
     }
-    return (sum_gradients * sum_gradients) / (sum_hessians + lambda_l2_);
+    return 0.0f;
   }
 
   /*!
-  * \brief Calculate the output of a leaf based on sum_gradients and sum_hessians
+  * \brief Calculate the output of a leaf based on regularized sum_gradients and sum_hessians
   * \param sum_gradients
   * \param sum_hessians
   * \return leaf output
   */
   double CalculateSplittedLeafOutput(double sum_gradients, double sum_hessians) const {
-    if (lambda_l1_ != 0.0f) {
-      return -(L1RegularizedGradients(sum_gradients)) / (sum_hessians + lambda_l2_);
+    if (sum_gradients < -lambda_l1_) {
+      return -(sum_gradients + lambda_l1_) / (sum_hessians + lambda_l2_);
+    } else if (sum_gradients > lambda_l1_) {
+      return -(sum_gradients - lambda_l1_) / (sum_hessians + lambda_l2_);
     }
-    return -(sum_gradients) / (sum_hessians + lambda_l2_);
+    return 0.0f;
   }
 
   int feature_idx_;
