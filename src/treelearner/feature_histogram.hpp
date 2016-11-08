@@ -219,7 +219,7 @@ private:
   * \return split gain
   */
   double GetLeafSplitGain(double sum_gradients, double sum_hessians) const {
-    double abs_sum_gradients = fabs(sum_gradients);
+    double abs_sum_gradients = std::fabs(sum_gradients);
     if (abs_sum_gradients > lambda_l1_) {
       double reg_abs_sum_gradients = abs_sum_gradients - lambda_l1_;
       return (reg_abs_sum_gradients * reg_abs_sum_gradients) / (sum_hessians + lambda_l2_);
@@ -234,9 +234,9 @@ private:
   * \return leaf output
   */
   double CalculateSplittedLeafOutput(double sum_gradients, double sum_hessians) const {
-    double abs_sum_gradients = fabs(sum_gradients);
+    double abs_sum_gradients = std::fabs(sum_gradients);
     if (abs_sum_gradients > lambda_l1_) {
-      return -copysign(abs_sum_gradients - lambda_l1_, sum_gradients) / (sum_hessians + lambda_l2_);
+      return -std::copysign(abs_sum_gradients - lambda_l1_, sum_gradients) / (sum_hessians + lambda_l2_);
     }
     return 0.0f;
   }
