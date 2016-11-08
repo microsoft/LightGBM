@@ -675,7 +675,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
         std::vector<std::pair<int, double>> ret;
         int64_t start = ptr_indptr[idx];
         int64_t end = ptr_indptr[idx + 1];
-        CHECK(start >= 0 && end < nelem);
+        CHECK(start >= 0 && end <= nelem);
         for (int64_t i = start; i <= end; ++i) {
           ret.emplace_back(indices[i], data_ptr[i]);
         }
@@ -688,7 +688,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
         std::vector<std::pair<int, double>> ret;
         int64_t start = ptr_indptr[idx];
         int64_t end = ptr_indptr[idx + 1];
-        CHECK(start >= 0 && end < nelem);
+        CHECK(start >= 0 && end <= nelem);
         for (int64_t i = start; i <= end; ++i) {
           ret.emplace_back(indices[i], data_ptr[i]);
         }
@@ -706,7 +706,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
         std::vector<std::pair<int, double>> ret;
         int64_t start = ptr_indptr[idx];
         int64_t end = ptr_indptr[idx + 1];
-        CHECK(start >= 0 && end < nelem);
+        CHECK(start >= 0 && end <= nelem);
         for (int64_t i = start; i <= end; ++i) {
           ret.emplace_back(indices[i], data_ptr[i]);
         }
@@ -719,7 +719,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
         std::vector<std::pair<int, double>> ret;
         int64_t start = ptr_indptr[idx];
         int64_t end = ptr_indptr[idx + 1];
-        CHECK(start >= 0 && end < nelem);
+        CHECK(start >= 0 && end <= nelem);
         for (int64_t i = start; i <= end; ++i) {
           ret.emplace_back(indices[i], data_ptr[i]);
         }
