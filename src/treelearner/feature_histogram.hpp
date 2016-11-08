@@ -26,10 +26,13 @@ public:
   * \param min_num_data_one_leaf minimal number of data in one leaf
   */
   void Init(const Feature* feature, int feature_idx, data_size_t min_num_data_one_leaf,
-    double min_sum_hessian_one_leaf) {
+    double min_sum_hessian_one_leaf, double lambda_l1, double lambda_l2, double min_gain_to_split) {
     feature_idx_ = feature_idx;
     min_num_data_one_leaf_ = min_num_data_one_leaf;
     min_sum_hessian_one_leaf_ = min_sum_hessian_one_leaf;
+    lambda_l1_ = lambda_l1;
+    lambda_l2_ = lambda_l2;
+    min_gain_to_split_ = min_gain_to_split;
     bin_data_ = feature->bin_data();
     num_bins_ = feature->num_bin();
     data_ = new HistogramBinEntry[num_bins_];
@@ -113,6 +116,7 @@ public:
     double sum_right_hessian = kEpsilon;
     data_size_t right_count = 0;
     double gain_shift = GetLeafSplitGain(sum_gradients_, sum_hessians_);
+    double min_gain_shift = gain_shift + min_gain_to_split_;
     is_splittable_ = false;
     // from right to left, and we don't need data in bin0
     for (unsigned int t = num_bins_ - 1; t > 0; --t) {
@@ -127,16 +131,14 @@ public:
 
       double sum_left_hessian = sum_hessians_ - sum_right_hessian;
       // if sum hessian too small
-      if (sum_left_hessian < min_sum_hessian_one_leaf_) {
-        break;
-      }
+      if (sum_left_hessian < min_sum_hessian_one_leaf_) break;
+
       double sum_left_gradient = sum_gradients_ - sum_right_gradient;
       // current split gain
       double current_gain = GetLeafSplitGain(sum_left_gradient, sum_left_hessian) + GetLeafSplitGain(sum_right_gradient, sum_right_hessian);
-      // gain is worst than no perform split
-      if (current_gain < gain_shift) {
-        continue;
-      }
+      // gain with split is worse than without split
+      if (current_gain < min_gain_shift) continue;
+
       // mark to is splittable
       is_splittable_ = true;
       // better split point
@@ -211,23 +213,32 @@ public:
 
 private:
   /*!
-  * \brief Calculate the split gain based on sum_gradients and sum_hessians
+  * \brief Calculate the split gain based on regularized sum_gradients and sum_hessians
   * \param sum_gradients
   * \param sum_hessians
   * \return split gain
   */
   double GetLeafSplitGain(double sum_gradients, double sum_hessians) const {
-    return (sum_gradients * sum_gradients) / (sum_hessians);
+    double abs_sum_gradients = std::fabs(sum_gradients);
+    if (abs_sum_gradients > lambda_l1_) {
+      double reg_abs_sum_gradients = abs_sum_gradients - lambda_l1_;
+      return (reg_abs_sum_gradients * reg_abs_sum_gradients) / (sum_hessians + lambda_l2_);
+    }
+    return 0.0f;
   }
 
   /*!
-  * \brief Calculate the output of a leaf based on sum_gradients and sum_hessians
+  * \brief Calculate the output of a leaf based on regularized sum_gradients and sum_hessians
   * \param sum_gradients
   * \param sum_hessians
   * \return leaf output
   */
   double CalculateSplittedLeafOutput(double sum_gradients, double sum_hessians) const {
-    return -(sum_gradients) / (sum_hessians);
+    double abs_sum_gradients = std::fabs(sum_gradients);
+    if (abs_sum_gradients > lambda_l1_) {
+      return -std::copysign(abs_sum_gradients - lambda_l1_, sum_gradients) / (sum_hessians + lambda_l2_);
+    }
+    return 0.0f;
   }
 
   int feature_idx_;
@@ -235,6 +246,12 @@ private:
   data_size_t min_num_data_one_leaf_;
   /*! \brief minimal sum hessian of data in one leaf */
   double min_sum_hessian_one_leaf_;
+  /*! \brief lambda of the L1 weights regularization */
+  double lambda_l1_;
+  /*! \brief lambda of the L2 weights regularization */
+  double lambda_l2_;
+  /*! \brief minimal gain (loss reduction) to split */
+  double min_gain_to_split_;
   /*! \brief the bin data of current feature */
   const Bin* bin_data_;
   /*! \brief number of bin of histogram */
