@@ -233,7 +233,7 @@ private:
   * \param sum_hessians
   * \return leaf output
   */
-  double CalculateSplittedLeafOutput_alt(double sum_gradients, double sum_hessians) const {
+  double CalculateSplittedLeafOutput(double sum_gradients, double sum_hessians) const {
     double abs_sum_gradients = fabs(sum_gradients);
     if (abs_sum_gradients > lambda_l1_) {
       return -copysign(abs_sum_gradients - lambda_l1_, sum_gradients) / (sum_hessians + lambda_l2_);
