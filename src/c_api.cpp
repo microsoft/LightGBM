@@ -558,7 +558,7 @@ DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
   return 0;
 }
 
-
+// ---- start of some help functions
 
 std::function<std::vector<double>(int row_idx)>
 RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_type, int is_row_major) {
@@ -609,6 +609,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
   } else {
     Log::Fatal("unknown data type in RowFunctionFromDenseMatric");
   }
+  return nullptr;
 }
 
 std::function<std::vector<std::pair<int, double>>(int row_idx)>
@@ -660,6 +661,7 @@ RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int d
   } else {
     Log::Fatal("unknown data type in RowPairFunctionFromDenseMatric");
   }
+  return nullptr;
 }
 
 std::function<std::vector<std::pair<int, double>>(int idx)>
@@ -729,6 +731,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
   } else {
     Log::Fatal("unknown data type in RowFunctionFromCSR");
   }
+  return nullptr;
 }
 
 std::function<std::vector<std::pair<int, double>>(int idx)>
@@ -798,6 +801,7 @@ ColumnFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indi
   } else {
     Log::Fatal("unknown data type in ColumnFunctionFromCSC");
   }
+  return nullptr;
 }
 
 std::vector<double> SampleFromOneColumn(const std::vector<std::pair<int, double>>& data, const std::vector<size_t>& indices) {

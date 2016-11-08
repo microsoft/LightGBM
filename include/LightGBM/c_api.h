@@ -67,10 +67,10 @@ DllExport int LGBM_CreateDatasetFromBinaryFile(const char* filename,
 /*!
 * \brief create a dataset from CSR format
 * \param indptr pointer to row headers
-* \param indptr_type 0:int_32 1:int_64
+* \param indptr_type
 * \param indices findex
 * \param data fvalue
-* \param data_type 0 for float_32 1 for float_64
+* \param data_type
 * \param nindptr number of rows in the matix + 1
 * \param nelem number of nonzero elements in the matrix
 * \param num_col number of columns; when it's set to 0, then guess from data
@@ -94,10 +94,10 @@ DllExport int LGBM_CreateDatasetFromCSR(const void* indptr,
 /*!
 * \brief create a dataset from CSC format
 * \param col_ptr pointer to col headers
-* \param col_ptr_type 0:int_32 1:int_64
+* \param col_ptr_type
 * \param indices findex
 * \param data fvalue
-* \param data_type 0 for float_32 1 for float_64
+* \param data_type
 * \param ncol_ptr number of rows in the matix + 1
 * \param nelem number of nonzero elements in the matrix
 * \param num_row number of rows; when it's set to 0, then guess from data
@@ -121,7 +121,7 @@ DllExport int LGBM_CreateDatasetFromCSC(const void* col_ptr,
 /*!
 * \brief create dataset from dense matrix
 * \param data pointer to the data space
-* \param data_type 0 for float_32 1 for float_64
+* \param data_type 0
 * \param nrow number of rows
 * \param ncol number columns
 * \param is_row_major 1 for row major, 0 for column major
@@ -302,10 +302,10 @@ DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
 * \brief make prediction for an new data set
 * \param handle handle
 * \param indptr pointer to row headers
-* \param indptr_type 0:int_32 1:int_64
+* \param indptr_type 
 * \param indices findex
 * \param data fvalue
-* \param data_type 0:float_32 1:float64
+* \param data_type
 * \param nindptr number of rows in the matix + 1
 * \param nelem number of nonzero elements in the matrix
 * \param num_col number of columns; when it's set to 0, then guess from data
@@ -334,7 +334,7 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
 * \brief make prediction for an new data set
 * \param handle handle
 * \param data pointer to the data space
-* \param data_type 0:float_32 1:float64
+* \param data_type
 * \param nrow number of rows
 * \param ncol number columns
 * \param is_row_major 1 for row major, 0 for column major
@@ -368,6 +368,8 @@ DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
   const char* filename);
 
 
+
+// some help functions used to convert data
 
 std::function<std::vector<double>(int row_idx)>
 RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_type, int is_row_major);
