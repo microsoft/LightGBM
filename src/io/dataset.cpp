@@ -64,57 +64,60 @@ std::vector<const BinMapper*> Dataset::GetBinMappers() const {
   return ret;
 }
 
-void Dataset::SetField(const char* field_name, const void* field_data, data_size_t num_element, int type) {
+bool Dataset::SetFloatField(const char* field_name, const float* field_data, data_size_t num_element) {
   std::string name(field_name);
   name = Common::Trim(name);
   if (name == std::string("label") || name == std::string("target")) {
-    if (type != 0) {
-      Log::Fatal("type of label should be float");
-    }
-    metadata_.SetLabel(reinterpret_cast<const float*>(field_data), num_element);
+    metadata_.SetLabel(field_data, num_element);
   } else if (name == std::string("weight") || name == std::string("weights")) {
-    if (type != 0) {
-      Log::Fatal("type of weights should be float");
-    }
-    metadata_.SetWeights(reinterpret_cast<const float*>(field_data), num_element);
+    metadata_.SetWeights(field_data, num_element);
   } else if (name == std::string("init_score")) {
-    if (type != 0) {
-      Log::Fatal("type of init_score should be float");
-    }
-    metadata_.SetInitScore(reinterpret_cast<const float*>(field_data), num_element);
-  } else if (name == std::string("query") || name == std::string("group")) {
-    if (type != 1) {
-      Log::Fatal("type of init_score should be int");
-    }
-    metadata_.SetQueryBoundaries(reinterpret_cast<const data_size_t*>(field_data), num_element);
+    metadata_.SetInitScore(field_data, num_element);
   } else {
-    Log::Fatal("unknow field name: %s", field_name);
+    return false;
   }
+  return true;
 }
 
-void Dataset::GetField(const char* field_name, uint64_t* out_len, const void** out_ptr, int* out_type) {
+bool Dataset::SetIntField(const char* field_name, const int* field_data, data_size_t num_element) {
+  std::string name(field_name);
+  name = Common::Trim(name);
+  if (name == std::string("query") || name == std::string("group")) {
+    metadata_.SetQueryBoundaries(field_data, num_element);
+  } else {
+    return false;
+  }
+  return true;
+}
+
+bool Dataset::GetFloatField(const char* field_name, int64_t* out_len, const float** out_ptr) {
   std::string name(field_name);
   name = Common::Trim(name);
   if (name == std::string("label") || name == std::string("target")) {
     *out_ptr = metadata_.label();
     *out_len = num_data_;
-    *out_type = 0;
   } else if (name == std::string("weight") || name == std::string("weights")) {
     *out_ptr = metadata_.weights();
     *out_len = num_data_;
-    *out_type = 0;
   } else if (name == std::string("init_score")) {
     *out_ptr = metadata_.init_score();
     *out_len = num_data_;
-    *out_type = 0;
-  } else if (name == std::string("query") || name == std::string("group")) {
+  } else {
+    return false;
+  }
+  return true;
+}
+
+bool Dataset::GetIntField(const char* field_name, int64_t* out_len, const int** out_ptr) {
+  std::string name(field_name);
+  name = Common::Trim(name);
+  if (name == std::string("query") || name == std::string("group")) {
     *out_ptr = metadata_.query_boundaries();
     *out_len = num_data_;
-    *out_type = 1;
   } else {
-    Log::Fatal("unknow field name: %s", field_name);
+    return false;
   }
-
+  return true;
 }
 
 void Dataset::SaveBinaryFile(const char* bin_filename) {

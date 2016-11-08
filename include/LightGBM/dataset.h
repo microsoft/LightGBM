@@ -277,9 +277,13 @@ public:
 
   void FinishLoad();
 
-  void SetField(const char* field_name, const void* field_data, data_size_t num_element, int type);
+  bool SetFloatField(const char* field_name, const float* field_data, data_size_t num_element);
 
-  void GetField(const char* field_name, uint64_t* out_len, const void** out_ptr, int* out_type);
+  bool SetIntField(const char* field_name, const int* field_data, data_size_t num_element);
+
+  bool GetFloatField(const char* field_name, int64_t* out_len, const float** out_ptr);
+
+  bool GetIntField(const char* field_name, int64_t* out_len, const int** out_ptr);
 
   /*!
   * \brief Save current dataset into binary file, will save to "filename.bin"
