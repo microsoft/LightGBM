@@ -437,6 +437,15 @@ Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>&
       delete bin_mappers[i];
     }
   }
+  // fill feature_names_ if not header
+  if (feature_names_.size() <= 0) {
+    for (int i = 0; i < dataset->num_total_features_; ++i) {
+      std::stringstream str_buf;
+      str_buf << "Column_" << i;
+      feature_names_.push_back(str_buf.str());
+    }
+  }
+  dataset->feature_names_ = feature_names_;
   dataset->num_features_ = static_cast<int>(dataset->features_.size());
   dataset->metadata_.Init(dataset->num_data_, dataset->num_class_, NO_SPECIFIC, NO_SPECIFIC);
   return dataset;

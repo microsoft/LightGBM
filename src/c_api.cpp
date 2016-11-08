@@ -43,16 +43,15 @@ public:
       ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
         config_.objective_config);
     // create training metric
-    if (config_.boosting_config->is_provide_training_metric) {
-      for (auto metric_type : config_.metric_types) {
-        Metric* metric =
-          Metric::CreateMetric(metric_type, config_.metric_config);
-        if (metric == nullptr) { continue; }
-        metric->Init("training", train_data_->metadata(),
-          train_data_->num_data());
-        train_metric_.push_back(metric);
-      }
+    for (auto metric_type : config_.metric_types) {
+      Metric* metric =
+        Metric::CreateMetric(metric_type, config_.metric_config);
+      if (metric == nullptr) { continue; }
+      metric->Init("training", train_data_->metadata(),
+        train_data_->num_data());
+      train_metric_.push_back(metric);
     }
+    
     // add metric for validation data
     for (size_t i = 0; i < valid_datas_.size(); ++i) {
       valid_metrics_.emplace_back();
