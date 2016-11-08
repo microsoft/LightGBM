@@ -186,10 +186,7 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   CHECK(max_bin > 0);
   GetInt(params, "num_class", &num_class);
   GetInt(params, "data_random_seed", &data_random_seed);
-
-  if (!GetString(params, "data", &data_filename)) {
-    Log::Fatal("No training/prediction data, application quit");
-  }
+  GetString(params, "data", &data_filename);
   GetInt(params, "verbose", &verbosity);
   GetInt(params, "num_model_predict", &num_model_predict);
   GetInt(params, "bin_construct_sample_cnt", &bin_construct_sample_cnt);

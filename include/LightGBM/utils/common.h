@@ -396,45 +396,45 @@ inline void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, size_t s
 inline std::function<std::vector<double>(int row_idx)>
 RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int float_type, int is_row_major) {
   if (float_type == 0) {
-    const float* dptr = reinterpret_cast<const float*>(data);
+    const float* data_ptr = reinterpret_cast<const float*>(data);
     if (is_row_major) {
-      return [&dptr, &num_col, &num_row](int row_idx) {
+      return [data_ptr, num_col, num_row](int row_idx) {
         CHECK(row_idx < num_row);
         std::vector<double> ret;
-        dptr += num_col * row_idx;
+        auto tmp_ptr = data_ptr + num_col * row_idx;
         for (int i = 0; i < num_col; ++i) {
-          ret.push_back(static_cast<double>(*(dptr + i)));
+          ret.push_back(static_cast<double>(*(tmp_ptr + i)));
         }
         return ret;
       };
     } else {
-      return [&dptr, &num_col, &num_row](int row_idx) {
+      return [data_ptr, num_col, num_row](int row_idx) {
         CHECK(row_idx < num_row);
         std::vector<double> ret;
         for (int i = 0; i < num_col; ++i) {
-          ret.push_back(static_cast<double>(*(dptr + num_row * i + row_idx)));
+          ret.push_back(static_cast<double>(*(data_ptr + num_row * i + row_idx)));
         }
         return ret;
       };
     }
   } else {
-    const double* dptr = reinterpret_cast<const double*>(data);
+    const double* data_ptr = reinterpret_cast<const double*>(data);
     if (is_row_major) {
-      return [&dptr, &num_col, &num_row](int row_idx) {
+      return [data_ptr, num_col, num_row](int row_idx) {
         CHECK(row_idx < num_row);
         std::vector<double> ret;
-        dptr += num_col * row_idx;
+        auto tmp_ptr = data_ptr + num_col * row_idx;
         for (int i = 0; i < num_col; ++i) {
-          ret.push_back(static_cast<double>(*(dptr + i)));
+          ret.push_back(static_cast<double>(*(tmp_ptr + i)));
         }
         return ret;
       };
     } else {
-      return [&dptr, &num_col, &num_row](int row_idx) {
+      return [data_ptr, num_col, num_row](int row_idx) {
         CHECK(row_idx < num_row);
         std::vector<double> ret;
         for (int i = 0; i < num_col; ++i) {
-          ret.push_back(static_cast<double>(*(dptr + num_row * i + row_idx)));
+          ret.push_back(static_cast<double>(*(data_ptr + num_row * i + row_idx)));
         }
         return ret;
       };
@@ -445,45 +445,45 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int float
 inline std::function<std::vector<std::pair<int, double>>(int row_idx)>
 RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int float_type, int is_row_major) {
   if (float_type == 0) {
-    const float* dptr = reinterpret_cast<const float*>(data);
+    const float* data_ptr = reinterpret_cast<const float*>(data);
     if (is_row_major) {
-      return [&dptr, &num_col, &num_row](int row_idx) {
+      return [data_ptr, num_col, num_row](int row_idx) {
         CHECK(row_idx < num_row);
         std::vector<std::pair<int, double>> ret;
-        dptr += num_col * row_idx;
+        auto tmp_ptr = data_ptr + num_col * row_idx;
         for (int i = 0; i < num_col; ++i) {
-          ret.emplace_back(i, static_cast<double>(*(dptr + i)));
+          ret.emplace_back(i, static_cast<double>(*(tmp_ptr + i)));
         }
         return ret;
       };
     } else {
-      return [&dptr, &num_col, &num_row](int row_idx) {
+      return [data_ptr, num_col, num_row](int row_idx) {
         CHECK(row_idx < num_row);
         std::vector<std::pair<int, double>> ret;
         for (int i = 0; i < num_col; ++i) {
-          ret.emplace_back(i, static_cast<double>(*(dptr + num_row * i + row_idx)));
+          ret.emplace_back(i, static_cast<double>(*(data_ptr + num_row * i + row_idx)));
         }
         return ret;
       };
     }
   } else {
-    const double* dptr = reinterpret_cast<const double*>(data);
+    const double* data_ptr = reinterpret_cast<const double*>(data);
     if (is_row_major) {
-      return [&dptr, &num_col, &num_row](int row_idx) {
+      return [data_ptr, num_col, num_row](int row_idx) {
         CHECK(row_idx < num_row);
         std::vector<std::pair<int, double>> ret;
-        dptr += num_col * row_idx;
+        auto tmp_ptr = data_ptr + num_col * row_idx;
         for (int i = 0; i < num_col; ++i) {
-          ret.emplace_back(i, static_cast<double>(*(dptr + i)));
+          ret.emplace_back(i, static_cast<double>(*(tmp_ptr + i)));
         }
         return ret;
       };
     } else {
-      return [&dptr, &num_col, &num_row](int row_idx) {
+      return [data_ptr, num_col, num_row](int row_idx) {
         CHECK(row_idx < num_row);
         std::vector<std::pair<int, double>> ret;
         for (int i = 0; i < num_col; ++i) {
-          ret.emplace_back(i, static_cast<double>(*(dptr + num_row * i + row_idx)));
+          ret.emplace_back(i, static_cast<double>(*(data_ptr + num_row * i + row_idx)));
         }
         return ret;
       };
@@ -494,28 +494,28 @@ RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int f
 inline std::function<std::vector<std::pair<int, double>>(int idx)>
 RowFunctionFromCSR(const int32_t* indptr, const int32_t* indices, const void* data, int float_type, uint64_t nindptr, uint64_t nelem) {
   if (float_type == 0) {
-    const float* dptr = reinterpret_cast<const float*>(data);
-    return [&indptr, &indices, &dptr, &nindptr, &nelem](int idx) {
+    const float* data_ptr = reinterpret_cast<const float*>(data);
+    return [indptr, indices, data_ptr, nindptr, nelem](int idx) {
       CHECK(idx + 1 < nindptr);
       std::vector<std::pair<int, double>> ret;
       int32_t start = indptr[idx];
       int32_t end = indptr[idx + 1];
       CHECK(start >= 0 && end < nelem);
-      for (int32_t i = start; i < end; ++i) {
-        ret.emplace_back(indices[i], dptr[i]);
+      for (int32_t i = start; i <= end; ++i) {
+        ret.emplace_back(indices[i], data_ptr[i]);
       }
       return ret;
     };
   } else {
-    const double* dptr = reinterpret_cast<const double*>(data);
-    return [&indptr, &indices, &dptr, &nindptr, &nelem](int idx) {
+    const double* data_ptr = reinterpret_cast<const double*>(data);
+    return [indptr, indices, data_ptr, nindptr, nelem](int idx) {
       CHECK(idx + 1 < nindptr);
       std::vector<std::pair<int, double>> ret;
       int32_t start = indptr[idx];
       int32_t end = indptr[idx + 1];
-      CHECK(start >= 0 && end < nelem);
+      CHECK(start >= 0 && end <= nelem);
       for (int32_t i = start; i < end; ++i) {
-        ret.emplace_back(indices[i], dptr[i]);
+        ret.emplace_back(indices[i], data_ptr[i]);
       }
       return ret;
     };
@@ -525,28 +525,28 @@ RowFunctionFromCSR(const int32_t* indptr, const int32_t* indices, const void* da
 inline std::function<std::vector<std::pair<int, double>>(int idx)>
 ColumnFunctionFromCSC(const int32_t* col_ptr, const int32_t* indices, const void* data, int float_type, uint64_t ncol_ptr, uint64_t nelem) {
   if (float_type == 0) {
-    const float* dptr = reinterpret_cast<const float*>(data);
-    return [&col_ptr, &indices, &dptr, &ncol_ptr, &nelem](int idx) {
+    const float* data_ptr = reinterpret_cast<const float*>(data);
+    return [col_ptr, indices, data_ptr, ncol_ptr, nelem](int idx) {
       CHECK(idx + 1 < ncol_ptr);
       std::vector<std::pair<int, double>> ret;
       int32_t start = col_ptr[idx];
       int32_t end = col_ptr[idx + 1];
-      CHECK(start >= 0 && end < nelem);
+      CHECK(start >= 0 && end <= nelem);
       for (int32_t i = start; i < end; ++i) {
-        ret.emplace_back(indices[i], dptr[i]);
+        ret.emplace_back(indices[i], data_ptr[i]);
       }
       return ret;
     };
   } else {
-    const double* dptr = reinterpret_cast<const double*>(data);
-    return [&col_ptr, &indices, &dptr, &ncol_ptr, &nelem](int idx) {
+    const double* data_ptr = reinterpret_cast<const double*>(data);
+    return [col_ptr, indices, data_ptr, ncol_ptr, nelem](int idx) {
       CHECK(idx + 1 < ncol_ptr);
       std::vector<std::pair<int, double>> ret;
       int32_t start = col_ptr[idx];
       int32_t end = col_ptr[idx + 1];
-      CHECK(start >= 0 && end < nelem);
+      CHECK(start >= 0 && end <= nelem);
       for (int32_t i = start; i < end; ++i) {
-        ret.emplace_back(indices[i], dptr[i]);
+        ret.emplace_back(indices[i], data_ptr[i]);
       }
       return ret;
     };
