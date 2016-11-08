@@ -199,7 +199,7 @@ void Dataset::LoadDataToMemory(int rank, int num_machines, bool is_pre_partition
         [this, rank, num_machines, &qid, &query_boundaries, &is_query_used, num_queries]
       (data_size_t line_idx) {
         if (qid >= num_queries) {
-          Log::Fatal("Current query exceed the range of query file, \
+          Log::Fatal("Current query exceeds the range of query file, \
                       please ensure your query file is correct");
         }
         if (line_idx >= query_boundaries[qid + 1]) {
@@ -373,7 +373,7 @@ void Dataset::ConstructBinMappers(int rank, int num_machines, const std::vector<
     len[num_machines - 1] = total_num_feature - start[num_machines - 1];
     // get size of bin mapper with max_bin_ size
     int type_size = BinMapper::SizeForSpecificBin(max_bin_);
-    // since sizes of different feature may not be same, we expand all bin mapper to type_size 
+    // since sizes of different feature may not be same, we expand all bin mapper to type_size
     int buffer_size = type_size * total_num_feature;
     char* input_buffer = new char[buffer_size];
     char* output_buffer = new char[buffer_size];
@@ -660,7 +660,7 @@ void Dataset::ExtractFeaturesFromFile() {
 }
 
 void Dataset::SaveBinaryFile() {
-  // if is loaded from binary file, not need to save 
+  // if is loaded from binary file, not need to save
   if (!is_loading_from_binfile_) {
     std::string bin_filename(data_filename_);
     bin_filename.append(".bin");
@@ -782,7 +782,7 @@ void Dataset::LoadDataFromBinFile(int rank, int num_machines, bool is_pre_partit
   if (read_cnt != size_of_head) {
     Log::Fatal("Binary file error: header is incorrect");
   }
-  // get header 
+  // get header
   const char* mem_ptr = buffer;
   global_num_data_ = *(reinterpret_cast<const size_t*>(mem_ptr));
   mem_ptr += sizeof(global_num_data_);
@@ -853,7 +853,7 @@ void Dataset::LoadDataFromBinFile(int rank, int num_machines, bool is_pre_partit
       for (data_size_t i = 0; i < num_data_; ++i) {
         if (random_.NextInt(0, num_machines) == rank) {
           used_data_indices_.push_back(i);
-        } 
+        }
       }
     } else {
       // if contain query file, minimal sample unit is one query
