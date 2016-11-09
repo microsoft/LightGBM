@@ -5,6 +5,7 @@
 
 #include <LightGBM/network.h>
 #include <LightGBM/dataset.h>
+#include <LightGBM/dataset_loader.h>
 #include <LightGBM/boosting.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/metric.h>
@@ -26,15 +27,19 @@
 namespace LightGBM {
 
 Application::Application(int argc, char** argv)
-  :train_data_(nullptr), boosting_(nullptr), objective_fun_(nullptr) {
+  :dataset_loader_(nullptr), train_data_(nullptr), boosting_(nullptr), objective_fun_(nullptr) {
   LoadParameters(argc, argv);
   // set number of threads for openmp
   if (config_.num_threads > 0) {
     omp_set_num_threads(config_.num_threads);
   }
+  if (config_.io_config.data_filename.size() == 0) {
+	  Log::Fatal("No training/prediction data, application quit");
+  }
 }
 
 Application::~Application() {
+  if (dataset_loader_ != nullptr) { delete dataset_loader_; }
   if (train_data_ != nullptr) { delete train_data_; }
   for (auto& data : valid_datas_) {
     if (data != nullptr) { delete data; }
@@ -123,41 +128,30 @@ void Application::LoadData() {
   Predictor* predictor = nullptr;
   // need to continue training
   if (boosting_->NumberOfSubModels() > 0) {
-    predictor = new Predictor(boosting_, config_.io_config.is_sigmoid, config_.predict_leaf_index);
-    if (config_.io_config.num_class == 1){
-      predict_fun =
-        [&predictor](const std::vector<std::pair<int, double>>& features) {
-        return predictor->PredictRawOneLine(features);
-      };
-    } else {
-      predict_fun =
-        [&predictor](const std::vector<std::pair<int, double>>& features) {
-        return predictor->PredictMulticlassOneLine(features);
-      };
-    }
+    predictor = new Predictor(boosting_, true, false);
+    predict_fun = predictor->GetPredictFunction();
   }
+
   // sync up random seed for data partition
   if (config_.is_parallel_find_bin) {
     config_.io_config.data_random_seed =
        GlobalSyncUpByMin<int>(config_.io_config.data_random_seed);
   }
-  train_data_ = new Dataset(config_.io_config.data_filename.c_str(),
-                         config_.io_config.input_init_score.c_str(),
-                                                  config_.io_config,
-                                                       predict_fun);
+
+  dataset_loader_ = new DatasetLoader(config_.io_config, predict_fun);
+  dataset_loader_->SetHeader(config_.io_config.data_filename.c_str());
   // load Training data
   if (config_.is_parallel_find_bin) {
     // load data for parallel training
-    train_data_->LoadTrainData(Network::rank(), Network::num_machines(),
-                                     config_.io_config.is_pre_partition,
-                               config_.io_config.use_two_round_loading);
+    train_data_ = dataset_loader_->LoadFromFile(config_.io_config.data_filename.c_str(),
+      Network::rank(), Network::num_machines());
   } else {
     // load data for single machine
-    train_data_->LoadTrainData(config_.io_config.use_two_round_loading);
+    train_data_ = dataset_loader_->LoadFromFile(config_.io_config.data_filename.c_str(), 0, 1);
   }
   // need save binary file
   if (config_.io_config.is_save_binary_file) {
-    train_data_->SaveBinaryFile();
+    train_data_->SaveBinaryFile(nullptr);
   }
   // create training metric
   if (config_.boosting_config->is_provide_training_metric) {
@@ -173,16 +167,11 @@ void Application::LoadData() {
   // Add validation data, if it exists
   for (size_t i = 0; i < config_.io_config.valid_data_filenames.size(); ++i) {
     // add
-    valid_datas_.push_back(
-      new Dataset(config_.io_config.valid_data_filenames[i].c_str(),
-                                                  config_.io_config,
-                                                      predict_fun));
-    // load validation data like train data
-    valid_datas_.back()->LoadValidationData(train_data_,
-                config_.io_config.use_two_round_loading);
+    valid_datas_.push_back(dataset_loader_->LoadFromFileAlignWithOtherDataset(config_.io_config.valid_data_filenames[i].c_str(),
+      train_data_));
     // need save binary file
     if (config_.io_config.is_save_binary_file) {
-      valid_datas_.back()->SaveBinaryFile();
+      valid_datas_.back()->SaveBinaryFile(nullptr);
     }
 
     // add metric for validation data
@@ -255,11 +244,11 @@ void Application::Train() {
     // output used time per iteration
     Log::Info("%f seconds elapsed, finished iteration %d", std::chrono::duration<double,
       std::milli>(end_time - start_time) * 1e-3, iter + 1);
-    boosting_->SaveModelToFile(is_finished, config_.io_config.output_model.c_str());
+    boosting_->SaveModelToFile(NO_LIMIT, is_finished, config_.io_config.output_model.c_str());
   }
   is_finished = true;
   // save model to file
-  boosting_->SaveModelToFile(is_finished, config_.io_config.output_model.c_str());
+  boosting_->SaveModelToFile(NO_LIMIT, is_finished, config_.io_config.output_model.c_str());
   Log::Info("Finished training");
 }
 
@@ -267,7 +256,7 @@ void Application::Train() {
 void Application::Predict() {
   boosting_->SetNumUsedModel(config_.io_config.num_model_predict);
   // create predictor
-  Predictor predictor(boosting_, config_.io_config.is_sigmoid,
+  Predictor predictor(boosting_, config_.io_config.is_raw_score,
     config_.predict_leaf_index);
   predictor.Predict(config_.io_config.data_filename.c_str(),
     config_.io_config.output_result.c_str(), config_.io_config.has_header);

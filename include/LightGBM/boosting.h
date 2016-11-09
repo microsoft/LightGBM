@@ -43,28 +43,50 @@ public:
   virtual void AddDataset(const Dataset* valid_data,
     const std::vector<const Metric*>& valid_metrics) = 0;
 
-  /*! \brief Training logic */
+  /*!
+  * \brief Training logic
+  * \param gradient nullptr for using default objective, otherwise use self-defined boosting
+  * \param hessian nullptr for using default objective, otherwise use self-defined boosting
+  * \param is_eval true if need evaluation or early stop
+  * \return True if meet early stopping or cannot boosting
+  */
   virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) = 0;
 
-  /*! \brief Get eval result */
-  virtual std::vector<std::string> EvalCurrent(bool is_eval_train) const = 0 ;
+  /*!
+  * \brief Get evaluation result at data_idx data
+  * \param data_idx 0: training data, 1: 1st validation data
+  * \return evaluation result
+  */
+  virtual std::vector<double> GetEvalAt(int data_idx) const = 0;
 
-  /*! \brief Get prediction result */
-  virtual const std::vector<const score_t*> PredictCurrent(bool is_predict_train) const = 0;
+  /*!
+  * \brief Get current training score
+  * \param out_len length of returned score
+  * \return training score
+  */
+  virtual const score_t* GetTrainingScore(data_size_t* out_len) const = 0;
+
+  /*!
+  * \brief Get prediction result at data_idx data
+  * \param data_idx 0: training data, 1: 1st validation data
+  * \param result used to store prediction result, should allocate memory before call this function
+  * \param out_len lenght of returned score
+  */
+  virtual void GetPredictAt(int data_idx, score_t* result, data_size_t* out_len) const = 0;
 
   /*!
   * \brief Prediction for one record, not sigmoid transform
   * \param feature_values Feature value on this record
   * \return Prediction result for this record
   */
-  virtual double PredictRaw(const double* feature_values) const = 0;
+  virtual std::vector<double> PredictRaw(const double* feature_values) const = 0;
 
   /*!
   * \brief Prediction for one record, sigmoid transformation will be used if needed
   * \param feature_values Feature value on this record
   * \return Prediction result for this record
   */
-  virtual double Predict(const double* feature_values) const = 0;
+  virtual std::vector<double> Predict(const double* feature_values) const = 0;
   
   /*!
   * \brief Predtion for one record with leaf index
@@ -73,24 +95,17 @@ public:
   */
   virtual std::vector<int> PredictLeafIndex(
     const double* feature_values) const = 0;
-  
-  /*!
-  * \brief Predtion for multiclass classification
-  * \param feature_values Feature value on this record
-  * \return Prediction result, num_class numbers per line
-  */
-  virtual std::vector<double> PredictMulticlass(const double* value) const = 0;
-  
+
   /*!
   * \brief save model to file
   */
-  virtual void SaveModelToFile(bool is_finish, const char* filename) = 0;
+  virtual void SaveModelToFile(int num_used_model, bool is_finish, const char* filename) = 0;
 
   /*!
   * \brief Restore from a serialized string
   * \param model_str The string of model
   */
-  virtual void ModelsFromString(const std::string& model_str) = 0;
+  virtual void LoadModelFromString(const std::string& model_str) = 0;
 
   /*!
   * \brief Get max feature index of this model
@@ -114,7 +129,7 @@ public:
   * \brief Get number of classes
   * \return Number of classes
   */
-  virtual int NumberOfClass() const = 0;
+  virtual int NumberOfClasses() const = 0;
 
   /*!
   * \brief Set number of used model for prediction

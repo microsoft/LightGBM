@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <algorithm>
 #include <cmath>
+#include <functional>
 
 namespace LightGBM {
 
@@ -78,6 +79,16 @@ inline static std::vector<std::string> Split(const char* c_str, const char* deli
   }
   ret.push_back(str.substr(i));
   return ret;
+}
+
+inline static std::string FindFromLines(const std::vector<std::string>& lines, const char* key_word) {
+  for (auto& line : lines) {
+    size_t find_pos = line.find(key_word);
+    if (find_pos != std::string::npos) {
+      return line;
+    }
+  }
+  return "";
 }
 
 inline static const char* Atoi(const char* p, int* out) {
@@ -299,7 +310,8 @@ inline static std::vector<int> StringToIntArray(const std::string& str, char del
   return ret;
 }
 
-inline static std::string Join(const std::vector<std::string>& strs, char delimiter) {
+template<typename T>
+inline static std::string Join(const std::vector<T>& strs, char delimiter) {
   if (strs.size() <= 0) {
     return std::string("");
   }
@@ -312,7 +324,8 @@ inline static std::string Join(const std::vector<std::string>& strs, char delimi
   return ss.str();
 }
 
-inline static std::string Join(const std::vector<std::string>& strs, size_t start, size_t end, char delimiter) {
+template<typename T>
+inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end, char delimiter) {
   if (end - start <= 0) {
     return std::string("");
   }
@@ -379,6 +392,7 @@ inline void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, size_t s
   }
 
 }
+
 
 }  // namespace Common
 

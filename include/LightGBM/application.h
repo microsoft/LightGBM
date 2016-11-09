@@ -8,6 +8,7 @@
 
 namespace LightGBM {
 
+class DatasetLoader;
 class Dataset;
 class Boosting;
 class ObjectiveFunction;
@@ -59,6 +60,8 @@ private:
 
   /*! \brief All configs */
   OverallConfig config_;
+  /*! \brief Dataset loader */
+  DatasetLoader* dataset_loader_;
   /*! \brief Training data */
   Dataset* train_data_;
   /*! \brief Validation data */

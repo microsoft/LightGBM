@@ -65,8 +65,8 @@ public:
     tree->AddPredictionToScore(data_, data_indices, data_cnt, score_ + curr_class * num_data_);
   }
   /*! \brief Pointer of score */
-  inline const score_t * score() { return score_; }
-
+  inline const score_t* score() { return score_; }
+  inline const data_size_t num_data() { return num_data_; }
 private:
   /*! \brief Number of total data */
   data_size_t num_data_;

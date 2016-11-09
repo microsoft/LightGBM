@@ -8,15 +8,14 @@
 namespace LightGBM {
 
 Metadata::Metadata()
-  :label_(nullptr), label_int_(nullptr), weights_(nullptr),
+  :label_(nullptr), weights_(nullptr), 
   query_boundaries_(nullptr),
   query_weights_(nullptr), init_score_(nullptr), queries_(nullptr){
 
 }
 
-void Metadata::Init(const char * data_filename, const char* init_score_filename, const int num_class) {
+void Metadata::Init(const char * data_filename, const int num_class) {
   data_filename_ = data_filename;
-  init_score_filename_ = init_score_filename;
   num_class_ = num_class;
   // for lambdarank, it needs query data for partition data in parallel learning
   LoadQueryBoundaries();
@@ -25,11 +24,6 @@ void Metadata::Init(const char * data_filename, const char* init_score_filename,
   LoadInitialScore();
 }
 
-void Metadata::Init(const char* init_score_filename, const int num_class) {
-  init_score_filename_ = init_score_filename;
-  num_class_ = num_class;
-  LoadInitialScore();
-}
 
 
 Metadata::~Metadata() {
@@ -109,50 +103,50 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     }
     // check weights
     if (weights_ != nullptr && num_weights_ != num_data_) {
-      Log::Fatal("Weights size doesn't match data size");
       delete[] weights_;
       num_weights_ = 0;
       weights_ = nullptr;
+      Log::Fatal("Weights size doesn't match data size");
     }
 
     // check query boundries
     if (query_boundaries_ != nullptr && query_boundaries_[num_queries_] != num_data_) {
-      Log::Fatal("Query size doesn't match data size");
       delete[] query_boundaries_;
       num_queries_ = 0;
       query_boundaries_ = nullptr;
+      Log::Fatal("Query size doesn't match data size");
     }
 
     // contain initial score file
     if (init_score_ != nullptr && num_init_score_ != num_data_) {
       delete[] init_score_;
-      Log::Fatal("Initial score size doesn't match data size");
       init_score_ = nullptr;
       num_init_score_ = 0;
+      Log::Fatal("Initial score size doesn't match data size");
     }
   } else {
     data_size_t num_used_data = static_cast<data_size_t>(used_data_indices.size());
     // check weights
     if (weights_ != nullptr && num_weights_ != num_all_data) {
-      Log::Fatal("Weights size doesn't match data size");
       delete[] weights_;
       num_weights_ = 0;
       weights_ = nullptr;
+      Log::Fatal("Weights size doesn't match data size");
     }
     // check query boundries
     if (query_boundaries_ != nullptr && query_boundaries_[num_queries_] != num_all_data) {
-      Log::Fatal("Query size doesn't match data size");
       delete[] query_boundaries_;
       num_queries_ = 0;
       query_boundaries_ = nullptr;
+      Log::Fatal("Query size doesn't match data size");
     }
 
     // contain initial score file
     if (init_score_ != nullptr && num_init_score_ != num_all_data) {
-      Log::Fatal("Initial score size doesn't match data size");
       delete[] init_score_;
       num_init_score_ = 0;
       init_score_ = nullptr;
+      Log::Fatal("Initial score size doesn't match data size");
     }
 
     // get local weights
@@ -230,6 +224,48 @@ void Metadata::SetInitScore(const float* init_score, data_size_t len) {
   }
 }
 
+void Metadata::SetLabel(const float* label, data_size_t len) {
+  if (num_data_ != len) {
+    Log::Fatal("len of label is not same with #data");
+  }
+  if (label_ != nullptr) { delete[] label_; }
+  label_ = new float[num_data_];
+  for (data_size_t i = 0; i < num_data_; ++i) {
+    label_[i] = label[i];
+  }
+}
+
+void Metadata::SetWeights(const float* weights, data_size_t len) {
+  if (num_data_ != len) {
+    Log::Fatal("len of weights is not same with #data");
+  }
+  if (weights_ != nullptr) { delete[] weights_; }
+  num_weights_ = num_data_;
+  weights_ = new float[num_weights_];
+  for (data_size_t i = 0; i < num_weights_; ++i) {
+    weights_[i] = weights[i];
+  }
+  LoadQueryWeights();
+}
+
+void Metadata::SetQueryBoundaries(const data_size_t* query_boundaries, data_size_t len) {
+  data_size_t sum = 0;
+  for (data_size_t i = 0; i < len; ++i) {
+    sum += query_boundaries[i];
+  }
+  if (num_data_ != sum) {
+    Log::Fatal("sum of query counts is not same with #data");
+  }
+  if (query_boundaries_ != nullptr) { delete[] query_boundaries_; }
+  num_queries_ = len;
+  query_boundaries_ = new data_size_t[num_queries_];
+  for (data_size_t i = 0; i < num_queries_; ++i) {
+    query_boundaries_[i] = query_boundaries[i];
+  }
+  LoadQueryWeights();
+}
+
+
 void Metadata::LoadWeights() {
   num_weights_ = 0;
   std::string weight_filename(data_filename_);
@@ -252,10 +288,14 @@ void Metadata::LoadWeights() {
 
 void Metadata::LoadInitialScore() {
   num_init_score_ = 0;
-  if (init_score_filename_[0] == '\0') { return; }
-  TextReader<size_t> reader(init_score_filename_, false);
+  std::string init_score_filename(data_filename_);
+  // default weight file name
+  init_score_filename.append(".init");
+  TextReader<size_t> reader(init_score_filename.c_str(), false);
   reader.ReadAllLines();
-
+  if (reader.Lines().size() <= 0) {
+    return;
+  }
   Log::Info("Loading initial scores...");
   num_init_score_ = static_cast<data_size_t>(reader.Lines().size());
 
