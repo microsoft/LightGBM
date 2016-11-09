@@ -243,13 +243,13 @@ public:
 
   Dataset();
 
-  explicit Dataset(data_size_t num_data, int num_class);
+  Dataset(data_size_t num_data, int num_class);
 
   /*! \brief Destructor */
   ~Dataset();
 
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<double>& feature_values) {
-    for (size_t i = 0; i < feature_values.size() && i < num_total_features_; ++i) {
+    for (size_t i = 0; i < feature_values.size() && i < static_cast<size_t>(num_total_features_); ++i) {
       int feature_idx = used_feature_map_[i];
       if (feature_idx >= 0) {
         features_[feature_idx]->PushData(tid, row_idx, feature_values[i]);
