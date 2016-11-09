@@ -729,6 +729,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
       // text_reader_->Lines()[i].shrink_to_fit();
       // push data
       for (auto& inner_data : oneline_features) {
+        if (inner_data.first >= dataset->num_total_features_) { continue; }
         int feature_idx = dataset->used_feature_map_[inner_data.first];
         if (feature_idx >= 0) {
           // if is used feature
@@ -764,6 +765,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
       // text_reader_->Lines()[i].shrink_to_fit();
       // push data
       for (auto& inner_data : oneline_features) {
+        if (inner_data.first >= dataset->num_total_features_) { continue; }
         int feature_idx = dataset->used_feature_map_[inner_data.first];
         if (feature_idx >= 0) {
           // if is used feature
@@ -814,6 +816,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
       dataset->metadata_.SetLabelAt(start_idx + i, static_cast<float>(tmp_label));
       // push data
       for (auto& inner_data : oneline_features) {
+        if (inner_data.first >= dataset->num_total_features_) { continue; }
         int feature_idx = dataset->used_feature_map_[inner_data.first];
         if (feature_idx >= 0) {
           // if is used feature
