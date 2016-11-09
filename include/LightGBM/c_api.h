@@ -8,7 +8,7 @@
 * Except following:
 * 1. gradients and hessians. 
 * 2. Get current score for training data and validation
-* The reason is becaused they are called frequently, the type-conversion on them maybe time cost. 
+* The reason is because they are called frequently, the type-conversion on them maybe time cost. 
 */
 
 #ifdef __cplusplus
@@ -40,7 +40,7 @@ typedef void* BoosterHandle;
 DllExport const char* LGBM_GetLastError();
 
 
-// --- start Dataset inferfaces
+// --- start Dataset interface
 
 /*!
 * \brief load data set from file like the command_line LightGBM do
@@ -71,7 +71,7 @@ DllExport int LGBM_CreateDatasetFromBinaryFile(const char* filename,
 * \param indices findex
 * \param data fvalue
 * \param data_type
-* \param nindptr number of rows in the matix + 1
+* \param nindptr number of rows in the matrix + 1
 * \param nelem number of nonzero elements in the matrix
 * \param num_col number of columns; when it's set to 0, then guess from data
 * \param parameters additional parameters
@@ -98,7 +98,7 @@ DllExport int LGBM_CreateDatasetFromCSR(const void* indptr,
 * \param indices findex
 * \param data fvalue
 * \param data_type
-* \param ncol_ptr number of rows in the matix + 1
+* \param ncol_ptr number of rows in the matrix + 1
 * \param nelem number of nonzero elements in the matrix
 * \param num_row number of rows; when it's set to 0, then guess from data
 * \param parameters additional parameters
@@ -206,7 +206,7 @@ DllExport int LGBM_DatasetGetNumFeature(DatesetHandle handle,
 
 /*!
 * \brief create an new boosting learner
-* \param train_data traning data set
+* \param train_data training data set
 * \param valid_datas validation data sets
 * \param valid_names names of validation data sets
 * \param n_valid_datas number of validation set
@@ -222,7 +222,7 @@ DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
   BoosterHandle* out);
 
 /*!
-* \brief load an exsiting boosting from model file
+* \brief load an existing boosting from model file
 * \param filename filename of model
 * \param out handle of created Booster
 * \return 0 when success, -1 when failure happens
@@ -261,7 +261,7 @@ DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
   int* is_finished);
 
 /*!
-* \brief get evaluation for training data and validation datas
+* \brief get evaluation for training data and validation data
 * \param handle handle
 * \param data 0:training data, 1: 1st valid data, 2:2nd valid data ...
 * \param out_len len of output result
@@ -285,7 +285,7 @@ DllExport int LGBM_BoosterGetScore(BoosterHandle handle,
   const float** out_result);
 
 /*!
-* \brief make prediction for training data and validation datas
+* \brief Get prediction for training data and validation data
 this can be used to support customized eval function
 * \param handle handle
 * \param data 0:training data, 1: 1st valid data, 2:2nd valid data ...
@@ -306,7 +306,7 @@ DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
 * \param indices findex
 * \param data fvalue
 * \param data_type
-* \param nindptr number of rows in the matix + 1
+* \param nindptr number of rows in the matrix + 1
 * \param nelem number of nonzero elements in the matrix
 * \param num_col number of columns; when it's set to 0, then guess from data
 * \param predict_type
