@@ -227,13 +227,15 @@ public:
   bool predict_leaf_index = false;
   IOConfig io_config;
   BoostingType boosting_type = BoostingType::kGBDT;
-  BoostingConfig* boosting_config;
+  BoostingConfig* boosting_config = nullptr;
   std::string objective_type = "regression";
   ObjectiveConfig objective_config;
   std::vector<std::string> metric_types;
   MetricConfig metric_config;
   ~OverallConfig() {
-    delete boosting_config;
+    if (boosting_config != nullptr) {
+      delete boosting_config;
+    }
   }
   void Set(const std::unordered_map<std::string, std::string>& params) override;
   void LoadFromString(const char* str);

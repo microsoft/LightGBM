@@ -123,9 +123,9 @@ bool Dataset::GetIntField(const char* field_name, int64_t* out_len, const int** 
 void Dataset::SaveBinaryFile(const char* bin_filename) {
 
   if (!is_loading_from_binfile_) {
+    std::string bin_filename_str(data_filename_);
     // if not pass a filename, just append ".bin" of original file
     if (bin_filename == nullptr || bin_filename[0] == '\0') {
-      std::string bin_filename_str(data_filename_);
       bin_filename_str.append(".bin");
       bin_filename = bin_filename_str.c_str();
     }
@@ -138,8 +138,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     if (file == NULL) {
       Log::Fatal("Cannot write binary data to %s ", bin_filename);
     }
-
-    Log::Info("Saving data to binary file %s", data_filename_);
+    Log::Info("Saving data to binary file %s", bin_filename);
 
     // get size of header
     size_t size_of_header = sizeof(num_data_) + sizeof(num_class_) + sizeof(num_features_) + sizeof(num_total_features_) 

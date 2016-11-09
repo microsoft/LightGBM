@@ -23,7 +23,9 @@ namespace LightGBM {
 class Booster {
 public:
   explicit Booster(const char* filename):
-    boosting_(Boosting::CreateBoosting(filename)), predictor_(nullptr) {
+    boosting_(Boosting::CreateBoosting(filename)), 
+    objective_fun_(nullptr), 
+    predictor_(nullptr) {
   }
 
   Booster(const Dataset* train_data, 
@@ -118,6 +120,10 @@ public:
     return predictor_->GetPredictFunction()(features);
   }
 
+  void PredictForFile(const char* data_filename, const char* result_filename, bool data_has_header) {
+    predictor_->Predict(data_filename, result_filename, data_has_header);
+  }
+
   void SaveModelToFile(int num_used_model, const char* filename) {
     boosting_->SaveModelToFile(num_used_model, true, filename);
   }
@@ -164,6 +170,7 @@ DllExport int LGBM_CreateDatasetFromFile(const char* filename,
   OverallConfig config;
   config.LoadFromString(parameters);
   DatasetLoader loader(config.io_config, nullptr);
+  loader.SetHeader(filename);
   if (reference == nullptr) {
     *out = loader.LoadFromFile(filename);
   } else {
@@ -335,8 +342,8 @@ DllExport int LGBM_CreateDatasetFromCSC(const void* col_ptr,
   return 0;
 }
 
-DllExport int LGBM_DatasetFree(DatesetHandle* handle) {
-  auto dataset = reinterpret_cast<Dataset*>(*handle);
+DllExport int LGBM_DatasetFree(DatesetHandle handle) {
+  auto dataset = reinterpret_cast<Dataset*>(handle);
   delete dataset;
   return 0;
 }
@@ -489,6 +496,20 @@ DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
   int len = 0;
   boosting->GetPredictAt(data, out_result, &len);
   *out_len = static_cast<int64_t>(len);
+  return 0;
+}
+
+DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
+  int predict_type,
+  int64_t n_used_trees,
+  int data_has_header,
+  const char* data_filename,
+  const char* result_filename) {
+
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  ref_booster->PrepareForPrediction(static_cast<int>(n_used_trees), predict_type);
+  bool bool_data_has_header = data_has_header > 0 ? true : false;
+  ref_booster->PredictForFile(data_filename, result_filename, bool_data_has_header);
   return 0;
 }
 

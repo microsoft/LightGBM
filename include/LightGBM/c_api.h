@@ -143,7 +143,7 @@ DllExport int LGBM_CreateDatasetFromMat(const void* data,
 * \brief free space for dataset
 * \return 0 when success, -1 when failure happens
 */
-DllExport int LGBM_DatasetFree(DatesetHandle* handle);
+DllExport int LGBM_DatasetFree(DatesetHandle handle);
 
 /*!
 * \brief save dateset to binary file
@@ -297,6 +297,26 @@ DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
   int data,
   int64_t* out_len,
   float* out_result);
+
+/*!
+* \brief make prediction for file
+* \param handle handle
+* \param predict_type
+*          0:raw score
+*          1:with transform(if needed)
+*          2:leaf index
+* \param n_used_trees number of used tree
+* \param data_has_header data file has header or not
+* \param data_filename filename of data file
+* \param result_filename filename of result file
+* \return 0 when success, -1 when failure happens
+*/
+DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
+  int predict_type,
+  int64_t n_used_trees,
+  int data_has_header,
+  const char* data_filename,
+  const char* result_filename);
 
 /*!
 * \brief make prediction for an new data set
