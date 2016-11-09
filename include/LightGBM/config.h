@@ -154,6 +154,9 @@ struct TreeConfig: public ConfigBase {
 public:
   int min_data_in_leaf = 100;
   double min_sum_hessian_in_leaf = 10.0f;
+  double lambda_l1 = 0.0f;
+  double lambda_l2 = 0.0f;
+  double min_gain_to_split = 0.0f;
   // should > 1, only one leaf means not need to learning
   int num_leaves = 127;
   int feature_fraction_seed = 2;
