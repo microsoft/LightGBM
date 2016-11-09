@@ -26,10 +26,14 @@
 typedef void* DatesetHandle;
 typedef void* BoosterHandle;
 
-#define dtype_float32 (0)
-#define dtype_float64 (1)
-#define dtype_int32   (2)
-#define dtype_int64   (3)
+#define C_API_DTYPE_FLOAT32 (0)
+#define C_API_DTYPE_FLOAT64 (1)
+#define C_API_DTYPE_INT32   (2)
+#define C_API_DTYPE_INT64   (3)
+
+#define C_API_PREDICT_NORMAL     (0)
+#define C_API_PREDICT_RAW_SCORE  (1)
+#define C_API_PREDICT_LEAF_INDEX (2)
 
 /*!
 * \brief get string message of the last error

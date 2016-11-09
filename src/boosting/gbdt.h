@@ -45,7 +45,7 @@ public:
   * \brief Training logic
   * \param gradient nullptr for using default objective, otherwise use self-defined boosting
   * \param hessian nullptr for using default objective, otherwise use self-defined boosting
-  * \param is_eval true if need evalulation or early stop
+  * \param is_eval true if need evaluation or early stop
   * \return True if meet early stopping or cannot boosting
   */
   bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override;
