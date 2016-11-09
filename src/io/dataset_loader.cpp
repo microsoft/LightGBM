@@ -219,7 +219,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
       dataset->num_data_ = static_cast<data_size_t>(text_data.size());
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, dataset->num_class_, weight_idx_, group_idx_);
-      train_data->CopyFeatureBinMapperTo(dataset, io_config_.is_enable_sparse);
+      dataset->CopyFeatureMapperFrom(train_data, io_config_.is_enable_sparse);
       // extract features
       ExtractFeaturesFromMemory(text_data, parser, dataset);
       text_data.clear();
@@ -230,7 +230,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
       num_global_data = dataset->num_data_;
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, dataset->num_class_, weight_idx_, group_idx_);
-      train_data->CopyFeatureBinMapperTo(dataset, io_config_.is_enable_sparse);
+      dataset->CopyFeatureMapperFrom(train_data, io_config_.is_enable_sparse);
       // extract features
       ExtractFeaturesFromFile(filename, parser, used_data_indices, dataset);
     }

@@ -42,18 +42,18 @@ void Dataset::FinishLoad() {
   }
 }
 
-void Dataset::CopyFeatureBinMapperTo(Dataset* dataset, bool is_enable_sparse) const {
-  dataset->features_.clear();
+void Dataset::CopyFeatureMapperFrom(const Dataset* dataset, bool is_enable_sparse) {
+  features_.clear();
   // copy feature bin mapper data
-  for (Feature* feature : features_) {
-    dataset->features_.push_back(new Feature(feature->feature_index(),
-      new BinMapper(*feature->bin_mapper()), dataset->num_data_, is_enable_sparse));
+  for (Feature* feature : dataset->features_) {
+    features_.push_back(new Feature(feature->feature_index(),
+      new BinMapper(*feature->bin_mapper()), num_data_, is_enable_sparse));
   }
-  dataset->num_class_ = num_class_;
-  dataset->used_feature_map_ = used_feature_map_;
-  dataset->num_features_ = static_cast<int>(dataset->features_.size());
-  dataset->num_total_features_ = num_total_features_;
-  dataset->feature_names_ = feature_names_;
+  num_class_ = dataset->num_class_;
+  used_feature_map_ = dataset->used_feature_map_;
+  num_features_ = static_cast<int>(features_.size());
+  num_total_features_ = dataset->num_total_features_;
+  feature_names_ = dataset->feature_names_;
 }
 
 std::vector<const BinMapper*> Dataset::GetBinMappers() const {

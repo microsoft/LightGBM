@@ -81,7 +81,7 @@ public:
 
   void SetWeights(const float* weights, data_size_t len);
 
-  void SetQueryBoundaries(const data_size_t* QueryBoundaries, data_size_t len);
+  void SetQueryBoundaries(const data_size_t* query_boundaries, data_size_t len);
 
   /*!
   * \brief Set initial scores
@@ -292,7 +292,7 @@ public:
 
   std::vector<const BinMapper*> GetBinMappers() const;
 
-  void CopyFeatureBinMapperTo(Dataset *dataset, bool is_enable_sparse) const;
+  void CopyFeatureMapperFrom(const Dataset* dataset, bool is_enable_sparse);
 
   /*!
   * \brief Get a feature pointer for specific index

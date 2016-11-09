@@ -212,7 +212,7 @@ DllExport int LGBM_CreateDatasetFromMat(const void* data,
     ret = loader.CostructFromSampleData(sample_values, nrow);
   } else {
     ret = new Dataset(nrow, config.io_config.num_class);
-    reinterpret_cast<const Dataset*>(*reference)->CopyFeatureBinMapperTo(ret, config.io_config.is_enable_sparse);
+    ret->CopyFeatureMapperFrom(reinterpret_cast<const Dataset*>(*reference), config.io_config.is_enable_sparse);
   }
 
 #pragma omp parallel for schedule(guided)
@@ -274,7 +274,7 @@ DllExport int LGBM_CreateDatasetFromCSR(const void* indptr,
     ret = loader.CostructFromSampleData(sample_values, nrow);
   } else {
     ret = new Dataset(nrow, config.io_config.num_class);
-    reinterpret_cast<const Dataset*>(*reference)->CopyFeatureBinMapperTo(ret, config.io_config.is_enable_sparse);
+    ret->CopyFeatureMapperFrom(reinterpret_cast<const Dataset*>(*reference), config.io_config.is_enable_sparse);
   }
 
 #pragma omp parallel for schedule(guided)
@@ -322,7 +322,7 @@ DllExport int LGBM_CreateDatasetFromCSC(const void* col_ptr,
     ret = loader.CostructFromSampleData(sample_values, nrow);
   } else {
     ret = new Dataset(nrow, config.io_config.num_class);
-    reinterpret_cast<const Dataset*>(*reference)->CopyFeatureBinMapperTo(ret, config.io_config.is_enable_sparse);
+    ret->CopyFeatureMapperFrom(reinterpret_cast<const Dataset*>(*reference), config.io_config.is_enable_sparse);
   }
 
 #pragma omp parallel for schedule(guided)

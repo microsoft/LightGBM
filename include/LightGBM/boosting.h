@@ -47,7 +47,7 @@ public:
   * \brief Training logic
   * \param gradient nullptr for using default objective, otherwise use self-defined boosting
   * \param hessian nullptr for using default objective, otherwise use self-defined boosting
-  * \param is_eval true if need evalulation or early stop
+  * \param is_eval true if need evaluation or early stop
   * \return True if meet early stopping or cannot boosting
   */
   virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) = 0;
@@ -61,7 +61,7 @@ public:
 
   /*!
   * \brief Get current training score
-  * \param out_len lenght of returned score
+  * \param out_len length of returned score
   * \return training score
   */
   virtual const score_t* GetTrainingScore(data_size_t* out_len) const = 0;
