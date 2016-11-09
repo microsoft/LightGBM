@@ -206,10 +206,12 @@ DllExport int LGBM_CreateDatasetFromMat(const void* data,
       auto idx = sample_indices[i];
       auto row = get_row_fun(static_cast<int>(idx));
       for (size_t j = 0; j < row.size(); ++j) {
-        sample_values[j].push_back(row[j]);
+        if (std::fabs(row[j]) > 1e-15) {
+          sample_values[j].push_back(row[j]);
+        }
       }
     }
-    ret = loader.CostructFromSampleData(sample_values, nrow);
+    ret = loader.CostructFromSampleData(sample_values, sample_cnt, nrow);
   } else {
     ret = new Dataset(nrow, config.io_config.num_class);
     ret->CopyFeatureMapperFrom(reinterpret_cast<const Dataset*>(*reference), config.io_config.is_enable_sparse);
@@ -253,25 +255,22 @@ DllExport int LGBM_CreateDatasetFromCSR(const void* indptr,
     for (size_t i = 0; i < sample_indices.size(); ++i) {
       auto idx = sample_indices[i];
       auto row = get_row_fun(static_cast<int>(idx));
-      // push 0 first, then edit the value according existing feature values
-      for (auto& feature_values : sample_values) {
-        feature_values.push_back(0.0);
-      }
       for (std::pair<int, double>& inner_data : row) {
-        if (static_cast<size_t>(inner_data.first) >= sample_values.size()) {
-          // if need expand feature set
-          size_t need_size = inner_data.first - sample_values.size() + 1;
-          for (size_t j = 0; j < need_size; ++j) {
-            // push i+1 0
-            sample_values.emplace_back(i + 1, 0.0f);
+        if (std::fabs(inner_data.second) > 1e-15) {
+          if (static_cast<size_t>(inner_data.first) >= sample_values.size()) {
+            // if need expand feature set
+            size_t need_size = inner_data.first - sample_values.size() + 1;
+            for (size_t j = 0; j < need_size; ++j) {
+              sample_values.emplace_back();
+            }
           }
+          // edit the feature value
+          sample_values[inner_data.first].push_back(inner_data.second);
         }
-        // edit the feature value
-        sample_values[inner_data.first][i] = inner_data.second;
       }
     }
     CHECK(num_col >= static_cast<int>(sample_values.size()));
-    ret = loader.CostructFromSampleData(sample_values, nrow);
+    ret = loader.CostructFromSampleData(sample_values, sample_cnt, nrow);
   } else {
     ret = new Dataset(nrow, config.io_config.num_class);
     ret->CopyFeatureMapperFrom(reinterpret_cast<const Dataset*>(*reference), config.io_config.is_enable_sparse);
@@ -319,7 +318,7 @@ DllExport int LGBM_CreateDatasetFromCSC(const void* col_ptr,
       auto cur_col = get_col_fun(i);
       sample_values[i] = SampleFromOneColumn(cur_col, sample_indices);
     }
-    ret = loader.CostructFromSampleData(sample_values, nrow);
+    ret = loader.CostructFromSampleData(sample_values, sample_cnt, nrow);
   } else {
     ret = new Dataset(nrow, config.io_config.num_class);
     ret->CopyFeatureMapperFrom(reinterpret_cast<const Dataset*>(*reference), config.io_config.is_enable_sparse);
