@@ -106,12 +106,12 @@ public:
     if (predictor_ != nullptr) { delete predictor_; }
     bool is_predict_leaf = false;
     bool is_raw_score = false;
-    if (predict_type == 2) {
+    if (predict_type == C_API_PREDICT_LEAF_INDEX) {
       is_predict_leaf = true;
-    } else if (predict_type == 1) {
-      is_raw_score = false;
-    } else {
+    } else if (predict_type == C_API_PREDICT_RAW_SCORE) {
       is_raw_score = true;
+    } else {
+      is_raw_score = false;
     }
     predictor_ = new Predictor(boosting_, is_raw_score, is_predict_leaf);
   }
@@ -362,9 +362,9 @@ DllExport int LGBM_DatasetSetField(DatesetHandle handle,
   int type) {
   auto dataset = reinterpret_cast<Dataset*>(handle);
   bool is_success = false;
-  if (type == dtype_float32) {
+  if (type == C_API_DTYPE_FLOAT32) {
     is_success = dataset->SetFloatField(field_name, reinterpret_cast<const float*>(field_data), static_cast<int32_t>(num_element));
-  } else if (type == dtype_int32) {
+  } else if (type == C_API_DTYPE_INT32) {
     is_success = dataset->SetIntField(field_name, reinterpret_cast<const int*>(field_data), static_cast<int32_t>(num_element));
   }
   if (is_success) { return 0; }
@@ -378,10 +378,10 @@ DllExport int LGBM_DatasetGetField(DatesetHandle handle,
   int* out_type) {
   auto dataset = reinterpret_cast<Dataset*>(handle);
   if (dataset->GetFloatField(field_name, out_len, reinterpret_cast<const float**>(out_ptr))) {
-    *out_type = dtype_float32;
+    *out_type = C_API_DTYPE_FLOAT32;
     return 0;
   } else if (dataset->GetIntField(field_name, out_len, reinterpret_cast<const int**>(out_ptr))) {
-    *out_type = dtype_int32;
+    *out_type = C_API_DTYPE_INT32;
     return 0;
   }
   return -1;
@@ -582,7 +582,7 @@ DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
 
 std::function<std::vector<double>(int row_idx)>
 RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_type, int is_row_major) {
-  if (data_type == dtype_float32) {
+  if (data_type == C_API_DTYPE_FLOAT32) {
     const float* data_ptr = reinterpret_cast<const float*>(data);
     if (is_row_major) {
       return [data_ptr, num_col, num_row](int row_idx) {
@@ -604,7 +604,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
         return ret;
       };
     }
-  } else if (data_type == dtype_float64) {
+  } else if (data_type == C_API_DTYPE_FLOAT64) {
     const double* data_ptr = reinterpret_cast<const double*>(data);
     if (is_row_major) {
       return [data_ptr, num_col, num_row](int row_idx) {
@@ -634,61 +634,27 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
 
 std::function<std::vector<std::pair<int, double>>(int row_idx)>
 RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_type, int is_row_major) {
-  if (data_type == dtype_float32) {
-    const float* data_ptr = reinterpret_cast<const float*>(data);
-    if (is_row_major) {
-      return [data_ptr, num_col, num_row](int row_idx) {
-        CHECK(row_idx < num_row);
-        std::vector<std::pair<int, double>> ret;
-        auto tmp_ptr = data_ptr + num_col * row_idx;
-        for (int i = 0; i < num_col; ++i) {
-          ret.emplace_back(i, static_cast<double>(*(tmp_ptr + i)));
+  auto inner_function = RowFunctionFromDenseMatric(data, num_row, num_col, data_type, is_row_major);
+  if (inner_function != nullptr) {
+    return [inner_function](int row_idx) {
+      auto raw_values = inner_function(row_idx);
+      std::vector<std::pair<int, double>> ret;
+      for (int i = 0; i < static_cast<int>(raw_values.size()); ++i) {
+        if (std::fabs(raw_values[i]) > 1e-15) {
+          ret.emplace_back(i, raw_values[i]);
         }
-        return ret;
-      };
-    } else {
-      return [data_ptr, num_col, num_row](int row_idx) {
-        CHECK(row_idx < num_row);
-        std::vector<std::pair<int, double>> ret;
-        for (int i = 0; i < num_col; ++i) {
-          ret.emplace_back(i, static_cast<double>(*(data_ptr + num_row * i + row_idx)));
-        }
-        return ret;
-      };
-    }
-  } else if (data_type == dtype_float64) {
-    const double* data_ptr = reinterpret_cast<const double*>(data);
-    if (is_row_major) {
-      return [data_ptr, num_col, num_row](int row_idx) {
-        CHECK(row_idx < num_row);
-        std::vector<std::pair<int, double>> ret;
-        auto tmp_ptr = data_ptr + num_col * row_idx;
-        for (int i = 0; i < num_col; ++i) {
-          ret.emplace_back(i, static_cast<double>(*(tmp_ptr + i)));
-        }
-        return ret;
-      };
-    } else {
-      return [data_ptr, num_col, num_row](int row_idx) {
-        CHECK(row_idx < num_row);
-        std::vector<std::pair<int, double>> ret;
-        for (int i = 0; i < num_col; ++i) {
-          ret.emplace_back(i, static_cast<double>(*(data_ptr + num_row * i + row_idx)));
-        }
-        return ret;
-      };
-    }
-  } else {
-    Log::Fatal("unknown data type in RowPairFunctionFromDenseMatric");
+      }
+      return ret;
+    };
   }
   return nullptr;
 }
 
 std::function<std::vector<std::pair<int, double>>(int idx)>
 RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, const void* data, int data_type, int64_t nindptr, int64_t nelem) {
-  if (data_type == dtype_float32) {
+  if (data_type == C_API_DTYPE_FLOAT32) {
     const float* data_ptr = reinterpret_cast<const float*>(data);
-    if (indptr_type == dtype_int32) {
+    if (indptr_type == C_API_DTYPE_INT32) {
       const int32_t* ptr_indptr = reinterpret_cast<const int32_t*>(indptr);
       return [ptr_indptr, indices, data_ptr, nindptr, nelem](int idx) {
         CHECK(idx + 1 < nindptr);
@@ -701,7 +667,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
         }
         return ret;
       };
-    } else if (indptr_type == dtype_int64) {
+    } else if (indptr_type == C_API_DTYPE_INT64) {
       const int64_t* ptr_indptr = reinterpret_cast<const int64_t*>(indptr);
       return [ptr_indptr, indices, data_ptr, nindptr, nelem](int idx) {
         CHECK(idx + 1 < nindptr);
@@ -717,9 +683,9 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
     } else {
       Log::Fatal("unknown data type in RowFunctionFromCSR");
     }
-  } else if (data_type == dtype_float64) {
+  } else if (data_type == C_API_DTYPE_FLOAT64) {
     const double* data_ptr = reinterpret_cast<const double*>(data);
-    if (indptr_type == dtype_int32) {
+    if (indptr_type == C_API_DTYPE_INT32) {
       const int32_t* ptr_indptr = reinterpret_cast<const int32_t*>(indptr);
       return [ptr_indptr, indices, data_ptr, nindptr, nelem](int idx) {
         CHECK(idx + 1 < nindptr);
@@ -732,7 +698,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
         }
         return ret;
       };
-    } else if (indptr_type == dtype_int64) {
+    } else if (indptr_type == C_API_DTYPE_INT64) {
       const int64_t* ptr_indptr = reinterpret_cast<const int64_t*>(indptr);
       return [ptr_indptr, indices, data_ptr, nindptr, nelem](int idx) {
         CHECK(idx + 1 < nindptr);
@@ -756,9 +722,9 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
 
 std::function<std::vector<std::pair<int, double>>(int idx)>
 ColumnFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indices, const void* data, int data_type, int64_t ncol_ptr, int64_t nelem) {
-  if (data_type == dtype_float32) {
+  if (data_type == C_API_DTYPE_FLOAT32) {
     const float* data_ptr = reinterpret_cast<const float*>(data);
-    if (col_ptr_type == dtype_int32) {
+    if (col_ptr_type == C_API_DTYPE_INT32) {
       const int32_t* ptr_col_ptr = reinterpret_cast<const int32_t*>(col_ptr);
       return [ptr_col_ptr, indices, data_ptr, ncol_ptr, nelem](int idx) {
         CHECK(idx + 1 < ncol_ptr);
@@ -771,7 +737,7 @@ ColumnFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indi
         }
         return ret;
       };
-    } else if (col_ptr_type == dtype_int64) {
+    } else if (col_ptr_type == C_API_DTYPE_INT64) {
       const int64_t* ptr_col_ptr = reinterpret_cast<const int64_t*>(col_ptr);
       return [ptr_col_ptr, indices, data_ptr, ncol_ptr, nelem](int idx) {
         CHECK(idx + 1 < ncol_ptr);
@@ -787,9 +753,9 @@ ColumnFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indi
     } else {
       Log::Fatal("unknown data type in ColumnFunctionFromCSC");
     }
-  } else if (data_type == dtype_float64) {
+  } else if (data_type == C_API_DTYPE_FLOAT64) {
     const double* data_ptr = reinterpret_cast<const double*>(data);
-    if (col_ptr_type == dtype_int32) {
+    if (col_ptr_type == C_API_DTYPE_INT32) {
       const int32_t* ptr_col_ptr = reinterpret_cast<const int32_t*>(col_ptr);
       return [ptr_col_ptr, indices, data_ptr, ncol_ptr, nelem](int idx) {
         CHECK(idx + 1 < ncol_ptr);
@@ -802,7 +768,7 @@ ColumnFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indi
         }
         return ret;
       };
-    } else if (col_ptr_type == dtype_int64) {
+    } else if (col_ptr_type == C_API_DTYPE_INT64) {
       const int64_t* ptr_col_ptr = reinterpret_cast<const int64_t*>(col_ptr);
       return [ptr_col_ptr, indices, data_ptr, ncol_ptr, nelem](int idx) {
         CHECK(idx + 1 < ncol_ptr);
