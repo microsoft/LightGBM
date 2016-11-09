@@ -249,7 +249,7 @@ public:
   ~Dataset();
 
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<double>& feature_values) {
-    for (size_t i = 0; i < feature_values.size(); ++i) {
+    for (size_t i = 0; i < feature_values.size() && i < num_total_features_; ++i) {
       int feature_idx = used_feature_map_[i];
       if (feature_idx >= 0) {
         features_[feature_idx]->PushData(tid, row_idx, feature_values[i]);
@@ -259,6 +259,7 @@ public:
 
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<std::pair<int, double>>& feature_values) {
     for (auto& inner_data : feature_values) {
+      if (inner_data.first >= num_total_features_) { continue; }
       int feature_idx = used_feature_map_[inner_data.first];
       if (feature_idx >= 0) {
         features_[feature_idx]->PushData(tid, row_idx, inner_data.second);
@@ -267,6 +268,7 @@ public:
   }
 
   inline void PushOneColumn(int tid, data_size_t col_idx, const std::vector<std::pair<int, double>>& feature_values) {
+    if (col_idx >= num_total_features_) { return; }
     int feature_idx = used_feature_map_[col_idx];
     if (feature_idx >= 0) {
       for (auto& inner_data : feature_values) {
