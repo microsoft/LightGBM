@@ -464,7 +464,9 @@ std::string GBDT::FeatureImportance() const {
     // store the importance first
     std::vector<std::pair<size_t, std::string>> pairs;
     for (size_t i = 0; i < feature_importances.size(); ++i) {
-      pairs.emplace_back(feature_importances[i], train_data_->feature_names()[i]);
+      if (feature_importances[i] > 0) {
+        pairs.emplace_back(feature_importances[i], train_data_->feature_names()[i]);
+      }
     }
     // sort the importance
     std::sort(pairs.begin(), pairs.end(),

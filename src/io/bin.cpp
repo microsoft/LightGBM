@@ -39,16 +39,24 @@ BinMapper::~BinMapper() {
   delete[] bin_upper_bound_;
 }
 
-void BinMapper::FindBin(std::vector<double>* values, int max_bin) {
+void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, int max_bin) {
   std::vector<double>& ref_values = (*values);
-  size_t sample_size = values->size();
+  size_t sample_size = total_sample_cnt;
+  size_t zero_cnt = total_sample_cnt - ref_values.size();
   // find distinct_values first
   std::vector<double> distinct_values;
   std::vector<int> counts;
   
   std::sort(ref_values.begin(), ref_values.end());
-  distinct_values.push_back(ref_values[0]);
-  counts.push_back(1);
+  // push 0 first
+  if (zero_cnt > 0) {
+    distinct_values.push_back(0.0f);
+    counts.push_back(static_cast<int>(zero_cnt));
+  }
+  if (ref_values.size() > 0) {
+    distinct_values.push_back(ref_values[0]);
+    counts.push_back(1);
+  }
   for (size_t i = 1; i < ref_values.size(); ++i) {
     if (ref_values[i] != ref_values[i - 1]) {
       distinct_values.push_back(ref_values[i]);

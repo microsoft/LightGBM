@@ -24,7 +24,7 @@ public:
 
   Dataset* LoadFromBinFile(const char* bin_filename, int rank, int num_machines);
 
-  Dataset* CostructFromSampleData(std::vector<std::vector<double>>& sample_values, data_size_t num_data);
+  Dataset* CostructFromSampleData(std::vector<std::vector<double>>& sample_values, size_t total_sample_size, data_size_t num_data);
 
   /*! \brief Disable copy */
   DatasetLoader& operator=(const DatasetLoader&) = delete;

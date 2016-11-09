@@ -408,12 +408,12 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* bin_filename, int rank, int 
   return dataset;
 }
 
-Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>& sample_values, data_size_t num_data) {
+Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>& sample_values, size_t total_sample_size, data_size_t num_data) {
   std::vector<BinMapper*> bin_mappers(sample_values.size());
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
     bin_mappers[i] = new BinMapper();
-    bin_mappers[i]->FindBin(&sample_values[i], io_config_.max_bin);
+    bin_mappers[i]->FindBin(&sample_values[i], total_sample_size, io_config_.max_bin);
   }
 
   Dataset* dataset = new Dataset();
@@ -580,21 +580,17 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     oneline_features.clear();
     // parse features
     parser->ParseOneLine(sample_data[i].c_str(), &oneline_features, &label);
-    // push 0 first, then edit the value according existing feature values
-    for (auto& feature_values : sample_values) {
-      feature_values.push_back(0.0);
-    }
     for (std::pair<int, double>& inner_data : oneline_features) {
-      if (static_cast<size_t>(inner_data.first) >= sample_values.size()) {
-        // if need expand feature set
-        size_t need_size = inner_data.first - sample_values.size() + 1;
-        for (size_t j = 0; j < need_size; ++j) {
-          // push i+1 0
-          sample_values.emplace_back(i + 1, 0.0f);
+      if (std::fabs(inner_data.second) > 1e-15) {
+        if (static_cast<size_t>(inner_data.first) >= sample_values.size()) {
+          // if need expand feature set
+          size_t need_size = inner_data.first - sample_values.size() + 1;
+          for (size_t j = 0; j < need_size; ++j) {
+            sample_values.emplace_back();
+          }
         }
+        sample_values[inner_data.first].push_back(inner_data.second);
       }
-      // edit the feature value
-      sample_values[inner_data.first][i] = inner_data.second;
     }
   }
 
@@ -629,7 +625,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
         continue;
       }
       bin_mappers[i] = new BinMapper();
-      bin_mappers[i]->FindBin(&sample_values[i], io_config_.max_bin);
+      bin_mappers[i]->FindBin(&sample_values[i], sample_data.size(), io_config_.max_bin);
     }
 
     for (size_t i = 0; i < sample_values.size(); ++i) {
@@ -676,7 +672,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
 #pragma omp parallel for schedule(guided)
     for (int i = 0; i < len[rank]; ++i) {
       BinMapper* bin_mapper = new BinMapper();
-      bin_mapper->FindBin(&sample_values[start[rank] + i], io_config_.max_bin);
+      bin_mapper->FindBin(&sample_values[start[rank] + i], sample_data.size(), io_config_.max_bin);
       bin_mapper->CopyTo(input_buffer + i * type_size);
       // don't need this any more
       delete bin_mapper;
