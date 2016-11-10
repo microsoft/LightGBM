@@ -27,9 +27,9 @@ public:
   virtual void Init(const char* test_name,
     const Metadata& metadata, data_size_t num_data) = 0;
 
-  virtual const char* GetName() const = 0;
+  virtual std::vector<std::string> GetName() const = 0;
 
-  virtual bool is_bigger_better() const = 0;
+  virtual score_t factor_to_bigger_better() const = 0;
   /*!
   * \brief Calcaluting and printing metric result
   * \param score Current prediction score

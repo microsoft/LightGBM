@@ -28,13 +28,11 @@ void DART::Init(const BoostingConfig* config, const Dataset* train_data, const O
   GBDT::Init(config, train_data, object_function, training_metrics);
   gbdt_config_ = dynamic_cast<const GBDTConfig*>(config);
   drop_rate_ = gbdt_config_->drop_rate;
+  shrinkage_rate_ = 1.0;
   random_for_drop_ = Random(gbdt_config_->dropping_seed);
 }
 
 bool DART::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) {
-  // drop trees
-  double shrinkage_rate = DroppingTrees();
-
   // boosting first
   if (gradient == nullptr || hessian == nullptr) {
     Boosting();
@@ -53,15 +51,19 @@ bool DART::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
       return true;
     }
     // shrink new tree
-    new_tree->Shrinkage(shrinkage_rate);
+    new_tree->Shrinkage(shrinkage_rate_);
     // update score
     UpdateScore(new_tree, curr_class);
+    UpdateScoreOutOfBag(new_tree, curr_class);
     // add model
     models_.push_back(new_tree);
   }
 
-  // normailize
-  Normailize(shrinkage_rate);
+  // normalize
+  Normalize();
+
+  // select dropping trees for next iteration
+  SelectDroppingTrees();
   
   bool is_met_early_stopping = false;
   // print message for metric
@@ -81,16 +83,28 @@ bool DART::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
   return is_met_early_stopping;
 }
 
-void DART::UpdateScore(const Tree* tree, const int curr_class) {
-  // update training score
-  train_score_updater_->AddScore(tree, curr_class);
-  // update validation score
-  for (auto& score_updater : valid_score_updater_) {
-    score_updater->AddScore(tree, curr_class);
+/*! \brief Get training scores result */
+const score_t* DART::GetTrainingScore(data_size_t* out_len) const {
+  // drop trees
+  for (int i: drop_index_) {
+    for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
+      int curr_tree = i * num_class_ + curr_class;
+      models_[curr_tree]->Shrinkage(-1.0);
+      train_score_updater_->AddScore(models_[curr_tree], curr_class);
+    }
+  }
+  *out_len = train_score_updater_->num_data() * num_class_;
+  return train_score_updater_->score();
+}
+
+void DART::SaveModelToFile(int num_used_model, bool is_finish, const char* filename) {
+  // only save model once when is_finish = true
+  if (is_finish && saved_model_size_ < 0) {
+    GBDT::SaveModelToFile(num_used_model, is_finish, filename);
   }
 }
 
-double DART::DroppingTrees(){
+void DART::SelectDroppingTrees() {
   drop_index_.clear();
   // select dropping tree indexes based on drop_rate
   // if drop rate is too small, skip this step, drop one tree randomly
@@ -105,24 +119,22 @@ double DART::DroppingTrees(){
   if (drop_index_.empty()){
     drop_index_ = random_for_drop_.Sample(iter_, 1);
   }
-  // drop trees
-  for (int i: drop_index_){
-    for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-      int curr_tree = i * num_class_ + curr_class;
-      models_[curr_tree]->Shrinkage(-1);
-      UpdateScore(models_[curr_tree], curr_class);
-    }
-  }
-  return 1.0 / (1.0 + drop_index_.size());
+  shrinkage_rate_ = 1.0 / (1.0 + drop_index_.size());
 }
 
-void DART::Normailize(double shrinkage_rate) {
+void DART::Normalize() {
   double k = static_cast<double>(drop_index_.size());
-  for (int i: drop_index_){
+  for (int i: drop_index_) {
     for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
       int curr_tree = i * num_class_ + curr_class;
-      models_[curr_tree]->Shrinkage(-k * shrinkage_rate);
-      UpdateScore(models_[curr_tree], curr_class);
+      // update validation score
+      models_[curr_tree]->Shrinkage(shrinkage_rate_);
+      for (auto& score_updater : valid_score_updater_) {
+        score_updater->AddScore(models_[curr_tree], curr_class);
+      }
+      // update training score
+      models_[curr_tree]->Shrinkage(-k);
+      train_score_updater_->AddScore(models_[curr_tree], curr_class);
     }
   }
 }

@@ -86,7 +86,7 @@ public:
   * \param values (Sampled) values of this feature
   * \param max_bin The maximal number of bin
   */
-  void FindBin(std::vector<double>* values, int max_bin);
+  void FindBin(std::vector<double>* values, size_t total_sample_cnt, int max_bin);
 
   /*!
   * \brief Use specific number of bin to calculate the size of this class

@@ -25,6 +25,12 @@ std::vector<const T*> ConstPtrInVectorWarpper(std::vector<T*> input) {
 
 using ReduceFunction = std::function<void(const char*, char*, int)>;
 
+using PredictFunction =
+std::function<std::vector<double>(const std::vector<std::pair<int, double>>&)>;
+
+#define NO_LIMIT (-1)
+#define NO_SPECIFIC (-1)
+
 }  // namespace LightGBM
 
 #endif   // LightGBM_META_H_

@@ -16,6 +16,9 @@ SerialTreeLearner::SerialTreeLearner(const TreeConfig& tree_config)
   num_leaves_ = tree_config.num_leaves;
   min_num_data_one_leaf_ = static_cast<data_size_t>(tree_config.min_data_in_leaf);
   min_sum_hessian_one_leaf_ = static_cast<double>(tree_config.min_sum_hessian_in_leaf);
+  lambda_l1_ = tree_config.lambda_l1;
+  lambda_l2_ = tree_config.lambda_l2;
+  min_gain_to_split_ = tree_config.min_gain_to_split;
   feature_fraction_ = tree_config.feature_fraction;
   random_ = Random(tree_config.feature_fraction_seed);
   histogram_pool_size_ = tree_config.histogram_pool_size;
@@ -68,7 +71,10 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
     for (int j = 0; j < train_data_->num_features(); ++j) {
       tmp_histogram_array[j].Init(train_data_->FeatureAt(j),
         j, min_num_data_one_leaf_,
-        min_sum_hessian_one_leaf_);
+        min_sum_hessian_one_leaf_,
+        lambda_l1_,
+        lambda_l2_,
+        min_gain_to_split_);
     }
     return tmp_histogram_array;
   };

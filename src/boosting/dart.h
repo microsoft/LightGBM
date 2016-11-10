@@ -40,30 +40,36 @@ public:
   */
   bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override;
   /*!
+  * \brief Get current training score
+  * \param out_len lenght of returned score
+  * \return training score
+  */
+  const score_t* GetTrainingScore(data_size_t* out_len) const override;
+  /*!
+  * \brief Serialize models by string
+  * \return String output of tranined model
+  */
+  void SaveModelToFile(int num_used_model, bool is_finish, const char* filename) override;
+  /*!
   * \brief Get Type name of this boosting object
   */
   const char* Name() const override { return "dart"; }
 
 private:
-
   /*!
-  * \brief updating score after tree was trained
-  * \param tree Trained tree of this iteration
-  * \param curr_class Current class for multiclass training
+  * \brief select drop trees based on drop_rate
   */
-  void UpdateScore(const Tree* tree, const int curr_class) override;
+  void SelectDroppingTrees();
   /*!
-  * \brief drop trees based on drop_rate
+  * \brief normalize dropped trees
   */
-  double DroppingTrees();
-  /*!
-  * \brief normailize based on shrinkage_rate
-  */
-  void Normailize(double shrinkage_rate);
+  void Normalize();
   /*! \brief The indexes of dropping trees */
   std::vector<size_t> drop_index_;
   /*! \brief Dropping rate */
   double drop_rate_;
+  /*! \brief Shrinkage rate for one iteration */
+  double shrinkage_rate_;
   /*! \brief Random generator, used to select dropping trees */
   Random random_for_drop_;
 };

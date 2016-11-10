@@ -188,21 +188,19 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   CHECK(max_bin > 0);
   GetInt(params, "num_class", &num_class);
   GetInt(params, "data_random_seed", &data_random_seed);
-
-  if (!GetString(params, "data", &data_filename)) {
-    Log::Fatal("No training/prediction data, application quit");
-  }
+  GetString(params, "data", &data_filename);
   GetInt(params, "verbose", &verbosity);
   GetInt(params, "num_model_predict", &num_model_predict);
+  GetInt(params, "bin_construct_sample_cnt", &bin_construct_sample_cnt);
   GetBool(params, "is_pre_partition", &is_pre_partition);
   GetBool(params, "is_enable_sparse", &is_enable_sparse);
   GetBool(params, "use_two_round_loading", &use_two_round_loading);
   GetBool(params, "is_save_binary_file", &is_save_binary_file);
-  GetBool(params, "is_sigmoid", &is_sigmoid);
+  GetBool(params, "enable_load_from_binary_file", &enable_load_from_binary_file);
+  GetBool(params, "is_raw_score", &is_raw_score);
   GetString(params, "output_model", &output_model);
   GetString(params, "input_model", &input_model);
   GetString(params, "output_result", &output_result);
-  GetString(params, "input_init_score", &input_init_score);
   std::string tmp_str = "";
   if (GetString(params, "valid_data", &tmp_str)) {
     valid_data_filenames = Common::Split(tmp_str.c_str(), ',');
@@ -269,6 +267,12 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   GetInt(params, "min_data_in_leaf", &min_data_in_leaf);
   GetDouble(params, "min_sum_hessian_in_leaf", &min_sum_hessian_in_leaf);
   CHECK(min_sum_hessian_in_leaf > 1.0f || min_data_in_leaf > 0);
+  GetDouble(params, "lambda_l1", &lambda_l1);
+  CHECK(lambda_l1 >= 0.0f)
+  GetDouble(params, "lambda_l2", &lambda_l2);
+  CHECK(lambda_l2 >= 0.0f)
+  GetDouble(params, "min_gain_to_split", &min_gain_to_split);
+  CHECK(min_gain_to_split >= 0.0f)
   GetInt(params, "num_leaves", &num_leaves);
   CHECK(num_leaves > 1);
   GetInt(params, "feature_fraction_seed", &feature_fraction_seed);

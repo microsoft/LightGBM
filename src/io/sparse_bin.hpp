@@ -54,11 +54,13 @@ public:
   void ConstructHistogram(data_size_t*, data_size_t , const score_t* ,
                  const score_t* , HistogramBinEntry*) const override {
     // Will use OrderedSparseBin->ConstructHistogram() instead
-    Log::Info("Using OrderedSparseBin->ConstructHistogram() instead");
+    Log::Fatal("Using OrderedSparseBin->ConstructHistogram() instead");
   }
 
   data_size_t Split(unsigned int threshold, data_size_t* data_indices, data_size_t num_data,
                          data_size_t* lte_indices, data_size_t* gt_indices) const override {
+    // not need to split
+    if (num_data <= 0) { return 0; }
     const auto fast_pair = fast_index_[(data_indices[0]) >> fast_index_shift_];
     data_size_t j = fast_pair.first;
     data_size_t cur_pos = fast_pair.second;

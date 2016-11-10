@@ -42,36 +42,49 @@ public:
   void AddDataset(const Dataset* valid_data,
        const std::vector<const Metric*>& valid_metrics) override;
   /*!
-  * \brief one training iteration
+  * \brief Training logic
+  * \param gradient nullptr for using default objective, otherwise use self-defined boosting
+  * \param hessian nullptr for using default objective, otherwise use self-defined boosting
+  * \param is_eval true if need evaluation or early stop
+  * \return True if meet early stopping or cannot boosting
   */
   virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override;
 
-  /*! \brief Get eval result */
-  std::vector<std::string> EvalCurrent(bool is_eval_train) const override;
+  /*!
+  * \brief Get evaluation result at data_idx data
+  * \param data_idx 0: training data, 1: 1st validation data
+  * \return evaluation result
+  */
+  std::vector<double> GetEvalAt(int data_idx) const override;
 
-  /*! \brief Get prediction result */
-  const std::vector<const score_t*> PredictCurrent(bool is_predict_train) const override;
+  /*!
+  * \brief Get current training score
+  * \param out_len lenght of returned score
+  * \return training score
+  */
+  virtual const score_t* GetTrainingScore(data_size_t* out_len) const override;
+
+  /*!
+  * \brief Get prediction result at data_idx data
+  * \param data_idx 0: training data, 1: 1st validation data
+  * \param result used to store prediction result, should allocate memory before call this function
+  * \param out_len lenght of returned score
+  */
+  void GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len) const override;
 
   /*!
   * \brief Predtion for one record without sigmoid transformation
   * \param feature_values Feature value on this record
   * \return Prediction result for this record
   */
-  double PredictRaw(const double* feature_values) const override;
+  std::vector<double> PredictRaw(const double* feature_values) const override;
 
   /*!
   * \brief Predtion for one record with sigmoid transformation if enabled
   * \param feature_values Feature value on this record
   * \return Prediction result for this record
   */
-  double Predict(const double* feature_values) const override;
-  
-  /*!
-  * \brief Predtion for multiclass classification
-  * \param feature_values Feature value on this record
-  * \return Prediction result, num_class numbers per line
-  */
-  std::vector<double> PredictMulticlass(const double* value) const override;
+  std::vector<double> Predict(const double* feature_values) const override;
   
   /*!
   * \brief Predtion for one record with leaf index
@@ -84,11 +97,11 @@ public:
   * \brief Serialize models by string
   * \return String output of tranined model
   */
-  void SaveModelToFile(bool is_finish, const char* filename) override;
+  virtual void SaveModelToFile(int num_used_model, bool is_finish, const char* filename) override;
   /*!
   * \brief Restore from a serialized string
   */
-  void ModelsFromString(const std::string& model_str) override;
+  void LoadModelFromString(const std::string& model_str) override;
   /*!
   * \brief Get max feature index of this model
   * \return Max feature index of this model
@@ -111,7 +124,7 @@ public:
   * \brief Get number of classes
   * \return Number of classes
   */
-  inline int NumberOfClass() const override { return num_class_; }
+  inline int NumberOfClasses() const override { return num_class_; }
 
   /*!
   * \brief Set number of used model for prediction
@@ -121,7 +134,6 @@ public:
       num_used_model_ = static_cast<int>(num_used_model / num_class_);
     }
   }
-
   
   /*!
   * \brief Get Type name of this boosting object
@@ -173,7 +185,7 @@ protected:
   /*! \brief Objective function */
   const ObjectiveFunction* object_function_;
   /*! \brief Store and update training data's score */
-  ScoreUpdater* train_score_updater_;
+  mutable ScoreUpdater* train_score_updater_;
   /*! \brief Metrics for training data */
   std::vector<const Metric*> training_metrics_;
   /*! \brief Store and update validation data's scores */

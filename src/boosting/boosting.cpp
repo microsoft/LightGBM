@@ -23,12 +23,12 @@ void LoadFileToBoosting(Boosting* boosting, const char* filename) {
     for (auto& line : model_reader.Lines()) {
       str_buf << line << '\n';
     }
-    boosting->ModelsFromString(str_buf.str());
+    boosting->LoadModelFromString(str_buf.str());
   }
 }
 
 Boosting* Boosting::CreateBoosting(BoostingType type, const char* filename) {
-  if (filename[0] == '\0') {
+  if (filename == nullptr || filename[0] == '\0') {
     if (type == BoostingType::kGBDT) {
       return new GBDT();
     } else if (type == BoostingType::kDART) {
