@@ -23,6 +23,7 @@ script:
 - cd $TRAVIS_BUILD_DIR/tests/c_api_test && python test.py
 - cd $TRAVIS_BUILD_DIR
 - rm -rf build && mkdir build && cd build && cmake -DUSE_MPI=ON ..&& make -j
+- cd $TRAVIS_BUILD_DIR/tests/c_api_test && python test.py
 
 notifications:
   email: false
