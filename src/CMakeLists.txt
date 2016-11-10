@@ -18,5 +18,6 @@ add_library(_lightgbm SHARED c_api.cpp ${APPLICATION_SRC} ${BOOSTING_SRC} ${IO_S
 
 if(USE_MPI)
   TARGET_LINK_LIBRARIES(lightgbm ${MPI_CXX_LIBRARIES})
+  TARGET_LINK_LIBRARIES(_lightgbm ${MPI_CXX_LIBRARIES})
 endif(USE_MPI)
 
