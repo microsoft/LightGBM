@@ -40,6 +40,7 @@ public:
   * \brief Using tree model to get prediction number, then adding to scores for all data
   *        Note: this function generally will be used on validation data too.
   * \param tree Trained tree model
+  * \param curr_class Current class for multiclass training
   */
   inline void AddScore(const Tree* tree, int curr_class) {
     tree->AddPredictionToScore(data_, num_data_, score_ + curr_class * num_data_);
@@ -49,6 +50,7 @@ public:
   *        The training data is partitioned into tree leaves after training
   *        Based on which We can get prediction quckily.
   * \param tree_learner
+  * \param curr_class Current class for multiclass training
   */
   inline void AddScore(const TreeLearner* tree_learner, int curr_class) {
     tree_learner->AddPredictionToScore(score_ + curr_class * num_data_);
@@ -59,6 +61,7 @@ public:
   * \param tree Trained tree model
   * \param data_indices Indices of data that will be proccessed
   * \param data_cnt Number of data that will be proccessed
+  * \param curr_class Current class for multiclass training
   */
   inline void AddScore(const Tree* tree, const data_size_t* data_indices,
                                                   data_size_t data_cnt, int curr_class) {

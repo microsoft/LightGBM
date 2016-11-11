@@ -357,7 +357,7 @@ void GBDT::SaveModelToFile(int num_used_model, bool is_finish, const char* filen
   if (saved_model_size_ < 0) {
     model_output_file_.open(filename);
     // output model type
-    model_output_file_ << "gbdt" << std::endl;
+    model_output_file_ << Name() << std::endl;
     // output number of class
     model_output_file_ << "num_class=" << num_class_ << std::endl;
     // output label index

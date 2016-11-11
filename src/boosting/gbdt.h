@@ -48,7 +48,7 @@ public:
   * \param is_eval true if need evaluation or early stop
   * \return True if meet early stopping or cannot boosting
   */
-  bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override;
+  virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override;
 
   /*!
   * \brief Get evaluation result at data_idx data
@@ -62,7 +62,7 @@ public:
   * \param out_len lenght of returned score
   * \return training score
   */
-  const score_t* GetTrainingScore(data_size_t* out_len) override;
+  virtual const score_t* GetTrainingScore(data_size_t* out_len) override;
 
   /*!
   * \brief Get prediction result at data_idx data
@@ -77,14 +77,14 @@ public:
   * \param feature_values Feature value on this record
   * \return Prediction result for this record
   */
-  std::vector<double>  PredictRaw(const double* feature_values) const override;
+  std::vector<double> PredictRaw(const double* feature_values) const override;
 
   /*!
   * \brief Predtion for one record with sigmoid transformation if enabled
   * \param feature_values Feature value on this record
   * \return Prediction result for this record
   */
-  std::vector<double>  Predict(const double* feature_values) const override;
+  std::vector<double> Predict(const double* feature_values) const override;
   
   /*!
   * \brief Predtion for one record with leaf index
@@ -97,7 +97,7 @@ public:
   * \brief Serialize models by string
   * \return String output of tranined model
   */
-  void SaveModelToFile(int num_used_model, bool is_finish, const char* filename) override;
+  virtual void SaveModelToFile(int num_used_model, bool is_finish, const char* filename) override;
   /*!
   * \brief Restore from a serialized string
   */
@@ -134,14 +134,13 @@ public:
       num_used_model_ = static_cast<int>(num_used_model / num_class_);
     }
   }
-
   
   /*!
   * \brief Get Type name of this boosting object
   */
-  const char* Name() const override { return "gbdt"; }
+  virtual const char* Name() const override { return "gbdt"; }
 
-private:
+protected:
   /*!
   * \brief Implement bagging logic
   * \param iter Current interation
@@ -164,7 +163,7 @@ private:
   * \param tree Trained tree of this iteration
   * \param curr_class Current class for multiclass training
   */
-  void UpdateScore(const Tree* tree, const int curr_class);
+  virtual void UpdateScore(const Tree* tree, const int curr_class);
   /*!
   * \brief Print metric result of current iteration
   * \param iter Current interation
