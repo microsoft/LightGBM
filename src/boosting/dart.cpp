@@ -61,9 +61,6 @@ bool DART::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
 
   // normalize
   Normalize();
-
-  // select dropping trees for next iteration
-  SelectDroppingTrees();
   
   bool is_met_early_stopping = false;
   // print message for metric
@@ -84,15 +81,8 @@ bool DART::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
 }
 
 /*! \brief Get training scores result */
-const score_t* DART::GetTrainingScore(data_size_t* out_len) const {
-  // drop trees
-  for (int i: drop_index_) {
-    for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-      int curr_tree = i * num_class_ + curr_class;
-      models_[curr_tree]->Shrinkage(-1.0);
-      train_score_updater_->AddScore(models_[curr_tree], curr_class);
-    }
-  }
+const score_t* DART::GetTrainingScore(data_size_t* out_len) {
+  DroppingTrees();
   *out_len = train_score_updater_->num_data() * num_class_;
   return train_score_updater_->score();
 }
@@ -104,7 +94,7 @@ void DART::SaveModelToFile(int num_used_model, bool is_finish, const char* filen
   }
 }
 
-void DART::SelectDroppingTrees() {
+void DART::DroppingTrees() {
   drop_index_.clear();
   // select dropping tree indexes based on drop_rate
   // if drop rate is too small, skip this step, drop one tree randomly
@@ -118,6 +108,14 @@ void DART::SelectDroppingTrees() {
   // binomial-plus-one, at least one tree will be dropped
   if (drop_index_.empty()){
     drop_index_ = random_for_drop_.Sample(iter_, 1);
+  }
+  // drop trees
+  for (int i: drop_index_) {
+    for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
+      int curr_tree = i * num_class_ + curr_class;
+      models_[curr_tree]->Shrinkage(-1.0);
+      train_score_updater_->AddScore(models_[curr_tree], curr_class);
+    }
   }
   shrinkage_rate_ = 1.0 / (1.0 + drop_index_.size());
 }

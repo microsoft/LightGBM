@@ -62,7 +62,7 @@ public:
   * \param out_len lenght of returned score
   * \return training score
   */
-  virtual const score_t* GetTrainingScore(data_size_t* out_len) const override;
+  virtual const score_t* GetTrainingScore(data_size_t* out_len) override;
 
   /*!
   * \brief Get prediction result at data_idx data
@@ -185,7 +185,7 @@ protected:
   /*! \brief Objective function */
   const ObjectiveFunction* object_function_;
   /*! \brief Store and update training data's score */
-  mutable ScoreUpdater* train_score_updater_;
+  ScoreUpdater* train_score_updater_;
   /*! \brief Metrics for training data */
   std::vector<const Metric*> training_metrics_;
   /*! \brief Store and update validation data's scores */

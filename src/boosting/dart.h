@@ -44,7 +44,7 @@ public:
   * \param out_len lenght of returned score
   * \return training score
   */
-  const score_t* GetTrainingScore(data_size_t* out_len) const override;
+  const score_t* GetTrainingScore(data_size_t* out_len) override;
   /*!
   * \brief Serialize models by string
   * \return String output of tranined model
@@ -57,9 +57,9 @@ public:
 
 private:
   /*!
-  * \brief select drop trees based on drop_rate
+  * \brief drop trees based on drop_rate
   */
-  void SelectDroppingTrees();
+  void DroppingTrees();
   /*!
   * \brief normalize dropped trees
   */
