@@ -62,7 +62,7 @@ public:
   * \param out_len lenght of returned score
   * \return training score
   */
-  const score_t* GetTrainingScore(data_size_t* out_len) const override;
+  const score_t* GetTrainingScore(data_size_t* out_len) override;
 
   /*!
   * \brief Get prediction result at data_idx data

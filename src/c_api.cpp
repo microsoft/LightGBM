@@ -127,7 +127,10 @@ public:
   void SaveModelToFile(int num_used_model, const char* filename) {
     boosting_->SaveModelToFile(num_used_model, true, filename);
   }
+  
   const Boosting* GetBoosting() const { return boosting_; }
+
+  const float* GetTrainingScore(int* out_len) const { return boosting_->GetTrainingScore(out_len); }
 
   const inline int NumberOfClasses() const { return boosting_->NumberOfClasses(); }
 
@@ -478,9 +481,8 @@ DllExport int LGBM_BoosterGetScore(BoosterHandle handle,
   const float** out_result) {
 
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  auto boosting = ref_booster->GetBoosting();
   int len = 0;
-  *out_result = boosting->GetTrainingScore(&len);
+  *out_result = ref_booster->GetTrainingScore(&len);
   *out_len = static_cast<int64_t>(len);
 
   return 0;

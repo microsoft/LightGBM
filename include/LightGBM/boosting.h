@@ -64,7 +64,7 @@ public:
   * \param out_len length of returned score
   * \return training score
   */
-  virtual const score_t* GetTrainingScore(data_size_t* out_len) const = 0;
+  virtual const score_t* GetTrainingScore(data_size_t* out_len) = 0;
 
   /*!
   * \brief Get prediction result at data_idx data
