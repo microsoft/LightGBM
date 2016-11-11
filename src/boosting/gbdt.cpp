@@ -294,7 +294,7 @@ std::vector<double> GBDT::GetEvalAt(int data_idx) const {
 }
 
 /*! \brief Get training scores result */
-const score_t* GBDT::GetTrainingScore(data_size_t* out_len) const {
+const score_t* GBDT::GetTrainingScore(data_size_t* out_len) {
   *out_len = train_score_updater_->num_data() * num_class_;
   return train_score_updater_->score();
 }
