@@ -103,7 +103,8 @@ public:
   bool is_save_binary_file = false;
   bool enable_load_from_binary_file = true;
   int bin_construct_sample_cnt = 50000;
-  bool is_raw_score = true;
+  bool is_predict_leaf_index = false;
+  bool is_predict_raw_score = false;
 
   bool has_header = false;
   /*! \brief Index or column name of label, default is the first column
@@ -224,7 +225,6 @@ public:
   int num_threads = 0;
   bool is_parallel = false;
   bool is_parallel_find_bin = false;
-  bool predict_leaf_index = false;
   IOConfig io_config;
   BoostingType boosting_type = BoostingType::kGBDT;
   BoostingConfig* boosting_config = nullptr;
@@ -365,7 +365,9 @@ struct ParameterAlias {
       { "query", "group_column" },
       { "query_column", "group_column" },
       { "ignore_feature", "ignore_column" },
-      { "blacklist", "ignore_column" }
+      { "blacklist", "ignore_column" },
+      { "predict_raw_score", "is_predict_raw_score" },
+      { "predict_leaf_index", "is_predict_leaf_index" }
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
