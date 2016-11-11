@@ -46,7 +46,7 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
   // find distinct_values first
   std::vector<double> distinct_values;
   std::vector<int> counts;
-  
+
   std::sort(ref_values.begin(), ref_values.end());
   // push 0 first
   if (zero_cnt > 0) {
@@ -67,8 +67,8 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
   }
   int num_values = static_cast<int>(distinct_values.size());
   int cnt_in_bin0 = 0;
-
   if (num_values <= max_bin) {
+    std::sort(distinct_values.begin(), distinct_values.end());
     // use distinct value is enough
     num_bin_ = num_values;
     bin_upper_bound_ = new double[num_values];
@@ -78,12 +78,11 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
     cnt_in_bin0 = counts[0];
     bin_upper_bound_[num_values - 1] = std::numeric_limits<double>::infinity();
   } else {
+    double min_lower_bound = std::numeric_limits<double>::infinity();
     // mean size for one bin
     double mean_bin_size = sample_size / static_cast<double>(max_bin);
     int rest_sample_cnt = static_cast<int>(sample_size);
     int bin_cnt = 0;
-
-    num_bin_ = max_bin;
     std::vector<double> upper_bounds(max_bin, std::numeric_limits<double>::infinity());
     std::vector<double> lower_bounds(max_bin, std::numeric_limits<double>::infinity());
     // sort by count, descent
@@ -92,6 +91,10 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
     while (counts[bin_cnt] > mean_bin_size) {
       upper_bounds[bin_cnt] = distinct_values[bin_cnt];
       lower_bounds[bin_cnt] = distinct_values[bin_cnt];
+      if (lower_bounds[bin_cnt] < min_lower_bound) {
+        min_lower_bound = lower_bounds[bin_cnt];
+        cnt_in_bin0 = counts[bin_cnt];
+      }
       rest_sample_cnt -= counts[bin_cnt];
       ++bin_cnt;
     }
@@ -108,7 +111,10 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
         // need a new bin
         if (cur_cnt_inbin >= mean_bin_size) {
           upper_bounds[bin_cnt] = distinct_values[i];
-          if (bin_cnt == 0) { cnt_in_bin0 = cur_cnt_inbin; }
+          if (lower_bounds[bin_cnt] < min_lower_bound) {
+            min_lower_bound = lower_bounds[bin_cnt];
+            cnt_in_bin0 = cur_cnt_inbin;
+          }
           ++bin_cnt;
           lower_bounds[bin_cnt] = distinct_values[i + 1];
           if (bin_cnt >= max_bin - 1) break;
@@ -117,7 +123,6 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
         }
       }
       cur_cnt_inbin += counts[num_values - 1];
-      
     }
     Common::SortForPair<double, double>(lower_bounds, upper_bounds, 0, false);
     // update bin upper bound
