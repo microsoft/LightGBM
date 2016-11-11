@@ -200,7 +200,7 @@ void Application::InitTrain() {
     Network::Init(config_.network_config);
     Log::Info("Finished initializing network");
     // sync global random seed for feature patition
-    if (config_.boosting_type == BoostingType::kGBDT) {
+    if (config_.boosting_type == BoostingType::kGBDT || config_.boosting_type == BoostingType::kDART) {
       GBDTConfig* gbdt_config =
         dynamic_cast<GBDTConfig*>(config_.boosting_config);
       gbdt_config->tree_config.feature_fraction_seed =
