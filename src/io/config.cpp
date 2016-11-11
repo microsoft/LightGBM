@@ -34,9 +34,6 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
   // load main config types
   GetInt(params, "num_threads", &num_threads);
   GetTaskType(params);
-
-  GetBool(params, "predict_leaf_index", &predict_leaf_index);
-
   GetBoostingType(params);
   GetObjectiveType(params);
   GetMetricType(params);
@@ -195,7 +192,8 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetBool(params, "use_two_round_loading", &use_two_round_loading);
   GetBool(params, "is_save_binary_file", &is_save_binary_file);
   GetBool(params, "enable_load_from_binary_file", &enable_load_from_binary_file);
-  GetBool(params, "is_raw_score", &is_raw_score);
+  GetBool(params, "is_predict_raw_score", &is_predict_raw_score);
+  GetBool(params, "is_predict_leaf_index", &is_predict_leaf_index);
   GetString(params, "output_model", &output_model);
   GetString(params, "input_model", &input_model);
   GetString(params, "output_result", &output_result);
