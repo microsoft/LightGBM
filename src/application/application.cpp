@@ -256,8 +256,8 @@ void Application::Train() {
 void Application::Predict() {
   boosting_->SetNumUsedModel(config_.io_config.num_model_predict);
   // create predictor
-  Predictor predictor(boosting_, config_.io_config.is_raw_score,
-    config_.predict_leaf_index);
+  Predictor predictor(boosting_, config_.io_config.is_predict_raw_score,
+    config_.io_config.is_predict_leaf_index);
   predictor.Predict(config_.io_config.data_filename.c_str(),
     config_.io_config.output_result.c_str(), config_.io_config.has_header);
   Log::Info("Finished prediction");
