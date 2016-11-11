@@ -9,7 +9,7 @@
 namespace LightGBM {
 
 DatasetLoader::DatasetLoader(const IOConfig& io_config, const PredictFunction& predict_fun)
-  :io_config_(io_config), predict_fun_(predict_fun), random_(io_config_.data_random_seed){
+  :io_config_(io_config), random_(io_config_.data_random_seed), predict_fun_(predict_fun) {
 
 }
 
