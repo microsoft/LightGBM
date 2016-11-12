@@ -1,5 +1,9 @@
 include_directories(${LightGBM_HEADER_DIR})
 
+if(APPLE)
+  set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
+endif(APPLE)
+
 if(USE_MPI)
   include_directories(${MPI_CXX_INCLUDE_PATH})
 endif()
