@@ -369,7 +369,8 @@ struct ParameterAlias {
       { "ignore_feature", "ignore_column" },
       { "blacklist", "ignore_column" },
       { "predict_raw_score", "is_predict_raw_score" },
-      { "predict_leaf_index", "is_predict_leaf_index" }
+      { "predict_leaf_index", "is_predict_leaf_index" }, 
+      { "num_classes", "num_class" }
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
