@@ -29,7 +29,7 @@ void DART::Init(const BoostingConfig* config, const Dataset* train_data, const O
   gbdt_config_ = dynamic_cast<const GBDTConfig*>(config);
   drop_rate_ = gbdt_config_->drop_rate;
   shrinkage_rate_ = 1.0;
-  random_for_drop_ = Random(gbdt_config_->dropping_seed);
+  random_for_drop_ = Random(gbdt_config_->drop_seed);
 }
 
 bool DART::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) {

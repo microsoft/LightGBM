@@ -192,7 +192,7 @@ public:
   int early_stopping_round = 0;
   int num_class = 1;
   double drop_rate = 0.01;
-  int dropping_seed = 4;
+  int drop_seed = 4;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
