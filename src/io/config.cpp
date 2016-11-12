@@ -298,7 +298,7 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   CHECK(output_freq >= 0);
   GetBool(params, "is_training_metric", &is_provide_training_metric);
   GetInt(params, "num_class", &num_class);
-  GetInt(params, "dropping_seed", &dropping_seed);
+  GetInt(params, "drop_seed", &drop_seed);
   GetDouble(params, "drop_rate", &drop_rate);
   CHECK(drop_rate <= 1.0 && drop_rate >= 0.0);
 }
