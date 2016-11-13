@@ -145,6 +145,8 @@ private:
   int* leaf_parent_;
   /*! \brief Output of leaves */
   double* leaf_value_;
+  /*! \brief Output of internal nodes(save internal output for per inference feature importance calc) */
+  double* internal_value_;
   /*! \brief Depth for leaves */
   int* leaf_depth_;
 };
