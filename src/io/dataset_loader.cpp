@@ -657,7 +657,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
 
     start[0] = 0;
     for (int i = 0; i < num_machines - 1; ++i) {
-      len[i] = Common::Min<int>(step, total_num_feature - start[i]);
+      len[i] = std::min(step, total_num_feature - start[i]);
       start[i + 1] = start[i] + len[i];
     }
     len[num_machines - 1] = total_num_feature - start[num_machines - 1];

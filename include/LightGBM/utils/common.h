@@ -16,18 +16,6 @@ namespace LightGBM {
 
 namespace Common {
 
-template<typename T>
-inline static T Max(const T& a, const T& b) {
-  return a > b ? a : b;
-}
-
-template<typename T>
-inline static T Min(const T& a, const T& b) {
-  return a < b ? a : b;
-}
-
-
-
 inline static std::string& Trim(std::string& str) {
   if (str.size() <= 0) {
     return str;
@@ -329,8 +317,8 @@ inline static std::string Join(const std::vector<T>& strs, size_t start, size_t 
   if (end - start <= 0) {
     return std::string("");
   }
-  start = Min<size_t>(start, static_cast<size_t>(strs.size()) - 1);
-  end = Min<size_t>(end, static_cast<size_t>(strs.size()));
+  start = std::min(start, static_cast<size_t>(strs.size()) - 1);
+  end = std::min(end, static_cast<size_t>(strs.size()));
   std::stringstream ss;
   ss << strs[start];
   for (size_t i = start + 1; i < end; ++i) {

@@ -54,7 +54,7 @@ void Network::Allreduce(char* input, int input_size, int type_size, char* output
   }
   block_start_[0] = 0;
   for (int i = 0; i < num_machines_ - 1; ++i) {
-    block_len_[i] = Common::Min<int>(step * type_size, input_size - block_start_[i]);
+    block_len_[i] = std::min(step * type_size, input_size - block_start_[i]);
     block_start_[i + 1] = block_start_[i] + block_len_[i];
   }
   block_len_[num_machines_ - 1] = input_size - block_start_[num_machines_ - 1];
@@ -108,7 +108,7 @@ void Network::Allgather(char* input, int all_size, int* block_start, int* block_
   int accumulated_block = 1;
   for (int i = 0; i < bruck_map_.k; ++i) {
     // get current local block size
-    int cur_block_size = Common::Min<int>(1 << i, num_machines_ - accumulated_block);
+    int cur_block_size = std::min(1 << i, num_machines_ - accumulated_block);
     // get out rank
     int out_rank = bruck_map_.out_ranks[i];
     // get send information

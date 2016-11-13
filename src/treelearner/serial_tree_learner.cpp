@@ -62,8 +62,8 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
     max_cache_size = static_cast<int>(histogram_pool_size_ * 1024 * 1024 / total_histogram_size);
   }
   // at least need 2 leaves
-  max_cache_size = Common::Max(2, max_cache_size);
-  max_cache_size = Common::Min(max_cache_size, num_leaves_);
+  max_cache_size = std::max(2, max_cache_size);
+  max_cache_size = std::min(max_cache_size, num_leaves_);
   histogram_pool_.ResetSize(max_cache_size, num_leaves_);
 
   auto histogram_create_function = [this]() {

@@ -110,9 +110,9 @@ void DART::DroppingTrees() {
     drop_index_ = random_for_drop_.Sample(iter_, 1);
   }
   // drop trees
-  for (int i: drop_index_) {
+  for (auto i: drop_index_) {
     for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-      int curr_tree = i * num_class_ + curr_class;
+      auto curr_tree = i * num_class_ + curr_class;
       models_[curr_tree]->Shrinkage(-1.0);
       train_score_updater_->AddScore(models_[curr_tree], curr_class);
     }
@@ -122,9 +122,9 @@ void DART::DroppingTrees() {
 
 void DART::Normalize() {
   double k = static_cast<double>(drop_index_.size());
-  for (int i: drop_index_) {
+  for (auto i: drop_index_) {
     for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-      int curr_tree = i * num_class_ + curr_class;
+      auto curr_tree = i * num_class_ + curr_class;
       // update validation score
       models_[curr_tree]->Shrinkage(shrinkage_rate_);
       for (auto& score_updater : valid_score_updater_) {

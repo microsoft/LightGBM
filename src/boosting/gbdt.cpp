@@ -385,7 +385,7 @@ void GBDT::SaveModelToFile(int num_used_model, bool is_finish, const char* filen
     model_output_file_ << models_[i]->ToString() << std::endl;
   }
 
-  saved_model_size_ = Common::Max(saved_model_size_, rest);
+  saved_model_size_ = std::max(saved_model_size_, rest);
 
   model_output_file_.flush();
   // training finished, can close file

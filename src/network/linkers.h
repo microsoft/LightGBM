@@ -1,13 +1,14 @@
 #ifndef LIGHTGBM_NETWORK_LINKERS_H_
 #define LIGHTGBM_NETWORK_LINKERS_H_
 
+
 #include <LightGBM/meta.h>
 #include <LightGBM/config.h>
 #include <LightGBM/network.h>
 
+#include <algorithm>
 #include <chrono>
 #include <ctime>
-
 #ifdef USE_SOCKET
 #include "socket_wrapper.hpp"
 #include <LightGBM/utils/common.h>
@@ -171,9 +172,9 @@ inline const RecursiveHalvingMap& Linkers::recursive_halving_map() {
 inline void Linkers::Recv(int rank, char* data, int len) const {
   int recv_cnt = 0;
   while (recv_cnt < len) {
-    recv_cnt += linkers_[rank]->Recv(data + recv_cnt ,
+    recv_cnt += linkers_[rank]->Recv(data + recv_cnt,
       //len - recv_cnt
-      Common::Min<int>(len - recv_cnt, SocketConfig::kMaxReceiveSize)
+      std::min(len - recv_cnt, SocketConfig::kMaxReceiveSize)
     );
   }
 }
