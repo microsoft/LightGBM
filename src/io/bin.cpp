@@ -96,10 +96,7 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
   } else {
     // mean size for one bin
     double mean_bin_size = sample_size / static_cast<double>(max_bin);
-    std::vector<bool> is_big_count_value(num_values, false);
-    for (int i = 0; i < num_values; ++i) {
-      if (counts[i] >= mean_bin_size) { is_big_count_value[i] = true; }
-    }
+    double static_mean_bin_size = mean_bin_size;
     std::vector<double> upper_bounds(max_bin, std::numeric_limits<double>::infinity());
     std::vector<double> lower_bounds(max_bin, std::numeric_limits<double>::infinity());
 
@@ -111,8 +108,8 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
       rest_sample_cnt -= counts[i];
       cur_cnt_inbin += counts[i];
       // need a new bin
-      if (is_big_count_value[i] || cur_cnt_inbin >= mean_bin_size ||
-        (is_big_count_value[i + 1] && cur_cnt_inbin >= std::max(1.0, mean_bin_size * 0.5f))) {
+      if (counts[i] >= static_mean_bin_size || cur_cnt_inbin >= mean_bin_size ||
+        (counts[i + 1] >= static_mean_bin_size && cur_cnt_inbin >= std::max(1.0, mean_bin_size * 0.5f))) {
         upper_bounds[bin_cnt] = distinct_values[i];
         if (bin_cnt == 0) {
           cnt_in_bin0 = cur_cnt_inbin;
