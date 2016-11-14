@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <cstdarg>
 #include <cstring>
+#include <exception>
+#include <stdexcept>
 
 namespace LightGBM {
 
@@ -62,13 +64,15 @@ public:
   }
   static void Fatal(const char *format, ...) {
     va_list val;
+    char str_buf[1024];
     va_start(val, format);
-    fprintf(stderr, "[LightGBM] [Fatal] ");
-    vfprintf(stderr, format, val);
-    fprintf(stderr, "\n");
-    fflush(stderr);
+#ifdef _MSC_VER
+    vsprintf_s(str_buf, format, val);
+#else
+    vsprintf(str_buf, format, val);
+#endif
     va_end(val);
-    exit(1);
+    throw std::runtime_error(std::string(str_buf));
   }
 
 private:

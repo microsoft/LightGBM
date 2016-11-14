@@ -1,8 +1,9 @@
 #ifndef LIGHTGBM_C_API_H_
 #define LIGHTGBM_C_API_H_
-#include<cstdint>
-
-
+#include <cstdint>
+#include <exception>
+#include <stdexcept>
+#include <string>
 /*!
 * To avoid type conversion on large data, most of our expose interface support both for float_32 and float_64.
 * Except following:
@@ -411,5 +412,31 @@ ColumnFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indi
 
 std::vector<double> 
 SampleFromOneColumn(const std::vector<std::pair<int, double>>& data, const std::vector<size_t>& indices);
+
+
+// exception handle and error msg
+
+static std::string& LastErrorMsg() { static std::string err_msg("Everything is fine"); return err_msg; }
+
+inline void LGBM_SetLastError(const char* msg) {
+  LastErrorMsg() = msg;
+}
+
+inline int LGBM_APIHandleException(const std::exception& ex) {
+  LGBM_SetLastError(ex.what());
+  return -1;
+}
+inline int LGBM_APIHandleException(const std::string& ex) {
+  LGBM_SetLastError(ex.c_str());
+  return -1;
+}
+
+#define API_BEGIN() try {
+
+#define API_END() } \
+catch(std::exception& ex) { return LGBM_APIHandleException(ex); } \
+catch(std::string& ex) { return LGBM_APIHandleException(ex); } \
+catch(...) { return LGBM_APIHandleException("unknown exception"); } \
+return 0;  
 
 #endif // LIGHTGBM_C_API_H_
