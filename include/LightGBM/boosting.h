@@ -141,6 +141,12 @@ public:
   */
   virtual const char* Name() const = 0;
 
+  Boosting() = default;
+  /*! \brief Disable copy */
+  Boosting& operator=(const Boosting&) = delete;
+  /*! \brief Disable copy */
+  Boosting(const Boosting&) = delete;
+
   /*!
   * \brief Create boosting object
   * \param type Type of boosting

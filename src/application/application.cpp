@@ -107,11 +107,10 @@ void Application::LoadData() {
   auto start_time = std::chrono::high_resolution_clock::now();
   // prediction is needed if using input initial model(continued train)
   PredictFunction predict_fun = nullptr;
-  Predictor* predictor = nullptr;
   // need to continue training
   if (boosting_->NumberOfSubModels() > 0) {
-    predictor = new Predictor(boosting_.get(), true, false);
-    predict_fun = predictor->GetPredictFunction();
+    Predictor predictor(boosting_.get(), true, false);
+    predict_fun = predictor.GetPredictFunction();
   }
 
   // sync up random seed for data partition
@@ -149,9 +148,12 @@ void Application::LoadData() {
   // Add validation data, if it exists
   for (size_t i = 0; i < config_.io_config.valid_data_filenames.size(); ++i) {
     // add
-    valid_datas_.emplace_back();
-    valid_datas_.back().reset(dataset_loader.LoadFromFileAlignWithOtherDataset(config_.io_config.valid_data_filenames[i].c_str(),
-      train_data_.get()));
+    valid_datas_.emplace_back(
+      std::unique_ptr<Dataset>(
+        dataset_loader.LoadFromFileAlignWithOtherDataset(config_.io_config.valid_data_filenames[i].c_str(),
+          train_data_.get())
+        )
+    );
     // need save binary file
     if (config_.io_config.is_save_binary_file) {
       valid_datas_.back()->SaveBinaryFile(nullptr);
@@ -168,9 +170,6 @@ void Application::LoadData() {
                                     valid_datas_.back()->num_data());
       valid_metrics_.back().push_back(std::move(metric));
     }
-  }
-  if (predictor != nullptr) {
-    delete predictor;
   }
   auto end_time = std::chrono::high_resolution_clock::now();
   // output used time on each iteration

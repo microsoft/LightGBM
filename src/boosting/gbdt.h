@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <memory>
 
 namespace LightGBM {
 /*!
@@ -181,15 +182,15 @@ protected:
   /*! \brief Config of gbdt */
   const GBDTConfig* gbdt_config_;
   /*! \brief Tree learner, will use this class to learn trees */
-  std::vector<TreeLearner*> tree_learner_;
+  std::vector<std::unique_ptr<TreeLearner>> tree_learner_;
   /*! \brief Objective function */
   const ObjectiveFunction* object_function_;
   /*! \brief Store and update training data's score */
-  ScoreUpdater* train_score_updater_;
+  std::unique_ptr<ScoreUpdater> train_score_updater_;
   /*! \brief Metrics for training data */
   std::vector<const Metric*> training_metrics_;
   /*! \brief Store and update validation data's scores */
-  std::vector<ScoreUpdater*> valid_score_updater_;
+  std::vector<std::unique_ptr<ScoreUpdater>> valid_score_updater_;
   /*! \brief Metric for validation data */
   std::vector<std::vector<const Metric*>> valid_metrics_;
   /*! \brief Number of rounds for early stopping */
@@ -198,19 +199,19 @@ protected:
   std::vector<std::vector<int>> best_iter_;
   std::vector<std::vector<double>> best_score_;
   /*! \brief Trained models(trees) */
-  std::vector<Tree*> models_;
+  std::vector<std::unique_ptr<Tree>> models_;
   /*! \brief Max feature index of training data*/
   int max_feature_idx_;
   /*! \brief First order derivative of training data */
-  score_t* gradients_;
+  std::vector<score_t> gradients_;
   /*! \brief Secend order derivative of training data */
-  score_t* hessians_;
+  std::vector<score_t> hessians_;
   /*! \brief Store the data indices of out-of-bag */
-  data_size_t* out_of_bag_data_indices_;
+  std::vector<data_size_t> out_of_bag_data_indices_;
   /*! \brief Number of out-of-bag data */
   data_size_t out_of_bag_data_cnt_;
   /*! \brief Store the indices of in-bag data */
-  data_size_t* bag_data_indices_;
+  std::vector<data_size_t> bag_data_indices_;
   /*! \brief Number of in-bag data */
   data_size_t bag_data_cnt_;
   /*! \brief Number of traning data */

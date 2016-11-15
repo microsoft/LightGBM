@@ -38,6 +38,12 @@ public:
   */
   virtual score_t GetSigmoid() const = 0;
 
+  ObjectiveFunction() = default;
+  /*! \brief Disable copy */
+  ObjectiveFunction& operator=(const ObjectiveFunction&) = delete;
+  /*! \brief Disable copy */
+  ObjectiveFunction(const ObjectiveFunction&) = delete;
+
   /*!
   * \brief Create object of objective function
   * \param type Specific type of objective function
