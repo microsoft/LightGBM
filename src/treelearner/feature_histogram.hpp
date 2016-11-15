@@ -20,6 +20,11 @@ public:
     if (data_ != nullptr) { delete[] data_; }
   }
 
+  /*! \brief Disable copy */
+  FeatureHistogram& operator=(const FeatureHistogram&) = delete;
+  /*! \brief Disable copy */
+  FeatureHistogram(const FeatureHistogram&) = delete;
+
   /*!
   * \brief Init the feature histogram
   * \param feature the feature data for this histogram

@@ -111,7 +111,7 @@ private:
   /*! \brief Number of bins */
   int num_bin_;
   /*! \brief Store upper bound for each bin */
-  double* bin_upper_bound_;
+  std::vector<double> bin_upper_bound_;
   /*! \brief True if this feature is trival */
   bool is_trival_;
   /*! \brief Sparse rate of this bins( num_bin0/num_data ) */
