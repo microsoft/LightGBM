@@ -6,6 +6,8 @@
 
 #include <cstring>
 #include <functional>
+#include <vector>
+#include <memory>
 
 namespace LightGBM {
 
@@ -26,7 +28,6 @@ public:
   * \brief Destructor
   */
   ~LRUPool() {
-    FreeAll();
   }
   /*!
   * \brief Reset pool size
@@ -34,8 +35,6 @@ public:
   * \param total_size Total size will be used
   */
   void ResetSize(int cache_size, int total_size) {
-    // free old memory
-    FreeAll();
     cache_size_ = cache_size;
     // at least need 2 bucket to store smaller leaf and larger leaf
     CHECK(cache_size_ >= 2);
@@ -44,15 +43,14 @@ public:
       cache_size_ = total_size_;
     }
     is_enough_ = (cache_size_ == total_size_);
-    pool_ = new T[cache_size_];
+    pool_ = std::vector<T>(cache_size_);
     if (!is_enough_) {
-      mapper_ = new int[total_size_];
-      inverse_mapper_ = new int[cache_size_];
-      last_used_time_ = new int[cache_size_];
+      mapper_ = std::vector<int>(total_size_);
+      inverse_mapper_ = std::vector<int>(cache_size_);
+      last_used_time_ = std::vector<int>(cache_size_);
       ResetMap();
     }
   }
-
 
   /*!
   * \brief Reset mapper
@@ -60,9 +58,9 @@ public:
   void ResetMap() {
     if (!is_enough_) {
       cur_time_ = 0;
-      memset(mapper_, -1, sizeof(int)*total_size_);
-      memset(inverse_mapper_, -1, sizeof(int)*cache_size_);
-      memset(last_used_time_, 0, sizeof(int)*cache_size_);
+      std::fill(mapper_.begin(), mapper_.end(), -1);
+      std::fill(inverse_mapper_.begin(), inverse_mapper_.end(), -1);
+      std::fill(last_used_time_.begin(), last_used_time_.end(), 0);
     }
   }
 
@@ -72,7 +70,7 @@ public:
   */
   void Fill(std::function<T()> obj_create_fun) {
     for (int i = 0; i < cache_size_; ++i) {
-      pool_[i] = obj_create_fun();
+      pool_[i] = std::move(obj_create_fun());
     }
   }
 
@@ -94,7 +92,7 @@ public:
       return true;
     } else {
       // choose the least used slot 
-      int slot = static_cast<int>(ArrayArgs<int>::ArgMin(last_used_time_, cache_size_));
+      int slot = static_cast<int>(ArrayArgs<int>::ArgMin(last_used_time_));
       *out = pool_[slot];
       last_used_time_[slot] = ++cur_time_;
 
@@ -133,27 +131,13 @@ public:
   }
 private:
 
-  void FreeAll(){
-    if (pool_ != nullptr) {
-      delete[] pool_;
-    }
-    if (mapper_ != nullptr) {
-      delete[] mapper_;
-    }
-    if (inverse_mapper_ != nullptr) {
-      delete[] inverse_mapper_;
-    }
-    if (last_used_time_ != nullptr) {
-      delete[] last_used_time_;
-    }
-  }
-  T* pool_ = nullptr;
+  std::vector<T> pool_;
   int cache_size_;
   int total_size_;
   bool is_enough_ = false;
-  int* mapper_ = nullptr;
-  int* inverse_mapper_ = nullptr;
-  int* last_used_time_ = nullptr;
+  std::vector<int> mapper_;
+  std::vector<int> inverse_mapper_;
+  std::vector<int> last_used_time_;
   int cur_time_ = 0;
 };
 

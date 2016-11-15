@@ -5,6 +5,7 @@
 #include <LightGBM/config.h>
 
 #include <vector>
+#include <memory>
 
 namespace LightGBM {
 
@@ -60,20 +61,18 @@ private:
 
   /*! \brief All configs */
   OverallConfig config_;
-  /*! \brief Dataset loader */
-  DatasetLoader* dataset_loader_;
   /*! \brief Training data */
-  Dataset* train_data_;
+  std::unique_ptr<Dataset> train_data_;
   /*! \brief Validation data */
-  std::vector<Dataset*> valid_datas_;
+  std::vector<std::unique_ptr<Dataset>> valid_datas_;
   /*! \brief Metric for training data */
-  std::vector<Metric*> train_metric_;
+  std::vector<std::unique_ptr<Metric>> train_metric_;
   /*! \brief Metrics for validation data */
-  std::vector<std::vector<Metric*>> valid_metrics_;
+  std::vector<std::vector<std::unique_ptr<Metric>>> valid_metrics_;
   /*! \brief Boosting object */
-  Boosting* boosting_;
+  std::unique_ptr<Boosting> boosting_;
   /*! \brief Training objective function */
-  ObjectiveFunction* objective_fun_;
+  std::unique_ptr<ObjectiveFunction> objective_fun_;
 };
 
 

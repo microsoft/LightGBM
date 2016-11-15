@@ -26,8 +26,7 @@
 
 namespace LightGBM {
 
-Application::Application(int argc, char** argv)
-  :dataset_loader_(nullptr), train_data_(nullptr), boosting_(nullptr), objective_fun_(nullptr) {
+Application::Application(int argc, char** argv) {
   LoadParameters(argc, argv);
   // set number of threads for openmp
   if (config_.num_threads > 0) {
@@ -39,23 +38,6 @@ Application::Application(int argc, char** argv)
 }
 
 Application::~Application() {
-  if (dataset_loader_ != nullptr) { delete dataset_loader_; }
-  if (train_data_ != nullptr) { delete train_data_; }
-  for (auto& data : valid_datas_) {
-    if (data != nullptr) { delete data; }
-  }
-  valid_datas_.clear();
-  for (auto& metric : train_metric_) {
-    if (metric != nullptr) { delete metric; }
-  }
-  for (auto& metric : valid_metrics_) {
-    for (auto& sub_metric : metric) {
-      if (sub_metric != nullptr) { delete sub_metric; }
-    }
-  }
-  valid_metrics_.clear();
-  if (boosting_ != nullptr) { delete boosting_; }
-  if (objective_fun_ != nullptr) { delete objective_fun_; }
   if (config_.is_parallel) {
     Network::Dispose();
   }
@@ -128,7 +110,7 @@ void Application::LoadData() {
   Predictor* predictor = nullptr;
   // need to continue training
   if (boosting_->NumberOfSubModels() > 0) {
-    predictor = new Predictor(boosting_, true, false);
+    predictor = new Predictor(boosting_.get(), true, false);
     predict_fun = predictor->GetPredictFunction();
   }
 
@@ -138,16 +120,16 @@ void Application::LoadData() {
        GlobalSyncUpByMin<int>(config_.io_config.data_random_seed);
   }
 
-  dataset_loader_ = new DatasetLoader(config_.io_config, predict_fun);
-  dataset_loader_->SetHeader(config_.io_config.data_filename.c_str());
+  DatasetLoader dataset_loader(config_.io_config, predict_fun);
+  dataset_loader.SetHeader(config_.io_config.data_filename.c_str());
   // load Training data
   if (config_.is_parallel_find_bin) {
     // load data for parallel training
-    train_data_ = dataset_loader_->LoadFromFile(config_.io_config.data_filename.c_str(),
-      Network::rank(), Network::num_machines());
+    train_data_.reset(dataset_loader.LoadFromFile(config_.io_config.data_filename.c_str(),
+      Network::rank(), Network::num_machines()));
   } else {
     // load data for single machine
-    train_data_ = dataset_loader_->LoadFromFile(config_.io_config.data_filename.c_str(), 0, 1);
+    train_data_.reset(dataset_loader.LoadFromFile(config_.io_config.data_filename.c_str(), 0, 1));
   }
   // need save binary file
   if (config_.io_config.is_save_binary_file) {
@@ -156,19 +138,20 @@ void Application::LoadData() {
   // create training metric
   if (config_.boosting_config->is_provide_training_metric) {
     for (auto metric_type : config_.metric_types) {
-      Metric* metric =
-        Metric::CreateMetric(metric_type, config_.metric_config);
+      std::unique_ptr<Metric> metric;
+      metric.reset(Metric::CreateMetric(metric_type, config_.metric_config));
       if (metric == nullptr) { continue; }
       metric->Init("training", train_data_->metadata(),
                               train_data_->num_data());
-      train_metric_.push_back(metric);
+      train_metric_.push_back(std::move(metric));
     }
   }
   // Add validation data, if it exists
   for (size_t i = 0; i < config_.io_config.valid_data_filenames.size(); ++i) {
     // add
-    valid_datas_.push_back(dataset_loader_->LoadFromFileAlignWithOtherDataset(config_.io_config.valid_data_filenames[i].c_str(),
-      train_data_));
+    valid_datas_.emplace_back();
+    valid_datas_.back().reset(dataset_loader.LoadFromFileAlignWithOtherDataset(config_.io_config.valid_data_filenames[i].c_str(),
+      train_data_.get()));
     // need save binary file
     if (config_.io_config.is_save_binary_file) {
       valid_datas_.back()->SaveBinaryFile(nullptr);
@@ -177,12 +160,13 @@ void Application::LoadData() {
     // add metric for validation data
     valid_metrics_.emplace_back();
     for (auto metric_type : config_.metric_types) {
-      Metric* metric = Metric::CreateMetric(metric_type, config_.metric_config);
+      std::unique_ptr<Metric> metric;
+      metric.reset(Metric::CreateMetric(metric_type, config_.metric_config));
       if (metric == nullptr) { continue; }
       metric->Init(config_.io_config.valid_data_filenames[i].c_str(),
                                      valid_datas_.back()->metadata(),
                                     valid_datas_.back()->num_data());
-      valid_metrics_.back().push_back(metric);
+      valid_metrics_.back().push_back(std::move(metric));
     }
   }
   if (predictor != nullptr) {
@@ -210,24 +194,24 @@ void Application::InitTrain() {
     }
   }
   // create boosting
-  boosting_ =
+  boosting_.reset(
     Boosting::CreateBoosting(config_.boosting_type,
-      config_.io_config.input_model.c_str());
+      config_.io_config.input_model.c_str()));
   // create objective function
-  objective_fun_ =
+  objective_fun_.reset(
     ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
-                                             config_.objective_config);
+      config_.objective_config));
   // load training data
   LoadData();
   // initialize the objective function
   objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
   // initialize the boosting
-  boosting_->Init(config_.boosting_config, train_data_, objective_fun_,
-    ConstPtrInVectorWarpper<Metric>(train_metric_));
+  boosting_->Init(config_.boosting_config, train_data_.get(), objective_fun_.get(),
+    Common::ConstPtrInVectorWarpper<Metric>(train_metric_));
   // add validation data into boosting
   for (size_t i = 0; i < valid_datas_.size(); ++i) {
-    boosting_->AddDataset(valid_datas_[i],
-      ConstPtrInVectorWarpper<Metric>(valid_metrics_[i]));
+    boosting_->AddDataset(valid_datas_[i].get(),
+      Common::ConstPtrInVectorWarpper<Metric>(valid_metrics_[i]));
   }
   Log::Info("Finished initializing training");
 }
@@ -256,7 +240,7 @@ void Application::Train() {
 void Application::Predict() {
   boosting_->SetNumUsedModel(config_.io_config.num_model_predict);
   // create predictor
-  Predictor predictor(boosting_, config_.io_config.is_predict_raw_score,
+  Predictor predictor(boosting_.get(), config_.io_config.is_predict_raw_score,
     config_.io_config.is_predict_leaf_index);
   predictor.Predict(config_.io_config.data_filename.c_str(),
     config_.io_config.output_result.c_str(), config_.io_config.has_header);
@@ -264,8 +248,8 @@ void Application::Predict() {
 }
 
 void Application::InitPredict() {
-  boosting_ =
-    Boosting::CreateBoosting(config_.io_config.input_model.c_str());
+  boosting_.reset(
+    Boosting::CreateBoosting(config_.io_config.input_model.c_str()));
   Log::Info("Finished initializing prediction");
 }
 

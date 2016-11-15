@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <functional>
 #include <thread>
+#include <memory>
 
 namespace LightGBM{
 
@@ -35,34 +36,34 @@ public:
     size_t cnt = 0;
     const size_t buffer_size =  16 * 1024 * 1024 ;
     // buffer used for the process_fun
-    char* buffer_process = new char[buffer_size];
+    std::unique_ptr<char> buffer_process;
+    buffer_process.reset(new char[buffer_size]);
     // buffer used for the file reading
-    char* buffer_read = new char[buffer_size];
+    std::unique_ptr<char> buffer_read;
+    buffer_read.reset(new char[buffer_size]);
     size_t read_cnt = 0;
     if (skip_bytes > 0) {
       // skip first k bytes
-      read_cnt = fread(buffer_process, 1, skip_bytes, file);
+      read_cnt = fread(buffer_process.get(), 1, skip_bytes, file);
     }
     // read first block
-    read_cnt = fread(buffer_process, 1, buffer_size, file);
+    read_cnt = fread(buffer_process.get(), 1, buffer_size, file);
     size_t last_read_cnt = 0;
     while (read_cnt > 0) {
       // strat read thread
       std::thread read_worker = std::thread(
-        [file, buffer_read, buffer_size, &last_read_cnt] {
-        last_read_cnt = fread(buffer_read, 1, buffer_size, file);
+        [file, &buffer_read, buffer_size, &last_read_cnt] {
+        last_read_cnt = fread(buffer_read.get(), 1, buffer_size, file);
       }
       );
       // start process
-      cnt += process_fun(buffer_process, read_cnt);
+      cnt += process_fun(buffer_process.get(), read_cnt);
       // wait for read thread
       read_worker.join();
       // exchange the buffer
       std::swap(buffer_process, buffer_read);
       read_cnt = last_read_cnt;
     }
-    delete[] buffer_process;
-    delete[] buffer_read;
     // close file
     fclose(file);
     return cnt;
