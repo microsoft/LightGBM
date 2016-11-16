@@ -18,7 +18,7 @@ class DenseBin: public Bin {
 public:
   explicit DenseBin(data_size_t num_data, int default_bin)
     : num_data_(num_data) {
-    data_.reserve(num_data_);
+    data_.resize(num_data_);
     if (default_bin == 0) {
       std::memset(data_.data(), 0, sizeof(VAL_T)*num_data_);
     } else {
