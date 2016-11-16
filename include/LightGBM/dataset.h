@@ -105,7 +105,7 @@ public:
   * \brief Get pointer of label
   * \return Pointer of label
   */
-  inline const float* label() const { return label_; }
+  inline const float* label() const { return label_.data(); }
 
   /*!
   * \brief Set label for one record
@@ -142,7 +142,7 @@ public:
   * \return Pointer of weights
   */
   inline const float* weights()
-            const { return weights_; }
+            const { return weights_.data(); }
 
   /*!
   * \brief Get data boundaries on queries, if not exists, will return nullptr
@@ -152,7 +152,7 @@ public:
   * \return Pointer of data boundaries on queries
   */
   inline const data_size_t* query_boundaries()
-           const { return query_boundaries_; }
+           const { return query_boundaries_.data(); }
 
   /*!
   * \brief Get Number of queries
@@ -164,13 +164,18 @@ public:
   * \brief Get weights for queries, if not exists, will return nullptr
   * \return Pointer of weights for queries
   */
-  inline const float* query_weights() const { return query_weights_; }
+  inline const float* query_weights() const { return query_weights_.data(); }
 
   /*!
   * \brief Get initial scores, if not exists, will return nullptr
   * \return Pointer of initial scores
   */
-  inline const float* init_score() const { return init_score_; }
+  inline const float* init_score() const { return init_score_.data(); }
+
+  /*! \brief Disable copy */
+  Metadata& operator=(const Metadata&) = delete;
+  /*! \brief Disable copy */
+  Metadata(const Metadata&) = delete;
 
 private:
   /*! \brief Load initial scores from file */
@@ -190,21 +195,21 @@ private:
   /*! \brief Number of weights, used to check correct weight file */
   data_size_t num_weights_;
   /*! \brief Label data */
-  float* label_;
+  std::vector<float> label_;
   /*! \brief Weights data */
-  float* weights_;
+  std::vector<float> weights_;
   /*! \brief Query boundaries */
-  data_size_t* query_boundaries_;
+  std::vector<data_size_t> query_boundaries_;
   /*! \brief Query weights */
-  float* query_weights_;
+  std::vector<float> query_weights_;
   /*! \brief Number of querys */
   data_size_t num_queries_;
   /*! \brief Number of Initial score, used to check correct weight file */
   data_size_t num_init_score_;
   /*! \brief Initial score */
-  float* init_score_;
+  std::vector<float> init_score_;
   /*! \brief Queries data */
-  data_size_t* queries_;
+  std::vector<data_size_t> queries_;
 };
 
 
@@ -301,7 +306,7 @@ public:
   * \param i Index for feature
   * \return Pointer of feature
   */
-  inline const Feature* FeatureAt(int i) const { return features_[i]; }
+  inline const Feature* FeatureAt(int i) const { return features_[i].get(); }
 
   /*!
   * \brief Get meta data pointer
@@ -332,7 +337,7 @@ public:
 private:
   const char* data_filename_;
   /*! \brief Store used features */
-  std::vector<Feature*> features_;
+  std::vector<std::unique_ptr<Feature>> features_;
   /*! \brief Mapper from real feature index to used index*/
   std::vector<int> used_feature_map_;
   /*! \brief Number of used features*/

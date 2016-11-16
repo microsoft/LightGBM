@@ -36,6 +36,12 @@ public:
   */
   virtual std::vector<double> Eval(const score_t* score) const = 0;
 
+  Metric() = default;
+  /*! \brief Disable copy */
+  Metric& operator=(const Metric&) = delete;
+  /*! \brief Disable copy */
+  Metric(const Metric&) = delete;
+
   /*!
   * \brief Create object of metrics
   * \param type Specific type of metric

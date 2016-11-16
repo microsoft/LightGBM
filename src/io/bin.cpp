@@ -14,29 +14,26 @@
 
 namespace LightGBM {
 
-BinMapper::BinMapper()
-  :bin_upper_bound_(nullptr) {
+BinMapper::BinMapper() {
 }
 
 // deep copy function for BinMapper
-BinMapper::BinMapper(const BinMapper& other)
-  : bin_upper_bound_(nullptr) {
+BinMapper::BinMapper(const BinMapper& other) {
   num_bin_ = other.num_bin_;
   is_trival_ = other.is_trival_;
   sparse_rate_ = other.sparse_rate_;
-  bin_upper_bound_ = new double[num_bin_];
+  bin_upper_bound_ = std::vector<double>(num_bin_);
   for (int i = 0; i < num_bin_; ++i) {
     bin_upper_bound_[i] = other.bin_upper_bound_[i];
   }
 }
 
-BinMapper::BinMapper(const void* memory)
-  :bin_upper_bound_(nullptr) {
+BinMapper::BinMapper(const void* memory) {
   CopyFrom(reinterpret_cast<const char*>(memory));
 }
 
 BinMapper::~BinMapper() {
-  delete[] bin_upper_bound_;
+
 }
 
 void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, int max_bin) {
@@ -87,7 +84,7 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
     std::sort(distinct_values.begin(), distinct_values.end());
     // use distinct value is enough
     num_bin_ = num_values;
-    bin_upper_bound_ = new double[num_values];
+    bin_upper_bound_ = std::vector<double>(num_values);
     for (int i = 0; i < num_values - 1; ++i) {
       bin_upper_bound_[i] = (distinct_values[i] + distinct_values[i + 1]) / 2;
     }
@@ -124,7 +121,7 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
     //
     ++bin_cnt;
     // update bin upper bound
-    bin_upper_bound_ = new double[bin_cnt];
+    bin_upper_bound_ = std::vector<double>(bin_cnt);
     num_bin_ = bin_cnt;
     for (int i = 0; i < bin_cnt - 1; ++i) {
       bin_upper_bound_[i] = (upper_bounds[i] + lower_bounds[i + 1]) / 2.0f;
@@ -159,7 +156,7 @@ void BinMapper::CopyTo(char * buffer) {
   buffer += sizeof(is_trival_);
   std::memcpy(buffer, &sparse_rate_, sizeof(sparse_rate_));
   buffer += sizeof(sparse_rate_);
-  std::memcpy(buffer, bin_upper_bound_, num_bin_ * sizeof(double));
+  std::memcpy(buffer, bin_upper_bound_.data(), num_bin_ * sizeof(double));
 }
 
 void BinMapper::CopyFrom(const char * buffer) {
@@ -169,16 +166,15 @@ void BinMapper::CopyFrom(const char * buffer) {
   buffer += sizeof(is_trival_);
   std::memcpy(&sparse_rate_, buffer, sizeof(sparse_rate_));
   buffer += sizeof(sparse_rate_);
-  if (bin_upper_bound_ != nullptr) { delete[] bin_upper_bound_; }
-  bin_upper_bound_ = new double[num_bin_];
-  std::memcpy(bin_upper_bound_, buffer, num_bin_ * sizeof(double));
+  bin_upper_bound_ = std::vector<double>(num_bin_);
+  std::memcpy(bin_upper_bound_.data(), buffer, num_bin_ * sizeof(double));
 }
 
 void BinMapper::SaveBinaryToFile(FILE* file) const {
   fwrite(&num_bin_, sizeof(num_bin_), 1, file);
   fwrite(&is_trival_, sizeof(is_trival_), 1, file);
   fwrite(&sparse_rate_, sizeof(sparse_rate_), 1, file);
-  fwrite(bin_upper_bound_, sizeof(double), num_bin_, file);
+  fwrite(bin_upper_bound_.data(), sizeof(double), num_bin_, file);
 }
 
 size_t BinMapper::SizesInByte() const {

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <functional>
+#include <memory>
 
 namespace LightGBM {
 
@@ -122,24 +123,24 @@ Parser* Parser::CreateParser(const char* filename, bool has_header, int num_feat
   if (type == DataType::INVALID) {
     Log::Fatal("Unknown format of training data");
   }
-  Parser* ret = nullptr;
+  std::unique_ptr<Parser> ret;
   if (type == DataType::LIBSVM) {
     label_idx = GetLabelIdxForLibsvm(line1, num_features, label_idx);
-    ret = new LibSVMParser(label_idx);
+    ret.reset(new LibSVMParser(label_idx));
   }
   else if (type == DataType::TSV) {
     label_idx = GetLabelIdxForTSV(line1, num_features, label_idx);
-    ret = new TSVParser(label_idx);
+    ret.reset(new TSVParser(label_idx));
   }
   else if (type == DataType::CSV) {
     label_idx = GetLabelIdxForCSV(line1, num_features, label_idx);
-    ret = new CSVParser(label_idx);
+    ret.reset(new CSVParser(label_idx));
   }
 
   if (label_idx < 0) {
     Log::Info("Data file %s doesn't contain a label column", filename);
   }
-  return ret;
+  return ret.release();
 }
 
 }  // namespace LightGBM

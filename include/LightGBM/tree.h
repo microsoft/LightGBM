@@ -127,28 +127,28 @@ private:
   int num_leaves_;
   // following values used for non-leaf node
   /*! \brief A non-leaf node's left child */
-  int* left_child_;
+  std::vector<int> left_child_;
   /*! \brief A non-leaf node's right child */
-  int* right_child_;
+  std::vector<int> right_child_;
   /*! \brief A non-leaf node's split feature */
-  int* split_feature_;
+  std::vector<int> split_feature_;
   /*! \brief A non-leaf node's split feature, the original index */
-  int* split_feature_real_;
+  std::vector<int> split_feature_real_;
   /*! \brief A non-leaf node's split threshold in bin */
-  unsigned int* threshold_in_bin_;
+  std::vector<unsigned int> threshold_in_bin_;
   /*! \brief A non-leaf node's split threshold in feature value */
-  double* threshold_;
+  std::vector<double> threshold_;
   /*! \brief A non-leaf node's split gain */
-  double* split_gain_;
+  std::vector<double> split_gain_;
   // used for leaf node
   /*! \brief The parent of leaf */
-  int* leaf_parent_;
+  std::vector<int> leaf_parent_;
   /*! \brief Output of leaves */
-  double* leaf_value_;
+  std::vector<double> leaf_value_;
   /*! \brief Output of internal nodes(save internal output for per inference feature importance calc) */
-  double* internal_value_;
+  std::vector<double> internal_value_;
   /*! \brief Depth for leaves */
-  int* leaf_depth_;
+  std::vector<int> leaf_depth_;
 };
 
 

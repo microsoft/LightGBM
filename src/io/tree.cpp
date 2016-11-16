@@ -16,37 +16,26 @@ namespace LightGBM {
 
 Tree::Tree(int max_leaves)
   :max_leaves_(max_leaves) {
+
   num_leaves_ = 0;
-
-  left_child_ = new int[max_leaves_ - 1];
-  right_child_ = new int[max_leaves_ - 1];
-  split_feature_ = new int[max_leaves_ - 1];
-  split_feature_real_ = new int[max_leaves_ - 1];
-  threshold_in_bin_ = new unsigned int[max_leaves_ - 1];
-  threshold_ = new double[max_leaves_ - 1];
-  split_gain_ = new double[max_leaves_ - 1];
-
-  leaf_parent_ = new int[max_leaves_];
-  leaf_value_ = new double[max_leaves_];
-  internal_value_ = new double[max_leaves_ - 1];
-  leaf_depth_ = new int[max_leaves_];
+  left_child_ = std::vector<int>(max_leaves_ - 1);
+  right_child_ = std::vector<int>(max_leaves_ - 1);
+  split_feature_ = std::vector<int>(max_leaves_ - 1);
+  split_feature_real_ = std::vector<int>(max_leaves_ - 1);
+  threshold_in_bin_ = std::vector<unsigned int>(max_leaves_ - 1);
+  threshold_ = std::vector<double>(max_leaves_ - 1);
+  split_gain_ = std::vector<double>(max_leaves_ - 1);
+  leaf_parent_ = std::vector<int>(max_leaves_);
+  leaf_value_ = std::vector<double>(max_leaves_);
+  internal_value_ = std::vector<double>(max_leaves_ - 1);
+  leaf_depth_ = std::vector<int>(max_leaves_);
   // root is in the depth 1
   leaf_depth_[0] = 1;
   num_leaves_ = 1;
   leaf_parent_[0] = -1;
 }
 Tree::~Tree() {
-  if (leaf_parent_ != nullptr) { delete[] leaf_parent_; }
-  if (left_child_ != nullptr) { delete[] left_child_; }
-  if (right_child_ != nullptr) { delete[] right_child_; }
-  if (split_feature_ != nullptr) { delete[] split_feature_; }
-  if (split_feature_real_ != nullptr) { delete[] split_feature_real_; }
-  if (threshold_in_bin_ != nullptr) { delete[] threshold_in_bin_; }
-  if (threshold_ != nullptr) { delete[] threshold_; }
-  if (split_gain_ != nullptr) { delete[] split_gain_; }
-  if (leaf_value_ != nullptr) { delete[] leaf_value_; }
-  if (internal_value_ != nullptr) { delete[] internal_value_; }
-  if (leaf_depth_ != nullptr) { delete[] leaf_depth_; }
+
 }
 
 int Tree::Split(int leaf, int feature, unsigned int threshold_bin, int real_feature,
@@ -116,21 +105,21 @@ std::string Tree::ToString() {
   std::stringstream ss;
   ss << "num_leaves=" << num_leaves_ << std::endl;
   ss << "split_feature="
-    << Common::ArrayToString<int>(split_feature_real_, num_leaves_ - 1, ' ') << std::endl;
+    << Common::ArrayToString<int>(split_feature_real_.data(), num_leaves_ - 1, ' ') << std::endl;
   ss << "split_gain="
-    << Common::ArrayToString<double>(split_gain_, num_leaves_ - 1, ' ') << std::endl;
+    << Common::ArrayToString<double>(split_gain_.data(), num_leaves_ - 1, ' ') << std::endl;
   ss << "threshold="
-    << Common::ArrayToString<double>(threshold_, num_leaves_ - 1, ' ') << std::endl;
+    << Common::ArrayToString<double>(threshold_.data(), num_leaves_ - 1, ' ') << std::endl;
   ss << "left_child="
-    << Common::ArrayToString<int>(left_child_, num_leaves_ - 1, ' ') << std::endl;
+    << Common::ArrayToString<int>(left_child_.data(), num_leaves_ - 1, ' ') << std::endl;
   ss << "right_child="
-    << Common::ArrayToString<int>(right_child_, num_leaves_ - 1, ' ') << std::endl;
+    << Common::ArrayToString<int>(right_child_.data(), num_leaves_ - 1, ' ') << std::endl;
   ss << "leaf_parent="
-    << Common::ArrayToString<int>(leaf_parent_, num_leaves_, ' ') << std::endl;
+    << Common::ArrayToString<int>(leaf_parent_.data(), num_leaves_, ' ') << std::endl;
   ss << "leaf_value="
-    << Common::ArrayToString<double>(leaf_value_, num_leaves_, ' ') << std::endl;
+    << Common::ArrayToString<double>(leaf_value_.data(), num_leaves_, ' ') << std::endl;
   ss << "internal_value="
-    << Common::ArrayToString<double>(internal_value_, num_leaves_ - 1, ' ') << std::endl;
+    << Common::ArrayToString<double>(internal_value_.data(), num_leaves_ - 1, ' ') << std::endl;
   ss << std::endl;
   return ss.str();
 }
@@ -158,35 +147,31 @@ Tree::Tree(const std::string& str) {
 
   Common::Atoi(key_vals["num_leaves"].c_str(), &num_leaves_);
 
-  left_child_ = new int[num_leaves_ - 1];
-  right_child_ = new int[num_leaves_ - 1];
-  split_feature_real_ = new int[num_leaves_ - 1];
-  threshold_ = new double[num_leaves_ - 1];
-  split_gain_ = new double[num_leaves_ - 1];
-  leaf_parent_ = new int[num_leaves_];
-  leaf_value_ = new double[num_leaves_];
-  internal_value_ = new double[num_leaves_ - 1];
-
-  split_feature_ = nullptr;
-  threshold_in_bin_ = nullptr;
-  leaf_depth_ = nullptr;
+  left_child_ = std::vector<int>(num_leaves_ - 1);
+  right_child_ = std::vector<int>(num_leaves_ - 1);
+  split_feature_real_ = std::vector<int>(num_leaves_ - 1);
+  threshold_ = std::vector<double>(num_leaves_ - 1);
+  split_gain_ = std::vector<double>(num_leaves_ - 1);
+  leaf_parent_ = std::vector<int>(num_leaves_);
+  leaf_value_ = std::vector<double>(num_leaves_);
+  internal_value_ = std::vector<double>(num_leaves_ - 1);
 
   Common::StringToIntArray(key_vals["split_feature"], ' ',
-                           num_leaves_ - 1, split_feature_real_);
+                           num_leaves_ - 1, split_feature_real_.data());
   Common::StringToDoubleArray(key_vals["split_gain"], ' ',
-                              num_leaves_ - 1, split_gain_);
+                              num_leaves_ - 1, split_gain_.data());
   Common::StringToDoubleArray(key_vals["threshold"], ' ',
-                              num_leaves_ - 1, threshold_);
+                              num_leaves_ - 1, threshold_.data());
   Common::StringToIntArray(key_vals["left_child"], ' ',
-                           num_leaves_ - 1, left_child_);
+                           num_leaves_ - 1, left_child_.data());
   Common::StringToIntArray(key_vals["right_child"], ' ',
-                           num_leaves_ - 1, right_child_);
+                           num_leaves_ - 1, right_child_.data());
   Common::StringToIntArray(key_vals["leaf_parent"], ' ',
-                           num_leaves_ , leaf_parent_);
+                           num_leaves_ , leaf_parent_.data());
   Common::StringToDoubleArray(key_vals["leaf_value"], ' ',
-                              num_leaves_ , leaf_value_);
+                              num_leaves_ , leaf_value_.data());
   Common::StringToDoubleArray(key_vals["internal_value"], ' ',
-                              num_leaves_ - 1 , internal_value_);
+                              num_leaves_ - 1 , internal_value_.data());
 }
 
 }  // namespace LightGBM

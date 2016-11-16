@@ -39,9 +39,6 @@
     <ClInclude Include="..\src\boosting\gbdt.h">
       <Filter>src\boosting</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\boosting\dart.h">
-      <Filter>src\boosting</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\network\linkers.h">
       <Filter>src\network</Filter>
     </ClInclude>
@@ -174,6 +171,9 @@
     <ClInclude Include="..\include\LightGBM\dataset_loader.h">
       <Filter>include\LightGBM</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\boosting\dart.hpp">
+      <Filter>src\boosting</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp">
@@ -192,9 +192,6 @@
       <Filter>src\treelearner</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Boosting\gbdt.cpp">
-      <Filter>src\boosting</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Boosting\dart.cpp">
       <Filter>src\boosting</Filter>
     </ClCompile>
     <ClCompile Include="..\src\io\dataset.cpp">

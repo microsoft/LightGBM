@@ -6,6 +6,7 @@
 #include <limits>
 #include <vector>
 #include <functional>
+#include <memory>
 
 namespace LightGBM {
 
@@ -17,11 +18,6 @@ typedef float score_t;
 const score_t kMinScore = -std::numeric_limits<score_t>::infinity();
 
 const score_t kEpsilon = 1e-15f;
-
-template<typename T>
-std::vector<const T*> ConstPtrInVectorWarpper(std::vector<T*> input) {
-  return std::vector<const T*>(input.begin(), input.end());
-}
 
 using ReduceFunction = std::function<void(const char*, char*, int)>;
 

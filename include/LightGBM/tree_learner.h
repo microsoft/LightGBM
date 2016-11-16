@@ -49,6 +49,12 @@ public:
   */
   virtual void AddPredictionToScore(score_t *out_score) const = 0;
 
+  TreeLearner() = default;
+  /*! \brief Disable copy */
+  TreeLearner& operator=(const TreeLearner&) = delete;
+  /*! \brief Disable copy */
+  TreeLearner(const TreeLearner&) = delete;
+
   /*!
   * \brief Create object of tree learner
   * \param type Type of tree learner
