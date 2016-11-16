@@ -36,10 +36,10 @@ void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const O
   num_class_ = config->num_class;
   // create tree learner
   for (int i = 0; i < num_class_; ++i) {
-    tree_learner_.emplace_back();
-    tree_learner_.back().reset(TreeLearner::CreateTreeLearner(gbdt_config_->tree_learner_type, gbdt_config_->tree_config));
+    auto new_tree_learner = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(gbdt_config_->tree_learner_type, gbdt_config_->tree_config));
+    new_tree_learner->Init(train_data_);
     // init tree learner
-    tree_learner_.back()->Init(train_data_);
+    tree_learner_.push_back(std::move(new_tree_learner));
   }
   object_function_ = object_function;
   // push training metrics
@@ -80,7 +80,8 @@ void GBDT::AddDataset(const Dataset* valid_data,
     Log::Fatal("Cannot add validation data after training started");
   }
   // for a validation dataset, we need its score and metric
-  valid_score_updater_.emplace_back(std::unique_ptr<ScoreUpdater>(new ScoreUpdater(valid_data, num_class_)));
+  auto new_score_updater = std::unique_ptr<ScoreUpdater>(new ScoreUpdater(valid_data, num_class_));
+  valid_score_updater_.push_back(std::move(new_score_updater));
   valid_metrics_.emplace_back();
   if (early_stopping_round_ > 0) {
     best_iter_.emplace_back();
@@ -427,7 +428,8 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
       while (i < lines.size() && lines[i].find("Tree=") == std::string::npos) { ++i; }
       int end = static_cast<int>(i);
       std::string tree_str = Common::Join<std::string>(lines, start, end, '\n');
-      models_.emplace_back(std::unique_ptr<Tree>(new Tree(tree_str)));
+      auto new_tree = std::unique_ptr<Tree>(new Tree(tree_str));
+      models_.push_back(std::move(new_tree));
     } else {
       ++i;
     }

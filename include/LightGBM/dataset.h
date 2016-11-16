@@ -306,7 +306,7 @@ public:
   * \param i Index for feature
   * \return Pointer of feature
   */
-  inline const Feature* FeatureAt(int i) const { return features_[i]; }
+  inline const Feature* FeatureAt(int i) const { return features_[i].get(); }
 
   /*!
   * \brief Get meta data pointer
@@ -337,7 +337,7 @@ public:
 private:
   const char* data_filename_;
   /*! \brief Store used features */
-  std::vector<Feature*> features_;
+  std::vector<std::unique_ptr<Feature>> features_;
   /*! \brief Mapper from real feature index to used index*/
   std::vector<int> used_feature_map_;
   /*! \brief Number of used features*/

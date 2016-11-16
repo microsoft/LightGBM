@@ -43,26 +43,24 @@ public:
       config_.objective_config));
     // create training metric
     for (auto metric_type : config_.metric_types) {
-      Metric* metric =
-        Metric::CreateMetric(metric_type, config_.metric_config);
+      auto metric = std::unique_ptr<Metric>(
+        Metric::CreateMetric(metric_type, config_.metric_config));
       if (metric == nullptr) { continue; }
       metric->Init("training", train_data_->metadata(),
         train_data_->num_data());
-      train_metric_.emplace_back();
-      train_metric_.back().reset(metric);
+      train_metric_.push_back(std::move(metric));
     }
     
     // add metric for validation data
     for (size_t i = 0; i < valid_datas_.size(); ++i) {
       valid_metrics_.emplace_back();
       for (auto metric_type : config_.metric_types) {
-        Metric* metric = Metric::CreateMetric(metric_type, config_.metric_config);
+        auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_.metric_config));
         if (metric == nullptr) { continue; }
         metric->Init(valid_names[i].c_str(),
           valid_datas_[i]->metadata(),
           valid_datas_[i]->num_data());
-        valid_metrics_.back().emplace_back();
-        valid_metrics_.back().back().reset(metric);
+        valid_metrics_.back().push_back(std::move(metric));
       }
     }
     // initialize the objective function

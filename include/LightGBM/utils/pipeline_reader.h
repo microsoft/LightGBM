@@ -36,11 +36,9 @@ public:
     size_t cnt = 0;
     const size_t buffer_size =  16 * 1024 * 1024 ;
     // buffer used for the process_fun
-    std::unique_ptr<char> buffer_process;
-    buffer_process.reset(new char[buffer_size]);
+    auto buffer_process = std::unique_ptr<char>(new char[buffer_size]);
     // buffer used for the file reading
-    std::unique_ptr<char> buffer_read;
-    buffer_read.reset(new char[buffer_size]);
+    auto buffer_read = std::unique_ptr<char>(new char[buffer_size]);
     size_t read_cnt = 0;
     if (skip_bytes > 0) {
       // skip first k bytes

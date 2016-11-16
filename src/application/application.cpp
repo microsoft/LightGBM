@@ -137,8 +137,7 @@ void Application::LoadData() {
   // create training metric
   if (config_.boosting_config->is_provide_training_metric) {
     for (auto metric_type : config_.metric_types) {
-      std::unique_ptr<Metric> metric;
-      metric.reset(Metric::CreateMetric(metric_type, config_.metric_config));
+      auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_.metric_config));
       if (metric == nullptr) { continue; }
       metric->Init("training", train_data_->metadata(),
                               train_data_->num_data());
@@ -148,12 +147,12 @@ void Application::LoadData() {
   // Add validation data, if it exists
   for (size_t i = 0; i < config_.io_config.valid_data_filenames.size(); ++i) {
     // add
-    valid_datas_.emplace_back(
-      std::unique_ptr<Dataset>(
-        dataset_loader.LoadFromFileAlignWithOtherDataset(config_.io_config.valid_data_filenames[i].c_str(),
-          train_data_.get())
-        )
-    );
+    auto new_dataset = std::unique_ptr<Dataset>(
+      dataset_loader.LoadFromFileAlignWithOtherDataset(
+        config_.io_config.valid_data_filenames[i].c_str(),
+        train_data_.get())
+      );
+    valid_datas_.push_back(std::move(new_dataset));
     // need save binary file
     if (config_.io_config.is_save_binary_file) {
       valid_datas_.back()->SaveBinaryFile(nullptr);
@@ -162,8 +161,7 @@ void Application::LoadData() {
     // add metric for validation data
     valid_metrics_.emplace_back();
     for (auto metric_type : config_.metric_types) {
-      std::unique_ptr<Metric> metric;
-      metric.reset(Metric::CreateMetric(metric_type, config_.metric_config));
+      auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_.metric_config));
       if (metric == nullptr) { continue; }
       metric->Init(config_.io_config.valid_data_filenames[i].c_str(),
                                      valid_datas_.back()->metadata(),
