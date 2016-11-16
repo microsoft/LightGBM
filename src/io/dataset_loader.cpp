@@ -620,7 +620,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
 #pragma omp parallel for schedule(guided)
     for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
       if (ignore_features_.count(i) > 0) {
-        bin_mappers[i] = nullptr;
+        bin_mappers[i].reset(nullptr);
         continue;
       }
       bin_mappers[i].reset(new BinMapper());

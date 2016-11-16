@@ -22,7 +22,7 @@ public:
     num_data_ = data->num_data();
     score_ = std::vector<score_t>(num_data_ * num_class);
     // default start score is zero
-    std::memset(score_.data(), 0, sizeof(score_t) * num_data_ * num_class);
+    std::fill(score_.begin(), score_.end(), 0.0f);
     const float* init_score = data->metadata().init_score();
     // if exists initial score, will start from it
     if (init_score != nullptr) {

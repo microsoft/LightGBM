@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace LightGBM {
 
@@ -111,7 +112,7 @@ private:
   * \param data_idx Index of record
   * \return Leaf index
   */
-  inline int GetLeaf(const std::vector<BinIterator*>& iterators,
+  inline int GetLeaf(const std::vector<std::unique_ptr<BinIterator>>& iterators,
                                            data_size_t data_idx) const;
 
   /*!
@@ -162,12 +163,11 @@ inline int Tree::PredictLeafIndex(const double* feature_values) const {
   return leaf;
 }
 
-inline int Tree::GetLeaf(const std::vector<BinIterator*>& iterators,
+inline int Tree::GetLeaf(const std::vector<std::unique_ptr<BinIterator>>& iterators,
                                        data_size_t data_idx) const {
   int node = 0;
   while (node >= 0) {
-    if (iterators[split_feature_[node]]->Get(data_idx) <=
-                                  threshold_in_bin_[node]) {
+    if (iterators[split_feature_[node]]->Get(data_idx) <= threshold_in_bin_[node]) {
       node = left_child_[node];
     } else {
       node = right_child_[node];

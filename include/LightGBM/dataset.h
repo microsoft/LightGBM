@@ -297,8 +297,6 @@ public:
   */
   void SaveBinaryFile(const char* bin_filename);
 
-  std::vector<const BinMapper*> GetBinMappers() const;
-
   void CopyFeatureMapperFrom(const Dataset* dataset, bool is_enable_sparse);
 
   /*!

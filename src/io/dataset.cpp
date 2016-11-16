@@ -57,14 +57,6 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset, bool is_enable_spars
   feature_names_ = dataset->feature_names_;
 }
 
-std::vector<const BinMapper*> Dataset::GetBinMappers() const {
-  std::vector<const BinMapper*> ret(num_total_features_, nullptr);
-  for (const auto& feature : features_) {
-    ret[feature->feature_index()] = feature->bin_mapper();
-  }
-  return ret;
-}
-
 bool Dataset::SetFloatField(const char* field_name, const float* field_data, data_size_t num_element) {
   std::string name(field_name);
   name = Common::Trim(name);
