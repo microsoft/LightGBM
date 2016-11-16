@@ -66,7 +66,7 @@ public:
     // initialize the objective function
     objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
     // initialize the boosting
-    boosting_->Init(config_.boosting_config, train_data_, objective_fun_.get(),
+    boosting_->Init(&config_.boosting_config, train_data_, objective_fun_.get(),
       Common::ConstPtrInVectorWarpper<Metric>(train_metric_));
     // add validation data into boosting
     for (size_t i = 0; i < valid_datas_.size(); ++i) {

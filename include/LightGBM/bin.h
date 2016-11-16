@@ -133,11 +133,11 @@ public:
 
   /*!
   * \brief Initialization logic.
-  * \param used_indices If used_indices==nullptr means using all data, otherwise, used_indices[i] != 0 means i-th data is used
+  * \param used_indices If used_indices.size() == 0 means using all data, otherwise, used_indices[i] == true means i-th data is used
            (this logic was build for bagging logic)
   * \param num_leaves Number of leaves on this iteration
   */
-  virtual void Init(const char* used_indices, data_size_t num_leaves) = 0;
+  virtual void Init(const std::vector<bool>& used_idices, data_size_t num_leaves) = 0;
 
   /*!
   * \brief Construct histogram by using this bin
@@ -155,9 +155,9 @@ public:
   * \brief Split current bin, and perform re-order by leaf
   * \param leaf Using which leaf's to split
   * \param right_leaf The new leaf index after perform this split
-  * \param left_indices left_indices[i] != 0 means the i-th data will be on left leaf after split
+  * \param left_indices left_indices[i] == true means the i-th data will be on left leaf after split
   */
-  virtual void Split(int leaf, int right_leaf, const char* left_indices) = 0;
+  virtual void Split(int leaf, int right_leaf, const std::vector<bool>& left_indices) = 0;
 };
 
 /*! \brief Iterator for one bin column */
@@ -231,7 +231,7 @@ public:
   * \param out Output Result
   */
   virtual void ConstructHistogram(
-    data_size_t* data_indices, data_size_t num_data,
+    const data_size_t* data_indices, data_size_t num_data,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
     HistogramBinEntry* out) const = 0;
 

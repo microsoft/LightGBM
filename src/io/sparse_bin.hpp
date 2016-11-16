@@ -51,7 +51,7 @@ public:
 
   BinIterator* GetIterator(data_size_t start_idx) const override;
 
-  void ConstructHistogram(data_size_t*, data_size_t , const score_t* ,
+  void ConstructHistogram(const data_size_t*, data_size_t , const score_t* ,
                  const score_t* , HistogramBinEntry*) const override {
     // Will use OrderedSparseBin->ConstructHistogram() instead
     Log::Fatal("Using OrderedSparseBin->ConstructHistogram() instead");

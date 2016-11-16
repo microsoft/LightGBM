@@ -14,6 +14,7 @@
 #include <utility>
 #include <functional>
 #include <string>
+#include <memory>
 
 namespace LightGBM {
 
@@ -90,7 +91,7 @@ public:
     if (result_file == NULL) {
       Log::Fatal("Prediction results file %s doesn't exist", data_filename);
     }
-    Parser* parser = Parser::CreateParser(data_filename, has_header, num_features_, boosting_->LabelIdx());
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, has_header, num_features_, boosting_->LabelIdx()));
 
     if (parser == nullptr) {
       Log::Fatal("Could not recognize the data format of data file %s", data_filename);
@@ -126,7 +127,6 @@ public:
     predict_data_reader.ReadAllAndProcessParallel(process_fun);
 
     fclose(result_file);
-    delete parser;
   }
 
 private:

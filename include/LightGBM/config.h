@@ -10,6 +10,7 @@
 #include <string>
 #include <unordered_map>
 #include <algorithm>
+#include <memory>
 
 namespace LightGBM {
 
@@ -193,19 +194,12 @@ public:
   int num_class = 1;
   double drop_rate = 0.01;
   int drop_seed = 4;
-  void Set(const std::unordered_map<std::string, std::string>& params) override;
-};
-
-/*! \brief Config for GBDT */
-struct GBDTConfig: public BoostingConfig {
-public:
   TreeLearnerType tree_learner_type = TreeLearnerType::kSerialTreeLearner;
   TreeConfig tree_config;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
-
 private:
   void GetTreeLearnerType(const std::unordered_map<std::string,
-                                         std::string>& params);
+    std::string>& params);
 };
 
 /*! \brief Config for Network */
@@ -229,16 +223,12 @@ public:
   bool is_parallel_find_bin = false;
   IOConfig io_config;
   BoostingType boosting_type = BoostingType::kGBDT;
-  BoostingConfig* boosting_config = nullptr;
+  BoostingConfig boosting_config;
   std::string objective_type = "regression";
   ObjectiveConfig objective_config;
   std::vector<std::string> metric_types;
   MetricConfig metric_config;
-  ~OverallConfig() {
-    if (boosting_config != nullptr) {
-      delete boosting_config;
-    }
-  }
+
   void Set(const std::unordered_map<std::string, std::string>& params) override;
   void LoadFromString(const char* str);
 private:

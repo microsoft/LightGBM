@@ -135,7 +135,7 @@ void Application::LoadData() {
     train_data_->SaveBinaryFile(nullptr);
   }
   // create training metric
-  if (config_.boosting_config->is_provide_training_metric) {
+  if (config_.boosting_config.is_provide_training_metric) {
     for (auto metric_type : config_.metric_types) {
       auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_.metric_config));
       if (metric == nullptr) { continue; }
@@ -182,12 +182,10 @@ void Application::InitTrain() {
     Log::Info("Finished initializing network");
     // sync global random seed for feature patition
     if (config_.boosting_type == BoostingType::kGBDT || config_.boosting_type == BoostingType::kDART) {
-      GBDTConfig* gbdt_config =
-        dynamic_cast<GBDTConfig*>(config_.boosting_config);
-      gbdt_config->tree_config.feature_fraction_seed =
-        GlobalSyncUpByMin<int>(gbdt_config->tree_config.feature_fraction_seed);
-      gbdt_config->tree_config.feature_fraction =
-        GlobalSyncUpByMin<double>(gbdt_config->tree_config.feature_fraction);
+      config_.boosting_config.tree_config.feature_fraction_seed =
+        GlobalSyncUpByMin<int>(config_.boosting_config.tree_config.feature_fraction_seed);
+      config_.boosting_config.tree_config.feature_fraction =
+        GlobalSyncUpByMin<double>(config_.boosting_config.tree_config.feature_fraction);
     }
   }
   // create boosting
@@ -203,7 +201,7 @@ void Application::InitTrain() {
   // initialize the objective function
   objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
   // initialize the boosting
-  boosting_->Init(config_.boosting_config, train_data_.get(), objective_fun_.get(),
+  boosting_->Init(&config_.boosting_config, train_data_.get(), objective_fun_.get(),
     Common::ConstPtrInVectorWarpper<Metric>(train_metric_));
   // add validation data into boosting
   for (size_t i = 0; i < valid_datas_.size(); ++i) {
@@ -215,7 +213,7 @@ void Application::InitTrain() {
 
 void Application::Train() {
   Log::Info("Started training...");
-  int total_iter = config_.boosting_config->num_iterations;
+  int total_iter = config_.boosting_config.num_iterations;
   bool is_finished = false;
   bool need_eval = true;
   auto start_time = std::chrono::high_resolution_clock::now();

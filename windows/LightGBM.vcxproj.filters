@@ -162,9 +162,6 @@
     <ClInclude Include="..\include\LightGBM\utils\threading.h">
       <Filter>include\LightGBM\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\LightGBM\utils\lru_pool.h">
-      <Filter>include\LightGBM\utils</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\LightGBM\c_api.h">
       <Filter>include\LightGBM</Filter>
     </ClInclude>

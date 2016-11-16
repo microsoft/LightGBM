@@ -180,7 +180,7 @@ protected:
   /*! \brief Pointer to training data */
   const Dataset* train_data_;
   /*! \brief Config of gbdt */
-  const GBDTConfig* gbdt_config_;
+  const BoostingConfig* gbdt_config_;
   /*! \brief Tree learner, will use this class to learn trees */
   std::vector<std::unique_ptr<TreeLearner>> tree_learner_;
   /*! \brief Objective function */

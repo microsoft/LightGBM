@@ -35,7 +35,7 @@ public:
   void Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
     const std::vector<const Metric*>& training_metrics) override {
     GBDT::Init(config, train_data, object_function, training_metrics);
-    gbdt_config_ = dynamic_cast<const GBDTConfig*>(config);
+    gbdt_config_ = config;
     drop_rate_ = gbdt_config_->drop_rate;
     shrinkage_rate_ = 1.0;
     random_for_drop_ = Random(gbdt_config_->drop_seed);

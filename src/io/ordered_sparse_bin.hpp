@@ -45,11 +45,11 @@ public:
   ~OrderedSparseBin() {
   }
 
-  void Init(const char* used_idices, int num_leaves) override {
+  void Init(const std::vector<bool>& used_idices, int num_leaves) override {
     // initialize the leaf information
     leaf_start_ = std::vector<data_size_t>(num_leaves, 0);
     leaf_cnt_ = std::vector<data_size_t>(num_leaves, 0);
-    if (used_idices == nullptr) {
+    if (used_idices.size() == 0) {
       // if using all data, copy all non-zero pair
       data_size_t cur_pos = 0;
       data_size_t j = 0;
@@ -68,7 +68,7 @@ public:
       data_size_t cur_pos = 0;
       for (size_t i = 0; i < vals_.size(); ++i) {
         cur_pos += delta_[i];
-        if (vals_[i] > 0 && used_idices[cur_pos] != 0) {
+        if (vals_[i] > 0 && used_idices[cur_pos]) {
           ordered_pair_[j].ridx = cur_pos;
           ordered_pair_[j].bin = vals_[i];
           ++j;
@@ -93,7 +93,7 @@ public:
     }
   }
 
-  void Split(int leaf, int right_leaf, const char* left_indices) override {
+  void Split(int leaf, int right_leaf, const std::vector<bool>& left_indices) override {
     // get current leaf boundary
     const data_size_t l_start = leaf_start_[leaf];
     const data_size_t l_end = l_start + leaf_cnt_[leaf];
@@ -101,7 +101,7 @@ public:
     data_size_t new_left_end = l_start;
 
     for (data_size_t i = l_start; i < l_end; ++i) {
-      if (left_indices[ordered_pair_[i].ridx] != 0) {
+      if (left_indices[ordered_pair_[i].ridx]) {
         std::swap(ordered_pair_[new_left_end], ordered_pair_[i]);
         ++new_left_end;
       }

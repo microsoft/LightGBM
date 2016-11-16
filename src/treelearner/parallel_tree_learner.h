@@ -9,6 +9,7 @@
 #include <cstring>
 
 #include <vector>
+#include <memory>
 
 namespace LightGBM {
 
@@ -32,9 +33,9 @@ private:
   /*! \brief Number of machines of this parallel task */
   int num_machines_;
   /*! \brief Buffer for network send */
-  char* input_buffer_;
+  std::vector<char> input_buffer_;
   /*! \brief Buffer for network receive */
-  char* output_buffer_;
+  std::vector<char> output_buffer_;
 };
 
 /*!
@@ -67,24 +68,24 @@ private:
   /*! \brief Number of machines of this parallel task */
   int num_machines_;
   /*! \brief Buffer for network send */
-  char* input_buffer_;
+  std::vector<char> input_buffer_;
   /*! \brief Buffer for network receive */
-  char* output_buffer_;
+  std::vector<char> output_buffer_;
   /*! \brief different machines will aggregate histograms for different features,
        use this to mark local aggregate features*/
-  bool* is_feature_aggregated_;
+  std::vector<bool> is_feature_aggregated_;
   /*! \brief Block start index for reduce scatter */
-  int* block_start_;
+  std::vector<int> block_start_;
   /*! \brief Block size for reduce scatter */
-  int* block_len_;
+  std::vector<int> block_len_;
   /*! \brief Write positions for feature histograms */
-  int* buffer_write_start_pos_;
+  std::vector<int> buffer_write_start_pos_;
   /*! \brief Read positions for local feature histograms */
-  int* buffer_read_start_pos_;
+  std::vector<int> buffer_read_start_pos_;
   /*! \brief Size for reduce scatter */
   int reduce_scatter_size_;
   /*! \brief Store global number of data in leaves  */
-  data_size_t* global_data_count_in_leaf_;
+  std::vector<data_size_t> global_data_count_in_leaf_;
 };
 
 

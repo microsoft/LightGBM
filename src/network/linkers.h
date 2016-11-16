@@ -15,6 +15,7 @@
 #include <thread>
 #include <vector>
 #include <string>
+#include <memory>
 #endif
 
 #ifdef USE_MPI
@@ -144,9 +145,9 @@ private:
   /*! \brief Local listen ports */
   int local_listen_port_;
   /*! \brief Linkers */
-  std::vector<TcpSocket*> linkers_;
+  std::vector<std::unique_ptr<TcpSocket>> linkers_;
   /*! \brief Local socket listener */
-  TcpSocket* listener_;
+  std::unique_ptr<TcpSocket> listener_;
   #endif  // USE_SOCKET
 };
 

@@ -18,7 +18,7 @@ class DenseBin: public Bin {
 public:
   explicit DenseBin(data_size_t num_data, int default_bin)
     : num_data_(num_data) {
-    data_.reserve(num_data_);
+    data_.resize(num_data_);
     if (default_bin == 0) {
       std::memset(data_.data(), 0, sizeof(VAL_T)*num_data_);
     } else {
@@ -40,7 +40,7 @@ public:
 
   BinIterator* GetIterator(data_size_t start_idx) const override;
 
-  void ConstructHistogram(data_size_t* data_indices, data_size_t num_data,
+  void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
                           const score_t* ordered_gradients, const score_t* ordered_hessians,
                           HistogramBinEntry* out) const override {
     // use 4-way unrolling, will be faster

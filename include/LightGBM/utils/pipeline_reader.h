@@ -36,26 +36,26 @@ public:
     size_t cnt = 0;
     const size_t buffer_size =  16 * 1024 * 1024 ;
     // buffer used for the process_fun
-    auto buffer_process = std::unique_ptr<char>(new char[buffer_size]);
+    auto buffer_process = std::vector<char>(buffer_size);
     // buffer used for the file reading
-    auto buffer_read = std::unique_ptr<char>(new char[buffer_size]);
+    auto buffer_read = std::vector<char>(buffer_size);
     size_t read_cnt = 0;
     if (skip_bytes > 0) {
       // skip first k bytes
-      read_cnt = fread(buffer_process.get(), 1, skip_bytes, file);
+      read_cnt = fread(buffer_process.data(), 1, skip_bytes, file);
     }
     // read first block
-    read_cnt = fread(buffer_process.get(), 1, buffer_size, file);
+    read_cnt = fread(buffer_process.data(), 1, buffer_size, file);
     size_t last_read_cnt = 0;
     while (read_cnt > 0) {
       // strat read thread
       std::thread read_worker = std::thread(
         [file, &buffer_read, buffer_size, &last_read_cnt] {
-        last_read_cnt = fread(buffer_read.get(), 1, buffer_size, file);
+        last_read_cnt = fread(buffer_read.data(), 1, buffer_size, file);
       }
       );
       // start process
-      cnt += process_fun(buffer_process.get(), read_cnt);
+      cnt += process_fun(buffer_process.data(), read_cnt);
       // wait for read thread
       read_worker.join();
       // exchange the buffer

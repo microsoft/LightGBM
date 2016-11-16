@@ -26,7 +26,7 @@ GBDT::~GBDT() {
 
 void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
      const std::vector<const Metric*>& training_metrics) {
-  gbdt_config_ = dynamic_cast<const GBDTConfig*>(config);
+  gbdt_config_ = config;
   iter_ = 0;
   saved_model_size_ = -1;
   num_used_model_ = 0;

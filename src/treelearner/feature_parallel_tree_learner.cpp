@@ -7,19 +7,18 @@
 namespace LightGBM {
 
 FeatureParallelTreeLearner::FeatureParallelTreeLearner(const TreeConfig& tree_config)
-  :SerialTreeLearner(tree_config), input_buffer_(nullptr), output_buffer_(nullptr) {
+  :SerialTreeLearner(tree_config) {
 }
 
 FeatureParallelTreeLearner::~FeatureParallelTreeLearner() {
-  if (input_buffer_ != nullptr) { delete[] input_buffer_; }
-  if (output_buffer_ != nullptr) { delete[] output_buffer_; }
+
 }
 void FeatureParallelTreeLearner::Init(const Dataset* train_data) {
   SerialTreeLearner::Init(train_data);
   rank_ = Network::rank();
   num_machines_ = Network::num_machines();
-  input_buffer_ = new char[sizeof(SplitInfo) * 2];
-  output_buffer_ = new char[sizeof(SplitInfo) * 2];
+  input_buffer_.resize(sizeof(SplitInfo) * 2);
+  output_buffer_.resize(sizeof(SplitInfo) * 2);
 }
 
 
@@ -63,14 +62,14 @@ void FeatureParallelTreeLearner::FindBestSplitsForLeaves() {
     larger_best = larger_leaf_splits_->BestSplitPerFeature()[larger_best_feature];
   }
   // sync global best info
-  std::memcpy(input_buffer_, &smaller_best, sizeof(SplitInfo));
-  std::memcpy(input_buffer_ + sizeof(SplitInfo), &larger_best, sizeof(SplitInfo));
+  std::memcpy(input_buffer_.data(), &smaller_best, sizeof(SplitInfo));
+  std::memcpy(input_buffer_.data() + sizeof(SplitInfo), &larger_best, sizeof(SplitInfo));
 
-  Network::Allreduce(input_buffer_, sizeof(SplitInfo) * 2, sizeof(SplitInfo),
-                     output_buffer_, &SplitInfo::MaxReducer);
+  Network::Allreduce(input_buffer_.data(), sizeof(SplitInfo) * 2, sizeof(SplitInfo),
+                     output_buffer_.data(), &SplitInfo::MaxReducer);
   // copy back
-  std::memcpy(&smaller_best, output_buffer_, sizeof(SplitInfo));
-  std::memcpy(&larger_best, output_buffer_ + sizeof(SplitInfo), sizeof(SplitInfo));
+  std::memcpy(&smaller_best, output_buffer_.data(), sizeof(SplitInfo));
+  std::memcpy(&larger_best, output_buffer_.data() + sizeof(SplitInfo), sizeof(SplitInfo));
   // update best split
   best_split_per_leaf_[smaller_leaf_splits_->LeafIndex()] = smaller_best;
   if (larger_leaf_splits_->LeafIndex() >= 0) {

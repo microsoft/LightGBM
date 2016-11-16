@@ -259,30 +259,30 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* bin_filename, int rank, int 
 
   // buffer to read binary file
   size_t buffer_size = 16 * 1024 * 1024;
-  auto buffer = std::unique_ptr<char>(new char[buffer_size]);
+  auto buffer = std::vector<char>(buffer_size);
 
   // read size of header
-  size_t read_cnt = fread(buffer.get(), sizeof(size_t), 1, file);
+  size_t read_cnt = fread(buffer.data(), sizeof(size_t), 1, file);
 
   if (read_cnt != 1) {
     Log::Fatal("Binary file error: header has the wrong size");
   }
 
-  size_t size_of_head = *(reinterpret_cast<size_t*>(buffer.get()));
+  size_t size_of_head = *(reinterpret_cast<size_t*>(buffer.data()));
 
   // re-allocmate space if not enough
   if (size_of_head > buffer_size) {
     buffer_size = size_of_head;
-    buffer.reset(new char[buffer_size]);
+    buffer.resize(buffer_size);
   }
   // read header
-  read_cnt = fread(buffer.get(), 1, size_of_head, file);
+  read_cnt = fread(buffer.data(), 1, size_of_head, file);
 
   if (read_cnt != size_of_head) {
     Log::Fatal("Binary file error: header is incorrect");
   }
   // get header
-  const char* mem_ptr = buffer.get();
+  const char* mem_ptr = buffer.data();
   dataset->num_data_ = *(reinterpret_cast<const data_size_t*>(mem_ptr));
   mem_ptr += sizeof(dataset->num_data_);
   dataset->num_class_ = *(reinterpret_cast<const int*>(mem_ptr));
@@ -315,27 +315,27 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* bin_filename, int rank, int 
   }
 
   // read size of meta data
-  read_cnt = fread(buffer.get(), sizeof(size_t), 1, file);
+  read_cnt = fread(buffer.data(), sizeof(size_t), 1, file);
 
   if (read_cnt != 1) {
     Log::Fatal("Binary file error: meta data has the wrong size");
   }
 
-  size_t size_of_metadata = *(reinterpret_cast<size_t*>(buffer.get()));
+  size_t size_of_metadata = *(reinterpret_cast<size_t*>(buffer.data()));
 
   // re-allocate space if not enough
   if (size_of_metadata > buffer_size) {
     buffer_size = size_of_metadata;
-    buffer.reset(new char[buffer_size]);
+    buffer.resize(buffer_size);
   }
   //  read meta data
-  read_cnt = fread(buffer.get(), 1, size_of_metadata, file);
+  read_cnt = fread(buffer.data(), 1, size_of_metadata, file);
 
   if (read_cnt != size_of_metadata) {
     Log::Fatal("Binary file error: meta data is incorrect");
   }
   // load meta data
-  dataset->metadata_.LoadFromMemory(buffer.get());
+  dataset->metadata_.LoadFromMemory(buffer.data());
 
   std::vector<data_size_t> used_data_indices;
   data_size_t num_global_data = dataset->num_data_;
@@ -377,24 +377,24 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* bin_filename, int rank, int 
   // read feature data
   for (int i = 0; i < dataset->num_features_; ++i) {
     // read feature size
-    read_cnt = fread(buffer.get(), sizeof(size_t), 1, file);
+    read_cnt = fread(buffer.data(), sizeof(size_t), 1, file);
     if (read_cnt != 1) {
       Log::Fatal("Binary file error: feature %d has the wrong size", i);
     }
-    size_t size_of_feature = *(reinterpret_cast<size_t*>(buffer.get()));
+    size_t size_of_feature = *(reinterpret_cast<size_t*>(buffer.data()));
     // re-allocate space if not enough
     if (size_of_feature > buffer_size) {
       buffer_size = size_of_feature;
-      buffer.reset(new char[buffer_size]);
+      buffer.resize(buffer_size);
     }
 
-    read_cnt = fread(buffer.get(), 1, size_of_feature, file);
+    read_cnt = fread(buffer.data(), 1, size_of_feature, file);
 
     if (read_cnt != size_of_feature) {
       Log::Fatal("Binary file error: feature %d is incorrect, read count: %d", i, read_cnt);
     }
     dataset->features_.emplace_back(std::unique_ptr<Feature>(
-      new Feature(buffer.get(), 
+      new Feature(buffer.data(), 
         num_global_data, 
         used_data_indices)
     ));
@@ -667,15 +667,15 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     int type_size = BinMapper::SizeForSpecificBin(io_config_.max_bin);
     // since sizes of different feature may not be same, we expand all bin mapper to type_size
     int buffer_size = type_size * total_num_feature;
-    auto input_buffer = std::unique_ptr<char>(new char[buffer_size]);
-    auto output_buffer = std::unique_ptr<char>(new char[buffer_size]);
+    auto input_buffer = std::vector<char>(buffer_size);
+    auto output_buffer = std::vector<char>(buffer_size);
 
     // find local feature bins and copy to buffer
 #pragma omp parallel for schedule(guided)
     for (int i = 0; i < len[rank]; ++i) {
       BinMapper bin_mapper;
       bin_mapper.FindBin(&sample_values[start[rank] + i], sample_data.size(), io_config_.max_bin);
-      bin_mapper.CopyTo(input_buffer.get() + i * type_size);
+      bin_mapper.CopyTo(input_buffer.data() + i * type_size);
     }
     // convert to binary size
     for (int i = 0; i < num_machines; ++i) {
@@ -683,7 +683,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
       len[i] *= type_size;
     }
     // gather global feature bin mappers
-    Network::Allgather(input_buffer.get(), buffer_size, start.data(), len.data(), output_buffer.get());
+    Network::Allgather(input_buffer.data(), buffer_size, start.data(), len.data(), output_buffer.data());
     // restore features bins from buffer
     for (int i = 0; i < total_num_feature; ++i) {
       if (ignore_features_.count(i) > 0) {
@@ -691,7 +691,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
         continue;
       }
       auto bin_mapper = std::unique_ptr<BinMapper>(new BinMapper());
-      bin_mapper->CopyFrom(output_buffer.get() + i * type_size);
+      bin_mapper->CopyFrom(output_buffer.data() + i * type_size);
       if (!bin_mapper->is_trival()) {
         dataset->used_feature_map_[i] = static_cast<int>(dataset->features_.size());
         dataset->features_.emplace_back(std::unique_ptr<Feature>(

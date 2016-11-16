@@ -18,7 +18,7 @@ RecursiveHalvingMap Network::recursive_halving_map_;
 std::vector<int> Network::block_start_;
 std::vector<int>  Network::block_len_;
 int Network::buffer_size_;
-std::unique_ptr<char> Network::buffer_;
+std::vector<char> Network::buffer_;
 
 void Network::Init(NetworkConfig config) {
   linkers_.reset(new Linkers(config));
@@ -29,7 +29,7 @@ void Network::Init(NetworkConfig config) {
   block_start_ = std::vector<int>(num_machines_);
   block_len_ = std::vector<int>(num_machines_);
   buffer_size_ = 1024 * 1024;
-  buffer_.reset(new char[buffer_size_]);
+  buffer_.resize(buffer_size_);
   Log::Info("Local rank: %d, total number of machines: %d", rank_, num_machines_);
 }
 
@@ -73,15 +73,15 @@ void Network::AllreduceByAllGather(char* input, int input_size, char* output, co
   // need use buffer here, since size of "output" is smaller than size after all gather
   if (input_size*num_machines_ > buffer_size_) {
     buffer_size_ = input_size*num_machines_;
-    buffer_.reset(new char[buffer_size_]);
+    buffer_.resize(buffer_size_);
   }
 
-  Allgather(input, all_size, block_start_.data(), block_len_.data(), buffer_.get());
+  Allgather(input, all_size, block_start_.data(), block_len_.data(), buffer_.data());
   for (int i = 1; i < num_machines_; ++i) {
-    reducer(buffer_.get() + block_start_[i], buffer_.get() + block_start_[0], input_size);
+    reducer(buffer_.data() + block_start_[i], buffer_.data() + block_start_[0], input_size);
   }
   // copy back
-  std::memcpy(output, buffer_.get(), input_size);
+  std::memcpy(output, buffer_.data(), input_size);
 }
 
 void Network::Allgather(char* input, int send_size, char* output) {

@@ -173,7 +173,7 @@ private:
   /*! \brief Buffer to store block size */
   static std::vector<int> block_len_;
   /*! \brief Buffer  */
-  static std::unique_ptr<char> buffer_;
+  static std::vector<char> buffer_;
   /*! \brief Size of buffer_ */
   static int buffer_size_;
 };
