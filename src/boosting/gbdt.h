@@ -51,6 +51,8 @@ public:
   */
   virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override;
 
+  bool EvalAndCheckEarlyStopping() override;
+
   /*!
   * \brief Get evaluation result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
@@ -60,7 +62,7 @@ public:
 
   /*!
   * \brief Get current training score
-  * \param out_len lenght of returned score
+  * \param out_len length of returned score
   * \return training score
   */
   virtual const score_t* GetTrainingScore(data_size_t* out_len) override;
@@ -95,8 +97,10 @@ public:
   std::vector<int> PredictLeafIndex(const double* value) const override;
   
   /*!
-  * \brief Serialize models by string
-  * \return String output of tranined model
+  * \brief save model to file
+  * \param num_used_model number of model that want to save, -1 means save all
+  * \param is_finish is training finished or not
+  * \param filename filename that want to save to
   */
   virtual void SaveModelToFile(int num_used_model, bool is_finish, const char* filename) override;
   /*!
@@ -233,6 +237,8 @@ protected:
   std::ofstream model_output_file_;
   /*! \brief number of used model */
   int num_used_model_;
+  /*! \brief Shrinkage rate for one iteration */
+  double shrinkage_rate_;
 };
 
 }  // namespace LightGBM

@@ -89,7 +89,7 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
   // initialize ordered gradients and hessians
   ordered_gradients_.resize(num_data_);
   ordered_hessians_.resize(num_data_);
-  // if has ordered bin, need allocate a buffer to fast split
+  // if has ordered bin, need to allocate a buffer to fast split
   if (has_ordered_bin_) {
     is_data_in_leaf_.resize(num_data_);
   }

@@ -35,7 +35,6 @@ public:
   void Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
     const std::vector<const Metric*>& training_metrics) override {
     GBDT::Init(config, train_data, object_function, training_metrics);
-    gbdt_config_ = config;
     drop_rate_ = gbdt_config_->drop_rate;
     shrinkage_rate_ = 1.0;
     random_for_drop_ = Random(gbdt_config_->drop_seed);
@@ -44,54 +43,18 @@ public:
   * \brief one training iteration
   */
   bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override {
-    // boosting first
-    if (gradient == nullptr || hessian == nullptr) {
-      Boosting();
-      gradient = gradients_.data();
-      hessian = hessians_.data();
-    }
-
-    for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-      // bagging logic
-      Bagging(iter_, curr_class);
-      // train a new tree
-      std::unique_ptr<Tree> new_tree(tree_learner_[curr_class]->Train(gradient + curr_class * num_data_, hessian + curr_class * num_data_));
-      // if cannot learn a new tree, then stop
-      if (new_tree->num_leaves() <= 1) {
-        Log::Info("Can't training anymore, there isn't any leaf meets split requirements.");
-        return true;
-      }
-      // shrink new tree
-      new_tree->Shrinkage(shrinkage_rate_);
-      // update score
-      UpdateScore(new_tree.get(), curr_class);
-      UpdateScoreOutOfBag(new_tree.get(), curr_class);
-      // add model
-      models_.push_back(std::move(new_tree));
-    }
-
+    GBDT::TrainOneIter(gradient, hessian, false);
     // normalize
     Normalize();
-
-    bool is_met_early_stopping = false;
-    // print message for metric
     if (is_eval) {
-      is_met_early_stopping = OutputMetric(iter_ + 1);
+      return EvalAndCheckEarlyStopping();
+    } else {
+      return false;
     }
-    ++iter_;
-    if (is_met_early_stopping) {
-      Log::Info("Early stopping at iteration %d, the best iteration round is %d",
-        iter_, iter_ - early_stopping_round_);
-      // pop last early_stopping_round_ models
-      for (int i = 0; i < early_stopping_round_ * num_class_; ++i) {
-        models_.pop_back();
-      }
-    }
-    return is_met_early_stopping;
   }
   /*!
   * \brief Get current training score
-  * \param out_len lenght of returned score
+  * \param out_len length of returned score
   * \return training score
   */
   const score_t* GetTrainingScore(data_size_t* out_len) override {
@@ -100,8 +63,10 @@ public:
     return train_score_updater_->score();
   }
   /*!
-  * \brief Serialize models by string
-  * \return String output of tranined model
+  * \brief save model to file
+  * \param num_used_model number of model that want to save, -1 means save all
+  * \param is_finish is training finished or not
+  * \param filename filename that want to save to
   */
   void SaveModelToFile(int num_used_model, bool is_finish, const char* filename) override {
     // only save model once when is_finish = true
@@ -166,8 +131,6 @@ private:
   std::vector<size_t> drop_index_;
   /*! \brief Dropping rate */
   double drop_rate_;
-  /*! \brief Shrinkage rate for one iteration */
-  double shrinkage_rate_;
   /*! \brief Random generator, used to select dropping trees */
   Random random_for_drop_;
 };

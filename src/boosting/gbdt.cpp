@@ -32,6 +32,7 @@ void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const O
   num_used_model_ = 0;
   max_feature_idx_ = 0;
   early_stopping_round_ = gbdt_config_->early_stopping_round;
+  shrinkage_rate_ = gbdt_config_->learning_rate;
   train_data_ = train_data;
   num_class_ = config->num_class;
   // create tree learner
@@ -158,41 +159,47 @@ void GBDT::UpdateScoreOutOfBag(const Tree* tree, const int curr_class) {
 }
 
 bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) {
-    // boosting first
-    if (gradient == nullptr || hessian == nullptr) {
-      Boosting();
-      gradient = gradients_.data();
-      hessian = hessians_.data();
+  // boosting first
+  if (gradient == nullptr || hessian == nullptr) {
+    Boosting();
+    gradient = gradients_.data();
+    hessian = hessians_.data();
+  }
+
+  for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
+    // bagging logic
+    Bagging(iter_, curr_class);
+
+    // train a new tree
+    std::unique_ptr<Tree> new_tree(tree_learner_[curr_class]->Train(gradient + curr_class * num_data_, hessian + curr_class * num_data_));
+    // if cannot learn a new tree, then stop
+    if (new_tree->num_leaves() <= 1) {
+      Log::Info("Stopped training because there are no more leafs that meet the split requirements.");
+      return true;
     }
 
-    for (int curr_class = 0; curr_class < num_class_; ++curr_class){
-      // bagging logic
-      Bagging(iter_, curr_class);
+    // shrinkage by learning rate
+    new_tree->Shrinkage(shrinkage_rate_);
+    // update score
+    UpdateScore(new_tree.get(), curr_class);
+    UpdateScoreOutOfBag(new_tree.get(), curr_class);
 
-      // train a new tree
-      std::unique_ptr<Tree> new_tree(tree_learner_[curr_class]->Train(gradient + curr_class * num_data_, hessian + curr_class * num_data_));
-      // if cannot learn a new tree, then stop
-      if (new_tree->num_leaves() <= 1) {
-        Log::Info("Stopped training because there are no more leafs that meet the split requirements.");
-        return true;
-      }
-
-      // shrinkage by learning rate
-      new_tree->Shrinkage(gbdt_config_->learning_rate);
-      // update score
-      UpdateScore(new_tree.get(), curr_class);
-      UpdateScoreOutOfBag(new_tree.get(), curr_class);
-
-      // add model
-      models_.push_back(std::move(new_tree));
-    }
-
-  bool is_met_early_stopping = false;
-  // print message for metric
-  if (is_eval) {
-    is_met_early_stopping = OutputMetric(iter_ + 1);
+    // add model
+    models_.push_back(std::move(new_tree));
   }
   ++iter_;
+  if (is_eval) {
+    return EvalAndCheckEarlyStopping();
+  } else {
+    return false;
+  }
+
+}
+
+bool GBDT::EvalAndCheckEarlyStopping() {
+  bool is_met_early_stopping = false;
+  // print message for metric
+  is_met_early_stopping = OutputMetric(iter_);
   if (is_met_early_stopping) {
     Log::Info("Early stopping at iteration %d, the best iteration round is %d",
       iter_, iter_ - early_stopping_round_);
@@ -202,7 +209,6 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
     }
   }
   return is_met_early_stopping;
-
 }
 
 void GBDT::UpdateScore(const Tree* tree, const int curr_class) {
