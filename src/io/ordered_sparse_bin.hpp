@@ -45,11 +45,11 @@ public:
   ~OrderedSparseBin() {
   }
 
-  void Init(const std::vector<bool>& used_idices, int num_leaves) override {
+  void Init(const char* used_idices, int num_leaves) override {
     // initialize the leaf information
     leaf_start_ = std::vector<data_size_t>(num_leaves, 0);
     leaf_cnt_ = std::vector<data_size_t>(num_leaves, 0);
-    if (used_idices.size() == 0) {
+    if (used_idices == nullptr) {
       // if using all data, copy all non-zero pair
       data_size_t cur_pos = 0;
       data_size_t j = 0;
@@ -93,7 +93,7 @@ public:
     }
   }
 
-  void Split(int leaf, int right_leaf, const std::vector<bool>& left_indices) override {
+  void Split(int leaf, int right_leaf, const char* left_indices) override {
     // get current leaf boundary
     const data_size_t l_start = leaf_start_[leaf];
     const data_size_t l_end = l_start + leaf_cnt_[leaf];

@@ -164,7 +164,7 @@ protected:
   /*! \brief True if has ordered bin */
   bool has_ordered_bin_ = false;
   /*! \brief  is_data_in_leaf_[i] != 0 means i-th data is marked */
-  std::vector<bool> is_data_in_leaf_;
+  std::vector<char> is_data_in_leaf_;
   /*! \brief  max cache size(unit:GB) for historical histogram. < 0 means not limit */
   double histogram_pool_size_;
   /*! \brief used to cache historical histogram to speed up*/

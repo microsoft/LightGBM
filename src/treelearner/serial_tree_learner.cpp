@@ -190,26 +190,26 @@ void SerialTreeLearner::BeforeTrain() {
       #pragma omp parallel for schedule(guided)
       for (int i = 0; i < num_features_; ++i) {
         if (ordered_bins_[i] != nullptr) {
-          ordered_bins_[i]->Init(std::vector<bool>(), num_leaves_);
+          ordered_bins_[i]->Init(nullptr, num_leaves_);
         }
       }
     } else {
       // bagging, only use part of data
 
       // mark used data
-      std::fill(is_data_in_leaf_.begin(), is_data_in_leaf_.end(), false);
+      std::memset(is_data_in_leaf_.data(), 0, sizeof(char)*num_data_);
       const data_size_t* indices = data_partition_->indices();
       data_size_t begin = data_partition_->leaf_begin(0);
       data_size_t end = begin + data_partition_->leaf_count(0);
       #pragma omp parallel for schedule(static)
       for (data_size_t i = begin; i < end; ++i) {
-        is_data_in_leaf_[indices[i]] = true;
+        is_data_in_leaf_[indices[i]] = 1;
       }
       // initialize ordered bin
       #pragma omp parallel for schedule(guided)
       for (int i = 0; i < num_features_; ++i) {
         if (ordered_bins_[i] != nullptr) {
-          ordered_bins_[i]->Init(is_data_in_leaf_, num_leaves_);
+          ordered_bins_[i]->Init(is_data_in_leaf_.data(), num_leaves_);
         }
       }
     }
@@ -300,19 +300,19 @@ bool SerialTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
   // split for the ordered bin
   if (has_ordered_bin_ && right_leaf >= 0) {
     // mark data that at left-leaf
-    std::fill(is_data_in_leaf_.begin(), is_data_in_leaf_.end(), false);
+    std::memset(is_data_in_leaf_.data(), 0, sizeof(char)*num_data_);
     const data_size_t* indices = data_partition_->indices();
     data_size_t begin = data_partition_->leaf_begin(left_leaf);
     data_size_t end = begin + data_partition_->leaf_count(left_leaf);
     #pragma omp parallel for schedule(static)
     for (data_size_t i = begin; i < end; ++i) {
-      is_data_in_leaf_[indices[i]] = true;
+      is_data_in_leaf_[indices[i]] = 1;
     }
     // split the ordered bin
     #pragma omp parallel for schedule(guided)
     for (int i = 0; i < num_features_; ++i) {
       if (ordered_bins_[i] != nullptr) {
-        ordered_bins_[i]->Split(left_leaf, right_leaf, is_data_in_leaf_);
+        ordered_bins_[i]->Split(left_leaf, right_leaf, is_data_in_leaf_.data());
       }
     }
   }

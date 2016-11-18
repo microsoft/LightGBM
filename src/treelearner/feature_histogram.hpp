@@ -325,9 +325,9 @@ public:
   */
   void Fill(std::function<FeatureHistogram*()> obj_create_fun) {
     pool_.clear();
-    pool_.reserve(cache_size_);
+    pool_.resize(cache_size_);
     for (int i = 0; i < cache_size_; ++i) {
-      pool_.push_back(std::move(std::unique_ptr<FeatureHistogram[]>(obj_create_fun())));
+      pool_[i].reset(obj_create_fun());
     }
   }
 

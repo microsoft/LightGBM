@@ -17,8 +17,8 @@ public:
   LeafSplits(int num_feature, data_size_t num_data)
     :num_data_in_leaf_(num_data), num_data_(num_data), num_features_(num_feature),
     data_indices_(nullptr) {
+    best_split_per_feature_.resize(num_features_);
     for (int i = 0; i < num_features_; ++i) {
-      best_split_per_feature_.push_back(SplitInfo());
       best_split_per_feature_[i].feature = i;
     }
   }
