@@ -42,11 +42,13 @@ void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const O
     // init tree learner
     tree_learner_.push_back(std::move(new_tree_learner));
   }
+  tree_learner_.shrink_to_fit();
   object_function_ = object_function;
   // push training metrics
   for (const auto& metric : training_metrics) {
     training_metrics_.push_back(metric);
   }
+  training_metrics_.shrink_to_fit();
   // create score tracker
   train_score_updater_.reset(new ScoreUpdater(train_data_, num_class_));
   num_data_ = train_data_->num_data();
@@ -100,6 +102,7 @@ void GBDT::AddDataset(const Dataset* valid_data,
       best_score_.back().push_back(kMinScore);
     }
   }
+  valid_metrics_.back().shrink_to_fit();
 }
 
 

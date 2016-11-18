@@ -399,6 +399,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* bin_filename, int rank, int 
         used_data_indices)
     ));
   }
+  dataset->features_.shrink_to_fit();
   fclose(file);
   dataset->is_loading_from_binfile_ = true;
   return dataset.release();
@@ -436,6 +437,7 @@ Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>&
       Log::Warning("Ignoring Column_%d , only has one value", i);
     }
   }
+  dataset->features_.shrink_to_fit();
   // fill feature_names_ if not header
   if (feature_names_.size() <= 0) {
     for (int i = 0; i < dataset->num_total_features_; ++i) {
@@ -515,10 +517,10 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromMemory(const std::vect
     sample_cnt = data.size();
   }
   std::vector<size_t> sample_indices = random_.Sample(data.size(), sample_cnt);
-  std::vector<std::string> out;
+  std::vector<std::string> out(sample_indices.size());
   for (size_t i = 0; i < sample_indices.size(); ++i) {
     const size_t idx = sample_indices[i];
-    out.push_back(data[idx]);
+    out[i] = data[idx];
   }
   return out;
 }
@@ -705,6 +707,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
       }
     }
   }
+  dataset->features_.shrink_to_fit();
   dataset->num_features_ = static_cast<int>(dataset->features_.size());
 }
 

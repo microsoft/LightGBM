@@ -23,10 +23,10 @@ public:
     // initialize DCG calculator
     DCGCalculator::Init(config.label_gain);
     // copy lable gain to local
-    std::vector<double> label_gain = config.label_gain;
-    for (auto gain : label_gain) {
+    for (auto gain : config.label_gain) {
       label_gain_.push_back(static_cast<score_t>(gain));
     }
+    label_gain_.shrink_to_fit();
     // will optimize NDCG@optimize_pos_at_
     optimize_pos_at_ = config.max_position;
     sigmoid_table_.clear();

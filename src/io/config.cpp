@@ -106,6 +106,7 @@ void OverallConfig::GetMetricType(const std::unordered_map<std::string, std::str
       std::string sub_metric_str = pair.first;
       metric_types.push_back(sub_metric_str);
     }
+    metric_types.shrink_to_fit();
   }
 }
 
@@ -224,6 +225,7 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
       label_gain.push_back(static_cast<double>((1 << i) - 1));
     }
   }
+  label_gain.shrink_to_fit();
 }
 
 
@@ -241,6 +243,7 @@ void MetricConfig::Set(const std::unordered_map<std::string, std::string>& param
       label_gain.push_back(static_cast<double>((1 << i) - 1));
     }
   }
+  label_gain.shrink_to_fit();
   if (GetString(params, "ndcg_eval_at", &tmp_str)) {
     eval_at = Common::StringToIntArray(tmp_str, ',');
     std::sort(eval_at.begin(), eval_at.end());
@@ -253,6 +256,7 @@ void MetricConfig::Set(const std::unordered_map<std::string, std::string>& param
       eval_at.push_back(i);
     }
   }
+  eval_at.shrink_to_fit();
 }
 
 

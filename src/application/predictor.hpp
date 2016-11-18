@@ -40,7 +40,7 @@ public:
     for (int i = 0; i < num_threads_; ++i) {
       features_.push_back(std::vector<double>(num_features_));
     }
-
+    features_.shrink_to_fit();
     if (is_predict_leaf_index) {
       predict_fun_ = [this](const std::vector<std::pair<int, double>>& features) {
         const int tid = PutFeatureValuesToBuffer(features);

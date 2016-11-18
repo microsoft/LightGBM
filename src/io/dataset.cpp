@@ -50,6 +50,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset, bool is_enable_spars
         is_enable_sparse)
       ));
   }
+  features_.shrink_to_fit();
   num_class_ = dataset->num_class_;
   used_feature_map_ = dataset->used_feature_map_;
   num_features_ = static_cast<int>(features_.size());

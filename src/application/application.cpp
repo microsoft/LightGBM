@@ -144,6 +144,7 @@ void Application::LoadData() {
       train_metric_.push_back(std::move(metric));
     }
   }
+  train_metric_.shrink_to_fit();
   // Add validation data, if it exists
   for (size_t i = 0; i < config_.io_config.valid_data_filenames.size(); ++i) {
     // add
@@ -168,7 +169,10 @@ void Application::LoadData() {
                                     valid_datas_.back()->num_data());
       valid_metrics_.back().push_back(std::move(metric));
     }
+    valid_metrics_.back().shrink_to_fit();
   }
+  valid_datas_.shrink_to_fit();
+  valid_metrics_.shrink_to_fit();
   auto end_time = std::chrono::high_resolution_clock::now();
   // output used time on each iteration
   Log::Info("Finished loading data in %f seconds",

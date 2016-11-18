@@ -22,10 +22,12 @@ void DCGCalculator::Init(std::vector<double> input_label_gain) {
   for(size_t i = 0;i < input_label_gain.size();++i){
     label_gain_.push_back(static_cast<score_t>(input_label_gain[i]));
   }
+  label_gain_.shrink_to_fit();
   discount_.clear();
   for (data_size_t i = 0; i < kMaxPosition; ++i) {
     discount_.emplace_back(1.0f / std::log2(2.0f + i));
   }
+  discount_.shrink_to_fit();
   is_inited_ = true;
 }
 

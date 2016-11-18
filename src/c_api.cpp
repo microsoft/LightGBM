@@ -54,7 +54,7 @@ public:
         train_data_->num_data());
       train_metric_.push_back(std::move(metric));
     }
-    
+    train_metric_.shrink_to_fit();
     // add metric for validation data
     for (size_t i = 0; i < valid_datas_.size(); ++i) {
       valid_metrics_.emplace_back();
@@ -66,7 +66,9 @@ public:
           valid_datas_[i]->num_data());
         valid_metrics_.back().push_back(std::move(metric));
       }
+      valid_metrics_.back().shrink_to_fit();
     }
+    valid_metrics_.shrink_to_fit();
     // initialize the objective function
     if (objective_fun_ != nullptr) {
       objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
@@ -592,18 +594,18 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
     const float* data_ptr = reinterpret_cast<const float*>(data);
     if (is_row_major) {
       return [data_ptr, num_col, num_row](int row_idx) {
-        std::vector<double> ret;
+        std::vector<double> ret(num_col);
         auto tmp_ptr = data_ptr + num_col * row_idx;
         for (int i = 0; i < num_col; ++i) {
-          ret.push_back(static_cast<double>(*(tmp_ptr + i)));
+          ret[i] = static_cast<double>(*(tmp_ptr + i));
         }
         return ret;
       };
     } else {
       return [data_ptr, num_col, num_row](int row_idx) {
-        std::vector<double> ret;
+        std::vector<double> ret(num_col);
         for (int i = 0; i < num_col; ++i) {
-          ret.push_back(static_cast<double>(*(data_ptr + num_row * i + row_idx)));
+          ret[i] = static_cast<double>(*(data_ptr + num_row * i + row_idx));
         }
         return ret;
       };
@@ -612,18 +614,18 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
     const double* data_ptr = reinterpret_cast<const double*>(data);
     if (is_row_major) {
       return [data_ptr, num_col, num_row](int row_idx) {
-        std::vector<double> ret;
+        std::vector<double> ret(num_col);
         auto tmp_ptr = data_ptr + num_col * row_idx;
         for (int i = 0; i < num_col; ++i) {
-          ret.push_back(static_cast<double>(*(tmp_ptr + i)));
+          ret[i] = static_cast<double>(*(tmp_ptr + i));
         }
         return ret;
       };
     } else {
       return [data_ptr, num_col, num_row](int row_idx) {
-        std::vector<double> ret;
+        std::vector<double> ret(num_col);
         for (int i = 0; i < num_col; ++i) {
-          ret.push_back(static_cast<double>(*(data_ptr + num_row * i + row_idx)));
+          ret[i] = static_cast<double>(*(data_ptr + num_row * i + row_idx));
         }
         return ret;
       };
@@ -771,8 +773,6 @@ std::vector<double> SampleFromOneColumn(const std::vector<std::pair<int, double>
     }
     if (j < data.size() && data[j].first == static_cast<int>(row_idx)) {
       ret.push_back(data[j].second);
-    } else {
-      ret.push_back(0);
     }
   }
   return ret;
