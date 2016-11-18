@@ -85,8 +85,8 @@ public:
     }
   }
 
-  score_t GetSigmoid() const override {
-    return sigmoid_;
+  const char* GetName() const override {
+    return "binary";
   }
 
 private:

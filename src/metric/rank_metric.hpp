@@ -20,6 +20,7 @@ public:
     for (auto k : config.eval_at) {
       eval_at_.push_back(static_cast<data_size_t>(k));
     }
+    eval_at_.shrink_to_fit();
     // initialize DCG calculator
     DCGCalculator::Init(config.label_gain);
     // get number of threads
@@ -76,7 +77,7 @@ public:
     }
   }
 
-  std::vector<std::string> GetName() const override {
+  const std::vector<std::string>& GetName() const override {
     return name_;
   }
 

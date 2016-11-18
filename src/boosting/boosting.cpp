@@ -1,6 +1,6 @@
 #include <LightGBM/boosting.h>
 #include "gbdt.h"
-#include "dart.h"
+#include "dart.hpp"
 
 namespace LightGBM {
 
@@ -37,32 +37,32 @@ Boosting* Boosting::CreateBoosting(BoostingType type, const char* filename) {
       return nullptr;
     }
   } else {
-    Boosting* ret = nullptr;
+    std::unique_ptr<Boosting> ret;
     auto type_in_file = GetBoostingTypeFromModelFile(filename);
     if (type_in_file == type) {
       if (type == BoostingType::kGBDT) {
-        ret = new GBDT();
+        ret.reset(new GBDT());
       } else if (type == BoostingType::kDART) {
-        ret = new DART();
+        ret.reset(new DART());
       }
-      LoadFileToBoosting(ret, filename);
+      LoadFileToBoosting(ret.get(), filename);
     } else {
       Log::Fatal("Boosting type in parameter is not the same as the type in the model file");
     }
-    return ret;
+    return ret.release();
   }
 }
 
 Boosting* Boosting::CreateBoosting(const char* filename) {
   auto type = GetBoostingTypeFromModelFile(filename);
-  Boosting* ret = nullptr;
+  std::unique_ptr<Boosting> ret;
   if (type == BoostingType::kGBDT) {
-    ret = new GBDT();
+    ret.reset(new GBDT());
   } else if (type == BoostingType::kDART) {
-    ret = new DART();
+    ret.reset(new DART());
   }
-  LoadFileToBoosting(ret, filename);
-  return ret;
+  LoadFileToBoosting(ret.get(), filename);
+  return ret.release();
 }
 
 }  // namespace LightGBM

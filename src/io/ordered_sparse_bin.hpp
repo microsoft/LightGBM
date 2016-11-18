@@ -68,7 +68,7 @@ public:
       data_size_t cur_pos = 0;
       for (size_t i = 0; i < vals_.size(); ++i) {
         cur_pos += delta_[i];
-        if (vals_[i] > 0 && used_idices[cur_pos] != 0) {
+        if (vals_[i] > 0 && used_idices[cur_pos]) {
           ordered_pair_[j].ridx = cur_pos;
           ordered_pair_[j].bin = vals_[i];
           ++j;
@@ -101,7 +101,7 @@ public:
     data_size_t new_left_end = l_start;
 
     for (data_size_t i = l_start; i < l_end; ++i) {
-      if (left_indices[ordered_pair_[i].ridx] != 0) {
+      if (left_indices[ordered_pair_[i].ridx]) {
         std::swap(ordered_pair_[new_left_end], ordered_pair_[i]);
         ++new_left_end;
       }

@@ -38,16 +38,12 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
   GetObjectiveType(params);
   GetMetricType(params);
 
-  // construct boosting configs
-  if (boosting_type == BoostingType::kGBDT || boosting_type == BoostingType::kDART) {
-    boosting_config = new GBDTConfig();
-  }
 
   // sub-config setup
   network_config.Set(params);
   io_config.Set(params);
 
-  boosting_config->Set(params);
+  boosting_config.Set(params);
   objective_config.Set(params);
   metric_config.Set(params);
   // check for conflicts
@@ -110,6 +106,7 @@ void OverallConfig::GetMetricType(const std::unordered_map<std::string, std::str
       std::string sub_metric_str = pair.first;
       metric_types.push_back(sub_metric_str);
     }
+    metric_types.shrink_to_fit();
   }
 }
 
@@ -130,11 +127,10 @@ void OverallConfig::GetTaskType(const std::unordered_map<std::string, std::strin
 }
 
 void OverallConfig::CheckParamConflict() {
-  GBDTConfig* gbdt_config = dynamic_cast<GBDTConfig*>(boosting_config);
 
   // check if objective_type, metric_type, and num_class match
   bool objective_type_multiclass = (objective_type == std::string("multiclass"));
-  int num_class_check = gbdt_config->num_class;
+  int num_class_check = boosting_config.num_class;
   if (objective_type_multiclass){
       if (num_class_check <= 1){
           Log::Fatal("Number of classes should be specified and greater than 1 for multiclass training");
@@ -157,24 +153,24 @@ void OverallConfig::CheckParamConflict() {
     is_parallel = true;
   } else {
     is_parallel = false;
-    gbdt_config->tree_learner_type = TreeLearnerType::kSerialTreeLearner;
+    boosting_config.tree_learner_type = TreeLearnerType::kSerialTreeLearner;
   }
 
-  if (gbdt_config->tree_learner_type == TreeLearnerType::kSerialTreeLearner) {
+  if (boosting_config.tree_learner_type == TreeLearnerType::kSerialTreeLearner) {
     is_parallel = false;
     network_config.num_machines = 1;
   }
 
-  if (gbdt_config->tree_learner_type == TreeLearnerType::kSerialTreeLearner ||
-    gbdt_config->tree_learner_type == TreeLearnerType::kFeatureParallelTreelearner) {
+  if (boosting_config.tree_learner_type == TreeLearnerType::kSerialTreeLearner ||
+    boosting_config.tree_learner_type == TreeLearnerType::kFeatureParallelTreelearner) {
     is_parallel_find_bin = false;
-  } else if (gbdt_config->tree_learner_type == TreeLearnerType::kDataParallelTreeLearner) {
+  } else if (boosting_config.tree_learner_type == TreeLearnerType::kDataParallelTreeLearner) {
     is_parallel_find_bin = true;
-    if (gbdt_config->tree_config.histogram_pool_size >= 0) {
+    if (boosting_config.tree_config.histogram_pool_size >= 0) {
       Log::Warning("Histogram LRU queue was enabled (histogram_pool_size=%f). Will disable this to reduce communication costs"
-                 , gbdt_config->tree_config.histogram_pool_size);
+                 , boosting_config.tree_config.histogram_pool_size);
       // Change pool size to -1 (not limit) when using data parallel to reduce communication costs
-      gbdt_config->tree_config.histogram_pool_size = -1;
+      boosting_config.tree_config.histogram_pool_size = -1;
     }
 
   }
@@ -229,6 +225,7 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
       label_gain.push_back(static_cast<double>((1 << i) - 1));
     }
   }
+  label_gain.shrink_to_fit();
 }
 
 
@@ -246,6 +243,7 @@ void MetricConfig::Set(const std::unordered_map<std::string, std::string>& param
       label_gain.push_back(static_cast<double>((1 << i) - 1));
     }
   }
+  label_gain.shrink_to_fit();
   if (GetString(params, "ndcg_eval_at", &tmp_str)) {
     eval_at = Common::StringToIntArray(tmp_str, ',');
     std::sort(eval_at.begin(), eval_at.end());
@@ -258,6 +256,7 @@ void MetricConfig::Set(const std::unordered_map<std::string, std::string>& param
       eval_at.push_back(i);
     }
   }
+  eval_at.shrink_to_fit();
 }
 
 
@@ -284,6 +283,7 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
 
 void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "num_iterations", &num_iterations);
+  GetDouble(params, "sigmoid", &sigmoid);
   CHECK(num_iterations >= 0);
   GetInt(params, "bagging_seed", &bagging_seed);
   GetInt(params, "bagging_freq", &bagging_freq);
@@ -301,9 +301,11 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   GetInt(params, "drop_seed", &drop_seed);
   GetDouble(params, "drop_rate", &drop_rate);
   CHECK(drop_rate <= 1.0 && drop_rate >= 0.0);
+  GetTreeLearnerType(params);
+  tree_config.Set(params);
 }
 
-void GBDTConfig::GetTreeLearnerType(const std::unordered_map<std::string, std::string>& params) {
+void BoostingConfig::GetTreeLearnerType(const std::unordered_map<std::string, std::string>& params) {
   std::string value;
   if (GetString(params, "tree_learner", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), ::tolower);
@@ -318,12 +320,6 @@ void GBDTConfig::GetTreeLearnerType(const std::unordered_map<std::string, std::s
       Log::Fatal("Unknown tree learner type %s", value.c_str());
     }
   }
-}
-
-void GBDTConfig::Set(const std::unordered_map<std::string, std::string>& params) {
-  BoostingConfig::Set(params);
-  GetTreeLearnerType(params);
-  tree_config.Set(params);
 }
 
 void NetworkConfig::Set(const std::unordered_map<std::string, std::string>& params) {

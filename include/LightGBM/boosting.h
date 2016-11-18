@@ -52,6 +52,7 @@ public:
   */
   virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) = 0;
 
+  virtual bool EvalAndCheckEarlyStopping() = 0;
   /*!
   * \brief Get evaluation result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
@@ -98,6 +99,9 @@ public:
 
   /*!
   * \brief save model to file
+  * \param num_used_model number of model that want to save, -1 means save all
+  * \param is_finish is training finished or not
+  * \param filename filename that want to save to
   */
   virtual void SaveModelToFile(int num_used_model, bool is_finish, const char* filename) = 0;
 
@@ -140,6 +144,12 @@ public:
   * \brief Get Type name of this boosting object
   */
   virtual const char* Name() const = 0;
+
+  Boosting() = default;
+  /*! \brief Disable copy */
+  Boosting& operator=(const Boosting&) = delete;
+  /*! \brief Disable copy */
+  Boosting(const Boosting&) = delete;
 
   /*!
   * \brief Create boosting object

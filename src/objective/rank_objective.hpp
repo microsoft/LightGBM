@@ -23,20 +23,20 @@ public:
     // initialize DCG calculator
     DCGCalculator::Init(config.label_gain);
     // copy lable gain to local
-    std::vector<double> label_gain = config.label_gain;
-    for (auto gain : label_gain) {
+    for (auto gain : config.label_gain) {
       label_gain_.push_back(static_cast<score_t>(gain));
     }
+    label_gain_.shrink_to_fit();
     // will optimize NDCG@optimize_pos_at_
     optimize_pos_at_ = config.max_position;
-    sigmoid_table_ = nullptr;
+    sigmoid_table_.clear();
+    inverse_max_dcgs_.clear();
     if (sigmoid_ <= 0.0) {
       Log::Fatal("Sigmoid param %f should be greater than zero", sigmoid_);
     }
   }
   ~LambdarankNDCG() {
-    delete[] inverse_max_dcgs_;
-    delete[] sigmoid_table_;
+
   }
   void Init(const Metadata& metadata, data_size_t num_data) override {
     num_data_ = num_data;
@@ -51,7 +51,7 @@ public:
     }
     num_queries_ = metadata.num_queries();
     // cache inverse max DCG, avoid computation many times
-    inverse_max_dcgs_ = new score_t[num_queries_];
+    inverse_max_dcgs_.resize(num_queries_);
     for (data_size_t i = 0; i < num_queries_; ++i) {
       inverse_max_dcgs_[i] = DCGCalculator::CalMaxDCGAtK(optimize_pos_at_,
         label_ + query_boundaries_[i],
@@ -180,7 +180,7 @@ public:
     // get boundary
     min_sigmoid_input_ = min_sigmoid_input_ / sigmoid_ / 2;
     max_sigmoid_input_ = -min_sigmoid_input_;
-    sigmoid_table_ = new score_t[_sigmoid_bins];
+    sigmoid_table_.resize(_sigmoid_bins);
     // get score to bin factor
     sigmoid_table_idx_factor_ =
       _sigmoid_bins / (max_sigmoid_input_ - min_sigmoid_input_);
@@ -191,18 +191,15 @@ public:
     }
   }
 
-  score_t GetSigmoid() const override {
-    // though we use sigmoid transform on objective
-    // for the prediction, we actually don't need to transform by sigmoid.
-    // since we only need the ranking score.
-    return -1.0f;
+  const char* GetName() const override {
+    return "lambdarank";
   }
 
 private:
   /*! \brief Gains for labels */
   std::vector<score_t> label_gain_;
   /*! \brief Cache inverse max DCG, speed up calculation */
-  score_t* inverse_max_dcgs_;
+  std::vector<score_t> inverse_max_dcgs_;
   /*! \brief Simgoid param */
   score_t sigmoid_;
   /*! \brief Optimized NDCG@ */
@@ -218,7 +215,7 @@ private:
   /*! \brief Query boundries */
   const data_size_t* query_boundaries_;
   /*! \brief Cache result for sigmoid transform to speed up */
-  score_t* sigmoid_table_;
+  std::vector<score_t> sigmoid_table_;
   /*! \brief Number of bins in simoid table */
   size_t _sigmoid_bins = 1024 * 1024;
   /*! \brief Minimal input of sigmoid table */

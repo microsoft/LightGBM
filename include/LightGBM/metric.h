@@ -27,7 +27,7 @@ public:
   virtual void Init(const char* test_name,
     const Metadata& metadata, data_size_t num_data) = 0;
 
-  virtual std::vector<std::string> GetName() const = 0;
+  virtual const std::vector<std::string>& GetName() const = 0;
 
   virtual score_t factor_to_bigger_better() const = 0;
   /*!
@@ -35,6 +35,12 @@ public:
   * \param score Current prediction score
   */
   virtual std::vector<double> Eval(const score_t* score) const = 0;
+
+  Metric() = default;
+  /*! \brief Disable copy */
+  Metric& operator=(const Metric&) = delete;
+  /*! \brief Disable copy */
+  Metric(const Metric&) = delete;
 
   /*!
   * \brief Create object of metrics

@@ -12,20 +12,18 @@ namespace LightGBM {
 */
 class MulticlassLogloss: public ObjectiveFunction {
 public:
-  explicit MulticlassLogloss(const ObjectiveConfig& config)
-        :label_int_(nullptr) {
+  explicit MulticlassLogloss(const ObjectiveConfig& config) {
     num_class_ = config.num_class;
   }
 
   ~MulticlassLogloss() {
-    if (label_int_ != nullptr) { delete[] label_int_; }
   }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
     num_data_ = num_data;
     label_ = metadata.label();
     weights_ = metadata.weights();
-    label_int_ = new int[num_data_];
+    label_int_.resize(num_data_);
     for (int i = 0; i < num_data_; ++i){
         label_int_[i] = static_cast<int>(label_[i]);
         if (label_int_[i] < 0 || label_int_[i] >= num_class_) {
@@ -74,8 +72,8 @@ public:
     }
   }
 
-  score_t GetSigmoid() const override {
-    return -1.0f;
+  const char* GetName() const override {
+    return "multiclass";
   }
 
 private:
@@ -86,7 +84,7 @@ private:
   /*! \brief Pointer of label */
   const float* label_;
   /*! \brief Corresponding integers of label_ */
-  int* label_int_;
+  std::vector<int> label_int_;
   /*! \brief Weights for data */
   const float* weights_;
 };

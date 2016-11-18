@@ -142,13 +142,13 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
                   Please use an additional query file or pre-partition the data");
     }
   }
-  auto parser = Parser::CreateParser(filename, io_config_.has_header, 0, label_idx_);
+  auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, io_config_.has_header, 0, label_idx_));
   if (parser == nullptr) {
     Log::Fatal("Could not recognize data format of %s", filename);
   }
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
-  Dataset* dataset = new Dataset();
+  auto dataset = std::unique_ptr<Dataset>(new Dataset());
   dataset->data_filename_ = filename;
   dataset->num_class_ = io_config_.num_class;
   dataset->metadata_.Init(filename, dataset->num_class_);
@@ -161,11 +161,11 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       // sample data
       auto sample_data = SampleTextDataFromMemory(text_data);
       // construct feature bin mappers
-      ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser, dataset);
+      ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, io_config_.num_class, weight_idx_, group_idx_);
       // extract features
-      ExtractFeaturesFromMemory(text_data, parser, dataset);
+      ExtractFeaturesFromMemory(text_data, parser.get(), dataset.get());
       text_data.clear();
     } else {
       // sample data from file
@@ -176,38 +176,36 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
         dataset->num_data_ = num_global_data;
       }
       // construct feature bin mappers
-      ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser, dataset);
+      ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
       // initialize label
       dataset->metadata_.Init(dataset->num_data_, dataset->num_class_, weight_idx_, group_idx_);
 
       // extract features
-      ExtractFeaturesFromFile(filename, parser, used_data_indices, dataset);
+      ExtractFeaturesFromFile(filename, parser.get(), used_data_indices, dataset.get());
     }
   } else {
     // load data from binary file
-    delete dataset;
     std::string bin_filename(filename);
     bin_filename.append(".bin");
-    dataset = LoadFromBinFile(bin_filename.c_str(), rank, num_machines);
+    dataset.reset(LoadFromBinFile(bin_filename.c_str(), rank, num_machines));
   }
   // check meta data
   dataset->metadata_.CheckOrPartition(num_global_data, used_data_indices);
   // need to check training data
-  CheckDataset(dataset);
-  delete parser;
-  return dataset;
+  CheckDataset(dataset.get());
+  return dataset.release();
 }
 
 
 
 Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data) {
-  auto parser = Parser::CreateParser(filename, io_config_.has_header, 0, label_idx_);
+  auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, io_config_.has_header, 0, label_idx_));
   if (parser == nullptr) {
     Log::Fatal("Could not recognize data format of %s", filename);
   }
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
-  Dataset* dataset = new Dataset();
+  auto dataset = std::unique_ptr<Dataset>(new Dataset());
   dataset->data_filename_ = filename;
   dataset->num_class_ = io_config_.num_class;
   dataset->metadata_.Init(filename, dataset->num_class_);
@@ -221,7 +219,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
       dataset->metadata_.Init(dataset->num_data_, dataset->num_class_, weight_idx_, group_idx_);
       dataset->CopyFeatureMapperFrom(train_data, io_config_.is_enable_sparse);
       // extract features
-      ExtractFeaturesFromMemory(text_data, parser, dataset);
+      ExtractFeaturesFromMemory(text_data, parser.get(), dataset.get());
       text_data.clear();
     } else {
       TextReader<data_size_t> text_reader(filename, io_config_.has_header);
@@ -232,24 +230,22 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
       dataset->metadata_.Init(dataset->num_data_, dataset->num_class_, weight_idx_, group_idx_);
       dataset->CopyFeatureMapperFrom(train_data, io_config_.is_enable_sparse);
       // extract features
-      ExtractFeaturesFromFile(filename, parser, used_data_indices, dataset);
+      ExtractFeaturesFromFile(filename, parser.get(), used_data_indices, dataset.get());
     }
   } else {
     // load data from binary file
-    delete dataset;
     std::string bin_filename(filename);
     bin_filename.append(".bin");
-    dataset = LoadFromBinFile(bin_filename.c_str(), 0, 1);
+    dataset.reset(LoadFromBinFile(bin_filename.c_str(), 0, 1));
   }
   // not need to check validation data
   // check meta data
   dataset->metadata_.CheckOrPartition(num_global_data, used_data_indices);
-  delete parser;
-  return dataset;
+  return dataset.release();
 }
 
 Dataset* DatasetLoader::LoadFromBinFile(const char* bin_filename, int rank, int num_machines) {
-  Dataset* dataset = new Dataset();
+  auto dataset = std::unique_ptr<Dataset>(new Dataset());
   FILE* file;
 #ifdef _MSC_VER
   fopen_s(&file, bin_filename, "rb");
@@ -263,31 +259,30 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* bin_filename, int rank, int 
 
   // buffer to read binary file
   size_t buffer_size = 16 * 1024 * 1024;
-  char* buffer = new char[buffer_size];
+  auto buffer = std::vector<char>(buffer_size);
 
   // read size of header
-  size_t read_cnt = fread(buffer, sizeof(size_t), 1, file);
+  size_t read_cnt = fread(buffer.data(), sizeof(size_t), 1, file);
 
   if (read_cnt != 1) {
     Log::Fatal("Binary file error: header has the wrong size");
   }
 
-  size_t size_of_head = *(reinterpret_cast<size_t*>(buffer));
+  size_t size_of_head = *(reinterpret_cast<size_t*>(buffer.data()));
 
   // re-allocmate space if not enough
   if (size_of_head > buffer_size) {
-    delete[] buffer;
     buffer_size = size_of_head;
-    buffer = new char[buffer_size];
+    buffer.resize(buffer_size);
   }
   // read header
-  read_cnt = fread(buffer, 1, size_of_head, file);
+  read_cnt = fread(buffer.data(), 1, size_of_head, file);
 
   if (read_cnt != size_of_head) {
     Log::Fatal("Binary file error: header is incorrect");
   }
   // get header
-  const char* mem_ptr = buffer;
+  const char* mem_ptr = buffer.data();
   dataset->num_data_ = *(reinterpret_cast<const data_size_t*>(mem_ptr));
   mem_ptr += sizeof(dataset->num_data_);
   dataset->num_class_ = *(reinterpret_cast<const int*>(mem_ptr));
@@ -320,28 +315,27 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* bin_filename, int rank, int 
   }
 
   // read size of meta data
-  read_cnt = fread(buffer, sizeof(size_t), 1, file);
+  read_cnt = fread(buffer.data(), sizeof(size_t), 1, file);
 
   if (read_cnt != 1) {
     Log::Fatal("Binary file error: meta data has the wrong size");
   }
 
-  size_t size_of_metadata = *(reinterpret_cast<size_t*>(buffer));
+  size_t size_of_metadata = *(reinterpret_cast<size_t*>(buffer.data()));
 
   // re-allocate space if not enough
   if (size_of_metadata > buffer_size) {
-    delete[] buffer;
     buffer_size = size_of_metadata;
-    buffer = new char[buffer_size];
+    buffer.resize(buffer_size);
   }
   //  read meta data
-  read_cnt = fread(buffer, 1, size_of_metadata, file);
+  read_cnt = fread(buffer.data(), 1, size_of_metadata, file);
 
   if (read_cnt != size_of_metadata) {
     Log::Fatal("Binary file error: meta data is incorrect");
   }
   // load meta data
-  dataset->metadata_.LoadFromMemory(buffer);
+  dataset->metadata_.LoadFromMemory(buffer.data());
 
   std::vector<data_size_t> used_data_indices;
   data_size_t num_global_data = dataset->num_data_;
@@ -383,40 +377,43 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* bin_filename, int rank, int 
   // read feature data
   for (int i = 0; i < dataset->num_features_; ++i) {
     // read feature size
-    read_cnt = fread(buffer, sizeof(size_t), 1, file);
+    read_cnt = fread(buffer.data(), sizeof(size_t), 1, file);
     if (read_cnt != 1) {
       Log::Fatal("Binary file error: feature %d has the wrong size", i);
     }
-    size_t size_of_feature = *(reinterpret_cast<size_t*>(buffer));
+    size_t size_of_feature = *(reinterpret_cast<size_t*>(buffer.data()));
     // re-allocate space if not enough
     if (size_of_feature > buffer_size) {
-      delete[] buffer;
       buffer_size = size_of_feature;
-      buffer = new char[buffer_size];
+      buffer.resize(buffer_size);
     }
 
-    read_cnt = fread(buffer, 1, size_of_feature, file);
+    read_cnt = fread(buffer.data(), 1, size_of_feature, file);
 
     if (read_cnt != size_of_feature) {
       Log::Fatal("Binary file error: feature %d is incorrect, read count: %d", i, read_cnt);
     }
-    dataset->features_.push_back(new Feature(buffer, num_global_data, used_data_indices));
+    dataset->features_.emplace_back(std::unique_ptr<Feature>(
+      new Feature(buffer.data(), 
+        num_global_data, 
+        used_data_indices)
+    ));
   }
-  delete[] buffer;
+  dataset->features_.shrink_to_fit();
   fclose(file);
   dataset->is_loading_from_binfile_ = true;
-  return dataset;
+  return dataset.release();
 }
 
 Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>& sample_values, size_t total_sample_size, data_size_t num_data) {
-  std::vector<BinMapper*> bin_mappers(sample_values.size());
+  std::vector<std::unique_ptr<BinMapper>> bin_mappers(sample_values.size());
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
-    bin_mappers[i] = new BinMapper();
+    bin_mappers[i].reset(new BinMapper());
     bin_mappers[i]->FindBin(&sample_values[i], total_sample_size, io_config_.max_bin);
   }
 
-  Dataset* dataset = new Dataset();
+  auto dataset = std::unique_ptr<Dataset>(new Dataset());
   dataset->num_class_ = io_config_.num_class;
   dataset->features_.clear();
   dataset->num_data_ = num_data;
@@ -429,14 +426,18 @@ Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>&
       // map real feature index to used feature index
       dataset->used_feature_map_[i] = static_cast<int>(dataset->features_.size());
       // push new feature
-      dataset->features_.push_back(new Feature(static_cast<int>(i), bin_mappers[i],
-        dataset->num_data_, io_config_.is_enable_sparse));
+      dataset->features_.emplace_back(std::unique_ptr<Feature>(
+        new Feature(static_cast<int>(i),
+          bin_mappers[i].release(),
+          dataset->num_data_, 
+          io_config_.is_enable_sparse)
+        ));
     } else {
       // if feature is trival(only 1 bin), free spaces
       Log::Warning("Ignoring Column_%d , only has one value", i);
-      delete bin_mappers[i];
     }
   }
+  dataset->features_.shrink_to_fit();
   // fill feature_names_ if not header
   if (feature_names_.size() <= 0) {
     for (int i = 0; i < dataset->num_total_features_; ++i) {
@@ -448,7 +449,7 @@ Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>&
   dataset->feature_names_ = feature_names_;
   dataset->num_features_ = static_cast<int>(dataset->features_.size());
   dataset->metadata_.Init(dataset->num_data_, dataset->num_class_, NO_SPECIFIC, NO_SPECIFIC);
-  return dataset;
+  return dataset.release();
 }
 
 
@@ -516,10 +517,10 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromMemory(const std::vect
     sample_cnt = data.size();
   }
   std::vector<size_t> sample_indices = random_.Sample(data.size(), sample_cnt);
-  std::vector<std::string> out;
+  std::vector<std::string> out(sample_indices.size());
   for (size_t i = 0; i < sample_indices.size(); ++i) {
     const size_t idx = sample_indices[i];
-    out.push_back(data[idx]);
+    out[i] = data[idx];
   }
   return out;
 }
@@ -616,15 +617,15 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
   dataset->feature_names_ = feature_names_;
   // start find bins
   if (num_machines == 1) {
-    std::vector<BinMapper*> bin_mappers(sample_values.size());
+    std::vector<std::unique_ptr<BinMapper>> bin_mappers(sample_values.size());
     // if only one machine, find bin locally
 #pragma omp parallel for schedule(guided)
     for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
       if (ignore_features_.count(i) > 0) {
-        bin_mappers[i] = nullptr;
+        bin_mappers[i].reset(nullptr);
         continue;
       }
-      bin_mappers[i] = new BinMapper();
+      bin_mappers[i].reset(new BinMapper());
       bin_mappers[i]->FindBin(&sample_values[i], sample_data.size(), io_config_.max_bin);
     }
 
@@ -635,12 +636,15 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
         // map real feature index to used feature index
         dataset->used_feature_map_[i] = static_cast<int>(dataset->features_.size());
         // push new feature
-        dataset->features_.push_back(new Feature(static_cast<int>(i), bin_mappers[i],
-          dataset->num_data_, io_config_.is_enable_sparse));
+        dataset->features_.emplace_back(std::unique_ptr<Feature>(
+          new Feature(static_cast<int>(i), 
+            bin_mappers[i].release(),
+            dataset->num_data_,
+            io_config_.is_enable_sparse)
+          ));
       } else {
         // if feature is trival(only 1 bin), free spaces
         Log::Warning("Ignoring feature %s, only has one value", feature_names_[i].c_str());
-        delete bin_mappers[i];
       }
     }
   } else {
@@ -649,8 +653,8 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
 
     // start and len will store the process feature indices for different machines
     // machine i will find bins for features in [ strat[i], start[i] + len[i] )
-    int* start = new int[num_machines];
-    int* len = new int[num_machines];
+    std::vector<int> start(num_machines);
+    std::vector<int> len(num_machines);
     int total_num_feature = static_cast<int>(sample_values.size());
     int step = (total_num_feature + num_machines - 1) / num_machines;
     if (step < 1) { step = 1; }
@@ -665,17 +669,15 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     int type_size = BinMapper::SizeForSpecificBin(io_config_.max_bin);
     // since sizes of different feature may not be same, we expand all bin mapper to type_size
     int buffer_size = type_size * total_num_feature;
-    char* input_buffer = new char[buffer_size];
-    char* output_buffer = new char[buffer_size];
+    auto input_buffer = std::vector<char>(buffer_size);
+    auto output_buffer = std::vector<char>(buffer_size);
 
     // find local feature bins and copy to buffer
 #pragma omp parallel for schedule(guided)
     for (int i = 0; i < len[rank]; ++i) {
-      BinMapper* bin_mapper = new BinMapper();
-      bin_mapper->FindBin(&sample_values[start[rank] + i], sample_data.size(), io_config_.max_bin);
-      bin_mapper->CopyTo(input_buffer + i * type_size);
-      // don't need this any more
-      delete bin_mapper;
+      BinMapper bin_mapper;
+      bin_mapper.FindBin(&sample_values[start[rank] + i], sample_data.size(), io_config_.max_bin);
+      bin_mapper.CopyTo(input_buffer.data() + i * type_size);
     }
     // convert to binary size
     for (int i = 0; i < num_machines; ++i) {
@@ -683,29 +685,29 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
       len[i] *= type_size;
     }
     // gather global feature bin mappers
-    Network::Allgather(input_buffer, buffer_size, start, len, output_buffer);
+    Network::Allgather(input_buffer.data(), buffer_size, start.data(), len.data(), output_buffer.data());
     // restore features bins from buffer
     for (int i = 0; i < total_num_feature; ++i) {
       if (ignore_features_.count(i) > 0) {
         Log::Warning("Ignoring feature %s", feature_names_[i].c_str());
         continue;
       }
-      BinMapper* bin_mapper = new BinMapper();
-      bin_mapper->CopyFrom(output_buffer + i * type_size);
+      auto bin_mapper = std::unique_ptr<BinMapper>(new BinMapper());
+      bin_mapper->CopyFrom(output_buffer.data() + i * type_size);
       if (!bin_mapper->is_trival()) {
         dataset->used_feature_map_[i] = static_cast<int>(dataset->features_.size());
-        dataset->features_.push_back(new Feature(static_cast<int>(i), bin_mapper, dataset->num_data_, io_config_.is_enable_sparse));
+        dataset->features_.emplace_back(std::unique_ptr<Feature>(
+          new Feature(static_cast<int>(i),
+            bin_mapper.release(),
+            dataset->num_data_,
+            io_config_.is_enable_sparse)
+          ));
       } else {
         Log::Warning("Ignoring feature %s, only has one value", feature_names_[i].c_str());
-        delete bin_mapper;
       }
     }
-    // free buffer
-    delete[] start;
-    delete[] len;
-    delete[] input_buffer;
-    delete[] output_buffer;
   }
+  dataset->features_.shrink_to_fit();
   dataset->num_features_ = static_cast<int>(dataset->features_.size());
 }
 
@@ -745,7 +747,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
     }
   } else {
     // if need to prediction with initial model
-    float* init_score = new float[dataset->num_data_ * dataset->num_class_];
+    std::vector<score_t> init_score(dataset->num_data_ * dataset->num_class_);
 #pragma omp parallel for schedule(guided) private(oneline_features) firstprivate(tmp_label)
     for (data_size_t i = 0; i < dataset->num_data_; ++i) {
       const int tid = omp_get_thread_num();
@@ -780,8 +782,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
       }
     }
     // metadata_ will manage space of init_score
-    dataset->metadata_.SetInitScore(init_score, dataset->num_data_ * dataset->num_class_);
-    delete[] init_score;
+    dataset->metadata_.SetInitScore(init_score.data(), dataset->num_data_ * dataset->num_class_);
   }
   dataset->FinishLoad();
   // text data can be free after loaded feature values
@@ -790,9 +791,9 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
 
 /*! \brief Extract local features from file */
 void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* parser, const std::vector<data_size_t>& used_data_indices, Dataset* dataset) {
-  float* init_score = nullptr;
+  std::vector<score_t> init_score;
   if (predict_fun_ != nullptr) {
-    init_score = new float[dataset->num_data_ * dataset->num_class_];
+    init_score = std::vector<score_t>(dataset->num_data_ * dataset->num_class_);
   }
   std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
     [this, &init_score, &parser, &dataset]
@@ -806,7 +807,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
       // parser
       parser->ParseOneLine(lines[i].c_str(), &oneline_features, &tmp_label);
       // set initial score
-      if (init_score != nullptr) {
+      if (init_score.size() > 0) {
         std::vector<double> oneline_init_score = predict_fun_(oneline_features);
         for (int k = 0; k < dataset->num_class_; ++k) {
           init_score[k * dataset->num_data_ + start_idx + i] = static_cast<float>(oneline_init_score[k]);
@@ -841,9 +842,8 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
   }
 
   // metadata_ will manage space of init_score
-  if (init_score != nullptr) {
-    dataset->metadata_.SetInitScore(init_score, dataset->num_data_ * dataset->num_class_);
-    delete[] init_score;
+  if (init_score.size() > 0) {
+    dataset->metadata_.SetInitScore(init_score.data(), dataset->num_data_ * dataset->num_class_);
   }
   dataset->FinishLoad();
 }

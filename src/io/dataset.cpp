@@ -29,10 +29,7 @@ Dataset::Dataset(data_size_t num_data, int num_class) {
 }
 
 Dataset::~Dataset() {
-  for (auto& feature : features_) {
-    delete feature;
-  }
-  features_.clear();
+
 }
 
 void Dataset::FinishLoad() {
@@ -45,23 +42,20 @@ void Dataset::FinishLoad() {
 void Dataset::CopyFeatureMapperFrom(const Dataset* dataset, bool is_enable_sparse) {
   features_.clear();
   // copy feature bin mapper data
-  for (Feature* feature : dataset->features_) {
-    features_.push_back(new Feature(feature->feature_index(),
-      new BinMapper(*feature->bin_mapper()), num_data_, is_enable_sparse));
+  for (const auto& feature : dataset->features_) {
+    features_.emplace_back(std::unique_ptr<Feature>(
+      new Feature(feature->feature_index(), 
+        new BinMapper(*feature->bin_mapper()), 
+        num_data_, 
+        is_enable_sparse)
+      ));
   }
+  features_.shrink_to_fit();
   num_class_ = dataset->num_class_;
   used_feature_map_ = dataset->used_feature_map_;
   num_features_ = static_cast<int>(features_.size());
   num_total_features_ = dataset->num_total_features_;
   feature_names_ = dataset->feature_names_;
-}
-
-std::vector<const BinMapper*> Dataset::GetBinMappers() const {
-  std::vector<const BinMapper*> ret(num_total_features_, nullptr);
-  for (const auto feature : features_) {
-    ret[feature->feature_index()] = feature->bin_mapper();
-  }
-  return ret;
 }
 
 bool Dataset::SetFloatField(const char* field_name, const float* field_data, data_size_t num_element) {

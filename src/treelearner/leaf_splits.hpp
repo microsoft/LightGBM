@@ -17,8 +17,8 @@ public:
   LeafSplits(int num_feature, data_size_t num_data)
     :num_data_in_leaf_(num_data), num_data_(num_data), num_features_(num_feature),
     data_indices_(nullptr) {
+    best_split_per_feature_.resize(num_features_);
     for (int i = 0; i < num_features_; ++i) {
-      best_split_per_feature_.push_back(SplitInfo());
       best_split_per_feature_[i].feature = i;
     }
   }
@@ -35,7 +35,7 @@ public:
   */
   void Init(int leaf, const DataPartition* data_partition, double sum_gradients, double sum_hessians) {
     leaf_index_ = leaf;
-    num_data_in_leaf_ = data_partition->GetIndexOnLeaf(leaf, &data_indices_);
+    data_indices_ = data_partition->GetIndexOnLeaf(leaf, &num_data_in_leaf_);
     sum_gradients_ = sum_gradients;
     sum_hessians_ = sum_hessians;
     for (SplitInfo& split_info : best_split_per_feature_) {
@@ -48,7 +48,7 @@ public:
   * \param gradients
   * \param hessians
   */
-  void Init(const score_t* gradients, const score_t *hessians) {
+  void Init(const score_t* gradients, const score_t* hessians) {
     num_data_in_leaf_ = num_data_;
     leaf_index_ = 0;
     data_indices_ = nullptr;
@@ -73,9 +73,9 @@ public:
   * \param gradients
   * \param hessians
   */
-  void Init(int leaf, const DataPartition* data_partition, const score_t* gradients, const score_t *hessians) {
+  void Init(int leaf, const DataPartition* data_partition, const score_t* gradients, const score_t* hessians) {
     leaf_index_ = leaf;
-    num_data_in_leaf_ = data_partition->GetIndexOnLeaf(leaf, &data_indices_);
+    data_indices_ = data_partition->GetIndexOnLeaf(leaf, &num_data_in_leaf_);
     double tmp_sum_gradients = 0.0f;
     double tmp_sum_hessians = 0.0f;
 #pragma omp parallel for schedule(static) reduction(+:tmp_sum_gradients, tmp_sum_hessians)
@@ -132,7 +132,7 @@ public:
   double sum_hessians() const { return sum_hessians_; }
 
   /*! \brief Get indices of data of current leaf */
-  data_size_t * data_indices() const { return data_indices_; }
+  const data_size_t* data_indices() const { return data_indices_; }
 
 
 private:
@@ -151,7 +151,7 @@ private:
   /*! \brief sum of hessians of current leaf */
   double sum_hessians_;
   /*! \brief indices of data of current leaf */
-  data_size_t* data_indices_;
+  const data_size_t* data_indices_;
 };
 
 }  // namespace LightGBM

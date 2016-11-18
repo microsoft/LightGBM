@@ -18,34 +18,25 @@ class DataPartition {
 public:
   DataPartition(data_size_t num_data, int num_leafs)
     :num_data_(num_data), num_leaves_(num_leafs) {
-    leaf_begin_ = new data_size_t[num_leaves_];
-    leaf_count_ = new data_size_t[num_leaves_];
-    indices_ = new data_size_t[num_data_];
-    temp_left_indices_ = new data_size_t[num_data_];
-    temp_right_indices_ = new data_size_t[num_data_];
+    leaf_begin_.resize(num_leaves_);
+    leaf_count_.resize(num_leaves_);
+    indices_.resize(num_data_);
+    temp_left_indices_.resize(num_data_);
+    temp_right_indices_.resize(num_data_);
     used_data_indices_ = nullptr;
 #pragma omp parallel
 #pragma omp master
     {
       num_threads_ = omp_get_num_threads();
     }
-    offsets_buf_ = new data_size_t[num_threads_];
-    left_cnts_buf_ = new data_size_t[num_threads_];
-    right_cnts_buf_ = new data_size_t[num_threads_];
-    left_write_pos_buf_ = new data_size_t[num_threads_];
-    right_write_pos_buf_ = new data_size_t[num_threads_];
+    offsets_buf_.resize(num_threads_);
+    left_cnts_buf_.resize(num_threads_);
+    right_cnts_buf_.resize(num_threads_);
+    left_write_pos_buf_.resize(num_threads_);
+    right_write_pos_buf_.resize(num_threads_);
   }
   ~DataPartition() {
-    delete[] leaf_begin_;
-    delete[] leaf_count_;
-    delete[] indices_;
-    delete[] temp_left_indices_;
-    delete[] temp_right_indices_;
-    delete[] offsets_buf_;
-    delete[] left_cnts_buf_;
-    delete[] right_cnts_buf_;
-    delete[] left_write_pos_buf_;
-    delete[] right_write_pos_buf_;
+
   }
 
   /*!
@@ -66,7 +57,7 @@ public:
     } else {
       // if bagging
       leaf_count_[0] = used_data_count_;
-      std::memcpy(indices_, used_data_indices_, used_data_count_ * sizeof(data_size_t));
+      std::memcpy(indices_.data(), used_data_indices_, used_data_count_ * sizeof(data_size_t));
     }
   }
 
@@ -76,11 +67,11 @@ public:
   * \param indices output data indices
   * \return number of data on this leaf
   */
-  data_size_t GetIndexOnLeaf(int leaf, data_size_t** indices) const {
+  const data_size_t* GetIndexOnLeaf(int leaf, data_size_t* out_len) const {
     // copy reference, maybe unsafe, but faster
     data_size_t begin = leaf_begin_[leaf];
-    (*indices) = static_cast<data_size_t*>(indices_ + begin);
-    return leaf_count_[leaf];
+    *out_len = leaf_count_[leaf];
+    return indices_.data() + begin;
   }
 
   /*!
@@ -108,8 +99,8 @@ public:
       data_size_t cur_cnt = inner_size;
       if (cur_start + cur_cnt > cnt) { cur_cnt = cnt - cur_start; }
       // split data inner, reduce the times of function called
-      data_size_t cur_left_count = feature_bins->Split(threshold, indices_ + begin + cur_start, cur_cnt,
-        temp_left_indices_ + cur_start, temp_right_indices_ + cur_start);
+      data_size_t cur_left_count = feature_bins->Split(threshold, indices_.data() + begin + cur_start, cur_cnt,
+        temp_left_indices_.data() + cur_start, temp_right_indices_.data() + cur_start);
       offsets_buf_[i] = cur_start;
       left_cnts_buf_[i] = cur_left_count;
       right_cnts_buf_[i] = cur_cnt - cur_left_count;
@@ -126,10 +117,12 @@ public:
 #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < num_threads_; ++i) {
       if (left_cnts_buf_[i] > 0) {
-        std::memcpy(indices_ + begin + left_write_pos_buf_[i], temp_left_indices_ + offsets_buf_[i], left_cnts_buf_[i] * sizeof(data_size_t));
+        std::memcpy(indices_.data() + begin + left_write_pos_buf_[i], 
+          temp_left_indices_.data() + offsets_buf_[i], left_cnts_buf_[i] * sizeof(data_size_t));
       }
       if (right_cnts_buf_[i] > 0) {
-        std::memcpy(indices_ + begin + left_cnt + right_write_pos_buf_[i], temp_right_indices_ + offsets_buf_[i], right_cnts_buf_[i] * sizeof(data_size_t));
+        std::memcpy(indices_.data() + begin + left_cnt + right_write_pos_buf_[i], 
+          temp_right_indices_.data() + offsets_buf_[i], right_cnts_buf_[i] * sizeof(data_size_t));
       }
     }
     // update leaf boundary
@@ -143,7 +136,7 @@ public:
   * \param used_data_indices indices of used data
   * \param num_used_data number of used data
   */
-  void SetUsedDataIndices(const data_size_t * used_data_indices, data_size_t num_used_data) {
+  void SetUsedDataIndices(const data_size_t* used_data_indices, data_size_t num_used_data) {
     used_data_indices_ = used_data_indices;
     used_data_count_ = num_used_data;
   }
@@ -162,7 +155,7 @@ public:
   */
   data_size_t leaf_begin(int leaf) const { return leaf_begin_[leaf]; }
 
-  const data_size_t* indices() const { return indices_; }
+  const data_size_t* indices() const { return indices_.data(); }
 
   /*! \brief Get number of leaves */
   int num_leaves() const { return num_leaves_; }
@@ -173,15 +166,15 @@ private:
   /*! \brief Number of all leaves */
   int num_leaves_;
   /*! \brief start index of data on one leaf */
-  data_size_t* leaf_begin_;
+  std::vector<data_size_t> leaf_begin_;
   /*! \brief number of data on one leaf */
-  data_size_t* leaf_count_;
+  std::vector<data_size_t> leaf_count_;
   /*! \brief Store all data's indices, order by leaf[data_in_leaf0,..,data_leaf1,..] */
-  data_size_t* indices_;
+  std::vector<data_size_t> indices_;
   /*! \brief team indices buffer for split */
-  data_size_t* temp_left_indices_;
+  std::vector<data_size_t> temp_left_indices_;
   /*! \brief team indices buffer for split */
-  data_size_t* temp_right_indices_;
+  std::vector<data_size_t> temp_right_indices_;
   /*! \brief used data indices, used for bagging */
   const data_size_t* used_data_indices_;
   /*! \brief used data count, used for bagging */
@@ -189,15 +182,15 @@ private:
   /*! \brief number of threads */
   int num_threads_;
   /*! \brief Buffer for multi-threading data partition, used to store offset for different threads */
-  data_size_t* offsets_buf_;
+  std::vector<data_size_t> offsets_buf_;
   /*! \brief Buffer for multi-threading data partition, used to store left count after split for different threads */
-  data_size_t* left_cnts_buf_;
+  std::vector<data_size_t> left_cnts_buf_;
   /*! \brief Buffer for multi-threading data partition, used to store right count after split for different threads */
-  data_size_t* right_cnts_buf_;
+  std::vector<data_size_t> right_cnts_buf_;
   /*! \brief Buffer for multi-threading data partition, used to store write position of left leaf for different threads */
-  data_size_t* left_write_pos_buf_;
+  std::vector<data_size_t> left_write_pos_buf_;
   /*! \brief Buffer for multi-threading data partition, used to store write position of right leaf for different threads */
-  data_size_t* right_write_pos_buf_;
+  std::vector<data_size_t> right_write_pos_buf_;
 };
 
 }  // namespace LightGBM

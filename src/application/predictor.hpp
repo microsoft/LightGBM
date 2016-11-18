@@ -14,6 +14,7 @@
 #include <utility>
 #include <functional>
 #include <string>
+#include <memory>
 
 namespace LightGBM {
 
@@ -36,16 +37,15 @@ public:
     {
       num_threads_ = omp_get_num_threads();
     }
-    features_ = new double*[num_threads_];
     for (int i = 0; i < num_threads_; ++i) {
-      features_[i] = new double[num_features_];
+      features_.push_back(std::vector<double>(num_features_));
     }
-
+    features_.shrink_to_fit();
     if (is_predict_leaf_index) {
       predict_fun_ = [this](const std::vector<std::pair<int, double>>& features) {
         const int tid = PutFeatureValuesToBuffer(features);
         // get result for leaf index
-        auto result = boosting_->PredictLeafIndex(features_[tid]);
+        auto result = boosting_->PredictLeafIndex(features_[tid].data());
         return std::vector<double>(result.begin(), result.end());
       };
     } else {
@@ -53,12 +53,12 @@ public:
         predict_fun_ = [this](const std::vector<std::pair<int, double>>& features) {
           const int tid = PutFeatureValuesToBuffer(features);
           // get result without sigmoid transformation
-          return boosting_->PredictRaw(features_[tid]);
+          return boosting_->PredictRaw(features_[tid].data());
         };
       } else {
         predict_fun_ = [this](const std::vector<std::pair<int, double>>& features) {
           const int tid = PutFeatureValuesToBuffer(features);
-          return boosting_->Predict(features_[tid]);
+          return boosting_->Predict(features_[tid].data());
         };
       }
     }
@@ -67,12 +67,6 @@ public:
   * \brief Destructor
   */
   ~Predictor() {
-    if (features_ != nullptr) {
-      for (int i = 0; i < num_threads_; ++i) {
-        delete[] features_[i];
-      }
-      delete[] features_;
-    }
   }
 
   inline const PredictFunction& GetPredictFunction() {
@@ -97,7 +91,7 @@ public:
     if (result_file == NULL) {
       Log::Fatal("Prediction results file %s doesn't exist", data_filename);
     }
-    Parser* parser = Parser::CreateParser(data_filename, has_header, num_features_, boosting_->LabelIdx());
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, has_header, num_features_, boosting_->LabelIdx()));
 
     if (parser == nullptr) {
       Log::Fatal("Could not recognize the data format of data file %s", data_filename);
@@ -133,14 +127,13 @@ public:
     predict_data_reader.ReadAllAndProcessParallel(process_fun);
 
     fclose(result_file);
-    delete parser;
   }
 
 private:
   int PutFeatureValuesToBuffer(const std::vector<std::pair<int, double>>& features) {
     int tid = omp_get_thread_num();
     // init feature value
-    std::memset(features_[tid], 0, sizeof(double)*num_features_);
+    std::memset(features_[tid].data(), 0, sizeof(double)*num_features_);
     // put feature value
     for (const auto& p : features) {
       if (p.first < num_features_) {
@@ -152,7 +145,7 @@ private:
   /*! \brief Boosting model */
   const Boosting* boosting_;
   /*! \brief Buffer for feature values */
-  double** features_;
+  std::vector<std::vector<double>> features_;
   /*! \brief Number of features */
   int num_features_;
   /*! \brief Number of threads */

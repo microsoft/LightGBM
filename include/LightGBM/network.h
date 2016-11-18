@@ -8,6 +8,7 @@
 
 #include <functional>
 #include <vector>
+#include <memory>
 
 namespace LightGBM {
 
@@ -139,8 +140,8 @@ public:
   * \param block_len The block size for different machines
   * \param output Output result
   */
-  static void Allgather(char* input, int all_size, int* block_start,
-    int* block_len, char* output);
+  static void Allgather(char* input, int all_size, const int* block_start,
+    const int* block_len, char* output);
 
   /*!
   * \brief Perform reduce scatter by using recursive halving algorithm. 
@@ -153,7 +154,7 @@ public:
   * \param reducer Reduce function
   */
   static void ReduceScatter(char* input, int input_size,
-    int* block_start, int* block_len, char* output,
+    const int* block_start, const int* block_len, char* output,
     const ReduceFunction& reducer);
 
 private:
@@ -162,17 +163,17 @@ private:
   /*! \brief Rank of local machine */
   static int rank_;
   /*! \brief The network interface, provide send/recv functions  */
-  static Linkers *linkers_;
+  static std::unique_ptr<Linkers> linkers_;
   /*! \brief Bruck map for all gather algorithm*/
   static BruckMap bruck_map_;
   /*! \brief Recursive halving map for reduce scatter */
   static RecursiveHalvingMap recursive_halving_map_;
   /*! \brief Buffer to store block start index */
-  static int* block_start_;
+  static std::vector<int> block_start_;
   /*! \brief Buffer to store block size */
-  static int* block_len_;
+  static std::vector<int> block_len_;
   /*! \brief Buffer  */
-  static char* buffer_;
+  static std::vector<char> buffer_;
   /*! \brief Size of buffer_ */
   static int buffer_size_;
 };

@@ -31,12 +31,13 @@ public:
   virtual void GetGradients(const score_t* score,
     score_t* gradients, score_t* hessians) const = 0;
 
-  /*!
-  * \brief Get sigmoid param for this objective if has. 
-  *        This function is used for prediction task, if has sigmoid param, the prediction value will be transform by sigmoid function.
-  * \return Sigmoid param, if <=0.0 means don't use sigmoid transform on this objective.
-  */
-  virtual score_t GetSigmoid() const = 0;
+  virtual const char* GetName() const = 0;
+
+  ObjectiveFunction() = default;
+  /*! \brief Disable copy */
+  ObjectiveFunction& operator=(const ObjectiveFunction&) = delete;
+  /*! \brief Disable copy */
+  ObjectiveFunction(const ObjectiveFunction&) = delete;
 
   /*!
   * \brief Create object of objective function

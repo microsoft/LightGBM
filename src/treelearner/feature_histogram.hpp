@@ -13,12 +13,15 @@ namespace LightGBM {
 */
 class FeatureHistogram {
 public:
-  FeatureHistogram()
-    :data_(nullptr) {
+  FeatureHistogram() {
   }
   ~FeatureHistogram() {
-    if (data_ != nullptr) { delete[] data_; }
   }
+
+  /*! \brief Disable copy */
+  FeatureHistogram& operator=(const FeatureHistogram&) = delete;
+  /*! \brief Disable copy */
+  FeatureHistogram(const FeatureHistogram&) = delete;
 
   /*!
   * \brief Init the feature histogram
@@ -35,7 +38,7 @@ public:
     min_gain_to_split_ = min_gain_to_split;
     bin_data_ = feature->bin_data();
     num_bins_ = feature->num_bin();
-    data_ = new HistogramBinEntry[num_bins_];
+    data_.resize(num_bins_);
   }
 
 
@@ -48,13 +51,13 @@ public:
   * \param ordered_hessians  Ordered hessians
   * \param data_indices data indices of current leaf
   */
-  void Construct(data_size_t* data_indices, data_size_t num_data, double sum_gradients,
+  void Construct(const data_size_t* data_indices, data_size_t num_data, double sum_gradients,
     double sum_hessians, const score_t* ordered_gradients, const score_t* ordered_hessians) {
-    std::memset(data_, 0, sizeof(HistogramBinEntry)* num_bins_);
+    std::memset(data_.data(), 0, sizeof(HistogramBinEntry)* num_bins_);
     num_data_ = num_data;
     sum_gradients_ = sum_gradients;
     sum_hessians_ = sum_hessians + 2 * kEpsilon;
-    bin_data_->ConstructHistogram(data_indices, num_data, ordered_gradients, ordered_hessians, data_);
+    bin_data_->ConstructHistogram(data_indices, num_data, ordered_gradients, ordered_hessians, data_.data());
   }
 
   /*!
@@ -68,11 +71,11 @@ public:
   */
   void Construct(const OrderedBin* ordered_bin, int leaf, data_size_t num_data, double sum_gradients,
     double sum_hessians, const score_t* gradients, const score_t* hessians) {
-    std::memset(data_, 0, sizeof(HistogramBinEntry)* num_bins_);
+    std::memset(data_.data(), 0, sizeof(HistogramBinEntry)* num_bins_);
     num_data_ = num_data;
     sum_gradients_ = sum_gradients;
     sum_hessians_ = sum_hessians + 2 * kEpsilon;
-    ordered_bin->ConstructHistogram(leaf, gradients, hessians, data_);
+    ordered_bin->ConstructHistogram(leaf, gradients, hessians, data_.data());
   }
 
   /*!
@@ -177,14 +180,14 @@ public:
   * \brief Memory pointer to histogram data
   */
   const HistogramBinEntry* HistogramData() const {
-    return data_;
+    return data_.data();
   }
 
   /*!
   * \brief Restore histogram from memory
   */
   void FromMemory(char* memory_data)  {
-    std::memcpy(data_, memory_data, num_bins_ * sizeof(HistogramBinEntry));
+    std::memcpy(data_.data(), memory_data, num_bins_ * sizeof(HistogramBinEntry));
   }
 
   /*!
@@ -257,7 +260,7 @@ private:
   /*! \brief number of bin of histogram */
   unsigned int num_bins_;
   /*! \brief sum of gradient of each bin */
-  HistogramBinEntry* data_;
+  std::vector<HistogramBinEntry> data_;
   /*! \brief number of all data */
   data_size_t num_data_;
   /*! \brief sum of gradient of current leaf */
@@ -267,6 +270,134 @@ private:
   /*! \brief False if this histogram cannot split */
   bool is_splittable_ = true;
 };
+
+
+class HistogramPool {
+public:
+  /*!
+  * \brief Constructor
+  */
+  HistogramPool() {
+  }
+
+  /*!
+  * \brief Destructor
+  */
+  ~HistogramPool() {
+  }
+  /*!
+  * \brief Reset pool size
+  * \param cache_size Max cache size
+  * \param total_size Total size will be used
+  */
+  void ResetSize(int cache_size, int total_size) {
+    cache_size_ = cache_size;
+    // at least need 2 bucket to store smaller leaf and larger leaf
+    CHECK(cache_size_ >= 2);
+    total_size_ = total_size;
+    if (cache_size_ > total_size_) {
+      cache_size_ = total_size_;
+    }
+    is_enough_ = (cache_size_ == total_size_);
+    if (!is_enough_) {
+      mapper_ = std::vector<int>(total_size_);
+      inverse_mapper_ = std::vector<int>(cache_size_);
+      last_used_time_ = std::vector<int>(cache_size_);
+      ResetMap();
+    }
+  }
+
+  /*!
+  * \brief Reset mapper
+  */
+  void ResetMap() {
+    if (!is_enough_) {
+      cur_time_ = 0;
+      std::fill(mapper_.begin(), mapper_.end(), -1);
+      std::fill(inverse_mapper_.begin(), inverse_mapper_.end(), -1);
+      std::fill(last_used_time_.begin(), last_used_time_.end(), 0);
+    }
+  }
+
+  /*!
+  * \brief Fill the pool
+  * \param obj_create_fun that used to generate object
+  */
+  void Fill(std::function<FeatureHistogram*()> obj_create_fun) {
+    pool_.clear();
+    pool_.resize(cache_size_);
+    for (int i = 0; i < cache_size_; ++i) {
+      pool_[i].reset(obj_create_fun());
+    }
+  }
+
+  /*!
+  * \brief Get data for the specific index
+  * \param idx which index want to get
+  * \param out output data will store into this
+  * \return True if this index is in the pool, False if this index is not in the pool
+  */
+  bool Get(int idx, FeatureHistogram** out) {
+    if (is_enough_) {
+      *out = pool_[idx].get();
+      return true;
+    } else if (mapper_[idx] >= 0) {
+      int slot = mapper_[idx];
+      *out = pool_[slot].get();
+      last_used_time_[slot] = ++cur_time_;
+      return true;
+    } else {
+      // choose the least used slot 
+      int slot = static_cast<int>(ArrayArgs<int>::ArgMin(last_used_time_));
+      *out = pool_[slot].get();
+      last_used_time_[slot] = ++cur_time_;
+
+      // reset previous mapper
+      if (inverse_mapper_[slot] >= 0) mapper_[inverse_mapper_[slot]] = -1;
+
+      // update current mapper
+      mapper_[idx] = slot;
+      inverse_mapper_[slot] = idx;
+      return false;
+    }
+  }
+
+  /*!
+  * \brief Move data from one index to another index
+  * \param src_idx
+  * \param dst_idx
+  */
+  void Move(int src_idx, int dst_idx) {
+    if (is_enough_) {
+      std::swap(pool_[src_idx], pool_[dst_idx]);
+      return;
+    }
+    if (mapper_[src_idx] < 0) {
+      return;
+    }
+    // get slot of src idx
+    int slot = mapper_[src_idx];
+    // reset src_idx
+    mapper_[src_idx] = -1;
+
+    // move to dst idx
+    mapper_[dst_idx] = slot;
+    last_used_time_[slot] = ++cur_time_;
+    inverse_mapper_[slot] = dst_idx;
+  }
+private:
+
+  std::vector<std::unique_ptr<FeatureHistogram[]>> pool_;
+  int cache_size_;
+  int total_size_;
+  bool is_enough_ = false;
+  std::vector<int> mapper_;
+  std::vector<int> inverse_mapper_;
+  std::vector<int> last_used_time_;
+  int cur_time_ = 0;
+};
+
+
 
 }  // namespace LightGBM
 #endif   // LightGBM_TREELEARNER_FEATURE_HISTOGRAM_HPP_

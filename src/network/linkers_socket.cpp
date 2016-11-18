@@ -47,7 +47,7 @@ Linkers::Linkers(NetworkConfig config) {
     Log::Fatal("Machine list file doesn't contain the local machine");
   }
   // construct listener
-  listener_ = new TcpSocket();
+  listener_ = std::unique_ptr<TcpSocket>(new TcpSocket());
   TryBind(local_listen_port_);
 
   for (int i = 0; i < num_machines_; ++i) {
@@ -62,14 +62,12 @@ Linkers::Linkers(NetworkConfig config) {
   Construct();
   // free listener
   listener_->Close();
-  delete listener_;
 }
 
 Linkers::~Linkers() {
   for (size_t i = 0; i < linkers_.size(); ++i) {
     if (linkers_[i] != nullptr) {
       linkers_[i]->Close();
-      delete linkers_[i];
     }
   }
   TcpSocket::Finalize();
@@ -119,7 +117,7 @@ void Linkers::TryBind(int port) {
 }
 
 void Linkers::SetLinker(int rank, const TcpSocket& socket) {
-  linkers_[rank] = new TcpSocket(socket);
+  linkers_[rank].reset(new TcpSocket(socket));
   // set timeout
   linkers_[rank]->SetTimeout(socket_timeout_ * 1000 * 60);
 }

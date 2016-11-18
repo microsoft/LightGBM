@@ -204,14 +204,13 @@
     <ClInclude Include="..\include\LightGBM\utils\array_args.h" />
     <ClInclude Include="..\include\LightGBM\utils\common.h" />
     <ClInclude Include="..\include\LightGBM\utils\log.h" />
-    <ClInclude Include="..\include\LightGBM\utils\lru_pool.h" />
     <ClInclude Include="..\include\LightGBM\utils\pipeline_reader.h" />
     <ClInclude Include="..\include\LightGBM\utils\random.h" />
     <ClInclude Include="..\include\LightGBM\utils\text_reader.h" />
     <ClInclude Include="..\include\LightGBM\utils\threading.h" />
     <ClInclude Include="..\src\application\predictor.hpp" />
     <ClInclude Include="..\src\boosting\gbdt.h" />
-    <ClInclude Include="..\src\boosting\dart.h" />
+    <ClInclude Include="..\src\boosting\dart.hpp" />
     <ClInclude Include="..\src\boosting\score_updater.hpp" />
     <ClInclude Include="..\src\io\dense_bin.hpp" />
     <ClInclude Include="..\src\io\ordered_sparse_bin.hpp" />
@@ -238,7 +237,6 @@
     <ClCompile Include="..\src\application\application.cpp" />
     <ClCompile Include="..\src\boosting\boosting.cpp" />
     <ClCompile Include="..\src\boosting\gbdt.cpp" />
-    <ClCompile Include="..\src\boosting\dart.cpp" />
     <ClCompile Include="..\src\c_api.cpp" />
     <ClCompile Include="..\src\io\bin.cpp" />
     <ClCompile Include="..\src\io\config.cpp" />
