@@ -55,7 +55,12 @@ void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const O
     gradients_ = std::vector<score_t>(num_data_ * num_class_);
     hessians_ = std::vector<score_t>(num_data_ * num_class_);
   }
-
+  sigmoid_ = -1.0f;
+  if (object_function_ != nullptr 
+    && std::string(object_function_->GetName()) == std::string("binary")) {
+    // only binary classification need sigmoid transform
+    sigmoid_ = gbdt_config_->sigmoid;
+  }
   // get max feature index
   max_feature_idx_ = train_data_->num_total_features() - 1;
   // get label index
@@ -145,7 +150,7 @@ void GBDT::Bagging(int iter, const int curr_class) {
       bag_data_cnt_ = cur_left_cnt;
       out_of_bag_data_cnt_ = num_data_ - bag_data_cnt_;
     }
-    Log::Info("Re-bagging, using %d data to train", bag_data_cnt_);
+    Log::Debug("Re-bagging, using %d data to train", bag_data_cnt_);
     // set bagging data to tree learner
     tree_learner_[curr_class]->SetBaggingData(bag_data_indices_.data(), bag_data_cnt_);
   }
@@ -316,7 +321,7 @@ void GBDT::GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len)
         out_result[j * num_data + i] = static_cast<score_t>(tmp_result[i]);
       }
     }
-  } else if(sigmoid_ > 0){
+  } else if(sigmoid_ > 0.0f){
 #pragma omp parallel for schedule(guided)
     for (data_size_t i = 0; i < num_data; ++i) {
       out_result[i] = static_cast<score_t>(1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * raw_scores[i])));
@@ -341,7 +346,6 @@ void GBDT::Boosting() {
 }
 
 void GBDT::SaveModelToFile(int num_used_model, bool is_finish, const char* filename) {
-
   // first time to this function, open file
   if (saved_model_size_ < 0) {
     model_output_file_.open(filename);
@@ -353,8 +357,12 @@ void GBDT::SaveModelToFile(int num_used_model, bool is_finish, const char* filen
     model_output_file_ << "label_index=" << label_idx_ << std::endl;
     // output max_feature_idx
     model_output_file_ << "max_feature_idx=" << max_feature_idx_ << std::endl;
+    // output objective name
+    if (object_function_ != nullptr) {
+      model_output_file_ << "objective=" << object_function_->GetName() << std::endl;
+    }
     // output sigmoid parameter
-    model_output_file_ << "sigmoid=" << object_function_->GetSigmoid() << std::endl;
+    model_output_file_ << "sigmoid=" << sigmoid_ << std::endl;
     model_output_file_ << std::endl;
     saved_model_size_ = 0;
   }

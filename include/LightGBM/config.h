@@ -183,6 +183,7 @@ enum TreeLearnerType {
 struct BoostingConfig: public ConfigBase {
 public:
   virtual ~BoostingConfig() {}
+  double sigmoid = 1.0f;
   int output_freq = 1;
   bool is_provide_training_metric = false;
   int num_iterations = 10;

@@ -38,9 +38,8 @@ public:
     }
   }
 
-  score_t GetSigmoid() const override {
-    // not sigmoid transform, return -1
-    return -1.0f;
+  const char* GetName() const override {
+    return "regression";
   }
 
 private:

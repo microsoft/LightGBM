@@ -202,11 +202,11 @@ void Application::InitTrain() {
   objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
   // initialize the boosting
   boosting_->Init(&config_.boosting_config, train_data_.get(), objective_fun_.get(),
-    Common::ConstPtrInVectorWarpper<Metric>(train_metric_));
+    Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
   // add validation data into boosting
   for (size_t i = 0; i < valid_datas_.size(); ++i) {
     boosting_->AddDataset(valid_datas_[i].get(),
-      Common::ConstPtrInVectorWarpper<Metric>(valid_metrics_[i]));
+      Common::ConstPtrInVectorWrapper<Metric>(valid_metrics_[i]));
   }
   Log::Info("Finished initializing training");
 }

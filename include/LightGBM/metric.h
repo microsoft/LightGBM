@@ -27,7 +27,7 @@ public:
   virtual void Init(const char* test_name,
     const Metadata& metadata, data_size_t num_data) = 0;
 
-  virtual std::vector<std::string> GetName() const = 0;
+  virtual const std::vector<std::string>& GetName() const = 0;
 
   virtual score_t factor_to_bigger_better() const = 0;
   /*!

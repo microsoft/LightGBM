@@ -279,6 +279,7 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
 
 void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "num_iterations", &num_iterations);
+  GetDouble(params, "sigmoid", &sigmoid);
   CHECK(num_iterations >= 0);
   GetInt(params, "bagging_seed", &bagging_seed);
   GetInt(params, "bagging_freq", &bagging_freq);

@@ -191,11 +191,8 @@ public:
     }
   }
 
-  score_t GetSigmoid() const override {
-    // though we use sigmoid transform on objective
-    // for the prediction, we actually don't need to transform by sigmoid.
-    // since we only need the ranking score.
-    return -1.0f;
+  const char* GetName() const override {
+    return "lambdarank";
   }
 
 private:

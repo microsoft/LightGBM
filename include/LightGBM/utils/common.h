@@ -361,7 +361,7 @@ inline void Softmax(std::vector<double>* p_rec) {
 }
 
 template<typename T>
-std::vector<const T*> ConstPtrInVectorWarpper(const std::vector<std::unique_ptr<T>>& input) {
+std::vector<const T*> ConstPtrInVectorWrapper(const std::vector<std::unique_ptr<T>>& input) {
   std::vector<const T*> ret;
   for (size_t i = 0; i < input.size(); ++i) {
     ret.push_back(input.at(i).get());

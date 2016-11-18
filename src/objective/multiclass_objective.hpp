@@ -72,8 +72,8 @@ public:
     }
   }
 
-  score_t GetSigmoid() const override {
-    return -1.0f;
+  const char* GetName() const override {
+    return "multiclass";
   }
 
 private:

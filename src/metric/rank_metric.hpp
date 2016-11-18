@@ -76,7 +76,7 @@ public:
     }
   }
 
-  std::vector<std::string> GetName() const override {
+  const std::vector<std::string>& GetName() const override {
     return name_;
   }
 
