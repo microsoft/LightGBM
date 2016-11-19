@@ -10,6 +10,8 @@
 #include <mutex>
 #include <algorithm>
 
+#include "sparse_bin.hpp"
+
 namespace LightGBM {
 
 /*!
@@ -21,7 +23,7 @@ namespace LightGBM {
 *        So we only using ordered bin for sparse situations.
 */
 template <typename VAL_T>
-class OrderedSparseBin:public OrderedBin {
+class OrderedSparseBin: public OrderedBin {
 public:
   /*! \brief Pair to store one bin entry */
   struct SparsePair {
@@ -30,14 +32,12 @@ public:
     SparsePair(data_size_t r, VAL_T b) : ridx(r), bin(b) {}
   };
 
-  OrderedSparseBin(const std::vector<uint8_t>& delta, const std::vector<VAL_T>& vals)
-    :delta_(delta), vals_(vals) {
+  OrderedSparseBin(const SparseBin<VAL_T>* bin_data)
+    :bin_data_(bin_data) {
     data_size_t cur_pos = 0;
-    for (size_t i = 0; i < vals_.size(); ++i) {
-      cur_pos += delta_[i];
-      if (vals_[i] > 0) {
-        ordered_pair_.emplace_back(cur_pos, vals_[i]);
-      }
+    data_size_t i_delta = -1;
+    while (bin_data_->NextNonzero(&i_delta, &cur_pos)) {
+      ordered_pair_.emplace_back(cur_pos, 0);
     }
     ordered_pair_.shrink_to_fit();
   }
@@ -51,26 +51,24 @@ public:
     leaf_cnt_ = std::vector<data_size_t>(num_leaves, 0);
     if (used_idices == nullptr) {
       // if using all data, copy all non-zero pair
-      data_size_t cur_pos = 0;
       data_size_t j = 0;
-      for (size_t i = 0; i < vals_.size(); ++i) {
-        cur_pos += delta_[i];
-        if (vals_[i] > 0) {
-          ordered_pair_[j].ridx = cur_pos;
-          ordered_pair_[j].bin = vals_[i];
-          ++j;
-        }
+      data_size_t cur_pos = 0;
+      data_size_t i_delta = -1;
+      while (bin_data_->NextNonzero(&i_delta, &cur_pos)) {
+        ordered_pair_[j].ridx = cur_pos;
+        ordered_pair_[j].bin = bin_data_->vals_[i_delta];
+        ++j;
       }
-      leaf_cnt_[0] = static_cast<data_size_t>(ordered_pair_.size());
+      leaf_cnt_[0] = static_cast<data_size_t>(j);
     } else {
       // if using part of data(bagging)
       data_size_t j = 0;
       data_size_t cur_pos = 0;
-      for (size_t i = 0; i < vals_.size(); ++i) {
-        cur_pos += delta_[i];
-        if (vals_[i] > 0 && used_idices[cur_pos]) {
+      data_size_t i_delta = -1;
+      while (bin_data_->NextNonzero(&i_delta, &cur_pos)) {
+        if (used_idices[cur_pos]) {
           ordered_pair_[j].ridx = cur_pos;
-          ordered_pair_[j].bin = vals_[i];
+          ordered_pair_[j].bin = bin_data_->vals_[i_delta];
           ++j;
         }
       }
@@ -79,7 +77,7 @@ public:
   }
 
   void ConstructHistogram(int leaf, const score_t* gradient, const score_t* hessian,
-                                            HistogramBinEntry* out) const override {
+    HistogramBinEntry* out) const override {
     // get current leaf boundary
     const data_size_t start = leaf_start_[leaf];
     const data_size_t end = start + leaf_cnt_[leaf];
@@ -118,9 +116,7 @@ public:
   OrderedSparseBin<VAL_T>(const OrderedSparseBin<VAL_T>&) = delete;
 
 private:
-  const std::vector<uint8_t>& delta_;
-  const std::vector<VAL_T>& vals_;
-
+  const SparseBin<VAL_T>* bin_data_;
   /*! \brief Store non-zero pair , group by leaf */
   std::vector<SparsePair> ordered_pair_;
   /*! \brief leaf_start_[i] means data in i-th leaf start from */
@@ -128,5 +124,11 @@ private:
   /*! \brief leaf_cnt_[i] means number of data in i-th leaf */
   std::vector<data_size_t> leaf_cnt_;
 };
+
+template <typename VAL_T>
+OrderedBin* SparseBin<VAL_T>::CreateOrderedBin() const {
+  return new OrderedSparseBin<VAL_T>(this);
+}
+
 }  // namespace LightGBM
 #endif   // LightGBM_IO_ORDERED_SPARSE_BIN_HPP_
