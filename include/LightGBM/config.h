@@ -286,7 +286,7 @@ inline bool ConfigBase::GetBool(
   const std::string& name, bool* out) {
   if (params.count(name) > 0) {
     std::string value = params.at(name);
-    std::transform(value.begin(), value.end(), value.begin(), ::tolower);
+    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("false") || value == std::string("-")) {
       *out = false;
     } else if (value == std::string("true") || value == std::string("+")) {

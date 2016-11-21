@@ -37,7 +37,7 @@ public:
     data_size_t cur_pos = 0;
     data_size_t i_delta = -1;
     while (bin_data_->NextNonzero(&i_delta, &cur_pos)) {
-      ordered_pair_.emplace_back(cur_pos, 0);
+      ordered_pair_.emplace_back(cur_pos, static_cast<VAL_T>(0));
     }
     ordered_pair_.shrink_to_fit();
   }

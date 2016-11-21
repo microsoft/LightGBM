@@ -5,10 +5,10 @@
 
 #include <cstdio>
 
-#include <algorithm>
 #include <functional>
 #include <thread>
 #include <memory>
+#include <algorithm>
 
 namespace LightGBM{
 

@@ -66,7 +66,7 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
 void OverallConfig::GetBoostingType(const std::unordered_map<std::string, std::string>& params) {
   std::string value;
   if (GetString(params, "boosting_type", &value)) {
-    std::transform(value.begin(), value.end(), value.begin(), ::tolower);
+    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("gbdt") || value == std::string("gbrt")) {
       boosting_type = BoostingType::kGBDT;
     } else if (value == std::string("dart")) {
@@ -80,7 +80,7 @@ void OverallConfig::GetBoostingType(const std::unordered_map<std::string, std::s
 void OverallConfig::GetObjectiveType(const std::unordered_map<std::string, std::string>& params) {
   std::string value;
   if (GetString(params, "objective", &value)) {
-    std::transform(value.begin(), value.end(), value.begin(), ::tolower);
+    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     objective_type = value;
   }
 }
@@ -91,13 +91,13 @@ void OverallConfig::GetMetricType(const std::unordered_map<std::string, std::str
     // clear old metrics
     metric_types.clear();
     // to lower
-    std::transform(value.begin(), value.end(), value.begin(), ::tolower);
+    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     // split
     std::vector<std::string> metrics = Common::Split(value.c_str(), ',');
     // remove dumplicate
     std::unordered_map<std::string, int> metric_maps;
     for (auto& metric : metrics) {
-      std::transform(metric.begin(), metric.end(), metric.begin(), ::tolower);
+      std::transform(metric.begin(), metric.end(), metric.begin(), Common::tolower);
       if (metric_maps.count(metric) <= 0) {
         metric_maps[metric] = 1;
       }
@@ -114,7 +114,7 @@ void OverallConfig::GetMetricType(const std::unordered_map<std::string, std::str
 void OverallConfig::GetTaskType(const std::unordered_map<std::string, std::string>& params) {
   std::string value;
   if (GetString(params, "task", &value)) {
-    std::transform(value.begin(), value.end(), value.begin(), ::tolower);
+    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("train") || value == std::string("training")) {
       task_type = TaskType::kTrain;
     } else if (value == std::string("predict") || value == std::string("prediction")
@@ -308,7 +308,7 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
 void BoostingConfig::GetTreeLearnerType(const std::unordered_map<std::string, std::string>& params) {
   std::string value;
   if (GetString(params, "tree_learner", &value)) {
-    std::transform(value.begin(), value.end(), value.begin(), ::tolower);
+    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("serial")) {
       tree_learner_type = TreeLearnerType::kSerialTreeLearner;
     } else if (value == std::string("feature") || value == std::string("feature_parallel")) {

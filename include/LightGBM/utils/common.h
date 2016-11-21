@@ -17,6 +17,12 @@ namespace LightGBM {
 
 namespace Common {
 
+inline char tolower(char in) {
+  if (in <= 'Z' && in >= 'A')
+    return in - ('Z' - 'z');
+  return in;
+}
+
 inline static std::string& Trim(std::string& str) {
   if (str.size() <= 0) {
     return str;
@@ -173,7 +179,7 @@ inline static const char* Atof(const char* p, double* out) {
     }
     if (cnt > 0) {
       std::string tmp_str(p, cnt);
-      std::transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(), ::tolower);
+      std::transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(), Common::tolower);
       if (tmp_str == std::string("na") || tmp_str == std::string("nan")) {
         *out = 0;
       } else if (tmp_str == std::string("inf") || tmp_str == std::string("infinity")) {
