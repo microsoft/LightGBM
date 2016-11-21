@@ -94,20 +94,32 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
   } else {
     // mean size for one bin
     double mean_bin_size = sample_size / static_cast<double>(max_bin);
-    double static_mean_bin_size = mean_bin_size;
+    int rest_bin_cnt = max_bin;
+    int rest_sample_cnt = static_cast<int>(sample_size);
+    std::vector<bool> is_big_count_value(num_values, false);
+    for (int i = 0; i < num_values; ++i) {
+      if (counts[i] >= mean_bin_size) {
+        is_big_count_value[i] = true;
+        --rest_bin_cnt;
+        rest_sample_cnt -= counts[i];
+      }
+    }
+    mean_bin_size = rest_sample_cnt / static_cast<double>(rest_bin_cnt);
+
     std::vector<double> upper_bounds(max_bin, std::numeric_limits<double>::infinity());
     std::vector<double> lower_bounds(max_bin, std::numeric_limits<double>::infinity());
 
-    int rest_sample_cnt = static_cast<int>(sample_size);
     int bin_cnt = 0;
     lower_bounds[bin_cnt] = distinct_values[0];
     int cur_cnt_inbin = 0;
     for (int i = 0; i < num_values - 1; ++i) {
-      rest_sample_cnt -= counts[i];
+      if (!is_big_count_value[i]) {
+        rest_sample_cnt -= counts[i];
+      }
       cur_cnt_inbin += counts[i];
       // need a new bin
-      if (counts[i] >= static_mean_bin_size || cur_cnt_inbin >= mean_bin_size ||
-        (counts[i + 1] >= static_mean_bin_size && cur_cnt_inbin >= std::max(1.0, mean_bin_size * 0.5f))) {
+      if (is_big_count_value[i] || cur_cnt_inbin >= mean_bin_size ||
+        (is_big_count_value[i + 1] && cur_cnt_inbin >= std::max(1.0, mean_bin_size * 0.5f))) {
         upper_bounds[bin_cnt] = distinct_values[i];
         if (bin_cnt == 0) {
           cnt_in_bin0 = cur_cnt_inbin;
@@ -116,7 +128,10 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
         lower_bounds[bin_cnt] = distinct_values[i + 1];
         if (bin_cnt >= max_bin - 1) { break; }
         cur_cnt_inbin = 0;
-        mean_bin_size = rest_sample_cnt / static_cast<double>(max_bin - bin_cnt);
+        if (!is_big_count_value[i]) {
+          --rest_bin_cnt;
+          mean_bin_size = rest_sample_cnt / static_cast<double>(rest_bin_cnt);
+        }
       }
     }
     //
