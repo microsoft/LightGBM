@@ -199,7 +199,7 @@ DllExport int LGBM_CreateDatasetFromMat(const void* data,
   if (reference == nullptr) {
     // sample data first
     Random rand(config.io_config.data_random_seed);
-    const size_t sample_cnt = static_cast<size_t>(nrow < config.io_config.bin_construct_sample_cnt ? nrow : config.io_config.bin_construct_sample_cnt);
+    const int sample_cnt = static_cast<int>(nrow < config.io_config.bin_construct_sample_cnt ? nrow : config.io_config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
     std::vector<std::vector<double>> sample_values(ncol);
     for (size_t i = 0; i < sample_indices.size(); ++i) {
@@ -251,7 +251,7 @@ DllExport int LGBM_CreateDatasetFromCSR(const void* indptr,
   if (reference == nullptr) {
     // sample data first
     Random rand(config.io_config.data_random_seed);
-    const size_t sample_cnt = static_cast<size_t>(nrow < config.io_config.bin_construct_sample_cnt ? nrow : config.io_config.bin_construct_sample_cnt);
+    const int sample_cnt = static_cast<int>(nrow < config.io_config.bin_construct_sample_cnt ? nrow : config.io_config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
     std::vector<std::vector<double>> sample_values;
     for (size_t i = 0; i < sample_indices.size(); ++i) {
@@ -313,7 +313,7 @@ DllExport int LGBM_CreateDatasetFromCSC(const void* col_ptr,
     Log::Warning("Construct from CSC format is not efficient");
     // sample data first
     Random rand(config.io_config.data_random_seed);
-    const size_t sample_cnt = static_cast<size_t>(nrow < config.io_config.bin_construct_sample_cnt ? nrow : config.io_config.bin_construct_sample_cnt);
+    const int sample_cnt = static_cast<int>(nrow < config.io_config.bin_construct_sample_cnt ? nrow : config.io_config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
     std::vector<std::vector<double>> sample_values(ncol_ptr - 1);
 #pragma omp parallel for schedule(guided)
@@ -762,7 +762,7 @@ ColumnFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indi
   throw std::runtime_error("unknown data type in ColumnFunctionFromCSC");
 }
 
-std::vector<double> SampleFromOneColumn(const std::vector<std::pair<int, double>>& data, const std::vector<size_t>& indices) {
+std::vector<double> SampleFromOneColumn(const std::vector<std::pair<int, double>>& data, const std::vector<int>& indices) {
   size_t j = 0;
   std::vector<double> ret;
   for (auto row_idx : indices) {

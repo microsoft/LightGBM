@@ -411,7 +411,7 @@ ColumnFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indi
   const void* data, int data_type, int64_t ncol_ptr, int64_t nelem);
 
 std::vector<double> 
-SampleFromOneColumn(const std::vector<std::pair<int, double>>& data, const std::vector<size_t>& indices);
+SampleFromOneColumn(const std::vector<std::pair<int, double>>& data, const std::vector<int>& indices);
 
 
 // exception handle and error msg

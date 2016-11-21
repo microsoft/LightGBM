@@ -88,7 +88,7 @@ private:
     // select dropping tree indexes based on drop_rate
     // if drop rate is too small, skip this step, drop one tree randomly
     if (drop_rate_ > kEpsilon) {
-      for (size_t i = 0; i < static_cast<size_t>(iter_); ++i) {
+      for (int i = 0; i < iter_; ++i) {
         if (random_for_drop_.NextDouble() < drop_rate_) {
           drop_index_.push_back(i);
         }
@@ -128,7 +128,7 @@ private:
     }
   }
   /*! \brief The indexes of dropping trees */
-  std::vector<size_t> drop_index_;
+  std::vector<int> drop_index_;
   /*! \brief Dropping rate */
   double drop_rate_;
   /*! \brief Random generator, used to select dropping trees */

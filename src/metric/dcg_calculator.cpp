@@ -38,7 +38,7 @@ score_t DCGCalculator::CalMaxDCGAtK(data_size_t k, const float* label, data_size
   for (data_size_t i = 0; i < num_data; ++i) {
     ++label_cnt[static_cast<int>(label[i])];
   }
-  size_t top_label = label_gain_.size() - 1;
+  int top_label = static_cast<int>(label_gain_.size()) - 1;
 
   if (k > num_data) { k = num_data; }
   //  start from top label, and accumulate DCG
@@ -67,7 +67,7 @@ void DCGCalculator::CalMaxDCG(const std::vector<data_size_t>& ks,
   }
   score_t cur_result = 0.0f;
   data_size_t cur_left = 0;
-  size_t top_label = label_gain_.size() - 1;
+  int top_label = static_cast<int>(label_gain_.size()) - 1;
   // calculate k Max DCG by one pass
   for (size_t i = 0; i < ks.size(); ++i) {
     data_size_t cur_k = ks[i];

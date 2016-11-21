@@ -141,8 +141,8 @@ void SerialTreeLearner::BeforeTrain() {
     is_feature_used_[i] = false;
   }
   // Get used feature at current tree
-  size_t used_feature_cnt = static_cast<size_t>(num_features_*feature_fraction_);
-  std::vector<size_t> used_feature_indices = random_.Sample(num_features_, used_feature_cnt);
+  int used_feature_cnt = static_cast<int>(num_features_*feature_fraction_);
+  auto used_feature_indices = random_.Sample(num_features_, used_feature_cnt);
   for (auto idx : used_feature_indices) {
     is_feature_used_[idx] = true;
   }

@@ -512,11 +512,11 @@ std::vector<std::string> DatasetLoader::LoadTextDataToMemory(const char* filenam
 }
 
 std::vector<std::string> DatasetLoader::SampleTextDataFromMemory(const std::vector<std::string>& data) {
-  size_t sample_cnt = static_cast<size_t>(io_config_.bin_construct_sample_cnt);
-  if (sample_cnt > data.size()) {
-    sample_cnt = data.size();
+  int sample_cnt = io_config_.bin_construct_sample_cnt;
+  if (static_cast<size_t>(sample_cnt) > data.size()) {
+    sample_cnt = static_cast<int>(data.size());
   }
-  std::vector<size_t> sample_indices = random_.Sample(data.size(), sample_cnt);
+  auto sample_indices = random_.Sample(static_cast<int>(data.size()), sample_cnt);
   std::vector<std::string> out(sample_indices.size());
   for (size_t i = 0; i < sample_indices.size(); ++i) {
     const size_t idx = sample_indices[i];
