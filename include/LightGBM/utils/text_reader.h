@@ -159,7 +159,7 @@ public:
       }
       else {
         const size_t idx = random.NextInt(0, line_idx + 1);
-        if (idx < sample_cnt) {
+        if (idx < static_cast<size_t>(sample_cnt)) {
           out_sampled_data->operator[](idx) = std::string(buffer, size);
         }
       }
@@ -184,7 +184,7 @@ public:
   }
 
   INDEX_T SampleAndFilterFromFile(const std::function<bool(INDEX_T)>& filter_fun, std::vector<INDEX_T>* out_used_data_indices,
-    Random& random, size_t sample_cnt, std::vector<std::string>* out_sampled_data) {
+    Random& random, INDEX_T sample_cnt, std::vector<std::string>* out_sampled_data) {
     INDEX_T cur_sample_cnt = 0;
     out_used_data_indices->clear();
     INDEX_T total_cnt = ReadAllAndProcess(
@@ -199,7 +199,7 @@ public:
         }
         else {
           const size_t idx = random.NextInt(0, out_used_data_indices->size());
-          if (idx < sample_cnt) {
+          if (idx < static_cast<size_t>(sample_cnt) ) {
             out_sampled_data->operator[](idx) = std::string(buffer, size);
           }
         }
@@ -286,7 +286,7 @@ public:
   INDEX_T ReadPartAndProcessParallel(const std::vector<INDEX_T>& used_data_indices, const std::function<void(INDEX_T, const std::vector<std::string>&)>& process_fun) {
     return ReadAllAndProcessParallelWithFilter(process_fun,
       [&used_data_indices](INDEX_T used_cnt ,INDEX_T total_cnt) {
-      if (used_cnt < used_data_indices.size() && total_cnt == used_data_indices[used_cnt]) {
+      if (static_cast<size_t>(used_cnt) < used_data_indices.size() && total_cnt == used_data_indices[used_cnt]) {
         return true;
       }
       else {
