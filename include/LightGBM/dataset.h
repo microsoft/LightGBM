@@ -143,8 +143,13 @@ public:
   * \brief Get weights, if not exists, will return nullptr
   * \return Pointer of weights
   */
-  inline const float* weights()
-            const { return weights_.data(); }
+  inline const float* weights() const {
+    if (weights_.size() > 0) {
+      return weights_.data();
+    } else {
+      return nullptr;
+    }
+  }
 
   /*!
   * \brief Get data boundaries on queries, if not exists, will return nullptr
@@ -153,8 +158,13 @@ public:
   *        is the data indices for query i.
   * \return Pointer of data boundaries on queries
   */
-  inline const data_size_t* query_boundaries()
-           const { return query_boundaries_.data(); }
+  inline const data_size_t* query_boundaries() const { 
+    if (query_boundaries_.size() > 0) {
+      return query_boundaries_.data();
+    } else {
+      return nullptr;
+    }
+  }
 
   /*!
   * \brief Get Number of queries
@@ -166,13 +176,25 @@ public:
   * \brief Get weights for queries, if not exists, will return nullptr
   * \return Pointer of weights for queries
   */
-  inline const float* query_weights() const { return query_weights_.data(); }
+  inline const float* query_weights() const { 
+    if (query_weights_.size() > 0) {
+      return query_weights_.data();
+    } else {
+      return nullptr;
+    }
+  }
 
   /*!
   * \brief Get initial scores, if not exists, will return nullptr
   * \return Pointer of initial scores
   */
-  inline const float* init_score() const { return init_score_.data(); }
+  inline const float* init_score() const { 
+    if (init_score_.size() > 0) {
+      return init_score_.data();
+    } else {
+      return nullptr;
+    }
+  }
 
   /*! \brief Disable copy */
   Metadata& operator=(const Metadata&) = delete;

@@ -387,7 +387,7 @@ DllExport int LGBM_DatasetGetField(DatesetHandle handle,
     *out_type = C_API_DTYPE_INT32;
     is_success = true;
   }
-  if (!is_success) { throw std::runtime_error("Field not found"); }
+  if (!is_success) { throw std::runtime_error("Field not found or not exist"); }
   API_END();
 }
 

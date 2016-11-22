@@ -101,7 +101,11 @@ bool Dataset::GetFloatField(const char* field_name, int64_t* out_len, const floa
   } else {
     return false;
   }
-  return true;
+  if (*out_ptr != nullptr) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 bool Dataset::GetIntField(const char* field_name, int64_t* out_len, const int** out_ptr) {
@@ -109,11 +113,15 @@ bool Dataset::GetIntField(const char* field_name, int64_t* out_len, const int** 
   name = Common::Trim(name);
   if (name == std::string("query") || name == std::string("group")) {
     *out_ptr = metadata_.query_boundaries();
-    *out_len = num_data_;
+    *out_len = metadata_.num_queries();
   } else {
     return false;
   }
-  return true;
+  if (*out_ptr != nullptr) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 void Dataset::SaveBinaryFile(const char* bin_filename) {
