@@ -15,7 +15,7 @@ BoostingType GetBoostingTypeFromModelFile(const char* filename) {
   return BoostingType::kUnknow;
 }
 
-void LoadFileToBoosting(Boosting* boosting, const char* filename) {
+void Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
   if (boosting != nullptr) {
     TextReader<size_t> model_reader(filename, true);
     model_reader.ReadAllLines();

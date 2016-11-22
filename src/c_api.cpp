@@ -82,11 +82,12 @@ public:
         Common::ConstPtrInVectorWrapper<Metric>(valid_metrics_[i]));
     }
   }
-
+  void LoadModelFromFile(const char* filename) {
+    Boosting::LoadFileToBoosting(boosting_.get(), filename);
+  }
   ~Booster() {
 
   }
-
   bool TrainOneIter() {
     return boosting_->TrainOneIter(nullptr, nullptr, false);
   }
@@ -414,6 +415,7 @@ DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
   const char* valid_names[],
   int n_valid_datas,
   const char* parameters,
+  const char* init_model_filename,
   BoosterHandle* out) {
   API_BEGIN();
   const Dataset* p_train_data = reinterpret_cast<const Dataset*>(train_data);
@@ -423,11 +425,15 @@ DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
     p_valid_datas.emplace_back(reinterpret_cast<const Dataset*>(valid_datas[i]));
     p_valid_names.emplace_back(valid_names[i]);
   }
-  *out = new Booster(p_train_data, p_valid_datas, p_valid_names, parameters);
+  auto ret = std::unique_ptr<Booster>(new Booster(p_train_data, p_valid_datas, p_valid_names, parameters));
+  if (init_model_filename != nullptr) {
+    ret->LoadModelFromFile(init_model_filename);
+  }
+  *out = ret.release();
   API_END();
 }
 
-DllExport int LGBM_BoosterLoadFromModelfile(
+DllExport int LGBM_BoosterCreateFromModelfile(
   const char* filename,
   BoosterHandle* out) {
   API_BEGIN();

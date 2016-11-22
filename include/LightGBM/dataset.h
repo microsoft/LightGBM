@@ -83,6 +83,8 @@ public:
 
   void SetQueryBoundaries(const data_size_t* query_boundaries, data_size_t len);
 
+  void SetQueryId(const data_size_t* query_id, data_size_t len);
+
   /*!
   * \brief Set initial scores
   * \param init_score Initial scores, this class will manage memory for init_score.

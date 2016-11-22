@@ -248,6 +248,39 @@ void Metadata::SetQueryBoundaries(const data_size_t* query_boundaries, data_size
   LoadQueryWeights();
 }
 
+void Metadata::SetQueryId(const data_size_t* query_id, data_size_t len) {
+  if (num_data_ != len) {
+    Log::Fatal("len of query id is not same with #data");
+  }
+  if (queries_.size() > 0) { queries_.clear(); }
+  queries_ = std::vector<data_size_t>(num_data_);
+  for (data_size_t i = 0; i < num_weights_; ++i) {
+    queries_[i] = query_id[i];
+  }
+  // need convert query_id to boundaries
+  std::vector<data_size_t> tmp_buffer;
+  data_size_t last_qid = -1;
+  data_size_t cur_cnt = 0;
+  for (data_size_t i = 0; i < num_data_; ++i) {
+    if (last_qid != queries_[i]) {
+      if (cur_cnt > 0) {
+        tmp_buffer.push_back(cur_cnt);
+      }
+      cur_cnt = 0;
+      last_qid = queries_[i];
+    }
+    ++cur_cnt;
+  }
+  tmp_buffer.push_back(cur_cnt);
+  query_boundaries_ = std::vector<data_size_t>(tmp_buffer.size() + 1);
+  num_queries_ = static_cast<data_size_t>(tmp_buffer.size());
+  query_boundaries_[0] = 0;
+  for (size_t i = 0; i < tmp_buffer.size(); ++i) {
+    query_boundaries_[i + 1] = query_boundaries_[i] + tmp_buffer[i];
+  }
+  queries_.clear();
+  LoadQueryWeights();
+}
 
 void Metadata::LoadWeights() {
   num_weights_ = 0;

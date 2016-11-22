@@ -151,6 +151,7 @@ public:
   /*! \brief Disable copy */
   Boosting(const Boosting&) = delete;
 
+  static void LoadFileToBoosting(Boosting* boosting, const char* filename);
   /*!
   * \brief Create boosting object
   * \param type Type of boosting

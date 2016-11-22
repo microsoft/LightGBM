@@ -178,7 +178,7 @@ def test_booster():
     name = [c_str('test')]
     booster = ctypes.c_void_p()
     LIB.LGBM_BoosterCreate(train, c_array(ctypes.c_void_p, test), c_array(ctypes.c_char_p, name), 
-        len(test), c_str("app=binary metric=auc num_leaves=31 verbose=0"), ctypes.byref(booster))
+        len(test), c_str("app=binary metric=auc num_leaves=31 verbose=0"),None, ctypes.byref(booster))
     is_finished = ctypes.c_int(0)
     for i in range(100):
         LIB.LGBM_BoosterUpdateOneIter(booster,ctypes.byref(is_finished))
@@ -191,7 +191,7 @@ def test_booster():
     test_free_dataset(train)
     test_free_dataset(test[0])
     booster2 = ctypes.c_void_p()
-    LIB.LGBM_BoosterLoadFromModelfile(c_str('model.txt'), ctypes.byref(booster2))
+    LIB.LGBM_BoosterCreateFromModelfile(c_str('model.txt'), ctypes.byref(booster2))
     data = []
     inp = open('../../examples/binary_classification/binary.test', 'r')
     for line in inp.readlines():
@@ -214,4 +214,3 @@ def test_booster():
 
 test_dataset()
 test_booster()
-

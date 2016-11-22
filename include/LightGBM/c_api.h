@@ -165,7 +165,7 @@ DllExport int LGBM_DatasetSaveBinary(DatesetHandle handle,
 * \param field_name field name, can be label, weight, group
 * \param field_data pointer to vector
 * \param num_element number of element in field_data
-* \param type float_32:0, int32_t:1
+* \param type float32 or int32
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_DatasetSetField(DatesetHandle handle,
@@ -180,7 +180,7 @@ DllExport int LGBM_DatasetSetField(DatesetHandle handle,
 * \param field_name field name
 * \param out_len used to set result length
 * \param out_ptr pointer to the result
-* \param out_type  float_32:0, int32_t:1
+* \param out_type  float32 or int32
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_DatasetGetField(DatesetHandle handle,
@@ -216,6 +216,7 @@ DllExport int LGBM_DatasetGetNumFeature(DatesetHandle handle,
 * \param valid_names names of validation data sets
 * \param n_valid_datas number of validation set
 * \param parameters format: 'key1=value1 key2=value2'
+* \param init_model_filename filename of model
 * \prama out handle of created Booster
 * \return 0 when success, -1 when failure happens
 */
@@ -224,6 +225,7 @@ DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
   const char* valid_names[],
   int n_valid_datas,
   const char* parameters,
+  const char* init_model_filename,
   BoosterHandle* out);
 
 /*!
@@ -232,7 +234,7 @@ DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
 * \param out handle of created Booster
 * \return 0 when success, -1 when failure happens
 */
-DllExport int LGBM_BoosterLoadFromModelfile(
+DllExport int LGBM_BoosterCreateFromModelfile(
   const char* filename,
   BoosterHandle* out);
 
