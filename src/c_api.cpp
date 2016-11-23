@@ -42,6 +42,10 @@ public:
       Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
   }
 
+  void MergeFrom(const Booster* other) {
+    boosting_->MergeFrom(other->boosting_.get());
+  }
+
   ~Booster() {
 
   }
@@ -465,6 +469,14 @@ DllExport int LGBM_BoosterFree(BoosterHandle handle) {
   API_END();
 }
 
+DllExport int LGBM_BoosterMerge(BoosterHandle handle,
+  BoosterHandle other_handle) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  Booster* ref_other_booster = reinterpret_cast<Booster*>(other_handle);
+  ref_booster->MergeFrom(ref_other_booster);
+  API_END();
+}
 
 DllExport int LGBM_BoosterAddValidData(BoosterHandle handle,
   const DatesetHandle valid_data) {

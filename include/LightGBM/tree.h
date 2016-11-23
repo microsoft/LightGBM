@@ -101,10 +101,6 @@ public:
   /*! \brief Serialize this object by string*/
   std::string ToString();
 
-  /*! \brief Disable copy */
-  Tree& operator=(const Tree&) = delete;
-  /*! \brief Disable copy */
-  Tree(const Tree&) = delete;
 private:
   /*!
   * \brief Find leaf index of which record belongs by data

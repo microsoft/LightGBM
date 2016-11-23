@@ -36,6 +36,11 @@ public:
     const std::vector<const Metric*>& training_metrics) = 0;
 
   /*!
+  * \brief Merge model from other boosting object
+  * \param other
+  */
+  virtual void MergeFrom(const Boosting* other) = 0;
+  /*!
   * \brief Reset Config for current boosting
   * \param config Configs for boosting
   */
@@ -179,6 +184,7 @@ public:
   Boosting(const Boosting&) = delete;
 
   static void LoadFileToBoosting(Boosting* boosting, const char* filename);
+
   /*!
   * \brief Create boosting object
   * \param type Type of boosting

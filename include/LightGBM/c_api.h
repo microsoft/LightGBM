@@ -241,7 +241,17 @@ DllExport int LGBM_BoosterCreateFromModelfile(
 DllExport int LGBM_BoosterFree(BoosterHandle handle);
 
 /*!
+* \brief Merge model in two booster to first handle
+* \param handle handle, will merge other handle to this
+* \param other_handle
+* \return 0 when success, -1 when failure happens
+*/
+DllExport int LGBM_BoosterMerge(BoosterHandle handle,
+  BoosterHandle other_handle);
+
+/*!
 * \brief Add new validation to booster
+* \param handle handle
 * \param valid_data validation data set
 * \return 0 when success, -1 when failure happens
 */
@@ -249,7 +259,8 @@ DllExport int LGBM_BoosterAddValidData(BoosterHandle handle,
   const DatesetHandle valid_data);
 
 /*!
-* \brief Add new validation to booster
+* \brief Reset training data for booster
+* \param handle handle
 * \param train_data training data set
 * \return 0 when success, -1 when failure happens
 */
@@ -258,6 +269,7 @@ DllExport int LGBM_BoosterResetTrainingData(BoosterHandle handle,
 
 /*!
 * \brief Reset config for current booster
+* \param handle handle
 * \param parameters format: 'key1=value1 key2=value2'
 * \return 0 when success, -1 when failure happens
 */
@@ -265,6 +277,7 @@ DllExport int LGBM_BoosterResetParameter(BoosterHandle handle, const char* param
 
 /*!
 * \brief Get number of class 
+* \param handle handle
 * \return number of class
 */
 DllExport int LGBM_BoosterGetNumClasses(BoosterHandle handle, int64_t* out_len);
