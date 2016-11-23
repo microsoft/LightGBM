@@ -139,8 +139,7 @@ void Application::LoadData() {
     for (auto metric_type : config_.metric_types) {
       auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_.metric_config));
       if (metric == nullptr) { continue; }
-      metric->Init("training", train_data_->metadata(),
-                              train_data_->num_data());
+      metric->Init(train_data_->metadata(), train_data_->num_data());
       train_metric_.push_back(std::move(metric));
     }
   }
@@ -164,9 +163,8 @@ void Application::LoadData() {
     for (auto metric_type : config_.metric_types) {
       auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_.metric_config));
       if (metric == nullptr) { continue; }
-      metric->Init(config_.io_config.valid_data_filenames[i].c_str(),
-                                     valid_datas_.back()->metadata(),
-                                    valid_datas_.back()->num_data());
+      metric->Init(valid_datas_.back()->metadata(), 
+        valid_datas_.back()->num_data());
       valid_metrics_.back().push_back(std::move(metric));
     }
     valid_metrics_.back().shrink_to_fit();

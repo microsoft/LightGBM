@@ -29,7 +29,6 @@ public:
 
   Booster(const Dataset* train_data, 
     std::vector<const Dataset*> valid_data, 
-    std::vector<std::string> valid_names,
     const char* parameters)
     :train_data_(train_data), valid_datas_(valid_data) {
     config_.LoadFromString(parameters);
@@ -50,8 +49,7 @@ public:
       auto metric = std::unique_ptr<Metric>(
         Metric::CreateMetric(metric_type, config_.metric_config));
       if (metric == nullptr) { continue; }
-      metric->Init("training", train_data_->metadata(),
-        train_data_->num_data());
+      metric->Init(train_data_->metadata(), train_data_->num_data());
       train_metric_.push_back(std::move(metric));
     }
     train_metric_.shrink_to_fit();
@@ -61,9 +59,7 @@ public:
       for (auto metric_type : config_.metric_types) {
         auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_.metric_config));
         if (metric == nullptr) { continue; }
-        metric->Init(valid_names[i].c_str(),
-          valid_datas_[i]->metadata(),
-          valid_datas_[i]->num_data());
+        metric->Init(valid_datas_[i]->metadata(), valid_datas_[i]->num_data());
         valid_metrics_.back().push_back(std::move(metric));
       }
       valid_metrics_.back().shrink_to_fit();
@@ -82,12 +78,15 @@ public:
         Common::ConstPtrInVectorWrapper<Metric>(valid_metrics_[i]));
     }
   }
+
   void LoadModelFromFile(const char* filename) {
     Boosting::LoadFileToBoosting(boosting_.get(), filename);
   }
+
   ~Booster() {
 
   }
+
   bool TrainOneIter() {
     return boosting_->TrainOneIter(nullptr, nullptr, false);
   }
@@ -121,7 +120,25 @@ public:
   void SaveModelToFile(int num_used_model, const char* filename) {
     boosting_->SaveModelToFile(num_used_model, true, filename);
   }
-  
+
+  int GetEvalCounts() const {
+    int ret = 0;
+    for (const auto& metric : train_metric_) {
+      ret += static_cast<int>(metric->GetName().size());
+    }
+    return ret;
+  }
+
+  int GetEvalNames(const char*** out_strs) const {
+    int idx = 0;
+    for (const auto& metric : train_metric_) {
+      for (const auto& name : metric->GetName()) {
+        *(out_strs[idx++]) = name.c_str();
+      }
+    }
+    return idx;
+  }
+
   const Boosting* GetBoosting() const { return boosting_.get(); }
 
   const float* GetTrainingScore(int* out_len) const { return boosting_->GetTrainingScore(out_len); }
@@ -412,7 +429,6 @@ DllExport int LGBM_DatasetGetNumFeature(DatesetHandle handle,
 
 DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
   const DatesetHandle valid_datas[],
-  const char* valid_names[],
   int n_valid_datas,
   const char* parameters,
   const char* init_model_filename,
@@ -420,12 +436,10 @@ DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
   API_BEGIN();
   const Dataset* p_train_data = reinterpret_cast<const Dataset*>(train_data);
   std::vector<const Dataset*> p_valid_datas;
-  std::vector<std::string> p_valid_names;
   for (int i = 0; i < n_valid_datas; ++i) {
     p_valid_datas.emplace_back(reinterpret_cast<const Dataset*>(valid_datas[i]));
-    p_valid_names.emplace_back(valid_names[i]);
   }
-  auto ret = std::unique_ptr<Booster>(new Booster(p_train_data, p_valid_datas, p_valid_names, parameters));
+  auto ret = std::unique_ptr<Booster>(new Booster(p_train_data, p_valid_datas, parameters));
   if (init_model_filename != nullptr) {
     ret->LoadModelFromFile(init_model_filename);
   }
@@ -472,7 +486,30 @@ DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
   API_END();
 }
 
-DllExport int LGBM_BoosterEval(BoosterHandle handle,
+/*!
+* \brief Get number of eval
+* \return total number of eval result
+*/
+DllExport int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int64_t* out_len) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_len = ref_booster->GetEvalCounts();
+  API_END();
+}
+
+/*!
+* \brief Get number of eval
+* \return total number of eval result
+*/
+DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int64_t* out_len, const char*** out_strs) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_len = ref_booster->GetEvalNames(out_strs);
+  API_END();
+}
+
+
+DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
   int data,
   int64_t* out_len,
   float* out_results) {
@@ -487,7 +524,7 @@ DllExport int LGBM_BoosterEval(BoosterHandle handle,
   API_END();
 }
 
-DllExport int LGBM_BoosterGetScore(BoosterHandle handle,
+DllExport int LGBM_BoosterGetTrainingScore(BoosterHandle handle,
   int64_t* out_len,
   const float** out_result) {
   API_BEGIN();

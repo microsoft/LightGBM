@@ -23,10 +23,9 @@ public:
 
   }
 
-  void Init(const char* test_name, const Metadata& metadata, data_size_t num_data) override {
-    std::stringstream str_buf;
-    str_buf << test_name << " : " << PointWiseLossCalculator::Name();
-    name_.emplace_back(str_buf.str());
+  void Init(const Metadata& metadata, data_size_t num_data) override {
+
+    name_.emplace_back(PointWiseLossCalculator::Name());
     num_data_ = num_data;
     // get label
     label_ = metadata.label();

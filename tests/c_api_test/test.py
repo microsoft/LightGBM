@@ -175,16 +175,15 @@ def test_dataset():
 def test_booster():
     train = test_load_from_mat('../../examples/binary_classification/binary.train', None)
     test = [test_load_from_mat('../../examples/binary_classification/binary.test', train)]
-    name = [c_str('test')]
     booster = ctypes.c_void_p()
-    LIB.LGBM_BoosterCreate(train, c_array(ctypes.c_void_p, test), c_array(ctypes.c_char_p, name), 
+    LIB.LGBM_BoosterCreate(train, c_array(ctypes.c_void_p, test), 
         len(test), c_str("app=binary metric=auc num_leaves=31 verbose=0"),None, ctypes.byref(booster))
     is_finished = ctypes.c_int(0)
     for i in range(100):
         LIB.LGBM_BoosterUpdateOneIter(booster,ctypes.byref(is_finished))
         result = np.array([0.0], dtype=np.float32)
         out_len = ctypes.c_ulong(0)
-        LIB.LGBM_BoosterEval(booster, 0, ctypes.byref(out_len), result.ctypes.data_as(ctypes.POINTER(ctypes.c_float)))
+        LIB.LGBM_BoosterGetEval(booster, 0, ctypes.byref(out_len), result.ctypes.data_as(ctypes.POINTER(ctypes.c_float)))
         print ('%d Iteration test AUC %f' %(i, result[0]))
     LIB.LGBM_BoosterSaveModel(booster, -1, c_str('model.txt'))
     LIB.LGBM_BoosterFree(booster)

@@ -236,7 +236,7 @@ bool GBDT::OutputMetric(int iter) {
       auto name = sub_metric->GetName();
       auto scores = sub_metric->Eval(train_score_updater_->score());
       for (size_t k = 0; k < name.size(); ++k) {
-        Log::Info("Iteration: %d, %s : %f", iter, name[k].c_str(), scores[k]);
+        Log::Info("Iteration:%d, training %s : %f", iter, name[k].c_str(), scores[k]);
       }
     }
   }
@@ -248,7 +248,7 @@ bool GBDT::OutputMetric(int iter) {
         if ((iter % gbdt_config_->output_freq) == 0) {
           auto name = valid_metrics_[i][j]->GetName();
           for (size_t k = 0; k < name.size(); ++k) {
-            Log::Info("Iteration: %d, %s : %f", iter, name[k].c_str(), test_scores[k]);
+            Log::Info("Iteration:%d, valid_%d %s : %f", iter, i + 1, name[k].c_str(), test_scores[k]);
           }
         }
         if (!ret && early_stopping_round_ > 0) {

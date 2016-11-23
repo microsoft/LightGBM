@@ -222,7 +222,6 @@ DllExport int LGBM_DatasetGetNumFeature(DatesetHandle handle,
 */
 DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
   const DatesetHandle valid_datas[],
-  const char* valid_names[],
   int n_valid_datas,
   const char* parameters,
   const char* init_model_filename,
@@ -268,6 +267,18 @@ DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
   int* is_finished);
 
 /*!
+* \brief Get number of eval 
+* \return total number of eval result
+*/
+DllExport int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int64_t* out_len);
+
+/*!
+* \brief Get number of eval
+* \return total number of eval result
+*/
+DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int64_t* out_len, const char*** out_strs);
+
+/*!
 * \brief get evaluation for training data and validation data
 * \param handle handle
 * \param data 0:training data, 1: 1st valid data, 2:2nd valid data ...
@@ -275,7 +286,7 @@ DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
 * \param out_result the string containing evaluation statistics, should allocate memory before call this function
 * \return 0 when success, -1 when failure happens
 */
-DllExport int LGBM_BoosterEval(BoosterHandle handle,
+DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
   int data,
   int64_t* out_len,
   float* out_results);
@@ -287,7 +298,7 @@ DllExport int LGBM_BoosterEval(BoosterHandle handle,
 * \param out_result used to set a pointer to array
 * \return 0 when success, -1 when failure happens
 */
-DllExport int LGBM_BoosterGetScore(BoosterHandle handle,
+DllExport int LGBM_BoosterGetTrainingScore(BoosterHandle handle,
   int64_t* out_len,
   const float** out_result);
 
