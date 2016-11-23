@@ -35,6 +35,13 @@ public:
   void Init(const BoostingConfig* gbdt_config, const Dataset* train_data, const ObjectiveFunction* object_function,
                              const std::vector<const Metric*>& training_metrics)
                                                                        override;
+
+  /*!
+  * \brief Reset Config for current boosting
+  * \param config Configs for boosting
+  */
+  void ResetConfig(const BoostingConfig* config) override;
+
   /*!
   * \brief Adding a validation dataset
   * \param valid_data Validation dataset
@@ -50,6 +57,13 @@ public:
   * \return True if meet early stopping or cannot boosting
   */
   virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override;
+
+  /*!
+  * \brief Rollback one iteration
+  */
+  void RollbackOneIter() override;
+
+  int GetCurrentIteration() const override { return iter_; }
 
   bool EvalAndCheckEarlyStopping() override;
 

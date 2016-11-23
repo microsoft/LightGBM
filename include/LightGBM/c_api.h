@@ -239,12 +239,20 @@ DllExport int LGBM_BoosterCreateFromModelfile(
   int64_t* out_num_total_model,
   BoosterHandle* out);
 
+
 /*!
 * \brief free obj in handle
 * \param handle handle to be freed
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_BoosterFree(BoosterHandle handle);
+
+/*!
+* \brief Reset config for current booster
+* \param parameters format: 'key1=value1 key2=value2'
+* \return 0 when success, -1 when failure happens
+*/
+DllExport int LGBM_BoosterResetParameter(BoosterHandle handle, const char* parameters);
 
 /*!
 * \brief Get number of class 
@@ -273,6 +281,19 @@ DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
   const float* grad,
   const float* hess,
   int* is_finished);
+
+/*!
+* \brief Rollback one iteration
+* \param handle handle
+* \return 0 when success, -1 when failure happens
+*/
+DllExport int LGBM_BoosterRollbackOneIter(BoosterHandle handle);
+
+/*!
+* \brief Get iteration of current boosting rounds
+* \return iteration of boosting rounds
+*/
+DllExport int LGBM_BoosterGetCurrentIteration(BoosterHandle handle, int64_t* out_iteration);
 
 /*!
 * \brief Get number of eval 

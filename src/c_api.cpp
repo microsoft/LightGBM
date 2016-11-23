@@ -150,6 +150,17 @@ public:
     return idx;
   }
 
+  void ResetBoostingConfig(const char* parameters) {
+    OverallConfig new_config;
+    new_config.LoadFromString(parameters);
+    config_.boosting_config = new_config.boosting_config;
+    boosting_->ResetConfig(&config_.boosting_config);
+  }
+
+  void RollbackOneIter() {
+    boosting_->RollbackOneIter();
+  }
+
   const Boosting* GetBoosting() const { return boosting_.get(); }
   
 private:
@@ -471,6 +482,13 @@ DllExport int LGBM_BoosterFree(BoosterHandle handle) {
   API_END();
 }
 
+DllExport int LGBM_BoosterResetParameter(BoosterHandle handle, const char* parameters) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  ref_booster->ResetBoostingConfig(parameters);
+  API_END();
+}
+
 DllExport int LGBM_BoosterGetNumClasses(BoosterHandle handle, int64_t* out_len) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
@@ -503,6 +521,19 @@ DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
   API_END();
 }
 
+DllExport int LGBM_BoosterRollbackOneIter(BoosterHandle handle) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  ref_booster->RollbackOneIter();
+  API_END();
+}
+
+DllExport int LGBM_BoosterGetCurrentIteration(BoosterHandle handle, int64_t* out_iteration) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_iteration = ref_booster->GetBoosting()->GetCurrentIteration();
+  API_END();
+}
 /*!
 * \brief Get number of eval
 * \return total number of eval result

@@ -36,6 +36,7 @@ void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const O
   train_data_ = train_data;
   num_class_ = config->num_class;
   // create tree learner
+  tree_learner_.clear();
   for (int i = 0; i < num_class_; ++i) {
     auto new_tree_learner = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(gbdt_config_->tree_learner_type, gbdt_config_->tree_config));
     new_tree_learner->Init(train_data_);
@@ -82,6 +83,32 @@ void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const O
 
 }
 
+void GBDT::ResetConfig(const BoostingConfig* config) {
+  gbdt_config_ = config;
+  early_stopping_round_ = gbdt_config_->early_stopping_round;
+  shrinkage_rate_ = gbdt_config_->learning_rate;
+  // create tree learner
+  tree_learner_.clear();
+  for (int i = 0; i < num_class_; ++i) {
+    auto new_tree_learner = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(gbdt_config_->tree_learner_type, gbdt_config_->tree_config));
+    new_tree_learner->Init(train_data_);
+    // init tree learner
+    tree_learner_.push_back(std::move(new_tree_learner));
+  }
+  tree_learner_.shrink_to_fit();
+  // if need bagging, create buffer
+  if (gbdt_config_->bagging_fraction < 1.0 && gbdt_config_->bagging_freq > 0) {
+    out_of_bag_data_indices_ = std::vector<data_size_t>(num_data_);
+    bag_data_indices_ = std::vector<data_size_t>(num_data_);
+  } else {
+    out_of_bag_data_cnt_ = 0;
+    out_of_bag_data_indices_.clear();
+    bag_data_cnt_ = num_data_;
+    bag_data_indices_.clear();
+  }
+  // initialize random generator
+  random_ = Random(gbdt_config_->bagging_seed);
+}
 void GBDT::AddDataset(const Dataset* valid_data,
   const std::vector<const Metric*>& valid_metrics) {
   if (iter_ > 0) {
@@ -202,6 +229,25 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
     return false;
   }
 
+}
+
+void GBDT::RollbackOneIter() {
+  if (iter_ == 0) { return; }
+  int cur_iter = iter_ - 1;
+  // reset score
+  for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
+    auto curr_tree = cur_iter * num_class_ + curr_class;
+    models_[curr_tree]->Shrinkage(-1.0);
+    train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
+    for (auto& score_updater : valid_score_updater_) {
+      score_updater->AddScore(models_[curr_tree].get(), curr_class);
+    }
+  }
+  // remove model
+  for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
+    models_.pop_back();
+  }
+  --iter_;
 }
 
 bool GBDT::EvalAndCheckEarlyStopping() {

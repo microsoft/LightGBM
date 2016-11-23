@@ -36,6 +36,12 @@ public:
     const std::vector<const Metric*>& training_metrics) = 0;
 
   /*!
+  * \brief Reset Config for current boosting
+  * \param config Configs for boosting
+  */
+  virtual void ResetConfig(const BoostingConfig* config) = 0;
+
+  /*!
   * \brief Add a validation data
   * \param valid_data Validation data
   * \param valid_metrics Metric for validation data
@@ -52,6 +58,19 @@ public:
   */
   virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) = 0;
 
+  /*!
+  * \brief Rollback one iteration
+  */
+  virtual void RollbackOneIter() = 0;
+
+  /*!
+  * \brief return current iteration
+  */
+  virtual int GetCurrentIteration() const = 0;
+
+  /*!
+  * \brief Eval metrics and check is met early stopping or not
+  */
   virtual bool EvalAndCheckEarlyStopping() = 0;
   /*!
   * \brief Get evaluation result at data_idx data
