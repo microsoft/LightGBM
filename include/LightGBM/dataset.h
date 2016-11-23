@@ -277,6 +277,27 @@ public:
   /*! \brief Destructor */
   ~Dataset();
 
+  bool CheckAlign(const Dataset& other) const {
+    if (num_features_ != other.num_features_) {
+      return false;
+    }
+    if (num_total_features_ != other.num_total_features_) {
+      return false;
+    }
+    if (num_class_ != other.num_class_) {
+      return false;
+    }
+    if (label_idx_ != other.label_idx_) {
+      return false;
+    }
+    for (int i = 0; i < num_features_; ++i) {
+      if (!features_[i]->CheckAlign(*(other.features_[i].get()))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<double>& feature_values) {
     for (size_t i = 0; i < feature_values.size() && i < static_cast<size_t>(num_total_features_); ++i) {
       int feature_idx = used_feature_map_[i];

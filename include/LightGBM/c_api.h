@@ -212,19 +212,12 @@ DllExport int LGBM_DatasetGetNumFeature(DatesetHandle handle,
 /*!
 * \brief create an new boosting learner
 * \param train_data training data set
-* \param valid_datas validation data sets
-* \param valid_names names of validation data sets
-* \param n_valid_datas number of validation set
 * \param parameters format: 'key1=value1 key2=value2'
-* \param init_model_filename filename of model
 * \prama out handle of created Booster
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
-  const DatesetHandle valid_datas[],
-  int n_valid_datas,
   const char* parameters,
-  const char* init_model_filename,
   BoosterHandle* out);
 
 /*!
@@ -246,6 +239,22 @@ DllExport int LGBM_BoosterCreateFromModelfile(
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_BoosterFree(BoosterHandle handle);
+
+/*!
+* \brief Add new validation to booster
+* \param valid_data validation data set
+* \return 0 when success, -1 when failure happens
+*/
+DllExport int LGBM_BoosterAddValidData(BoosterHandle handle,
+  const DatesetHandle valid_data);
+
+/*!
+* \brief Add new validation to booster
+* \param train_data training data set
+* \return 0 when success, -1 when failure happens
+*/
+DllExport int LGBM_BoosterResetTrainingData(BoosterHandle handle,
+  const DatesetHandle train_data);
 
 /*!
 * \brief Reset config for current booster

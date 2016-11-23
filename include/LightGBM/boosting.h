@@ -42,11 +42,19 @@ public:
   virtual void ResetConfig(const BoostingConfig* config) = 0;
 
   /*!
+  * \brief Reset training data for current boosting
+  * \param train_data Training data
+  * \param object_function Training objective function
+  * \param training_metrics Training metric
+  */
+  virtual void ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* object_function, const std::vector<const Metric*>& training_metrics) = 0;
+
+  /*!
   * \brief Add a validation data
   * \param valid_data Validation data
   * \param valid_metrics Metric for validation data
   */
-  virtual void AddDataset(const Dataset* valid_data,
+  virtual void AddValidDataset(const Dataset* valid_data,
     const std::vector<const Metric*>& valid_metrics) = 0;
 
   /*!

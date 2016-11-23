@@ -174,10 +174,10 @@ def test_dataset():
     test_free_dataset(train)
 def test_booster():
     train = test_load_from_mat('../../examples/binary_classification/binary.train', None)
-    test = [test_load_from_mat('../../examples/binary_classification/binary.test', train)]
+    test = test_load_from_mat('../../examples/binary_classification/binary.test', train)
     booster = ctypes.c_void_p()
-    LIB.LGBM_BoosterCreate(train, c_array(ctypes.c_void_p, test), 
-        len(test), c_str("app=binary metric=auc num_leaves=31 verbose=0"),None, ctypes.byref(booster))
+    LIB.LGBM_BoosterCreate(train, c_str("app=binary metric=auc num_leaves=31 verbose=0"), ctypes.byref(booster))
+    LIB.LGBM_BoosterAddValidData(booster, test)
     is_finished = ctypes.c_int(0)
     for i in range(100):
         LIB.LGBM_BoosterUpdateOneIter(booster,ctypes.byref(is_finished))
@@ -188,7 +188,7 @@ def test_booster():
     LIB.LGBM_BoosterSaveModel(booster, -1, c_str('model.txt'))
     LIB.LGBM_BoosterFree(booster)
     test_free_dataset(train)
-    test_free_dataset(test[0])
+    test_free_dataset(test)
     booster2 = ctypes.c_void_p()
     num_total_model = ctypes.c_long()
     LIB.LGBM_BoosterCreateFromModelfile(c_str('model.txt'), ctypes.byref(num_total_model), ctypes.byref(booster2))

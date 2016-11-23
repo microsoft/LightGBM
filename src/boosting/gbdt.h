@@ -43,11 +43,19 @@ public:
   void ResetConfig(const BoostingConfig* config) override;
 
   /*!
+  * \brief Reset training data for current boosting
+  * \param train_data Training data
+  * \param object_function Training objective function
+  * \param training_metrics Training metric
+  */
+  void ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* object_function, const std::vector<const Metric*>& training_metrics) override;
+
+  /*!
   * \brief Adding a validation dataset
   * \param valid_data Validation dataset
   * \param valid_metrics Metrics for validation dataset
   */
-  void AddDataset(const Dataset* valid_data,
+  void AddValidDataset(const Dataset* valid_data,
        const std::vector<const Metric*>& valid_metrics) override;
   /*!
   * \brief Training logic
@@ -63,7 +71,7 @@ public:
   */
   void RollbackOneIter() override;
 
-  int GetCurrentIteration() const override { return iter_; }
+  int GetCurrentIteration() const override { return iter_ + num_init_iteration_; }
 
   bool EvalAndCheckEarlyStopping() override;
 
@@ -256,6 +264,7 @@ protected:
   int num_iteration_for_pred_;
   /*! \brief Shrinkage rate for one iteration */
   double shrinkage_rate_;
+  int num_init_iteration_;
 };
 
 }  // namespace LightGBM

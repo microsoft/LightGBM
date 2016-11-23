@@ -28,9 +28,7 @@ public:
   }
 
   Booster(const Dataset* train_data, 
-    std::vector<const Dataset*> valid_data, 
-    const char* parameters)
-    :train_data_(train_data), valid_datas_(valid_data) {
+    const char* parameters) {
     config_.LoadFromString(parameters);
     // create boosting
     if (config_.io_config.input_model.size() > 0) {
@@ -38,6 +36,17 @@ public:
         please use continued train with input score");
     }
     boosting_.reset(Boosting::CreateBoosting(config_.boosting_type, ""));
+    ConstructObjectAndTrainingMetrics(train_data);
+    // initialize the boosting
+    boosting_->Init(&config_.boosting_config, train_data, objective_fun_.get(),
+      Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
+  }
+
+  ~Booster() {
+
+  }
+
+  void ConstructObjectAndTrainingMetrics(const Dataset* train_data) {
     // create objective function
     objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
       config_.objective_config));
@@ -45,48 +54,39 @@ public:
       Log::Warning("Using self-defined objective functions");
     }
     // create training metric
+    train_metric_.clear();
     for (auto metric_type : config_.metric_types) {
       auto metric = std::unique_ptr<Metric>(
         Metric::CreateMetric(metric_type, config_.metric_config));
       if (metric == nullptr) { continue; }
-      metric->Init(train_data_->metadata(), train_data_->num_data());
+      metric->Init(train_data->metadata(), train_data->num_data());
       train_metric_.push_back(std::move(metric));
     }
     train_metric_.shrink_to_fit();
-    // add metric for validation data
-    for (size_t i = 0; i < valid_datas_.size(); ++i) {
-      valid_metrics_.emplace_back();
-      for (auto metric_type : config_.metric_types) {
-        auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_.metric_config));
-        if (metric == nullptr) { continue; }
-        metric->Init(valid_datas_[i]->metadata(), valid_datas_[i]->num_data());
-        valid_metrics_.back().push_back(std::move(metric));
-      }
-      valid_metrics_.back().shrink_to_fit();
-    }
-    valid_metrics_.shrink_to_fit();
     // initialize the objective function
     if (objective_fun_ != nullptr) {
-      objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
+      objective_fun_->Init(train_data->metadata(), train_data->num_data());
     }
+  }
+
+  void ResetTrainingData(const Dataset* train_data) {
+    ConstructObjectAndTrainingMetrics(train_data);
     // initialize the boosting
-    boosting_->Init(&config_.boosting_config, train_data_, objective_fun_.get(),
-      Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
-    // add validation data into boosting
-    for (size_t i = 0; i < valid_datas_.size(); ++i) {
-      boosting_->AddDataset(valid_datas_[i],
-        Common::ConstPtrInVectorWrapper<Metric>(valid_metrics_[i]));
+    boosting_->ResetTrainingData(train_data, objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
+  }
+
+  void AddValidData(const Dataset* valid_data) {
+    valid_metrics_.emplace_back();
+    for (auto metric_type : config_.metric_types) {
+      auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_.metric_config));
+      if (metric == nullptr) { continue; }
+      metric->Init(valid_data->metadata(), valid_data->num_data());
+      valid_metrics_.back().push_back(std::move(metric));
     }
+    valid_metrics_.back().shrink_to_fit();
+    boosting_->AddValidDataset(valid_data,
+      Common::ConstPtrInVectorWrapper<Metric>(valid_metrics_.back()));
   }
-
-  void LoadModelFromFile(const char* filename) {
-    Boosting::LoadFileToBoosting(boosting_.get(), filename);
-  }
-
-  ~Booster() {
-
-  }
-
   bool TrainOneIter() {
     return boosting_->TrainOneIter(nullptr, nullptr, false);
   }
@@ -151,9 +151,7 @@ public:
   }
 
   void ResetBoostingConfig(const char* parameters) {
-    OverallConfig new_config;
-    new_config.LoadFromString(parameters);
-    config_.boosting_config = new_config.boosting_config;
+    config_.LoadFromString(parameters);
     boosting_->ResetConfig(&config_.boosting_config);
   }
 
@@ -164,14 +162,9 @@ public:
   const Boosting* GetBoosting() const { return boosting_.get(); }
   
 private:
-
   std::unique_ptr<Boosting> boosting_;
   /*! \brief All configs */
   OverallConfig config_;
-  /*! \brief Training data */
-  const Dataset* train_data_;
-  /*! \brief Validation data */
-  std::vector<const Dataset*> valid_datas_;
   /*! \brief Metric for training data */
   std::vector<std::unique_ptr<Metric>> train_metric_;
   /*! \brief Metrics for validation data */
@@ -446,21 +439,11 @@ DllExport int LGBM_DatasetGetNumFeature(DatesetHandle handle,
 // ---- start of booster
 
 DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
-  const DatesetHandle valid_datas[],
-  int n_valid_datas,
   const char* parameters,
-  const char* init_model_filename,
   BoosterHandle* out) {
   API_BEGIN();
   const Dataset* p_train_data = reinterpret_cast<const Dataset*>(train_data);
-  std::vector<const Dataset*> p_valid_datas;
-  for (int i = 0; i < n_valid_datas; ++i) {
-    p_valid_datas.emplace_back(reinterpret_cast<const Dataset*>(valid_datas[i]));
-  }
-  auto ret = std::unique_ptr<Booster>(new Booster(p_train_data, p_valid_datas, parameters));
-  if (init_model_filename != nullptr) {
-    ret->LoadModelFromFile(init_model_filename);
-  }
+  auto ret = std::unique_ptr<Booster>(new Booster(p_train_data, parameters));
   *out = ret.release();
   API_END();
 }
@@ -479,6 +462,25 @@ DllExport int LGBM_BoosterCreateFromModelfile(
 DllExport int LGBM_BoosterFree(BoosterHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Booster*>(handle);
+  API_END();
+}
+
+
+DllExport int LGBM_BoosterAddValidData(BoosterHandle handle,
+  const DatesetHandle valid_data) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  const Dataset* p_dataset = reinterpret_cast<const Dataset*>(valid_data);
+  ref_booster->AddValidData(p_dataset);
+  API_END();
+}
+
+DllExport int LGBM_BoosterResetTrainingData(BoosterHandle handle,
+  const DatesetHandle train_data) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  const Dataset* p_dataset = reinterpret_cast<const Dataset*>(train_data);
+  ref_booster->ResetTrainingData(p_dataset);
   API_END();
 }
 

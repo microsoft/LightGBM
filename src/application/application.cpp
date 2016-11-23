@@ -207,7 +207,7 @@ void Application::InitTrain() {
     Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
   // add validation data into boosting
   for (size_t i = 0; i < valid_datas_.size(); ++i) {
-    boosting_->AddDataset(valid_datas_[i].get(),
+    boosting_->AddValidDataset(valid_datas_[i].get(),
       Common::ConstPtrInVectorWrapper<Metric>(valid_metrics_[i]));
   }
   Log::Info("Finished initializing training");
