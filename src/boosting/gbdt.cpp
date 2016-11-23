@@ -16,7 +16,7 @@
 
 namespace LightGBM {
 
-GBDT::GBDT() : saved_model_size_(-1), num_used_model_(0) {
+GBDT::GBDT() : saved_model_size_(-1), num_iteration_for_pred_(0) {
 
 }
 
@@ -29,7 +29,7 @@ void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const O
   gbdt_config_ = config;
   iter_ = 0;
   saved_model_size_ = -1;
-  num_used_model_ = 0;
+  num_iteration_for_pred_ = 0;
   max_feature_idx_ = 0;
   early_stopping_round_ = gbdt_config_->early_stopping_round;
   shrinkage_rate_ = gbdt_config_->learning_rate;
@@ -296,24 +296,23 @@ const score_t* GBDT::GetTrainingScore(data_size_t* out_len) {
   return train_score_updater_->score();
 }
 
-void GBDT::GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len) const {
+void GBDT::GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len) {
   CHECK(data_idx >= 0 && data_idx <= static_cast<int>(valid_metrics_.size()));
   std::vector<double> ret;
 
   const score_t* raw_scores = nullptr;
   data_size_t num_data = 0;
   if (data_idx == 0) {
-    raw_scores = train_score_updater_->score();
+    raw_scores = GetTrainingScore(out_len);
     num_data = train_score_updater_->num_data();
   } else {
     auto used_idx = data_idx - 1;
     raw_scores = valid_score_updater_[used_idx]->score();
     num_data = valid_score_updater_[used_idx]->num_data();
+    *out_len = num_data * num_class_;
   }
-  *out_len = num_data * num_class_;
-
   if (num_class_ > 1) {
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_data; ++i) {
       std::vector<double> tmp_result;
       for (int j = 0; j < num_class_; ++j) {
@@ -325,12 +324,12 @@ void GBDT::GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len)
       }
     }
   } else if(sigmoid_ > 0.0f){
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_data; ++i) {
       out_result[i] = static_cast<score_t>(1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * raw_scores[i])));
     }
   } else {
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_data; ++i) {
       out_result[i] = raw_scores[i];
     }
@@ -348,7 +347,7 @@ void GBDT::Boosting() {
     GetGradients(GetTrainingScore(&num_score), gradients_.data(), hessians_.data());
 }
 
-void GBDT::SaveModelToFile(int num_used_model, bool is_finish, const char* filename) {
+void GBDT::SaveModelToFile(int num_iteration, bool is_finish, const char* filename) {
   // first time to this function, open file
   if (saved_model_size_ < 0) {
     model_output_file_.open(filename);
@@ -373,10 +372,11 @@ void GBDT::SaveModelToFile(int num_used_model, bool is_finish, const char* filen
   if (!model_output_file_.is_open()) {
     return;
   }
-  if (num_used_model == NO_LIMIT) {
+  int num_used_model = 0;
+  if (num_iteration == NO_LIMIT) {
     num_used_model = static_cast<int>(models_.size());
   } else {
-    num_used_model = num_used_model * num_class_;
+    num_used_model = num_iteration * num_class_;
   }
   int rest = num_used_model - early_stopping_round_ * num_class_;
   // output tree models
@@ -452,7 +452,7 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
     }
   }
   Log::Info("Finished loading %d models", models_.size());
-  num_used_model_ = static_cast<int>(models_.size()) / num_class_;
+  num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_class_;
 }
 
 std::string GBDT::FeatureImportance() const {
@@ -486,7 +486,7 @@ std::string GBDT::FeatureImportance() const {
 
 std::vector<double> GBDT::PredictRaw(const double* value) const {
   std::vector<double> ret(num_class_, 0.0f);
-  for (int i = 0; i < num_used_model_; ++i) {
+  for (int i = 0; i < num_iteration_for_pred_; ++i) {
     for (int j = 0; j < num_class_; ++j) {
       ret[j] += models_[i * num_class_ + j]->Predict(value);
     }
@@ -496,7 +496,7 @@ std::vector<double> GBDT::PredictRaw(const double* value) const {
 
 std::vector<double> GBDT::Predict(const double* value) const {
   std::vector<double> ret(num_class_, 0.0f);
-  for (int i = 0; i < num_used_model_; ++i) {
+  for (int i = 0; i < num_iteration_for_pred_; ++i) {
     for (int j = 0; j < num_class_; ++j) {
       ret[j] += models_[i * num_class_ + j]->Predict(value);
     }
@@ -512,7 +512,7 @@ std::vector<double> GBDT::Predict(const double* value) const {
 
 std::vector<int> GBDT::PredictLeafIndex(const double* value) const {
   std::vector<int> ret;
-  for (int i = 0; i < num_used_model_; ++i) {
+  for (int i = 0; i < num_iteration_for_pred_; ++i) {
     for (int j = 0; j < num_class_; ++j) {
       ret.push_back(models_[i * num_class_ + j]->PredictLeafIndex(value));
     }

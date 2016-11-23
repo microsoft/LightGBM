@@ -73,7 +73,7 @@ public:
   * \param result used to store prediction result, should allocate memory before call this function
   * \param out_len lenght of returned score
   */
-  virtual void GetPredictAt(int data_idx, score_t* result, data_size_t* out_len) const = 0;
+  virtual void GetPredictAt(int data_idx, score_t* result, data_size_t* out_len) = 0;
 
   /*!
   * \brief Prediction for one record, not sigmoid transform
@@ -127,7 +127,7 @@ public:
   * \brief Get number of weak sub-models
   * \return Number of weak sub-models
   */
-  virtual int NumberOfSubModels() const = 0;
+  virtual int NumberOfTotalModel() const = 0;
   
   /*!
   * \brief Get number of classes
@@ -138,7 +138,7 @@ public:
   /*!
   * \brief Set number of used model for prediction
   */
-  virtual void SetNumUsedModel(int num_used_model) = 0;
+  virtual void SetNumIterationForPred(int num_iteration) = 0;
   
   /*!
   * \brief Get Type name of this boosting object

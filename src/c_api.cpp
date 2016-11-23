@@ -95,8 +95,8 @@ public:
     return boosting_->TrainOneIter(gradients, hessians, false);
   }
 
-  void PrepareForPrediction(int num_used_model, int predict_type) {
-    boosting_->SetNumUsedModel(num_used_model);
+  void PrepareForPrediction(int num_iteration, int predict_type) {
+    boosting_->SetNumIterationForPred(num_iteration);
     bool is_predict_leaf = false;
     bool is_raw_score = false;
     if (predict_type == C_API_PREDICT_LEAF_INDEX) {
@@ -109,6 +109,10 @@ public:
     predictor_.reset(new Predictor(boosting_.get(), is_raw_score, is_predict_leaf));
   }
 
+  void GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len) {
+    boosting_->GetPredictAt(data_idx, out_result, out_len);
+  }
+
   std::vector<double> Predict(const std::vector<std::pair<int, double>>& features) {
     return predictor_->GetPredictFunction()(features);
   }
@@ -117,8 +121,8 @@ public:
     predictor_->Predict(data_filename, result_filename, data_has_header);
   }
 
-  void SaveModelToFile(int num_used_model, const char* filename) {
-    boosting_->SaveModelToFile(num_used_model, true, filename);
+  void SaveModelToFile(int num_iteration, const char* filename) {
+    boosting_->SaveModelToFile(num_iteration, true, filename);
   }
 
   int GetEvalCounts() const {
@@ -129,22 +133,25 @@ public:
     return ret;
   }
 
-  int GetEvalNames(const char*** out_strs) const {
+  int GetEvalNames(char** out_strs) const {
     int idx = 0;
     for (const auto& metric : train_metric_) {
       for (const auto& name : metric->GetName()) {
-        *(out_strs[idx++]) = name.c_str();
+        int j = 0;
+        auto name_cstr = name.c_str();
+        while (name_cstr[j] != '\0') {
+          out_strs[idx][j] = name_cstr[j];
+          ++j;
+        }
+        out_strs[idx][j] = '\0';
+        ++idx;
       }
     }
     return idx;
   }
 
   const Boosting* GetBoosting() const { return boosting_.get(); }
-
-  const float* GetTrainingScore(int* out_len) const { return boosting_->GetTrainingScore(out_len); }
-
-  const inline int NumberOfClasses() const { return boosting_->NumberOfClasses(); }
-
+  
 private:
 
   std::unique_ptr<Boosting> boosting_;
@@ -449,15 +456,25 @@ DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
 
 DllExport int LGBM_BoosterCreateFromModelfile(
   const char* filename,
+  int64_t* num_total_model,
   BoosterHandle* out) {
   API_BEGIN();
-  *out = new Booster(filename);
+  auto ret = std::unique_ptr<Booster>(new Booster(filename));
+  *num_total_model = static_cast<int64_t>(ret->GetBoosting()->NumberOfTotalModel());
+  *out = ret.release();
   API_END();
 }
 
 DllExport int LGBM_BoosterFree(BoosterHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Booster*>(handle);
+  API_END();
+}
+
+DllExport int LGBM_BoosterGetNumClasses(BoosterHandle handle, int64_t* out_len) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_len = ref_booster->GetBoosting()->NumberOfClasses();
   API_END();
 }
 
@@ -501,7 +518,7 @@ DllExport int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int64_t* out_len) 
 * \brief Get number of eval
 * \return total number of eval result
 */
-DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int64_t* out_len, const char*** out_strs) {
+DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int64_t* out_len, char** out_strs) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetEvalNames(out_strs);
@@ -524,39 +541,27 @@ DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
   API_END();
 }
 
-DllExport int LGBM_BoosterGetTrainingScore(BoosterHandle handle,
-  int64_t* out_len,
-  const float** out_result) {
-  API_BEGIN();
-  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  int len = 0;
-  *out_result = ref_booster->GetTrainingScore(&len);
-  *out_len = static_cast<int64_t>(len);
-  API_END();
-}
-
 DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
   int data,
   int64_t* out_len,
   float* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  auto boosting = ref_booster->GetBoosting();
   int len = 0;
-  boosting->GetPredictAt(data, out_result, &len);
+  ref_booster->GetPredictAt(data, out_result, &len);
   *out_len = static_cast<int64_t>(len);
   API_END();
 }
 
 DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
-  int predict_type,
-  int64_t n_used_trees,
-  int data_has_header,
   const char* data_filename,
+  int data_has_header,
+  int predict_type,
+  int64_t num_iteration,
   const char* result_filename) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  ref_booster->PrepareForPrediction(static_cast<int>(n_used_trees), predict_type);
+  ref_booster->PrepareForPrediction(static_cast<int>(num_iteration), predict_type);
   bool bool_data_has_header = data_has_header > 0 ? true : false;
   ref_booster->PredictForFile(data_filename, result_filename, bool_data_has_header);
   API_END();
@@ -572,23 +577,32 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   int64_t nelem,
   int64_t,
   int predict_type,
-  int64_t n_used_trees,
-  double* out_result) {
+  int64_t num_iteration,
+  int64_t* out_len,
+  float* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  ref_booster->PrepareForPrediction(static_cast<int>(n_used_trees), predict_type);
+  ref_booster->PrepareForPrediction(static_cast<int>(num_iteration), predict_type);
 
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
-  int num_class = ref_booster->NumberOfClasses();
+  int num_preb_in_one_row = ref_booster->GetBoosting()->NumberOfClasses();
+  if (predict_type == C_API_PREDICT_LEAF_INDEX) {
+    if (num_iteration > 0) {
+      num_preb_in_one_row *= static_cast<int>(num_iteration);
+    } else {
+      num_preb_in_one_row *= ref_booster->GetBoosting()->NumberOfTotalModel() / num_preb_in_one_row;
+    }
+  }
   int nrow = static_cast<int>(nindptr - 1);
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < nrow; ++i) {
     auto one_row = get_row_fun(i);
     auto predicton_result = ref_booster->Predict(one_row);
-    for (int j = 0; j < num_class; ++j) {
-      out_result[i * num_class + j] = predicton_result[j];
+    for (int j = 0; j < static_cast<int>(predicton_result.size()); ++j) {
+      out_result[i * num_preb_in_one_row + j] = static_cast<float>(predicton_result[j]);
     }
   }
+  *out_len = nrow * num_preb_in_one_row;
   API_END();
 }
 
@@ -599,31 +613,40 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
   int32_t ncol,
   int is_row_major,
   int predict_type,
-  int64_t n_used_trees,
-  double* out_result) {
+  int64_t num_iteration,
+  int64_t* out_len,
+  float* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  ref_booster->PrepareForPrediction(static_cast<int>(n_used_trees), predict_type);
+  ref_booster->PrepareForPrediction(static_cast<int>(num_iteration), predict_type);
 
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
-  int num_class = ref_booster->NumberOfClasses();
+  int num_preb_in_one_row = ref_booster->GetBoosting()->NumberOfClasses();
+  if (predict_type == C_API_PREDICT_LEAF_INDEX) {
+    if (num_iteration > 0) {
+      num_preb_in_one_row *= static_cast<int>(num_iteration);
+    } else {
+      num_preb_in_one_row *= ref_booster->GetBoosting()->NumberOfTotalModel() / num_preb_in_one_row;
+    }
+  }
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < nrow; ++i) {
     auto one_row = get_row_fun(i);
     auto predicton_result = ref_booster->Predict(one_row);
-    for (int j = 0; j < num_class; ++j) {
-      out_result[i * num_class + j] = predicton_result[j];
+    for (int j = 0; j < static_cast<int>(predicton_result.size()); ++j) {
+      out_result[i * num_preb_in_one_row + j] = static_cast<float>(predicton_result[j]);
     }
   }
+  *out_len = nrow * num_preb_in_one_row;
   API_END();
 }
 
 DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
-  int num_used_model,
+  int num_iteration,
   const char* filename) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  ref_booster->SaveModelToFile(num_used_model, filename);
+  ref_booster->SaveModelToFile(num_iteration, filename);
   API_END();
 }
 

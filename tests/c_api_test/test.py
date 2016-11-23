@@ -190,14 +190,16 @@ def test_booster():
     test_free_dataset(train)
     test_free_dataset(test[0])
     booster2 = ctypes.c_void_p()
-    LIB.LGBM_BoosterCreateFromModelfile(c_str('model.txt'), ctypes.byref(booster2))
+    num_total_model = ctypes.c_long()
+    LIB.LGBM_BoosterCreateFromModelfile(c_str('model.txt'), ctypes.byref(num_total_model), ctypes.byref(booster2))
     data = []
     inp = open('../../examples/binary_classification/binary.test', 'r')
     for line in inp.readlines():
         data.append( [float(x) for x in line.split('\t')[1:]] )
     inp.close()
     mat = np.array(data)
-    preb = np.zeros(( mat.shape[0],1 ), dtype=np.float64)
+    preb = np.zeros(mat.shape[0], dtype=np.float32)
+    num_preb = ctypes.c_long()
     data = np.array(mat.reshape(mat.size), copy=False)
     LIB.LGBM_BoosterPredictForMat(booster2,
         data.ctypes.data_as(ctypes.POINTER(ctypes.c_void_p)), 
@@ -207,8 +209,9 @@ def test_booster():
         1,
         1,
         50,
+        ctypes.byref(num_preb),
         preb.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
-    LIB.LGBM_BoosterPredictForFile(booster2, 1, 50, 0, c_str('../../examples/binary_classification/binary.test'), c_str('preb.txt'))
+    LIB.LGBM_BoosterPredictForFile(booster2,c_str('../../examples/binary_classification/binary.test'),0 , 0, 50, c_str('preb.txt'))
     LIB.LGBM_BoosterFree(booster2)
 
 test_dataset()

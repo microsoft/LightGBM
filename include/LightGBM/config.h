@@ -97,7 +97,7 @@ public:
   std::string output_result = "LightGBM_predict_result.txt";
   std::string input_model = "";
   int verbosity = 1;
-  int num_model_predict = NO_LIMIT;
+  int num_iteration_predict = NO_LIMIT;
   bool is_pre_partition = false;
   bool is_enable_sparse = true;
   bool use_two_round_loading = false;

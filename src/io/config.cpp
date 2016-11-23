@@ -183,7 +183,7 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "data_random_seed", &data_random_seed);
   GetString(params, "data", &data_filename);
   GetInt(params, "verbose", &verbosity);
-  GetInt(params, "num_model_predict", &num_model_predict);
+  GetInt(params, "num_iteration_predict", &num_iteration_predict);
   GetInt(params, "bin_construct_sample_cnt", &bin_construct_sample_cnt);
   GetBool(params, "is_pre_partition", &is_pre_partition);
   GetBool(params, "is_enable_sparse", &is_enable_sparse);

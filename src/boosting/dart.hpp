@@ -43,6 +43,7 @@ public:
   * \brief one training iteration
   */
   bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override {
+    is_update_score_cur_iter_ = false;
     GBDT::TrainOneIter(gradient, hessian, false);
     // normalize
     Normalize();
@@ -58,20 +59,24 @@ public:
   * \return training score
   */
   const score_t* GetTrainingScore(data_size_t* out_len) override {
-    DroppingTrees();
+    if (!is_update_score_cur_iter_) {
+      // only drop one time in one iteration
+      DroppingTrees();
+      is_update_score_cur_iter_ = true;
+    }
     *out_len = train_score_updater_->num_data() * num_class_;
     return train_score_updater_->score();
   }
   /*!
   * \brief save model to file
-  * \param num_used_model number of model that want to save, -1 means save all
+  * \param num_iteration -1 means save all
   * \param is_finish is training finished or not
   * \param filename filename that want to save to
   */
-  void SaveModelToFile(int num_used_model, bool is_finish, const char* filename) override {
+  void SaveModelToFile(int num_iteration, bool is_finish, const char* filename) override {
     // only save model once when is_finish = true
     if (is_finish && saved_model_size_ < 0) {
-      GBDT::SaveModelToFile(num_used_model, is_finish, filename);
+      GBDT::SaveModelToFile(num_iteration, is_finish, filename);
     }
   }
   /*!
@@ -133,6 +138,8 @@ private:
   double drop_rate_;
   /*! \brief Random generator, used to select dropping trees */
   Random random_for_drop_;
+  /*! \brief Flag that the score is update on current iter or not*/
+  bool is_update_score_cur_iter_;
 };
 
 }  // namespace LightGBM

@@ -73,7 +73,7 @@ public:
   * \param result used to store prediction result, should allocate memory before call this function
   * \param out_len lenght of returned score
   */
-  void GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len) const override;
+  void GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len) override;
 
   /*!
   * \brief Predtion for one record without sigmoid transformation
@@ -98,11 +98,11 @@ public:
   
   /*!
   * \brief save model to file
-  * \param num_used_model number of model that want to save, -1 means save all
+  * \param num_iteration -1 means save all
   * \param is_finish is training finished or not
   * \param filename filename that want to save to
   */
-  virtual void SaveModelToFile(int num_used_model, bool is_finish, const char* filename) override;
+  virtual void SaveModelToFile(int num_iteration, bool is_finish, const char* filename) override;
   /*!
   * \brief Restore from a serialized string
   */
@@ -119,11 +119,12 @@ public:
   */
   inline int LabelIdx() const override { return label_idx_; }
 
+
   /*!
   * \brief Get number of weak sub-models
   * \return Number of weak sub-models
   */
-  inline int NumberOfSubModels() const override { return static_cast<int>(models_.size()); }
+  inline int NumberOfTotalModel() const override { return static_cast<int>(models_.size()); }
 
   /*!
   * \brief Get number of classes
@@ -132,11 +133,13 @@ public:
   inline int NumberOfClasses() const override { return num_class_; }
 
   /*!
-  * \brief Set number of used model for prediction
+  * \brief Set number of iterations for prediction
   */
-  inline void SetNumUsedModel(int num_used_model) {
-    if (num_used_model >= 0) {
-      num_used_model_ = static_cast<int>(num_used_model / num_class_);
+  inline void SetNumIterationForPred(int num_iteration) override {
+    if (num_iteration > 0) {
+      num_iteration_for_pred_ = num_iteration;
+    } else {
+      num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_class_;
     }
   }
   
@@ -236,7 +239,7 @@ protected:
   /*! \brief File to write models */
   std::ofstream model_output_file_;
   /*! \brief number of used model */
-  int num_used_model_;
+  int num_iteration_for_pred_;
   /*! \brief Shrinkage rate for one iteration */
   double shrinkage_rate_;
 };

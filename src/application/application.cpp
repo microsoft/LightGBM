@@ -108,7 +108,7 @@ void Application::LoadData() {
   // prediction is needed if using input initial model(continued train)
   PredictFunction predict_fun = nullptr;
   // need to continue training
-  if (boosting_->NumberOfSubModels() > 0) {
+  if (boosting_->NumberOfTotalModel() > 0) {
     Predictor predictor(boosting_.get(), true, false);
     predict_fun = predictor.GetPredictFunction();
   }
@@ -235,7 +235,7 @@ void Application::Train() {
 
 
 void Application::Predict() {
-  boosting_->SetNumUsedModel(config_.io_config.num_model_predict);
+  boosting_->SetNumIterationForPred(config_.io_config.num_iteration_predict);
   // create predictor
   Predictor predictor(boosting_.get(), config_.io_config.is_predict_raw_score,
     config_.io_config.is_predict_leaf_index);

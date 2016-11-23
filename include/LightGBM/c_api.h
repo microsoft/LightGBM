@@ -230,11 +230,13 @@ DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
 /*!
 * \brief load an existing boosting from model file
 * \param filename filename of model
+* \param out_num_total_model number of total models
 * \param out handle of created Booster
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_BoosterCreateFromModelfile(
   const char* filename,
+  int64_t* out_num_total_model,
   BoosterHandle* out);
 
 /*!
@@ -243,6 +245,12 @@ DllExport int LGBM_BoosterCreateFromModelfile(
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_BoosterFree(BoosterHandle handle);
+
+/*!
+* \brief Get number of class 
+* \return number of class
+*/
+DllExport int LGBM_BoosterGetNumClasses(BoosterHandle handle, int64_t* out_len);
 
 /*!
 * \brief update the model in one round
@@ -276,7 +284,7 @@ DllExport int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int64_t* out_len);
 * \brief Get number of eval
 * \return total number of eval result
 */
-DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int64_t* out_len, const char*** out_strs);
+DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int64_t* out_len, char** out_strs);
 
 /*!
 * \brief get evaluation for training data and validation data
@@ -290,17 +298,6 @@ DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
   int data,
   int64_t* out_len,
   float* out_results);
-
-/*!
-* \brief get raw score for training data, used to calculate gradients outside
-* \param handle handle
-* \param out_len len of output result
-* \param out_result used to set a pointer to array
-* \return 0 when success, -1 when failure happens
-*/
-DllExport int LGBM_BoosterGetTrainingScore(BoosterHandle handle,
-  int64_t* out_len,
-  const float** out_result);
 
 /*!
 * \brief Get prediction for training data and validation data
@@ -319,21 +316,21 @@ DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
 /*!
 * \brief make prediction for file
 * \param handle handle
+* \param data_filename filename of data file
+* \param data_has_header data file has header or not
 * \param predict_type
 *          0:raw score
 *          1:with transform(if needed)
 *          2:leaf index
-* \param n_used_trees number of used tree
-* \param data_has_header data file has header or not
-* \param data_filename filename of data file
+* \param num_iteration number of iteration for prediction 
 * \param result_filename filename of result file
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
-  int predict_type,
-  int64_t n_used_trees,
-  int data_has_header,
   const char* data_filename,
+  int data_has_header,
+  int predict_type,
+  int64_t num_iteration,
   const char* result_filename);
 
 /*!
@@ -351,7 +348,8 @@ DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
 *          0:raw score
 *          1:with transform(if needed)
 *          2:leaf index
-* \param n_used_trees number of used tree
+* \param num_iteration number of iteration for prediction
+* \param out_len len of output result
 * \param out_result used to set a pointer to array, should allocate memory before call this function
 * \return 0 when success, -1 when failure happens
 */
@@ -365,8 +363,9 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   int64_t nelem,
   int64_t num_col,
   int predict_type,
-  int64_t n_used_trees,
-  double* out_result);
+  int64_t num_iteration,
+  int64_t* out_len,
+  float* out_result);
 
 /*!
 * \brief make prediction for an new data set
@@ -380,7 +379,8 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
 *          0:raw score
 *          1:with transform(if needed)
 *          2:leaf index
-* \param n_used_trees number of used tree
+* \param num_iteration number of iteration for prediction
+* \param out_len len of output result
 * \param out_result used to set a pointer to array, should allocate memory before call this function
 * \return 0 when success, -1 when failure happens
 */
@@ -391,18 +391,19 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
   int32_t ncol,
   int is_row_major,
   int predict_type,
-  int64_t n_used_trees,
-  double* out_result);
+  int64_t num_iteration,
+  int64_t* out_len,
+  float* out_result);
 
 /*!
 * \brief save model into file
 * \param handle handle
-* \param num_used_model
+* \param num_iteration
 * \param filename file name
 * \return 0 when success, -1 when failure happens
 */
 DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
-  int num_used_model,
+  int num_iteration,
   const char* filename);
 
 
