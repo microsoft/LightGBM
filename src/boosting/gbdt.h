@@ -76,26 +76,26 @@ public:
   void GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len) const override;
 
   /*!
-  * \brief Predtion for one record without sigmoid transformation
+  * \brief Prediction for one record without sigmoid transformation
   * \param feature_values Feature value on this record
   * \return Prediction result for this record
   */
   std::vector<double> PredictRaw(const double* feature_values) const override;
 
   /*!
-  * \brief Predtion for one record with sigmoid transformation if enabled
+  * \brief Prediction for one record with sigmoid transformation if enabled
   * \param feature_values Feature value on this record
   * \return Prediction result for this record
   */
   std::vector<double> Predict(const double* feature_values) const override;
-  
+
   /*!
-  * \brief Predtion for one record with leaf index
+  * \brief Prediction for one record with leaf index
   * \param feature_values Feature value on this record
   * \return Predicted leaf index for this record
   */
   std::vector<int> PredictLeafIndex(const double* value) const override;
-  
+
   /*!
   * \brief save model to file
   * \param num_used_model number of model that want to save, -1 means save all
@@ -137,9 +137,11 @@ public:
   inline void SetNumUsedModel(int num_used_model) {
     if (num_used_model >= 0) {
       num_used_model_ = static_cast<int>(num_used_model / num_class_);
+    } else {
+      num_used_model_ = static_cast<int>(models_.size()) / num_class_;
     }
   }
-  
+
   /*!
   * \brief Get Type name of this boosting object
   */
@@ -218,7 +220,7 @@ protected:
   std::vector<data_size_t> bag_data_indices_;
   /*! \brief Number of in-bag data */
   data_size_t bag_data_cnt_;
-  /*! \brief Number of traning data */
+  /*! \brief Number of training data */
   data_size_t num_data_;
   /*! \brief Number of classes */
   int num_class_;
@@ -226,7 +228,7 @@ protected:
   Random random_;
   /*!
   *   \brief Sigmoid parameter, used for prediction.
-  *          if > 0 meas output score will transform by sigmoid function
+  *          if > 0 means output score will transform by sigmoid function
   */
   double sigmoid_;
   /*! \brief Index of label column */
