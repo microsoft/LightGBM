@@ -21,9 +21,11 @@ script:
 - cd $TRAVIS_BUILD_DIR
 - mkdir build && cd build && cmake .. && make -j
 - cd $TRAVIS_BUILD_DIR/tests/c_api_test && python test.py
+- cd $TRAVIS_BUILD_DIR/tests/python_package_test && python test_basic.py 
 - cd $TRAVIS_BUILD_DIR
 - rm -rf build && mkdir build && cd build && cmake -DUSE_MPI=ON ..&& make -j
-- cd $TRAVIS_BUILD_DIR/tests/c_api_test && python test.py
+- cd $TRAVIS_BUILD_DIR/tests/c_api_test && python test.py 
+- cd $TRAVIS_BUILD_DIR/tests/python_package_test && python test_basic.py 
 
 notifications:
   email: false

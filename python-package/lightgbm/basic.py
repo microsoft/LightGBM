@@ -290,7 +290,7 @@ class Predictor(object):
                 n_preds *= used_iteration
         preds = np.zeros(n_preds, dtype=np.float32)
         out_num_preds = ctypes.c_int64(0)
-        _safe_call(LIB.LGBM_BoosterPredictForMat(
+        _safe_call(_LIB.LGBM_BoosterPredictForMat(
             self.handle,
             ptr_data, 
             type_ptr_data,
@@ -324,7 +324,7 @@ class Predictor(object):
         ptr_indptr, type_ptr_indptr = c_int_array(csr.indptr)
         ptr_data, type_ptr_data = c_float_array(csr.data)
 
-        _safe_call(LIB.LGBM_BoosterPredictForCSR(
+        _safe_call(_LIB.LGBM_BoosterPredictForCSR(
             self.handle,
             ptr_indptr, 
             type_ptr_indptr,
@@ -447,7 +447,7 @@ class Dataset(object):
                 init_score = new_init_score
             self.set_init_score(init_score)
 
-    def new_valid_dataset(self, data, label=None, weight=None, group_id=None, 
+    def create_valid(self, data, label=None, weight=None, group_id=None, 
         silent=False, params=None):
         """
         Create validation data align with current dataset
@@ -487,7 +487,7 @@ class Dataset(object):
             data = np.array(mat.reshape(mat.size), dtype=np.float32)
 
         ptr_data, type_ptr_data = c_float_array(data)
-        _safe_call(LIB.LGBM_CreateDatasetFromMat(
+        _safe_call(_LIB.LGBM_CreateDatasetFromMat(
             ptr_data, 
             type_ptr_data,
             mat.shape[0],
@@ -825,7 +825,7 @@ class Booster(object):
         if self.handle is not None and self.__is_manage_handle:
             _safe_call(_LIB.LGBM_BoosterFree(self.handle))
 
-    def add_valid_data(self, data, name):
+    def add_valid(self, data, name):
         if data.predictor is not self.init_predictor:
             raise Exception("Add validation data failed, you should use same predictor for these data")
         _safe_call(_LIB.LGBM_BoosterAddValidData(
@@ -835,7 +835,7 @@ class Booster(object):
         self.name_valid_sets.append(name)
         self.__num_dataset += 1
 
-    def ResetParameter(self, params, silent=False):
+    def reset_parameter(self, params, silent=False):
         self.__need_reload_eval_info = True
         if silent:
             params["verbose"] = 0
