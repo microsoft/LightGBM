@@ -46,12 +46,12 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
   gbdt_config_ = config;
   early_stopping_round_ = gbdt_config_->early_stopping_round;
   shrinkage_rate_ = gbdt_config_->learning_rate;
-  train_data_ = train_data;
+  random_ = Random(gbdt_config_->bagging_seed);
   // create tree learner
   tree_learner_.clear();
   for (int i = 0; i < num_class_; ++i) {
     auto new_tree_learner = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(gbdt_config_->tree_learner_type, gbdt_config_->tree_config));
-    new_tree_learner->Init(train_data_);
+    new_tree_learner->Init(train_data);
     // init tree learner
     tree_learner_.push_back(std::move(new_tree_learner));
   }
@@ -63,42 +63,45 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
     training_metrics_.push_back(metric);
   }
   training_metrics_.shrink_to_fit();
-  // create score tracker
-  train_score_updater_.reset(new ScoreUpdater(train_data_, num_class_));
-  num_data_ = train_data_->num_data();
-  // create buffer for gradients and hessians
-  if (object_function_ != nullptr) {
-    gradients_ = std::vector<score_t>(num_data_ * num_class_);
-    hessians_ = std::vector<score_t>(num_data_ * num_class_);
-  }
   sigmoid_ = -1.0f;
   if (object_function_ != nullptr
     && std::string(object_function_->GetName()) == std::string("binary")) {
     // only binary classification need sigmoid transform
     sigmoid_ = gbdt_config_->sigmoid;
   }
-  // get max feature index
-  max_feature_idx_ = train_data_->num_total_features() - 1;
-  // get label index
-  label_idx_ = train_data_->label_idx();
-  // if need bagging, create buffer
-  if (gbdt_config_->bagging_fraction < 1.0 && gbdt_config_->bagging_freq > 0) {
-    out_of_bag_data_indices_ = std::vector<data_size_t>(num_data_);
-    bag_data_indices_ = std::vector<data_size_t>(num_data_);
-  } else {
-    out_of_bag_data_cnt_ = 0;
-    out_of_bag_data_indices_.clear();
-    bag_data_cnt_ = num_data_;
-    bag_data_indices_.clear();
-  }
-  random_ = Random(gbdt_config_->bagging_seed);
-  // update score
-  for (int i = 0; i < iter_; ++i) {
-    for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-      auto curr_tree = i * num_class_ + curr_class;
-      train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
+  if (train_data_ != train_data) {
+    // not same training data, need reset score and others
+    // create score tracker
+    train_score_updater_.reset(new ScoreUpdater(train_data, num_class_));
+    // update score
+    for (int i = 0; i < iter_; ++i) {
+      for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
+        auto curr_tree = (i + num_init_iteration_) * num_class_ + curr_class;
+        train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
+      }
+    }
+    num_data_ = train_data->num_data();
+    // create buffer for gradients and hessians
+    if (object_function_ != nullptr) {
+      gradients_ = std::vector<score_t>(num_data_ * num_class_);
+      hessians_ = std::vector<score_t>(num_data_ * num_class_);
+    }
+    // get max feature index
+    max_feature_idx_ = train_data->num_total_features() - 1;
+    // get label index
+    label_idx_ = train_data->label_idx();
+    // if need bagging, create buffer
+    if (gbdt_config_->bagging_fraction < 1.0 && gbdt_config_->bagging_freq > 0) {
+      out_of_bag_data_indices_ = std::vector<data_size_t>(num_data_);
+      bag_data_indices_ = std::vector<data_size_t>(num_data_);
+    } else {
+      out_of_bag_data_cnt_ = 0;
+      out_of_bag_data_indices_.clear();
+      bag_data_cnt_ = num_data_;
+      bag_data_indices_.clear();
     }
   }
+  train_data_ = train_data;
 }
 
 void GBDT::AddValidDataset(const Dataset* valid_data,
@@ -111,7 +114,7 @@ void GBDT::AddValidDataset(const Dataset* valid_data,
   // update score
   for (int i = 0; i < iter_; ++i) {
     for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-      auto curr_tree = i * num_class_ + curr_class;
+      auto curr_tree = (i + num_init_iteration_) * num_class_ + curr_class;
       new_score_updater->AddScore(models_[curr_tree].get(), curr_class);
     }
   }
@@ -232,7 +235,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
 
 void GBDT::RollbackOneIter() {
   if (iter_ == 0) { return; }
-  int cur_iter = iter_ - 1;
+  int cur_iter = iter_ + num_init_iteration_ - 1;
   // reset score
   for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
     auto curr_tree = cur_iter * num_class_ + curr_class;

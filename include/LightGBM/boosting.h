@@ -37,6 +37,7 @@ public:
 
   /*!
   * \brief Merge model from other boosting object
+           Will insert to the front of current boosting object
   * \param other
   */
   virtual void MergeFrom(const Boosting* other) = 0;

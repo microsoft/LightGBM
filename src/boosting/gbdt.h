@@ -36,12 +36,28 @@ public:
                              const std::vector<const Metric*>& training_metrics)
                                                                        override;
 
+  /*!
+  * \brief Merge model from other boosting object
+           Will insert to the front of current boosting object
+  * \param other
+  */
   void MergeFrom(const Boosting* other) override {
     auto other_gbdt = reinterpret_cast<const GBDT*>(other);
+    // tmp move to other vector
+    auto original_models = std::move(models_);
+    models_ = std::vector<std::unique_ptr<Tree>>();
+    // push model from other first
     for (const auto& tree : other_gbdt->models_) {
       auto new_tree = std::unique_ptr<Tree>(new Tree(*(tree.get())));
       models_.push_back(std::move(new_tree));
     }
+    num_init_iteration_ = static_cast<int>(models_.size()) / num_class_;
+    // push model in current object
+    for (const auto& tree : original_models) {
+      auto new_tree = std::unique_ptr<Tree>(new Tree(*(tree.get())));
+      models_.push_back(std::move(new_tree));
+    }
+    num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_class_;
   }
 
   /*!
@@ -266,6 +282,7 @@ protected:
   int num_iteration_for_pred_;
   /*! \brief Shrinkage rate for one iteration */
   double shrinkage_rate_;
+  /*! \brief Number of loaded initial models */
   int num_init_iteration_;
 };
 

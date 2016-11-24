@@ -36,7 +36,7 @@ public:
       Log::Warning("continued train from model is not support for c_api, \
         please use continued train with input score");
     }
-    boosting_.reset(Boosting::CreateBoosting(config_.boosting_type, ""));
+    boosting_.reset(Boosting::CreateBoosting(config_.boosting_type, nullptr));
     ConstructObjectAndTrainingMetrics(train_data);
     // initialize the boosting
     boosting_->Init(&config_.boosting_config, train_data, objective_fun_.get(),
@@ -114,6 +114,10 @@ public:
     return boosting_->TrainOneIter(gradients, hessians, false);
   }
 
+  void RollbackOneIter() {
+    boosting_->RollbackOneIter();
+  }
+
   void PrepareForPrediction(int num_iteration, int predict_type) {
     boosting_->SetNumIterationForPred(num_iteration);
     bool is_predict_leaf = false;
@@ -156,22 +160,11 @@ public:
     int idx = 0;
     for (const auto& metric : train_metric_) {
       for (const auto& name : metric->GetName()) {
-        int j = 0;
-        auto name_cstr = name.c_str();
-        while (name_cstr[j] != '\0') {
-          out_strs[idx][j] = name_cstr[j];
-          ++j;
-        }
-        out_strs[idx][j] = '\0';
+        std::strcpy(out_strs[idx], name.c_str());
         ++idx;
       }
     }
     return idx;
-  }
-
-
-  void RollbackOneIter() {
-    boosting_->RollbackOneIter();
   }
 
   const Boosting* GetBoosting() const { return boosting_.get(); }
