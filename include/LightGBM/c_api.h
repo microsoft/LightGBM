@@ -7,9 +7,9 @@
 /*!
 * To avoid type conversion on large data, most of our expose interface support both for float_32 and float_64.
 * Except following:
-* 1. gradients and hessians. 
+* 1. gradients and hessians.
 * 2. Get current score for training data and validation
-* The reason is because they are called frequently, the type-conversion on them maybe time cost. 
+* The reason is because they are called frequently, the type-conversion on them maybe time cost.
 */
 
 #ifdef __cplusplus
@@ -307,10 +307,10 @@ DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
 * \brief make prediction for file
 * \param handle handle
 * \param predict_type
-*          0:raw score
-*          1:with transform(if needed)
+*          0:normal, with transform (if needed)
+*          1:raw score
 *          2:leaf index
-* \param n_used_trees number of used tree
+* \param n_used_trees number of used tree, < 0 means no limit
 * \param data_has_header data file has header or not
 * \param data_filename filename of data file
 * \param result_filename filename of result file
@@ -327,7 +327,7 @@ DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
 * \brief make prediction for an new data set
 * \param handle handle
 * \param indptr pointer to row headers
-* \param indptr_type 
+* \param indptr_type
 * \param indices findex
 * \param data fvalue
 * \param data_type
@@ -335,10 +335,10 @@ DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
 * \param nelem number of nonzero elements in the matrix
 * \param num_col number of columns; when it's set to 0, then guess from data
 * \param predict_type
-*          0:raw score
-*          1:with transform(if needed)
+*          0:normal, with transform (if needed)
+*          1:raw score
 *          2:leaf index
-* \param n_used_trees number of used tree
+* \param n_used_trees number of used tree, < 0 means no limit
 * \param out_result used to set a pointer to array, should allocate memory before call this function
 * \return 0 when success, -1 when failure happens
 */
@@ -364,10 +364,10 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
 * \param ncol number columns
 * \param is_row_major 1 for row major, 0 for column major
 * \param predict_type
-*          0:raw score
-*          1:with transform(if needed)
+*          0:normal, with transform (if needed)
+*          1:raw score
 *          2:leaf index
-* \param n_used_trees number of used tree
+* \param n_used_trees number of used tree, < 0 means no limit
 * \param out_result used to set a pointer to array, should allocate memory before call this function
 * \return 0 when success, -1 when failure happens
 */
@@ -384,7 +384,7 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
 /*!
 * \brief save model into file
 * \param handle handle
-* \param num_used_model
+* \param num_used_model, < 0 means no limit
 * \param filename file name
 * \return 0 when success, -1 when failure happens
 */
@@ -403,14 +403,14 @@ std::function<std::vector<std::pair<int, double>>(int row_idx)>
 RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_type, int is_row_major);
 
 std::function<std::vector<std::pair<int, double>>(int idx)>
-RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
+RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices,
   const void* data, int data_type, int64_t nindptr, int64_t nelem);
 
 std::function<std::vector<std::pair<int, double>>(int idx)>
-ColumnFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indices, 
+ColumnFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indices,
   const void* data, int data_type, int64_t ncol_ptr, int64_t nelem);
 
-std::vector<double> 
+std::vector<double>
 SampleFromOneColumn(const std::vector<std::pair<int, double>>& data, const std::vector<int>& indices);
 
 
@@ -437,6 +437,6 @@ inline int LGBM_APIHandleException(const std::string& ex) {
 catch(std::exception& ex) { return LGBM_APIHandleException(ex); } \
 catch(std::string& ex) { return LGBM_APIHandleException(ex); } \
 catch(...) { return LGBM_APIHandleException("unknown exception"); } \
-return 0;  
+return 0;
 
 #endif // LIGHTGBM_C_API_H_
