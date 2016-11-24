@@ -29,7 +29,8 @@ public:
 
   Booster(const Dataset* train_data, 
     const char* parameters) {
-    config_.LoadFromString(parameters);
+    auto param = ConfigBase::Str2Map(parameters);
+    config_.Set(param);
     // create boosting
     if (config_.io_config.input_model.size() > 0) {
       Log::Warning("continued train from model is not support for c_api, \
@@ -74,9 +75,23 @@ public:
   }
 
   void ResetTrainingData(const Dataset* train_data) {
-    ConstructObjectAndTrainingMetrics(train_data);
+    train_data_ = train_data;
+    ConstructObjectAndTrainingMetrics(train_data_);
     // initialize the boosting
-    boosting_->ResetTrainingData(train_data, objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
+    boosting_->ResetTrainingData(&config_.boosting_config, train_data_, 
+      objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
+  }
+
+  void ResetConfig(const char* parameters) {
+    auto param = ConfigBase::Str2Map(parameters);
+    if (param.count("num_class")) {
+      Log::Fatal("cannot change num class during training");
+    }
+    if (param.count("boosting_type")) {
+      Log::Fatal("cannot change boosting_type during training");
+    }
+    config_.Set(param);
+    ResetTrainingData(train_data_);
   }
 
   void AddValidData(const Dataset* valid_data) {
@@ -154,10 +169,6 @@ public:
     return idx;
   }
 
-  void ResetBoostingConfig(const char* parameters) {
-    config_.LoadFromString(parameters);
-    boosting_->ResetConfig(&config_.boosting_config);
-  }
 
   void RollbackOneIter() {
     boosting_->RollbackOneIter();
@@ -166,6 +177,7 @@ public:
   const Boosting* GetBoosting() const { return boosting_.get(); }
   
 private:
+  const Dataset* train_data_;
   std::unique_ptr<Boosting> boosting_;
   /*! \brief All configs */
   OverallConfig config_;
@@ -193,9 +205,10 @@ DllExport int LGBM_CreateDatasetFromFile(const char* filename,
   const DatesetHandle* reference,
   DatesetHandle* out) {
   API_BEGIN();
-  OverallConfig config;
-  config.LoadFromString(parameters);
-  DatasetLoader loader(config.io_config, nullptr);
+  auto param = ConfigBase::Str2Map(parameters);
+  IOConfig io_config;
+  io_config.Set(param);
+  DatasetLoader loader(io_config, nullptr);
   loader.SetHeader(filename);
   if (reference == nullptr) {
     *out = loader.LoadFromFile(filename);
@@ -224,15 +237,16 @@ DllExport int LGBM_CreateDatasetFromMat(const void* data,
   const DatesetHandle* reference,
   DatesetHandle* out) {
   API_BEGIN();
-  OverallConfig config;
-  config.LoadFromString(parameters);
-  DatasetLoader loader(config.io_config, nullptr);
+  auto param = ConfigBase::Str2Map(parameters);
+  IOConfig io_config;
+  io_config.Set(param);
+  DatasetLoader loader(io_config, nullptr);
   std::unique_ptr<Dataset> ret;
   auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
   if (reference == nullptr) {
     // sample data first
-    Random rand(config.io_config.data_random_seed);
-    const int sample_cnt = static_cast<int>(nrow < config.io_config.bin_construct_sample_cnt ? nrow : config.io_config.bin_construct_sample_cnt);
+    Random rand(io_config.data_random_seed);
+    const int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
     std::vector<std::vector<double>> sample_values(ncol);
     for (size_t i = 0; i < sample_indices.size(); ++i) {
@@ -246,10 +260,10 @@ DllExport int LGBM_CreateDatasetFromMat(const void* data,
     }
     ret.reset(loader.CostructFromSampleData(sample_values, sample_cnt, nrow));
   } else {
-    ret.reset(new Dataset(nrow, config.io_config.num_class));
+    ret.reset(new Dataset(nrow, io_config.num_class));
     ret->CopyFeatureMapperFrom(
       reinterpret_cast<const Dataset*>(*reference),
-      config.io_config.is_enable_sparse);
+      io_config.is_enable_sparse);
   }
 
 #pragma omp parallel for schedule(guided)
@@ -275,16 +289,17 @@ DllExport int LGBM_CreateDatasetFromCSR(const void* indptr,
   const DatesetHandle* reference,
   DatesetHandle* out) {
   API_BEGIN();
-  OverallConfig config;
-  config.LoadFromString(parameters);
-  DatasetLoader loader(config.io_config, nullptr);
+  auto param = ConfigBase::Str2Map(parameters);
+  IOConfig io_config;
+  io_config.Set(param);
+  DatasetLoader loader(io_config, nullptr);
   std::unique_ptr<Dataset> ret;
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
   if (reference == nullptr) {
     // sample data first
-    Random rand(config.io_config.data_random_seed);
-    const int sample_cnt = static_cast<int>(nrow < config.io_config.bin_construct_sample_cnt ? nrow : config.io_config.bin_construct_sample_cnt);
+    Random rand(io_config.data_random_seed);
+    const int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
     std::vector<std::vector<double>> sample_values;
     for (size_t i = 0; i < sample_indices.size(); ++i) {
@@ -307,10 +322,10 @@ DllExport int LGBM_CreateDatasetFromCSR(const void* indptr,
     CHECK(num_col >= static_cast<int>(sample_values.size()));
     ret.reset(loader.CostructFromSampleData(sample_values, sample_cnt, nrow));
   } else {
-    ret.reset(new Dataset(nrow, config.io_config.num_class));
+    ret.reset(new Dataset(nrow, io_config.num_class));
     ret->CopyFeatureMapperFrom(
       reinterpret_cast<const Dataset*>(*reference),
-      config.io_config.is_enable_sparse);
+      io_config.is_enable_sparse);
   }
 
 #pragma omp parallel for schedule(guided)
@@ -336,17 +351,18 @@ DllExport int LGBM_CreateDatasetFromCSC(const void* col_ptr,
   const DatesetHandle* reference,
   DatesetHandle* out) {
   API_BEGIN();
-  OverallConfig config;
-  config.LoadFromString(parameters);
-  DatasetLoader loader(config.io_config, nullptr);
+  auto param = ConfigBase::Str2Map(parameters);
+  IOConfig io_config;
+  io_config.Set(param);
+  DatasetLoader loader(io_config, nullptr);
   std::unique_ptr<Dataset> ret;
   auto get_col_fun = ColumnFunctionFromCSC(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem);
   int32_t nrow = static_cast<int32_t>(num_row);
   if (reference == nullptr) {
     Log::Warning("Construct from CSC format is not efficient");
     // sample data first
-    Random rand(config.io_config.data_random_seed);
-    const int sample_cnt = static_cast<int>(nrow < config.io_config.bin_construct_sample_cnt ? nrow : config.io_config.bin_construct_sample_cnt);
+    Random rand(io_config.data_random_seed);
+    const int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
     std::vector<std::vector<double>> sample_values(ncol_ptr - 1);
 #pragma omp parallel for schedule(guided)
@@ -356,10 +372,10 @@ DllExport int LGBM_CreateDatasetFromCSC(const void* col_ptr,
     }
     ret.reset(loader.CostructFromSampleData(sample_values, sample_cnt, nrow));
   } else {
-    ret.reset(new Dataset(nrow, config.io_config.num_class));
+    ret.reset(new Dataset(nrow, io_config.num_class));
     ret->CopyFeatureMapperFrom(
       reinterpret_cast<const Dataset*>(*reference),
-      config.io_config.is_enable_sparse);
+      io_config.is_enable_sparse);
   }
 
 #pragma omp parallel for schedule(guided)
@@ -500,7 +516,7 @@ DllExport int LGBM_BoosterResetTrainingData(BoosterHandle handle,
 DllExport int LGBM_BoosterResetParameter(BoosterHandle handle, const char* parameters) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  ref_booster->ResetBoostingConfig(parameters);
+  ref_booster->ResetConfig(parameters);
   API_END();
 }
 

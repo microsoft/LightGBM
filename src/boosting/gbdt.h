@@ -45,18 +45,12 @@ public:
   }
 
   /*!
-  * \brief Reset Config for current boosting
-  * \param config Configs for boosting
-  */
-  void ResetConfig(const BoostingConfig* config) override;
-
-  /*!
   * \brief Reset training data for current boosting
   * \param train_data Training data
   * \param object_function Training objective function
   * \param training_metrics Training metric
   */
-  void ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* object_function, const std::vector<const Metric*>& training_metrics) override;
+  void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function, const std::vector<const Metric*>& training_metrics) override;
 
   /*!
   * \brief Adding a validation dataset

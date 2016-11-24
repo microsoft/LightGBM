@@ -10,9 +10,9 @@
 
 namespace LightGBM {
 
-void OverallConfig::LoadFromString(const char* str) {
+std::unordered_map<std::string, std::string> ConfigBase::Str2Map(const char* parameters) {
   std::unordered_map<std::string, std::string> params;
-  auto args = Common::Split(str, " \t\n\r");
+  auto args = Common::Split(parameters, " \t\n\r");
   for (auto arg : args) {
     std::vector<std::string> tmp_strs = Common::Split(arg.c_str(), '=');
     if (tmp_strs.size() == 2) {
@@ -27,7 +27,7 @@ void OverallConfig::LoadFromString(const char* str) {
     }
   }
   ParameterAlias::KeyAliasTransform(&params);
-  Set(params);
+  return params;
 }
 
 void OverallConfig::Set(const std::unordered_map<std::string, std::string>& params) {

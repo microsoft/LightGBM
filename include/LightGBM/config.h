@@ -72,6 +72,8 @@ public:
   inline bool GetBool(
     const std::unordered_map<std::string, std::string>& params,
     const std::string& name, bool* out);
+
+  static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
 };
 
 /*! \brief Types of boosting */
@@ -231,7 +233,7 @@ public:
   MetricConfig metric_config;
 
   void Set(const std::unordered_map<std::string, std::string>& params) override;
-  void LoadFromString(const char* str);
+
 private:
   void GetBoostingType(const std::unordered_map<std::string, std::string>& params);
 

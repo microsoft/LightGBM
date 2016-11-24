@@ -29,52 +29,23 @@ GBDT::~GBDT() {
 
 void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
      const std::vector<const Metric*>& training_metrics) {
-  gbdt_config_ = config;
   iter_ = 0;
   saved_model_size_ = -1;
   num_iteration_for_pred_ = 0;
   max_feature_idx_ = 0;
-  early_stopping_round_ = gbdt_config_->early_stopping_round;
-  shrinkage_rate_ = gbdt_config_->learning_rate;
   num_class_ = config->num_class;
   train_data_ = nullptr;
-  ResetTrainingData(train_data, object_function, training_metrics);
-  // initialize random generator
-  random_ = Random(gbdt_config_->bagging_seed);
-
+  ResetTrainingData(config, train_data, object_function, training_metrics);
 }
 
-void GBDT::ResetConfig(const BoostingConfig* config) {
-  gbdt_config_ = config;
-  early_stopping_round_ = gbdt_config_->early_stopping_round;
-  shrinkage_rate_ = gbdt_config_->learning_rate;
-  // create tree learner
-  tree_learner_.clear();
-  for (int i = 0; i < num_class_; ++i) {
-    auto new_tree_learner = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(gbdt_config_->tree_learner_type, gbdt_config_->tree_config));
-    new_tree_learner->Init(train_data_);
-    // init tree learner
-    tree_learner_.push_back(std::move(new_tree_learner));
-  }
-  tree_learner_.shrink_to_fit();
-  // if need bagging, create buffer
-  if (gbdt_config_->bagging_fraction < 1.0 && gbdt_config_->bagging_freq > 0) {
-    out_of_bag_data_indices_ = std::vector<data_size_t>(num_data_);
-    bag_data_indices_ = std::vector<data_size_t>(num_data_);
-  } else {
-    out_of_bag_data_cnt_ = 0;
-    out_of_bag_data_indices_.clear();
-    bag_data_cnt_ = num_data_;
-    bag_data_indices_.clear();
-  }
-  // initialize random generator
-  random_ = Random(gbdt_config_->bagging_seed);
-}
-
-void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* object_function, const std::vector<const Metric*>& training_metrics) {
+void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
+  const std::vector<const Metric*>& training_metrics) {
   if (train_data_ != nullptr && !train_data_->CheckAlign(*train_data)) {
     Log::Fatal("cannot reset training data, since new training data has different bin mappers");
   }
+  gbdt_config_ = config;
+  early_stopping_round_ = gbdt_config_->early_stopping_round;
+  shrinkage_rate_ = gbdt_config_->learning_rate;
   train_data_ = train_data;
   // create tree learner
   tree_learner_.clear();
@@ -120,6 +91,7 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
     bag_data_cnt_ = num_data_;
     bag_data_indices_.clear();
   }
+  random_ = Random(gbdt_config_->bagging_seed);
   // update score
   for (int i = 0; i < iter_; ++i) {
     for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
