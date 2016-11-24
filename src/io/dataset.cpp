@@ -101,11 +101,7 @@ bool Dataset::GetFloatField(const char* field_name, int64_t* out_len, const floa
   } else {
     return false;
   }
-  if (*out_ptr != nullptr) {
-    return true;
-  } else {
-    return false;
-  }
+  return true;
 }
 
 bool Dataset::GetIntField(const char* field_name, int64_t* out_len, const int** out_ptr) {
@@ -117,11 +113,7 @@ bool Dataset::GetIntField(const char* field_name, int64_t* out_len, const int** 
   } else {
     return false;
   }
-  if (*out_ptr != nullptr) {
-    return true;
-  } else {
-    return false;
-  }
+  return true;
 }
 
 void Dataset::SaveBinaryFile(const char* bin_filename) {

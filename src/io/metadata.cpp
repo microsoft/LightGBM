@@ -196,6 +196,12 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
 
 
 void Metadata::SetInitScore(const float* init_score, data_size_t len) {
+  // save to nullptr
+  if (init_score == nullptr || len == 0) {
+    init_score_.clear();
+    num_init_score_ = 0;
+    return;
+  }
   if (len != num_data_ * num_class_) {
     Log::Fatal("Initial score size doesn't match data size");
   }
@@ -208,6 +214,9 @@ void Metadata::SetInitScore(const float* init_score, data_size_t len) {
 }
 
 void Metadata::SetLabel(const float* label, data_size_t len) {
+  if (label == nullptr) {
+    Log::Fatal("label cannot be nullptr");
+  }
   if (num_data_ != len) {
     Log::Fatal("len of label is not same with #data");
   }
@@ -219,6 +228,12 @@ void Metadata::SetLabel(const float* label, data_size_t len) {
 }
 
 void Metadata::SetWeights(const float* weights, data_size_t len) {
+  // save to nullptr
+  if (weights == nullptr || len == 0) {
+    weights_.clear();
+    num_weights_ = 0;
+    return;
+  }
   if (num_data_ != len) {
     Log::Fatal("len of weights is not same with #data");
   }
@@ -232,6 +247,12 @@ void Metadata::SetWeights(const float* weights, data_size_t len) {
 }
 
 void Metadata::SetQueryBoundaries(const data_size_t* query_boundaries, data_size_t len) {
+  // save to nullptr
+  if (query_boundaries == nullptr || len == 0) {
+    query_boundaries_.clear();
+    num_queries_ = 0;
+    return;
+  }
   data_size_t sum = 0;
   for (data_size_t i = 0; i < len; ++i) {
     sum += query_boundaries[i];
@@ -249,6 +270,13 @@ void Metadata::SetQueryBoundaries(const data_size_t* query_boundaries, data_size
 }
 
 void Metadata::SetQueryId(const data_size_t* query_id, data_size_t len) {
+  // save to nullptr
+  if (query_id == nullptr || len == 0) {
+    query_boundaries_.clear();
+    queries_.clear();
+    num_queries_ = 0;
+    return;
+  }
   if (num_data_ != len) {
     Log::Fatal("len of query id is not same with #data");
   }
