@@ -24,8 +24,9 @@ def find_lib_path():
     """
     curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
     dll_path = [curr_path, os.path.join(curr_path, '../../lib/'),
-                os.path.join(curr_path, './lib/'),
-                os.path.join(sys.prefix, 'lightgbm')]
+        os.path.join(curr_path, '../../'),
+        os.path.join(curr_path, './lib/'),
+        os.path.join(sys.prefix, 'lightgbm')]
     if os.name == 'nt':
         dll_path.append(os.path.join(curr_path, '../../windows/x64/Dll/'))
         dll_path.append(os.path.join(curr_path, './windows/x64/Dll/'))
