@@ -438,7 +438,7 @@ class Dataset(object):
                 if params["has_header"].lower() == "true" or params["header"].lower() == "true":
                     self.data_has_header = True
             self.handle = ctypes.c_void_p()
-            _safe_call(_LIB.LGBM_CreateDatasetFromFile(
+            _safe_call(_LIB.LGBM_DatasetCreateFromFile(
                 c_str(data), 
                 c_str(params_str), 
                 ref_dataset,
@@ -521,7 +521,7 @@ class Dataset(object):
             data = np.array(mat.reshape(mat.size), dtype=np.float32)
 
         ptr_data, type_ptr_data = c_float_array(data)
-        _safe_call(_LIB.LGBM_CreateDatasetFromMat(
+        _safe_call(_LIB.LGBM_DatasetCreateFromMat(
             ptr_data, 
             type_ptr_data,
             mat.shape[0],
@@ -542,7 +542,7 @@ class Dataset(object):
         ptr_indptr, type_ptr_indptr = c_int_array(csr.indptr)
         ptr_data, type_ptr_data = c_float_array(csr.data)
 
-        _safe_call(_LIB.LGBM_CreateDatasetFromCSR(
+        _safe_call(_LIB.LGBM_DatasetCreateFromCSR(
             ptr_indptr, 
             type_ptr_indptr,
             csr.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),

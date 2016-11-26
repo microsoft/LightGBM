@@ -330,6 +330,8 @@ public:
     }
   }
 
+  Dataset* Subset(const data_size_t* used_indices, data_size_t num_used_indices, bool is_enable_sparse) const;
+
   void FinishLoad();
 
   bool SetFloatField(const char* field_name, const float* field_data, data_size_t num_element);
@@ -396,8 +398,6 @@ private:
   int num_class_;
   /*! \brief Store some label level data*/
   Metadata metadata_;
-  /*! \brief True if dataset is loaded from binary file */
-  bool is_loading_from_binfile_;
   /*! \brief index of label column */
   int label_idx_ = 0;
   /*! \brief store feature names */

@@ -57,7 +57,7 @@ DllExport const char* LGBM_GetLastError();
 * \param out a loaded dataset
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_CreateDatasetFromFile(const char* filename,
+DllExport int LGBM_DatasetCreateFromFile(const char* filename,
   const char* parameters,
   const DatesetHandle* reference,
   DatesetHandle* out);
@@ -77,7 +77,7 @@ DllExport int LGBM_CreateDatasetFromFile(const char* filename,
 * \param out created dataset
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_CreateDatasetFromCSR(const void* indptr,
+DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
   int indptr_type,
   const int32_t* indices,
   const void* data,
@@ -104,7 +104,7 @@ DllExport int LGBM_CreateDatasetFromCSR(const void* indptr,
 * \param out created dataset
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_CreateDatasetFromCSC(const void* col_ptr,
+DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   int col_ptr_type,
   const int32_t* indices,
   const void* data,
@@ -128,13 +128,29 @@ DllExport int LGBM_CreateDatasetFromCSC(const void* col_ptr,
 * \param out created dataset
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_CreateDatasetFromMat(const void* data,
+DllExport int LGBM_DatasetCreateFromMat(const void* data,
   int data_type,
   int32_t nrow,
   int32_t ncol,
   int is_row_major,
   const char* parameters,
   const DatesetHandle* reference,
+  DatesetHandle* out);
+
+/*!
+* \brief Create subset of a data
+* \param full_data the full dataset
+* \param used_row_indices Indices used in subset
+* \param num_used_row_indices len of used_row_indices
+* \param parameters additional parameters
+* \param out subset of data
+* \return 0 when succeed, -1 when failure happens
+*/
+DllExport int LGBM_DatasetGetSubset(
+  const DatesetHandle* full_data,
+  const int32_t* used_row_indices,
+  const int32_t num_used_row_indices,
+  const char* parameters,
   DatesetHandle* out);
 
 /*!

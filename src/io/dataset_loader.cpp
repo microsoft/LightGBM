@@ -142,18 +142,18 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
                   Please use an additional query file or pre-partition the data");
     }
   }
-  auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, io_config_.has_header, 0, label_idx_));
-  if (parser == nullptr) {
-    Log::Fatal("Could not recognize data format of %s", filename);
-  }
+  auto dataset = std::unique_ptr<Dataset>(new Dataset());
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
-  auto dataset = std::unique_ptr<Dataset>(new Dataset());
-  dataset->data_filename_ = filename;
-  dataset->num_class_ = io_config_.num_class;
-  dataset->metadata_.Init(filename, dataset->num_class_);
   auto bin_filename = CheckCanLoadFromBin(filename);
   if (bin_filename.size() == 0) {
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, io_config_.has_header, 0, label_idx_));
+    if (parser == nullptr) {
+      Log::Fatal("Could not recognize data format of %s", filename);
+    }
+    dataset->data_filename_ = filename;
+    dataset->num_class_ = io_config_.num_class;
+    dataset->metadata_.Init(filename, dataset->num_class_);
     if (!io_config_.use_two_round_loading) {
       // read data to memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, rank, num_machines,&num_global_data, &used_data_indices);
@@ -197,18 +197,18 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
 
 
 Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data) {
-  auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, io_config_.has_header, 0, label_idx_));
-  if (parser == nullptr) {
-    Log::Fatal("Could not recognize data format of %s", filename);
-  }
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
-  dataset->data_filename_ = filename;
-  dataset->num_class_ = io_config_.num_class;
-  dataset->metadata_.Init(filename, dataset->num_class_);
   auto bin_filename = CheckCanLoadFromBin(filename);
   if (bin_filename.size() == 0) {
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, io_config_.has_header, 0, label_idx_));
+    if (parser == nullptr) {
+      Log::Fatal("Could not recognize data format of %s", filename);
+    }
+    dataset->data_filename_ = filename;
+    dataset->num_class_ = io_config_.num_class;
+    dataset->metadata_.Init(filename, dataset->num_class_);
     if (!io_config_.use_two_round_loading) {
       // read data in memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, 0, 1, &num_global_data, &used_data_indices);
@@ -407,7 +407,6 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* bin_filename, int rank, int 
   }
   dataset->features_.shrink_to_fit();
   fclose(file);
-  dataset->is_loading_from_binfile_ = true;
   return dataset.release();
 }
 

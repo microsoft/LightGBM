@@ -204,7 +204,7 @@ DllExport const char* LGBM_GetLastError() {
   return LastErrorMsg();
 }
 
-DllExport int LGBM_CreateDatasetFromFile(const char* filename,
+DllExport int LGBM_DatasetCreateFromFile(const char* filename,
   const char* parameters,
   const DatesetHandle* reference,
   DatesetHandle* out) {
@@ -223,7 +223,7 @@ DllExport int LGBM_CreateDatasetFromFile(const char* filename,
   API_END();
 }
 
-DllExport int LGBM_CreateDatasetFromMat(const void* data,
+DllExport int LGBM_DatasetCreateFromMat(const void* data,
   int data_type,
   int32_t nrow,
   int32_t ncol,
@@ -272,7 +272,7 @@ DllExport int LGBM_CreateDatasetFromMat(const void* data,
   API_END();
 }
 
-DllExport int LGBM_CreateDatasetFromCSR(const void* indptr,
+DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
   int indptr_type,
   const int32_t* indices,
   const void* data,
@@ -334,7 +334,7 @@ DllExport int LGBM_CreateDatasetFromCSR(const void* indptr,
   API_END();
 }
 
-DllExport int LGBM_CreateDatasetFromCSC(const void* col_ptr,
+DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   int col_ptr_type,
   const int32_t* indices,
   const void* data,
@@ -379,6 +379,26 @@ DllExport int LGBM_CreateDatasetFromCSC(const void* col_ptr,
     auto one_col = get_col_fun(i);
     ret->PushOneColumn(tid, i, one_col);
   }
+  ret->FinishLoad();
+  *out = ret.release();
+  API_END();
+}
+
+DllExport int LGBM_DatasetGetSubset(
+  const DatesetHandle* full_data,
+  const int32_t* used_row_indices,
+  const int32_t num_used_row_indices,
+  const char* parameters,
+  DatesetHandle* out) {
+  API_BEGIN();
+  auto param = ConfigBase::Str2Map(parameters);
+  IOConfig io_config;
+  io_config.Set(param);
+  auto full_dataset = reinterpret_cast<const Dataset*>(*full_data);
+  auto ret = std::unique_ptr<Dataset>(
+    full_dataset->Subset(used_row_indices,
+      num_used_row_indices, 
+      io_config.is_enable_sparse));
   ret->FinishLoad();
   *out = ret.release();
   API_END();

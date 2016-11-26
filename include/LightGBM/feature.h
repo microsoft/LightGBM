@@ -80,6 +80,9 @@ public:
     unsigned int bin = bin_mapper_->ValueToBin(value);
     bin_data_->Push(tid, line_idx, bin);
   }
+  inline void PushBin(int tid, data_size_t line_idx, unsigned int bin) {
+    bin_data_->Push(tid, line_idx, bin);
+  }
   inline void FinishLoad() { bin_data_->FinishLoad(); }
   /*! \brief Index of this feature */
   inline int feature_index() const { return feature_index_; }
