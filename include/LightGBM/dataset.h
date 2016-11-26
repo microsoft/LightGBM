@@ -13,6 +13,7 @@
 #include <functional>
 #include <string>
 #include <unordered_set>
+#include <mutex>
 
 namespace LightGBM {
 
@@ -234,6 +235,8 @@ private:
   std::vector<float> init_score_;
   /*! \brief Queries data */
   std::vector<data_size_t> queries_;
+  /*! \brief mutex for threading safe call */
+  std::mutex mutex_;
 };
 
 

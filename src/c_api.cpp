@@ -30,7 +30,6 @@ public:
 
   Booster(const Dataset* train_data, 
     const char* parameters) {
-    std::lock_guard<std::mutex> lock(mutex_);
     auto param = ConfigBase::Str2Map(parameters);
     config_.Set(param);
     // create boosting

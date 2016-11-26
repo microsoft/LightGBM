@@ -196,6 +196,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
 
 
 void Metadata::SetInitScore(const float* init_score, data_size_t len) {
+  std::lock_guard<std::mutex> lock(mutex_);
   // save to nullptr
   if (init_score == nullptr || len == 0) {
     init_score_.clear();
@@ -214,6 +215,7 @@ void Metadata::SetInitScore(const float* init_score, data_size_t len) {
 }
 
 void Metadata::SetLabel(const float* label, data_size_t len) {
+  std::lock_guard<std::mutex> lock(mutex_);
   if (label == nullptr) {
     Log::Fatal("label cannot be nullptr");
   }
@@ -228,6 +230,7 @@ void Metadata::SetLabel(const float* label, data_size_t len) {
 }
 
 void Metadata::SetWeights(const float* weights, data_size_t len) {
+  std::lock_guard<std::mutex> lock(mutex_);
   // save to nullptr
   if (weights == nullptr || len == 0) {
     weights_.clear();
@@ -247,6 +250,7 @@ void Metadata::SetWeights(const float* weights, data_size_t len) {
 }
 
 void Metadata::SetQueryBoundaries(const data_size_t* query_boundaries, data_size_t len) {
+  std::lock_guard<std::mutex> lock(mutex_);
   // save to nullptr
   if (query_boundaries == nullptr || len == 0) {
     query_boundaries_.clear();
@@ -270,6 +274,7 @@ void Metadata::SetQueryBoundaries(const data_size_t* query_boundaries, data_size
 }
 
 void Metadata::SetQueryId(const data_size_t* query_id, data_size_t len) {
+  std::lock_guard<std::mutex> lock(mutex_);
   // save to nullptr
   if (query_id == nullptr || len == 0) {
     query_boundaries_.clear();
