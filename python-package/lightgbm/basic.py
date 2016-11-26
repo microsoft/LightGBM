@@ -274,7 +274,9 @@ class Predictor(object):
                 predict_type,
                 num_iteration,
                 c_str(tmp_pred_fname)))
-            lines = open(tmp_pred_fname,"r").readlines()
+            tmp_file = open(tmp_pred_fname,"r")
+            lines = tmp_file.readlines()
+            tmp_file.close()
             nrow = len(lines)
             preds = []
             for line in lines:
@@ -505,7 +507,11 @@ class Dataset(object):
         return Dataset(data, label=label, max_bin=self.max_bin, reference=self,
             weight=weight, group_id=group_id, predictor=self.predictor, 
             silent=silent, params=params)
+
     def subset(self, used_indices, params=None):
+        """
+        Get subset of current dataset
+        """
         used_indices = list_to_1d_numpy(used_indices, np.int32)
         ret = Dataset(None)
         ret.handle = ctypes.c_void_p()
