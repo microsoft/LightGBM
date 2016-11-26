@@ -402,6 +402,8 @@ private:
   int label_idx_ = 0;
   /*! \brief store feature names */
   std::vector<std::string> feature_names_;
+  /*! \brief store feature names */
+  static const char* binary_file_token;
 };
 
 }  // namespace LightGBM

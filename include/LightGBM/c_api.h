@@ -63,15 +63,6 @@ DllExport int LGBM_CreateDatasetFromFile(const char* filename,
   DatesetHandle* out);
 
 /*!
-* \brief load data set from binary file like the command_line LightGBM do
-* \param filename the name of the file
-* \param out a loaded dataset
-* \return 0 when succeed, -1 when failure happens
-*/
-DllExport int LGBM_CreateDatasetFromBinaryFile(const char* filename,
-  DatesetHandle* out);
-
-/*!
 * \brief create a dataset from CSR format
 * \param indptr pointer to row headers
 * \param indptr_type

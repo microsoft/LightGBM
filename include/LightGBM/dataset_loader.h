@@ -49,7 +49,7 @@ private:
   void ExtractFeaturesFromFile(const char* filename, const Parser* parser, const std::vector<data_size_t>& used_data_indices, Dataset* dataset);
 
   /*! \brief Check can load from binary file */
-  bool CheckCanLoadFromBin(const char* filename);
+  std::string CheckCanLoadFromBin(const char* filename);
 
   const IOConfig& io_config_;
   /*! \brief Random generator*/

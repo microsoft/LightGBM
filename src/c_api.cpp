@@ -223,15 +223,6 @@ DllExport int LGBM_CreateDatasetFromFile(const char* filename,
   API_END();
 }
 
-DllExport int LGBM_CreateDatasetFromBinaryFile(const char* filename,
-  DatesetHandle* out) {
-  API_BEGIN();
-  OverallConfig config;
-  DatasetLoader loader(config.io_config, nullptr);
-  *out = loader.LoadFromBinFile(filename, 0, 1);
-  API_END();
-}
-
 DllExport int LGBM_CreateDatasetFromMat(const void* data,
   int data_type,
   int32_t nrow,

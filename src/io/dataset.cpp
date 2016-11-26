@@ -14,6 +14,7 @@
 
 namespace LightGBM {
 
+const char* Dataset::binary_file_token = "______LightGBM_Binary_File_Token______\n";
 
 Dataset::Dataset() {
   num_class_ = 1;
@@ -135,7 +136,8 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
       Log::Fatal("Cannot write binary data to %s ", bin_filename);
     }
     Log::Info("Saving data to binary file %s", bin_filename);
-
+    size_t size_of_token = std::strlen(binary_file_token);
+    fwrite(binary_file_token, sizeof(char), size_of_token, file);
     // get size of header
     size_t size_of_header = sizeof(num_data_) + sizeof(num_class_) + sizeof(num_features_) + sizeof(num_total_features_) 
       + sizeof(size_t) + sizeof(int) * used_feature_map_.size();
