@@ -365,7 +365,7 @@ DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
 *          0:normal, with transform (if needed)
 *          1:raw score
 *          2:leaf index
-* \param num_iteration number of iteration for prediction, < 0 means no limit
+* \param num_iteration number of iteration for prediction, <= 0 means no limit
 * \param result_filename filename of result file
 * \return 0 when succeed, -1 when failure happens
 */
@@ -391,7 +391,7 @@ DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
 *          0:normal, with transform (if needed)
 *          1:raw score
 *          2:leaf index
-* \param num_iteration number of iteration for prediction, < 0 means no limit
+* \param num_iteration number of iteration for prediction, <= 0 means no limit
 * \param out_len len of output result
 * \param out_result used to set a pointer to array, should allocate memory before call this function
 * \return 0 when succeed, -1 when failure happens
@@ -422,7 +422,7 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
 *          0:normal, with transform (if needed)
 *          1:raw score
 *          2:leaf index
-* \param num_iteration number of iteration for prediction, < 0 means no limit
+* \param num_iteration number of iteration for prediction, <= 0 means no limit
 * \param out_len len of output result
 * \param out_result used to set a pointer to array, should allocate memory before call this function
 * \return 0 when succeed, -1 when failure happens
@@ -441,7 +441,7 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
 /*!
 * \brief save model into file
 * \param handle handle
-* \param num_iteration, < 0 means no limit
+* \param num_iteration, <= 0 means save all
 * \param filename file name
 * \return 0 when succeed, -1 when failure happens
 */

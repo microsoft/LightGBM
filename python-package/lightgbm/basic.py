@@ -82,7 +82,7 @@ def is_1d_list(data):
     if not isinstance(data, list):
         return False
     if len(data) > 0:
-        if not isinstance(data[0], (int, str, bool) ):
+        if not isinstance(data[0], (int, float, bool) ):
             return False
     return True
 

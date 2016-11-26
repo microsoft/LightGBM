@@ -414,12 +414,12 @@ void GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
   output_file << std::endl;
 
   int num_used_model = 0;
-  if (num_iteration == NO_LIMIT) {
+  if (num_iteration <= 0) {
     num_used_model = static_cast<int>(models_.size());
   } else {
     num_used_model = num_iteration * num_class_;
   }
-
+  num_used_model = std::min(num_used_model, static_cast<int>(models_.size()));
   // output tree models
   for (int i = 0; i < num_used_model; ++i) {
     output_file << "Tree=" << i << std::endl;
