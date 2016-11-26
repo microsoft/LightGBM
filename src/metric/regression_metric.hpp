@@ -101,7 +101,7 @@ public:
   }
 
   inline static const char* Name() {
-    return "l2 loss";
+    return "l2";
   }
 };
 
@@ -114,7 +114,7 @@ public:
     return std::fabs(score - label);
   }
   inline static const char* Name() {
-    return "l1 loss";
+    return "l1";
   }
 };
 

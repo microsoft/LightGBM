@@ -187,8 +187,7 @@ class Predictor(object):
     """"A Predictor of LightGBM.
     """
     def __init__(self,model_file=None, params=None, booster_handle=None, is_manage_handle=True):
-        # pylint: disable=invalid-name
-        """Initialize the Booster.
+        """Initialize the Predictor.
 
         Parameters
         ----------
@@ -233,6 +232,29 @@ class Predictor(object):
 
 
     def predict(self, data, num_iteration=-1, raw_score=False, pred_leaf=False, data_has_header=False, is_reshape=True):
+        """
+        Predict logic
+
+        Parameters
+        ----------
+        data : string/numpy array/scipy.sparse
+            Data source for prediction
+            When data is string type, it represents the path of txt file,
+        num_iteration : 
+            used iteration for prediction
+        raw_score : bool 
+            True for predict raw score
+        pred_leaf : bool
+            True for predict leaf index
+        data_has_header : bool
+            Used for txt data
+        is_reshape : bool
+            True for reshape to [nrow, ...] 
+
+        Returns
+        -------
+        Prediction result
+        """
         if isinstance(data, Dataset):
             raise TypeError("cannot use Dataset instance for prediction, please use raw data instead")
         predict_type = C_API_PREDICT_NORMAL
@@ -400,7 +422,7 @@ class Dataset(object):
         params["max_bin"] = max_bin
         if silent:
             params["verbose"] = 0
-        else:
+        elif "verbose" not in params:
             params["verbose"] = 1
         params_str = dict_to_str(params)
         """process for reference dataset"""
@@ -477,7 +499,7 @@ class Dataset(object):
             group/query id for each instance. Note: if having group/query id, data should group by this id
         silent : boolean, optional
             Whether print messages during construction
-        other_params: dict, optional
+        params: dict, optional
             other parameters
         """
         return Dataset(data, label=label, max_bin=self.max_bin, reference=self,
@@ -758,7 +780,6 @@ class Booster(object):
     """"A Booster of of LightGBM.
     """
     def __init__(self, params=None, train_set=None, model_file=None, silent=False):
-        # pylint: disable=invalid-name
         """Initialize the Booster.
 
         Parameters
@@ -769,6 +790,8 @@ class Booster(object):
             training dataset
         model_file : string
             Path to the model file. 
+        silent : boolean, optional
+            Whether print messages during construction
         """
         self.handle = ctypes.c_void_p()
         self.__need_reload_eval_info = True
@@ -777,7 +800,7 @@ class Booster(object):
             params = {}
         if silent:
             params["verbose"] = 0
-        else:
+        elif "verbose" not in params:
             params["verbose"] = 1
         if train_set is not None:
             """Training task"""
@@ -806,6 +829,7 @@ class Booster(object):
             self.__num_class = out_num_class.value
             """buffer for inner predict"""
             self.__inner_predict_buffer = [None]
+            self.__is_predicted_cur_iter = [False]
             self.__get_eval_info()
         elif model_file is not None:
             """Prediction task"""
@@ -828,6 +852,15 @@ class Booster(object):
             _safe_call(_LIB.LGBM_BoosterFree(self.handle))
 
     def add_valid(self, data, name):
+        """Add an validation data
+
+        Parameters
+        ----------
+        data : Dataset
+            validation data
+        name : String
+            name of validation data
+        """
         if data.predictor is not self.init_predictor:
             raise Exception("Add validation data failed, you should use same predictor for these data")
         _safe_call(_LIB.LGBM_BoosterAddValidData(
@@ -836,12 +869,23 @@ class Booster(object):
         self.valid_sets.append(data)
         self.name_valid_sets.append(name)
         self.__num_dataset += 1
+        self.__inner_predict_buffer.append(None)
+        self.__is_predicted_cur_iter.append(False)
 
     def reset_parameter(self, params, silent=False):
+        """Reset parameters for booster
+
+        Parameters
+        ----------
+        params : dict
+            params
+        silent : boolean, optional
+            Whether print messages during construction
+        """
         self.__need_reload_eval_info = True
         if silent:
             params["verbose"] = 0
-        else:
+        elif "verbose" not in params:
             params["verbose"] = 1
         params_str = dict_to_str(params)
         _safe_call(_LIB.LGBM_BoosterResetParameter(
@@ -864,6 +908,7 @@ class Booster(object):
         -------
         is_finished, bool
         """
+
         """need reset training data"""
         if train_set is not None and train_set is not self.train_set:
             if train_set.predictor is not self.init_predictor:
@@ -878,6 +923,7 @@ class Booster(object):
             _safe_call(_LIB.LGBM_BoosterUpdateOneIter(
                 self.handle, 
                 ctypes.byref(is_finished)))
+            self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
             return is_finished.value == 1
         else:
             grad, hess = fobj(self.__inner_predict(0), self.train_set)
@@ -891,9 +937,9 @@ class Booster(object):
               and you should group grad and hess in this way as well
         Parameters
         ----------
-        grad : 1d numpy or list
+        grad : 1d numpy or 1d list
             The first order of gradient.
-        hess : 1d numpy or list
+        hess : 1d numpy or 1d list
             The second order of gradient.
 
         Returns
@@ -922,11 +968,16 @@ class Booster(object):
             grad.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
             hess.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
             ctypes.byref(is_finished)))
+        self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
         return is_finished.value == 1
 
     def rollback_one_iter(self):
+        """
+        Rollback one iteration
+        """
         _safe_call(_LIB.LGBM_BoosterRollbackOneIter(
             self.handle))
+        self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
 
     def current_iteration(self):
         out_cur_iter = ctypes.c_int64(0)
@@ -946,8 +997,8 @@ class Booster(object):
             Custom evaluation function.
         Returns
         -------
-        result: str
-            Evaluation result string.
+        result: list
+            Evaluation result list.
         """
         if not isinstance(data, Dataset):
             raise TypeError("Can only eval for Dataset instance")
@@ -977,7 +1028,7 @@ class Booster(object):
         Returns
         -------
         result: str
-            Evaluation result string.
+            Evaluation result list.
         """
         return self.__inner_eval("training", 0, feval)
 
@@ -992,29 +1043,67 @@ class Booster(object):
         Returns
         -------
         result: str
-            Evaluation result string.
+            Evaluation result list.
         """
         ret = []
         for i in range(1, self.__num_dataset):
-            ret.append(self.__inner_eval(self.name_valid_sets[i-1], i, feval))
-        return '\n'.join(ret)
+            ret.extend(self.__inner_eval(self.name_valid_sets[i-1], i, feval))
+        return ret
 
     def save_model(self, filename, num_iteration=-1):
+        """Save model of booster to file
+
+        Parameters
+        ----------
+        filename : str
+            filename to save 
+        num_iteration: int
+            number of iteration that want to save. < 0 means save all
+        """
         _safe_call(_LIB.LGBM_BoosterSaveModel(
             self.handle,
             num_iteration,
             c_str(filename)))
 
     def predict(self, data, num_iteration=-1, raw_score=False, pred_leaf=False, data_has_header=False, is_reshape=True):
+        """
+        Predict logic
+
+        Parameters
+        ----------
+        data : string/numpy array/scipy.sparse
+            Data source for prediction
+            When data is string type, it represents the path of txt file,
+        num_iteration : 
+            used iteration for prediction
+        raw_score : bool 
+            True for predict raw score
+        pred_leaf : bool
+            True for predict leaf index
+        data_has_header : bool
+            Used for txt data
+        is_reshape : bool
+            True for reshape to [nrow, ...] 
+
+        Returns
+        -------
+        Prediction result
+        """
         predictor = Predictor(booster_handle=self.handle, is_manage_handle=False)
         return predictor.predict(data, num_iteration, raw_score, pred_leaf, data_has_header, is_reshape)
 
     def to_predictor(self):
+        """Convert to predictor
+        Note: Predictor will manage the handle after doing this
+        """
         predictor = Predictor(booster_handle=self.handle, is_manage_handle=True)
         self.__is_manage_handle = False
         return predictor
 
     def __inner_eval(self, data_name, data_idx, feval=None):
+        """
+        Evaulate traning or validation data
+        """
         if data_idx >= self.__num_dataset:
             raise ValueError("data_idx should be smaller than number of dataset")
         self.__get_eval_info()
@@ -1030,7 +1119,7 @@ class Booster(object):
             if tmp_out_len.value != self.__num_inner_eval:
                 raise ValueError("incorrect number of eval results")
             for i in range(self.__num_inner_eval):
-                ret.append('%s %s : %f' %(data_name, self.__name_inner_eval[i], result[i]))
+                ret.append((data_name, self.__name_inner_eval[i], result[i]))
         if feval is not None:
             if data_idx == 0:
                 cur_data = self.train_set
@@ -1038,14 +1127,17 @@ class Booster(object):
                 cur_data = self.valid_sets[data_idx - 1]
             feval_ret = feval(self.__inner_predict(data_idx), cur_data)
             if isinstance(feval_ret, list):
-                for name, val in feval_ret:
-                    ret.append('%s %s : %f' % (data_name, name, val))
+                for eval_name, val in feval_ret:
+                    ret.append((data_name, eval_name, val))
             else:
-                name, val = feval_ret
-                ret.append('%s %s : %f' % (data_name, name, val))
-        return '\t'.join(ret)
+                eval_name, val = feval_ret
+                ret.append((data_name, eval_name, val))
+        return ret
 
     def __inner_predict(self, data_idx):
+        """
+        Predict for training and validation dataset
+        """
         if data_idx >= self.__num_dataset:
             raise ValueError("data_idx should be smaller than number of dataset")
         if self.__inner_predict_buffer[data_idx] is None:
@@ -1055,18 +1147,24 @@ class Booster(object):
                 num_data = self.valid_sets[data_idx - 1].num_data() * self.__num_class
             self.__inner_predict_buffer[data_idx] = \
                 np.array([0.0 for _ in range(num_data)], dtype=np.float32, copy=False)
-        tmp_out_len = ctypes.c_int64(0)
-        data_ptr = self.__inner_predict_buffer[data_idx].ctypes.data_as(ctypes.POINTER(ctypes.c_float))
-        _safe_call(_LIB.LGBM_BoosterGetPredict(
-            self.handle, 
-            data_idx, 
-            ctypes.byref(tmp_out_len), 
-            data_ptr))
-        if tmp_out_len.value != len(self.__inner_predict_buffer[data_idx]):
-            raise ValueError("incorrect number of predict results for data %d" %(data_idx) )
+        """avoid to predict many time in one iteration"""
+        if not self.__is_predicted_cur_iter[data_idx]:
+            tmp_out_len = ctypes.c_int64(0)
+            data_ptr = self.__inner_predict_buffer[data_idx].ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+            _safe_call(_LIB.LGBM_BoosterGetPredict(
+                self.handle, 
+                data_idx, 
+                ctypes.byref(tmp_out_len), 
+                data_ptr))
+            if tmp_out_len.value != len(self.__inner_predict_buffer[data_idx]):
+                raise ValueError("incorrect number of predict results for data %d" %(data_idx) )
+            self.__is_predicted_cur_iter[data_idx] = True
         return self.__inner_predict_buffer[data_idx]
 
     def __get_eval_info(self):
+        """
+        Get inner evaluation count and names
+        """
         if self.__need_reload_eval_info:
             self.__need_reload_eval_info = False
             out_num_eval = ctypes.c_int64(0)

@@ -116,7 +116,7 @@ public:
   }
 
   inline static const char* Name() {
-    return "log loss";
+    return "logloss";
   }
 };
 /*!
@@ -135,7 +135,7 @@ public:
   }
 
   inline static const char* Name() {
-    return "error rate";
+    return "error";
   }
 };
 
@@ -160,7 +160,7 @@ public:
   }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
-    name_.emplace_back("AUC");
+    name_.emplace_back("auc");
 
     num_data_ = num_data;
     // get label

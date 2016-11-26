@@ -35,7 +35,7 @@ public:
   }
   void Init(const Metadata& metadata, data_size_t num_data) override {
     for (auto k : eval_at_) {
-      name_.emplace_back(std::string("NDCG@") + std::to_string(k));
+      name_.emplace_back(std::string("ndcg@") + std::to_string(k));
     }
     num_data_ = num_data;
     // get label

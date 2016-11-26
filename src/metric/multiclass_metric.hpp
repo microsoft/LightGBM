@@ -109,7 +109,7 @@ public:
   }
 
   inline static const char* Name() {
-    return "multi error";
+    return "multi_error";
   }
 };
 
@@ -129,7 +129,7 @@ public:
   }
   
   inline static const char* Name() {
-    return "multi logloss";
+    return "multi_logloss";
   }
 };
 
