@@ -395,23 +395,23 @@ void GBDT::Boosting() {
 
 void GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
   /*! \brief File to write models */
-  std::ofstream outpu_file;
-  outpu_file.open(filename);
+  std::ofstream output_file;
+  output_file.open(filename);
   // output model type
-  outpu_file << Name() << std::endl;
+  output_file << Name() << std::endl;
   // output number of class
-  outpu_file << "num_class=" << num_class_ << std::endl;
+  output_file << "num_class=" << num_class_ << std::endl;
   // output label index
-  outpu_file << "label_index=" << label_idx_ << std::endl;
+  output_file << "label_index=" << label_idx_ << std::endl;
   // output max_feature_idx
-  outpu_file << "max_feature_idx=" << max_feature_idx_ << std::endl;
+  output_file << "max_feature_idx=" << max_feature_idx_ << std::endl;
   // output objective name
   if (object_function_ != nullptr) {
-    outpu_file << "objective=" << object_function_->GetName() << std::endl;
+    output_file << "objective=" << object_function_->GetName() << std::endl;
   }
   // output sigmoid parameter
-  outpu_file << "sigmoid=" << sigmoid_ << std::endl;
-  outpu_file << std::endl;
+  output_file << "sigmoid=" << sigmoid_ << std::endl;
+  output_file << std::endl;
 
   int num_used_model = 0;
   if (num_iteration == NO_LIMIT) {
@@ -422,12 +422,12 @@ void GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
 
   // output tree models
   for (int i = 0; i < num_used_model; ++i) {
-    outpu_file << "Tree=" << i << std::endl;
-    outpu_file << models_[i]->ToString() << std::endl;
+    output_file << "Tree=" << i << std::endl;
+    output_file << models_[i]->ToString() << std::endl;
   }
 
-  outpu_file << std::endl << FeatureImportance() << std::endl;
-  outpu_file.close();
+  output_file << std::endl << FeatureImportance() << std::endl;
+  output_file.close();
 }
 
 void GBDT::LoadModelFromString(const std::string& model_str) {

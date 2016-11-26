@@ -38,7 +38,7 @@ typedef void* BoosterHandle;
 
 /*!
 * \brief get string message of the last error
-*  all function in this file will return 0 when success
+*  all function in this file will return 0 when succeed
 *  and -1 when an error occured,
 * \return const char* error inforomation
 */
@@ -53,7 +53,7 @@ DllExport const char* LGBM_GetLastError();
 * \param parameters additional parameters
 * \param reference used to align bin mapper with other dataset, nullptr means don't used
 * \param out a loaded dataset
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_CreateDatasetFromFile(const char* filename,
   const char* parameters,
@@ -64,7 +64,7 @@ DllExport int LGBM_CreateDatasetFromFile(const char* filename,
 * \brief load data set from binary file like the command_line LightGBM do
 * \param filename the name of the file
 * \param out a loaded dataset
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_CreateDatasetFromBinaryFile(const char* filename,
   DatesetHandle* out);
@@ -82,7 +82,7 @@ DllExport int LGBM_CreateDatasetFromBinaryFile(const char* filename,
 * \param parameters additional parameters
 * \param reference used to align bin mapper with other dataset, nullptr means don't used
 * \param out created dataset
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_CreateDatasetFromCSR(const void* indptr,
   int indptr_type,
@@ -109,7 +109,7 @@ DllExport int LGBM_CreateDatasetFromCSR(const void* indptr,
 * \param parameters additional parameters
 * \param reference used to align bin mapper with other dataset, nullptr means don't used
 * \param out created dataset
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_CreateDatasetFromCSC(const void* col_ptr,
   int col_ptr_type,
@@ -133,7 +133,7 @@ DllExport int LGBM_CreateDatasetFromCSC(const void* col_ptr,
 * \param parameters additional parameters
 * \param reference used to align bin mapper with other dataset, nullptr means don't used
 * \param out created dataset
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_CreateDatasetFromMat(const void* data,
   int data_type,
@@ -146,7 +146,7 @@ DllExport int LGBM_CreateDatasetFromMat(const void* data,
 
 /*!
 * \brief free space for dataset
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_DatasetFree(DatesetHandle handle);
 
@@ -154,7 +154,7 @@ DllExport int LGBM_DatasetFree(DatesetHandle handle);
 * \brief save dateset to binary file
 * \param handle a instance of dataset
 * \param filename file name
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_DatasetSaveBinary(DatesetHandle handle,
   const char* filename);
@@ -166,7 +166,7 @@ DllExport int LGBM_DatasetSaveBinary(DatesetHandle handle,
 * \param field_data pointer to vector
 * \param num_element number of element in field_data
 * \param type float32 or int32
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_DatasetSetField(DatesetHandle handle,
   const char* field_name,
@@ -181,7 +181,7 @@ DllExport int LGBM_DatasetSetField(DatesetHandle handle,
 * \param out_len used to set result length
 * \param out_ptr pointer to the result
 * \param out_type  float32 or int32
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_DatasetGetField(DatesetHandle handle,
   const char* field_name,
@@ -193,7 +193,7 @@ DllExport int LGBM_DatasetGetField(DatesetHandle handle,
 * \brief get number of data.
 * \param handle the handle to the dataset
 * \param out The address to hold number of data
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_DatasetGetNumData(DatesetHandle handle,
   int64_t* out);
@@ -202,7 +202,7 @@ DllExport int LGBM_DatasetGetNumData(DatesetHandle handle,
 * \brief get number of features
 * \param handle the handle to the dataset
 * \param out The output of number of features
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_DatasetGetNumFeature(DatesetHandle handle,
   int64_t* out);
@@ -214,7 +214,7 @@ DllExport int LGBM_DatasetGetNumFeature(DatesetHandle handle,
 * \param train_data training data set
 * \param parameters format: 'key1=value1 key2=value2'
 * \prama out handle of created Booster
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
   const char* parameters,
@@ -225,7 +225,7 @@ DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
 * \param filename filename of model
 * \param out_num_total_model number of total models
 * \param out handle of created Booster
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterCreateFromModelfile(
   const char* filename,
@@ -236,7 +236,7 @@ DllExport int LGBM_BoosterCreateFromModelfile(
 /*!
 * \brief free obj in handle
 * \param handle handle to be freed
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterFree(BoosterHandle handle);
 
@@ -244,7 +244,7 @@ DllExport int LGBM_BoosterFree(BoosterHandle handle);
 * \brief Merge model in two booster to first handle
 * \param handle handle, will merge other handle to this
 * \param other_handle
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterMerge(BoosterHandle handle,
   BoosterHandle other_handle);
@@ -253,7 +253,7 @@ DllExport int LGBM_BoosterMerge(BoosterHandle handle,
 * \brief Add new validation to booster
 * \param handle handle
 * \param valid_data validation data set
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterAddValidData(BoosterHandle handle,
   const DatesetHandle valid_data);
@@ -262,7 +262,7 @@ DllExport int LGBM_BoosterAddValidData(BoosterHandle handle,
 * \brief Reset training data for booster
 * \param handle handle
 * \param train_data training data set
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterResetTrainingData(BoosterHandle handle,
   const DatesetHandle train_data);
@@ -271,7 +271,7 @@ DllExport int LGBM_BoosterResetTrainingData(BoosterHandle handle,
 * \brief Reset config for current booster
 * \param handle handle
 * \param parameters format: 'key1=value1 key2=value2'
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterResetParameter(BoosterHandle handle, const char* parameters);
 
@@ -286,7 +286,7 @@ DllExport int LGBM_BoosterGetNumClasses(BoosterHandle handle, int64_t* out_len);
 * \brief update the model in one round
 * \param handle handle
 * \param is_finished 1 means finised(cannot split any more)
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished);
 
@@ -297,7 +297,7 @@ DllExport int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished);
 * \param grad gradient statistics
 * \param hess second order gradient statistics
 * \param is_finished 1 means finised(cannot split any more)
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
   const float* grad,
@@ -307,7 +307,7 @@ DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
 /*!
 * \brief Rollback one iteration
 * \param handle handle
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterRollbackOneIter(BoosterHandle handle);
 
@@ -332,13 +332,13 @@ DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int64_t* out_len, c
 /*!
 * \brief get evaluation for training data and validation data
 * \param handle handle
-* \param data 0:training data, 1: 1st valid data, 2:2nd valid data ...
+* \param data_idx 0:training data, 1: 1st valid data, 2:2nd valid data ...
 * \param out_len len of output result
 * \param out_result the string containing evaluation statistics, should allocate memory before call this function
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
-  int data,
+  int data_idx,
   int64_t* out_len,
   float* out_results);
 
@@ -346,13 +346,13 @@ DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
 * \brief Get prediction for training data and validation data
 this can be used to support customized eval function
 * \param handle handle
-* \param data 0:training data, 1: 1st valid data, 2:2nd valid data ...
+* \param data_idx 0:training data, 1: 1st valid data, 2:2nd valid data ...
 * \param out_len len of output result
 * \param out_result used to set a pointer to array, should allocate memory before call this function
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
-  int data,
+  int data_idx,
   int64_t* out_len,
   float* out_result);
 
@@ -367,7 +367,7 @@ DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
 *          2:leaf index
 * \param num_iteration number of iteration for prediction, < 0 means no limit
 * \param result_filename filename of result file
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
   const char* data_filename,
@@ -394,7 +394,7 @@ DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
 * \param num_iteration number of iteration for prediction, < 0 means no limit
 * \param out_len len of output result
 * \param out_result used to set a pointer to array, should allocate memory before call this function
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   const void* indptr,
@@ -425,7 +425,7 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
 * \param num_iteration number of iteration for prediction, < 0 means no limit
 * \param out_len len of output result
 * \param out_result used to set a pointer to array, should allocate memory before call this function
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
   const void* data,
@@ -443,7 +443,7 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
 * \param handle handle
 * \param num_iteration, < 0 means no limit
 * \param filename file name
-* \return 0 when success, -1 when failure happens
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
   int num_iteration,

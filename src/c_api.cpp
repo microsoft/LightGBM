@@ -593,13 +593,13 @@ DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int64_t* out_len, c
 
 
 DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
-  int data,
+  int data_idx,
   int64_t* out_len,
   float* out_results) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto boosting = ref_booster->GetBoosting();
-  auto result_buf = boosting->GetEvalAt(data);
+  auto result_buf = boosting->GetEvalAt(data_idx);
   *out_len = static_cast<int64_t>(result_buf.size());
   for (size_t i = 0; i < result_buf.size(); ++i) {
     (out_results)[i] = static_cast<float>(result_buf[i]);
@@ -608,13 +608,13 @@ DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
 }
 
 DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
-  int data,
+  int data_idx,
   int64_t* out_len,
   float* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   int len = 0;
-  ref_booster->GetPredictAt(data, out_result, &len);
+  ref_booster->GetPredictAt(data_idx, out_result, &len);
   *out_len = static_cast<int64_t>(len);
   API_END();
 }
