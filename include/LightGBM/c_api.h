@@ -473,7 +473,7 @@ SampleFromOneColumn(const std::vector<std::pair<int, double>>& data, const std::
 
 // exception handle and error msg
 
-static std::string& LastErrorMsg() { static std::string err_msg("Everything is fine"); return err_msg; }
+static std::string& LastErrorMsg() { static thread_local std::string err_msg("Everything is fine"); return err_msg; }
 
 inline void LGBM_SetLastError(const char* msg) {
   LastErrorMsg() = msg;

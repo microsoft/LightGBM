@@ -225,11 +225,10 @@ void Application::Train() {
     // output used time per iteration
     Log::Info("%f seconds elapsed, finished iteration %d", std::chrono::duration<double,
       std::milli>(end_time - start_time) * 1e-3, iter + 1);
-    boosting_->SaveModelToFile(NO_LIMIT, is_finished, config_.io_config.output_model.c_str());
   }
   is_finished = true;
   // save model to file
-  boosting_->SaveModelToFile(NO_LIMIT, is_finished, config_.io_config.output_model.c_str());
+  boosting_->SaveModelToFile(NO_LIMIT, config_.io_config.output_model.c_str());
   Log::Info("Finished training");
 }
 

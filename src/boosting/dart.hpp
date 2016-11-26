@@ -67,18 +67,7 @@ public:
     *out_len = train_score_updater_->num_data() * num_class_;
     return train_score_updater_->score();
   }
-  /*!
-  * \brief save model to file
-  * \param num_iteration -1 means save all
-  * \param is_finish is training finished or not
-  * \param filename filename that want to save to
-  */
-  void SaveModelToFile(int num_iteration, bool is_finish, const char* filename) override {
-    // only save model once when is_finish = true
-    if (is_finish && saved_model_size_ < 0) {
-      GBDT::SaveModelToFile(num_iteration, is_finish, filename);
-    }
-  }
+
   /*!
   * \brief Get Type name of this boosting object
   */

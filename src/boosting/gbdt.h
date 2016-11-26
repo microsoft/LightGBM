@@ -138,11 +138,11 @@ public:
 
   /*!
   * \brief save model to file
-  * \param num_iteration -1 means save all
-  * \param is_finish is training finished or not
+  * \param num_iterations Iterations that want to save, -1 means save all
   * \param filename filename that want to save to
   */
-  virtual void SaveModelToFile(int num_iteration, bool is_finish, const char* filename) override;
+  virtual void SaveModelToFile(int num_iterations, const char* filename) const override ;
+
   /*!
   * \brief Restore from a serialized string
   */
@@ -274,10 +274,6 @@ protected:
   double sigmoid_;
   /*! \brief Index of label column */
   data_size_t label_idx_;
-  /*! \brief Saved number of models */
-  int saved_model_size_;
-  /*! \brief File to write models */
-  std::ofstream model_output_file_;
   /*! \brief number of used model */
   int num_iteration_for_pred_;
   /*! \brief Shrinkage rate for one iteration */

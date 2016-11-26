@@ -89,7 +89,7 @@ private:
 
   // a trick to use static variable in header file. 
   // May be not good, but avoid to use an additional cpp file
-  static LogLevel& GetLevel() { static LogLevel level; return level; }
+  static LogLevel& GetLevel() { static thread_local LogLevel level = LogLevel::Info; return level; }
   
 };
 

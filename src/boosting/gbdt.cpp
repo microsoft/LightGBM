@@ -17,8 +17,7 @@
 namespace LightGBM {
 
 GBDT::GBDT() 
-  :saved_model_size_(-1), 
-  num_iteration_for_pred_(0), 
+  :num_iteration_for_pred_(0), 
   num_init_iteration_(0) {
 
 }
@@ -30,7 +29,6 @@ GBDT::~GBDT() {
 void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
      const std::vector<const Metric*>& training_metrics) {
   iter_ = 0;
-  saved_model_size_ = -1;
   num_iteration_for_pred_ = 0;
   max_feature_idx_ = 0;
   num_class_ = config->num_class;
@@ -395,56 +393,41 @@ void GBDT::Boosting() {
     GetGradients(GetTrainingScore(&num_score), gradients_.data(), hessians_.data());
 }
 
-void GBDT::SaveModelToFile(int num_iteration, bool is_finish, const char* filename) {
-  // first time to this function, open file
-  if (saved_model_size_ < 0) {
-    model_output_file_.open(filename);
-    // output model type
-    model_output_file_ << Name() << std::endl;
-    // output number of class
-    model_output_file_ << "num_class=" << num_class_ << std::endl;
-    // output label index
-    model_output_file_ << "label_index=" << label_idx_ << std::endl;
-    // output max_feature_idx
-    model_output_file_ << "max_feature_idx=" << max_feature_idx_ << std::endl;
-    // output objective name
-    if (object_function_ != nullptr) {
-      model_output_file_ << "objective=" << object_function_->GetName() << std::endl;
-    }
-    // output sigmoid parameter
-    model_output_file_ << "sigmoid=" << sigmoid_ << std::endl;
-    model_output_file_ << std::endl;
-    saved_model_size_ = 0;
+void GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
+  /*! \brief File to write models */
+  std::ofstream outpu_file;
+  outpu_file.open(filename);
+  // output model type
+  outpu_file << Name() << std::endl;
+  // output number of class
+  outpu_file << "num_class=" << num_class_ << std::endl;
+  // output label index
+  outpu_file << "label_index=" << label_idx_ << std::endl;
+  // output max_feature_idx
+  outpu_file << "max_feature_idx=" << max_feature_idx_ << std::endl;
+  // output objective name
+  if (object_function_ != nullptr) {
+    outpu_file << "objective=" << object_function_->GetName() << std::endl;
   }
-  // already saved
-  if (!model_output_file_.is_open()) {
-    return;
-  }
+  // output sigmoid parameter
+  outpu_file << "sigmoid=" << sigmoid_ << std::endl;
+  outpu_file << std::endl;
+
   int num_used_model = 0;
   if (num_iteration == NO_LIMIT) {
     num_used_model = static_cast<int>(models_.size());
   } else {
     num_used_model = num_iteration * num_class_;
   }
-  int rest = num_used_model - early_stopping_round_ * num_class_;
+
   // output tree models
-  for (int i = saved_model_size_; i < rest; ++i) {
-    model_output_file_ << "Tree=" << i << std::endl;
-    model_output_file_ << models_[i]->ToString() << std::endl;
+  for (int i = 0; i < num_used_model; ++i) {
+    outpu_file << "Tree=" << i << std::endl;
+    outpu_file << models_[i]->ToString() << std::endl;
   }
 
-  saved_model_size_ = std::max(saved_model_size_, rest);
-
-  model_output_file_.flush();
-  // training finished, can close file
-  if (is_finish) {
-    for (int i = saved_model_size_; i < num_used_model; ++i) {
-      model_output_file_ << "Tree=" << i << std::endl;
-      model_output_file_ << models_[i]->ToString() << std::endl;
-    }
-    model_output_file_ << std::endl << FeatureImportance() << std::endl;
-    model_output_file_.close();
-  }
+  outpu_file << std::endl << FeatureImportance() << std::endl;
+  outpu_file.close();
 }
 
 void GBDT::LoadModelFromString(const std::string& model_str) {

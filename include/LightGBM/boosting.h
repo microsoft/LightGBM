@@ -128,11 +128,10 @@ public:
 
   /*!
   * \brief save model to file
-  * \param num_used_model number of model that want to save, -1 means save all
-  * \param is_finish is training finished or not
+  * \param num_iterations Iterations that want to save, -1 means save all
   * \param filename filename that want to save to
   */
-  virtual void SaveModelToFile(int num_used_model, bool is_finish, const char* filename) = 0;
+  virtual void SaveModelToFile(int num_iterations, const char* filename) const = 0;
 
   /*!
   * \brief Restore from a serialized string
