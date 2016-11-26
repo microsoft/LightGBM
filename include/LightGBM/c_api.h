@@ -3,7 +3,9 @@
 #include <cstdint>
 #include <exception>
 #include <stdexcept>
+#include <cstring>
 #include <string>
+
 /*!
 * To avoid type conversion on large data, most of our expose interface support both for float_32 and float_64.
 * Except following:
@@ -472,11 +474,10 @@ SampleFromOneColumn(const std::vector<std::pair<int, double>>& data, const std::
 
 
 // exception handle and error msg
-
-static std::string& LastErrorMsg() { static thread_local std::string err_msg("Everything is fine"); return err_msg; }
+static char* LastErrorMsg() { static thread_local char err_msg[512] = "Everything is fine"; return err_msg; }
 
 inline void LGBM_SetLastError(const char* msg) {
-  LastErrorMsg() = msg;
+  std::strcpy(LastErrorMsg(), msg);
 }
 
 inline int LGBM_APIHandleException(const std::exception& ex) {

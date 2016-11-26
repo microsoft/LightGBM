@@ -201,7 +201,7 @@ private:
 using namespace LightGBM;
 
 DllExport const char* LGBM_GetLastError() {
-  return LastErrorMsg().c_str();
+  return LastErrorMsg();
 }
 
 DllExport int LGBM_CreateDatasetFromFile(const char* filename,
