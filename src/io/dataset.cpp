@@ -55,6 +55,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset, bool is_enable_spars
   num_features_ = static_cast<int>(features_.size());
   num_total_features_ = dataset->num_total_features_;
   feature_names_ = dataset->feature_names_;
+  label_idx_ = dataset->label_idx_;
 }
 
 Dataset* Dataset::Subset(const data_size_t* used_indices, data_size_t num_used_indices, bool is_enable_sparse) const {
@@ -67,6 +68,8 @@ Dataset* Dataset::Subset(const data_size_t* used_indices, data_size_t num_used_i
       ret->features_[fidx]->PushBin(0, i, iterator->Get(used_indices[i]));
     }
   }
+  ret->metadata_.Init(metadata_, used_indices, num_used_indices);
+  return ret.release();
 }
 
 bool Dataset::SetFloatField(const char* field_name, const float* field_data, data_size_t num_element) {

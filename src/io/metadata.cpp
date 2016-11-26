@@ -50,6 +50,69 @@ void Metadata::Init(data_size_t num_data, int num_class, int weight_idx, int que
   }
 }
 
+void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, data_size_t num_used_indices) {
+  num_data_ = num_used_indices;
+  num_class_ = fullset.num_class_;
+
+  label_ = std::vector<float>(num_used_indices);
+  for (data_size_t i = 0; i < num_used_indices; i++) {
+    label_[i] = fullset.label_[used_indices[i]];
+  }
+
+  if (fullset.weights_.size() > 0) {
+    weights_ = std::vector<float>(num_used_indices);
+    num_weights_ = num_used_indices;
+    for (data_size_t i = 0; i < num_used_indices; i++) {
+      weights_[i] = fullset.weights_[used_indices[i]];
+    }
+  } else {
+    num_weights_ = 0;
+  }
+
+  if (fullset.init_score_.size() > 0) {
+    init_score_ = std::vector<float>(num_used_indices);
+    num_init_score_ = num_used_indices;
+    for (data_size_t i = 0; i < num_used_indices; i++) {
+      init_score_[i] = fullset.init_score_[used_indices[i]];
+    }
+  } else {
+    num_init_score_ = 0;
+  }
+
+  if (fullset.query_boundaries_.size() > 0) {
+    std::vector<data_size_t> used_query;
+    data_size_t data_idx = 0;
+    for (data_size_t qid = 0; qid < num_queries_ && data_idx < num_used_indices; ++qid) {
+      data_size_t start = fullset.query_boundaries_[qid];
+      data_size_t end = fullset.query_boundaries_[qid + 1];
+      data_size_t len = end - start;
+      if (used_indices[data_idx] > start) {
+        continue;
+      } else if (used_indices[data_idx] == start) {
+        if (num_used_indices >= data_idx + len && used_indices[data_idx + len - 1] == end - 1) {
+          used_query.push_back(qid);
+          data_idx += len;
+        } else {
+          Log::Fatal("Data partition error, data didn't match queries");
+        }
+      } else {
+        Log::Fatal("Data partition error, data didn't match queries");
+      }
+    }
+    query_boundaries_ = std::vector<data_size_t>(used_query.size() + 1);
+    num_queries_ = static_cast<data_size_t>(used_query.size());
+    query_boundaries_[0] = 0;
+    for (data_size_t i = 0; i < num_queries_; ++i) {
+      data_size_t qid = used_query[i];
+      data_size_t len = fullset.query_boundaries_[qid + 1] - fullset.query_boundaries_[qid];
+      query_boundaries_[i + 1] = query_boundaries_[i] + len;
+    }
+  } else {
+    num_queries_ = 0;
+  }
+
+}
+
 void Metadata::PartitionLabel(const std::vector<data_size_t>& used_indices) {
   if (used_indices.size() <= 0) {
     return;

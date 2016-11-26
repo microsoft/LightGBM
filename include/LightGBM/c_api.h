@@ -149,7 +149,7 @@ DllExport int LGBM_DatasetCreateFromMat(const void* data,
 DllExport int LGBM_DatasetGetSubset(
   const DatesetHandle* full_data,
   const int32_t* used_row_indices,
-  const int32_t num_used_row_indices,
+  int32_t num_used_row_indices,
   const char* parameters,
   DatesetHandle* out);
 

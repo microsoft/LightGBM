@@ -47,6 +47,13 @@ public:
   */
   void Init(const char* data_filename, const int num_class);
   /*!
+  * \brief init as subset
+  * \param metadata Filename of data
+  * \param used_indices 
+  * \param num_used_indices
+  */
+  void Init(const Metadata& metadata, const data_size_t* used_indices, data_size_t num_used_indices);
+  /*!
   * \brief Initial with binary memory
   * \param memory Pointer to memory
   */
@@ -76,7 +83,6 @@ public:
   */
   void CheckOrPartition(data_size_t num_all_data,
     const std::vector<data_size_t>& used_data_indices);
-
 
   void SetLabel(const float* label, data_size_t len);
 

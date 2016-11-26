@@ -410,6 +410,10 @@ class Dataset(object):
         params: dict, optional
             other parameters
         """
+        self.__label = None
+        self.__weight = None
+        self.__init_score = None
+        self.__group = None
         if data is None:
             self.handle = None
             return
@@ -453,10 +457,6 @@ class Dataset(object):
                 self.__init_from_csr(csr, params_str, ref_dataset)
             except:
                 raise TypeError('can not initialize Dataset from {}'.format(type(data).__name__))
-        self.__label = None
-        self.__weight = None
-        self.__init_score = None
-        self.__group = None
         if label is not None:
             self.set_label(label)
         if self.get_label() is None:
@@ -505,6 +505,22 @@ class Dataset(object):
         return Dataset(data, label=label, max_bin=self.max_bin, reference=self,
             weight=weight, group_id=group_id, predictor=self.predictor, 
             silent=silent, params=params)
+    def subset(self, used_indices, params=None):
+        used_indices = list_to_1d_numpy(used_indices, np.int32)
+        ret = Dataset(None)
+        ret.handle = ctypes.c_void_p()
+        params_str = dict_to_str(params)
+        _safe_call(_LIB.LGBM_DatasetGetSubset(
+            ctypes.byref(self.handle), 
+            used_indices.data_as(ctypes.POINTER(ctypes.c_int32)),
+            used_indices.shape[0],
+            c_str(params_str), 
+            ctypes.byref(ret.handle)))
+        ret.max_bin = self.max_bin
+        ret.predictor = self.predictor
+        if ret.get_label() is None:
+            raise ValueError("label should not be None")
+        return ret
 
     def __init_from_np2d(self, mat, params_str, ref_dataset):
         """
@@ -1102,7 +1118,7 @@ class Booster(object):
 
     def __inner_eval(self, data_name, data_idx, feval=None):
         """
-        Evaulate traning or validation data
+        Evaulate training  or validation data
         """
         if data_idx >= self.__num_dataset:
             raise ValueError("data_idx should be smaller than number of dataset")
