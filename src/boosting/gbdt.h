@@ -69,6 +69,14 @@ public:
   void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function, const std::vector<const Metric*>& training_metrics) override;
 
   /*!
+  * \brief Reset shrinkage_rate data for current boosting
+  * \param shrinkage_rate Configs for boosting
+  */
+  void ResetShrinkageRate(double shrinkage_rate) override {
+    shrinkage_rate_ = shrinkage_rate;
+  }
+
+  /*!
   * \brief Adding a validation dataset
   * \param valid_data Validation dataset
   * \param valid_metrics Metrics for validation dataset

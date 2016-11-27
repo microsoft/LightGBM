@@ -128,9 +128,11 @@ def param_dict_to_str(data):
         return ""
     pairs = []
     for key, val in data.items():
-        if isinstance(val, list):
-            pairs.append(str(key)+'='+','.join(val))
-        elif isinstance(val, (int, float, str, bool)):
+        if is_str(val):
+            pairs.append(str(key)+'='+str(val))
+        elif isinstance(val, (list, tuple)):
+            pairs.append(str(key)+'='+','.join(map(str,val)))
+        elif isinstance(val, (int, float, bool)):
             pairs.append(str(key)+'='+str(val))
         else:
             raise TypeError('unknow type of parameter:%s , got:%s' %(key, type(val).__name__))

@@ -72,7 +72,12 @@ public:
       Log::Fatal("cannot change boosting_type during training");
     }
     config_.Set(param);
-    ResetTrainingData(train_data_);
+    if (param.size() == 1 && (param.count("learning_rate") || param.count("shrinkage_rate"))) {
+      // only need to set learning rate
+      boosting_->ResetShrinkageRate(config_.boosting_config.learning_rate);
+    } else {
+      ResetTrainingData(train_data_);
+    }
   }
 
   void AddValidData(const Dataset* valid_data) {

@@ -144,33 +144,39 @@ void Application::LoadData() {
     }
   }
   train_metric_.shrink_to_fit();
-  // Add validation data, if it exists
-  for (size_t i = 0; i < config_.io_config.valid_data_filenames.size(); ++i) {
-    // add
-    auto new_dataset = std::unique_ptr<Dataset>(
-      dataset_loader.LoadFromFileAlignWithOtherDataset(
-        config_.io_config.valid_data_filenames[i].c_str(),
-        train_data_.get())
-      );
-    valid_datas_.push_back(std::move(new_dataset));
-    // need save binary file
-    if (config_.io_config.is_save_binary_file) {
-      valid_datas_.back()->SaveBinaryFile(nullptr);
-    }
 
-    // add metric for validation data
-    valid_metrics_.emplace_back();
-    for (auto metric_type : config_.metric_types) {
-      auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_.metric_config));
-      if (metric == nullptr) { continue; }
-      metric->Init(valid_datas_.back()->metadata(), 
-        valid_datas_.back()->num_data());
-      valid_metrics_.back().push_back(std::move(metric));
+
+  if (config_.metric_types.size() > 0) {
+    // only when have metrics then need to construct validation data
+
+    // Add validation data, if it exists
+    for (size_t i = 0; i < config_.io_config.valid_data_filenames.size(); ++i) {
+      // add
+      auto new_dataset = std::unique_ptr<Dataset>(
+        dataset_loader.LoadFromFileAlignWithOtherDataset(
+          config_.io_config.valid_data_filenames[i].c_str(),
+          train_data_.get())
+        );
+      valid_datas_.push_back(std::move(new_dataset));
+      // need save binary file
+      if (config_.io_config.is_save_binary_file) {
+        valid_datas_.back()->SaveBinaryFile(nullptr);
+      }
+
+      // add metric for validation data
+      valid_metrics_.emplace_back();
+      for (auto metric_type : config_.metric_types) {
+        auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_.metric_config));
+        if (metric == nullptr) { continue; }
+        metric->Init(valid_datas_.back()->metadata(),
+          valid_datas_.back()->num_data());
+        valid_metrics_.back().push_back(std::move(metric));
+      }
+      valid_metrics_.back().shrink_to_fit();
     }
-    valid_metrics_.back().shrink_to_fit();
+    valid_datas_.shrink_to_fit();
+    valid_metrics_.shrink_to_fit();
   }
-  valid_datas_.shrink_to_fit();
-  valid_metrics_.shrink_to_fit();
   auto end_time = std::chrono::high_resolution_clock::now();
   // output used time on each iteration
   Log::Info("Finished loading data in %f seconds",
