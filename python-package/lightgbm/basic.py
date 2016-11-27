@@ -123,12 +123,17 @@ def c_array(ctype, values):
     """Convert a python array to c array."""
     return (ctype * len(values))(*values)
 
-def dict_to_str(data):
+def param_dict_to_str(data):
     if data is None or len(data) == 0:
         return ""
     pairs = []
-    for key in data:
-        pairs.append(str(key)+'='+str(data[key]))
+    for key, val in data.items():
+        if isinstance(val, list):
+            pairs.append(str(key)+'='+','.join(val))
+        elif isinstance(val, (int, float, str, bool)):
+            pairs.append(str(key)+'='+str(val))
+        else:
+            raise TypeError('unknow type of parameter:%s , got:%s' %(key, type(val).__name__))
     return ' '.join(pairs)
 """marco definition of data type in c_api of LightGBM"""
 C_API_DTYPE_FLOAT32 =0
@@ -145,7 +150,6 @@ C_API_PREDICT_LEAF_INDEX =2
 FIELD_TYPE_MAPPER = {"label":C_API_DTYPE_FLOAT32, 
 "wegiht":C_API_DTYPE_FLOAT32, 
 "init_score":C_API_DTYPE_FLOAT32,
-"group_id":C_API_DTYPE_INT32,
 "group":C_API_DTYPE_INT32,
  }
 
@@ -208,7 +212,7 @@ class Predictor(object):
                 self.handle,
                 ctypes.byref(out_num_class)))
             self.num_class = out_num_class.value
-            self.__num_total_model = out_num_iterations.value * self.num_class
+            self.__num_total_iteration = out_num_iterations.value 
         elif booster_handle is not None:
             self.__is_manage_handle = is_manage_handle
             self.handle = booster_handle
@@ -221,7 +225,7 @@ class Predictor(object):
             _safe_call(_LIB.LGBM_BoosterGetCurrentIteration(
                 self.handle,
                 ctypes.byref(out_num_iterations)))
-            self.__num_total_model = out_num_iterations.value * self.num_class
+            self.__num_total_iteration = out_num_iterations.value 
         else:
             raise TypeError('Need Model file to create a booster')
 
@@ -261,9 +265,9 @@ class Predictor(object):
             predict_type = C_API_PREDICT_RAW_SCORE
         if pred_leaf:
             predict_type = C_API_PREDICT_LEAF_INDEX
-        int_data_has_header = 0
-        if data_has_header:
-            int_data_has_header = 1
+        int_data_has_header = 1 if data_has_header else 0
+        if num_iteration > self.__num_total_iteration:
+            num_iteration = self.__num_total_iteration
         if is_str(data):
             tmp_pred_fname = tempfile.NamedTemporaryFile(prefix="lightgbm_tmp_pred_").name
             _safe_call(_LIB.LGBM_BoosterPredictForFile(
@@ -303,6 +307,15 @@ class Predictor(object):
                 raise ValueError('len of predict result(%d) cannot be divide nrow(%d)' %(preds.size, nrow) )
         return preds
 
+    def __get_num_preds(self, num_iteration, nrow, predict_type):
+        n_preds = self.num_class * nrow
+        if predict_type == C_API_PREDICT_LEAF_INDEX:
+            if num_iteration > 0:
+                n_preds *= min(num_iteration, self.__num_total_iteration)
+            else:
+                n_preds *= self.__num_total_iteration
+        return n_preds
+
     def __pred_for_np2d(self, mat, num_iteration, predict_type):
         """
         Predict for a 2-D numpy matrix.
@@ -316,13 +329,7 @@ class Predictor(object):
             """change non-float data to float data, need to copy"""
             data = np.array(mat.reshape(mat.size), dtype=np.float32)
         ptr_data, type_ptr_data = c_float_array(data)
-        n_preds = self.num_class * mat.shape[0]
-        if predict_type == C_API_PREDICT_LEAF_INDEX:
-            if num_iteration > 0:
-                n_preds *= num_iteration
-            else:
-                used_iteration = self.__num_total_model / self.num_class
-                n_preds *= used_iteration
+        n_preds = self.__get_num_preds(num_iteration, mat.shape[0], predict_type)
         preds = np.zeros(n_preds, dtype=np.float32)
         out_num_preds = ctypes.c_int64(0)
         _safe_call(_LIB.LGBM_BoosterPredictForMat(
@@ -346,13 +353,7 @@ class Predictor(object):
         Predict for a csr data
         """
         nrow = len(csr.indptr) - 1
-        n_preds = self.num_class * nrow
-        if predict_type == C_API_PREDICT_LEAF_INDEX:
-            if num_iteration > 0:
-                n_preds *= num_iteration
-            else:
-                used_iteration = self.__num_total_model / self.num_class
-                n_preds *= used_iteration
+        n_preds = self.__get_num_preds(num_iteration, nrow, predict_type)
         preds = np.zeros(n_preds, dtype=np.float32)
         out_num_preds = ctypes.c_int64(0)
 
@@ -386,7 +387,7 @@ class Dataset(object):
     """
 
     def __init__(self, data, label=None, max_bin=255, reference=None,
-        weight=None, group_id=None, predictor=None,
+        weight=None, group=None, predictor=None,
         silent=False, params=None):
         """
         Dataset used in LightGBM.
@@ -404,8 +405,8 @@ class Dataset(object):
             If this dataset validation, need to use training data as reference
         weight : list or numpy 1-D array , optional
             Weight for each instance.
-        group_id : list or numpy 1-D array , optional
-            group/query id for each instance. Note: if having group/query id, data should group by this id
+        group : list or numpy 1-D array , optional
+            group/query size for dataset
         silent : boolean, optional
             Whether print messages during construction
         params: dict, optional
@@ -420,8 +421,7 @@ class Dataset(object):
             return
         self.data_has_header = False
         """process for args"""
-        if params is None:
-            params = {}
+        params = {} if params is None else params
         self.max_bin = max_bin
         self.predictor = predictor
         params["max_bin"] = max_bin
@@ -429,7 +429,7 @@ class Dataset(object):
             params["verbose"] = 0
         elif "verbose" not in params:
             params["verbose"] = 1
-        params_str = dict_to_str(params)
+        params_str = param_dict_to_str(params)
         """process for reference dataset"""
         ref_dataset = None
         if isinstance(reference, Dataset):
@@ -464,8 +464,8 @@ class Dataset(object):
             raise ValueError("label should not be None")
         if weight is not None:
             self.set_weight(weight)
-        if group_id is not None:
-            self.set_group_id(group_id)
+        if group is not None:
+            self.set_group(group)
         # load init score
         if self.predictor is not None and isinstance(self.predictor, Predictor):
             init_score = self.predictor.predict(data, 
@@ -482,7 +482,7 @@ class Dataset(object):
                 init_score = new_init_score
             self.set_init_score(init_score)
 
-    def create_valid(self, data, label=None, weight=None, group_id=None, 
+    def create_valid(self, data, label=None, weight=None, group=None, 
         silent=False, params=None):
         """
         Create validation data align with current dataset
@@ -496,15 +496,15 @@ class Dataset(object):
             Label of the training data.
         weight : list or numpy 1-D array , optional
             Weight for each instance.
-        group_id : list or numpy 1-D array , optional
-            group/query id for each instance. Note: if having group/query id, data should group by this id
+        group : list or numpy 1-D array , optional
+            group/query size for dataset
         silent : boolean, optional
             Whether print messages during construction
         params: dict, optional
             other parameters
         """
         return Dataset(data, label=label, max_bin=self.max_bin, reference=self,
-            weight=weight, group_id=group_id, predictor=self.predictor, 
+            weight=weight, group=group, predictor=self.predictor, 
             silent=silent, params=params)
 
     def subset(self, used_indices, params=None):
@@ -514,7 +514,7 @@ class Dataset(object):
         used_indices = list_to_1d_numpy(used_indices, np.int32)
         ret = Dataset(None)
         ret.handle = ctypes.c_void_p()
-        params_str = dict_to_str(params)
+        params_str = param_dict_to_str(params)
         _safe_call(_LIB.LGBM_DatasetGetSubset(
             ctypes.byref(self.handle), 
             used_indices.data_as(ctypes.POINTER(ctypes.c_int32)),
@@ -624,6 +624,7 @@ class Dataset(object):
             The array ofdata to be set
         """
         if data is None:
+            """set to None"""
             _safe_call(_LIB.LGBM_DatasetSetField(
                 self.handle,
                 c_str(field_name),
@@ -713,18 +714,6 @@ class Dataset(object):
         self.__group = group
         self.set_field('group', group)
 
-    def set_group_id(self, group_id):
-
-        """Set group_id of Dataset (used for ranking).
-
-        Parameters
-        ----------
-        group : array like
-            group_id of Dataset (used for ranking).
-        """
-        if group_id is not None:
-            group_id = list_to_1d_numpy(group_id, np.int32)
-        self.set_field('group_id', group_id)
 
     def get_label(self):
         """Get the label of the Dataset.
@@ -817,8 +806,7 @@ class Booster(object):
         self.handle = ctypes.c_void_p()
         self.__need_reload_eval_info = True
         self.__is_manage_handle = True
-        if params is None:
-            params = {}
+        params = {} if params is None else params
         if silent:
             params["verbose"] = 0
         elif "verbose" not in params:
@@ -827,7 +815,7 @@ class Booster(object):
             """Training task"""
             if not isinstance(train_set, Dataset):
                 raise TypeError('training data should be Dataset instance, met{}'.format(type(train_set).__name__))
-            params_str = dict_to_str(params)
+            params_str = param_dict_to_str(params)
             """construct booster object"""
             _safe_call(_LIB.LGBM_BoosterCreate(
                 train_set.handle, 
@@ -907,7 +895,7 @@ class Booster(object):
             params["verbose"] = 0
         elif "verbose" not in params:
             params["verbose"] = 1
-        params_str = dict_to_str(params)
+        params_str = param_dict_to_str(params)
         _safe_call(_LIB.LGBM_BoosterResetParameter(
             self.handle,
             c_str(params_str)))
@@ -1162,11 +1150,11 @@ class Booster(object):
             raise ValueError("data_idx should be smaller than number of dataset")
         if self.__inner_predict_buffer[data_idx] is None:
             if data_idx == 0:
-                num_data = self.train_set.num_data() * self.__num_class
+                n_preds = self.train_set.num_data() * self.__num_class
             else:
-                num_data = self.valid_sets[data_idx - 1].num_data() * self.__num_class
+                n_preds = self.valid_sets[data_idx - 1].num_data() * self.__num_class
             self.__inner_predict_buffer[data_idx] = \
-                np.array([0.0 for _ in range(num_data)], dtype=np.float32, copy=False)
+                np.array([0.0 for _ in range(n_preds)], dtype=np.float32, copy=False)
         """avoid to predict many time in one iteration"""
         if not self.__is_predicted_cur_iter[data_idx]:
             tmp_out_len = ctypes.c_int64(0)

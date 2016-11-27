@@ -181,6 +181,8 @@ public:
     } else {
       num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_class_;
     }
+    num_iteration_for_pred_ = std::min(num_iteration_for_pred_, 
+      static_cast<int>(models_.size()) / num_class_);
   }
 
   /*!
