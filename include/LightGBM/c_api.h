@@ -65,13 +65,13 @@ DllExport int LGBM_DatasetCreateFromFile(const char* filename,
 /*!
 * \brief create a dataset from CSR format
 * \param indptr pointer to row headers
-* \param indptr_type
+* \param indptr_type type of indptr, can be C_API_DTYPE_INT32 or C_API_DTYPE_INT64
 * \param indices findex
 * \param data fvalue
-* \param data_type
+* \param data_type type of data pointer, can be C_API_DTYPE_FLOAT32 or C_API_DTYPE_FLOAT64
 * \param nindptr number of rows in the matrix + 1
 * \param nelem number of nonzero elements in the matrix
-* \param num_col number of columns; when it's set to 0, then guess from data
+* \param num_col number of columns
 * \param parameters additional parameters
 * \param reference used to align bin mapper with other dataset, nullptr means don't used
 * \param out created dataset
@@ -92,13 +92,13 @@ DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
 /*!
 * \brief create a dataset from CSC format
 * \param col_ptr pointer to col headers
-* \param col_ptr_type
+* \param col_ptr_type type of col_ptr, can be C_API_DTYPE_INT32 or C_API_DTYPE_INT64
 * \param indices findex
 * \param data fvalue
-* \param data_type
-* \param ncol_ptr number of rows in the matrix + 1
+* \param data_type type of data pointer, can be C_API_DTYPE_FLOAT32 or C_API_DTYPE_FLOAT64
+* \param ncol_ptr number of cols in the matrix + 1
 * \param nelem number of nonzero elements in the matrix
-* \param num_row number of rows; when it's set to 0, then guess from data
+* \param num_row number of rows
 * \param parameters additional parameters
 * \param reference used to align bin mapper with other dataset, nullptr means don't used
 * \param out created dataset
@@ -119,7 +119,7 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
 /*!
 * \brief create dataset from dense matrix
 * \param data pointer to the data space
-* \param data_type 0
+* \param data_type type of data pointer, can be C_API_DTYPE_FLOAT32 or C_API_DTYPE_FLOAT64
 * \param nrow number of rows
 * \param ncol number columns
 * \param is_row_major 1 for row major, 0 for column major
@@ -139,7 +139,7 @@ DllExport int LGBM_DatasetCreateFromMat(const void* data,
 
 /*!
 * \brief Create subset of a data
-* \param full_data the full dataset
+* \param handle handle of full dataset
 * \param used_row_indices Indices used in subset
 * \param num_used_row_indices len of used_row_indices
 * \param parameters additional parameters
@@ -147,7 +147,7 @@ DllExport int LGBM_DatasetCreateFromMat(const void* data,
 * \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_DatasetGetSubset(
-  const DatesetHandle* full_data,
+  const DatesetHandle* handle,
   const int32_t* used_row_indices,
   int32_t num_used_row_indices,
   const char* parameters,
@@ -170,11 +170,13 @@ DllExport int LGBM_DatasetSaveBinary(DatesetHandle handle,
 
 /*!
 * \brief set vector to a content in info
+*        Note: group and group only work for C_API_DTYPE_INT32
+*              label and weight only work for C_API_DTYPE_FLOAT32
 * \param handle a instance of dataset
-* \param field_name field name, can be label, weight, group
+* \param field_name field name, can be label, weight, group, group_id
 * \param field_data pointer to vector
 * \param num_element number of element in field_data
-* \param type float32 or int32
+* \param type C_API_DTYPE_FLOAT32 or C_API_DTYPE_INT32
 * \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_DatasetSetField(DatesetHandle handle,
@@ -189,7 +191,7 @@ DllExport int LGBM_DatasetSetField(DatesetHandle handle,
 * \param field_name field name
 * \param out_len used to set result length
 * \param out_ptr pointer to the result
-* \param out_type  float32 or int32
+* \param out_type  C_API_DTYPE_FLOAT32 or C_API_DTYPE_INT32
 * \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_DatasetGetField(DatesetHandle handle,
@@ -232,13 +234,13 @@ DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
 /*!
 * \brief load an existing boosting from model file
 * \param filename filename of model
-* \param out_num_total_model number of total models
+* \param out_num_iterations number of iterations of this booster
 * \param out handle of created Booster
 * \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterCreateFromModelfile(
   const char* filename,
-  int64_t* out_num_total_model,
+  int64_t* out_num_iterations,
   BoosterHandle* out);
 
 
@@ -287,7 +289,8 @@ DllExport int LGBM_BoosterResetParameter(BoosterHandle handle, const char* param
 /*!
 * \brief Get number of class 
 * \param handle handle
-* \return number of class
+* \param out_len number of class
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterGetNumClasses(BoosterHandle handle, int64_t* out_len);
 
@@ -322,28 +325,34 @@ DllExport int LGBM_BoosterRollbackOneIter(BoosterHandle handle);
 
 /*!
 * \brief Get iteration of current boosting rounds
-* \return iteration of boosting rounds
+* \param out_iteration iteration of boosting rounds
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterGetCurrentIteration(BoosterHandle handle, int64_t* out_iteration);
 
 /*!
 * \brief Get number of eval 
-* \return total number of eval result
+* \param out_len total number of eval results
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int64_t* out_len);
 
 /*!
-* \brief Get number of eval
-* \return total number of eval result
+* \brief Get Name of eval
+* \param out_len total number of eval results
+* \param out_strs names of eval result
+* \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int64_t* out_len, char** out_strs);
 
 /*!
 * \brief get evaluation for training data and validation data
+         Note: 1. you should call LGBM_BoosterGetEvalNames first to get the name of evaluation results
+         2. should pre-allocate memory for out_results, you can get its length by LGBM_BoosterGetEvalCounts
 * \param handle handle
 * \param data_idx 0:training data, 1: 1st valid data, 2:2nd valid data ...
 * \param out_len len of output result
-* \param out_result the string containing evaluation statistics, should allocate memory before call this function
+* \param out_result float arrary contains result
 * \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
@@ -353,7 +362,8 @@ DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
 
 /*!
 * \brief Get prediction for training data and validation data
-this can be used to support customized eval function
+         this can be used to support customized eval function
+         Note:  should pre-allocate memory for out_result, its length is equal to num_class * num_data 
 * \param handle handle
 * \param data_idx 0:training data, 1: 1st valid data, 2:2nd valid data ...
 * \param out_len len of output result
@@ -371,9 +381,9 @@ DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
 * \param data_filename filename of data file
 * \param data_has_header data file has header or not
 * \param predict_type
-*          0:normal, with transform (if needed)
-*          1:raw score
-*          2:leaf index
+*          C_API_PREDICT_NORMAL: normal prediction, with transform (if needed)
+*          C_API_PREDICT_RAW_SCORE: raw score
+*          C_API_PREDICT_LEAF_INDEX: leaf index
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
 * \param result_filename filename of result file
 * \return 0 when succeed, -1 when failure happens
@@ -387,19 +397,22 @@ DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
 
 /*!
 * \brief make prediction for an new data set
+*        Note:  should pre-allocate memory for out_result, 
+*               for noraml and raw score: its length is equal to num_class * num_data
+*               for leaf index, its length is equal to num_class * num_data * num_iteration
 * \param handle handle
 * \param indptr pointer to row headers
-* \param indptr_type
+* \param indptr_type type of indptr, can be C_API_DTYPE_INT32 or C_API_DTYPE_INT64
 * \param indices findex
 * \param data fvalue
-* \param data_type
+* \param data_type type of data pointer, can be C_API_DTYPE_FLOAT32 or C_API_DTYPE_FLOAT64
 * \param nindptr number of rows in the matrix + 1
 * \param nelem number of nonzero elements in the matrix
 * \param num_col number of columns; when it's set to 0, then guess from data
 * \param predict_type
-*          0:normal, with transform (if needed)
-*          1:raw score
-*          2:leaf index
+*          C_API_PREDICT_NORMAL: normal prediction, with transform (if needed)
+*          C_API_PREDICT_RAW_SCORE: raw score
+*          C_API_PREDICT_LEAF_INDEX: leaf index
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
 * \param out_len len of output result
 * \param out_result used to set a pointer to array, should allocate memory before call this function
@@ -421,16 +434,19 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
 
 /*!
 * \brief make prediction for an new data set
+*        Note:  should pre-allocate memory for out_result,
+*               for noraml and raw score: its length is equal to num_class * num_data
+*               for leaf index, its length is equal to num_class * num_data * num_iteration
 * \param handle handle
 * \param data pointer to the data space
-* \param data_type
+* \param data_type type of data pointer, can be C_API_DTYPE_FLOAT32 or C_API_DTYPE_FLOAT64
 * \param nrow number of rows
 * \param ncol number columns
 * \param is_row_major 1 for row major, 0 for column major
 * \param predict_type
-*          0:normal, with transform (if needed)
-*          1:raw score
-*          2:leaf index
+*          C_API_PREDICT_NORMAL: normal prediction, with transform (if needed)
+*          C_API_PREDICT_RAW_SCORE: raw score
+*          C_API_PREDICT_LEAF_INDEX: leaf index
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
 * \param out_len len of output result
 * \param out_result used to set a pointer to array, should allocate memory before call this function

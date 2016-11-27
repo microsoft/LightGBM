@@ -385,7 +385,7 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
 }
 
 DllExport int LGBM_DatasetGetSubset(
-  const DatesetHandle* full_data,
+  const DatesetHandle* handle,
   const int32_t* used_row_indices,
   int32_t num_used_row_indices,
   const char* parameters,
@@ -394,7 +394,7 @@ DllExport int LGBM_DatasetGetSubset(
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
   io_config.Set(param);
-  auto full_dataset = reinterpret_cast<const Dataset*>(*full_data);
+  auto full_dataset = reinterpret_cast<const Dataset*>(*handle);
   auto ret = std::unique_ptr<Dataset>(
     full_dataset->Subset(used_row_indices,
       num_used_row_indices, 
@@ -486,11 +486,12 @@ DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
 
 DllExport int LGBM_BoosterCreateFromModelfile(
   const char* filename,
-  int64_t* num_total_model,
+  int64_t* out_num_iterations,
   BoosterHandle* out) {
   API_BEGIN();
   auto ret = std::unique_ptr<Booster>(new Booster(filename));
-  *num_total_model = static_cast<int64_t>(ret->GetBoosting()->NumberOfTotalModel());
+  *out_num_iterations = static_cast<int64_t>(ret->GetBoosting()->NumberOfTotalModel()
+    / ret->GetBoosting()->NumberOfClasses());
   *out = ret.release();
   API_END();
 }

@@ -5,7 +5,7 @@
 
 #include <vector>
 #include <string>
-#include <unordered_map>
+#include <unordered_set>
 #include <algorithm>
 
 namespace LightGBM {
@@ -95,16 +95,15 @@ void OverallConfig::GetMetricType(const std::unordered_map<std::string, std::str
     // split
     std::vector<std::string> metrics = Common::Split(value.c_str(), ',');
     // remove dumplicate
-    std::unordered_map<std::string, int> metric_maps;
+    std::unordered_set<std::string> metric_sets;
     for (auto& metric : metrics) {
       std::transform(metric.begin(), metric.end(), metric.begin(), Common::tolower);
-      if (metric_maps.count(metric) <= 0) {
-        metric_maps[metric] = 1;
+      if (metric_sets.count(metric) <= 0) {
+        metric_sets.insert(metric);
       }
     }
-    for (auto& pair : metric_maps) {
-      std::string sub_metric_str = pair.first;
-      metric_types.push_back(sub_metric_str);
+    for (auto& metric : metric_sets) {
+      metric_types.push_back(metric);
     }
     metric_types.shrink_to_fit();
   }

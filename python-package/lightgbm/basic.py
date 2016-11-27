@@ -186,43 +186,42 @@ def c_int_array(data):
 class Predictor(object):
     """"A Predictor of LightGBM.
     """
-    def __init__(self,model_file=None, params=None, booster_handle=None, is_manage_handle=True):
+    def __init__(self,model_file=None, booster_handle=None, is_manage_handle=True):
         """Initialize the Predictor.
 
         Parameters
         ----------
         model_file : string
             Path to the model file. 
-        params : dict
-            Parameters for boosters.
         """
         self.handle = ctypes.c_void_p()
         self.__is_manage_handle = True
         if model_file is not None:
             """Prediction task"""
-            out_num_total_model = ctypes.c_int64(0)
+            out_num_iterations = ctypes.c_int64(0)
             _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
                 c_str(model_file), 
-                ctypes.byref(out_num_total_model),
+                ctypes.byref(out_num_iterations),
                 ctypes.byref(self.handle)))
-            self.__num_total_model = out_num_total_model.value
-            tmp_out_len = ctypes.c_int64(0)
+            out_num_class = ctypes.c_int64(0)
             _safe_call(_LIB.LGBM_BoosterGetNumClasses(
                 self.handle,
-                ctypes.byref(tmp_out_len)))
-            self.num_class = tmp_out_len.value
+                ctypes.byref(out_num_class)))
+            self.num_class = out_num_class.value
+            self.__num_total_model = out_num_iterations.value * self.num_class
         elif booster_handle is not None:
             self.__is_manage_handle = is_manage_handle
             self.handle = booster_handle
-            tmp_out_len = ctypes.c_int64(0)
+            out_num_class = ctypes.c_int64(0)
             _safe_call(_LIB.LGBM_BoosterGetNumClasses(
                 self.handle,
-                ctypes.byref(tmp_out_len)))
-            self.num_class = tmp_out_len.value
+                ctypes.byref(out_num_class)))
+            self.num_class = out_num_class.value
+            out_num_iterations = ctypes.c_int64(0)
             _safe_call(_LIB.LGBM_BoosterGetCurrentIteration(
                 self.handle,
-                ctypes.byref(tmp_out_len)))
-            self.__num_total_model = self.num_class * tmp_out_len.value
+                ctypes.byref(out_num_iterations)))
+            self.__num_total_model = out_num_iterations.value * self.num_class
         else:
             raise TypeError('Need Model file to create a booster')
 
@@ -855,12 +854,11 @@ class Booster(object):
             self.__get_eval_info()
         elif model_file is not None:
             """Prediction task"""
-            out_num_total_model = ctypes.c_int64(0)
+            out_num_iterations = ctypes.c_int64(0)
             _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
                 c_str(model_file), 
-                ctypes.byref(out_num_total_model),
+                ctypes.byref(out_num_iterations),
                 ctypes.byref(self.handle)))
-            self.__num_total_model = out_num_total_model.value
             out_num_class = ctypes.c_int64(0)
             _safe_call(_LIB.LGBM_BoosterGetNumClasses(
                 self.handle,
