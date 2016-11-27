@@ -787,7 +787,6 @@ class Dataset(object):
                                          ctypes.byref(ret)))
         return ret.value
 
-
 class Booster(object):
     """"A Booster of of LightGBM.
     """
@@ -808,6 +807,7 @@ class Booster(object):
         self.handle = ctypes.c_void_p()
         self.__need_reload_eval_info = True
         self.__is_manage_handle = True
+        self.__train_data_name = "training"
         params = {} if params is None else params
         if silent:
             params["verbose"] = 0
@@ -861,6 +861,9 @@ class Booster(object):
         if self.handle is not None and self.__is_manage_handle:
             _safe_call(_LIB.LGBM_BoosterFree(self.handle))
 
+    def set_train_data_name(self, name):
+        self.__train_data_name = name
+
     def add_valid(self, data, name):
         """Add an validation data
 
@@ -882,7 +885,7 @@ class Booster(object):
         self.__inner_predict_buffer.append(None)
         self.__is_predicted_cur_iter.append(False)
 
-    def reset_parameter(self, params, silent=False):
+    def reset_parameter(self, params):
         """Reset parameters for booster
 
         Parameters
@@ -892,11 +895,8 @@ class Booster(object):
         silent : boolean, optional
             Whether print messages during construction
         """
-        self.__need_reload_eval_info = True
-        if silent:
-            params["verbose"] = 0
-        elif "verbose" not in params:
-            params["verbose"] = 1
+        if 'metric' in params:
+            self.__need_reload_eval_info = True
         params_str = param_dict_to_str(params)
         _safe_call(_LIB.LGBM_BoosterResetParameter(
             self.handle,
@@ -1040,7 +1040,7 @@ class Booster(object):
         result: str
             Evaluation result list.
         """
-        return self.__inner_eval("training", 0, feval)
+        return self.__inner_eval(self.__train_data_name, 0, feval)
 
     def eval_valid(self, feval=None):
         """Evaluate for validation data
@@ -1129,7 +1129,7 @@ class Booster(object):
             if tmp_out_len.value != self.__num_inner_eval:
                 raise ValueError("incorrect number of eval results")
             for i in range(self.__num_inner_eval):
-                ret.append((data_name, self.__name_inner_eval[i], result[i]))
+                ret.append((data_name, self.__name_inner_eval[i], result[i], self.__higher_better_inner_eval[i]))
         if feval is not None:
             if data_idx == 0:
                 cur_data = self.train_set
@@ -1137,11 +1137,11 @@ class Booster(object):
                 cur_data = self.valid_sets[data_idx - 1]
             feval_ret = feval(self.__inner_predict(data_idx), cur_data)
             if isinstance(feval_ret, list):
-                for eval_name, val in feval_ret:
-                    ret.append((data_name, eval_name, val))
+                for eval_name, val, is_higher_better in feval_ret:
+                    ret.append((data_name, eval_name, val, is_higher_better))
             else:
-                eval_name, val = feval_ret
-                ret.append((data_name, eval_name, val))
+                eval_name, val, is_higher_better = feval_ret
+                ret.append((data_name, eval_name, val, is_higher_better))
         return ret
 
     def __inner_predict(self, data_idx):
@@ -1197,3 +1197,10 @@ class Booster(object):
                 self.__name_inner_eval = []
                 for i in range(self.__num_inner_eval):
                     self.__name_inner_eval.append(string_buffers[i].value.decode())
+                self.__higher_better_inner_eval = []
+                higher_better_metric = ['auc', 'ndcg']
+                for name in self.__name_inner_eval:
+                    if any(name.startswith(x) for x in higher_better_metric):
+                        self.__higher_better_inner_eval.append(True)
+                    else:
+                        self.__higher_better_inner_eval.append(False)
