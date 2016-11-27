@@ -898,9 +898,10 @@ class Booster(object):
         if 'metric' in params:
             self.__need_reload_eval_info = True
         params_str = param_dict_to_str(params)
-        _safe_call(_LIB.LGBM_BoosterResetParameter(
-            self.handle,
-            c_str(params_str)))
+        if params_str:
+            _safe_call(_LIB.LGBM_BoosterResetParameter(
+                self.handle,
+                c_str(params_str)))
 
     def update(self, train_set=None, fobj=None):
         """

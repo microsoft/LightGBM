@@ -166,7 +166,7 @@ def train(params, train_data, num_boost_round=100,
     """start training"""
     for i in range(num_boost_round):
         for cb in callbacks_before_iter:
-            cb(CallbackEnv(model=booster,
+            cb(callback.CallbackEnv(model=booster,
                            cvfolds=None,
                            iteration=i,
                            begin_iteration=0,
@@ -183,13 +183,13 @@ def train(params, train_data, num_boost_round=100,
             evaluation_result_list.extend(booster.eval_valid(feval))
         try:
             for cb in callbacks_after_iter:
-                cb(CallbackEnv(model=booster,
+                cb(callback.CallbackEnv(model=booster,
                                cvfolds=None,
                                iteration=i,
                                begin_iteration=0,
                                end_iteration=num_boost_round,
                                evaluation_result_list=evaluation_result_list))
-        except EarlyStopException:
+        except callback.EarlyStopException:
             break
     if booster.attr('best_iteration') is not None:
         booster.best_iteration = int(booster.attr('best_iteration'))
