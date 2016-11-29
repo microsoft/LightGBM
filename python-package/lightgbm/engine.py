@@ -41,7 +41,7 @@ def train(params, train_data, num_boost_round=100,
         valid_datas=None, valid_names=None,
         fobj=None, feval=None, init_model=None, 
         train_fields=None, valid_fields=None, 
-        early_stopping_rounds=None, out_eval_result=None,
+        early_stopping_rounds=None, evals_result=None,
         verbose_eval=True, learning_rates=None, callbacks=None):
     """Train with given parameters.
 
@@ -76,7 +76,7 @@ def train(params, train_data, num_boost_round=100,
         If there's more than one, will check all of them
         Returns the model with (best_iter + early_stopping_rounds)
         If early stopping occurs, the model will add 'best_iteration' field
-    out_eval_result: dict or None
+    evals_result: dict or None
         This dictionary used to store all evaluation results of all the items in valid_datas.
         Example: with a valid_datas containing [valid_set, train_set] and valid_names containing ['eval', 'train'] and
         a paramater containing ('metric':'logloss')
@@ -157,14 +157,20 @@ def train(params, train_data, num_boost_round=100,
     if learning_rates is not None:
         callbacks.append(callback.reset_learning_rate(learning_rates))
 
-    if out_eval_result is not None:
-        callbacks.append(callback.record_evaluation(out_eval_result))
+    if evals_result is not None:
+        callbacks.append(callback.record_evaluation(evals_result))
 
     callbacks_before_iter = [
         cb for cb in callbacks if cb.__dict__.get('before_iteration', False)]
     callbacks_after_iter = [
         cb for cb in callbacks if not cb.__dict__.get('before_iteration', False)]
     """construct booster"""
+    if 'metric' in params:
+        if is_str(params['metric']):
+            params['metric'] = params['metric'].split(',')
+        else:
+            params['metric'] = list(params['metric'])
+
     booster = Booster(params=params, train_set=train_set)
     if is_valid_contain_train:
         booster.set_train_data_name(train_data_name)

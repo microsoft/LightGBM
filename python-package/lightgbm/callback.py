@@ -80,7 +80,7 @@ def record_evaluation(eval_result):
 
     def init(env):
         """internal function"""
-        for data_name, eval_name, _ in env.evaluation_result_list:
+        for data_name, eval_name, _, _ in env.evaluation_result_list:
             if data_name not in eval_result:
                 eval_result[data_name] = {}
             if eval_name not in eval_result[data_name]:
@@ -90,7 +90,7 @@ def record_evaluation(eval_result):
         """internal function"""
         if len(eval_result) == 0:
             init(env)
-        for data_name, eval_name, result in env.evaluation_result_list:
+        for data_name, eval_name, result, _ in env.evaluation_result_list:
             eval_result[data_name][eval_name].append(result)
     return callback
 

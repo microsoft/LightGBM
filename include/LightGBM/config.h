@@ -138,6 +138,8 @@ public:
   bool is_unbalance = false;
   // for multiclass
   int num_class = 1;
+  // Balancing of positive and negative weights
+  double scale_pos_weight = 1.0f;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -333,14 +335,18 @@ struct ParameterAlias {
       { "min_sum_hessian_per_leaf", "min_sum_hessian_in_leaf" },
       { "min_sum_hessian", "min_sum_hessian_in_leaf" },
       { "min_hessian", "min_sum_hessian_in_leaf" },
+      { "min_child_weight", "min_sum_hessian_in_leaf" },
       { "num_leaf", "num_leaves" },
       { "sub_feature", "feature_fraction" },
+      { "colsample_bytree", "feature_fraction" },
       { "num_iteration", "num_iterations" },
       { "num_tree", "num_iterations" },
       { "num_round", "num_iterations" },
       { "num_trees", "num_iterations" },
       { "num_rounds", "num_iterations" },
       { "sub_row", "bagging_fraction" },
+      { "subsample", "bagging_fraction" },
+      { "subsample_freq", "bagging_freq" },
       { "shrinkage_rate", "learning_rate" },
       { "tree", "tree_learner" },
       { "num_machine", "num_machines" },
@@ -363,6 +369,9 @@ struct ParameterAlias {
       { "blacklist", "ignore_column" },
       { "predict_raw_score", "is_predict_raw_score" },
       { "predict_leaf_index", "is_predict_leaf_index" }, 
+      { "gamma", "min_gain_to_split" },
+      { "reg_alpha", "lambda_l1" },
+      { "reg_lambda", "lambda_l2" },
       { "num_classes", "num_class" }
     });
     std::unordered_map<std::string, std::string> tmp_map;
