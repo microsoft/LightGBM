@@ -495,9 +495,12 @@ ColumnFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indi
 std::vector<double>
 SampleFromOneColumn(const std::vector<std::pair<int, double>>& data, const std::vector<int>& indices);
 
-
+#if defined(_MSC_VER)
 // exception handle and error msg
+static char* LastErrorMsg() { static __declspec(thread) char err_msg[512] = "Everything is fine"; return err_msg; }
+#else
 static char* LastErrorMsg() { static thread_local char err_msg[512] = "Everything is fine"; return err_msg; }
+#endif
 
 inline void LGBM_SetLastError(const char* msg) {
   std::strcpy(LastErrorMsg(), msg);
