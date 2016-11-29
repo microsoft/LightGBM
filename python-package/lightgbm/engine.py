@@ -6,9 +6,7 @@ import numpy as np
 from .basic import LightGBMError, Predictor, Dataset, Booster, is_str
 from . import callback
 
-
-
-def _construct_dataset(x, y, reference=None,
+def _construct_dataset(data, reference=None,
     params=None, other_fields=None, predictor=None):
     if 'max_bin' in params:
         max_bin = int(params['max_bin'])
@@ -24,10 +22,17 @@ def _construct_dataset(x, y, reference=None,
         group = None if 'group' not in other_fields else other_fields['group']
         init_score = None if 'init_score' not in other_fields else other_fields['init_score']
     if reference is None:
-        ret = Dataset(x, y, max_bin=max_bin, 
+        if is_str(data):
+            ret = Dataset(data, label=None, max_bin=max_bin, 
             weight=weight, group=group, predictor=predictor, params=params)
+        else:
+            ret = Dataset(data[0], data[1], max_bin=max_bin, 
+                weight=weight, group=group, predictor=predictor, params=params)
     else:
-        ret = reference.create_valid(x, y, weight, group, params=params)
+        if is_str(data):
+            ret = reference.create_valid(data, label=None, weight=weight, group=group, params=params)
+        else:
+            ret = reference.create_valid(data[0], data[1], weight, group, params=params)
     if init_score is not None:
         ret.set_init_score(init_score)
     return ret
@@ -44,11 +49,11 @@ def train(params, train_data, num_boost_round=100,
     ----------
     params : dict
          params.
-    train_data : pair, (X, y)
+    train_data : pair, (X, y) or filename of data
         Data to be trained.
     num_boost_round: int
         Number of boosting iterations.
-    valid_datas: list of pairs (valid_X, valid_y)
+    valid_datas: list of pairs (valid_X, valid_y) or filename of data
         List of data to be evaluated during training
     valid_names: list of string
         names of valid_datas
@@ -73,7 +78,7 @@ def train(params, train_data, num_boost_round=100,
         If early stopping occurs, the model will add 'best_iteration' field
     out_eval_result: dict or None
         This dictionary used to store all evaluation results of all the items in valid_datas.
-        Example: with a valid_datas containing [dtest, dtrain] and valid_names containing ['eval', 'train'] and
+        Example: with a valid_datas containing [valid_set, train_set] and valid_names containing ['eval', 'train'] and
         a paramater containing ('metric':'logloss')
         Returns: {'train': {'logloss': ['0.48253', '0.35953', ...]},
                   'eval': {'logloss': ['0.480385', '0.357756', ...]}}
@@ -111,7 +116,7 @@ def train(params, train_data, num_boost_round=100,
     else:
         predictor = None
     """create dataset"""
-    train_set = _construct_dataset(train_data[0], train_data[1], None, params, train_fields, predictor, silent)
+    train_set = _construct_dataset(train_data, None, params, train_fields, predictor)
     is_valid_contain_train = False
     train_data_name = "training"
     valid_sets = []
@@ -125,13 +130,11 @@ def train(params, train_data, num_boost_round=100,
                 train_data_name = valid_names[i]
                 continue
             valid_set = _construct_dataset(
-                valid_datas[i][0], 
-                valid_datas[i][1],
+                valid_datas[i],
                 train_set, 
                 params, 
                 other_fields, 
-                predictor,
-                silent)
+                predictor)
             valid_sets.append(valid_set)
             name_valid_sets.append(valid_names[i])
     """process callbacks"""
@@ -158,7 +161,7 @@ def train(params, train_data, num_boost_round=100,
     callbacks_after_iter = [
         cb for cb in callbacks if not cb.__dict__.get('before_iteration', False)]
     """construct booster"""
-    booster = Booster(params=params, train_set=train_set, silent=silent)
+    booster = Booster(params=params, train_set=train_set)
     if is_valid_contain_train:
         booster.set_train_data_name(train_data_name)
     for i in range(len(valid_sets)):
@@ -196,3 +199,200 @@ def train(params, train_data, num_boost_round=100,
     else:
         booster.best_iteration = num_boost_round - 1
     return num_boost_round
+
+
+class CVBooster(object):
+    """"Auxiliary datastruct to hold one fold of CV."""
+    def __init__(self, train_set, valid_test, param):
+        """"Initialize the CVBooster"""
+        self.train_set = train_set
+        self.valid_test = valid_test
+        self.booster = Booster(params=params, train_set=train_set)
+        self.booster.add_valid(valid_test, 'valid')
+
+    def update(self, fobj):
+        """"Update the boosters for one iteration"""
+        self.booster.update(fobj=fobj)
+
+    def eval(self, feval):
+        """"Evaluate the CVBooster for one iteration."""
+        return self.booster.eval_valid(feval)
+
+try:
+    try:
+        from sklearn.model_selection import KFold, StratifiedKFold
+    except ImportError:
+        from sklearn.cross_validation import KFold, StratifiedKFold
+    SKLEARN_StratifiedKFold = True
+except ImportError:
+    SKLEARN_StratifiedKFold = False
+
+def _make_n_folds(full_data, nfold, param, seed, fpreproc=None, stratified=False):
+    """
+    Make an n-fold list of CVBooster from random indices.
+    """
+    np.random.seed(seed)
+    if stratified:
+        if SKLEARN_StratifiedKFold:
+            sfk = StratifiedKFold(n_splits=nfold, shuffle=True, random_state=seed)
+            idset = [x[1] for x in sfk.split(X=full_data.get_label(), y=full_data.get_label())]
+        else:
+            raise LightGBMError('sklearn needs to be installed in order to use stratified cv')
+    else:
+        randidx = np.random.permutation(full_data.num_data())
+        kstep = int(len(randidx) / nfold)
+        idset = [randidx[(i * kstep): min(len(randidx), (i + 1) * kstep)] for i in range(nfold)]
+
+    ret = []
+    for k in range(nfold):
+        train_set = full_data.subset(np.concatenate([idset[i] for i in range(nfold) if k != i]))
+        valid_set = full_data.subset(idset[k])
+        # run preprocessing on the data set if needed
+        if fpreproc is not None:
+            train_set, valid_set, tparam = fpreproc(train_set, valid_set, param.copy())
+        else:
+            tparam = param
+        ret.append(CVBooster(train_set, valid_set, tparam))
+    return ret
+
+def _agg_cv_result(raw_results):
+    # pylint: disable=invalid-name
+    """
+    Aggregate cross-validation results.
+    """
+    cvmap = {}
+    metric_type = {}
+    for one_result in raw_results:
+        for one_line in one_result:
+            key = one_line[1]
+            metric_type[key] = one_line[3]
+            if key not in cvmap:
+                cvmap[key] = []
+            cvmap[key].append(one_result[2])
+    results = []
+    for k, v in cvmap.items():
+        v = np.array(v)
+        mean, std = np.mean(v), np.std(v)
+        results.extend(['cv_agg', k, mean, metric_type[k], std])
+    return results
+
+def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
+       metrics=(), fobj=None, feval=None, train_fields=None, early_stopping_rounds=None,
+       fpreproc=None, verbose_eval=None, show_stdv=True, seed=0,
+       callbacks=None):
+    # pylint: disable = invalid-name
+    """Cross-validation with given paramaters.
+
+    Parameters
+    ----------
+    params : dict
+        Booster params.
+    train_data : pair, (X, y) or filename of data
+        Data to be trained.
+    num_boost_round : int
+        Number of boosting iterations.
+    nfold : int
+        Number of folds in CV.
+    stratified : bool
+        Perform stratified sampling.
+    folds : a KFold or StratifiedKFold instance
+        Sklearn KFolds or StratifiedKFolds.
+    metrics : string or list of strings
+        Evaluation metrics to be watched in CV.
+    fobj : function
+        Custom objective function.
+    feval : function
+        Custom evaluation function.
+    train_fields : dict
+        other data file in training data. e.g. train_fields['weight'] is weight data
+        support fields: weight, group, init_score
+    early_stopping_rounds: int
+        Activates early stopping. CV error needs to decrease at least
+        every <early_stopping_rounds> round(s) to continue.
+        Last entry in evaluation history is the one from best iteration.
+    fpreproc : function
+        Preprocessing function that takes (dtrain, dtest, param) and returns
+        transformed versions of those.
+    verbose_eval : bool, int, or None, default None
+        Whether to display the progress. If None, progress will be displayed
+        when np.ndarray is returned. If True, progress will be displayed at
+        boosting stage. If an integer is given, progress will be displayed
+        at every given `verbose_eval` boosting stage.
+    show_stdv : bool, default True
+        Whether to display the standard deviation in progress.
+        Results are not affected, and always contains std.
+    seed : int
+        Seed used to generate the folds (passed to numpy.random.seed).
+    callbacks : list of callback functions
+        List of callback functions that are applied at end of each iteration.
+
+    Returns
+    -------
+    evaluation history : list(string)
+    """
+
+    if isinstance(metrics, str):
+        metrics = [metrics]
+
+    if isinstance(params, list):
+        params = dict(params)
+
+    if not 'metric' in params:
+        params['metric'] = []
+
+    if len(metric) > 0:
+        params['metric'].extend(metric)
+
+    train_set = _construct_dataset(train_data, None, params, train_fields)
+
+    results = {}
+    cvfolds = _make_n_folds(train_set, nfold, params, seed, fpreproc, stratified)
+
+    # setup callbacks
+    callbacks = [] if callbacks is None else callbacks
+    if early_stopping_rounds is not None:
+        callbacks.append(callback.early_stop(early_stopping_rounds,
+                                             verbose=False))
+    if isinstance(verbose_eval, bool) and verbose_eval:
+        callbacks.append(callback.print_evaluation(show_stdv=show_stdv))
+    else:
+        if isinstance(verbose_eval, int):
+            callbacks.append(callback.print_evaluation(verbose_eval, show_stdv=show_stdv))
+
+    callbacks_before_iter = [
+        cb for cb in callbacks if cb.__dict__.get('before_iteration', False)]
+    callbacks_after_iter = [
+        cb for cb in callbacks if not cb.__dict__.get('before_iteration', False)]
+
+    for i in range(num_boost_round):
+        for cb in callbacks_before_iter:
+            cb(callback.CallbackEnv(model=None,
+                           cvfolds=cvfolds,
+                           iteration=i,
+                           begin_iteration=0,
+                           end_iteration=num_boost_round,
+                           evaluation_result_list=None))
+        for fold in cvfolds:
+            fold.update(fobj)
+        res = aggcv([f.eval(feval) for f in cvfolds])
+
+        for _, key, mean, _, std in res:
+            if key + '-mean' not in results:
+                results[key + '-mean'] = []
+            if key + '-std' not in results:
+                results[key + '-std'] = []
+            results[key + '-mean'].append(mean)
+            results[key + '-std'].append(std)
+        try:
+            for cb in callbacks_after_iter:
+                cb(callback.CallbackEnv(model=None,
+                               cvfolds=cvfolds,
+                               iteration=i,
+                               begin_iteration=0,
+                               end_iteration=num_boost_round,
+                               evaluation_result_list=res))
+        except callback.EarlyStopException as e:
+            for k in results.keys():
+                results[k] = results[k][:(e.final_best_iter + 1)]
+            break
+    return results

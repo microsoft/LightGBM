@@ -148,7 +148,7 @@ def early_stop(stopping_rounds, verbose=True):
         The requested callback function.
     """
     is_init = False
-
+    final_best_iter = 0
     def init(env):
         """internal function"""
         bst = env.model
@@ -183,6 +183,7 @@ def early_stop(stopping_rounds, verbose=True):
                         '\t'.join([_format_eval_result(x) for x in env.evaluation_result_list]))
             else:
                 if env.iteration - best_iter[i] >= stopping_rounds:
+                    final_best_iter = best_iter[i]
                     if env.model is not None:
                         env.model.set_attr(best_iteration=str(best_iter[i]))
                     if verbose:
