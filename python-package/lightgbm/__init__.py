@@ -11,7 +11,7 @@ import os
 from .basic import Predictor, Dataset, Booster
 from .engine import train, cv
 try:
-    from .sklearn import LGBMModel
+    from .sklearn import LGBMModel, LGBMRegressor, LGBMClassifier
 except ImportError:
     pass
 
@@ -21,4 +21,4 @@ with open(VERSION_FILE) as f:
 
 __all__ = ['Dataset', 'Booster',
            'train', 'cv',
-           'LGBMModel']
+           'LGBMModel','LGBMRegressor', 'LGBMClassifier']

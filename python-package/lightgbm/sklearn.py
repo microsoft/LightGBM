@@ -75,8 +75,6 @@ class LGBMModel(LGBMModelBase):
     objective : string or callable
         Specify the learning task and the corresponding learning objective or
         a custom objective function to be used (see note below).
-    num_class: int
-        only affect for multi-class training.
     nthread : int
         Number of parallel threads 
     gamma : float
@@ -125,7 +123,7 @@ class LGBMModel(LGBMModelBase):
 
     def __init__(self, num_leaves=63, max_depth=-1, 
                  learning_rate=0.1, n_estimators=100, max_bin=255,
-                 silent=True, objective="regression", num_class=1, 
+                 silent=True, objective="regression",  
                  nthread=-1, gamma=0, min_child_weight=1,
                  subsample=1, subsample_freq=1, colsample_bytree=1, colsample_byleaf=1, 
                  reg_alpha=0, reg_lambda=0, scale_pos_weight=1, 
@@ -140,7 +138,6 @@ class LGBMModel(LGBMModelBase):
         self.max_bin = max_bin
         self.silent = silent
         self.objective = objective
-        self.num_class = num_class
         self.nthread = nthread
         self.gamma = gamma
         self.min_child_weight = min_child_weight
@@ -169,7 +166,7 @@ class LGBMModel(LGBMModelBase):
         return self._Booster
 
     def get_params(self, deep=False):
-        """Get parameter.s"""
+        """Get parameters"""
         params = super(LGBMModel, self).get_params(deep=deep)
         params['verbose'] = 0 if self.silent else 1
         if self.nthread <= 0:
@@ -177,7 +174,7 @@ class LGBMModel(LGBMModelBase):
         return params
 
     def fit(self, X, y, eval_set=None, eval_metric=None,
-            early_stopping_rounds=None, verbose=True):
+            early_stopping_rounds=None, verbose=True, train_fields=None, valid_fields=None, other_params=None):
         """
         Fit the gradient boosting model
 
@@ -198,7 +195,14 @@ class LGBMModel(LGBMModelBase):
         early_stopping_rounds : int
         verbose : bool
             If `verbose` and an evaluation set is used, writes the evaluation
-            metric measured on the validation set to stderr.
+        train_fields : dict
+            other data file in training data. e.g. train_fields['weight'] is weight data
+            support fields: weight, group, init_score
+        valid_fields : dict
+            other data file in training data. e.g. valid_fields[0]['weight'] is weight data for first valid data
+            support fields: weight, group, init_score
+        other_params: dict
+            other parameters
         """
         evals_result = {}
         params = self.get_params()
@@ -207,6 +211,7 @@ class LGBMModel(LGBMModelBase):
             fobj = _objective_decorator(self.objective)
             params["objective"] = "None"
         else:
+            params["objective"] = self.objective
             fobj = None
         if callable(eval_metric):
             feval = eval_metric
@@ -215,12 +220,14 @@ class LGBMModel(LGBMModelBase):
             params.update({'metric': eval_metric})
         feval = eval_metric if callable(eval_metric) else None
 
+        if other_params is not None:
+            params.update(other_params)
 
         self._Booster = train(params, (X, y),
                               self.n_estimators, valid_datas=eval_set,
                               early_stopping_rounds=early_stopping_rounds,
                               evals_result=evals_result, fobj=fobj, feval=feval,
-                              verbose_eval=verbose)
+                              verbose_eval=verbose, train_fields=train_fields, valid_fields=valid_fields)
 
         if evals_result:
             for val in evals_result.items():
@@ -268,3 +275,61 @@ class LGBMModel(LGBMModelBase):
             raise LightGBMError('No results.')
 
         return evals_result
+
+
+class LGBMRegressor(LGBMModel, LGBMRegressorBase):
+    __doc__ = """Implementation of the scikit-learn API for LightGBM regression.
+    """ + '\n'.join(LGBMModel.__doc__.split('\n')[2:])
+
+class LGBMClassifier(LGBMModel, LGBMClassifierBase):
+    __doc__ = """Implementation of the scikit-learn API for LGBMoost classification.
+
+    """ + '\n'.join(LGBMModel.__doc__.split('\n')[2:])
+
+    def fit(self, X, y, eval_set=None, eval_metric=None,
+            early_stopping_rounds=None, verbose=True, 
+            train_fields=None, valid_fields=None, other_params=None):
+
+        self.classes_ = np.unique(y)
+        self.n_classes_ = len(self.classes_)
+        if other_params is None:
+            other_params = {}
+        if self.n_classes_ > 2:
+            # Switch to using a multiclass objective in the underlying LGBM instance
+            other_params["objective"] = "multiclass"
+            other_params['num_class'] = self.n_classes_
+        else:
+            other_params["objective"] = "binary"
+
+        self._le = LGBMLabelEncoder().fit(y)
+        training_labels = self._le.transform(y)
+
+        if eval_set is not None:
+            eval_set = list( (x[0], self._le.transform(x[1])) for x in eval_set )
+
+        super(LGBMClassifier, self).fit(X, training_labels, eval_set, eval_metric, 
+            early_stopping_rounds, verbose, train_fields, valid_fields, other_params)
+        return self
+
+    def predict(self, data, raw_score=False, num_iteration=0):
+        class_probs = self.booster().predict(data,
+                                             raw_score=raw_score,
+                                             num_iteration=num_iteration)
+        if len(class_probs.shape) > 1:
+            column_indexes = np.argmax(class_probs, axis=1)
+        else:
+            column_indexes = np.repeat(0, class_probs.shape[0])
+            column_indexes[class_probs > 0.5] = 1
+        return self._le.inverse_transform(column_indexes)
+
+    def predict_proba(self, data, raw_score=False, num_iteration=0):
+        class_probs = self.booster().predict(data,
+                                             raw_score=raw_score,
+                                             num_iteration=num_iteration)
+        if self.n_classes_ > 2:
+            return class_probs
+        else:
+            classone_probs = class_probs
+            classzero_probs = 1.0 - classone_probs
+            return np.vstack((classzero_probs, classone_probs)).transpose()
+
