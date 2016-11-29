@@ -16,7 +16,7 @@ def _construct_dataset(data, reference=None,
     group = None
     init_score = None
     if other_fields is not None:
-        if not is isinstance(other_fields, dict):
+        if not isinstance(other_fields, dict):
             raise TypeError("other filed data should be dict type")
         weight = None if 'weight' not in other_fields else other_fields['weight']
         group = None if 'group' not in other_fields else other_fields['group']
@@ -127,7 +127,8 @@ def train(params, train_data, num_boost_round=100,
             """reduce cost for prediction training data"""
             if valid_datas[i] is train_data:
                 is_valid_contain_train = True
-                train_data_name = valid_names[i]
+                if valid_names is not None:
+                    train_data_name = valid_names[i]
                 continue
             valid_set = _construct_dataset(
                 valid_datas[i],
@@ -136,7 +137,10 @@ def train(params, train_data, num_boost_round=100,
                 other_fields, 
                 predictor)
             valid_sets.append(valid_set)
-            name_valid_sets.append(valid_names[i])
+            if valid_names is not None:
+                name_valid_sets.append(valid_names[i])
+            else:
+                name_valid_sets.append('valid_'+str(i))
     """process callbacks"""
     callbacks = [] if callbacks is None else callbacks
 
@@ -153,8 +157,8 @@ def train(params, train_data, num_boost_round=100,
     if learning_rates is not None:
         callbacks.append(callback.reset_learning_rate(learning_rates))
 
-    if evals_result is not None:
-        callbacks.append(callback.record_evaluation(evals_result))
+    if out_eval_result is not None:
+        callbacks.append(callback.record_evaluation(out_eval_result))
 
     callbacks_before_iter = [
         cb for cb in callbacks if cb.__dict__.get('before_iteration', False)]
@@ -203,7 +207,7 @@ def train(params, train_data, num_boost_round=100,
 
 class CVBooster(object):
     """"Auxiliary datastruct to hold one fold of CV."""
-    def __init__(self, train_set, valid_test, param):
+    def __init__(self, train_set, valid_test, params):
         """"Initialize the CVBooster"""
         self.train_set = train_set
         self.valid_test = valid_test
@@ -268,12 +272,12 @@ def _agg_cv_result(raw_results):
             metric_type[key] = one_line[3]
             if key not in cvmap:
                 cvmap[key] = []
-            cvmap[key].append(one_result[2])
+            cvmap[key].append(one_line[2])
     results = []
     for k, v in cvmap.items():
         v = np.array(v)
         mean, std = np.mean(v), np.std(v)
-        results.extend(['cv_agg', k, mean, metric_type[k], std])
+        results.append(('cv_agg', k, mean, metric_type[k], std))
     return results
 
 def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
@@ -339,9 +343,14 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
 
     if not 'metric' in params:
         params['metric'] = []
+    else:
+        if is_str(params['metric']):
+            params['metric'] = params['metric'].split(',')
+        else:
+            params['metric'] = list(params['metric'])
 
-    if len(metric) > 0:
-        params['metric'].extend(metric)
+    if metrics is not None and len(metrics) > 0:
+        params['metric'].extend(metrics)
 
     train_set = _construct_dataset(train_data, None, params, train_fields)
 
@@ -374,8 +383,7 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
                            evaluation_result_list=None))
         for fold in cvfolds:
             fold.update(fobj)
-        res = aggcv([f.eval(feval) for f in cvfolds])
-
+        res = _agg_cv_result([f.eval(feval) for f in cvfolds])
         for _, key, mean, _, std in res:
             if key + '-mean' not in results:
                 results[key + '-mean'] = []

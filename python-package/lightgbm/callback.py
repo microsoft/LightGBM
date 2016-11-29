@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import collections
 
 class EarlyStopException(Exception):
     """Exception of early stopping.

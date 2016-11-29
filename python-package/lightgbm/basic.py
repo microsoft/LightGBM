@@ -519,7 +519,7 @@ class Dataset(object):
         params_str = param_dict_to_str(params)
         _safe_call(_LIB.LGBM_DatasetGetSubset(
             ctypes.byref(self.handle), 
-            used_indices.data_as(ctypes.POINTER(ctypes.c_int32)),
+            used_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
             used_indices.shape[0],
             c_str(params_str), 
             ctypes.byref(ret.handle)))
@@ -808,6 +808,7 @@ class Booster(object):
         self.__need_reload_eval_info = True
         self.__is_manage_handle = True
         self.__train_data_name = "training"
+        self.__attr = {}
         params = {} if params is None else params
         if silent:
             params["verbose"] = 0
@@ -1205,3 +1206,36 @@ class Booster(object):
                         self.__higher_better_inner_eval.append(True)
                     else:
                         self.__higher_better_inner_eval.append(False)
+    def attr(self, key):
+        """Get attribute string from the Booster.
+
+        Parameters
+        ----------
+        key : str
+            The key to get attribute from.
+
+        Returns
+        -------
+        value : str
+            The attribute value of the key, returns None if attribute do not exist.
+        """
+        if key in self.__attr:
+            return self.__attr[key]
+        else:
+            return None
+
+    def set_attr(self, **kwargs):
+        """Set the attribute of the Booster.
+
+        Parameters
+        ----------
+        **kwargs
+            The attributes to set. Setting a value to None deletes an attribute.
+        """
+        for key, value in kwargs.items():
+            if value is not None:
+                if not isinstance(value, STRING_TYPES):
+                    raise ValueError("Set Attr only accepts string values")
+                self.__attr[key] = value
+            else:
+                self.__attr.pop(key, None)
