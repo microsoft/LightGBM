@@ -10,13 +10,13 @@ def test_binary_classification():
     from sklearn import datasets, metrics, model_selection
 
     X, y = datasets.make_classification(n_samples=10000, n_features=100)
-    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1)
+    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1, random_state=1)
     lgb_model = lgb.LGBMClassifier().fit(x_train, y_train)
     from sklearn.datasets import load_digits
     digits = load_digits(2)
     y = digits['target']
     X = digits['data']
-    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2)
+    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1, random_state=1)
     lgb_model = lgb.LGBMClassifier().fit(x_train, y_train)
     preds = lgb_model.predict(x_test)
     err = sum(1 for i in range(len(preds))
@@ -35,7 +35,7 @@ def test_multiclass_classification():
 
     X, y = datasets.make_classification(n_samples=10000, n_features=100, n_classes=4, n_informative=3)
 
-    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1)
+    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1, random_state=1)
 
     lgb_model = lgb.LGBMClassifier().fit(x_train, y_train)
     preds = lgb_model.predict(x_test)
@@ -51,10 +51,10 @@ def test_regression():
     boston = load_boston()
     y = boston['target']
     X = boston['data']
-    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1)
+    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1, random_state=1)
     lgb_model = lgb.LGBMRegressor().fit(x_train, y_train)
     preds = lgb_model.predict(x_test)
-    assert mean_squared_error(preds, y_test) < 40
+    assert mean_squared_error(preds, y_test) < 100
 
 def test_regression_with_custom_objective():
     from sklearn.metrics import mean_squared_error
@@ -68,10 +68,10 @@ def test_regression_with_custom_objective():
     boston = load_boston()
     y = boston['target']
     X = boston['data']
-    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1)
+    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1, random_state=1)
     lgb_model = lgb.LGBMRegressor(objective=objective_ls).fit(x_train, y_train)
     preds = lgb_model.predict(x_test)
-    assert mean_squared_error(preds, y_test) < 40
+    assert mean_squared_error(preds, y_test) < 100
 
 
 def test_binary_classification_with_custom_objective():
@@ -83,13 +83,13 @@ def test_binary_classification_with_custom_objective():
         hess = y_pred * (1.0 - y_pred)
         return grad, hess
     X, y = datasets.make_classification(n_samples=10000, n_features=100)
-    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1)
+    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1, random_state=1)
     lgb_model = lgb.LGBMClassifier(objective=logregobj).fit(x_train, y_train)
     from sklearn.datasets import load_digits
     digits = load_digits(2)
     y = digits['target']
     X = digits['data']
-    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2)
+    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, random_state=1)
     lgb_model = lgb.LGBMClassifier(objective=logregobj).fit(x_train, y_train)
     preds = lgb_model.predict(x_test)
     err = sum(1 for i in range(len(preds))

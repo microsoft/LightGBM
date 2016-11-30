@@ -80,7 +80,9 @@ class LGBMModel(LGBMModelBase):
     gamma : float
         Minimum loss reduction required to make a further partition on a leaf node of the tree.
     min_child_weight : int
-        Minimum sum of instance weight(hessian) needed in a child.
+        Minimum sum of instance weight(hessian) needed in a child(leaf)
+    min_data : int
+        Minimum number of data need in a child(leaf)
     subsample : float
         Subsample ratio of the training instance.
     subsample_freq : int
@@ -121,10 +123,10 @@ class LGBMModel(LGBMModelBase):
           and you should group grad and hess in this way as well
     """
 
-    def __init__(self, num_leaves=63, max_depth=-1, 
-                 learning_rate=0.1, n_estimators=100, max_bin=255,
+    def __init__(self, num_leaves=31, max_depth=-1, 
+                 learning_rate=0.1, n_estimators=10, max_bin=255,
                  silent=True, objective="regression",  
-                 nthread=-1, gamma=0, min_child_weight=1,
+                 nthread=-1, gamma=0, min_child_weight=5, min_data=10,
                  subsample=1, subsample_freq=1, colsample_bytree=1, colsample_byleaf=1, 
                  reg_alpha=0, reg_lambda=0, scale_pos_weight=1, 
                  is_unbalance=False, seed=0):
@@ -141,6 +143,7 @@ class LGBMModel(LGBMModelBase):
         self.nthread = nthread
         self.gamma = gamma
         self.min_child_weight = min_child_weight
+        self.min_data = min_data
         self.subsample = subsample
         self.subsample_freq = subsample_freq
         self.colsample_bytree = colsample_bytree
