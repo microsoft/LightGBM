@@ -54,7 +54,7 @@ def test_regression():
     x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1)
     lgb_model = lgb.LGBMRegressor().fit(x_train, y_train,eval_set=[[x_train, y_train],(x_test, y_test)], eval_metric='l2')
     preds = lgb_model.predict(x_test)
-    assert mean_squared_error(preds, y_test) < 30
+    assert mean_squared_error(preds, y_test) < 40
 
 def test_regression_with_custom_objective():
     from sklearn.metrics import mean_squared_error
@@ -71,7 +71,7 @@ def test_regression_with_custom_objective():
     x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1)
     lgb_model = lgb.LGBMRegressor(objective=objective_ls).fit(x_train, y_train,eval_set=[[x_train, y_train],(x_test, y_test)], eval_metric='l2')
     preds = lgb_model.predict(x_test)
-    assert mean_squared_error(preds, y_test) < 30
+    assert mean_squared_error(preds, y_test) < 40
 
 
 def test_binary_classification_with_custom_objective():
