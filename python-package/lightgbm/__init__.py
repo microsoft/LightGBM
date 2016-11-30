@@ -20,4 +20,4 @@ __version__ = 0.1
 
 __all__ = ['Dataset', 'Booster',
            'train', 'cv',
-           'LGBMModel','LGBMRegressor', 'LGBMClassifier']
+           'LGBMModel','LGBMRegressor', 'LGBMClassifier', 'LGBMRanker']
