@@ -207,6 +207,9 @@ class LGBMModel(LGBMModelBase):
         evals_result = {}
         params = self.get_params()
 
+        if other_params is not None:
+            params.update(other_params)
+
         if callable(self.objective):
             fobj = _objective_decorator(self.objective)
             params["objective"] = "None"
@@ -215,13 +218,12 @@ class LGBMModel(LGBMModelBase):
             fobj = None
         if callable(eval_metric):
             feval = eval_metric
-        else:
+        elif is_str(eval_metric) or isinstance(eval_metric, list):
             feval = None
             params.update({'metric': eval_metric})
+        else:
+            feval = None
         feval = eval_metric if callable(eval_metric) else None
-
-        if other_params is not None:
-            params.update(other_params)
 
         self._Booster = train(params, (X, y),
                               self.n_estimators, valid_datas=eval_set,
@@ -296,10 +298,12 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
             other_params = {}
         if self.n_classes_ > 2:
             # Switch to using a multiclass objective in the underlying LGBM instance
-            other_params["objective"] = "multiclass"
+            if not callable(self.objective):
+                self.objective = "multiclass"
             other_params['num_class'] = self.n_classes_
         else:
-            other_params["objective"] = "binary"
+            if not callable(self.objective):
+                self.objective = "binary"
 
         self._le = LGBMLabelEncoder().fit(y)
         training_labels = self._le.transform(y)

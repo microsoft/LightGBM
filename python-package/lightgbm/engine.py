@@ -208,7 +208,7 @@ def train(params, train_data, num_boost_round=100,
         booster.best_iteration = int(booster.attr('best_iteration'))
     else:
         booster.best_iteration = num_boost_round - 1
-    return num_boost_round
+    return booster
 
 
 class CVBooster(object):
