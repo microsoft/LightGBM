@@ -11,7 +11,7 @@ import os
 from .basic import Predictor, Dataset, Booster
 from .engine import train, cv
 try:
-    from .sklearn import LGBMModel, LGBMRegressor, LGBMClassifier
+    from .sklearn import LGBMModel, LGBMRegressor, LGBMClassifier, LGBMRanker
 except ImportError:
     pass
 
