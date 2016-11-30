@@ -96,8 +96,26 @@ def test_binary_classification_with_custom_objective():
           if int(preds[i] > 0.5) != y_test[i]) / float(len(preds))
     assert err < 0.1
 
+def test_early_stopping():
+    from sklearn.metrics import mean_squared_error
+    from sklearn.datasets import load_boston
+    from sklearn.cross_validation import KFold
+    from sklearn import datasets, metrics, model_selection
+
+    boston = load_boston()
+    y = boston['target']
+    X = boston['data']
+    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1, random_state=1)
+    lgb_model = lgb.LGBMRegressor(n_estimators=500) \
+            .fit(x_train, y_train, eval_set=[(x_test, y_test)], 
+                eval_metric='l2', 
+                early_stopping_rounds=10,
+                verbose=10)
+    print(lgb_model.best_iteration)
+
 test_binary_classification()
 test_multiclass_classification()
 test_regression()
 test_regression_with_custom_objective()
 test_binary_classification_with_custom_objective()
+test_early_stopping()

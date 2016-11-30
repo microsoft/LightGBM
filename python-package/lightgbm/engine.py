@@ -112,7 +112,7 @@ def train(params, train_data, num_boost_round=100,
     if is_str(init_model):
         predictor = Predictor(model_file=init_model)
     elif isinstance(init_model, Booster):
-        predictor = Booster.to_predictor()
+        predictor = init_model.to_predictor()
     elif isinstance(init_model, Predictor):
         predictor = init_model
     else:
@@ -409,6 +409,6 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
                                evaluation_result_list=res))
         except callback.EarlyStopException as e:
             for k in results.keys():
-                results[k] = results[k][:(e.final_best_iter + 1)]
+                results[k] = results[k][:(e.state['best_iter'] + 1)]
             break
     return results

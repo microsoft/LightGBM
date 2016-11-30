@@ -148,8 +148,11 @@ def early_stop(stopping_rounds, verbose=True):
     callback : function
         The requested callback function.
     """
-    is_init = False
-    final_best_iter = 0
+    state = {}
+    factor_to_bigger_better = {}
+    best_score = {}
+    best_iter = {}
+    best_msg = {}
     def init(env):
         """internal function"""
         bst = env.model
@@ -160,19 +163,20 @@ def early_stop(stopping_rounds, verbose=True):
         if verbose:
             msg = "Will train until hasn't improved in {} rounds.\n"
             print(msg.format(stopping_rounds))
-        best_scores = [ float('-inf') for _ in range(len(env.evaluation_result_list))]
-        best_iter = [ 0 for _ in range(len(env.evaluation_result_list))]
-        if verbose:
-            best_msg = [ "" for _ in range(len(env.evaluation_result_list))]
-        factor_to_bigger_better = [-1.0 for _ in range(len(env.evaluation_result_list))]
+
         for i in range(len(env.evaluation_result_list)):
-            if evaluation.evaluation_result_list[i][3]:
+            best_score[i] = float('-inf')
+            best_iter[i] = 0
+            if verbose:
+                best_msg[i] = ""
+            factor_to_bigger_better[i] = -1.0
+            if env.evaluation_result_list[i][3]:
                 factor_to_bigger_better[i] = 1.0
-        is_init = True
+        state['best_iter'] = 0
 
     def callback(env):
         """internal function"""
-        if not is_init:
+        if len(best_score) == 0:
             init(env)
         for i in range(len(env.evaluation_result_list)): 
             score = env.evaluation_result_list[i][2] * factor_to_bigger_better[i]
@@ -184,7 +188,7 @@ def early_stop(stopping_rounds, verbose=True):
                         '\t'.join([_format_eval_result(x) for x in env.evaluation_result_list]))
             else:
                 if env.iteration - best_iter[i] >= stopping_rounds:
-                    final_best_iter = best_iter[i]
+                    state['best_iter'] = best_iter[i]
                     if env.model is not None:
                         env.model.set_attr(best_iteration=str(best_iter[i]))
                     if verbose:
