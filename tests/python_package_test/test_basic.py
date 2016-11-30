@@ -1,9 +1,6 @@
 import numpy as np
 from sklearn import datasets, metrics, model_selection
-import importlib.util
-spec  = importlib.util.spec_from_file_location("module.name", "../../python-package/lightgbm/basic.py")
-lgb = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(lgb)
+import lightgbm as lgb
 
 
 X, Y = datasets.make_classification(n_samples=100000, n_features=100)
