@@ -16,10 +16,9 @@ exec(compile(open(libpath_py, "rb").read(), libpath_py, 'exec'), libpath, libpat
 LIB_PATH = libpath['find_lib_path']()
 print("Install lib_lightgbm from: %s" % LIB_PATH)
 
-# Please use setup_pip.py for generating and deploying pip installation
-# detailed instruction in setup_pip.py
+
 setup(name='lightgbm',
-      version=open(os.path.join(CURRENT_DIR, 'lightgbm/VERSION')).read().strip(),
+      version=0.1,
       description="LightGBM Python Package",
       install_requires=[
           'numpy',
@@ -31,4 +30,4 @@ setup(name='lightgbm',
       packages=find_packages(),
       include_package_data=True,
       data_files=[('lightgbm', LIB_PATH)],
-      url='hhttps://github.com/Microsoft/LightGBM')
+      url='https://github.com/Microsoft/LightGBM')

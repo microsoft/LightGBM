@@ -1211,7 +1211,7 @@ class Booster(object):
         """
         for key, value in kwargs.items():
             if value is not None:
-                if not isinstance(value, STRING_TYPES):
+                if not is_str(value):
                     raise ValueError("Set Attr only accepts string values")
                 self.__attr[key] = value
             else:

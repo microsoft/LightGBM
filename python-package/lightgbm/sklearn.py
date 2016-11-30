@@ -24,7 +24,7 @@ except ImportError:
 def _objective_decorator(func):
     """Decorate an objective function
 
-    Converts an objective function using the typical sklearn metrics to LightGBM ffobj
+    Converts an objective function using the typical sklearn metrics to LightGBM fobj
 
     Note: for multi-class task, the label/pred is group by class_id first, then group by row_id
           if you want to get i-th row label/pred in j-th class, the access way is label/pred[j*num_data+i]
@@ -282,7 +282,7 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
     """ + '\n'.join(LGBMModel.__doc__.split('\n')[2:])
 
 class LGBMClassifier(LGBMModel, LGBMClassifierBase):
-    __doc__ = """Implementation of the scikit-learn API for LGBMoost classification.
+    __doc__ = """Implementation of the scikit-learn API for LightGBM classification.
 
     """ + '\n'.join(LGBMModel.__doc__.split('\n')[2:])
 
