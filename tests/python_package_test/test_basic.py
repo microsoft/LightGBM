@@ -15,7 +15,8 @@ bst.add_valid(valid_data,"valid_1")
 
 for i in range(100):
 	bst.update()
-	print(bst.eval_train())
-	print(bst.eval_valid())
+	if i % 10 == 0:
+		print(bst.eval_train())
+		print(bst.eval_valid())
 bst.save_model("model.txt")
 

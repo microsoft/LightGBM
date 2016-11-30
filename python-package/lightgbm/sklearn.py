@@ -21,13 +21,13 @@ except ImportError:
     LGBMRegressorBase = object
     LGBMLabelEncoder = None
 
-def _objective_decorator(func):
+def _point_wise_objective(func):
     """Decorate an objective function
 
     Converts an objective function using the typical sklearn metrics to LightGBM fobj
 
-    Note: for multi-class task, the label/pred is group by class_id first, then group by row_id
-          if you want to get i-th row label/pred in j-th class, the access way is label/pred[j*num_data+i]
+    Note: for multi-class task, the y_pred is group by class_id first, then group by row_id
+          if you want to get i-th row y_pred in j-th class, the access way is y_pred[j*num_data+i]
           and you should group grad and hess in this way as well
     Parameters
     ----------
@@ -36,8 +36,9 @@ def _objective_decorator(func):
 
         y_true: array_like of shape [n_samples]
             The target values
-        y_pred: array_like of shape [n_samples]
+        y_pred: array_like of shape [n_samples] or shape[n_samples* n_class]
             The predicted values
+
 
     Returns
     -------
@@ -45,7 +46,7 @@ def _objective_decorator(func):
         The new objective function as expected by ``lightgbm.engine.train``.
         The signature is ``new_func(preds, dataset)``:
 
-        preds: array_like, shape [n_samples]
+        preds: array_like, shape [n_samples] or shape[n_samples* n_class]
             The predicted values
         dataset: ``dataset``
             The training set from which the labels will be extracted using
@@ -54,8 +55,25 @@ def _objective_decorator(func):
     def inner(preds, dataset):
         """internal function"""
         labels = dataset.get_label()
-        return func(labels, preds)
+        grad, hess = func(labels, preds)
+        """weighted for objective"""
+        weight = dataset.get_weight()
+        if weight is not None:
+            """only one class"""
+            if len(weight) == len(grad):
+                grad = np.multiply(grad, weight)
+                hess = np.multiply(hess, weight)
+            else:
+                num_data = len(weight)
+                num_class = len(grad) // num_data
+                for k in range(num_class):
+                    for i in range(num_data):
+                        idx = k * num_data + i
+                        grad[idx] *= weight[i]
+                        hess[idx] *= weight[i]
+        return grad, hess
     return inner
+
 
 class LGBMModel(LGBMModelBase):
     """Implementation of the Scikit-Learn API for LightGBM.
@@ -77,11 +95,11 @@ class LGBMModel(LGBMModelBase):
         a custom objective function to be used (see note below).
     nthread : int
         Number of parallel threads 
-    gamma : float
+    min_split_gain : float
         Minimum loss reduction required to make a further partition on a leaf node of the tree.
     min_child_weight : int
         Minimum sum of instance weight(hessian) needed in a child(leaf)
-    min_data : int
+    min_child_samples : int
         Minimum number of data need in a child(leaf)
     subsample : float
         Subsample ratio of the training instance.
@@ -89,8 +107,6 @@ class LGBMModel(LGBMModelBase):
         frequence of subsample, <=0 means no enable
     colsample_bytree : float
         Subsample ratio of columns when constructing each tree.
-    colsample_byleaf : float
-        Subsample ratio of columns when constructing each leaf.
     reg_alpha : float 
         L1 regularization term on weights
     reg_lambda : float 
@@ -108,26 +124,26 @@ class LGBMModel(LGBMModelBase):
     parameter. In this case, it should have the signature
     ``objective(y_true, y_pred) -> grad, hess``:
 
-    y_true: array_like of shape [n_samples]
+    y_true: array_like of shape [n_samples] 
         The target values
-    y_pred: array_like of shape [n_samples]
+    y_pred: array_like of shape [n_samples] or shape[n_samples* n_class]
         The predicted values
 
-    grad: array_like of shape [n_samples]
+    grad: array_like of shape [n_samples] or shape[n_samples* n_class]
         The value of the gradient for each sample point.
-    hess: array_like of shape [n_samples]
+    hess: array_like of shape [n_samples] or shape[n_samples* n_class]
         The value of the second derivative for each sample point
 
-    for multi-class task, the label/pred is group by class_id first, then group by row_id
-          if you want to get i-th row label/pred in j-th class, the access way is label/pred[j*num_data+i]
+    for multi-class task, the y_pred is group by class_id first, then group by row_id
+          if you want to get i-th row y_pred in j-th class, the access way is y_pred[j*num_data+i]
           and you should group grad and hess in this way as well
     """
 
     def __init__(self, num_leaves=31, max_depth=-1, 
                  learning_rate=0.1, n_estimators=10, max_bin=255,
                  silent=True, objective="regression",  
-                 nthread=-1, gamma=0, min_child_weight=5, min_data=10,
-                 subsample=1, subsample_freq=1, colsample_bytree=1, colsample_byleaf=1, 
+                 nthread=-1, min_split_gain=0, min_child_weight=5, min_child_samples=10,
+                 subsample=1, subsample_freq=1, colsample_bytree=1,
                  reg_alpha=0, reg_lambda=0, scale_pos_weight=1, 
                  is_unbalance=False, seed=0):
         if not SKLEARN_INSTALLED:
@@ -141,13 +157,12 @@ class LGBMModel(LGBMModelBase):
         self.silent = silent
         self.objective = objective
         self.nthread = nthread
-        self.gamma = gamma
+        self.min_split_gain = min_split_gain
         self.min_child_weight = min_child_weight
-        self.min_data = min_data
+        self.min_child_samples = min_child_samples
         self.subsample = subsample
         self.subsample_freq = subsample_freq
         self.colsample_bytree = colsample_bytree
-        self.colsample_byleaf = colsample_byleaf
         self.reg_alpha = reg_alpha
         self.reg_lambda = reg_lambda
         self.scale_pos_weight = scale_pos_weight
@@ -214,7 +229,7 @@ class LGBMModel(LGBMModelBase):
             params.update(other_params)
 
         if callable(self.objective):
-            fobj = _objective_decorator(self.objective)
+            fobj = _point_wise_objective(self.objective)
             params["objective"] = "None"
         else:
             params["objective"] = self.objective

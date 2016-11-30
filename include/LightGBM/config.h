@@ -332,6 +332,7 @@ struct ParameterAlias {
       { "ndcg_at", "ndcg_eval_at" },
       { "min_data_per_leaf", "min_data_in_leaf" },
       { "min_data", "min_data_in_leaf" },
+      { "min_child_samples", "min_data_in_leaf" },
       { "min_sum_hessian_per_leaf", "min_sum_hessian_in_leaf" },
       { "min_sum_hessian", "min_sum_hessian_in_leaf" },
       { "min_hessian", "min_sum_hessian_in_leaf" },
@@ -369,7 +370,7 @@ struct ParameterAlias {
       { "blacklist", "ignore_column" },
       { "predict_raw_score", "is_predict_raw_score" },
       { "predict_leaf_index", "is_predict_leaf_index" }, 
-      { "gamma", "min_gain_to_split" },
+      { "min_split_gain", "min_gain_to_split" },
       { "reg_alpha", "lambda_l1" },
       { "reg_lambda", "lambda_l2" },
       { "num_classes", "num_class" }
