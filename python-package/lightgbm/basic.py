@@ -19,7 +19,7 @@ def _load_lib():
     """Load LightGBM Library."""
     lib_path = find_lib_path()
     if len(lib_path) == 0:
-        return None
+        raise Exception("cannot find LightGBM library")
     lib = ctypes.cdll.LoadLibrary(lib_path[0])
     lib.LGBM_GetLastError.restype = ctypes.c_char_p
     return lib
@@ -1034,7 +1034,7 @@ class Booster(object):
                 if data is self.valid_sets[i]:
                     data_idx = i + 1
                     break
-        """need push new valid data"""
+        """need to push new valid data"""
         if data_idx == -1:
             self.add_valid(data, name)
             data_idx = self.__num_dataset - 1

@@ -64,7 +64,7 @@ def _point_wise_objective(func):
                 num_data = len(weight)
                 num_class = len(grad) // num_data
                 if num_class * num_data != len(grad):
-                    raise ValueError("lenght of grad and hess should equal with num_class * num_data")
+                    raise ValueError("length of grad and hess should equal with num_class * num_data")
                 for k in range(num_class):
                     for i in range(num_data):
                         idx = k * num_data + i
@@ -81,7 +81,7 @@ class LGBMModel(LGBMModelBase):
     num_leaves : int
         Maximum tree leaves for base learners.
     max_depth : int
-        Maximum tree depth for base learners, -1 means not limit. 
+        Maximum tree depth for base learners, -1 means no limit. 
     learning_rate : float
         Boosting learning rate 
     n_estimators : int

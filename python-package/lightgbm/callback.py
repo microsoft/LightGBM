@@ -130,7 +130,7 @@ def reset_learning_rate(learning_rates):
 
 
 def early_stop(stopping_rounds, verbose=True):
-    """Create a callback that activates early stoppping.
+    """Create a callback that activates early stopping.
     Activates early stopping. 
     Requires at least one validation data and one metric
     If there's more than one, will check all of them
