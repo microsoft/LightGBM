@@ -117,6 +117,7 @@ public:
   * \brief Construct feature value to bin mapper according feature values
   * \param values (Sampled) values of this feature
   * \param max_bin The maximal number of bin
+  * \param bin_type Type of this bin
   */
   void FindBin(std::vector<double>* values, size_t total_sample_cnt, int max_bin, BinType bin_type);
 
@@ -284,7 +285,8 @@ public:
   * \return The number of less than or equal data.
   */
   virtual data_size_t Split(
-    unsigned int threshold, data_size_t* data_indices, data_size_t num_data,
+    unsigned int threshold,
+    data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
 
   /*!
@@ -307,29 +309,34 @@ public:
   * \param is_enable_sparse True if enable sparse feature
   * \param is_sparse Will set to true if this bin is sparse
   * \param default_bin Default bin for zeros value
+  * \param bin_type type of bin
   * \return The bin data object
   */
   static Bin* CreateBin(data_size_t num_data, int num_bin,
-    double sparse_rate, bool is_enable_sparse, bool* is_sparse, int default_bin);
+    double sparse_rate, bool is_enable_sparse, 
+    bool* is_sparse, int default_bin, BinType bin_type);
 
   /*!
   * \brief Create object for bin data of one feature, used for dense feature
   * \param num_data Total number of data
   * \param num_bin Number of bin
   * \param default_bin Default bin for zeros value
+  * \param bin_type type of bin
   * \return The bin data object
   */
-  static Bin* CreateDenseBin(data_size_t num_data, int num_bin, int default_bin);
+  static Bin* CreateDenseBin(data_size_t num_data, int num_bin, 
+    int default_bin, BinType bin_type);
 
   /*!
   * \brief Create object for bin data of one feature, used for sparse feature
   * \param num_data Total number of data
   * \param num_bin Number of bin
   * \param default_bin Default bin for zeros value
+  * \param bin_type type of bin
   * \return The bin data object
   */
   static Bin* CreateSparseBin(data_size_t num_data,
-    int num_bin, int default_bin);
+    int num_bin, int default_bin, BinType bin_type);
 };
 
 inline unsigned int BinMapper::ValueToBin(double value) const {

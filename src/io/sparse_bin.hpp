@@ -100,7 +100,7 @@ public:
     }
   }
 
-  data_size_t Split(unsigned int threshold, data_size_t* data_indices, data_size_t num_data,
+  virtual data_size_t Split(unsigned int threshold, data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const override {
     // not need to split
     if (num_data <= 0) { return 0; }
@@ -261,7 +261,7 @@ public:
 
   }
 
-private:
+protected:
   data_size_t num_data_;
   std::vector<std::pair<data_size_t, VAL_T>> non_zero_pair_;
   std::vector<uint8_t> deltas_;
@@ -298,6 +298,33 @@ BinIterator* SparseBin<VAL_T>::GetIterator(data_size_t start_idx) const {
   return new SparseBinIterator<VAL_T>(this, start_idx);
 }
 
+
+template <typename VAL_T>
+class SparseCategoricalBin: public SparseBin<VAL_T> {
+public:
+  SparseCategoricalBin(data_size_t num_data, int default_bin)
+    : SparseBin(num_data, default_bin) {
+  }
+
+  data_size_t Split(unsigned int threshold, data_size_t* data_indices, data_size_t num_data,
+    data_size_t* lte_indices, data_size_t* gt_indices) const override {
+    // not need to split
+    if (num_data <= 0) { return 0; }
+    SparseBinIterator<VAL_T> iterator(this, data_indices[0]);
+    data_size_t lte_count = 0;
+    data_size_t gt_count = 0;
+    for (data_size_t i = 0; i < num_data; ++i) {
+      const data_size_t idx = data_indices[i];
+      VAL_T bin = iterator.InnerGet(idx);
+      if (bin != threshold) {
+        gt_indices[gt_count++] = idx;
+      } else {
+        lte_indices[lte_count++] = idx;
+      }
+    }
+    return lte_count;
+  }
+};
 
 
 }  // namespace LightGBM

@@ -36,6 +36,7 @@ public:
     lambda_l1_ = lambda_l1;
     lambda_l2_ = lambda_l2;
     min_gain_to_split_ = min_gain_to_split;
+    bin_type_ = feature->bin_type();
     bin_data_ = feature->bin_data();
     num_bins_ = feature->num_bin();
     data_.resize(num_bins_);
@@ -110,6 +111,9 @@ public:
   * \param output The best split result
   */
   void FindBestThreshold(SplitInfo* output) {
+    if (bin_type_ == BinType::CategoracilBin) {
+      return FindBestThresholdForCategorical(output);
+    }
     double best_sum_left_gradient = NAN;
     double best_sum_left_hessian = NAN;
     double best_gain = kMinScore;
@@ -138,7 +142,8 @@ public:
 
       double sum_left_gradient = sum_gradients_ - sum_right_gradient;
       // current split gain
-      double current_gain = GetLeafSplitGain(sum_left_gradient, sum_left_hessian) + GetLeafSplitGain(sum_right_gradient, sum_right_hessian);
+      double current_gain = GetLeafSplitGain(sum_left_gradient, sum_left_hessian) 
+        + GetLeafSplitGain(sum_right_gradient, sum_right_hessian);
       // gain with split is worse than without split
       if (current_gain < min_gain_shift) continue;
 
@@ -166,6 +171,65 @@ public:
     output->right_count = num_data_ - best_left_count;
     output->right_sum_gradient = sum_gradients_ - best_sum_left_gradient;
     output->right_sum_hessian = sum_hessians_ - best_sum_left_hessian;
+    output->gain = best_gain - gain_shift;
+  }
+
+  /*!
+  * \brief Find best threshold for this histogram
+  * \param output The best split result
+  */
+  void FindBestThresholdForCategorical(SplitInfo* output) {
+    double best_gain = kMinScore;
+    unsigned int best_threshold = static_cast<unsigned int>(num_bins_);
+
+    double gain_shift = GetLeafSplitGain(sum_gradients_, sum_hessians_);
+    double min_gain_shift = gain_shift + min_gain_to_split_;
+    is_splittable_ = false;
+
+    for (unsigned int t = num_bins_ - 1; t > 0; --t) {
+      double sum_current_gradient = data_[t].sum_gradients;
+      double sum_current_hessian = data_[t].sum_hessians;
+      data_size_t current_count = data_[t].cnt;
+      // if data not enough, or sum hessian too small
+      if (current_count < min_num_data_one_leaf_ || sum_current_hessian < min_sum_hessian_one_leaf_) continue;
+      data_size_t other_count = num_data_ - current_count;
+      // if data not enough
+      if (other_count < min_num_data_one_leaf_) break;
+
+      double sum_other_hessian = sum_hessians_ - sum_current_hessian;
+      // if sum hessian too small
+      if (sum_other_hessian < min_sum_hessian_one_leaf_) break;
+
+      double sum_other_gradient = sum_gradients_ - sum_current_gradient;
+      // current split gain
+      double current_gain = GetLeafSplitGain(sum_other_gradient, sum_other_hessian) 
+        + GetLeafSplitGain(sum_current_gradient, sum_current_hessian);
+      // gain with split is worse than without split
+      if (current_gain < min_gain_shift) continue;
+
+      // mark to is splittable
+      is_splittable_ = true;
+      // better split point
+      if (current_gain > best_gain) {
+        best_threshold = t;
+        best_gain = current_gain;
+      }
+    }
+    // update split information
+    output->feature = feature_idx_;
+    output->threshold = best_threshold;
+    output->left_output = CalculateSplittedLeafOutput(data_[best_threshold].sum_gradients,
+      data_[best_threshold].sum_hessians);
+    output->left_count = data_[best_threshold].cnt;
+    output->left_sum_gradient = data_[best_threshold].sum_gradients;
+    output->left_sum_hessian = data_[best_threshold].sum_hessians;
+
+    output->right_output = CalculateSplittedLeafOutput(sum_gradients_ - data_[best_threshold].sum_gradients,
+      sum_hessians_ - data_[best_threshold].sum_hessians);
+    output->right_count = num_data_ - data_[best_threshold].cnt;
+    output->right_sum_gradient = sum_gradients_ - data_[best_threshold].sum_gradients;
+    output->right_sum_hessian = sum_hessians_ - data_[best_threshold].sum_hessians;
+
     output->gain = best_gain - gain_shift;
   }
 
@@ -269,6 +333,8 @@ private:
   double sum_hessians_;
   /*! \brief False if this histogram cannot split */
   bool is_splittable_ = true;
+  /*! \brief bin type of feature */
+  BinType bin_type_;
 };
 
 

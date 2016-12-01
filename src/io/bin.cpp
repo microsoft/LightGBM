@@ -267,44 +267,73 @@ template class DenseBin<uint8_t>;
 template class DenseBin<uint16_t>;
 template class DenseBin<uint32_t>;
 
+template class DenseCategoricalBin<uint8_t>;
+template class DenseCategoricalBin<uint16_t>;
+template class DenseCategoricalBin<uint32_t>;
+
 template class SparseBin<uint8_t>;
 template class SparseBin<uint16_t>;
 template class SparseBin<uint32_t>;
+
+template class SparseCategoricalBin<uint8_t>;
+template class SparseCategoricalBin<uint16_t>;
+template class SparseCategoricalBin<uint32_t>;
 
 template class OrderedSparseBin<uint8_t>;
 template class OrderedSparseBin<uint16_t>;
 template class OrderedSparseBin<uint32_t>;
 
 
-Bin* Bin::CreateBin(data_size_t num_data, int num_bin, double sparse_rate, bool is_enable_sparse, bool* is_sparse, int default_bin) {
+Bin* Bin::CreateBin(data_size_t num_data, int num_bin, double sparse_rate, 
+  bool is_enable_sparse, bool* is_sparse, int default_bin, BinType bin_type) {
   // sparse threshold
   const double kSparseThreshold = 0.8f;
   if (sparse_rate >= kSparseThreshold && is_enable_sparse) {
     *is_sparse = true;
-    return CreateSparseBin(num_data, num_bin, default_bin);
+    return CreateSparseBin(num_data, num_bin, default_bin, bin_type);
   } else {
     *is_sparse = false;
-    return CreateDenseBin(num_data, num_bin, default_bin);
+    return CreateDenseBin(num_data, num_bin, default_bin, bin_type);
   }
 }
 
-Bin* Bin::CreateDenseBin(data_size_t num_data, int num_bin, int default_bin) {
-  if (num_bin <= 256) {
-    return new DenseBin<uint8_t>(num_data, default_bin);
-  } else if (num_bin <= 65536) {
-    return new DenseBin<uint16_t>(num_data, default_bin);
+Bin* Bin::CreateDenseBin(data_size_t num_data, int num_bin, int default_bin, BinType bin_type) {
+  if (bin_type == BinType::NumericalBin) {
+    if (num_bin <= 256) {
+      return new DenseBin<uint8_t>(num_data, default_bin);
+    } else if (num_bin <= 65536) {
+      return new DenseBin<uint16_t>(num_data, default_bin);
+    } else {
+      return new DenseBin<uint32_t>(num_data, default_bin);
+    }
   } else {
-    return new DenseBin<uint32_t>(num_data, default_bin);
+    if (num_bin <= 256) {
+      return new DenseCategoricalBin<uint8_t>(num_data, default_bin);
+    } else if (num_bin <= 65536) {
+      return new DenseCategoricalBin<uint16_t>(num_data, default_bin);
+    } else {
+      return new DenseCategoricalBin<uint32_t>(num_data, default_bin);
+    }
   }
 }
 
-Bin* Bin::CreateSparseBin(data_size_t num_data, int num_bin, int default_bin) {
-  if (num_bin <= 256) {
-    return new SparseBin<uint8_t>(num_data, default_bin);
-  } else if (num_bin <= 65536) {
-    return new SparseBin<uint16_t>(num_data, default_bin);
+Bin* Bin::CreateSparseBin(data_size_t num_data, int num_bin, int default_bin, BinType bin_type) {
+  if (bin_type == BinType::NumericalBin) {
+    if (num_bin <= 256) {
+      return new SparseBin<uint8_t>(num_data, default_bin);
+    } else if (num_bin <= 65536) {
+      return new SparseBin<uint16_t>(num_data, default_bin);
+    } else {
+      return new SparseBin<uint32_t>(num_data, default_bin);
+    }
   } else {
-    return new SparseBin<uint32_t>(num_data, default_bin);
+    if (num_bin <= 256) {
+      return new SparseCategoricalBin<uint8_t>(num_data, default_bin);
+    } else if (num_bin <= 65536) {
+      return new SparseCategoricalBin<uint16_t>(num_data, default_bin);
+    } else {
+      return new SparseCategoricalBin<uint32_t>(num_data, default_bin);
+    }
   }
 }
 

@@ -103,7 +103,7 @@ public:
     }
   }
 
-  data_size_t Split(unsigned int threshold, data_size_t* data_indices, data_size_t num_data,
+  virtual data_size_t Split(unsigned int threshold, data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const override {
     data_size_t lte_count = 0;
     data_size_t gt_count = 0;
@@ -145,7 +145,7 @@ public:
     return sizeof(VAL_T) * num_data_;
   }
 
-private:
+protected:
   data_size_t num_data_;
   std::vector<VAL_T> data_;
 };
@@ -167,6 +167,29 @@ template <typename VAL_T>
 BinIterator* DenseBin<VAL_T>::GetIterator(data_size_t) const {
   return new DenseBinIterator<VAL_T>(this);
 }
+
+template <typename VAL_T>
+class DenseCategoricalBin: public DenseBin<VAL_T> {
+public:
+  DenseCategoricalBin(data_size_t num_data, int default_bin)
+    : DenseBin(num_data, default_bin) {
+  }
+
+  data_size_t Split(unsigned int threshold, data_size_t* data_indices, data_size_t num_data,
+    data_size_t* lte_indices, data_size_t* gt_indices) const override {
+    data_size_t lte_count = 0;
+    data_size_t gt_count = 0;
+    for (data_size_t i = 0; i < num_data; ++i) {
+      data_size_t idx = data_indices[i];
+      if (data_[idx] != threshold) {
+        gt_indices[gt_count++] = idx;
+      } else {
+        lte_indices[lte_count++] = idx;
+      }
+    }
+    return lte_count;
+  }
+};
 
 }  // namespace LightGBM
 #endif   // LightGBM_IO_DENSE_BIN_HPP_
