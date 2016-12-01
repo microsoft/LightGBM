@@ -8,3 +8,10 @@ rng = np.random.RandomState(2016)
 X, y = datasets.make_classification(n_samples=10000, n_features=100)
 x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1, random_state=1)
 lgb_model = lgb.LGBMClassifier(n_estimators=100).fit(x_train, y_train, [(x_test, y_test)], eval_metric="auc")
+lgb_model.predict(x_test)
+# save model
+lgb_model.booster().save_model('model.txt')
+# load model
+booster = lgb.Booster(model_file='model.txt')
+# predict
+print(booster.predict(x_test))
