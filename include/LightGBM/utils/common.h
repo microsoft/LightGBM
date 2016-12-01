@@ -231,21 +231,7 @@ inline static const char* SkipReturn(const char* p) {
 }
 
 template<typename T>
-inline static std::string ArrayToString(const T* arr, int n, char delimiter) {
-  if (n <= 0) {
-    return std::string("");
-  }
-  std::stringstream str_buf;
-  str_buf << arr[0];
-  for (int i = 1; i < n; ++i) {
-    str_buf << delimiter;
-    str_buf << arr[i];
-  }
-  return str_buf.str();
-}
-
-template<typename T>
-inline static std::string ArrayToString(std::vector<T> arr, char delimiter) {
+inline static std::string ArrayToString(const std::vector<T>& arr, char delimiter) {
   if (arr.size() <= 0) {
     return std::string("");
   }
@@ -254,6 +240,20 @@ inline static std::string ArrayToString(std::vector<T> arr, char delimiter) {
   for (size_t i = 1; i < arr.size(); ++i) {
     str_buf << delimiter;
     str_buf << arr[i];
+  }
+  return str_buf.str();
+}
+
+template<typename T, typename T2>
+inline static std::string ArrayToString(const std::vector<T>& arr, char delimiter) {
+  if (arr.size() <= 0) {
+    return std::string("");
+  }
+  std::stringstream str_buf;
+  str_buf << static_cast<T2>(arr[0]);
+  for (size_t i = 1; i < arr.size(); ++i) {
+    str_buf << delimiter;
+    str_buf << static_cast<T2>(arr[i]);
   }
   return str_buf.str();
 }

@@ -139,7 +139,7 @@ private:
   /*! \brief A non-leaf node's split threshold in feature value */
   std::vector<double> threshold_;
   /*! \brief Decision type, 0 for '<=' 1(numerical feature) for 'is'(categorical feature) */
-  std::vector<uint8_t> decision_type_;
+  std::vector<int8_t> decision_type_;
   /*! \brief A non-leaf node's split gain */
   std::vector<double> split_gain_;
   // used for leaf node
