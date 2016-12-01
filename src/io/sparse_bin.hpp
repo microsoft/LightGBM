@@ -303,10 +303,10 @@ template <typename VAL_T>
 class SparseCategoricalBin: public SparseBin<VAL_T> {
 public:
   SparseCategoricalBin(data_size_t num_data, int default_bin)
-    : SparseBin(num_data, default_bin) {
+    : SparseBin<VAL_T>(num_data, default_bin) {
   }
 
-  data_size_t Split(unsigned int threshold, data_size_t* data_indices, data_size_t num_data,
+  virtual data_size_t Split(unsigned int threshold, data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const override {
     // not need to split
     if (num_data <= 0) { return 0; }

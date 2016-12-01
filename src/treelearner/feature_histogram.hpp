@@ -159,19 +159,24 @@ public:
         best_gain = current_gain;
       }
     }
-    // update split information
-    output->feature = feature_idx_;
-    output->threshold = best_threshold;
-    output->left_output = CalculateSplittedLeafOutput(best_sum_left_gradient, best_sum_left_hessian);
-    output->left_count = best_left_count;
-    output->left_sum_gradient = best_sum_left_gradient;
-    output->left_sum_hessian = best_sum_left_hessian;
-    output->right_output = CalculateSplittedLeafOutput(sum_gradients_ - best_sum_left_gradient,
-      sum_hessians_ - best_sum_left_hessian);
-    output->right_count = num_data_ - best_left_count;
-    output->right_sum_gradient = sum_gradients_ - best_sum_left_gradient;
-    output->right_sum_hessian = sum_hessians_ - best_sum_left_hessian;
-    output->gain = best_gain - gain_shift;
+    if (best_threshold < static_cast<unsigned int>(num_bins_)) {
+      // update split information
+      output->feature = feature_idx_;
+      output->threshold = best_threshold;
+      output->left_output = CalculateSplittedLeafOutput(best_sum_left_gradient, best_sum_left_hessian);
+      output->left_count = best_left_count;
+      output->left_sum_gradient = best_sum_left_gradient;
+      output->left_sum_hessian = best_sum_left_hessian;
+      output->right_output = CalculateSplittedLeafOutput(sum_gradients_ - best_sum_left_gradient,
+        sum_hessians_ - best_sum_left_hessian);
+      output->right_count = num_data_ - best_left_count;
+      output->right_sum_gradient = sum_gradients_ - best_sum_left_gradient;
+      output->right_sum_hessian = sum_hessians_ - best_sum_left_hessian;
+      output->gain = best_gain - gain_shift;
+    } else {
+      output->feature = feature_idx_;
+      output->gain = kMinScore;
+    }
   }
 
   /*!
@@ -194,11 +199,11 @@ public:
       if (current_count < min_num_data_one_leaf_ || sum_current_hessian < min_sum_hessian_one_leaf_) continue;
       data_size_t other_count = num_data_ - current_count;
       // if data not enough
-      if (other_count < min_num_data_one_leaf_) break;
+      if (other_count < min_num_data_one_leaf_) continue;
 
       double sum_other_hessian = sum_hessians_ - sum_current_hessian;
       // if sum hessian too small
-      if (sum_other_hessian < min_sum_hessian_one_leaf_) break;
+      if (sum_other_hessian < min_sum_hessian_one_leaf_) continue;
 
       double sum_other_gradient = sum_gradients_ - sum_current_gradient;
       // current split gain
@@ -216,21 +221,26 @@ public:
       }
     }
     // update split information
-    output->feature = feature_idx_;
-    output->threshold = best_threshold;
-    output->left_output = CalculateSplittedLeafOutput(data_[best_threshold].sum_gradients,
-      data_[best_threshold].sum_hessians);
-    output->left_count = data_[best_threshold].cnt;
-    output->left_sum_gradient = data_[best_threshold].sum_gradients;
-    output->left_sum_hessian = data_[best_threshold].sum_hessians;
+    if (best_threshold < static_cast<unsigned int>(num_bins_)) {
+      output->feature = feature_idx_;
+      output->threshold = best_threshold;
+      output->left_output = CalculateSplittedLeafOutput(data_[best_threshold].sum_gradients,
+        data_[best_threshold].sum_hessians);
+      output->left_count = data_[best_threshold].cnt;
+      output->left_sum_gradient = data_[best_threshold].sum_gradients;
+      output->left_sum_hessian = data_[best_threshold].sum_hessians;
 
-    output->right_output = CalculateSplittedLeafOutput(sum_gradients_ - data_[best_threshold].sum_gradients,
-      sum_hessians_ - data_[best_threshold].sum_hessians);
-    output->right_count = num_data_ - data_[best_threshold].cnt;
-    output->right_sum_gradient = sum_gradients_ - data_[best_threshold].sum_gradients;
-    output->right_sum_hessian = sum_hessians_ - data_[best_threshold].sum_hessians;
+      output->right_output = CalculateSplittedLeafOutput(sum_gradients_ - data_[best_threshold].sum_gradients,
+        sum_hessians_ - data_[best_threshold].sum_hessians);
+      output->right_count = num_data_ - data_[best_threshold].cnt;
+      output->right_sum_gradient = sum_gradients_ - data_[best_threshold].sum_gradients;
+      output->right_sum_hessian = sum_hessians_ - data_[best_threshold].sum_hessians;
 
-    output->gain = best_gain - gain_shift;
+      output->gain = best_gain - gain_shift;
+    } else {
+      output->feature = feature_idx_;
+      output->gain = kMinScore;
+    }
   }
 
   /*!
