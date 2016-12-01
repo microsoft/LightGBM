@@ -265,8 +265,8 @@ inline static std::vector<T> StringToIntArray(const std::string& str, char delim
     Log::Fatal("StringToIntArray error, size doesn't match.");
   }
   std::vector<T> ret(n);
-  for (const auto& s : strs) {
-    ret.push_back(static_cast<T>(std::stol(s)));
+  for (size_t i = 0; i < n; ++i) {
+    ret[i] = static_cast<T>(std::stol(strs[i]));
   }
   return ret;
 }
@@ -278,8 +278,8 @@ inline static std::vector<T> StringToDoubleArray(const std::string& str, char de
     Log::Fatal("StringToIntArray error, size doesn't match.");
   }
   std::vector<T> ret(n);
-  for (const auto& s : strs) {
-    ret.push_back(static_cast<T>(std::stod(s)));
+  for (size_t i = 0; i < n; ++i) {
+    ret[i] = static_cast<T>(std::stod(strs[i]));
   }
   return ret;
 }

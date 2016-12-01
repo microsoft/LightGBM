@@ -55,7 +55,6 @@ int Tree::Split(int leaf, int feature, BinType bin_type, unsigned int threshold_
     } else {
       right_child_[parent] = new_node_idx;
     }
-    internal_count_[parent] = left_cnt + right_cnt;
   }
   // add new node
   split_feature_[new_node_idx] = feature;
@@ -76,7 +75,7 @@ int Tree::Split(int leaf, int feature, BinType bin_type, unsigned int threshold_
   leaf_parent_[num_leaves_] = new_node_idx;
   // save current leaf value to internal node before change
   internal_value_[new_node_idx] = leaf_value_[leaf];
-  internal_count_[new_node_idx] = leaf_count_[leaf];
+  internal_count_[new_node_idx] = left_cnt + right_cnt;
   leaf_value_[leaf] = left_value;
   leaf_count_[leaf] = left_cnt;
   leaf_value_[num_leaves_] = right_value;
