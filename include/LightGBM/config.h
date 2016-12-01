@@ -121,7 +121,8 @@ public:
   /*! \brief ignored features, separate by ','
   * e.g. name:column_name1,column_name2  */
   std::string ignore_column = "";
-
+  /*! \brief specific categorical columns, Note:only support for integer type*/
+  std::string categorical_column = "";
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 

@@ -27,6 +27,7 @@ BinMapper::BinMapper(const BinMapper& other) {
   for (int i = 0; i < num_bin_; ++i) {
     bin_upper_bound_[i] = other.bin_upper_bound_[i];
   }
+  bin_type_ = other.bin_type_;
 }
 
 BinMapper::BinMapper(const void* memory) {
@@ -37,7 +38,8 @@ BinMapper::~BinMapper() {
 
 }
 
-void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, int max_bin) {
+void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, int max_bin, BinType bin_type) {
+  bin_type_ = bin_type;
   std::vector<double>& ref_values = (*values);
   size_t sample_size = total_sample_cnt;
   int zero_cnt = static_cast<int>(total_sample_cnt - ref_values.size());
@@ -161,6 +163,7 @@ int BinMapper::SizeForSpecificBin(int bin) {
   size += sizeof(int);
   size += sizeof(bool);
   size += sizeof(double);
+  size += sizeof(BinType);
   size += bin * sizeof(double);
   return size;
 }
@@ -172,6 +175,8 @@ void BinMapper::CopyTo(char * buffer) {
   buffer += sizeof(is_trival_);
   std::memcpy(buffer, &sparse_rate_, sizeof(sparse_rate_));
   buffer += sizeof(sparse_rate_);
+  std::memcpy(buffer, &bin_type_, sizeof(bin_type_));
+  buffer += sizeof(bin_type_);
   std::memcpy(buffer, bin_upper_bound_.data(), num_bin_ * sizeof(double));
 }
 
@@ -182,6 +187,8 @@ void BinMapper::CopyFrom(const char * buffer) {
   buffer += sizeof(is_trival_);
   std::memcpy(&sparse_rate_, buffer, sizeof(sparse_rate_));
   buffer += sizeof(sparse_rate_);
+  std::memcpy(&bin_type_, buffer, sizeof(bin_type_));
+  buffer += sizeof(bin_type_);
   bin_upper_bound_ = std::vector<double>(num_bin_);
   std::memcpy(bin_upper_bound_.data(), buffer, num_bin_ * sizeof(double));
 }
@@ -190,11 +197,13 @@ void BinMapper::SaveBinaryToFile(FILE* file) const {
   fwrite(&num_bin_, sizeof(num_bin_), 1, file);
   fwrite(&is_trival_, sizeof(is_trival_), 1, file);
   fwrite(&sparse_rate_, sizeof(sparse_rate_), 1, file);
+  fwrite(&bin_type_, sizeof(bin_type_), 1, file);
   fwrite(bin_upper_bound_.data(), sizeof(double), num_bin_, file);
 }
 
 size_t BinMapper::SizesInByte() const {
-  return sizeof(num_bin_) + sizeof(is_trival_) + sizeof(sparse_rate_) + sizeof(double) * num_bin_;
+  return sizeof(num_bin_) + sizeof(is_trival_) + sizeof(sparse_rate_) 
+    + sizeof(bin_type_) + sizeof(double) * num_bin_;
 }
 
 template class DenseBin<uint8_t>;

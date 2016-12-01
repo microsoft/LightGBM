@@ -90,6 +90,8 @@ public:
   inline const BinMapper* bin_mapper() const { return bin_mapper_.get(); }
   /*! \brief Number of bin of this feature */
   inline int num_bin() const { return bin_mapper_->num_bin(); }
+
+  inline BinType bin_type() const { return bin_mapper_->bin_type(); }
   /*! \brief Get bin data of this feature */
   inline const Bin* bin_data() const { return bin_data_.get(); }
   /*!

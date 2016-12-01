@@ -8,6 +8,10 @@
 
 namespace LightGBM {
 
+enum BinType {
+  NumericalBin,
+  CategoracilBin
+};
 
 /*! \brief Store data for one histogram bin */
 struct HistogramBinEntry {
@@ -98,7 +102,7 @@ public:
   * \param values (Sampled) values of this feature
   * \param max_bin The maximal number of bin
   */
-  void FindBin(std::vector<double>* values, size_t total_sample_cnt, int max_bin);
+  void FindBin(std::vector<double>* values, size_t total_sample_cnt, int max_bin, BinType bin_type);
 
   /*!
   * \brief Use specific number of bin to calculate the size of this class
@@ -119,6 +123,7 @@ public:
   */
   void CopyFrom(const char* buffer);
 
+  inline BinType bin_type() const { return bin_type_; }
 private:
   /*! \brief Number of bins */
   int num_bin_;
@@ -128,6 +133,7 @@ private:
   bool is_trival_;
   /*! \brief Sparse rate of this bins( num_bin0/num_data ) */
   double sparse_rate_;
+  BinType bin_type_;
 };
 
 /*!

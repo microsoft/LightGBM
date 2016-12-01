@@ -258,52 +258,52 @@ inline static std::string ArrayToString(std::vector<T> arr, char delimiter) {
   return str_buf.str();
 }
 
-inline static void StringToIntArray(const std::string& str, char delimiter, size_t n, int* out) {
+template<typename T>
+inline static std::vector<T> StringToIntArray(const std::string& str, char delimiter, size_t n) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   if (strs.size() != n) {
     Log::Fatal("StringToIntArray error, size doesn't match.");
   }
-  for (size_t i = 0; i < strs.size(); ++i) {
-    strs[i] = Trim(strs[i]);
-    Atoi(strs[i].c_str(), &out[i]);
+  std::vector<T> ret(n);
+  for (const auto& s : strs) {
+    ret.push_back(static_cast<T>(std::stol(s)));
   }
+  return ret;
 }
 
-
-inline static void StringToDoubleArray(const std::string& str, char delimiter, size_t n, double* out) {
+template<typename T>
+inline static std::vector<T> StringToDoubleArray(const std::string& str, char delimiter, size_t n) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   if (strs.size() != n) {
-    Log::Fatal("StringToDoubleArray error, size doesn't match.");
+    Log::Fatal("StringToIntArray error, size doesn't match.");
   }
-  for (size_t i = 0; i < strs.size(); ++i) {
-    strs[i] = Trim(strs[i]);
-    Atof(strs[i].c_str(), &out[i]);
-  }
-}
-
-inline static std::vector<double> StringToDoubleArray(const std::string& str, char delimiter) {
-  std::vector<std::string> strs = Split(str.c_str(), delimiter);
-  std::vector<double> ret;
-  for (size_t i = 0; i < strs.size(); ++i) {
-    strs[i] = Trim(strs[i]);
-    double val = 0.0f;
-    Atof(strs[i].c_str(), &val);
-    ret.push_back(val);
+  std::vector<T> ret(n);
+  for (const auto& s : strs) {
+    ret.push_back(static_cast<T>(std::stod(s)));
   }
   return ret;
 }
 
-inline static std::vector<int> StringToIntArray(const std::string& str, char delimiter) {
+template<typename T>
+inline static std::vector<T> StringToIntArray(const std::string& str, char delimiter) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
-  std::vector<int> ret;
-  for (size_t i = 0; i < strs.size(); ++i) {
-    strs[i] = Trim(strs[i]);
-    int val = 0;
-    Atoi(strs[i].c_str(), &val);
-    ret.push_back(val);
+  std::vector<T> ret;
+  for (const auto& s : strs) {
+    ret.push_back(static_cast<T>(std::stol(s)));
   }
   return ret;
 }
+
+template<typename T>
+inline static std::vector<T> StringToDoubleArray(const std::string& str, char delimiter) {
+  std::vector<std::string> strs = Split(str.c_str(), delimiter);
+  std::vector<T> ret;
+  for (const auto& s : strs) {
+    ret.push_back(static_cast<T>(std::stod(s)));
+  }
+  return ret;
+}
+
 
 template<typename T>
 inline static std::string Join(const std::vector<T>& strs, char delimiter) {

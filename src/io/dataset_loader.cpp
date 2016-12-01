@@ -415,7 +415,7 @@ Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>&
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
     bin_mappers[i].reset(new BinMapper());
-    bin_mappers[i]->FindBin(&sample_values[i], total_sample_size, io_config_.max_bin);
+    bin_mappers[i]->FindBin(&sample_values[i], total_sample_size, io_config_.max_bin, BinType::NumericalBin);
   }
 
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
@@ -631,7 +631,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
         continue;
       }
       bin_mappers[i].reset(new BinMapper());
-      bin_mappers[i]->FindBin(&sample_values[i], sample_data.size(), io_config_.max_bin);
+      bin_mappers[i]->FindBin(&sample_values[i], sample_data.size(), io_config_.max_bin, BinType::NumericalBin);
     }
 
     for (size_t i = 0; i < sample_values.size(); ++i) {
@@ -681,7 +681,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
 #pragma omp parallel for schedule(guided)
     for (int i = 0; i < len[rank]; ++i) {
       BinMapper bin_mapper;
-      bin_mapper.FindBin(&sample_values[start[rank] + i], sample_data.size(), io_config_.max_bin);
+      bin_mapper.FindBin(&sample_values[start[rank] + i], sample_data.size(), io_config_.max_bin, BinType::NumericalBin);
       bin_mapper.CopyTo(input_buffer.data() + i * type_size);
     }
     // convert to binary size

@@ -393,11 +393,15 @@ void SerialTreeLearner::Split(Tree* tree, int best_Leaf, int* left_leaf, int* ri
   // left = parent
   *left_leaf = best_Leaf;
   // split tree, will return right leaf
-  *right_leaf = tree->Split(best_Leaf, best_split_info.feature, best_split_info.threshold,
+  *right_leaf = tree->Split(best_Leaf, best_split_info.feature, 
+    train_data_->FeatureAt(best_split_info.feature)->bin_type(),
+    best_split_info.threshold,
     train_data_->FeatureAt(best_split_info.feature)->feature_index(),
     train_data_->FeatureAt(best_split_info.feature)->BinToValue(best_split_info.threshold),
     static_cast<double>(best_split_info.left_output),
     static_cast<double>(best_split_info.right_output),
+    static_cast<data_size_t>(best_split_info.left_count),
+    static_cast<data_size_t>(best_split_info.right_count),
     static_cast<double>(best_split_info.gain));
 
   // split data partition
