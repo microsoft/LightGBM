@@ -50,6 +50,69 @@ void Metadata::Init(data_size_t num_data, int num_class, int weight_idx, int que
   }
 }
 
+void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, data_size_t num_used_indices) {
+  num_data_ = num_used_indices;
+  num_class_ = fullset.num_class_;
+
+  label_ = std::vector<float>(num_used_indices);
+  for (data_size_t i = 0; i < num_used_indices; i++) {
+    label_[i] = fullset.label_[used_indices[i]];
+  }
+
+  if (fullset.weights_.size() > 0) {
+    weights_ = std::vector<float>(num_used_indices);
+    num_weights_ = num_used_indices;
+    for (data_size_t i = 0; i < num_used_indices; i++) {
+      weights_[i] = fullset.weights_[used_indices[i]];
+    }
+  } else {
+    num_weights_ = 0;
+  }
+
+  if (fullset.init_score_.size() > 0) {
+    init_score_ = std::vector<float>(num_used_indices);
+    num_init_score_ = num_used_indices;
+    for (data_size_t i = 0; i < num_used_indices; i++) {
+      init_score_[i] = fullset.init_score_[used_indices[i]];
+    }
+  } else {
+    num_init_score_ = 0;
+  }
+
+  if (fullset.query_boundaries_.size() > 0) {
+    std::vector<data_size_t> used_query;
+    data_size_t data_idx = 0;
+    for (data_size_t qid = 0; qid < num_queries_ && data_idx < num_used_indices; ++qid) {
+      data_size_t start = fullset.query_boundaries_[qid];
+      data_size_t end = fullset.query_boundaries_[qid + 1];
+      data_size_t len = end - start;
+      if (used_indices[data_idx] > start) {
+        continue;
+      } else if (used_indices[data_idx] == start) {
+        if (num_used_indices >= data_idx + len && used_indices[data_idx + len - 1] == end - 1) {
+          used_query.push_back(qid);
+          data_idx += len;
+        } else {
+          Log::Fatal("Data partition error, data didn't match queries");
+        }
+      } else {
+        Log::Fatal("Data partition error, data didn't match queries");
+      }
+    }
+    query_boundaries_ = std::vector<data_size_t>(used_query.size() + 1);
+    num_queries_ = static_cast<data_size_t>(used_query.size());
+    query_boundaries_[0] = 0;
+    for (data_size_t i = 0; i < num_queries_; ++i) {
+      data_size_t qid = used_query[i];
+      data_size_t len = fullset.query_boundaries_[qid + 1] - fullset.query_boundaries_[qid];
+      query_boundaries_[i + 1] = query_boundaries_[i] + len;
+    }
+  } else {
+    num_queries_ = 0;
+  }
+
+}
+
 void Metadata::PartitionLabel(const std::vector<data_size_t>& used_indices) {
   if (used_indices.size() <= 0) {
     return;
@@ -196,6 +259,13 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
 
 
 void Metadata::SetInitScore(const float* init_score, data_size_t len) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  // save to nullptr
+  if (init_score == nullptr || len == 0) {
+    init_score_.clear();
+    num_init_score_ = 0;
+    return;
+  }
   if (len != num_data_ * num_class_) {
     Log::Fatal("Initial score size doesn't match data size");
   }
@@ -208,6 +278,10 @@ void Metadata::SetInitScore(const float* init_score, data_size_t len) {
 }
 
 void Metadata::SetLabel(const float* label, data_size_t len) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (label == nullptr) {
+    Log::Fatal("label cannot be nullptr");
+  }
   if (num_data_ != len) {
     Log::Fatal("len of label is not same with #data");
   }
@@ -219,6 +293,13 @@ void Metadata::SetLabel(const float* label, data_size_t len) {
 }
 
 void Metadata::SetWeights(const float* weights, data_size_t len) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  // save to nullptr
+  if (weights == nullptr || len == 0) {
+    weights_.clear();
+    num_weights_ = 0;
+    return;
+  }
   if (num_data_ != len) {
     Log::Fatal("len of weights is not same with #data");
   }
@@ -232,6 +313,13 @@ void Metadata::SetWeights(const float* weights, data_size_t len) {
 }
 
 void Metadata::SetQueryBoundaries(const data_size_t* query_boundaries, data_size_t len) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  // save to nullptr
+  if (query_boundaries == nullptr || len == 0) {
+    query_boundaries_.clear();
+    num_queries_ = 0;
+    return;
+  }
   data_size_t sum = 0;
   for (data_size_t i = 0; i < len; ++i) {
     sum += query_boundaries[i];
@@ -248,6 +336,47 @@ void Metadata::SetQueryBoundaries(const data_size_t* query_boundaries, data_size
   LoadQueryWeights();
 }
 
+void Metadata::SetQueryId(const data_size_t* query_id, data_size_t len) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  // save to nullptr
+  if (query_id == nullptr || len == 0) {
+    query_boundaries_.clear();
+    queries_.clear();
+    num_queries_ = 0;
+    return;
+  }
+  if (num_data_ != len) {
+    Log::Fatal("len of query id is not same with #data");
+  }
+  if (queries_.size() > 0) { queries_.clear(); }
+  queries_ = std::vector<data_size_t>(num_data_);
+  for (data_size_t i = 0; i < num_weights_; ++i) {
+    queries_[i] = query_id[i];
+  }
+  // need convert query_id to boundaries
+  std::vector<data_size_t> tmp_buffer;
+  data_size_t last_qid = -1;
+  data_size_t cur_cnt = 0;
+  for (data_size_t i = 0; i < num_data_; ++i) {
+    if (last_qid != queries_[i]) {
+      if (cur_cnt > 0) {
+        tmp_buffer.push_back(cur_cnt);
+      }
+      cur_cnt = 0;
+      last_qid = queries_[i];
+    }
+    ++cur_cnt;
+  }
+  tmp_buffer.push_back(cur_cnt);
+  query_boundaries_ = std::vector<data_size_t>(tmp_buffer.size() + 1);
+  num_queries_ = static_cast<data_size_t>(tmp_buffer.size());
+  query_boundaries_[0] = 0;
+  for (size_t i = 0; i < tmp_buffer.size(); ++i) {
+    query_boundaries_[i + 1] = query_boundaries_[i] + tmp_buffer[i];
+  }
+  queries_.clear();
+  LoadQueryWeights();
+}
 
 void Metadata::LoadWeights() {
   num_weights_ = 0;

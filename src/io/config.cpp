@@ -5,14 +5,14 @@
 
 #include <vector>
 #include <string>
-#include <unordered_map>
+#include <unordered_set>
 #include <algorithm>
 
 namespace LightGBM {
 
-void OverallConfig::LoadFromString(const char* str) {
+std::unordered_map<std::string, std::string> ConfigBase::Str2Map(const char* parameters) {
   std::unordered_map<std::string, std::string> params;
-  auto args = Common::Split(str, " \t\n\r");
+  auto args = Common::Split(parameters, " \t\n\r");
   for (auto arg : args) {
     std::vector<std::string> tmp_strs = Common::Split(arg.c_str(), '=');
     if (tmp_strs.size() == 2) {
@@ -27,7 +27,7 @@ void OverallConfig::LoadFromString(const char* str) {
     }
   }
   ParameterAlias::KeyAliasTransform(&params);
-  Set(params);
+  return params;
 }
 
 void OverallConfig::Set(const std::unordered_map<std::string, std::string>& params) {
@@ -95,16 +95,15 @@ void OverallConfig::GetMetricType(const std::unordered_map<std::string, std::str
     // split
     std::vector<std::string> metrics = Common::Split(value.c_str(), ',');
     // remove dumplicate
-    std::unordered_map<std::string, int> metric_maps;
+    std::unordered_set<std::string> metric_sets;
     for (auto& metric : metrics) {
       std::transform(metric.begin(), metric.end(), metric.begin(), Common::tolower);
-      if (metric_maps.count(metric) <= 0) {
-        metric_maps[metric] = 1;
+      if (metric_sets.count(metric) <= 0) {
+        metric_sets.insert(metric);
       }
     }
-    for (auto& pair : metric_maps) {
-      std::string sub_metric_str = pair.first;
-      metric_types.push_back(sub_metric_str);
+    for (auto& metric : metric_sets) {
+      metric_types.push_back(metric);
     }
     metric_types.shrink_to_fit();
   }
@@ -183,7 +182,7 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "data_random_seed", &data_random_seed);
   GetString(params, "data", &data_filename);
   GetInt(params, "verbose", &verbosity);
-  GetInt(params, "num_model_predict", &num_model_predict);
+  GetInt(params, "num_iteration_predict", &num_iteration_predict);
   GetInt(params, "bin_construct_sample_cnt", &bin_construct_sample_cnt);
   GetBool(params, "is_pre_partition", &is_pre_partition);
   GetBool(params, "is_enable_sparse", &is_enable_sparse);
@@ -214,6 +213,7 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
   CHECK(max_position > 0);
   GetInt(params, "num_class", &num_class);
   CHECK(num_class >= 1);
+  GetDouble(params, "scale_pos_weight", &scale_pos_weight);
   std::string tmp_str = "";
   if (GetString(params, "label_gain", &tmp_str)) {
     label_gain = Common::StringToDoubleArray(tmp_str, ',');

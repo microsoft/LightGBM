@@ -36,11 +36,33 @@ public:
     const std::vector<const Metric*>& training_metrics) = 0;
 
   /*!
+  * \brief Merge model from other boosting object
+           Will insert to the front of current boosting object
+  * \param other
+  */
+  virtual void MergeFrom(const Boosting* other) = 0;
+
+  /*!
+  * \brief Reset training data for current boosting
+  * \param config Configs for boosting
+  * \param train_data Training data
+  * \param object_function Training objective function
+  * \param training_metrics Training metric
+  */
+  virtual void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function, const std::vector<const Metric*>& training_metrics) = 0;
+
+  /*!
+  * \brief Reset shrinkage_rate data for current boosting
+  * \param shrinkage_rate Configs for boosting
+  */
+  virtual void ResetShrinkageRate(double shrinkage_rate) = 0;
+
+  /*!
   * \brief Add a validation data
   * \param valid_data Validation data
   * \param valid_metrics Metric for validation data
   */
-  virtual void AddDataset(const Dataset* valid_data,
+  virtual void AddValidDataset(const Dataset* valid_data,
     const std::vector<const Metric*>& valid_metrics) = 0;
 
   /*!
@@ -52,6 +74,19 @@ public:
   */
   virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) = 0;
 
+  /*!
+  * \brief Rollback one iteration
+  */
+  virtual void RollbackOneIter() = 0;
+
+  /*!
+  * \brief return current iteration
+  */
+  virtual int GetCurrentIteration() const = 0;
+
+  /*!
+  * \brief Eval metrics and check is met early stopping or not
+  */
   virtual bool EvalAndCheckEarlyStopping() = 0;
   /*!
   * \brief Get evaluation result at data_idx data
@@ -73,7 +108,7 @@ public:
   * \param result used to store prediction result, should allocate memory before call this function
   * \param out_len lenght of returned score
   */
-  virtual void GetPredictAt(int data_idx, score_t* result, data_size_t* out_len) const = 0;
+  virtual void GetPredictAt(int data_idx, score_t* result, data_size_t* out_len) = 0;
 
   /*!
   * \brief Prediction for one record, not sigmoid transform
@@ -99,11 +134,10 @@ public:
 
   /*!
   * \brief save model to file
-  * \param num_used_model number of model that want to save, -1 means save all
-  * \param is_finish is training finished or not
+  * \param num_iterations Iterations that want to save, -1 means save all
   * \param filename filename that want to save to
   */
-  virtual void SaveModelToFile(int num_used_model, bool is_finish, const char* filename) = 0;
+  virtual void SaveModelToFile(int num_iterations, const char* filename) const = 0;
 
   /*!
   * \brief Restore from a serialized string
@@ -127,7 +161,7 @@ public:
   * \brief Get number of weak sub-models
   * \return Number of weak sub-models
   */
-  virtual int NumberOfSubModels() const = 0;
+  virtual int NumberOfTotalModel() const = 0;
   
   /*!
   * \brief Get number of classes
@@ -138,7 +172,7 @@ public:
   /*!
   * \brief Set number of used model for prediction
   */
-  virtual void SetNumUsedModel(int num_used_model) = 0;
+  virtual void SetNumIterationForPred(int num_iteration) = 0;
   
   /*!
   * \brief Get Type name of this boosting object
@@ -150,6 +184,8 @@ public:
   Boosting& operator=(const Boosting&) = delete;
   /*! \brief Disable copy */
   Boosting(const Boosting&) = delete;
+
+  static void LoadFileToBoosting(Boosting* boosting, const char* filename);
 
   /*!
   * \brief Create boosting object

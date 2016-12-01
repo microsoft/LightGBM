@@ -51,6 +51,18 @@ public:
   explicit BinMapper(const void* memory);
   ~BinMapper();
 
+  bool CheckAlign(const BinMapper& other) const {
+    if (num_bin_ != other.num_bin_) {
+      return false;
+    }
+    for (int i = 0; i < num_bin_; ++i) {
+      if (bin_upper_bound_[i] != other.bin_upper_bound_[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /*! \brief Get number of bins */
   inline int num_bin() const { return num_bin_; }
   /*! \brief True if bin is trival (contains only one bin) */

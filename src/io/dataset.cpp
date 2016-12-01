@@ -14,17 +14,16 @@
 
 namespace LightGBM {
 
+const char* Dataset::binary_file_token = "______LightGBM_Binary_File_Token______\n";
 
 Dataset::Dataset() {
   num_class_ = 1;
   num_data_ = 0;
-  is_loading_from_binfile_ = false;
 }
 
 Dataset::Dataset(data_size_t num_data, int num_class) {
   num_class_ = num_class;
   num_data_ = num_data;
-  is_loading_from_binfile_ = false;
   metadata_.Init(num_data_, num_class_, -1, -1);
 }
 
@@ -56,6 +55,21 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset, bool is_enable_spars
   num_features_ = static_cast<int>(features_.size());
   num_total_features_ = dataset->num_total_features_;
   feature_names_ = dataset->feature_names_;
+  label_idx_ = dataset->label_idx_;
+}
+
+Dataset* Dataset::Subset(const data_size_t* used_indices, data_size_t num_used_indices, bool is_enable_sparse) const {
+  auto ret = std::unique_ptr<Dataset>(new Dataset(num_used_indices, num_class_));
+  ret->CopyFeatureMapperFrom(this, is_enable_sparse);
+#pragma omp parallel for schedule(guided)
+  for (int fidx = 0; fidx < num_features_; ++fidx) {
+    auto iterator = features_[fidx]->bin_data()->GetIterator(0);
+    for (data_size_t i = 0; i < num_used_indices; ++i) {
+      ret->features_[fidx]->PushBin(0, i, iterator->Get(used_indices[i]));
+    }
+  }
+  ret->metadata_.Init(metadata_, used_indices, num_used_indices);
+  return ret.release();
 }
 
 bool Dataset::SetFloatField(const char* field_name, const float* field_data, data_size_t num_element) {
@@ -78,6 +92,8 @@ bool Dataset::SetIntField(const char* field_name, const int* field_data, data_si
   name = Common::Trim(name);
   if (name == std::string("query") || name == std::string("group")) {
     metadata_.SetQueryBoundaries(field_data, num_element);
+  } else if (name == std::string("query_id") || name == std::string("group_id")) {
+    metadata_.SetQueryId(field_data, num_element);
   } else {
     return false;
   }
@@ -107,7 +123,7 @@ bool Dataset::GetIntField(const char* field_name, int64_t* out_len, const int** 
   name = Common::Trim(name);
   if (name == std::string("query") || name == std::string("group")) {
     *out_ptr = metadata_.query_boundaries();
-    *out_len = num_data_;
+    *out_len = metadata_.num_queries();
   } else {
     return false;
   }
@@ -115,15 +131,27 @@ bool Dataset::GetIntField(const char* field_name, int64_t* out_len, const int** 
 }
 
 void Dataset::SaveBinaryFile(const char* bin_filename) {
+  bool is_file_existed = false;
+  FILE* file;
+#ifdef _MSC_VER
+  fopen_s(&file, bin_filename, "rb");
+#else
+  file = fopen(bin_filename, "rb");
+#endif
 
-  if (!is_loading_from_binfile_) {
+  if (file != NULL) {
+    is_file_existed = true;
+    Log::Warning("File %s existed, cannot save binary to it", bin_filename);
+    fclose(file);
+  }
+
+  if (!is_file_existed) {
     std::string bin_filename_str(data_filename_);
     // if not pass a filename, just append ".bin" of original file
     if (bin_filename == nullptr || bin_filename[0] == '\0') {
       bin_filename_str.append(".bin");
       bin_filename = bin_filename_str.c_str();
     }
-    FILE* file;
 #ifdef _MSC_VER
     fopen_s(&file, bin_filename, "wb");
 #else
@@ -133,7 +161,8 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
       Log::Fatal("Cannot write binary data to %s ", bin_filename);
     }
     Log::Info("Saving data to binary file %s", bin_filename);
-
+    size_t size_of_token = std::strlen(binary_file_token);
+    fwrite(binary_file_token, sizeof(char), size_of_token, file);
     // get size of header
     size_t size_of_header = sizeof(num_data_) + sizeof(num_class_) + sizeof(num_features_) + sizeof(num_total_features_) 
       + sizeof(size_t) + sizeof(int) * used_feature_map_.size();

@@ -28,10 +28,6 @@ Linkers::Linkers(NetworkConfig config) {
   // parser clients from file
   ParseMachineList(config.machine_list_filename.c_str());
 
-  if (num_machines_ <= 1) {
-    return;
-  }
-
   if (rank_ == -1) {
     // get ip list of local machine
     std::unordered_set<std::string> local_ip_list = TcpSocket::GetLocalIpList();
@@ -101,10 +97,15 @@ void Linkers::ParseMachineList(const char * filename) {
     client_ips_.push_back(str_after_split[0]);
     client_ports_.push_back(atoi(str_after_split[1].c_str()));
   }
+  if (client_ips_.size() == 0) {
+    Log::Fatal("Machine list file doesn't contain any ip and port. \
+                Please check it again");
+  }
   if (client_ips_.size() != static_cast<size_t>(num_machines_)) {
     Log::Warning("World size is larger than the machine_list size, change world size to %d", client_ips_.size());
     num_machines_ = static_cast<int>(client_ips_.size());
   }
+
 }
 
 void Linkers::TryBind(int port) {
