@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <functional>
+#include <unordered_map>
 
 namespace LightGBM {
 
@@ -59,9 +60,20 @@ public:
     if (num_bin_ != other.num_bin_) {
       return false;
     }
-    for (int i = 0; i < num_bin_; ++i) {
-      if (bin_upper_bound_[i] != other.bin_upper_bound_[i]) {
-        return false;
+    if (bin_type_ != other.bin_type_) {
+      return false;
+    }
+    if (bin_type_ == BinType::NumericalBin) {
+      for (int i = 0; i < num_bin_; ++i) {
+        if (bin_upper_bound_[i] != other.bin_upper_bound_[i]) {
+          return false;
+        }
+      }
+    } else {
+      for (int i = 0; i < num_bin_; i++) {
+        if (bin_2_categorical_[i] != other.bin_2_categorical_[i]) {
+          return false;
+        }
       }
     }
     return true;
@@ -84,7 +96,11 @@ public:
   * \return Feature value of this bin
   */
   inline double BinToValue(unsigned int bin) const {
-    return bin_upper_bound_[bin];
+    if (bin_type_ == BinType::NumericalBin) {
+      return bin_upper_bound_[bin];
+    } else {
+      return bin_2_categorical_[bin];
+    }
   }
   /*!
   * \brief Get sizes in byte of this object
@@ -133,7 +149,12 @@ private:
   bool is_trival_;
   /*! \brief Sparse rate of this bins( num_bin0/num_data ) */
   double sparse_rate_;
+  /*! \brief Type of this bin */
   BinType bin_type_;
+  /*! \brief Mapper from categorical to bin */
+  std::unordered_map<int, unsigned int> categorical_2_bin_;
+  /*! \brief Mapper from bin to categorical */
+  std::vector<int> bin_2_categorical_;
 };
 
 /*!
@@ -313,17 +334,26 @@ public:
 
 inline unsigned int BinMapper::ValueToBin(double value) const {
   // binary search to find bin
-  int l = 0;
-  int r = num_bin_ - 1;
-  while (l < r) {
-    int m = (r + l - 1) / 2;
-    if (value <= bin_upper_bound_[m]) {
-      r = m;
+  if (bin_type_ == BinType::NumericalBin) {
+    int l = 0;
+    int r = num_bin_ - 1;
+    while (l < r) {
+      int m = (r + l - 1) / 2;
+      if (value <= bin_upper_bound_[m]) {
+        r = m;
+      } else {
+        l = m + 1;
+      }
+    }
+    return l;
+  } else {
+    int int_value = static_cast<int>(value);
+    if (categorical_2_bin_.count(int_value)) {
+      return categorical_2_bin_.at(int_value);
     } else {
-      l = m + 1;
+      return 0;
     }
   }
-  return l;
 }
 
 }  // namespace LightGBM

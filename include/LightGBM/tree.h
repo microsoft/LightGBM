@@ -200,7 +200,8 @@ inline int Tree::GetLeaf(const double* feature_values) const {
         node = right_child_[node];
       }
     } else {
-      if (feature_values[split_feature_real_[node]] == threshold_[node]) {
+      if (static_cast<int>(feature_values[split_feature_real_[node]])
+          == static_cast<int>(threshold_[node])) {
         node = left_child_[node];
       } else {
         node = right_child_[node];

@@ -375,6 +375,28 @@ std::vector<const T*> ConstPtrInVectorWrapper(const std::vector<std::unique_ptr<
   return ret;
 }
 
+template<typename T1, typename T2>
+inline void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, size_t start, bool is_reverse = false) {
+  std::vector<std::pair<T1, T2>> arr;
+  for (size_t i = start; i < keys.size(); ++i) {
+    arr.emplace_back(keys[i], values[i]);
+  }
+  if (!is_reverse) {
+    std::sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
+      return a.first < b.first;
+    });
+  } else {
+    std::sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
+      return a.first > b.first;
+    });
+  }
+  for (size_t i = start; i < arr.size(); ++i) {
+    keys[i] = arr[i].first;
+    values[i] = arr[i].second;
+  }
+
+}
+
 }  // namespace Common
 
 }  // namespace LightGBM
