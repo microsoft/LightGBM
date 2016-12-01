@@ -148,7 +148,6 @@ def early_stop(stopping_rounds, verbose=True):
     callback : function
         The requested callback function.
     """
-    state = {}
     factor_to_bigger_better = {}
     best_score = {}
     best_iter = {}
@@ -172,23 +171,21 @@ def early_stop(stopping_rounds, verbose=True):
             factor_to_bigger_better[i] = -1.0
             if env.evaluation_result_list[i][3]:
                 factor_to_bigger_better[i] = 1.0
-        state['best_iter'] = 0
 
     def callback(env):
         """internal function"""
         if len(best_score) == 0:
             init(env)
-        for i in range(len(env.evaluation_result_list)): 
+        for i in range(len(env.evaluation_result_list)):
             score = env.evaluation_result_list[i][2] * factor_to_bigger_better[i]
             if score > best_score[i]:
                 best_score[i] = score
                 best_iter[i] = env.iteration
                 if verbose:
-                    best_msg[i] = '[%d]\t%s' % ( env.iteration, 
+                    best_msg[i] = '[%d]\t%s' % ( env.iteration,
                         '\t'.join([_format_eval_result(x) for x in env.evaluation_result_list]))
             else:
                 if env.iteration - best_iter[i] >= stopping_rounds:
-                    state['best_iter'] = best_iter[i]
                     if env.model is not None:
                         env.model.set_attr(best_iteration=str(best_iter[i]))
                     if verbose:

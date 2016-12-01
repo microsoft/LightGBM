@@ -194,7 +194,8 @@ class LGBMModel(LGBMModelBase):
         return params
 
     def fit(self, X, y, eval_set=None, eval_metric=None,
-            early_stopping_rounds=None, verbose=True, train_fields=None, valid_fields=None, other_params=None):
+            early_stopping_rounds=None, verbose=True,
+            train_fields=None, valid_fields=None, other_params=None):
         """
         Fit the gradient boosting model
 
@@ -308,7 +309,7 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
     """ + '\n'.join(LGBMModel.__doc__.split('\n')[2:])
 
     def fit(self, X, y, eval_set=None, eval_metric=None,
-            early_stopping_rounds=None, verbose=True, 
+            early_stopping_rounds=None, verbose=True,
             train_fields=None, valid_fields=None, other_params=None):
 
         self.classes_ = np.unique(y)
@@ -328,8 +329,10 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
         if eval_set is not None:
             eval_set = list( (x[0], self._le.transform(x[1])) for x in eval_set )
 
-        super(LGBMClassifier, self).fit(X, training_labels, eval_set, eval_metric, 
-            early_stopping_rounds, verbose, train_fields, valid_fields, other_params)
+        super(LGBMClassifier, self).fit(X, training_labels, eval_set,
+                                        eval_metric, early_stopping_rounds,
+                                        verbose, train_fields, valid_fields,
+                                        other_params)
         return self
 
     def predict(self, data, raw_score=False, num_iteration=0):
@@ -405,7 +408,7 @@ class LGBMRanker(LGBMModel):
     """ + '\n'.join(LGBMModel.__doc__.split('\n')[2:])
 
     def fit(self, X, y, eval_set=None, eval_metric=None,
-            early_stopping_rounds=None, verbose=True, 
+            early_stopping_rounds=None, verbose=True,
             train_fields=None, valid_fields=None, other_params=None):
 
         """check group data"""
@@ -428,6 +431,8 @@ class LGBMRanker(LGBMModel):
             self.objective = "lambdarank"
             self.fobj = None
 
-        super(LGBMRanker, self).fit(X, y, eval_set, eval_metric, 
-            early_stopping_rounds, verbose, train_fields, valid_fields, other_params)
+        super(LGBMRanker, self).fit(X, y, eval_set, eval_metric,
+                                    early_stopping_rounds, verbose,
+                                    train_fields, valid_fields,
+                                    other_params)
         return self

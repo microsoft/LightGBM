@@ -1,13 +1,13 @@
 """Training Library containing training routines of LightGBM."""
 from __future__ import absolute_import
 
-import collections
 import numpy as np
 from .basic import LightGBMError, Predictor, Dataset, Booster, is_str
 from . import callback
 
 def _construct_dataset(X_y, reference=None,
-    params=None, other_fields=None, predictor=None):
+                       params=None, other_fields=None, 
+                       predictor=None):
     if 'max_bin' in params:
         max_bin = int(params['max_bin'])
     else:
@@ -31,20 +31,22 @@ def _construct_dataset(X_y, reference=None,
         label = X_y[1]
     if reference is None:
         ret = Dataset(data, label=label, max_bin=max_bin, 
-        weight=weight, group=group, predictor=predictor, params=params)
+                      weight=weight, group=group,
+                      predictor=predictor, params=params)
 
     else:
-        ret = reference.create_valid(data, label=label, weight=weight, group=group, params=params)
+        ret = reference.create_valid(data, label=label, weight=weight,
+                                     group=group, params=params)
     if init_score is not None:
         ret.set_init_score(init_score)
     return ret
 
-def train(params, train_data, num_boost_round=100, 
-        valid_datas=None, valid_names=None,
-        fobj=None, feval=None, init_model=None, 
-        train_fields=None, valid_fields=None, 
-        early_stopping_rounds=None, evals_result=None,
-        verbose_eval=True, learning_rates=None, callbacks=None):
+def train(params, train_data, num_boost_round=100,
+          valid_datas=None, valid_names=None,
+          fobj=None, feval=None, init_model=None,
+          train_fields=None, valid_fields=None,
+          early_stopping_rounds=None, evals_result=None,
+          verbose_eval=True, learning_rates=None, callbacks=None):
     """Train with given parameters.
 
     Parameters
@@ -134,9 +136,9 @@ def train(params, train_data, num_boost_round=100,
                 continue
             valid_set = _construct_dataset(
                 valid_datas[i],
-                train_set, 
-                params, 
-                other_fields, 
+                train_set,
+                params,
+                other_fields,
                 predictor)
             valid_sets.append(valid_set)
             if valid_names is not None:
@@ -182,11 +184,11 @@ def train(params, train_data, num_boost_round=100,
     for i in range(num_boost_round):
         for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=booster,
-                           cvfolds=None,
-                           iteration=i,
-                           begin_iteration=0,
-                           end_iteration=num_boost_round,
-                           evaluation_result_list=None))
+                                    cvfolds=None,
+                                    iteration=i,
+                                    begin_iteration=0,
+                                    end_iteration=num_boost_round,
+                                    evaluation_result_list=None))
 
         booster.update(fobj=fobj)
 
@@ -199,11 +201,11 @@ def train(params, train_data, num_boost_round=100,
         try:
             for cb in callbacks_after_iter:
                 cb(callback.CallbackEnv(model=booster,
-                               cvfolds=None,
-                               iteration=i,
-                               begin_iteration=0,
-                               end_iteration=num_boost_round,
-                               evaluation_result_list=evaluation_result_list))
+                                        cvfolds=None,
+                                        iteration=i,
+                                        begin_iteration=0,
+                                        end_iteration=num_boost_round,
+                                        evaluation_result_list=evaluation_result_list))
         except callback.EarlyStopException:
             break
     if booster.attr('best_iteration') is not None:
@@ -384,11 +386,11 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
     for i in range(num_boost_round):
         for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=None,
-                           cvfolds=cvfolds,
-                           iteration=i,
-                           begin_iteration=0,
-                           end_iteration=num_boost_round,
-                           evaluation_result_list=None))
+                                    cvfolds=cvfolds,
+                                    iteration=i,
+                                    begin_iteration=0,
+                                    end_iteration=num_boost_round,
+                                    evaluation_result_list=None))
         for fold in cvfolds:
             fold.update(fobj)
         res = _agg_cv_result([f.eval(feval) for f in cvfolds])
@@ -402,13 +404,13 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
         try:
             for cb in callbacks_after_iter:
                 cb(callback.CallbackEnv(model=None,
-                               cvfolds=cvfolds,
-                               iteration=i,
-                               begin_iteration=0,
-                               end_iteration=num_boost_round,
-                               evaluation_result_list=res))
+                                        cvfolds=cvfolds,
+                                        iteration=i,
+                                        begin_iteration=0,
+                                        end_iteration=num_boost_round,
+                                        evaluation_result_list=res))
         except callback.EarlyStopException as e:
             for k in results.keys():
-                results[k] = results[k][:(e.state['best_iter'] + 1)]
+                results[k] = results[k][:(e.best_iteration + 1)]
             break
     return results
