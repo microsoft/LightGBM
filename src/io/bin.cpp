@@ -178,6 +178,10 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
       categorical_2_bin_[distinct_values_int[i]] = static_cast<unsigned int>(i);
       used_cnt += counts_int[i];
     }
+    if (used_cnt / static_cast<double>(sample_size) < 0.9f) {
+      Log::Warning("Too many categoricals are ignored, \
+                   please use bigger max_bin or partition this column ");
+    }
     cnt_in_bin0 = static_cast<int>(sample_size) - used_cnt + counts_int[0];
   }
 

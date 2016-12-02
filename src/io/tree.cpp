@@ -15,6 +15,12 @@
 
 namespace LightGBM {
 
+std::vector<std::function<bool(unsigned int, unsigned int)>> Tree::inner_decision_funs = 
+          {Tree::numerical_decision<unsigned int>, Tree::categorical_decision<unsigned int> };
+std::vector<std::function<bool(double, double)>> Tree::decision_funs = 
+          { Tree::numerical_decision<double>, Tree::categorical_decision<double> };
+
+
 Tree::Tree(int max_leaves)
   :max_leaves_(max_leaves) {
 
@@ -160,20 +166,22 @@ std::string Tree::NodeToJSON(int index) {
     // non-leaf
     ss << "{" << std::endl;
     ss << "\"split_index\":" << index << "," << std::endl;
-    ss << "\"split_feature\":" << split_feature_real_.data()[index] << "," << std::endl;
-    ss << "\"split_gain\":" << split_gain_.data()[index] << "," << std::endl;
-    ss << "\"threshold\":" << threshold_.data()[index] << "," << std::endl;
-    ss << "\"internal_value\":" << internal_value_.data()[index] << "," << std::endl;
-    ss << "\"left_child\":" << NodeToJSON(left_child_.data()[index]) << "," << std::endl;
-    ss << "\"right_child\":" << NodeToJSON(right_child_.data()[index]) << std::endl;
+    ss << "\"split_feature\":" << split_feature_real_[index] << "," << std::endl;
+    ss << "\"split_gain\":" << split_gain_[index] << "," << std::endl;
+    ss << "\"threshold\":" << threshold_[index] << "," << std::endl;
+    ss << "\"internal_value\":" << internal_value_[index] << "," << std::endl;
+    ss << "\"internal_count\":" << internal_count_[index] << "," << std::endl;
+    ss << "\"left_child\":" << NodeToJSON(left_child_[index]) << "," << std::endl;
+    ss << "\"right_child\":" << NodeToJSON(right_child_[index]) << std::endl;
     ss << "}";
   } else {
     // leaf
     index = ~index;
     ss << "{" << std::endl;
     ss << "\"leaf_index\":" << index << "," << std::endl;
-    ss << "\"leaf_parent\":" << leaf_parent_.data()[index] << "," << std::endl;
-    ss << "\"leaf_value\":" << leaf_value_.data()[index] << std::endl;
+    ss << "\"leaf_parent\":" << leaf_parent_[index] << "," << std::endl;
+    ss << "\"leaf_value\":" << leaf_value_[index] << std::endl;
+    ss << "\"leaf_count\":" << leaf_count_[index] << std::endl;
     ss << "}";
   }
 

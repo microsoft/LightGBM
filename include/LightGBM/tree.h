@@ -107,6 +107,27 @@ public:
   /*! \brief Serialize this object to json*/
   std::string ToJSON();
 
+  template<typename T>
+  static bool categorical_decision(T fval, T threshold) {
+    if (static_cast<int>(fval) == static_cast<int>(threshold)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  template<typename T>
+  static bool numerical_decision(T fval, T threshold) {
+    if (fval <= threshold) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  static std::vector<std::function<bool(unsigned int, unsigned int)>> inner_decision_funs;
+  static std::vector<std::function<bool(double, double)>> decision_funs;
+
 private:
   /*!
   * \brief Find leaf index of which record belongs by data
@@ -178,19 +199,12 @@ inline int Tree::GetLeaf(const std::vector<std::unique_ptr<BinIterator>>& iterat
                                        data_size_t data_idx) const {
   int node = 0;
   while (node >= 0) {
-    // Todo: maybe use function pointer to avoid if..else
-    if (decision_type_[node] == 0) {
-      if (iterators[split_feature_[node]]->Get(data_idx) <= threshold_in_bin_[node]) {
-        node = left_child_[node];
-      } else {
-        node = right_child_[node];
-      }
+    if (inner_decision_funs[decision_type_[node]](
+          iterators[split_feature_[node]]->Get(data_idx), 
+          threshold_in_bin_[node])) {
+      node = left_child_[node];
     } else {
-      if (iterators[split_feature_[node]]->Get(data_idx) == threshold_in_bin_[node]) {
-        node = left_child_[node];
-      } else {
-        node = right_child_[node];
-      }
+      node = right_child_[node];
     }
   }
   return ~node;
@@ -199,19 +213,12 @@ inline int Tree::GetLeaf(const std::vector<std::unique_ptr<BinIterator>>& iterat
 inline int Tree::GetLeaf(const double* feature_values) const {
   int node = 0;
   while (node >= 0) {
-    if (decision_type_[node] == 0) {
-      if (feature_values[split_feature_real_[node]] <= threshold_[node]) {
-        node = left_child_[node];
-      } else {
-        node = right_child_[node];
-      }
+    if (decision_funs[decision_type_[node]](
+      feature_values[split_feature_real_[node]],
+      threshold_[node])) {
+      node = left_child_[node];
     } else {
-      if (static_cast<int>(feature_values[split_feature_real_[node]])
-          == static_cast<int>(threshold_[node])) {
-        node = left_child_[node];
-      } else {
-        node = right_child_[node];
-      }
+      node = right_child_[node];
     }
   }
   return ~node;
