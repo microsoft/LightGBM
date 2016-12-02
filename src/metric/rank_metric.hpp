@@ -33,12 +33,9 @@ public:
 
   ~NDCGMetric() {
   }
-  void Init(const char* test_name, const Metadata& metadata, data_size_t num_data) override {
+  void Init(const Metadata& metadata, data_size_t num_data) override {
     for (auto k : eval_at_) {
-      std::stringstream str_buf;
-      str_buf << test_name << "'s : ";
-      str_buf << "NDCG@" + std::to_string(k) + " ";
-      name_.emplace_back(str_buf.str());
+      name_.emplace_back(std::string("ndcg@") + std::to_string(k));
     }
     num_data_ = num_data;
     // get label

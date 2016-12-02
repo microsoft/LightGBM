@@ -18,6 +18,7 @@ public:
     if (sigmoid_ <= 0.0) {
       Log::Fatal("Sigmoid parameter %f should be greater than zero", sigmoid_);
     }
+    scale_pos_weight_ = static_cast<score_t>(config.scale_pos_weight);
   }
   ~BinaryLogloss() {}
   void Init(const Metadata& metadata, data_size_t num_data) override {
@@ -55,6 +56,7 @@ public:
         label_weights_[0] = 1.0f;
       }
     }
+    label_weights_[1] *= scale_pos_weight_;
   }
 
   void GetGradients(const score_t* score, score_t* gradients, score_t* hessians) const override {
@@ -104,6 +106,7 @@ private:
   score_t label_weights_[2];
   /*! \brief Weights for data */
   const float* weights_;
+  score_t scale_pos_weight_;
 };
 
 }  // namespace LightGBM

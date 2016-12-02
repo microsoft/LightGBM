@@ -16,6 +16,7 @@
 #include <cstring>
 #include <memory>
 #include <stdexcept>
+#include <mutex>
 
 #include "./application/predictor.hpp"
 
@@ -28,75 +29,88 @@ public:
   }
 
   Booster(const Dataset* train_data, 
-    std::vector<const Dataset*> valid_data, 
-    std::vector<std::string> valid_names,
-    const char* parameters)
-    :train_data_(train_data), valid_datas_(valid_data) {
-    config_.LoadFromString(parameters);
+    const char* parameters) {
+    auto param = ConfigBase::Str2Map(parameters);
+    config_.Set(param);
     // create boosting
     if (config_.io_config.input_model.size() > 0) {
       Log::Warning("continued train from model is not support for c_api, \
         please use continued train with input score");
     }
-    boosting_.reset(Boosting::CreateBoosting(config_.boosting_type, ""));
-    // create objective function
-    objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
-      config_.objective_config));
-    if (objective_fun_ == nullptr) {
-      Log::Warning("Using self-defined objective functions");
-    }
-    // create training metric
-    for (auto metric_type : config_.metric_types) {
-      auto metric = std::unique_ptr<Metric>(
-        Metric::CreateMetric(metric_type, config_.metric_config));
-      if (metric == nullptr) { continue; }
-      metric->Init("training", train_data_->metadata(),
-        train_data_->num_data());
-      train_metric_.push_back(std::move(metric));
-    }
-    train_metric_.shrink_to_fit();
-    // add metric for validation data
-    for (size_t i = 0; i < valid_datas_.size(); ++i) {
-      valid_metrics_.emplace_back();
-      for (auto metric_type : config_.metric_types) {
-        auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_.metric_config));
-        if (metric == nullptr) { continue; }
-        metric->Init(valid_names[i].c_str(),
-          valid_datas_[i]->metadata(),
-          valid_datas_[i]->num_data());
-        valid_metrics_.back().push_back(std::move(metric));
-      }
-      valid_metrics_.back().shrink_to_fit();
-    }
-    valid_metrics_.shrink_to_fit();
-    // initialize the objective function
-    if (objective_fun_ != nullptr) {
-      objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
-    }
+    boosting_.reset(Boosting::CreateBoosting(config_.boosting_type, nullptr));
+    ConstructObjectAndTrainingMetrics(train_data);
     // initialize the boosting
-    boosting_->Init(&config_.boosting_config, train_data_, objective_fun_.get(),
+    boosting_->Init(&config_.boosting_config, train_data, objective_fun_.get(),
       Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
-    // add validation data into boosting
-    for (size_t i = 0; i < valid_datas_.size(); ++i) {
-      boosting_->AddDataset(valid_datas_[i],
-        Common::ConstPtrInVectorWrapper<Metric>(valid_metrics_[i]));
-    }
+  }
+
+  void MergeFrom(const Booster* other) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    boosting_->MergeFrom(other->boosting_.get());
   }
 
   ~Booster() {
 
   }
 
+  void ResetTrainingData(const Dataset* train_data) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    train_data_ = train_data;
+    ConstructObjectAndTrainingMetrics(train_data_);
+    // initialize the boosting
+    boosting_->ResetTrainingData(&config_.boosting_config, train_data_, 
+      objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
+  }
+
+  void ResetConfig(const char* parameters) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto param = ConfigBase::Str2Map(parameters);
+    if (param.count("num_class")) {
+      Log::Fatal("cannot change num class during training");
+    }
+    if (param.count("boosting_type")) {
+      Log::Fatal("cannot change boosting_type during training");
+    }
+    config_.Set(param);
+    if (param.size() == 1 && (param.count("learning_rate") || param.count("shrinkage_rate"))) {
+      // only need to set learning rate
+      boosting_->ResetShrinkageRate(config_.boosting_config.learning_rate);
+    } else {
+      ResetTrainingData(train_data_);
+    }
+  }
+
+  void AddValidData(const Dataset* valid_data) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    valid_metrics_.emplace_back();
+    for (auto metric_type : config_.metric_types) {
+      auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_.metric_config));
+      if (metric == nullptr) { continue; }
+      metric->Init(valid_data->metadata(), valid_data->num_data());
+      valid_metrics_.back().push_back(std::move(metric));
+    }
+    valid_metrics_.back().shrink_to_fit();
+    boosting_->AddValidDataset(valid_data,
+      Common::ConstPtrInVectorWrapper<Metric>(valid_metrics_.back()));
+  }
   bool TrainOneIter() {
+    std::lock_guard<std::mutex> lock(mutex_);
     return boosting_->TrainOneIter(nullptr, nullptr, false);
   }
 
   bool TrainOneIter(const float* gradients, const float* hessians) {
+    std::lock_guard<std::mutex> lock(mutex_);
     return boosting_->TrainOneIter(gradients, hessians, false);
   }
 
-  void PrepareForPrediction(int num_used_model, int predict_type) {
-    boosting_->SetNumUsedModel(num_used_model);
+  void RollbackOneIter() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    boosting_->RollbackOneIter();
+  }
+
+  void PrepareForPrediction(int num_iteration, int predict_type) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    boosting_->SetNumIterationForPred(num_iteration);
     bool is_predict_leaf = false;
     bool is_raw_score = false;
     if (predict_type == C_API_PREDICT_LEAF_INDEX) {
@@ -109,6 +123,10 @@ public:
     predictor_.reset(new Predictor(boosting_.get(), is_raw_score, is_predict_leaf));
   }
 
+  void GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len) {
+    boosting_->GetPredictAt(data_idx, out_result, out_len);
+  }
+
   std::vector<double> Predict(const std::vector<std::pair<int, double>>& features) {
     return predictor_->GetPredictFunction()(features);
   }
@@ -117,25 +135,64 @@ public:
     predictor_->Predict(data_filename, result_filename, data_has_header);
   }
 
-  void SaveModelToFile(int num_used_model, const char* filename) {
-    boosting_->SaveModelToFile(num_used_model, true, filename);
+  void SaveModelToFile(int num_iteration, const char* filename) {
+    boosting_->SaveModelToFile(num_iteration, filename);
   }
-  
+
+  std::string DumpModel() {
+    return boosting_->DumpModel();
+  }
+
+  int GetEvalCounts() const {
+    int ret = 0;
+    for (const auto& metric : train_metric_) {
+      ret += static_cast<int>(metric->GetName().size());
+    }
+    return ret;
+  }
+
+  int GetEvalNames(char** out_strs) const {
+    int idx = 0;
+    for (const auto& metric : train_metric_) {
+      for (const auto& name : metric->GetName()) {
+        std::strcpy(out_strs[idx], name.c_str());
+        ++idx;
+      }
+    }
+    return idx;
+  }
+
   const Boosting* GetBoosting() const { return boosting_.get(); }
-
-  const float* GetTrainingScore(int* out_len) const { return boosting_->GetTrainingScore(out_len); }
-
-  const inline int NumberOfClasses() const { return boosting_->NumberOfClasses(); }
-
+  
 private:
 
+  void ConstructObjectAndTrainingMetrics(const Dataset* train_data) {
+    // create objective function
+    objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
+      config_.objective_config));
+    if (objective_fun_ == nullptr) {
+      Log::Warning("Using self-defined objective functions");
+    }
+    // create training metric
+    train_metric_.clear();
+    for (auto metric_type : config_.metric_types) {
+      auto metric = std::unique_ptr<Metric>(
+        Metric::CreateMetric(metric_type, config_.metric_config));
+      if (metric == nullptr) { continue; }
+      metric->Init(train_data->metadata(), train_data->num_data());
+      train_metric_.push_back(std::move(metric));
+    }
+    train_metric_.shrink_to_fit();
+    // initialize the objective function
+    if (objective_fun_ != nullptr) {
+      objective_fun_->Init(train_data->metadata(), train_data->num_data());
+    }
+  }
+
+  const Dataset* train_data_;
   std::unique_ptr<Boosting> boosting_;
   /*! \brief All configs */
   OverallConfig config_;
-  /*! \brief Training data */
-  const Dataset* train_data_;
-  /*! \brief Validation data */
-  std::vector<const Dataset*> valid_datas_;
   /*! \brief Metric for training data */
   std::vector<std::unique_ptr<Metric>> train_metric_;
   /*! \brief Metrics for validation data */
@@ -144,7 +201,8 @@ private:
   std::unique_ptr<ObjectiveFunction> objective_fun_;
   /*! \brief Using predictor for prediction task */
   std::unique_ptr<Predictor> predictor_;
-
+  /*! \brief mutex for threading safe call */
+  std::mutex mutex_;
 };
 
 }
@@ -152,17 +210,18 @@ private:
 using namespace LightGBM;
 
 DllExport const char* LGBM_GetLastError() {
-  return LastErrorMsg().c_str();
+  return LastErrorMsg();
 }
 
-DllExport int LGBM_CreateDatasetFromFile(const char* filename,
+DllExport int LGBM_DatasetCreateFromFile(const char* filename,
   const char* parameters,
   const DatesetHandle* reference,
   DatesetHandle* out) {
   API_BEGIN();
-  OverallConfig config;
-  config.LoadFromString(parameters);
-  DatasetLoader loader(config.io_config, nullptr);
+  auto param = ConfigBase::Str2Map(parameters);
+  IOConfig io_config;
+  io_config.Set(param);
+  DatasetLoader loader(io_config, nullptr);
   loader.SetHeader(filename);
   if (reference == nullptr) {
     *out = loader.LoadFromFile(filename);
@@ -173,16 +232,7 @@ DllExport int LGBM_CreateDatasetFromFile(const char* filename,
   API_END();
 }
 
-DllExport int LGBM_CreateDatasetFromBinaryFile(const char* filename,
-  DatesetHandle* out) {
-  API_BEGIN();
-  OverallConfig config;
-  DatasetLoader loader(config.io_config, nullptr);
-  *out = loader.LoadFromBinFile(filename, 0, 1);
-  API_END();
-}
-
-DllExport int LGBM_CreateDatasetFromMat(const void* data,
+DllExport int LGBM_DatasetCreateFromMat(const void* data,
   int data_type,
   int32_t nrow,
   int32_t ncol,
@@ -191,15 +241,16 @@ DllExport int LGBM_CreateDatasetFromMat(const void* data,
   const DatesetHandle* reference,
   DatesetHandle* out) {
   API_BEGIN();
-  OverallConfig config;
-  config.LoadFromString(parameters);
-  DatasetLoader loader(config.io_config, nullptr);
+  auto param = ConfigBase::Str2Map(parameters);
+  IOConfig io_config;
+  io_config.Set(param);
+  DatasetLoader loader(io_config, nullptr);
   std::unique_ptr<Dataset> ret;
   auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
   if (reference == nullptr) {
     // sample data first
-    Random rand(config.io_config.data_random_seed);
-    const int sample_cnt = static_cast<int>(nrow < config.io_config.bin_construct_sample_cnt ? nrow : config.io_config.bin_construct_sample_cnt);
+    Random rand(io_config.data_random_seed);
+    const int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
     std::vector<std::vector<double>> sample_values(ncol);
     for (size_t i = 0; i < sample_indices.size(); ++i) {
@@ -213,10 +264,10 @@ DllExport int LGBM_CreateDatasetFromMat(const void* data,
     }
     ret.reset(loader.CostructFromSampleData(sample_values, sample_cnt, nrow));
   } else {
-    ret.reset(new Dataset(nrow, config.io_config.num_class));
+    ret.reset(new Dataset(nrow, io_config.num_class));
     ret->CopyFeatureMapperFrom(
       reinterpret_cast<const Dataset*>(*reference),
-      config.io_config.is_enable_sparse);
+      io_config.is_enable_sparse);
   }
 
 #pragma omp parallel for schedule(guided)
@@ -230,7 +281,7 @@ DllExport int LGBM_CreateDatasetFromMat(const void* data,
   API_END();
 }
 
-DllExport int LGBM_CreateDatasetFromCSR(const void* indptr,
+DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
   int indptr_type,
   const int32_t* indices,
   const void* data,
@@ -242,16 +293,17 @@ DllExport int LGBM_CreateDatasetFromCSR(const void* indptr,
   const DatesetHandle* reference,
   DatesetHandle* out) {
   API_BEGIN();
-  OverallConfig config;
-  config.LoadFromString(parameters);
-  DatasetLoader loader(config.io_config, nullptr);
+  auto param = ConfigBase::Str2Map(parameters);
+  IOConfig io_config;
+  io_config.Set(param);
+  DatasetLoader loader(io_config, nullptr);
   std::unique_ptr<Dataset> ret;
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
   if (reference == nullptr) {
     // sample data first
-    Random rand(config.io_config.data_random_seed);
-    const int sample_cnt = static_cast<int>(nrow < config.io_config.bin_construct_sample_cnt ? nrow : config.io_config.bin_construct_sample_cnt);
+    Random rand(io_config.data_random_seed);
+    const int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
     std::vector<std::vector<double>> sample_values;
     for (size_t i = 0; i < sample_indices.size(); ++i) {
@@ -274,10 +326,10 @@ DllExport int LGBM_CreateDatasetFromCSR(const void* indptr,
     CHECK(num_col >= static_cast<int>(sample_values.size()));
     ret.reset(loader.CostructFromSampleData(sample_values, sample_cnt, nrow));
   } else {
-    ret.reset(new Dataset(nrow, config.io_config.num_class));
+    ret.reset(new Dataset(nrow, io_config.num_class));
     ret->CopyFeatureMapperFrom(
       reinterpret_cast<const Dataset*>(*reference),
-      config.io_config.is_enable_sparse);
+      io_config.is_enable_sparse);
   }
 
 #pragma omp parallel for schedule(guided)
@@ -291,7 +343,7 @@ DllExport int LGBM_CreateDatasetFromCSR(const void* indptr,
   API_END();
 }
 
-DllExport int LGBM_CreateDatasetFromCSC(const void* col_ptr,
+DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   int col_ptr_type,
   const int32_t* indices,
   const void* data,
@@ -303,17 +355,18 @@ DllExport int LGBM_CreateDatasetFromCSC(const void* col_ptr,
   const DatesetHandle* reference,
   DatesetHandle* out) {
   API_BEGIN();
-  OverallConfig config;
-  config.LoadFromString(parameters);
-  DatasetLoader loader(config.io_config, nullptr);
+  auto param = ConfigBase::Str2Map(parameters);
+  IOConfig io_config;
+  io_config.Set(param);
+  DatasetLoader loader(io_config, nullptr);
   std::unique_ptr<Dataset> ret;
   auto get_col_fun = ColumnFunctionFromCSC(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem);
   int32_t nrow = static_cast<int32_t>(num_row);
   if (reference == nullptr) {
     Log::Warning("Construct from CSC format is not efficient");
     // sample data first
-    Random rand(config.io_config.data_random_seed);
-    const int sample_cnt = static_cast<int>(nrow < config.io_config.bin_construct_sample_cnt ? nrow : config.io_config.bin_construct_sample_cnt);
+    Random rand(io_config.data_random_seed);
+    const int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
     std::vector<std::vector<double>> sample_values(ncol_ptr - 1);
 #pragma omp parallel for schedule(guided)
@@ -323,10 +376,10 @@ DllExport int LGBM_CreateDatasetFromCSC(const void* col_ptr,
     }
     ret.reset(loader.CostructFromSampleData(sample_values, sample_cnt, nrow));
   } else {
-    ret.reset(new Dataset(nrow, config.io_config.num_class));
+    ret.reset(new Dataset(nrow, io_config.num_class));
     ret->CopyFeatureMapperFrom(
       reinterpret_cast<const Dataset*>(*reference),
-      config.io_config.is_enable_sparse);
+      io_config.is_enable_sparse);
   }
 
 #pragma omp parallel for schedule(guided)
@@ -335,6 +388,26 @@ DllExport int LGBM_CreateDatasetFromCSC(const void* col_ptr,
     auto one_col = get_col_fun(i);
     ret->PushOneColumn(tid, i, one_col);
   }
+  ret->FinishLoad();
+  *out = ret.release();
+  API_END();
+}
+
+DllExport int LGBM_DatasetGetSubset(
+  const DatesetHandle* handle,
+  const int32_t* used_row_indices,
+  int32_t num_used_row_indices,
+  const char* parameters,
+  DatesetHandle* out) {
+  API_BEGIN();
+  auto param = ConfigBase::Str2Map(parameters);
+  IOConfig io_config;
+  io_config.Set(param);
+  auto full_dataset = reinterpret_cast<const Dataset*>(*handle);
+  auto ret = std::unique_ptr<Dataset>(
+    full_dataset->Subset(used_row_indices,
+      num_used_row_indices, 
+      io_config.is_enable_sparse));
   ret->FinishLoad();
   *out = ret.release();
   API_END();
@@ -387,6 +460,7 @@ DllExport int LGBM_DatasetGetField(DatesetHandle handle,
     is_success = true;
   }
   if (!is_success) { throw std::runtime_error("Field not found"); }
+  if (*out_ptr == nullptr) { *out_len = 0; }
   API_END();
 }
 
@@ -410,34 +484,71 @@ DllExport int LGBM_DatasetGetNumFeature(DatesetHandle handle,
 // ---- start of booster
 
 DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
-  const DatesetHandle valid_datas[],
-  const char* valid_names[],
-  int n_valid_datas,
   const char* parameters,
   BoosterHandle* out) {
   API_BEGIN();
   const Dataset* p_train_data = reinterpret_cast<const Dataset*>(train_data);
-  std::vector<const Dataset*> p_valid_datas;
-  std::vector<std::string> p_valid_names;
-  for (int i = 0; i < n_valid_datas; ++i) {
-    p_valid_datas.emplace_back(reinterpret_cast<const Dataset*>(valid_datas[i]));
-    p_valid_names.emplace_back(valid_names[i]);
-  }
-  *out = new Booster(p_train_data, p_valid_datas, p_valid_names, parameters);
+  auto ret = std::unique_ptr<Booster>(new Booster(p_train_data, parameters));
+  *out = ret.release();
   API_END();
 }
 
-DllExport int LGBM_BoosterLoadFromModelfile(
+DllExport int LGBM_BoosterCreateFromModelfile(
   const char* filename,
+  int64_t* out_num_iterations,
   BoosterHandle* out) {
   API_BEGIN();
-  *out = new Booster(filename);
+  auto ret = std::unique_ptr<Booster>(new Booster(filename));
+  *out_num_iterations = static_cast<int64_t>(ret->GetBoosting()->NumberOfTotalModel()
+    / ret->GetBoosting()->NumberOfClasses());
+  *out = ret.release();
   API_END();
 }
 
 DllExport int LGBM_BoosterFree(BoosterHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Booster*>(handle);
+  API_END();
+}
+
+DllExport int LGBM_BoosterMerge(BoosterHandle handle,
+  BoosterHandle other_handle) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  Booster* ref_other_booster = reinterpret_cast<Booster*>(other_handle);
+  ref_booster->MergeFrom(ref_other_booster);
+  API_END();
+}
+
+DllExport int LGBM_BoosterAddValidData(BoosterHandle handle,
+  const DatesetHandle valid_data) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  const Dataset* p_dataset = reinterpret_cast<const Dataset*>(valid_data);
+  ref_booster->AddValidData(p_dataset);
+  API_END();
+}
+
+DllExport int LGBM_BoosterResetTrainingData(BoosterHandle handle,
+  const DatesetHandle train_data) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  const Dataset* p_dataset = reinterpret_cast<const Dataset*>(train_data);
+  ref_booster->ResetTrainingData(p_dataset);
+  API_END();
+}
+
+DllExport int LGBM_BoosterResetParameter(BoosterHandle handle, const char* parameters) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  ref_booster->ResetConfig(parameters);
+  API_END();
+}
+
+DllExport int LGBM_BoosterGetNumClasses(BoosterHandle handle, int64_t* out_len) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_len = ref_booster->GetBoosting()->NumberOfClasses();
   API_END();
 }
 
@@ -466,14 +577,50 @@ DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
   API_END();
 }
 
-DllExport int LGBM_BoosterEval(BoosterHandle handle,
-  int data,
+DllExport int LGBM_BoosterRollbackOneIter(BoosterHandle handle) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  ref_booster->RollbackOneIter();
+  API_END();
+}
+
+DllExport int LGBM_BoosterGetCurrentIteration(BoosterHandle handle, int64_t* out_iteration) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_iteration = ref_booster->GetBoosting()->GetCurrentIteration();
+  API_END();
+}
+/*!
+* \brief Get number of eval
+* \return total number of eval result
+*/
+DllExport int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int64_t* out_len) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_len = ref_booster->GetEvalCounts();
+  API_END();
+}
+
+/*!
+* \brief Get number of eval
+* \return total number of eval result
+*/
+DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int64_t* out_len, char** out_strs) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_len = ref_booster->GetEvalNames(out_strs);
+  API_END();
+}
+
+
+DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
+  int data_idx,
   int64_t* out_len,
   float* out_results) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto boosting = ref_booster->GetBoosting();
-  auto result_buf = boosting->GetEvalAt(data);
+  auto result_buf = boosting->GetEvalAt(data_idx);
   *out_len = static_cast<int64_t>(result_buf.size());
   for (size_t i = 0; i < result_buf.size(); ++i) {
     (out_results)[i] = static_cast<float>(result_buf[i]);
@@ -481,39 +628,27 @@ DllExport int LGBM_BoosterEval(BoosterHandle handle,
   API_END();
 }
 
-DllExport int LGBM_BoosterGetScore(BoosterHandle handle,
-  int64_t* out_len,
-  const float** out_result) {
-  API_BEGIN();
-  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  int len = 0;
-  *out_result = ref_booster->GetTrainingScore(&len);
-  *out_len = static_cast<int64_t>(len);
-  API_END();
-}
-
 DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
-  int data,
+  int data_idx,
   int64_t* out_len,
   float* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  auto boosting = ref_booster->GetBoosting();
   int len = 0;
-  boosting->GetPredictAt(data, out_result, &len);
+  ref_booster->GetPredictAt(data_idx, out_result, &len);
   *out_len = static_cast<int64_t>(len);
   API_END();
 }
 
 DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
-  int predict_type,
-  int64_t n_used_trees,
-  int data_has_header,
   const char* data_filename,
+  int data_has_header,
+  int predict_type,
+  int64_t num_iteration,
   const char* result_filename) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  ref_booster->PrepareForPrediction(static_cast<int>(n_used_trees), predict_type);
+  ref_booster->PrepareForPrediction(static_cast<int>(num_iteration), predict_type);
   bool bool_data_has_header = data_has_header > 0 ? true : false;
   ref_booster->PredictForFile(data_filename, result_filename, bool_data_has_header);
   API_END();
@@ -529,23 +664,32 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   int64_t nelem,
   int64_t,
   int predict_type,
-  int64_t n_used_trees,
-  double* out_result) {
+  int64_t num_iteration,
+  int64_t* out_len,
+  float* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  ref_booster->PrepareForPrediction(static_cast<int>(n_used_trees), predict_type);
+  ref_booster->PrepareForPrediction(static_cast<int>(num_iteration), predict_type);
 
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
-  int num_class = ref_booster->NumberOfClasses();
+  int num_preb_in_one_row = ref_booster->GetBoosting()->NumberOfClasses();
+  if (predict_type == C_API_PREDICT_LEAF_INDEX) {
+    if (num_iteration > 0) {
+      num_preb_in_one_row *= static_cast<int>(num_iteration);
+    } else {
+      num_preb_in_one_row *= ref_booster->GetBoosting()->NumberOfTotalModel() / num_preb_in_one_row;
+    }
+  }
   int nrow = static_cast<int>(nindptr - 1);
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < nrow; ++i) {
     auto one_row = get_row_fun(i);
     auto predicton_result = ref_booster->Predict(one_row);
-    for (int j = 0; j < num_class; ++j) {
-      out_result[i * num_class + j] = predicton_result[j];
+    for (int j = 0; j < static_cast<int>(predicton_result.size()); ++j) {
+      out_result[i * num_preb_in_one_row + j] = static_cast<float>(predicton_result[j]);
     }
   }
+  *out_len = nrow * num_preb_in_one_row;
   API_END();
 }
 
@@ -556,31 +700,54 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
   int32_t ncol,
   int is_row_major,
   int predict_type,
-  int64_t n_used_trees,
-  double* out_result) {
+  int64_t num_iteration,
+  int64_t* out_len,
+  float* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  ref_booster->PrepareForPrediction(static_cast<int>(n_used_trees), predict_type);
+  ref_booster->PrepareForPrediction(static_cast<int>(num_iteration), predict_type);
 
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
-  int num_class = ref_booster->NumberOfClasses();
+  int num_preb_in_one_row = ref_booster->GetBoosting()->NumberOfClasses();
+  if (predict_type == C_API_PREDICT_LEAF_INDEX) {
+    if (num_iteration > 0) {
+      num_preb_in_one_row *= static_cast<int>(num_iteration);
+    } else {
+      num_preb_in_one_row *= ref_booster->GetBoosting()->NumberOfTotalModel() / num_preb_in_one_row;
+    }
+  }
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < nrow; ++i) {
     auto one_row = get_row_fun(i);
     auto predicton_result = ref_booster->Predict(one_row);
-    for (int j = 0; j < num_class; ++j) {
-      out_result[i * num_class + j] = predicton_result[j];
+    for (int j = 0; j < static_cast<int>(predicton_result.size()); ++j) {
+      out_result[i * num_preb_in_one_row + j] = static_cast<float>(predicton_result[j]);
     }
   }
+  *out_len = nrow * num_preb_in_one_row;
   API_END();
 }
 
 DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
-  int num_used_model,
+  int num_iteration,
   const char* filename) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  ref_booster->SaveModelToFile(num_used_model, filename);
+  ref_booster->SaveModelToFile(num_iteration, filename);
+  API_END();
+}
+
+DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
+  int buffer_len,
+  int64_t* out_len,
+  char** out_str) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  std::string model = ref_booster->DumpModel();
+  *out_len = static_cast<int64_t>(model.size());
+  if (*out_len <= buffer_len) {
+    std::strcpy(*out_str, model.c_str());
+  }
   API_END();
 }
 

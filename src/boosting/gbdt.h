@@ -35,12 +35,53 @@ public:
   void Init(const BoostingConfig* gbdt_config, const Dataset* train_data, const ObjectiveFunction* object_function,
                              const std::vector<const Metric*>& training_metrics)
                                                                        override;
+
+  /*!
+  * \brief Merge model from other boosting object
+           Will insert to the front of current boosting object
+  * \param other
+  */
+  void MergeFrom(const Boosting* other) override {
+    auto other_gbdt = reinterpret_cast<const GBDT*>(other);
+    // tmp move to other vector
+    auto original_models = std::move(models_);
+    models_ = std::vector<std::unique_ptr<Tree>>();
+    // push model from other first
+    for (const auto& tree : other_gbdt->models_) {
+      auto new_tree = std::unique_ptr<Tree>(new Tree(*(tree.get())));
+      models_.push_back(std::move(new_tree));
+    }
+    num_init_iteration_ = static_cast<int>(models_.size()) / num_class_;
+    // push model in current object
+    for (const auto& tree : original_models) {
+      auto new_tree = std::unique_ptr<Tree>(new Tree(*(tree.get())));
+      models_.push_back(std::move(new_tree));
+    }
+    num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_class_;
+  }
+
+  /*!
+  * \brief Reset training data for current boosting
+  * \param train_data Training data
+  * \param object_function Training objective function
+  * \param training_metrics Training metric
+  */
+  void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function, const std::vector<const Metric*>& training_metrics) override;
+
+  /*!
+  * \brief Reset shrinkage_rate data for current boosting
+  * \param shrinkage_rate Configs for boosting
+  */
+  void ResetShrinkageRate(double shrinkage_rate) override {
+    shrinkage_rate_ = shrinkage_rate;
+  }
+
   /*!
   * \brief Adding a validation dataset
   * \param valid_data Validation dataset
   * \param valid_metrics Metrics for validation dataset
   */
-  void AddDataset(const Dataset* valid_data,
+  void AddValidDataset(const Dataset* valid_data,
        const std::vector<const Metric*>& valid_metrics) override;
   /*!
   * \brief Training logic
@@ -50,6 +91,13 @@ public:
   * \return True if meet early stopping or cannot boosting
   */
   virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override;
+
+  /*!
+  * \brief Rollback one iteration
+  */
+  void RollbackOneIter() override;
+
+  int GetCurrentIteration() const override { return iter_ + num_init_iteration_; }
 
   bool EvalAndCheckEarlyStopping() override;
 
@@ -73,40 +121,48 @@ public:
   * \param result used to store prediction result, should allocate memory before call this function
   * \param out_len lenght of returned score
   */
-  void GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len) const override;
+  void GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len) override;
 
   /*!
-  * \brief Predtion for one record without sigmoid transformation
+  * \brief Prediction for one record without sigmoid transformation
   * \param feature_values Feature value on this record
   * \return Prediction result for this record
   */
   std::vector<double> PredictRaw(const double* feature_values) const override;
 
   /*!
-  * \brief Predtion for one record with sigmoid transformation if enabled
+  * \brief Prediction for one record with sigmoid transformation if enabled
   * \param feature_values Feature value on this record
   * \return Prediction result for this record
   */
   std::vector<double> Predict(const double* feature_values) const override;
-  
+
   /*!
-  * \brief Predtion for one record with leaf index
+  * \brief Prediction for one record with leaf index
   * \param feature_values Feature value on this record
   * \return Predicted leaf index for this record
   */
   std::vector<int> PredictLeafIndex(const double* value) const override;
-  
+
   /*!
-  * \brief save model to file
-  * \param num_used_model number of model that want to save, -1 means save all
-  * \param is_finish is training finished or not
-  * \param filename filename that want to save to
+  * \brief Dump model to json format string
+  * \return Json format string of model
   */
-  virtual void SaveModelToFile(int num_used_model, bool is_finish, const char* filename) override;
+  std::string DumpModel() const override;
+
+  /*!
+  * \brief Save model to file
+  * \param num_used_model Number of model that want to save, -1 means save all
+  * \param is_finish Is training finished or not
+  * \param filename Filename that want to save to
+  */
+  virtual void SaveModelToFile(int num_iterations, const char* filename) const override ;
+
   /*!
   * \brief Restore from a serialized string
   */
   void LoadModelFromString(const std::string& model_str) override;
+
   /*!
   * \brief Get max feature index of this model
   * \return Max feature index of this model
@@ -119,11 +175,12 @@ public:
   */
   inline int LabelIdx() const override { return label_idx_; }
 
+
   /*!
   * \brief Get number of weak sub-models
   * \return Number of weak sub-models
   */
-  inline int NumberOfSubModels() const override { return static_cast<int>(models_.size()); }
+  inline int NumberOfTotalModel() const override { return static_cast<int>(models_.size()); }
 
   /*!
   * \brief Get number of classes
@@ -132,14 +189,18 @@ public:
   inline int NumberOfClasses() const override { return num_class_; }
 
   /*!
-  * \brief Set number of used model for prediction
+  * \brief Set number of iterations for prediction
   */
-  inline void SetNumUsedModel(int num_used_model) {
-    if (num_used_model >= 0) {
-      num_used_model_ = static_cast<int>(num_used_model / num_class_);
+  inline void SetNumIterationForPred(int num_iteration) override {
+    if (num_iteration > 0) {
+      num_iteration_for_pred_ = num_iteration;
+    } else {
+      num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_class_;
     }
+    num_iteration_for_pred_ = std::min(num_iteration_for_pred_, 
+      static_cast<int>(models_.size()) / num_class_);
   }
-  
+
   /*!
   * \brief Get Type name of this boosting object
   */
@@ -178,7 +239,7 @@ protected:
   * \brief Calculate feature importances
   * \param last_iter Last tree use to calculate
   */
-  std::string FeatureImportance() const;
+  std::vector<std::pair<size_t, std::string>> FeatureImportance() const;
   /*! \brief current iteration */
   int iter_;
   /*! \brief Pointer to training data */
@@ -218,7 +279,7 @@ protected:
   std::vector<data_size_t> bag_data_indices_;
   /*! \brief Number of in-bag data */
   data_size_t bag_data_cnt_;
-  /*! \brief Number of traning data */
+  /*! \brief Number of training data */
   data_size_t num_data_;
   /*! \brief Number of classes */
   int num_class_;
@@ -226,19 +287,17 @@ protected:
   Random random_;
   /*!
   *   \brief Sigmoid parameter, used for prediction.
-  *          if > 0 meas output score will transform by sigmoid function
+  *          if > 0 means output score will transform by sigmoid function
   */
   double sigmoid_;
   /*! \brief Index of label column */
   data_size_t label_idx_;
-  /*! \brief Saved number of models */
-  int saved_model_size_;
-  /*! \brief File to write models */
-  std::ofstream model_output_file_;
   /*! \brief number of used model */
-  int num_used_model_;
+  int num_iteration_for_pred_;
   /*! \brief Shrinkage rate for one iteration */
   double shrinkage_rate_;
+  /*! \brief Number of loaded initial models */
+  int num_init_iteration_;
 };
 
 }  // namespace LightGBM

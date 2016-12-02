@@ -72,6 +72,8 @@ public:
   inline bool GetBool(
     const std::unordered_map<std::string, std::string>& params,
     const std::string& name, bool* out);
+
+  static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
 };
 
 /*! \brief Types of boosting */
@@ -97,7 +99,7 @@ public:
   std::string output_result = "LightGBM_predict_result.txt";
   std::string input_model = "";
   int verbosity = 1;
-  int num_model_predict = NO_LIMIT;
+  int num_iteration_predict = -1;
   bool is_pre_partition = false;
   bool is_enable_sparse = true;
   bool use_two_round_loading = false;
@@ -136,6 +138,8 @@ public:
   bool is_unbalance = false;
   // for multiclass
   int num_class = 1;
+  // Balancing of positive and negative weights
+  double scale_pos_weight = 1.0f;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -164,12 +168,12 @@ public:
   int feature_fraction_seed = 2;
   double feature_fraction = 1.0f;
   // max cache size(unit:MB) for historical histogram. < 0 means not limit
-  double histogram_pool_size = NO_LIMIT;
+  double histogram_pool_size = -1.0f;
   // max depth of tree model.
   // Still grow tree by leaf-wise, but limit the max depth to avoid over-fitting
   // And the max leaves will be min(num_leaves, pow(2, max_depth - 1))
   // max_depth < 0 means not limit
-  int max_depth = NO_LIMIT;
+  int max_depth = -1;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -231,7 +235,7 @@ public:
   MetricConfig metric_config;
 
   void Set(const std::unordered_map<std::string, std::string>& params) override;
-  void LoadFromString(const char* str);
+
 private:
   void GetBoostingType(const std::unordered_map<std::string, std::string>& params);
 
@@ -328,17 +332,22 @@ struct ParameterAlias {
       { "ndcg_at", "ndcg_eval_at" },
       { "min_data_per_leaf", "min_data_in_leaf" },
       { "min_data", "min_data_in_leaf" },
+      { "min_child_samples", "min_data_in_leaf" },
       { "min_sum_hessian_per_leaf", "min_sum_hessian_in_leaf" },
       { "min_sum_hessian", "min_sum_hessian_in_leaf" },
       { "min_hessian", "min_sum_hessian_in_leaf" },
+      { "min_child_weight", "min_sum_hessian_in_leaf" },
       { "num_leaf", "num_leaves" },
       { "sub_feature", "feature_fraction" },
+      { "colsample_bytree", "feature_fraction" },
       { "num_iteration", "num_iterations" },
       { "num_tree", "num_iterations" },
       { "num_round", "num_iterations" },
       { "num_trees", "num_iterations" },
       { "num_rounds", "num_iterations" },
       { "sub_row", "bagging_fraction" },
+      { "subsample", "bagging_fraction" },
+      { "subsample_freq", "bagging_freq" },
       { "shrinkage_rate", "learning_rate" },
       { "tree", "tree_learner" },
       { "num_machine", "num_machines" },
@@ -361,6 +370,9 @@ struct ParameterAlias {
       { "blacklist", "ignore_column" },
       { "predict_raw_score", "is_predict_raw_score" },
       { "predict_leaf_index", "is_predict_leaf_index" }, 
+      { "min_split_gain", "min_gain_to_split" },
+      { "reg_alpha", "lambda_l1" },
+      { "reg_lambda", "lambda_l2" },
       { "num_classes", "num_class" }
     });
     std::unordered_map<std::string, std::string> tmp_map;

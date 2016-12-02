@@ -279,7 +279,7 @@ inline VAL_T SparseBinIterator<VAL_T>::InnerGet(data_size_t idx) {
   while (cur_pos_ < idx && i_delta_ < bin_data_->num_vals_) {
     bin_data_->NextNonzero(&i_delta_, &cur_pos_);
   }
-  if (cur_pos_ == idx && i_delta_ < bin_data_->num_vals_) {
+  if (cur_pos_ == idx && i_delta_ < bin_data_->num_vals_ && i_delta_ >= 0) {
     return bin_data_->vals_[i_delta_];
   } else {
     return 0;

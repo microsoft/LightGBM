@@ -63,6 +63,13 @@ public:
   ~Feature() {
   }
 
+  bool CheckAlign(const Feature& other) const {
+    if (feature_index_ != other.feature_index_) {
+      return false;
+    }
+    return bin_mapper_->CheckAlign(*(other.bin_mapper_.get()));
+  }
+
   /*!
   * \brief Push one record, will auto convert to bin and push to bin data
   * \param tid Thread id
@@ -71,6 +78,9 @@ public:
   */
   inline void PushData(int tid, data_size_t line_idx, double value) {
     unsigned int bin = bin_mapper_->ValueToBin(value);
+    bin_data_->Push(tid, line_idx, bin);
+  }
+  inline void PushBin(int tid, data_size_t line_idx, unsigned int bin) {
     bin_data_->Push(tid, line_idx, bin);
   }
   inline void FinishLoad() { bin_data_->FinishLoad(); }

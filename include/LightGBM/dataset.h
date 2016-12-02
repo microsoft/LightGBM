@@ -13,6 +13,7 @@
 #include <functional>
 #include <string>
 #include <unordered_set>
+#include <mutex>
 
 namespace LightGBM {
 
@@ -46,6 +47,13 @@ public:
   */
   void Init(const char* data_filename, const int num_class);
   /*!
+  * \brief init as subset
+  * \param metadata Filename of data
+  * \param used_indices 
+  * \param num_used_indices
+  */
+  void Init(const Metadata& metadata, const data_size_t* used_indices, data_size_t num_used_indices);
+  /*!
   * \brief Initial with binary memory
   * \param memory Pointer to memory
   */
@@ -76,12 +84,13 @@ public:
   void CheckOrPartition(data_size_t num_all_data,
     const std::vector<data_size_t>& used_data_indices);
 
-
   void SetLabel(const float* label, data_size_t len);
 
   void SetWeights(const float* weights, data_size_t len);
 
   void SetQueryBoundaries(const data_size_t* query_boundaries, data_size_t len);
+
+  void SetQueryId(const data_size_t* query_id, data_size_t len);
 
   /*!
   * \brief Set initial scores
@@ -141,8 +150,13 @@ public:
   * \brief Get weights, if not exists, will return nullptr
   * \return Pointer of weights
   */
-  inline const float* weights()
-            const { return weights_.data(); }
+  inline const float* weights() const {
+    if (weights_.size() > 0) {
+      return weights_.data();
+    } else {
+      return nullptr;
+    }
+  }
 
   /*!
   * \brief Get data boundaries on queries, if not exists, will return nullptr
@@ -151,8 +165,13 @@ public:
   *        is the data indices for query i.
   * \return Pointer of data boundaries on queries
   */
-  inline const data_size_t* query_boundaries()
-           const { return query_boundaries_.data(); }
+  inline const data_size_t* query_boundaries() const { 
+    if (query_boundaries_.size() > 0) {
+      return query_boundaries_.data();
+    } else {
+      return nullptr;
+    }
+  }
 
   /*!
   * \brief Get Number of queries
@@ -164,13 +183,25 @@ public:
   * \brief Get weights for queries, if not exists, will return nullptr
   * \return Pointer of weights for queries
   */
-  inline const float* query_weights() const { return query_weights_.data(); }
+  inline const float* query_weights() const { 
+    if (query_weights_.size() > 0) {
+      return query_weights_.data();
+    } else {
+      return nullptr;
+    }
+  }
 
   /*!
   * \brief Get initial scores, if not exists, will return nullptr
   * \return Pointer of initial scores
   */
-  inline const float* init_score() const { return init_score_.data(); }
+  inline const float* init_score() const { 
+    if (init_score_.size() > 0) {
+      return init_score_.data();
+    } else {
+      return nullptr;
+    }
+  }
 
   /*! \brief Disable copy */
   Metadata& operator=(const Metadata&) = delete;
@@ -210,6 +241,8 @@ private:
   std::vector<float> init_score_;
   /*! \brief Queries data */
   std::vector<data_size_t> queries_;
+  /*! \brief mutex for threading safe call */
+  std::mutex mutex_;
 };
 
 
@@ -253,6 +286,27 @@ public:
   /*! \brief Destructor */
   ~Dataset();
 
+  bool CheckAlign(const Dataset& other) const {
+    if (num_features_ != other.num_features_) {
+      return false;
+    }
+    if (num_total_features_ != other.num_total_features_) {
+      return false;
+    }
+    if (num_class_ != other.num_class_) {
+      return false;
+    }
+    if (label_idx_ != other.label_idx_) {
+      return false;
+    }
+    for (int i = 0; i < num_features_; ++i) {
+      if (!features_[i]->CheckAlign(*(other.features_[i].get()))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<double>& feature_values) {
     for (size_t i = 0; i < feature_values.size() && i < static_cast<size_t>(num_total_features_); ++i) {
       int feature_idx = used_feature_map_[i];
@@ -281,6 +335,8 @@ public:
       }
     }
   }
+
+  Dataset* Subset(const data_size_t* used_indices, data_size_t num_used_indices, bool is_enable_sparse) const;
 
   void FinishLoad();
 
@@ -348,12 +404,12 @@ private:
   int num_class_;
   /*! \brief Store some label level data*/
   Metadata metadata_;
-  /*! \brief True if dataset is loaded from binary file */
-  bool is_loading_from_binfile_;
   /*! \brief index of label column */
   int label_idx_ = 0;
   /*! \brief store feature names */
   std::vector<std::string> feature_names_;
+  /*! \brief store feature names */
+  static const char* binary_file_token;
 };
 
 }  // namespace LightGBM

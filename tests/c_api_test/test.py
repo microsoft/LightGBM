@@ -16,6 +16,8 @@ def LoadDll():
 
 LIB = LoadDll()
 
+LIB.LGBM_GetLastError.restype = ctypes.c_char_p
+
 dtype_float32 = 0
 dtype_float64 = 1
 dtype_int32 = 2
@@ -33,9 +35,10 @@ def test_load_from_file(filename, reference):
     if reference != None:
         ref = ctypes.byref(reference)
     handle = ctypes.c_void_p()
-    LIB.LGBM_CreateDatasetFromFile(c_str(filename), 
+    LIB.LGBM_DatasetCreateFromFile(c_str(filename), 
         c_str('max_bin=15'), 
         ref, ctypes.byref(handle) )
+    print(LIB.LGBM_GetLastError())
     num_data = ctypes.c_long()
     LIB.LGBM_DatasetGetNumData(handle, ctypes.byref(num_data) )
     num_feature = ctypes.c_long()
@@ -46,15 +49,6 @@ def test_load_from_file(filename, reference):
 def test_save_to_binary(handle, filename):
     LIB.LGBM_DatasetSaveBinary(handle, c_str(filename))
 
-def test_load_from_binary(filename):
-    handle = ctypes.c_void_p()
-    LIB.LGBM_CreateDatasetFromBinaryFile(c_str(filename), ctypes.byref(handle) )
-    num_data = ctypes.c_long()
-    LIB.LGBM_DatasetGetNumData(handle, ctypes.byref(num_data) )
-    num_feature = ctypes.c_long()
-    LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature) )
-    print ('#data:%d #feature:%d' %(num_data.value, num_feature.value) ) 
-    return handle
 
 def test_load_from_csr(filename, reference):
     data = []
@@ -72,7 +66,7 @@ def test_load_from_csr(filename, reference):
     if reference != None:
         ref = ctypes.byref(reference)
 
-    LIB.LGBM_CreateDatasetFromCSR(c_array(ctypes.c_int, csr.indptr), 
+    LIB.LGBM_DatasetCreateFromCSR(c_array(ctypes.c_int, csr.indptr), 
         dtype_int32, 
         c_array(ctypes.c_int, csr.indices), 
         csr.data.ctypes.data_as(ctypes.POINTER(ctypes.c_void_p)),
@@ -107,7 +101,7 @@ def test_load_from_csc(filename, reference):
     if reference != None:
         ref = ctypes.byref(reference)
 
-    LIB.LGBM_CreateDatasetFromCSC(c_array(ctypes.c_int, csr.indptr), 
+    LIB.LGBM_DatasetCreateFromCSC(c_array(ctypes.c_int, csr.indptr), 
         dtype_int32, 
         c_array(ctypes.c_int, csr.indices), 
         csr.data.ctypes.data_as(ctypes.POINTER(ctypes.c_void_p)),
@@ -142,7 +136,7 @@ def test_load_from_mat(filename, reference):
     if reference != None:
         ref = ctypes.byref(reference)
 
-    LIB.LGBM_CreateDatasetFromMat(data.ctypes.data_as(ctypes.POINTER(ctypes.c_void_p)), 
+    LIB.LGBM_DatasetCreateFromMat(data.ctypes.data_as(ctypes.POINTER(ctypes.c_void_p)), 
         dtype_float64,
         mat.shape[0],
         mat.shape[1],
@@ -170,35 +164,36 @@ def test_dataset():
     test_free_dataset(test)
     test_save_to_binary(train, 'train.binary.bin')
     test_free_dataset(train)
-    train  = test_load_from_binary('train.binary.bin')
+    train  = test_load_from_file('train.binary.bin', None)
     test_free_dataset(train)
 def test_booster():
     train = test_load_from_mat('../../examples/binary_classification/binary.train', None)
-    test = [test_load_from_mat('../../examples/binary_classification/binary.test', train)]
-    name = [c_str('test')]
+    test = test_load_from_mat('../../examples/binary_classification/binary.test', train)
     booster = ctypes.c_void_p()
-    LIB.LGBM_BoosterCreate(train, c_array(ctypes.c_void_p, test), c_array(ctypes.c_char_p, name), 
-        len(test), c_str("app=binary metric=auc num_leaves=31 verbose=0"), ctypes.byref(booster))
+    LIB.LGBM_BoosterCreate(train, c_str("app=binary metric=auc num_leaves=31 verbose=0"), ctypes.byref(booster))
+    LIB.LGBM_BoosterAddValidData(booster, test)
     is_finished = ctypes.c_int(0)
     for i in range(100):
         LIB.LGBM_BoosterUpdateOneIter(booster,ctypes.byref(is_finished))
         result = np.array([0.0], dtype=np.float32)
         out_len = ctypes.c_ulong(0)
-        LIB.LGBM_BoosterEval(booster, 0, ctypes.byref(out_len), result.ctypes.data_as(ctypes.POINTER(ctypes.c_float)))
+        LIB.LGBM_BoosterGetEval(booster, 0, ctypes.byref(out_len), result.ctypes.data_as(ctypes.POINTER(ctypes.c_float)))
         print ('%d Iteration test AUC %f' %(i, result[0]))
     LIB.LGBM_BoosterSaveModel(booster, -1, c_str('model.txt'))
     LIB.LGBM_BoosterFree(booster)
     test_free_dataset(train)
-    test_free_dataset(test[0])
+    test_free_dataset(test)
     booster2 = ctypes.c_void_p()
-    LIB.LGBM_BoosterLoadFromModelfile(c_str('model.txt'), ctypes.byref(booster2))
+    num_total_model = ctypes.c_long()
+    LIB.LGBM_BoosterCreateFromModelfile(c_str('model.txt'), ctypes.byref(num_total_model), ctypes.byref(booster2))
     data = []
     inp = open('../../examples/binary_classification/binary.test', 'r')
     for line in inp.readlines():
         data.append( [float(x) for x in line.split('\t')[1:]] )
     inp.close()
     mat = np.array(data)
-    preb = np.zeros(( mat.shape[0],1 ), dtype=np.float64)
+    preb = np.zeros(mat.shape[0], dtype=np.float32)
+    num_preb = ctypes.c_long()
     data = np.array(mat.reshape(mat.size), copy=False)
     LIB.LGBM_BoosterPredictForMat(booster2,
         data.ctypes.data_as(ctypes.POINTER(ctypes.c_void_p)), 
@@ -208,10 +203,10 @@ def test_booster():
         1,
         1,
         50,
+        ctypes.byref(num_preb),
         preb.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
-    LIB.LGBM_BoosterPredictForFile(booster2, 1, 50, 0, c_str('../../examples/binary_classification/binary.test'), c_str('preb.txt'))
+    LIB.LGBM_BoosterPredictForFile(booster2,c_str('../../examples/binary_classification/binary.test'),0 , 0, 50, c_str('preb.txt'))
     LIB.LGBM_BoosterFree(booster2)
 
 test_dataset()
 test_booster()
-

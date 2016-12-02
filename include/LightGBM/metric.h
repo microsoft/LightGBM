@@ -24,8 +24,7 @@ public:
   * \param metadata Label data
   * \param num_data Number of data
   */
-  virtual void Init(const char* test_name,
-    const Metadata& metadata, data_size_t num_data) = 0;
+  virtual void Init(const Metadata& metadata, data_size_t num_data) = 0;
 
   virtual const std::vector<std::string>& GetName() const = 0;
 

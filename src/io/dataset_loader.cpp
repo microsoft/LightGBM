@@ -142,18 +142,18 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
                   Please use an additional query file or pre-partition the data");
     }
   }
-  auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, io_config_.has_header, 0, label_idx_));
-  if (parser == nullptr) {
-    Log::Fatal("Could not recognize data format of %s", filename);
-  }
+  auto dataset = std::unique_ptr<Dataset>(new Dataset());
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
-  auto dataset = std::unique_ptr<Dataset>(new Dataset());
-  dataset->data_filename_ = filename;
-  dataset->num_class_ = io_config_.num_class;
-  dataset->metadata_.Init(filename, dataset->num_class_);
-  bool is_loading_from_binfile = CheckCanLoadFromBin(filename);
-  if (!is_loading_from_binfile) {
+  auto bin_filename = CheckCanLoadFromBin(filename);
+  if (bin_filename.size() == 0) {
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, io_config_.has_header, 0, label_idx_));
+    if (parser == nullptr) {
+      Log::Fatal("Could not recognize data format of %s", filename);
+    }
+    dataset->data_filename_ = filename;
+    dataset->num_class_ = io_config_.num_class;
+    dataset->metadata_.Init(filename, dataset->num_class_);
     if (!io_config_.use_two_round_loading) {
       // read data to memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, rank, num_machines,&num_global_data, &used_data_indices);
@@ -185,8 +185,6 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     }
   } else {
     // load data from binary file
-    std::string bin_filename(filename);
-    bin_filename.append(".bin");
     dataset.reset(LoadFromBinFile(bin_filename.c_str(), rank, num_machines));
   }
   // check meta data
@@ -199,18 +197,18 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
 
 
 Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data) {
-  auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, io_config_.has_header, 0, label_idx_));
-  if (parser == nullptr) {
-    Log::Fatal("Could not recognize data format of %s", filename);
-  }
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
-  dataset->data_filename_ = filename;
-  dataset->num_class_ = io_config_.num_class;
-  dataset->metadata_.Init(filename, dataset->num_class_);
-  bool is_loading_from_binfile = CheckCanLoadFromBin(filename);
-  if (!is_loading_from_binfile) {
+  auto bin_filename = CheckCanLoadFromBin(filename);
+  if (bin_filename.size() == 0) {
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, io_config_.has_header, 0, label_idx_));
+    if (parser == nullptr) {
+      Log::Fatal("Could not recognize data format of %s", filename);
+    }
+    dataset->data_filename_ = filename;
+    dataset->num_class_ = io_config_.num_class;
+    dataset->metadata_.Init(filename, dataset->num_class_);
     if (!io_config_.use_two_round_loading) {
       // read data in memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, 0, 1, &num_global_data, &used_data_indices);
@@ -234,8 +232,6 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
     }
   } else {
     // load data from binary file
-    std::string bin_filename(filename);
-    bin_filename.append(".bin");
     dataset.reset(LoadFromBinFile(bin_filename.c_str(), 0, 1));
   }
   // not need to check validation data
@@ -260,9 +256,19 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* bin_filename, int rank, int 
   // buffer to read binary file
   size_t buffer_size = 16 * 1024 * 1024;
   auto buffer = std::vector<char>(buffer_size);
+  
+  // check token
+  size_t size_of_token = std::strlen(Dataset::binary_file_token);
+  size_t read_cnt = fread(buffer.data(), sizeof(char), size_of_token, file);
+  if (read_cnt != size_of_token) {
+    Log::Fatal("Binary file error: token has the wrong size");
+  }
+  if (std::string(buffer.data()) != std::string(Dataset::binary_file_token)) {
+    Log::Fatal("input file is not LightGBM binary file");
+  }
 
   // read size of header
-  size_t read_cnt = fread(buffer.data(), sizeof(size_t), 1, file);
+  read_cnt = fread(buffer.data(), sizeof(size_t), 1, file);
 
   if (read_cnt != 1) {
     Log::Fatal("Binary file error: header has the wrong size");
@@ -401,7 +407,6 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* bin_filename, int rank, int 
   }
   dataset->features_.shrink_to_fit();
   fclose(file);
-  dataset->is_loading_from_binfile_ = true;
   return dataset.release();
 }
 
@@ -849,7 +854,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
 }
 
 /*! \brief Check can load from binary file */
-bool DatasetLoader::CheckCanLoadFromBin(const char* filename) {
+std::string DatasetLoader::CheckCanLoadFromBin(const char* filename) {
   std::string bin_filename(filename);
   bin_filename.append(".bin");
 
@@ -860,12 +865,32 @@ bool DatasetLoader::CheckCanLoadFromBin(const char* filename) {
 #else
   file = fopen(bin_filename.c_str(), "rb");
 #endif
+
   if (file == NULL) {
-    return false;
+    bin_filename = std::string(filename);
+#ifdef _MSC_VER
+    fopen_s(&file, bin_filename.c_str(), "rb");
+#else
+    file = fopen(bin_filename.c_str(), "rb");
+#endif
+    if (file == NULL) {
+      Log::Fatal("cannot open data file %s", bin_filename.c_str());
+    }
+  } 
+
+  size_t buffer_size = 256;
+  auto buffer = std::vector<char>(buffer_size);
+  // read size of token
+  size_t size_of_token = std::strlen(Dataset::binary_file_token);
+  size_t read_cnt = fread(buffer.data(), sizeof(char), size_of_token, file);
+  fclose(file);
+  if (read_cnt == size_of_token 
+    && std::string(buffer.data()) == std::string(Dataset::binary_file_token)) {
+    return bin_filename;
   } else {
-    fclose(file);
-    return true;
+    return std::string();
   }
+
 }
 
 }

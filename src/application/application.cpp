@@ -108,7 +108,7 @@ void Application::LoadData() {
   // prediction is needed if using input initial model(continued train)
   PredictFunction predict_fun = nullptr;
   // need to continue training
-  if (boosting_->NumberOfSubModels() > 0) {
+  if (boosting_->NumberOfTotalModel() > 0) {
     Predictor predictor(boosting_.get(), true, false);
     predict_fun = predictor.GetPredictFunction();
   }
@@ -139,40 +139,44 @@ void Application::LoadData() {
     for (auto metric_type : config_.metric_types) {
       auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_.metric_config));
       if (metric == nullptr) { continue; }
-      metric->Init("training", train_data_->metadata(),
-                              train_data_->num_data());
+      metric->Init(train_data_->metadata(), train_data_->num_data());
       train_metric_.push_back(std::move(metric));
     }
   }
   train_metric_.shrink_to_fit();
-  // Add validation data, if it exists
-  for (size_t i = 0; i < config_.io_config.valid_data_filenames.size(); ++i) {
-    // add
-    auto new_dataset = std::unique_ptr<Dataset>(
-      dataset_loader.LoadFromFileAlignWithOtherDataset(
-        config_.io_config.valid_data_filenames[i].c_str(),
-        train_data_.get())
-      );
-    valid_datas_.push_back(std::move(new_dataset));
-    // need save binary file
-    if (config_.io_config.is_save_binary_file) {
-      valid_datas_.back()->SaveBinaryFile(nullptr);
-    }
 
-    // add metric for validation data
-    valid_metrics_.emplace_back();
-    for (auto metric_type : config_.metric_types) {
-      auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_.metric_config));
-      if (metric == nullptr) { continue; }
-      metric->Init(config_.io_config.valid_data_filenames[i].c_str(),
-                                     valid_datas_.back()->metadata(),
-                                    valid_datas_.back()->num_data());
-      valid_metrics_.back().push_back(std::move(metric));
+
+  if (config_.metric_types.size() > 0) {
+    // only when have metrics then need to construct validation data
+
+    // Add validation data, if it exists
+    for (size_t i = 0; i < config_.io_config.valid_data_filenames.size(); ++i) {
+      // add
+      auto new_dataset = std::unique_ptr<Dataset>(
+        dataset_loader.LoadFromFileAlignWithOtherDataset(
+          config_.io_config.valid_data_filenames[i].c_str(),
+          train_data_.get())
+        );
+      valid_datas_.push_back(std::move(new_dataset));
+      // need save binary file
+      if (config_.io_config.is_save_binary_file) {
+        valid_datas_.back()->SaveBinaryFile(nullptr);
+      }
+
+      // add metric for validation data
+      valid_metrics_.emplace_back();
+      for (auto metric_type : config_.metric_types) {
+        auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_.metric_config));
+        if (metric == nullptr) { continue; }
+        metric->Init(valid_datas_.back()->metadata(),
+          valid_datas_.back()->num_data());
+        valid_metrics_.back().push_back(std::move(metric));
+      }
+      valid_metrics_.back().shrink_to_fit();
     }
-    valid_metrics_.back().shrink_to_fit();
+    valid_datas_.shrink_to_fit();
+    valid_metrics_.shrink_to_fit();
   }
-  valid_datas_.shrink_to_fit();
-  valid_metrics_.shrink_to_fit();
   auto end_time = std::chrono::high_resolution_clock::now();
   // output used time on each iteration
   Log::Info("Finished loading data in %f seconds",
@@ -209,7 +213,7 @@ void Application::InitTrain() {
     Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
   // add validation data into boosting
   for (size_t i = 0; i < valid_datas_.size(); ++i) {
-    boosting_->AddDataset(valid_datas_[i].get(),
+    boosting_->AddValidDataset(valid_datas_[i].get(),
       Common::ConstPtrInVectorWrapper<Metric>(valid_metrics_[i]));
   }
   Log::Info("Finished initializing training");
@@ -227,17 +231,15 @@ void Application::Train() {
     // output used time per iteration
     Log::Info("%f seconds elapsed, finished iteration %d", std::chrono::duration<double,
       std::milli>(end_time - start_time) * 1e-3, iter + 1);
-    boosting_->SaveModelToFile(NO_LIMIT, is_finished, config_.io_config.output_model.c_str());
   }
-  is_finished = true;
   // save model to file
-  boosting_->SaveModelToFile(NO_LIMIT, is_finished, config_.io_config.output_model.c_str());
+  boosting_->SaveModelToFile(-1, config_.io_config.output_model.c_str());
   Log::Info("Finished training");
 }
 
 
 void Application::Predict() {
-  boosting_->SetNumUsedModel(config_.io_config.num_model_predict);
+  boosting_->SetNumIterationForPred(config_.io_config.num_iteration_predict);
   // create predictor
   Predictor predictor(boosting_.get(), config_.io_config.is_predict_raw_score,
     config_.io_config.is_predict_leaf_index);

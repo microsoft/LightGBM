@@ -98,13 +98,12 @@ public:
     }
   }
 
-  /*! \brief Serialize this object by string*/
+  /*! \brief Serialize this object to string*/
   std::string ToString();
 
-  /*! \brief Disable copy */
-  Tree& operator=(const Tree&) = delete;
-  /*! \brief Disable copy */
-  Tree(const Tree&) = delete;
+  /*! \brief Serialize this object to json*/
+  std::string ToJSON();
+
 private:
   /*!
   * \brief Find leaf index of which record belongs by data
@@ -121,6 +120,9 @@ private:
   * \return Leaf index
   */
   inline int GetLeaf(const double* feature_values) const;
+
+  /*! \brief Serialize one node to json*/
+  inline std::string NodeToJSON(int index);
 
   /*! \brief Number of max leaves*/
   int max_leaves_;
@@ -141,13 +143,13 @@ private:
   std::vector<double> threshold_;
   /*! \brief A non-leaf node's split gain */
   std::vector<double> split_gain_;
+  /*! \brief Output of internal nodes(save internal output for per inference feature importance calc) */
+  std::vector<double> internal_value_;
   // used for leaf node
   /*! \brief The parent of leaf */
   std::vector<int> leaf_parent_;
   /*! \brief Output of leaves */
   std::vector<double> leaf_value_;
-  /*! \brief Output of internal nodes(save internal output for per inference feature importance calc) */
-  std::vector<double> internal_value_;
   /*! \brief Depth for leaves */
   std::vector<int> leaf_depth_;
 };
