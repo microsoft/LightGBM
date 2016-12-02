@@ -1,3 +1,4 @@
+# coding: utf-8
 # pylint: disable=invalid-name, exec-used
 """Setup lightgbm package."""
 from __future__ import absolute_import

@@ -1,3 +1,5 @@
+# coding: utf-8
+# pylint: disable = invalid-name, C0111, R0912, R0913, R0914, W0105
 """Wrapper c_api of LightGBM"""
 from __future__ import absolute_import
 
@@ -5,11 +7,23 @@ import sys
 import os
 import ctypes
 import tempfile
+import json
 
 import numpy as np
 import scipy.sparse
 
 from .libpath import find_lib_path
+
+# pandas
+try:
+    from pandas import Series, DataFrame
+    IS_PANDAS_INSTALLED = True
+except ImportError:
+    IS_PANDAS_INSTALLED = False
+    class Series(object):
+        pass
+    class DataFrame(object):
+        pass
 
 IS_PY3 = (sys.version_info[0] == 3)
 
@@ -69,6 +83,8 @@ def list_to_1d_numpy(data, dtype):
             return data.astype(dtype=dtype, copy=False)
     elif is_1d_list(data):
         return np.array(data, dtype=dtype, copy=False)
+    elif IS_PANDAS_INSTALLED and isinstance(data, Series):
+        return data.astype(dtype).values
     else:
         raise TypeError("Unknow type({})".format(type(data).__name__))
 
@@ -110,7 +126,7 @@ def param_dict_to_str(data):
         elif isinstance(val, (int, float, bool)):
             pairs.append(str(key)+'='+str(val))
         else:
-            raise TypeError('unknow type of parameter:%s , got:%s' 
+            raise TypeError('unknow type of parameter:%s , got:%s'
                             % (key, type(val).__name__))
     return ' '.join(pairs)
 """marco definition of data type in c_api of LightGBM"""
@@ -183,7 +199,7 @@ class Predictor(object):
             """Prediction task"""
             out_num_iterations = ctypes.c_int64(0)
             _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
-                c_str(model_file), 
+                c_str(model_file),
                 ctypes.byref(out_num_iterations),
                 ctypes.byref(self.handle)))
             out_num_class = ctypes.c_int64(0)
@@ -357,7 +373,7 @@ class Predictor(object):
             type_ptr_data,
             len(csr.indptr),
             len(csr.data),
-            csr.shape[1], 
+            csr.shape[1],
             predict_type,
             num_iteration,
             ctypes.byref(out_num_preds),
@@ -366,13 +382,6 @@ class Predictor(object):
         if n_preds != out_num_preds.value:
             raise ValueError("incorrect number for predict result")
         return preds, nrow
-
-# pandas
-try:
-    from pandas import DataFrame
-except ImportError:
-    class DataFrame(object):
-        pass
 
 PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
                        'int64': 'int', 'uint8': 'int', 'uint16': 'int',
@@ -467,8 +476,8 @@ class Dataset(object):
                     self.data_has_header = True
             self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_DatasetCreateFromFile(
-                c_str(data), 
-                c_str(params_str), 
+                c_str(data),
+                c_str(params_str),
                 ref_dataset,
                 ctypes.byref(self.handle)))
         elif isinstance(data, scipy.sparse.csr_matrix):
@@ -830,6 +839,7 @@ class Booster(object):
         self.__is_manage_handle = True
         self.__train_data_name = "training"
         self.__attr = {}
+        self.best_iteration = -1
         params = {} if params is None else params
         if silent:
             params["verbose"] = 0
@@ -1018,7 +1028,7 @@ class Booster(object):
             self.handle,
             ctypes.byref(out_cur_iter)))
         return out_cur_iter.value
-    
+
     def eval(self, data, name, feval=None):
         """Evaluate for data
 
@@ -1098,6 +1108,34 @@ class Booster(object):
             num_iteration,
             c_str(filename)))
 
+    def dump_model(self):
+        """
+        Dump model to json format
+
+        Returns
+        -------
+        Json format of model
+        """
+        buffer_len = 1 << 20
+        tmp_out_len = ctypes.c_int64(0)
+        string_buffer = ctypes.create_string_buffer(buffer_len)
+        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        _safe_call(_LIB.LGBM_BoosterDumpModel(
+            self.handle,
+            buffer_len,
+            ctypes.byref(tmp_out_len),
+            ctypes.byref(ptr_string_buffer)))
+        actual_len = tmp_out_len.value
+        if actual_len > buffer_len:
+            string_buffer = ctypes.create_string_buffer(actual_len)
+            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            _safe_call(_LIB.LGBM_BoosterDumpModel(
+                self.handle,
+                actual_len,
+                ctypes.byref(tmp_out_len),
+                ctypes.byref(ptr_string_buffer)))
+        return json.loads(string_buffer.value.decode())
+
     def predict(self, data, num_iteration=-1, raw_score=False, pred_leaf=False, data_has_header=False, is_reshape=True):
         """
         Predict logic
@@ -1147,7 +1185,7 @@ class Booster(object):
             _safe_call(_LIB.LGBM_BoosterGetEval(
                 self.handle,
                 data_idx,
-                ctypes.byref(tmp_out_len), 
+                ctypes.byref(tmp_out_len),
                 result.ctypes.data_as(ctypes.POINTER(ctypes.c_float))))
             if tmp_out_len.value != self.__num_inner_eval:
                 raise ValueError("incorrect number of eval results")
@@ -1190,7 +1228,7 @@ class Booster(object):
                 ctypes.byref(tmp_out_len),
                 data_ptr))
             if tmp_out_len.value != len(self.__inner_predict_buffer[data_idx]):
-                raise ValueError("incorrect number of predict results for data %d" % (data_idx) )
+                raise ValueError("incorrect number of predict results for data %d" % (data_idx))
             self.__is_predicted_cur_iter[data_idx] = True
         return self.__inner_predict_buffer[data_idx]
 

@@ -143,6 +143,43 @@ std::string Tree::ToString() {
   return ss.str();
 }
 
+std::string Tree::ToJSON() {
+  std::stringstream ss;
+
+  ss << "\"num_leaves\":" << num_leaves_ << "," << std::endl;
+
+  ss << "\"tree_structure\":" << NodeToJSON(0) << std::endl;
+
+  return ss.str();
+}
+
+std::string Tree::NodeToJSON(int index) {
+  std::stringstream ss;
+
+  if (index >= 0) {
+    // non-leaf
+    ss << "{" << std::endl;
+    ss << "\"split_index\":" << index << "," << std::endl;
+    ss << "\"split_feature\":" << split_feature_real_.data()[index] << "," << std::endl;
+    ss << "\"split_gain\":" << split_gain_.data()[index] << "," << std::endl;
+    ss << "\"threshold\":" << threshold_.data()[index] << "," << std::endl;
+    ss << "\"internal_value\":" << internal_value_.data()[index] << "," << std::endl;
+    ss << "\"left_child\":" << NodeToJSON(left_child_.data()[index]) << "," << std::endl;
+    ss << "\"right_child\":" << NodeToJSON(right_child_.data()[index]) << std::endl;
+    ss << "}";
+  } else {
+    // leaf
+    index = ~index;
+    ss << "{" << std::endl;
+    ss << "\"leaf_index\":" << index << "," << std::endl;
+    ss << "\"leaf_parent\":" << leaf_parent_.data()[index] << "," << std::endl;
+    ss << "\"leaf_value\":" << leaf_value_.data()[index] << std::endl;
+    ss << "}";
+  }
+
+  return ss.str();
+}
+
 Tree::Tree(const std::string& str) {
   std::vector<std::string> lines = Common::Split(str.c_str(), '\n');
   std::unordered_map<std::string, std::string> key_vals;

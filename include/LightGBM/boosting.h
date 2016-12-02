@@ -133,9 +133,16 @@ public:
     const double* feature_values) const = 0;
 
   /*!
-  * \brief save model to file
-  * \param num_iterations Iterations that want to save, -1 means save all
-  * \param filename filename that want to save to
+  * \brief Dump model to json format string
+  * \return Json format string of model
+  */
+  virtual std::string DumpModel() const = 0;
+
+  /*!
+  * \brief Save model to file
+  * \param num_used_model Number of model that want to save, -1 means save all
+  * \param is_finish Is training finished or not
+  * \param filename Filename that want to save to
   */
   virtual void SaveModelToFile(int num_iterations, const char* filename) const = 0;
 

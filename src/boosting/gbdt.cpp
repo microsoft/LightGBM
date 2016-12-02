@@ -393,6 +393,36 @@ void GBDT::Boosting() {
     GetGradients(GetTrainingScore(&num_score), gradients_.data(), hessians_.data());
 }
 
+std::string GBDT::DumpModel() const {
+  std::stringstream ss;
+
+  ss << "{";
+  ss << "\"name\":\"" << Name() << "\"," << std::endl;
+  ss << "\"num_class\":" << num_class_ << "," << std::endl;
+  ss << "\"label_index\":" << label_idx_ << "," << std::endl;
+  ss << "\"max_feature_idx\":" << max_feature_idx_ << "," << std::endl;
+  if (object_function_ != nullptr) {
+    ss << "\"objective\":\"" << object_function_->GetName() << "\"," << std::endl;
+  }
+  ss << "\"sigmoid\":" << sigmoid_ << "," << std::endl;
+
+  ss << "\"tree_info\":[";
+  for (int i = 0; i < static_cast<int>(models_.size()); ++i) {
+    if (i > 0) {
+      ss << ",";
+    }
+    ss << "{";
+    ss << "\"tree_index\":" << i << ",";
+    ss << models_[i]->ToJSON();
+    ss << "}";
+  }
+  ss << "]" << std::endl;
+
+  ss << "}" << std::endl;
+
+  return ss.str();
+}
+
 void GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
   /*! \brief File to write models */
   std::ofstream output_file;
@@ -432,7 +462,11 @@ void GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
     output_file << models_[i]->ToString() << std::endl;
   }
 
-  output_file << std::endl << FeatureImportance() << std::endl;
+  std::vector<std::pair<size_t, std::string>> pairs = FeatureImportance();
+  output_file << std::endl << "feature importances:" << std::endl;
+  for (size_t i = 0; i < pairs.size(); ++i) {
+    output_file << pairs[i].second << "=" << std::to_string(pairs[i].first) << std::endl;
+  }
   output_file.close();
 }
 
@@ -506,7 +540,7 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
   num_init_iteration_ = num_iteration_for_pred_;
 }
 
-std::string GBDT::FeatureImportance() const {
+std::vector<std::pair<size_t, std::string>> GBDT::FeatureImportance() const {
   auto feature_names = std::ref(feature_names_);
   if (train_data_ != nullptr) {
     feature_names = std::ref(train_data_->feature_names());
@@ -530,13 +564,7 @@ std::string GBDT::FeatureImportance() const {
         const std::pair<size_t, std::string>& rhs) {
       return lhs.first > rhs.first;
     });
-    std::stringstream str_buf;
-    // write to model file
-    str_buf << std::endl << "feature importances:" << std::endl;
-    for (size_t i = 0; i < pairs.size(); ++i) {
-      str_buf << pairs[i].second << "=" << std::to_string(pairs[i].first) << std::endl;
-    }
-    return str_buf.str();
+    return pairs;
 }
 
 std::vector<double> GBDT::PredictRaw(const double* value) const {

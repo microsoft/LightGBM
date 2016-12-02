@@ -486,7 +486,18 @@ DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
   int num_iteration,
   const char* filename);
 
-
+/*!
+* \brief dump model to json
+* \param handle handle
+* \param buffer_len string buffer length, if buffer_len < out_len, re-allocate buffer
+* \param out_len actual output length
+* \param out_str json format string of model
+* \return 0 when succeed, -1 when failure happens
+*/
+DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
+  int buffer_len,
+  int64_t* out_len,
+  char** out_str);
 
 // some help functions used to convert data
 

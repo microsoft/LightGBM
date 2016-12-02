@@ -1,3 +1,5 @@
+# coding: utf-8
+# pylint: disable = invalid-name, W0105
 """Scikit-Learn Wrapper interface for LightGBM."""
 from __future__ import absolute_import
 
@@ -81,9 +83,9 @@ class LGBMModel(LGBMModelBase):
     num_leaves : int
         Maximum tree leaves for base learners.
     max_depth : int
-        Maximum tree depth for base learners, -1 means no limit. 
+        Maximum tree depth for base learners, -1 means no limit.
     learning_rate : float
-        Boosting learning rate 
+        Boosting learning rate
     n_estimators : int
         Number of boosted trees to fit.
     silent : boolean
@@ -92,7 +94,7 @@ class LGBMModel(LGBMModelBase):
         Specify the learning task and the corresponding learning objective or
         a custom objective function to be used (see note below).
     nthread : int
-        Number of parallel threads 
+        Number of parallel threads
     min_split_gain : float
         Minimum loss reduction required to make a further partition on a leaf node of the tree.
     min_child_weight : int
@@ -105,9 +107,9 @@ class LGBMModel(LGBMModelBase):
         frequence of subsample, <=0 means no enable
     colsample_bytree : float
         Subsample ratio of columns when constructing each tree.
-    reg_alpha : float 
+    reg_alpha : float
         L1 regularization term on weights
-    reg_lambda : float 
+    reg_lambda : float
         L2 regularization term on weights
     scale_pos_weight : float
         Balancing of positive and negative weights.
@@ -122,7 +124,7 @@ class LGBMModel(LGBMModelBase):
     parameter. In this case, it should have the signature
     ``objective(y_true, y_pred) -> grad, hess``:
 
-    y_true: array_like of shape [n_samples] 
+    y_true: array_like of shape [n_samples]
         The target values
     y_pred: array_like of shape [n_samples] or shape[n_samples* n_class]
         The predicted values
@@ -137,12 +139,12 @@ class LGBMModel(LGBMModelBase):
           and you should group grad and hess in this way as well
     """
 
-    def __init__(self, num_leaves=31, max_depth=-1, 
+    def __init__(self, num_leaves=31, max_depth=-1,
                  learning_rate=0.1, n_estimators=10, max_bin=255,
-                 silent=True, objective="regression",  
+                 silent=True, objective="regression",
                  nthread=-1, min_split_gain=0, min_child_weight=5, min_child_samples=10,
                  subsample=1, subsample_freq=1, colsample_bytree=1,
-                 reg_alpha=0, reg_lambda=0, scale_pos_weight=1, 
+                 reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
                  is_unbalance=False, seed=0):
         if not SKLEARN_INSTALLED:
             raise LightGBMError('sklearn needs to be installed in order to use this module')
@@ -220,7 +222,8 @@ class LGBMModel(LGBMModelBase):
             other data file in training data. e.g. train_fields['weight'] is weight data
             support fields: weight, group, init_score
         valid_fields : dict
-            other data file in training data. e.g. valid_fields[0]['weight'] is weight data for first valid data
+            other data file in training data. \
+            e.g. valid_fields[0]['weight'] is weight data for first valid data
             support fields: weight, group, init_score
         other_params: dict
             other parameters
@@ -235,6 +238,13 @@ class LGBMModel(LGBMModelBase):
             params["objective"] = "None"
         else:
             params["objective"] = self.objective
+            if eval_metric is None and eval_set is not None:
+                eval_metric = {
+                    'regression': 'l2',
+                    'binary': 'binary_logloss',
+                    'lambdarank': 'ndcg',
+                    'multiclass': 'multi_logloss'
+                }.get(self.objective, None)
 
         if callable(eval_metric):
             feval = eval_metric
@@ -249,7 +259,8 @@ class LGBMModel(LGBMModelBase):
                               self.n_estimators, valid_datas=eval_set,
                               early_stopping_rounds=early_stopping_rounds,
                               evals_result=evals_result, fobj=self.fobj, feval=feval,
-                              verbose_eval=verbose, train_fields=train_fields, valid_fields=valid_fields)
+                              verbose_eval=verbose, train_fields=train_fields,
+                              valid_fields=valid_fields)
 
         if evals_result:
             for val in evals_result.items():
@@ -320,14 +331,18 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
             # Switch to using a multiclass objective in the underlying LGBM instance
             self.objective = "multiclass"
             other_params['num_class'] = self.n_classes_
+            if eval_metric is None and eval_set is not None:
+                eval_metric = "multi_logloss"
         else:
             self.objective = "binary"
+            if eval_metric is None and eval_set is not None:
+                eval_metric = "binary_logloss"
 
         self._le = LGBMLabelEncoder().fit(y)
         training_labels = self._le.transform(y)
 
         if eval_set is not None:
-            eval_set = list( (x[0], self._le.transform(x[1])) for x in eval_set )
+            eval_set = list((x[0], self._le.transform(x[1])) for x in eval_set)
 
         super(LGBMClassifier, self).fit(X, training_labels, eval_set,
                                         eval_metric, early_stopping_rounds,
@@ -430,6 +445,8 @@ class LGBMRanker(LGBMModel):
         else:
             self.objective = "lambdarank"
             self.fobj = None
+            if eval_metric is None and eval_set is not None:
+                eval_metric = "ndcg"
 
         super(LGBMRanker, self).fit(X, y, eval_set, eval_metric,
                                     early_stopping_rounds, verbose,

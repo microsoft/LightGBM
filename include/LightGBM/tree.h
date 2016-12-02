@@ -101,8 +101,11 @@ public:
     }
   }
 
-  /*! \brief Serialize this object by string*/
+  /*! \brief Serialize this object to string*/
   std::string ToString();
+
+  /*! \brief Serialize this object to json*/
+  std::string ToJSON();
 
 private:
   /*!
@@ -120,6 +123,9 @@ private:
   * \return Leaf index
   */
   inline int GetLeaf(const double* feature_values) const;
+
+  /*! \brief Serialize one node to json*/
+  inline std::string NodeToJSON(int index);
 
   /*! \brief Number of max leaves*/
   int max_leaves_;
