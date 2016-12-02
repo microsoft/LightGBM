@@ -191,7 +191,7 @@ public:
     double min_gain_shift = gain_shift + min_gain_to_split_;
     is_splittable_ = false;
 
-    for (unsigned int t = num_bins_ - 1; t > 0; --t) {
+    for (unsigned int t = num_bins_ - 1; t >= 0; --t) {
       double sum_current_gradient = data_[t].sum_gradients;
       double sum_current_hessian = data_[t].sum_hessians;
       data_size_t current_count = data_[t].cnt;

@@ -119,8 +119,7 @@ void Application::LoadData() {
        GlobalSyncUpByMin<int>(config_.io_config.data_random_seed);
   }
 
-  DatasetLoader dataset_loader(config_.io_config, predict_fun);
-  dataset_loader.SetHeader(config_.io_config.data_filename.c_str());
+  DatasetLoader dataset_loader(config_.io_config, predict_fun, config_.io_config.data_filename.c_str());
   // load Training data
   if (config_.is_parallel_find_bin) {
     // load data for parallel training

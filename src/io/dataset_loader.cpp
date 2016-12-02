@@ -8,9 +8,9 @@
 
 namespace LightGBM {
 
-DatasetLoader::DatasetLoader(const IOConfig& io_config, const PredictFunction& predict_fun)
+DatasetLoader::DatasetLoader(const IOConfig& io_config, const PredictFunction& predict_fun, const char* filename)
   :io_config_(io_config), random_(io_config_.data_random_seed), predict_fun_(predict_fun) {
-
+  SetHeader(filename);
 }
 
 DatasetLoader::~DatasetLoader() {
@@ -18,58 +18,138 @@ DatasetLoader::~DatasetLoader() {
 }
 
 void DatasetLoader::SetHeader(const char* filename) {
-  TextReader<data_size_t> text_reader(filename, io_config_.has_header);
   std::unordered_map<std::string, int> name2idx;
-
-  // get column names
-  if (io_config_.has_header) {
-    std::string first_line = text_reader.first_line();
-    feature_names_ = Common::Split(first_line.c_str(), "\t ,");
-    for (size_t i = 0; i < feature_names_.size(); ++i) {
-      name2idx[feature_names_[i]] = static_cast<int>(i);
-    }
-  }
   std::string name_prefix("name:");
-
-  // load label idx
-  if (io_config_.label_column.size() > 0) {
-    if (Common::StartsWith(io_config_.label_column, name_prefix)) {
-      std::string name = io_config_.label_column.substr(name_prefix.size());
-      if (name2idx.count(name) > 0) {
-        label_idx_ = name2idx[name];
-        Log::Info("Using column %s as label", name.c_str());
-      } else {
-        Log::Fatal("Could not find label column %s in data file", name.c_str());
+  if (filename != nullptr) {
+    TextReader<data_size_t> text_reader(filename, io_config_.has_header);
+    // get column names
+    if (io_config_.has_header) {
+      std::string first_line = text_reader.first_line();
+      feature_names_ = Common::Split(first_line.c_str(), "\t ,");
+      for (size_t i = 0; i < feature_names_.size(); ++i) {
+        name2idx[feature_names_[i]] = static_cast<int>(i);
       }
-    } else {
-      if (!Common::AtoiAndCheck(io_config_.label_column.c_str(), &label_idx_)) {
-        Log::Fatal("label_column is not a number, \
+    }
+    // load label idx
+    if (io_config_.label_column.size() > 0) {
+      if (Common::StartsWith(io_config_.label_column, name_prefix)) {
+        std::string name = io_config_.label_column.substr(name_prefix.size());
+        if (name2idx.count(name) > 0) {
+          label_idx_ = name2idx[name];
+          Log::Info("Using column %s as label", name.c_str());
+        } else {
+          Log::Fatal("Could not find label column %s in data file", name.c_str());
+        }
+      } else {
+        if (!Common::AtoiAndCheck(io_config_.label_column.c_str(), &label_idx_)) {
+          Log::Fatal("label_column is not a number, \
                       if you want to use a column name, \
                       please add the prefix \"name:\" to the column name");
+        }
+        Log::Info("Using column number %d as label", label_idx_);
       }
-      Log::Info("Using column number %d as label", label_idx_);
     }
+    if (feature_names_.size() > 0) {
+      // erase label column name
+      feature_names_.erase(feature_names_.begin() + label_idx_);
+    }
+    // load ignore columns
+    if (io_config_.ignore_column.size() > 0) {
+      if (Common::StartsWith(io_config_.ignore_column, name_prefix)) {
+        std::string names = io_config_.ignore_column.substr(name_prefix.size());
+        for (auto name : Common::Split(names.c_str(), ',')) {
+          if (name2idx.count(name) > 0) {
+            int tmp = name2idx[name];
+            // skip for label column
+            if (tmp > label_idx_) { tmp -= 1; }
+            ignore_features_.emplace(tmp);
+          } else {
+            Log::Fatal("Could not find ignore column %s in data file", name.c_str());
+          }
+        }
+      } else {
+        for (auto token : Common::Split(io_config_.ignore_column.c_str(), ',')) {
+          int tmp = 0;
+          if (!Common::AtoiAndCheck(token.c_str(), &tmp)) {
+            Log::Fatal("ignore_column is not a number, \
+                        if you want to use a column name, \
+                        please add the prefix \"name:\" to the column name");
+          }
+          // skip for label column
+          if (tmp > label_idx_) { tmp -= 1; }
+          ignore_features_.emplace(tmp);
+        }
+      }
+    }
+    // load weight idx
+    if (io_config_.weight_column.size() > 0) {
+      if (Common::StartsWith(io_config_.weight_column, name_prefix)) {
+        std::string name = io_config_.weight_column.substr(name_prefix.size());
+        if (name2idx.count(name) > 0) {
+          weight_idx_ = name2idx[name];
+          Log::Info("Using column %s as weight", name.c_str());
+        } else {
+          Log::Fatal("Could not find weight column %s in data file", name.c_str());
+        }
+      } else {
+        if (!Common::AtoiAndCheck(io_config_.weight_column.c_str(), &weight_idx_)) {
+          Log::Fatal("weight_column is not a number, \
+                      if you want to use a column name, \
+                      please add the prefix \"name:\" to the column name");
+        }
+        Log::Info("Using column number %d as weight", weight_idx_);
+      }
+      // skip for label column
+      if (weight_idx_ > label_idx_) {
+        weight_idx_ -= 1;
+      }
+      ignore_features_.emplace(weight_idx_);
+    }
+    // load group idx
+    if (io_config_.group_column.size() > 0) {
+      if (Common::StartsWith(io_config_.group_column, name_prefix)) {
+        std::string name = io_config_.group_column.substr(name_prefix.size());
+        if (name2idx.count(name) > 0) {
+          group_idx_ = name2idx[name];
+          Log::Info("Using column %s as group/query id", name.c_str());
+        } else {
+          Log::Fatal("Could not find group/query column %s in data file", name.c_str());
+        }
+      } else {
+        if (!Common::AtoiAndCheck(io_config_.group_column.c_str(), &group_idx_)) {
+          Log::Fatal("group_column is not a number, \
+                      if you want to use a column name, \
+                      please add the prefix \"name:\" to the column name");
+        }
+        Log::Info("Using column number %d as group/query id", group_idx_);
+      }
+      // skip for label column
+      if (group_idx_ > label_idx_) {
+        group_idx_ -= 1;
+      }
+      ignore_features_.emplace(group_idx_);
+    }
+  } else {
+    // not label load from file
+    label_idx_ = std::numeric_limits<int>::infinity();
   }
-  if (feature_names_.size() > 0) {
-    // erase label column name
-    feature_names_.erase(feature_names_.begin() + label_idx_);
-  }
-  // load ignore columns
-  if (io_config_.ignore_column.size() > 0) {
-    if (Common::StartsWith(io_config_.ignore_column, name_prefix)) {
-      std::string names = io_config_.ignore_column.substr(name_prefix.size());
+
+  // load categorical features
+  if (io_config_.categorical_column.size() > 0) {
+    if (Common::StartsWith(io_config_.categorical_column, name_prefix)) {
+      std::string names = io_config_.categorical_column.substr(name_prefix.size());
       for (auto name : Common::Split(names.c_str(), ',')) {
         if (name2idx.count(name) > 0) {
           int tmp = name2idx[name];
           // skip for label column
           if (tmp > label_idx_) { tmp -= 1; }
-          ignore_features_.emplace(tmp);
+          categorical_features_.emplace(tmp);
         } else {
           Log::Fatal("Could not find ignore column %s in data file", name.c_str());
         }
       }
     } else {
-      for (auto token : Common::Split(io_config_.ignore_column.c_str(), ',')) {
+      for (auto token : Common::Split(io_config_.categorical_column.c_str(), ',')) {
         int tmp = 0;
         if (!Common::AtoiAndCheck(token.c_str(), &tmp)) {
           Log::Fatal("ignore_column is not a number, \
@@ -78,59 +158,9 @@ void DatasetLoader::SetHeader(const char* filename) {
         }
         // skip for label column
         if (tmp > label_idx_) { tmp -= 1; }
-        ignore_features_.emplace(tmp);
+        categorical_features_.emplace(tmp);
       }
     }
-
-  }
-
-  // load weight idx
-  if (io_config_.weight_column.size() > 0) {
-    if (Common::StartsWith(io_config_.weight_column, name_prefix)) {
-      std::string name = io_config_.weight_column.substr(name_prefix.size());
-      if (name2idx.count(name) > 0) {
-        weight_idx_ = name2idx[name];
-        Log::Info("Using column %s as weight", name.c_str());
-      } else {
-        Log::Fatal("Could not find weight column %s in data file", name.c_str());
-      }
-    } else {
-      if (!Common::AtoiAndCheck(io_config_.weight_column.c_str(), &weight_idx_)) {
-        Log::Fatal("weight_column is not a number, \
-                      if you want to use a column name, \
-                      please add the prefix \"name:\" to the column name");
-      }
-      Log::Info("Using column number %d as weight", weight_idx_);
-    }
-    // skip for label column
-    if (weight_idx_ > label_idx_) {
-      weight_idx_ -= 1;
-    }
-    ignore_features_.emplace(weight_idx_);
-  }
-
-  if (io_config_.group_column.size() > 0) {
-    if (Common::StartsWith(io_config_.group_column, name_prefix)) {
-      std::string name = io_config_.group_column.substr(name_prefix.size());
-      if (name2idx.count(name) > 0) {
-        group_idx_ = name2idx[name];
-        Log::Info("Using column %s as group/query id", name.c_str());
-      } else {
-        Log::Fatal("Could not find group/query column %s in data file", name.c_str());
-      }
-    } else {
-      if (!Common::AtoiAndCheck(io_config_.group_column.c_str(), &group_idx_)) {
-        Log::Fatal("group_column is not a number, \
-                      if you want to use a column name, \
-                      please add the prefix \"name:\" to the column name");
-      }
-      Log::Info("Using column number %d as group/query id", group_idx_);
-    }
-    // skip for label column
-    if (group_idx_ > label_idx_) {
-      group_idx_ -= 1;
-    }
-    ignore_features_.emplace(group_idx_);
   }
 }
 
@@ -415,7 +445,11 @@ Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>&
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
     bin_mappers[i].reset(new BinMapper());
-    bin_mappers[i]->FindBin(&sample_values[i], total_sample_size, io_config_.max_bin, BinType::NumericalBin);
+    BinType bin_type = BinType::NumericalBin;
+    if (categorical_features_.count(i)) {
+      bin_type = BinType::CategoracilBin;
+    }
+    bin_mappers[i]->FindBin(&sample_values[i], total_sample_size, io_config_.max_bin, bin_type);
   }
 
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
@@ -631,7 +665,11 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
         continue;
       }
       bin_mappers[i].reset(new BinMapper());
-      bin_mappers[i]->FindBin(&sample_values[i], sample_data.size(), io_config_.max_bin, BinType::NumericalBin);
+      BinType bin_type = BinType::NumericalBin;
+      if (categorical_features_.count(i)) {
+        bin_type = BinType::CategoracilBin;
+      }
+      bin_mappers[i]->FindBin(&sample_values[i], sample_data.size(), io_config_.max_bin, bin_type);
     }
 
     for (size_t i = 0; i < sample_values.size(); ++i) {
@@ -681,7 +719,11 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
 #pragma omp parallel for schedule(guided)
     for (int i = 0; i < len[rank]; ++i) {
       BinMapper bin_mapper;
-      bin_mapper.FindBin(&sample_values[start[rank] + i], sample_data.size(), io_config_.max_bin, BinType::NumericalBin);
+      BinType bin_type = BinType::NumericalBin;
+      if (categorical_features_.count(start[rank] + i)) {
+        bin_type = BinType::CategoracilBin;
+      }
+      bin_mapper.FindBin(&sample_values[start[rank] + i], sample_data.size(), io_config_.max_bin, bin_type);
       bin_mapper.CopyTo(input_buffer.data() + i * type_size);
     }
     // convert to binary size

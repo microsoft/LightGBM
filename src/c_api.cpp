@@ -221,8 +221,7 @@ DllExport int LGBM_DatasetCreateFromFile(const char* filename,
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
   io_config.Set(param);
-  DatasetLoader loader(io_config, nullptr);
-  loader.SetHeader(filename);
+  DatasetLoader loader(io_config, nullptr, filename);
   if (reference == nullptr) {
     *out = loader.LoadFromFile(filename);
   } else {
@@ -244,7 +243,7 @@ DllExport int LGBM_DatasetCreateFromMat(const void* data,
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
   io_config.Set(param);
-  DatasetLoader loader(io_config, nullptr);
+  DatasetLoader loader(io_config, nullptr, nullptr);
   std::unique_ptr<Dataset> ret;
   auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
   if (reference == nullptr) {
@@ -296,7 +295,7 @@ DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
   io_config.Set(param);
-  DatasetLoader loader(io_config, nullptr);
+  DatasetLoader loader(io_config, nullptr, nullptr);
   std::unique_ptr<Dataset> ret;
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
@@ -358,7 +357,7 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
   io_config.Set(param);
-  DatasetLoader loader(io_config, nullptr);
+  DatasetLoader loader(io_config, nullptr, nullptr);
   std::unique_ptr<Dataset> ret;
   auto get_col_fun = ColumnFunctionFromCSC(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem);
   int32_t nrow = static_cast<int32_t>(num_row);
