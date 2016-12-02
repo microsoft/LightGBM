@@ -1,3 +1,5 @@
+# coding: utf-8
+# pylint: disable = invalid-name, W0105
 from __future__ import absolute_import
 import collections
 
@@ -25,12 +27,12 @@ CallbackEnv = collections.namedtuple(
 def _format_eval_result(value, show_stdv=True):
     """format metric string"""
     if len(value) == 4:
-        return '%s_%s:%g' % (value[0], value[1], value[2])
+        return '%s\'s %s:%g' % (value[0], value[1], value[2])
     elif len(value) == 5:
         if show_stdv:
-            return '%s_%s:%g+%g' % (value[0], value[1], value[2], value[4])
+            return '%s\'s %s:%g+%g' % (value[0], value[1], value[2], value[4])
         else:
-            return '%s_%s:%g' % (value[0], value[1], value[2])
+            return '%s\'s %s:%g' % (value[0], value[1], value[2])
     else:
         raise ValueError("wrong metric value")
 
@@ -55,9 +57,10 @@ def print_evaluation(period=1, show_stdv=True):
         """internal function"""
         if len(env.evaluation_result_list) == 0 or period is False:
             return
-        if (env.iteration % period == 0 or env.iteration + 1 == env.begin_iteration):
-            result = '\t'.join([_format_eval_result(x, show_stdv) for x in env.evaluation_result_list])
-            print('[%d]\t%s\n' % (env.iteration, result))
+        if env.iteration % period == 0 or env.iteration + 1 == env.begin_iteration:
+            result = '\t'.join([_format_eval_result(x, show_stdv) \
+                for x in env.evaluation_result_list])
+            print('[%d]\t%s' % (env.iteration, result))
     return callback
 
 
@@ -131,13 +134,13 @@ def reset_learning_rate(learning_rates):
 
 def early_stop(stopping_rounds, verbose=True):
     """Create a callback that activates early stopping.
-    Activates early stopping. 
+    Activates early stopping.
     Requires at least one validation data and one metric
     If there's more than one, will check all of them
 
     Parameters
     ----------
-    stopp_rounds : int
+    stopping_rounds : int
        The stopping rounds before the trend occur.
 
     verbose : optional, bool
@@ -154,13 +157,11 @@ def early_stop(stopping_rounds, verbose=True):
     best_msg = {}
     def init(env):
         """internal function"""
-        bst = env.model
-
         if len(env.evaluation_result_list) == 0:
             raise ValueError('For early stopping you need at least one set in evals.')
 
         if verbose:
-            msg = "Will train until hasn't improved in {} rounds.\n"
+            msg = "Train until valid scores didn't improve in {} rounds."
             print(msg.format(stopping_rounds))
 
         for i in range(len(env.evaluation_result_list)):
@@ -182,13 +183,13 @@ def early_stop(stopping_rounds, verbose=True):
                 best_score[i] = score
                 best_iter[i] = env.iteration
                 if verbose:
-                    best_msg[i] = '[%d]\t%s' % ( env.iteration,
+                    best_msg[i] = '[%d]\t%s' % (env.iteration, \
                         '\t'.join([_format_eval_result(x) for x in env.evaluation_result_list]))
             else:
                 if env.iteration - best_iter[i] >= stopping_rounds:
                     if env.model is not None:
                         env.model.set_attr(best_iteration=str(best_iter[i]))
                     if verbose:
-                        print('early stopping, best message is:\n {} '.format(best_msg[i]))
+                        print('early stopping, best iteration is:\n{}'.format(best_msg[i]))
                     raise EarlyStopException(best_iter[i])
     return callback

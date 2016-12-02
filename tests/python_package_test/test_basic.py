@@ -1,7 +1,7 @@
+# coding: utf-8
 import numpy as np
 from sklearn import datasets, metrics, model_selection
 import lightgbm as lgb
-
 
 X, Y = datasets.make_classification(n_samples=100000, n_features=100)
 x_train, x_test, y_train, y_test = model_selection.train_test_split(X, Y, test_size=0.1)

@@ -17,7 +17,7 @@ For more details, please refer to [Features](https://github.com/Microsoft/LightG
 News
 ----
 
-12/02/2012 : Release [python-package](https://github.com/Microsoft/LightGBM/tree/master/python-package) beta version, welcome to have a try and provide issues and feedback.
+12/02/2016 : Release [python-package](https://github.com/Microsoft/LightGBM/tree/master/python-package) beta version, welcome to have a try and provide issues and feedback.
 
 Get Started
 ------------

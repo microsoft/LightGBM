@@ -1,3 +1,5 @@
+# coding: utf-8
+# pylint: disable = invalid-name, W0105
 """Training Library containing training routines of LightGBM."""
 from __future__ import absolute_import
 
@@ -6,7 +8,7 @@ from .basic import LightGBMError, Predictor, Dataset, Booster, is_str
 from . import callback
 
 def _construct_dataset(X_y, reference=None,
-                       params=None, other_fields=None, 
+                       params=None, other_fields=None,
                        predictor=None):
     if 'max_bin' in params:
         max_bin = int(params['max_bin'])
@@ -30,10 +32,9 @@ def _construct_dataset(X_y, reference=None,
         data = X_y[0]
         label = X_y[1]
     if reference is None:
-        ret = Dataset(data, label=label, max_bin=max_bin, 
+        ret = Dataset(data, label=label, max_bin=max_bin,
                       weight=weight, group=group,
                       predictor=predictor, params=params)
-
     else:
         ret = reference.create_valid(data, label=label, weight=weight,
                                      group=group, params=params)
@@ -53,11 +54,11 @@ def train(params, train_data, num_boost_round=100,
     ----------
     params : dict
          params.
-    train_data : pair, (X, y) or filename of data
+    train_data : Dataset, tuple (X, y) or filename of data
         Data to be trained.
     num_boost_round: int
         Number of boosting iterations.
-    valid_datas: list of pairs (valid_X, valid_y) or filename of data
+    valid_datas: list of Datasets, tuples (valid_X, valid_y) or filename of data
         List of data to be evaluated during training
     valid_names: list of string
         names of valid_datas
@@ -72,18 +73,19 @@ def train(params, train_data, num_boost_round=100,
         other data file in training data. e.g. train_fields['weight'] is weight data
         support fields: weight, group, init_score
     valid_fields : dict
-        other data file in training data. e.g. valid_fields[0]['weight'] is weight data for first valid data
+        other data file in training data. \
+        e.g. valid_fields[0]['weight'] is weight data for first valid data
         support fields: weight, group, init_score
     early_stopping_rounds: int
-        Activates early stopping. 
+        Activates early stopping.
         Requires at least one validation data and one metric
         If there's more than one, will check all of them
         Returns the model with (best_iter + early_stopping_rounds)
         If early stopping occurs, the model will add 'best_iteration' field
     evals_result: dict or None
         This dictionary used to store all evaluation results of all the items in valid_datas.
-        Example: with a valid_datas containing [valid_set, train_set] and valid_names containing ['eval', 'train'] and
-        a paramater containing ('metric':'logloss')
+        Example: with a valid_datas containing [valid_set, train_set] \
+        and valid_names containing ['eval', 'train'] and a paramater containing ('metric':'logloss')
         Returns: {'train': {'logloss': ['0.48253', '0.35953', ...]},
                   'eval': {'logloss': ['0.480385', '0.357756', ...]}}
         passed with None means no using this function
@@ -120,26 +122,36 @@ def train(params, train_data, num_boost_round=100,
     else:
         predictor = None
     """create dataset"""
-    train_set = _construct_dataset(train_data, None, params, train_fields, predictor)
+    if isinstance(train_data, Dataset):
+        train_set = train_data
+    else:
+        train_set = _construct_dataset(train_data, None, params, train_fields, predictor)
     is_valid_contain_train = False
     train_data_name = "training"
     valid_sets = []
     name_valid_sets = []
     if valid_datas is not None:
-        for i in range(len(valid_datas)):
+        if isinstance(valid_datas, (Dataset, tuple)):
+            valid_datas = [valid_datas]
+        if isinstance(valid_names, str):
+            valid_names = [valid_names]
+        for i, valid_data in enumerate(valid_datas):
             other_fields = None if valid_fields is None else valid_fields[i]
             """reduce cost for prediction training data"""
-            if valid_datas[i] is train_data:
+            if valid_data is train_data:
                 is_valid_contain_train = True
                 if valid_names is not None:
                     train_data_name = valid_names[i]
                 continue
-            valid_set = _construct_dataset(
-                valid_datas[i],
-                train_set,
-                params,
-                other_fields,
-                predictor)
+            if isinstance(valid_data, Dataset):
+                valid_set = valid_data
+            else:
+                valid_set = _construct_dataset(
+                    valid_data,
+                    train_set,
+                    params,
+                    other_fields,
+                    predictor)
             valid_sets.append(valid_set)
             if valid_names is not None:
                 name_valid_sets.append(valid_names[i])
@@ -178,8 +190,8 @@ def train(params, train_data, num_boost_round=100,
     booster = Booster(params=params, train_set=train_set)
     if is_valid_contain_train:
         booster.set_train_data_name(train_data_name)
-    for i in range(len(valid_sets)):
-        booster.add_valid(valid_sets[i], name_valid_sets[i])
+    for valid_set, name_valid_set in zip(valid_sets, name_valid_sets):
+        booster.add_valid(valid_set, name_valid_set)
     """start training"""
     for i in range(num_boost_round):
         for cb in callbacks_before_iter:
@@ -209,9 +221,9 @@ def train(params, train_data, num_boost_round=100,
         except callback.EarlyStopException:
             break
     if booster.attr('best_iteration') is not None:
-        booster.best_iteration = int(booster.attr('best_iteration'))
+        booster.best_iteration = int(booster.attr('best_iteration')) + 1
     else:
-        booster.best_iteration = num_boost_round - 1
+        booster.best_iteration = num_boost_round
     return booster
 
 
@@ -233,13 +245,14 @@ class CVBooster(object):
         return self.booster.eval_valid(feval)
 
 try:
-    try:
-        from sklearn.model_selection import KFold, StratifiedKFold
-    except ImportError:
-        from sklearn.cross_validation import KFold, StratifiedKFold
+    from sklearn.model_selection import StratifiedKFold
     SKLEARN_StratifiedKFold = True
 except ImportError:
-    SKLEARN_StratifiedKFold = False
+    try:
+        from sklearn.cross_validation import StratifiedKFold
+        SKLEARN_StratifiedKFold = True
+    except ImportError:
+        SKLEARN_StratifiedKFold = False
 
 def _make_n_folds(full_data, nfold, param, seed, fpreproc=None, stratified=False):
     """
@@ -270,7 +283,6 @@ def _make_n_folds(full_data, nfold, param, seed, fpreproc=None, stratified=False
     return ret
 
 def _agg_cv_result(raw_results):
-    # pylint: disable=invalid-name
     """
     Aggregate cross-validation results.
     """
@@ -294,7 +306,6 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
        metrics=(), fobj=None, feval=None, train_fields=None, early_stopping_rounds=None,
        fpreproc=None, verbose_eval=None, show_stdv=True, seed=0,
        callbacks=None):
-    # pylint: disable = invalid-name
     """Cross-validation with given paramaters.
 
     Parameters
@@ -351,7 +362,7 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
     if isinstance(params, list):
         params = dict(params)
 
-    if not 'metric' in params:
+    if 'metric' not in params:
         params['metric'] = []
     else:
         if is_str(params['metric']):
@@ -410,7 +421,7 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
                                         end_iteration=num_boost_round,
                                         evaluation_result_list=res))
         except callback.EarlyStopException as e:
-            for k in results.keys():
+            for k in results:
                 results[k] = results[k][:(e.best_iteration + 1)]
             break
     return results

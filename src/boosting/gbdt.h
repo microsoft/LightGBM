@@ -145,9 +145,16 @@ public:
   std::vector<int> PredictLeafIndex(const double* value) const override;
 
   /*!
-  * \brief save model to file
-  * \param num_iterations Iterations that want to save, -1 means save all
-  * \param filename filename that want to save to
+  * \brief Dump model to json format string
+  * \return Json format string of model
+  */
+  std::string DumpModel() const override;
+
+  /*!
+  * \brief Save model to file
+  * \param num_used_model Number of model that want to save, -1 means save all
+  * \param is_finish Is training finished or not
+  * \param filename Filename that want to save to
   */
   virtual void SaveModelToFile(int num_iterations, const char* filename) const override ;
 
@@ -155,6 +162,7 @@ public:
   * \brief Restore from a serialized string
   */
   void LoadModelFromString(const std::string& model_str) override;
+
   /*!
   * \brief Get max feature index of this model
   * \return Max feature index of this model
@@ -231,7 +239,7 @@ protected:
   * \brief Calculate feature importances
   * \param last_iter Last tree use to calculate
   */
-  std::string FeatureImportance() const;
+  std::vector<std::pair<size_t, std::string>> FeatureImportance() const;
   /*! \brief current iteration */
   int iter_;
   /*! \brief Pointer to training data */
