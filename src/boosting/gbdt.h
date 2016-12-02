@@ -290,6 +290,8 @@ protected:
   double shrinkage_rate_;
   /*! \brief Number of loaded initial models */
   int num_init_iteration_;
+  /*! \brief Feature names */
+  std::vector<std::string> feature_names_;
 };
 
 }  // namespace LightGBM

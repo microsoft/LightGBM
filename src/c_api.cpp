@@ -409,6 +409,20 @@ DllExport int LGBM_DatasetGetSubset(
   API_END();
 }
 
+DllExport int LGBM_DatasetSetFeatureNames(
+  DatesetHandle handle,
+  const char** feature_names,
+  int64_t num_feature_names) {
+  API_BEGIN();
+  auto dataset = reinterpret_cast<Dataset*>(handle);
+  std::vector<std::string> feature_names_str;
+  for (int64_t i = 0; i < num_feature_names; ++i) {
+    feature_names_str.emplace_back(feature_names[i]);
+  }
+  dataset->set_feature_names(feature_names_str);
+  API_END();
+}
+
 DllExport int LGBM_DatasetFree(DatesetHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Dataset*>(handle);

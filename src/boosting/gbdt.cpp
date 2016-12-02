@@ -411,8 +411,14 @@ void GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
   }
   // output sigmoid parameter
   output_file << "sigmoid=" << sigmoid_ << std::endl;
-  output_file << std::endl;
+  // output feature names
+  auto feature_names = std::ref(feature_names_);
+  if (train_data_ != nullptr) {
+    feature_names = std::ref(train_data_->feature_names());
+  }
+  output_file << "feature_names=" << Common::Join(feature_names.get(), ' ') << std::endl;
 
+  output_file << std::endl;
   int num_used_model = 0;
   if (num_iteration <= 0) {
     num_used_model = static_cast<int>(models_.size());
@@ -466,6 +472,19 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
   } else {
     sigmoid_ = -1.0f;
   }
+  // get feature names
+  line = Common::FindFromLines(lines, "feature_names=");
+  if (line.size() > 0) {
+    feature_names_ = Common::Split(Common::Split(line.c_str(), '=')[1].c_str(), ' ');
+    if (feature_names_.size() != static_cast<size_t>(max_feature_idx_ + 1)) {
+      Log::Fatal("Wrong size of feature_names");
+      return;
+    }
+  } else {
+    Log::Fatal("Model file doesn't contain feature names");
+    return;
+  }
+
   // get tree models
   size_t i = 0;
   while (i < lines.size()) {
@@ -488,6 +507,10 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
 }
 
 std::string GBDT::FeatureImportance() const {
+  auto feature_names = std::ref(feature_names_);
+  if (train_data_ != nullptr) {
+    feature_names = std::ref(train_data_->feature_names());
+  }
   std::vector<size_t> feature_importances(max_feature_idx_ + 1, 0);
     for (size_t iter = 0; iter < models_.size(); ++iter) {
         for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
@@ -498,7 +521,7 @@ std::string GBDT::FeatureImportance() const {
     std::vector<std::pair<size_t, std::string>> pairs;
     for (size_t i = 0; i < feature_importances.size(); ++i) {
       if (feature_importances[i] > 0) {
-        pairs.emplace_back(feature_importances[i], train_data_->feature_names()[i]);
+        pairs.emplace_back(feature_importances[i], feature_names.get().at(i));
       }
     }
     // sort the importance
