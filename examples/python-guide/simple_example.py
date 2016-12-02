@@ -62,4 +62,3 @@ model_json = gbm.dump_model()
 
 with open('model.json', 'w+') as f:
     json.dump(model_json, f, indent=4)
-

@@ -245,13 +245,14 @@ class CVBooster(object):
         return self.booster.eval_valid(feval)
 
 try:
-    try:
-        from sklearn.model_selection import StratifiedKFold
-    except ImportError:
-        from sklearn.cross_validation import StratifiedKFold
+    from sklearn.model_selection import StratifiedKFold
     SKLEARN_StratifiedKFold = True
 except ImportError:
-    SKLEARN_StratifiedKFold = False
+    try:
+        from sklearn.cross_validation import StratifiedKFold
+        SKLEARN_StratifiedKFold = True
+    except ImportError:
+        SKLEARN_StratifiedKFold = False
 
 def _make_n_folds(full_data, nfold, param, seed, fpreproc=None, stratified=False):
     """

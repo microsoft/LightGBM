@@ -416,17 +416,7 @@ std::string GBDT::DumpModel() const {
     ss << models_[i]->ToJSON();
     ss << "}";
   }
-  ss << "]," << std::endl;
-
-  std::vector<std::pair<size_t, std::string>> pairs = FeatureImportance();
-  ss << "\"feature_importances\":{" << std::endl;
-  for (size_t i = 0; i < pairs.size(); ++i) {
-    if (i > 0) {
-      ss << ",";
-    }
-    ss << "\"" << pairs[i].second << "\":" << pairs[i].first;
-  }
-  ss << "}" << std::endl;
+  ss << "]" << std::endl;
 
   ss << "}" << std::endl;
 

@@ -3,8 +3,8 @@ import numpy as np
 from sklearn import datasets, metrics, model_selection
 import lightgbm as lgb
 
-X, Y = datasets.make_classification(n_samples=100000, n_features=100, random_state=42)
-x_train, x_test, y_train, y_test = model_selection.train_test_split(X, Y, test_size=0.1, random_state=42)
+X, Y = datasets.make_classification(n_samples=100000, n_features=100)
+x_train, x_test, y_train, y_test = model_selection.train_test_split(X, Y, test_size=0.1)
 
 train_data = lgb.Dataset(x_train, max_bin=255, label=y_train)
 valid_data = train_data.create_valid(x_test, label=y_test)
