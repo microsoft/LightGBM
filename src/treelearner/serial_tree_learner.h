@@ -109,20 +109,6 @@ protected:
   const score_t* gradients_;
   /*! \brief hessians of current iteration */
   const score_t* hessians_;
-  /*! \brief number of total leaves */
-  int num_leaves_;
-  /*! \brief minimal data on one leaf */
-  data_size_t min_num_data_one_leaf_;
-  /*! \brief minimal sum hessian on one leaf */
-  double min_sum_hessian_one_leaf_;
-  /*! \brief lambda of the L1 weights regularization */
-  double lambda_l1_;
-  /*! \brief lambda of the L2 weights regularization */
-  double lambda_l2_;
-  /*! \brief minimal gain (loss reduction) to split */
-  double min_gain_to_split_;
-  /*! \brief sub-feature fraction rate */
-  double feature_fraction_;
   /*! \brief training data partition on leaves */
   std::unique_ptr<DataPartition> data_partition_;
   /*! \brief used for generate used features */
@@ -158,19 +144,16 @@ protected:
   const score_t* ptr_to_ordered_gradients_larger_leaf_;
   /*! \brief Pointer to ordered_hessians_, use this to avoid copy at BeforeTrain*/
   const score_t* ptr_to_ordered_hessians_larger_leaf_;
-
   /*! \brief Store ordered bin */
   std::vector<std::unique_ptr<OrderedBin>> ordered_bins_;
   /*! \brief True if has ordered bin */
   bool has_ordered_bin_ = false;
   /*! \brief  is_data_in_leaf_[i] != 0 means i-th data is marked */
   std::vector<char> is_data_in_leaf_;
-  /*! \brief  max cache size(unit:GB) for historical histogram. < 0 means not limit */
-  double histogram_pool_size_;
   /*! \brief used to cache historical histogram to speed up*/
   HistogramPool histogram_pool_;
-  /*! \brief  max depth of tree model */
-  int max_depth_;
+  /*! \brief config of tree learner*/
+  const TreeConfig& tree_config_;
 };
 
 
