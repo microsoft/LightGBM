@@ -757,7 +757,7 @@ DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   std::string model = ref_booster->DumpModel();
-  *out_len = static_cast<int64_t>(model.size());
+  *out_len = static_cast<int64_t>(model.size()) + 1;
   if (*out_len <= buffer_len) {
     std::strcpy(*out_str, model.c_str());
   }

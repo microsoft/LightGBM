@@ -409,7 +409,9 @@ std::string GBDT::DumpModel() const {
     feature_names = std::ref(train_data_->feature_names());
   }
 
-  ss << "\"feature_names\":" << Common::Join(feature_names.get(), ' ') << "," << std::endl;
+  ss << "\"feature_names\":[\"" 
+     << Common::Join(feature_names.get(), "\",\"") << "\"]," 
+     << std::endl;
 
   ss << "\"tree_info\":[";
   for (int i = 0; i < static_cast<int>(models_.size()); ++i) {

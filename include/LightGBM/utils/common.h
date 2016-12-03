@@ -320,6 +320,20 @@ inline static std::string Join(const std::vector<T>& strs, char delimiter) {
 }
 
 template<typename T>
+inline static std::string Join(const std::vector<T>& strs, const char* delimiter) {
+  if (strs.size() <= 0) {
+    return std::string("");
+  }
+  std::stringstream ss;
+  ss << strs[0];
+  for (size_t i = 1; i < strs.size(); ++i) {
+    ss << delimiter;
+    ss << strs[i];
+  }
+  return ss.str();
+}
+
+template<typename T>
 inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end, char delimiter) {
   if (end - start <= 0) {
     return std::string("");
