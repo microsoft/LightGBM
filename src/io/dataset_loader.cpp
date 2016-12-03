@@ -25,23 +25,29 @@ void DatasetLoader::SetHeader(const char* filename) {
   std::string name_prefix("name:");
   if (filename != nullptr) {
     TextReader<data_size_t> text_reader(filename, io_config_.has_header);
+
     // get column names
     if (io_config_.has_header) {
       std::string first_line = text_reader.first_line();
       feature_names_ = Common::Split(first_line.c_str(), "\t ,");
-      for (size_t i = 0; i < feature_names_.size(); ++i) {
-        name2idx[feature_names_[i]] = static_cast<int>(i);
-      }
     }
-    // load label idx
+
+    // load label idx first
     if (io_config_.label_column.size() > 0) {
       if (Common::StartsWith(io_config_.label_column, name_prefix)) {
         std::string name = io_config_.label_column.substr(name_prefix.size());
-        if (name2idx.count(name) > 0) {
-          label_idx_ = name2idx[name];
+        label_idx_ = -1;
+        for (int i = 0; i < static_cast<int>(feature_names_.size()); ++i) {
+          if (name == feature_names_[i]) {
+            label_idx_ = i;
+            break;
+          }
+        }
+        if (label_idx_ >= 0) {
           Log::Info("Using column %s as label", name.c_str());
         } else {
-          Log::Fatal("Could not find label column %s in data file", name.c_str());
+          Log::Fatal("Could not find label column %s in data file \
+                      or data file doesn't contain header", name.c_str());
         }
       } else {
         if (!Common::AtoiAndCheck(io_config_.label_column.c_str(), &label_idx_)) {
@@ -52,10 +58,15 @@ void DatasetLoader::SetHeader(const char* filename) {
         Log::Info("Using column number %d as label", label_idx_);
       }
     }
+
     if (feature_names_.size() > 0) {
       // erase label column name
       feature_names_.erase(feature_names_.begin() + label_idx_);
+      for (size_t i = 0; i < feature_names_.size(); ++i) {
+        name2idx[feature_names_[i]] = static_cast<int>(i);
+      }
     }
+
     // load ignore columns
     if (io_config_.ignore_column.size() > 0) {
       if (Common::StartsWith(io_config_.ignore_column, name_prefix)) {
@@ -63,8 +74,6 @@ void DatasetLoader::SetHeader(const char* filename) {
         for (auto name : Common::Split(names.c_str(), ',')) {
           if (name2idx.count(name) > 0) {
             int tmp = name2idx[name];
-            // skip for label column
-            if (tmp > label_idx_) { tmp -= 1; }
             ignore_features_.emplace(tmp);
           } else {
             Log::Fatal("Could not find ignore column %s in data file", name.c_str());
@@ -78,8 +87,6 @@ void DatasetLoader::SetHeader(const char* filename) {
                         if you want to use a column name, \
                         please add the prefix \"name:\" to the column name");
           }
-          // skip for label column
-          if (tmp > label_idx_) { tmp -= 1; }
           ignore_features_.emplace(tmp);
         }
       }
@@ -102,10 +109,6 @@ void DatasetLoader::SetHeader(const char* filename) {
         }
         Log::Info("Using column number %d as weight", weight_idx_);
       }
-      // skip for label column
-      if (weight_idx_ > label_idx_) {
-        weight_idx_ -= 1;
-      }
       ignore_features_.emplace(weight_idx_);
     }
     // load group idx
@@ -126,17 +129,8 @@ void DatasetLoader::SetHeader(const char* filename) {
         }
         Log::Info("Using column number %d as group/query id", group_idx_);
       }
-      // skip for label column
-      if (group_idx_ > label_idx_) {
-        group_idx_ -= 1;
-      }
       ignore_features_.emplace(group_idx_);
     }
-  } else {
-    // label is not load from file
-    label_idx_ = std::numeric_limits<int>::max();
-    weight_idx_ = NO_SPECIFIC;
-    group_idx_ = NO_SPECIFIC;
   }
 
   // load categorical features
@@ -146,8 +140,6 @@ void DatasetLoader::SetHeader(const char* filename) {
       for (auto name : Common::Split(names.c_str(), ',')) {
         if (name2idx.count(name) > 0) {
           int tmp = name2idx[name];
-          // skip for label column
-          if (tmp > label_idx_) { tmp -= 1; }
           categorical_features_.emplace(tmp);
         } else {
           Log::Fatal("Could not find categorical_column %s in data file", name.c_str());
@@ -161,8 +153,6 @@ void DatasetLoader::SetHeader(const char* filename) {
                         if you want to use a column name, \
                         please add the prefix \"name:\" to the column name");
         }
-        // skip for label column
-        if (tmp > label_idx_) { tmp -= 1; }
         categorical_features_.emplace(tmp);
       }
     }

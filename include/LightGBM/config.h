@@ -114,14 +114,20 @@ public:
    * And add an prefix "name:" while using column name */
   std::string label_column = "";
   /*! \brief Index or column name of weight, < 0 means not used
-  * And add an prefix "name:" while using column name */
+  * And add an prefix "name:" while using column name 
+  * Note: when using Index, it dosen't count the label index */
   std::string weight_column = "";
-  /*! \brief Index or column name of group, < 0 means not used */
+  /*! \brief Index or column name of group/query id, < 0 means not used
+  * And add an prefix "name:" while using column name
+  * Note: when using Index, it dosen't count the label index */
   std::string group_column = "";
   /*! \brief ignored features, separate by ','
-  * e.g. name:column_name1,column_name2  */
+  * And add an prefix "name:" while using column name
+  * Note: when using Index, it dosen't count the label index */
   std::string ignore_column = "";
-  /*! \brief specific categorical columns, Note:only support for integer type*/
+  /*! \brief specific categorical columns, Note:only support for integer type categorical
+  * And add an prefix "name:" while using column name
+  * Note: when using Index, it dosen't count the label index */
   std::string categorical_column = "";
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
