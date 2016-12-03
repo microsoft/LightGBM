@@ -442,7 +442,7 @@ Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>&
     bin_mappers[i].reset(new BinMapper());
     BinType bin_type = BinType::NumericalBin;
     if (categorical_features_.count(i)) {
-      bin_type = BinType::CategoracilBin;
+      bin_type = BinType::CategoricalBin;
     }
     bin_mappers[i]->FindBin(&sample_values[i], total_sample_size, io_config_.max_bin, bin_type);
   }
@@ -662,7 +662,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
       bin_mappers[i].reset(new BinMapper());
       BinType bin_type = BinType::NumericalBin;
       if (categorical_features_.count(i)) {
-        bin_type = BinType::CategoracilBin;
+        bin_type = BinType::CategoricalBin;
       }
       bin_mappers[i]->FindBin(&sample_values[i], sample_data.size(), io_config_.max_bin, bin_type);
     }
@@ -716,7 +716,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
       BinMapper bin_mapper;
       BinType bin_type = BinType::NumericalBin;
       if (categorical_features_.count(start[rank] + i)) {
-        bin_type = BinType::CategoracilBin;
+        bin_type = BinType::CategoricalBin;
       }
       bin_mapper.FindBin(&sample_values[start[rank] + i], sample_data.size(), io_config_.max_bin, bin_type);
       bin_mapper.CopyTo(input_buffer.data() + i * type_size);

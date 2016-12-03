@@ -11,7 +11,7 @@ namespace LightGBM {
 
 enum BinType {
   NumericalBin,
-  CategoracilBin
+  CategoricalBin
 };
 
 /*! \brief Store data for one histogram bin */

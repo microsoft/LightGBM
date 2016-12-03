@@ -9,7 +9,7 @@ from . import callback
 
 def _construct_dataset(X_y, reference=None,
                        params=None, other_fields=None, 
-                       feature_names=None, categorical_features=None,
+                       feature_name=None, categorical_feature=None,
                        predictor=None):
     if 'max_bin' in params:
         max_bin = int(params['max_bin'])
@@ -36,8 +36,8 @@ def _construct_dataset(X_y, reference=None,
         ret = Dataset(data, label=label, max_bin=max_bin,
                       weight=weight, group=group,
                       predictor=predictor,
-                      feature_names=feature_names,
-                      categorical_features=categorical_features,
+                      feature_name=feature_name,
+                      categorical_feature=categorical_feature,
                       params=params)
     else:
         ret = reference.create_valid(data, label=label, weight=weight,
@@ -50,7 +50,7 @@ def train(params, train_data, num_boost_round=100,
           valid_datas=None, valid_names=None,
           fobj=None, feval=None, init_model=None,
           train_fields=None, valid_fields=None,
-          feature_names=None, categorical_features=None,
+          feature_name=None, categorical_feature=None,
           early_stopping_rounds=None, evals_result=None,
           verbose_eval=True, learning_rates=None, callbacks=None):
     """Train with given parameters.
@@ -81,11 +81,11 @@ def train(params, train_data, num_boost_round=100,
         other data file in training data. \
         e.g. valid_fields[0]['weight'] is weight data for first valid data
         support fields: weight, group, init_score
-    feature_names : list of str
+    feature_name : list of str
         feature names
-    categorical_features : list of str/int
+    categorical_feature : list of str/int
         categorical features , int type to use index, 
-        str type to use feature names (feature_names cannot be None)
+        str type to use feature names (feature_name cannot be None)
     early_stopping_rounds: int
         Activates early stopping.
         Requires at least one validation data and one metric
@@ -137,8 +137,8 @@ def train(params, train_data, num_boost_round=100,
     else:
         train_set = _construct_dataset(train_data, None, params, 
                                        other_fields=train_fields, 
-                                       feature_names=feature_names,
-                                       categorical_features=categorical_features,
+                                       feature_name=feature_name,
+                                       categorical_feature=categorical_feature,
                                        predictor=predictor)
     is_valid_contain_train = False
     train_data_name = "training"
@@ -165,8 +165,8 @@ def train(params, train_data, num_boost_round=100,
                     train_set,
                     params,
                     other_fields=other_fields,
-                    feature_names=feature_names,
-                    categorical_features=categorical_features,
+                    feature_name=feature_name,
+                    categorical_feature=categorical_feature,
                     predictor=predictor)
             valid_sets.append(valid_set)
             if valid_names is not None:
@@ -320,7 +320,7 @@ def _agg_cv_result(raw_results):
 
 def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
        metrics=(), fobj=None, feval=None, train_fields=None,
-       feature_names=None, categorical_features=None,
+       feature_name=None, categorical_feature=None,
        early_stopping_rounds=None, fpreproc=None,
        verbose_eval=None, show_stdv=True, seed=0,
        callbacks=None):
@@ -349,11 +349,11 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
     train_fields : dict
         other data file in training data. e.g. train_fields['weight'] is weight data
         support fields: weight, group, init_score
-    feature_names : list of str
+    feature_name : list of str
         feature names
-    categorical_features : list of str/int
+    categorical_feature : list of str/int
         categorical features , int type to use index, 
-        str type to use feature names (feature_names cannot be None)
+        str type to use feature names (feature_name cannot be None)
     early_stopping_rounds: int
         Activates early stopping. CV error needs to decrease at least
         every <early_stopping_rounds> round(s) to continue.
@@ -398,8 +398,8 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
 
     train_set = _construct_dataset(train_data, None, params, 
 								   other_fields=train_fields,
-                                   feature_names=feature_names,
-                                   categorical_features=categorical_features)
+                                   feature_name=feature_name,
+                                   categorical_feature=categorical_feature)
 
     results = {}
     cvfolds = _make_n_folds(train_set, nfold, params, seed, fpreproc, stratified)

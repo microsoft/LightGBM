@@ -198,7 +198,7 @@ class LGBMModel(LGBMModelBase):
     def fit(self, X, y, eval_set=None, eval_metric=None,
             early_stopping_rounds=None, verbose=True,
             train_fields=None, valid_fields=None,
-            feature_names=None, categorical_features=None,
+            feature_name=None, categorical_feature=None,
             other_params=None):
         """
         Fit the gradient boosting model
@@ -227,11 +227,11 @@ class LGBMModel(LGBMModelBase):
             other data file in training data. \
             e.g. valid_fields[0]['weight'] is weight data for first valid data
             support fields: weight, group, init_score
-        feature_names : list of str
+        feature_name : list of str
             feature names
-        categorical_features : list of str/int
+        categorical_feature : list of str/int
             categorical features , int type to use index, 
-            str type to use feature names (feature_names cannot be None)
+            str type to use feature names (feature_name cannot be None)
         other_params: dict
             other parameters
         """
@@ -267,8 +267,8 @@ class LGBMModel(LGBMModelBase):
                               early_stopping_rounds=early_stopping_rounds,
                               evals_result=evals_result, fobj=self.fobj, feval=feval,
                               verbose_eval=verbose, train_fields=train_fields,
-                              valid_fields=valid_fields, feature_names=feature_names,
-                              categorical_features=categorical_features)
+                              valid_fields=valid_fields, feature_name=feature_name,
+                              categorical_feature=categorical_feature)
 
         if evals_result:
             for val in evals_result.items():
@@ -330,7 +330,7 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
     def fit(self, X, y, eval_set=None, eval_metric=None,
             early_stopping_rounds=None, verbose=True,
             train_fields=None, valid_fields=None,
-            feature_names=None, categorical_features=None,
+            feature_name=None, categorical_feature=None,
             other_params=None):
 
         self.classes_ = np.unique(y)
@@ -357,7 +357,7 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
         super(LGBMClassifier, self).fit(X, training_labels, eval_set,
                                         eval_metric, early_stopping_rounds,
                                         verbose, train_fields, valid_fields,
-                                        feature_names, categorical_features,
+                                        feature_name, categorical_feature,
                                         other_params)
         return self
 
