@@ -453,7 +453,7 @@ void GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
   if (train_data_ != nullptr) {
     feature_names = std::ref(train_data_->feature_names());
   }
-  output_file << "feature_names=" << Common::Join(feature_names.get(), ' ') << std::endl;
+  output_file << "feature_names=" << Common::Join(feature_names.get(), " ") << std::endl;
 
   output_file << std::endl;
   int num_used_model = 0;
@@ -535,7 +535,7 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
       int start = static_cast<int>(i);
       while (i < lines.size() && lines[i].find("Tree=") == std::string::npos) { ++i; }
       int end = static_cast<int>(i);
-      std::string tree_str = Common::Join<std::string>(lines, start, end, '\n');
+      std::string tree_str = Common::Join<std::string>(lines, start, end, "\n");
       auto new_tree = std::unique_ptr<Tree>(new Tree(tree_str));
       models_.push_back(std::move(new_tree));
     } else {

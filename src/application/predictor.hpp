@@ -116,7 +116,7 @@ public:
         // parser
         parser_fun(lines[i].c_str(), &oneline_features);
         // predict
-        pred_result[i] = Common::Join<double>(predict_fun_(oneline_features), '\t');
+        pred_result[i] = Common::Join<double>(predict_fun_(oneline_features), "\t");
       }
 
       for (size_t i = 0; i < pred_result.size(); ++i) {
