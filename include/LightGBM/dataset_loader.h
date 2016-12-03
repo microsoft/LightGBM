@@ -58,11 +58,11 @@ private:
   /*! \brief prediction function for initial model */
   const PredictFunction& predict_fun_;
   /*! \brief index of label column */
-  int label_idx_ = 0;
+  int label_idx_;
   /*! \brief index of weight column */
-  int weight_idx_ = NO_SPECIFIC;
+  int weight_idx_;
   /*! \brief index of group column */
-  int group_idx_ = NO_SPECIFIC;
+  int group_idx_;
   /*! \brief Mapper from real feature index to used index*/
   std::unordered_set<int> ignore_features_;
   /*! \brief store feature names */

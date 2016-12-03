@@ -10,6 +10,9 @@ namespace LightGBM {
 
 DatasetLoader::DatasetLoader(const IOConfig& io_config, const PredictFunction& predict_fun, const char* filename)
   :io_config_(io_config), random_(io_config_.data_random_seed), predict_fun_(predict_fun) {
+  label_idx_ = 0;
+  weight_idx_ = NO_SPECIFIC;
+  group_idx_ = NO_SPECIFIC;
   SetHeader(filename);
 }
 
@@ -130,8 +133,10 @@ void DatasetLoader::SetHeader(const char* filename) {
       ignore_features_.emplace(group_idx_);
     }
   } else {
-    // not label load from file
-    label_idx_ = std::numeric_limits<int>::infinity();
+    // label is not load from file
+    label_idx_ = std::numeric_limits<int>::max();
+    weight_idx_ = NO_SPECIFIC;
+    group_idx_ = NO_SPECIFIC;
   }
 
   // load categorical features
@@ -145,14 +150,14 @@ void DatasetLoader::SetHeader(const char* filename) {
           if (tmp > label_idx_) { tmp -= 1; }
           categorical_features_.emplace(tmp);
         } else {
-          Log::Fatal("Could not find ignore column %s in data file", name.c_str());
+          Log::Fatal("Could not find categorical_column %s in data file", name.c_str());
         }
       }
     } else {
       for (auto token : Common::Split(io_config_.categorical_column.c_str(), ',')) {
         int tmp = 0;
         if (!Common::AtoiAndCheck(token.c_str(), &tmp)) {
-          Log::Fatal("ignore_column is not a number, \
+          Log::Fatal("categorical_column is not a number, \
                         if you want to use a column name, \
                         please add the prefix \"name:\" to the column name");
         }

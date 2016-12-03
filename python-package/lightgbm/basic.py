@@ -589,7 +589,7 @@ class Dataset(object):
             return
         if len(feature_names) != self.num_feature():
             raise ValueError("size of feature_names error")
-        c_feature_names = [c_str(name) for name in self.feature_names]
+        c_feature_names = [c_str(name) for name in feature_names]
         _safe_call(_LIB.LGBM_DatasetSetFeatureNames(
             self.handle,
             c_array(ctypes.c_char_p, c_feature_names),
