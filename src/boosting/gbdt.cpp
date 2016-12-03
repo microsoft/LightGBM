@@ -401,10 +401,15 @@ std::string GBDT::DumpModel() const {
   ss << "\"num_class\":" << num_class_ << "," << std::endl;
   ss << "\"label_index\":" << label_idx_ << "," << std::endl;
   ss << "\"max_feature_idx\":" << max_feature_idx_ << "," << std::endl;
-  if (object_function_ != nullptr) {
-    ss << "\"objective\":\"" << object_function_->GetName() << "\"," << std::endl;
-  }
   ss << "\"sigmoid\":" << sigmoid_ << "," << std::endl;
+
+  // output feature names
+  auto feature_names = std::ref(feature_names_);
+  if (train_data_ != nullptr) {
+    feature_names = std::ref(train_data_->feature_names());
+  }
+
+  ss << "\"feature_names\":" << Common::Join(feature_names.get(), ' ') << std::endl;
 
   ss << "\"tree_info\":[";
   for (int i = 0; i < static_cast<int>(models_.size()); ++i) {

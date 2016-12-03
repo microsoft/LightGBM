@@ -108,7 +108,7 @@ public:
   std::string ToJSON();
 
   template<typename T>
-  static bool categorical_decision(T fval, T threshold) {
+  static bool CategoricalDecision(T fval, T threshold) {
     if (static_cast<int>(fval) == static_cast<int>(threshold)) {
       return true;
     } else {
@@ -117,11 +117,19 @@ public:
   }
 
   template<typename T>
-  static bool numerical_decision(T fval, T threshold) {
+  static bool NumericalDecision(T fval, T threshold) {
     if (fval <= threshold) {
       return true;
     } else {
       return false;
+    }
+  }
+
+  static const char* GetDecisionTypeName(int8_t type) {
+    if (type == 0) {
+      return "no_greater";
+    } else {
+      return "is";
     }
   }
 

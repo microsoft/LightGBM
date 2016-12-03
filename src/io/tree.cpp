@@ -16,9 +16,9 @@
 namespace LightGBM {
 
 std::vector<std::function<bool(unsigned int, unsigned int)>> Tree::inner_decision_funs = 
-          {Tree::numerical_decision<unsigned int>, Tree::categorical_decision<unsigned int> };
+          {Tree::NumericalDecision<unsigned int>, Tree::CategoricalDecision<unsigned int> };
 std::vector<std::function<bool(double, double)>> Tree::decision_funs = 
-          { Tree::numerical_decision<double>, Tree::categorical_decision<double> };
+          { Tree::NumericalDecision<double>, Tree::CategoricalDecision<double> };
 
 
 Tree::Tree(int max_leaves)
@@ -169,6 +169,7 @@ std::string Tree::NodeToJSON(int index) {
     ss << "\"split_feature\":" << split_feature_real_[index] << "," << std::endl;
     ss << "\"split_gain\":" << split_gain_[index] << "," << std::endl;
     ss << "\"threshold\":" << threshold_[index] << "," << std::endl;
+    ss << "\"decision_type\":\"" << Tree::GetDecisionTypeName(decision_type_[index]) << "\"," << std::endl;
     ss << "\"internal_value\":" << internal_value_[index] << "," << std::endl;
     ss << "\"internal_count\":" << internal_count_[index] << "," << std::endl;
     ss << "\"left_child\":" << NodeToJSON(left_child_[index]) << "," << std::endl;
