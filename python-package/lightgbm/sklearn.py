@@ -1,10 +1,10 @@
 # coding: utf-8
-# pylint: disable = invalid-name, W0105
+# pylint: disable = invalid-name, W0105, C0111
 """Scikit-Learn Wrapper interface for LightGBM."""
 from __future__ import absolute_import
 
 import numpy as np
-from .basic import LightGBMError, Predictor, Dataset, Booster, is_str
+from .basic import LightGBMError, is_str
 from .engine import train
 # sklearn
 try:
@@ -66,7 +66,7 @@ def _point_wise_objective(func):
                 num_data = len(weight)
                 num_class = len(grad) // num_data
                 if num_class * num_data != len(grad):
-                    raise ValueError("length of grad and hess should equal with num_class * num_data")
+                    raise ValueError("length of grad and hess should equal to num_class * num_data")
                 for k in range(num_class):
                     for i in range(num_data):
                         idx = k * num_data + i
@@ -169,6 +169,7 @@ class LGBMModel(LGBMModelBase):
         self.is_unbalance = is_unbalance
         self.seed = seed
         self._Booster = None
+        self.best_iteration = -1
         if callable(self.objective):
             self.fobj = _point_wise_objective(self.objective)
         else:
@@ -197,7 +198,9 @@ class LGBMModel(LGBMModelBase):
 
     def fit(self, X, y, eval_set=None, eval_metric=None,
             early_stopping_rounds=None, verbose=True,
-            train_fields=None, valid_fields=None, other_params=None):
+            train_fields=None, valid_fields=None,
+            feature_name=None, categorical_feature=None,
+            other_params=None):
         """
         Fit the gradient boosting model
 
@@ -211,22 +214,27 @@ class LGBMModel(LGBMModelBase):
             A list of (X, y) tuple pairs to use as a validation set for early-stopping
         eval_metric : str, list of str, callable, optional
             If a str, should be a built-in evaluation metric to use.
-            If callable, a custom evaluation metric. The call
-            signature is func(y_predicted, dataset) where dataset will be a
-            Dataset fobject such that you may need to call the get_label
+            If callable, a custom evaluation metric. The call \
+            signature is func(y_predicted, dataset) where dataset will be a \
+            Dataset fobject such that you may need to call the get_label \
             method. And it must return (eval_name->str, eval_result->float, is_bigger_better->Bool)
         early_stopping_rounds : int
         verbose : bool
             If `verbose` and an evaluation set is used, writes the evaluation
         train_fields : dict
-            other data file in training data. e.g. train_fields['weight'] is weight data
-            support fields: weight, group, init_score
+            Other data file in training data. e.g. train_fields['weight'] is weight data
+            Support fields: weight, group, init_score
         valid_fields : dict
-            other data file in training data. \
+            Other data file in training data. \
             e.g. valid_fields[0]['weight'] is weight data for first valid data
-            support fields: weight, group, init_score
+            Support fields: weight, group, init_score
+        feature_name : list of str
+            Feature names
+        categorical_feature : list of str or int
+            Categorical features , type int represents index, \
+            type str represents feature names (need to specify feature_name as well)
         other_params: dict
-            other parameters
+            Other parameters
         """
         evals_result = {}
         params = self.get_params()
@@ -260,7 +268,8 @@ class LGBMModel(LGBMModelBase):
                               early_stopping_rounds=early_stopping_rounds,
                               evals_result=evals_result, fobj=self.fobj, feval=feval,
                               verbose_eval=verbose, train_fields=train_fields,
-                              valid_fields=valid_fields)
+                              valid_fields=valid_fields, feature_name=feature_name,
+                              categorical_feature=categorical_feature)
 
         if evals_result:
             for val in evals_result.items():
@@ -309,6 +318,14 @@ class LGBMModel(LGBMModelBase):
 
         return evals_result
 
+    def feature_importance(self):
+        """Feature importances
+        Returns
+        -------
+        Array of normailized feature importances
+        """
+        importace_array = self._Booster.feature_importance().astype(np.float32)
+        return importace_array / importace_array.sum()
 
 class LGBMRegressor(LGBMModel, LGBMRegressorBase):
     __doc__ = """Implementation of the scikit-learn API for LightGBM regression.
@@ -321,7 +338,9 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
 
     def fit(self, X, y, eval_set=None, eval_metric=None,
             early_stopping_rounds=None, verbose=True,
-            train_fields=None, valid_fields=None, other_params=None):
+            train_fields=None, valid_fields=None,
+            feature_name=None, categorical_feature=None,
+            other_params=None):
 
         self.classes_ = np.unique(y)
         self.n_classes_ = len(self.classes_)
@@ -347,6 +366,7 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
         super(LGBMClassifier, self).fit(X, training_labels, eval_set,
                                         eval_metric, early_stopping_rounds,
                                         verbose, train_fields, valid_fields,
+                                        feature_name, categorical_feature,
                                         other_params)
         return self
 
@@ -383,7 +403,7 @@ def _group_wise_objective(func):
         y_true: array_like of shape [n_samples]
             The target values
         group : array_like of shape
-            group size data of data
+            Group size data of data
         y_pred: array_like of shape [n_samples] or shape[n_samples* n_class] (for multi-class)
             The predicted values
     Returns

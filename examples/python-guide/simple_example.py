@@ -49,9 +49,6 @@ gbm = lgb.train(params,
 # save model to file
 gbm.save_model('model.txt')
 
-# load model from file
-gbm = lgb.Booster(model_file='model.txt')
-
 # predict
 y_pred = gbm.predict(X_test, num_iteration=gbm.best_iteration)
 # eval
@@ -62,3 +59,7 @@ model_json = gbm.dump_model()
 
 with open('model.json', 'w+') as f:
     json.dump(model_json, f, indent=4)
+
+# feature importances
+print('Feature importances:', gbm.feature_importance())
+print('Feature importances:', gbm.feature_importance("gain"))

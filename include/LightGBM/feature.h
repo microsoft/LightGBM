@@ -27,7 +27,7 @@ public:
     :bin_mapper_(bin_mapper) {
     feature_index_ = feature_idx;
     bin_data_.reset(Bin::CreateBin(num_data, bin_mapper_->num_bin(),
-      bin_mapper_->sparse_rate(), is_enable_sparse, &is_sparse_, bin_mapper_->ValueToBin(0)));
+      bin_mapper_->sparse_rate(), is_enable_sparse, &is_sparse_, bin_mapper_->ValueToBin(0), bin_mapper_->bin_type()));
   }
   /*!
   * \brief Constructor from memory
@@ -52,9 +52,9 @@ public:
       num_data = static_cast<data_size_t>(local_used_indices.size());
     }
     if (is_sparse_) {
-      bin_data_.reset(Bin::CreateSparseBin(num_data, bin_mapper_->num_bin(), bin_mapper_->ValueToBin(0)));
+      bin_data_.reset(Bin::CreateSparseBin(num_data, bin_mapper_->num_bin(), bin_mapper_->ValueToBin(0), bin_mapper_->bin_type()));
     } else {
-      bin_data_.reset(Bin::CreateDenseBin(num_data, bin_mapper_->num_bin(), bin_mapper_->ValueToBin(0)));
+      bin_data_.reset(Bin::CreateDenseBin(num_data, bin_mapper_->num_bin(), bin_mapper_->ValueToBin(0), bin_mapper_->bin_type()));
     }
     // get bin data
     bin_data_->LoadFromMemory(memory_ptr, local_used_indices);
@@ -90,6 +90,8 @@ public:
   inline const BinMapper* bin_mapper() const { return bin_mapper_.get(); }
   /*! \brief Number of bin of this feature */
   inline int num_bin() const { return bin_mapper_->num_bin(); }
+
+  inline BinType bin_type() const { return bin_mapper_->bin_type(); }
   /*! \brief Get bin data of this feature */
   inline const Bin* bin_data() const { return bin_data_.get(); }
   /*!

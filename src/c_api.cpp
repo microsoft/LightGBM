@@ -221,8 +221,7 @@ DllExport int LGBM_DatasetCreateFromFile(const char* filename,
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
   io_config.Set(param);
-  DatasetLoader loader(io_config, nullptr);
-  loader.SetHeader(filename);
+  DatasetLoader loader(io_config, nullptr, filename);
   if (reference == nullptr) {
     *out = loader.LoadFromFile(filename);
   } else {
@@ -244,7 +243,6 @@ DllExport int LGBM_DatasetCreateFromMat(const void* data,
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
   io_config.Set(param);
-  DatasetLoader loader(io_config, nullptr);
   std::unique_ptr<Dataset> ret;
   auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
   if (reference == nullptr) {
@@ -262,6 +260,7 @@ DllExport int LGBM_DatasetCreateFromMat(const void* data,
         }
       }
     }
+    DatasetLoader loader(io_config, nullptr, nullptr);
     ret.reset(loader.CostructFromSampleData(sample_values, sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow, io_config.num_class));
@@ -296,7 +295,6 @@ DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
   io_config.Set(param);
-  DatasetLoader loader(io_config, nullptr);
   std::unique_ptr<Dataset> ret;
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
@@ -324,6 +322,7 @@ DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
       }
     }
     CHECK(num_col >= static_cast<int>(sample_values.size()));
+    DatasetLoader loader(io_config, nullptr, nullptr);
     ret.reset(loader.CostructFromSampleData(sample_values, sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow, io_config.num_class));
@@ -358,7 +357,6 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
   io_config.Set(param);
-  DatasetLoader loader(io_config, nullptr);
   std::unique_ptr<Dataset> ret;
   auto get_col_fun = ColumnFunctionFromCSC(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem);
   int32_t nrow = static_cast<int32_t>(num_row);
@@ -374,6 +372,7 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
       auto cur_col = get_col_fun(i);
       sample_values[i] = SampleFromOneColumn(cur_col, sample_indices);
     }
+    DatasetLoader loader(io_config, nullptr, nullptr);
     ret.reset(loader.CostructFromSampleData(sample_values, sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow, io_config.num_class));
@@ -410,6 +409,20 @@ DllExport int LGBM_DatasetGetSubset(
       io_config.is_enable_sparse));
   ret->FinishLoad();
   *out = ret.release();
+  API_END();
+}
+
+DllExport int LGBM_DatasetSetFeatureNames(
+  DatesetHandle handle,
+  const char** feature_names,
+  int64_t num_feature_names) {
+  API_BEGIN();
+  auto dataset = reinterpret_cast<Dataset*>(handle);
+  std::vector<std::string> feature_names_str;
+  for (int64_t i = 0; i < num_feature_names; ++i) {
+    feature_names_str.emplace_back(feature_names[i]);
+  }
+  dataset->set_feature_names(feature_names_str);
   API_END();
 }
 
@@ -744,7 +757,7 @@ DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   std::string model = ref_booster->DumpModel();
-  *out_len = static_cast<int64_t>(model.size());
+  *out_len = static_cast<int64_t>(model.size()) + 1;
   if (*out_len <= buffer_len) {
     std::strcpy(*out_str, model.c_str());
   }

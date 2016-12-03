@@ -5,7 +5,7 @@ from __future__ import absolute_import
 import sys
 import os
 from setuptools import setup, find_packages
-# import subprocess
+
 sys.path.insert(0, '.')
 
 CURRENT_DIR = os.path.dirname(__file__)

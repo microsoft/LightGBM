@@ -9,6 +9,7 @@ from . import callback
 
 def _construct_dataset(X_y, reference=None,
                        params=None, other_fields=None,
+                       feature_name=None, categorical_feature=None,
                        predictor=None):
     if 'max_bin' in params:
         max_bin = int(params['max_bin'])
@@ -20,9 +21,9 @@ def _construct_dataset(X_y, reference=None,
     if other_fields is not None:
         if not isinstance(other_fields, dict):
             raise TypeError("other filed data should be dict type")
-        weight = None if 'weight' not in other_fields else other_fields['weight']
-        group = None if 'group' not in other_fields else other_fields['group']
-        init_score = None if 'init_score' not in other_fields else other_fields['init_score']
+        weight = other_fields.get('weight', None)
+        group = other_fields.get('group', None)
+        init_score = other_fields.get('init_score', None)
     if is_str(X_y):
         data = X_y
         label = None
@@ -34,7 +35,10 @@ def _construct_dataset(X_y, reference=None,
     if reference is None:
         ret = Dataset(data, label=label, max_bin=max_bin,
                       weight=weight, group=group,
-                      predictor=predictor, params=params)
+                      predictor=predictor,
+                      feature_name=feature_name,
+                      categorical_feature=categorical_feature,
+                      params=params)
     else:
         ret = reference.create_valid(data, label=label, weight=weight,
                                      group=group, params=params)
@@ -46,6 +50,7 @@ def train(params, train_data, num_boost_round=100,
           valid_datas=None, valid_names=None,
           fobj=None, feval=None, init_model=None,
           train_fields=None, valid_fields=None,
+          feature_name=None, categorical_feature=None,
           early_stopping_rounds=None, evals_result=None,
           verbose_eval=True, learning_rates=None, callbacks=None):
     """Train with given parameters.
@@ -53,15 +58,15 @@ def train(params, train_data, num_boost_round=100,
     Parameters
     ----------
     params : dict
-         params.
+        Parameters for training.
     train_data : Dataset, tuple (X, y) or filename of data
         Data to be trained.
     num_boost_round: int
         Number of boosting iterations.
-    valid_datas: list of Datasets, tuples (valid_X, valid_y) or filename of data
+    valid_datas: list of Datasets, tuples (valid_X, valid_y) or filenames of data
         List of data to be evaluated during training
     valid_names: list of string
-        names of valid_datas
+        Names of valid_datas
     fobj : function
         Customized objective function.
     feval : function
@@ -70,12 +75,17 @@ def train(params, train_data, num_boost_round=100,
     init_model : file name of lightgbm model or 'Booster' instance
         model used for continued train
     train_fields : dict
-        other data file in training data. e.g. train_fields['weight'] is weight data
-        support fields: weight, group, init_score
+        Other data file in training data. e.g. train_fields['weight'] is weight data
+        Support fields: weight, group, init_score
     valid_fields : dict
-        other data file in training data. \
+        Other data file in training data. \
         e.g. valid_fields[0]['weight'] is weight data for first valid data
-        support fields: weight, group, init_score
+        Support fields: weight, group, init_score
+    feature_name : list of str
+            Feature names
+    categorical_feature : list of str or int
+        Categorical features , type int represents index, \
+        type str represents feature names (need to specify feature_name as well)
     early_stopping_rounds: int
         Activates early stopping.
         Requires at least one validation data and one metric
@@ -91,18 +101,18 @@ def train(params, train_data, num_boost_round=100,
         passed with None means no using this function
     verbose_eval : bool or int
         Requires at least one item in evals.
-        If `verbose_eval` is True then the evaluation metric on the validation set is
+        If `verbose_eval` is True then the evaluation metric on the validation set is \
         printed at each boosting stage.
-        If `verbose_eval` is an integer then the evaluation metric on the validation set
-        is printed at every given `verbose_eval` boosting stage. The last boosting stage
+        If `verbose_eval` is an integer then the evaluation metric on the validation set \
+        is printed at every given `verbose_eval` boosting stage. The last boosting stage \
         / the boosting stage found by using `early_stopping_rounds` is also printed.
-        Example: with verbose_eval=4 and at least one item in evals, an evaluation metric
+        Example: with verbose_eval=4 and at least one item in evals, an evaluation metric \
         is printed every 4 boosting stages, instead of every boosting stage.
     learning_rates: list or function
-        List of learning rate for each boosting round
-        or a customized function that calculates learning_rate in terms of
-        current number of round and the total number of boosting round (e.g. yields
-        learning rate decay)
+        List of learning rate for each boosting round \
+        or a customized function that calculates learning_rate in terms of \
+        current number of round and the total number of boosting round \
+        (e.g. yields learning rate decay)
         - list l: learning_rate = l[current_round]
         - function f: learning_rate = f(current_round, total_boost_round)
     callbacks : list of callback functions
@@ -124,8 +134,15 @@ def train(params, train_data, num_boost_round=100,
     """create dataset"""
     if isinstance(train_data, Dataset):
         train_set = train_data
+        if train_fields is not None:
+            for field, data in train_fields.items():
+                train_set.set_field(field, data)
     else:
-        train_set = _construct_dataset(train_data, None, params, train_fields, predictor)
+        train_set = _construct_dataset(train_data, None, params,
+                                       other_fields=train_fields,
+                                       feature_name=feature_name,
+                                       categorical_feature=categorical_feature,
+                                       predictor=predictor)
     is_valid_contain_train = False
     train_data_name = "training"
     valid_sets = []
@@ -136,7 +153,7 @@ def train(params, train_data, num_boost_round=100,
         if isinstance(valid_names, str):
             valid_names = [valid_names]
         for i, valid_data in enumerate(valid_datas):
-            other_fields = None if valid_fields is None else valid_fields[i]
+            other_fields = None if valid_fields is None else valid_fields.get(i, None)
             """reduce cost for prediction training data"""
             if valid_data is train_data:
                 is_valid_contain_train = True
@@ -145,15 +162,20 @@ def train(params, train_data, num_boost_round=100,
                 continue
             if isinstance(valid_data, Dataset):
                 valid_set = valid_data
+                if other_fields is not None:
+                    for field, data in other_fields.items():
+                        valid_set.set_field(field, data)
             else:
                 valid_set = _construct_dataset(
                     valid_data,
                     train_set,
                     params,
-                    other_fields,
-                    predictor)
+                    other_fields=other_fields,
+                    feature_name=feature_name,
+                    categorical_feature=categorical_feature,
+                    predictor=predictor)
             valid_sets.append(valid_set)
-            if valid_names is not None:
+            if valid_names is not None and len(valid_names) > i:
                 name_valid_sets.append(valid_names[i])
             else:
                 name_valid_sets.append('valid_'+str(i))
@@ -303,8 +325,10 @@ def _agg_cv_result(raw_results):
     return results
 
 def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
-       metrics=(), fobj=None, feval=None, train_fields=None, early_stopping_rounds=None,
-       fpreproc=None, verbose_eval=None, show_stdv=True, seed=0,
+       metrics=(), fobj=None, feval=None, train_fields=None,
+       feature_name=None, categorical_feature=None,
+       early_stopping_rounds=None, fpreproc=None,
+       verbose_eval=None, show_stdv=True, seed=0,
        callbacks=None):
     """Cross-validation with given paramaters.
 
@@ -329,19 +353,24 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
     feval : function
         Custom evaluation function.
     train_fields : dict
-        other data file in training data. e.g. train_fields['weight'] is weight data
-        support fields: weight, group, init_score
+        Other data file in training data. e.g. train_fields['weight'] is weight data
+        Support fields: weight, group, init_score
+    feature_name : list of str
+            Feature names
+    categorical_feature : list of str or int
+        Categorical features , type int represents index, \
+        type str represents feature names (need to specify feature_name as well)
     early_stopping_rounds: int
-        Activates early stopping. CV error needs to decrease at least
+        Activates early stopping. CV error needs to decrease at least \
         every <early_stopping_rounds> round(s) to continue.
         Last entry in evaluation history is the one from best iteration.
     fpreproc : function
-        Preprocessing function that takes (dtrain, dtest, param) and returns
+        Preprocessing function that takes (dtrain, dtest, param) and returns \
         transformed versions of those.
     verbose_eval : bool, int, or None, default None
-        Whether to display the progress. If None, progress will be displayed
-        when np.ndarray is returned. If True, progress will be displayed at
-        boosting stage. If an integer is given, progress will be displayed
+        Whether to display the progress. If None, progress will be displayed \
+        when np.ndarray is returned. If True, progress will be displayed at \
+        boosting stage. If an integer is given, progress will be displayed \
         at every given `verbose_eval` boosting stage.
     show_stdv : bool, default True
         Whether to display the standard deviation in progress.
@@ -373,7 +402,10 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
     if metrics is not None and len(metrics) > 0:
         params['metric'].extend(metrics)
 
-    train_set = _construct_dataset(train_data, None, params, train_fields)
+    train_set = _construct_dataset(train_data, None, params,
+								   other_fields=train_fields,
+                                   feature_name=feature_name,
+                                   categorical_feature=categorical_feature)
 
     results = {}
     cvfolds = _make_n_folds(train_set, nfold, params, seed, fpreproc, stratified)

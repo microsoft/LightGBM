@@ -46,7 +46,7 @@ def print_evaluation(period=1, show_stdv=True):
         The period to log the evaluation results
 
     show_stdv : bool, optional
-         Whether show stdv if provided
+        Whether show stdv if provided
 
     Returns
     -------
@@ -99,17 +99,17 @@ def record_evaluation(eval_result):
 
 
 def reset_learning_rate(learning_rates):
-    """Reset learning rate after iteration 1
+    """Reset learning rate after first iteration
 
     NOTE: the initial learning rate will still take in-effect on first iteration.
 
     Parameters
     ----------
     learning_rates: list or function
-        List of learning rate for each boosting round
-        or a customized function that calculates learning_rate in terms of
-        current number of round and the total number of boosting round (e.g. yields
-        learning rate decay)
+        List of learning rate for each boosting round \
+        or a customized function that calculates learning_rate in terms of \
+        current number of round and the total number of boosting round \
+        (e.g. yields learning rate decay)
         - list l: learning_rate = l[current_round]
         - function f: learning_rate = f(current_round, total_boost_round)
 
