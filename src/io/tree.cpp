@@ -181,7 +181,7 @@ std::string Tree::NodeToJSON(int index) {
     ss << "{" << std::endl;
     ss << "\"leaf_index\":" << index << "," << std::endl;
     ss << "\"leaf_parent\":" << leaf_parent_[index] << "," << std::endl;
-    ss << "\"leaf_value\":" << leaf_value_[index] << std::endl;
+    ss << "\"leaf_value\":" << leaf_value_[index] << "," << std::endl;
     ss << "\"leaf_count\":" << leaf_count_[index] << std::endl;
     ss << "}";
   }
