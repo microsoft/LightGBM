@@ -36,10 +36,14 @@ public:
     lambda_l1_ = lambda_l1;
     lambda_l2_ = lambda_l2;
     min_gain_to_split_ = min_gain_to_split;
-    bin_type_ = feature->bin_type();
     bin_data_ = feature->bin_data();
     num_bins_ = feature->num_bin();
     data_.resize(num_bins_);
+    if (feature->bin_type() == BinType::NumericalBin) {
+      find_best_threshold_fun_ = std::bind(&FeatureHistogram::FindBestThresholdForNumerical, this, std::placeholders::_1);
+    } else {
+      find_best_threshold_fun_ = std::bind(&FeatureHistogram::FindBestThresholdForCategorical, this, std::placeholders::_1);
+    }
   }
 
 
@@ -111,9 +115,10 @@ public:
   * \param output The best split result
   */
   void FindBestThreshold(SplitInfo* output) {
-    if (bin_type_ == BinType::CategoracilBin) {
-      return FindBestThresholdForCategorical(output);
-    }
+    find_best_threshold_fun_(output);
+  }
+
+  void FindBestThresholdForNumerical(SplitInfo* output) {
     double best_sum_left_gradient = NAN;
     double best_sum_left_hessian = NAN;
     double best_gain = kMinScore;
@@ -142,7 +147,7 @@ public:
 
       double sum_left_gradient = sum_gradients_ - sum_right_gradient;
       // current split gain
-      double current_gain = GetLeafSplitGain(sum_left_gradient, sum_left_hessian) 
+      double current_gain = GetLeafSplitGain(sum_left_gradient, sum_left_hessian)
         + GetLeafSplitGain(sum_right_gradient, sum_right_hessian);
       // gain with split is worse than without split
       if (current_gain < min_gain_shift) continue;
@@ -159,7 +164,7 @@ public:
         best_gain = current_gain;
       }
     }
-    if (best_threshold < static_cast<unsigned int>(num_bins_)) {
+    if (is_splittable_) {
       // update split information
       output->feature = feature_idx_;
       output->threshold = best_threshold;
@@ -221,7 +226,7 @@ public:
       }
     }
     // update split information
-    if (best_threshold < static_cast<unsigned int>(num_bins_)) {
+    if (is_splittable_) {
       output->feature = feature_idx_;
       output->threshold = best_threshold;
       output->left_output = CalculateSplittedLeafOutput(data_[best_threshold].sum_gradients,
@@ -343,8 +348,8 @@ private:
   double sum_hessians_;
   /*! \brief False if this histogram cannot split */
   bool is_splittable_ = true;
-  /*! \brief bin type of feature */
-  BinType bin_type_;
+  /*! \brief function that used to find best threshold */
+  std::function<void(SplitInfo*)> find_best_threshold_fun_;
 };
 
 
