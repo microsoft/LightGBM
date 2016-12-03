@@ -8,7 +8,8 @@ from .basic import LightGBMError, Predictor, Dataset, Booster, is_str
 from . import callback
 
 def _construct_dataset(X_y, reference=None,
-                       params=None, other_fields=None,
+                       params=None, other_fields=None, 
+                       feature_names=None, categorical_features=None,
                        predictor=None):
     if 'max_bin' in params:
         max_bin = int(params['max_bin'])
@@ -34,7 +35,10 @@ def _construct_dataset(X_y, reference=None,
     if reference is None:
         ret = Dataset(data, label=label, max_bin=max_bin,
                       weight=weight, group=group,
-                      predictor=predictor, params=params)
+                      predictor=predictor,
+                      feature_names=feature_names,
+                      categorical_features=categorical_features,
+                      params=params)
     else:
         ret = reference.create_valid(data, label=label, weight=weight,
                                      group=group, params=params)
@@ -46,6 +50,7 @@ def train(params, train_data, num_boost_round=100,
           valid_datas=None, valid_names=None,
           fobj=None, feval=None, init_model=None,
           train_fields=None, valid_fields=None,
+          feature_names=None, categorical_features=None,
           early_stopping_rounds=None, evals_result=None,
           verbose_eval=True, learning_rates=None, callbacks=None):
     """Train with given parameters.
@@ -76,6 +81,11 @@ def train(params, train_data, num_boost_round=100,
         other data file in training data. \
         e.g. valid_fields[0]['weight'] is weight data for first valid data
         support fields: weight, group, init_score
+    feature_names : list of str
+        feature names
+    categorical_features : list of str/int
+        categorical features , int type to use index, 
+        str type to use feature names (feature_names cannot be None)
     early_stopping_rounds: int
         Activates early stopping.
         Requires at least one validation data and one metric
@@ -125,7 +135,11 @@ def train(params, train_data, num_boost_round=100,
     if isinstance(train_data, Dataset):
         train_set = train_data
     else:
-        train_set = _construct_dataset(train_data, None, params, train_fields, predictor)
+        train_set = _construct_dataset(train_data, None, params, 
+                                       other_fields=train_fields, 
+                                       feature_names=feature_names,
+                                       categorical_features=categorical_features,
+                                       predictor=predictor)
     is_valid_contain_train = False
     train_data_name = "training"
     valid_sets = []
@@ -150,8 +164,10 @@ def train(params, train_data, num_boost_round=100,
                     valid_data,
                     train_set,
                     params,
-                    other_fields,
-                    predictor)
+                    other_fields=other_fields,
+                    feature_names=feature_names,
+                    categorical_features=categorical_features,
+                    predictor=predictor)
             valid_sets.append(valid_set)
             if valid_names is not None:
                 name_valid_sets.append(valid_names[i])
@@ -303,8 +319,10 @@ def _agg_cv_result(raw_results):
     return results
 
 def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
-       metrics=(), fobj=None, feval=None, train_fields=None, early_stopping_rounds=None,
-       fpreproc=None, verbose_eval=None, show_stdv=True, seed=0,
+       metrics=(), fobj=None, feval=None, train_fields=None,
+       feature_names=None, categorical_features=None,
+       early_stopping_rounds=None, fpreproc=None,
+       verbose_eval=None, show_stdv=True, seed=0,
        callbacks=None):
     """Cross-validation with given paramaters.
 
@@ -331,6 +349,11 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
     train_fields : dict
         other data file in training data. e.g. train_fields['weight'] is weight data
         support fields: weight, group, init_score
+    feature_names : list of str
+        feature names
+    categorical_features : list of str/int
+        categorical features , int type to use index, 
+        str type to use feature names (feature_names cannot be None)
     early_stopping_rounds: int
         Activates early stopping. CV error needs to decrease at least
         every <early_stopping_rounds> round(s) to continue.
@@ -373,7 +396,10 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
     if metrics is not None and len(metrics) > 0:
         params['metric'].extend(metrics)
 
-    train_set = _construct_dataset(train_data, None, params, train_fields)
+    train_set = _construct_dataset(train_data, None, params, 
+								   other_fields=train_fields,
+                                   feature_names=feature_names,
+                                   categorical_features=categorical_features)
 
     results = {}
     cvfolds = _make_n_folds(train_set, nfold, params, seed, fpreproc, stratified)
