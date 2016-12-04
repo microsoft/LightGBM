@@ -130,7 +130,7 @@ std::string Tree::ToString() {
   ss << "threshold="
     << Common::ArrayToString<double>(threshold_, ' ') << std::endl;
   ss << "decision_type="
-    << Common::ArrayToString<int8_t, int>(decision_type_, ' ') << std::endl;
+    << Common::ArrayToString<int>(Common::ArrayCast<int8_t, int>(decision_type_), ' ') << std::endl;
   ss << "left_child="
     << Common::ArrayToString<int>(left_child_, ' ') << std::endl;
   ss << "right_child="
@@ -214,18 +214,18 @@ Tree::Tree(const std::string& str) {
 
   Common::Atoi(key_vals["num_leaves"].c_str(), &num_leaves_);
 
-  left_child_ = Common::StringToIntArray<int>(key_vals["left_child"], ' ', num_leaves_ - 1);
-  right_child_ = Common::StringToIntArray<int>(key_vals["right_child"], ' ', num_leaves_ - 1);
-  split_feature_real_ = Common::StringToIntArray<int>(key_vals["split_feature"], ' ', num_leaves_ - 1);
-  threshold_ = Common::StringToDoubleArray<double>(key_vals["threshold"], ' ', num_leaves_ - 1);
-  split_gain_ = Common::StringToDoubleArray<double>(key_vals["split_gain"], ' ', num_leaves_ - 1);
-  internal_count_ = Common::StringToIntArray<data_size_t>(key_vals["internal_count"], ' ', num_leaves_ - 1);
-  internal_value_ = Common::StringToDoubleArray<double>(key_vals["internal_value"], ' ', num_leaves_ - 1);
-  decision_type_ = Common::StringToIntArray<int8_t>(key_vals["decision_type"], ' ', num_leaves_ - 1);
+  left_child_ = Common::StringToArray<int>(key_vals["left_child"], ' ', num_leaves_ - 1);
+  right_child_ = Common::StringToArray<int>(key_vals["right_child"], ' ', num_leaves_ - 1);
+  split_feature_real_ = Common::StringToArray<int>(key_vals["split_feature"], ' ', num_leaves_ - 1);
+  threshold_ = Common::StringToArray<double>(key_vals["threshold"], ' ', num_leaves_ - 1);
+  split_gain_ = Common::StringToArray<double>(key_vals["split_gain"], ' ', num_leaves_ - 1);
+  internal_count_ = Common::StringToArray<data_size_t>(key_vals["internal_count"], ' ', num_leaves_ - 1);
+  internal_value_ = Common::StringToArray<double>(key_vals["internal_value"], ' ', num_leaves_ - 1);
+  decision_type_ = Common::StringToArray<int8_t>(key_vals["decision_type"], ' ', num_leaves_ - 1);
 
-  leaf_count_ = Common::StringToIntArray<data_size_t>(key_vals["leaf_count"], ' ', num_leaves_);
-  leaf_parent_ = Common::StringToIntArray<int>(key_vals["leaf_parent"], ' ', num_leaves_);
-  leaf_value_ = Common::StringToDoubleArray<double>(key_vals["leaf_value"], ' ', num_leaves_);
+  leaf_count_ = Common::StringToArray<data_size_t>(key_vals["leaf_count"], ' ', num_leaves_);
+  leaf_parent_ = Common::StringToArray<int>(key_vals["leaf_parent"], ' ', num_leaves_);
+  leaf_value_ = Common::StringToArray<double>(key_vals["leaf_value"], ' ', num_leaves_);
 
 
 

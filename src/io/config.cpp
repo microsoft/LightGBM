@@ -217,7 +217,7 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
   GetDouble(params, "scale_pos_weight", &scale_pos_weight);
   std::string tmp_str = "";
   if (GetString(params, "label_gain", &tmp_str)) {
-    label_gain = Common::StringToDoubleArray<double>(tmp_str, ',');
+    label_gain = Common::StringToArray<double>(tmp_str, ',');
   } else {
     // label_gain = 2^i - 1, may overflow, so we use 31 here
     const int max_label = 31;
@@ -235,7 +235,7 @@ void MetricConfig::Set(const std::unordered_map<std::string, std::string>& param
   GetInt(params, "num_class", &num_class);
   std::string tmp_str = "";
   if (GetString(params, "label_gain", &tmp_str)) {
-    label_gain = Common::StringToDoubleArray<double>(tmp_str, ',');
+    label_gain = Common::StringToArray<double>(tmp_str, ',');
   } else {
     // label_gain = 2^i - 1, may overflow, so we use 31 here
     const int max_label = 31;
@@ -246,7 +246,7 @@ void MetricConfig::Set(const std::unordered_map<std::string, std::string>& param
   }
   label_gain.shrink_to_fit();
   if (GetString(params, "ndcg_eval_at", &tmp_str)) {
-    eval_at = Common::StringToIntArray<int>(tmp_str, ',');
+    eval_at = Common::StringToArray<int>(tmp_str, ',');
     std::sort(eval_at.begin(), eval_at.end());
     for (size_t i = 0; i < eval_at.size(); ++i) {
       CHECK(eval_at[i] > 0);

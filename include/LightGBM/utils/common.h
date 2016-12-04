@@ -12,6 +12,7 @@
 #include <cmath>
 #include <functional>
 #include <memory>
+#include <type_traits>
 
 namespace LightGBM {
 
@@ -230,6 +231,15 @@ inline static const char* SkipReturn(const char* p) {
   return p;
 }
 
+template<typename T, typename T2>
+inline static std::vector<T2> ArrayCast(const std::vector<T>& arr) {
+  std::vector<T2> ret;
+  for (size_t i = 0; i < arr.size(); ++i) {
+    ret.push_back(static_cast<T2>(arr[i]));
+  }
+  return ret;
+}
+
 template<typename T>
 inline static std::string ArrayToString(const std::vector<T>& arr, char delimiter) {
   if (arr.size() <= 0) {
@@ -244,62 +254,37 @@ inline static std::string ArrayToString(const std::vector<T>& arr, char delimite
   return str_buf.str();
 }
 
-template<typename T, typename T2>
-inline static std::string ArrayToString(const std::vector<T>& arr, char delimiter) {
-  if (arr.size() <= 0) {
-    return std::string("");
-  }
-  std::stringstream str_buf;
-  str_buf << static_cast<T2>(arr[0]);
-  for (size_t i = 1; i < arr.size(); ++i) {
-    str_buf << delimiter;
-    str_buf << static_cast<T2>(arr[i]);
-  }
-  return str_buf.str();
-}
-
 template<typename T>
-inline static std::vector<T> StringToIntArray(const std::string& str, char delimiter, size_t n) {
+inline static std::vector<T> StringToArray(const std::string& str, char delimiter, size_t n) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   if (strs.size() != n) {
     Log::Fatal("StringToIntArray error, size doesn't match.");
   }
   std::vector<T> ret(n);
-  for (size_t i = 0; i < n; ++i) {
-    ret[i] = static_cast<T>(std::stol(strs[i]));
+  if (std::is_same<T, float>::value || std::is_same<T, double>::value) {
+    for (size_t i = 0; i < n; ++i) {
+      ret[i] = static_cast<T>(std::stod(strs[i]));
+    }
+  } else {
+    for (size_t i = 0; i < n; ++i) {
+      ret[i] = static_cast<T>(std::stol(strs[i]));
+    }
   }
   return ret;
 }
 
 template<typename T>
-inline static std::vector<T> StringToDoubleArray(const std::string& str, char delimiter, size_t n) {
-  std::vector<std::string> strs = Split(str.c_str(), delimiter);
-  if (strs.size() != n) {
-    Log::Fatal("StringToIntArray error, size doesn't match.");
-  }
-  std::vector<T> ret(n);
-  for (size_t i = 0; i < n; ++i) {
-    ret[i] = static_cast<T>(std::stod(strs[i]));
-  }
-  return ret;
-}
-
-template<typename T>
-inline static std::vector<T> StringToIntArray(const std::string& str, char delimiter) {
+inline static std::vector<T> StringToArray(const std::string& str, char delimiter) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   std::vector<T> ret;
-  for (const auto& s : strs) {
-    ret.push_back(static_cast<T>(std::stol(s)));
-  }
-  return ret;
-}
-
-template<typename T>
-inline static std::vector<T> StringToDoubleArray(const std::string& str, char delimiter) {
-  std::vector<std::string> strs = Split(str.c_str(), delimiter);
-  std::vector<T> ret;
-  for (const auto& s : strs) {
-    ret.push_back(static_cast<T>(std::stod(s)));
+  if (std::is_same<T, float>::value || std::is_same<T, double>::value) {
+    for (const auto& s : strs) {
+      ret.push_back(static_cast<T>(std::stod(s)));
+    }
+  } else {
+    for (const auto& s : strs) {
+      ret.push_back(static_cast<T>(std::stol(s)));
+    }
   }
   return ret;
 }
