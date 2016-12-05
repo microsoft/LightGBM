@@ -418,7 +418,8 @@ class Dataset(object):
 
     def __init__(self, data, label=None, max_bin=255, reference=None,
                  weight=None, group=None, predictor=None,
-                 silent=False, params=None):
+                 silent=False, feature_name=None, 
+                 categorical_feature=None, params=None):
         """
         Dataset used in LightGBM.
 
@@ -439,6 +440,11 @@ class Dataset(object):
             group/query size for dataset
         silent : boolean, optional
             Whether print messages during construction
+        feature_name : list of str
+            feature names
+        categorical_feature : list of str/int
+            categorical features , int type to use index, 
+            str type to use feature names (feature_name cannot be None)
         params: dict, optional
             other parameters
         """
@@ -461,6 +467,23 @@ class Dataset(object):
             params["verbose"] = 0
         elif "verbose" not in params:
             params["verbose"] = 1
+        """get categorical features"""
+        if categorical_feature is not None:
+            categorical_indices = []
+            feature_dict = {}
+            if feature_name is not None:
+                feature_dict =dict((name, i) for i, name in enumerate(feature_name))
+            for name in categorical_feature:
+                if is_str(name) and name in feature_dict:
+                    categorical_indices.append(feature_dict[name])
+                elif isinstance(name, int):
+                    categorical_indices.append(name)
+                else:
+                    raise TypeError("unknown type({}) or unknown name({}) in categorical_feature"
+                        .format(type(name).__name__, name))
+
+            params['categorical_column'] = categorical_indices
+
         params_str = param_dict_to_str(params)
         """process for reference dataset"""
         ref_dataset = None
@@ -513,6 +536,8 @@ class Dataset(object):
                         new_init_score[j * num_data + i] = init_score[i * self.predictor.num_class + j]
                 init_score = new_init_score
             self.set_init_score(init_score)
+        # set feature names
+        self.set_feature_name(feature_name)
 
     def create_valid(self, data, label=None, weight=None, group=None,
                      silent=False, params=None):
@@ -558,6 +583,17 @@ class Dataset(object):
         if ret.get_label() is None:
             raise ValueError("label should not be None")
         return ret
+
+    def set_feature_name(self, feature_name):
+        if feature_name is None:
+            return
+        if len(feature_name) != self.num_feature():
+            raise ValueError("size of feature_name error")
+        c_feature_name = [c_str(name) for name in feature_name]
+        _safe_call(_LIB.LGBM_DatasetSetFeatureNames(
+            self.handle,
+            c_array(ctypes.c_char_p, c_feature_name),
+            len(feature_name)))
 
     def __init_from_np2d(self, mat, params_str, ref_dataset):
         """

@@ -35,17 +35,20 @@ public:
   * \brief Performing a split on tree leaves.
   * \param leaf Index of leaf to be split
   * \param feature Index of feature; the converted index after removing useless features
+  * \param bin_type type of this feature, numerical or categorical
   * \param threshold Threshold(bin) of split
   * \param real_feature Index of feature, the original index on data
   * \param threshold_double Threshold on feature value
   * \param left_value Model Left child output
   * \param right_value Model Right child output
+  * \param left_cnt Count of left child
+  * \param right_cnt Count of right child
   * \param gain Split gain
   * \return The index of new leaf.
   */
-  int Split(int leaf, int feature, unsigned int threshold, int real_feature,
+  int Split(int leaf, int feature, BinType bin_type, unsigned int threshold, int real_feature,
     double threshold_double, double left_value,
-    double right_value, double gain);
+    double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain);
 
   /*! \brief Get the output of one leave */
   inline double LeafOutput(int leaf) const { return leaf_value_[leaf]; }
@@ -104,6 +107,35 @@ public:
   /*! \brief Serialize this object to json*/
   std::string ToJSON();
 
+  template<typename T>
+  static bool CategoricalDecision(T fval, T threshold) {
+    if (static_cast<int>(fval) == static_cast<int>(threshold)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  template<typename T>
+  static bool NumericalDecision(T fval, T threshold) {
+    if (fval <= threshold) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  static const char* GetDecisionTypeName(int8_t type) {
+    if (type == 0) {
+      return "no_greater";
+    } else {
+      return "is";
+    }
+  }
+
+  static std::vector<std::function<bool(unsigned int, unsigned int)>> inner_decision_funs;
+  static std::vector<std::function<bool(double, double)>> decision_funs;
+
 private:
   /*!
   * \brief Find leaf index of which record belongs by data
@@ -141,15 +173,21 @@ private:
   std::vector<unsigned int> threshold_in_bin_;
   /*! \brief A non-leaf node's split threshold in feature value */
   std::vector<double> threshold_;
+  /*! \brief Decision type, 0 for '<='(numerical feature), 1 for 'is'(categorical feature) */
+  std::vector<int8_t> decision_type_;
   /*! \brief A non-leaf node's split gain */
   std::vector<double> split_gain_;
-  /*! \brief Output of internal nodes(save internal output for per inference feature importance calc) */
-  std::vector<double> internal_value_;
   // used for leaf node
   /*! \brief The parent of leaf */
   std::vector<int> leaf_parent_;
   /*! \brief Output of leaves */
   std::vector<double> leaf_value_;
+  /*! \brief DataCount of leaves */
+  std::vector<data_size_t> leaf_count_;
+  /*! \brief Output of non-leaf nodes */
+  std::vector<double> internal_value_;
+  /*! \brief DataCount of non-leaf nodes */
+  std::vector<data_size_t> internal_count_;
   /*! \brief Depth for leaves */
   std::vector<int> leaf_depth_;
 };
@@ -169,7 +207,9 @@ inline int Tree::GetLeaf(const std::vector<std::unique_ptr<BinIterator>>& iterat
                                        data_size_t data_idx) const {
   int node = 0;
   while (node >= 0) {
-    if (iterators[split_feature_[node]]->Get(data_idx) <= threshold_in_bin_[node]) {
+    if (inner_decision_funs[decision_type_[node]](
+        iterators[split_feature_[node]]->Get(data_idx),
+        threshold_in_bin_[node])) {
       node = left_child_[node];
     } else {
       node = right_child_[node];
@@ -181,7 +221,9 @@ inline int Tree::GetLeaf(const std::vector<std::unique_ptr<BinIterator>>& iterat
 inline int Tree::GetLeaf(const double* feature_values) const {
   int node = 0;
   while (node >= 0) {
-    if (feature_values[split_feature_real_[node]] <= threshold_[node]) {
+    if (decision_funs[decision_type_[node]](
+        feature_values[split_feature_real_[node]],
+        threshold_[node])) {
       node = left_child_[node];
     } else {
       node = right_child_[node];

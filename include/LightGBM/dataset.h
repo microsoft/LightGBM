@@ -378,7 +378,15 @@ public:
   inline int label_idx() const { return label_idx_; }
 
   /*! \brief Get names of current data set */
-  inline std::vector<std::string> feature_names() const { return feature_names_; }
+  inline const std::vector<std::string>& feature_names() const { return feature_names_; }
+
+  inline void set_feature_names(const std::vector<std::string>& feature_names) {
+    if (feature_names.size() != static_cast<size_t>(num_total_features_)) {
+      Log::Warning("size of feature_names error, should equal with total number of features");
+      return;
+    }
+    feature_names_ = std::vector<std::string>(feature_names);
+  }
 
   /*! \brief Get Number of data */
   inline data_size_t num_data() const { return num_data_; }

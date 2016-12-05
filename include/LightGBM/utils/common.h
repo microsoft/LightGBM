@@ -12,6 +12,7 @@
 #include <cmath>
 #include <functional>
 #include <memory>
+#include <type_traits>
 
 namespace LightGBM {
 
@@ -230,22 +231,17 @@ inline static const char* SkipReturn(const char* p) {
   return p;
 }
 
-template<typename T>
-inline static std::string ArrayToString(const T* arr, int n, char delimiter) {
-  if (n <= 0) {
-    return std::string("");
+template<typename T, typename T2>
+inline static std::vector<T2> ArrayCast(const std::vector<T>& arr) {
+  std::vector<T2> ret;
+  for (size_t i = 0; i < arr.size(); ++i) {
+    ret.push_back(static_cast<T2>(arr[i]));
   }
-  std::stringstream str_buf;
-  str_buf << arr[0];
-  for (int i = 1; i < n; ++i) {
-    str_buf << delimiter;
-    str_buf << arr[i];
-  }
-  return str_buf.str();
+  return ret;
 }
 
 template<typename T>
-inline static std::string ArrayToString(std::vector<T> arr, char delimiter) {
+inline static std::string ArrayToString(const std::vector<T>& arr, char delimiter) {
   if (arr.size() <= 0) {
     return std::string("");
   }
@@ -258,55 +254,43 @@ inline static std::string ArrayToString(std::vector<T> arr, char delimiter) {
   return str_buf.str();
 }
 
-inline static void StringToIntArray(const std::string& str, char delimiter, size_t n, int* out) {
+template<typename T>
+inline static std::vector<T> StringToArray(const std::string& str, char delimiter, size_t n) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   if (strs.size() != n) {
     Log::Fatal("StringToIntArray error, size doesn't match.");
   }
-  for (size_t i = 0; i < strs.size(); ++i) {
-    strs[i] = Trim(strs[i]);
-    Atoi(strs[i].c_str(), &out[i]);
-  }
-}
-
-
-inline static void StringToDoubleArray(const std::string& str, char delimiter, size_t n, double* out) {
-  std::vector<std::string> strs = Split(str.c_str(), delimiter);
-  if (strs.size() != n) {
-    Log::Fatal("StringToDoubleArray error, size doesn't match.");
-  }
-  for (size_t i = 0; i < strs.size(); ++i) {
-    strs[i] = Trim(strs[i]);
-    Atof(strs[i].c_str(), &out[i]);
-  }
-}
-
-inline static std::vector<double> StringToDoubleArray(const std::string& str, char delimiter) {
-  std::vector<std::string> strs = Split(str.c_str(), delimiter);
-  std::vector<double> ret;
-  for (size_t i = 0; i < strs.size(); ++i) {
-    strs[i] = Trim(strs[i]);
-    double val = 0.0f;
-    Atof(strs[i].c_str(), &val);
-    ret.push_back(val);
-  }
-  return ret;
-}
-
-inline static std::vector<int> StringToIntArray(const std::string& str, char delimiter) {
-  std::vector<std::string> strs = Split(str.c_str(), delimiter);
-  std::vector<int> ret;
-  for (size_t i = 0; i < strs.size(); ++i) {
-    strs[i] = Trim(strs[i]);
-    int val = 0;
-    Atoi(strs[i].c_str(), &val);
-    ret.push_back(val);
+  std::vector<T> ret(n);
+  if (std::is_same<T, float>::value || std::is_same<T, double>::value) {
+    for (size_t i = 0; i < n; ++i) {
+      ret[i] = static_cast<T>(std::stod(strs[i]));
+    }
+  } else {
+    for (size_t i = 0; i < n; ++i) {
+      ret[i] = static_cast<T>(std::stol(strs[i]));
+    }
   }
   return ret;
 }
 
 template<typename T>
-inline static std::string Join(const std::vector<T>& strs, char delimiter) {
+inline static std::vector<T> StringToArray(const std::string& str, char delimiter) {
+  std::vector<std::string> strs = Split(str.c_str(), delimiter);
+  std::vector<T> ret;
+  if (std::is_same<T, float>::value || std::is_same<T, double>::value) {
+    for (const auto& s : strs) {
+      ret.push_back(static_cast<T>(std::stod(s)));
+    }
+  } else {
+    for (const auto& s : strs) {
+      ret.push_back(static_cast<T>(std::stol(s)));
+    }
+  }
+  return ret;
+}
+
+template<typename T>
+inline static std::string Join(const std::vector<T>& strs, const char* delimiter) {
   if (strs.size() <= 0) {
     return std::string("");
   }
@@ -320,7 +304,7 @@ inline static std::string Join(const std::vector<T>& strs, char delimiter) {
 }
 
 template<typename T>
-inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end, char delimiter) {
+inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end, const char* delimiter) {
   if (end - start <= 0) {
     return std::string("");
   }
@@ -373,6 +357,28 @@ std::vector<const T*> ConstPtrInVectorWrapper(const std::vector<std::unique_ptr<
     ret.push_back(input.at(i).get());
   }
   return ret;
+}
+
+template<typename T1, typename T2>
+inline void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, size_t start, bool is_reverse = false) {
+  std::vector<std::pair<T1, T2>> arr;
+  for (size_t i = start; i < keys.size(); ++i) {
+    arr.emplace_back(keys[i], values[i]);
+  }
+  if (!is_reverse) {
+    std::sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
+      return a.first < b.first;
+    });
+  } else {
+    std::sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
+      return a.first > b.first;
+    });
+  }
+  for (size_t i = start; i < arr.size(); ++i) {
+    keys[i] = arr[i].first;
+    values[i] = arr[i].second;
+  }
+
 }
 
 }  // namespace Common

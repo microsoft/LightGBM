@@ -105,12 +105,13 @@ void Application::LoadParameters(int argc, char** argv) {
 
 void Application::LoadData() {
   auto start_time = std::chrono::high_resolution_clock::now();
+  std::unique_ptr<Predictor> predictor;
   // prediction is needed if using input initial model(continued train)
   PredictFunction predict_fun = nullptr;
   // need to continue training
   if (boosting_->NumberOfTotalModel() > 0) {
-    Predictor predictor(boosting_.get(), true, false);
-    predict_fun = predictor.GetPredictFunction();
+    predictor.reset(new Predictor(boosting_.get(), true, false));
+    predict_fun = predictor->GetPredictFunction();
   }
 
   // sync up random seed for data partition
@@ -119,8 +120,7 @@ void Application::LoadData() {
        GlobalSyncUpByMin<int>(config_.io_config.data_random_seed);
   }
 
-  DatasetLoader dataset_loader(config_.io_config, predict_fun);
-  dataset_loader.SetHeader(config_.io_config.data_filename.c_str());
+  DatasetLoader dataset_loader(config_.io_config, predict_fun, config_.io_config.data_filename.c_str());
   // load Training data
   if (config_.is_parallel_find_bin) {
     // load data for parallel training

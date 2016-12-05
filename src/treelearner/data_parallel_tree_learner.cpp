@@ -37,7 +37,7 @@ void DataParallelTreeLearner::Init(const Dataset* train_data) {
 
   buffer_write_start_pos_.resize(num_features_);
   buffer_read_start_pos_.resize(num_features_);
-  global_data_count_in_leaf_.resize(num_leaves_);
+  global_data_count_in_leaf_.resize(tree_config_.num_leaves);
 }
 
 
