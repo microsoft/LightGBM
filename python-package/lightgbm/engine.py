@@ -152,7 +152,7 @@ def train(params, train_data, num_boost_round=100,
         for i, valid_data in enumerate(valid_datas):
             other_fields = None if valid_fields is None else valid_fields[i]
             """reduce cost for prediction training data"""
-            if valid_data is train_data:
+            if valid_data[0] is train_data[0] and valid_data[1] is train_data[1]:
                 is_valid_contain_train = True
                 if valid_names is not None:
                     train_data_name = valid_names[i]
