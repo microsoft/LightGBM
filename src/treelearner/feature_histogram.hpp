@@ -192,7 +192,7 @@ public:
     double min_gain_shift = gain_shift + tree_config_->min_gain_to_split;
     is_splittable_ = false;
 
-    for (unsigned int t = num_bins_ - 1; t > 0; --t) {
+    for (int t = num_bins_ - 1; t >= 0; --t) {
       double sum_current_gradient = data_[t].sum_gradients;
       double sum_current_hessian = data_[t].sum_hessians;
       data_size_t current_count = data_[t].cnt;
@@ -218,7 +218,7 @@ public:
       is_splittable_ = true;
       // better split point
       if (current_gain > best_gain) {
-        best_threshold = t;
+        best_threshold = static_cast<unsigned int>(t);
         best_gain = current_gain;
       }
     }

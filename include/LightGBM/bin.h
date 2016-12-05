@@ -358,7 +358,7 @@ inline unsigned int BinMapper::ValueToBin(double value) const {
     if (categorical_2_bin_.count(int_value)) {
       return categorical_2_bin_.at(int_value);
     } else {
-      return 0;
+      return num_bin_ - 1;
     }
   }
 }
