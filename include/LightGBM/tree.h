@@ -173,7 +173,7 @@ private:
   std::vector<unsigned int> threshold_in_bin_;
   /*! \brief A non-leaf node's split threshold in feature value */
   std::vector<double> threshold_;
-  /*! \brief Decision type, 0 for '<=' 1(numerical feature) for 'is'(categorical feature) */
+  /*! \brief Decision type, 0 for '<='(numerical feature), 1 for 'is'(categorical feature) */
   std::vector<int8_t> decision_type_;
   /*! \brief A non-leaf node's split gain */
   std::vector<double> split_gain_;
@@ -184,9 +184,9 @@ private:
   std::vector<double> leaf_value_;
   /*! \brief DataCount of leaves */
   std::vector<data_size_t> leaf_count_;
-  /*! \brief Output of internal nodes(save internal output for per inference feature importance calc) */
+  /*! \brief Output of non-leaf nodes */
   std::vector<double> internal_value_;
-  /*! \brief DataCount of internal nodes */
+  /*! \brief DataCount of non-leaf nodes */
   std::vector<data_size_t> internal_count_;
   /*! \brief Depth for leaves */
   std::vector<int> leaf_depth_;
@@ -208,8 +208,8 @@ inline int Tree::GetLeaf(const std::vector<std::unique_ptr<BinIterator>>& iterat
   int node = 0;
   while (node >= 0) {
     if (inner_decision_funs[decision_type_[node]](
-          iterators[split_feature_[node]]->Get(data_idx), 
-          threshold_in_bin_[node])) {
+        iterators[split_feature_[node]]->Get(data_idx),
+        threshold_in_bin_[node])) {
       node = left_child_[node];
     } else {
       node = right_child_[node];
@@ -222,8 +222,8 @@ inline int Tree::GetLeaf(const double* feature_values) const {
   int node = 0;
   while (node >= 0) {
     if (decision_funs[decision_type_[node]](
-      feature_values[split_feature_real_[node]],
-      threshold_[node])) {
+        feature_values[split_feature_real_[node]],
+        threshold_[node])) {
       node = left_child_[node];
     } else {
       node = right_child_[node];

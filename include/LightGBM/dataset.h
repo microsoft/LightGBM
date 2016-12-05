@@ -385,10 +385,7 @@ public:
       Log::Warning("size of feature_names error, should equal with total number of features");
       return;
     }
-    feature_names_ = std::vector<std::string>(num_total_features_);
-    for (int i = 0; i < num_total_features_; ++i) {
-      feature_names_[i] = feature_names[i];
-    }
+    feature_names_ = std::vector<std::string>(feature_names);
   }
 
   /*! \brief Get Number of data */
