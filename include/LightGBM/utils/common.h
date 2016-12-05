@@ -255,10 +255,24 @@ inline static std::string ArrayToString(const std::vector<T>& arr, char delimite
 }
 
 template<typename T>
+inline static std::string ArrayToString(const std::vector<T>& arr, size_t n, char delimiter) {
+  if (arr.empty() || n == 0) {
+    return std::string("");
+  }
+  std::stringstream str_buf;
+  str_buf << arr[0];
+  for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
+    str_buf << delimiter;
+    str_buf << arr[i];
+  }
+  return str_buf.str();
+}
+
+template<typename T>
 inline static std::vector<T> StringToArray(const std::string& str, char delimiter, size_t n) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   if (strs.size() != n) {
-    Log::Fatal("StringToIntArray error, size doesn't match.");
+    Log::Fatal("StringToArray error, size doesn't match.");
   }
   std::vector<T> ret(n);
   if (std::is_same<T, float>::value || std::is_same<T, double>::value) {
