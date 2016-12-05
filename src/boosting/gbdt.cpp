@@ -135,7 +135,7 @@ void GBDT::AddValidDataset(const Dataset* valid_data,
 
 void GBDT::Bagging(int iter, const int curr_class) {
   // if need bagging
-  if (out_of_bag_data_indices_.size() > 0 && iter % gbdt_config_->bagging_freq == 0) {
+  if (!out_of_bag_data_indices_.empty() && iter % gbdt_config_->bagging_freq == 0) {
     // if doesn't have query data
     if (train_data_->metadata().query_boundaries() == nullptr) {
       bag_data_cnt_ =
@@ -188,7 +188,7 @@ void GBDT::Bagging(int iter, const int curr_class) {
 
 void GBDT::UpdateScoreOutOfBag(const Tree* tree, const int curr_class) {
   // we need to predict out-of-bag socres of data for boosting
-  if (out_of_bag_data_indices_.size() > 0) {
+  if (!out_of_bag_data_indices_.empty()) {
     train_score_updater_->AddScore(tree, out_of_bag_data_indices_.data(), out_of_bag_data_cnt_, curr_class);
   }
 }

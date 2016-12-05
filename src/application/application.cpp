@@ -65,7 +65,7 @@ void Application::LoadParameters(int argc, char** argv) {
   if (params.count("config_file") > 0) {
     TextReader<size_t> config_reader(params["config_file"].c_str(), false);
     config_reader.ReadAllLines();
-    if (config_reader.Lines().size() > 0) {
+    if (!config_reader.Lines().empty()) {
       for (auto& line : config_reader.Lines()) {
         // remove str after "#"
         if (line.size() > 0 && std::string::npos != line.find_first_of("#")) {
@@ -146,7 +146,7 @@ void Application::LoadData() {
   train_metric_.shrink_to_fit();
 
 
-  if (config_.metric_types.size() > 0) {
+  if (!config_.metric_types.empty()) {
     // only when have metrics then need to construct validation data
 
     // Add validation data, if it exists

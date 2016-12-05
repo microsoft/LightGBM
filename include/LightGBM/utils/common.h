@@ -25,7 +25,7 @@ inline char tolower(char in) {
 }
 
 inline static std::string& Trim(std::string& str) {
-  if (str.size() <= 0) {
+  if (str.empty()) {
     return str;
   }
   str.erase(str.find_last_not_of(" \f\n\r\t\v") + 1);
@@ -34,7 +34,7 @@ inline static std::string& Trim(std::string& str) {
 }
 
 inline static std::string& RemoveQuotationSymbol(std::string& str) {
-  if (str.size() <= 0) {
+  if (str.empty()) {
     return str;
   }
   str.erase(str.find_last_not_of("'\"") + 1);
@@ -242,7 +242,7 @@ inline static std::vector<T2> ArrayCast(const std::vector<T>& arr) {
 
 template<typename T>
 inline static std::string ArrayToString(const std::vector<T>& arr, char delimiter) {
-  if (arr.size() <= 0) {
+  if (arr.empty()) {
     return std::string("");
   }
   std::stringstream str_buf;
@@ -291,7 +291,7 @@ inline static std::vector<T> StringToArray(const std::string& str, char delimite
 
 template<typename T>
 inline static std::string Join(const std::vector<T>& strs, const char* delimiter) {
-  if (strs.size() <= 0) {
+  if (strs.empty()) {
     return std::string("");
   }
   std::stringstream ss;
