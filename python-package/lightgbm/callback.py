@@ -55,7 +55,7 @@ def print_evaluation(period=1, show_stdv=True):
     """
     def callback(env):
         """internal function"""
-        if len(env.evaluation_result_list) == 0 or period is False:
+        if not env.evaluation_result_list or period <= 0:
             return
         if env.iteration % period == 0 or env.iteration + 1 == env.begin_iteration:
             result = '\t'.join([_format_eval_result(x, show_stdv) \

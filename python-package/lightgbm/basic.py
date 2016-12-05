@@ -199,7 +199,7 @@ class Predictor(object):
                 self.handle,
                 ctypes.byref(out_num_class)))
             self.num_class = out_num_class.value
-            self.__num_total_iteration = out_num_iterations.value
+            self.num_total_iteration = out_num_iterations.value
         elif booster_handle is not None:
             self.__is_manage_handle = is_manage_handle
             self.handle = booster_handle
@@ -212,7 +212,7 @@ class Predictor(object):
             _safe_call(_LIB.LGBM_BoosterGetCurrentIteration(
                 self.handle,
                 ctypes.byref(out_num_iterations)))
-            self.__num_total_iteration = out_num_iterations.value
+            self.num_total_iteration = out_num_iterations.value
         else:
             raise TypeError('Need Model file to create a booster')
 
@@ -255,8 +255,8 @@ class Predictor(object):
         if pred_leaf:
             predict_type = C_API_PREDICT_LEAF_INDEX
         int_data_has_header = 1 if data_has_header else 0
-        if num_iteration > self.__num_total_iteration:
-            num_iteration = self.__num_total_iteration
+        if num_iteration > self.num_total_iteration:
+            num_iteration = self.num_total_iteration
         if is_str(data):
             tmp_pred_fname = tempfile.NamedTemporaryFile(prefix="lightgbm_tmp_pred_").name
             _safe_call(_LIB.LGBM_BoosterPredictForFile(
@@ -302,9 +302,9 @@ class Predictor(object):
         n_preds = self.num_class * nrow
         if predict_type == C_API_PREDICT_LEAF_INDEX:
             if num_iteration > 0:
-                n_preds *= min(num_iteration, self.__num_total_iteration)
+                n_preds *= min(num_iteration, self.num_total_iteration)
             else:
-                n_preds *= self.__num_total_iteration
+                n_preds *= self.num_total_iteration
         return n_preds
 
     def __pred_for_np2d(self, mat, num_iteration, predict_type):

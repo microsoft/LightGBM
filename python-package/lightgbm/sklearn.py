@@ -191,7 +191,6 @@ class LGBMModel(LGBMModelBase):
     def get_params(self, deep=False):
         """Get parameters"""
         params = super(LGBMModel, self).get_params(deep=deep)
-        params['verbose'] = 0 if self.silent else 1
         if self.nthread <= 0:
             params.pop('nthread', None)
         return params
@@ -238,6 +237,7 @@ class LGBMModel(LGBMModelBase):
         """
         evals_result = {}
         params = self.get_params()
+        params['verbose'] = 0 if self.silent else 1
 
         if other_params is not None:
             params.update(other_params)

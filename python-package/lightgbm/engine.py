@@ -131,6 +131,7 @@ def train(params, train_data, num_boost_round=100,
         predictor = init_model
     else:
         predictor = None
+    init_iteration = predictor.num_total_iteration if predictor else 0
     """create dataset"""
     if isinstance(train_data, Dataset):
         train_set = train_data
@@ -185,13 +186,13 @@ def train(params, train_data, num_boost_round=100,
     # Most of legacy advanced options becomes callbacks
     if isinstance(verbose_eval, bool) and verbose_eval:
         callbacks.append(callback.print_evaluation())
-    else:
-        if isinstance(verbose_eval, int):
-            callbacks.append(callback.print_evaluation(verbose_eval))
+    elif isinstance(verbose_eval, int):
+        callbacks.append(callback.print_evaluation(verbose_eval))
 
     if early_stopping_rounds is not None:
         callbacks.append(callback.early_stop(early_stopping_rounds,
                                              verbose=bool(verbose_eval)))
+
     if learning_rates is not None:
         callbacks.append(callback.reset_learning_rate(learning_rates))
 
@@ -203,32 +204,26 @@ def train(params, train_data, num_boost_round=100,
     callbacks_after_iter = [
         cb for cb in callbacks if not cb.__dict__.get('before_iteration', False)]
     """construct booster"""
-    if 'metric' in params:
-        if is_str(params['metric']):
-            params['metric'] = params['metric'].split(',')
-        else:
-            params['metric'] = list(params['metric'])
-
     booster = Booster(params=params, train_set=train_set)
     if is_valid_contain_train:
         booster.set_train_data_name(train_data_name)
     for valid_set, name_valid_set in zip(valid_sets, name_valid_sets):
         booster.add_valid(valid_set, name_valid_set)
     """start training"""
-    for i in range(num_boost_round):
+    for i in range(init_iteration, init_iteration + num_boost_round):
         for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=booster,
                                     cvfolds=None,
                                     iteration=i,
-                                    begin_iteration=0,
-                                    end_iteration=num_boost_round,
+                                    begin_iteration=init_iteration,
+                                    end_iteration=init_iteration + num_boost_round,
                                     evaluation_result_list=None))
 
         booster.update(fobj=fobj)
 
         evaluation_result_list = []
         # check evaluation result.
-        if len(valid_sets) != 0:
+        if valid_sets:
             if is_valid_contain_train:
                 evaluation_result_list.extend(booster.eval_train(feval))
             evaluation_result_list.extend(booster.eval_valid(feval))
@@ -237,8 +232,8 @@ def train(params, train_data, num_boost_round=100,
                 cb(callback.CallbackEnv(model=booster,
                                         cvfolds=None,
                                         iteration=i,
-                                        begin_iteration=0,
-                                        end_iteration=num_boost_round,
+                                        begin_iteration=init_iteration,
+                                        end_iteration=init_iteration + num_boost_round,
                                         evaluation_result_list=evaluation_result_list))
         except callback.EarlyStopException:
             break
@@ -384,23 +379,12 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
     -------
     evaluation history : list(string)
     """
-
-    if isinstance(metrics, str):
-        metrics = [metrics]
-
-    if isinstance(params, list):
-        params = dict(params)
-
-    if 'metric' not in params:
-        params['metric'] = []
-    else:
-        if is_str(params['metric']):
-            params['metric'] = params['metric'].split(',')
+    if metrics:
+        params.setdefault('metric', [])
+        if is_str(metrics):
+            params['metric'].append(metrics)
         else:
-            params['metric'] = list(params['metric'])
-
-    if metrics is not None and len(metrics) > 0:
-        params['metric'].extend(metrics)
+            params['metric'].extend(metrics)
 
     train_set = _construct_dataset(train_data, None, params,
 								   other_fields=train_fields,
@@ -417,9 +401,8 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
                                              verbose=False))
     if isinstance(verbose_eval, bool) and verbose_eval:
         callbacks.append(callback.print_evaluation(show_stdv=show_stdv))
-    else:
-        if isinstance(verbose_eval, int):
-            callbacks.append(callback.print_evaluation(verbose_eval, show_stdv=show_stdv))
+    elif isinstance(verbose_eval, int):
+        callbacks.append(callback.print_evaluation(verbose_eval, show_stdv=show_stdv))
 
     callbacks_before_iter = [
         cb for cb in callbacks if cb.__dict__.get('before_iteration', False)]
