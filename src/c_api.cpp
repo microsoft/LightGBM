@@ -32,6 +32,9 @@ public:
     const char* parameters) {
     auto param = ConfigBase::Str2Map(parameters);
     config_.Set(param);
+    if (config_.num_threads > 0) {
+      omp_set_num_threads(config_.num_threads);
+    }
     // create boosting
     if (config_.io_config.input_model.size() > 0) {
       Log::Warning("continued train from model is not support for c_api, \
@@ -72,6 +75,9 @@ public:
       Log::Fatal("cannot change boosting_type during training");
     }
     config_.Set(param);
+    if (config_.num_threads > 0) {
+      omp_set_num_threads(config_.num_threads);
+    }
     if (param.size() == 1 && (param.count("learning_rate") || param.count("shrinkage_rate"))) {
       // only need to set learning rate
       boosting_->ResetShrinkageRate(config_.boosting_config.learning_rate);
