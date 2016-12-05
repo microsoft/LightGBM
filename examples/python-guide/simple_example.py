@@ -17,7 +17,11 @@ X_test = df_test.drop(0, axis=1)
 # create dataset for lightgbm
 lgb_train = lgb.Dataset(X_train, y_train)
 lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
-# or you can simply use a tuple of length=2 here
+# ATTENTION: you should carefully use lightgbm.Dataset
+# it requires setting up categorical_feature when you init it
+# rather than passing from lightgbm.train
+# instead, you can simply use a tuple of length=2 like below
+# it will help you construct Datasets with parameters in lightgbm.train
 lgb_train = (X_train, y_train)
 lgb_eval = (X_test, y_test)
 
@@ -26,14 +30,12 @@ params = {
     'task' : 'train',
     'boosting_type' : 'gbdt',
     'objective' : 'regression',
-    'metric' : 'l2',
+    'metric' : {'l2', 'auc'},
     'num_leaves' : 31,
     'learning_rate' : 0.05,
     'feature_fraction' : 0.9,
     'bagging_fraction' : 0.8,
     'bagging_freq': 5,
-    # 'ndcg_eval_at' : [1, 3, 5, 10],
-    # this metric is not needed in this task, show as an example
     'verbose' : 0
 }
 

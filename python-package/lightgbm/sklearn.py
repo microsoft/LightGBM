@@ -231,7 +231,7 @@ class LGBMModel(LGBMModelBase):
         feature_name : list of str
             Feature names
         categorical_feature : list of str or int
-            Categorical features , type int represents index, \
+            Categorical features, type int represents index, \
             type str represents feature names (need to specify feature_name as well)
         other_params: dict
             Other parameters

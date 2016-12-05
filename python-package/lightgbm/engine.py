@@ -82,9 +82,9 @@ def train(params, train_data, num_boost_round=100,
         e.g. valid_fields[0]['weight'] is weight data for first valid data
         Support fields: weight, group, init_score
     feature_name : list of str
-            Feature names
+        Feature names
     categorical_feature : list of str or int
-        Categorical features , type int represents index, \
+        Categorical features, type int represents index, \
         type str represents feature names (need to specify feature_name as well)
     early_stopping_rounds: int
         Activates early stopping.
@@ -356,9 +356,9 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
         Other data file in training data. e.g. train_fields['weight'] is weight data
         Support fields: weight, group, init_score
     feature_name : list of str
-            Feature names
+        Feature names
     categorical_feature : list of str or int
-        Categorical features , type int represents index, \
+        Categorical features, type int represents index, \
         type str represents feature names (need to specify feature_name as well)
     early_stopping_rounds: int
         Activates early stopping. CV error needs to decrease at least \
