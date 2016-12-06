@@ -257,7 +257,7 @@ def _agg_cv_result(raw_results):
     return results
 
 def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
-       metrics=(), fobj=None, feval=None, train_fields=None,
+       metrics=(), fobj=None, feval=None,
        feature_name=None, categorical_feature=None,
        early_stopping_rounds=None, fpreproc=None,
        verbose_eval=None, show_stdv=True, seed=0,
@@ -313,6 +313,9 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
     -------
     evaluation history : list(string)
     """
+    if not isinstance(train_set, Dataset):
+        raise TypeError("only can accept Dataset instance for traninig")
+
     if metrics:
         params.setdefault('metric', [])
         if is_str(metrics):

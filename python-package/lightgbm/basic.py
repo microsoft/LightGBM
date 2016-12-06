@@ -247,8 +247,8 @@ class Predictor(object):
         -------
         Prediction result
         """
-        if isinstance(data, _InnerDataset):
-            raise TypeError("cannot use _InnerDataset instance for prediction, please use raw data instead")
+        if isinstance(data, (_InnerDataset, Dataset)):
+            raise TypeError("cannot use Dataset instance for prediction, please use raw data instead")
         predict_type = C_API_PREDICT_NORMAL
         if raw_score:
             predict_type = C_API_PREDICT_RAW_SCORE
@@ -834,7 +834,7 @@ class Dataset(object):
     def __init__(self, data, label=None, max_bin=255, reference=None,
                  weight=None, group=None, predictor=None, silent=False,
                  feature_name=None, categorical_feature=None, params=None,
-                 free_raw_data=True):
+                 free_raw_data=True, lazy_init=True):
         """
         Dataset used in LightGBM.
 
@@ -866,6 +866,8 @@ class Dataset(object):
             Other parameters
         free_raw_data: Bool
             True if need to free raw data after construct inner dataset
+        lazy_init: Bool
+            False if need to construct immediately
         """
         self.data = data
         self.label = label
@@ -880,8 +882,10 @@ class Dataset(object):
         self.params = params
         self.free_raw_data = free_raw_data
         self.inner_dataset = None
-
         self.used_indices = None
+        self.lazy_init = lazy_init
+        if not self.lazy_init:
+            self.construct()
 
     def create_valid(self, data, label=None, weight=None, group=None,
                      silent=False, params=None):
@@ -906,9 +910,10 @@ class Dataset(object):
         """
         return Dataset(data, label=label, max_bin=self.max_bin, reference=self,
                        weight=weight, group=group, predictor=self.predictor,
-                       silent=silent, params=params, free_raw_data=self.free_raw_data)
+                       silent=silent, params=params, free_raw_data=self.free_raw_data,
+                       lazy_init=self.lazy_init)
 
-    def _get_inner_dataset(self):
+    def construct(self):
         """Lazy init"""
         if self.inner_dataset is None:
             if self.reference is not None:
@@ -927,7 +932,10 @@ class Dataset(object):
                     self.silent, self.feature_name, self.categorical_feature, self.params)
             if self.free_raw_data:
                 self.data = None
-        return self.inner_dataset 
+
+    def _get_inner_dataset(self):
+        self.construct()
+        return self.inner_dataset
 
     def __is_constructed(self):
         return self.inner_dataset is not None
@@ -964,7 +972,7 @@ class Dataset(object):
         if self.__is_constructed():
             self.inner_dataset.set_feature_name(self.feature_name)
 
-    def subset(self, used_indices, params=None):
+    def subset(self, used_indices, params=None, lazy_init=True):
         """
         Get subset of current dataset
         """
@@ -972,6 +980,8 @@ class Dataset(object):
         ret.reference = self
         ret.used_indices = used_indices
         ret.params = param
+        if not lazy_init:
+            ret.construct()
         return ret
 
     def save_binary(self, filename):
@@ -1087,7 +1097,7 @@ class Dataset(object):
         if self.__is_constructed():
             return self.inner_dataset.num_data()
         else:
-            return None
+            raise Exception("Cannot call num_data before construct, please call it explicitly")
 
     def num_feature(self):
         """Get the number of columns (features) in the Dataset.
@@ -1099,7 +1109,7 @@ class Dataset(object):
         if self.__is_constructed():
             return self.inner_dataset.num_feature()
         else:
-            return None
+            raise Exception("Cannot call num_feature before construct, please call it explicitly")
 
 class Booster(object):
     """"A Booster of LightGBM.
