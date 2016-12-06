@@ -3,6 +3,7 @@
 """Training Library containing training routines of LightGBM."""
 from __future__ import absolute_import
 
+import collections
 import numpy as np
 from .basic import LightGBMError, Predictor, Dataset, Booster, is_str
 from . import callback
@@ -20,7 +21,7 @@ def _construct_dataset(X_y, reference=None,
     init_score = None
     if other_fields is not None:
         if not isinstance(other_fields, dict):
-            raise TypeError("other filed data should be dict type")
+            raise TypeError("type of other filed data should be dict")
         weight = other_fields.get('weight', None)
         group = other_fields.get('group', None)
         init_score = other_fields.get('init_score', None)
@@ -29,7 +30,7 @@ def _construct_dataset(X_y, reference=None,
         label = None
     else:
         if len(X_y) != 2:
-            raise TypeError("should pass (data, label) pair")
+            raise TypeError("should pass (data, label) tuple for dataset")
         data = X_y[0]
         label = X_y[1]
     if reference is None:
@@ -148,7 +149,7 @@ def train(params, train_data, num_boost_round=100,
     train_data_name = "training"
     valid_sets = []
     name_valid_sets = []
-    if valid_datas is not None:
+    if valid_datas:
         if isinstance(valid_datas, (Dataset, tuple)):
             valid_datas = [valid_datas]
         if isinstance(valid_names, str):
@@ -181,28 +182,31 @@ def train(params, train_data, num_boost_round=100,
             else:
                 name_valid_sets.append('valid_'+str(i))
     """process callbacks"""
-    callbacks = [] if callbacks is None else callbacks
+    if not callbacks:
+        callbacks = set()
+    else:
+        for i, cb in enumerate(callbacks):
+            cb.__dict__.setdefault('order', i - len(callbacks))
+        callbacks = set(callbacks)
 
     # Most of legacy advanced options becomes callbacks
-    if isinstance(verbose_eval, bool) and verbose_eval:
-        callbacks.append(callback.print_evaluation())
+    if verbose_eval is True:
+        callbacks.add(callback.print_evaluation())
     elif isinstance(verbose_eval, int):
-        callbacks.append(callback.print_evaluation(verbose_eval))
+        callbacks.add(callback.print_evaluation(verbose_eval))
 
-    if early_stopping_rounds is not None:
-        callbacks.append(callback.early_stop(early_stopping_rounds,
-                                             verbose=bool(verbose_eval)))
+    if early_stopping_rounds:
+        callbacks.add(callback.early_stop(early_stopping_rounds,
+                                          verbose=bool(verbose_eval)))
 
     if learning_rates is not None:
-        callbacks.append(callback.reset_learning_rate(learning_rates))
+        callbacks.add(callback.reset_learning_rate(learning_rates))
 
     if evals_result is not None:
-        callbacks.append(callback.record_evaluation(evals_result))
+        callbacks.add(callback.record_evaluation(evals_result))
 
-    callbacks_before_iter = [
-        cb for cb in callbacks if cb.__dict__.get('before_iteration', False)]
-    callbacks_after_iter = [
-        cb for cb in callbacks if not cb.__dict__.get('before_iteration', False)]
+    callbacks_before_iter = {cb for cb in callbacks if cb.__dict__.get('before_iteration', False)}
+    callbacks_after_iter = callbacks - callbacks_before_iter
     """construct booster"""
     booster = Booster(params=params, train_set=train_set)
     if is_valid_contain_train:
@@ -211,7 +215,7 @@ def train(params, train_data, num_boost_round=100,
         booster.add_valid(valid_set, name_valid_set)
     """start training"""
     for i in range(init_iteration, init_iteration + num_boost_round):
-        for cb in callbacks_before_iter:
+        for cb in sorted(callbacks_before_iter, key=lambda x: x.__dict__.get('order', 0)):
             cb(callback.CallbackEnv(model=booster,
                                     cvfolds=None,
                                     iteration=i,
@@ -228,7 +232,7 @@ def train(params, train_data, num_boost_round=100,
                 evaluation_result_list.extend(booster.eval_train(feval))
             evaluation_result_list.extend(booster.eval_valid(feval))
         try:
-            for cb in callbacks_after_iter:
+            for cb in sorted(callbacks_after_iter, key=lambda x: x.__dict__.get('order', 0)):
                 cb(callback.CallbackEnv(model=booster,
                                         cvfolds=None,
                                         iteration=i,
@@ -303,21 +307,13 @@ def _agg_cv_result(raw_results):
     """
     Aggregate cross-validation results.
     """
-    cvmap = {}
+    cvmap = collections.defaultdict(list)
     metric_type = {}
     for one_result in raw_results:
         for one_line in one_result:
-            key = one_line[1]
-            metric_type[key] = one_line[3]
-            if key not in cvmap:
-                cvmap[key] = []
-            cvmap[key].append(one_line[2])
-    results = []
-    for k, v in cvmap.items():
-        v = np.array(v)
-        mean, std = np.mean(v), np.std(v)
-        results.append(('cv_agg', k, mean, metric_type[k], std))
-    return results
+            metric_type[one_line[1]] = one_line[3]
+            cvmap[one_line[1]].append(one_line[2])
+    return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
 
 def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
        metrics=(), fobj=None, feval=None, train_fields=None,
@@ -331,7 +327,7 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
     ----------
     params : dict
         Booster params.
-    train_data : pair, (X, y) or filename of data
+    train_data : tuple (X, y) or filename of data
         Data to be trained.
     num_boost_round : int
         Number of boosting iterations.
@@ -391,26 +387,28 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
                                    feature_name=feature_name,
                                    categorical_feature=categorical_feature)
 
-    results = {}
+    results = collections.defaultdict(list)
     cvfolds = _make_n_folds(train_set, nfold, params, seed, fpreproc, stratified)
 
     # setup callbacks
-    callbacks = [] if callbacks is None else callbacks
-    if early_stopping_rounds is not None:
-        callbacks.append(callback.early_stop(early_stopping_rounds,
-                                             verbose=False))
-    if isinstance(verbose_eval, bool) and verbose_eval:
-        callbacks.append(callback.print_evaluation(show_stdv=show_stdv))
+    if not callbacks:
+        callbacks = set()
+    else:
+        for i, cb in enumerate(callbacks):
+            cb.__dict__.setdefault('order', i - len(callbacks))
+        callbacks = set(callbacks)
+    if early_stopping_rounds:
+        callbacks.add(callback.early_stop(early_stopping_rounds, verbose=False))
+    if verbose_eval is True:
+        callbacks.add(callback.print_evaluation(show_stdv=show_stdv))
     elif isinstance(verbose_eval, int):
-        callbacks.append(callback.print_evaluation(verbose_eval, show_stdv=show_stdv))
+        callbacks.add(callback.print_evaluation(verbose_eval, show_stdv=show_stdv))
 
-    callbacks_before_iter = [
-        cb for cb in callbacks if cb.__dict__.get('before_iteration', False)]
-    callbacks_after_iter = [
-        cb for cb in callbacks if not cb.__dict__.get('before_iteration', False)]
+    callbacks_before_iter = {cb for cb in callbacks if cb.__dict__.get('before_iteration', False)}
+    callbacks_after_iter = callbacks - callbacks_before_iter
 
     for i in range(num_boost_round):
-        for cb in callbacks_before_iter:
+        for cb in sorted(callbacks_before_iter, key=lambda x: x.__dict__.get('order', 0)):
             cb(callback.CallbackEnv(model=None,
                                     cvfolds=cvfolds,
                                     iteration=i,
@@ -421,14 +419,10 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
             fold.update(fobj)
         res = _agg_cv_result([f.eval(feval) for f in cvfolds])
         for _, key, mean, _, std in res:
-            if key + '-mean' not in results:
-                results[key + '-mean'] = []
-            if key + '-std' not in results:
-                results[key + '-std'] = []
             results[key + '-mean'].append(mean)
             results[key + '-std'].append(std)
         try:
-            for cb in callbacks_after_iter:
+            for cb in sorted(callbacks_after_iter, key=lambda x: x.__dict__.get('order', 0)):
                 cb(callback.CallbackEnv(model=None,
                                         cvfolds=cvfolds,
                                         iteration=i,
@@ -437,6 +431,6 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
                                         evaluation_result_list=res))
         except callback.EarlyStopException as e:
             for k in results:
-                results[k] = results[k][:(e.best_iteration + 1)]
+                results[k] = results[k][:e.best_iteration + 1]
             break
-    return results
+    return dict(results)

@@ -57,10 +57,11 @@ def print_evaluation(period=1, show_stdv=True):
         """internal function"""
         if not env.evaluation_result_list or period <= 0:
             return
-        if env.iteration % period == 0 or env.iteration + 1 == env.begin_iteration:
+        if (env.iteration + 1) % period == 0:
             result = '\t'.join([_format_eval_result(x, show_stdv) \
                 for x in env.evaluation_result_list])
-            print('[%d]\t%s' % (env.iteration, result))
+            print('[%d]\t%s' % (env.iteration + 1, result))
+    callback.order = 10
     return callback
 
 
@@ -92,6 +93,7 @@ def record_evaluation(eval_result):
             init(env)
         for data_name, eval_name, result, _ in env.evaluation_result_list:
             eval_result[data_name][eval_name].append(result)
+    callback.order = 20
     return callback
 
 
@@ -126,6 +128,7 @@ def reset_learning_rate(learning_rates):
         else:
             booster.reset_parameter({'learning_rate':learning_rates(iteration, env.end_iteration)})
     callback.before_iteration = True
+    callback.order = 10
     return callback
 
 
@@ -178,7 +181,7 @@ def early_stop(stopping_rounds, verbose=True):
                 best_score[i] = score
                 best_iter[i] = env.iteration
                 if verbose:
-                    best_msg[i] = '[%d]\t%s' % (env.iteration, \
+                    best_msg[i] = '[%d]\t%s' % (env.iteration + 1, \
                         '\t'.join([_format_eval_result(x) for x in env.evaluation_result_list]))
             else:
                 if env.iteration - best_iter[i] >= stopping_rounds:
@@ -188,4 +191,5 @@ def early_stop(stopping_rounds, verbose=True):
                         print('early stopping, best iteration is:')
                         print(best_msg[i])
                     raise EarlyStopException(best_iter[i])
+    callback.order = 30
     return callback
