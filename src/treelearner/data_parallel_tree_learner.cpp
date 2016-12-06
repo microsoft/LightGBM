@@ -125,7 +125,7 @@ void DataParallelTreeLearner::FindBestThresholds() {
   // construct local histograms
   #pragma omp parallel for schedule(guided)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
-    if ((is_feature_used_.size() > 0 && is_feature_used_[feature_index] == false)) continue;
+    if ((!is_feature_used_.empty() && is_feature_used_[feature_index] == false)) continue;
     // construct histograms for smaller leaf
     if (ordered_bins_[feature_index] == nullptr) {
       smaller_leaf_histogram_array_[feature_index].Construct(smaller_leaf_splits_->data_indices(),

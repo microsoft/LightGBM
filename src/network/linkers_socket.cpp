@@ -73,7 +73,7 @@ Linkers::~Linkers() {
 void Linkers::ParseMachineList(const char * filename) {
   TextReader<size_t> machine_list_reader(filename, false);
   machine_list_reader.ReadAllLines();
-  if (machine_list_reader.Lines().size() <= 0) {
+  if (machine_list_reader.Lines().empty()) {
     Log::Fatal("Machine list file %s doesn't exist", filename);
   }
 
@@ -97,7 +97,7 @@ void Linkers::ParseMachineList(const char * filename) {
     client_ips_.push_back(str_after_split[0]);
     client_ports_.push_back(atoi(str_after_split[1].c_str()));
   }
-  if (client_ips_.size() == 0) {
+  if (client_ips_.empty()) {
     Log::Fatal("Machine list file doesn't contain any ip and port. \
                 Please check it again");
   }

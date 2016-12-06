@@ -124,27 +124,27 @@ std::string Tree::ToString() {
   std::stringstream ss;
   ss << "num_leaves=" << num_leaves_ << std::endl;
   ss << "split_feature="
-    << Common::ArrayToString<int>(split_feature_real_, ' ') << std::endl;
+    << Common::ArrayToString<int>(split_feature_real_, num_leaves_ - 1, ' ') << std::endl;
   ss << "split_gain="
-    << Common::ArrayToString<double>(split_gain_, ' ') << std::endl;
+    << Common::ArrayToString<double>(split_gain_, num_leaves_ - 1, ' ') << std::endl;
   ss << "threshold="
-    << Common::ArrayToString<double>(threshold_, ' ') << std::endl;
+    << Common::ArrayToString<double>(threshold_, num_leaves_ - 1, ' ') << std::endl;
   ss << "decision_type="
-    << Common::ArrayToString<int>(Common::ArrayCast<int8_t, int>(decision_type_), ' ') << std::endl;
+    << Common::ArrayToString<int>(Common::ArrayCast<int8_t, int>(decision_type_), num_leaves_ - 1, ' ') << std::endl;
   ss << "left_child="
-    << Common::ArrayToString<int>(left_child_, ' ') << std::endl;
+    << Common::ArrayToString<int>(left_child_, num_leaves_ - 1, ' ') << std::endl;
   ss << "right_child="
-    << Common::ArrayToString<int>(right_child_, ' ') << std::endl;
+    << Common::ArrayToString<int>(right_child_, num_leaves_ - 1, ' ') << std::endl;
   ss << "leaf_parent="
-    << Common::ArrayToString<int>(leaf_parent_, ' ') << std::endl;
+    << Common::ArrayToString<int>(leaf_parent_, num_leaves_, ' ') << std::endl;
   ss << "leaf_value="
-    << Common::ArrayToString<double>(leaf_value_, ' ') << std::endl;
+    << Common::ArrayToString<double>(leaf_value_, num_leaves_, ' ') << std::endl;
   ss << "leaf_count="
-    << Common::ArrayToString<data_size_t>(leaf_count_, ' ') << std::endl;
+    << Common::ArrayToString<data_size_t>(leaf_count_, num_leaves_, ' ') << std::endl;
   ss << "internal_value="
-    << Common::ArrayToString<double>(internal_value_, ' ') << std::endl;
+    << Common::ArrayToString<double>(internal_value_, num_leaves_ - 1, ' ') << std::endl;
   ss << "internal_count="
-    << Common::ArrayToString<data_size_t>(internal_count_, ' ') << std::endl;
+    << Common::ArrayToString<data_size_t>(internal_count_, num_leaves_ - 1, ' ') << std::endl;
   ss << std::endl;
   return ss.str();
 }

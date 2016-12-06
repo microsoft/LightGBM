@@ -1,7 +1,8 @@
 # coding: utf-8
-# pylint: disable = invalid-name, W0105
+# pylint: disable = invalid-name, W0105, C0301
 from __future__ import absolute_import
 import collections
+import inspect
 
 class EarlyStopException(Exception):
     """Exception of early stopping.
@@ -110,8 +111,8 @@ def reset_learning_rate(learning_rates):
         current number of round and the total number of boosting round \
         (e.g. yields learning rate decay)
         - list l: learning_rate = l[current_round]
-        - function f: learning_rate = f(current_round, total_boost_round)
-
+        - function f: learning_rate = f(current_round, total_boost_round) \
+                   or learning_rate = f(current_round)
     Returns
     -------
     callback : function
@@ -119,14 +120,19 @@ def reset_learning_rate(learning_rates):
     """
     def callback(env):
         """internal function"""
-        booster = env.model
-        iteration = env.iteration
         if isinstance(learning_rates, list):
-            if len(learning_rates) != env.end_iteration:
-                raise ValueError("Length of list 'learning_rates' has to equal 'num_boost_round'.")
-            booster.reset_parameter({'learning_rate':learning_rates[iteration]})
+            if len(learning_rates) != env.end_iteration - env.begin_iteration:
+                raise ValueError("Length of list 'learning_rates' has to equal to 'num_boost_round'.")
+            env.model.reset_parameter({'learning_rate':learning_rates[env.iteration]})
         else:
-            booster.reset_parameter({'learning_rate':learning_rates(iteration, env.end_iteration)})
+            argc = len(inspect.getargspec(learning_rates).args)
+            if argc is 1:
+                env.model.reset_parameter({"learning_rate": learning_rates(env.iteration - env.begin_iteration)})
+            elif argc is 2:
+                env.model.reset_parameter({"learning_rate": \
+                    learning_rates(env.iteration - env.begin_iteration, env.end_iteration - env.begin_iteration)})
+            else:
+                raise ValueError("Self-defined function 'learning_rates' should have 1 or 2 arguments")
     callback.before_iteration = True
     callback.order = 10
     return callback

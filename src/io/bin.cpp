@@ -53,12 +53,12 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
   std::sort(ref_values.begin(), ref_values.end());
 
   // push zero in the front
-  if (ref_values.size() == 0 || (ref_values[0] > 0.0f && zero_cnt > 0)) {
+  if (ref_values.empty() || (ref_values[0] > 0.0f && zero_cnt > 0)) {
     distinct_values.push_back(0);
     counts.push_back(zero_cnt);
   }
 
-  if (ref_values.size() > 0) {
+  if (!ref_values.empty()) {
     distinct_values.push_back(ref_values[0]);
     counts.push_back(1);
   }
@@ -79,7 +79,7 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
   }
 
   // push zero in the back
-  if (ref_values.size() > 0 && ref_values.back() < 0.0f && zero_cnt > 0) {
+  if (!ref_values.empty() && ref_values.back() < 0.0f && zero_cnt > 0) {
     distinct_values.push_back(0);
     counts.push_back(zero_cnt);
   }

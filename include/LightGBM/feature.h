@@ -48,7 +48,7 @@ public:
     bin_mapper_.reset(new BinMapper(memory_ptr));
     memory_ptr += bin_mapper_->SizesInByte();
     data_size_t num_data = num_all_data;
-    if (local_used_indices.size() > 0) {
+    if (!local_used_indices.empty()) {
       num_data = static_cast<data_size_t>(local_used_indices.size());
     }
     if (is_sparse_) {

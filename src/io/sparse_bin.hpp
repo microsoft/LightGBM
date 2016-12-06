@@ -239,7 +239,7 @@ public:
     deltas_.shrink_to_fit();
     vals_.shrink_to_fit();
 
-    if (local_used_indices.size() <= 0) {
+    if (local_used_indices.empty()) {
       // generate fast index
       GetFastIndex();
     } else {

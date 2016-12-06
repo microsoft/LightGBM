@@ -151,7 +151,7 @@ public:
   * \return Pointer of weights
   */
   inline const float* weights() const {
-    if (weights_.size() > 0) {
+    if (!weights_.empty()) {
       return weights_.data();
     } else {
       return nullptr;
@@ -166,7 +166,7 @@ public:
   * \return Pointer of data boundaries on queries
   */
   inline const data_size_t* query_boundaries() const { 
-    if (query_boundaries_.size() > 0) {
+    if (!query_boundaries_.empty()) {
       return query_boundaries_.data();
     } else {
       return nullptr;
@@ -184,7 +184,7 @@ public:
   * \return Pointer of weights for queries
   */
   inline const float* query_weights() const { 
-    if (query_weights_.size() > 0) {
+    if (!query_weights_.empty()) {
       return query_weights_.data();
     } else {
       return nullptr;
@@ -196,7 +196,7 @@ public:
   * \return Pointer of initial scores
   */
   inline const float* init_score() const { 
-    if (init_score_.size() > 0) {
+    if (!init_score_.empty()) {
       return init_score_.data();
     } else {
       return nullptr;

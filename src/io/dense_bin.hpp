@@ -126,7 +126,7 @@ public:
 
   void LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices) override {
     const VAL_T* mem_data = reinterpret_cast<const VAL_T*>(memory);
-    if (local_used_indices.size() > 0) {
+    if (!local_used_indices.empty()) {
       for (int i = 0; i < num_data_; ++i) {
         data_[i] = mem_data[local_used_indices[i]];
       }

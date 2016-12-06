@@ -31,7 +31,7 @@ void Metadata::Init(data_size_t num_data, int num_class, int weight_idx, int que
   num_class_ = num_class;
   label_ = std::vector<float>(num_data_);
   if (weight_idx >= 0) {
-    if (weights_.size() > 0) {
+    if (!weights_.empty()) {
       Log::Info("Using weights in data file, ignoring the additional weights file");
       weights_.clear();
     }
@@ -40,11 +40,11 @@ void Metadata::Init(data_size_t num_data, int num_class, int weight_idx, int que
     std::fill(weights_.begin(), weights_.end(), 0.0f);
   }
   if (query_idx >= 0) {
-    if (query_boundaries_.size() >  0) {
+    if (!query_boundaries_.empty()) {
       Log::Info("Using query id in data file, ignoring the additional query file");
       query_boundaries_.clear();
     }
-    if (query_weights_.size() > 0) { query_weights_.clear(); }
+    if (!query_weights_.empty()) { query_weights_.clear(); }
     queries_ = std::vector<data_size_t>(num_data_);
     std::fill(queries_.begin(), queries_.end(), 0);
   }
@@ -59,7 +59,7 @@ void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, da
     label_[i] = fullset.label_[used_indices[i]];
   }
 
-  if (fullset.weights_.size() > 0) {
+  if (!fullset.weights_.empty()) {
     weights_ = std::vector<float>(num_used_indices);
     num_weights_ = num_used_indices;
     for (data_size_t i = 0; i < num_used_indices; i++) {
@@ -69,7 +69,7 @@ void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, da
     num_weights_ = 0;
   }
 
-  if (fullset.init_score_.size() > 0) {
+  if (!fullset.init_score_.empty()) {
     init_score_ = std::vector<float>(num_used_indices);
     num_init_score_ = num_used_indices;
     for (data_size_t i = 0; i < num_used_indices; i++) {
@@ -79,7 +79,7 @@ void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, da
     num_init_score_ = 0;
   }
 
-  if (fullset.query_boundaries_.size() > 0) {
+  if (!fullset.query_boundaries_.empty()) {
     std::vector<data_size_t> used_query;
     data_size_t data_idx = 0;
     for (data_size_t qid = 0; qid < num_queries_ && data_idx < num_used_indices; ++qid) {
@@ -114,7 +114,7 @@ void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, da
 }
 
 void Metadata::PartitionLabel(const std::vector<data_size_t>& used_indices) {
-  if (used_indices.size() <= 0) {
+  if (used_indices.empty()) {
     return;
   }
   auto old_label = label_;
@@ -127,8 +127,8 @@ void Metadata::PartitionLabel(const std::vector<data_size_t>& used_indices) {
 }
 
 void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data_size_t>& used_data_indices) {
-  if (used_data_indices.size() == 0) {
-    if (queries_.size() > 0) {
+  if (used_data_indices.empty()) {
+    if (!queries_.empty()) {
       // need convert query_id to boundaries
       std::vector<data_size_t> tmp_buffer;
       data_size_t last_qid = -1;
@@ -154,21 +154,21 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
       queries_.clear();
     }
     // check weights
-    if (weights_.size() > 0 && num_weights_ != num_data_) {
+    if (!weights_.empty() && num_weights_ != num_data_) {
       weights_.clear();
       num_weights_ = 0;
       Log::Fatal("Weights size doesn't match data size");
     }
 
     // check query boundries
-    if (query_boundaries_.size() > 0 && query_boundaries_[num_queries_] != num_data_) {
+    if (!query_boundaries_.empty() && query_boundaries_[num_queries_] != num_data_) {
       query_boundaries_.clear();
       num_queries_ = 0;
       Log::Fatal("Query size doesn't match data size");
     }
 
     // contain initial score file
-    if (init_score_.size() > 0 && num_init_score_ != num_data_) {
+    if (!init_score_.empty() && num_init_score_ != num_data_) {
       init_score_.clear();
       num_init_score_ = 0;
       Log::Fatal("Initial score size doesn't match data size");
@@ -182,21 +182,21 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
       Log::Fatal("Weights size doesn't match data size");
     }
     // check query boundries
-    if (query_boundaries_.size() > 0 && query_boundaries_[num_queries_] != num_all_data) {
+    if (!query_boundaries_.empty() && query_boundaries_[num_queries_] != num_all_data) {
       query_boundaries_.clear();
       num_queries_ = 0;
       Log::Fatal("Query size doesn't match data size");
     }
 
     // contain initial score file
-    if (init_score_.size() > 0 && num_init_score_ != num_all_data) {
+    if (!init_score_.empty() && num_init_score_ != num_all_data) {
       init_score_.clear();
       num_init_score_ = 0;
       Log::Fatal("Initial score size doesn't match data size");
     }
 
     // get local weights
-    if (weights_.size() > 0) {
+    if (!weights_.empty()) {
       auto old_weights = weights_;
       num_weights_ = num_data_;
       weights_ = std::vector<float>(num_data_);
@@ -207,7 +207,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     }
 
     // get local query boundaries
-    if (query_boundaries_.size() > 0) {
+    if (!query_boundaries_.empty()) {
       std::vector<data_size_t> used_query;
       data_size_t data_idx = 0;
       for (data_size_t qid = 0; qid < num_queries_ && data_idx < num_used_data; ++qid) {
@@ -240,7 +240,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     }
 
     // get local initial scores
-    if (init_score_.size() > 0) {
+    if (!init_score_.empty()) {
       auto old_scores = init_score_;
       num_init_score_ = num_data_;
       init_score_ = std::vector<float>(num_init_score_ * num_class_);
@@ -269,7 +269,7 @@ void Metadata::SetInitScore(const float* init_score, data_size_t len) {
   if (len != num_data_ * num_class_) {
     Log::Fatal("Initial score size doesn't match data size");
   }
-  if (init_score_.size() > 0) { init_score_.clear(); }
+  if (!init_score_.empty()) { init_score_.clear(); }
   num_init_score_ = num_data_;
   init_score_ = std::vector<float>(len);
   for (data_size_t i = 0; i < len; ++i) {
@@ -285,7 +285,7 @@ void Metadata::SetLabel(const float* label, data_size_t len) {
   if (num_data_ != len) {
     Log::Fatal("len of label is not same with #data");
   }
-  if (label_.size() > 0) { label_.clear(); }
+  if (!label_.empty()) { label_.clear(); }
   label_ = std::vector<float>(num_data_);
   for (data_size_t i = 0; i < num_data_; ++i) {
     label_[i] = label[i];
@@ -303,7 +303,7 @@ void Metadata::SetWeights(const float* weights, data_size_t len) {
   if (num_data_ != len) {
     Log::Fatal("len of weights is not same with #data");
   }
-  if (weights_.size() > 0) { weights_.clear(); }
+  if (!weights_.empty()) { weights_.clear(); }
   num_weights_ = num_data_;
   weights_ = std::vector<float>(num_weights_);
   for (data_size_t i = 0; i < num_weights_; ++i) {
@@ -327,7 +327,7 @@ void Metadata::SetQueryBoundaries(const data_size_t* query_boundaries, data_size
   if (num_data_ != sum) {
     Log::Fatal("sum of query counts is not same with #data");
   }
-  if (query_boundaries_.size() > 0) { query_boundaries_.clear(); }
+  if (!query_boundaries_.empty()) { query_boundaries_.clear(); }
   num_queries_ = len;
   query_boundaries_ = std::vector<data_size_t>(num_queries_);
   for (data_size_t i = 0; i < num_queries_; ++i) {
@@ -348,7 +348,7 @@ void Metadata::SetQueryId(const data_size_t* query_id, data_size_t len) {
   if (num_data_ != len) {
     Log::Fatal("len of query id is not same with #data");
   }
-  if (queries_.size() > 0) { queries_.clear(); }
+  if (!queries_.empty()) { queries_.clear(); }
   queries_ = std::vector<data_size_t>(num_data_);
   for (data_size_t i = 0; i < num_weights_; ++i) {
     queries_[i] = query_id[i];
@@ -385,7 +385,7 @@ void Metadata::LoadWeights() {
   weight_filename.append(".weight");
   TextReader<size_t> reader(weight_filename.c_str(), false);
   reader.ReadAllLines();
-  if (reader.Lines().size() <= 0) {
+  if (reader.Lines().empty()) {
     return;
   }
   Log::Info("Loading weights...");
@@ -405,7 +405,7 @@ void Metadata::LoadInitialScore() {
   init_score_filename.append(".init");
   TextReader<size_t> reader(init_score_filename.c_str(), false);
   reader.ReadAllLines();
-  if (reader.Lines().size() <= 0) {
+  if (reader.Lines().empty()) {
     return;
   }
   Log::Info("Loading initial scores...");
@@ -441,7 +441,7 @@ void Metadata::LoadQueryBoundaries() {
   query_filename.append(".query");
   TextReader<size_t> reader(query_filename.c_str(), false);
   reader.ReadAllLines();
-  if (reader.Lines().size() <= 0) {
+  if (reader.Lines().empty()) {
     return;
   }
   Log::Info("Loading query boundaries...");
@@ -481,19 +481,19 @@ void Metadata::LoadFromMemory(const void* memory) {
   num_queries_ = *(reinterpret_cast<const data_size_t*>(mem_ptr));
   mem_ptr += sizeof(num_queries_);
 
-  if (label_.size() > 0) { label_.clear(); }
+  if (!label_.empty()) { label_.clear(); }
   label_ = std::vector<float>(num_data_);
   std::memcpy(label_.data(), mem_ptr, sizeof(float)*num_data_);
   mem_ptr += sizeof(float)*num_data_;
 
   if (num_weights_ > 0) {
-    if (weights_.size() > 0) { weights_.clear(); }
+    if (!weights_.empty()) { weights_.clear(); }
     weights_ = std::vector<float>(num_weights_);
     std::memcpy(weights_.data(), mem_ptr, sizeof(float)*num_weights_);
     mem_ptr += sizeof(float)*num_weights_;
   }
   if (num_queries_ > 0) {
-    if (query_boundaries_.size() > 0) { query_boundaries_.clear(); }
+    if (!query_boundaries_.empty()) { query_boundaries_.clear(); }
     query_boundaries_ = std::vector<data_size_t>(num_queries_ + 1);
     std::memcpy(query_boundaries_.data(), mem_ptr, sizeof(data_size_t)*(num_queries_ + 1));
     mem_ptr += sizeof(data_size_t)*(num_queries_ + 1);
@@ -506,10 +506,10 @@ void Metadata::SaveBinaryToFile(FILE* file) const {
   fwrite(&num_weights_, sizeof(num_weights_), 1, file);
   fwrite(&num_queries_, sizeof(num_queries_), 1, file);
   fwrite(label_.data(), sizeof(float), num_data_, file);
-  if (weights_.size() > 0) {
+  if (!weights_.empty()) {
     fwrite(weights_.data(), sizeof(float), num_weights_, file);
   }
-  if (query_boundaries_.size() > 0) {
+  if (!query_boundaries_.empty()) {
     fwrite(query_boundaries_.data(), sizeof(data_size_t), num_queries_ + 1, file);
   }
 
@@ -519,10 +519,10 @@ size_t Metadata::SizesInByte() const  {
   size_t size = sizeof(num_data_) + sizeof(num_weights_)
     + sizeof(num_queries_);
   size += sizeof(float) * num_data_;
-  if (weights_.size() > 0) {
+  if (!weights_.empty()) {
     size += sizeof(float) * num_weights_;
   }
-  if (query_boundaries_.size() > 0) {
+  if (!query_boundaries_.empty()) {
     size += sizeof(data_size_t) * (num_queries_ + 1);
   }
   return size;

@@ -4,6 +4,7 @@
 from __future__ import absolute_import
 
 import collections
+from operator import attrgetter
 import numpy as np
 from .basic import LightGBMError, Predictor, Dataset, Booster, is_str
 from . import callback
@@ -115,7 +116,8 @@ def train(params, train_data, num_boost_round=100,
         current number of round and the total number of boosting round \
         (e.g. yields learning rate decay)
         - list l: learning_rate = l[current_round]
-        - function f: learning_rate = f(current_round, total_boost_round)
+        - function f: learning_rate = f(current_round, total_boost_round) \
+        or learning_rate = f(current_round)
     callbacks : list of callback functions
         List of callback functions that are applied at end of each iteration.
 
@@ -157,7 +159,7 @@ def train(params, train_data, num_boost_round=100,
         for i, valid_data in enumerate(valid_datas):
             other_fields = None if valid_fields is None else valid_fields.get(i, None)
             """reduce cost for prediction training data"""
-            if valid_data is train_data:
+            if valid_data[0] is train_data[0] and valid_data[1] is train_data[1]:
                 is_valid_contain_train = True
                 if valid_names is not None:
                     train_data_name = valid_names[i]
@@ -181,6 +183,7 @@ def train(params, train_data, num_boost_round=100,
                 name_valid_sets.append(valid_names[i])
             else:
                 name_valid_sets.append('valid_'+str(i))
+
     """process callbacks"""
     if not callbacks:
         callbacks = set()
@@ -205,17 +208,21 @@ def train(params, train_data, num_boost_round=100,
     if evals_result is not None:
         callbacks.add(callback.record_evaluation(evals_result))
 
-    callbacks_before_iter = {cb for cb in callbacks if cb.__dict__.get('before_iteration', False)}
+    callbacks_before_iter = {cb for cb in callbacks if getattr(cb, 'before_iteration', False)}
     callbacks_after_iter = callbacks - callbacks_before_iter
+    callbacks_before_iter = sorted(callbacks_before_iter, key=attrgetter('order'))
+    callbacks_after_iter = sorted(callbacks_after_iter, key=attrgetter('order'))
+
     """construct booster"""
     booster = Booster(params=params, train_set=train_set)
     if is_valid_contain_train:
         booster.set_train_data_name(train_data_name)
     for valid_set, name_valid_set in zip(valid_sets, name_valid_sets):
         booster.add_valid(valid_set, name_valid_set)
+
     """start training"""
     for i in range(init_iteration, init_iteration + num_boost_round):
-        for cb in sorted(callbacks_before_iter, key=lambda x: x.__dict__.get('order', 0)):
+        for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=booster,
                                     cvfolds=None,
                                     iteration=i,
@@ -232,7 +239,7 @@ def train(params, train_data, num_boost_round=100,
                 evaluation_result_list.extend(booster.eval_train(feval))
             evaluation_result_list.extend(booster.eval_valid(feval))
         try:
-            for cb in sorted(callbacks_after_iter, key=lambda x: x.__dict__.get('order', 0)):
+            for cb in callbacks_after_iter:
                 cb(callback.CallbackEnv(model=booster,
                                         cvfolds=None,
                                         iteration=i,
@@ -275,7 +282,7 @@ except ImportError:
     except ImportError:
         SKLEARN_StratifiedKFold = False
 
-def _make_n_folds(full_data, nfold, param, seed, fpreproc=None, stratified=False):
+def _make_n_folds(full_data, nfold, params, seed, fpreproc=None, stratified=False):
     """
     Make an n-fold list of CVBooster from random indices.
     """
@@ -297,9 +304,9 @@ def _make_n_folds(full_data, nfold, param, seed, fpreproc=None, stratified=False
         valid_set = full_data.subset(idset[k])
         # run preprocessing on the data set if needed
         if fpreproc is not None:
-            train_set, valid_set, tparam = fpreproc(train_set, valid_set, param.copy())
+            train_set, valid_set, tparam = fpreproc(train_set, valid_set, params.copy())
         else:
-            tparam = param
+            tparam = params
         ret.append(CVBooster(train_set, valid_set, tparam))
     return ret
 
@@ -404,11 +411,13 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
     elif isinstance(verbose_eval, int):
         callbacks.add(callback.print_evaluation(verbose_eval, show_stdv=show_stdv))
 
-    callbacks_before_iter = {cb for cb in callbacks if cb.__dict__.get('before_iteration', False)}
+    callbacks_before_iter = {cb for cb in callbacks if getattr(cb, 'before_iteration', False)}
     callbacks_after_iter = callbacks - callbacks_before_iter
+    callbacks_before_iter = sorted(callbacks_before_iter, key=attrgetter('order'))
+    callbacks_after_iter = sorted(callbacks_after_iter, key=attrgetter('order'))
 
     for i in range(num_boost_round):
-        for cb in sorted(callbacks_before_iter, key=lambda x: x.__dict__.get('order', 0)):
+        for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=None,
                                     cvfolds=cvfolds,
                                     iteration=i,
@@ -420,9 +429,9 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
         res = _agg_cv_result([f.eval(feval) for f in cvfolds])
         for _, key, mean, _, std in res:
             results[key + '-mean'].append(mean)
-            results[key + '-std'].append(std)
+            results[key + '-stdv'].append(std)
         try:
-            for cb in sorted(callbacks_after_iter, key=lambda x: x.__dict__.get('order', 0)):
+            for cb in callbacks_after_iter:
                 cb(callback.CallbackEnv(model=None,
                                         cvfolds=cvfolds,
                                         iteration=i,

@@ -13,7 +13,7 @@ template<typename VAL_T>
 class ArrayArgs {
 public:
   inline static size_t ArgMax(const std::vector<VAL_T>& array) {
-    if (array.size() <= 0) {
+    if (array.empty()) {
       return 0;
     }
     size_t argMax = 0;
@@ -26,7 +26,7 @@ public:
   }
 
   inline static size_t ArgMin(const std::vector<VAL_T>& array) {
-    if (array.size() <= 0) {
+    if (array.empty()) {
       return 0;
     }
     size_t argMin = 0;

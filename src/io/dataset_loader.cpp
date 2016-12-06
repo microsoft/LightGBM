@@ -59,7 +59,7 @@ void DatasetLoader::SetHeader(const char* filename) {
       }
     }
 
-    if (feature_names_.size() > 0) {
+    if (!feature_names_.empty()) {
       // erase label column name
       feature_names_.erase(feature_names_.begin() + label_idx_);
       for (size_t i = 0; i < feature_names_.size(); ++i) {
@@ -473,7 +473,7 @@ Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>&
   }
   dataset->features_.shrink_to_fit();
   // fill feature_names_ if not header
-  if (feature_names_.size() <= 0) {
+  if (feature_names_.empty()) {
     for (int i = 0; i < dataset->num_total_features_; ++i) {
       std::stringstream str_buf;
       str_buf << "Column_" << i;
@@ -493,7 +493,7 @@ void DatasetLoader::CheckDataset(const Dataset* dataset) {
   if (dataset->num_data_ <= 0) {
     Log::Fatal("Data file %s is empty", dataset->data_filename_);
   }
-  if (dataset->features_.size() <= 0) {
+  if (dataset->features_.empty()) {
     Log::Fatal("No usable features in data file %s", dataset->data_filename_);
   }
 }
@@ -641,7 +641,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
   CHECK(group_idx_ < 0 || group_idx_ < dataset->num_total_features_);
 
   // fill feature_names_ if not header
-  if (feature_names_.size() <= 0) {
+  if (feature_names_.empty()) {
     for (int i = 0; i < dataset->num_total_features_; ++i) {
       std::stringstream str_buf;
       str_buf << "Column_" << i;
@@ -849,7 +849,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
       // parser
       parser->ParseOneLine(lines[i].c_str(), &oneline_features, &tmp_label);
       // set initial score
-      if (init_score.size() > 0) {
+      if (!init_score.empty()) {
         std::vector<double> oneline_init_score = predict_fun_(oneline_features);
         for (int k = 0; k < dataset->num_class_; ++k) {
           init_score[k * dataset->num_data_ + start_idx + i] = static_cast<float>(oneline_init_score[k]);
@@ -875,7 +875,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
     }
   };
   TextReader<data_size_t> text_reader(filename, io_config_.has_header);
-  if (used_data_indices.size() > 0) {
+  if (!used_data_indices.empty()) {
     // only need part of data
     text_reader.ReadPartAndProcessParallel(used_data_indices, process_fun);
   } else {
@@ -884,7 +884,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
   }
 
   // metadata_ will manage space of init_score
-  if (init_score.size() > 0) {
+  if (!init_score.empty()) {
     dataset->metadata_.SetInitScore(init_score.data(), dataset->num_data_ * dataset->num_class_);
   }
   dataset->FinishLoad();
