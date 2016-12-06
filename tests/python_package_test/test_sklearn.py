@@ -101,6 +101,7 @@ def test_early_stopping():
     from sklearn.datasets import load_boston
     from sklearn.cross_validation import KFold
     from sklearn import datasets, metrics, model_selection
+    from sklearn.base import clone
 
     boston = load_boston()
     y = boston['target']
@@ -111,6 +112,7 @@ def test_early_stopping():
                 eval_metric='l2', 
                 early_stopping_rounds=10,
                 verbose=10)
+    lgb_model_clone = clone(lgb_model)
     print(lgb_model.best_iteration)
 
 test_binary_classification()

@@ -8,7 +8,7 @@ from .basic import LightGBMError, Predictor, Dataset, Booster, is_str
 from . import callback
 
 def _construct_dataset(X_y, reference=None,
-                       params=None, other_fields=None, 
+                       params=None, other_fields=None,
                        feature_name=None, categorical_feature=None,
                        predictor=None):
     if 'max_bin' in params:
@@ -21,9 +21,9 @@ def _construct_dataset(X_y, reference=None,
     if other_fields is not None:
         if not isinstance(other_fields, dict):
             raise TypeError("other filed data should be dict type")
-        weight = None if 'weight' not in other_fields else other_fields['weight']
-        group = None if 'group' not in other_fields else other_fields['group']
-        init_score = None if 'init_score' not in other_fields else other_fields['init_score']
+        weight = other_fields.get('weight', None)
+        group = other_fields.get('group', None)
+        init_score = other_fields.get('init_score', None)
     if is_str(X_y):
         data = X_y
         label = None
@@ -58,15 +58,15 @@ def train(params, train_data, num_boost_round=100,
     Parameters
     ----------
     params : dict
-         params.
+        Parameters for training.
     train_data : Dataset, tuple (X, y) or filename of data
         Data to be trained.
     num_boost_round: int
         Number of boosting iterations.
-    valid_datas: list of Datasets, tuples (valid_X, valid_y) or filename of data
+    valid_datas: list of Datasets, tuples (valid_X, valid_y) or filenames of data
         List of data to be evaluated during training
     valid_names: list of string
-        names of valid_datas
+        Names of valid_datas
     fobj : function
         Customized objective function.
     feval : function
@@ -75,17 +75,17 @@ def train(params, train_data, num_boost_round=100,
     init_model : file name of lightgbm model or 'Booster' instance
         model used for continued train
     train_fields : dict
-        other data file in training data. e.g. train_fields['weight'] is weight data
-        support fields: weight, group, init_score
+        Other data file in training data. e.g. train_fields['weight'] is weight data
+        Support fields: weight, group, init_score
     valid_fields : dict
-        other data file in training data. \
+        Other data file in training data. \
         e.g. valid_fields[0]['weight'] is weight data for first valid data
-        support fields: weight, group, init_score
+        Support fields: weight, group, init_score
     feature_name : list of str
-        feature names
-    categorical_feature : list of str/int
-        categorical features , int type to use index, 
-        str type to use feature names (feature_name cannot be None)
+        Feature names
+    categorical_feature : list of str or int
+        Categorical features, type int represents index, \
+        type str represents feature names (need to specify feature_name as well)
     early_stopping_rounds: int
         Activates early stopping.
         Requires at least one validation data and one metric
@@ -101,18 +101,18 @@ def train(params, train_data, num_boost_round=100,
         passed with None means no using this function
     verbose_eval : bool or int
         Requires at least one item in evals.
-        If `verbose_eval` is True then the evaluation metric on the validation set is
+        If `verbose_eval` is True then the evaluation metric on the validation set is \
         printed at each boosting stage.
-        If `verbose_eval` is an integer then the evaluation metric on the validation set
-        is printed at every given `verbose_eval` boosting stage. The last boosting stage
+        If `verbose_eval` is an integer then the evaluation metric on the validation set \
+        is printed at every given `verbose_eval` boosting stage. The last boosting stage \
         / the boosting stage found by using `early_stopping_rounds` is also printed.
-        Example: with verbose_eval=4 and at least one item in evals, an evaluation metric
+        Example: with verbose_eval=4 and at least one item in evals, an evaluation metric \
         is printed every 4 boosting stages, instead of every boosting stage.
     learning_rates: list or function
-        List of learning rate for each boosting round
-        or a customized function that calculates learning_rate in terms of
-        current number of round and the total number of boosting round (e.g. yields
-        learning rate decay)
+        List of learning rate for each boosting round \
+        or a customized function that calculates learning_rate in terms of \
+        current number of round and the total number of boosting round \
+        (e.g. yields learning rate decay)
         - list l: learning_rate = l[current_round]
         - function f: learning_rate = f(current_round, total_boost_round)
     callbacks : list of callback functions
@@ -131,12 +131,16 @@ def train(params, train_data, num_boost_round=100,
         predictor = init_model
     else:
         predictor = None
+    init_iteration = predictor.num_total_iteration if predictor else 0
     """create dataset"""
     if isinstance(train_data, Dataset):
         train_set = train_data
+        if train_fields is not None:
+            for field, data in train_fields.items():
+                train_set.set_field(field, data)
     else:
-        train_set = _construct_dataset(train_data, None, params, 
-                                       other_fields=train_fields, 
+        train_set = _construct_dataset(train_data, None, params,
+                                       other_fields=train_fields,
                                        feature_name=feature_name,
                                        categorical_feature=categorical_feature,
                                        predictor=predictor)
@@ -150,7 +154,7 @@ def train(params, train_data, num_boost_round=100,
         if isinstance(valid_names, str):
             valid_names = [valid_names]
         for i, valid_data in enumerate(valid_datas):
-            other_fields = None if valid_fields is None else valid_fields[i]
+            other_fields = None if valid_fields is None else valid_fields.get(i, None)
             """reduce cost for prediction training data"""
             if valid_data[0] is train_data[0] and valid_data[1] is train_data[1]:
                 is_valid_contain_train = True
@@ -159,6 +163,9 @@ def train(params, train_data, num_boost_round=100,
                 continue
             if isinstance(valid_data, Dataset):
                 valid_set = valid_data
+                if other_fields is not None:
+                    for field, data in other_fields.items():
+                        valid_set.set_field(field, data)
             else:
                 valid_set = _construct_dataset(
                     valid_data,
@@ -169,7 +176,7 @@ def train(params, train_data, num_boost_round=100,
                     categorical_feature=categorical_feature,
                     predictor=predictor)
             valid_sets.append(valid_set)
-            if valid_names is not None:
+            if valid_names is not None and len(valid_names) > i:
                 name_valid_sets.append(valid_names[i])
             else:
                 name_valid_sets.append('valid_'+str(i))
@@ -179,13 +186,13 @@ def train(params, train_data, num_boost_round=100,
     # Most of legacy advanced options becomes callbacks
     if isinstance(verbose_eval, bool) and verbose_eval:
         callbacks.append(callback.print_evaluation())
-    else:
-        if isinstance(verbose_eval, int):
-            callbacks.append(callback.print_evaluation(verbose_eval))
+    elif isinstance(verbose_eval, int):
+        callbacks.append(callback.print_evaluation(verbose_eval))
 
     if early_stopping_rounds is not None:
         callbacks.append(callback.early_stop(early_stopping_rounds,
                                              verbose=bool(verbose_eval)))
+
     if learning_rates is not None:
         callbacks.append(callback.reset_learning_rate(learning_rates))
 
@@ -197,32 +204,26 @@ def train(params, train_data, num_boost_round=100,
     callbacks_after_iter = [
         cb for cb in callbacks if not cb.__dict__.get('before_iteration', False)]
     """construct booster"""
-    if 'metric' in params:
-        if is_str(params['metric']):
-            params['metric'] = params['metric'].split(',')
-        else:
-            params['metric'] = list(params['metric'])
-
     booster = Booster(params=params, train_set=train_set)
     if is_valid_contain_train:
         booster.set_train_data_name(train_data_name)
     for valid_set, name_valid_set in zip(valid_sets, name_valid_sets):
         booster.add_valid(valid_set, name_valid_set)
     """start training"""
-    for i in range(num_boost_round):
+    for i in range(init_iteration, init_iteration + num_boost_round):
         for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=booster,
                                     cvfolds=None,
                                     iteration=i,
-                                    begin_iteration=0,
-                                    end_iteration=num_boost_round,
+                                    begin_iteration=init_iteration,
+                                    end_iteration=init_iteration + num_boost_round,
                                     evaluation_result_list=None))
 
         booster.update(fobj=fobj)
 
         evaluation_result_list = []
         # check evaluation result.
-        if len(valid_sets) != 0:
+        if valid_sets:
             if is_valid_contain_train:
                 evaluation_result_list.extend(booster.eval_train(feval))
             evaluation_result_list.extend(booster.eval_valid(feval))
@@ -231,8 +232,8 @@ def train(params, train_data, num_boost_round=100,
                 cb(callback.CallbackEnv(model=booster,
                                         cvfolds=None,
                                         iteration=i,
-                                        begin_iteration=0,
-                                        end_iteration=num_boost_round,
+                                        begin_iteration=init_iteration,
+                                        end_iteration=init_iteration + num_boost_round,
                                         evaluation_result_list=evaluation_result_list))
         except callback.EarlyStopException:
             break
@@ -347,24 +348,24 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
     feval : function
         Custom evaluation function.
     train_fields : dict
-        other data file in training data. e.g. train_fields['weight'] is weight data
-        support fields: weight, group, init_score
+        Other data file in training data. e.g. train_fields['weight'] is weight data
+        Support fields: weight, group, init_score
     feature_name : list of str
-        feature names
-    categorical_feature : list of str/int
-        categorical features , int type to use index, 
-        str type to use feature names (feature_name cannot be None)
+        Feature names
+    categorical_feature : list of str or int
+        Categorical features, type int represents index, \
+        type str represents feature names (need to specify feature_name as well)
     early_stopping_rounds: int
-        Activates early stopping. CV error needs to decrease at least
+        Activates early stopping. CV error needs to decrease at least \
         every <early_stopping_rounds> round(s) to continue.
         Last entry in evaluation history is the one from best iteration.
     fpreproc : function
-        Preprocessing function that takes (dtrain, dtest, param) and returns
+        Preprocessing function that takes (dtrain, dtest, param) and returns \
         transformed versions of those.
     verbose_eval : bool, int, or None, default None
-        Whether to display the progress. If None, progress will be displayed
-        when np.ndarray is returned. If True, progress will be displayed at
-        boosting stage. If an integer is given, progress will be displayed
+        Whether to display the progress. If None, progress will be displayed \
+        when np.ndarray is returned. If True, progress will be displayed at \
+        boosting stage. If an integer is given, progress will be displayed \
         at every given `verbose_eval` boosting stage.
     show_stdv : bool, default True
         Whether to display the standard deviation in progress.
@@ -378,25 +379,14 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
     -------
     evaluation history : list(string)
     """
-
-    if isinstance(metrics, str):
-        metrics = [metrics]
-
-    if isinstance(params, list):
-        params = dict(params)
-
-    if 'metric' not in params:
-        params['metric'] = []
-    else:
-        if is_str(params['metric']):
-            params['metric'] = params['metric'].split(',')
+    if metrics:
+        params.setdefault('metric', [])
+        if is_str(metrics):
+            params['metric'].append(metrics)
         else:
-            params['metric'] = list(params['metric'])
+            params['metric'].extend(metrics)
 
-    if metrics is not None and len(metrics) > 0:
-        params['metric'].extend(metrics)
-
-    train_set = _construct_dataset(train_data, None, params, 
+    train_set = _construct_dataset(train_data, None, params,
 								   other_fields=train_fields,
                                    feature_name=feature_name,
                                    categorical_feature=categorical_feature)
@@ -411,9 +401,8 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
                                              verbose=False))
     if isinstance(verbose_eval, bool) and verbose_eval:
         callbacks.append(callback.print_evaluation(show_stdv=show_stdv))
-    else:
-        if isinstance(verbose_eval, int):
-            callbacks.append(callback.print_evaluation(verbose_eval, show_stdv=show_stdv))
+    elif isinstance(verbose_eval, int):
+        callbacks.append(callback.print_evaluation(verbose_eval, show_stdv=show_stdv))
 
     callbacks_before_iter = [
         cb for cb in callbacks if cb.__dict__.get('before_iteration', False)]

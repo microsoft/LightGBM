@@ -227,8 +227,6 @@ Tree::Tree(const std::string& str) {
   leaf_parent_ = Common::StringToArray<int>(key_vals["leaf_parent"], ' ', num_leaves_);
   leaf_value_ = Common::StringToArray<double>(key_vals["leaf_value"], ' ', num_leaves_);
 
-
-
 }
 
 }  // namespace LightGBM

@@ -46,7 +46,7 @@ def print_evaluation(period=1, show_stdv=True):
         The period to log the evaluation results
 
     show_stdv : bool, optional
-         Whether show stdv if provided
+        Whether show stdv if provided
 
     Returns
     -------
@@ -55,7 +55,7 @@ def print_evaluation(period=1, show_stdv=True):
     """
     def callback(env):
         """internal function"""
-        if len(env.evaluation_result_list) == 0 or period is False:
+        if not env.evaluation_result_list or period <= 0:
             return
         if env.iteration % period == 0 or env.iteration + 1 == env.begin_iteration:
             result = '\t'.join([_format_eval_result(x, show_stdv) \
@@ -83,15 +83,12 @@ def record_evaluation(eval_result):
 
     def init(env):
         """internal function"""
-        for data_name, eval_name, _, _ in env.evaluation_result_list:
-            if data_name not in eval_result:
-                eval_result[data_name] = {}
-            if eval_name not in eval_result[data_name]:
-                eval_result[data_name][eval_name] = []
+        for data_name, _, _, _ in env.evaluation_result_list:
+            eval_result.setdefault(data_name, collections.defaultdict(list))
 
     def callback(env):
         """internal function"""
-        if len(eval_result) == 0:
+        if not eval_result:
             init(env)
         for data_name, eval_name, result, _ in env.evaluation_result_list:
             eval_result[data_name][eval_name].append(result)
@@ -99,17 +96,17 @@ def record_evaluation(eval_result):
 
 
 def reset_learning_rate(learning_rates):
-    """Reset learning rate after iteration 1
+    """Reset learning rate after first iteration
 
     NOTE: the initial learning rate will still take in-effect on first iteration.
 
     Parameters
     ----------
     learning_rates: list or function
-        List of learning rate for each boosting round
-        or a customized function that calculates learning_rate in terms of
-        current number of round and the total number of boosting round (e.g. yields
-        learning rate decay)
+        List of learning rate for each boosting round \
+        or a customized function that calculates learning_rate in terms of \
+        current number of round and the total number of boosting round \
+        (e.g. yields learning rate decay)
         - list l: learning_rate = l[current_round]
         - function f: learning_rate = f(current_round, total_boost_round)
 
@@ -121,13 +118,13 @@ def reset_learning_rate(learning_rates):
     def callback(env):
         """internal function"""
         booster = env.model
-        i = env.iteration
+        iteration = env.iteration
         if isinstance(learning_rates, list):
             if len(learning_rates) != env.end_iteration:
                 raise ValueError("Length of list 'learning_rates' has to equal 'num_boost_round'.")
-            booster.reset_parameter({'learning_rate':learning_rates[i]})
+            booster.reset_parameter({'learning_rate':learning_rates[iteration]})
         else:
-            booster.reset_parameter({'learning_rate':learning_rates(i, env.end_iteration)})
+            booster.reset_parameter({'learning_rate':learning_rates(iteration, env.end_iteration)})
     callback.before_iteration = True
     return callback
 
@@ -157,7 +154,7 @@ def early_stop(stopping_rounds, verbose=True):
     best_msg = {}
     def init(env):
         """internal function"""
-        if len(env.evaluation_result_list) == 0:
+        if not env.evaluation_result_list:
             raise ValueError('For early stopping you need at least one set in evals.')
 
         if verbose:
@@ -169,13 +166,11 @@ def early_stop(stopping_rounds, verbose=True):
             best_iter[i] = 0
             if verbose:
                 best_msg[i] = ""
-            factor_to_bigger_better[i] = -1.0
-            if env.evaluation_result_list[i][3]:
-                factor_to_bigger_better[i] = 1.0
+            factor_to_bigger_better[i] = 1.0 if env.evaluation_result_list[i][3] else -1.0
 
     def callback(env):
         """internal function"""
-        if len(best_score) == 0:
+        if not best_score:
             init(env)
         for i in range(len(env.evaluation_result_list)):
             score = env.evaluation_result_list[i][2] * factor_to_bigger_better[i]
@@ -190,6 +185,7 @@ def early_stop(stopping_rounds, verbose=True):
                     if env.model is not None:
                         env.model.set_attr(best_iteration=str(best_iter[i]))
                     if verbose:
-                        print('early stopping, best iteration is:\n{}'.format(best_msg[i]))
+                        print('early stopping, best iteration is:')
+                        print(best_msg[i])
                     raise EarlyStopException(best_iter[i])
     return callback
