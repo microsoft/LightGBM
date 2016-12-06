@@ -17,13 +17,7 @@ X_test = df_test.drop(0, axis=1)
 # create dataset for lightgbm
 lgb_train = lgb.Dataset(X_train, y_train)
 lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
-# ATTENTION: you should carefully use lightgbm.Dataset
-# it requires setting up categorical_feature when you init it
-# rather than passing from lightgbm.train
-# instead, you can simply use a tuple of length=2 like below
-# it will help you construct Datasets with parameters in lightgbm.train
-lgb_train = (X_train, y_train)
-lgb_eval = (X_test, y_test)
+
 
 # specify your configurations as a dict
 params = {
@@ -43,7 +37,7 @@ params = {
 gbm = lgb.train(params,
                 lgb_train,
                 num_boost_round=100,
-                valid_datas=lgb_eval,
+                valid_sets=lgb_eval,
                 # you can use a list to represent multiple valid_datas/valid_names
                 # don't use tuple, tuple is used to represent one dataset
                 early_stopping_rounds=10)

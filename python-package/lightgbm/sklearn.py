@@ -4,7 +4,7 @@
 from __future__ import absolute_import
 
 import numpy as np
-from .basic import LightGBMError, is_str
+from .basic import LightGBMError, Dataset, is_str
 from .engine import train
 # sklearn
 try:
@@ -215,7 +215,7 @@ class LGBMModel(LGBMModelBase):
             If a str, should be a built-in evaluation metric to use.
             If callable, a custom evaluation metric. The call \
             signature is func(y_predicted, dataset) where dataset will be a \
-            Dataset fobject such that you may need to call the get_label \
+            Dateset object such that you may need to call the get_label \
             method. And it must return (eval_name->str, eval_result->float, is_bigger_better->Bool)
         early_stopping_rounds : int
         verbose : bool
@@ -263,12 +263,40 @@ class LGBMModel(LGBMModelBase):
             feval = None
         feval = eval_metric if callable(eval_metric) else None
 
-        self._Booster = train(params, (X, y),
-                              self.n_estimators, valid_datas=eval_set,
+        def _construct_dataset(X, y, other_fields=None):
+            weight = None
+            group = None
+            init_score = None
+            if other_fields is not None:
+                if not isinstance(other_fields, dict):
+                    raise TypeError("other filed data should be dict type")
+                weight = other_fields.get('weight', None)
+                group = other_fields.get('group', None)
+                init_score = other_fields.get('init_score', None)
+            ret = Dataset(X, label=y, weight=weight, group=group)
+            ret.set_init_score(init_score)
+            return ret
+
+        train_set = _construct_dataset(X, y, train_fields)
+
+        valid_sets = []
+        if eval_set is not None:
+            if isinstance(eval_set, tuple):
+                eval_set = [eval_set]
+            for i, valid_data in enumerate(eval_set):
+                other_fields = None if valid_fields is None else valid_fields.get(i, None)
+                """reduce cost for prediction training data"""
+                if valid_data[0] is X and valid_data[1] is y:
+                    valid_set = train_set
+                else:
+                    valid_set = _construct_dataset(valid_data[0], valid_data[1], other_fields)
+                valid_sets.append(valid_set)
+
+        self._Booster = train(params, train_set,
+                              self.n_estimators, valid_sets=valid_sets,
                               early_stopping_rounds=early_stopping_rounds,
                               evals_result=evals_result, fobj=self.fobj, feval=feval,
-                              verbose_eval=verbose, train_fields=train_fields,
-                              valid_fields=valid_fields, feature_name=feature_name,
+                              verbose_eval=verbose, feature_name=feature_name,
                               categorical_feature=categorical_feature)
 
         if evals_result:
