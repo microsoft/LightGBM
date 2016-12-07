@@ -959,6 +959,9 @@ class Dataset(object):
             raise Exception("Cannot set predictor after freed raw data")
 
     def set_reference(self, reference):
+        self.set_categorical_feature(reference.categorical_feature)
+        self.set_feature_name(reference.feature_name)
+        self.set_predictor(reference.predictor)
         if self.reference is reference:
             return
         if self.data is not None:
