@@ -76,7 +76,7 @@ add_executable(lightgbm src/main.cpp ${SOURCES})
 add_library(_lightgbm SHARED src/c_api.cpp ${SOURCES})
 
 if(MSVC)
-    set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lightgbm")
+    set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
 endif(MSVC)
 
 if(USE_MPI)
