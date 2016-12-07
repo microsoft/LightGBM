@@ -1,7 +1,8 @@
 # coding: utf-8
-# pylint: disable = invalid-name, W0105
+# pylint: disable = invalid-name, W0105, C0301
 from __future__ import absolute_import
 import collections
+import inspect
 
 class EarlyStopException(Exception):
     """Exception of early stopping.
@@ -57,10 +58,11 @@ def print_evaluation(period=1, show_stdv=True):
         """internal function"""
         if not env.evaluation_result_list or period <= 0:
             return
-        if env.iteration % period == 0 or env.iteration + 1 == env.begin_iteration:
+        if (env.iteration + 1) % period == 0:
             result = '\t'.join([_format_eval_result(x, show_stdv) \
                 for x in env.evaluation_result_list])
-            print('[%d]\t%s' % (env.iteration, result))
+            print('[%d]\t%s' % (env.iteration + 1, result))
+    callback.order = 10
     return callback
 
 
@@ -92,6 +94,7 @@ def record_evaluation(eval_result):
             init(env)
         for data_name, eval_name, result, _ in env.evaluation_result_list:
             eval_result[data_name][eval_name].append(result)
+    callback.order = 20
     return callback
 
 
@@ -108,8 +111,8 @@ def reset_learning_rate(learning_rates):
         current number of round and the total number of boosting round \
         (e.g. yields learning rate decay)
         - list l: learning_rate = l[current_round]
-        - function f: learning_rate = f(current_round, total_boost_round)
-
+        - function f: learning_rate = f(current_round, total_boost_round) \
+                   or learning_rate = f(current_round)
     Returns
     -------
     callback : function
@@ -117,15 +120,21 @@ def reset_learning_rate(learning_rates):
     """
     def callback(env):
         """internal function"""
-        booster = env.model
-        iteration = env.iteration
         if isinstance(learning_rates, list):
-            if len(learning_rates) != env.end_iteration:
-                raise ValueError("Length of list 'learning_rates' has to equal 'num_boost_round'.")
-            booster.reset_parameter({'learning_rate':learning_rates[iteration]})
+            if len(learning_rates) != env.end_iteration - env.begin_iteration:
+                raise ValueError("Length of list 'learning_rates' has to equal to 'num_boost_round'.")
+            env.model.reset_parameter({'learning_rate':learning_rates[env.iteration]})
         else:
-            booster.reset_parameter({'learning_rate':learning_rates(iteration, env.end_iteration)})
+            argc = len(inspect.getargspec(learning_rates).args)
+            if argc is 1:
+                env.model.reset_parameter({"learning_rate": learning_rates(env.iteration - env.begin_iteration)})
+            elif argc is 2:
+                env.model.reset_parameter({"learning_rate": \
+                    learning_rates(env.iteration - env.begin_iteration, env.end_iteration - env.begin_iteration)})
+            else:
+                raise ValueError("Self-defined function 'learning_rates' should have 1 or 2 arguments")
     callback.before_iteration = True
+    callback.order = 10
     return callback
 
 
@@ -178,7 +187,7 @@ def early_stop(stopping_rounds, verbose=True):
                 best_score[i] = score
                 best_iter[i] = env.iteration
                 if verbose:
-                    best_msg[i] = '[%d]\t%s' % (env.iteration, \
+                    best_msg[i] = '[%d]\t%s' % (env.iteration + 1, \
                         '\t'.join([_format_eval_result(x) for x in env.evaluation_result_list]))
             else:
                 if env.iteration - best_iter[i] >= stopping_rounds:
@@ -188,4 +197,5 @@ def early_stop(stopping_rounds, verbose=True):
                         print('early stopping, best iteration is:')
                         print(best_msg[i])
                     raise EarlyStopException(best_iter[i])
+    callback.order = 30
     return callback
