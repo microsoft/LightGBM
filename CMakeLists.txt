@@ -13,7 +13,7 @@ else()
     ADD_DEFINITIONS(-DUSE_SOCKET)
 endif(USE_MPI)
 
-find_package(OpenMP)
+find_package(OpenMP REQUIRED)
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
