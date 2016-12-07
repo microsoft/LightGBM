@@ -947,7 +947,8 @@ class Dataset(object):
             self.categorical_feature = categorical_feature
             self.inner_dataset = None
         else:
-            raise Exception("Cannot set categorical feature after freed raw data")
+            raise LightGBMError("Cannot set categorical feature after freed raw data,\
+             Set free_raw_data=False when construct Dataset to avoid this.")
 
     def set_predictor(self, predictor):
         if predictor is self.predictor:
@@ -956,7 +957,8 @@ class Dataset(object):
             self.predictor = predictor
             self.inner_dataset = None
         else:
-            raise Exception("Cannot set predictor after freed raw data")
+            raise LightGBMError("Cannot set predictor after freed raw data,\
+             Set free_raw_data=False when construct Dataset to avoid this.")
 
     def set_reference(self, reference):
         self.set_categorical_feature(reference.categorical_feature)
@@ -968,7 +970,8 @@ class Dataset(object):
             self.reference = reference
             self.inner_dataset = None
         else:
-            raise Exception("Cannot set reference after freed raw data")
+            raise LightGBMError("Cannot set reference after freed raw data,\
+             Set free_raw_data=False when construct Dataset to avoid this.")
 
     def set_feature_name(self, feature_name):
         self.feature_name = feature_name
@@ -982,7 +985,7 @@ class Dataset(object):
         ret = Dataset(None)
         ret.reference = self
         ret.used_indices = used_indices
-        ret.params = param
+        ret.params = params
         if not lazy_init:
             ret.construct()
         return ret
@@ -1100,7 +1103,7 @@ class Dataset(object):
         if self.__is_constructed():
             return self.inner_dataset.num_data()
         else:
-            raise Exception("Cannot call num_data before construct, please call it explicitly")
+            raise LightGBMError("Cannot call num_data before construct, please call it explicitly")
 
     def num_feature(self):
         """Get the number of columns (features) in the Dataset.
@@ -1112,7 +1115,7 @@ class Dataset(object):
         if self.__is_constructed():
             return self.inner_dataset.num_feature()
         else:
-            raise Exception("Cannot call num_feature before construct, please call it explicitly")
+            raise LightGBMError("Cannot call num_feature before construct, please call it explicitly")
 
 class Booster(object):
     """"A Booster of LightGBM.
@@ -1204,7 +1207,7 @@ class Booster(object):
             Name of validation data
         """
         if data.predictor is not self.init_predictor:
-            raise Exception("Add validation data failed, you should use same predictor for these data")
+            raise LightGBMError("Add validation data failed, you should use same predictor for these data")
         _safe_call(_LIB.LGBM_BoosterAddValidData(
             self.handle,
             data._get_inner_dataset().handle))
@@ -1254,7 +1257,7 @@ class Booster(object):
         """need reset training data"""
         if train_set is not None and train_set is not self.train_set:
             if train_set.predictor is not self.init_predictor:
-                raise Exception("Replace training data failed, you should use same predictor for these data")
+                raise LightGBMError("Replace training data failed, you should use same predictor for these data")
             self.train_set = train_set
             _safe_call(_LIB.LGBM_BoosterResetTrainingData(
                 self.handle,
