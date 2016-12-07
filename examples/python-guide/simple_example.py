@@ -38,8 +38,6 @@ gbm = lgb.train(params,
                 lgb_train,
                 num_boost_round=100,
                 valid_sets=lgb_eval,
-                # you can use a list to represent multiple valid_datas/valid_names
-                # don't use tuple, tuple is used to represent one dataset
                 early_stopping_rounds=10)
 
 # save model to file

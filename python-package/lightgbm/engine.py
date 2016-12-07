@@ -315,6 +315,9 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
     """
     if not isinstance(train_set, Dataset):
         raise TypeError("only can accept Dataset instance for traninig")
+        
+    train_set.set_feature_name(feature_name)
+    train_set.set_categorical_feature(categorical_feature)
 
     if metrics:
         params.setdefault('metric', [])
