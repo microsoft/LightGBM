@@ -11,13 +11,13 @@ if(USE_MPI)
     MESSAGE(${MPI_CXX_LIBRARIES})
 else()
     ADD_DEFINITIONS(-DUSE_SOCKET)
-endif()
+endif(USE_MPI)
 
 find_package(OpenMP)
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
-if(UNIX)
+if(UNIX OR MINGW OR CYGWIN)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -O3 -Wall -std=c++11")
 endif()
 
@@ -60,7 +60,7 @@ endif(APPLE)
 
 if(USE_MPI)
   include_directories(${MPI_CXX_INCLUDE_PATH})
-endif()
+endif(USE_MPI)
 
 file(GLOB SOURCES 
     src/application/*.cpp
@@ -81,12 +81,12 @@ if(USE_MPI)
   TARGET_LINK_LIBRARIES(_lightgbm ${MPI_CXX_LIBRARIES})
 endif(USE_MPI)
 
-if(WIN32)
+if(WIN32 AND (MINGW OR CYGWIN))
     TARGET_LINK_LIBRARIES(lightgbm Ws2_32)
     TARGET_LINK_LIBRARIES(_lightgbm Ws2_32)
     TARGET_LINK_LIBRARIES(lightgbm IPHLPAPI)
     TARGET_LINK_LIBRARIES(_lightgbm IPHLPAPI)
-endif(WIN32)
+endif()
 
 install(TARGETS lightgbm _lightgbm
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
