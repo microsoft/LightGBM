@@ -6,52 +6,12 @@ from __future__ import absolute_import
 import collections
 from operator import attrgetter
 import numpy as np
-from .basic import LightGBMError, Predictor, Dataset, Booster, is_str
+from .basic import LightGBMError, _InnerPredictor, Dataset, Booster, is_str
 from . import callback
 
-def _construct_dataset(X_y, reference=None,
-                       params=None, other_fields=None,
-                       feature_name=None, categorical_feature=None,
-                       predictor=None):
-    if 'max_bin' in params:
-        max_bin = int(params['max_bin'])
-    else:
-        max_bin = 255
-    weight = None
-    group = None
-    init_score = None
-    if other_fields is not None:
-        if not isinstance(other_fields, dict):
-            raise TypeError("type of other filed data should be dict")
-        weight = other_fields.get('weight', None)
-        group = other_fields.get('group', None)
-        init_score = other_fields.get('init_score', None)
-    if is_str(X_y):
-        data = X_y
-        label = None
-    else:
-        if len(X_y) != 2:
-            raise TypeError("should pass (data, label) tuple for dataset")
-        data = X_y[0]
-        label = X_y[1]
-    if reference is None:
-        ret = Dataset(data, label=label, max_bin=max_bin,
-                      weight=weight, group=group,
-                      predictor=predictor,
-                      feature_name=feature_name,
-                      categorical_feature=categorical_feature,
-                      params=params)
-    else:
-        ret = reference.create_valid(data, label=label, weight=weight,
-                                     group=group, params=params)
-    if init_score is not None:
-        ret.set_init_score(init_score)
-    return ret
-
-def train(params, train_data, num_boost_round=100,
-          valid_datas=None, valid_names=None,
+def train(params, train_set, num_boost_round=100,
+          valid_sets=None, valid_names=None,
           fobj=None, feval=None, init_model=None,
-          train_fields=None, valid_fields=None,
           feature_name=None, categorical_feature=None,
           early_stopping_rounds=None, evals_result=None,
           verbose_eval=True, learning_rates=None, callbacks=None):
@@ -61,14 +21,14 @@ def train(params, train_data, num_boost_round=100,
     ----------
     params : dict
         Parameters for training.
-    train_data : Dataset, tuple (X, y) or filename of data
+    train_set : Dataset
         Data to be trained.
     num_boost_round: int
         Number of boosting iterations.
-    valid_datas: list of Datasets, tuples (valid_X, valid_y) or filenames of data
+    valid_sets: list of Datasets
         List of data to be evaluated during training
     valid_names: list of string
-        Names of valid_datas
+        Names of valid_sets
     fobj : function
         Customized objective function.
     feval : function
@@ -76,13 +36,6 @@ def train(params, train_data, num_boost_round=100,
         Note: should return (eval_name, eval_result, is_higher_better) of list of this
     init_model : file name of lightgbm model or 'Booster' instance
         model used for continued train
-    train_fields : dict
-        Other data file in training data. e.g. train_fields['weight'] is weight data
-        Support fields: weight, group, init_score
-    valid_fields : dict
-        Other data file in training data. \
-        e.g. valid_fields[0]['weight'] is weight data for first valid data
-        Support fields: weight, group, init_score
     feature_name : list of str
         Feature names
     categorical_feature : list of str or int
@@ -95,8 +48,8 @@ def train(params, train_data, num_boost_round=100,
         Returns the model with (best_iter + early_stopping_rounds)
         If early stopping occurs, the model will add 'best_iteration' field
     evals_result: dict or None
-        This dictionary used to store all evaluation results of all the items in valid_datas.
-        Example: with a valid_datas containing [valid_set, train_set] \
+        This dictionary used to store all evaluation results of all the items in valid_sets.
+        Example: with a valid_sets containing [valid_set, train_set] \
         and valid_names containing ['eval', 'train'] and a paramater containing ('metric':'logloss')
         Returns: {'train': {'logloss': ['0.48253', '0.35953', ...]},
                   'eval': {'logloss': ['0.480385', '0.357756', ...]}}
@@ -127,58 +80,40 @@ def train(params, train_data, num_boost_round=100,
     """
     """create predictor first"""
     if is_str(init_model):
-        predictor = Predictor(model_file=init_model)
+        predictor = _InnerPredictor(model_file=init_model)
     elif isinstance(init_model, Booster):
-        predictor = init_model.to_predictor()
-    elif isinstance(init_model, Predictor):
-        predictor = init_model
+        predictor = init_model._to_predictor()
     else:
         predictor = None
     init_iteration = predictor.num_total_iteration if predictor else 0
-    """create dataset"""
-    if isinstance(train_data, Dataset):
-        train_set = train_data
-        if train_fields is not None:
-            for field, data in train_fields.items():
-                train_set.set_field(field, data)
-    else:
-        train_set = _construct_dataset(train_data, None, params,
-                                       other_fields=train_fields,
-                                       feature_name=feature_name,
-                                       categorical_feature=categorical_feature,
-                                       predictor=predictor)
+    """check dataset"""
+    if not isinstance(train_set, Dataset):
+        raise TypeError("only can accept Dataset instance for traninig")
+
+    train_set._set_predictor(predictor)
+    train_set.set_feature_name(feature_name)
+    train_set.set_categorical_feature(categorical_feature)
+
     is_valid_contain_train = False
     train_data_name = "training"
-    valid_sets = []
+    reduced_valid_sets = []
     name_valid_sets = []
-    if valid_datas:
-        if isinstance(valid_datas, (Dataset, tuple)):
-            valid_datas = [valid_datas]
+    if valid_sets:
+        if isinstance(valid_sets, Dataset):
+            valid_sets = [valid_sets]
         if isinstance(valid_names, str):
             valid_names = [valid_names]
-        for i, valid_data in enumerate(valid_datas):
-            other_fields = None if valid_fields is None else valid_fields.get(i, None)
+        for i, valid_data in enumerate(valid_sets):
             """reduce cost for prediction training data"""
-            if valid_data[0] is train_data[0] and valid_data[1] is train_data[1]:
+            if valid_data is train_set:
                 is_valid_contain_train = True
                 if valid_names is not None:
                     train_data_name = valid_names[i]
                 continue
-            if isinstance(valid_data, Dataset):
-                valid_set = valid_data
-                if other_fields is not None:
-                    for field, data in other_fields.items():
-                        valid_set.set_field(field, data)
-            else:
-                valid_set = _construct_dataset(
-                    valid_data,
-                    train_set,
-                    params,
-                    other_fields=other_fields,
-                    feature_name=feature_name,
-                    categorical_feature=categorical_feature,
-                    predictor=predictor)
-            valid_sets.append(valid_set)
+            if not isinstance(valid_data, Dataset):
+                raise TypeError("only can accept Dataset instance for traninig")
+            valid_data.set_reference(train_set)
+            reduced_valid_sets.append(valid_data)
             if valid_names is not None and len(valid_names) > i:
                 name_valid_sets.append(valid_names[i])
             else:
@@ -217,7 +152,7 @@ def train(params, train_data, num_boost_round=100,
     booster = Booster(params=params, train_set=train_set)
     if is_valid_contain_train:
         booster.set_train_data_name(train_data_name)
-    for valid_set, name_valid_set in zip(valid_sets, name_valid_sets):
+    for valid_set, name_valid_set in zip(reduced_valid_sets, name_valid_sets):
         booster.add_valid(valid_set, name_valid_set)
 
     """start training"""
@@ -294,6 +229,7 @@ def _make_n_folds(full_data, nfold, params, seed, fpreproc=None, stratified=Fals
         else:
             raise LightGBMError('sklearn needs to be installed in order to use stratified cv')
     else:
+        full_data.construct()
         randidx = np.random.permutation(full_data.num_data())
         kstep = int(len(randidx) / nfold)
         idset = [randidx[(i * kstep): min(len(randidx), (i + 1) * kstep)] for i in range(nfold)]
@@ -322,8 +258,8 @@ def _agg_cv_result(raw_results):
             cvmap[one_line[1]].append(one_line[2])
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
 
-def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
-       metrics=(), fobj=None, feval=None, train_fields=None,
+def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
+       metrics=(), fobj=None, feval=None, init_model=None,
        feature_name=None, categorical_feature=None,
        early_stopping_rounds=None, fpreproc=None,
        verbose_eval=None, show_stdv=True, seed=0,
@@ -334,7 +270,7 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
     ----------
     params : dict
         Booster params.
-    train_data : tuple (X, y) or filename of data
+    train_set : Dataset
         Data to be trained.
     num_boost_round : int
         Number of boosting iterations.
@@ -350,9 +286,8 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
         Custom objective function.
     feval : function
         Custom evaluation function.
-    train_fields : dict
-        Other data file in training data. e.g. train_fields['weight'] is weight data
-        Support fields: weight, group, init_score
+    init_model : file name of lightgbm model or 'Booster' instance
+        model used for continued train
     feature_name : list of str
         Feature names
     categorical_feature : list of str or int
@@ -382,17 +317,26 @@ def cv(params, train_data, num_boost_round=10, nfold=5, stratified=False,
     -------
     evaluation history : list(string)
     """
+    if not isinstance(train_set, Dataset):
+        raise TypeError("only can accept Dataset instance for traninig")
+
+    if is_str(init_model):
+        predictor = _InnerPredictor(model_file=init_model)
+    elif isinstance(init_model, Booster):
+        predictor = init_model._to_predictor()
+    else:
+        predictor = None
+
+    train_set._set_predictor(predictor)
+    train_set.set_feature_name(feature_name)
+    train_set.set_categorical_feature(categorical_feature)
+
     if metrics:
         params.setdefault('metric', [])
         if is_str(metrics):
             params['metric'].append(metrics)
         else:
             params['metric'].extend(metrics)
-
-    train_set = _construct_dataset(train_data, None, params,
-								   other_fields=train_fields,
-                                   feature_name=feature_name,
-                                   categorical_feature=categorical_feature)
 
     results = collections.defaultdict(list)
     cvfolds = _make_n_folds(train_set, nfold, params, seed, fpreproc, stratified)

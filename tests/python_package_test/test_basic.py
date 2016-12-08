@@ -8,10 +8,6 @@ x_train, x_test, y_train, y_test = model_selection.train_test_split(X, Y, test_s
 
 train_data = lgb.Dataset(x_train, max_bin=255, label=y_train)
 
-num_features = train_data.num_feature()
-names = ["name_%d" %(i) for i in range(num_features)]
-train_data.set_feature_name(names)
-
 valid_data = train_data.create_valid(x_test, label=y_test)
 
 config={"objective":"binary","metric":"auc", "min_data":1, "num_leaves":15}

@@ -4,7 +4,7 @@
 from __future__ import absolute_import
 
 import numpy as np
-from .basic import LightGBMError, is_str
+from .basic import LightGBMError, Dataset, is_str
 from .engine import train
 # sklearn
 try:
@@ -195,9 +195,12 @@ class LGBMModel(LGBMModelBase):
             params.pop('nthread', None)
         return params
 
-    def fit(self, X, y, eval_set=None, eval_metric=None,
+    def fit(self, X, y,
+            sample_weight=None, init_score=None, group=None, 
+            eval_set=None, eval_sample_weight=None, 
+            eval_init_score=None, eval_group=None,
+            eval_metric=None,
             early_stopping_rounds=None, verbose=True,
-            train_fields=None, valid_fields=None,
             feature_name=None, categorical_feature=None,
             other_params=None):
         """
@@ -209,24 +212,29 @@ class LGBMModel(LGBMModelBase):
             Feature matrix
         y : array_like
             Labels
+        sample_weight : array_like
+            weight of training data
+        init_score : array_like
+            init score of training data
+        group : array_like
+            group data of training data
         eval_set : list, optional
             A list of (X, y) tuple pairs to use as a validation set for early-stopping
+        eval_sample_weight : List of array
+            weight of eval data
+        eval_init_score : List of array
+            init score of eval data
+        eval_group : List of array
+            group data of eval data
         eval_metric : str, list of str, callable, optional
             If a str, should be a built-in evaluation metric to use.
             If callable, a custom evaluation metric. The call \
             signature is func(y_predicted, dataset) where dataset will be a \
-            Dataset fobject such that you may need to call the get_label \
+            Dateset object such that you may need to call the get_label \
             method. And it must return (eval_name->str, eval_result->float, is_bigger_better->Bool)
         early_stopping_rounds : int
         verbose : bool
             If `verbose` and an evaluation set is used, writes the evaluation
-        train_fields : dict
-            Other data file in training data. e.g. train_fields['weight'] is weight data
-            Support fields: weight, group, init_score
-        valid_fields : dict
-            Other data file in training data. \
-            e.g. valid_fields[0]['weight'] is weight data for first valid data
-            Support fields: weight, group, init_score
         feature_name : list of str
             Feature names
         categorical_feature : list of str or int
@@ -263,12 +271,33 @@ class LGBMModel(LGBMModelBase):
             feval = None
         feval = eval_metric if callable(eval_metric) else None
 
-        self._Booster = train(params, (X, y),
-                              self.n_estimators, valid_datas=eval_set,
+        def _construct_dataset(X, y, sample_weight, init_score, group):
+            ret = Dataset(X, label=y, weight=sample_weight, group=group)
+            ret.set_init_score(init_score)
+            return ret
+
+        train_set = _construct_dataset(X, y, sample_weight, init_score, group)
+
+        valid_sets = []
+        if eval_set is not None:
+            if isinstance(eval_set, tuple):
+                eval_set = [eval_set]
+            for i, valid_data in enumerate(eval_set):
+                """reduce cost for prediction training data"""
+                if valid_data[0] is X and valid_data[1] is y:
+                    valid_set = train_set
+                else:
+                    valid_weight = None if eval_sample_weight is None else eval_sample_weight.get(i, None)
+                    valid_init_score = None if eval_init_score is None else eval_init_score.get(i, None)
+                    valid_group = None if eval_group is None else eval_group.get(i, None)
+                    valid_set = _construct_dataset(valid_data[0], valid_data[1], valid_weight, valid_init_score, valid_group)
+                valid_sets.append(valid_set)
+
+        self._Booster = train(params, train_set,
+                              self.n_estimators, valid_sets=valid_sets,
                               early_stopping_rounds=early_stopping_rounds,
                               evals_result=evals_result, fobj=self.fobj, feval=feval,
-                              verbose_eval=verbose, train_fields=train_fields,
-                              valid_fields=valid_fields, feature_name=feature_name,
+                              verbose_eval=verbose, feature_name=feature_name,
                               categorical_feature=categorical_feature)
 
         if evals_result:
@@ -331,14 +360,48 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
     __doc__ = """Implementation of the scikit-learn API for LightGBM regression.
     """ + '\n'.join(LGBMModel.__doc__.split('\n')[2:])
 
+    def fit(self, X, y,
+            sample_weight=None, init_score=None,
+            eval_set=None, eval_sample_weight=None, 
+            eval_init_score=None,
+            eval_metric=None,
+            early_stopping_rounds=None, verbose=True,
+            feature_name=None, categorical_feature=None,
+            other_params=None):
+
+        super(LGBMRegressor, self).fit(X, y, sample_weight, init_score, None,
+                                    eval_set, eval_sample_weight, eval_init_score, None,
+                                    eval_metric, early_stopping_rounds,
+                                    verbose, feature_name, categorical_feature,
+                                    other_params)
+        return self
+
 class LGBMClassifier(LGBMModel, LGBMClassifierBase):
     __doc__ = """Implementation of the scikit-learn API for LightGBM classification.
 
     """ + '\n'.join(LGBMModel.__doc__.split('\n')[2:])
 
-    def fit(self, X, y, eval_set=None, eval_metric=None,
+    def __init__(self, num_leaves=31, max_depth=-1,
+                 learning_rate=0.1, n_estimators=10, max_bin=255,
+                 silent=True, objective="binary",
+                 nthread=-1, min_split_gain=0, min_child_weight=5, min_child_samples=10,
+                 subsample=1, subsample_freq=1, colsample_bytree=1,
+                 reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
+                 is_unbalance=False, seed=0):
+        super(LGBMClassifier, self).__init__(num_leaves, max_depth,
+                                             learning_rate, n_estimators, max_bin,
+                                             silent, objective,
+                                             nthread, min_split_gain, min_child_weight, min_child_samples,
+                                             subsample, subsample_freq, colsample_bytree,
+                                             reg_alpha, reg_lambda, scale_pos_weight,
+                                             is_unbalance, seed)
+
+    def fit(self, X, y,
+            sample_weight=None, init_score=None,
+            eval_set=None, eval_sample_weight=None, 
+            eval_init_score=None,
+            eval_metric=None,
             early_stopping_rounds=None, verbose=True,
-            train_fields=None, valid_fields=None,
             feature_name=None, categorical_feature=None,
             other_params=None):
 
@@ -350,12 +413,6 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
             # Switch to using a multiclass objective in the underlying LGBM instance
             self.objective = "multiclass"
             other_params['num_class'] = self.n_classes_
-            if eval_metric is None and eval_set is not None:
-                eval_metric = "multi_logloss"
-        else:
-            self.objective = "binary"
-            if eval_metric is None and eval_set is not None:
-                eval_metric = "binary_logloss"
 
         self._le = LGBMLabelEncoder().fit(y)
         training_labels = self._le.transform(y)
@@ -363,10 +420,10 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
         if eval_set is not None:
             eval_set = list((x[0], self._le.transform(x[1])) for x in eval_set)
 
-        super(LGBMClassifier, self).fit(X, training_labels, eval_set,
+        super(LGBMClassifier, self).fit(X, training_labels, sample_weight, init_score, None,
+                                        eval_set, eval_sample_weight, eval_init_score, None,
                                         eval_metric, early_stopping_rounds,
-                                        verbose, train_fields, valid_fields,
-                                        feature_name, categorical_feature,
+                                        verbose, feature_name, categorical_feature,
                                         other_params)
         return self
 
@@ -442,34 +499,59 @@ class LGBMRanker(LGBMModel):
 
     """ + '\n'.join(LGBMModel.__doc__.split('\n')[2:])
 
-    def fit(self, X, y, eval_set=None, eval_metric=None,
-            early_stopping_rounds=None, verbose=True,
-            train_fields=None, valid_fields=None, other_params=None):
-
-        """check group data"""
-        if "group" not in train_fields:
-            raise ValueError("should set group in train_fields for ranking task")
-
-        if eval_set is not None:
-            if valid_fields is None:
-                raise ValueError("valid_fields cannot be None when eval_set is not None")
-            elif len(valid_fields) != len(eval_set):
-                raise ValueError("lenght of valid_fields should equal with eval_set")
-            else:
-                for inner in valid_fields:
-                    if "group" not in inner:
-                        raise ValueError("should set group in valid_fields for ranking task")
-
+    def __init__(self, num_leaves=31, max_depth=-1,
+                 learning_rate=0.1, n_estimators=10, max_bin=255,
+                 silent=True, objective="lambdarank",
+                 nthread=-1, min_split_gain=0, min_child_weight=5, min_child_samples=10,
+                 subsample=1, subsample_freq=1, colsample_bytree=1,
+                 reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
+                 is_unbalance=False, seed=0):
+        super(LGBMRanker, self).__init__(num_leaves, max_depth,
+                                             learning_rate, n_estimators, max_bin,
+                                             silent, objective,
+                                             nthread, min_split_gain, min_child_weight, min_child_samples,
+                                             subsample, subsample_freq, colsample_bytree,
+                                             reg_alpha, reg_lambda, scale_pos_weight,
+                                             is_unbalance, seed)
         if callable(self.objective):
             self.fobj = _group_wise_objective(self.objective)
         else:
-            self.objective = "lambdarank"
             self.fobj = None
-            if eval_metric is None and eval_set is not None:
-                eval_metric = "ndcg"
 
-        super(LGBMRanker, self).fit(X, y, eval_set, eval_metric,
-                                    early_stopping_rounds, verbose,
-                                    train_fields, valid_fields,
+    def fit(self, X, y,
+            sample_weight=None, init_score=None, group=None, 
+            eval_set=None, eval_sample_weight=None, 
+            eval_init_score=None, eval_group=None,
+            eval_metric=None, eval_at=None,
+            early_stopping_rounds=None, verbose=True,
+            feature_name=None, categorical_feature=None,
+            other_params=None):
+        """
+        Most arguments like LGBMModel.fit except following:
+
+        eval_at : list of int
+            The evaulation positions of NDCG
+        """
+
+        """check group data"""
+        if group is None:
+            raise ValueError("should use group for ranking task")
+
+        if eval_set is not None:
+            if eval_group is None:
+                raise ValueError("eval_group cannot be None when eval_set is not None")
+            elif len(eval_group) != len(eval_set):
+                raise ValueError("length of eval_group should equal with eval_set")
+            else:
+                for inner_group in eval_group:
+                    if inner_group is None:
+                        raise ValueError("should set group for all eval data for ranking task")
+        if eval_at is not None:
+            other_params = {} if other_params is None else other_params
+            other_params['ndcg_eval_at'] = list(eval_at)
+        super(LGBMRanker, self).fit(X, y, sample_weight, init_score, group,
+                                    eval_set, eval_sample_weight, eval_init_score, eval_group,
+                                    eval_metric, early_stopping_rounds,
+                                    verbose, feature_name, categorical_feature,
                                     other_params)
         return self

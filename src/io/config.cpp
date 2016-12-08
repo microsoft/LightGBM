@@ -1,12 +1,14 @@
 #include <LightGBM/config.h>
 
 #include <LightGBM/utils/common.h>
+#include <LightGBM/utils/random.h>
 #include <LightGBM/utils/log.h>
 
 #include <vector>
 #include <string>
 #include <unordered_set>
 #include <algorithm>
+#include <limits>
 
 namespace LightGBM {
 
@@ -22,7 +24,7 @@ std::unordered_map<std::string, std::string> ConfigBase::Str2Map(const char* par
         continue;
       }
       params[key] = value;
-    } else {
+    } else if(Common::Trim(arg).size() > 0){
       Log::Warning("Unknown parameter %s", arg.c_str());
     }
   }
@@ -33,11 +35,20 @@ std::unordered_map<std::string, std::string> ConfigBase::Str2Map(const char* par
 void OverallConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   // load main config types
   GetInt(params, "num_threads", &num_threads);
+
+  // generate seeds by seed.
+  if (GetInt(params, "seed", &seed)) {
+    Random rand(seed);
+    int int_max = std::numeric_limits<int>::max();
+    io_config.data_random_seed = static_cast<int>(rand.NextInt(0, int_max));
+    boosting_config.bagging_seed = static_cast<int>(rand.NextInt(0, int_max));
+    boosting_config.drop_seed = static_cast<int>(rand.NextInt(0, int_max));
+    boosting_config.tree_config.feature_fraction_seed = static_cast<int>(rand.NextInt(0, int_max));
+  }
   GetTaskType(params);
   GetBoostingType(params);
   GetObjectiveType(params);
   GetMetricType(params);
-
 
   // sub-config setup
   network_config.Set(params);
