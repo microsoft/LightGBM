@@ -112,7 +112,7 @@ def param_dict_to_str(data):
         return ""
     pairs = []
     for key, val in data.items():
-        if is_str(val) or isinstance(val, (int, float, bool)):
+        if is_str(val) or isinstance(val, (int, float, bool, np.integer, np.float, np.float32)):
             pairs.append(str(key)+'='+str(val))
         elif isinstance(val, (list, tuple, set)):
             pairs.append(str(key)+'='+','.join(map(str, val)))
