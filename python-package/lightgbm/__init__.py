@@ -8,7 +8,7 @@ from __future__ import absolute_import
 
 import os
 
-from .basic import Predictor, Dataset, Booster
+from .basic import Dataset, Booster
 from .engine import train, cv
 try:
     from .sklearn import LGBMModel, LGBMRegressor, LGBMClassifier, LGBMRanker

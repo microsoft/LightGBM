@@ -6,7 +6,7 @@ from __future__ import absolute_import
 import collections
 from operator import attrgetter
 import numpy as np
-from .basic import LightGBMError, Predictor, Dataset, Booster, is_str
+from .basic import LightGBMError, _InnerPredictor, Dataset, Booster, is_str
 from . import callback
 
 def train(params, train_set, num_boost_round=100,
@@ -80,11 +80,9 @@ def train(params, train_set, num_boost_round=100,
     """
     """create predictor first"""
     if is_str(init_model):
-        predictor = Predictor(model_file=init_model)
+        predictor = _InnerPredictor(model_file=init_model)
     elif isinstance(init_model, Booster):
-        predictor = init_model.to_predictor()
-    elif isinstance(init_model, Predictor):
-        predictor = init_model
+        predictor = init_model._to_predictor()
     else:
         predictor = None
     init_iteration = predictor.num_total_iteration if predictor else 0
@@ -92,7 +90,7 @@ def train(params, train_set, num_boost_round=100,
     if not isinstance(train_set, Dataset):
         raise TypeError("only can accept Dataset instance for traninig")
 
-    train_set.set_predictor(predictor)
+    train_set._set_predictor(predictor)
     train_set.set_feature_name(feature_name)
     train_set.set_categorical_feature(categorical_feature)
 
@@ -231,6 +229,7 @@ def _make_n_folds(full_data, nfold, params, seed, fpreproc=None, stratified=Fals
         else:
             raise LightGBMError('sklearn needs to be installed in order to use stratified cv')
     else:
+        full_data.construct()
         randidx = np.random.permutation(full_data.num_data())
         kstep = int(len(randidx) / nfold)
         idset = [randidx[(i * kstep): min(len(randidx), (i + 1) * kstep)] for i in range(nfold)]
@@ -260,7 +259,7 @@ def _agg_cv_result(raw_results):
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
 
 def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
-       metrics=(), fobj=None, feval=None,
+       metrics=(), fobj=None, feval=None, init_model=None,
        feature_name=None, categorical_feature=None,
        early_stopping_rounds=None, fpreproc=None,
        verbose_eval=None, show_stdv=True, seed=0,
@@ -287,6 +286,8 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
         Custom objective function.
     feval : function
         Custom evaluation function.
+    init_model : file name of lightgbm model or 'Booster' instance
+        model used for continued train
     feature_name : list of str
         Feature names
     categorical_feature : list of str or int
@@ -318,7 +319,15 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
     """
     if not isinstance(train_set, Dataset):
         raise TypeError("only can accept Dataset instance for traninig")
-        
+
+    if is_str(init_model):
+        predictor = _InnerPredictor(model_file=init_model)
+    elif isinstance(init_model, Booster):
+        predictor = init_model._to_predictor()
+    else:
+        predictor = None
+
+    train_set._set_predictor(predictor)
     train_set.set_feature_name(feature_name)
     train_set.set_categorical_feature(categorical_feature)
 
@@ -328,7 +337,6 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
             params['metric'].append(metrics)
         else:
             params['metric'].extend(metrics)
-
 
     results = collections.defaultdict(list)
     cvfolds = _make_n_folds(train_set, nfold, params, seed, fpreproc, stratified)

@@ -22,7 +22,7 @@ std::unordered_map<std::string, std::string> ConfigBase::Str2Map(const char* par
         continue;
       }
       params[key] = value;
-    } else {
+    } else if(Common::Trim(arg).size() > 0){
       Log::Warning("Unknown parameter %s", arg.c_str());
     }
   }
