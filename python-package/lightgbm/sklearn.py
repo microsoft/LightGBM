@@ -6,7 +6,7 @@ from __future__ import absolute_import
 import numpy as np
 from .basic import LightGBMError, Dataset, is_str
 from .engine import train
-# sklearn
+'''sklearn'''
 try:
     from sklearn.base import BaseEstimator
     from sklearn.base import RegressorMixin, ClassifierMixin
@@ -38,7 +38,6 @@ def _point_wise_objective(func):
         y_pred: array_like of shape [n_samples] or shape[n_samples* n_class] (for multi-class)
             The predicted values
 
-
     Returns
     -------
     new_func: callable
@@ -66,7 +65,7 @@ def _point_wise_objective(func):
                 num_data = len(weight)
                 num_class = len(grad) // num_data
                 if num_class * num_data != len(grad):
-                    raise ValueError("length of grad and hess should equal to num_class * num_data")
+                    raise ValueError("Length of grad and hess should equal to num_class * num_data")
                 for k in range(num_class):
                     for i in range(num_data):
                         idx = k * num_data + i
@@ -147,7 +146,7 @@ class LGBMModel(LGBMModelBase):
                  reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
                  is_unbalance=False, seed=0):
         if not SKLEARN_INSTALLED:
-            raise LightGBMError('sklearn needs to be installed in order to use this module')
+            raise LightGBMError('Scikit-learn is required for this module')
 
         self.num_leaves = num_leaves
         self.max_depth = max_depth
@@ -185,7 +184,7 @@ class LGBMModel(LGBMModelBase):
         booster : a lightgbm booster of underlying model
         """
         if self._Booster is None:
-            raise LightGBMError('need to call fit beforehand')
+            raise LightGBMError('Need to call fit beforehand')
         return self._Booster
 
     def get_params(self, deep=False):
@@ -196,8 +195,8 @@ class LGBMModel(LGBMModelBase):
         return params
 
     def fit(self, X, y,
-            sample_weight=None, init_score=None, group=None, 
-            eval_set=None, eval_sample_weight=None, 
+            sample_weight=None, init_score=None, group=None,
+            eval_set=None, eval_sample_weight=None,
             eval_init_score=None, eval_group=None,
             eval_metric=None,
             early_stopping_rounds=None, verbose=True,
@@ -343,7 +342,7 @@ class LGBMModel(LGBMModelBase):
         if self.evals_result_:
             evals_result = self.evals_result_
         else:
-            raise LightGBMError('No results.')
+            raise LightGBMError('No results found.')
 
         return evals_result
 
@@ -362,7 +361,7 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
 
     def fit(self, X, y,
             sample_weight=None, init_score=None,
-            eval_set=None, eval_sample_weight=None, 
+            eval_set=None, eval_sample_weight=None,
             eval_init_score=None,
             eval_metric=None,
             early_stopping_rounds=None, verbose=True,
@@ -370,10 +369,10 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
             other_params=None):
 
         super(LGBMRegressor, self).fit(X, y, sample_weight, init_score, None,
-                                    eval_set, eval_sample_weight, eval_init_score, None,
-                                    eval_metric, early_stopping_rounds,
-                                    verbose, feature_name, categorical_feature,
-                                    other_params)
+                                       eval_set, eval_sample_weight, eval_init_score, None,
+                                       eval_metric, early_stopping_rounds,
+                                       verbose, feature_name, categorical_feature,
+                                       other_params)
         return self
 
 class LGBMClassifier(LGBMModel, LGBMClassifierBase):
@@ -390,15 +389,15 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
                  is_unbalance=False, seed=0):
         super(LGBMClassifier, self).__init__(num_leaves, max_depth,
                                              learning_rate, n_estimators, max_bin,
-                                             silent, objective,
-                                             nthread, min_split_gain, min_child_weight, min_child_samples,
+                                             silent, objective, nthread,
+                                             min_split_gain, min_child_weight, min_child_samples,
                                              subsample, subsample_freq, colsample_bytree,
                                              reg_alpha, reg_lambda, scale_pos_weight,
                                              is_unbalance, seed)
 
     def fit(self, X, y,
             sample_weight=None, init_score=None,
-            eval_set=None, eval_sample_weight=None, 
+            eval_set=None, eval_sample_weight=None,
             eval_init_score=None,
             eval_metric=None,
             early_stopping_rounds=None, verbose=True,
@@ -480,7 +479,7 @@ def _group_wise_objective(func):
         labels = dataset.get_label()
         group = dataset.get_group()
         if group is None:
-            raise ValueError("group should not be None for ranking task")
+            raise ValueError("Group should not be None for ranking task")
         grad, hess = func(labels, group, preds)
         """weighted for objective"""
         weight = dataset.get_weight()
@@ -490,7 +489,7 @@ def _group_wise_objective(func):
                 grad = np.multiply(grad, weight)
                 hess = np.multiply(hess, weight)
             else:
-                raise ValueError("lenght of grad and hess should equal with num_data")
+                raise ValueError("Length of grad and hess should equal with num_data")
         return grad, hess
     return inner
 
@@ -507,20 +506,20 @@ class LGBMRanker(LGBMModel):
                  reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
                  is_unbalance=False, seed=0):
         super(LGBMRanker, self).__init__(num_leaves, max_depth,
-                                             learning_rate, n_estimators, max_bin,
-                                             silent, objective,
-                                             nthread, min_split_gain, min_child_weight, min_child_samples,
-                                             subsample, subsample_freq, colsample_bytree,
-                                             reg_alpha, reg_lambda, scale_pos_weight,
-                                             is_unbalance, seed)
+                                         learning_rate, n_estimators, max_bin,
+                                         silent, objective, nthread,
+                                         min_split_gain, min_child_weight, min_child_samples,
+                                         subsample, subsample_freq, colsample_bytree,
+                                         reg_alpha, reg_lambda, scale_pos_weight,
+                                         is_unbalance, seed)
         if callable(self.objective):
             self.fobj = _group_wise_objective(self.objective)
         else:
             self.fobj = None
 
     def fit(self, X, y,
-            sample_weight=None, init_score=None, group=None, 
-            eval_set=None, eval_sample_weight=None, 
+            sample_weight=None, init_score=None, group=None,
+            eval_set=None, eval_sample_weight=None,
             eval_init_score=None, eval_group=None,
             eval_metric=None, eval_at=None,
             early_stopping_rounds=None, verbose=True,
@@ -535,17 +534,18 @@ class LGBMRanker(LGBMModel):
 
         """check group data"""
         if group is None:
-            raise ValueError("should use group for ranking task")
+            raise ValueError("Should set group for ranking task")
 
         if eval_set is not None:
             if eval_group is None:
-                raise ValueError("eval_group cannot be None when eval_set is not None")
+                raise ValueError("Eval_group cannot be None when eval_set is not None")
             elif len(eval_group) != len(eval_set):
-                raise ValueError("length of eval_group should equal with eval_set")
+                raise ValueError("Length of eval_group should equal to eval_set")
             else:
                 for inner_group in eval_group:
                     if inner_group is None:
-                        raise ValueError("should set group for all eval data for ranking task")
+                        raise ValueError("Should set group for all eval dataset for ranking task")
+
         if eval_at is not None:
             other_params = {} if other_params is None else other_params
             other_params['ndcg_eval_at'] = list(eval_at)
