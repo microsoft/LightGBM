@@ -230,6 +230,7 @@ struct OverallConfig: public ConfigBase {
 public:
   TaskType task_type = TaskType::kTrain;
   NetworkConfig network_config;
+  int seed = 0;
   int num_threads = 0;
   bool is_parallel = false;
   bool is_parallel_find_bin = false;
@@ -317,6 +318,7 @@ struct ParameterAlias {
     {
       { "config", "config_file" },
       { "nthread", "num_threads" },
+      { "random_seed", "seed" },
       { "num_thread", "num_threads" },
       { "boosting", "boosting_type" },
       { "boost", "boosting_type" },
