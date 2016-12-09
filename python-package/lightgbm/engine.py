@@ -85,10 +85,10 @@ def train(params, train_set, num_boost_round=100,
         predictor = init_model._to_predictor()
     else:
         predictor = None
-    init_iteration = predictor.num_total_iteration if predictor else 0
+    init_iteration = predictor.num_total_iteration if predictor is not None else 0
     """check dataset"""
     if not isinstance(train_set, Dataset):
-        raise TypeError("only can accept Dataset instance for traninig")
+        raise TypeError("Traninig only accepts Dataset object")
 
     train_set._set_predictor(predictor)
     train_set.set_feature_name(feature_name)
@@ -98,7 +98,7 @@ def train(params, train_set, num_boost_round=100,
     train_data_name = "training"
     reduced_valid_sets = []
     name_valid_sets = []
-    if valid_sets:
+    if valid_sets is not None:
         if isinstance(valid_sets, Dataset):
             valid_sets = [valid_sets]
         if isinstance(valid_names, str):
@@ -111,7 +111,7 @@ def train(params, train_set, num_boost_round=100,
                     train_data_name = valid_names[i]
                 continue
             if not isinstance(valid_data, Dataset):
-                raise TypeError("only can accept Dataset instance for traninig")
+                raise TypeError("Traninig only accepts Dataset object")
             valid_data.set_reference(train_set)
             reduced_valid_sets.append(valid_data)
             if valid_names is not None and len(valid_names) > i:
@@ -120,7 +120,7 @@ def train(params, train_set, num_boost_round=100,
                 name_valid_sets.append('valid_'+str(i))
 
     """process callbacks"""
-    if not callbacks:
+    if callbacks is None:
         callbacks = set()
     else:
         for i, cb in enumerate(callbacks):
@@ -133,7 +133,7 @@ def train(params, train_set, num_boost_round=100,
     elif isinstance(verbose_eval, int):
         callbacks.add(callback.print_evaluation(verbose_eval))
 
-    if early_stopping_rounds:
+    if early_stopping_rounds is not None:
         callbacks.add(callback.early_stop(early_stopping_rounds,
                                           verbose=bool(verbose_eval)))
 
@@ -169,7 +169,7 @@ def train(params, train_set, num_boost_round=100,
 
         evaluation_result_list = []
         # check evaluation result.
-        if valid_sets:
+        if valid_sets is not None:
             if is_valid_contain_train:
                 evaluation_result_list.extend(booster.eval_train(feval))
             evaluation_result_list.extend(booster.eval_valid(feval))
@@ -227,7 +227,7 @@ def _make_n_folds(full_data, nfold, params, seed, fpreproc=None, stratified=Fals
             sfk = StratifiedKFold(n_splits=nfold, shuffle=True, random_state=seed)
             idset = [x[1] for x in sfk.split(X=full_data.get_label(), y=full_data.get_label())]
         else:
-            raise LightGBMError('sklearn needs to be installed in order to use stratified cv')
+            raise LightGBMError('Scikit-learn is required for stratified cv')
     else:
         full_data.construct()
         randidx = np.random.permutation(full_data.num_data())
@@ -318,7 +318,7 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
     evaluation history : list(string)
     """
     if not isinstance(train_set, Dataset):
-        raise TypeError("only can accept Dataset instance for traninig")
+        raise TypeError("Traninig only accepts Dataset object")
 
     if is_str(init_model):
         predictor = _InnerPredictor(model_file=init_model)
@@ -342,13 +342,13 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
     cvfolds = _make_n_folds(train_set, nfold, params, seed, fpreproc, stratified)
 
     # setup callbacks
-    if not callbacks:
+    if callbacks is None:
         callbacks = set()
     else:
         for i, cb in enumerate(callbacks):
             cb.__dict__.setdefault('order', i - len(callbacks))
         callbacks = set(callbacks)
-    if early_stopping_rounds:
+    if early_stopping_rounds is not None:
         callbacks.add(callback.early_stop(early_stopping_rounds, verbose=False))
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation(show_stdv=show_stdv))

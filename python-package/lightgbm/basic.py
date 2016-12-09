@@ -1,5 +1,6 @@
 # coding: utf-8
-# pylint: disable = invalid-name, C0111, C0301, R0912, R0913, R0914, W0105
+# pylint: disable = invalid-name, C0111, C0301
+# pylint: disable = R0912, R0913, R0914, W0105, W0201, W0212
 # pylint: disable = E1101
 """Wrapper c_api of LightGBM"""
 from __future__ import absolute_import
@@ -17,13 +18,11 @@ from .libpath import find_lib_path
 """pandas"""
 try:
     from pandas import Series, DataFrame
-    IS_PANDAS_INSTALLED = True
 except ImportError:
     class Series(object):
         pass
     class DataFrame(object):
         pass
-    IS_PANDAS_INSTALLED = False
 
 IS_PY3 = (sys.version_info[0] == 3)
 
@@ -72,7 +71,7 @@ def is_1d_list(data):
     return isinstance(data, list) and \
         (not data or isinstance(data[0], (int, float, bool)))
 
-def list_to_1d_numpy(data, dtype):
+def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     """convert to 1d numpy array"""
     if is_numpy_1d_array(data):
         if data.dtype == dtype:
@@ -81,28 +80,26 @@ def list_to_1d_numpy(data, dtype):
             return data.astype(dtype=dtype, copy=False)
     elif is_1d_list(data):
         return np.array(data, dtype=dtype, copy=False)
-    elif IS_PANDAS_INSTALLED and isinstance(data, Series):
-        return data.astype(dtype).values
+    elif isinstance(data, Series):
+        return data.values.astype(dtype)
     else:
-        raise TypeError("Unknow type({})".format(type(data).__name__))
+        raise TypeError("Wrong type({}) for {}, should be list or numpy array".format(type(data).__name__, name))
 
 def cfloat32_array_to_numpy(cptr, length):
     """Convert a ctypes float pointer array to a numpy array.
     """
     if isinstance(cptr, ctypes.POINTER(ctypes.c_float)):
-        res = np.fromiter(cptr, dtype=np.float32, count=length)
-        return res
+        return np.fromiter(cptr, dtype=np.float32, count=length)
     else:
-        raise RuntimeError('expected float pointer')
+        raise RuntimeError('Expected float pointer')
 
 def cint32_array_to_numpy(cptr, length):
     """Convert a ctypes float pointer array to a numpy array.
     """
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int32)):
-        res = np.fromiter(cptr, dtype=np.int32, count=length)
-        return res
+        return np.fromiter(cptr, dtype=np.int32, count=length)
     else:
-        raise RuntimeError('expected int pointer')
+        raise RuntimeError('Expected int pointer')
 
 def c_str(string):
     """Convert a python string to cstring."""
@@ -113,7 +110,7 @@ def c_array(ctype, values):
     return (ctype * len(values))(*values)
 
 def param_dict_to_str(data):
-    if not data:
+    if data is None or not data:
         return ""
     pairs = []
     for key, val in data.items():
@@ -122,7 +119,7 @@ def param_dict_to_str(data):
         elif isinstance(val, (list, tuple, set)):
             pairs.append(str(key)+'='+','.join(map(str, val)))
         else:
-            raise TypeError('unknow type of parameter:%s , got:%s'
+            raise TypeError('Unknown type of parameter:%s, got:%s'
                             % (key, type(val).__name__))
     return ' '.join(pairs)
 
@@ -158,10 +155,10 @@ def c_float_array(data):
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
             type_data = C_API_DTYPE_FLOAT64
         else:
-            raise TypeError("expected np.float32 or np.float64, met type({})"
+            raise TypeError("Expected np.float32 or np.float64, met type({})"
                             .format(data.dtype))
     else:
-        raise TypeError("Unknow type({})".format(type(data).__name__))
+        raise TypeError("Unknown type({})".format(type(data).__name__))
     return (ptr_data, type_data)
 
 def c_int_array(data):
@@ -176,16 +173,16 @@ def c_int_array(data):
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_int64))
             type_data = C_API_DTYPE_INT64
         else:
-            raise TypeError("expected np.int32 or np.int64, met type({})"
+            raise TypeError("Expected np.int32 or np.int64, met type({})"
                             .format(data.dtype))
     else:
-        raise TypeError("Unknow type({})".format(type(data).__name__))
+        raise TypeError("Unknown type({})".format(type(data).__name__))
     return (ptr_data, type_data)
 
 class _InnerPredictor(object):
     """
-    A _InnerPredictor of LightGBM. 
-    Only used for prediction, usually used for continued-train 
+    A _InnerPredictor of LightGBM.
+    Only used for prediction, usually used for continued-train
     Note: Can convert from Booster, but cannot convert to Booster
     """
     def __init__(self, model_file=None, booster_handle=None):
@@ -261,7 +258,7 @@ class _InnerPredictor(object):
         Prediction result
         """
         if isinstance(data, (_InnerDataset, Dataset)):
-            raise TypeError("cannot use Dataset instance for prediction, please use raw data instead")
+            raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
         predict_type = C_API_PREDICT_NORMAL
         if raw_score:
             predict_type = C_API_PREDICT_RAW_SCORE
@@ -290,7 +287,7 @@ class _InnerPredictor(object):
         elif isinstance(data, np.ndarray):
             preds, nrow = self.__pred_for_np2d(data, num_iteration,
                                                predict_type)
-        elif IS_PANDAS_INSTALLED and isinstance(data, DataFrame):
+        elif isinstance(data, DataFrame):
             preds, nrow = self.__pred_for_np2d(data.values, num_iteration,
                                                predict_type)
         else:
@@ -299,15 +296,14 @@ class _InnerPredictor(object):
                 preds, nrow = self.__pred_for_csr(csr, num_iteration,
                                                   predict_type)
             except:
-                raise TypeError('can not predict data for type {}'.
-                                format(type(data).__name__))
+                raise TypeError('Cannot predict data for type {}'.format(type(data).__name__))
         if pred_leaf:
             preds = preds.astype(np.int32)
         if is_reshape and preds.size != nrow:
             if preds.size % nrow == 0:
                 preds = preds.reshape(nrow, -1)
             else:
-                raise ValueError('length of predict result (%d) cannot be divide nrow (%d)'
+                raise ValueError('Length of predict result (%d) cannot be divide nrow (%d)'
                                  % (preds.size, nrow))
         return preds
 
@@ -353,7 +349,7 @@ class _InnerPredictor(object):
             preds.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
             ))
         if n_preds != out_num_preds.value:
-            raise ValueError("incorrect number for predict result")
+            raise ValueError("Wrong length for predict results")
         return preds, mat.shape[0]
 
     def __pred_for_csr(self, csr, num_iteration, predict_type):
@@ -384,7 +380,7 @@ class _InnerPredictor(object):
             preds.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
             ))
         if n_preds != out_num_preds.value:
-            raise ValueError("incorrect number for predict result")
+            raise ValueError("Wrong length for predict results")
         return preds, nrow
 
 PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
@@ -481,10 +477,10 @@ class _InnerDataset(object):
                 elif isinstance(name, int):
                     categorical_indices.add(name)
                 else:
-                    raise TypeError("unknown type({}) or unknown name({}) in categorical_feature" \
+                    raise TypeError("Wrong type({}) or unknown name({}) in categorical_feature" \
                         .format(type(name).__name__, name))
 
-            params['categorical_column'] = categorical_indices
+            params['categorical_column'] = sorted(categorical_indices)
 
         params_str = param_dict_to_str(params)
         """process for reference dataset"""
@@ -514,11 +510,11 @@ class _InnerDataset(object):
                 csr = scipy.sparse.csr_matrix(data)
                 self.__init_from_csr(csr, params_str, ref_dataset)
             except:
-                raise TypeError('can not initialize _InnerDataset from {}'.format(type(data).__name__))
+                raise TypeError('Cannot initialize _InnerDataset from {}'.format(type(data).__name__))
         if label is not None:
             self.set_label(label)
         if self.get_label() is None:
-            raise ValueError("label should not be None")
+            raise ValueError("Label should not be None")
         if weight is not None:
             self.set_weight(weight)
         if group is not None:
@@ -572,7 +568,7 @@ class _InnerDataset(object):
         """
         Get subset of current dataset
         """
-        used_indices = list_to_1d_numpy(used_indices, np.int32)
+        used_indices = list_to_1d_numpy(used_indices, np.int32, name='used_indices')
         ret = _InnerDataset(None)
         ret.handle = ctypes.c_void_p()
         params_str = param_dict_to_str(params)
@@ -585,7 +581,7 @@ class _InnerDataset(object):
         ret.max_bin = self.max_bin
         ret.predictor = self.predictor
         if ret.get_label() is None:
-            raise ValueError("label should not be None")
+            raise ValueError("Label should not be None")
         return ret
 
     def set_feature_name(self, feature_name):
@@ -595,7 +591,7 @@ class _InnerDataset(object):
         if feature_name is None:
             return
         if len(feature_name) != self.num_feature():
-            raise ValueError("size of feature_name error")
+            raise ValueError("Length of feature_name({}) and num_feature({}) don't match".format(len(feature_name), self.num_feature()))
         c_feature_name = [c_str(name) for name in feature_name]
         _safe_call(_LIB.LGBM_DatasetSetFeatureNames(
             self.handle,
@@ -632,7 +628,7 @@ class _InnerDataset(object):
         Initialize data from a CSR matrix.
         """
         if len(csr.indices) != len(csr.data):
-            raise ValueError('length mismatch: {} vs {}'.format(len(csr.indices), len(csr.data)))
+            raise ValueError('Length mismatch: {} vs {}'.format(len(csr.indices), len(csr.data)))
         self.handle = ctypes.c_void_p()
 
         ptr_indptr, type_ptr_indptr = c_int_array(csr.indptr)
@@ -685,7 +681,7 @@ class _InnerDataset(object):
         elif out_type.value == C_API_DTYPE_FLOAT32:
             return cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
         else:
-            raise TypeError("unknow type")
+            raise TypeError("Unknown type")
 
     def set_field(self, field_name, data):
         """Set property into the _InnerDataset.
@@ -707,11 +703,8 @@ class _InnerDataset(object):
                 0,
                 FIELD_TYPE_MAPPER[field_name]))
             return
-        if IS_PANDAS_INSTALLED and isinstance(data, Series):
-            dtype = np.int32 if field_name == 'group' else np.float32
-            data = data.astype(dtype).values
-        if not is_numpy_1d_array(data):
-            raise TypeError("Unknow type({})".format(type(data).__name__))
+        dtype = np.int32 if field_name == 'group' else np.float32
+        data = list_to_1d_numpy(data, dtype, name=field_name)
         if data.dtype == np.float32:
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
             type_data = C_API_DTYPE_FLOAT32
@@ -719,9 +712,9 @@ class _InnerDataset(object):
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_int32))
             type_data = C_API_DTYPE_INT32
         else:
-            raise TypeError("excepted np.float32 or np.int32, met type({})".format(data.dtype))
+            raise TypeError("Excepted np.float32 or np.int32, meet type({})".format(data.dtype))
         if type_data != FIELD_TYPE_MAPPER[field_name]:
-            raise TypeError("type error for set_field")
+            raise TypeError("Input type error for set_field")
         _safe_call(_LIB.LGBM_DatasetSetField(
             self.handle,
             c_str(field_name),
@@ -749,7 +742,7 @@ class _InnerDataset(object):
         label: numpy array or list or None
             The label information to be set into _InnerDataset
         """
-        label = list_to_1d_numpy(label, np.float32)
+        label = list_to_1d_numpy(label, name='label')
         self.set_field('label', label)
 
     def set_weight(self, weight):
@@ -761,7 +754,7 @@ class _InnerDataset(object):
             Weight for each data point
         """
         if weight is not None:
-            weight = list_to_1d_numpy(weight, np.float32)
+            weight = list_to_1d_numpy(weight, name='weight')
         self.set_field('weight', weight)
 
     def set_init_score(self, score):
@@ -773,7 +766,7 @@ class _InnerDataset(object):
             Init score for booster
         """
         if score is not None:
-            score = list_to_1d_numpy(score, np.float32)
+            score = list_to_1d_numpy(score, name='init score')
         self.set_field('init_score', score)
 
     def set_group(self, group):
@@ -785,7 +778,7 @@ class _InnerDataset(object):
             Group size of each group
         """
         if group is not None:
-            group = list_to_1d_numpy(group, np.int32)
+            group = list_to_1d_numpy(group, np.int32, name='group')
         self.set_field('group', group)
 
     def get_label(self):
@@ -940,8 +933,9 @@ class Dataset(object):
                         self.used_indices, self.params)
             else:
                 self.inner_dataset = _InnerDataset(self.data, self.label, self.max_bin,
-                    None, self.weight, self.group, self._predictor,
-                    self.silent, self.feature_name, self.categorical_feature, self.params)
+                                                   None, self.weight, self.group, self._predictor,
+                                                   self.silent, self.feature_name,
+                                                   self.categorical_feature, self.params)
             if self.free_raw_data:
                 self.data = None
 
@@ -994,7 +988,7 @@ class Dataset(object):
         Parameters
         ----------
         reference : Dataset
-            will use reference as template to consturct current dataset
+            Will use reference as template to consturct current dataset
         """
         self.set_categorical_feature(reference.categorical_feature)
         self.set_feature_name(reference.feature_name)
@@ -1015,7 +1009,7 @@ class Dataset(object):
         Parameters
         ----------
         feature_name : list of str
-            feature names
+            Feature names
         """
         self.feature_name = feature_name
         if self.__is_constructed():
@@ -1028,9 +1022,9 @@ class Dataset(object):
         Parameters
         ----------
         used_indices : list of int
-            use indices of this subset
+            Used indices of this subset
         params : dict
-            other parameters
+            Other parameters
         """
         ret = Dataset(None)
         ret.feature_name = self.feature_name
@@ -1198,7 +1192,7 @@ class Booster(object):
         if train_set is not None:
             """Training task"""
             if not isinstance(train_set, Dataset):
-                raise TypeError('training data should be Dataset instance, met {}'.format(type(train_set).__name__))
+                raise TypeError('Training data should be Dataset instance, met {}'.format(type(train_set).__name__))
             params_str = param_dict_to_str(params)
             """construct booster object"""
             _safe_call(_LIB.LGBM_BoosterCreate(
@@ -1237,7 +1231,7 @@ class Booster(object):
                 ctypes.byref(out_num_class)))
             self.__num_class = out_num_class.value
         else:
-            raise TypeError('At least need training dataset or model file to create booster instance')
+            raise TypeError('Need at least one training dataset or model file to create booster instance')
 
     def __del__(self):
         if self.handle is not None:
@@ -1342,22 +1336,10 @@ class Booster(object):
         -------
         is_finished, bool
         """
-        if not is_numpy_1d_array(grad):
-            if is_1d_list(grad):
-                grad = np.array(grad, dtype=np.float32, copy=False)
-            else:
-                raise TypeError("grad should be numpy 1d array or 1d list")
-        if not is_numpy_1d_array(hess):
-            if is_1d_list(hess):
-                hess = np.array(hess, dtype=np.float32, copy=False)
-            else:
-                raise TypeError("hess should be numpy 1d array or 1d list")
+        grad = list_to_1d_numpy(grad, name='gradient')
+        hess = list_to_1d_numpy(hess, name='hessian')
         if len(grad) != len(hess):
-            raise ValueError('grad / hess lengths mismatch: {} / {}'.format(len(grad), len(hess)))
-        if grad.dtype != np.float32:
-            grad = grad.astype(np.float32, copy=False)
-        if hess.dtype != np.float32:
-            hess = hess.astype(np.float32, copy=False)
+            raise ValueError("Lengths of gradient({}) and hessian({}) don't match".format(len(grad), len(hess)))
         is_finished = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterUpdateOneIterCustom(
             self.handle,
@@ -1548,7 +1530,7 @@ class Booster(object):
         Evaulate training or validation data
         """
         if data_idx >= self.__num_dataset:
-            raise ValueError("data_idx should be smaller than number of dataset")
+            raise ValueError("Data_idx should be smaller than number of dataset")
         self.__get_eval_info()
         ret = []
         if self.__num_inner_eval > 0:
@@ -1560,7 +1542,7 @@ class Booster(object):
                 ctypes.byref(tmp_out_len),
                 result.ctypes.data_as(ctypes.POINTER(ctypes.c_float))))
             if tmp_out_len.value != self.__num_inner_eval:
-                raise ValueError("incorrect number of eval results")
+                raise ValueError("Wrong length of eval results")
             for i in range(self.__num_inner_eval):
                 ret.append((data_name, self.__name_inner_eval[i], result[i], self.__higher_better_inner_eval[i]))
         if feval is not None:
@@ -1582,7 +1564,7 @@ class Booster(object):
         Predict for training and validation dataset
         """
         if data_idx >= self.__num_dataset:
-            raise ValueError("data_idx should be smaller than number of dataset")
+            raise ValueError("Data_idx should be smaller than number of dataset")
         if self.__inner_predict_buffer[data_idx] is None:
             if data_idx == 0:
                 n_preds = self.train_set.num_data() * self.__num_class
@@ -1600,7 +1582,7 @@ class Booster(object):
                 ctypes.byref(tmp_out_len),
                 data_ptr))
             if tmp_out_len.value != len(self.__inner_predict_buffer[data_idx]):
-                raise ValueError("incorrect number of predict results for data %d" % (data_idx))
+                raise ValueError("Wrong length of predict results for data %d" % (data_idx))
             self.__is_predicted_cur_iter[data_idx] = True
         return self.__inner_predict_buffer[data_idx]
 
@@ -1626,7 +1608,7 @@ class Booster(object):
                     ctypes.byref(tmp_out_len),
                     ptr_string_buffers))
                 if self.__num_inner_eval != tmp_out_len.value:
-                    raise ValueError("size of eval names doesn't equal with num_evals")
+                    raise ValueError("Length of eval names doesn't equal with num_evals")
                 self.__name_inner_eval = \
                     [string_buffers[i].value.decode() for i in range(self.__num_inner_eval)]
                 self.__higher_better_inner_eval = \
@@ -1658,7 +1640,7 @@ class Booster(object):
         for key, value in kwargs.items():
             if value is not None:
                 if not is_str(value):
-                    raise ValueError("set_attr only accepts string values")
+                    raise ValueError("Set attr only accepts strings")
                 self.__attr[key] = value
             else:
                 self.__attr.pop(key, None)

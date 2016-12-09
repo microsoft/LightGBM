@@ -35,7 +35,7 @@ def _format_eval_result(value, show_stdv=True):
         else:
             return '%s\'s %s:%g' % (value[0], value[1], value[2])
     else:
-        raise ValueError("wrong metric value")
+        raise ValueError("Wrong metric value")
 
 
 def print_evaluation(period=1, show_stdv=True):
@@ -80,7 +80,7 @@ def record_evaluation(eval_result):
         The requested callback function.
     """
     if not isinstance(eval_result, dict):
-        raise TypeError('eval_result has to be a dictionary')
+        raise TypeError('Eval_result should be a dictionary')
     eval_result.clear()
 
     def init(env):
@@ -164,7 +164,7 @@ def early_stop(stopping_rounds, verbose=True):
     def init(env):
         """internal function"""
         if not env.evaluation_result_list:
-            raise ValueError('For early stopping you need at least one set in evals.')
+            raise ValueError('For early stopping, at least one dataset is required for evaluation')
 
         if verbose:
             msg = "Train until valid scores didn't improve in {} rounds."
@@ -194,7 +194,7 @@ def early_stop(stopping_rounds, verbose=True):
                     if env.model is not None:
                         env.model.set_attr(best_iteration=str(best_iter[i]))
                     if verbose:
-                        print('early stopping, best iteration is:')
+                        print('Early stopping, best iteration is:')
                         print(best_msg[i])
                     raise EarlyStopException(best_iter[i])
     callback.order = 30

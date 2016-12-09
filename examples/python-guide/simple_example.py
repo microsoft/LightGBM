@@ -6,6 +6,7 @@ import pandas as pd
 from sklearn.metrics import mean_squared_error
 
 # load or create your dataset
+print('Load data...')
 df_train = pd.read_csv('../regression/regression.train', header=None, sep='\t')
 df_test = pd.read_csv('../regression/regression.test', header=None, sep='\t')
 
@@ -17,7 +18,6 @@ X_test = df_test.drop(0, axis=1)
 # create dataset for lightgbm
 lgb_train = lgb.Dataset(X_train, y_train)
 lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
-
 
 # specify your configurations as a dict
 params = {
@@ -33,27 +33,32 @@ params = {
     'verbose' : 0
 }
 
+print('Start training...')
 # train
 gbm = lgb.train(params,
                 lgb_train,
-                num_boost_round=100,
+                num_boost_round=20,
                 valid_sets=lgb_eval,
-                early_stopping_rounds=10)
+                early_stopping_rounds=5)
 
+print('Save model...')
 # save model to file
 gbm.save_model('model.txt')
 
+print('Start predicting...')
 # predict
 y_pred = gbm.predict(X_test, num_iteration=gbm.best_iteration)
 # eval
 print('The rmse of prediction is:', mean_squared_error(y_test, y_pred) ** 0.5)
 
+print('Dump model to JSON...')
 # dump model to json (and save to file)
 model_json = gbm.dump_model()
 
 with open('model.json', 'w+') as f:
     json.dump(model_json, f, indent=4)
 
+print('Calculate feature importances...')
 # feature importances
-print('Feature importances:', gbm.feature_importance())
-print('Feature importances:', gbm.feature_importance("gain"))
+print('Feature importances:', list(gbm.feature_importance()))
+# print('Feature importances:', list(gbm.feature_importance("gain")))
