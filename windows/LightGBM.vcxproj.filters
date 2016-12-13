@@ -242,5 +242,8 @@
     <ClCompile Include="..\src\io\dataset_loader.cpp">
       <Filter>src\io</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\treelearner\voting_parallel_tree_learner.cpp">
+      <Filter>src\treelearner</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

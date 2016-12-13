@@ -289,6 +289,7 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   CHECK(feature_fraction > 0.0f && feature_fraction <= 1.0f);
   GetDouble(params, "histogram_pool_size", &histogram_pool_size);
   GetInt(params, "max_depth", &max_depth);
+  GetInt(params, "top_k", &top_k);
   CHECK(max_depth > 1 || max_depth < 0);
 }
 
@@ -327,8 +328,9 @@ void BoostingConfig::GetTreeLearnerType(const std::unordered_map<std::string, st
       tree_learner_type = TreeLearnerType::kFeatureParallelTreelearner;
     } else if (value == std::string("data") || value == std::string("data_parallel")) {
       tree_learner_type = TreeLearnerType::kDataParallelTreeLearner;
-    }
-    else {
+    } else if (value == std::string("voting") || value == std::string("voting_parallel")) {
+      tree_learner_type = TreeLearnerType::KVotingParallelTreeLearner;
+    } else {
       Log::Fatal("Unknown tree learner type %s", value.c_str());
     }
   }
