@@ -15,7 +15,8 @@ def train(params, train_set, num_boost_round=100,
           feature_name=None, categorical_feature=None,
           early_stopping_rounds=None, evals_result=None,
           verbose_eval=True, learning_rates=None, callbacks=None):
-    """Train with given parameters.
+    """
+    Train with given parameters.
 
     Parameters
     ----------
@@ -39,7 +40,8 @@ def train(params, train_set, num_boost_round=100,
     feature_name : list of str
         Feature names
     categorical_feature : list of str or int
-        Categorical features, type int represents index, \
+        Categorical features,
+        type int represents index,
         type str represents feature names (need to specify feature_name as well)
     early_stopping_rounds: int
         Activates early stopping.
@@ -49,28 +51,30 @@ def train(params, train_set, num_boost_round=100,
         If early stopping occurs, the model will add 'best_iteration' field
     evals_result: dict or None
         This dictionary used to store all evaluation results of all the items in valid_sets.
-        Example: with a valid_sets containing [valid_set, train_set] \
-        and valid_names containing ['eval', 'train'] and a paramater containing ('metric':'logloss')
+        Example: with a valid_sets containing [valid_set, train_set]
+                 and valid_names containing ['eval', 'train']
+                 and a paramater containing ('metric':'logloss')
         Returns: {'train': {'logloss': ['0.48253', '0.35953', ...]},
                   'eval': {'logloss': ['0.480385', '0.357756', ...]}}
         passed with None means no using this function
     verbose_eval : bool or int
         Requires at least one item in evals.
-        If `verbose_eval` is True then the evaluation metric on the validation set is \
-        printed at each boosting stage.
-        If `verbose_eval` is an integer then the evaluation metric on the validation set \
-        is printed at every given `verbose_eval` boosting stage. The last boosting stage \
-        / the boosting stage found by using `early_stopping_rounds` is also printed.
-        Example: with verbose_eval=4 and at least one item in evals, an evaluation metric \
-        is printed every 4 boosting stages, instead of every boosting stage.
+        If `verbose_eval` is True,
+            the eval metric on the valid set is printed at each boosting stage.
+        If `verbose_eval` is int,
+            the eval metric on the valid set is printed at every `verbose_eval` boosting stage.
+        The last boosting stage
+            or the boosting stage found by using `early_stopping_rounds` is also printed.
+        Example: with verbose_eval=4 and at least one item in evals,
+            an evaluation metric is printed every 4 (instead of 1) boosting stages.
     learning_rates: list or function
-        List of learning rate for each boosting round \
-        or a customized function that calculates learning_rate in terms of \
-        current number of round and the total number of boosting round \
+        List of learning rate for each boosting round
+        or a customized function that calculates learning_rate in terms of
+        current number of round (and the total number of boosting round)
         (e.g. yields learning rate decay)
         - list l: learning_rate = l[current_round]
-        - function f: learning_rate = f(current_round, total_boost_round) \
-        or learning_rate = f(current_round)
+        - function f: learning_rate = f(current_round, total_boost_round)
+                   or learning_rate = f(current_round)
     callbacks : list of callback functions
         List of callback functions that are applied at end of each iteration.
 
@@ -259,12 +263,13 @@ def _agg_cv_result(raw_results):
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
 
 def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
-       metrics=(), fobj=None, feval=None, init_model=None,
+       metrics=None, fobj=None, feval=None, init_model=None,
        feature_name=None, categorical_feature=None,
        early_stopping_rounds=None, fpreproc=None,
        verbose_eval=None, show_stdv=True, seed=0,
        callbacks=None):
-    """Cross-validation with given paramaters.
+    """
+    Cross-validation with given paramaters.
 
     Parameters
     ----------
@@ -291,20 +296,21 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
     feature_name : list of str
         Feature names
     categorical_feature : list of str or int
-        Categorical features, type int represents index, \
+        Categorical features, type int represents index,
         type str represents feature names (need to specify feature_name as well)
     early_stopping_rounds: int
-        Activates early stopping. CV error needs to decrease at least \
+        Activates early stopping. CV error needs to decrease at least
         every <early_stopping_rounds> round(s) to continue.
         Last entry in evaluation history is the one from best iteration.
     fpreproc : function
-        Preprocessing function that takes (dtrain, dtest, param) and returns \
-        transformed versions of those.
+        Preprocessing function that takes (dtrain, dtest, param)
+        and returns transformed versions of those.
     verbose_eval : bool, int, or None, default None
-        Whether to display the progress. If None, progress will be displayed \
-        when np.ndarray is returned. If True, progress will be displayed at \
-        boosting stage. If an integer is given, progress will be displayed \
-        at every given `verbose_eval` boosting stage.
+        Whether to display the progress.
+        If None, progress will be displayed when np.ndarray is returned.
+        If True, progress will be displayed at boosting stage.
+        If an integer is given,
+            progress will be displayed at every given `verbose_eval` boosting stage.
     show_stdv : bool, default True
         Whether to display the standard deviation in progress.
         Results are not affected, and always contains std.
