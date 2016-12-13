@@ -128,69 +128,6 @@ def _eval_function_wrapper(func):
     return inner
 
 class LGBMModel(LGBMModelBase):
-    """Implementation of the Scikit-Learn API for LightGBM.
-
-    Parameters
-    ----------
-    num_leaves : int
-        Maximum tree leaves for base learners.
-    max_depth : int
-        Maximum tree depth for base learners, -1 means no limit.
-    learning_rate : float
-        Boosting learning rate
-    n_estimators : int
-        Number of boosted trees to fit.
-    silent : boolean
-        Whether to print messages while running boosting.
-    objective : string or callable
-        Specify the learning task and the corresponding learning objective or
-        a custom objective function to be used (see note below).
-    nthread : int
-        Number of parallel threads
-    min_split_gain : float
-        Minimum loss reduction required to make a further partition on a leaf node of the tree.
-    min_child_weight : int
-        Minimum sum of instance weight(hessian) needed in a child(leaf)
-    min_child_samples : int
-        Minimum number of data need in a child(leaf)
-    subsample : float
-        Subsample ratio of the training instance.
-    subsample_freq : int
-        frequence of subsample, <=0 means no enable
-    colsample_bytree : float
-        Subsample ratio of columns when constructing each tree.
-    reg_alpha : float
-        L1 regularization term on weights
-    reg_lambda : float
-        L2 regularization term on weights
-    scale_pos_weight : float
-        Balancing of positive and negative weights.
-    is_unbalance : bool
-        Is unbalance for binary classification
-    seed : int
-        Random number seed.
-
-    Note
-    ----
-    A custom objective function can be provided for the ``objective``
-    parameter. In this case, it should have the signature
-    ``objective(y_true, y_pred) -> grad, hess`` or ``objective(y_true, y_pred, group) -> grad, hess``:
-
-        y_true: array_like of shape [n_samples]
-            The target values
-        y_pred: array_like of shape [n_samples] or shape[n_samples* n_class]
-            The predicted values
-        group: array_like
-            group/query data, used for ranking task
-        grad: array_like of shape [n_samples] or shape[n_samples* n_class]
-            The value of the gradient for each sample point.
-        hess: array_like of shape [n_samples] or shape[n_samples* n_class]
-            The value of the second derivative for each sample point
-
-    for multi-class task, the y_pred is group by class_id first, then group by row_id
-          if you want to get i-th row y_pred in j-th class, the access way is y_pred[j*num_data+i]
-          and you should group grad and hess in this way as well
-    """
 
     def __init__(self, num_leaves=31, max_depth=-1,
                  learning_rate=0.1, n_estimators=10, max_bin=255,
@@ -199,6 +136,72 @@ class LGBMModel(LGBMModelBase):
                  subsample=1, subsample_freq=1, colsample_bytree=1,
                  reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
                  is_unbalance=False, seed=0):
+        """
+        Implementation of the Scikit-Learn API for LightGBM.
+
+        Parameters
+        ----------
+        num_leaves : int
+            Maximum tree leaves for base learners.
+        max_depth : int
+            Maximum tree depth for base learners, -1 means no limit.
+        learning_rate : float
+            Boosting learning rate
+        n_estimators : int
+            Number of boosted trees to fit.
+        silent : boolean
+            Whether to print messages while running boosting.
+        objective : string or callable
+            Specify the learning task and the corresponding learning objective or
+            a custom objective function to be used (see note below).
+            default: binary for LGBMClassifier, lambdarank for LGBMRanker
+        nthread : int
+            Number of parallel threads
+        min_split_gain : float
+            Minimum loss reduction required to make a further partition on a leaf node of the tree.
+        min_child_weight : int
+            Minimum sum of instance weight(hessian) needed in a child(leaf)
+        min_child_samples : int
+            Minimum number of data need in a child(leaf)
+        subsample : float
+            Subsample ratio of the training instance.
+        subsample_freq : int
+            frequence of subsample, <=0 means no enable
+        colsample_bytree : float
+            Subsample ratio of columns when constructing each tree.
+        reg_alpha : float
+            L1 regularization term on weights
+        reg_lambda : float
+            L2 regularization term on weights
+        scale_pos_weight : float
+            Balancing of positive and negative weights.
+        is_unbalance : bool
+            Is unbalance for binary classification
+        seed : int
+            Random number seed.
+
+        Note
+        ----
+        A custom objective function can be provided for the ``objective``
+        parameter. In this case, it should have the signature
+        ``objective(y_true, y_pred) -> grad, hess`` 
+            or ``objective(y_true, y_pred, group) -> grad, hess``:
+
+            y_true: array_like of shape [n_samples]
+                The target values
+            y_pred: array_like of shape [n_samples] or shape[n_samples* n_class]
+                The predicted values
+            group: array_like
+                group/query data, used for ranking task
+            grad: array_like of shape [n_samples] or shape[n_samples* n_class]
+                The value of the gradient for each sample point.
+            hess: array_like of shape [n_samples] or shape[n_samples* n_class]
+                The value of the second derivative for each sample point
+
+        for multi-class task, the y_pred is group by class_id first, then group by row_id
+            if you want to get i-th row y_pred in j-th class, the access way is y_pred[j*num_data+i]
+            and you should group grad and hess in this way as well
+        """
         if not SKLEARN_INSTALLED:
             raise LightGBMError('Scikit-learn is required for this module')
 
@@ -229,8 +232,8 @@ class LGBMModel(LGBMModelBase):
             self.fobj = None
 
     def booster(self):
-        """Get the underlying lightgbm Booster of this model.
-
+        """
+        Get the underlying lightgbm Booster of this model.
         This will raise an exception when fit was not called
 
         Returns
@@ -242,7 +245,9 @@ class LGBMModel(LGBMModelBase):
         return self._Booster
 
     def get_params(self, deep=False):
-        """Get parameters"""
+        """
+        Get parameters
+        """
         params = super(LGBMModel, self).get_params(deep=deep)
         if self.nthread <= 0:
             params.pop('nthread', None)
@@ -288,20 +293,23 @@ class LGBMModel(LGBMModelBase):
         feature_name : list of str
             Feature names
         categorical_feature : list of str or int
-            Categorical features, type int represents index, \
+            Categorical features,
+            type int represents index,
             type str represents feature names (need to specify feature_name as well)
         other_params: dict
             Other parameters
 
         Note
         ----
-        Custom eval function expects a callable with following functions: ``func(y_true, y_pred)``, ``func(y_true, y_pred, weight)`` 
-            or ``func(y_true, y_pred, weight, group)``.
-            return (eval_name, eval_result, is_bigger_better) or list of (eval_name, eval_result, is_bigger_better)
+        Custom eval function expects a callable with following functions:
+            ``func(y_true, y_pred)``, ``func(y_true, y_pred, weight)``
+                or ``func(y_true, y_pred, weight, group)``.
+            return (eval_name, eval_result, is_bigger_better)
+                or list of (eval_name, eval_result, is_bigger_better)
 
             y_true: array_like of shape [n_samples]
                 The target values
-            y_pred: array_like of shape [n_samples] or shape[n_samples* n_class] (for multi-class)
+            y_pred: array_like of shape [n_samples] or shape[n_samples * n_class] (for multi-class)
                 The predicted values
             weight: array_like of shape [n_samples]
                 The weight of samples
@@ -383,20 +391,36 @@ class LGBMModel(LGBMModelBase):
         return self
 
     def predict(self, data, raw_score=False, num_iteration=0):
-        return self.booster().predict(data,
-                                      raw_score=raw_score,
-                                      num_iteration=num_iteration)
-
-    def apply(self, X, num_iteration=0):
-        """Return the predicted leaf every tree for each sample.
+        """
+        Return the predicted value for each sample.
 
         Parameters
         ----------
         X : array_like, shape=[n_samples, n_features]
             Input features matrix.
 
-        ntree_limit : int
-            Limit number of trees in the prediction; defaults to 0 (use all trees).
+        num_iteration : int
+            Limit number of iterations in the prediction; defaults to 0 (use all trees).
+
+        Returns
+        -------
+        predicted_result : array_like, shape=[n_samples] or [n_samples, n_classes]
+        """
+        return self.booster().predict(data,
+                                      raw_score=raw_score,
+                                      num_iteration=num_iteration)
+
+    def apply(self, X, num_iteration=0):
+        """
+        Return the predicted leaf every tree for each sample.
+
+        Parameters
+        ----------
+        X : array_like, shape=[n_samples, n_features]
+            Input features matrix.
+
+        num_iteration : int
+            Limit number of iterations in the prediction; defaults to 0 (use all trees).
 
         Returns
         -------
@@ -407,7 +431,9 @@ class LGBMModel(LGBMModelBase):
                                       num_iteration=num_iteration)
 
     def evals_result(self):
-        """Return the evaluation results.
+        """
+        Return the evaluation results.
+
         Returns
         -------
         evals_result : dictionary
@@ -420,7 +446,9 @@ class LGBMModel(LGBMModelBase):
         return evals_result
 
     def feature_importance(self):
-        """Feature importances
+        """
+        Feature importances
+
         Returns
         -------
         Array of normailized feature importances
@@ -429,8 +457,6 @@ class LGBMModel(LGBMModelBase):
         return importace_array / importace_array.sum()
 
 class LGBMRegressor(LGBMModel, LGBMRegressorBase):
-    __doc__ = """Implementation of the scikit-learn API for LightGBM regression.
-    """ + '\n'.join(LGBMModel.__doc__.split('\n')[2:])
 
     def fit(self, X, y,
             sample_weight=None, init_score=None,
@@ -449,9 +475,6 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
         return self
 
 class LGBMClassifier(LGBMModel, LGBMClassifierBase):
-    __doc__ = """Implementation of the scikit-learn API for LightGBM classification.
-
-    """ + '\n'.join(LGBMModel.__doc__.split('\n')[2:])
 
     def __init__(self, num_leaves=31, max_depth=-1,
                  learning_rate=0.1, n_estimators=10, max_bin=255,
@@ -511,6 +534,21 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
         return self._le.inverse_transform(column_indexes)
 
     def predict_proba(self, data, raw_score=False, num_iteration=0):
+        """
+        Return the predicted probability for each class for each sample.
+
+        Parameters
+        ----------
+        X : array_like, shape=[n_samples, n_features]
+            Input features matrix.
+
+        num_iteration : int
+            Limit number of iterations in the prediction; defaults to 0 (use all trees).
+
+        Returns
+        -------
+        predicted_probability : array_like, shape=[n_samples, n_classes]
+        """
         class_probs = self.booster().predict(data,
                                              raw_score=raw_score,
                                              num_iteration=num_iteration)
@@ -522,9 +560,6 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
             return np.vstack((classzero_probs, classone_probs)).transpose()
 
 class LGBMRanker(LGBMModel):
-    __doc__ = """Implementation of the scikit-learn API for LightGBM ranking application.
-
-    """ + '\n'.join(LGBMModel.__doc__.split('\n')[2:])
 
     def __init__(self, num_leaves=31, max_depth=-1,
                  learning_rate=0.1, n_estimators=10, max_bin=255,
@@ -550,7 +585,7 @@ class LGBMRanker(LGBMModel):
             feature_name=None, categorical_feature=None,
             other_params=None):
         """
-        Most arguments like LGBMModel.fit except following:
+        Most arguments like common methods except following:
 
         eval_at : list of int
             The evaulation positions of NDCG

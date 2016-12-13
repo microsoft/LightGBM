@@ -758,7 +758,7 @@ class _InnerDataset(object):
         self.set_field('weight', weight)
 
     def set_init_score(self, score):
-        """ Set init score of booster to start from.
+        """Set init score of booster to start from.
 
         Parameters
         ----------
@@ -869,7 +869,8 @@ class Dataset(object):
         feature_name : list of str
             Feature names
         categorical_feature : list of str or int
-            Categorical features, type int represents index, \
+            Categorical features,
+            type int represents index,
             type str represents feature names (need to specify feature_name as well)
         params: dict, optional
             Other parameters
@@ -919,7 +920,9 @@ class Dataset(object):
         return ret
 
     def construct(self):
-        """Lazy init"""
+        """
+        Lazy init
+        """
         if self.inner_dataset is None:
             if self.reference is not None:
                 if self.used_indices is None:
@@ -1036,7 +1039,8 @@ class Dataset(object):
         return ret
 
     def save_binary(self, filename):
-        """Save Dataset to binary file
+        """
+        Save Dataset to binary file
 
         Parameters
         ----------
@@ -1047,7 +1051,8 @@ class Dataset(object):
 
 
     def set_label(self, label):
-        """Set label of Dataset
+        """
+        Set label of Dataset
 
         Parameters
         ----------
@@ -1059,7 +1064,8 @@ class Dataset(object):
             self.inner_dataset.set_label(self.label)
 
     def set_weight(self, weight):
-        """ Set weight of each instance.
+        """
+        Set weight of each instance.
 
         Parameters
         ----------
@@ -1071,7 +1077,8 @@ class Dataset(object):
             self.inner_dataset.set_weight(self.weight)
 
     def set_init_score(self, init_score):
-        """ Set init score of booster to start from.
+        """
+        Set init score of booster to start from.
 
         Parameters
         ----------
@@ -1083,7 +1090,8 @@ class Dataset(object):
             self.inner_dataset.set_init_score(self.init_score)
 
     def set_group(self, group):
-        """Set group size of Dataset (used for ranking).
+        """
+        Set group size of Dataset (used for ranking).
 
         Parameters
         ----------
@@ -1095,7 +1103,8 @@ class Dataset(object):
             self.inner_dataset.set_group(self.group)
 
     def get_label(self):
-        """Get the label of the Dataset.
+        """
+        Get the label of the Dataset.
 
         Returns
         -------
@@ -1106,7 +1115,8 @@ class Dataset(object):
         return self.label
 
     def get_weight(self):
-        """Get the weight of the Dataset.
+        """
+        Get the weight of the Dataset.
 
         Returns
         -------
@@ -1117,7 +1127,8 @@ class Dataset(object):
         return self.weight
 
     def get_init_score(self):
-        """Get the initial score of the Dataset.
+        """
+        Get the initial score of the Dataset.
 
         Returns
         -------
@@ -1128,7 +1139,8 @@ class Dataset(object):
         return self.init_score
 
     def get_group(self):
-        """Get the initial score of the Dataset.
+        """
+        Get the initial score of the Dataset.
 
         Returns
         -------
@@ -1139,7 +1151,8 @@ class Dataset(object):
         return self.group
 
     def num_data(self):
-        """Get the number of rows in the Dataset.
+        """
+        Get the number of rows in the Dataset.
 
         Returns
         -------
@@ -1151,7 +1164,8 @@ class Dataset(object):
             raise LightGBMError("Cannot call num_data before construct, please call it explicitly")
 
     def num_feature(self):
-        """Get the number of columns (features) in the Dataset.
+        """
+        Get the number of columns (features) in the Dataset.
 
         Returns
         -------
@@ -1166,7 +1180,8 @@ class Booster(object):
     """"A Booster of LightGBM.
     """
     def __init__(self, params=None, train_set=None, model_file=None, silent=False):
-        """Initialize the Booster.
+        """
+        Initialize the Booster.
 
         Parameters
         ----------
@@ -1241,7 +1256,8 @@ class Booster(object):
         self.__train_data_name = name
 
     def add_valid(self, data, name):
-        """Add an validation data
+        """
+        Add an validation data
 
         Parameters
         ----------
@@ -1262,7 +1278,8 @@ class Booster(object):
         self.__is_predicted_cur_iter.append(False)
 
     def reset_parameter(self, params):
-        """Reset parameters for booster
+        """
+        Reset parameters for booster
 
         Parameters
         ----------
@@ -1365,7 +1382,8 @@ class Booster(object):
         return out_cur_iter.value
 
     def eval(self, data, name, feval=None):
-        """Evaluate for data
+        """
+        Evaluate for data
 
         Parameters
         ----------
@@ -1397,7 +1415,8 @@ class Booster(object):
         return self.__inner_eval(name, data_idx, feval)
 
     def eval_train(self, feval=None):
-        """Evaluate for training data
+        """
+        Evaluate for training data
 
         Parameters
         ----------
@@ -1412,7 +1431,8 @@ class Booster(object):
         return self.__inner_eval(self.__train_data_name, 0, feval)
 
     def eval_valid(self, feval=None):
-        """Evaluate for validation data
+        """
+        Evaluate for validation data
 
         Parameters
         ----------
@@ -1428,7 +1448,8 @@ class Booster(object):
             for item in self.__inner_eval(self.name_valid_sets[i-1], i, feval)]
 
     def save_model(self, filename, num_iteration=-1):
-        """Save model of booster to file
+        """
+        Save model of booster to file
 
         Parameters
         ----------
@@ -1443,7 +1464,8 @@ class Booster(object):
             c_str(filename)))
 
     def dump_model(self):
-        """Dump model to json format
+        """
+        Dump model to json format
 
         Returns
         -------
@@ -1471,7 +1493,8 @@ class Booster(object):
         return json.loads(string_buffer.value.decode())
 
     def predict(self, data, num_iteration=-1, raw_score=False, pred_leaf=False, data_has_header=False, is_reshape=True):
-        """Predict logic
+        """
+        Predict logic
 
         Parameters
         ----------
@@ -1503,7 +1526,8 @@ class Booster(object):
         return predictor
 
     def feature_importance(self, importance_type='split'):
-        """Feature importances
+        """
+        Feature importances
 
         Returns
         -------
@@ -1615,7 +1639,8 @@ class Booster(object):
                     [name.startswith(('auc', 'ndcg')) for name in self.__name_inner_eval]
 
     def attr(self, key):
-        """Get attribute string from the Booster.
+        """
+        Get attribute string from the Booster.
 
         Parameters
         ----------
@@ -1630,7 +1655,8 @@ class Booster(object):
         return self.__attr.get(key, None)
 
     def set_attr(self, **kwargs):
-        """Set the attribute of the Booster.
+        """
+        Set the attribute of the Booster.
 
         Parameters
         ----------
