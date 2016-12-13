@@ -12,6 +12,8 @@ TreeLearner* TreeLearner::CreateTreeLearner(TreeLearnerType type, const TreeConf
     return new FeatureParallelTreeLearner(tree_config);
   } else if (type == TreeLearnerType::kDataParallelTreeLearner) {
     return new DataParallelTreeLearner(tree_config);
+  } else if (type == TreeLearnerType::KVotingParallelTreeLearner) {
+    return new VotingParallelTreeLearner(tree_config);
   }
   return nullptr;
 }

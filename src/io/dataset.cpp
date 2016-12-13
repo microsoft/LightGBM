@@ -131,6 +131,13 @@ bool Dataset::GetIntField(const char* field_name, int64_t* out_len, const int** 
 }
 
 void Dataset::SaveBinaryFile(const char* bin_filename) {
+  // if not pass a filename, just append ".bin" of original file
+  if (bin_filename == nullptr || bin_filename[0] == '\0') {
+    std::string bin_filename_str(data_filename_);
+    bin_filename_str.append(".bin");
+    bin_filename = bin_filename_str.c_str();
+  }
+
   bool is_file_existed = false;
   FILE* file;
 #ifdef _MSC_VER
@@ -146,12 +153,6 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
   }
 
   if (!is_file_existed) {
-    std::string bin_filename_str(data_filename_);
-    // if not pass a filename, just append ".bin" of original file
-    if (bin_filename == nullptr || bin_filename[0] == '\0') {
-      bin_filename_str.append(".bin");
-      bin_filename = bin_filename_str.c_str();
-    }
 #ifdef _MSC_VER
     fopen_s(&file, bin_filename, "wb");
 #else

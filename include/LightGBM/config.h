@@ -181,13 +181,14 @@ public:
   // And the max leaves will be min(num_leaves, pow(2, max_depth - 1))
   // max_depth < 0 means not limit
   int max_depth = -1;
+  int top_k = 20;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
 /*! \brief Types of tree learning algorithms */
 enum TreeLearnerType {
   kSerialTreeLearner, kFeatureParallelTreelearner,
-  kDataParallelTreeLearner
+  kDataParallelTreeLearner, KVotingParallelTreeLearner
 };
 
 /*! \brief Config for Boosting */
@@ -385,6 +386,7 @@ struct ParameterAlias {
       { "raw_score", "is_predict_raw_score" },
       { "leaf_index", "is_predict_leaf_index" },
       { "min_split_gain", "min_gain_to_split" },
+      { "topk", "top_k" },
       { "reg_alpha", "lambda_l1" },
       { "reg_lambda", "lambda_l2" },
       { "num_classes", "num_class" }
