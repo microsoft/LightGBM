@@ -490,7 +490,7 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
                  subsample=1, subsample_freq=1, colsample_bytree=1,
                  reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
                  is_unbalance=False, seed=0):
-        super(LGBMClassifier, self).__init__(num_leaves, max_depth,
+        super(LGBMClassifier, self).__init__(boosting_type, num_leaves, max_depth,
                                              learning_rate, n_estimators, max_bin,
                                              silent, objective, nthread,
                                              min_split_gain, min_child_weight, min_child_samples,
@@ -575,7 +575,7 @@ class LGBMRanker(LGBMModel):
                  subsample=1, subsample_freq=1, colsample_bytree=1,
                  reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
                  is_unbalance=False, seed=0):
-        super(LGBMRanker, self).__init__(num_leaves, max_depth,
+        super(LGBMRanker, self).__init__(boosting_type, num_leaves, max_depth,
                                          learning_rate, n_estimators, max_bin,
                                          silent, objective, nthread,
                                          min_split_gain, min_child_weight, min_child_samples,
