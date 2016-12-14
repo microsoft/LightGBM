@@ -1,5 +1,5 @@
 # coding: utf-8
-# pylint: disable = invalid-name, W0105, C0111
+# pylint: disable = invalid-name, W0105, C0111, C0301
 """Scikit-Learn Wrapper interface for LightGBM."""
 from __future__ import absolute_import
 import inspect
@@ -61,7 +61,7 @@ def _objective_function_wrapper(func):
         elif argc == 3:
             grad, hess = func(labels, preds, dataset.get_group())
         else:
-            raise TypeError("parameter number of objective function should be (2, 3), got %d" %(argc))
+            raise TypeError("Self-defined objective function should have 2 or 3 arguments, got %d" %(argc))
         """weighted for objective"""
         weight = dataset.get_weight()
         if weight is not None:
@@ -89,8 +89,11 @@ def _eval_function_wrapper(func):
     Parameters
     ----------
     func: callable
-        Expects a callable with following functions: ``func(y_true, y_pred)``, ``func(y_true, y_pred, weight)`` 
-            or ``func(y_true, y_pred, weight, group)`` and return (eval_name->str, eval_result->float, is_bigger_better->Bool):
+        Expects a callable with following functions:
+            ``func(y_true, y_pred)``,
+            ``func(y_true, y_pred, weight)``
+         or ``func(y_true, y_pred, weight, group)``
+            and return (eval_name->str, eval_result->float, is_bigger_better->Bool):
 
             y_true: array_like of shape [n_samples]
                 The target values
@@ -124,12 +127,12 @@ def _eval_function_wrapper(func):
         elif argc == 4:
             return func(labels, preds, dataset.get_weight(), dataset.get_group())
         else:
-            raise TypeError("parameter number of eval function should be (2, 3, 4), got %d" %(argc))
+            raise TypeError("Self-defined eval function should have 2, 3 or 4 arguments, got %d" %(argc))
     return inner
 
 class LGBMModel(LGBMModelBase):
 
-    def __init__(self, num_leaves=31, max_depth=-1,
+    def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
                  learning_rate=0.1, n_estimators=10, max_bin=255,
                  silent=True, objective="regression",
                  nthread=-1, min_split_gain=0, min_child_weight=5, min_child_samples=10,
@@ -141,6 +144,9 @@ class LGBMModel(LGBMModelBase):
 
         Parameters
         ----------
+        boosting_type : string
+            gbdt, traditional Gradient Boosting Decision Tree
+            dart, Dropouts meet Multiple Additive Regression Trees
         num_leaves : int
             Maximum tree leaves for base learners.
         max_depth : int
@@ -184,7 +190,7 @@ class LGBMModel(LGBMModelBase):
         ----
         A custom objective function can be provided for the ``objective``
         parameter. In this case, it should have the signature
-        ``objective(y_true, y_pred) -> grad, hess`` 
+        ``objective(y_true, y_pred) -> grad, hess``
             or ``objective(y_true, y_pred, group) -> grad, hess``:
 
             y_true: array_like of shape [n_samples]
@@ -205,6 +211,7 @@ class LGBMModel(LGBMModelBase):
         if not SKLEARN_INSTALLED:
             raise LightGBMError('Scikit-learn is required for this module')
 
+        self.boosting_type = boosting_type
         self.num_leaves = num_leaves
         self.max_depth = max_depth
         self.learning_rate = learning_rate
@@ -476,14 +483,14 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
 
 class LGBMClassifier(LGBMModel, LGBMClassifierBase):
 
-    def __init__(self, num_leaves=31, max_depth=-1,
+    def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
                  learning_rate=0.1, n_estimators=10, max_bin=255,
                  silent=True, objective="binary",
                  nthread=-1, min_split_gain=0, min_child_weight=5, min_child_samples=10,
                  subsample=1, subsample_freq=1, colsample_bytree=1,
                  reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
                  is_unbalance=False, seed=0):
-        super(LGBMClassifier, self).__init__(num_leaves, max_depth,
+        super(LGBMClassifier, self).__init__(boosting_type, num_leaves, max_depth,
                                              learning_rate, n_estimators, max_bin,
                                              silent, objective, nthread,
                                              min_split_gain, min_child_weight, min_child_samples,
@@ -561,14 +568,14 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
 
 class LGBMRanker(LGBMModel):
 
-    def __init__(self, num_leaves=31, max_depth=-1,
+    def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
                  learning_rate=0.1, n_estimators=10, max_bin=255,
                  silent=True, objective="lambdarank",
                  nthread=-1, min_split_gain=0, min_child_weight=5, min_child_samples=10,
                  subsample=1, subsample_freq=1, colsample_bytree=1,
                  reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
                  is_unbalance=False, seed=0):
-        super(LGBMRanker, self).__init__(num_leaves, max_depth,
+        super(LGBMRanker, self).__init__(boosting_type, num_leaves, max_depth,
                                          learning_rate, n_estimators, max_bin,
                                          silent, objective, nthread,
                                          min_split_gain, min_child_weight, min_child_samples,

@@ -132,7 +132,7 @@ def reset_learning_rate(learning_rates):
                 env.model.reset_parameter({"learning_rate": \
                     learning_rates(env.iteration - env.begin_iteration, env.end_iteration - env.begin_iteration)})
             else:
-                raise ValueError("Self-defined function 'learning_rates' should have 1 or 2 arguments")
+                raise ValueError("Self-defined function 'learning_rates' should have 1 or 2 arguments, got %d" %(argc))
     callback.before_iteration = True
     callback.order = 10
     return callback
