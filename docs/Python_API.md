@@ -532,12 +532,15 @@
 ##Scikit-learn API
 ----
 ###Common Methods
-####__init__(num_leaves=31, max_depth=-1, learning_rate=0.1, n_estimators=10, max_bin=255, silent=True, objective=regression, nthread=-1, min_split_gain=0, min_child_weight=5, min_child_samples=10, subsample=1, subsample_freq=1, colsample_bytree=1, reg_alpha=0, reg_lambda=0, scale_pos_weight=1, is_unbalance=False, seed=0)
+####__init__(boosting_type="gbdt", num_leaves=31, max_depth=-1, learning_rate=0.1, n_estimators=10, max_bin=255, silent=True, objective=regression, nthread=-1, min_split_gain=0, min_child_weight=5, min_child_samples=10, subsample=1, subsample_freq=1, colsample_bytree=1, reg_alpha=0, reg_lambda=0, scale_pos_weight=1, is_unbalance=False, seed=0)
 
     Implementation of the Scikit-Learn API for LightGBM.
 
     Parameters
     ----------
+    boosting_type : string
+        gbdt, traditional Gradient Boosting Decision Tree
+        dart, Dropouts meet Multiple Additive Regression Trees
     num_leaves : int
         Maximum tree leaves for base learners.
     max_depth : int
