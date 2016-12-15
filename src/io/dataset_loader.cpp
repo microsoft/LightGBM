@@ -210,7 +210,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     }
   } else {
     // load data from binary file
-    dataset.reset(LoadFromBinFile(bin_filename.c_str(), rank, num_machines));
+    dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), rank, num_machines));
   }
   // check meta data
   dataset->metadata_.CheckOrPartition(num_global_data, used_data_indices);
@@ -257,7 +257,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
     }
   } else {
     // load data from binary file
-    dataset.reset(LoadFromBinFile(bin_filename.c_str(), 0, 1));
+    dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), 0, 1));
   }
   // not need to check validation data
   // check meta data
@@ -265,7 +265,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   return dataset.release();
 }
 
-Dataset* DatasetLoader::LoadFromBinFile(const char* bin_filename, int rank, int num_machines) {
+Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines) {
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
   FILE* file;
 #ifdef _MSC_VER
@@ -273,7 +273,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* bin_filename, int rank, int 
 #else
   file = fopen(bin_filename, "rb");
 #endif
-
+  dataset->data_filename_ = data_filename;
   if (file == NULL) {
     Log::Fatal("Could not read binary data from %s", bin_filename);
   }

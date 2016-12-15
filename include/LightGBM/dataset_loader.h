@@ -20,7 +20,7 @@ public:
 
   Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data);
 
-  Dataset* LoadFromBinFile(const char* bin_filename, int rank, int num_machines);
+  Dataset* LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines);
 
   Dataset* CostructFromSampleData(std::vector<std::vector<double>>& sample_values, size_t total_sample_size, data_size_t num_data);
 
