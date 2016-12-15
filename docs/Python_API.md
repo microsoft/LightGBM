@@ -1,11 +1,32 @@
+##Catalog
+----
+
+    * Data Structure API
+        - Dataset
+        - Booster
+    
+    * Training API
+        - train
+        - cv
+    
+    * Scikit-learn API
+        - Common Methods
+        - LGBMClassifier
+        - LGBMRegressor
+        - LGBMRanker
+    
+    The methods of each Class is in alphabetical order.
+
+
 ##Basic Data Structure API
 ----
 ###Dataset
+
 ####__init__(data, label=None, max_bin=255, reference=None, weight=None, group=None, silent=False, feature_name=None, categorical_feature=None, params=None, free_raw_data=True)
 
     Parameters
     ----------
-    data : string/numpy array/scipy.sparse
+    data : str/numpy array/scipy.sparse
         Data source of Dataset.
         When data type is string, it represents the path of txt file
     label : list or numpy 1-D array, optional
@@ -14,15 +35,15 @@
         Max number of discrete bin for features
     reference : Other Dataset, optional
         If this dataset validation, need to use training data as reference
-    weight : list or numpy 1-D array , optional
+    weight : list or numpy 1-D array, optional
         Weight for each instance.
-    group : list or numpy 1-D array , optional
+    group : list or numpy 1-D array, optional
         Group/query size for dataset
     silent : boolean, optional
         Whether print messages during construction
     feature_name : list of str
         Feature names
-    categorical_feature : list of str or int
+    categorical_feature : list of str or list of int
         Categorical features,
         type int represents index,
         type str represents feature names (need to specify feature_name as well)
@@ -39,18 +60,18 @@
 
 ####create_valid(data, label=None, weight=None, group=None, silent=False, params=None)
 
-    Create validation data align with current dataset
+    Create validation data align with current dataset.
 
     Parameters
     ----------
-    data : string/numpy array/scipy.sparse
+    data : str/numpy array/scipy.sparse
         Data source of _InnerDataset.
         When data type is string, it represents the path of txt file
     label : list or numpy 1-D array, optional
         Label of the training data.
-    weight : list or numpy 1-D array , optional
+    weight : list or numpy 1-D array, optional
         Weight for each instance.
-    group : list or numpy 1-D array , optional
+    group : list or numpy 1-D array, optional
         Group/query size for dataset
     silent : boolean, optional
         Whether print messages during construction
@@ -114,28 +135,28 @@
 
 ####save_binary(filename)
 
-    Save Dataset to binary file
+    Save Dataset to binary file.
 
     Parameters
     ----------
-    filename : string
+    filename : str
         Name of the output file.
     
 
 ####set_categorical_feature(categorical_feature)
 
-    Set categorical features
+    Set categorical features.
 
     Parameters
     ----------
-    categorical_feature : list of int or str
-        Name/index of categorical features
+    categorical_feature : list of str or list of int
+        Name (str) or index (int) of categorical features
 
     
 
 ####set_feature_name(feature_name)
 
-    Set feature name
+    Set feature name.
 
     Parameters
     ----------
@@ -159,23 +180,23 @@
 
     Parameters
     ----------
-    init_score: numpy array or list or None
+    init_score : numpy array or list or None
         Init score for booster
     
 
 ####set_label(label)
 
-    Set label of Dataset
+    Set label of Dataset.
 
     Parameters
     ----------
-    label: numpy array or list or None
+    label : numpy array or list or None
         The label information to be set into Dataset
     
 
 ####set_reference(reference)
 
-    Set reference dataset
+    Set reference dataset.
 
     Parameters
     ----------
@@ -195,7 +216,7 @@
 
 ####subset(used_indices, params=None)
 
-    Get subset of current dataset
+    Get subset of current dataset.
 
     Parameters
     ----------
@@ -206,6 +227,7 @@
     
 
 ###Booster
+
 ####__init__(params=None, train_set=None, model_file=None, silent=False)
 
     Initialize the Booster.
@@ -216,7 +238,7 @@
         Parameters for boosters.
     train_set : Dataset
         Training dataset
-    model_file : string
+    model_file : str
         Path to the model file.
     silent : boolean, optional
         Whether print messages during construction
@@ -224,13 +246,13 @@
 
 ####add_valid(data, name)
 
-    Add an validation data
+    Add an validation data.
 
     Parameters
     ----------
     data : Dataset
         Validation data
-    name : String
+    name : str
         Name of validation data
     
 
@@ -251,18 +273,26 @@
 
 ####current_iteration()
 
-####dump_model()
-
-    Dump model to json format
+    Get current number of iterations.
 
     Returns
     -------
-    Json format of model
+    result : int
+        Current number of iterations
+
+####dump_model()
+
+    Dump model to json format.
+
+    Returns
+    -------
+    result : dict or list
+        Json format of model
     
 
 ####eval(data, name, feval=None)
 
-    Evaluate for data
+    Evaluate for data.
 
     Parameters
     ----------
@@ -273,13 +303,13 @@
         Custom evaluation function.
     Returns
     -------
-    result: list
+    result : list
         Evaluation result list.
     
 
 ####eval_train(feval=None)
 
-    Evaluate for training data
+    Evaluate for training data.
 
     Parameters
     ----------
@@ -294,7 +324,7 @@
 
 ####eval_valid(feval=None)
 
-    Evaluate for validation data
+    Evaluate for validation data.
 
     Parameters
     ----------
@@ -303,26 +333,27 @@
 
     Returns
     -------
-    result: str
+    result : str
         Evaluation result list.
     
 
-####feature_importance(importance_type=split)
+####feature_importance(importance_type="split")
 
-    Feature importances
+    Feature importances.
 
     Returns
     -------
-    Array of feature importances
+    result : array
+        Array of feature importances
     
 
 ####predict(data, num_iteration=-1, raw_score=False, pred_leaf=False, data_has_header=False, is_reshape=True)
 
-    Predict logic
+    Predict logic.
 
     Parameters
     ----------
-    data : string/numpy array/scipy.sparse
+    data : str/numpy array/scipy.sparse
         Data source for prediction
         When data type is string, it represents the path of txt file
     num_iteration : int
@@ -343,7 +374,7 @@
 
 ####reset_parameter(params)
 
-    Reset parameters for booster
+    Reset parameters for booster.
 
     Parameters
     ----------
@@ -355,12 +386,12 @@
 
 ####rollback_one_iter()
 
-    Rollback one iteration
+    Rollback one iteration.
     
 
 ####save_model(filename, num_iteration=-1)
 
-    Save model of booster to file
+    Save model of booster to file.
 
     Parameters
     ----------
@@ -370,7 +401,7 @@
         Number of iteration that want to save. < 0 means save all
     
 
-####set_attr(kwargs)
+####set_attr(**kwargs)
 
     Set the attribute of the Booster.
 
@@ -384,10 +415,10 @@
 
 ####update(train_set=None, fobj=None)
 
-    Update for one iteration
+    Update for one iteration.
     Note: for multi-class task, the score is group by class_id first, then group by row_id
           if you want to get i-th row score in j-th class, the access way is score[j*num_data+i]
-          and you should group grad and hess in this way as well
+          and you should group grad and hess in this way as well.
 
     Parameters
     ----------
@@ -402,6 +433,7 @@
     
 
 ##Training API
+
 ----
 ####train(params, train_set, num_boost_round=100, valid_sets=None, valid_names=None, fobj=None, feval=None, init_model=None, feature_name=None, categorical_feature=None, early_stopping_rounds=None, evals_result=None, verbose_eval=True, learning_rates=None, callbacks=None)
 
@@ -417,7 +449,7 @@
         Number of boosting iterations.
     valid_sets: list of Datasets
         List of data to be evaluated during training
-    valid_names: list of string
+    valid_names: list of str
         Names of valid_sets
     fobj : function
         Customized objective function.
@@ -428,7 +460,7 @@
         model used for continued train
     feature_name : list of str
         Feature names
-    categorical_feature : list of str or int
+    categorical_feature : list of str or list of int
         Categorical features,
         type int represents index,
         type str represents feature names (need to specify feature_name as well)
@@ -490,7 +522,7 @@
         Perform stratified sampling.
     folds : a KFold or StratifiedKFold instance
         Sklearn KFolds or StratifiedKFolds.
-    metrics : string or list of strings
+    metrics : str or list of str
         Evaluation metrics to be watched in CV.
     fobj : function
         Custom objective function.
@@ -526,19 +558,20 @@
 
     Returns
     -------
-    evaluation history : list(string)
+    evaluation history : list of str
     
 
 ##Scikit-learn API
 ----
 ###Common Methods
-####__init__(boosting_type="gbdt", num_leaves=31, max_depth=-1, learning_rate=0.1, n_estimators=10, max_bin=255, silent=True, objective=regression, nthread=-1, min_split_gain=0, min_child_weight=5, min_child_samples=10, subsample=1, subsample_freq=1, colsample_bytree=1, reg_alpha=0, reg_lambda=0, scale_pos_weight=1, is_unbalance=False, seed=0)
+
+####__init__(boosting_type="gbdt", num_leaves=31, max_depth=-1, learning_rate=0.1, n_estimators=10, max_bin=255, silent=True, objective="regression", nthread=-1, min_split_gain=0, min_child_weight=5, min_child_samples=10, subsample=1, subsample_freq=1, colsample_bytree=1, reg_alpha=0, reg_lambda=0, scale_pos_weight=1, is_unbalance=False, seed=0)
 
     Implementation of the Scikit-Learn API for LightGBM.
 
     Parameters
     ----------
-    boosting_type : string
+    boosting_type : str
         gbdt, traditional Gradient Boosting Decision Tree
         dart, Dropouts meet Multiple Additive Regression Trees
     num_leaves : int
@@ -551,10 +584,10 @@
         Number of boosted trees to fit.
     silent : boolean
         Whether to print messages while running boosting.
-    objective : string or callable
+    objective : str or callable
         Specify the learning task and the corresponding learning objective or
         a custom objective function to be used (see note below).
-        default: binary for LGBMClassifier, lambdarank for LGBMRanker
+        default: binary for LGBMClassifier, regression for LGBMRegressor, lambdarank for LGBMRanker
     nthread : int
         Number of parallel threads
     min_split_gain : float
@@ -623,7 +656,7 @@
 ####booster()
 
     Get the underlying lightgbm Booster of this model.
-    This will raise an exception when fit was not called
+    This will raise an exception when it's called before fit().
 
     Returns
     -------
@@ -641,16 +674,17 @@
 
 ####feature_importance()
 
-    Feature importances
+    Return the feature importances of each feature.
 
     Returns
     -------
-    Array of normailized feature importances
+    result : array
+        Array of normailized feature importances
     
 
 ####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric=None, early_stopping_rounds=None, verbose=True, feature_name=None, categorical_feature=None, other_params=None)
 
-    Fit the gradient boosting model
+    Fit the gradient boosting model.
 
     Parameters
     ----------
@@ -715,7 +749,7 @@
 
 ####get_params(deep=False)
 
-    Get parameters
+    Get parameters.
     
 
 ####predict(data, raw_score=False, num_iteration=0)
@@ -760,9 +794,8 @@
 
 ####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric=None, eval_at=None, early_stopping_rounds=None, verbose=True, feature_name=None, categorical_feature=None, other_params=None)
 
-    Most arguments like common methods except following:
+    Most arguments are same as Common Methods except:
 
     eval_at : list of int
         The evaulation positions of NDCG
-    
 
