@@ -39,8 +39,8 @@ Tree::Tree(int max_leaves)
   internal_value_ = std::vector<double>(max_leaves_ - 1);
   internal_count_ = std::vector<data_size_t>(max_leaves_ - 1);
   leaf_depth_ = std::vector<int>(max_leaves_);
-  // root is in the depth 1
-  leaf_depth_[0] = 1;
+  // root is in the depth 0
+  leaf_depth_[0] = 0;
   num_leaves_ = 1;
   leaf_parent_[0] = -1;
 }
