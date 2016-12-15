@@ -1,25 +1,25 @@
 ##Catalog
+
+* [Data Structure API](Python_API.md#basic-data-structure-api)
+    - [Dataset](Python_API.md#dataset)
+    - [Booster](Python_API.md#booster)
+
+* [Training API](Python_API.md#training-api)
+    - [train](Python_API.md#trainparams-train_set-num_boost_round100-valid_setsnone-valid_namesnone-fobjnone-fevalnone-init_modelnone-feature_namenone-categorical_featurenone-early_stopping_roundsnone-evals_resultnone-verbose_evaltrue-learning_ratesnone-callbacksnone)
+    - [cv](Python_API.md#cvparams-train_set-num_boost_round10-nfold5-stratifiedfalse-metricsnone-fobjnone-fevalnone-init_modelnone-feature_namenone-categorical_featurenone-early_stopping_roundsnone-fpreprocnone-verbose_evalnone-show_stdvtrue-seed0-callbacksnone)
+
+* [Scikit-learn API](Python_API.md#scikit-learn-api)
+    - [Common Methods](Python_API.md#common-methods)
+    - [LGBMClassifier](Python_API.md#lgbmclassifier)
+    - [LGBMRegressor](Python_API.md#lgbmregressor)
+    - [LGBMRanker](Python_API.md#lgbmranker)
+    
+The methods of each Class is in alphabetical order.
+
 ----
-
-    * Data Structure API
-        - Dataset
-        - Booster
-    
-    * Training API
-        - train
-        - cv
-    
-    * Scikit-learn API
-        - Common Methods
-        - LGBMClassifier
-        - LGBMRegressor
-        - LGBMRanker
-    
-    The methods of each Class is in alphabetical order.
-
 
 ##Basic Data Structure API
-----
+
 ###Dataset
 
 ####__init__(data, label=None, max_bin=255, reference=None, weight=None, group=None, silent=False, feature_name=None, categorical_feature=None, params=None, free_raw_data=True)
@@ -413,6 +413,13 @@
 
 ####set_train_data_name(name)
 
+    Set training data name.
+
+    Parameters
+    ----------
+    name : str
+        Name of training data.
+
 ####update(train_set=None, fobj=None)
 
     Update for one iteration.
@@ -434,7 +441,6 @@
 
 ##Training API
 
-----
 ####train(params, train_set, num_boost_round=100, valid_sets=None, valid_names=None, fobj=None, feval=None, init_model=None, feature_name=None, categorical_feature=None, early_stopping_rounds=None, evals_result=None, verbose_eval=True, learning_rates=None, callbacks=None)
 
     Train with given parameters.
@@ -562,7 +568,7 @@
     
 
 ##Scikit-learn API
-----
+
 ###Common Methods
 
 ####__init__(boosting_type="gbdt", num_leaves=31, max_depth=-1, learning_rate=0.1, n_estimators=10, max_bin=255, silent=True, objective="regression", nthread=-1, min_split_gain=0, min_child_weight=5, min_child_samples=10, subsample=1, subsample_freq=1, colsample_bytree=1, reg_alpha=0, reg_lambda=0, scale_pos_weight=1, is_unbalance=False, seed=0)
