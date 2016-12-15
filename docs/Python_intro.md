@@ -30,9 +30,9 @@ The data is stored in a ```Dataset``` object.
 
 #### To load a libsvm text file or a LightGBM binary file into ```Dataset```:
 ```python
-train_data = lgb.Dataset('train.svm')
-test_data = lgb.Dataset('test.svm.bin')
+train_data = lgb.Dataset('train.svm.bin')
 ```
+
 ####  To load a numpy array into ```Dataset```:
 ```python
 data = np.random.rand(500,10) # 500 entities, each contains 10 features
@@ -49,6 +49,18 @@ train_data = lgb.Dataset(csr)
 train_data = lgb.Dataset('train.svm.txt')
 train_data.save_binary("train.bin")
 ```
+#### Create validation data
+```python
+test_data = train_data.create_valid('test.svm')
+```
+
+or 
+
+```python
+test_data = lgb.Dataset('test.svm', reference=train_data)
+```
+
+In LightGBM, the validation data should be aligned with training data.
 
 #### Specific feature names and categorical features
 
