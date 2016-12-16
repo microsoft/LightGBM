@@ -34,7 +34,7 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * ```serial```, single machine tree learner
   * ```feature```, feature parallel tree learner
   * ```data```, data parallel tree learner
-  * Refer to [Parallel Learning Guide](https://github.com/Microsoft/LightGBM/wiki/Parallel-Learning-Guide) to get more details.
+  * Refer to [Parallel Learning Guide](./Parallel-Learning-Guide.md) to get more details.
 * ```num_threads```, default=OpenMP_default, type=int, alias=```num_thread```,```nthread```
   * Number of threads for LightGBM. 
   * For the best speed, set this to the number of **real CPU cores**, not the number of threads (most CPU using [hyper-threading](https://en.wikipedia.org/wiki/Hyper-threading) to generate 2 threads per CPU core).
@@ -217,7 +217,7 @@ LightGBM uses [leaf-wise](https://github.com/Microsoft/LightGBM/wiki/Features#op
 * Use feature sub-sampling by set ```feature_fraction```
 * Use small ```max_bin```
 * Use ```save_binary``` to speed up data loading in future learning
-* Use parallel learning, refer to [parallel learning guide](https://github.com/Microsoft/LightGBM/wiki/Parallel-Learning-Guide).
+* Use parallel learning, refer to [parallel learning guide](./Parallel-Learning-Guide.md).
 
 ### For better accuracy
 

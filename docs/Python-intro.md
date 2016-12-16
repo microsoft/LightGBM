@@ -3,12 +3,12 @@ Python Package Introduction
 This document gives a basic walkthrough of LightGBM python package.
 
 ***List of other Helpful Links***
-* [Python Examples](https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide)
-* [Python API Reference](https://github.com/Microsoft/LightGBM/blob/master/docs/Python_API.md)
+* [Python Examples](../examples/python-guide/)
+* [Python API Reference](./Python-API.md)
 
 Install
 -------
-* Install the library first, follow the wiki [here](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide).
+* Install the library first, follow the wiki [here](./Installation-Guide.md).
 * In the  `python-package` directory, run
 ```
 python setup.py install
@@ -95,7 +95,7 @@ However, Numpy/Array/Pandas object is memory cost. If you concern about your mem
 
 Setting Parameters
 ------------------
-LightGBM can use either a list of pairs or a dictionary to set [parameters](https://github.com/Microsoft/LightGBM/blob/master/docs/Parameters.md). For instance:
+LightGBM can use either a list of pairs or a dictionary to set [parameters](./Parameters.md). For instance:
 * Booster parameters
 ```python
 param = {'num_leaves':31, 'num_trees':100, 'objective':'binary' }

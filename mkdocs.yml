@@ -1,5 +1,0 @@
-site_name: LightGBM
-theme: readthedocs
-
-extra_css:
-  - css/extra.css

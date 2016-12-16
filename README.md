@@ -17,9 +17,9 @@ For more details, please refer to [Features](https://github.com/Microsoft/LightG
 News
 ----
 12/05/2016 : **Categorical Features as input directly**(without one-hot coding). Experiment on [Expo data](http://stat-computing.org/dataexpo/2009/) shows about 8x speed-up with same accuracy compared with one-hot coding (refer to [categorical log]( https://github.com/guolinke/boosting_tree_benchmarks/blob/master/lightgbm/lightgbm_dataexpo_speed.log) and [one-hot log]( https://github.com/guolinke/boosting_tree_benchmarks/blob/master/lightgbm/lightgbm_dataexpo_onehot_speed.log)).
-For the setting details, please refer to [IO Parameters](https://github.com/Microsoft/LightGBM/blob/master/docs/Parameters.md#io-parameters).
+For the setting details, please refer to [IO Parameters](./docs/Parameters.md#io-parameters).
 
-12/02/2016 : Release [**python-package**](https://github.com/Microsoft/LightGBM/tree/master/python-package) beta version, welcome to have a try and provide issues and feedback.
+12/02/2016 : Release [**python-package**](./python-package) beta version, welcome to have a try and provide issues and feedback.
 
 Get Started
 ------------
@@ -30,7 +30,7 @@ Documents
 * [**Wiki**](https://github.com/Microsoft/LightGBM/wiki)
 * [**Installation Guide**](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide)
 * [**Quick Start**](https://github.com/Microsoft/LightGBM/wiki/Quick-Start)
-* [**Examples**](https://github.com/Microsoft/LightGBM/tree/master/examples)
+* [**Examples**](./examples)
 * [**Features**](https://github.com/Microsoft/LightGBM/wiki/Features)
 * [**Parallel Learning Guide**](https://github.com/Microsoft/LightGBM/wiki/Parallel-Learning-Guide)
 * [**Configuration**](https://github.com/Microsoft/LightGBM/wiki/Configuration)

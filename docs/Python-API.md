@@ -1,18 +1,18 @@
 ##Catalog
 
-* [Data Structure API](Python_API.md#basic-data-structure-api)
-    - [Dataset](Python_API.md#dataset)
-    - [Booster](Python_API.md#booster)
+* [Data Structure API](Python-API.md#basic-data-structure-api)
+    - [Dataset](Python-API.md#dataset)
+    - [Booster](Python-API.md#booster)
 
-* [Training API](Python_API.md#training-api)
-    - [train](Python_API.md#trainparams-train_set-num_boost_round100-valid_setsnone-valid_namesnone-fobjnone-fevalnone-init_modelnone-feature_namenone-categorical_featurenone-early_stopping_roundsnone-evals_resultnone-verbose_evaltrue-learning_ratesnone-callbacksnone)
-    - [cv](Python_API.md#cvparams-train_set-num_boost_round10-nfold5-stratifiedfalse-metricsnone-fobjnone-fevalnone-init_modelnone-feature_namenone-categorical_featurenone-early_stopping_roundsnone-fpreprocnone-verbose_evalnone-show_stdvtrue-seed0-callbacksnone)
+* [Training API](Python-API.md#training-api)
+    - [train](Python-API.md#trainparams-train_set-num_boost_round100-valid_setsnone-valid_namesnone-fobjnone-fevalnone-init_modelnone-feature_namenone-categorical_featurenone-early_stopping_roundsnone-evals_resultnone-verbose_evaltrue-learning_ratesnone-callbacksnone)
+    - [cv](Python-API.md#cvparams-train_set-num_boost_round10-nfold5-stratifiedfalse-metricsnone-fobjnone-fevalnone-init_modelnone-feature_namenone-categorical_featurenone-early_stopping_roundsnone-fpreprocnone-verbose_evalnone-show_stdvtrue-seed0-callbacksnone)
 
-* [Scikit-learn API](Python_API.md#scikit-learn-api)
-    - [Common Methods](Python_API.md#common-methods)
-    - [LGBMClassifier](Python_API.md#lgbmclassifier)
-    - [LGBMRegressor](Python_API.md#lgbmregressor)
-    - [LGBMRanker](Python_API.md#lgbmranker)
+* [Scikit-learn API](Python-API.md#scikit-learn-api)
+    - [Common Methods](Python-API.md#common-methods)
+    - [LGBMClassifier](Python-API.md#lgbmclassifier)
+    - [LGBMRegressor](Python-API.md#lgbmregressor)
+    - [LGBMRanker](Python-API.md#lgbmranker)
     
 The methods of each Class is in alphabetical order.
 

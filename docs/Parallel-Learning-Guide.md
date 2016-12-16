@@ -1,0 +1,1 @@
+Refer to https://github.com/Microsoft/LightGBM/wiki/Parallel-Learning-Guide
