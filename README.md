@@ -28,10 +28,11 @@ To get started, please follow the [Installation Guide](https://github.com/Micros
 * [**Wiki**](https://github.com/Microsoft/LightGBM/wiki)
 * [**Installation Guide**](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide)
 * [**Quick Start**](https://github.com/Microsoft/LightGBM/wiki/Quick-Start)
-* [**Examples**](./examples)
+* [**Examples**](https://github.com/Microsoft/LightGBM/tree/master/examples)
 * [**Features**](https://github.com/Microsoft/LightGBM/wiki/Features)
 * [**Parallel Learning Guide**](https://github.com/Microsoft/LightGBM/wiki/Parallel-Learning-Guide)
 * [**Configuration**](https://github.com/Microsoft/LightGBM/wiki/Configuration)
+* [**Document Indexer**](https://github.com/Microsoft/LightGBM/blob/master/docs/Readme.md)
 
 How to Contribute
 -----------------
@@ -41,7 +42,8 @@ LightGBM has been developed and used by many active community members. Your help
 - Check out [call for contributions](https://github.com/Microsoft/LightGBM/issues?q=is%3Aissue+is%3Aopen+label%3Acall-for-contribution) to see what can be improved, or open an issue if you want something.
 - Contribute to the [documents](https://github.com/Microsoft/LightGBM/tree/master/docs) to make it clearly for everyone.
 - Contribute to the [examples](https://github.com/Microsoft/LightGBM/tree/master/examples) to share your experience with other users.
-- Open issue if you met any problems during development.
+- Check out [Development Guide](./docs/development.md).
+- Open issue if you met problems during development.
 
 Microsoft Open Source Code of Conduct
 ------------
