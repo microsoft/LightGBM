@@ -21,12 +21,10 @@ For the setting details, please refer to [IO Parameters](./docs/Parameters.md#io
 
 12/02/2016 : Release [**python-package**](./python-package) beta version, welcome to have a try and provide issues and feedback.
 
-Get Started
-------------
+Get Started And Documents
+-------------------------
 To get started, please follow the [Installation Guide](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide) and [Quick Start](https://github.com/Microsoft/LightGBM/wiki/Quick-Start).
 
-Documents
-------------
 * [**Wiki**](https://github.com/Microsoft/LightGBM/wiki)
 * [**Installation Guide**](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide)
 * [**Quick Start**](https://github.com/Microsoft/LightGBM/wiki/Quick-Start)
@@ -34,6 +32,16 @@ Documents
 * [**Features**](https://github.com/Microsoft/LightGBM/wiki/Features)
 * [**Parallel Learning Guide**](https://github.com/Microsoft/LightGBM/wiki/Parallel-Learning-Guide)
 * [**Configuration**](https://github.com/Microsoft/LightGBM/wiki/Configuration)
+
+How to Contribute
+-----------------
+
+LightGBM has been developed and used by many active community members. Your help is very valuable to make it better for everyone.
+
+- Check out [call for contributions](https://github.com/Microsoft/LightGBM/issues?q=is%3Aissue+is%3Aopen+label%3Acall-for-contribution) to see what can be improved, or open an issue if you want something.
+- Contribute to the [documents](https://github.com/Microsoft/LightGBM/tree/master/docs) to make it clearly for everyone.
+- Contribute to the [examples](https://github.com/Microsoft/LightGBM/tree/master/examples) to share your experience with other users.
+- Open issue if you met any problems during development.
 
 Microsoft Open Source Code of Conduct
 ------------
