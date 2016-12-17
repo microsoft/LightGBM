@@ -36,7 +36,7 @@ print('Calculate feature importances...')
 # feature importances
 print('Feature importances:', list(gbm.feature_importance()))
 
-# other scikit-learn built-in module
+# other scikit-learn modules
 estimator = lgb.LGBMRegressor(num_leaves=31)
 
 param_grid = {

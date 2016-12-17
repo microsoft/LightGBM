@@ -69,12 +69,10 @@ def train(params, train_set, num_boost_round=100,
             an evaluation metric is printed every 4 (instead of 1) boosting stages.
     learning_rates: list or function
         List of learning rate for each boosting round
-        or a customized function that calculates learning_rate in terms of
-        current number of round (and the total number of boosting round)
-        (e.g. yields learning rate decay)
+        or a customized function that calculates learning_rate
+        in terms of current number of round (e.g. yields learning rate decay)
         - list l: learning_rate = l[current_round]
-        - function f: learning_rate = f(current_round, total_boost_round)
-                   or learning_rate = f(current_round)
+        - function f: learning_rate = f(current_round)
     callbacks : list of callback functions
         List of callback functions that are applied at end of each iteration.
 
@@ -138,11 +136,10 @@ def train(params, train_set, num_boost_round=100,
         callbacks.add(callback.print_evaluation(verbose_eval))
 
     if early_stopping_rounds is not None:
-        callbacks.add(callback.early_stop(early_stopping_rounds,
-                                          verbose=bool(verbose_eval)))
+        callbacks.add(callback.early_stopping(early_stopping_rounds, verbose=bool(verbose_eval)))
 
     if learning_rates is not None:
-        callbacks.add(callback.reset_learning_rate(learning_rates))
+        callbacks.add(callback.reset_parameter(learning_rate=learning_rates))
 
     if evals_result is not None:
         callbacks.add(callback.record_evaluation(evals_result))
@@ -355,7 +352,7 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
             cb.__dict__.setdefault('order', i - len(callbacks))
         callbacks = set(callbacks)
     if early_stopping_rounds is not None:
-        callbacks.add(callback.early_stop(early_stopping_rounds, verbose=False))
+        callbacks.add(callback.early_stopping(early_stopping_rounds, verbose=False))
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation(show_stdv=show_stdv))
     elif isinstance(verbose_eval, int):
