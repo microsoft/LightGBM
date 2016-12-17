@@ -886,6 +886,3 @@ The methods of each Class is in alphabetical order.
     -------
     callback : function
         The requested callback function.
-
-
-
