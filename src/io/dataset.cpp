@@ -123,7 +123,7 @@ bool Dataset::GetIntField(const char* field_name, int64_t* out_len, const int** 
   name = Common::Trim(name);
   if (name == std::string("query") || name == std::string("group")) {
     *out_ptr = metadata_.query_boundaries();
-    *out_len = metadata_.num_queries();
+    *out_len = metadata_.num_queries() + 1;
   } else {
     return false;
   }
