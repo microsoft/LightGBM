@@ -41,6 +41,7 @@ public:
         please use continued train with input score");
     }
     boosting_.reset(Boosting::CreateBoosting(config_.boosting_type, nullptr));
+    train_data_ = train_data;
     ConstructObjectAndTrainingMetrics(train_data);
     // initialize the boosting
     boosting_->Init(&config_.boosting_config, train_data, objective_fun_.get(),
@@ -66,7 +67,6 @@ public:
   }
 
   void ResetConfig(const char* parameters) {
-    std::lock_guard<std::mutex> lock(mutex_);
     auto param = ConfigBase::Str2Map(parameters);
     if (param.count("num_class")) {
       Log::Fatal("cannot change num class during training");
@@ -74,12 +74,20 @@ public:
     if (param.count("boosting_type")) {
       Log::Fatal("cannot change boosting_type during training");
     }
-    config_.Set(param);
+    if (param.count("metric")) {
+      Log::Fatal("cannot change metric during training");
+    }
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      config_.Set(param);
+    }
     if (config_.num_threads > 0) {
+      std::lock_guard<std::mutex> lock(mutex_);
       omp_set_num_threads(config_.num_threads);
     }
     if (param.size() == 1 && (param.count("learning_rate") || param.count("shrinkage_rate"))) {
       // only need to set learning rate
+      std::lock_guard<std::mutex> lock(mutex_);
       boosting_->ResetShrinkageRate(config_.boosting_config.learning_rate);
     } else {
       ResetTrainingData(train_data_);
