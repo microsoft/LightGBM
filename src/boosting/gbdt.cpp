@@ -33,41 +33,57 @@ void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const O
   max_feature_idx_ = 0;
   num_class_ = config->num_class;
   train_data_ = nullptr;
+  gbdt_config_ = nullptr;
   ResetTrainingData(config, train_data, object_function, training_metrics);
 }
 
 void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
   const std::vector<const Metric*>& training_metrics) {
+  if (train_data == nullptr) { return; }
+  auto new_config = std::unique_ptr<BoostingConfig>(new BoostingConfig(*config));
   if (train_data_ != nullptr && !train_data_->CheckAlign(*train_data)) {
     Log::Fatal("cannot reset training data, since new training data has different bin mappers");
   }
-  gbdt_config_ = config;
-  early_stopping_round_ = gbdt_config_->early_stopping_round;
-  shrinkage_rate_ = gbdt_config_->learning_rate;
-  random_ = Random(gbdt_config_->bagging_seed);
-  // create tree learner
-  tree_learner_.clear();
+  early_stopping_round_ = new_config->early_stopping_round;
+  shrinkage_rate_ = new_config->learning_rate;
+  random_ = Random(new_config->bagging_seed);
+
+  // create tree learner, only create once
+  if (gbdt_config_ == nullptr) {
+    tree_learner_.clear();
+    for (int i = 0; i < num_class_; ++i) {
+      auto new_tree_learner = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(new_config->tree_learner_type, &new_config->tree_config));
+      tree_learner_.push_back(std::move(new_tree_learner));
+    }
+    tree_learner_.shrink_to_fit();
+  }
+  // init tree learner
+  if (train_data_ != train_data) {
+    for (int i = 0; i < num_class_; ++i) {
+      tree_learner_[i]->Init(train_data);
+    }
+  }
+  // reset config for tree learner
   for (int i = 0; i < num_class_; ++i) {
-    auto new_tree_learner = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(gbdt_config_->tree_learner_type, gbdt_config_->tree_config));
-    new_tree_learner->Init(train_data);
-    // init tree learner
-    tree_learner_.push_back(std::move(new_tree_learner));
+    tree_learner_[i]->ResetConfig(&new_config->tree_config);
   }
-  tree_learner_.shrink_to_fit();
+
   object_function_ = object_function;
-  // push training metrics
-  training_metrics_.clear();
-  for (const auto& metric : training_metrics) {
-    training_metrics_.push_back(metric);
-  }
-  training_metrics_.shrink_to_fit();
+
   sigmoid_ = -1.0f;
   if (object_function_ != nullptr
     && std::string(object_function_->GetName()) == std::string("binary")) {
     // only binary classification need sigmoid transform
-    sigmoid_ = gbdt_config_->sigmoid;
+    sigmoid_ = new_config->sigmoid;
   }
+
   if (train_data_ != train_data) {
+    // push training metrics
+    training_metrics_.clear();
+    for (const auto& metric : training_metrics) {
+      training_metrics_.push_back(metric);
+    }
+    training_metrics_.shrink_to_fit();
     // not same training data, need reset score and others
     // create score tracker
     train_score_updater_.reset(new ScoreUpdater(train_data, num_class_));
@@ -88,8 +104,13 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
     max_feature_idx_ = train_data->num_total_features() - 1;
     // get label index
     label_idx_ = train_data->label_idx();
+  }
+
+  if (train_data_ != train_data
+      || gbdt_config_ == nullptr
+      || (gbdt_config_->bagging_fraction != new_config->bagging_fraction)) {
     // if need bagging, create buffer
-    if (gbdt_config_->bagging_fraction < 1.0 && gbdt_config_->bagging_freq > 0) {
+    if (new_config->bagging_fraction < 1.0 && new_config->bagging_freq > 0) {
       out_of_bag_data_indices_ = std::vector<data_size_t>(num_data_);
       bag_data_indices_ = std::vector<data_size_t>(num_data_);
     } else {
@@ -100,6 +121,7 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
     }
   }
   train_data_ = train_data;
+  gbdt_config_.reset(new_config.release());
 }
 
 void GBDT::AddValidDataset(const Dataset* valid_data,

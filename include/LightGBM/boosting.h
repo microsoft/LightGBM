@@ -52,12 +52,6 @@ public:
   virtual void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function, const std::vector<const Metric*>& training_metrics) = 0;
 
   /*!
-  * \brief Reset shrinkage_rate data for current boosting
-  * \param shrinkage_rate Configs for boosting
-  */
-  virtual void ResetShrinkageRate(double shrinkage_rate) = 0;
-
-  /*!
   * \brief Add a validation data
   * \param valid_data Validation data
   * \param valid_metrics Metric for validation data

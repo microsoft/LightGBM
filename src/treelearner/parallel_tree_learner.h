@@ -20,7 +20,7 @@ namespace LightGBM {
 */
 class FeatureParallelTreeLearner: public SerialTreeLearner {
 public:
-  explicit FeatureParallelTreeLearner(const TreeConfig& tree_config);
+  explicit FeatureParallelTreeLearner(const TreeConfig* tree_config);
   ~FeatureParallelTreeLearner();
   virtual void Init(const Dataset* train_data);
 
@@ -45,9 +45,10 @@ private:
 */
 class DataParallelTreeLearner: public SerialTreeLearner {
 public:
-  explicit DataParallelTreeLearner(const TreeConfig& tree_config);
+  explicit DataParallelTreeLearner(const TreeConfig* tree_config);
   ~DataParallelTreeLearner();
   void Init(const Dataset* train_data) override;
+  void ResetConfig(const TreeConfig* tree_config) override;
 protected:
   void BeforeTrain() override;
   void FindBestThresholds() override;
@@ -96,10 +97,10 @@ private:
 */
 class VotingParallelTreeLearner: public SerialTreeLearner {
 public:
-  explicit VotingParallelTreeLearner(const TreeConfig& tree_config);
+  explicit VotingParallelTreeLearner(const TreeConfig* tree_config);
   ~VotingParallelTreeLearner() { }
   void Init(const Dataset* train_data) override;
-
+  void ResetConfig(const TreeConfig* tree_config) override;
 protected:
   void BeforeTrain() override;
   bool BeforeFindBestSplit(int left_leaf, int right_leaf) override;

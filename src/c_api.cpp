@@ -40,12 +40,14 @@ public:
       Log::Warning("continued train from model is not support for c_api, \
         please use continued train with input score");
     }
+
     boosting_.reset(Boosting::CreateBoosting(config_.boosting_type, nullptr));
-    train_data_ = train_data;
-    ConstructObjectAndTrainingMetrics(train_data);
+
     // initialize the boosting
-    boosting_->Init(&config_.boosting_config, train_data, objective_fun_.get(),
+    boosting_->Init(&config_.boosting_config, nullptr, objective_fun_.get(),
       Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
+
+    ResetTrainingData(train_data);
   }
 
   void MergeFrom(const Booster* other) {
@@ -60,13 +62,34 @@ public:
   void ResetTrainingData(const Dataset* train_data) {
     std::lock_guard<std::mutex> lock(mutex_);
     train_data_ = train_data;
-    ConstructObjectAndTrainingMetrics(train_data_);
-    // initialize the boosting
+    // create objective function
+    objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
+      config_.objective_config));
+    if (objective_fun_ == nullptr) {
+      Log::Warning("Using self-defined objective function");
+    }
+    // initialize the objective function
+    if (objective_fun_ != nullptr) {
+      objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
+    }
+
+    // create training metric
+    train_metric_.clear();
+    for (auto metric_type : config_.metric_types) {
+      auto metric = std::unique_ptr<Metric>(
+        Metric::CreateMetric(metric_type, config_.metric_config));
+      if (metric == nullptr) { continue; }
+      metric->Init(train_data_->metadata(), train_data_->num_data());
+      train_metric_.push_back(std::move(metric));
+    }
+    train_metric_.shrink_to_fit();
+    // reset the boosting
     boosting_->ResetTrainingData(&config_.boosting_config, train_data_, 
       objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
   }
 
   void ResetConfig(const char* parameters) {
+    std::lock_guard<std::mutex> lock(mutex_);
     auto param = ConfigBase::Str2Map(parameters);
     if (param.count("num_class")) {
       Log::Fatal("cannot change num class during training");
@@ -77,21 +100,28 @@ public:
     if (param.count("metric")) {
       Log::Fatal("cannot change metric during training");
     }
-    {
-      std::lock_guard<std::mutex> lock(mutex_);
-      config_.Set(param);
-    }
+
+    config_.Set(param);
     if (config_.num_threads > 0) {
-      std::lock_guard<std::mutex> lock(mutex_);
       omp_set_num_threads(config_.num_threads);
     }
-    if (param.size() == 1 && (param.count("learning_rate") || param.count("shrinkage_rate"))) {
-      // only need to set learning rate
-      std::lock_guard<std::mutex> lock(mutex_);
-      boosting_->ResetShrinkageRate(config_.boosting_config.learning_rate);
-    } else {
-      ResetTrainingData(train_data_);
+
+    if (param.count("objective")) {
+      // create objective function
+      objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
+        config_.objective_config));
+      if (objective_fun_ == nullptr) {
+        Log::Warning("Using self-defined objective function");
+      }
+      // initialize the objective function
+      if (objective_fun_ != nullptr) {
+        objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
+      }
     }
+
+    boosting_->ResetTrainingData(&config_.boosting_config, train_data_,
+      objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
+    
   }
 
   void AddValidData(const Dataset* valid_data) {
@@ -107,6 +137,7 @@ public:
     boosting_->AddValidDataset(valid_data,
       Common::ConstPtrInVectorWrapper<Metric>(valid_metrics_.back()));
   }
+
   bool TrainOneIter() {
     std::lock_guard<std::mutex> lock(mutex_);
     return boosting_->TrainOneIter(nullptr, nullptr, false);
@@ -142,10 +173,12 @@ public:
   }
 
   std::vector<double> Predict(const std::vector<std::pair<int, double>>& features) {
+    std::lock_guard<std::mutex> lock(mutex_);
     return predictor_->GetPredictFunction()(features);
   }
 
   void PredictForFile(const char* data_filename, const char* result_filename, bool data_has_header) {
+    std::lock_guard<std::mutex> lock(mutex_);
     predictor_->Predict(data_filename, result_filename, data_has_header);
   }
 
@@ -179,29 +212,6 @@ public:
   const Boosting* GetBoosting() const { return boosting_.get(); }
   
 private:
-
-  void ConstructObjectAndTrainingMetrics(const Dataset* train_data) {
-    // create objective function
-    objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
-      config_.objective_config));
-    if (objective_fun_ == nullptr) {
-      Log::Warning("Using self-defined objective functions");
-    }
-    // create training metric
-    train_metric_.clear();
-    for (auto metric_type : config_.metric_types) {
-      auto metric = std::unique_ptr<Metric>(
-        Metric::CreateMetric(metric_type, config_.metric_config));
-      if (metric == nullptr) { continue; }
-      metric->Init(train_data->metadata(), train_data->num_data());
-      train_metric_.push_back(std::move(metric));
-    }
-    train_metric_.shrink_to_fit();
-    // initialize the objective function
-    if (objective_fun_ != nullptr) {
-      objective_fun_->Init(train_data->metadata(), train_data->num_data());
-    }
-  }
 
   const Dataset* train_data_;
   std::unique_ptr<Boosting> boosting_;

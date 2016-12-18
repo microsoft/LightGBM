@@ -7,9 +7,9 @@
 
 namespace LightGBM {
 
-SerialTreeLearner::SerialTreeLearner(const TreeConfig& tree_config)
+SerialTreeLearner::SerialTreeLearner(const TreeConfig* tree_config)
   :tree_config_(tree_config){
-  random_ = Random(tree_config.feature_fraction_seed);
+  random_ = Random(tree_config_->feature_fraction_seed);
 }
 
 SerialTreeLearner::~SerialTreeLearner() {
@@ -22,32 +22,32 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
   num_features_ = train_data_->num_features();
   int max_cache_size = 0;
   // Get the max size of pool
-  if (tree_config_.histogram_pool_size < 0) {
-    max_cache_size = tree_config_.num_leaves;
+  if (tree_config_->histogram_pool_size <= 0) {
+    max_cache_size = tree_config_->num_leaves;
   } else {
     size_t total_histogram_size = 0;
     for (int i = 0; i < train_data_->num_features(); ++i) {
       total_histogram_size += sizeof(HistogramBinEntry) * train_data_->FeatureAt(i)->num_bin();
     }
-    max_cache_size = static_cast<int>(tree_config_.histogram_pool_size * 1024 * 1024 / total_histogram_size);
+    max_cache_size = static_cast<int>(tree_config_->histogram_pool_size * 1024 * 1024 / total_histogram_size);
   }
   // at least need 2 leaves
   max_cache_size = std::max(2, max_cache_size);
-  max_cache_size = std::min(max_cache_size, tree_config_.num_leaves);
-  histogram_pool_.ResetSize(max_cache_size, tree_config_.num_leaves);
+  max_cache_size = std::min(max_cache_size, tree_config_->num_leaves);
+  histogram_pool_.Reset(max_cache_size, tree_config_->num_leaves);
 
   auto histogram_create_function = [this]() {
     auto tmp_histogram_array = std::unique_ptr<FeatureHistogram[]>(new FeatureHistogram[train_data_->num_features()]);
     for (int j = 0; j < train_data_->num_features(); ++j) {
       tmp_histogram_array[j].Init(train_data_->FeatureAt(j),
-        j, &tree_config_);
+        j, tree_config_);
     }
     return tmp_histogram_array.release();
   };
   histogram_pool_.Fill(histogram_create_function);
 
   // push split information for all leaves
-  best_split_per_leaf_.resize(tree_config_.num_leaves);
+  best_split_per_leaf_.resize(tree_config_->num_leaves);
   // initialize ordered_bins_ with nullptr
   ordered_bins_.resize(num_features_);
 
@@ -69,7 +69,7 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
   larger_leaf_splits_.reset(new LeafSplits(train_data_->num_features(), train_data_->num_data()));
 
   // initialize data partition
-  data_partition_.reset(new DataPartition(num_data_, tree_config_.num_leaves));
+  data_partition_.reset(new DataPartition(num_data_, tree_config_->num_leaves));
 
   is_feature_used_.resize(num_features_);
 
@@ -84,19 +84,49 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
 }
 
 
+void SerialTreeLearner::ResetConfig(const TreeConfig* tree_config) {
+  if (tree_config_->num_leaves != tree_config->num_leaves) {
+    tree_config_ = tree_config;
+    int max_cache_size = 0;
+    // Get the max size of pool
+    if (tree_config->histogram_pool_size <= 0) {
+      max_cache_size = tree_config_->num_leaves;
+    } else {
+      size_t total_histogram_size = 0;
+      for (int i = 0; i < train_data_->num_features(); ++i) {
+        total_histogram_size += sizeof(HistogramBinEntry) * train_data_->FeatureAt(i)->num_bin();
+      }
+      max_cache_size = static_cast<int>(tree_config_->histogram_pool_size * 1024 * 1024 / total_histogram_size);
+    }
+    // at least need 2 leaves
+    max_cache_size = std::max(2, max_cache_size);
+    max_cache_size = std::min(max_cache_size, tree_config_->num_leaves);
+    histogram_pool_.DynamicChangeSize(max_cache_size, tree_config_->num_leaves);
+
+    // push split information for all leaves
+    best_split_per_leaf_.resize(tree_config_->num_leaves);
+    data_partition_.reset(new DataPartition(num_data_, tree_config_->num_leaves));
+  } else {
+    tree_config_ = tree_config;
+  }
+
+  histogram_pool_.ResetConfig(tree_config_, train_data_->num_features());
+  random_ = Random(tree_config_->feature_fraction_seed);
+}
+
 Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians) {
   gradients_ = gradients;
   hessians_ = hessians;
   // some initial works before training
   BeforeTrain();
-  auto tree = std::unique_ptr<Tree>(new Tree(tree_config_.num_leaves));
+  auto tree = std::unique_ptr<Tree>(new Tree(tree_config_->num_leaves));
   // save pointer to last trained tree
   last_trained_tree_ = tree.get();
   // root leaf
   int left_leaf = 0;
   // only root leaf can be splitted on first time
   int right_leaf = -1;
-  for (int split = 0; split < tree_config_.num_leaves - 1; split++) {
+  for (int split = 0; split < tree_config_->num_leaves - 1; split++) {
     // some initial works before finding best split
     if (BeforeFindBestSplit(left_leaf, right_leaf)) {
       // find best threshold for every feature
@@ -121,6 +151,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
 }
 
 void SerialTreeLearner::BeforeTrain() {
+
   // reset histogram pool
   histogram_pool_.ResetMap();
   // initialize used features
@@ -128,7 +159,7 @@ void SerialTreeLearner::BeforeTrain() {
     is_feature_used_[i] = false;
   }
   // Get used feature at current tree
-  int used_feature_cnt = static_cast<int>(num_features_*tree_config_.feature_fraction);
+  int used_feature_cnt = static_cast<int>(num_features_*tree_config_->feature_fraction);
   auto used_feature_indices = random_.Sample(num_features_, used_feature_cnt);
   for (auto idx : used_feature_indices) {
     is_feature_used_[idx] = true;
@@ -138,7 +169,7 @@ void SerialTreeLearner::BeforeTrain() {
   data_partition_->Init();
 
   // reset the splits for leaves
-  for (int i = 0; i < tree_config_.num_leaves; ++i) {
+  for (int i = 0; i < tree_config_->num_leaves; ++i) {
     best_split_per_leaf_[i].Reset();
   }
 
@@ -177,7 +208,7 @@ void SerialTreeLearner::BeforeTrain() {
       #pragma omp parallel for schedule(guided)
       for (int i = 0; i < num_features_; ++i) {
         if (ordered_bins_[i] != nullptr) {
-          ordered_bins_[i]->Init(nullptr, tree_config_.num_leaves);
+          ordered_bins_[i]->Init(nullptr, tree_config_->num_leaves);
         }
       }
     } else {
@@ -196,7 +227,7 @@ void SerialTreeLearner::BeforeTrain() {
       #pragma omp parallel for schedule(guided)
       for (int i = 0; i < num_features_; ++i) {
         if (ordered_bins_[i] != nullptr) {
-          ordered_bins_[i]->Init(is_data_in_leaf_.data(), tree_config_.num_leaves);
+          ordered_bins_[i]->Init(is_data_in_leaf_.data(), tree_config_->num_leaves);
         }
       }
     }
@@ -205,9 +236,9 @@ void SerialTreeLearner::BeforeTrain() {
 
 bool SerialTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
   // check depth of current leaf
-  if (tree_config_.max_depth > 0) {
+  if (tree_config_->max_depth > 0) {
     // only need to check left leaf, since right leaf is in same level of left leaf
-    if (last_trained_tree_->leaf_depth(left_leaf) >= tree_config_.max_depth) {
+    if (last_trained_tree_->leaf_depth(left_leaf) >= tree_config_->max_depth) {
       best_split_per_leaf_[left_leaf].gain = kMinScore;
       if (right_leaf >= 0) {
         best_split_per_leaf_[right_leaf].gain = kMinScore;
@@ -218,8 +249,8 @@ bool SerialTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
   data_size_t num_data_in_left_child = GetGlobalDataCountInLeaf(left_leaf);
   data_size_t num_data_in_right_child = GetGlobalDataCountInLeaf(right_leaf);
   // no enough data to continue
-  if (num_data_in_right_child < static_cast<data_size_t>(tree_config_.min_data_in_leaf * 2)
-    && num_data_in_left_child < static_cast<data_size_t>(tree_config_.min_data_in_leaf * 2)) {
+  if (num_data_in_right_child < static_cast<data_size_t>(tree_config_->min_data_in_leaf * 2)
+    && num_data_in_left_child < static_cast<data_size_t>(tree_config_->min_data_in_leaf * 2)) {
     best_split_per_leaf_[left_leaf].gain = kMinScore;
     if (right_leaf >= 0) {
       best_split_per_leaf_[right_leaf].gain = kMinScore;

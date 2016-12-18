@@ -7,7 +7,7 @@
 
 namespace LightGBM {
 
-DataParallelTreeLearner::DataParallelTreeLearner(const TreeConfig& tree_config)
+DataParallelTreeLearner::DataParallelTreeLearner(const TreeConfig* tree_config)
   :SerialTreeLearner(tree_config) {
 }
 
@@ -37,10 +37,13 @@ void DataParallelTreeLearner::Init(const Dataset* train_data) {
 
   buffer_write_start_pos_.resize(num_features_);
   buffer_read_start_pos_.resize(num_features_);
-  global_data_count_in_leaf_.resize(tree_config_.num_leaves);
+  global_data_count_in_leaf_.resize(tree_config_->num_leaves);
 }
 
-
+void DataParallelTreeLearner::ResetConfig(const TreeConfig* tree_config) {
+  SerialTreeLearner::ResetConfig(tree_config);
+  global_data_count_in_leaf_.resize(tree_config_->num_leaves);
+}
 
 void DataParallelTreeLearner::BeforeTrain() {
   SerialTreeLearner::BeforeTrain();

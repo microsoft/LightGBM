@@ -35,7 +35,6 @@ public:
   void Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
     const std::vector<const Metric*>& training_metrics) override {
     GBDT::Init(config, train_data, object_function, training_metrics);
-    drop_rate_ = gbdt_config_->drop_rate;
     shrinkage_rate_ = 1.0;
     random_for_drop_ = Random(gbdt_config_->drop_seed);
   }
@@ -53,6 +52,14 @@ public:
       return false;
     }
   }
+
+  void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
+    const std::vector<const Metric*>& training_metrics) {
+    GBDT::ResetTrainingData(config, train_data, object_function, training_metrics);
+    shrinkage_rate_ = 1.0;
+    random_for_drop_ = Random(gbdt_config_->drop_seed);
+  }
+
   /*!
   * \brief Get current training score
   * \param out_len length of returned score
@@ -81,9 +88,9 @@ private:
     drop_index_.clear();
     // select dropping tree indexes based on drop_rate
     // if drop rate is too small, skip this step, drop one tree randomly
-    if (drop_rate_ > kEpsilon) {
+    if (gbdt_config_->drop_rate > kEpsilon) {
       for (int i = 0; i < iter_; ++i) {
-        if (random_for_drop_.NextDouble() < drop_rate_) {
+        if (random_for_drop_.NextDouble() < gbdt_config_->drop_rate) {
           drop_index_.push_back(i);
         }
       }
@@ -123,8 +130,6 @@ private:
   }
   /*! \brief The indexes of dropping trees */
   std::vector<int> drop_index_;
-  /*! \brief Dropping rate */
-  double drop_rate_;
   /*! \brief Random generator, used to select dropping trees */
   Random random_for_drop_;
   /*! \brief Flag that the score is update on current iter or not*/

@@ -69,14 +69,6 @@ public:
   void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function, const std::vector<const Metric*>& training_metrics) override;
 
   /*!
-  * \brief Reset shrinkage_rate data for current boosting
-  * \param shrinkage_rate Configs for boosting
-  */
-  void ResetShrinkageRate(double shrinkage_rate) override {
-    shrinkage_rate_ = shrinkage_rate;
-  }
-
-  /*!
   * \brief Adding a validation dataset
   * \param valid_data Validation dataset
   * \param valid_metrics Metrics for validation dataset
@@ -245,7 +237,7 @@ protected:
   /*! \brief Pointer to training data */
   const Dataset* train_data_;
   /*! \brief Config of gbdt */
-  const BoostingConfig* gbdt_config_;
+  std::unique_ptr<BoostingConfig> gbdt_config_;
   /*! \brief Tree learner, will use this class to learn trees */
   std::vector<std::unique_ptr<TreeLearner>> tree_learner_;
   /*! \brief Objective function */

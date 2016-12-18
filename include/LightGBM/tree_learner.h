@@ -22,10 +22,16 @@ public:
   virtual ~TreeLearner() {}
 
   /*!
-  * \brief Initialize tree learner with training dataset and configs
+  * \brief Initialize tree learner with training dataset
   * \param train_data The used training data
   */
   virtual void Init(const Dataset* train_data) = 0;
+
+  /*!
+  * \brief Reset tree configs
+  * \param tree_config config of tree
+  */
+  virtual void ResetConfig(const TreeConfig* tree_config) = 0;
 
   /*!
   * \brief training tree model on dataset 
@@ -58,9 +64,10 @@ public:
   /*!
   * \brief Create object of tree learner
   * \param type Type of tree learner
+  * \param tree_config config of tree
   */
   static TreeLearner* CreateTreeLearner(TreeLearnerType type,
-    const TreeConfig& tree_config);
+    const TreeConfig* tree_config);
 };
 
 }  // namespace LightGBM
