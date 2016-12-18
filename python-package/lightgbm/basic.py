@@ -1148,6 +1148,12 @@ class Dataset(object):
         """
         if self.group is None and self.__is_constructed():
             self.group = self.inner_dataset.get_group()
+            if self.group is not None:
+                # group data from LightGBM is boundaries data, need to convert to group size
+                new_group = []
+                for i in range(len(self.group) - 1):
+                    new_group.append(self.group[i + 1] - self.group[i])
+                self.group = new_group
         return self.group
 
     def num_data(self):
