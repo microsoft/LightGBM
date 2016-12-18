@@ -839,6 +839,7 @@ The methods of each Class is in alphabetical order.
 ####print_evaluation(period=1, show_stdv=True)
 
     Create a callback that print evaluation result.
+    (Same function as `verbose_eval` in lightgbm.train())
 
     Parameters
     ----------
@@ -856,6 +857,7 @@ The methods of each Class is in alphabetical order.
 ####record_evaluation(eval_result)
 
     Create a call back that records the evaluation history into eval_result.
+    (Same function as `evals_result` in lightgbm.train())
 
     Parameters
     ----------
@@ -870,9 +872,9 @@ The methods of each Class is in alphabetical order.
 ####early_stopping(stopping_rounds, verbose=True)
 
     Create a callback that activates early stopping.
-    Activates early stopping.
-    Requires at least one validation data and one metric
-    If there's more than one, will check all of them
+    To activates early stopping, at least one validation data and one metric is required.
+    If there's more than one, all of them will be checked.
+    (Same function as `early_stopping_rounds` in lightgbm.train())
 
     Parameters
     ----------
