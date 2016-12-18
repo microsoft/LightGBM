@@ -13,6 +13,14 @@
     - [LGBMClassifier](Python-API.md#lgbmclassifier)
     - [LGBMRegressor](Python-API.md#lgbmregressor)
     - [LGBMRanker](Python-API.md#lgbmranker)
+
+* [Callbacks](Python-API.md#callbacks)
+    - [Before iteration](Python-API.md#before-iteration)
+        + [reset_parameter](Python-API.md#reset_parameterkwargs)
+    - [After iteration](Python-API.md#after-iteration)
+        + [print_evaluation](Python-API.md#print_evaluationperiod1-show_stdvtrue)
+        + [record_evaluation](Python-API.md#record_evaluationeval_result)
+        + [early_stopping](Python-API.md#early_stoppingstopping_rounds-verbosetrue)
     
 The methods of each Class is in alphabetical order.
 
@@ -496,12 +504,10 @@ The methods of each Class is in alphabetical order.
             an evaluation metric is printed every 4 (instead of 1) boosting stages.
     learning_rates: list or function
         List of learning rate for each boosting round
-        or a customized function that calculates learning_rate in terms of
-        current number of round (and the total number of boosting round)
-        (e.g. yields learning rate decay)
+        or a customized function that calculates learning_rate
+        in terms of current number of round (e.g. yields learning rate decay)
         - list l: learning_rate = l[current_round]
-        - function f: learning_rate = f(current_round, total_boost_round)
-                   or learning_rate = f(current_round)
+        - function f: learning_rate = f(current_round)
     callbacks : list of callback functions
         List of callback functions that are applied at end of each iteration.
 
@@ -805,3 +811,80 @@ The methods of each Class is in alphabetical order.
     eval_at : list of int
         The evaulation positions of NDCG
 
+## Callbacks
+
+###Before iteration
+
+####reset_parameter(**kwargs)
+
+    Reset parameter after first iteration
+
+    NOTE: the initial parameter will still take in-effect on first iteration.
+
+    Parameters
+    ----------
+    **kwargs: value should be list or function
+        List of parameters for each boosting round
+        or a customized function that calculates learning_rate in terms of
+        current number of round (e.g. yields learning rate decay)
+        - list l: parameter = l[current_round]
+        - function f: parameter = f(current_round)
+    Returns
+    -------
+    callback : function
+        The requested callback function.
+
+###After iteration
+
+####print_evaluation(period=1, show_stdv=True)
+
+    Create a callback that print evaluation result.
+    (Same function as `verbose_eval` in lightgbm.train())
+
+    Parameters
+    ----------
+    period : int
+        The period to log the evaluation results
+
+    show_stdv : bool, optional
+        Whether show standard deviation if provided
+
+    Returns
+    -------
+    callback : function
+        A callback that prints evaluation every period iterations.
+
+####record_evaluation(eval_result)
+
+    Create a call back that records the evaluation history into eval_result.
+    (Same function as `evals_result` in lightgbm.train())
+
+    Parameters
+    ----------
+    eval_result : dict
+       A dictionary to store the evaluation results.
+
+    Returns
+    -------
+    callback : function
+        The requested callback function.
+
+####early_stopping(stopping_rounds, verbose=True)
+
+    Create a callback that activates early stopping.
+    To activates early stopping, at least one validation data and one metric is required.
+    If there's more than one, all of them will be checked.
+    (Same function as `early_stopping_rounds` in lightgbm.train())
+
+    Parameters
+    ----------
+    stopping_rounds : int
+       The stopping rounds before the trend occur.
+
+    verbose : optional, bool
+        Whether to print message about early stopping information.
+
+    Returns
+    -------
+    callback : function
+        The requested callback function.
