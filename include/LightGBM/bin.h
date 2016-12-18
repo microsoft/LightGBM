@@ -114,6 +114,17 @@ public:
   inline unsigned int ValueToBin(double value) const;
 
   /*!
+  * \brief Get the default bin when value is 0 or is firt categorical
+  * \return default bin
+  */
+  inline uint32_t GetDefaultBin() const {
+    if (bin_type_ == BinType::NumericalBin) {
+      return ValueToBin(0);
+    } else {
+      return 0;
+    }
+  }
+  /*!
   * \brief Construct feature value to bin mapper according feature values
   * \param values (Sampled) values of this feature
   * \param max_bin The maximal number of bin
