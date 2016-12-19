@@ -111,11 +111,11 @@ private:
   * \brief normalize dropped trees
   * NOTE: num_drop_tree(k), learning_rate(lr), shrinkage_rate_ = lr / (k + lr)
   *       step 1: shrink tree to -1 -> drop tree
-  *       step 2: shrink tree to k * lr / (k + lr) - 1 from -1
+  *       step 2: shrink tree to k / (k + lr) - 1 from -1
   *               -> normalize for valid data
-  *       step 3: shrink tree to k * lr / (k + lr) from k * lr / (k + lr) - 1
+  *       step 3: shrink tree to k / (k + lr) from k / (k + lr) - 1
   *               -> normalize for train data
-  *       end with tree weight = k * lr / (k + lr)
+  *       end with tree weight = k / (k + lr)
   */
   void Normalize() {
     double k = static_cast<double>(drop_index_.size());
@@ -123,12 +123,12 @@ private:
       for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
         auto curr_tree = i * num_class_ + curr_class;
         // update validation score
-        models_[curr_tree]->Shrinkage(1.0 - shrinkage_rate_ * k);
+        models_[curr_tree]->Shrinkage(shrinkage_rate_);
         for (auto& score_updater : valid_score_updater_) {
           score_updater->AddScore(models_[curr_tree].get(), curr_class);
         }
         // update training score
-        models_[curr_tree]->Shrinkage(shrinkage_rate_ * k / (shrinkage_rate_ * k - 1.0));
+        models_[curr_tree]->Shrinkage(-k / gbdt_config_->learning_rate);
         train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
       }
     }
