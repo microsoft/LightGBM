@@ -225,8 +225,9 @@ protected:
   /*!
   * \brief Print metric result of current iteration
   * \param iter Current interation
+  * \return best_msg if met early_stopping
   */
-  bool OutputMetric(int iter);
+  std::string OutputMetric(int iter);
   /*!
   * \brief Calculate feature importances
   * \param last_iter Last tree use to calculate
@@ -252,9 +253,12 @@ protected:
   std::vector<std::vector<const Metric*>> valid_metrics_;
   /*! \brief Number of rounds for early stopping */
   int early_stopping_round_;
-  /*! \brief Best score(s) for early stopping */
+  /*! \brief Best iteration(s) for early stopping */
   std::vector<std::vector<int>> best_iter_;
+  /*! \brief Best score(s) for early stopping */
   std::vector<std::vector<double>> best_score_;
+  /*! \brief output message of best iteration */
+  std::vector<std::vector<std::string>> best_msg_;
   /*! \brief Trained models(trees) */
   std::vector<std::unique_ptr<Tree>> models_;
   /*! \brief Max feature index of training data*/
