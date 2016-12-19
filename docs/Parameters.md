@@ -28,6 +28,7 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * number of boosting iterations/trees
 * ```learning_rate```, default=```0.1```, type=double, alias=```shrinkage_rate```
   * shrinkage rate
+  * in ```dart```, it also affects normalization weights of dropped trees
 * ```num_leaves```, default=```127```, type=int, alias=```num_leaf```
   * number of leaves in one tree
 * ```tree_learner```, default=```serial```, type=enum, options=```serial```,```feature```,```data```
@@ -56,7 +57,7 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * Random seed for feature fraction.
 * ```bagging_fraction```, default=```1.0```, type=double, , ```0.0 < bagging_fraction < 1.0```, alias=```sub_row```
   * Like ```feature_fraction```, but this will random select part of data
-  * can use this to speed up training
+  * Can use this to speed up training
   * Can use this to deal with over-fit
   * Note: To enable bagging, should set ```bagging_freq``` to a non zero value as well
 * ```bagging_freq```, default=```0```, type=int
@@ -74,6 +75,7 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * The minimal gain to perform split 
 * ```drop_rate```, default=```0.01```, type=double
   * only used in ```dart```, will drop ```drop_rate*current_num_models``` before boosting. 
+  * If you want to use ```skip_rate``` like in xgboost, you can use [callbacks](Python-API.md#callbacks) with changing ```drop_rate```.
 * ```drop_seed```, default=```4```, type=int
   * only used in ```dart```, used to random seed to choose dropping models.
 
