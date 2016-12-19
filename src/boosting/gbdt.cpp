@@ -46,7 +46,10 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
   }
   early_stopping_round_ = new_config->early_stopping_round;
   shrinkage_rate_ = new_config->learning_rate;
-  random_ = Random(new_config->bagging_seed);
+  // cannot reset seed, only create one time
+  if (gbdt_config_ == nullptr ) {
+    random_ = Random(new_config->bagging_seed);
+  }
 
   // create tree learner, only create once
   if (gbdt_config_ == nullptr) {

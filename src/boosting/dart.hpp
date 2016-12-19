@@ -57,7 +57,6 @@ public:
     const std::vector<const Metric*>& training_metrics) {
     GBDT::ResetTrainingData(config, train_data, object_function, training_metrics);
     shrinkage_rate_ = 1.0;
-    random_for_drop_ = Random(gbdt_config_->drop_seed);
   }
 
   /*!

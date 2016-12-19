@@ -111,7 +111,6 @@ void SerialTreeLearner::ResetConfig(const TreeConfig* tree_config) {
   }
 
   histogram_pool_.ResetConfig(tree_config_, train_data_->num_features());
-  random_ = Random(tree_config_->feature_fraction_seed);
 }
 
 Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians) {
