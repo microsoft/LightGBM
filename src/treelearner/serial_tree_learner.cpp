@@ -105,7 +105,7 @@ void SerialTreeLearner::ResetConfig(const TreeConfig* tree_config) {
 
     // push split information for all leaves
     best_split_per_leaf_.resize(tree_config_->num_leaves);
-    data_partition_.reset(new DataPartition(num_data_, tree_config_->num_leaves));
+    data_partition_->ResetLeaves(tree_config_->num_leaves);
   } else {
     tree_config_ = tree_config;
   }

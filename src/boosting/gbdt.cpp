@@ -100,8 +100,8 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
     num_data_ = train_data->num_data();
     // create buffer for gradients and hessians
     if (object_function_ != nullptr) {
-      gradients_ = std::vector<score_t>(num_data_ * num_class_);
-      hessians_ = std::vector<score_t>(num_data_ * num_class_);
+      gradients_.resize(num_data_ * num_class_);
+      hessians_.resize(num_data_ * num_class_);
     }
     // get max feature index
     max_feature_idx_ = train_data->num_total_features() - 1;
@@ -114,8 +114,8 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
       || (gbdt_config_->bagging_fraction != new_config->bagging_fraction)) {
     // if need bagging, create buffer
     if (new_config->bagging_fraction < 1.0 && new_config->bagging_freq > 0) {
-      out_of_bag_data_indices_ = std::vector<data_size_t>(num_data_);
-      bag_data_indices_ = std::vector<data_size_t>(num_data_);
+      out_of_bag_data_indices_.resize(num_data_);
+      bag_data_indices_.resize(num_data_);
     } else {
       out_of_bag_data_cnt_ = 0;
       out_of_bag_data_indices_.clear();

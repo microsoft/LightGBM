@@ -364,9 +364,9 @@ public:
     }
     is_enough_ = (cache_size_ == total_size_);
     if (!is_enough_) {
-      mapper_ = std::vector<int>(total_size_);
-      inverse_mapper_ = std::vector<int>(cache_size_);
-      last_used_time_ = std::vector<int>(cache_size_);
+      mapper_.resize(total_size_);
+      inverse_mapper_.resize(cache_size_);
+      last_used_time_.resize(cache_size_);
       ResetMap();
     }
   }

@@ -16,8 +16,8 @@ namespace LightGBM {
 */
 class DataPartition {
 public:
-  DataPartition(data_size_t num_data, int num_leafs)
-    :num_data_(num_data), num_leaves_(num_leafs) {
+  DataPartition(data_size_t num_data, int num_leaves)
+    :num_data_(num_data), num_leaves_(num_leaves) {
     leaf_begin_.resize(num_leaves_);
     leaf_count_.resize(num_leaves_);
     indices_.resize(num_data_);
@@ -35,6 +35,13 @@ public:
     left_write_pos_buf_.resize(num_threads_);
     right_write_pos_buf_.resize(num_threads_);
   }
+
+  void ResetLeaves(int num_leaves) {
+    num_leaves_ = num_leaves;
+    leaf_begin_.resize(num_leaves_);
+    leaf_count_.resize(num_leaves_);
+  }
+
   ~DataPartition() {
 
   }
