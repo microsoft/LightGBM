@@ -56,6 +56,13 @@ def test_regression():
     preds = lgb_model.predict(x_test)
     assert mean_squared_error(preds, y_test) < 100
 
+def test_lambdarank():
+    from sklearn.datasets import load_svmlight_file
+    X_train, y_train = load_svmlight_file('../../examples/lambdarank/rank.train')
+    X_test, y_test = load_svmlight_file('../../examples/lambdarank/rank.test')
+    q_train = np.loadtxt('../../examples/lambdarank/rank.train.query')
+    lgb_model = lgb.LGBMRanker().fit(X_train, y_train, group=q_train, eval_at=[1])
+
 def test_regression_with_custom_objective():
     from sklearn.metrics import mean_squared_error
     from sklearn.datasets import load_boston
@@ -118,6 +125,7 @@ def test_early_stopping():
 test_binary_classification()
 test_multiclass_classification()
 test_regression()
+test_lambdarank()
 test_regression_with_custom_objective()
 test_binary_classification_with_custom_objective()
 test_early_stopping()

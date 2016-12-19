@@ -73,7 +73,6 @@ print('Finish 10 - 20 rounds with model file...')
 # learning_rates accepts:
 # 1. list/tuple with length = num_boost_round
 # 2. function(curr_iter)
-# 3. function(curr_iter, total_iter)
 gbm = lgb.train(params,
                 lgb_train,
                 num_boost_round=10,
@@ -82,6 +81,16 @@ gbm = lgb.train(params,
                 valid_sets=lgb_eval)
 
 print('Finish 20 - 30 rounds with decay learning rates...')
+
+# change other parameters during training
+gbm = lgb.train(params,
+                lgb_train,
+                num_boost_round=10,
+                init_model=gbm,
+                valid_sets=lgb_eval,
+                callbacks=[lgb.reset_parameter(bagging_fraction=[0.7]*5+[0.6]*5)])
+
+print('Finish 30 - 40 rounds with changing bagging_fraction...')
 
 # self-defined objective function
 # f(preds: array, train_data: Dataset) -> grad: array, hess: array
@@ -108,7 +117,7 @@ gbm = lgb.train(params,
                 feval=binary_error,
                 valid_sets=lgb_eval)
 
-print('Finish 30 - 40 rounds with self-defined objective function and eval metric...')
+print('Finish 40 - 50 rounds with self-defined objective function and eval metric...')
 
 print('Start a new training job...')
 # callback

@@ -35,7 +35,6 @@ public:
   void Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
     const std::vector<const Metric*>& training_metrics) override {
     GBDT::Init(config, train_data, object_function, training_metrics);
-    shrinkage_rate_ = 1.0;
     random_for_drop_ = Random(gbdt_config_->drop_seed);
   }
   /*!
@@ -56,7 +55,7 @@ public:
   void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
     const std::vector<const Metric*>& training_metrics) {
     GBDT::ResetTrainingData(config, train_data, object_function, training_metrics);
-    shrinkage_rate_ = 1.0;
+    shrinkage_rate_ = gbdt_config_->learning_rate / (gbdt_config_->learning_rate + static_cast<double>(drop_index_.size()));
   }
 
   /*!
@@ -106,10 +105,17 @@ private:
         train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
       }
     }
-    shrinkage_rate_ = 1.0 / (1.0 + drop_index_.size());
+    shrinkage_rate_ = gbdt_config_->learning_rate / (gbdt_config_->learning_rate + static_cast<double>(drop_index_.size()));
   }
   /*!
   * \brief normalize dropped trees
+  * NOTE: num_drop_tree(k), learning_rate(lr), shrinkage_rate_ = lr / (k + lr)
+  *       step 1: shrink tree to -1 -> drop tree
+  *       step 2: shrink tree to k / (k + lr) - 1 from -1
+  *               -> normalize for valid data
+  *       step 3: shrink tree to k / (k + lr) from k / (k + lr) - 1
+  *               -> normalize for train data
+  *       end with tree weight = k / (k + lr)
   */
   void Normalize() {
     double k = static_cast<double>(drop_index_.size());
@@ -122,7 +128,7 @@ private:
           score_updater->AddScore(models_[curr_tree].get(), curr_class);
         }
         // update training score
-        models_[curr_tree]->Shrinkage(-k);
+        models_[curr_tree]->Shrinkage(-k / gbdt_config_->learning_rate);
         train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
       }
     }
