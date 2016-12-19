@@ -218,20 +218,21 @@ except ImportError:
     except ImportError:
         SKLEARN_StratifiedKFold = False
 
-def _make_n_folds(full_data, nfold, params, seed, fpreproc=None, stratified=False):
+def _make_n_folds(full_data, nfold, params, seed, fpreproc=None, stratified=False, shuffle=True):
     """
     Make an n-fold list of CVBooster from random indices.
     """
     np.random.seed(seed)
     if stratified:
         if SKLEARN_StratifiedKFold:
-            sfk = StratifiedKFold(n_splits=nfold, shuffle=True, random_state=seed)
+            sfk = StratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
             idset = [x[1] for x in sfk.split(X=full_data.get_label(), y=full_data.get_label())]
         else:
             raise LightGBMError('Scikit-learn is required for stratified cv')
     else:
         full_data.construct()
-        randidx = np.random.permutation(full_data.num_data())
+        if shuffle:
+            randidx = np.random.permutation(full_data.num_data())
         kstep = int(len(randidx) / nfold)
         idset = [randidx[(i * kstep): min(len(randidx), (i + 1) * kstep)] for i in range(nfold)]
 
@@ -260,7 +261,7 @@ def _agg_cv_result(raw_results):
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
 
 def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
-       metrics=None, fobj=None, feval=None, init_model=None,
+       shuffle=True, metrics=None, fobj=None, feval=None, init_model=None,
        feature_name=None, categorical_feature=None,
        early_stopping_rounds=None, fpreproc=None,
        verbose_eval=None, show_stdv=True, seed=0,
@@ -280,6 +281,8 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
         Number of folds in CV.
     stratified : bool
         Perform stratified sampling.
+    shuffle: bool
+        Whether shuffle before split data
     folds : a KFold or StratifiedKFold instance
         Sklearn KFolds or StratifiedKFolds.
     metrics : string or list of strings
@@ -342,7 +345,7 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
             params['metric'].extend(metrics)
 
     results = collections.defaultdict(list)
-    cvfolds = _make_n_folds(train_set, nfold, params, seed, fpreproc, stratified)
+    cvfolds = _make_n_folds(train_set, nfold, params, seed, fpreproc, stratified, shuffle)
 
     # setup callbacks
     if callbacks is None:
