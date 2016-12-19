@@ -358,12 +358,12 @@ class LGBMModel(LGBMModelBase):
         else:
             feval = None
 
-        def _construct_dataset(X, y, sample_weight, init_score, group):
-            ret = Dataset(X, label=y, weight=sample_weight, group=group)
+        def _construct_dataset(X, y, sample_weight, init_score, group, params):
+            ret = Dataset(X, label=y, weight=sample_weight, group=group, params=params)
             ret.set_init_score(init_score)
             return ret
 
-        train_set = _construct_dataset(X, y, sample_weight, init_score, group)
+        train_set = _construct_dataset(X, y, sample_weight, init_score, group, params)
 
         valid_sets = []
         if eval_set is not None:
@@ -377,7 +377,7 @@ class LGBMModel(LGBMModelBase):
                     valid_weight = None if eval_sample_weight is None else eval_sample_weight.get(i, None)
                     valid_init_score = None if eval_init_score is None else eval_init_score.get(i, None)
                     valid_group = None if eval_group is None else eval_group.get(i, None)
-                    valid_set = _construct_dataset(valid_data[0], valid_data[1], valid_weight, valid_init_score, valid_group)
+                    valid_set = _construct_dataset(valid_data[0], valid_data[1], valid_weight, valid_init_score, valid_group, params)
                 valid_sets.append(valid_set)
 
         self._Booster = train(params, train_set,
