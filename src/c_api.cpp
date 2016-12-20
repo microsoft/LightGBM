@@ -332,14 +332,14 @@ DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
       auto idx = sample_indices[i];
       auto row = get_row_fun(static_cast<int>(idx));
       for (std::pair<int, double>& inner_data : row) {
-        if (std::fabs(inner_data.second) > 1e-15) {
-          if (static_cast<size_t>(inner_data.first) >= sample_values.size()) {
-            // if need expand feature set
-            size_t need_size = inner_data.first - sample_values.size() + 1;
-            for (size_t j = 0; j < need_size; ++j) {
-              sample_values.emplace_back();
-            }
+        if (static_cast<size_t>(inner_data.first) >= sample_values.size()) {
+          // if need expand feature set
+          size_t need_size = inner_data.first - sample_values.size() + 1;
+          for (size_t j = 0; j < need_size; ++j) {
+            sample_values.emplace_back();
           }
+        }
+        if (std::fabs(inner_data.second) > 1e-15) {
           // edit the feature value
           sample_values[inner_data.first].push_back(inner_data.second);
         }
