@@ -19,7 +19,7 @@ namespace LightGBM {
 
 #ifndef CHECK_NOTNULL
 #define CHECK_NOTNULL(pointer)                             \
-  if ((pointer) == nullptr) LightGBM::Log::Fatal(#pointer " Can't be NULL");
+  if ((pointer) == nullptr) LightGBM::Log::Fatal(#pointer " Can't be NULL at %s, line %d .\n", __FILE__,  __LINE__);
 #endif
 
 
