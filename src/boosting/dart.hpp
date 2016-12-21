@@ -55,7 +55,6 @@ public:
   void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
     const std::vector<const Metric*>& training_metrics) {
     GBDT::ResetTrainingData(config, train_data, object_function, training_metrics);
-    shrinkage_rate_ = gbdt_config_->learning_rate / (1.0f + static_cast<double>(drop_index_.size()));
   }
 
   /*!
