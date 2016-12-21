@@ -155,6 +155,8 @@ class LGBMModel(LGBMModelBase):
             Boosting learning rate
         n_estimators : int
             Number of boosted trees to fit.
+        max_bin : int
+            Number of bucketed bin for feature values
         silent : boolean
             Whether to print messages while running boosting.
         objective : string or callable
@@ -359,7 +361,7 @@ class LGBMModel(LGBMModelBase):
             feval = None
 
         def _construct_dataset(X, y, sample_weight, init_score, group, params):
-            ret = Dataset(X, label=y, weight=sample_weight, group=group, params=params)
+            ret = Dataset(X, label=y, max_bin=self.max_bin, weight=sample_weight, group=group, params=params)
             ret.set_init_score(init_score)
             return ret
 

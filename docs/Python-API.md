@@ -594,6 +594,8 @@ The methods of each Class is in alphabetical order.
         Boosting learning rate
     n_estimators : int
         Number of boosted trees to fit.
+    max_bin : int
+        Number of bucketed bin for feature values
     silent : boolean
         Whether to print messages while running boosting.
     objective : str or callable
