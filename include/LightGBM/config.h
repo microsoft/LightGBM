@@ -205,7 +205,9 @@ public:
   int bagging_freq = 0;
   int early_stopping_round = 0;
   int num_class = 1;
-  double drop_rate = 0.01;
+  double drop_rate = 0.1;
+  double skip_drop = 0.5;
+  bool xgboost_dart_mode = false;
   int drop_seed = 4;
   TreeLearnerType tree_learner_type = TreeLearnerType::kSerialTreeLearner;
   TreeConfig tree_config;

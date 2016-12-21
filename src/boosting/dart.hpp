@@ -55,7 +55,7 @@ public:
   void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
     const std::vector<const Metric*>& training_metrics) {
     GBDT::ResetTrainingData(config, train_data, object_function, training_metrics);
-    shrinkage_rate_ = gbdt_config_->learning_rate / (gbdt_config_->learning_rate + static_cast<double>(drop_index_.size()));
+    shrinkage_rate_ = gbdt_config_->learning_rate / (1.0f + static_cast<double>(drop_index_.size()));
   }
 
   /*!
@@ -84,18 +84,14 @@ private:
   */
   void DroppingTrees() {
     drop_index_.clear();
+    bool is_skip = random_for_drop_.NextDouble() < gbdt_config_->skip_drop;
     // select dropping tree indexes based on drop_rate
-    // if drop rate is too small, skip this step, drop one tree randomly
-    if (gbdt_config_->drop_rate > kEpsilon) {
+    if (!is_skip) {
       for (int i = 0; i < iter_; ++i) {
         if (random_for_drop_.NextDouble() < gbdt_config_->drop_rate) {
           drop_index_.push_back(i);
         }
       }
-    }
-    // binomial-plus-one, at least one tree will be dropped
-    if (drop_index_.empty()) {
-      drop_index_ = random_for_drop_.Sample(iter_, 1);
     }
     // drop trees
     for (auto i : drop_index_) {
@@ -105,31 +101,55 @@ private:
         train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
       }
     }
-    shrinkage_rate_ = gbdt_config_->learning_rate / (gbdt_config_->learning_rate + static_cast<double>(drop_index_.size()));
+    if (!gbdt_config_->xgboost_dart_mode) {
+      shrinkage_rate_ = gbdt_config_->learning_rate / (1.0f + static_cast<double>(drop_index_.size()));
+    } else {
+      if (drop_index_.empty()) {
+        shrinkage_rate_ = gbdt_config_->learning_rate;
+      } else {
+        shrinkage_rate_ = gbdt_config_->learning_rate / (gbdt_config_->learning_rate + static_cast<double>(drop_index_.size()));
+      }
+    }
   }
   /*!
   * \brief normalize dropped trees
-  * NOTE: num_drop_tree(k), learning_rate(lr), shrinkage_rate_ = lr / (k + lr)
+  * NOTE: num_drop_tree(k), learning_rate(lr), shrinkage_rate_ = lr / (k + 1)
   *       step 1: shrink tree to -1 -> drop tree
-  *       step 2: shrink tree to k / (k + lr) - 1 from -1
+  *       step 2: shrink tree to k / (k + 1) - 1 from -1, by 1/(k+1)
   *               -> normalize for valid data
-  *       step 3: shrink tree to k / (k + lr) from k / (k + lr) - 1
+  *       step 3: shrink tree to k / (k + 1) from k / (k + 1) - 1, by -k
   *               -> normalize for train data
-  *       end with tree weight = k / (k + lr)
+  *       end with tree weight = (k / (k + 1)) * old_weight
   */
   void Normalize() {
     double k = static_cast<double>(drop_index_.size());
-    for (auto i : drop_index_) {
-      for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-        auto curr_tree = i * num_class_ + curr_class;
-        // update validation score
-        models_[curr_tree]->Shrinkage(shrinkage_rate_);
-        for (auto& score_updater : valid_score_updater_) {
-          score_updater->AddScore(models_[curr_tree].get(), curr_class);
+    if (!gbdt_config_->xgboost_dart_mode) {
+      for (auto i : drop_index_) {
+        for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
+          auto curr_tree = i * num_class_ + curr_class;
+          // update validation score
+          models_[curr_tree]->Shrinkage(1.0f / (k + 1.0f));
+          for (auto& score_updater : valid_score_updater_) {
+            score_updater->AddScore(models_[curr_tree].get(), curr_class);
+          }
+          // update training score
+          models_[curr_tree]->Shrinkage(-k);
+          train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
         }
-        // update training score
-        models_[curr_tree]->Shrinkage(-k / gbdt_config_->learning_rate);
-        train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
+      }
+    } else {
+      for (auto i : drop_index_) {
+        for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
+          auto curr_tree = i * num_class_ + curr_class;
+          // update validation score
+          models_[curr_tree]->Shrinkage(shrinkage_rate_);
+          for (auto& score_updater : valid_score_updater_) {
+            score_updater->AddScore(models_[curr_tree].get(), curr_class);
+          }
+          // update training score
+          models_[curr_tree]->Shrinkage(-k / gbdt_config_->learning_rate);
+          train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
+        }
       }
     }
   }
