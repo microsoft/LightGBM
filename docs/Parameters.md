@@ -77,6 +77,8 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * only used in ```dart```
 * ```skip_drop```, default=```0.5```, type=double
   * only used in ```dart```, probability of skipping drop
+* ```uniform_drop```, default=```false```, type=bool
+  * only used in ```dart```, true if want to use uniform drop
 * ```xgboost_dart_mode```, default=```false```, type=bool
   * only used in ```dart```, true if want to use xgboost dart mode
 * ```drop_seed```, default=```4```, type=int

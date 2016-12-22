@@ -208,6 +208,7 @@ public:
   double drop_rate = 0.1;
   double skip_drop = 0.5;
   bool xgboost_dart_mode = false;
+  bool uniform_drop = false;
   int drop_seed = 4;
   TreeLearnerType tree_learner_type = TreeLearnerType::kSerialTreeLearner;
   TreeConfig tree_config;

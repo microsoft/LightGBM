@@ -46,8 +46,10 @@ public:
     GBDT::TrainOneIter(gradient, hessian, false);
     // normalize
     Normalize();
-    tree_weight_.push_back(shrinkage_rate_);
-    sum_weight_ += shrinkage_rate_;
+    if (!gbdt_config_->uniform_drop) {
+      tree_weight_.push_back(shrinkage_rate_);
+      sum_weight_ += shrinkage_rate_;
+    }
     if (is_eval) {
       return EvalAndCheckEarlyStopping();
     } else {
@@ -89,10 +91,18 @@ private:
     bool is_skip = random_for_drop_.NextDouble() < gbdt_config_->skip_drop;
     // select dropping tree indexes based on drop_rate and tree weights
     if (!is_skip) {
-      double inv_average_weight = static_cast<double>(tree_weight_.size()) / sum_weight_;
-      for (int i = 0; i < iter_; ++i) {
-        if (random_for_drop_.NextDouble() < gbdt_config_->drop_rate * tree_weight_[i] * inv_average_weight) {
-          drop_index_.push_back(i);
+      if (!gbdt_config_->uniform_drop) {
+        double inv_average_weight = static_cast<double>(tree_weight_.size()) / sum_weight_;
+        for (int i = 0; i < iter_; ++i) {
+          if (random_for_drop_.NextDouble() < gbdt_config_->drop_rate * tree_weight_[i] * inv_average_weight) {
+            drop_index_.push_back(i);
+          }
+        }
+      } else {
+        for (int i = 0; i < iter_; ++i) {
+          if (random_for_drop_.NextDouble() < gbdt_config_->drop_rate) {
+            drop_index_.push_back(i);
+          }
         }
       }
     }
@@ -131,7 +141,6 @@ private:
         for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
           auto curr_tree = i * num_class_ + curr_class;
           // update validation score
-          sum_weight_ -= tree_weight_[curr_tree];
           models_[curr_tree]->Shrinkage(1.0f / (k + 1.0f));
           for (auto& score_updater : valid_score_updater_) {
             score_updater->AddScore(models_[curr_tree].get(), curr_class);
@@ -139,8 +148,10 @@ private:
           // update training score
           models_[curr_tree]->Shrinkage(-k);
           train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
-          tree_weight_[curr_tree] *= (k / (k + 1.0f));
-          sum_weight_ += tree_weight_[curr_tree];
+          if (!gbdt_config_->uniform_drop) {
+            sum_weight_ -= tree_weight_[curr_tree] * (1.0f / (k + 1.0f));
+            tree_weight_[curr_tree] *= (k / (k + 1.0f));
+          }
         }
       }
     } else {
@@ -148,7 +159,6 @@ private:
         for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
           auto curr_tree = i * num_class_ + curr_class;
           // update validation score
-          sum_weight_ -= tree_weight_[curr_tree];
           models_[curr_tree]->Shrinkage(shrinkage_rate_);
           for (auto& score_updater : valid_score_updater_) {
             score_updater->AddScore(models_[curr_tree].get(), curr_class);
@@ -156,8 +166,10 @@ private:
           // update training score
           models_[curr_tree]->Shrinkage(-k / gbdt_config_->learning_rate);
           train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
-          tree_weight_[curr_tree] *= (k / (k + gbdt_config_->learning_rate));
-          sum_weight_ += tree_weight_[curr_tree];
+          if (!gbdt_config_->uniform_drop) {
+            sum_weight_ -= tree_weight_[curr_tree] * (1.0f / (k + gbdt_config_->learning_rate));;
+            tree_weight_[curr_tree] *= (k / (k + gbdt_config_->learning_rate));
+          }
         }
       }
     }
