@@ -19,7 +19,7 @@ public:
   /*!
   * \brief Constructor
   */
-  DART(): GBDT() { }
+  DART() : GBDT() { }
   /*!
   * \brief Destructor
   */
@@ -36,6 +36,7 @@ public:
     const std::vector<const Metric*>& training_metrics) override {
     GBDT::Init(config, train_data, object_function, training_metrics);
     random_for_drop_ = Random(gbdt_config_->drop_seed);
+    sum_weight_ = 0.0f;
   }
   /*!
   * \brief one training iteration
@@ -45,6 +46,8 @@ public:
     GBDT::TrainOneIter(gradient, hessian, false);
     // normalize
     Normalize();
+    tree_weight_.push_back(shrinkage_rate_);
+    sum_weight_ += shrinkage_rate_;
     if (is_eval) {
       return EvalAndCheckEarlyStopping();
     } else {
@@ -84,10 +87,11 @@ private:
   void DroppingTrees() {
     drop_index_.clear();
     bool is_skip = random_for_drop_.NextDouble() < gbdt_config_->skip_drop;
-    // select dropping tree indexes based on drop_rate
+    // select dropping tree indexes based on drop_rate and tree weights
     if (!is_skip) {
+      double inv_average_weight = static_cast<double>(tree_weight_.size()) / sum_weight_;
       for (int i = 0; i < iter_; ++i) {
-        if (random_for_drop_.NextDouble() < gbdt_config_->drop_rate) {
+        if (random_for_drop_.NextDouble() < gbdt_config_->drop_rate * tree_weight_[i] * inv_average_weight) {
           drop_index_.push_back(i);
         }
       }
@@ -127,6 +131,7 @@ private:
         for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
           auto curr_tree = i * num_class_ + curr_class;
           // update validation score
+          sum_weight_ -= tree_weight_[curr_tree];
           models_[curr_tree]->Shrinkage(1.0f / (k + 1.0f));
           for (auto& score_updater : valid_score_updater_) {
             score_updater->AddScore(models_[curr_tree].get(), curr_class);
@@ -134,6 +139,8 @@ private:
           // update training score
           models_[curr_tree]->Shrinkage(-k);
           train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
+          tree_weight_[curr_tree] *= (k / (k + 1.0f));
+          sum_weight_ += tree_weight_[curr_tree];
         }
       }
     } else {
@@ -141,6 +148,7 @@ private:
         for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
           auto curr_tree = i * num_class_ + curr_class;
           // update validation score
+          sum_weight_ -= tree_weight_[curr_tree];
           models_[curr_tree]->Shrinkage(shrinkage_rate_);
           for (auto& score_updater : valid_score_updater_) {
             score_updater->AddScore(models_[curr_tree].get(), curr_class);
@@ -148,10 +156,16 @@ private:
           // update training score
           models_[curr_tree]->Shrinkage(-k / gbdt_config_->learning_rate);
           train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
+          tree_weight_[curr_tree] *= (k / (k + gbdt_config_->learning_rate));
+          sum_weight_ += tree_weight_[curr_tree];
         }
       }
     }
   }
+  /*! \brief The weights of all trees, used to choose drop trees */
+  std::vector<double> tree_weight_;
+  /*! \brief sum weights of all trees */
+  double sum_weight_;
   /*! \brief The indexes of dropping trees */
   std::vector<int> drop_index_;
   /*! \brief Random generator, used to select dropping trees */
