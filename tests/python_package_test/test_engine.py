@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 def multi_logloss(y_true, y_pred):
     return np.mean([-math.log(y_pred[i][y]) for i, y in enumerate(y_true)])
 
-def test_module(params = {'objective' : 'regression', 'metric' : 'l2'},
+def test_template(params = {'objective' : 'regression', 'metric' : 'l2'},
                 X_y=load_boston(True), feval=mean_squared_error,
                 stratify=None, num_round=100, return_data=False,
                 return_model=False, init_model=None, custom_eval=None):
@@ -42,12 +42,12 @@ class TestBasic(unittest.TestCase):
             'objective' : 'binary',
             'metric' : 'binary_logloss'
         }
-        evals_result, ret = test_module(params, X_y, log_loss, stratify=X_y[1])
+        evals_result, ret = test_template(params, X_y, log_loss, stratify=X_y[1])
         self.assertLess(ret, 0.15)
         self.assertAlmostEqual(min(evals_result['eval']['logloss']), ret, places=5)
     
     def test_regreesion(self):
-        evals_result, ret = test_module()
+        evals_result, ret = test_template()
         ret **= 0.5
         self.assertLess(ret, 4)
         self.assertAlmostEqual(min(evals_result['eval']['l2']), ret, places=5)
@@ -59,7 +59,7 @@ class TestBasic(unittest.TestCase):
             'metric' : 'multi_logloss',
             'num_class' : 10
         }
-        evals_result, ret = test_module(params, X_y, multi_logloss, stratify=X_y[1])
+        evals_result, ret = test_template(params, X_y, multi_logloss, stratify=X_y[1])
         self.assertLess(ret, 0.2)
         self.assertAlmostEqual(min(evals_result['eval']['multi_logloss']), ret, places=5)
 
@@ -69,9 +69,9 @@ class TestBasic(unittest.TestCase):
             'metric' : 'l1'
         }
         model_name = 'model.txt'
-        gbm = test_module(params, num_round=20, return_model=True)
+        gbm = test_template(params, num_round=20, return_model=True)
         gbm.save_model(model_name)
-        evals_result, ret = test_module(params, feval=mean_absolute_error,
+        evals_result, ret = test_template(params, feval=mean_absolute_error,
                                         num_round=80, init_model=model_name,
                                         custom_eval=(lambda p, d: ('mae', mean_absolute_error(p, d.get_label()), False)))
         self.assertLess(ret, 3)
@@ -89,14 +89,14 @@ class TestBasic(unittest.TestCase):
             'metric' : 'multi_logloss',
             'num_class' : 3
         }
-        gbm = test_module(params, X_y, num_round=20, return_model=True, stratify=X_y[1])
-        evals_result, ret = test_module(params, X_y, feval=multi_logloss,
+        gbm = test_template(params, X_y, num_round=20, return_model=True, stratify=X_y[1])
+        evals_result, ret = test_template(params, X_y, feval=multi_logloss,
                                         num_round=80, init_model=gbm)
         self.assertLess(ret, 1.5)
         self.assertAlmostEqual(min(evals_result['eval']['multi_logloss']), ret, places=5)
 
     def test_cv(self):
-        lgb_train, lgb_eval = test_module(return_data=True)
+        lgb_train, lgb_eval = test_template(return_data=True)
         lgb.cv({'verbose':0}, lgb_train, num_boost_round=200, nfold=5,
                 metrics='l1', verbose_eval=True)
 
