@@ -486,7 +486,7 @@ class _InnerDataset(object):
         """process for reference dataset"""
         ref_dataset = None
         if isinstance(reference, _InnerDataset):
-            ref_dataset = ctypes.byref(reference.handle)
+            ref_dataset = reference.handle
         elif reference is not None:
             raise TypeError('Reference dataset should be None or dataset instance')
         """start construct data"""
@@ -573,7 +573,7 @@ class _InnerDataset(object):
         ret.handle = ctypes.c_void_p()
         params_str = param_dict_to_str(params)
         _safe_call(_LIB.LGBM_DatasetGetSubset(
-            ctypes.byref(self.handle),
+            self.handle,
             used_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
             used_indices.shape[0],
             c_str(params_str),

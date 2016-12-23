@@ -59,7 +59,7 @@ DllExport const char* LGBM_GetLastError();
 */
 DllExport int LGBM_DatasetCreateFromFile(const char* filename,
   const char* parameters,
-  const DatasetHandle* reference,
+  const DatasetHandle reference,
   DatasetHandle* out);
 
 /*!
@@ -86,7 +86,7 @@ DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
   int64_t nelem,
   int64_t num_col,
   const char* parameters,
-  const DatasetHandle* reference,
+  const DatasetHandle reference,
   DatasetHandle* out);
 
 /*!
@@ -113,7 +113,7 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   int64_t nelem,
   int64_t num_row,
   const char* parameters,
-  const DatasetHandle* reference,
+  const DatasetHandle reference,
   DatasetHandle* out);
 
 /*!
@@ -134,7 +134,7 @@ DllExport int LGBM_DatasetCreateFromMat(const void* data,
   int32_t ncol,
   int is_row_major,
   const char* parameters,
-  const DatasetHandle* reference,
+  const DatasetHandle reference,
   DatasetHandle* out);
 
 /*!
@@ -147,7 +147,7 @@ DllExport int LGBM_DatasetCreateFromMat(const void* data,
 * \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_DatasetGetSubset(
-  const DatasetHandle* handle,
+  const DatasetHandle handle,
   const int32_t* used_row_indices,
   int32_t num_used_row_indices,
   const char* parameters,

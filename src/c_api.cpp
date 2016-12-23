@@ -239,7 +239,7 @@ DllExport const char* LGBM_GetLastError() {
 
 DllExport int LGBM_DatasetCreateFromFile(const char* filename,
   const char* parameters,
-  const DatasetHandle* reference,
+  const DatasetHandle reference,
   DatasetHandle* out) {
   API_BEGIN();
   auto param = ConfigBase::Str2Map(parameters);
@@ -250,7 +250,7 @@ DllExport int LGBM_DatasetCreateFromFile(const char* filename,
     *out = loader.LoadFromFile(filename);
   } else {
     *out = loader.LoadFromFileAlignWithOtherDataset(filename,
-      reinterpret_cast<const Dataset*>(*reference));
+      reinterpret_cast<const Dataset*>(reference));
   }
   API_END();
 }
@@ -261,7 +261,7 @@ DllExport int LGBM_DatasetCreateFromMat(const void* data,
   int32_t ncol,
   int is_row_major,
   const char* parameters,
-  const DatasetHandle* reference,
+  const DatasetHandle reference,
   DatasetHandle* out) {
   API_BEGIN();
   auto param = ConfigBase::Str2Map(parameters);
@@ -289,7 +289,7 @@ DllExport int LGBM_DatasetCreateFromMat(const void* data,
   } else {
     ret.reset(new Dataset(nrow, io_config.num_class));
     ret->CopyFeatureMapperFrom(
-      reinterpret_cast<const Dataset*>(*reference),
+      reinterpret_cast<const Dataset*>(reference),
       io_config.is_enable_sparse);
   }
 
@@ -313,7 +313,7 @@ DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
   int64_t nelem,
   int64_t num_col,
   const char* parameters,
-  const DatasetHandle* reference,
+  const DatasetHandle reference,
   DatasetHandle* out) {
   API_BEGIN();
   auto param = ConfigBase::Str2Map(parameters);
@@ -351,7 +351,7 @@ DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
   } else {
     ret.reset(new Dataset(nrow, io_config.num_class));
     ret->CopyFeatureMapperFrom(
-      reinterpret_cast<const Dataset*>(*reference),
+      reinterpret_cast<const Dataset*>(reference),
       io_config.is_enable_sparse);
   }
 
@@ -375,7 +375,7 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   int64_t nelem,
   int64_t num_row,
   const char* parameters,
-  const DatasetHandle* reference,
+  const DatasetHandle reference,
   DatasetHandle* out) {
   API_BEGIN();
   auto param = ConfigBase::Str2Map(parameters);
@@ -401,7 +401,7 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   } else {
     ret.reset(new Dataset(nrow, io_config.num_class));
     ret->CopyFeatureMapperFrom(
-      reinterpret_cast<const Dataset*>(*reference),
+      reinterpret_cast<const Dataset*>(reference),
       io_config.is_enable_sparse);
   }
 
@@ -417,7 +417,7 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
 }
 
 DllExport int LGBM_DatasetGetSubset(
-  const DatasetHandle* handle,
+  const DatasetHandle handle,
   const int32_t* used_row_indices,
   int32_t num_used_row_indices,
   const char* parameters,
@@ -426,7 +426,7 @@ DllExport int LGBM_DatasetGetSubset(
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
   io_config.Set(param);
-  auto full_dataset = reinterpret_cast<const Dataset*>(*handle);
+  auto full_dataset = reinterpret_cast<const Dataset*>(handle);
   auto ret = std::unique_ptr<Dataset>(
     full_dataset->Subset(used_row_indices,
       num_used_row_indices, 
