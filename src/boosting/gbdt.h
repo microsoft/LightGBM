@@ -193,6 +193,18 @@ public:
       static_cast<int>(models_.size()) / num_class_);
   }
 
+  inline double GetLeafValue(int tree_idx, int leaf_idx) const {
+    CHECK(tree_idx >= 0 && static_cast<size_t>(tree_idx) < models_.size());
+    CHECK(leaf_idx >= 0 && leaf_idx < models_[tree_idx]->num_leaves());
+    return models_[tree_idx]->LeafOutput(leaf_idx);
+  }
+
+  inline void SetLeafValue(int tree_idx, int leaf_idx, double val) {
+    CHECK(tree_idx >= 0 && static_cast<size_t>(tree_idx) < models_.size());
+    CHECK(leaf_idx >= 0 && leaf_idx < models_[tree_idx]->num_leaves());
+    models_[tree_idx]->SetLeafOutput(leaf_idx, val);
+  }
+
   /*!
   * \brief Get Type name of this boosting object
   */

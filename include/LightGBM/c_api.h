@@ -499,6 +499,32 @@ DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
   int64_t* out_len,
   char** out_str);
 
+/*!
+* \brief Get leaf value 
+* \param handle handle
+* \param tree_idx index of tree
+* \param leaf_idx index of leaf
+* \param out_val out result
+* \return 0 when succeed, -1 when failure happens
+*/
+DllExport int LGBM_BoosterGetLeafValue(BoosterHandle handle,
+  int tree_idx,
+  int leaf_idx,
+  float* out_val);
+
+/*!
+* \brief Set leaf value
+* \param handle handle
+* \param tree_idx index of tree
+* \param leaf_idx index of leaf
+* \param val leaf value
+* \return 0 when succeed, -1 when failure happens
+*/
+DllExport int LGBM_BoosterSetLeafValue(BoosterHandle handle,
+  int tree_idx,
+  int leaf_idx,
+  float val);
+
 // some help functions used to convert data
 
 std::function<std::vector<double>(int row_idx)>

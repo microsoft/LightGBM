@@ -50,8 +50,13 @@ public:
     double threshold_double, double left_value,
     double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain);
 
-  /*! \brief Get the output of one leave */
+  /*! \brief Get the output of one leaf */
   inline double LeafOutput(int leaf) const { return leaf_value_[leaf]; }
+
+  /*! \brief Set the output of one leaf */
+  inline void SetLeafOutput(int leaf, double output) {
+    leaf_value_[leaf] = output;
+  }
 
   /*!
   * \brief Adding prediction value of this tree model to scores

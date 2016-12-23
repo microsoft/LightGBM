@@ -19,6 +19,7 @@
 #include <mutex>
 
 #include "./application/predictor.hpp"
+#include "./boosting/gbdt.h"
 
 namespace LightGBM {
 
@@ -188,6 +189,15 @@ public:
 
   std::string DumpModel() {
     return boosting_->DumpModel();
+  }
+
+  double GetLeafValue(int tree_idx, int leaf_idx) const {
+    return dynamic_cast<GBDT*>(boosting_.get())->GetLeafValue(tree_idx, leaf_idx);
+  }
+
+  void SetLeafValue(int tree_idx, int leaf_idx, double val) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    dynamic_cast<GBDT*>(boosting_.get())->SetLeafValue(tree_idx, leaf_idx, val);
   }
 
   int GetEvalCounts() const {
@@ -785,6 +795,29 @@ DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
   if (*out_len <= buffer_len) {
     std::strcpy(*out_str, model.c_str());
   }
+  API_END();
+}
+
+
+
+DllExport int LGBM_BoosterGetLeafValue(BoosterHandle handle,
+  int tree_idx,
+  int leaf_idx,
+  float* out_val) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_val = static_cast<float>(ref_booster->GetLeafValue(tree_idx, leaf_idx));
+  API_END();
+}
+
+
+DllExport int LGBM_BoosterSetLeafValue(BoosterHandle handle,
+  int tree_idx,
+  int leaf_idx,
+  float val) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  ref_booster->SetLeafValue(tree_idx, leaf_idx, static_cast<double>(val));
   API_END();
 }
 
