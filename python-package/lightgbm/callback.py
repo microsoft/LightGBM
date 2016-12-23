@@ -155,7 +155,7 @@ def early_stopping(stopping_rounds, verbose=True):
     def init(env):
         """internal function"""
         if not env.evaluation_result_list:
-            raise ValueError('For early stopping, at least one dataset is required for evaluation')
+            raise ValueError('For early stopping, at least one dataset or eval metric is required for evaluation')
 
         if verbose:
             msg = "Train until valid scores didn't improve in {} rounds."

@@ -1,131 +1,80 @@
+# coding: utf-8
+# pylint: skip-file
+import os, unittest
 import numpy as np
-import random
 import lightgbm as lgb
+from sklearn.metrics import log_loss, mean_squared_error, mean_absolute_error
+from sklearn.datasets import load_breast_cancer, load_boston, load_digits, load_iris, load_svmlight_file
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.base import clone
 
+def test_template(X_y=load_boston(True), model=lgb.LGBMRegressor,
+                feval=mean_squared_error, stratify=None, num_round=100, return_data=False,
+                return_model=False, init_model=None, custom_obj=None, proba=False):
+    X, y = X_y
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
+                                                        stratify=stratify,
+                                                        random_state=42)
+    if return_data: return X_train, X_test, y_train, y_test
+    gbm = model(n_estimators=num_round, objective=custom_obj) if custom_obj else model(n_estimators=num_round)
+    gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=10, verbose=False)
+    if return_model: return gbm
+    else: return feval(y_test, gbm.predict_proba(X_test) if proba else gbm.predict(X_test))
 
-rng = np.random.RandomState(2016)
+class TestSklearn(unittest.TestCase):
 
-def test_binary_classification():
+    def test_binary(self):
+        X_y= load_breast_cancer(True)
+        ret = test_template(X_y, lgb.LGBMClassifier, log_loss, stratify=X_y[1], proba=True)
+        self.assertLess(ret, 0.15)
 
-    from sklearn import datasets, metrics, model_selection
+    def test_regreesion(self):
+        self.assertLess(test_template() ** 0.5, 4)
+ 
+    def test_multiclass(self):
+        X_y = load_digits(10, True)
+        def multi_error(y_true, y_pred):
+            return np.mean(y_true != y_pred)
+        ret = test_template(X_y, lgb.LGBMClassifier, multi_error, stratify=X_y[1])
+        self.assertLess(ret, 0.2)
+        
+    def test_lambdarank(self):
+        X_train, y_train = load_svmlight_file('../../examples/lambdarank/rank.train')
+        X_test, y_test = load_svmlight_file('../../examples/lambdarank/rank.test')
+        q_train = np.loadtxt('../../examples/lambdarank/rank.train.query')
+        lgb_model = lgb.LGBMRanker().fit(X_train, y_train, group=q_train, eval_at=[1])
 
-    X, y = datasets.make_classification(n_samples=10000, n_features=100)
-    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1, random_state=1)
-    lgb_model = lgb.LGBMClassifier().fit(x_train, y_train)
-    from sklearn.datasets import load_digits
-    digits = load_digits(2)
-    y = digits['target']
-    X = digits['data']
-    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1, random_state=1)
-    lgb_model = lgb.LGBMClassifier().fit(x_train, y_train)
-    preds = lgb_model.predict(x_test)
-    err = sum(1 for i in range(len(preds))
-          if int(preds[i] > 0.5) != y_test[i]) / float(len(preds))
-    assert err < 0.1
+    def test_regression_with_custom_objective(self):
+        def objective_ls(y_true, y_pred):
+            grad = (y_pred - y_true)
+            hess = np.ones(len(y_true))
+            return grad, hess
+        ret = test_template(custom_obj=objective_ls)
+        self.assertLess(ret, 100)
 
-def test_multiclass_classification():
-    from sklearn.datasets import load_iris
-    from sklearn import datasets, metrics, model_selection
+    def test_binary_classification_with_custom_objective(self):
+        def logregobj(y_true, y_pred):
+            y_pred = 1.0 / (1.0 + np.exp(-y_pred))
+            grad = y_pred - y_true
+            hess = y_pred * (1.0 - y_pred)
+            return grad, hess
+        X_y = load_digits(2, True)
+        def binary_error(y_test, y_pred):
+            return np.mean([int(p > 0.5) != y for y, p in zip(y_test, y_pred)])
+        ret = test_template(X_y, lgb.LGBMClassifier, feval=binary_error, custom_obj=logregobj)
+        self.assertLess(ret, 0.1)
 
-    def check_pred(preds, labels):
-        err = sum(1 for i in range(len(preds))
-                  if int(preds[i] > 0.5) != labels[i]) / float(len(preds))
-        assert err < 0.7
+    def test_grid_search(self):
+        X_train, X_test, y_train, y_test = test_template(return_data=True)
+        params = {'n_estimators': [10, 15, 20]}
+        gbm = GridSearchCV(lgb.LGBMRegressor(), params, cv=5)
+        gbm.fit(X_train, y_train)
+        self.assertIn(gbm.best_params_['n_estimators'], [10, 15, 20])
 
+    def test_clone(self):
+        gbm = test_template(return_model=True)
+        gbm_clone = clone(gbm)
 
-    X, y = datasets.make_classification(n_samples=10000, n_features=100, n_classes=4, n_informative=3)
-
-    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1, random_state=1)
-
-    lgb_model = lgb.LGBMClassifier().fit(x_train, y_train)
-    preds = lgb_model.predict(x_test)
-
-    check_pred(preds, y_test)
-
-def test_regression():
-    from sklearn.metrics import mean_squared_error
-    from sklearn.datasets import load_boston
-    from sklearn.cross_validation import KFold
-    from sklearn import datasets, metrics, model_selection
-
-    boston = load_boston()
-    y = boston['target']
-    X = boston['data']
-    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1, random_state=1)
-    lgb_model = lgb.LGBMRegressor().fit(x_train, y_train)
-    preds = lgb_model.predict(x_test)
-    assert mean_squared_error(preds, y_test) < 100
-
-def test_lambdarank():
-    from sklearn.datasets import load_svmlight_file
-    X_train, y_train = load_svmlight_file('../../examples/lambdarank/rank.train')
-    X_test, y_test = load_svmlight_file('../../examples/lambdarank/rank.test')
-    q_train = np.loadtxt('../../examples/lambdarank/rank.train.query')
-    lgb_model = lgb.LGBMRanker().fit(X_train, y_train, group=q_train, eval_at=[1])
-
-def test_regression_with_custom_objective():
-    from sklearn.metrics import mean_squared_error
-    from sklearn.datasets import load_boston
-    from sklearn.cross_validation import KFold
-    from sklearn import datasets, metrics, model_selection
-    def objective_ls(y_true, y_pred):
-        grad = (y_pred - y_true)
-        hess = np.ones(len(y_true))
-        return grad, hess
-    boston = load_boston()
-    y = boston['target']
-    X = boston['data']
-    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1, random_state=1)
-    lgb_model = lgb.LGBMRegressor(objective=objective_ls).fit(x_train, y_train)
-    preds = lgb_model.predict(x_test)
-    assert mean_squared_error(preds, y_test) < 100
-
-
-def test_binary_classification_with_custom_objective():
-
-    from sklearn import datasets, metrics, model_selection
-    def logregobj(y_true, y_pred):
-        y_pred = 1.0 / (1.0 + np.exp(-y_pred))
-        grad = y_pred - y_true
-        hess = y_pred * (1.0 - y_pred)
-        return grad, hess
-    X, y = datasets.make_classification(n_samples=10000, n_features=100)
-    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1, random_state=1)
-    lgb_model = lgb.LGBMClassifier(objective=logregobj).fit(x_train, y_train)
-    from sklearn.datasets import load_digits
-    digits = load_digits(2)
-    y = digits['target']
-    X = digits['data']
-    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.2, random_state=1)
-    lgb_model = lgb.LGBMClassifier(objective=logregobj).fit(x_train, y_train)
-    preds = lgb_model.predict(x_test)
-    err = sum(1 for i in range(len(preds))
-          if int(preds[i] > 0.5) != y_test[i]) / float(len(preds))
-    assert err < 0.1
-
-def test_early_stopping():
-    from sklearn.metrics import mean_squared_error
-    from sklearn.datasets import load_boston
-    from sklearn.cross_validation import KFold
-    from sklearn import datasets, metrics, model_selection
-    from sklearn.base import clone
-
-    boston = load_boston()
-    y = boston['target']
-    X = boston['data']
-    x_train, x_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.1, random_state=1)
-    lgb_model = lgb.LGBMRegressor(n_estimators=500) \
-            .fit(x_train, y_train, eval_set=[(x_test, y_test)], 
-                eval_metric='l2', 
-                early_stopping_rounds=10,
-                verbose=10)
-    lgb_model_clone = clone(lgb_model)
-    print(lgb_model.best_iteration)
-
-test_binary_classification()
-test_multiclass_classification()
-test_regression()
-test_lambdarank()
-test_regression_with_custom_objective()
-test_binary_classification_with_custom_objective()
-test_early_stopping()
+print("----------------------------------------------------------------------")
+print("running test_sklearn.py")
+unittest.main()

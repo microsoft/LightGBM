@@ -344,13 +344,6 @@ class LGBMModel(LGBMModelBase):
             params["objective"] = "None"
         else:
             params["objective"] = self.objective
-            if eval_metric is None and eval_set is not None:
-                eval_metric = {
-                    'regression': 'l2',
-                    'binary': 'binary_logloss',
-                    'lambdarank': 'ndcg',
-                    'multiclass': 'multi_logloss'
-                }.get(self.objective, None)
 
         if callable(eval_metric):
             feval = _eval_function_wrapper(eval_metric)
@@ -471,7 +464,7 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
             sample_weight=None, init_score=None,
             eval_set=None, eval_sample_weight=None,
             eval_init_score=None,
-            eval_metric=None,
+            eval_metric="l2",
             early_stopping_rounds=None, verbose=True,
             feature_name=None, categorical_feature=None,
             other_params=None):
@@ -504,7 +497,7 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
             sample_weight=None, init_score=None,
             eval_set=None, eval_sample_weight=None,
             eval_init_score=None,
-            eval_metric=None,
+            eval_metric="binary_logloss",
             early_stopping_rounds=None, verbose=True,
             feature_name=None, categorical_feature=None,
             other_params=None):
@@ -517,6 +510,8 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
             # Switch to using a multiclass objective in the underlying LGBM instance
             self.objective = "multiclass"
             other_params['num_class'] = self.n_classes_
+            if eval_set is not None and eval_metric == "binary_logloss":
+                eval_metric = "multi_logloss"
 
         self._le = LGBMLabelEncoder().fit(y)
         training_labels = self._le.transform(y)
@@ -589,7 +584,7 @@ class LGBMRanker(LGBMModel):
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_sample_weight=None,
             eval_init_score=None, eval_group=None,
-            eval_metric=None, eval_at=None,
+            eval_metric='ndcg', eval_at=1,
             early_stopping_rounds=None, verbose=True,
             feature_name=None, categorical_feature=None,
             other_params=None):
@@ -616,6 +611,8 @@ class LGBMRanker(LGBMModel):
 
         if eval_at is not None:
             other_params = {} if other_params is None else other_params
+            if isinstance(eval_at, int):
+                eval_at = [eval_at]
             other_params['ndcg_eval_at'] = list(eval_at)
         super(LGBMRanker, self).fit(X, y, sample_weight, init_score, group,
                                     eval_set, eval_sample_weight, eval_init_score, eval_group,

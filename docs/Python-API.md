@@ -6,7 +6,7 @@
 
 * [Training API](Python-API.md#training-api)
     - [train](Python-API.md#trainparams-train_set-num_boost_round100-valid_setsnone-valid_namesnone-fobjnone-fevalnone-init_modelnone-feature_namenone-categorical_featurenone-early_stopping_roundsnone-evals_resultnone-verbose_evaltrue-learning_ratesnone-callbacksnone)
-    - [cv](Python-API.md#cvparams-train_set-num_boost_round10-nfold5-stratifiedfalse-metricsnone-fobjnone-fevalnone-init_modelnone-feature_namenone-categorical_featurenone-early_stopping_roundsnone-fpreprocnone-verbose_evalnone-show_stdvtrue-seed0-callbacksnone)
+    - [cv](Python-API.md#cvparams-train_set-num_boost_round10-nfold5-stratifiedfalse-shuffletrue-metricsnone-fobjnone-fevalnone-init_modelnone-feature_namenone-categorical_featurenone-early_stopping_roundsnone-fpreprocnone-verbose_evalnone-show_stdvtrue-seed0-callbacksnone)
 
 * [Scikit-learn API](Python-API.md#scikit-learn-api)
     - [Common Methods](Python-API.md#common-methods)
@@ -516,7 +516,7 @@ The methods of each Class is in alphabetical order.
     booster : a trained booster model
     
 
-####cv(params, train_set, num_boost_round=10, nfold=5, stratified=False, metrics=None, fobj=None, feval=None, init_model=None, feature_name=None, categorical_feature=None, early_stopping_rounds=None, fpreproc=None, verbose_eval=None, show_stdv=True, seed=0, callbacks=None)
+####cv(params, train_set, num_boost_round=10, nfold=5, stratified=False, shuffle=True, metrics=None, fobj=None, feval=None, init_model=None, feature_name=None, categorical_feature=None, early_stopping_rounds=None, fpreproc=None, verbose_eval=None, show_stdv=True, seed=0, callbacks=None)
 
     Cross-validation with given paramaters.
 
@@ -532,6 +532,8 @@ The methods of each Class is in alphabetical order.
         Number of folds in CV.
     stratified : bool
         Perform stratified sampling.
+    shuffle: bool
+        Whether shuffle before split data.
     folds : a KFold or StratifiedKFold instance
         Sklearn KFolds or StratifiedKFolds.
     metrics : str or list of str
@@ -723,6 +725,7 @@ The methods of each Class is in alphabetical order.
     eval_metric : str, list of str, callable, optional
         If a str, should be a built-in evaluation metric to use.
         If callable, a custom evaluation metric, see note for more details.
+        default: binary_error for LGBMClassifier, l2 for LGBMRegressor, ndcg for LGBMRanker
     early_stopping_rounds : int
     verbose : bool
         If `verbose` and an evaluation set is used, writes the evaluation
@@ -806,11 +809,11 @@ The methods of each Class is in alphabetical order.
 
 ###LGBMRanker
 
-####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric=None, eval_at=None, early_stopping_rounds=None, verbose=True, feature_name=None, categorical_feature=None, other_params=None)
+####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric='ndcg', eval_at=1, early_stopping_rounds=None, verbose=True, feature_name=None, categorical_feature=None, other_params=None)
 
     Most arguments are same as Common Methods except:
 
-    eval_at : list of int
+    eval_at : int or list of int, default=1
         The evaulation positions of NDCG
 
 ## Callbacks

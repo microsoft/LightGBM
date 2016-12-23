@@ -527,7 +527,7 @@ class _InnerDataset(object):
                                                 is_reshape=False)
             if self.predictor.num_class > 1:
                 # need re group init score
-                new_init_score = np.zeros(init_score.size(), dtype=np.float32)
+                new_init_score = np.zeros(init_score.size, dtype=np.float32)
                 num_data = self.num_data()
                 for i in range(num_data):
                     for j in range(self.predictor.num_class):
@@ -981,8 +981,7 @@ class Dataset(object):
             self._predictor = predictor
             self.inner_dataset = None
         else:
-            raise LightGBMError("Cannot set predictor after freed raw data,\
-             Set free_raw_data=False when construct Dataset to avoid this.")
+            raise LightGBMError("Cannot set predictor after freed raw data,Set free_raw_data=False when construct Dataset to avoid this.")
 
     def set_reference(self, reference):
         """
