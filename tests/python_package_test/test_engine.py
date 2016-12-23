@@ -18,8 +18,8 @@ def test_module(params = {'objective' : 'regression', 'metric' : 'l2'},
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
                                                         stratify=stratify,
                                                         random_state=42)
-    lgb_train = lgb.Dataset(X_train, y_train, free_raw_data=not return_model)
-    lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, free_raw_data=not return_model)
+    lgb_train = lgb.Dataset(X_train, y_train, free_raw_data=not return_model, params=params)
+    lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, free_raw_data=not return_model, params=params)
     if return_data: return lgb_train, lgb_eval
     evals_result = {}
     params['verbose'] = 0
@@ -82,17 +82,18 @@ class TestBasic(unittest.TestCase):
         self.assertIsInstance(gbm.feature_importance(), np.ndarray)
         os.remove(model_name)
 
-    @unittest.skip("Can't pass yet")
     def test_continue_train_multiclass(self):
         X_y = load_iris(True)
         params = {
             'objective' : 'multiclass',
-            'metric' : 'multi_error',
+            'metric' : 'multi_logloss',
             'num_class' : 3
         }
         gbm = test_module(params, X_y, num_round=20, return_model=True, stratify=X_y[1])
-        evals_result, ret = test_module(params, feval=multi_logloss,
+        evals_result, ret = test_module(params, X_y, feval=multi_logloss,
                                         num_round=80, init_model=gbm)
+        self.assertLess(ret, 1.5)
+        self.assertAlmostEqual(min(evals_result['eval']['multi_logloss']), ret, places=5)
 
     def test_cv(self):
         lgb_train, lgb_eval = test_module(return_data=True)
