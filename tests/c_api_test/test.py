@@ -33,7 +33,7 @@ def c_str(string):
 def test_load_from_file(filename, reference):
     ref = None
     if reference != None:
-        ref = ctypes.byref(reference)
+        ref = reference
     handle = ctypes.c_void_p()
     LIB.LGBM_DatasetCreateFromFile(c_str(filename), 
         c_str('max_bin=15'), 
@@ -64,7 +64,7 @@ def test_load_from_csr(filename, reference):
     handle = ctypes.c_void_p()
     ref = None
     if reference != None:
-        ref = ctypes.byref(reference)
+        ref = reference
 
     LIB.LGBM_DatasetCreateFromCSR(c_array(ctypes.c_int, csr.indptr), 
         dtype_int32, 
@@ -99,7 +99,7 @@ def test_load_from_csc(filename, reference):
     handle = ctypes.c_void_p()
     ref = None
     if reference != None:
-        ref = ctypes.byref(reference)
+        ref = reference
 
     LIB.LGBM_DatasetCreateFromCSC(c_array(ctypes.c_int, csr.indptr), 
         dtype_int32, 
@@ -134,7 +134,7 @@ def test_load_from_mat(filename, reference):
     handle = ctypes.c_void_p()
     ref = None
     if reference != None:
-        ref = ctypes.byref(reference)
+        ref = reference
 
     LIB.LGBM_DatasetCreateFromMat(data.ctypes.data_as(ctypes.POINTER(ctypes.c_void_p)), 
         dtype_float64,
