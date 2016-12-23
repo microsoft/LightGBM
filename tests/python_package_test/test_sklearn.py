@@ -10,14 +10,14 @@ from sklearn.base import clone
 
 def test_module(X_y=load_boston(True), model=lgb.LGBMRegressor,
                 feval=mean_squared_error, stratify=None, num_round=100, return_data=False,
-                return_model=False, init_model=None, custom_obj=None, proba=False):
+                return_model=False, init_model=None, custom_obj=None, eval_metric=None, proba=False):
     X, y = X_y
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
                                                         stratify=stratify,
                                                         random_state=42)
     if return_data: return X_train, X_test, y_train, y_test
     gbm = model(n_estimators=num_round, objective=custom_obj) if custom_obj else model(n_estimators=num_round)
-    gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=10)
+    gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=10, eval_metric=eval_metric)
     if return_model: return gbm
     else: return feval(y_test, gbm.predict_proba(X_test) if proba else gbm.predict(X_test))
 
@@ -44,16 +44,14 @@ class TestSklearn(unittest.TestCase):
         q_train = np.loadtxt('../../examples/lambdarank/rank.train.query')
         lgb_model = lgb.LGBMRanker().fit(X_train, y_train, group=q_train, eval_at=[1])
 
-    @unittest.skip("Can't pass yet")
     def test_regression_with_custom_objective(self):
         def objective_ls(y_true, y_pred):
             grad = (y_pred - y_true)
             hess = np.ones(len(y_true))
             return grad, hess
-        ret = test_module(custom_obj=objective_ls)
+        ret = test_module(custom_obj=objective_ls, eval_metric='l2')
         self.assertLess(ret, 100)
 
-    @unittest.skip("Can't pass yet")
     def test_binary_classification_with_custom_objective(self):
         def logregobj(y_true, y_pred):
             y_pred = 1.0 / (1.0 + np.exp(-y_pred))
@@ -63,7 +61,7 @@ class TestSklearn(unittest.TestCase):
         X_y = load_digits(2, True)
         def binary_error(y_test, y_pred):
             return np.mean([int(p > 0.5) != y for y, p in zip(y_test, y_pred)])
-        ret = test_module(X_y, lgb.LGBMClassifier, feval=binary_error, custom_obj=logregobj)
+        ret = test_module(X_y, lgb.LGBMClassifier, feval=binary_error, custom_obj=logregobj, eval_metric='binary_error')
         self.assertLess(ret, 0.1)
 
     def test_other(self):
