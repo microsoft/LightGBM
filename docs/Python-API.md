@@ -725,6 +725,7 @@ The methods of each Class is in alphabetical order.
     eval_metric : str, list of str, callable, optional
         If a str, should be a built-in evaluation metric to use.
         If callable, a custom evaluation metric, see note for more details.
+        default: binary_error for LGBMClassifier, l2 for LGBMRegressor, ndcg for LGBMRanker
     early_stopping_rounds : int
     verbose : bool
         If `verbose` and an evaluation set is used, writes the evaluation
@@ -808,11 +809,11 @@ The methods of each Class is in alphabetical order.
 
 ###LGBMRanker
 
-####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric=None, eval_at=None, early_stopping_rounds=None, verbose=True, feature_name=None, categorical_feature=None, other_params=None)
+####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric='ndcg', eval_at=1, early_stopping_rounds=None, verbose=True, feature_name=None, categorical_feature=None, other_params=None)
 
     Most arguments are same as Common Methods except:
 
-    eval_at : list of int
+    eval_at : int or list of int, default=1
         The evaulation positions of NDCG
 
 ## Callbacks
