@@ -101,11 +101,11 @@ public:
   inline static score_t LossOnPoint(float label, std::vector<double> score) {
     size_t k = static_cast<size_t>(label);
     for (size_t i = 0; i < score.size(); ++i){
-        if (i != k && score[i] > score[k]) {
-            return 0.0f;
+        if (i != k && score[i] >= score[k]) {
+            return 1.0f;
         }
     }
-    return 1.0f;
+    return 0.0f;
   }
 
   inline static const char* Name() {
