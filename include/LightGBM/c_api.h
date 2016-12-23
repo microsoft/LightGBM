@@ -26,7 +26,7 @@
 #define DllExport DLL_EXTERN_C
 #endif
 
-typedef void* DatesetHandle;
+typedef void* DatasetHandle;
 typedef void* BoosterHandle;
 
 #define C_API_DTYPE_FLOAT32 (0)
@@ -59,8 +59,8 @@ DllExport const char* LGBM_GetLastError();
 */
 DllExport int LGBM_DatasetCreateFromFile(const char* filename,
   const char* parameters,
-  const DatesetHandle* reference,
-  DatesetHandle* out);
+  const DatasetHandle* reference,
+  DatasetHandle* out);
 
 /*!
 * \brief create a dataset from CSR format
@@ -86,8 +86,8 @@ DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
   int64_t nelem,
   int64_t num_col,
   const char* parameters,
-  const DatesetHandle* reference,
-  DatesetHandle* out);
+  const DatasetHandle* reference,
+  DatasetHandle* out);
 
 /*!
 * \brief create a dataset from CSC format
@@ -113,8 +113,8 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   int64_t nelem,
   int64_t num_row,
   const char* parameters,
-  const DatesetHandle* reference,
-  DatesetHandle* out);
+  const DatasetHandle* reference,
+  DatasetHandle* out);
 
 /*!
 * \brief create dataset from dense matrix
@@ -134,8 +134,8 @@ DllExport int LGBM_DatasetCreateFromMat(const void* data,
   int32_t ncol,
   int is_row_major,
   const char* parameters,
-  const DatesetHandle* reference,
-  DatesetHandle* out);
+  const DatasetHandle* reference,
+  DatasetHandle* out);
 
 /*!
 * \brief Create subset of a data
@@ -147,11 +147,11 @@ DllExport int LGBM_DatasetCreateFromMat(const void* data,
 * \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_DatasetGetSubset(
-  const DatesetHandle* handle,
+  const DatasetHandle* handle,
   const int32_t* used_row_indices,
   int32_t num_used_row_indices,
   const char* parameters,
-  DatesetHandle* out);
+  DatasetHandle* out);
 
 /*!
 * \brief save feature names to Dataset
@@ -161,7 +161,7 @@ DllExport int LGBM_DatasetGetSubset(
 * \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_DatasetSetFeatureNames(
-  DatesetHandle handle,
+  DatasetHandle handle,
   const char** feature_names,
   int64_t num_feature_names);
 
@@ -169,7 +169,7 @@ DllExport int LGBM_DatasetSetFeatureNames(
 * \brief free space for dataset
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_DatasetFree(DatesetHandle handle);
+DllExport int LGBM_DatasetFree(DatasetHandle handle);
 
 /*!
 * \brief save dateset to binary file
@@ -177,7 +177,7 @@ DllExport int LGBM_DatasetFree(DatesetHandle handle);
 * \param filename file name
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_DatasetSaveBinary(DatesetHandle handle,
+DllExport int LGBM_DatasetSaveBinary(DatasetHandle handle,
   const char* filename);
 
 /*!
@@ -191,7 +191,7 @@ DllExport int LGBM_DatasetSaveBinary(DatesetHandle handle,
 * \param type C_API_DTYPE_FLOAT32 or C_API_DTYPE_INT32
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_DatasetSetField(DatesetHandle handle,
+DllExport int LGBM_DatasetSetField(DatasetHandle handle,
   const char* field_name,
   const void* field_data,
   int64_t num_element,
@@ -206,7 +206,7 @@ DllExport int LGBM_DatasetSetField(DatesetHandle handle,
 * \param out_type  C_API_DTYPE_FLOAT32 or C_API_DTYPE_INT32
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_DatasetGetField(DatesetHandle handle,
+DllExport int LGBM_DatasetGetField(DatasetHandle handle,
   const char* field_name,
   int64_t* out_len,
   const void** out_ptr,
@@ -218,7 +218,7 @@ DllExport int LGBM_DatasetGetField(DatesetHandle handle,
 * \param out The address to hold number of data
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_DatasetGetNumData(DatesetHandle handle,
+DllExport int LGBM_DatasetGetNumData(DatasetHandle handle,
   int64_t* out);
 
 /*!
@@ -227,7 +227,7 @@ DllExport int LGBM_DatasetGetNumData(DatesetHandle handle,
 * \param out The output of number of features
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_DatasetGetNumFeature(DatesetHandle handle,
+DllExport int LGBM_DatasetGetNumFeature(DatasetHandle handle,
   int64_t* out);
 
 // --- start Booster interfaces
@@ -239,7 +239,7 @@ DllExport int LGBM_DatasetGetNumFeature(DatesetHandle handle,
 * \prama out handle of created Booster
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
+DllExport int LGBM_BoosterCreate(const DatasetHandle train_data,
   const char* parameters,
   BoosterHandle* out);
 
@@ -279,7 +279,7 @@ DllExport int LGBM_BoosterMerge(BoosterHandle handle,
 * \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterAddValidData(BoosterHandle handle,
-  const DatesetHandle valid_data);
+  const DatasetHandle valid_data);
 
 /*!
 * \brief Reset training data for booster
@@ -288,7 +288,7 @@ DllExport int LGBM_BoosterAddValidData(BoosterHandle handle,
 * \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterResetTrainingData(BoosterHandle handle,
-  const DatesetHandle train_data);
+  const DatasetHandle train_data);
 
 /*!
 * \brief Reset config for current booster
@@ -352,7 +352,7 @@ DllExport int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int64_t* out_len);
 /*!
 * \brief Get Name of eval
 * \param out_len total number of eval results
-* \param out_strs names of eval result
+* \param out_strs names of eval result, need to pre-allocate memory before call this
 * \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int64_t* out_len, char** out_strs);
@@ -491,7 +491,7 @@ DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
 * \param handle handle
 * \param buffer_len string buffer length, if buffer_len < out_len, re-allocate buffer
 * \param out_len actual output length
-* \param out_str json format string of model
+* \param out_str json format string of model, need to pre-allocate memory before call this
 * \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,

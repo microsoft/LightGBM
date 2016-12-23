@@ -239,8 +239,8 @@ DllExport const char* LGBM_GetLastError() {
 
 DllExport int LGBM_DatasetCreateFromFile(const char* filename,
   const char* parameters,
-  const DatesetHandle* reference,
-  DatesetHandle* out) {
+  const DatasetHandle* reference,
+  DatasetHandle* out) {
   API_BEGIN();
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
@@ -261,8 +261,8 @@ DllExport int LGBM_DatasetCreateFromMat(const void* data,
   int32_t ncol,
   int is_row_major,
   const char* parameters,
-  const DatesetHandle* reference,
-  DatesetHandle* out) {
+  const DatasetHandle* reference,
+  DatasetHandle* out) {
   API_BEGIN();
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
@@ -313,8 +313,8 @@ DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
   int64_t nelem,
   int64_t num_col,
   const char* parameters,
-  const DatesetHandle* reference,
-  DatesetHandle* out) {
+  const DatasetHandle* reference,
+  DatasetHandle* out) {
   API_BEGIN();
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
@@ -375,8 +375,8 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   int64_t nelem,
   int64_t num_row,
   const char* parameters,
-  const DatesetHandle* reference,
-  DatesetHandle* out) {
+  const DatasetHandle* reference,
+  DatasetHandle* out) {
   API_BEGIN();
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
@@ -417,11 +417,11 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
 }
 
 DllExport int LGBM_DatasetGetSubset(
-  const DatesetHandle* handle,
+  const DatasetHandle* handle,
   const int32_t* used_row_indices,
   int32_t num_used_row_indices,
   const char* parameters,
-  DatesetHandle* out) {
+  DatasetHandle* out) {
   API_BEGIN();
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
@@ -437,7 +437,7 @@ DllExport int LGBM_DatasetGetSubset(
 }
 
 DllExport int LGBM_DatasetSetFeatureNames(
-  DatesetHandle handle,
+  DatasetHandle handle,
   const char** feature_names,
   int64_t num_feature_names) {
   API_BEGIN();
@@ -450,13 +450,13 @@ DllExport int LGBM_DatasetSetFeatureNames(
   API_END();
 }
 
-DllExport int LGBM_DatasetFree(DatesetHandle handle) {
+DllExport int LGBM_DatasetFree(DatasetHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Dataset*>(handle);
   API_END();
 }
 
-DllExport int LGBM_DatasetSaveBinary(DatesetHandle handle,
+DllExport int LGBM_DatasetSaveBinary(DatasetHandle handle,
   const char* filename) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
@@ -464,7 +464,7 @@ DllExport int LGBM_DatasetSaveBinary(DatesetHandle handle,
   API_END();
 }
 
-DllExport int LGBM_DatasetSetField(DatesetHandle handle,
+DllExport int LGBM_DatasetSetField(DatasetHandle handle,
   const char* field_name,
   const void* field_data,
   int64_t num_element,
@@ -481,7 +481,7 @@ DllExport int LGBM_DatasetSetField(DatesetHandle handle,
   API_END();
 }
 
-DllExport int LGBM_DatasetGetField(DatesetHandle handle,
+DllExport int LGBM_DatasetGetField(DatasetHandle handle,
   const char* field_name,
   int64_t* out_len,
   const void** out_ptr,
@@ -501,7 +501,7 @@ DllExport int LGBM_DatasetGetField(DatesetHandle handle,
   API_END();
 }
 
-DllExport int LGBM_DatasetGetNumData(DatesetHandle handle,
+DllExport int LGBM_DatasetGetNumData(DatasetHandle handle,
   int64_t* out) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
@@ -509,7 +509,7 @@ DllExport int LGBM_DatasetGetNumData(DatesetHandle handle,
   API_END();
 }
 
-DllExport int LGBM_DatasetGetNumFeature(DatesetHandle handle,
+DllExport int LGBM_DatasetGetNumFeature(DatasetHandle handle,
   int64_t* out) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
@@ -520,7 +520,7 @@ DllExport int LGBM_DatasetGetNumFeature(DatesetHandle handle,
 
 // ---- start of booster
 
-DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
+DllExport int LGBM_BoosterCreate(const DatasetHandle train_data,
   const char* parameters,
   BoosterHandle* out) {
   API_BEGIN();
@@ -558,7 +558,7 @@ DllExport int LGBM_BoosterMerge(BoosterHandle handle,
 }
 
 DllExport int LGBM_BoosterAddValidData(BoosterHandle handle,
-  const DatesetHandle valid_data) {
+  const DatasetHandle valid_data) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   const Dataset* p_dataset = reinterpret_cast<const Dataset*>(valid_data);
@@ -567,7 +567,7 @@ DllExport int LGBM_BoosterAddValidData(BoosterHandle handle,
 }
 
 DllExport int LGBM_BoosterResetTrainingData(BoosterHandle handle,
-  const DatesetHandle train_data) {
+  const DatasetHandle train_data) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   const Dataset* p_dataset = reinterpret_cast<const Dataset*>(train_data);
