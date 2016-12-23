@@ -27,6 +27,7 @@ def test_template(params = {'objective' : 'regression', 'metric' : 'l2'},
                     num_boost_round=num_round,
                     valid_sets=lgb_eval,
                     valid_names='eval',
+                    verbose_eval=False,
                     feval=custom_eval,
                     evals_result=evals_result,
                     early_stopping_rounds=10,
@@ -98,6 +99,8 @@ class TestBasic(unittest.TestCase):
     def test_cv(self):
         lgb_train, lgb_eval = test_template(return_data=True)
         lgb.cv({'verbose':0}, lgb_train, num_boost_round=200, nfold=5,
-                metrics='l1', verbose_eval=True)
+                metrics='l1', verbose_eval=False)
 
+print("----------------------------------------------------------------------")
+print("running test_engine.py")
 unittest.main()

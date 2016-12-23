@@ -17,7 +17,7 @@ def test_template(X_y=load_boston(True), model=lgb.LGBMRegressor,
                                                         random_state=42)
     if return_data: return X_train, X_test, y_train, y_test
     gbm = model(n_estimators=num_round, objective=custom_obj) if custom_obj else model(n_estimators=num_round)
-    gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=10)
+    gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=10, verbose=False)
     if return_model: return gbm
     else: return feval(y_test, gbm.predict_proba(X_test) if proba else gbm.predict(X_test))
 
@@ -75,4 +75,6 @@ class TestSklearn(unittest.TestCase):
         gbm = test_template(return_model=True)
         gbm_clone = clone(gbm)
 
+print("----------------------------------------------------------------------")
+print("running test_sklearn.py")
 unittest.main()
