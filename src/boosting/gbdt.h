@@ -105,7 +105,7 @@ public:
   * \param out_len length of returned score
   * \return training score
   */
-  virtual const score_t* GetTrainingScore(data_size_t* out_len) override;
+  virtual const score_t* GetTrainingScore(int64_t* out_len) override;
 
   /*!
   * \brief Get prediction result at data_idx data
@@ -113,7 +113,7 @@ public:
   * \param result used to store prediction result, should allocate memory before call this function
   * \param out_len lenght of returned score
   */
-  void GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len) override;
+  void GetPredictAt(int data_idx, score_t* out_result, int64_t* out_len) override;
 
   /*!
   * \brief Prediction for one record without sigmoid transformation

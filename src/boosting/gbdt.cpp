@@ -83,8 +83,9 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
     num_data_ = train_data->num_data();
     // create buffer for gradients and hessians
     if (object_function_ != nullptr) {
-      gradients_.resize(num_data_ * num_class_);
-      hessians_.resize(num_data_ * num_class_);
+      size_t total_size = static_cast<size_t>(num_data_) * num_class_;
+      gradients_.resize(total_size);
+      hessians_.resize(total_size);
     }
     // get max feature index
     max_feature_idx_ = train_data->num_total_features() - 1;
@@ -372,12 +373,12 @@ std::vector<double> GBDT::GetEvalAt(int data_idx) const {
 }
 
 /*! \brief Get training scores result */
-const score_t* GBDT::GetTrainingScore(data_size_t* out_len) {
-  *out_len = train_score_updater_->num_data() * num_class_;
+const score_t* GBDT::GetTrainingScore(int64_t* out_len) {
+  *out_len = static_cast<int64_t>(train_score_updater_->num_data()) * num_class_;
   return train_score_updater_->score();
 }
 
-void GBDT::GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len) {
+void GBDT::GetPredictAt(int data_idx, score_t* out_result, int64_t* out_len) {
   CHECK(data_idx >= 0 && data_idx <= static_cast<int>(valid_metrics_.size()));
 
   const score_t* raw_scores = nullptr;
@@ -389,7 +390,7 @@ void GBDT::GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len)
     auto used_idx = data_idx - 1;
     raw_scores = valid_score_updater_[used_idx]->score();
     num_data = valid_score_updater_[used_idx]->num_data();
-    *out_len = num_data * num_class_;
+    *out_len = static_cast<int64_t>(num_data) * num_class_;
   }
   if (num_class_ > 1) {
 #pragma omp parallel for schedule(static)
@@ -422,7 +423,7 @@ void GBDT::Boosting() {
     Log::Fatal("No object function provided");
   }
   // objective function will calculate gradients and hessians
-  int num_score = 0;
+  int64_t num_score = 0;
   object_function_->
     GetGradients(GetTrainingScore(&num_score), gradients_.data(), hessians_.data());
 }

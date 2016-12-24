@@ -169,7 +169,7 @@ public:
     predictor_.reset(new Predictor(boosting_.get(), is_raw_score, is_predict_leaf));
   }
 
-  void GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len) {
+  void GetPredictAt(int data_idx, score_t* out_result, int64_t* out_len) {
     boosting_->GetPredictAt(data_idx, out_result, out_len);
   }
 
@@ -681,9 +681,7 @@ DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
   float* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  int len = 0;
-  ref_booster->GetPredictAt(data_idx, out_result, &len);
-  *out_len = static_cast<int64_t>(len);
+  ref_booster->GetPredictAt(data_idx, out_result, out_len);
   API_END();
 }
 
