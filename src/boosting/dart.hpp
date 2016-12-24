@@ -148,10 +148,10 @@ private:
           // update training score
           models_[curr_tree]->Shrinkage(-k);
           train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
-          if (!gbdt_config_->uniform_drop) {
-            sum_weight_ -= tree_weight_[curr_tree] * (1.0f / (k + 1.0f));
-            tree_weight_[curr_tree] *= (k / (k + 1.0f));
-          }
+        }
+        if (!gbdt_config_->uniform_drop) {
+          sum_weight_ -= tree_weight_[i] * (1.0f / (k + 1.0f));
+          tree_weight_[i] *= (k / (k + 1.0f));
         }
       }
     } else {
@@ -166,10 +166,10 @@ private:
           // update training score
           models_[curr_tree]->Shrinkage(-k / gbdt_config_->learning_rate);
           train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
-          if (!gbdt_config_->uniform_drop) {
-            sum_weight_ -= tree_weight_[curr_tree] * (1.0f / (k + gbdt_config_->learning_rate));;
-            tree_weight_[curr_tree] *= (k / (k + gbdt_config_->learning_rate));
-          }
+        }
+        if (!gbdt_config_->uniform_drop) {
+          sum_weight_ -= tree_weight_[i] * (1.0f / (k + gbdt_config_->learning_rate));;
+          tree_weight_[i] *= (k / (k + gbdt_config_->learning_rate));
         }
       }
     }
