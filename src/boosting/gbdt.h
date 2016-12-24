@@ -214,9 +214,8 @@ protected:
   /*!
   * \brief Implement bagging logic
   * \param iter Current interation
-  * \param curr_class Current class for multiclass training
   */
-  void Bagging(int iter, const int curr_class);
+  void Bagging(int iter);
   /*!
   * \brief updating score for out-of-bag data.
   *        Data should be update since we may re-bagging data on training
@@ -252,7 +251,7 @@ protected:
   /*! \brief Config of gbdt */
   std::unique_ptr<BoostingConfig> gbdt_config_;
   /*! \brief Tree learner, will use this class to learn trees */
-  std::vector<std::unique_ptr<TreeLearner>> tree_learner_;
+  std::unique_ptr<TreeLearner> tree_learner_;
   /*! \brief Objective function */
   const ObjectiveFunction* object_function_;
   /*! \brief Store and update training data's score */
