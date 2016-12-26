@@ -1,5 +1,10 @@
 This is a page contains all parameters in LightGBM.
 
+***List of other Helpful Links***
+* [Python API Reference](./Python-API.md)
+* [Parameters Tuning](./Parameters-tuning.md)
+
+
 ## Parameter format
 
 The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can be set both in config file and command line. By using command line, parameters should not have spaces before and after ```=```. By using config files, one line can only contain one parameter. you can use ```#``` to comment. If one parameter appears in both command line and config file, LightGBM will use the parameter in command line.
@@ -78,7 +83,7 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
 * ```skip_drop```, default=```0.5```, type=double
   * only used in ```dart```, probability of skipping drop
 * ```max_drop```, default=```50```, type=int
-  * only used in ```dart```, max number of dropped trees on one iteration.
+  * only used in ```dart```, max number of dropped trees on one iteration. ```<=0``` means no limit.
 * ```uniform_drop```, default=```false```, type=bool
   * only used in ```dart```, true if want to use uniform drop
 * ```xgboost_dart_mode```, default=```false```, type=bool
@@ -205,47 +210,6 @@ Following parameters are used for parallel learning, and only used for base(sock
 * ```machine_list_file```, default=```""```, type=string
   * File that list machines for this parallel learning application
   * Each line contains one IP and one port for one machine. The format is ```ip port```, separate by space.
-
-## Tuning Parameters
-
-### Convert parameters from XGBoost
-
-LightGBM uses [leaf-wise](https://github.com/Microsoft/LightGBM/wiki/Features#optimization-in-accuracy) tree growth algorithm. But other popular tools, e.g. XGBoost, use depth-wise tree growth. So LightGBM use ```num_leaves``` to control complexity of tree model, and other tools usually use ```max_depth```. Following table is the correspond between leaves and depths. The relation is ```num_leaves = 2^(max_depth) ```.
-
-| max_depth | num_leaves |
-| --------- | ---------- |
-| 1 | 2 |
-| 2 | 4 |
-| 3 | 8 |
-| 7 | 128 |
-| 10 | 1024 |   
-
-### For faster speed
-
-* Use bagging by set ```bagging_fraction``` and ```bagging_freq``` 
-* Use feature sub-sampling by set ```feature_fraction```
-* Use small ```max_bin```
-* Use ```save_binary``` to speed up data loading in future learning
-* Use parallel learning, refer to [parallel learning guide](./Parallel-Learning-Guide.md).
-
-### For better accuracy
-
-* Use large ```max_bin``` (may slower)
-* Use small ```learning_rate``` with large ```num_iterations```
-* Use large ```num_leave```(may over-fitting)
-* Use bigger training data
-* Try ```dart```
-
-### Deal with over-fitting
-
-* Use small ```max_bin```
-* Use small ```num_leaves```
-* Use ```min_data_in_leaf``` and ```min_sum_hessian_in_leaf```
-* Use bagging by set ```bagging_fraction``` and ```bagging_freq``` 
-* Use feature sub-sampling by set ```feature_fraction```
-* Use bigger training data
-* Try ```lambda_l1```, ```lambda_l2``` and ```min_gain_to_split``` to regularization
-* Try ```max_depth``` to avoid growing deep tree 
 
 ## Others
 

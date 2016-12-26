@@ -3,7 +3,10 @@ This is a quick start guide for LightGBM of cli version.
 Follow the [Installation Guide](./Installation-Guide.md) to install LightGBM first.
 
 ***List of other Helpful Links***
+* [Parameters](./Parameters.md)
+* [Parameters Tuning](./Parameters-tuning.md)
 * [Python Package quick start guide](./Python-intro.md)
+* [Python API Reference](./Python-API.md)
 
 ## Training data format 
 
