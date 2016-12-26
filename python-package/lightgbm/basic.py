@@ -114,10 +114,10 @@ def param_dict_to_str(data):
         return ""
     pairs = []
     for key, val in data.items():
-        if is_str(val) or isinstance(val, (int, float, bool, np.integer, np.float, np.float32)):
-            pairs.append(str(key)+'='+str(val))
-        elif isinstance(val, (list, tuple, set)):
+        if isinstance(val, (list, tuple, set)) or is_numpy_1d_array(val):
             pairs.append(str(key)+'='+','.join(map(str, val)))
+        elif is_str(val) or isinstance(val, (int, float, bool)) or is_numpy_object(val):
+            pairs.append(str(key)+'='+str(val))
         else:
             raise TypeError('Unknown type of parameter:%s, got:%s'
                             % (key, type(val).__name__))

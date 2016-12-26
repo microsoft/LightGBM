@@ -313,7 +313,12 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   GetInt(params, "num_class", &num_class);
   GetInt(params, "drop_seed", &drop_seed);
   GetDouble(params, "drop_rate", &drop_rate);
+  GetDouble(params, "skip_drop", &skip_drop);
+  GetInt(params, "max_drop", &max_drop);
+  GetBool(params, "xgboost_dart_mode", &xgboost_dart_mode);
+  GetBool(params, "uniform_drop", &uniform_drop);
   CHECK(drop_rate <= 1.0 && drop_rate >= 0.0);
+  CHECK(skip_drop <= 1.0 && skip_drop >= 0.0);
   GetTreeLearnerType(params);
   tree_config.Set(params);
 }
