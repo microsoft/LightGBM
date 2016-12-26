@@ -206,6 +206,7 @@ public:
   int early_stopping_round = 0;
   int num_class = 1;
   double drop_rate = 0.1;
+  int max_drop = 50;
   double skip_drop = 0.5;
   bool xgboost_dart_mode = false;
   bool uniform_drop = false;
