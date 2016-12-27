@@ -58,6 +58,14 @@ def is_str(s):
     else:
         return isinstance(s, basestring)
 
+def is_numeric(obj):
+    """Check is a number or not, include numpy number etc."""
+    try:
+        float(obj)
+        return True
+    except:
+        return False
+
 def is_numpy_object(data):
     """Check is numpy object"""
     return type(data).__module__ == np.__name__
@@ -116,7 +124,7 @@ def param_dict_to_str(data):
     for key, val in data.items():
         if isinstance(val, (list, tuple, set)) or is_numpy_1d_array(val):
             pairs.append(str(key)+'='+','.join(map(str, val)))
-        elif is_str(val) or isinstance(val, (int, float, bool)) or is_numpy_object(val):
+        elif is_str(val) or isinstance(val, (int, float, bool)) or is_numeric(val):
             pairs.append(str(key)+'='+str(val))
         else:
             raise TypeError('Unknown type of parameter:%s, got:%s'
