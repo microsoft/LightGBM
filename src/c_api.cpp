@@ -174,7 +174,6 @@ public:
   }
 
   std::vector<double> Predict(const std::vector<std::pair<int, double>>& features) {
-    std::lock_guard<std::mutex> lock(mutex_);
     return predictor_->GetPredictFunction()(features);
   }
 
