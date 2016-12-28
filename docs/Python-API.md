@@ -61,11 +61,6 @@ The methods of each Class is in alphabetical order.
         True if need to free raw data after construct inner dataset
     
 
-####construct()
-
-    Lazy init
-    
-
 ####create_valid(data, label=None, weight=None, group=None, silent=False, params=None)
 
     Create validation data align with current dataset.
@@ -628,6 +623,16 @@ The methods of each Class is in alphabetical order.
         Is unbalance for binary classification
     seed : int
         Random number seed.
+    drop_rate : float
+        Only used when boosting_type='dart'. Probablity to select dropping trees.
+    skip_drop : float
+        Only used when boosting_type='dart'. Probablity to skip dropping trees.
+    max_drop : int
+        Only used when boosting_type='dart'. Max number of dropped trees in one iteration.
+    uniform_drop : bool
+        Only used when boosting_type='dart'. If true, drop trees uniformly, else drop according to weights.
+    xgboost_dart_mode : bool
+        Only used when boosting_type='dart'. Whether use xgboost dart mode.
 
     Note
     ----
@@ -698,7 +703,7 @@ The methods of each Class is in alphabetical order.
         Array of normailized feature importances
     
 
-####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric=None, early_stopping_rounds=None, verbose=True, feature_name=None, categorical_feature=None, other_params=None)
+####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric=None, early_stopping_rounds=None, verbose=True, feature_name=None, categorical_feature=None)
 
     Fit the gradient boosting model.
 
@@ -735,8 +740,6 @@ The methods of each Class is in alphabetical order.
         Categorical features,
         type int represents index,
         type str represents feature names (need to specify feature_name as well)
-    other_params: dict
-        Other parameters
 
     Note
     ----
@@ -762,12 +765,7 @@ The methods of each Class is in alphabetical order.
             is eval result bigger better, e.g. AUC is bigger_better.
     for multi-class task, the y_pred is group by class_id first, then group by row_id
       if you want to get i-th row y_pred in j-th class, the access way is y_pred[j*num_data+i]
-    
 
-####get_params(deep=False)
-
-    Get parameters.
-    
 
 ####predict(data, raw_score=False, num_iteration=0)
 
@@ -809,14 +807,14 @@ The methods of each Class is in alphabetical order.
 
 ###LGBMRanker
 
-####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric='ndcg', eval_at=1, early_stopping_rounds=None, verbose=True, feature_name=None, categorical_feature=None, other_params=None)
+####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric='ndcg', eval_at=1, early_stopping_rounds=None, verbose=True, feature_name=None, categorical_feature=None)
 
     Most arguments are same as Common Methods except:
 
     eval_at : int or list of int, default=1
         The evaulation positions of NDCG
 
-## Callbacks
+##Callbacks
 
 ###Before iteration
 

@@ -16,7 +16,8 @@ def test_template(X_y=load_boston(True), model=lgb.LGBMRegressor,
                                                         stratify=stratify,
                                                         random_state=42)
     if return_data: return X_train, X_test, y_train, y_test
-    gbm = model(n_estimators=num_round, objective=custom_obj) if custom_obj else model(n_estimators=num_round)
+    if not custom_obj: gbm = model(n_estimators=num_round, silent=True)
+    else: gbm = model(n_estimators=num_round, objective=custom_obj, silent=True)
     gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=10, verbose=False)
     if return_model: return gbm
     else: return feval(y_test, gbm.predict_proba(X_test) if proba else gbm.predict(X_test))
@@ -64,12 +65,19 @@ class TestSklearn(unittest.TestCase):
         ret = test_template(X_y, lgb.LGBMClassifier, feval=binary_error, custom_obj=logregobj)
         self.assertLess(ret, 0.1)
 
+    def test_dart(self):
+        X_train, X_test, y_train, y_test = test_template(return_data=True)
+        gbm = lgb.LGBMRegressor(boosting_type='dart')
+        gbm.fit(X_train, y_train)
+        self.assertLessEqual(gbm.score(X_train, y_train), 1.)
+
     def test_grid_search(self):
         X_train, X_test, y_train, y_test = test_template(return_data=True)
-        params = {'n_estimators': [10, 15, 20]}
-        gbm = GridSearchCV(lgb.LGBMRegressor(), params, cv=5)
+        params = {'boosting_type': ['dart', 'gbdt'],
+                  'n_estimators': [15, 20], 'drop_rate':[0.1, 0.2]}
+        gbm = GridSearchCV(lgb.LGBMRegressor(), params, cv=3)
         gbm.fit(X_train, y_train)
-        self.assertIn(gbm.best_params_['n_estimators'], [10, 15, 20])
+        self.assertIn(gbm.best_params_['n_estimators'], [15, 20])
 
     def test_clone(self):
         gbm = test_template(return_model=True)
