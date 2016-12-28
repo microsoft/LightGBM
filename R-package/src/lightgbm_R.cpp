@@ -369,10 +369,9 @@ SEXP LGBM_BoosterGetEval_R(SEXP handle,
   R_API_BEGIN();
   int64_t len;
   CHECK_CALL(LGBM_BoosterGetEvalCounts(R_ExternalPtrAddr(handle), &len));
-  int c_data_idx = static_cast<int>(INTEGER(data_idx)[0]);
   std::vector<float> out_result(len);
   int64_t out_len;
-  CHECK_CALL(LGBM_BoosterGetEval(R_ExternalPtrAddr(handle), c_data_idx, &out_len, out_result.data()));
+  CHECK_CALL(LGBM_BoosterGetEval(R_ExternalPtrAddr(handle), asInteger(data_idx), &out_len, out_result.data()));
   CHECK(out_len == len);
   SEXP ret = PROTECT(allocVector(REALSXP, out_len));
   for (int64_t i = 0; i < out_len; ++i) {
@@ -387,11 +386,10 @@ SEXP LGBM_BoosterGetPredict_R(SEXP handle,
   SEXP data_idx) {
   R_API_BEGIN();
   int64_t len;
-  int c_data_idx = static_cast<int>(INTEGER(data_idx)[0]);
-  CHECK_CALL(LGBM_BoosterGetNumPredict(R_ExternalPtrAddr(handle), c_data_idx, &len));
+  CHECK_CALL(LGBM_BoosterGetNumPredict(R_ExternalPtrAddr(handle), asInteger(data_idx), &len));
   std::vector<float> out_result(len);
   int64_t out_len;
-  CHECK_CALL(LGBM_BoosterGetPredict(R_ExternalPtrAddr(handle), c_data_idx, &out_len, out_result.data()));
+  CHECK_CALL(LGBM_BoosterGetPredict(R_ExternalPtrAddr(handle), asInteger(data_idx), &out_len, out_result.data()));
   CHECK(out_len == len);
   SEXP ret = PROTECT(allocVector(REALSXP, out_len));
 #pragma omp parallel for schedule(static)
@@ -403,84 +401,153 @@ SEXP LGBM_BoosterGetPredict_R(SEXP handle,
   return ret;
 }
 
-/*!
-* \brief make prediction for file
-* \param handle handle
-* \param data_filename filename of data file
-* \param data_has_header data file has header or not
-* \param predict_type
-*          C_API_PREDICT_NORMAL: normal prediction, with transform _R(if needed)
-*          C_API_PREDICT_RAW_SCORE: raw score
-*          C_API_PREDICT_LEAF_INDEX: leaf index
-* \param num_iteration number of iteration for prediction, <= 0 means no limit
-* \param result_filename filename of result file
-* \return R_NilValue
-*/
 SEXP LGBM_BoosterPredictForFile_R(SEXP handle,
   SEXP data_filename,
   SEXP data_has_header,
-  SEXP predict_type,
+  SEXP is_rawscore,
+  SEXP is_leafidx,
   SEXP num_iteration,
-  SEXP result_filename);
+  SEXP result_filename) {
+  R_API_BEGIN();
+  int pred_type = C_API_PREDICT_NORMAL;
+  if (asInteger(is_rawscore)) {
+    pred_type = C_API_PREDICT_RAW_SCORE;
+  }
+  if (asInteger(is_leafidx)) {
+    pred_type = C_API_PREDICT_LEAF_INDEX;
+  }
+  CHECK_CALL(LGBM_BoosterPredictForFile(R_ExternalPtrAddr(handle), CHAR(asChar(data_filename)), 
+    asInteger(data_has_header), pred_type, asInteger(num_iteration),
+    CHAR(asChar(result_filename)) ));
+  R_API_END();
+  return R_NilValue;
+}
 
-/*!
-* \brief make prediction for an new data set
-*        Note:  should pre-allocate memory for out_result,
-*               for noraml and raw score: its length is equal to num_class * num_data
-*               for leaf index, its length is equal to num_class * num_data * num_iteration
-* \param handle handle
-* \param indptr pointer to row headers
-* \param indices findex
-* \param data fvalue
-* \param num_col number of columns
-* \param predict_type
-*          C_API_PREDICT_NORMAL: normal prediction, with transform _R(if needed)
-*          C_API_PREDICT_RAW_SCORE: raw score
-*          C_API_PREDICT_LEAF_INDEX: leaf index
-* \param num_iteration number of iteration for prediction, <= 0 means no limit
-* \return prediction result
-*/
 SEXP LGBM_BoosterPredictForCSR_R(SEXP handle,
   SEXP indptr,
   SEXP indices,
   SEXP data,
   SEXP num_col,
-  SEXP predict_type,
-  SEXP num_iteration);
+  SEXP is_rawscore,
+  SEXP is_leafidx,
+  SEXP num_iteration) {
+  R_API_BEGIN();
+  int pred_type = C_API_PREDICT_NORMAL;
+  if (asInteger(is_rawscore)) {
+    pred_type = C_API_PREDICT_RAW_SCORE;
+  }
+  if (asInteger(is_leafidx)) {
+    pred_type = C_API_PREDICT_LEAF_INDEX;
+  }
 
-/*!
-* \brief make prediction for an new data set
-*        Note:  should pre-allocate memory for out_result,
-*               for noraml and raw score: its length is equal to num_class * num_data
-*               for leaf index, its length is equal to num_class * num_data * num_iteration
-* \param handle handle
-* \param data pointer to the data space
-* \param predict_type
-*          C_API_PREDICT_NORMAL: normal prediction, with transform _R(if needed)
-*          C_API_PREDICT_RAW_SCORE: raw score
-*          C_API_PREDICT_LEAF_INDEX: leaf index
-* \param num_iteration number of iteration for prediction, <= 0 means no limit
-* \return prediction result
-*/
+  const int* p_indptr = INTEGER(indptr);
+  const int* p_indices = INTEGER(indices);
+  const double* p_data = REAL(data);
+
+  int64_t nindptr = static_cast<int64_t>(length(indptr));
+  int64_t ndata = static_cast<int64_t>(length(data));
+  int64_t ncol = static_cast<int64_t>(INTEGER(num_col)[0]);
+  int64_t nrow = nindptr - 1;
+  int64_t len = nrow;
+  int num_class = asInteger(LGBM_BoosterGetNumClasses_R(handle));
+  len *= num_class;
+  if (pred_type == C_API_PREDICT_LEAF_INDEX) {
+    int num_iter = asInteger(num_iteration);
+    if (num_iter <= 0) {
+      num_iter = asInteger(LGBM_BoosterGetCurrentIteration_R(handle));
+    }
+    len *= num_iter;
+  }
+  std::vector<float> out_result(len);
+  int64_t out_len;
+
+  CHECK_CALL(LGBM_BoosterPredictForCSR(R_ExternalPtrAddr(handle),
+    p_indptr, C_API_DTYPE_INT32, p_indices,
+    p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
+    ncol, pred_type, asInteger(num_iteration), &out_len, out_result.data()));
+
+  SEXP ret = PROTECT(allocVector(REALSXP, out_len));
+
+#pragma omp parallel for schedule(static)
+  for (int64_t i = 0; i < out_len; ++i) {
+    REAL(ret)[i] = out_result[i];
+  }
+
+  R_API_END();
+  UNPROTECT(1);
+  return ret;
+}
+
 SEXP LGBM_BoosterPredictForMat_R(SEXP handle,
-  SEXP data,
-  SEXP predict_type,
-  SEXP num_iteration);
+  SEXP mat,
+  SEXP is_rawscore,
+  SEXP is_leafidx,
+  SEXP num_iteration) {
+  R_API_BEGIN();
+  int pred_type = C_API_PREDICT_NORMAL;
+  if (asInteger(is_rawscore)) {
+    pred_type = C_API_PREDICT_RAW_SCORE;
+  }
+  if (asInteger(is_leafidx)) {
+    pred_type = C_API_PREDICT_LEAF_INDEX;
+  }
 
-/*!
-* \brief save model into file
-* \param handle handle
-* \param num_iteration, <= 0 means save all
-* \param filename file name
-* \return R_NilValue
-*/
+  SEXP dim = getAttrib(mat, R_DimSymbol);
+  int32_t nrow = static_cast<int32_t>(INTEGER(dim)[0]);
+  int32_t ncol = static_cast<int32_t>(INTEGER(dim)[1]);
+  double* p_mat = REAL(mat);
+
+  int num_class = asInteger(LGBM_BoosterGetNumClasses_R(handle));
+
+  len *= num_class;
+  if (pred_type == C_API_PREDICT_LEAF_INDEX) {
+    int num_iter = asInteger(num_iteration);
+    if (num_iter <= 0) {
+      num_iter = asInteger(LGBM_BoosterGetCurrentIteration_R(handle));
+    }
+    len *= num_iter;
+  }
+
+  std::vector<float> out_result(len);
+  int64_t out_len;
+
+  CHECK_CALL(LGBM_BoosterPredictForMat(R_ExternalPtrAddr(handle),
+    p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, 1,
+    pred_type, asInteger(num_iteration), &out_len, out_result.data()));
+
+  SEXP ret = PROTECT(allocVector(REALSXP, out_len));
+
+#pragma omp parallel for schedule(static)
+  for (int64_t i = 0; i < out_len; ++i) {
+    REAL(ret)[i] = out_result[i];
+  }
+
+  R_API_END();
+  UNPROTECT(1);
+  return ret;
+}
+
 SEXP LGBM_BoosterSaveModel_R(SEXP handle,
   SEXP num_iteration,
-  SEXP filename);
+  SEXP filename) {
+  R_API_BEGIN();
+  CHECK_CALL(LGBM_BoosterSaveModel(R_ExternalPtrAddr(handle), asInteger(num_iteration), CHAR(asChar(filename))));
+  R_API_END();
+  return R_NilValue;
+}
 
-/*!
-* \brief dump model to json
-* \param handle handle
-* \return json format string of model
-*/
-SEXP LGBM_BoosterDumpModel_R(SEXP handle);
+SEXP LGBM_BoosterDumpModel_R(SEXP handle) {
+  R_API_BEGIN();
+  std::unique_ptr<char[]> buf;
+  int buffer_len = 1024 * 1024;
+  buf.reset(new char[buffer_len]);
+  int64_t out_len = 0;
+  CHECK_CALL(LGBM_BoosterDumpModel(R_ExternalPtrAddr(handle), buffer_len, &out_len, buf.get()));
+  if (out_len > buffer_len) {
+    buffer_len = out_len;
+    buf.reset(new char[buffer_len]);
+    CHECK_CALL(LGBM_BoosterDumpModel(R_ExternalPtrAddr(handle), buffer_len, &out_len, buf.get()));
+  }
+  R_API_END();
+  return mkChar(buf.get());
+}

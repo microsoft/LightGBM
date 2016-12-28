@@ -251,10 +251,8 @@ DllExport SEXP LGBM_BoosterGetPredict_R(SEXP handle,
 * \param handle handle
 * \param data_filename filename of data file
 * \param data_has_header data file has header or not
-* \param predict_type
-*          C_API_PREDICT_NORMAL: normal prediction, with transform _R(if needed)
-*          C_API_PREDICT_RAW_SCORE: raw score
-*          C_API_PREDICT_LEAF_INDEX: leaf index
+* \param is_rawscore
+* \param is_leafidx
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
 * \param result_filename filename of result file
 * \return R_NilValue
@@ -262,7 +260,8 @@ DllExport SEXP LGBM_BoosterGetPredict_R(SEXP handle,
 DllExport SEXP LGBM_BoosterPredictForFile_R(SEXP handle,
   SEXP data_filename,
   SEXP data_has_header,
-  SEXP predict_type,
+  SEXP is_rawscore,
+  SEXP is_leafidx,
   SEXP num_iteration,
   SEXP result_filename);
 
@@ -276,10 +275,8 @@ DllExport SEXP LGBM_BoosterPredictForFile_R(SEXP handle,
 * \param indices findex
 * \param data fvalue
 * \param num_col number of columns
-* \param predict_type
-*          C_API_PREDICT_NORMAL: normal prediction, with transform _R(if needed)
-*          C_API_PREDICT_RAW_SCORE: raw score
-*          C_API_PREDICT_LEAF_INDEX: leaf index
+* \param is_rawscore
+* \param is_leafidx
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
 * \return prediction result
 */
@@ -288,7 +285,8 @@ DllExport SEXP LGBM_BoosterPredictForCSR_R(SEXP handle,
   SEXP indices,
   SEXP data,
   SEXP num_col,
-  SEXP predict_type,
+  SEXP is_rawscore,
+  SEXP is_leafidx,
   SEXP num_iteration);
 
 /*!
@@ -298,16 +296,15 @@ DllExport SEXP LGBM_BoosterPredictForCSR_R(SEXP handle,
 *               for leaf index, its length is equal to num_class * num_data * num_iteration
 * \param handle handle
 * \param data pointer to the data space
-* \param predict_type
-*          C_API_PREDICT_NORMAL: normal prediction, with transform _R(if needed)
-*          C_API_PREDICT_RAW_SCORE: raw score
-*          C_API_PREDICT_LEAF_INDEX: leaf index
+* \param is_rawscore
+* \param is_leafidx
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
 * \return prediction result
 */
 DllExport SEXP LGBM_BoosterPredictForMat_R(SEXP handle,
   SEXP data,
-  SEXP predict_type,
+  SEXP is_rawscore,
+  SEXP is_leafidx,
   SEXP num_iteration);
 
 /*!
