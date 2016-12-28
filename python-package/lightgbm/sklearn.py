@@ -268,8 +268,7 @@ class LGBMModel(LGBMModelBase):
             eval_init_score=None, eval_group=None,
             eval_metric=None,
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None,
-            other_params=None):
+            feature_name=None, categorical_feature=None):
         """
         Fit the gradient boosting model
 
@@ -336,9 +335,10 @@ class LGBMModel(LGBMModelBase):
         evals_result = {}
         params = self.get_params()
         params['verbose'] = 0 if self.silent else 1
-
-        if other_params is not None:
-            params.update(other_params)
+        if hasattr(self, 'num_class') and self.num_class > 2:
+            params['num_class'] = self.num_class
+        if hasattr(self, 'ndcg_eval_at'):
+            params['ndcg_eval_at'] = self.ndcg_eval_at
 
         if self.fobj:
             params["objective"] = "None"
@@ -466,14 +466,12 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
             eval_init_score=None,
             eval_metric="l2",
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None,
-            other_params=None):
+            feature_name=None, categorical_feature=None):
 
         super(LGBMRegressor, self).fit(X, y, sample_weight, init_score, None,
                                        eval_set, eval_sample_weight, eval_init_score, None,
                                        eval_metric, early_stopping_rounds,
-                                       verbose, feature_name, categorical_feature,
-                                       other_params)
+                                       verbose, feature_name, categorical_feature)
         return self
 
 class LGBMClassifier(LGBMModel, LGBMClassifierBase):
@@ -499,17 +497,13 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
             eval_init_score=None,
             eval_metric="binary_logloss",
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None,
-            other_params=None):
+            feature_name=None, categorical_feature=None):
 
         self.classes_ = np.unique(y)
-        self.n_classes_ = len(self.classes_)
-        if other_params is None:
-            other_params = {}
-        if self.n_classes_ > 2:
+        self.num_class = len(self.classes_)
+        if self.num_class > 2:
             # Switch to using a multiclass objective in the underlying LGBM instance
             self.objective = "multiclass"
-            other_params['num_class'] = self.n_classes_
             if eval_set is not None and eval_metric == "binary_logloss":
                 eval_metric = "multi_logloss"
 
@@ -522,8 +516,7 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
         super(LGBMClassifier, self).fit(X, training_labels, sample_weight, init_score, None,
                                         eval_set, eval_sample_weight, eval_init_score, None,
                                         eval_metric, early_stopping_rounds,
-                                        verbose, feature_name, categorical_feature,
-                                        other_params)
+                                        verbose, feature_name, categorical_feature)
         return self
 
     def predict(self, data, raw_score=False, num_iteration=0):
@@ -556,7 +549,7 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
         class_probs = self.booster().predict(data,
                                              raw_score=raw_score,
                                              num_iteration=num_iteration)
-        if self.n_classes_ > 2:
+        if self.num_class > 2:
             return class_probs
         else:
             classone_probs = class_probs
@@ -610,13 +603,11 @@ class LGBMRanker(LGBMModel):
                         raise ValueError("Should set group for all eval dataset for ranking task")
 
         if eval_at is not None:
-            other_params = {} if other_params is None else other_params
             if isinstance(eval_at, int):
                 eval_at = [eval_at]
-            other_params['ndcg_eval_at'] = list(eval_at)
+            self.ndcg_eval_at = list(eval_at)
         super(LGBMRanker, self).fit(X, y, sample_weight, init_score, group,
                                     eval_set, eval_sample_weight, eval_init_score, eval_group,
                                     eval_metric, early_stopping_rounds,
-                                    verbose, feature_name, categorical_feature,
-                                    other_params)
+                                    verbose, feature_name, categorical_feature)
         return self
