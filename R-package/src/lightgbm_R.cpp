@@ -138,7 +138,7 @@ SEXP LGBM_DatasetSetFeatureNames_R(SEXP handle,
   return R_NilValue;
 }
 
-DllExport SEXP LGBM_DatasetSaveBinary_R(SEXP handle,
+SEXP LGBM_DatasetSaveBinary_R(SEXP handle,
   SEXP filename) {
   R_API_BEGIN();
   CHECK_CALL(LGBM_DatasetSaveBinary(R_ExternalPtrAddr(handle),
@@ -147,7 +147,7 @@ DllExport SEXP LGBM_DatasetSaveBinary_R(SEXP handle,
   return R_NilValue;
 }
 
-DllExport SEXP LGBM_DatasetSetField_R(SEXP handle,
+SEXP LGBM_DatasetSetField_R(SEXP handle,
   SEXP field_name,
   SEXP field_data) {
   R_API_BEGIN();
@@ -172,7 +172,7 @@ DllExport SEXP LGBM_DatasetSetField_R(SEXP handle,
   return R_NilValue;
 }
 
-DllExport SEXP LGBM_DatasetGetField_R(SEXP handle,
+SEXP LGBM_DatasetGetField_R(SEXP handle,
   SEXP field_name) {
   R_API_BEGIN();
   const char *name = CHAR(asChar(field_name));
@@ -201,7 +201,7 @@ DllExport SEXP LGBM_DatasetGetField_R(SEXP handle,
   return ret;
 }
 
-DllExport SEXP LGBM_DatasetGetNumData_R(SEXP handle) {
+SEXP LGBM_DatasetGetNumData_R(SEXP handle) {
   int64_t nrow;
   R_API_BEGIN();
   CHECK_CALL(LGBM_DatasetGetNumData(R_ExternalPtrAddr(handle), &nrow));
@@ -209,7 +209,7 @@ DllExport SEXP LGBM_DatasetGetNumData_R(SEXP handle) {
   return ScalarInteger(static_cast<int>(nrow));
 }
 
-DllExport SEXP LGBM_DatasetGetNumFeature_R(SEXP handle) {
+SEXP LGBM_DatasetGetNumFeature_R(SEXP handle) {
   int64_t nfeature;
   R_API_BEGIN();
   CHECK_CALL(LGBM_DatasetGetNumFeature(R_ExternalPtrAddr(handle), &nfeature));
@@ -225,7 +225,7 @@ DllExport SEXP LGBM_DatasetGetNumFeature_R(SEXP handle) {
 * \param parameters format: 'key1=value1 key2=value2'
 * \return out created Booster
 */
-DllExport SEXP LGBM_BoosterCreate_R(SEXP train_data,
+SEXP LGBM_BoosterCreate_R(SEXP train_data,
   SEXP parameters);
 
 /*!
@@ -233,7 +233,7 @@ DllExport SEXP LGBM_BoosterCreate_R(SEXP train_data,
 * \param filename filename of model
 * \return handle of created Booster
 */
-DllExport SEXP LGBM_BoosterCreateFromModelfile_R(SEXP filename);
+SEXP LGBM_BoosterCreateFromModelfile_R(SEXP filename);
 
 /*!
 * \brief Merge model in two booster to first handle
@@ -241,7 +241,7 @@ DllExport SEXP LGBM_BoosterCreateFromModelfile_R(SEXP filename);
 * \param other_handle
 * \return R_NilValue
 */
-DllExport SEXP LGBM_BoosterMerge_R(SEXP handle,
+SEXP LGBM_BoosterMerge_R(SEXP handle,
   SEXP other_handle);
 
 /*!
@@ -250,7 +250,7 @@ DllExport SEXP LGBM_BoosterMerge_R(SEXP handle,
 * \param valid_data validation data set
 * \return R_NilValue
 */
-DllExport SEXP LGBM_BoosterAddValidData_R(SEXP handle,
+SEXP LGBM_BoosterAddValidData_R(SEXP handle,
   SEXP valid_data);
 
 /*!
@@ -259,7 +259,7 @@ DllExport SEXP LGBM_BoosterAddValidData_R(SEXP handle,
 * \param train_data training data set
 * \return R_NilValue
 */
-DllExport SEXP LGBM_BoosterResetTrainingData_R(SEXP handle,
+SEXP LGBM_BoosterResetTrainingData_R(SEXP handle,
   SEXP train_data);
 
 /*!
@@ -268,21 +268,21 @@ DllExport SEXP LGBM_BoosterResetTrainingData_R(SEXP handle,
 * \param parameters format: 'key1=value1 key2=value2'
 * \return R_NilValue
 */
-DllExport SEXP LGBM_BoosterResetParameter_R(SEXP handle, SEXP parameters);
+SEXP LGBM_BoosterResetParameter_R(SEXP handle, SEXP parameters);
 
 /*!
 * \brief Get number of class
 * \param handle handle
 * \return number of classes
 */
-DllExport SEXP LGBM_BoosterGetNumClasses_R(SEXP handle);
+SEXP LGBM_BoosterGetNumClasses_R(SEXP handle);
 
 /*!
 * \brief update the model in one round
 * \param handle handle
 * \return bool, true means finished
 */
-DllExport SEXP LGBM_BoosterUpdateOneIter_R(SEXP handle);
+SEXP LGBM_BoosterUpdateOneIter_R(SEXP handle);
 
 /*!
 * \brief update the model, by directly specify gradient and second order gradient,
@@ -292,7 +292,7 @@ DllExport SEXP LGBM_BoosterUpdateOneIter_R(SEXP handle);
 * \param hess second order gradient statistics
 * \return bool, true means finished
 */
-DllExport SEXP LGBM_BoosterUpdateOneIterCustom_R(SEXP handle,
+SEXP LGBM_BoosterUpdateOneIterCustom_R(SEXP handle,
   SEXP grad,
   SEXP hess);
 
@@ -301,25 +301,25 @@ DllExport SEXP LGBM_BoosterUpdateOneIterCustom_R(SEXP handle,
 * \param handle handle
 * \return R_NilValue
 */
-DllExport SEXP LGBM_BoosterRollbackOneIter_R(SEXP handle);
+SEXP LGBM_BoosterRollbackOneIter_R(SEXP handle);
 
 /*!
 * \brief Get iteration of current boosting rounds
 * \return iteration of boosting rounds
 */
-DllExport SEXP LGBM_BoosterGetCurrentIteration_R(SEXP handle);
+SEXP LGBM_BoosterGetCurrentIteration_R(SEXP handle);
 
 /*!
 * \brief Get number of eval
 * \return total number of eval results
 */
-DllExport SEXP LGBM_BoosterGetEvalCounts_R(SEXP handle);
+SEXP LGBM_BoosterGetEvalCounts_R(SEXP handle);
 
 /*!
 * \brief Get Name of eval
 * \return out_strs names of eval result
 */
-DllExport SEXP LGBM_BoosterGetEvalNames_R(SEXP handle);
+SEXP LGBM_BoosterGetEvalNames_R(SEXP handle);
 
 /*!
 * \brief get evaluation for training data and validation data
@@ -327,7 +327,7 @@ DllExport SEXP LGBM_BoosterGetEvalNames_R(SEXP handle);
 * \param data_idx 0:training data, 1: 1st valid data, 2:2nd valid data ...
 * \return float arrary contains result
 */
-DllExport SEXP LGBM_BoosterGetEval_R(SEXP handle,
+SEXP LGBM_BoosterGetEval_R(SEXP handle,
   SEXP data_idx);
 
 /*!
@@ -337,7 +337,7 @@ this can be used to support customized eval function
 * \param data_idx 0:training data, 1: 1st valid data, 2:2nd valid data ...
 * \return prediction result
 */
-DllExport SEXP LGBM_BoosterGetPredict_R(SEXP handle,
+SEXP LGBM_BoosterGetPredict_R(SEXP handle,
   SEXP data_idx);
 
 /*!
@@ -353,7 +353,7 @@ DllExport SEXP LGBM_BoosterGetPredict_R(SEXP handle,
 * \param result_filename filename of result file
 * \return R_NilValue
 */
-DllExport SEXP LGBM_BoosterPredictForFile_R(SEXP handle,
+SEXP LGBM_BoosterPredictForFile_R(SEXP handle,
   SEXP data_filename,
   SEXP data_has_header,
   SEXP predict_type,
@@ -377,7 +377,7 @@ DllExport SEXP LGBM_BoosterPredictForFile_R(SEXP handle,
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
 * \return prediction result
 */
-DllExport SEXP LGBM_BoosterPredictForCSR_R(SEXP handle,
+SEXP LGBM_BoosterPredictForCSR_R(SEXP handle,
   SEXP indptr,
   SEXP indices,
   SEXP data,
@@ -399,7 +399,7 @@ DllExport SEXP LGBM_BoosterPredictForCSR_R(SEXP handle,
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
 * \return prediction result
 */
-DllExport SEXP LGBM_BoosterPredictForMat_R(SEXP handle,
+SEXP LGBM_BoosterPredictForMat_R(SEXP handle,
   SEXP data,
   SEXP predict_type,
   SEXP num_iteration);
@@ -411,7 +411,7 @@ DllExport SEXP LGBM_BoosterPredictForMat_R(SEXP handle,
 * \param filename file name
 * \return R_NilValue
 */
-DllExport SEXP LGBM_BoosterSaveModel_R(SEXP handle,
+SEXP LGBM_BoosterSaveModel_R(SEXP handle,
   SEXP num_iteration,
   SEXP filename);
 
@@ -420,4 +420,4 @@ DllExport SEXP LGBM_BoosterSaveModel_R(SEXP handle,
 * \param handle handle
 * \return json format string of model
 */
-DllExport SEXP LGBM_BoosterDumpModel_R(SEXP handle);
+SEXP LGBM_BoosterDumpModel_R(SEXP handle);
