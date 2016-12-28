@@ -927,6 +927,12 @@ class Dataset(object):
         ret._set_predictor(self._predictor)
         return ret
 
+    def _update_params(self, params):
+        if not self.params:
+            self.params = params
+        else:
+            self.params.update(params)
+
     def construct(self):
         """
         Lazy init
