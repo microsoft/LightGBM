@@ -10,9 +10,8 @@ namespace LightGBM {
 Metadata::Metadata() {
 }
 
-void Metadata::Init(const char * data_filename, const int num_class) {
+void Metadata::Init(const char * data_filename) {
   data_filename_ = data_filename;
-  num_class_ = num_class;
   // for lambdarank, it needs query data for partition data in parallel learning
   LoadQueryBoundaries();
   LoadWeights();
@@ -20,15 +19,11 @@ void Metadata::Init(const char * data_filename, const int num_class) {
   LoadInitialScore();
 }
 
-
-
 Metadata::~Metadata() {
 }
 
-
-void Metadata::Init(data_size_t num_data, int num_class, int weight_idx, int query_idx) {
+void Metadata::Init(data_size_t num_data, int weight_idx, int query_idx) {
   num_data_ = num_data;
-  num_class_ = num_class;
   label_ = std::vector<float>(num_data_);
   if (weight_idx >= 0) {
     if (!weights_.empty()) {
@@ -52,7 +47,6 @@ void Metadata::Init(data_size_t num_data, int num_class, int weight_idx, int que
 
 void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, data_size_t num_used_indices) {
   num_data_ = num_used_indices;
-  num_class_ = fullset.num_class_;
 
   label_ = std::vector<float>(num_used_indices);
   for (data_size_t i = 0; i < num_used_indices; i++) {
@@ -70,10 +64,13 @@ void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, da
   }
 
   if (!fullset.init_score_.empty()) {
-    init_score_ = std::vector<float>(num_used_indices);
-    num_init_score_ = num_used_indices;
-    for (data_size_t i = 0; i < num_used_indices; i++) {
-      init_score_[i] = fullset.init_score_[used_indices[i]];
+    int num_class = static_cast<int>(fullset.num_init_score_) / fullset.num_data_;
+    init_score_ = std::vector<float>(num_used_indices*num_class);
+    num_init_score_ = num_used_indices*num_class;
+    for (int k = 0; k < num_class; ++k) {
+      for (data_size_t i = 0; i < num_used_indices; i++) {
+        init_score_[k*num_data_ + i] = fullset.init_score_[k* fullset.num_data_ + used_indices[i]];
+      }
     }
   } else {
     num_init_score_ = 0;
@@ -168,7 +165,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     }
 
     // contain initial score file
-    if (!init_score_.empty() && num_init_score_ != num_data_) {
+    if (!init_score_.empty() && (num_init_score_ % num_data_) != 0) {
       init_score_.clear();
       num_init_score_ = 0;
       Log::Fatal("Initial score size doesn't match data size");
@@ -189,7 +186,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     }
 
     // contain initial score file
-    if (!init_score_.empty() && num_init_score_ != num_all_data) {
+    if (!init_score_.empty() && (num_init_score_ % num_all_data) != 0) {
       init_score_.clear();
       num_init_score_ = 0;
       Log::Fatal("Initial score size doesn't match data size");
@@ -242,9 +239,10 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     // get local initial scores
     if (!init_score_.empty()) {
       auto old_scores = init_score_;
-      num_init_score_ = num_data_;
-      init_score_ = std::vector<float>(num_init_score_ * num_class_);
-      for (int k = 0; k < num_class_; ++k){
+      int num_class = num_init_score_ / num_all_data;
+      num_init_score_ = num_data_ * num_class;
+      init_score_ = std::vector<float>(num_init_score_);
+      for (int k = 0; k < num_class; ++k){
         for (size_t i = 0; i < used_data_indices.size(); ++i) {
           init_score_[k * num_data_ + i] = old_scores[k * num_all_data + used_data_indices[i]];
         }
@@ -266,11 +264,11 @@ void Metadata::SetInitScore(const float* init_score, data_size_t len) {
     num_init_score_ = 0;
     return;
   }
-  if (len != num_data_ * num_class_) {
+  if ((len % num_data_) != 0) {
     Log::Fatal("Initial score size doesn't match data size");
   }
   if (!init_score_.empty()) { init_score_.clear(); }
-  num_init_score_ = num_data_;
+  num_init_score_ = len;
   init_score_ = std::vector<float>(len);
   for (data_size_t i = 0; i < len; ++i) {
     init_score_[i] = init_score[i];
@@ -410,28 +408,32 @@ void Metadata::LoadInitialScore() {
     return;
   }
   Log::Info("Loading initial scores...");
-  num_init_score_ = static_cast<data_size_t>(reader.Lines().size());
 
-  init_score_ = std::vector<float>(num_init_score_ * num_class_);
+  // use first line to count number class
+  int num_class = static_cast<int>(Common::Split(reader.Lines()[0].c_str(), '\t').size());
+  data_size_t num_line = static_cast<data_size_t>(reader.Lines().size());
+  num_init_score_ = static_cast<data_size_t>(num_line * num_class);
+
+  init_score_ = std::vector<float>(num_init_score_);
   double tmp = 0.0f;
 
-  if (num_class_ == 1){
-      for (data_size_t i = 0; i < num_init_score_; ++i) {
-        Common::Atof(reader.Lines()[i].c_str(), &tmp);
-        init_score_[i] = static_cast<float>(tmp);
-      }
+  if (num_class == 1) {
+    for (data_size_t i = 0; i < num_line; ++i) {
+      Common::Atof(reader.Lines()[i].c_str(), &tmp);
+      init_score_[i] = static_cast<float>(tmp);
+    }
   } else {
-      std::vector<std::string> oneline_init_score;
-      for (data_size_t i = 0; i < num_init_score_; ++i) {
-        oneline_init_score = Common::Split(reader.Lines()[i].c_str(), '\t');
-        if (static_cast<int>(oneline_init_score.size()) != num_class_){
-            Log::Fatal("Invalid initial score file. Redundant or insufficient columns.");
-        }
-        for (int k = 0; k < num_class_; ++k) {
-          Common::Atof(oneline_init_score[k].c_str(), &tmp);
-          init_score_[k * num_init_score_ + i] = static_cast<float>(tmp);
-        }
+    std::vector<std::string> oneline_init_score;
+    for (data_size_t i = 0; i < num_line; ++i) {
+      oneline_init_score = Common::Split(reader.Lines()[i].c_str(), '\t');
+      if (static_cast<int>(oneline_init_score.size()) != num_class) {
+        Log::Fatal("Invalid initial score file. Redundant or insufficient columns.");
       }
+      for (int k = 0; k < num_class; ++k) {
+        Common::Atof(oneline_init_score[k].c_str(), &tmp);
+        init_score_[k * num_line + i] = static_cast<float>(tmp);
+      }
+    }
   }
 }
 

@@ -24,7 +24,7 @@ std::unordered_map<std::string, std::string> ConfigBase::Str2Map(const char* par
         continue;
       }
       params[key] = value;
-    } else if(Common::Trim(arg).size() > 0){
+    } else if (Common::Trim(arg).size() > 0) {
       Log::Warning("Unknown parameter %s", arg.c_str());
     }
   }
@@ -62,14 +62,11 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
 
   if (io_config.verbosity == 1) {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);
-  }
-  else if (io_config.verbosity == 0) {
+  } else if (io_config.verbosity == 0) {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Warning);
-  }
-  else if (io_config.verbosity >= 2) {
+  } else if (io_config.verbosity >= 2) {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Debug);
-  }
-  else {
+  } else {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
   }
 }
@@ -141,22 +138,21 @@ void OverallConfig::CheckParamConflict() {
   // check if objective_type, metric_type, and num_class match
   bool objective_type_multiclass = (objective_type == std::string("multiclass"));
   int num_class_check = boosting_config.num_class;
-  if (objective_type_multiclass){
-      if (num_class_check <= 1){
-          Log::Fatal("Number of classes should be specified and greater than 1 for multiclass training");
-      }
+  if (objective_type_multiclass) {
+    if (num_class_check <= 2) {
+      Log::Fatal("Number of classes should be specified and greater than 2 for multiclass training");
+    }
+  } else {
+    if (task_type == TaskType::kTrain && num_class_check != 1) {
+      Log::Fatal("Number of classes must be 1 for non-multiclass training");
+    }
   }
-  else {
-      if (task_type == TaskType::kTrain && num_class_check != 1){
-          Log::Fatal("Number of classes must be 1 for non-multiclass training");
-      }
-  }
-  for (std::string metric_type : metric_types){
-        bool metric_type_multiclass = ( metric_type == std::string("multi_logloss") || metric_type == std::string("multi_error"));
-        if ((objective_type_multiclass && !metric_type_multiclass)
-            || (!objective_type_multiclass && metric_type_multiclass)){
-            Log::Fatal("Objective and metrics don't match");
-        }
+  for (std::string metric_type : metric_types) {
+    bool metric_type_multiclass = (metric_type == std::string("multi_logloss") || metric_type == std::string("multi_error"));
+    if ((objective_type_multiclass && !metric_type_multiclass)
+      || (!objective_type_multiclass && metric_type_multiclass)) {
+      Log::Fatal("Objective and metrics don't match");
+    }
   }
 
   if (network_config.num_machines > 1) {
@@ -178,7 +174,7 @@ void OverallConfig::CheckParamConflict() {
     is_parallel_find_bin = true;
     if (boosting_config.tree_config.histogram_pool_size >= 0) {
       Log::Warning("Histogram LRU queue was enabled (histogram_pool_size=%f). Will disable this to reduce communication costs"
-                 , boosting_config.tree_config.histogram_pool_size);
+        , boosting_config.tree_config.histogram_pool_size);
       // Change pool size to -1 (not limit) when using data parallel to reduce communication costs
       boosting_config.tree_config.histogram_pool_size = -1;
     }
@@ -278,11 +274,11 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   CHECK(min_sum_hessian_in_leaf > 1.0f || min_data_in_leaf > 0);
   GetDouble(params, "lambda_l1", &lambda_l1);
   CHECK(lambda_l1 >= 0.0f)
-  GetDouble(params, "lambda_l2", &lambda_l2);
+    GetDouble(params, "lambda_l2", &lambda_l2);
   CHECK(lambda_l2 >= 0.0f)
-  GetDouble(params, "min_gain_to_split", &min_gain_to_split);
+    GetDouble(params, "min_gain_to_split", &min_gain_to_split);
   CHECK(min_gain_to_split >= 0.0f)
-  GetInt(params, "num_leaves", &num_leaves);
+    GetInt(params, "num_leaves", &num_leaves);
   CHECK(num_leaves > 1);
   GetInt(params, "feature_fraction_seed", &feature_fraction_seed);
   GetDouble(params, "feature_fraction", &feature_fraction);

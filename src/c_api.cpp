@@ -245,7 +245,7 @@ DllExport int LGBM_DatasetCreateFromFile(const char* filename,
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
   io_config.Set(param);
-  DatasetLoader loader(io_config, nullptr, filename);
+  DatasetLoader loader(io_config, nullptr, 1, filename);
   if (reference == nullptr) {
     *out = loader.LoadFromFile(filename);
   } else {
@@ -284,10 +284,10 @@ DllExport int LGBM_DatasetCreateFromMat(const void* data,
         }
       }
     }
-    DatasetLoader loader(io_config, nullptr, nullptr);
+    DatasetLoader loader(io_config, nullptr, 1, nullptr);
     ret.reset(loader.CostructFromSampleData(sample_values, sample_cnt, nrow));
   } else {
-    ret.reset(new Dataset(nrow, io_config.num_class));
+    ret.reset(new Dataset(nrow));
     ret->CopyFeatureMapperFrom(
       reinterpret_cast<const Dataset*>(reference),
       io_config.is_enable_sparse);
@@ -346,10 +346,10 @@ DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
       }
     }
     CHECK(num_col >= static_cast<int>(sample_values.size()));
-    DatasetLoader loader(io_config, nullptr, nullptr);
+    DatasetLoader loader(io_config, nullptr, 1, nullptr);
     ret.reset(loader.CostructFromSampleData(sample_values, sample_cnt, nrow));
   } else {
-    ret.reset(new Dataset(nrow, io_config.num_class));
+    ret.reset(new Dataset(nrow));
     ret->CopyFeatureMapperFrom(
       reinterpret_cast<const Dataset*>(reference),
       io_config.is_enable_sparse);
@@ -396,10 +396,10 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
       auto cur_col = get_col_fun(i);
       sample_values[i] = SampleFromOneColumn(cur_col, sample_indices);
     }
-    DatasetLoader loader(io_config, nullptr, nullptr);
+    DatasetLoader loader(io_config, nullptr, 1, nullptr);
     ret.reset(loader.CostructFromSampleData(sample_values, sample_cnt, nrow));
   } else {
-    ret.reset(new Dataset(nrow, io_config.num_class));
+    ret.reset(new Dataset(nrow));
     ret->CopyFeatureMapperFrom(
       reinterpret_cast<const Dataset*>(reference),
       io_config.is_enable_sparse);

@@ -43,9 +43,8 @@ public:
   * \brief Initialization will load qurey level informations, since it is need for sampling data
   * \param data_filename Filename of data
   * \param init_score_filename Filename of initial score
-  * \param num_class Number of classes
   */
-  void Init(const char* data_filename, const int num_class);
+  void Init(const char* data_filename);
   /*!
   * \brief init as subset
   * \param metadata Filename of data
@@ -64,11 +63,10 @@ public:
   /*!
   * \brief Initial work, will allocate space for label, weight(if exists) and query(if exists)
   * \param num_data Number of training data
-  * \param num_class Number of classes
   * \param weight_idx Index of weight column, < 0 means doesn't exists
   * \param query_idx Index of query id column, < 0 means doesn't exists
   */
-  void Init(data_size_t num_data, int num_class, int weight_idx, int query_idx);
+  void Init(data_size_t num_data, int weight_idx, int query_idx);
 
   /*!
   * \brief Partition label by used indices
@@ -203,6 +201,11 @@ public:
     }
   }
 
+  /*!
+  * \brief Get size of initial scores
+  */
+  inline data_size_t num_init_score() const { return num_init_score_; }
+
   /*! \brief Disable copy */
   Metadata& operator=(const Metadata&) = delete;
   /*! \brief Disable copy */
@@ -221,8 +224,6 @@ private:
   const char* data_filename_;
   /*! \brief Number of data */
   data_size_t num_data_;
-  /*! \brief Number of classes */
-  int num_class_;
   /*! \brief Number of weights, used to check correct weight file */
   data_size_t num_weights_;
   /*! \brief Label data */
@@ -281,7 +282,7 @@ public:
 
   Dataset();
 
-  Dataset(data_size_t num_data, int num_class);
+  Dataset(data_size_t num_data);
 
   /*! \brief Destructor */
   ~Dataset();
@@ -291,9 +292,6 @@ public:
       return false;
     }
     if (num_total_features_ != other.num_total_features_) {
-      return false;
-    }
-    if (num_class_ != other.num_class_) {
       return false;
     }
     if (label_idx_ != other.label_idx_) {
@@ -408,8 +406,6 @@ private:
   int num_total_features_;
   /*! \brief Number of total data*/
   data_size_t num_data_;
-  /*! \brief Number of classes*/
-  int num_class_;
   /*! \brief Store some label level data*/
   Metadata metadata_;
   /*! \brief index of label column */
