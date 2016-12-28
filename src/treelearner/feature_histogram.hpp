@@ -276,6 +276,10 @@ public:
   */
   void set_is_splittable(bool val) { is_splittable_ = val; }
 
+  void ResetConfig(const TreeConfig* tree_config) {
+    tree_config_ = tree_config;
+  }
+
 private:
   /*!
   * \brief Calculate the split gain based on regularized sum_gradients and sum_hessians
@@ -336,6 +340,8 @@ public:
   * \brief Constructor
   */
   HistogramPool() {
+    cache_size_ = 0;
+    total_size_ = 0;
   }
 
   /*!
@@ -348,7 +354,7 @@ public:
   * \param cache_size Max cache size
   * \param total_size Total size will be used
   */
-  void ResetSize(int cache_size, int total_size) {
+  void Reset(int cache_size, int total_size) {
     cache_size_ = cache_size;
     // at least need 2 bucket to store smaller leaf and larger leaf
     CHECK(cache_size_ >= 2);
@@ -358,9 +364,9 @@ public:
     }
     is_enough_ = (cache_size_ == total_size_);
     if (!is_enough_) {
-      mapper_ = std::vector<int>(total_size_);
-      inverse_mapper_ = std::vector<int>(cache_size_);
-      last_used_time_ = std::vector<int>(cache_size_);
+      mapper_.resize(total_size_);
+      inverse_mapper_.resize(cache_size_);
+      last_used_time_.resize(cache_size_);
       ResetMap();
     }
   }
@@ -382,6 +388,7 @@ public:
   * \param obj_create_fun that used to generate object
   */
   void Fill(std::function<FeatureHistogram*()> obj_create_fun) {
+    fill_func_ = obj_create_fun;
     pool_.clear();
     pool_.resize(cache_size_);
     for (int i = 0; i < cache_size_; ++i) {
@@ -389,6 +396,23 @@ public:
     }
   }
 
+  void DynamicChangeSize(int cache_size, int total_size) {
+    int old_cache_size = cache_size_;
+    Reset(cache_size, total_size);
+    pool_.resize(cache_size_);
+    for (int i = old_cache_size; i < cache_size_; ++i) {
+      pool_[i].reset(fill_func_());
+    }
+  }
+
+  void ResetConfig(const TreeConfig* tree_config, int array_size) {
+    for (int i = 0; i < cache_size_; ++i) {
+      auto data_ptr = pool_[i].get();
+      for (int j = 0; j < array_size; ++j) {
+        data_ptr[j].ResetConfig(tree_config);
+      }
+    }
+  }
   /*!
   * \brief Get data for the specific index
   * \param idx which index want to get
@@ -446,6 +470,7 @@ public:
 private:
 
   std::vector<std::unique_ptr<FeatureHistogram[]>> pool_;
+  std::function<FeatureHistogram*()> fill_func_;
   int cache_size_;
   int total_size_;
   bool is_enough_ = false;

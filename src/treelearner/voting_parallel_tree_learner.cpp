@@ -9,9 +9,9 @@
 
 namespace LightGBM {
 
-VotingParallelTreeLearner::VotingParallelTreeLearner(const TreeConfig& tree_config)
+VotingParallelTreeLearner::VotingParallelTreeLearner(const TreeConfig* tree_config)
   :SerialTreeLearner(tree_config) {
-  top_k_ = tree_config.top_k;
+  top_k_ = tree_config_->top_k;
 }
 
 void VotingParallelTreeLearner::Init(const Dataset* train_data) {
@@ -44,34 +44,41 @@ void VotingParallelTreeLearner::Init(const Dataset* train_data) {
 
   smaller_buffer_read_start_pos_.resize(num_features_);
   larger_buffer_read_start_pos_.resize(num_features_);
-  global_data_count_in_leaf_.resize(tree_config_.num_leaves);
+  global_data_count_in_leaf_.resize(tree_config_->num_leaves);
 
   smaller_leaf_splits_global_.reset(new LeafSplits(train_data_->num_features(), train_data_->num_data()));
   larger_leaf_splits_global_.reset(new LeafSplits(train_data_->num_features(), train_data_->num_data()));
 
-  local_tree_config_ = tree_config_;
+  local_tree_config_ = *tree_config_;
   local_tree_config_.min_data_in_leaf /= num_machines_;
   local_tree_config_.min_sum_hessian_in_leaf /= num_machines_;
 
-  auto histogram_create_function = [this]() {
-    auto tmp_histogram_array = std::unique_ptr<FeatureHistogram[]>(new FeatureHistogram[train_data_->num_features()]);
-    for (int j = 0; j < train_data_->num_features(); ++j) {
-      tmp_histogram_array[j].Init(train_data_->FeatureAt(j),
-        j, &local_tree_config_);
-    }
-    return tmp_histogram_array.release();
-  };
-  histogram_pool_.Fill(histogram_create_function);
+  histogram_pool_.ResetConfig(&local_tree_config_, train_data_->num_features());
 
   // initialize histograms for global
   smaller_leaf_histogram_array_global_.reset(new FeatureHistogram[num_features_]);
   larger_leaf_histogram_array_global_.reset(new FeatureHistogram[num_features_]);
   for (int j = 0; j < num_features_; ++j) {
-    smaller_leaf_histogram_array_global_[j].Init(train_data_->FeatureAt(j), j, &tree_config_);
-    larger_leaf_histogram_array_global_[j].Init(train_data_->FeatureAt(j), j, &tree_config_);
+    smaller_leaf_histogram_array_global_[j].Init(train_data_->FeatureAt(j), j, tree_config_);
+    larger_leaf_histogram_array_global_[j].Init(train_data_->FeatureAt(j), j, tree_config_);
   }
 }
 
+void VotingParallelTreeLearner::ResetConfig(const TreeConfig* tree_config) {
+  SerialTreeLearner::ResetConfig(tree_config);
+
+  local_tree_config_ = *tree_config_;
+  local_tree_config_.min_data_in_leaf /= num_machines_;
+  local_tree_config_.min_sum_hessian_in_leaf /= num_machines_;
+
+  histogram_pool_.ResetConfig(&local_tree_config_, train_data_->num_features());
+  global_data_count_in_leaf_.resize(tree_config_->num_leaves);
+
+  for (int j = 0; j < num_features_; ++j) {
+    smaller_leaf_histogram_array_global_[j].ResetConfig(tree_config_);
+    larger_leaf_histogram_array_global_[j].ResetConfig(tree_config_);
+  }
+}
 
 void VotingParallelTreeLearner::BeforeTrain() {
   SerialTreeLearner::BeforeTrain();

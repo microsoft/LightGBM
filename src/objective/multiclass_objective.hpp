@@ -38,17 +38,19 @@ public:
       for (data_size_t i = 0; i < num_data_; ++i) {
         std::vector<double> rec(num_class_);
         for (int k = 0; k < num_class_; ++k){
-          rec[k] = static_cast<double>(score[k * num_data_ + i]);
+          size_t idx = static_cast<size_t>(num_data_) * k + i;
+          rec[k] = static_cast<double>(score[idx]);
         }
         Common::Softmax(&rec);
         for (int k = 0; k < num_class_; ++k) {
           score_t p = static_cast<score_t>(rec[k]);
+          size_t idx = static_cast<size_t>(num_data_) * k + i;
           if (label_int_[i] == k) {
-            gradients[k * num_data_ + i] = p - 1.0f;
+            gradients[idx] = p - 1.0f;
           } else {
-            gradients[k * num_data_ + i] = p;
+            gradients[idx] = p;
           }
-          hessians[k * num_data_ + i] = 2.0f * p * (1.0f - p);
+          hessians[idx] = 2.0f * p * (1.0f - p);
         }
       }
     } else {
@@ -56,17 +58,19 @@ public:
       for (data_size_t i = 0; i < num_data_; ++i) {
         std::vector<double> rec(num_class_);
         for (int k = 0; k < num_class_; ++k){
-          rec[k] = static_cast<double>(score[k * num_data_ + i]);
+          size_t idx = static_cast<size_t>(num_data_) * k + i;
+          rec[k] = static_cast<double>(score[idx]);
         }
         Common::Softmax(&rec);
         for (int k = 0; k < num_class_; ++k) {
           score_t p = static_cast<score_t>(rec[k]);
+          size_t idx = static_cast<size_t>(num_data_) * k + i;
           if (label_int_[i] == k) {
-            gradients[k * num_data_ + i] = (p - 1.0f) * weights_[i];
+            gradients[idx] = (p - 1.0f) * weights_[i];
           } else {
-            gradients[k * num_data_ + i] = p * weights_[i];
+            gradients[idx] = p * weights_[i];
           }
-          hessians[k * num_data_ + i] = 2.0f * p * (1.0f - p) * weights_[i];
+          hessians[idx] = 2.0f * p * (1.0f - p) * weights_[i];
         }
       }
     }

@@ -88,7 +88,7 @@ public:
 
   void SetWeights(const float* weights, data_size_t len);
 
-  void SetQueryBoundaries(const data_size_t* query_boundaries, data_size_t len);
+  void SetQuery(const data_size_t* query, data_size_t len);
 
   void SetQueryId(const data_size_t* query_id, data_size_t len);
 

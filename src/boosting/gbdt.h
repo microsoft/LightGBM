@@ -69,14 +69,6 @@ public:
   void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function, const std::vector<const Metric*>& training_metrics) override;
 
   /*!
-  * \brief Reset shrinkage_rate data for current boosting
-  * \param shrinkage_rate Configs for boosting
-  */
-  void ResetShrinkageRate(double shrinkage_rate) override {
-    shrinkage_rate_ = shrinkage_rate;
-  }
-
-  /*!
   * \brief Adding a validation dataset
   * \param valid_data Validation dataset
   * \param valid_metrics Metrics for validation dataset
@@ -113,7 +105,7 @@ public:
   * \param out_len length of returned score
   * \return training score
   */
-  virtual const score_t* GetTrainingScore(data_size_t* out_len) override;
+  virtual const score_t* GetTrainingScore(int64_t* out_len) override;
 
   /*!
   * \brief Get prediction result at data_idx data
@@ -121,7 +113,7 @@ public:
   * \param result used to store prediction result, should allocate memory before call this function
   * \param out_len lenght of returned score
   */
-  void GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len) override;
+  void GetPredictAt(int data_idx, score_t* out_result, int64_t* out_len) override;
 
   /*!
   * \brief Prediction for one record without sigmoid transformation
@@ -201,6 +193,18 @@ public:
       static_cast<int>(models_.size()) / num_class_);
   }
 
+  inline double GetLeafValue(int tree_idx, int leaf_idx) const {
+    CHECK(tree_idx >= 0 && static_cast<size_t>(tree_idx) < models_.size());
+    CHECK(leaf_idx >= 0 && leaf_idx < models_[tree_idx]->num_leaves());
+    return models_[tree_idx]->LeafOutput(leaf_idx);
+  }
+
+  inline void SetLeafValue(int tree_idx, int leaf_idx, double val) {
+    CHECK(tree_idx >= 0 && static_cast<size_t>(tree_idx) < models_.size());
+    CHECK(leaf_idx >= 0 && leaf_idx < models_[tree_idx]->num_leaves());
+    models_[tree_idx]->SetLeafOutput(leaf_idx, val);
+  }
+
   /*!
   * \brief Get Type name of this boosting object
   */
@@ -210,9 +214,8 @@ protected:
   /*!
   * \brief Implement bagging logic
   * \param iter Current interation
-  * \param curr_class Current class for multiclass training
   */
-  void Bagging(int iter, const int curr_class);
+  void Bagging(int iter);
   /*!
   * \brief updating score for out-of-bag data.
   *        Data should be update since we may re-bagging data on training
@@ -233,8 +236,9 @@ protected:
   /*!
   * \brief Print metric result of current iteration
   * \param iter Current interation
+  * \return best_msg if met early_stopping
   */
-  bool OutputMetric(int iter);
+  std::string OutputMetric(int iter);
   /*!
   * \brief Calculate feature importances
   * \param last_iter Last tree use to calculate
@@ -245,9 +249,9 @@ protected:
   /*! \brief Pointer to training data */
   const Dataset* train_data_;
   /*! \brief Config of gbdt */
-  const BoostingConfig* gbdt_config_;
+  std::unique_ptr<BoostingConfig> gbdt_config_;
   /*! \brief Tree learner, will use this class to learn trees */
-  std::vector<std::unique_ptr<TreeLearner>> tree_learner_;
+  std::unique_ptr<TreeLearner> tree_learner_;
   /*! \brief Objective function */
   const ObjectiveFunction* object_function_;
   /*! \brief Store and update training data's score */
@@ -260,9 +264,12 @@ protected:
   std::vector<std::vector<const Metric*>> valid_metrics_;
   /*! \brief Number of rounds for early stopping */
   int early_stopping_round_;
-  /*! \brief Best score(s) for early stopping */
+  /*! \brief Best iteration(s) for early stopping */
   std::vector<std::vector<int>> best_iter_;
+  /*! \brief Best score(s) for early stopping */
   std::vector<std::vector<double>> best_score_;
+  /*! \brief output message of best iteration */
+  std::vector<std::vector<std::string>> best_msg_;
   /*! \brief Trained models(trees) */
   std::vector<std::unique_ptr<Tree>> models_;
   /*! \brief Max feature index of training data*/

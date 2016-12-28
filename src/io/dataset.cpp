@@ -91,7 +91,7 @@ bool Dataset::SetIntField(const char* field_name, const int* field_data, data_si
   std::string name(field_name);
   name = Common::Trim(name);
   if (name == std::string("query") || name == std::string("group")) {
-    metadata_.SetQueryBoundaries(field_data, num_element);
+    metadata_.SetQuery(field_data, num_element);
   } else if (name == std::string("query_id") || name == std::string("group_id")) {
     metadata_.SetQueryId(field_data, num_element);
   } else {
@@ -123,7 +123,7 @@ bool Dataset::GetIntField(const char* field_name, int64_t* out_len, const int** 
   name = Common::Trim(name);
   if (name == std::string("query") || name == std::string("group")) {
     *out_ptr = metadata_.query_boundaries();
-    *out_len = metadata_.num_queries();
+    *out_len = metadata_.num_queries() + 1;
   } else {
     return false;
   }

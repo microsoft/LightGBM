@@ -496,6 +496,10 @@ void DatasetLoader::CheckDataset(const Dataset* dataset) {
   if (dataset->features_.empty()) {
     Log::Fatal("No usable features in data file %s", dataset->data_filename_);
   }
+  if (dataset->feature_names_.size() != static_cast<size_t>(dataset->num_total_features_)) {
+    Log::Fatal("Size of feature name error, should be %d, got %d", dataset->num_total_features_,
+      static_cast<int>(dataset->feature_names_.size()));
+  }
 }
 
 std::vector<std::string> DatasetLoader::LoadTextDataToMemory(const char* filename, const Metadata& metadata,
@@ -616,14 +620,14 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     // parse features
     parser->ParseOneLine(sample_data[i].c_str(), &oneline_features, &label);
     for (std::pair<int, double>& inner_data : oneline_features) {
-      if (std::fabs(inner_data.second) > 1e-15) {
-        if (static_cast<size_t>(inner_data.first) >= sample_values.size()) {
-          // if need expand feature set
-          size_t need_size = inner_data.first - sample_values.size() + 1;
-          for (size_t j = 0; j < need_size; ++j) {
-            sample_values.emplace_back();
-          }
+      if (static_cast<size_t>(inner_data.first) >= sample_values.size()) {
+        // if need expand feature set
+        size_t need_size = inner_data.first - sample_values.size() + 1;
+        for (size_t j = 0; j < need_size; ++j) {
+          sample_values.emplace_back();
         }
+      }
+      if (std::fabs(inner_data.second) > 1e-15) {
         sample_values[inner_data.first].push_back(inner_data.second);
       }
     }
@@ -631,9 +635,14 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
 
   dataset->features_.clear();
 
-  // -1 means doesn't use this feature
-  dataset->used_feature_map_ = std::vector<int>(sample_values.size(), -1);
-  dataset->num_total_features_ = static_cast<int>(sample_values.size());
+  if (feature_names_.empty()) {
+    // -1 means doesn't use this feature
+    dataset->used_feature_map_ = std::vector<int>(sample_values.size(), -1);
+    dataset->num_total_features_ = static_cast<int>(sample_values.size());
+  } else {
+    dataset->used_feature_map_ = std::vector<int>(feature_names_.size(), -1);
+    dataset->num_total_features_ = static_cast<int>(feature_names_.size());
+  }
 
   // check the range of label_idx, weight_idx and group_idx
   CHECK(label_idx_ >= 0 && label_idx_ <= dataset->num_total_features_);

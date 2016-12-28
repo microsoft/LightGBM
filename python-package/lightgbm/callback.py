@@ -2,7 +2,6 @@
 # pylint: disable = invalid-name, W0105, C0301
 from __future__ import absolute_import
 import collections
-import inspect
 
 class EarlyStopException(Exception):
     """Exception of early stopping.
@@ -98,21 +97,19 @@ def record_evaluation(eval_result):
     return callback
 
 
-def reset_learning_rate(learning_rates):
-    """Reset learning rate after first iteration
+def reset_parameter(**kwargs):
+    """Reset parameter after first iteration
 
-    NOTE: the initial learning rate will still take in-effect on first iteration.
+    NOTE: the initial parameter will still take in-effect on first iteration.
 
     Parameters
     ----------
-    learning_rates: list or function
-        List of learning rate for each boosting round \
-        or a customized function that calculates learning_rate in terms of \
-        current number of round and the total number of boosting round \
-        (e.g. yields learning rate decay)
-        - list l: learning_rate = l[current_round]
-        - function f: learning_rate = f(current_round, total_boost_round) \
-                   or learning_rate = f(current_round)
+    **kwargs: value should be list or function
+        List of parameters for each boosting round
+        or a customized function that calculates learning_rate in terms of
+        current number of round (e.g. yields learning rate decay)
+        - list l: parameter = l[current_round]
+        - function f: parameter = f(current_round)
     Returns
     -------
     callback : function
@@ -120,25 +117,19 @@ def reset_learning_rate(learning_rates):
     """
     def callback(env):
         """internal function"""
-        if isinstance(learning_rates, list):
-            if len(learning_rates) != env.end_iteration - env.begin_iteration:
-                raise ValueError("Length of list 'learning_rates' has to equal to 'num_boost_round'.")
-            env.model.reset_parameter({'learning_rate':learning_rates[env.iteration]})
-        else:
-            argc = len(inspect.getargspec(learning_rates).args)
-            if argc is 1:
-                env.model.reset_parameter({"learning_rate": learning_rates(env.iteration - env.begin_iteration)})
-            elif argc is 2:
-                env.model.reset_parameter({"learning_rate": \
-                    learning_rates(env.iteration - env.begin_iteration, env.end_iteration - env.begin_iteration)})
+        for key, value in kwargs.items():
+            if isinstance(value, list):
+                if len(value) != env.end_iteration - env.begin_iteration:
+                    raise ValueError("Length of list {} has to equal to 'num_boost_round'.".format(repr(key)))
+                env.model.reset_parameter({key: value[env.iteration - env.begin_iteration]})
             else:
-                raise ValueError("Self-defined function 'learning_rates' should have 1 or 2 arguments, got %d" %(argc))
+                env.model.reset_parameter({key: value(env.iteration - env.begin_iteration)})
     callback.before_iteration = True
     callback.order = 10
     return callback
 
 
-def early_stop(stopping_rounds, verbose=True):
+def early_stopping(stopping_rounds, verbose=True):
     """Create a callback that activates early stopping.
     Activates early stopping.
     Requires at least one validation data and one metric
@@ -164,7 +155,7 @@ def early_stop(stopping_rounds, verbose=True):
     def init(env):
         """internal function"""
         if not env.evaluation_result_list:
-            raise ValueError('For early stopping, at least one dataset is required for evaluation')
+            raise ValueError('For early stopping, at least one dataset or eval metric is required for evaluation')
 
         if verbose:
             msg = "Train until valid scores didn't improve in {} rounds."

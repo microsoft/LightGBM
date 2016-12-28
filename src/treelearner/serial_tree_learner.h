@@ -26,11 +26,13 @@ namespace LightGBM {
 */
 class SerialTreeLearner: public TreeLearner {
 public:
-  explicit SerialTreeLearner(const TreeConfig& tree_config);
+  explicit SerialTreeLearner(const TreeConfig* tree_config);
 
   ~SerialTreeLearner();
 
   void Init(const Dataset* train_data) override;
+
+  void ResetConfig(const TreeConfig* tree_config) override;
 
   Tree* Train(const score_t* gradients, const score_t *hessians) override;
 
@@ -153,7 +155,7 @@ protected:
   /*! \brief used to cache historical histogram to speed up*/
   HistogramPool histogram_pool_;
   /*! \brief config of tree learner*/
-  const TreeConfig& tree_config_;
+  const TreeConfig* tree_config_;
 };
 
 

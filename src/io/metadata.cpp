@@ -312,26 +312,27 @@ void Metadata::SetWeights(const float* weights, data_size_t len) {
   LoadQueryWeights();
 }
 
-void Metadata::SetQueryBoundaries(const data_size_t* query_boundaries, data_size_t len) {
+void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
   std::lock_guard<std::mutex> lock(mutex_);
   // save to nullptr
-  if (query_boundaries == nullptr || len == 0) {
+  if (query == nullptr || len == 0) {
     query_boundaries_.clear();
     num_queries_ = 0;
     return;
   }
   data_size_t sum = 0;
   for (data_size_t i = 0; i < len; ++i) {
-    sum += query_boundaries[i];
+    sum += query[i];
   }
   if (num_data_ != sum) {
     Log::Fatal("sum of query counts is not same with #data");
   }
   if (!query_boundaries_.empty()) { query_boundaries_.clear(); }
   num_queries_ = len;
-  query_boundaries_ = std::vector<data_size_t>(num_queries_);
+  query_boundaries_ = std::vector<data_size_t>(num_queries_ + 1);
+  query_boundaries_[0] = 0;
   for (data_size_t i = 0; i < num_queries_; ++i) {
-    query_boundaries_[i] = query_boundaries[i];
+    query_boundaries_[i + 1] = query_boundaries_[i] + query[i];
   }
   LoadQueryWeights();
 }

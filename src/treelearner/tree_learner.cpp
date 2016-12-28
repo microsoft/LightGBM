@@ -5,7 +5,7 @@
 
 namespace LightGBM {
 
-TreeLearner* TreeLearner::CreateTreeLearner(TreeLearnerType type, const TreeConfig& tree_config) {
+TreeLearner* TreeLearner::CreateTreeLearner(TreeLearnerType type, const TreeConfig* tree_config) {
   if (type == TreeLearnerType::kSerialTreeLearner) {
     return new SerialTreeLearner(tree_config);
   } else if (type == TreeLearnerType::kFeatureParallelTreelearner) {

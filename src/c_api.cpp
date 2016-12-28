@@ -19,6 +19,7 @@
 #include <mutex>
 
 #include "./application/predictor.hpp"
+#include "./boosting/gbdt.h"
 
 namespace LightGBM {
 
@@ -40,11 +41,14 @@ public:
       Log::Warning("continued train from model is not support for c_api, \
         please use continued train with input score");
     }
+
     boosting_.reset(Boosting::CreateBoosting(config_.boosting_type, nullptr));
-    ConstructObjectAndTrainingMetrics(train_data);
+
     // initialize the boosting
-    boosting_->Init(&config_.boosting_config, train_data, objective_fun_.get(),
+    boosting_->Init(&config_.boosting_config, nullptr, objective_fun_.get(),
       Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
+
+    ResetTrainingData(train_data);
   }
 
   void MergeFrom(const Booster* other) {
@@ -59,8 +63,28 @@ public:
   void ResetTrainingData(const Dataset* train_data) {
     std::lock_guard<std::mutex> lock(mutex_);
     train_data_ = train_data;
-    ConstructObjectAndTrainingMetrics(train_data_);
-    // initialize the boosting
+    // create objective function
+    objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
+      config_.objective_config));
+    if (objective_fun_ == nullptr) {
+      Log::Warning("Using self-defined objective function");
+    }
+    // initialize the objective function
+    if (objective_fun_ != nullptr) {
+      objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
+    }
+
+    // create training metric
+    train_metric_.clear();
+    for (auto metric_type : config_.metric_types) {
+      auto metric = std::unique_ptr<Metric>(
+        Metric::CreateMetric(metric_type, config_.metric_config));
+      if (metric == nullptr) { continue; }
+      metric->Init(train_data_->metadata(), train_data_->num_data());
+      train_metric_.push_back(std::move(metric));
+    }
+    train_metric_.shrink_to_fit();
+    // reset the boosting
     boosting_->ResetTrainingData(&config_.boosting_config, train_data_, 
       objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
   }
@@ -74,16 +98,31 @@ public:
     if (param.count("boosting_type")) {
       Log::Fatal("cannot change boosting_type during training");
     }
+    if (param.count("metric")) {
+      Log::Fatal("cannot change metric during training");
+    }
+
     config_.Set(param);
     if (config_.num_threads > 0) {
       omp_set_num_threads(config_.num_threads);
     }
-    if (param.size() == 1 && (param.count("learning_rate") || param.count("shrinkage_rate"))) {
-      // only need to set learning rate
-      boosting_->ResetShrinkageRate(config_.boosting_config.learning_rate);
-    } else {
-      ResetTrainingData(train_data_);
+
+    if (param.count("objective")) {
+      // create objective function
+      objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
+        config_.objective_config));
+      if (objective_fun_ == nullptr) {
+        Log::Warning("Using self-defined objective function");
+      }
+      // initialize the objective function
+      if (objective_fun_ != nullptr) {
+        objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
+      }
     }
+
+    boosting_->ResetTrainingData(&config_.boosting_config, train_data_,
+      objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
+    
   }
 
   void AddValidData(const Dataset* valid_data) {
@@ -99,6 +138,7 @@ public:
     boosting_->AddValidDataset(valid_data,
       Common::ConstPtrInVectorWrapper<Metric>(valid_metrics_.back()));
   }
+
   bool TrainOneIter() {
     std::lock_guard<std::mutex> lock(mutex_);
     return boosting_->TrainOneIter(nullptr, nullptr, false);
@@ -114,7 +154,7 @@ public:
     boosting_->RollbackOneIter();
   }
 
-  void PrepareForPrediction(int num_iteration, int predict_type) {
+  Predictor NewPredictor(int num_iteration, int predict_type) {
     std::lock_guard<std::mutex> lock(mutex_);
     boosting_->SetNumIterationForPred(num_iteration);
     bool is_predict_leaf = false;
@@ -126,19 +166,13 @@ public:
     } else {
       is_raw_score = false;
     }
-    predictor_.reset(new Predictor(boosting_.get(), is_raw_score, is_predict_leaf));
+    // not threading safe now
+    // boosting_->SetNumIterationForPred may be set by other thread during prediction. 
+    return Predictor(boosting_.get(), is_raw_score, is_predict_leaf);
   }
 
-  void GetPredictAt(int data_idx, score_t* out_result, data_size_t* out_len) {
+  void GetPredictAt(int data_idx, score_t* out_result, int64_t* out_len) {
     boosting_->GetPredictAt(data_idx, out_result, out_len);
-  }
-
-  std::vector<double> Predict(const std::vector<std::pair<int, double>>& features) {
-    return predictor_->GetPredictFunction()(features);
-  }
-
-  void PredictForFile(const char* data_filename, const char* result_filename, bool data_has_header) {
-    predictor_->Predict(data_filename, result_filename, data_has_header);
   }
 
   void SaveModelToFile(int num_iteration, const char* filename) {
@@ -147,6 +181,15 @@ public:
 
   std::string DumpModel() {
     return boosting_->DumpModel();
+  }
+
+  double GetLeafValue(int tree_idx, int leaf_idx) const {
+    return dynamic_cast<GBDT*>(boosting_.get())->GetLeafValue(tree_idx, leaf_idx);
+  }
+
+  void SetLeafValue(int tree_idx, int leaf_idx, double val) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    dynamic_cast<GBDT*>(boosting_.get())->SetLeafValue(tree_idx, leaf_idx, val);
   }
 
   int GetEvalCounts() const {
@@ -172,29 +215,6 @@ public:
   
 private:
 
-  void ConstructObjectAndTrainingMetrics(const Dataset* train_data) {
-    // create objective function
-    objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
-      config_.objective_config));
-    if (objective_fun_ == nullptr) {
-      Log::Warning("Using self-defined objective functions");
-    }
-    // create training metric
-    train_metric_.clear();
-    for (auto metric_type : config_.metric_types) {
-      auto metric = std::unique_ptr<Metric>(
-        Metric::CreateMetric(metric_type, config_.metric_config));
-      if (metric == nullptr) { continue; }
-      metric->Init(train_data->metadata(), train_data->num_data());
-      train_metric_.push_back(std::move(metric));
-    }
-    train_metric_.shrink_to_fit();
-    // initialize the objective function
-    if (objective_fun_ != nullptr) {
-      objective_fun_->Init(train_data->metadata(), train_data->num_data());
-    }
-  }
-
   const Dataset* train_data_;
   std::unique_ptr<Boosting> boosting_;
   /*! \brief All configs */
@@ -205,8 +225,6 @@ private:
   std::vector<std::vector<std::unique_ptr<Metric>>> valid_metrics_;
   /*! \brief Training objective function */
   std::unique_ptr<ObjectiveFunction> objective_fun_;
-  /*! \brief Using predictor for prediction task */
-  std::unique_ptr<Predictor> predictor_;
   /*! \brief mutex for threading safe call */
   std::mutex mutex_;
 };
@@ -221,8 +239,8 @@ DllExport const char* LGBM_GetLastError() {
 
 DllExport int LGBM_DatasetCreateFromFile(const char* filename,
   const char* parameters,
-  const DatesetHandle* reference,
-  DatesetHandle* out) {
+  const DatasetHandle reference,
+  DatasetHandle* out) {
   API_BEGIN();
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
@@ -232,7 +250,7 @@ DllExport int LGBM_DatasetCreateFromFile(const char* filename,
     *out = loader.LoadFromFile(filename);
   } else {
     *out = loader.LoadFromFileAlignWithOtherDataset(filename,
-      reinterpret_cast<const Dataset*>(*reference));
+      reinterpret_cast<const Dataset*>(reference));
   }
   API_END();
 }
@@ -243,8 +261,8 @@ DllExport int LGBM_DatasetCreateFromMat(const void* data,
   int32_t ncol,
   int is_row_major,
   const char* parameters,
-  const DatesetHandle* reference,
-  DatesetHandle* out) {
+  const DatasetHandle reference,
+  DatasetHandle* out) {
   API_BEGIN();
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
@@ -271,7 +289,7 @@ DllExport int LGBM_DatasetCreateFromMat(const void* data,
   } else {
     ret.reset(new Dataset(nrow, io_config.num_class));
     ret->CopyFeatureMapperFrom(
-      reinterpret_cast<const Dataset*>(*reference),
+      reinterpret_cast<const Dataset*>(reference),
       io_config.is_enable_sparse);
   }
 
@@ -295,8 +313,8 @@ DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
   int64_t nelem,
   int64_t num_col,
   const char* parameters,
-  const DatesetHandle* reference,
-  DatesetHandle* out) {
+  const DatasetHandle reference,
+  DatasetHandle* out) {
   API_BEGIN();
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
@@ -314,14 +332,14 @@ DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
       auto idx = sample_indices[i];
       auto row = get_row_fun(static_cast<int>(idx));
       for (std::pair<int, double>& inner_data : row) {
-        if (std::fabs(inner_data.second) > 1e-15) {
-          if (static_cast<size_t>(inner_data.first) >= sample_values.size()) {
-            // if need expand feature set
-            size_t need_size = inner_data.first - sample_values.size() + 1;
-            for (size_t j = 0; j < need_size; ++j) {
-              sample_values.emplace_back();
-            }
+        if (static_cast<size_t>(inner_data.first) >= sample_values.size()) {
+          // if need expand feature set
+          size_t need_size = inner_data.first - sample_values.size() + 1;
+          for (size_t j = 0; j < need_size; ++j) {
+            sample_values.emplace_back();
           }
+        }
+        if (std::fabs(inner_data.second) > 1e-15) {
           // edit the feature value
           sample_values[inner_data.first].push_back(inner_data.second);
         }
@@ -333,7 +351,7 @@ DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
   } else {
     ret.reset(new Dataset(nrow, io_config.num_class));
     ret->CopyFeatureMapperFrom(
-      reinterpret_cast<const Dataset*>(*reference),
+      reinterpret_cast<const Dataset*>(reference),
       io_config.is_enable_sparse);
   }
 
@@ -357,8 +375,8 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   int64_t nelem,
   int64_t num_row,
   const char* parameters,
-  const DatesetHandle* reference,
-  DatesetHandle* out) {
+  const DatasetHandle reference,
+  DatasetHandle* out) {
   API_BEGIN();
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
@@ -383,7 +401,7 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   } else {
     ret.reset(new Dataset(nrow, io_config.num_class));
     ret->CopyFeatureMapperFrom(
-      reinterpret_cast<const Dataset*>(*reference),
+      reinterpret_cast<const Dataset*>(reference),
       io_config.is_enable_sparse);
   }
 
@@ -399,16 +417,16 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
 }
 
 DllExport int LGBM_DatasetGetSubset(
-  const DatesetHandle* handle,
+  const DatasetHandle handle,
   const int32_t* used_row_indices,
   int32_t num_used_row_indices,
   const char* parameters,
-  DatesetHandle* out) {
+  DatasetHandle* out) {
   API_BEGIN();
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
   io_config.Set(param);
-  auto full_dataset = reinterpret_cast<const Dataset*>(*handle);
+  auto full_dataset = reinterpret_cast<const Dataset*>(handle);
   auto ret = std::unique_ptr<Dataset>(
     full_dataset->Subset(used_row_indices,
       num_used_row_indices, 
@@ -419,7 +437,7 @@ DllExport int LGBM_DatasetGetSubset(
 }
 
 DllExport int LGBM_DatasetSetFeatureNames(
-  DatesetHandle handle,
+  DatasetHandle handle,
   const char** feature_names,
   int64_t num_feature_names) {
   API_BEGIN();
@@ -432,13 +450,13 @@ DllExport int LGBM_DatasetSetFeatureNames(
   API_END();
 }
 
-DllExport int LGBM_DatasetFree(DatesetHandle handle) {
+DllExport int LGBM_DatasetFree(DatasetHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Dataset*>(handle);
   API_END();
 }
 
-DllExport int LGBM_DatasetSaveBinary(DatesetHandle handle,
+DllExport int LGBM_DatasetSaveBinary(DatasetHandle handle,
   const char* filename) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
@@ -446,7 +464,7 @@ DllExport int LGBM_DatasetSaveBinary(DatesetHandle handle,
   API_END();
 }
 
-DllExport int LGBM_DatasetSetField(DatesetHandle handle,
+DllExport int LGBM_DatasetSetField(DatasetHandle handle,
   const char* field_name,
   const void* field_data,
   int64_t num_element,
@@ -463,7 +481,7 @@ DllExport int LGBM_DatasetSetField(DatesetHandle handle,
   API_END();
 }
 
-DllExport int LGBM_DatasetGetField(DatesetHandle handle,
+DllExport int LGBM_DatasetGetField(DatasetHandle handle,
   const char* field_name,
   int64_t* out_len,
   const void** out_ptr,
@@ -483,7 +501,7 @@ DllExport int LGBM_DatasetGetField(DatesetHandle handle,
   API_END();
 }
 
-DllExport int LGBM_DatasetGetNumData(DatesetHandle handle,
+DllExport int LGBM_DatasetGetNumData(DatasetHandle handle,
   int64_t* out) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
@@ -491,7 +509,7 @@ DllExport int LGBM_DatasetGetNumData(DatesetHandle handle,
   API_END();
 }
 
-DllExport int LGBM_DatasetGetNumFeature(DatesetHandle handle,
+DllExport int LGBM_DatasetGetNumFeature(DatasetHandle handle,
   int64_t* out) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
@@ -502,7 +520,7 @@ DllExport int LGBM_DatasetGetNumFeature(DatesetHandle handle,
 
 // ---- start of booster
 
-DllExport int LGBM_BoosterCreate(const DatesetHandle train_data,
+DllExport int LGBM_BoosterCreate(const DatasetHandle train_data,
   const char* parameters,
   BoosterHandle* out) {
   API_BEGIN();
@@ -540,7 +558,7 @@ DllExport int LGBM_BoosterMerge(BoosterHandle handle,
 }
 
 DllExport int LGBM_BoosterAddValidData(BoosterHandle handle,
-  const DatesetHandle valid_data) {
+  const DatasetHandle valid_data) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   const Dataset* p_dataset = reinterpret_cast<const Dataset*>(valid_data);
@@ -549,7 +567,7 @@ DllExport int LGBM_BoosterAddValidData(BoosterHandle handle,
 }
 
 DllExport int LGBM_BoosterResetTrainingData(BoosterHandle handle,
-  const DatesetHandle train_data) {
+  const DatasetHandle train_data) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   const Dataset* p_dataset = reinterpret_cast<const Dataset*>(train_data);
@@ -653,9 +671,7 @@ DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
   float* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  int len = 0;
-  ref_booster->GetPredictAt(data_idx, out_result, &len);
-  *out_len = static_cast<int64_t>(len);
+  ref_booster->GetPredictAt(data_idx, out_result, out_len);
   API_END();
 }
 
@@ -667,9 +683,9 @@ DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
   const char* result_filename) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  ref_booster->PrepareForPrediction(static_cast<int>(num_iteration), predict_type);
+  auto predictor = ref_booster->NewPredictor(static_cast<int>(num_iteration), predict_type);
   bool bool_data_has_header = data_has_header > 0 ? true : false;
-  ref_booster->PredictForFile(data_filename, result_filename, bool_data_has_header);
+  predictor.Predict(data_filename, result_filename, bool_data_has_header);
   API_END();
 }
 
@@ -688,8 +704,7 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   float* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  ref_booster->PrepareForPrediction(static_cast<int>(num_iteration), predict_type);
-
+  auto predictor = ref_booster->NewPredictor(static_cast<int>(num_iteration), predict_type);
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int num_preb_in_one_row = ref_booster->GetBoosting()->NumberOfClasses();
   if (predict_type == C_API_PREDICT_LEAF_INDEX) {
@@ -703,7 +718,7 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < nrow; ++i) {
     auto one_row = get_row_fun(i);
-    auto predicton_result = ref_booster->Predict(one_row);
+    auto predicton_result = predictor.GetPredictFunction()(one_row);
     for (int j = 0; j < static_cast<int>(predicton_result.size()); ++j) {
       out_result[i * num_preb_in_one_row + j] = static_cast<float>(predicton_result[j]);
     }
@@ -724,8 +739,7 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
   float* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  ref_booster->PrepareForPrediction(static_cast<int>(num_iteration), predict_type);
-
+  auto predictor = ref_booster->NewPredictor(static_cast<int>(num_iteration), predict_type);
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
   int num_preb_in_one_row = ref_booster->GetBoosting()->NumberOfClasses();
   if (predict_type == C_API_PREDICT_LEAF_INDEX) {
@@ -738,7 +752,7 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < nrow; ++i) {
     auto one_row = get_row_fun(i);
-    auto predicton_result = ref_booster->Predict(one_row);
+    auto predicton_result = predictor.GetPredictFunction()(one_row);
     for (int j = 0; j < static_cast<int>(predicton_result.size()); ++j) {
       out_result[i * num_preb_in_one_row + j] = static_cast<float>(predicton_result[j]);
     }
@@ -767,6 +781,29 @@ DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
   if (*out_len <= buffer_len) {
     std::strcpy(*out_str, model.c_str());
   }
+  API_END();
+}
+
+
+
+DllExport int LGBM_BoosterGetLeafValue(BoosterHandle handle,
+  int tree_idx,
+  int leaf_idx,
+  float* out_val) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_val = static_cast<float>(ref_booster->GetLeafValue(tree_idx, leaf_idx));
+  API_END();
+}
+
+
+DllExport int LGBM_BoosterSetLeafValue(BoosterHandle handle,
+  int tree_idx,
+  int leaf_idx,
+  float val) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  ref_booster->SetLeafValue(tree_idx, leaf_idx, static_cast<double>(val));
   API_END();
 }
 

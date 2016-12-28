@@ -3,6 +3,7 @@
 import lightgbm as lgb
 import pandas as pd
 from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import GridSearchCV
 
 # load or create your dataset
 print('Load data...')
@@ -34,3 +35,17 @@ print('The rmse of prediction is:', mean_squared_error(y_test, y_pred) ** 0.5)
 print('Calculate feature importances...')
 # feature importances
 print('Feature importances:', list(gbm.feature_importance()))
+
+# other scikit-learn modules
+estimator = lgb.LGBMRegressor(num_leaves=31)
+
+param_grid = {
+    'learning_rate': [0.01, 0.1, 1],
+    'n_estimators': [20, 40]
+}
+
+gbm = GridSearchCV(estimator, param_grid)
+
+gbm.fit(X_train, y_train)
+
+print('Best parameters found by grid search are:', gbm.best_params_)

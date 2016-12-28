@@ -52,12 +52,6 @@ public:
   virtual void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function, const std::vector<const Metric*>& training_metrics) = 0;
 
   /*!
-  * \brief Reset shrinkage_rate data for current boosting
-  * \param shrinkage_rate Configs for boosting
-  */
-  virtual void ResetShrinkageRate(double shrinkage_rate) = 0;
-
-  /*!
   * \brief Add a validation data
   * \param valid_data Validation data
   * \param valid_metrics Metric for validation data
@@ -100,7 +94,7 @@ public:
   * \param out_len length of returned score
   * \return training score
   */
-  virtual const score_t* GetTrainingScore(data_size_t* out_len) = 0;
+  virtual const score_t* GetTrainingScore(int64_t* out_len) = 0;
 
   /*!
   * \brief Get prediction result at data_idx data
@@ -108,7 +102,7 @@ public:
   * \param result used to store prediction result, should allocate memory before call this function
   * \param out_len lenght of returned score
   */
-  virtual void GetPredictAt(int data_idx, score_t* result, data_size_t* out_len) = 0;
+  virtual void GetPredictAt(int data_idx, score_t* result, int64_t* out_len) = 0;
 
   /*!
   * \brief Prediction for one record, not sigmoid transform

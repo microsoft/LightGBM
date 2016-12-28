@@ -69,12 +69,10 @@ def train(params, train_set, num_boost_round=100,
             an evaluation metric is printed every 4 (instead of 1) boosting stages.
     learning_rates: list or function
         List of learning rate for each boosting round
-        or a customized function that calculates learning_rate in terms of
-        current number of round (and the total number of boosting round)
-        (e.g. yields learning rate decay)
+        or a customized function that calculates learning_rate
+        in terms of current number of round (e.g. yields learning rate decay)
         - list l: learning_rate = l[current_round]
-        - function f: learning_rate = f(current_round, total_boost_round)
-                   or learning_rate = f(current_round)
+        - function f: learning_rate = f(current_round)
     callbacks : list of callback functions
         List of callback functions that are applied at end of each iteration.
 
@@ -138,11 +136,10 @@ def train(params, train_set, num_boost_round=100,
         callbacks.add(callback.print_evaluation(verbose_eval))
 
     if early_stopping_rounds is not None:
-        callbacks.add(callback.early_stop(early_stopping_rounds,
-                                          verbose=bool(verbose_eval)))
+        callbacks.add(callback.early_stopping(early_stopping_rounds, verbose=bool(verbose_eval)))
 
     if learning_rates is not None:
-        callbacks.add(callback.reset_learning_rate(learning_rates))
+        callbacks.add(callback.reset_parameter(learning_rate=learning_rates))
 
     if evals_result is not None:
         callbacks.add(callback.record_evaluation(evals_result))
@@ -221,20 +218,21 @@ except ImportError:
     except ImportError:
         SKLEARN_StratifiedKFold = False
 
-def _make_n_folds(full_data, nfold, params, seed, fpreproc=None, stratified=False):
+def _make_n_folds(full_data, nfold, params, seed, fpreproc=None, stratified=False, shuffle=True):
     """
     Make an n-fold list of CVBooster from random indices.
     """
     np.random.seed(seed)
     if stratified:
         if SKLEARN_StratifiedKFold:
-            sfk = StratifiedKFold(n_splits=nfold, shuffle=True, random_state=seed)
+            sfk = StratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
             idset = [x[1] for x in sfk.split(X=full_data.get_label(), y=full_data.get_label())]
         else:
             raise LightGBMError('Scikit-learn is required for stratified cv')
     else:
         full_data.construct()
-        randidx = np.random.permutation(full_data.num_data())
+        if shuffle:
+            randidx = np.random.permutation(full_data.num_data())
         kstep = int(len(randidx) / nfold)
         idset = [randidx[(i * kstep): min(len(randidx), (i + 1) * kstep)] for i in range(nfold)]
 
@@ -263,7 +261,7 @@ def _agg_cv_result(raw_results):
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
 
 def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
-       metrics=None, fobj=None, feval=None, init_model=None,
+       shuffle=True, metrics=None, fobj=None, feval=None, init_model=None,
        feature_name=None, categorical_feature=None,
        early_stopping_rounds=None, fpreproc=None,
        verbose_eval=None, show_stdv=True, seed=0,
@@ -283,6 +281,8 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
         Number of folds in CV.
     stratified : bool
         Perform stratified sampling.
+    shuffle: bool
+        Whether shuffle before split data
     folds : a KFold or StratifiedKFold instance
         Sklearn KFolds or StratifiedKFolds.
     metrics : string or list of strings
@@ -345,7 +345,7 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
             params['metric'].extend(metrics)
 
     results = collections.defaultdict(list)
-    cvfolds = _make_n_folds(train_set, nfold, params, seed, fpreproc, stratified)
+    cvfolds = _make_n_folds(train_set, nfold, params, seed, fpreproc, stratified, shuffle)
 
     # setup callbacks
     if callbacks is None:
@@ -355,7 +355,7 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
             cb.__dict__.setdefault('order', i - len(callbacks))
         callbacks = set(callbacks)
     if early_stopping_rounds is not None:
-        callbacks.add(callback.early_stop(early_stopping_rounds, verbose=False))
+        callbacks.add(callback.early_stopping(early_stopping_rounds, verbose=False))
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation(show_stdv=show_stdv))
     elif isinstance(verbose_eval, int):

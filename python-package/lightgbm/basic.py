@@ -58,6 +58,14 @@ def is_str(s):
     else:
         return isinstance(s, basestring)
 
+def is_numeric(obj):
+    """Check is a number or not, include numpy number etc."""
+    try:
+        float(obj)
+        return True
+    except:
+        return False
+
 def is_numpy_object(data):
     """Check is numpy object"""
     return type(data).__module__ == np.__name__
@@ -114,10 +122,10 @@ def param_dict_to_str(data):
         return ""
     pairs = []
     for key, val in data.items():
-        if is_str(val) or isinstance(val, (int, float, bool, np.integer, np.float, np.float32)):
-            pairs.append(str(key)+'='+str(val))
-        elif isinstance(val, (list, tuple, set)):
+        if isinstance(val, (list, tuple, set)) or is_numpy_1d_array(val):
             pairs.append(str(key)+'='+','.join(map(str, val)))
+        elif is_str(val) or isinstance(val, (int, float, bool)) or is_numeric(val):
+            pairs.append(str(key)+'='+str(val))
         else:
             raise TypeError('Unknown type of parameter:%s, got:%s'
                             % (key, type(val).__name__))
@@ -486,7 +494,7 @@ class _InnerDataset(object):
         """process for reference dataset"""
         ref_dataset = None
         if isinstance(reference, _InnerDataset):
-            ref_dataset = ctypes.byref(reference.handle)
+            ref_dataset = reference.handle
         elif reference is not None:
             raise TypeError('Reference dataset should be None or dataset instance')
         """start construct data"""
@@ -527,7 +535,7 @@ class _InnerDataset(object):
                                                 is_reshape=False)
             if self.predictor.num_class > 1:
                 # need re group init score
-                new_init_score = np.zeros(init_score.size(), dtype=np.float32)
+                new_init_score = np.zeros(init_score.size, dtype=np.float32)
                 num_data = self.num_data()
                 for i in range(num_data):
                     for j in range(self.predictor.num_class):
@@ -573,7 +581,7 @@ class _InnerDataset(object):
         ret.handle = ctypes.c_void_p()
         params_str = param_dict_to_str(params)
         _safe_call(_LIB.LGBM_DatasetGetSubset(
-            ctypes.byref(self.handle),
+            self.handle,
             used_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
             used_indices.shape[0],
             c_str(params_str),
@@ -981,8 +989,7 @@ class Dataset(object):
             self._predictor = predictor
             self.inner_dataset = None
         else:
-            raise LightGBMError("Cannot set predictor after freed raw data,\
-             Set free_raw_data=False when construct Dataset to avoid this.")
+            raise LightGBMError("Cannot set predictor after freed raw data,Set free_raw_data=False when construct Dataset to avoid this.")
 
     def set_reference(self, reference):
         """
@@ -1148,6 +1155,12 @@ class Dataset(object):
         """
         if self.group is None and self.__is_constructed():
             self.group = self.inner_dataset.get_group()
+            if self.group is not None:
+                # group data from LightGBM is boundaries data, need to convert to group size
+                new_group = []
+                for i in range(len(self.group) - 1):
+                    new_group.append(self.group[i + 1] - self.group[i])
+                self.group = new_group
         return self.group
 
     def num_data(self):

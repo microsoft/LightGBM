@@ -6,7 +6,7 @@
 
 namespace LightGBM {
 
-FeatureParallelTreeLearner::FeatureParallelTreeLearner(const TreeConfig& tree_config)
+FeatureParallelTreeLearner::FeatureParallelTreeLearner(const TreeConfig* tree_config)
   :SerialTreeLearner(tree_config) {
 }
 

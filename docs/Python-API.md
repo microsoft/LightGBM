@@ -6,13 +6,21 @@
 
 * [Training API](Python-API.md#training-api)
     - [train](Python-API.md#trainparams-train_set-num_boost_round100-valid_setsnone-valid_namesnone-fobjnone-fevalnone-init_modelnone-feature_namenone-categorical_featurenone-early_stopping_roundsnone-evals_resultnone-verbose_evaltrue-learning_ratesnone-callbacksnone)
-    - [cv](Python-API.md#cvparams-train_set-num_boost_round10-nfold5-stratifiedfalse-metricsnone-fobjnone-fevalnone-init_modelnone-feature_namenone-categorical_featurenone-early_stopping_roundsnone-fpreprocnone-verbose_evalnone-show_stdvtrue-seed0-callbacksnone)
+    - [cv](Python-API.md#cvparams-train_set-num_boost_round10-nfold5-stratifiedfalse-shuffletrue-metricsnone-fobjnone-fevalnone-init_modelnone-feature_namenone-categorical_featurenone-early_stopping_roundsnone-fpreprocnone-verbose_evalnone-show_stdvtrue-seed0-callbacksnone)
 
 * [Scikit-learn API](Python-API.md#scikit-learn-api)
     - [Common Methods](Python-API.md#common-methods)
     - [LGBMClassifier](Python-API.md#lgbmclassifier)
     - [LGBMRegressor](Python-API.md#lgbmregressor)
     - [LGBMRanker](Python-API.md#lgbmranker)
+
+* [Callbacks](Python-API.md#callbacks)
+    - [Before iteration](Python-API.md#before-iteration)
+        + [reset_parameter](Python-API.md#reset_parameterkwargs)
+    - [After iteration](Python-API.md#after-iteration)
+        + [print_evaluation](Python-API.md#print_evaluationperiod1-show_stdvtrue)
+        + [record_evaluation](Python-API.md#record_evaluationeval_result)
+        + [early_stopping](Python-API.md#early_stoppingstopping_rounds-verbosetrue)
     
 The methods of each Class is in alphabetical order.
 
@@ -496,12 +504,10 @@ The methods of each Class is in alphabetical order.
             an evaluation metric is printed every 4 (instead of 1) boosting stages.
     learning_rates: list or function
         List of learning rate for each boosting round
-        or a customized function that calculates learning_rate in terms of
-        current number of round (and the total number of boosting round)
-        (e.g. yields learning rate decay)
+        or a customized function that calculates learning_rate
+        in terms of current number of round (e.g. yields learning rate decay)
         - list l: learning_rate = l[current_round]
-        - function f: learning_rate = f(current_round, total_boost_round)
-                   or learning_rate = f(current_round)
+        - function f: learning_rate = f(current_round)
     callbacks : list of callback functions
         List of callback functions that are applied at end of each iteration.
 
@@ -510,7 +516,7 @@ The methods of each Class is in alphabetical order.
     booster : a trained booster model
     
 
-####cv(params, train_set, num_boost_round=10, nfold=5, stratified=False, metrics=None, fobj=None, feval=None, init_model=None, feature_name=None, categorical_feature=None, early_stopping_rounds=None, fpreproc=None, verbose_eval=None, show_stdv=True, seed=0, callbacks=None)
+####cv(params, train_set, num_boost_round=10, nfold=5, stratified=False, shuffle=True, metrics=None, fobj=None, feval=None, init_model=None, feature_name=None, categorical_feature=None, early_stopping_rounds=None, fpreproc=None, verbose_eval=None, show_stdv=True, seed=0, callbacks=None)
 
     Cross-validation with given paramaters.
 
@@ -526,6 +532,8 @@ The methods of each Class is in alphabetical order.
         Number of folds in CV.
     stratified : bool
         Perform stratified sampling.
+    shuffle: bool
+        Whether shuffle before split data.
     folds : a KFold or StratifiedKFold instance
         Sklearn KFolds or StratifiedKFolds.
     metrics : str or list of str
@@ -588,6 +596,8 @@ The methods of each Class is in alphabetical order.
         Boosting learning rate
     n_estimators : int
         Number of boosted trees to fit.
+    max_bin : int
+        Number of bucketed bin for feature values
     silent : boolean
         Whether to print messages while running boosting.
     objective : str or callable
@@ -715,6 +725,7 @@ The methods of each Class is in alphabetical order.
     eval_metric : str, list of str, callable, optional
         If a str, should be a built-in evaluation metric to use.
         If callable, a custom evaluation metric, see note for more details.
+        default: binary_error for LGBMClassifier, l2 for LGBMRegressor, ndcg for LGBMRanker
     early_stopping_rounds : int
     verbose : bool
         If `verbose` and an evaluation set is used, writes the evaluation
@@ -798,10 +809,87 @@ The methods of each Class is in alphabetical order.
 
 ###LGBMRanker
 
-####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric=None, eval_at=None, early_stopping_rounds=None, verbose=True, feature_name=None, categorical_feature=None, other_params=None)
+####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric='ndcg', eval_at=1, early_stopping_rounds=None, verbose=True, feature_name=None, categorical_feature=None, other_params=None)
 
     Most arguments are same as Common Methods except:
 
-    eval_at : list of int
+    eval_at : int or list of int, default=1
         The evaulation positions of NDCG
 
+## Callbacks
+
+###Before iteration
+
+####reset_parameter(**kwargs)
+
+    Reset parameter after first iteration
+
+    NOTE: the initial parameter will still take in-effect on first iteration.
+
+    Parameters
+    ----------
+    **kwargs: value should be list or function
+        List of parameters for each boosting round
+        or a customized function that calculates learning_rate in terms of
+        current number of round (e.g. yields learning rate decay)
+        - list l: parameter = l[current_round]
+        - function f: parameter = f(current_round)
+    Returns
+    -------
+    callback : function
+        The requested callback function.
+
+###After iteration
+
+####print_evaluation(period=1, show_stdv=True)
+
+    Create a callback that print evaluation result.
+    (Same function as `verbose_eval` in lightgbm.train())
+
+    Parameters
+    ----------
+    period : int
+        The period to log the evaluation results
+
+    show_stdv : bool, optional
+        Whether show standard deviation if provided
+
+    Returns
+    -------
+    callback : function
+        A callback that prints evaluation every period iterations.
+
+####record_evaluation(eval_result)
+
+    Create a call back that records the evaluation history into eval_result.
+    (Same function as `evals_result` in lightgbm.train())
+
+    Parameters
+    ----------
+    eval_result : dict
+       A dictionary to store the evaluation results.
+
+    Returns
+    -------
+    callback : function
+        The requested callback function.
+
+####early_stopping(stopping_rounds, verbose=True)
+
+    Create a callback that activates early stopping.
+    To activates early stopping, at least one validation data and one metric is required.
+    If there's more than one, all of them will be checked.
+    (Same function as `early_stopping_rounds` in lightgbm.train())
+
+    Parameters
+    ----------
+    stopping_rounds : int
+       The stopping rounds before the trend occur.
+
+    verbose : optional, bool
+        Whether to print message about early stopping information.
+
+    Returns
+    -------
+    callback : function
+        The requested callback function.

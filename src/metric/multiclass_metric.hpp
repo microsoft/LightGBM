@@ -56,7 +56,8 @@ public:
       for (data_size_t i = 0; i < num_data_; ++i) {
         std::vector<double> rec(num_class_);
         for (int k = 0; k < num_class_; ++k) {
-          rec[k] = static_cast<double>(score[k * num_data_ + i]);
+          size_t idx = static_cast<size_t>(num_data_) * k + i;
+          rec[k] = static_cast<double>(score[idx]);
         }
         // add loss
         sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec);
@@ -66,7 +67,8 @@ public:
       for (data_size_t i = 0; i < num_data_; ++i) {
         std::vector<double> rec(num_class_);
         for (int k = 0; k < num_class_; ++k) {
-          rec[k] = static_cast<double>(score[k * num_data_ + i]);
+          size_t idx = static_cast<size_t>(num_data_) * k + i;
+          rec[k] = static_cast<double>(score[idx]);
         }
         // add loss
         sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec) * weights_[i];
@@ -101,11 +103,11 @@ public:
   inline static score_t LossOnPoint(float label, std::vector<double> score) {
     size_t k = static_cast<size_t>(label);
     for (size_t i = 0; i < score.size(); ++i){
-        if (i != k && score[i] > score[k]) {
-            return 0.0f;
+        if (i != k && score[i] >= score[k]) {
+            return 1.0f;
         }
     }
-    return 1.0f;
+    return 0.0f;
   }
 
   inline static const char* Name() {
