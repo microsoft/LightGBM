@@ -27,6 +27,10 @@ public:
     const float* init_score = data->metadata().init_score();
     // if exists initial score, will start from it
     if (init_score != nullptr) {
+      if ((data->metadata().num_init_score() % num_data_) != 0 
+        || (data->metadata().num_init_score() / num_data_) != num_class) {
+        Log::Fatal("number of class for initial score error");
+      }
       for (size_t i = 0; i < total_size; ++i) {
         score_[i] = init_score[i];
       }

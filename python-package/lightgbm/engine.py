@@ -92,6 +92,7 @@ def train(params, train_set, num_boost_round=100,
     if not isinstance(train_set, Dataset):
         raise TypeError("Traninig only accepts Dataset object")
 
+    train_set._update_params(params)
     train_set._set_predictor(predictor)
     train_set.set_feature_name(feature_name)
     train_set.set_categorical_feature(categorical_feature)
@@ -120,7 +121,8 @@ def train(params, train_set, num_boost_round=100,
                 name_valid_sets.append(valid_names[i])
             else:
                 name_valid_sets.append('valid_'+str(i))
-
+        for valid_data in valid_sets:
+            valid_data._update_params(params)
     """process callbacks"""
     if callbacks is None:
         callbacks = set()
@@ -332,7 +334,7 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
         predictor = init_model._to_predictor()
     else:
         predictor = None
-
+    train_set._update_params(params)
     train_set._set_predictor(predictor)
     train_set.set_feature_name(feature_name)
     train_set.set_categorical_feature(categorical_feature)

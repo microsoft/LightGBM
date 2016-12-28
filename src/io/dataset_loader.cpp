@@ -8,8 +8,8 @@
 
 namespace LightGBM {
 
-DatasetLoader::DatasetLoader(const IOConfig& io_config, const PredictFunction& predict_fun, const char* filename)
-  :io_config_(io_config), random_(io_config_.data_random_seed), predict_fun_(predict_fun) {
+DatasetLoader::DatasetLoader(const IOConfig& io_config, const PredictFunction& predict_fun, int num_class, const char* filename)
+  :io_config_(io_config), random_(io_config_.data_random_seed), predict_fun_(predict_fun), num_class_(num_class) {
   label_idx_ = 0;
   weight_idx_ = NO_SPECIFIC;
   group_idx_ = NO_SPECIFIC;
@@ -177,8 +177,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       Log::Fatal("Could not recognize data format of %s", filename);
     }
     dataset->data_filename_ = filename;
-    dataset->num_class_ = io_config_.num_class;
-    dataset->metadata_.Init(filename, dataset->num_class_);
+    dataset->metadata_.Init(filename);
     if (!io_config_.use_two_round_loading) {
       // read data to memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, rank, num_machines,&num_global_data, &used_data_indices);
@@ -188,7 +187,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       // construct feature bin mappers
       ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
       // initialize label
-      dataset->metadata_.Init(dataset->num_data_, io_config_.num_class, weight_idx_, group_idx_);
+      dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
       // extract features
       ExtractFeaturesFromMemory(text_data, parser.get(), dataset.get());
       text_data.clear();
@@ -203,7 +202,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       // construct feature bin mappers
       ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
       // initialize label
-      dataset->metadata_.Init(dataset->num_data_, dataset->num_class_, weight_idx_, group_idx_);
+      dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
 
       // extract features
       ExtractFeaturesFromFile(filename, parser.get(), used_data_indices, dataset.get());
@@ -232,14 +231,13 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
       Log::Fatal("Could not recognize data format of %s", filename);
     }
     dataset->data_filename_ = filename;
-    dataset->num_class_ = io_config_.num_class;
-    dataset->metadata_.Init(filename, dataset->num_class_);
+    dataset->metadata_.Init(filename);
     if (!io_config_.use_two_round_loading) {
       // read data in memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, 0, 1, &num_global_data, &used_data_indices);
       dataset->num_data_ = static_cast<data_size_t>(text_data.size());
       // initialize label
-      dataset->metadata_.Init(dataset->num_data_, dataset->num_class_, weight_idx_, group_idx_);
+      dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
       dataset->CopyFeatureMapperFrom(train_data, io_config_.is_enable_sparse);
       // extract features
       ExtractFeaturesFromMemory(text_data, parser.get(), dataset.get());
@@ -250,7 +248,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
       dataset->num_data_ = static_cast<data_size_t>(text_reader.CountLine());
       num_global_data = dataset->num_data_;
       // initialize label
-      dataset->metadata_.Init(dataset->num_data_, dataset->num_class_, weight_idx_, group_idx_);
+      dataset->metadata_.Init(dataset->num_data_, weight_idx_, group_idx_);
       dataset->CopyFeatureMapperFrom(train_data, io_config_.is_enable_sparse);
       // extract features
       ExtractFeaturesFromFile(filename, parser.get(), used_data_indices, dataset.get());
@@ -316,8 +314,6 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   const char* mem_ptr = buffer.data();
   dataset->num_data_ = *(reinterpret_cast<const data_size_t*>(mem_ptr));
   mem_ptr += sizeof(dataset->num_data_);
-  dataset->num_class_ = *(reinterpret_cast<const int*>(mem_ptr));
-  mem_ptr += sizeof(dataset->num_class_);
   dataset->num_features_ = *(reinterpret_cast<const int*>(mem_ptr));
   mem_ptr += sizeof(dataset->num_features_);
   dataset->num_total_features_ = *(reinterpret_cast<const int*>(mem_ptr));
@@ -448,7 +444,6 @@ Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>&
   }
 
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
-  dataset->num_class_ = io_config_.num_class;
   dataset->features_.clear();
   dataset->num_data_ = num_data;
   // -1 means doesn't use this feature
@@ -482,7 +477,7 @@ Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>&
   }
   dataset->feature_names_ = feature_names_;
   dataset->num_features_ = static_cast<int>(dataset->features_.size());
-  dataset->metadata_.Init(dataset->num_data_, dataset->num_class_, NO_SPECIFIC, NO_SPECIFIC);
+  dataset->metadata_.Init(dataset->num_data_, NO_SPECIFIC, NO_SPECIFIC);
   return dataset.release();
 }
 
@@ -798,7 +793,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
     }
   } else {
     // if need to prediction with initial model
-    std::vector<score_t> init_score(dataset->num_data_ * dataset->num_class_);
+    std::vector<score_t> init_score(dataset->num_data_ * num_class_);
 #pragma omp parallel for schedule(guided) private(oneline_features) firstprivate(tmp_label)
     for (data_size_t i = 0; i < dataset->num_data_; ++i) {
       const int tid = omp_get_thread_num();
@@ -807,7 +802,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
       parser->ParseOneLine(text_data[i].c_str(), &oneline_features, &tmp_label);
       // set initial score
       std::vector<double> oneline_init_score = predict_fun_(oneline_features);
-      for (int k = 0; k < dataset->num_class_; ++k) {
+      for (int k = 0; k < num_class_; ++k) {
         init_score[k * dataset->num_data_ + i] = static_cast<float>(oneline_init_score[k]);
       }
       // set label
@@ -833,7 +828,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
       }
     }
     // metadata_ will manage space of init_score
-    dataset->metadata_.SetInitScore(init_score.data(), dataset->num_data_ * dataset->num_class_);
+    dataset->metadata_.SetInitScore(init_score.data(), dataset->num_data_ * num_class_);
   }
   dataset->FinishLoad();
   // text data can be free after loaded feature values
@@ -844,7 +839,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
 void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* parser, const std::vector<data_size_t>& used_data_indices, Dataset* dataset) {
   std::vector<score_t> init_score;
   if (predict_fun_ != nullptr) {
-    init_score = std::vector<score_t>(dataset->num_data_ * dataset->num_class_);
+    init_score = std::vector<score_t>(dataset->num_data_ * num_class_);
   }
   std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
     [this, &init_score, &parser, &dataset]
@@ -860,7 +855,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
       // set initial score
       if (!init_score.empty()) {
         std::vector<double> oneline_init_score = predict_fun_(oneline_features);
-        for (int k = 0; k < dataset->num_class_; ++k) {
+        for (int k = 0; k < num_class_; ++k) {
           init_score[k * dataset->num_data_ + start_idx + i] = static_cast<float>(oneline_init_score[k]);
         }
       }
@@ -894,7 +889,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
 
   // metadata_ will manage space of init_score
   if (!init_score.empty()) {
-    dataset->metadata_.SetInitScore(init_score.data(), dataset->num_data_ * dataset->num_class_);
+    dataset->metadata_.SetInitScore(init_score.data(), dataset->num_data_ * num_class_);
   }
   dataset->FinishLoad();
 }

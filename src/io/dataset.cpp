@@ -17,14 +17,12 @@ namespace LightGBM {
 const char* Dataset::binary_file_token = "______LightGBM_Binary_File_Token______\n";
 
 Dataset::Dataset() {
-  num_class_ = 1;
   num_data_ = 0;
 }
 
-Dataset::Dataset(data_size_t num_data, int num_class) {
-  num_class_ = num_class;
+Dataset::Dataset(data_size_t num_data) {
   num_data_ = num_data;
-  metadata_.Init(num_data_, num_class_, -1, -1);
+  metadata_.Init(num_data_, -1, -1);
 }
 
 Dataset::~Dataset() {
@@ -50,7 +48,6 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset, bool is_enable_spars
       ));
   }
   features_.shrink_to_fit();
-  num_class_ = dataset->num_class_;
   used_feature_map_ = dataset->used_feature_map_;
   num_features_ = static_cast<int>(features_.size());
   num_total_features_ = dataset->num_total_features_;
@@ -59,7 +56,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset, bool is_enable_spars
 }
 
 Dataset* Dataset::Subset(const data_size_t* used_indices, data_size_t num_used_indices, bool is_enable_sparse) const {
-  auto ret = std::unique_ptr<Dataset>(new Dataset(num_used_indices, num_class_));
+  auto ret = std::unique_ptr<Dataset>(new Dataset(num_used_indices));
   ret->CopyFeatureMapperFrom(this, is_enable_sparse);
 #pragma omp parallel for schedule(guided)
   for (int fidx = 0; fidx < num_features_; ++fidx) {
@@ -169,7 +166,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     size_t size_of_token = std::strlen(binary_file_token);
     fwrite(binary_file_token, sizeof(char), size_of_token, file);
     // get size of header
-    size_t size_of_header = sizeof(num_data_) + sizeof(num_class_) + sizeof(num_features_) + sizeof(num_total_features_) 
+    size_t size_of_header = sizeof(num_data_) + sizeof(num_features_) + sizeof(num_total_features_) 
       + sizeof(size_t) + sizeof(int) * used_feature_map_.size();
     // size of feature names
     for (int i = 0; i < num_total_features_; ++i) {
@@ -178,7 +175,6 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     fwrite(&size_of_header, sizeof(size_of_header), 1, file);
     // write header
     fwrite(&num_data_, sizeof(num_data_), 1, file);
-    fwrite(&num_class_, sizeof(num_class_), 1, file);
     fwrite(&num_features_, sizeof(num_features_), 1, file);
     fwrite(&num_total_features_, sizeof(num_features_), 1, file);
     size_t num_used_feature_map = used_feature_map_.size();

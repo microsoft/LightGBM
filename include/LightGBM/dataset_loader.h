@@ -8,7 +8,7 @@ namespace LightGBM {
 class DatasetLoader {
 public:
 
-  DatasetLoader(const IOConfig& io_config, const PredictFunction& predict_fun, const char* filename);
+  DatasetLoader(const IOConfig& io_config, const PredictFunction& predict_fun, int num_class, const char* filename);
 
   ~DatasetLoader();
 
@@ -57,6 +57,8 @@ private:
   Random random_;
   /*! \brief prediction function for initial model */
   const PredictFunction& predict_fun_;
+  /*! \brief number of classes */
+  int num_class_;
   /*! \brief index of label column */
   int label_idx_;
   /*! \brief index of weight column */
