@@ -138,7 +138,9 @@ class LGBMModel(LGBMModelBase):
                  nthread=-1, min_split_gain=0, min_child_weight=5, min_child_samples=10,
                  subsample=1, subsample_freq=1, colsample_bytree=1,
                  reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
-                 is_unbalance=False, seed=0):
+                 is_unbalance=False, seed=0,
+                 drop_rate=0.1, skip_drop=0.5, max_drop=50,
+                 uniform_drop=False, xgboost_dart_mode=False):
         """
         Implementation of the Scikit-Learn API for LightGBM.
 
@@ -187,6 +189,16 @@ class LGBMModel(LGBMModelBase):
             Is unbalance for binary classification
         seed : int
             Random number seed.
+        drop_rate : float
+            Only used when boosting_type='dart'. Probablity to select dropping trees.
+        skip_drop : float
+            Only used when boosting_type='dart'. Probablity to skip dropping trees.
+        max_drop : int
+            Only used when boosting_type='dart'. Max number of dropped trees in one iteration.
+        uniform_drop : bool
+            Only used when boosting_type='dart'. If true, drop trees uniformly, else drop according to weights.
+        xgboost_dart_mode : bool
+            Only used when boosting_type='dart'. Whether use xgboost dart mode.
 
         Note
         ----
@@ -233,6 +245,11 @@ class LGBMModel(LGBMModelBase):
         self.scale_pos_weight = scale_pos_weight
         self.is_unbalance = is_unbalance
         self.seed = seed
+        self.drop_rate = drop_rate
+        self.skip_drop = skip_drop
+        self.max_drop = max_drop
+        self.uniform_drop = uniform_drop
+        self.xgboost_dart_mode = xgboost_dart_mode
         self._Booster = None
         self.best_iteration = -1
         if callable(self.objective):
@@ -253,23 +270,13 @@ class LGBMModel(LGBMModelBase):
             raise LightGBMError('Need to call fit beforehand')
         return self._Booster
 
-    def get_params(self, deep=False):
-        """
-        Get parameters
-        """
-        params = super(LGBMModel, self).get_params(deep=deep)
-        if self.nthread <= 0:
-            params.pop('nthread', None)
-        return params
-
     def fit(self, X, y,
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_sample_weight=None,
             eval_init_score=None, eval_group=None,
             eval_metric=None,
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None,
-            other_params=None):
+            feature_name=None, categorical_feature=None):
         """
         Fit the gradient boosting model
 
@@ -305,8 +312,6 @@ class LGBMModel(LGBMModelBase):
             Categorical features,
             type int represents index,
             type str represents feature names (need to specify feature_name as well)
-        other_params: dict
-            Other parameters
 
         Note
         ----
@@ -335,10 +340,11 @@ class LGBMModel(LGBMModelBase):
         """
         evals_result = {}
         params = self.get_params()
-        params['verbose'] = 0 if self.silent else 1
-
-        if other_params is not None:
-            params.update(other_params)
+        params['verbose'] = -1 if self.silent else 1
+        if hasattr(self, 'n_classes_') and self.n_classes_ > 2:
+            params['num_class'] = self.n_classes_
+        if hasattr(self, 'eval_at'):
+            params['ndcg_eval_at'] = self.eval_at
 
         if self.fobj:
             params["objective"] = "None"
@@ -408,9 +414,9 @@ class LGBMModel(LGBMModelBase):
         -------
         predicted_result : array_like, shape=[n_samples] or [n_samples, n_classes]
         """
-        return self.booster().predict(data,
-                                      raw_score=raw_score,
-                                      num_iteration=num_iteration)
+        return self._Booster.predict(data,
+                                     raw_score=raw_score,
+                                     num_iteration=num_iteration)
 
     def apply(self, X, num_iteration=0):
         """
@@ -428,9 +434,9 @@ class LGBMModel(LGBMModelBase):
         -------
         X_leaves : array_like, shape=[n_samples, n_trees]
         """
-        return self.booster().predict(X,
-                                      pred_leaf=True,
-                                      num_iteration=num_iteration)
+        return self._Booster.predict(X,
+                                     pred_leaf=True,
+                                     num_iteration=num_iteration)
 
     def evals_result(self):
         """
@@ -466,14 +472,16 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
             eval_init_score=None,
             eval_metric="l2",
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None,
-            other_params=None):
+            feature_name=None, categorical_feature=None):
 
-        super(LGBMRegressor, self).fit(X, y, sample_weight, init_score, None,
-                                       eval_set, eval_sample_weight, eval_init_score, None,
-                                       eval_metric, early_stopping_rounds,
-                                       verbose, feature_name, categorical_feature,
-                                       other_params)
+        super(LGBMRegressor, self).fit(X, y, sample_weight=sample_weight,
+                                       init_score=init_score, eval_set=eval_set,
+                                       eval_sample_weight=eval_sample_weight,
+                                       eval_init_score=eval_init_score,
+                                       eval_metric=eval_metric,
+                                       early_stopping_rounds=early_stopping_rounds,
+                                       verbose=verbose, feature_name=feature_name,
+                                       categorical_feature=categorical_feature)
         return self
 
 class LGBMClassifier(LGBMModel, LGBMClassifierBase):
@@ -484,14 +492,20 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
                  nthread=-1, min_split_gain=0, min_child_weight=5, min_child_samples=10,
                  subsample=1, subsample_freq=1, colsample_bytree=1,
                  reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
-                 is_unbalance=False, seed=0):
-        super(LGBMClassifier, self).__init__(boosting_type, num_leaves, max_depth,
-                                             learning_rate, n_estimators, max_bin,
-                                             silent, objective, nthread,
-                                             min_split_gain, min_child_weight, min_child_samples,
-                                             subsample, subsample_freq, colsample_bytree,
-                                             reg_alpha, reg_lambda, scale_pos_weight,
-                                             is_unbalance, seed)
+                 is_unbalance=False, seed=0,
+                 drop_rate=0.1, skip_drop=0.5, max_drop=50,
+                 uniform_drop=False, xgboost_dart_mode=False):
+        super(LGBMClassifier, self).__init__(boosting_type=boosting_type, num_leaves=num_leaves,
+                                             max_depth=max_depth, learning_rate=learning_rate,
+                                             n_estimators=n_estimators, max_bin=max_bin,
+                                             silent=silent, objective=objective, nthread=nthread,
+                                             min_split_gain=min_split_gain, min_child_weight=min_child_weight,
+                                             min_child_samples=min_child_samples, subsample=subsample,
+                                             subsample_freq=subsample_freq, colsample_bytree=colsample_bytree,
+                                             reg_alpha=reg_alpha, reg_lambda=reg_lambda,
+                                             scale_pos_weight=scale_pos_weight, is_unbalance=is_unbalance, seed=seed,
+                                             drop_rate=drop_rate, skip_drop=skip_drop, max_drop=max_drop,
+                                             uniform_drop=uniform_drop, xgboost_dart_mode=xgboost_dart_mode)
 
     def fit(self, X, y,
             sample_weight=None, init_score=None,
@@ -499,37 +513,35 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
             eval_init_score=None,
             eval_metric="binary_logloss",
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None,
-            other_params=None):
+            feature_name=None, categorical_feature=None):
 
-        self.classes_ = np.unique(y)
-        self.n_classes_ = len(self.classes_)
-        if other_params is None:
-            other_params = {}
+        self._le = LGBMLabelEncoder().fit(y)
+        y = self._le.transform(y)
+
+        self.n_classes_ = len(self._le.classes_)
         if self.n_classes_ > 2:
             # Switch to using a multiclass objective in the underlying LGBM instance
             self.objective = "multiclass"
-            other_params['num_class'] = self.n_classes_
             if eval_set is not None and eval_metric == "binary_logloss":
                 eval_metric = "multi_logloss"
 
-        self._le = LGBMLabelEncoder().fit(y)
-        training_labels = self._le.transform(y)
-
         if eval_set is not None:
-            eval_set = list((x[0], self._le.transform(x[1])) for x in eval_set)
+            eval_set = [(x[0], self._le.transform(x[1])) for x in eval_set]
 
-        super(LGBMClassifier, self).fit(X, training_labels, sample_weight, init_score, None,
-                                        eval_set, eval_sample_weight, eval_init_score, None,
-                                        eval_metric, early_stopping_rounds,
-                                        verbose, feature_name, categorical_feature,
-                                        other_params)
+        super(LGBMClassifier, self).fit(X, y, sample_weight=sample_weight,
+                                        init_score=init_score, eval_set=eval_set,
+                                        eval_sample_weight=eval_sample_weight,
+                                        eval_init_score=eval_init_score,
+                                        eval_metric=eval_metric,
+                                        early_stopping_rounds=early_stopping_rounds,
+                                        verbose=verbose, feature_name=feature_name,
+                                        categorical_feature=categorical_feature)
         return self
 
     def predict(self, data, raw_score=False, num_iteration=0):
-        class_probs = self.booster().predict(data,
-                                             raw_score=raw_score,
-                                             num_iteration=num_iteration)
+        class_probs = self._Booster.predict(data,
+                                            raw_score=raw_score,
+                                            num_iteration=num_iteration)
         if len(class_probs.shape) > 1:
             column_indexes = np.argmax(class_probs, axis=1)
         else:
@@ -553,9 +565,9 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
         -------
         predicted_probability : array_like, shape=[n_samples, n_classes]
         """
-        class_probs = self.booster().predict(data,
-                                             raw_score=raw_score,
-                                             num_iteration=num_iteration)
+        class_probs = self._Booster.predict(data,
+                                            raw_score=raw_score,
+                                            num_iteration=num_iteration)
         if self.n_classes_ > 2:
             return class_probs
         else:
@@ -571,14 +583,20 @@ class LGBMRanker(LGBMModel):
                  nthread=-1, min_split_gain=0, min_child_weight=5, min_child_samples=10,
                  subsample=1, subsample_freq=1, colsample_bytree=1,
                  reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
-                 is_unbalance=False, seed=0):
-        super(LGBMRanker, self).__init__(boosting_type, num_leaves, max_depth,
-                                         learning_rate, n_estimators, max_bin,
-                                         silent, objective, nthread,
-                                         min_split_gain, min_child_weight, min_child_samples,
-                                         subsample, subsample_freq, colsample_bytree,
-                                         reg_alpha, reg_lambda, scale_pos_weight,
-                                         is_unbalance, seed)
+                 is_unbalance=False, seed=0,
+                 drop_rate=0.1, skip_drop=0.5, max_drop=50,
+                 uniform_drop=False, xgboost_dart_mode=False):
+        super(LGBMRanker, self).__init__(boosting_type=boosting_type, num_leaves=num_leaves,
+                                         max_depth=max_depth, learning_rate=learning_rate,
+                                         n_estimators=n_estimators, max_bin=max_bin,
+                                         silent=silent, objective=objective, nthread=nthread,
+                                         min_split_gain=min_split_gain, min_child_weight=min_child_weight,
+                                         min_child_samples=min_child_samples, subsample=subsample,
+                                         subsample_freq=subsample_freq, colsample_bytree=colsample_bytree,
+                                         reg_alpha=reg_alpha, reg_lambda=reg_lambda,
+                                         scale_pos_weight=scale_pos_weight, is_unbalance=is_unbalance, seed=seed,
+                                         drop_rate=drop_rate, skip_drop=skip_drop, max_drop=max_drop,
+                                         uniform_drop=uniform_drop, xgboost_dart_mode=xgboost_dart_mode)
 
     def fit(self, X, y,
             sample_weight=None, init_score=None, group=None,
@@ -586,8 +604,7 @@ class LGBMRanker(LGBMModel):
             eval_init_score=None, eval_group=None,
             eval_metric='ndcg', eval_at=1,
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None,
-            other_params=None):
+            feature_name=None, categorical_feature=None):
         """
         Most arguments like common methods except following:
 
@@ -610,13 +627,13 @@ class LGBMRanker(LGBMModel):
                         raise ValueError("Should set group for all eval dataset for ranking task")
 
         if eval_at is not None:
-            other_params = {} if other_params is None else other_params
-            if isinstance(eval_at, int):
-                eval_at = [eval_at]
-            other_params['ndcg_eval_at'] = list(eval_at)
-        super(LGBMRanker, self).fit(X, y, sample_weight, init_score, group,
-                                    eval_set, eval_sample_weight, eval_init_score, eval_group,
-                                    eval_metric, early_stopping_rounds,
-                                    verbose, feature_name, categorical_feature,
-                                    other_params)
+            self.eval_at = eval_at
+        super(LGBMRanker, self).fit(X, y, sample_weight=sample_weight,
+                                    init_score=init_score, group=group,
+                                    eval_set=eval_set, eval_sample_weight=eval_sample_weight,
+                                    eval_init_score=eval_init_score, eval_group=eval_group,
+                                    eval_metric=eval_metric,
+                                    early_stopping_rounds=early_stopping_rounds,
+                                    verbose=verbose, feature_name=feature_name,
+                                    categorical_feature=categorical_feature)
         return self
