@@ -665,6 +665,15 @@ DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
   API_END();
 }
 
+DllExport int LGBM_BoosterGetNumPredict(BoosterHandle handle,
+  int data_idx,
+  int64_t* out_len) {
+  API_BEGIN();
+  auto boosting = reinterpret_cast<Booster*>(handle)->GetBoosting();
+  *out_len = boosting->GetNumPredictAt(data_idx);
+  API_END();
+}
+
 DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
   int data_idx,
   int64_t* out_len,

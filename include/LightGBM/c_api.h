@@ -373,6 +373,19 @@ DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
   float* out_results);
 
 /*!
+* \brief Get number of predict for inner dataset
+this can be used to support customized eval function
+Note:  should pre-allocate memory for out_result, its length is equal to num_class * num_data
+* \param handle handle
+* \param data_idx 0:training data, 1: 1st valid data, 2:2nd valid data ...
+* \param out_len len of output result
+* \return 0 when succeed, -1 when failure happens
+*/
+DllExport int LGBM_BoosterGetNumPredict(BoosterHandle handle,
+  int data_idx,
+  int64_t* out_len);
+
+/*!
 * \brief Get prediction for training data and validation data
          this can be used to support customized eval function
          Note:  should pre-allocate memory for out_result, its length is equal to num_class * num_data 

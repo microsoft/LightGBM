@@ -39,8 +39,8 @@ void _DatasetFinalizer(SEXP ext) {
 }
 
 SEXP LGBM_DatasetCreateFromFile_R(SEXP filename, SEXP parameters, SEXP reference) {
-  SEXP ret;
   R_API_BEGIN();
+  SEXP ret;
   DatasetHandle handle;
   CHECK_CALL(LGBM_DatasetCreateFromFile(CHAR(asChar(filename)), CHAR(asChar(parameters)), 
     R_ExternalPtrAddr(reference), &handle));
@@ -81,8 +81,8 @@ SEXP LGBM_DatasetCreateFromCSR_R(SEXP indptr,
 SEXP LGBM_DatasetCreateFromMat_R(SEXP mat,
   SEXP parameters,
   SEXP reference) {
-  SEXP ret;
   R_API_BEGIN();
+  SEXP ret;
   SEXP dim = getAttrib(mat, R_DimSymbol);
   int32_t nrow = static_cast<int32_t>(INTEGER(dim)[0]);
   int32_t ncol = static_cast<int32_t>(INTEGER(dim)[1]);
@@ -198,20 +198,21 @@ SEXP LGBM_DatasetGetField_R(SEXP handle,
     }
   }
   R_API_END();
+  UNPROTECT(1);
   return ret;
 }
 
 SEXP LGBM_DatasetGetNumData_R(SEXP handle) {
-  int64_t nrow;
   R_API_BEGIN();
+  int64_t nrow;
   CHECK_CALL(LGBM_DatasetGetNumData(R_ExternalPtrAddr(handle), &nrow));
   R_API_END();
   return ScalarInteger(static_cast<int>(nrow));
 }
 
 SEXP LGBM_DatasetGetNumFeature_R(SEXP handle) {
-  int64_t nfeature;
   R_API_BEGIN();
+  int64_t nfeature;
   CHECK_CALL(LGBM_DatasetGetNumFeature(R_ExternalPtrAddr(handle), &nfeature));
   R_API_END();
   return ScalarInteger(static_cast<int>(nfeature));
@@ -219,126 +220,188 @@ SEXP LGBM_DatasetGetNumFeature_R(SEXP handle) {
 
 // --- start Booster interfaces
 
-/*!
-* \brief create an new boosting learner
-* \param train_data training data set
-* \param parameters format: 'key1=value1 key2=value2'
-* \return out created Booster
-*/
+void _BoosterFinalizer(SEXP ext) {
+  R_API_BEGIN();
+  if (R_ExternalPtrAddr(ext) == NULL) return;
+  CHECK_CALL(LGBM_BoosterFree(R_ExternalPtrAddr(ext)));
+  R_ClearExternalPtr(ext);
+  R_API_END();
+}
+
 SEXP LGBM_BoosterCreate_R(SEXP train_data,
-  SEXP parameters);
+  SEXP parameters) {
+  R_API_BEGIN();
+  SEXP ret;
+  BoosterHandle handle;
+  CHECK_CALL(LGBM_BoosterCreate(R_ExternalPtrAddr(train_data), CHAR(asChar(parameters)), &handle));
+  ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
+  R_RegisterCFinalizerEx(ret, _BoosterFinalizer, TRUE);
+  R_API_END();
+  UNPROTECT(1);
+  return ret;
+}
 
-/*!
-* \brief load an existing boosting from model file
-* \param filename filename of model
-* \return handle of created Booster
-*/
-SEXP LGBM_BoosterCreateFromModelfile_R(SEXP filename);
+SEXP LGBM_BoosterCreateFromModelfile_R(SEXP filename) {
+  R_API_BEGIN();
+  SEXP ret;
+  int64_t out_num_iterations = 0;
+  BoosterHandle handle;
+  CHECK_CALL(LGBM_BoosterCreateFromModelfile(CHAR(asChar(filename)), &out_num_iterations, &handle));
+  ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
+  R_RegisterCFinalizerEx(ret, _BoosterFinalizer, TRUE);
+  R_API_END();
+  UNPROTECT(1);
+  return ret;
+}
 
-/*!
-* \brief Merge model in two booster to first handle
-* \param handle handle, will merge other handle to this
-* \param other_handle
-* \return R_NilValue
-*/
 SEXP LGBM_BoosterMerge_R(SEXP handle,
-  SEXP other_handle);
+  SEXP other_handle) {
+  R_API_BEGIN();
+  CHECK_CALL(LGBM_BoosterMerge(R_ExternalPtrAddr(handle), R_ExternalPtrAddr(other_handle)));
+  R_API_END();
+  return R_NilValue;
+}
 
-/*!
-* \brief Add new validation to booster
-* \param handle handle
-* \param valid_data validation data set
-* \return R_NilValue
-*/
 SEXP LGBM_BoosterAddValidData_R(SEXP handle,
-  SEXP valid_data);
+  SEXP valid_data) {
+  R_API_BEGIN();
+  CHECK_CALL(LGBM_BoosterAddValidData(R_ExternalPtrAddr(handle), R_ExternalPtrAddr(valid_data)));
+  R_API_END();
+  return R_NilValue;
+}
 
-/*!
-* \brief Reset training data for booster
-* \param handle handle
-* \param train_data training data set
-* \return R_NilValue
-*/
 SEXP LGBM_BoosterResetTrainingData_R(SEXP handle,
-  SEXP train_data);
+  SEXP train_data) {
+  R_API_BEGIN();
+  CHECK_CALL(LGBM_BoosterResetTrainingData(R_ExternalPtrAddr(handle), R_ExternalPtrAddr(train_data)));
+  R_API_END();
+  return R_NilValue;
+}
 
-/*!
-* \brief Reset config for current booster
-* \param handle handle
-* \param parameters format: 'key1=value1 key2=value2'
-* \return R_NilValue
-*/
-SEXP LGBM_BoosterResetParameter_R(SEXP handle, SEXP parameters);
+SEXP LGBM_BoosterResetParameter_R(SEXP handle, SEXP parameters) {
+  R_API_BEGIN();
+  CHECK_CALL(LGBM_BoosterResetParameter(R_ExternalPtrAddr(handle), CHAR(asChar(parameters))));
+  R_API_END();
+  return R_NilValue;
+}
 
-/*!
-* \brief Get number of class
-* \param handle handle
-* \return number of classes
-*/
-SEXP LGBM_BoosterGetNumClasses_R(SEXP handle);
+SEXP LGBM_BoosterGetNumClasses_R(SEXP handle) {
+  R_API_BEGIN();
+  int64_t num_class;
+  CHECK_CALL(LGBM_BoosterGetNumClasses(R_ExternalPtrAddr(handle), &num_class));
+  R_API_END();
+  return ScalarInteger(static_cast<int>(num_class));
+}
 
-/*!
-* \brief update the model in one round
-* \param handle handle
-* \return bool, true means finished
-*/
-SEXP LGBM_BoosterUpdateOneIter_R(SEXP handle);
+SEXP LGBM_BoosterUpdateOneIter_R(SEXP handle) {
+  R_API_BEGIN();
+  int is_finished = 0;
+  CHECK_CALL(LGBM_BoosterUpdateOneIter(R_ExternalPtrAddr(handle), &is_finished));
+  R_API_END();
+  return ScalarLogical(is_finished == 1);
+}
 
-/*!
-* \brief update the model, by directly specify gradient and second order gradient,
-*       this can be used to support customized loss function
-* \param handle handle
-* \param grad gradient statistics
-* \param hess second order gradient statistics
-* \return bool, true means finished
-*/
 SEXP LGBM_BoosterUpdateOneIterCustom_R(SEXP handle,
   SEXP grad,
-  SEXP hess);
+  SEXP hess) {
+  R_API_BEGIN();
+  CHECK(length(grad) == length(hess));
+  int len = length(grad);
+  std::vector<float> tgrad(len), thess(len);
+#pragma omp parallel for schedule(static)
+  for (int j = 0; j < len; ++j) {
+    tgrad[j] = REAL(grad)[j];
+    thess[j] = REAL(hess)[j];
+  }
+  int is_finished = 0;
+  CHECK_CALL(LGBM_BoosterUpdateOneIterCustom(R_ExternalPtrAddr(handle), tgrad.data(), thess.data(), &is_finished));
+  R_API_END();
+  return ScalarLogical(is_finished == 1);
+}
 
-/*!
-* \brief Rollback one iteration
-* \param handle handle
-* \return R_NilValue
-*/
-SEXP LGBM_BoosterRollbackOneIter_R(SEXP handle);
+SEXP LGBM_BoosterRollbackOneIter_R(SEXP handle) {
+  R_API_BEGIN();
+  CHECK_CALL(LGBM_BoosterRollbackOneIter(R_ExternalPtrAddr(handle)));
+  R_API_END();
+  return R_NilValue;
+}
 
-/*!
-* \brief Get iteration of current boosting rounds
-* \return iteration of boosting rounds
-*/
-SEXP LGBM_BoosterGetCurrentIteration_R(SEXP handle);
+SEXP LGBM_BoosterGetCurrentIteration_R(SEXP handle) {
+  R_API_BEGIN();
+  int64_t out_iteration;
+  CHECK_CALL(LGBM_BoosterGetCurrentIteration(R_ExternalPtrAddr(handle), &out_iteration));
+  R_API_END();
+  return ScalarInteger(static_cast<int>(out_iteration));
+}
 
-/*!
-* \brief Get number of eval
-* \return total number of eval results
-*/
-SEXP LGBM_BoosterGetEvalCounts_R(SEXP handle);
+SEXP LGBM_BoosterGetEvalCounts_R(SEXP handle) {
+  R_API_BEGIN();
+  int64_t out_len;
+  CHECK_CALL(LGBM_BoosterGetEvalCounts(R_ExternalPtrAddr(handle), &out_len));
+  R_API_END();
+  return ScalarInteger(static_cast<int>(out_len));
+}
 
-/*!
-* \brief Get Name of eval
-* \return out_strs names of eval result
-*/
-SEXP LGBM_BoosterGetEvalNames_R(SEXP handle);
+SEXP LGBM_BoosterGetEvalNames_R(SEXP handle) {
+  R_API_BEGIN();
+  int64_t len;
+  CHECK_CALL(LGBM_BoosterGetEvalCounts(R_ExternalPtrAddr(handle), &len));
+  std::vector<std::unique_ptr<char[]>> names(len);
+  std::vector<char*> ptr_names(len);
+  for (int i = 0; i < len; ++i) {
+    names[i].reset(new char[128]);
+    ptr_names[i] = names[i].get();
+  }
+  int64_t out_len;
+  CHECK_CALL(LGBM_BoosterGetEvalNames(R_ExternalPtrAddr(handle), &out_len, ptr_names.data()));
+  CHECK(out_len == len);
+  SEXP ret = PROTECT(allocVector(STRSXP, out_len));
+  for (int i = 0; i < out_len; ++i) {
+    SET_STRING_ELT(ret, i, mkChar(names[i].get()));
+  }
+  R_API_END();
+  UNPROTECT(1);
+  return ret;
+}
 
-/*!
-* \brief get evaluation for training data and validation data
-* \param handle handle
-* \param data_idx 0:training data, 1: 1st valid data, 2:2nd valid data ...
-* \return float arrary contains result
-*/
 SEXP LGBM_BoosterGetEval_R(SEXP handle,
-  SEXP data_idx);
+  SEXP data_idx) {
+  R_API_BEGIN();
+  int64_t len;
+  CHECK_CALL(LGBM_BoosterGetEvalCounts(R_ExternalPtrAddr(handle), &len));
+  int c_data_idx = static_cast<int>(INTEGER(data_idx)[0]);
+  std::vector<float> out_result(len);
+  int64_t out_len;
+  CHECK_CALL(LGBM_BoosterGetEval(R_ExternalPtrAddr(handle), c_data_idx, &out_len, out_result.data()));
+  CHECK(out_len == len);
+  SEXP ret = PROTECT(allocVector(REALSXP, out_len));
+  for (int64_t i = 0; i < out_len; ++i) {
+    REAL(ret)[i] = out_result[i];
+  }
+  R_API_END();
+  UNPROTECT(1);
+  return ret;
+}
 
-/*!
-* \brief Get prediction for training data and validation data
-this can be used to support customized eval function
-* \param handle handle
-* \param data_idx 0:training data, 1: 1st valid data, 2:2nd valid data ...
-* \return prediction result
-*/
 SEXP LGBM_BoosterGetPredict_R(SEXP handle,
-  SEXP data_idx);
+  SEXP data_idx) {
+  R_API_BEGIN();
+  int64_t len;
+  int c_data_idx = static_cast<int>(INTEGER(data_idx)[0]);
+  CHECK_CALL(LGBM_BoosterGetNumPredict(R_ExternalPtrAddr(handle), c_data_idx, &len));
+  std::vector<float> out_result(len);
+  int64_t out_len;
+  CHECK_CALL(LGBM_BoosterGetPredict(R_ExternalPtrAddr(handle), c_data_idx, &out_len, out_result.data()));
+  CHECK(out_len == len);
+  SEXP ret = PROTECT(allocVector(REALSXP, out_len));
+#pragma omp parallel for schedule(static)
+  for (int64_t i = 0; i < out_len; ++i) {
+    REAL(ret)[i] = out_result[i];
+  }
+  R_API_END();
+  UNPROTECT(1);
+  return ret;
+}
 
 /*!
 * \brief make prediction for file

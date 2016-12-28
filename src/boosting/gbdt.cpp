@@ -350,7 +350,7 @@ std::string GBDT::OutputMetric(int iter) {
 
 /*! \brief Get eval result */
 std::vector<double> GBDT::GetEvalAt(int data_idx) const {
-  CHECK(data_idx >= 0 && data_idx <= static_cast<int>(valid_metrics_.size()));
+  CHECK(data_idx >= 0 && data_idx <= static_cast<int>(valid_score_updater_.size()));
   std::vector<double> ret;
   if (data_idx == 0) {
     for (auto& sub_metric : training_metrics_) {
@@ -379,7 +379,7 @@ const score_t* GBDT::GetTrainingScore(int64_t* out_len) {
 }
 
 void GBDT::GetPredictAt(int data_idx, score_t* out_result, int64_t* out_len) {
-  CHECK(data_idx >= 0 && data_idx <= static_cast<int>(valid_metrics_.size()));
+  CHECK(data_idx >= 0 && data_idx <= static_cast<int>(valid_score_updater_.size()));
 
   const score_t* raw_scores = nullptr;
   data_size_t num_data = 0;

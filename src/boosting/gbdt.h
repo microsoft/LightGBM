@@ -107,6 +107,14 @@ public:
   */
   virtual const score_t* GetTrainingScore(int64_t* out_len) override;
 
+  virtual int64_t GetNumPredictAt(int data_idx) const override {
+    CHECK(data_idx >= 0 && data_idx <= static_cast<int>(valid_score_updater_.size()));
+    data_size_t num_data = train_data_->num_data();
+    if (data_idx > 0) {
+      num_data = valid_score_updater_[data_idx - 1]->num_data();
+    }
+    return num_data * num_class_;
+  }
   /*!
   * \brief Get prediction result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
