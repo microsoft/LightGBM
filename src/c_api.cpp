@@ -171,7 +171,7 @@ public:
     return Predictor(boosting_.get(), is_raw_score, is_predict_leaf);
   }
 
-  void GetPredictAt(int data_idx, score_t* out_result, int64_t* out_len) {
+  void GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
     boosting_->GetPredictAt(data_idx, out_result, out_len);
   }
 
@@ -653,14 +653,14 @@ DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int64_t* out_len, c
 DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
   int data_idx,
   int64_t* out_len,
-  float* out_results) {
+  double* out_results) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto boosting = ref_booster->GetBoosting();
   auto result_buf = boosting->GetEvalAt(data_idx);
   *out_len = static_cast<int64_t>(result_buf.size());
   for (size_t i = 0; i < result_buf.size(); ++i) {
-    (out_results)[i] = static_cast<float>(result_buf[i]);
+    (out_results)[i] = static_cast<double>(result_buf[i]);
   }
   API_END();
 }
@@ -677,7 +677,7 @@ DllExport int LGBM_BoosterGetNumPredict(BoosterHandle handle,
 DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
   int data_idx,
   int64_t* out_len,
-  float* out_result) {
+  double* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->GetPredictAt(data_idx, out_result, out_len);
@@ -710,7 +710,7 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   int predict_type,
   int64_t num_iteration,
   int64_t* out_len,
-  float* out_result) {
+  double* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto predictor = ref_booster->NewPredictor(static_cast<int>(num_iteration), predict_type);
@@ -729,7 +729,7 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
     auto one_row = get_row_fun(i);
     auto predicton_result = predictor.GetPredictFunction()(one_row);
     for (int j = 0; j < static_cast<int>(predicton_result.size()); ++j) {
-      out_result[i * num_preb_in_one_row + j] = static_cast<float>(predicton_result[j]);
+      out_result[i * num_preb_in_one_row + j] = static_cast<double>(predicton_result[j]);
     }
   }
   *out_len = nrow * num_preb_in_one_row;
@@ -745,7 +745,7 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
   int predict_type,
   int64_t num_iteration,
   int64_t* out_len,
-  float* out_result) {
+  double* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto predictor = ref_booster->NewPredictor(static_cast<int>(num_iteration), predict_type);
@@ -763,7 +763,7 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
     auto one_row = get_row_fun(i);
     auto predicton_result = predictor.GetPredictFunction()(one_row);
     for (int j = 0; j < static_cast<int>(predicton_result.size()); ++j) {
-      out_result[i * num_preb_in_one_row + j] = static_cast<float>(predicton_result[j]);
+      out_result[i * num_preb_in_one_row + j] = static_cast<double>(predicton_result[j]);
     }
   }
   *out_len = nrow * num_preb_in_one_row;
@@ -798,10 +798,10 @@ DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
 DllExport int LGBM_BoosterGetLeafValue(BoosterHandle handle,
   int tree_idx,
   int leaf_idx,
-  float* out_val) {
+  double* out_val) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  *out_val = static_cast<float>(ref_booster->GetLeafValue(tree_idx, leaf_idx));
+  *out_val = static_cast<double>(ref_booster->GetLeafValue(tree_idx, leaf_idx));
   API_END();
 }
 
@@ -809,10 +809,10 @@ DllExport int LGBM_BoosterGetLeafValue(BoosterHandle handle,
 DllExport int LGBM_BoosterSetLeafValue(BoosterHandle handle,
   int tree_idx,
   int leaf_idx,
-  float val) {
+  double val) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  ref_booster->SetLeafValue(tree_idx, leaf_idx, static_cast<double>(val));
+  ref_booster->SetLeafValue(tree_idx, leaf_idx, val);
   API_END();
 }
 

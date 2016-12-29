@@ -288,7 +288,7 @@ class _InnerPredictor(object):
                 lines = tmp_file.readlines()
                 nrow = len(lines)
                 preds = [float(token) for line in lines for token in line.split('\t')]
-                preds = np.array(preds, dtype=np.float32, copy=False)
+                preds = np.array(preds, dtype=np.float64, copy=False)
         elif isinstance(data, scipy.sparse.csr_matrix):
             preds, nrow = self.__pred_for_csr(data, num_iteration,
                                               predict_type)
@@ -342,7 +342,7 @@ class _InnerPredictor(object):
         ptr_data, type_ptr_data = c_float_array(data)
         n_preds = self.__get_num_preds(num_iteration, mat.shape[0],
                                        predict_type)
-        preds = np.zeros(n_preds, dtype=np.float32)
+        preds = np.zeros(n_preds, dtype=np.float64)
         out_num_preds = ctypes.c_int64(0)
         _safe_call(_LIB.LGBM_BoosterPredictForMat(
             self.handle,
@@ -354,7 +354,7 @@ class _InnerPredictor(object):
             predict_type,
             num_iteration,
             ctypes.byref(out_num_preds),
-            preds.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+            preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
             ))
         if n_preds != out_num_preds.value:
             raise ValueError("Wrong length for predict results")
@@ -366,7 +366,7 @@ class _InnerPredictor(object):
         """
         nrow = len(csr.indptr) - 1
         n_preds = self.__get_num_preds(num_iteration, nrow, predict_type)
-        preds = np.zeros(n_preds, dtype=np.float32)
+        preds = np.zeros(n_preds, dtype=np.float64)
         out_num_preds = ctypes.c_int64(0)
 
         ptr_indptr, type_ptr_indptr = c_int_array(csr.indptr)
@@ -385,7 +385,7 @@ class _InnerPredictor(object):
             predict_type,
             num_iteration,
             ctypes.byref(out_num_preds),
-            preds.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+            preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
             ))
         if n_preds != out_num_preds.value:
             raise ValueError("Wrong length for predict results")
@@ -541,6 +541,7 @@ class _InnerDataset(object):
                     for j in range(self.predictor.num_class):
                         new_init_score[j * num_data + i] = init_score[i * self.predictor.num_class + j]
                 init_score = new_init_score
+            init_score = init_score.astype(dtype=np.float32, copy=False)
             self.set_init_score(init_score)
         elif self.predictor is not None:
             raise TypeError('wrong predictor type {}'.format(type(self.predictor).__name__))
@@ -1577,13 +1578,13 @@ class Booster(object):
         self.__get_eval_info()
         ret = []
         if self.__num_inner_eval > 0:
-            result = np.array([0.0 for _ in range(self.__num_inner_eval)], dtype=np.float32)
+            result = np.array([0.0 for _ in range(self.__num_inner_eval)], dtype=np.float64)
             tmp_out_len = ctypes.c_int64(0)
             _safe_call(_LIB.LGBM_BoosterGetEval(
                 self.handle,
                 data_idx,
                 ctypes.byref(tmp_out_len),
-                result.ctypes.data_as(ctypes.POINTER(ctypes.c_float))))
+                result.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
             if tmp_out_len.value != self.__num_inner_eval:
                 raise ValueError("Wrong length of eval results")
             for i in range(self.__num_inner_eval):
@@ -1614,11 +1615,11 @@ class Booster(object):
             else:
                 n_preds = self.valid_sets[data_idx - 1].num_data() * self.__num_class
             self.__inner_predict_buffer[data_idx] = \
-                np.array([0.0 for _ in range(n_preds)], dtype=np.float32, copy=False)
+                np.array([0.0 for _ in range(n_preds)], dtype=np.float64, copy=False)
         """avoid to predict many time in one iteration"""
         if not self.__is_predicted_cur_iter[data_idx]:
             tmp_out_len = ctypes.c_int64(0)
-            data_ptr = self.__inner_predict_buffer[data_idx].ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+            data_ptr = self.__inner_predict_buffer[data_idx].ctypes.data_as(ctypes.POINTER(ctypes.c_double))
             _safe_call(_LIB.LGBM_BoosterGetPredict(
                 self.handle,
                 data_idx,

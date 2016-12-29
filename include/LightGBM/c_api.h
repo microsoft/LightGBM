@@ -371,7 +371,7 @@ DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int64_t* out_len, c
 DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
   int data_idx,
   int64_t* out_len,
-  float* out_results);
+  double* out_results);
 
 /*!
 * \brief Get number of predict for inner dataset
@@ -399,7 +399,7 @@ DllExport int LGBM_BoosterGetNumPredict(BoosterHandle handle,
 DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
   int data_idx,
   int64_t* out_len,
-  float* out_result);
+  double* out_result);
 
 /*!
 * \brief make prediction for file
@@ -456,7 +456,7 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   int predict_type,
   int64_t num_iteration,
   int64_t* out_len,
-  float* out_result);
+  double* out_result);
 
 /*!
 * \brief make prediction for an new data set
@@ -487,7 +487,7 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
   int predict_type,
   int64_t num_iteration,
   int64_t* out_len,
-  float* out_result);
+  double* out_result);
 
 /*!
 * \brief save model into file
@@ -524,7 +524,7 @@ DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
 DllExport int LGBM_BoosterGetLeafValue(BoosterHandle handle,
   int tree_idx,
   int leaf_idx,
-  float* out_val);
+  double* out_val);
 
 /*!
 * \brief Set leaf value
@@ -537,7 +537,7 @@ DllExport int LGBM_BoosterGetLeafValue(BoosterHandle handle,
 DllExport int LGBM_BoosterSetLeafValue(BoosterHandle handle,
   int tree_idx,
   int leaf_idx,
-  float val);
+  double val);
 
 // some help functions used to convert data
 

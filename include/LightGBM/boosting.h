@@ -108,7 +108,7 @@ public:
   * \param result used to store prediction result, should allocate memory before call this function
   * \param out_len lenght of returned score
   */
-  virtual void GetPredictAt(int data_idx, score_t* result, int64_t* out_len) = 0;
+  virtual void GetPredictAt(int data_idx, double* result, int64_t* out_len) = 0;
 
   /*!
   * \brief Prediction for one record, not sigmoid transform

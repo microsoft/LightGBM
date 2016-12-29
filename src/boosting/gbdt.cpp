@@ -378,7 +378,7 @@ const score_t* GBDT::GetTrainingScore(int64_t* out_len) {
   return train_score_updater_->score();
 }
 
-void GBDT::GetPredictAt(int data_idx, score_t* out_result, int64_t* out_len) {
+void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
   CHECK(data_idx >= 0 && data_idx <= static_cast<int>(valid_score_updater_.size()));
 
   const score_t* raw_scores = nullptr;
@@ -401,18 +401,18 @@ void GBDT::GetPredictAt(int data_idx, score_t* out_result, int64_t* out_len) {
       }
       Common::Softmax(&tmp_result);
       for (int j = 0; j < num_class_; ++j) {
-        out_result[j * num_data + i] = static_cast<score_t>(tmp_result[j]);
+        out_result[j * num_data + i] = static_cast<double>(tmp_result[j]);
       }
     }
   } else if(sigmoid_ > 0.0f){
 #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_data; ++i) {
-      out_result[i] = static_cast<score_t>(1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * raw_scores[i])));
+      out_result[i] = static_cast<double>(1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * raw_scores[i])));
     }
   } else {
 #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_data; ++i) {
-      out_result[i] = raw_scores[i];
+      out_result[i] = static_cast<double>(raw_scores[i]);
     }
   }
 

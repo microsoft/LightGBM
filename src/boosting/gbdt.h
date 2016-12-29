@@ -121,7 +121,7 @@ public:
   * \param result used to store prediction result, should allocate memory before call this function
   * \param out_len lenght of returned score
   */
-  void GetPredictAt(int data_idx, score_t* out_result, int64_t* out_len) override;
+  void GetPredictAt(int data_idx, double* out_result, int64_t* out_len) override;
 
   /*!
   * \brief Prediction for one record without sigmoid transformation
