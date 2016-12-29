@@ -292,6 +292,9 @@ class _InnerPredictor(object):
         elif isinstance(data, scipy.sparse.csr_matrix):
             preds, nrow = self.__pred_for_csr(data, num_iteration,
                                               predict_type)
+        elif isinstance(data, scipy.sparse.csc_matrix):
+            preds, nrow = self.__pred_for_csc(data, num_iteration,
+                                              predict_type)
         elif isinstance(data, np.ndarray):
             preds, nrow = self.__pred_for_np2d(data, num_iteration,
                                                predict_type)
@@ -382,6 +385,37 @@ class _InnerPredictor(object):
             len(csr.indptr),
             len(csr.data),
             csr.shape[1],
+            predict_type,
+            num_iteration,
+            ctypes.byref(out_num_preds),
+            preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+            ))
+        if n_preds != out_num_preds.value:
+            raise ValueError("Wrong length for predict results")
+        return preds, nrow
+
+    def __pred_for_csc(self, csc, num_iteration, predict_type):
+        """
+        Predict for a csc data
+        """
+        nrow = csc.shape[0]
+        n_preds = self.__get_num_preds(num_iteration, nrow, predict_type)
+        preds = np.zeros(n_preds, dtype=np.float64)
+        out_num_preds = ctypes.c_int64(0)
+
+        ptr_indptr, type_ptr_indptr = c_int_array(csc.indptr)
+        ptr_data, type_ptr_data = c_float_array(csc.data)
+
+        _safe_call(_LIB.LGBM_BoosterPredictForCSC(
+            self.handle,
+            ptr_indptr,
+            type_ptr_indptr,
+            csc.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+            ptr_data,
+            type_ptr_data,
+            len(csc.indptr),
+            len(csc.data),
+            csc.shape[0],
             predict_type,
             num_iteration,
             ctypes.byref(out_num_preds),
@@ -511,6 +545,8 @@ class _InnerDataset(object):
                 ctypes.byref(self.handle)))
         elif isinstance(data, scipy.sparse.csr_matrix):
             self.__init_from_csr(data, params_str, ref_dataset)
+        elif isinstance(data, scipy.sparse.csc_matrix):
+            self.__init_from_csc(data, params_str, ref_dataset)
         elif isinstance(data, np.ndarray):
             self.__init_from_np2d(data, params_str, ref_dataset)
         else:
@@ -652,6 +688,30 @@ class _InnerDataset(object):
             len(csr.indptr),
             len(csr.data),
             csr.shape[1],
+            c_str(params_str),
+            ref_dataset,
+            ctypes.byref(self.handle)))
+
+    def __init_from_csc(self, csc, params_str, ref_dataset):
+        """
+        Initialize data from a csc matrix.
+        """
+        if len(csc.indices) != len(csc.data):
+            raise ValueError('Length mismatch: {} vs {}'.format(len(csc.indices), len(csc.data)))
+        self.handle = ctypes.c_void_p()
+
+        ptr_indptr, type_ptr_indptr = c_int_array(csc.indptr)
+        ptr_data, type_ptr_data = c_float_array(csc.data)
+
+        _safe_call(_LIB.LGBM_DatasetCreateFromCSC(
+            ptr_indptr,
+            type_ptr_indptr,
+            csc.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+            ptr_data,
+            type_ptr_data,
+            len(csc.indptr),
+            len(csc.data),
+            csc.shape[0],
             c_str(params_str),
             ref_dataset,
             ctypes.byref(self.handle)))
