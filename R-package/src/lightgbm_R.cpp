@@ -440,7 +440,7 @@ SEXP LGBM_BoosterPredictForCSR_R(SEXP handle,
   SEXP is_rawscore,
   SEXP is_leafidx,
   SEXP num_iteration) {
-  SEXP ret
+  SEXP ret;
   R_API_BEGIN();
   int pred_type = C_API_PREDICT_NORMAL;
   if (asInteger(is_rawscore)) {
@@ -492,6 +492,7 @@ SEXP LGBM_BoosterPredictForMat_R(SEXP handle,
   SEXP is_rawscore,
   SEXP is_leafidx,
   SEXP num_iteration) {
+  SEXP ret;
   R_API_BEGIN();
   int pred_type = C_API_PREDICT_NORMAL;
   if (asInteger(is_rawscore)) {
@@ -524,7 +525,7 @@ SEXP LGBM_BoosterPredictForMat_R(SEXP handle,
     p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, 1,
     pred_type, asInteger(num_iteration), &out_len, out_result.data()));
 
-  SEXP ret = PROTECT(allocVector(REALSXP, out_len));
+  ret = PROTECT(allocVector(REALSXP, out_len));
 
 #pragma omp parallel for schedule(static)
   for (int64_t i = 0; i < out_len; ++i) {
