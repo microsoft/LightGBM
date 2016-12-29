@@ -92,9 +92,8 @@ SEXP LGBM_DatasetCreateFromMat_R(SEXP mat,
   int32_t nrow = static_cast<int32_t>(INTEGER(dim)[0]);
   int32_t ncol = static_cast<int32_t>(INTEGER(dim)[1]);
   double* p_mat = REAL(mat);
-
   DatasetHandle handle;
-  CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, 1,
+  CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, 0,
     CHAR(asChar(parameters)), R_ExternalPtrAddr(reference), &handle));
   ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
   R_RegisterCFinalizerEx(ret, _DatasetFinalizer, TRUE);

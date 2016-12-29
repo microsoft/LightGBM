@@ -17,6 +17,7 @@
 #include <memory>
 #include <stdexcept>
 #include <mutex>
+#include <functional>
 
 #include "./application/predictor.hpp"
 #include "./boosting/gbdt.h"
@@ -233,6 +234,44 @@ private:
 
 using namespace LightGBM;
 
+// some help functions used to convert data
+
+std::function<std::vector<double>(int row_idx)>
+RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_type, int is_row_major);
+
+std::function<std::vector<std::pair<int, double>>(int row_idx)>
+RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_type, int is_row_major);
+
+std::function<std::vector<std::pair<int, double>>(int idx)>
+RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices,
+  const void* data, int data_type, int64_t nindptr, int64_t nelem);
+
+// Row iterator of on column for CSC matrix
+class CSC_RowIterator {
+public:
+  CSC_RowIterator(const void* col_ptr, int col_ptr_type, const int32_t* indices,
+    const void* data, int data_type, int64_t ncol_ptr, int64_t nelem, int col_idx) {}
+  ~CSC_RowIterator(){}
+  // return value at idx
+  double Get(int idx) { return 0; }
+  // return first non zero value that index >= out_idx, 
+  // and alter out_idx to the index of this non-zero value
+  // if out_idx < 0 means no more non-zero data
+  double NextNonZero(int* out_idx) { return 0; }
+private:
+  int cur_idx_ = 0;
+};
+
+std::function<std::vector<std::pair<int, double>>(int idx)>
+ColumnFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indices,
+  const void* data, int data_type, int64_t ncol_ptr, int64_t nelem);
+
+std::vector<double>
+SampleFromOneColumn(const std::vector<std::pair<int, double>>& data, const std::vector<int>& indices);
+
+
+// start of c_api functions
+
 DllExport const char* LGBM_GetLastError() {
   return LastErrorMsg();
 }
@@ -393,8 +432,11 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     std::vector<std::vector<double>> sample_values(ncol_ptr - 1);
 #pragma omp parallel for schedule(guided)
     for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
-      auto cur_col = get_col_fun(i);
-      sample_values[i] = SampleFromOneColumn(cur_col, sample_indices);
+      CSC_RowIterator col_it(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i);
+      sample_values[i].resize(sample_cnt);
+      for (int j = 0; j < sample_cnt; j++) {
+        sample_values[i][j] = col_it.Get(sample_indices[j]);
+      }
     }
     DatasetLoader loader(io_config, nullptr, 1, nullptr);
     ret.reset(loader.CostructFromSampleData(sample_values, sample_cnt, nrow));
@@ -408,8 +450,17 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < ncol_ptr - 1; ++i) {
     const int tid = omp_get_thread_num();
-    auto one_col = get_col_fun(i);
-    ret->PushOneColumn(tid, i, one_col);
+    int feature_idx = ret->GetInnerFeatureIndex(i);
+    if (feature_idx < 0) { continue; }
+    CSC_RowIterator col_it(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i);
+    int row_idx = 0;
+    while (row_idx < nrow) {
+      double val = col_it.NextNonZero(&row_idx);
+      // no more data
+      if (row_idx < 0) { break; }
+      ret->FeatureAt(feature_idx)->PushData(tid, row_idx, val);
+      ++row_idx;
+    }
   }
   ret->FinishLoad();
   *out = ret.release();
@@ -733,6 +784,24 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
     }
   }
   *out_len = nrow * num_preb_in_one_row;
+  API_END();
+}
+
+DllExport int LGBM_BoosterPredictForCSC(BoosterHandle handle,
+  const void* col_ptr,
+  int col_ptr_type,
+  const int32_t* indices,
+  const void* data,
+  int data_type,
+  int64_t ncol_ptr,
+  int64_t nelem,
+  int64_t num_row,
+  int predict_type,
+  int64_t num_iteration,
+  int64_t* out_len,
+  double* out_result) {
+  API_BEGIN();
+
   API_END();
 }
 
