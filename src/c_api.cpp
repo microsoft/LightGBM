@@ -31,7 +31,7 @@ public:
     boosting_.reset(Boosting::CreateBoosting(filename));
   }
 
-  Booster(const Dataset* train_data, 
+  Booster(const Dataset* train_data,
     const char* parameters) {
     auto param = ConfigBase::Str2Map(parameters);
     config_.Set(param);
@@ -87,7 +87,7 @@ public:
     }
     train_metric_.shrink_to_fit();
     // reset the boosting
-    boosting_->ResetTrainingData(&config_.boosting_config, train_data_, 
+    boosting_->ResetTrainingData(&config_.boosting_config, train_data_,
       objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
   }
 
@@ -124,7 +124,7 @@ public:
 
     boosting_->ResetTrainingData(&config_.boosting_config, train_data_,
       objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
-    
+
   }
 
   void AddValidData(const Dataset* valid_data) {
@@ -214,7 +214,7 @@ public:
   }
 
   const Boosting* GetBoosting() const { return boosting_.get(); }
-  
+
 private:
 
   const Dataset* train_data_;
@@ -252,17 +252,17 @@ class CSC_RowIterator {
 public:
   CSC_RowIterator(const void* col_ptr, int col_ptr_type, const int32_t* indices,
     const void* data, int data_type, int64_t ncol_ptr, int64_t nelem, int col_idx);
-  ~CSC_RowIterator(){}
-  // return value at idx
+  ~CSC_RowIterator() {}
+  // return value at idx, only can access by ascent order
   double Get(int idx);
-  // return next non-zero pair
+  // return next non-zero pair, if index < 0, means no more data
   std::pair<int, double> NextNonZero();
 private:
   int nonzero_idx_ = 0;
-  int cur_idx_ = 0;
+  int cur_idx_ = -1;
   double cur_val_ = 0.0f;
   bool is_end_ = false;
-  std::function<std::pair<int,double>(int idx)> iter_fun_;
+  std::function<std::pair<int, double>(int idx)> iter_fun_;
 };
 
 // start of c_api functions
@@ -418,7 +418,6 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   std::unique_ptr<Dataset> ret;
   int32_t nrow = static_cast<int32_t>(num_row);
   if (reference == nullptr) {
-    Log::Warning("Construct from CSC format is not efficient");
     // sample data first
     Random rand(io_config.data_random_seed);
     const int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
@@ -427,9 +426,11 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
 #pragma omp parallel for schedule(guided)
     for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
       CSC_RowIterator col_it(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i);
-      sample_values[i].resize(sample_cnt);
       for (int j = 0; j < sample_cnt; j++) {
-        sample_values[i][j] = col_it.Get(sample_indices[j]);
+        auto val = col_it.Get(sample_indices[j]);
+        if (std::fabs(val) > kEpsilon) {
+          sample_values[i].push_back(val);
+        }
       }
     }
     DatasetLoader loader(io_config, nullptr, 1, nullptr);
@@ -454,7 +455,6 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
       // no more data
       if (row_idx < 0) { break; }
       ret->FeatureAt(feature_idx)->PushData(tid, row_idx, pair.second);
-      ++row_idx;
     }
   }
   ret->FinishLoad();
@@ -475,7 +475,7 @@ DllExport int LGBM_DatasetGetSubset(
   auto full_dataset = reinterpret_cast<const Dataset*>(handle);
   auto ret = std::unique_ptr<Dataset>(
     full_dataset->Subset(used_row_indices,
-      num_used_row_indices, 
+      num_used_row_indices,
       io_config.is_enable_sparse));
   ret->FinishLoad();
   *out = ret.release();
@@ -797,9 +797,9 @@ DllExport int LGBM_BoosterPredictForCSC(BoosterHandle handle,
   int num_preb_in_one_row = GetNumPredOneRow(ref_booster, predict_type, num_iteration);
   int ncol = static_cast<int>(ncol_ptr - 1);
 
-  Threading::For<int64_t>(0, num_row, 
+  Threading::For<int64_t>(0, num_row,
     [&predictor, &out_result, num_preb_in_one_row, ncol, col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem]
-    (int, data_size_t start, data_size_t end) {
+  (int, data_size_t start, data_size_t end) {
     std::vector<CSC_RowIterator> iterators;
     for (int j = 0; j < ncol; ++j) {
       iterators.emplace_back(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, j);
@@ -809,7 +809,7 @@ DllExport int LGBM_BoosterPredictForCSC(BoosterHandle handle,
       one_row.clear();
       for (int j = 0; j < ncol; ++j) {
         auto val = iterators[j].Get(static_cast<int>(i));
-        if (std::fabs(val) > 1e-6) {
+        if (std::fabs(val) > kEpsilon) {
           one_row.emplace_back(j, val);
         }
       }
@@ -1010,12 +1010,12 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
         }
         return ret;
       };
-    } 
-  } 
+    }
+  }
   throw std::runtime_error("unknown data type in RowFunctionFromCSR");
 }
 
-std::function<std::pair<int, double>(int idx)> 
+std::function<std::pair<int, double>(int idx)>
 IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indices, const void* data, int data_type, int64_t ncol_ptr, int64_t nelem, int col_idx) {
   CHECK(col_idx < ncol_ptr && col_idx >= 0);
   if (data_type == C_API_DTYPE_FLOAT32) {
@@ -1025,10 +1025,10 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
       int64_t start = ptr_col_ptr[col_idx];
       int64_t end = ptr_col_ptr[col_idx + 1];
       return [ptr_col_ptr, indices, data_ptr, ncol_ptr, nelem, start, end](int bias) {
-        if (bias >= end) {
+        int64_t i = static_cast<int64_t>(start + bias);
+        if (i >= end) {
           return std::make_pair(-1, 0.0);
         }
-        int64_t i = static_cast<int64_t>(start + bias);
         int idx = static_cast<int>(indices[i]);
         double val = static_cast<double>(data_ptr[i]);
         return std::make_pair(idx, val);
@@ -1038,15 +1038,15 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
       int64_t start = ptr_col_ptr[col_idx];
       int64_t end = ptr_col_ptr[col_idx + 1];
       return [ptr_col_ptr, indices, data_ptr, ncol_ptr, nelem, start, end](int bias) {
-        if (bias >= end) {
+        int64_t i = static_cast<int64_t>(start + bias);
+        if (i >= end) {
           return std::make_pair(-1, 0.0);
         }
-        int64_t i = static_cast<int64_t>(start + bias);
         int idx = static_cast<int>(indices[i]);
         double val = static_cast<double>(data_ptr[i]);
         return std::make_pair(idx, val);
       };
-    } 
+    }
   } else if (data_type == C_API_DTYPE_FLOAT64) {
     const double* data_ptr = reinterpret_cast<const double*>(data);
     if (col_ptr_type == C_API_DTYPE_INT32) {
@@ -1054,10 +1054,10 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
       int64_t start = ptr_col_ptr[col_idx];
       int64_t end = ptr_col_ptr[col_idx + 1];
       return [ptr_col_ptr, indices, data_ptr, ncol_ptr, nelem, start, end](int bias) {
-        if (bias >= end) {
+        int64_t i = static_cast<int64_t>(start + bias);
+        if (i >= end) {
           return std::make_pair(-1, 0.0);
         }
-        int64_t i = static_cast<int64_t>(start + bias);
         int idx = static_cast<int>(indices[i]);
         double val = static_cast<double>(data_ptr[i]);
         return std::make_pair(idx, val);
@@ -1067,16 +1067,16 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
       int64_t start = ptr_col_ptr[col_idx];
       int64_t end = ptr_col_ptr[col_idx + 1];
       return [ptr_col_ptr, indices, data_ptr, ncol_ptr, nelem, start, end](int bias) {
-        if (bias >= end) {
+        int64_t i = static_cast<int64_t>(start + bias);
+        if (i >= end) {
           return std::make_pair(-1, 0.0);
         }
-        int64_t i = static_cast<int64_t>(start + bias);
         int idx = static_cast<int>(indices[i]);
         double val = static_cast<double>(data_ptr[i]);
         return std::make_pair(idx, val);
       };
-    } 
-  } 
+    }
+  }
   throw std::runtime_error("unknown data type in CSC matrix");
 }
 
