@@ -1,6 +1,7 @@
 #ifndef LIGHTGBM_C_API_H_
 #define LIGHTGBM_C_API_H_
 #include <cstdint>
+#include <functional>
 #include <exception>
 #include <stdexcept>
 #include <cstring>
@@ -510,7 +511,7 @@ DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
 DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
   int buffer_len,
   int64_t* out_len,
-  char** out_str);
+  char* out_str);
 
 /*!
 * \brief Get leaf value 

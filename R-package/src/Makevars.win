@@ -1,24 +1,12 @@
 # package root
-PKGROOT=./
+PKGROOT=../../
 
-ENABLE_STD_THREAD=0
-
-
-.PHONY: all lgbmlib
-all: $(SHLIB)
-$(SHLIB): lgbmlib
-lgbmlib:
-	cp -r ../../src .
-	cp -r ../../include .
-
+ENABLE_STD_THREAD=1
 CXX_STD = CXX11
 
-LGBM_RFLAGS = -DUSE_SOCKET
+LGBM_RFLAGS = -DUSE_SOCKET 
 
-PKG_CPPFLAGS= -I$(PKGROOT)/include -I$(PKGROOT) $(LGBM_RFLAGS)
-PKG_CXXFLAGS= $(SHLIB_OPENMP_CFLAGS) $(SHLIB_PTHREAD_FLAGS)
+PKG_CPPFLAGS= -I$(PKGROOT)/include $(LGBM_RFLAGS) 
+PKG_CXXFLAGS= $(SHLIB_OPENMP_CFLAGS) $(SHLIB_PTHREAD_FLAGS) -std=c++11
 PKG_LIBS = $(SHLIB_OPENMP_CFLAGS) $(SHLIB_PTHREAD_FLAGS) -lws2_32 -liphlpapi 
-		$(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e "Rcpp:::LdFlags()")
-OBJECTS = ./lightgbm_R.o ./lightgbm-all.o
-
-$(OBJECTS) : lgbmlib
+OBJECTS = ./lightgbm-all.o ./lightgbm_R.o 

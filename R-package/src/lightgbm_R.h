@@ -4,7 +4,7 @@
 #include <Rinternals.h>
 #include <R_ext/Random.h>
 #include <Rmath.h>
-
+#include <cstdint.h>
 #include <LightGBM/c_api.h>
 
 /*!

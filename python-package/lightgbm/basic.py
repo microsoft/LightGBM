@@ -1498,7 +1498,7 @@ class Booster(object):
             self.handle,
             buffer_len,
             ctypes.byref(tmp_out_len),
-            ctypes.byref(ptr_string_buffer)))
+            ptr_string_buffer))
         actual_len = tmp_out_len.value
         '''if buffer length is not long enough, reallocate a buffer'''
         if actual_len > buffer_len:
