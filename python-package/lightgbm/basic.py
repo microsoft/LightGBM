@@ -322,14 +322,14 @@ class _InnerPredictor(object):
         """
         Get size of prediction result
         """
-        n_preds = 0
+        n_preds = ctypes.c_int64(0)
         _safe_call(_LIB.LGBM_BoosterCalcNumPredict(
             self.handle,
             nrow,
             predict_type,
             num_iteration,
             ctypes.byref(n_preds)))
-        return n_preds
+        return n_preds.value
 
     def __pred_for_np2d(self, mat, num_iteration, predict_type):
         """
