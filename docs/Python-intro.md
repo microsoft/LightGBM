@@ -15,7 +15,7 @@ Install
 python setup.py install
 ```
 
-To verify your installation, try to `import lightgbm` in Python.
+* To verify your installation, try to `import lightgbm` in Python.
 ```
 import lightgbm as lgb
 ```
@@ -90,8 +90,8 @@ And you can use `Dataset.set_init_score()` to set initial score, and `Dataset.se
 The `Dataset` object in LightGBM is very memory-efficient, due to it only need to save discrete bins.
 However, Numpy/Array/Pandas object is memory cost. If you concern about your memory consumption. You can save memory accroding to following:
 
-1. let ```free_raw_data=True```(default is ```True```) when construct Dataset
-2. Explicit set ```raw_data=None``` after ```Dataset``` constructed
+1. Let ```free_raw_data=True```(default is ```True```) when constructing the ```Dataset```
+2. Explicit set ```raw_data=None``` after the ```Dataset``` has been constructed
 3. Call ```gc```  
 
 Setting Parameters
@@ -120,7 +120,7 @@ After training, the model can be saved.
 ```python
 bst.save_model('model.txt')
 ```
-The model can be dumpped to json format
+The trained model can also be dumped to JSON format
 ```python
 # dump model
 json_model = bst.dump_model()
@@ -132,7 +132,7 @@ bst = lgb.Booster(model_file="model.txt") #init model
 
 CV
 --
-Training with 5-fold cv:
+Training with 5-fold CV:
 ```python
 num_round = 10
 lgb.cv(param, train_data, num_round, nfold=5)
