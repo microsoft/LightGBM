@@ -721,11 +721,11 @@ The methods of each Class is in alphabetical order.
         group data of training data
     eval_set : list, optional
         A list of (X, y) tuple pairs to use as a validation set for early-stopping
-    eval_sample_weight : List of array
+    eval_sample_weight : List or Dict of array
         weight of eval data
-    eval_init_score : List of array
+    eval_init_score : List or Dict of array
         init score of eval data
-    eval_group : List of array
+    eval_group : List or Dict of array
         group data of eval data
     eval_metric : str, list of str, callable, optional
         If a str, should be a built-in evaluation metric to use.
