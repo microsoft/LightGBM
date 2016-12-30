@@ -738,13 +738,25 @@ DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
 int GetNumPredOneRow(const Booster* ref_booster, int predict_type, int64_t num_iteration) {
   int num_preb_in_one_row = ref_booster->GetBoosting()->NumberOfClasses();
   if (predict_type == C_API_PREDICT_LEAF_INDEX) {
+    int64_t max_iteration = ref_booster->GetBoosting()->GetCurrentIteration();
     if (num_iteration > 0) {
-      num_preb_in_one_row *= static_cast<int>(num_iteration);
+      num_preb_in_one_row *= static_cast<int>(std::min(max_iteration, num_iteration));
     } else {
-      num_preb_in_one_row *= ref_booster->GetBoosting()->NumberOfTotalModel() / num_preb_in_one_row;
+      num_preb_in_one_row *= max_iteration;
     }
   }
   return num_preb_in_one_row;
+}
+
+DllExport int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
+  int64_t num_row,
+  int predict_type,
+  int64_t num_iteration,
+  int64_t* out_len) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_len = static_cast<int64_t>(num_row * GetNumPredOneRow(ref_booster, predict_type, num_iteration));
+  API_END();
 }
 
 DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,

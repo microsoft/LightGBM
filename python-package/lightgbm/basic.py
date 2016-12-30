@@ -322,12 +322,13 @@ class _InnerPredictor(object):
         """
         Get size of prediction result
         """
-        n_preds = self.num_class * nrow
-        if predict_type == C_API_PREDICT_LEAF_INDEX:
-            if num_iteration > 0:
-                n_preds *= min(num_iteration, self.num_total_iteration)
-            else:
-                n_preds *= self.num_total_iteration
+        n_preds = 0
+        _safe_call(_LIB.LGBM_BoosterCalcNumPredict(
+            self.handle,
+            nrow,
+            predict_type,
+            num_iteration,
+            ctypes.byref(n_preds)))
         return n_preds
 
     def __pred_for_np2d(self, mat, num_iteration, predict_type):

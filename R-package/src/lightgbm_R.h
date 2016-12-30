@@ -29,19 +29,19 @@ DllExport SEXP LGBM_DatasetCreateFromFile_R(SEXP filename,
   SEXP reference);
 
 /*!
-* \brief create a dataset from CSR format
+* \brief create a dataset from CSC format
 * \param indptr pointer to row headers
 * \param indices findex
 * \param data fvalue
-* \param num_col number of columns
+* \param num_row number of rows
 * \param parameters additional parameters
 * \param reference used to align bin mapper with other dataset, nullptr means don't used
 * \return created dataset
 */
-DllExport SEXP LGBM_DatasetCreateFromCSR_R(SEXP indptr,
+DllExport SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
   SEXP indices,
   SEXP data,
-  SEXP num_col,
+  SEXP num_row,
   SEXP parameters,
   SEXP reference);
 
@@ -102,9 +102,9 @@ DllExport SEXP LGBM_DatasetSetField_R(SEXP handle,
 
 /*!
 * \brief get info vector from dataset
-* \param handle a instance of data matrix
+* \param handle a instance of dataset
 * \param field_name field name
-* \return the result
+* \return the field data
 */
 DllExport SEXP LGBM_DatasetGetField_R(SEXP handle,
   SEXP field_name);
@@ -216,12 +216,6 @@ DllExport SEXP LGBM_BoosterRollbackOneIter_R(SEXP handle);
 DllExport SEXP LGBM_BoosterGetCurrentIteration_R(SEXP handle);
 
 /*!
-* \brief Get number of eval
-* \return total number of eval results
-*/
-DllExport SEXP LGBM_BoosterGetEvalCounts_R(SEXP handle);
-
-/*!
 * \brief Get Name of eval
 * \return out_strs names of eval result
 */
@@ -237,14 +231,25 @@ DllExport SEXP LGBM_BoosterGetEval_R(SEXP handle,
   SEXP data_idx);
 
 /*!
+* \brief Get number of prediction for training data and validation data
+* \param handle handle
+* \param data_idx 0:training data, 1: 1st valid data, 2:2nd valid data ...
+* \return size of predict
+*/
+DllExport SEXP LGBM_BoosterGetNumPredict_R(SEXP handle,
+  SEXP data_idx);
+
+/*!
 * \brief Get prediction for training data and validation data
 this can be used to support customized eval function
 * \param handle handle
 * \param data_idx 0:training data, 1: 1st valid data, 2:2nd valid data ...
-* \return prediction result
+* \param out_result, used to store predict result, should pre-allocate memory
+* \return R_NilValue
 */
 DllExport SEXP LGBM_BoosterGetPredict_R(SEXP handle,
-  SEXP data_idx);
+  SEXP data_idx,
+  SEXP out_result);
 
 /*!
 * \brief make prediction for file
@@ -274,17 +279,17 @@ DllExport SEXP LGBM_BoosterPredictForFile_R(SEXP handle,
 * \param indptr pointer to row headers
 * \param indices findex
 * \param data fvalue
-* \param num_col number of columns
+* \param num_row number of rows
 * \param is_rawscore
 * \param is_leafidx
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
 * \return prediction result
 */
-DllExport SEXP LGBM_BoosterPredictForCSR_R(SEXP handle,
+DllExport SEXP LGBM_BoosterPredictForCSC_R(SEXP handle,
   SEXP indptr,
   SEXP indices,
   SEXP data,
-  SEXP num_col,
+  SEXP num_row,
   SEXP is_rawscore,
   SEXP is_leafidx,
   SEXP num_iteration);

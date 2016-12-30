@@ -10,6 +10,8 @@
 
 #include "./lightgbm_R.h"
 
+#define COL_MAJOR (0)
+
 #define R_API_BEGIN() \
   GetRNGstate(); \
   try {
@@ -56,10 +58,10 @@ SEXP LGBM_DatasetCreateFromFile_R(SEXP filename, SEXP parameters, SEXP reference
   return ret;
 }
 
-SEXP LGBM_DatasetCreateFromCSR_R(SEXP indptr,
+SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
   SEXP indices,
   SEXP data,
-  SEXP num_col,
+  SEXP num_row,
   SEXP parameters,
   SEXP reference) {
   SEXP ret;
@@ -70,12 +72,12 @@ SEXP LGBM_DatasetCreateFromCSR_R(SEXP indptr,
 
   int64_t nindptr = static_cast<int64_t>(length(indptr));
   int64_t ndata = static_cast<int64_t>(length(data));
-  int64_t ncol = static_cast<int64_t>(INTEGER(num_col)[0]);
+  int64_t nrow = static_cast<int64_t>(asInteger(num_row));
 
   DatasetHandle handle;
-  CHECK_CALL(LGBM_DatasetCreateFromCSR(p_indptr, C_API_DTYPE_INT32, p_indices,
+  CHECK_CALL(LGBM_DatasetCreateFromCSC(p_indptr, C_API_DTYPE_INT32, p_indices,
     p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
-    ncol, CHAR(asChar(parameters)), R_ExternalPtrAddr(reference), &handle));
+    nrow, CHAR(asChar(parameters)), R_ExternalPtrAddr(reference), &handle));
   ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
   R_RegisterCFinalizerEx(ret, _DatasetFinalizer, TRUE);
   R_API_END();
@@ -93,7 +95,7 @@ SEXP LGBM_DatasetCreateFromMat_R(SEXP mat,
   int32_t ncol = static_cast<int32_t>(INTEGER(dim)[1]);
   double* p_mat = REAL(mat);
   DatasetHandle handle;
-  CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, 0,
+  CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
     CHAR(asChar(parameters)), R_ExternalPtrAddr(reference), &handle));
   ret = PROTECT(R_MakeExternalPtr(handle, R_NilValue, R_NilValue));
   R_RegisterCFinalizerEx(ret, _DatasetFinalizer, TRUE);
@@ -157,7 +159,7 @@ SEXP LGBM_DatasetSetField_R(SEXP handle,
   SEXP field_data) {
   R_API_BEGIN();
   int64_t len = static_cast<int64_t>(length(field_data));
-  const char *name = CHAR(asChar(field_name));
+  const char* name = CHAR(asChar(field_name));
   if (!strcmp("group", name) || !strcmp("query", name)) {
     std::vector<int32_t> vec(len);
 #pragma omp parallel for schedule(static)
@@ -181,7 +183,7 @@ SEXP LGBM_DatasetGetField_R(SEXP handle,
   SEXP field_name) {
   SEXP ret = R_NilValue;
   R_API_BEGIN();
-  const char *name = CHAR(asChar(field_name));
+  const char* name = CHAR(asChar(field_name));
   int64_t out_len = 0;
   int out_type = 0;
   const void* res;
@@ -339,14 +341,6 @@ SEXP LGBM_BoosterGetCurrentIteration_R(SEXP handle) {
   return ScalarInteger(static_cast<int>(out_iteration));
 }
 
-SEXP LGBM_BoosterGetEvalCounts_R(SEXP handle) {
-  int64_t out_len;
-  R_API_BEGIN();
-  CHECK_CALL(LGBM_BoosterGetEvalCounts(R_ExternalPtrAddr(handle), &out_len));
-  R_API_END();
-  return ScalarInteger(static_cast<int>(out_len));
-}
-
 SEXP LGBM_BoosterGetEvalNames_R(SEXP handle) {
   SEXP ret;
   R_API_BEGIN();
@@ -376,37 +370,49 @@ SEXP LGBM_BoosterGetEval_R(SEXP handle,
   R_API_BEGIN();
   int64_t len;
   CHECK_CALL(LGBM_BoosterGetEvalCounts(R_ExternalPtrAddr(handle), &len));
-  std::vector<float> out_result(len);
+  ret = PROTECT(allocVector(REALSXP, len));
+  double* ptr_ret = REAL(ret);
   int64_t out_len;
-  CHECK_CALL(LGBM_BoosterGetEval(R_ExternalPtrAddr(handle), asInteger(data_idx), &out_len, out_result.data()));
+  CHECK_CALL(LGBM_BoosterGetEval(R_ExternalPtrAddr(handle), asInteger(data_idx), &out_len, ptr_ret));
   CHECK(out_len == len);
-  ret = PROTECT(allocVector(REALSXP, out_len));
-  for (int64_t i = 0; i < out_len; ++i) {
-    REAL(ret)[i] = out_result[i];
-  }
   R_API_END();
   UNPROTECT(1);
   return ret;
 }
 
-SEXP LGBM_BoosterGetPredict_R(SEXP handle,
-  SEXP data_idx) {
-  SEXP ret;
-  R_API_BEGIN();
+SEXP LGBM_BoosterGetNumPredict_R(SEXP handle,
+  SEXP data_idx){
   int64_t len;
+  R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterGetNumPredict(R_ExternalPtrAddr(handle), asInteger(data_idx), &len));
-  std::vector<float> out_result(len);
+  R_API_END();
+  return ScalarInteger(static_cast<int>(len));
+}
+
+SEXP LGBM_BoosterGetPredict_R(SEXP handle,
+  SEXP data_idx,
+  SEXP out_result) {
+  R_API_BEGIN();
+  int64_t len = static_cast<int64_t>(length(out_result));
+  double* ptr_ret = REAL(out_result);
   int64_t out_len;
-  CHECK_CALL(LGBM_BoosterGetPredict(R_ExternalPtrAddr(handle), asInteger(data_idx), &out_len, out_result.data()));
+  CHECK_CALL(LGBM_BoosterGetPredict(R_ExternalPtrAddr(handle), asInteger(data_idx), &out_len, ptr_ret));
   CHECK(out_len == len);
-  ret = PROTECT(allocVector(REALSXP, out_len));
-#pragma omp parallel for schedule(static)
-  for (int64_t i = 0; i < out_len; ++i) {
-    REAL(ret)[i] = out_result[i];
+  R_API_END();
+  return R_NilValue;
+}
+
+int GetPredictType(SEXP is_rawscore, SEXP is_leafidx){
+  int pred_type = C_API_PREDICT_NORMAL;
+  R_API_BEGIN();
+  if (asInteger(is_rawscore)) {
+    pred_type = C_API_PREDICT_RAW_SCORE;
+  }
+  if (asInteger(is_leafidx)) {
+    pred_type = C_API_PREDICT_LEAF_INDEX;
   }
   R_API_END();
-  UNPROTECT(1);
-  return ret;
+  return pred_type;
 }
 
 SEXP LGBM_BoosterPredictForFile_R(SEXP handle,
@@ -417,13 +423,7 @@ SEXP LGBM_BoosterPredictForFile_R(SEXP handle,
   SEXP num_iteration,
   SEXP result_filename) {
   R_API_BEGIN();
-  int pred_type = C_API_PREDICT_NORMAL;
-  if (asInteger(is_rawscore)) {
-    pred_type = C_API_PREDICT_RAW_SCORE;
-  }
-  if (asInteger(is_leafidx)) {
-    pred_type = C_API_PREDICT_LEAF_INDEX;
-  }
+  int pred_type = GetPredictType(is_rawscore, is_leafidx);
   CHECK_CALL(LGBM_BoosterPredictForFile(R_ExternalPtrAddr(handle), CHAR(asChar(data_filename)), 
     asInteger(data_has_header), pred_type, asInteger(num_iteration),
     CHAR(asChar(result_filename)) ));
@@ -431,23 +431,17 @@ SEXP LGBM_BoosterPredictForFile_R(SEXP handle,
   return R_NilValue;
 }
 
-SEXP LGBM_BoosterPredictForCSR_R(SEXP handle,
+SEXP LGBM_BoosterPredictForCSC_R(SEXP handle,
   SEXP indptr,
   SEXP indices,
   SEXP data,
-  SEXP num_col,
+  SEXP num_row,
   SEXP is_rawscore,
   SEXP is_leafidx,
   SEXP num_iteration) {
   SEXP ret;
   R_API_BEGIN();
-  int pred_type = C_API_PREDICT_NORMAL;
-  if (asInteger(is_rawscore)) {
-    pred_type = C_API_PREDICT_RAW_SCORE;
-  }
-  if (asInteger(is_leafidx)) {
-    pred_type = C_API_PREDICT_LEAF_INDEX;
-  }
+  int pred_type = GetPredictType(is_rawscore, is_leafidx);
 
   const int* p_indptr = INTEGER(indptr);
   const int* p_indices = INTEGER(indices);
@@ -455,32 +449,18 @@ SEXP LGBM_BoosterPredictForCSR_R(SEXP handle,
 
   int64_t nindptr = static_cast<int64_t>(length(indptr));
   int64_t ndata = static_cast<int64_t>(length(data));
-  int64_t ncol = static_cast<int64_t>(INTEGER(num_col)[0]);
-  int64_t nrow = nindptr - 1;
-  int64_t len = nrow;
-  int num_class = asInteger(LGBM_BoosterGetNumClasses_R(handle));
-  len *= num_class;
-  if (pred_type == C_API_PREDICT_LEAF_INDEX) {
-    int num_iter = asInteger(num_iteration);
-    if (num_iter <= 0) {
-      num_iter = asInteger(LGBM_BoosterGetCurrentIteration_R(handle));
-    }
-    len *= num_iter;
-  }
-  std::vector<float> out_result(len);
+  int64_t nrow = static_cast<int64_t>(INTEGER(num_row)[0]);
+  int64_t len = 0;
+  CHECK_CALL(LGBM_BoosterCalcNumPredict(R_ExternalPtrAddr(handle), nrow, 
+    pred_type, asInteger(num_iteration), &len));
+  ret = PROTECT(allocVector(REALSXP, len));
+  double* ptr_ret = REAL(ret);
   int64_t out_len;
-
   CHECK_CALL(LGBM_BoosterPredictForCSR(R_ExternalPtrAddr(handle),
     p_indptr, C_API_DTYPE_INT32, p_indices,
     p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
-    ncol, pred_type, asInteger(num_iteration), &out_len, out_result.data()));
+    nrow, pred_type, asInteger(num_iteration), &out_len, ptr_ret));
 
-  ret = PROTECT(allocVector(REALSXP, out_len));
-
-#pragma omp parallel for schedule(static)
-  for (int64_t i = 0; i < out_len; ++i) {
-    REAL(ret)[i] = out_result[i];
-  }
   R_API_END();
   UNPROTECT(1);
   return ret;
@@ -493,43 +473,24 @@ SEXP LGBM_BoosterPredictForMat_R(SEXP handle,
   SEXP num_iteration) {
   SEXP ret;
   R_API_BEGIN();
-  int pred_type = C_API_PREDICT_NORMAL;
-  if (asInteger(is_rawscore)) {
-    pred_type = C_API_PREDICT_RAW_SCORE;
-  }
-  if (asInteger(is_leafidx)) {
-    pred_type = C_API_PREDICT_LEAF_INDEX;
-  }
+  int pred_type = GetPredictType(is_rawscore, is_leafidx);
 
   SEXP dim = getAttrib(mat, R_DimSymbol);
   int32_t nrow = static_cast<int32_t>(INTEGER(dim)[0]);
   int32_t ncol = static_cast<int32_t>(INTEGER(dim)[1]);
   double* p_mat = REAL(mat);
 
-  int num_class = asInteger(LGBM_BoosterGetNumClasses_R(handle));
-  int64_t len = nrow;
-  len *= num_class;
-  if (pred_type == C_API_PREDICT_LEAF_INDEX) {
-    int num_iter = asInteger(num_iteration);
-    if (num_iter <= 0) {
-      num_iter = asInteger(LGBM_BoosterGetCurrentIteration_R(handle));
-    }
-    len *= num_iter;
-  }
-
-  std::vector<float> out_result(len);
+  int64_t len = 0;
+  CHECK_CALL(LGBM_BoosterCalcNumPredict(R_ExternalPtrAddr(handle), nrow, 
+    pred_type, asInteger(num_iteration), &len));
+  ret = PROTECT(allocVector(REALSXP, len));
+  double* ptr_ret = REAL(ret);
   int64_t out_len;
-
   CHECK_CALL(LGBM_BoosterPredictForMat(R_ExternalPtrAddr(handle),
-    p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, 1,
-    pred_type, asInteger(num_iteration), &out_len, out_result.data()));
+    p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
+    pred_type, asInteger(num_iteration), &out_len, ptr_ret));
 
   ret = PROTECT(allocVector(REALSXP, out_len));
-
-#pragma omp parallel for schedule(static)
-  for (int64_t i = 0; i < out_len; ++i) {
-    REAL(ret)[i] = out_result[i];
-  }
 
   R_API_END();
   UNPROTECT(1);

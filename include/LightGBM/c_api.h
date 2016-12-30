@@ -421,6 +421,24 @@ DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
   const char* result_filename);
 
 /*!
+* \brief Get number of prediction
+* \param handle handle
+* \param num_row 
+* \param predict_type
+*          C_API_PREDICT_NORMAL: normal prediction, with transform (if needed)
+*          C_API_PREDICT_RAW_SCORE: raw score
+*          C_API_PREDICT_LEAF_INDEX: leaf index
+* \param num_iteration number of iteration for prediction, <= 0 means no limit
+* \param out_len lenght of prediction
+* \return 0 when succeed, -1 when failure happens
+*/
+DllExport int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
+  int64_t num_row,
+  int predict_type,
+  int64_t num_iteration,
+  int64_t* out_len);
+
+/*!
 * \brief make prediction for an new data set
 *        Note:  should pre-allocate memory for out_result, 
 *               for noraml and raw score: its length is equal to num_class * num_data
