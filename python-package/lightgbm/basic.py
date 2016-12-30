@@ -5,6 +5,7 @@
 """Wrapper c_api of LightGBM"""
 from __future__ import absolute_import
 
+import os
 import sys
 import ctypes
 import tempfile
@@ -1195,6 +1196,8 @@ class Dataset(object):
         else:
             raise LightGBMError("Cannot call num_feature before construct, please call it explicitly")
 
+MODEL_FILE = 'tmp.model'
+
 class Booster(object):
     """"A Booster of LightGBM.
     """
@@ -1270,6 +1273,39 @@ class Booster(object):
     def __del__(self):
         if self.handle is not None:
             _safe_call(_LIB.LGBM_BoosterFree(self.handle))
+
+    def __copy__(self):
+        return self.__deepcopy__(None)
+
+    def __deepcopy__(self, _):
+        self.save_model(MODEL_FILE)
+        return Booster(model_file=MODEL_FILE)
+
+    def __getstate__(self):
+        this = self.__dict__.copy()
+        handle = this['handle']
+        this.pop('train_set', None)
+        this.pop('valid_sets', None)
+        if handle is not None:
+            self.save_model(MODEL_FILE)
+            this["handle"] = open(MODEL_FILE, 'r').readlines()
+            os.remove(MODEL_FILE)
+        return this
+
+    def __setstate__(self, state):
+        handle = state['handle']
+        if handle is not None:
+            with open(MODEL_FILE, 'w') as f:
+                f.writelines(handle)
+            handle = ctypes.c_void_p()
+            out_num_iterations = ctypes.c_int64(0)
+            _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
+                c_str(MODEL_FILE),
+                ctypes.byref(out_num_iterations),
+                ctypes.byref(handle)))
+            state['handle'] = handle
+            os.remove(MODEL_FILE)
+        self.__dict__.update(state)
 
     def set_train_data_name(self, name):
         self.__train_data_name = name
