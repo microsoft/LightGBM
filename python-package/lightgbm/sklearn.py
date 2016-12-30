@@ -375,9 +375,21 @@ class LGBMModel(LGBMModelBase):
                 if valid_data[0] is X and valid_data[1] is y:
                     valid_set = train_set
                 else:
-                    valid_weight = None if eval_sample_weight is None else eval_sample_weight[i]
-                    valid_init_score = None if eval_init_score is None else eval_init_score[i]
-                    valid_group = None if eval_group is None else eval_group[i]
+                    def get_meta_data(collection, i):
+                        if collection is None:
+                            return None
+                        elif isinstance(collection, list):
+                            if len(collection) > i:
+                                return collection[i]
+                            else:
+                                return None
+                        elif isinstance(collection, dict):
+                            return collection.get(i, None)
+                        else:
+                            raise TypeError('eval_sample_weight, eval_init_score, and eval_group should be dict or list')
+                    valid_weight = get_meta_data(eval_sample_weight, i)
+                    valid_init_score = get_meta_data(eval_init_score, i)
+                    valid_group = get_meta_data(eval_group, i)
                     valid_set = _construct_dataset(valid_data[0], valid_data[1], valid_weight, valid_init_score, valid_group, params)
                 valid_sets.append(valid_set)
 
