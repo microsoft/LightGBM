@@ -7,12 +7,12 @@ from sklearn.metrics import log_loss, mean_squared_error, mean_absolute_error
 from sklearn.datasets import load_breast_cancer, load_boston, load_digits, load_iris, load_svmlight_file
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.base import clone
+from sklearn.externals import joblib
 
 def test_template(X_y=load_boston(True), model=lgb.LGBMRegressor,
                 feval=mean_squared_error, stratify=None, num_round=100, return_data=False,
                 return_model=False, init_model=None, custom_obj=None, proba=False):
-    X, y = X_y
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
+    X_train, X_test, y_train, y_test = train_test_split(*X_y, test_size=0.1,
                                                         stratify=stratify,
                                                         random_state=42)
     if return_data: return X_train, X_test, y_train, y_test
@@ -82,6 +82,12 @@ class TestSklearn(unittest.TestCase):
     def test_clone(self):
         gbm = test_template(return_model=True)
         gbm_clone = clone(gbm)
+
+    def test_joblib(self):
+        gbm = test_template(return_model=True)
+        joblib.dump(gbm, 'lgb.pkl')
+        gbm_pickle = joblib.load('lgb.pkl')
+        self.assertDictEqual(gbm.get_params(), gbm_pickle.get_params())
 
 print("----------------------------------------------------------------------")
 print("running test_sklearn.py")

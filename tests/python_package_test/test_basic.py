@@ -1,23 +1,35 @@
 # coding: utf-8
-import numpy as np
-from sklearn import datasets, metrics, model_selection
+# pylint: skip-file
+import unittest
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
 import lightgbm as lgb
 
-X, Y = datasets.make_classification(n_samples=100000, n_features=100)
-x_train, x_test, y_train, y_test = model_selection.train_test_split(X, Y, test_size=0.1)
+class TestBasic(unittest.TestCase):
 
-train_data = lgb.Dataset(x_train, max_bin=255, label=y_train)
+    def test(self):
+        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True), test_size=0.1)
 
-valid_data = train_data.create_valid(x_test, label=y_test)
+        train_data = lgb.Dataset(X_train, max_bin=255, label=y_train, free_raw_data=False)
+        valid_data = train_data.create_valid(X_test, label=y_test)
+		# train_data.save_binary('train.bin')
 
-config={"objective":"binary","metric":"auc", "min_data":1, "num_leaves":15}
-bst = lgb.Booster(params=config, train_set=train_data)
-bst.add_valid(valid_data,"valid_1")
+        params = {
+            "objective" : "binary",
+            "metric" : "auc",
+            "min_data" : 1,
+            "num_leaves" : 15,
+            "verbose" : -1
+        }
+        bst = lgb.Booster(params, train_data)
+        bst.add_valid(valid_data, "valid_1")
 
-for i in range(100):
-	bst.update()
-	if i % 10 == 0:
-		print(bst.eval_train())
-		print(bst.eval_valid())
-bst.save_model("model.txt")
+        for i in range(30):
+            bst.update()
+            if i % 10 == 0:
+                print(bst.eval_train(), bst.eval_valid())
+        bst.save_model("model.txt")
 
+print("----------------------------------------------------------------------")
+print("running test_basic.py")
+unittest.main()

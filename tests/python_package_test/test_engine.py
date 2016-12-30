@@ -6,6 +6,10 @@ import lightgbm as lgb
 from sklearn.metrics import log_loss, mean_squared_error, mean_absolute_error
 from sklearn.datasets import load_breast_cancer, load_boston, load_digits, load_iris
 from sklearn.model_selection import train_test_split
+try:
+    import cPickle as pickle
+except:
+    import pickle
 
 def multi_logloss(y_true, y_pred):
     return np.mean([-math.log(y_pred[i][y]) for i, y in enumerate(y_true)])
@@ -14,8 +18,7 @@ def test_template(params = {'objective' : 'regression', 'metric' : 'l2'},
                 X_y=load_boston(True), feval=mean_squared_error,
                 stratify=None, num_round=100, return_data=False,
                 return_model=False, init_model=None, custom_eval=None):
-    X, y = X_y
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
+    X_train, X_test, y_train, y_test = train_test_split(*X_y, test_size=0.1,
                                                         stratify=stratify,
                                                         random_state=42)
     lgb_train = lgb.Dataset(X_train, y_train, free_raw_data=not return_model, params=params)
@@ -35,7 +38,7 @@ def test_template(params = {'objective' : 'regression', 'metric' : 'l2'},
     if return_model: return gbm
     else: return evals_result, feval(y_test, gbm.predict(X_test, gbm.best_iteration))
 
-class TestBasic(unittest.TestCase):
+class TestEngine(unittest.TestCase):
 
     def test_binary(self):
         X_y= load_breast_cancer(True)
@@ -98,8 +101,19 @@ class TestBasic(unittest.TestCase):
 
     def test_cv(self):
         lgb_train, lgb_eval = test_template(return_data=True)
-        lgb.cv({'verbose':0}, lgb_train, num_boost_round=200, nfold=5,
+        lgb.cv({'verbose':0}, lgb_train, num_boost_round=20, nfold=5,
                 metrics='l1', verbose_eval=False)
+
+    def test_pickle(self):
+        gbm = test_template(return_model=True)
+        with open('lgb.pkl', 'wb') as f:
+            pickle.dump(gbm, f)
+        with open('lgb.pkl', 'rb') as f:
+            gbm_pickle = pickle.load(f)
+            evals_result_origin, _ = test_template(num_round=10, init_model=gbm)
+            evals_result_loaded, _ = test_template(num_round=10, init_model=gbm_pickle)
+            self.assertDictEqual(evals_result_origin, evals_result_loaded)
+        gbm_pickles = pickle.loads(pickle.dumps(gbm))
 
 print("----------------------------------------------------------------------")
 print("running test_engine.py")
