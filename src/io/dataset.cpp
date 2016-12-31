@@ -17,6 +17,7 @@ namespace LightGBM {
 const char* Dataset::binary_file_token = "______LightGBM_Binary_File_Token______\n";
 
 Dataset::Dataset() {
+  data_filename_ = "noname";
   num_data_ = 0;
 }
 
