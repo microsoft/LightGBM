@@ -110,10 +110,12 @@ class TestEngine(unittest.TestCase):
             pickle.dump(gbm, f)
         with open('lgb.pkl', 'rb') as f:
             gbm_pickle = pickle.load(f)
-            evals_result_origin, _ = test_template(num_round=10, init_model=gbm)
-            evals_result_loaded, _ = test_template(num_round=10, init_model=gbm_pickle)
-            self.assertDictEqual(evals_result_origin, evals_result_loaded)
+        _, ret_origin = test_template(init_model=gbm)
+        _, ret_loaded = test_template(init_model=gbm_pickle)
+        self.assertAlmostEqual(ret_origin, ret_loaded, places=0)
         gbm_pickles = pickle.loads(pickle.dumps(gbm))
+        _, ret_loadeds = test_template(init_model=gbm_pickles)
+        self.assertAlmostEqual(ret_origin, ret_loadeds, places=0)
 
 print("----------------------------------------------------------------------")
 print("running test_engine.py")

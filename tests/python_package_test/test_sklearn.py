@@ -84,10 +84,14 @@ class TestSklearn(unittest.TestCase):
         gbm_clone = clone(gbm)
 
     def test_joblib(self):
-        gbm = test_template(return_model=True)
+        gbm = test_template(num_round=10, return_model=True)
         joblib.dump(gbm, 'lgb.pkl')
         gbm_pickle = joblib.load('lgb.pkl')
         self.assertDictEqual(gbm.get_params(), gbm_pickle.get_params())
+        X_train, X_test, y_train, y_test = test_template(return_data=True)
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+        gbm_pickle.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+        self.assertDictEqual(gbm.evals_result(), gbm_pickle.evals_result())
 
 print("----------------------------------------------------------------------")
 print("running test_sklearn.py")
