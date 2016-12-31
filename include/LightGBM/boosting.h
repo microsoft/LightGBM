@@ -99,10 +99,16 @@ public:
   /*!
   * \brief Get prediction result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
+  * \return out_len lenght of returned score
+  */
+  virtual int64_t GetNumPredictAt(int data_idx) const = 0;
+  /*!
+  * \brief Get prediction result at data_idx data
+  * \param data_idx 0: training data, 1: 1st validation data
   * \param result used to store prediction result, should allocate memory before call this function
   * \param out_len lenght of returned score
   */
-  virtual void GetPredictAt(int data_idx, score_t* result, int64_t* out_len) = 0;
+  virtual void GetPredictAt(int data_idx, double* result, int64_t* out_len) = 0;
 
   /*!
   * \brief Prediction for one record, not sigmoid transform

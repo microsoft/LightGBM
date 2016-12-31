@@ -55,9 +55,9 @@ The methods of each Class is in alphabetical order.
         Categorical features,
         type int represents index,
         type str represents feature names (need to specify feature_name as well)
-    params: dict, optional
+    params : dict, optional
         Other parameters
-    free_raw_data: Bool
+    free_raw_data : Bool
         True if need to free raw data after construct inner dataset
     
 
@@ -78,7 +78,7 @@ The methods of each Class is in alphabetical order.
         Group/query size for dataset
     silent : boolean, optional
         Whether print messages during construction
-    params: dict, optional
+    params : dict, optional
         Other parameters
     
 
@@ -400,7 +400,7 @@ The methods of each Class is in alphabetical order.
     ----------
     filename : str
         Filename to save
-    num_iteration: int
+    num_iteration : int
         Number of iteration that want to save. < 0 means save all
     
 
@@ -497,14 +497,15 @@ The methods of each Class is in alphabetical order.
             or the boosting stage found by using `early_stopping_rounds` is also printed.
         Example: with verbose_eval=4 and at least one item in evals,
             an evaluation metric is printed every 4 (instead of 1) boosting stages.
-    learning_rates: list or function
+    learning_rates : list or function
         List of learning rate for each boosting round
         or a customized function that calculates learning_rate
         in terms of current number of round (e.g. yields learning rate decay)
         - list l: learning_rate = l[current_round]
         - function f: learning_rate = f(current_round)
     callbacks : list of callback functions
-        List of callback functions that are applied at end of each iteration.
+        List of callback functions that are applied at each iteration.
+        See Callbacks in Python-API.md for more information.
 
     Returns
     -------
@@ -643,13 +644,13 @@ The methods of each Class is in alphabetical order.
 
         y_true: array_like of shape [n_samples]
             The target values
-        y_pred: array_like of shape [n_samples] or shape[n_samples* n_class]
+        y_pred: array_like of shape [n_samples] or shape[n_samples * n_class]
             The predicted values
         group: array_like
             group/query data, used for ranking task
-        grad: array_like of shape [n_samples] or shape[n_samples* n_class]
+        grad: array_like of shape [n_samples] or shape[n_samples * n_class]
             The value of the gradient for each sample point.
-        hess: array_like of shape [n_samples] or shape[n_samples* n_class]
+        hess: array_like of shape [n_samples] or shape[n_samples * n_class]
             The value of the second derivative for each sample point
 
     for multi-class task, the y_pred is group by class_id first, then group by row_id
@@ -703,7 +704,7 @@ The methods of each Class is in alphabetical order.
         Array of normailized feature importances
     
 
-####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric=None, early_stopping_rounds=None, verbose=True, feature_name=None, categorical_feature=None)
+####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric=None, early_stopping_rounds=None, verbose=True, feature_name=None, categorical_feature=None, callbacks=None)
 
     Fit the gradient boosting model.
 
@@ -721,12 +722,12 @@ The methods of each Class is in alphabetical order.
         group data of training data
     eval_set : list, optional
         A list of (X, y) tuple pairs to use as a validation set for early-stopping
-    eval_sample_weight : List or Dict of array
-        weight of eval data
-    eval_init_score : List or Dict of array
-        init score of eval data
-    eval_group : List or Dict of array
-        group data of eval data
+    eval_sample_weight : list or dict of array
+        weight of eval data; if you use dict, the index should start from 0
+    eval_init_score : list or dict of array
+        init score of eval data; if you use dict, the index should start from 0
+    eval_group : list or dict of array
+        group data of eval data; if you use dict, the index should start from 0
     eval_metric : str, list of str, callable, optional
         If a str, should be a built-in evaluation metric to use.
         If callable, a custom evaluation metric, see note for more details.
@@ -739,7 +740,10 @@ The methods of each Class is in alphabetical order.
     categorical_feature : list of str or int
         Categorical features,
         type int represents index,
-        type str represents feature names (need to specify feature_name as well)
+        type str represents feature names (need to specify feature_name as well).
+    callbacks : list of callback functions
+        List of callback functions that are applied at each iteration.
+        See Callbacks in Python-API.md for more information.
 
     Note
     ----
@@ -807,7 +811,7 @@ The methods of each Class is in alphabetical order.
 
 ###LGBMRanker
 
-####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric='ndcg', eval_at=1, early_stopping_rounds=None, verbose=True, feature_name=None, categorical_feature=None)
+####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric='ndcg', eval_at=1, early_stopping_rounds=None, verbose=True, feature_name=None, categorical_feature=None, callbacks=None)
 
     Most arguments are same as Common Methods except:
 
