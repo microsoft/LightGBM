@@ -8,6 +8,9 @@
 #include <cstdint>
 #include <memory>
 
+#include <LightGBM/utils/text_reader.h>
+#include <LightGBM/utils/common.h>
+
 #include "./lightgbm_R.h"
 
 #define COL_MAJOR (0)
@@ -22,16 +25,16 @@
   catch(...) { PutRNGstate(); error("unknown exception"); } \
   PutRNGstate();
 
-#ifndef CHECK
-#define CHECK(condition)                                   \
+#define RCHECK(condition)                                   \
   if (!(condition)) error("Check failed: " #condition \
      " at %s, line %d .\n", __FILE__,  __LINE__);
-#endif
 
 #define CHECK_CALL(x) \
   if ((x) != 0) { \
     error(LGBM_GetLastError()); \
   }
+
+using namespace LightGBM;
 
 SEXP LGBMCheckNullPtr_R(SEXP handle) {
   return ScalarLogical(R_ExternalPtrAddr(handle) == NULL);
@@ -313,7 +316,7 @@ SEXP LGBM_BoosterUpdateOneIterCustom_R(SEXP handle,
   SEXP hess) {
   int is_finished = 0;
   R_API_BEGIN();
-  CHECK(length(grad) == length(hess));
+  RCHECK(length(grad) == length(hess));
   int len = length(grad);
   std::vector<float> tgrad(len), thess(len);
 #pragma omp parallel for schedule(static)
@@ -354,7 +357,7 @@ SEXP LGBM_BoosterGetEvalNames_R(SEXP handle) {
   }
   int64_t out_len;
   CHECK_CALL(LGBM_BoosterGetEvalNames(R_ExternalPtrAddr(handle), &out_len, ptr_names.data()));
-  CHECK(out_len == len);
+  RCHECK(out_len == len);
   ret = PROTECT(allocVector(STRSXP, out_len));
   for (int i = 0; i < out_len; ++i) {
     SET_STRING_ELT(ret, i, mkChar(names[i].get()));
@@ -374,7 +377,7 @@ SEXP LGBM_BoosterGetEval_R(SEXP handle,
   double* ptr_ret = REAL(ret);
   int64_t out_len;
   CHECK_CALL(LGBM_BoosterGetEval(R_ExternalPtrAddr(handle), asInteger(data_idx), &out_len, ptr_ret));
-  CHECK(out_len == len);
+  RCHECK(out_len == len);
   R_API_END();
   UNPROTECT(1);
   return ret;
@@ -397,7 +400,7 @@ SEXP LGBM_BoosterGetPredict_R(SEXP handle,
   double* ptr_ret = REAL(out_result);
   int64_t out_len;
   CHECK_CALL(LGBM_BoosterGetPredict(R_ExternalPtrAddr(handle), asInteger(data_idx), &out_len, ptr_ret));
-  CHECK(out_len == len);
+  RCHECK(out_len == len);
   R_API_END();
   return R_NilValue;
 }
@@ -421,14 +424,33 @@ SEXP LGBM_BoosterPredictForFile_R(SEXP handle,
   SEXP is_rawscore,
   SEXP is_leafidx,
   SEXP num_iteration,
-  SEXP result_filename) {
+  SEXP out_nrow) {
+  SEXP ret;
   R_API_BEGIN();
+  std::string tmp_filen = std::tmpnam(nullptr);
   int pred_type = GetPredictType(is_rawscore, is_leafidx);
   CHECK_CALL(LGBM_BoosterPredictForFile(R_ExternalPtrAddr(handle), CHAR(asChar(data_filename)), 
     asInteger(data_has_header), pred_type, asInteger(num_iteration),
-    CHAR(asChar(result_filename)) ));
+    tmp_filen.c_str()));
+  TextReader<size_t> reader(tmp_filen.c_str(), false);
+  reader.ReadAllLines();
+  int num_pred_one_row = static_cast<int>(Common::Split(reader.Lines()[0].c_str(), '\t').size());
+  int num_line = static_cast<int64_t>(reader.Lines().size());
+  int64_t num_pred = num_line * num_pred_one_row;
+  ret = PROTECT(allocVector(REALSXP, num_pred));
+  for (int64_t i = 0; i < num_line; ++i) {
+    auto oneline_pred = Common::Split(reader.Lines()[i].c_str(), '\t');
+    double tmp = 0.0f;
+    for (int k = 0; k < num_pred_one_row; ++k) {
+      Common::Atof(oneline_pred[k].c_str(), &tmp);
+      REAL(ret)[i * num_pred_one_row + k] = tmp;
+    }
+  }
+  std::remove(tmp_filen.c_str());
+  INTEGER(out_nrow)[0] = static_cast<int>(num_line);
   R_API_END();
-  return R_NilValue;
+  UNPROTECT(1);
+  return ret;
 }
 
 SEXP LGBM_BoosterPredictForCSC_R(SEXP handle,

@@ -1,4 +1,4 @@
-Package: LightGBM
+Package: lightgbm
 Type: Package
 Title: Light Gradient Boosting Machine
 Version: 0.1

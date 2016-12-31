@@ -4,6 +4,7 @@
 #include <Rinternals.h>
 #include <R_ext/Random.h>
 #include <Rmath.h>
+#include <LightGBM/utils/log.h>
 #include <cstdint>
 #include <LightGBM/c_api.h>
 
@@ -259,8 +260,8 @@ DllExport SEXP LGBM_BoosterGetPredict_R(SEXP handle,
 * \param is_rawscore
 * \param is_leafidx
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
-* \param result_filename filename of result file
-* \return R_NilValue
+* \param out_nrow number of rows of predict data
+* \return prediction result
 */
 DllExport SEXP LGBM_BoosterPredictForFile_R(SEXP handle,
   SEXP data_filename,
@@ -268,7 +269,7 @@ DllExport SEXP LGBM_BoosterPredictForFile_R(SEXP handle,
   SEXP is_rawscore,
   SEXP is_leafidx,
   SEXP num_iteration,
-  SEXP result_filename);
+  SEXP out_nrow);
 
 /*!
 * \brief make prediction for an new data set
