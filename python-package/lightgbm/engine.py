@@ -74,8 +74,7 @@ def train(params, train_set, num_boost_round=100,
         - list l: learning_rate = l[current_round]
         - function f: learning_rate = f(current_round)
     callbacks : list of callback functions
-        List of callback functions that are applied at each iteration.
-        See Callbacks in Python-API.md for more information.
+        List of callback functions that are applied at end of each iteration.
 
     Returns
     -------
@@ -320,8 +319,7 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
     seed : int
         Seed used to generate the folds (passed to numpy.random.seed).
     callbacks : list of callback functions
-        List of callback functions that are applied at each iteration.
-        See Callbacks in Python-API.md for more information.
+        List of callback functions that are applied at end of each iteration.
 
     Returns
     -------

@@ -175,9 +175,9 @@ def test_booster():
     is_finished = ctypes.c_int(0)
     for i in range(100):
         LIB.LGBM_BoosterUpdateOneIter(booster,ctypes.byref(is_finished))
-        result = np.array([0.0], dtype=np.float64)
+        result = np.array([0.0], dtype=np.float32)
         out_len = ctypes.c_ulong(0)
-        LIB.LGBM_BoosterGetEval(booster, 0, ctypes.byref(out_len), result.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
+        LIB.LGBM_BoosterGetEval(booster, 0, ctypes.byref(out_len), result.ctypes.data_as(ctypes.POINTER(ctypes.c_float)))
         print ('%d Iteration test AUC %f' %(i, result[0]))
     LIB.LGBM_BoosterSaveModel(booster, -1, c_str('model.txt'))
     LIB.LGBM_BoosterFree(booster)
@@ -192,7 +192,7 @@ def test_booster():
         data.append( [float(x) for x in line.split('\t')[1:]] )
     inp.close()
     mat = np.array(data)
-    preb = np.zeros(mat.shape[0], dtype=np.float64)
+    preb = np.zeros(mat.shape[0], dtype=np.float32)
     num_preb = ctypes.c_long()
     data = np.array(mat.reshape(mat.size), copy=False)
     LIB.LGBM_BoosterPredictForMat(booster2,

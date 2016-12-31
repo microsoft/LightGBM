@@ -324,8 +324,14 @@ public:
     }
   }
 
-  inline int GetInnerFeatureIndex(int col_idx) const {
-    return used_feature_map_[col_idx];
+  inline void PushOneColumn(int tid, data_size_t col_idx, const std::vector<std::pair<int, double>>& feature_values) {
+    if (col_idx >= num_total_features_) { return; }
+    int feature_idx = used_feature_map_[col_idx];
+    if (feature_idx >= 0) {
+      for (auto& inner_data : feature_values) {
+        features_[feature_idx]->PushData(tid, inner_data.first, inner_data.second);
+      }
+    }
   }
 
   Dataset* Subset(const data_size_t* used_indices, data_size_t num_used_indices, bool is_enable_sparse) const;
@@ -352,7 +358,7 @@ public:
   * \param i Index for feature
   * \return Pointer of feature
   */
-  inline Feature* FeatureAt(int i) const { return features_[i].get(); }
+  inline const Feature* FeatureAt(int i) const { return features_[i].get(); }
 
   /*!
   * \brief Get meta data pointer

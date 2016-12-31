@@ -43,14 +43,7 @@ class TestSklearn(unittest.TestCase):
         X_train, y_train = load_svmlight_file('../../examples/lambdarank/rank.train')
         X_test, y_test = load_svmlight_file('../../examples/lambdarank/rank.test')
         q_train = np.loadtxt('../../examples/lambdarank/rank.train.query')
-        q_test = np.loadtxt('../../examples/lambdarank/rank.test.query')
-        lgb_model = lgb.LGBMRanker().fit(X_train, y_train,
-                                         group=q_train,
-                                         eval_set=[(X_test, y_test)],
-                                         eval_group=[q_test],
-                                         eval_at=[1],
-                                         verbose=False,
-                                         callbacks=[lgb.reset_parameter(learning_rate=lambda x: 0.95 ** x * 0.1)])
+        lgb_model = lgb.LGBMRanker().fit(X_train, y_train, group=q_train, eval_at=[1])
 
     def test_regression_with_custom_objective(self):
         def objective_ls(y_true, y_pred):

@@ -370,20 +370,7 @@ DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int64_t* out_len, c
 DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
   int data_idx,
   int64_t* out_len,
-  double* out_results);
-
-/*!
-* \brief Get number of predict for inner dataset
-this can be used to support customized eval function
-Note:  should pre-allocate memory for out_result, its length is equal to num_class * num_data
-* \param handle handle
-* \param data_idx 0:training data, 1: 1st valid data, 2:2nd valid data ...
-* \param out_len len of output result
-* \return 0 when succeed, -1 when failure happens
-*/
-DllExport int LGBM_BoosterGetNumPredict(BoosterHandle handle,
-  int data_idx,
-  int64_t* out_len);
+  float* out_results);
 
 /*!
 * \brief Get prediction for training data and validation data
@@ -398,7 +385,7 @@ DllExport int LGBM_BoosterGetNumPredict(BoosterHandle handle,
 DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
   int data_idx,
   int64_t* out_len,
-  double* out_result);
+  float* out_result);
 
 /*!
 * \brief make prediction for file
@@ -419,24 +406,6 @@ DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
   int predict_type,
   int64_t num_iteration,
   const char* result_filename);
-
-/*!
-* \brief Get number of prediction
-* \param handle handle
-* \param num_row 
-* \param predict_type
-*          C_API_PREDICT_NORMAL: normal prediction, with transform (if needed)
-*          C_API_PREDICT_RAW_SCORE: raw score
-*          C_API_PREDICT_LEAF_INDEX: leaf index
-* \param num_iteration number of iteration for prediction, <= 0 means no limit
-* \param out_len lenght of prediction
-* \return 0 when succeed, -1 when failure happens
-*/
-DllExport int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
-  int64_t num_row,
-  int predict_type,
-  int64_t num_iteration,
-  int64_t* out_len);
 
 /*!
 * \brief make prediction for an new data set
@@ -473,44 +442,7 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   int predict_type,
   int64_t num_iteration,
   int64_t* out_len,
-  double* out_result);
-
-/*!
-* \brief make prediction for an new data set
-*        Note:  should pre-allocate memory for out_result,
-*               for noraml and raw score: its length is equal to num_class * num_data
-*               for leaf index, its length is equal to num_class * num_data * num_iteration
-* \param handle handle
-* \param col_ptr pointer to col headers
-* \param col_ptr_type type of col_ptr, can be C_API_DTYPE_INT32 or C_API_DTYPE_INT64
-* \param indices findex
-* \param data fvalue
-* \param data_type type of data pointer, can be C_API_DTYPE_FLOAT32 or C_API_DTYPE_FLOAT64
-* \param ncol_ptr number of cols in the matrix + 1
-* \param nelem number of nonzero elements in the matrix
-* \param num_row number of rows
-* \param predict_type
-*          C_API_PREDICT_NORMAL: normal prediction, with transform (if needed)
-*          C_API_PREDICT_RAW_SCORE: raw score
-*          C_API_PREDICT_LEAF_INDEX: leaf index
-* \param num_iteration number of iteration for prediction, <= 0 means no limit
-* \param out_len len of output result
-* \param out_result used to set a pointer to array, should allocate memory before call this function
-* \return 0 when succeed, -1 when failure happens
-*/
-DllExport int LGBM_BoosterPredictForCSC(BoosterHandle handle,
-  const void* col_ptr,
-  int col_ptr_type,
-  const int32_t* indices,
-  const void* data,
-  int data_type,
-  int64_t ncol_ptr,
-  int64_t nelem,
-  int64_t num_row,
-  int predict_type,
-  int64_t num_iteration,
-  int64_t* out_len,
-  double* out_result);
+  float* out_result);
 
 /*!
 * \brief make prediction for an new data set
@@ -541,7 +473,7 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
   int predict_type,
   int64_t num_iteration,
   int64_t* out_len,
-  double* out_result);
+  float* out_result);
 
 /*!
 * \brief save model into file
@@ -565,7 +497,7 @@ DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
 DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
   int buffer_len,
   int64_t* out_len,
-  char* out_str);
+  char** out_str);
 
 /*!
 * \brief Get leaf value 
@@ -578,7 +510,7 @@ DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
 DllExport int LGBM_BoosterGetLeafValue(BoosterHandle handle,
   int tree_idx,
   int leaf_idx,
-  double* out_val);
+  float* out_val);
 
 /*!
 * \brief Set leaf value
@@ -591,7 +523,26 @@ DllExport int LGBM_BoosterGetLeafValue(BoosterHandle handle,
 DllExport int LGBM_BoosterSetLeafValue(BoosterHandle handle,
   int tree_idx,
   int leaf_idx,
-  double val);
+  float val);
+
+// some help functions used to convert data
+
+std::function<std::vector<double>(int row_idx)>
+RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_type, int is_row_major);
+
+std::function<std::vector<std::pair<int, double>>(int row_idx)>
+RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_type, int is_row_major);
+
+std::function<std::vector<std::pair<int, double>>(int idx)>
+RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices,
+  const void* data, int data_type, int64_t nindptr, int64_t nelem);
+
+std::function<std::vector<std::pair<int, double>>(int idx)>
+ColumnFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indices,
+  const void* data, int data_type, int64_t ncol_ptr, int64_t nelem);
+
+std::vector<double>
+SampleFromOneColumn(const std::vector<std::pair<int, double>>& data, const std::vector<int>& indices);
 
 #if defined(_MSC_VER)
 // exception handle and error msg
