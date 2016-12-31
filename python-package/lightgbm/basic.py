@@ -535,8 +535,8 @@ class _InnerDataset(object):
         """start construct data"""
         if is_str(data):
             """check data has header or not"""
-            if params.get("has_header", "").lower() == "true" \
-                or params.get("header", "").lower() == "true":
+            if str(params.get("has_header", "")).lower() == "true" \
+                or str(params.get("header", "")).lower() == "true":
                 self.data_has_header = True
             self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_DatasetCreateFromFile(
