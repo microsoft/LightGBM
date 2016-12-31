@@ -35,7 +35,7 @@ def _objective_function_wrapper(func):
         Expects a callable with signature ``func(y_true, y_pred)`` or ``func(y_true, y_pred, group):
             y_true: array_like of shape [n_samples]
                 The target values
-            y_pred: array_like of shape [n_samples] or shape[n_samples* n_class] (for multi-class)
+            y_pred: array_like of shape [n_samples] or shape[n_samples * n_class] (for multi-class)
                 The predicted values
             group: array_like
                 group/query data, used for ranking task
@@ -46,7 +46,7 @@ def _objective_function_wrapper(func):
         The new objective function as expected by ``lightgbm.engine.train``.
         The signature is ``new_func(preds, dataset)``:
 
-        preds: array_like, shape [n_samples] or shape[n_samples* n_class]
+        preds: array_like, shape [n_samples] or shape[n_samples * n_class]
             The predicted values
         dataset: ``dataset``
             The training set from which the labels will be extracted using
@@ -97,7 +97,7 @@ def _eval_function_wrapper(func):
 
             y_true: array_like of shape [n_samples]
                 The target values
-            y_pred: array_like of shape [n_samples] or shape[n_samples* n_class] (for multi-class)
+            y_pred: array_like of shape [n_samples] or shape[n_samples * n_class] (for multi-class)
                 The predicted values
             weight: array_like of shape [n_samples]
                 The weight of samples
@@ -110,7 +110,7 @@ def _eval_function_wrapper(func):
         The new eval function as expected by ``lightgbm.engine.train``.
         The signature is ``new_func(preds, dataset)``:
 
-        preds: array_like, shape [n_samples] or shape[n_samples* n_class]
+        preds: array_like, shape [n_samples] or shape[n_samples * n_class]
             The predicted values
         dataset: ``dataset``
             The training set from which the labels will be extracted using
@@ -209,13 +209,13 @@ class LGBMModel(LGBMModelBase):
 
             y_true: array_like of shape [n_samples]
                 The target values
-            y_pred: array_like of shape [n_samples] or shape[n_samples* n_class]
+            y_pred: array_like of shape [n_samples] or shape[n_samples * n_class]
                 The predicted values
             group: array_like
                 group/query data, used for ranking task
-            grad: array_like of shape [n_samples] or shape[n_samples* n_class]
+            grad: array_like of shape [n_samples] or shape[n_samples * n_class]
                 The value of the gradient for each sample point.
-            hess: array_like of shape [n_samples] or shape[n_samples* n_class]
+            hess: array_like of shape [n_samples] or shape[n_samples * n_class]
                 The value of the second derivative for each sample point
 
         for multi-class task, the y_pred is group by class_id first, then group by row_id
@@ -276,7 +276,8 @@ class LGBMModel(LGBMModelBase):
             eval_init_score=None, eval_group=None,
             eval_metric=None,
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None):
+            feature_name=None, categorical_feature=None,
+            callbacks=None):
         """
         Fit the gradient boosting model
 
@@ -312,6 +313,9 @@ class LGBMModel(LGBMModelBase):
             Categorical features,
             type int represents index,
             type str represents feature names (need to specify feature_name as well)
+        callbacks : list of callback functions
+            List of callback functions that are applied at each iteration.
+            See Callbacks in Python-API.md for more information.
 
         Note
         ----
@@ -398,7 +402,8 @@ class LGBMModel(LGBMModelBase):
                               early_stopping_rounds=early_stopping_rounds,
                               evals_result=evals_result, fobj=self.fobj, feval=feval,
                               verbose_eval=verbose, feature_name=feature_name,
-                              categorical_feature=categorical_feature)
+                              categorical_feature=categorical_feature,
+                              callbacks=callbacks)
 
         if evals_result:
             for val in evals_result.items():
@@ -484,7 +489,7 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
             eval_init_score=None,
             eval_metric="l2",
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None):
+            feature_name=None, categorical_feature=None, callbacks=None):
 
         super(LGBMRegressor, self).fit(X, y, sample_weight=sample_weight,
                                        init_score=init_score, eval_set=eval_set,
@@ -493,7 +498,8 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
                                        eval_metric=eval_metric,
                                        early_stopping_rounds=early_stopping_rounds,
                                        verbose=verbose, feature_name=feature_name,
-                                       categorical_feature=categorical_feature)
+                                       categorical_feature=categorical_feature,
+                                       callbacks=callbacks)
         return self
 
 class LGBMClassifier(LGBMModel, LGBMClassifierBase):
@@ -525,7 +531,8 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
             eval_init_score=None,
             eval_metric="binary_logloss",
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None):
+            feature_name=None, categorical_feature=None,
+            callbacks=None):
 
         self._le = LGBMLabelEncoder().fit(y)
         y = self._le.transform(y)
@@ -547,7 +554,8 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
                                         eval_metric=eval_metric,
                                         early_stopping_rounds=early_stopping_rounds,
                                         verbose=verbose, feature_name=feature_name,
-                                        categorical_feature=categorical_feature)
+                                        categorical_feature=categorical_feature,
+                                        callbacks=callbacks)
         return self
 
     def predict(self, data, raw_score=False, num_iteration=0):
@@ -616,7 +624,8 @@ class LGBMRanker(LGBMModel):
             eval_init_score=None, eval_group=None,
             eval_metric='ndcg', eval_at=1,
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None):
+            feature_name=None, categorical_feature=None,
+            callbacks=None):
         """
         Most arguments like common methods except following:
 
@@ -633,10 +642,9 @@ class LGBMRanker(LGBMModel):
                 raise ValueError("Eval_group cannot be None when eval_set is not None")
             elif len(eval_group) != len(eval_set):
                 raise ValueError("Length of eval_group should equal to eval_set")
-            else:
-                for inner_group in eval_group:
-                    if inner_group is None:
-                        raise ValueError("Should set group for all eval dataset for ranking task")
+            elif (isinstance(eval_group, dict) and any(i not in eval_group or eval_group[i] is None for i in range(len(eval_group)))) \
+                or (isinstance(eval_group, list) and any(group is None for group in eval_group)):
+                raise ValueError("Should set group for all eval dataset for ranking task; if you use dict, the index should start from 0")
 
         if eval_at is not None:
             self.eval_at = eval_at
@@ -647,5 +655,6 @@ class LGBMRanker(LGBMModel):
                                     eval_metric=eval_metric,
                                     early_stopping_rounds=early_stopping_rounds,
                                     verbose=verbose, feature_name=feature_name,
-                                    categorical_feature=categorical_feature)
+                                    categorical_feature=categorical_feature,
+                                    callbacks=callbacks)
         return self
