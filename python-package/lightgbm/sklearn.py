@@ -489,7 +489,7 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
             eval_init_score=None,
             eval_metric="l2",
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None):
+            feature_name=None, categorical_feature=None, callbacks=None):
 
         super(LGBMRegressor, self).fit(X, y, sample_weight=sample_weight,
                                        init_score=init_score, eval_set=eval_set,
@@ -498,7 +498,8 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
                                        eval_metric=eval_metric,
                                        early_stopping_rounds=early_stopping_rounds,
                                        verbose=verbose, feature_name=feature_name,
-                                       categorical_feature=categorical_feature)
+                                       categorical_feature=categorical_feature,
+                                       callbacks=callbacks)
         return self
 
 class LGBMClassifier(LGBMModel, LGBMClassifierBase):
