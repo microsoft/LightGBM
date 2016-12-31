@@ -1279,7 +1279,9 @@ class Booster(object):
 
     def __deepcopy__(self, _):
         self.save_model(MODEL_FILE)
-        return Booster(model_file=MODEL_FILE)
+        copied_model = Booster(model_file=MODEL_FILE)
+        os.remove(MODEL_FILE)
+        return copied_model
 
     def __getstate__(self):
         this = self.__dict__.copy()
