@@ -15,14 +15,12 @@ def multi_logloss(y_true, y_pred):
     return np.mean([-math.log(y_pred[i][y]) for i, y in enumerate(y_true)])
 
 def test_template(params = {'objective' : 'regression', 'metric' : 'l2'},
-                X_y=load_boston(True), feval=mean_squared_error,
-                stratify=None, num_round=100, return_data=False,
-                return_model=False, init_model=None, custom_eval=None):
-    X_train, X_test, y_train, y_test = train_test_split(*X_y, test_size=0.1,
-                                                        stratify=stratify,
-                                                        random_state=42)
-    lgb_train = lgb.Dataset(X_train, y_train, free_raw_data=not return_model, params=params)
-    lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, free_raw_data=not return_model, params=params)
+                  X_y=load_boston(True), feval=mean_squared_error,
+                  num_round=100, init_model=None, custom_eval=None,
+                  return_data=False, return_model=False):
+    X_train, X_test, y_train, y_test = train_test_split(*X_y, test_size=0.1, random_state=42)
+    lgb_train = lgb.Dataset(X_train, y_train, params=params)
+    lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, params=params)
     if return_data: return lgb_train, lgb_eval
     evals_result = {}
     params['verbose'] = params['seed'] = 0
@@ -46,10 +44,10 @@ class TestEngine(unittest.TestCase):
             'objective' : 'binary',
             'metric' : 'binary_logloss'
         }
-        evals_result, ret = test_template(params, X_y, log_loss, stratify=X_y[1])
+        evals_result, ret = test_template(params, X_y, log_loss)
         self.assertLess(ret, 0.15)
         self.assertAlmostEqual(min(evals_result['eval']['logloss']), ret, places=5)
-    
+
     def test_regreesion(self):
         evals_result, ret = test_template()
         ret **= 0.5
@@ -63,7 +61,7 @@ class TestEngine(unittest.TestCase):
             'metric' : 'multi_logloss',
             'num_class' : 10
         }
-        evals_result, ret = test_template(params, X_y, multi_logloss, stratify=X_y[1])
+        evals_result, ret = test_template(params, X_y, multi_logloss)
         self.assertLess(ret, 0.2)
         self.assertAlmostEqual(min(evals_result['eval']['multi_logloss']), ret, places=5)
 
@@ -76,8 +74,8 @@ class TestEngine(unittest.TestCase):
         gbm = test_template(params, num_round=20, return_model=True)
         gbm.save_model(model_name)
         evals_result, ret = test_template(params, feval=mean_absolute_error,
-                                        num_round=80, init_model=model_name,
-                                        custom_eval=(lambda p, d: ('mae', mean_absolute_error(p, d.get_label()), False)))
+                                          num_round=80, init_model=model_name,
+                                          custom_eval=(lambda p, d: ('mae', mean_absolute_error(p, d.get_label()), False)))
         self.assertLess(ret, 3)
         self.assertAlmostEqual(min(evals_result['eval']['l1']), ret, places=5)
         for l1, mae in zip(evals_result['eval']['l1'], evals_result['eval']['mae']):
@@ -93,16 +91,16 @@ class TestEngine(unittest.TestCase):
             'metric' : 'multi_logloss',
             'num_class' : 3
         }
-        gbm = test_template(params, X_y, num_round=20, return_model=True, stratify=X_y[1])
+        gbm = test_template(params, X_y, num_round=20, return_model=True)
         evals_result, ret = test_template(params, X_y, feval=multi_logloss,
                                         num_round=80, init_model=gbm)
         self.assertLess(ret, 1.5)
         self.assertAlmostEqual(min(evals_result['eval']['multi_logloss']), ret, places=5)
 
     def test_cv(self):
-        lgb_train, lgb_eval = test_template(return_data=True)
+        lgb_train, _ = test_template(return_data=True)
         lgb.cv({'verbose':0}, lgb_train, num_boost_round=20, nfold=5,
-                metrics='l1', verbose_eval=False)
+               metrics='l1', verbose_eval=False)
 
     def test_save_load_copy_pickle(self):
         gbm = test_template(num_round=20, return_model=True)
