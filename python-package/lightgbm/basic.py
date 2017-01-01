@@ -1603,7 +1603,7 @@ class Booster(object):
                 self.handle,
                 actual_len,
                 ctypes.byref(tmp_out_len),
-                ctypes.byref(ptr_string_buffer)))
+                ptr_string_buffer))
         return json.loads(string_buffer.value.decode())
 
     def predict(self, data, num_iteration=-1, raw_score=False, pred_leaf=False, data_has_header=False, is_reshape=True):
