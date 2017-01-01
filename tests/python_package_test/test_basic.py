@@ -31,11 +31,12 @@ class TestBasic(unittest.TestCase):
         bst.save_model("model.txt")
         with tempfile.NamedTemporaryFile() as f:
             np.savetxt(f, X_test, delimiter=',')
+            f.flush()
             pred_from_matr = bst.predict(X_test)
             pred_from_file = bst.predict(f.name)
             self.assertEqual(len(pred_from_matr), len(pred_from_file))
-            for pm, pf in zip(pred_from_matr, pred_from_file):
-                self.assertAlmostEqual(pm, pf, places=3)
+            for preds in zip(pred_from_matr, pred_from_file):
+                self.assertAlmostEqual(*preds, places=3)
 
 print("----------------------------------------------------------------------")
 print("running test_basic.py")

@@ -1,6 +1,6 @@
 # coding: utf-8
 # pylint: skip-file
-import os, unittest, math
+import os, unittest, math, copy
 import numpy as np
 import lightgbm as lgb
 from sklearn.metrics import log_loss, mean_squared_error, mean_absolute_error
@@ -25,7 +25,7 @@ def test_template(params = {'objective' : 'regression', 'metric' : 'l2'},
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, free_raw_data=not return_model, params=params)
     if return_data: return lgb_train, lgb_eval
     evals_result = {}
-    params['verbose'] = 0
+    params['verbose'] = params['seed'] = 0
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=num_round,
                     valid_sets=lgb_eval,
@@ -104,18 +104,25 @@ class TestEngine(unittest.TestCase):
         lgb.cv({'verbose':0}, lgb_train, num_boost_round=20, nfold=5,
                 metrics='l1', verbose_eval=False)
 
-    def test_pickle(self):
-        gbm = test_template(return_model=True)
+    def test_save_load_copy_pickle(self):
+        gbm = test_template(num_round=20, return_model=True)
+        _, ret_origin = test_template(init_model=gbm)
+        other_ret = []
+        gbm.save_model('lgb.model')
+        gbm_load = lgb.Booster(model_file='lgb.model')
+        other_ret.append(test_template(init_model='lgb.model')[1])
+        other_ret.append(test_template(init_model=gbm_load)[1])
+        other_ret.append(test_template(init_model=copy.copy(gbm))[1])
+        other_ret.append(test_template(init_model=copy.deepcopy(gbm))[1])
         with open('lgb.pkl', 'wb') as f:
             pickle.dump(gbm, f)
         with open('lgb.pkl', 'rb') as f:
             gbm_pickle = pickle.load(f)
-        _, ret_origin = test_template(init_model=gbm)
-        _, ret_loaded = test_template(init_model=gbm_pickle)
-        self.assertAlmostEqual(ret_origin, ret_loaded, places=0)
         gbm_pickles = pickle.loads(pickle.dumps(gbm))
-        _, ret_loadeds = test_template(init_model=gbm_pickles)
-        self.assertAlmostEqual(ret_origin, ret_loadeds, places=0)
+        other_ret.append(test_template(init_model=gbm_pickle)[1])
+        other_ret.append(test_template(init_model=gbm_pickles)[1])
+        for ret in other_ret:
+            self.assertAlmostEqual(ret_origin, ret, places=0)
 
 print("----------------------------------------------------------------------")
 print("running test_engine.py")

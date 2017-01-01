@@ -5,11 +5,10 @@
 """Wrapper c_api of LightGBM"""
 from __future__ import absolute_import
 
-import os
 import sys
 import ctypes
-import tempfile
 import json
+from tempfile import NamedTemporaryFile
 
 import numpy as np
 import scipy.sparse
@@ -277,16 +276,15 @@ class _InnerPredictor(object):
         if num_iteration > self.num_total_iteration:
             num_iteration = self.num_total_iteration
         if is_str(data):
-            tmp_pred_fname = tempfile.NamedTemporaryFile(prefix="lightgbm_tmp_pred_").name
-            _safe_call(_LIB.LGBM_BoosterPredictForFile(
-                self.handle,
-                c_str(data),
-                int_data_has_header,
-                predict_type,
-                num_iteration,
-                c_str(tmp_pred_fname)))
-            with open(tmp_pred_fname, "r") as tmp_file:
-                lines = tmp_file.readlines()
+            with NamedTemporaryFile() as f:
+                _safe_call(_LIB.LGBM_BoosterPredictForFile(
+                    self.handle,
+                    c_str(data),
+                    int_data_has_header,
+                    predict_type,
+                    num_iteration,
+                    c_str(f.name)))
+                lines = f.readlines()
                 nrow = len(lines)
                 preds = [float(token) for line in lines for token in line.split('\t')]
                 preds = np.array(preds, dtype=np.float64, copy=False)
@@ -1258,7 +1256,6 @@ class Dataset(object):
         else:
             raise LightGBMError("Cannot call num_feature before construct, please call it explicitly")
 
-MODEL_FILE = 'tmp.model'
 
 class Booster(object):
     """"A Booster of LightGBM.
@@ -1340,10 +1337,9 @@ class Booster(object):
         return self.__deepcopy__(None)
 
     def __deepcopy__(self, _):
-        self.save_model(MODEL_FILE)
-        copied_model = Booster(model_file=MODEL_FILE)
-        os.remove(MODEL_FILE)
-        return copied_model
+        with NamedTemporaryFile() as f:
+            self.save_model(f.name)
+            return Booster(model_file=f.name)
 
     def __getstate__(self):
         this = self.__dict__.copy()
@@ -1351,24 +1347,24 @@ class Booster(object):
         this.pop('train_set', None)
         this.pop('valid_sets', None)
         if handle is not None:
-            self.save_model(MODEL_FILE)
-            this["handle"] = open(MODEL_FILE, 'r').readlines()
-            os.remove(MODEL_FILE)
+            with NamedTemporaryFile() as f:
+                self.save_model(f.name)
+                this["handle"] = f.readlines()
         return this
 
     def __setstate__(self, state):
-        handle = state['handle']
-        if handle is not None:
-            with open(MODEL_FILE, 'w') as f:
-                f.writelines(handle)
-            handle = ctypes.c_void_p()
-            out_num_iterations = ctypes.c_int64(0)
-            _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
-                c_str(MODEL_FILE),
-                ctypes.byref(out_num_iterations),
-                ctypes.byref(handle)))
+        model = state['handle']
+        if model is not None:
+            with NamedTemporaryFile() as f:
+                f.writelines(model)
+                f.flush()
+                handle = ctypes.c_void_p()
+                out_num_iterations = ctypes.c_int64(0)
+                _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
+                    c_str(f.name),
+                    ctypes.byref(out_num_iterations),
+                    ctypes.byref(handle)))
             state['handle'] = handle
-            os.remove(MODEL_FILE)
         self.__dict__.update(state)
 
     def set_train_data_name(self, name):
