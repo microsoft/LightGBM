@@ -735,8 +735,8 @@ DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
   API_END();
 }
 
-int GetNumPredOneRow(const Booster* ref_booster, int predict_type, int64_t num_iteration) {
-  int num_preb_in_one_row = ref_booster->GetBoosting()->NumberOfClasses();
+int64_t GetNumPredOneRow(const Booster* ref_booster, int predict_type, int64_t num_iteration) {
+  int64_t num_preb_in_one_row = ref_booster->GetBoosting()->NumberOfClasses();
   if (predict_type == C_API_PREDICT_LEAF_INDEX) {
     int64_t max_iteration = ref_booster->GetBoosting()->GetCurrentIteration();
     if (num_iteration > 0) {
@@ -776,7 +776,7 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto predictor = ref_booster->NewPredictor(static_cast<int>(num_iteration), predict_type);
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
-  int num_preb_in_one_row = GetNumPredOneRow(ref_booster, predict_type, num_iteration);
+  int64_t num_preb_in_one_row = GetNumPredOneRow(ref_booster, predict_type, num_iteration);
   int nrow = static_cast<int>(nindptr - 1);
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < nrow; ++i) {
@@ -806,7 +806,7 @@ DllExport int LGBM_BoosterPredictForCSC(BoosterHandle handle,
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto predictor = ref_booster->NewPredictor(static_cast<int>(num_iteration), predict_type);
-  int num_preb_in_one_row = GetNumPredOneRow(ref_booster, predict_type, num_iteration);
+  int64_t num_preb_in_one_row = GetNumPredOneRow(ref_booster, predict_type, num_iteration);
   int ncol = static_cast<int>(ncol_ptr - 1);
 
   Threading::For<int64_t>(0, num_row,
@@ -849,7 +849,7 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto predictor = ref_booster->NewPredictor(static_cast<int>(num_iteration), predict_type);
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
-  int num_preb_in_one_row = GetNumPredOneRow(ref_booster, predict_type, num_iteration);
+  int64_t num_preb_in_one_row = GetNumPredOneRow(ref_booster, predict_type, num_iteration);
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < nrow; ++i) {
     auto one_row = get_row_fun(i);

@@ -107,8 +107,8 @@ class TestEngine(unittest.TestCase):
         _, ret_origin = test_template(init_model=gbm)
         other_ret = []
         gbm.save_model('lgb.model')
-        gbm_load = lgb.Booster(model_file='lgb.model')
         other_ret.append(test_template(init_model='lgb.model')[1])
+        gbm_load = lgb.Booster(model_file='lgb.model')
         other_ret.append(test_template(init_model=gbm_load)[1])
         other_ret.append(test_template(init_model=copy.copy(gbm))[1])
         other_ret.append(test_template(init_model=copy.deepcopy(gbm))[1])
@@ -116,11 +116,11 @@ class TestEngine(unittest.TestCase):
             pickle.dump(gbm, f)
         with open('lgb.pkl', 'rb') as f:
             gbm_pickle = pickle.load(f)
-        gbm_pickles = pickle.loads(pickle.dumps(gbm))
         other_ret.append(test_template(init_model=gbm_pickle)[1])
+        gbm_pickles = pickle.loads(pickle.dumps(gbm))
         other_ret.append(test_template(init_model=gbm_pickles)[1])
         for ret in other_ret:
-            self.assertAlmostEqual(ret_origin, ret, places=0)
+            self.assertAlmostEqual(ret_origin, ret, places=5)
 
 print("----------------------------------------------------------------------")
 print("running test_engine.py")

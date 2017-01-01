@@ -99,6 +99,11 @@ class TestSklearn(unittest.TestCase):
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
         gbm_pickle.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
         self.assertDictEqual(gbm.evals_result(), gbm_pickle.evals_result())
+        pred_origin = gbm.predict(X_test)
+        pred_pickle = gbm_pickle.predict(X_test)
+        self.assertEqual(len(pred_origin), len(pred_pickle))
+        for preds in zip(pred_origin, pred_pickle):
+            self.assertAlmostEqual(*preds, places=5)
 
 print("----------------------------------------------------------------------")
 print("running test_sklearn.py")

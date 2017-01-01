@@ -36,7 +36,7 @@ class TestBasic(unittest.TestCase):
             pred_from_file = bst.predict(f.name)
         self.assertEqual(len(pred_from_matr), len(pred_from_file))
         for preds in zip(pred_from_matr, pred_from_file):
-            self.assertAlmostEqual(*preds, places=3)
+            self.assertAlmostEqual(*preds, places=5)
 
 print("----------------------------------------------------------------------")
 print("running test_basic.py")

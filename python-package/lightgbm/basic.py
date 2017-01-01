@@ -1256,7 +1256,6 @@ class Dataset(object):
         else:
             raise LightGBMError("Cannot call num_feature before construct, please call it explicitly")
 
-
 class Booster(object):
     """"A Booster of LightGBM.
     """
