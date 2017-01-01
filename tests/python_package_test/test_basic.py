@@ -29,14 +29,14 @@ class TestBasic(unittest.TestCase):
             if i % 10 == 0:
                 print(bst.eval_train(), bst.eval_valid())
         bst.save_model("model.txt")
+        pred_from_matr = bst.predict(X_test)
         with tempfile.NamedTemporaryFile() as f:
             np.savetxt(f, X_test, delimiter=',')
             f.flush()
-            pred_from_matr = bst.predict(X_test)
             pred_from_file = bst.predict(f.name)
-            self.assertEqual(len(pred_from_matr), len(pred_from_file))
-            for preds in zip(pred_from_matr, pred_from_file):
-                self.assertAlmostEqual(*preds, places=3)
+        self.assertEqual(len(pred_from_matr), len(pred_from_file))
+        for preds in zip(pred_from_matr, pred_from_file):
+            self.assertAlmostEqual(*preds, places=3)
 
 print("----------------------------------------------------------------------")
 print("running test_basic.py")

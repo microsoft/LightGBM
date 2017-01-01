@@ -276,7 +276,7 @@ class _InnerPredictor(object):
         if num_iteration > self.num_total_iteration:
             num_iteration = self.num_total_iteration
         if is_str(data):
-            with NamedTemporaryFile() as f:
+            with NamedTemporaryFile(mode='w+') as f:
                 _safe_call(_LIB.LGBM_BoosterPredictForFile(
                     self.handle,
                     c_str(data),
@@ -1337,7 +1337,7 @@ class Booster(object):
         return self.__deepcopy__(None)
 
     def __deepcopy__(self, _):
-        with NamedTemporaryFile() as f:
+        with NamedTemporaryFile(mode='w+') as f:
             self.save_model(f.name)
             return Booster(model_file=f.name)
 
@@ -1347,7 +1347,7 @@ class Booster(object):
         this.pop('train_set', None)
         this.pop('valid_sets', None)
         if handle is not None:
-            with NamedTemporaryFile() as f:
+            with NamedTemporaryFile(mode='w+') as f:
                 self.save_model(f.name)
                 this["handle"] = f.readlines()
         return this
@@ -1355,11 +1355,11 @@ class Booster(object):
     def __setstate__(self, state):
         model = state['handle']
         if model is not None:
-            with NamedTemporaryFile() as f:
+            handle = ctypes.c_void_p()
+            out_num_iterations = ctypes.c_int64(0)
+            with NamedTemporaryFile(mode='w+') as f:
                 f.writelines(model)
                 f.flush()
-                handle = ctypes.c_void_p()
-                out_num_iterations = ctypes.c_int64(0)
                 _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
                     c_str(f.name),
                     ctypes.byref(out_num_iterations),
