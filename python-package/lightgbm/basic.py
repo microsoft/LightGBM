@@ -7,8 +7,8 @@ from __future__ import absolute_import
 
 import sys
 import ctypes
-import tempfile
 import json
+from tempfile import NamedTemporaryFile
 
 import numpy as np
 import scipy.sparse
@@ -276,16 +276,15 @@ class _InnerPredictor(object):
         if num_iteration > self.num_total_iteration:
             num_iteration = self.num_total_iteration
         if is_str(data):
-            tmp_pred_fname = tempfile.NamedTemporaryFile(prefix="lightgbm_tmp_pred_").name
-            _safe_call(_LIB.LGBM_BoosterPredictForFile(
-                self.handle,
-                c_str(data),
-                int_data_has_header,
-                predict_type,
-                num_iteration,
-                c_str(tmp_pred_fname)))
-            with open(tmp_pred_fname, "r") as tmp_file:
-                lines = tmp_file.readlines()
+            with NamedTemporaryFile(mode='w+') as f:
+                _safe_call(_LIB.LGBM_BoosterPredictForFile(
+                    self.handle,
+                    c_str(data),
+                    int_data_has_header,
+                    predict_type,
+                    num_iteration,
+                    c_str(f.name)))
+                lines = f.readlines()
                 nrow = len(lines)
                 preds = [float(token) for line in lines for token in line.split('\t')]
                 preds = np.array(preds, dtype=np.float64, copy=False)
@@ -1332,6 +1331,40 @@ class Booster(object):
     def __del__(self):
         if self.handle is not None:
             _safe_call(_LIB.LGBM_BoosterFree(self.handle))
+
+    def __copy__(self):
+        return self.__deepcopy__(None)
+
+    def __deepcopy__(self, _):
+        with NamedTemporaryFile(mode='w+') as f:
+            self.save_model(f.name)
+            return Booster(model_file=f.name)
+
+    def __getstate__(self):
+        this = self.__dict__.copy()
+        handle = this['handle']
+        this.pop('train_set', None)
+        this.pop('valid_sets', None)
+        if handle is not None:
+            with NamedTemporaryFile(mode='w+') as f:
+                self.save_model(f.name)
+                this["handle"] = f.readlines()
+        return this
+
+    def __setstate__(self, state):
+        model = state['handle']
+        if model is not None:
+            handle = ctypes.c_void_p()
+            out_num_iterations = ctypes.c_int64(0)
+            with NamedTemporaryFile(mode='w+') as f:
+                f.writelines(model)
+                f.flush()
+                _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
+                    c_str(f.name),
+                    ctypes.byref(out_num_iterations),
+                    ctypes.byref(handle)))
+            state['handle'] = handle
+        self.__dict__.update(state)
 
     def set_train_data_name(self, name):
         self.__train_data_name = name

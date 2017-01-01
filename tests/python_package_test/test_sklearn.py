@@ -3,42 +3,42 @@
 import os, unittest
 import numpy as np
 import lightgbm as lgb
-from sklearn.metrics import log_loss, mean_squared_error, mean_absolute_error
-from sklearn.datasets import load_breast_cancer, load_boston, load_digits, load_iris, load_svmlight_file
+from sklearn.metrics import log_loss, mean_squared_error
+from sklearn.datasets import load_breast_cancer, load_boston, load_digits, load_svmlight_file
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.base import clone
+from sklearn.externals import joblib
 
 def test_template(X_y=load_boston(True), model=lgb.LGBMRegressor,
-                feval=mean_squared_error, stratify=None, num_round=100, return_data=False,
-                return_model=False, init_model=None, custom_obj=None, proba=False):
-    X, y = X_y
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,
-                                                        stratify=stratify,
-                                                        random_state=42)
+                  feval=mean_squared_error, num_round=100,
+                  custom_obj=None, predict_proba=False,
+                  return_data=False, return_model=False):
+    X_train, X_test, y_train, y_test = train_test_split(*X_y, test_size=0.1, random_state=42)
     if return_data: return X_train, X_test, y_train, y_test
-    if not custom_obj: gbm = model(n_estimators=num_round, silent=True)
-    else: gbm = model(n_estimators=num_round, objective=custom_obj, silent=True)
+    arguments = {'n_estimators' : num_round, 'silent' : True}
+    if custom_obj: arguments['objective'] = custom_obj
+    gbm = model(**arguments)
     gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=10, verbose=False)
     if return_model: return gbm
-    else: return feval(y_test, gbm.predict_proba(X_test) if proba else gbm.predict(X_test))
+    else: return feval(y_test, gbm.predict_proba(X_test) if predict_proba else gbm.predict(X_test))
 
 class TestSklearn(unittest.TestCase):
 
     def test_binary(self):
         X_y= load_breast_cancer(True)
-        ret = test_template(X_y, lgb.LGBMClassifier, log_loss, stratify=X_y[1], proba=True)
+        ret = test_template(X_y, lgb.LGBMClassifier, log_loss, predict_proba=True)
         self.assertLess(ret, 0.15)
 
     def test_regreesion(self):
         self.assertLess(test_template() ** 0.5, 4)
- 
+
     def test_multiclass(self):
         X_y = load_digits(10, True)
         def multi_error(y_true, y_pred):
             return np.mean(y_true != y_pred)
-        ret = test_template(X_y, lgb.LGBMClassifier, multi_error, stratify=X_y[1])
+        ret = test_template(X_y, lgb.LGBMClassifier, multi_error)
         self.assertLess(ret, 0.2)
-        
+
     def test_lambdarank(self):
         X_train, y_train = load_svmlight_file('../../examples/lambdarank/rank.train')
         X_test, y_test = load_svmlight_file('../../examples/lambdarank/rank.test')
@@ -89,6 +89,21 @@ class TestSklearn(unittest.TestCase):
     def test_clone(self):
         gbm = test_template(return_model=True)
         gbm_clone = clone(gbm)
+
+    def test_joblib(self):
+        gbm = test_template(num_round=10, return_model=True)
+        joblib.dump(gbm, 'lgb.pkl')
+        gbm_pickle = joblib.load('lgb.pkl')
+        self.assertDictEqual(gbm.get_params(), gbm_pickle.get_params())
+        X_train, X_test, y_train, y_test = test_template(return_data=True)
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+        gbm_pickle.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+        self.assertDictEqual(gbm.evals_result(), gbm_pickle.evals_result())
+        pred_origin = gbm.predict(X_test)
+        pred_pickle = gbm_pickle.predict(X_test)
+        self.assertEqual(len(pred_origin), len(pred_pickle))
+        for preds in zip(pred_origin, pred_pickle):
+            self.assertAlmostEqual(*preds, places=5)
 
 print("----------------------------------------------------------------------")
 print("running test_sklearn.py")
