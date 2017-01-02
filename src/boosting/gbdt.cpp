@@ -16,9 +16,16 @@
 
 namespace LightGBM {
 
-GBDT::GBDT() 
+GBDT::GBDT()
   :iter_(0),
+  train_data_(nullptr),
+  object_function_(nullptr),
+  early_stopping_round_(0),
+  max_feature_idx_(0),
+  num_class_(1),
+  sigmoid_(1.0f),
   num_iteration_for_pred_(0),
+  shrinkage_rate_(0.1f),
   num_init_iteration_(0) {
 }
 
