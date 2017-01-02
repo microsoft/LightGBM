@@ -251,24 +251,12 @@ class LGBMModel(LGBMModelBase):
         self.uniform_drop = uniform_drop
         self.xgboost_dart_mode = xgboost_dart_mode
         self._Booster = None
+        self.evals_result = None
         self.best_iteration = -1
         if callable(self.objective):
             self.fobj = _objective_function_wrapper(self.objective)
         else:
             self.fobj = None
-
-    def booster(self):
-        """
-        Get the underlying lightgbm Booster of this model.
-        This will raise an exception when fit was not called
-
-        Returns
-        -------
-        booster : a lightgbm booster of underlying model
-        """
-        if self._Booster is None:
-            raise LightGBMError('Need to call fit beforehand')
-        return self._Booster
 
     def fit(self, X, y,
             sample_weight=None, init_score=None, group=None,
@@ -349,19 +337,14 @@ class LGBMModel(LGBMModelBase):
             params['num_class'] = self.n_classes_
         if hasattr(self, 'eval_at'):
             params['ndcg_eval_at'] = self.eval_at
-
         if self.fobj:
-            params["objective"] = "None"
-        else:
-            params["objective"] = self.objective
+            params.pop('objective', None)
 
         if callable(eval_metric):
             feval = _eval_function_wrapper(eval_metric)
-        elif is_str(eval_metric) or isinstance(eval_metric, list):
-            feval = None
-            params.update({'metric': eval_metric})
         else:
             feval = None
+            params['metric'] = eval_metric
 
         def _construct_dataset(X, y, sample_weight, init_score, group, params):
             ret = Dataset(X, label=y, max_bin=self.max_bin, weight=sample_weight, group=group, params=params)
@@ -383,10 +366,7 @@ class LGBMModel(LGBMModelBase):
                         if collection is None:
                             return None
                         elif isinstance(collection, list):
-                            if len(collection) > i:
-                                return collection[i]
-                            else:
-                                return None
+                            return collection[i] if len(collection) > i else None
                         elif isinstance(collection, dict):
                             return collection.get(i, None)
                         else:
@@ -406,16 +386,13 @@ class LGBMModel(LGBMModelBase):
                               callbacks=callbacks)
 
         if evals_result:
-            for val in evals_result.items():
-                evals_result_key = list(val[1].keys())[0]
-                evals_result[val[0]][evals_result_key] = val[1][evals_result_key]
-            self.evals_result_ = evals_result
+            self.evals_result = evals_result
 
         if early_stopping_rounds is not None:
             self.best_iteration = self._Booster.best_iteration
         return self
 
-    def predict(self, data, raw_score=False, num_iteration=0):
+    def predict(self, X, raw_score=False, num_iteration=0):
         """
         Return the predicted value for each sample.
 
@@ -431,9 +408,7 @@ class LGBMModel(LGBMModelBase):
         -------
         predicted_result : array_like, shape=[n_samples] or [n_samples, n_classes]
         """
-        return self._Booster.predict(data,
-                                     raw_score=raw_score,
-                                     num_iteration=num_iteration)
+        return self.booster_.predict(X, raw_score=raw_score, num_iteration=num_iteration)
 
     def apply(self, X, num_iteration=0):
         """
@@ -451,34 +426,26 @@ class LGBMModel(LGBMModelBase):
         -------
         X_leaves : array_like, shape=[n_samples, n_trees]
         """
-        return self._Booster.predict(X,
-                                     pred_leaf=True,
-                                     num_iteration=num_iteration)
+        return self.booster_.predict(X, pred_leaf=True, num_iteration=num_iteration)
 
-    def evals_result(self):
-        """
-        Return the evaluation results.
+    @property
+    def booster_(self):
+        """Get the underlying lightgbm Booster of this model."""
+        if self._Booster is None:
+            raise LightGBMError('No booster found. Need to call fit beforehand.')
+        return self._Booster
 
-        Returns
-        -------
-        evals_result : dictionary
-        """
-        if self.evals_result_:
-            evals_result = self.evals_result_
-        else:
-            raise LightGBMError('No results found.')
+    @property
+    def evals_result_(self):
+        """Get the evaluation results."""
+        if self.evals_result is None:
+            raise LightGBMError('No results found. Need to call fit with eval set beforehand.')
+        return self.evals_result
 
-        return evals_result
-
-    def feature_importance(self):
-        """
-        Feature importances
-
-        Returns
-        -------
-        Array of normailized feature importances
-        """
-        importace_array = self._Booster.feature_importance().astype(np.float32)
+    @property
+    def feature_importance_(self):
+        """Get normailized feature importances."""
+        importace_array = self.booster_.feature_importance().astype(np.float32)
         return importace_array / importace_array.sum()
 
 class LGBMRegressor(LGBMModel, LGBMRegressorBase):
@@ -513,6 +480,7 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
                  is_unbalance=False, seed=0,
                  drop_rate=0.1, skip_drop=0.5, max_drop=50,
                  uniform_drop=False, xgboost_dart_mode=False):
+        self.classes, self.n_classes = None, None
         super(LGBMClassifier, self).__init__(boosting_type=boosting_type, num_leaves=num_leaves,
                                              max_depth=max_depth, learning_rate=learning_rate,
                                              n_estimators=n_estimators, max_bin=max_bin,
@@ -533,12 +501,12 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
             early_stopping_rounds=None, verbose=True,
             feature_name=None, categorical_feature=None,
             callbacks=None):
-
         self._le = LGBMLabelEncoder().fit(y)
         y = self._le.transform(y)
 
-        self.n_classes_ = len(self._le.classes_)
-        if self.n_classes_ > 2:
+        self.classes = self._le.classes_
+        self.n_classes = len(self.classes_)
+        if self.n_classes > 2:
             # Switch to using a multiclass objective in the underlying LGBM instance
             self.objective = "multiclass"
             if eval_set is not None and eval_metric == "binary_logloss":
@@ -558,18 +526,12 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
                                         callbacks=callbacks)
         return self
 
-    def predict(self, data, raw_score=False, num_iteration=0):
-        class_probs = self._Booster.predict(data,
-                                            raw_score=raw_score,
-                                            num_iteration=num_iteration)
-        if len(class_probs.shape) > 1:
-            column_indexes = np.argmax(class_probs, axis=1)
-        else:
-            column_indexes = np.repeat(0, class_probs.shape[0])
-            column_indexes[class_probs > 0.5] = 1
-        return self._le.inverse_transform(column_indexes)
+    def predict(self, X, raw_score=False, num_iteration=0):
+        class_probs = self.predict_proba(X, raw_score, num_iteration)
+        class_index = np.argmax(class_probs, axis=1)
+        return self._le.inverse_transform(class_index)
 
-    def predict_proba(self, data, raw_score=False, num_iteration=0):
+    def predict_proba(self, X, raw_score=False, num_iteration=0):
         """
         Return the predicted probability for each class for each sample.
 
@@ -585,15 +547,25 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
         -------
         predicted_probability : array_like, shape=[n_samples, n_classes]
         """
-        class_probs = self._Booster.predict(data,
-                                            raw_score=raw_score,
-                                            num_iteration=num_iteration)
-        if self.n_classes_ > 2:
+        class_probs = self.booster_.predict(X, raw_score=raw_score, num_iteration=num_iteration)
+        if self.n_classes > 2:
             return class_probs
         else:
-            classone_probs = class_probs
-            classzero_probs = 1.0 - classone_probs
-            return np.vstack((classzero_probs, classone_probs)).transpose()
+            return np.vstack((1. - class_probs, class_probs)).transpose()
+
+    @property
+    def classes_(self):
+        """Get class label array."""
+        if self.classes is None:
+            raise LightGBMError('No classes found. Need to call fit beforehand.')
+        return self.classes
+
+    @property
+    def n_classes_(self):
+        """Get number of classes"""
+        if self.n_classes is None:
+            raise LightGBMError('No classes found. Need to call fit beforehand.')
+        return self.n_classes
 
 class LGBMRanker(LGBMModel):
 

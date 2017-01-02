@@ -10,6 +10,7 @@
 
 * [Scikit-learn API](Python-API.md#scikit-learn-api)
     - [Common Methods](Python-API.md#common-methods)
+    - [Common Attributes](Python-API.md#common-attributes)
     - [LGBMClassifier](Python-API.md#lgbmclassifier)
     - [LGBMRegressor](Python-API.md#lgbmregressor)
     - [LGBMRanker](Python-API.md#lgbmranker)
@@ -675,35 +676,6 @@ The methods of each Class is in alphabetical order.
     X_leaves : array_like, shape=[n_samples, n_trees]
     
 
-####booster()
-
-    Get the underlying lightgbm Booster of this model.
-    This will raise an exception when it's called before fit().
-
-    Returns
-    -------
-    booster : a lightgbm booster of underlying model
-    
-
-####evals_result()
-
-    Return the evaluation results.
-
-    Returns
-    -------
-    evals_result : dictionary
-    
-
-####feature_importance()
-
-    Return the feature importances of each feature.
-
-    Returns
-    -------
-    result : array
-        Array of normailized feature importances
-    
-
 ####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric=None, early_stopping_rounds=None, verbose=True, feature_name=None, categorical_feature=None, callbacks=None)
 
     Fit the gradient boosting model.
@@ -771,7 +743,7 @@ The methods of each Class is in alphabetical order.
       if you want to get i-th row y_pred in j-th class, the access way is y_pred[j*num_data+i]
 
 
-####predict(data, raw_score=False, num_iteration=0)
+####predict(X, raw_score=False, num_iteration=0)
 
     Return the predicted value for each sample.
 
@@ -786,11 +758,26 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     predicted_result : array_like, shape=[n_samples] or [n_samples, n_classes]
-    
+
+
+###Common Attributes
+
+####booster_
+
+    Get the underlying lightgbm Booster of this model.
+
+####evals_result_
+
+    Get the evaluation results.
+
+####feature_importance_
+
+    Get normailized feature importances.
+
 
 ###LGBMClassifier
 
-####predict_proba(data, raw_score=False, num_iteration=0)
+####predict_proba(X, raw_score=False, num_iteration=0)
 
     Return the predicted probability for each class for each sample.
 
@@ -805,6 +792,14 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     predicted_probability : array_like, shape=[n_samples, n_classes]
+
+####classes_
+
+    Get class label array.
+
+####n_classes_
+
+    Get number of classes.
     
 
 ###LGBMRegressor

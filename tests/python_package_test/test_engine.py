@@ -17,13 +17,14 @@ def multi_logloss(y_true, y_pred):
 def test_template(params = {'objective' : 'regression', 'metric' : 'l2'},
                   X_y=load_boston(True), feval=mean_squared_error,
                   num_round=100, init_model=None, custom_eval=None,
-                  return_data=False, return_model=False, early_stopping_rounds=10):
+                  early_stopping_rounds=10,
+                  return_data=False, return_model=False):
+    params['verbose'], params['seed'] = -1, 42
     X_train, X_test, y_train, y_test = train_test_split(*X_y, test_size=0.1, random_state=42)
     lgb_train = lgb.Dataset(X_train, y_train, params=params)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, params=params)
     if return_data: return lgb_train, lgb_eval
     evals_result = {}
-    params['verbose'] = params['seed'] = 0
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=num_round,
                     valid_sets=lgb_eval,
