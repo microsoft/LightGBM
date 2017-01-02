@@ -17,9 +17,9 @@
 namespace LightGBM {
 
 GBDT::GBDT() 
-  :num_iteration_for_pred_(0), 
+  :iter_(0),
+  num_iteration_for_pred_(0),
   num_init_iteration_(0) {
-
 }
 
 GBDT::~GBDT() {
@@ -581,6 +581,7 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
   Log::Info("Finished loading %d models", models_.size());
   num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_class_;
   num_init_iteration_ = num_iteration_for_pred_;
+  iter_ = 0;
 }
 
 std::vector<std::pair<size_t, std::string>> GBDT::FeatureImportance() const {
