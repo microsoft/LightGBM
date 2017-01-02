@@ -5,13 +5,14 @@ from __future__ import absolute_import
 import inspect
 
 import numpy as np
-from .basic import LightGBMError, Dataset, is_str
+from .basic import LightGBMError, Dataset
 from .engine import train
 '''sklearn'''
 try:
     from sklearn.base import BaseEstimator
     from sklearn.base import RegressorMixin, ClassifierMixin
     from sklearn.preprocessing import LabelEncoder
+    from sklearn.utils import deprecated
     SKLEARN_INSTALLED = True
     LGBMModelBase = BaseEstimator
     LGBMRegressorBase = RegressorMixin
@@ -338,7 +339,8 @@ class LGBMModel(LGBMModelBase):
         if hasattr(self, 'eval_at'):
             params['ndcg_eval_at'] = self.eval_at
         if self.fobj:
-            params.pop('objective', None)
+            # objective = nullptr for unknown objective
+            params['objective'] = 'None'
 
         if callable(eval_metric):
             feval = _eval_function_wrapper(eval_metric)
@@ -447,6 +449,14 @@ class LGBMModel(LGBMModelBase):
         """Get normailized feature importances."""
         importace_array = self.booster_.feature_importance().astype(np.float32)
         return importace_array / importace_array.sum()
+
+    @deprecated('Use attribute booster_ instead.')
+    def booster(self):
+        return self.booster_
+
+    @deprecated('Use attribute feature_importance_ instead.')
+    def feature_importance(self):
+        return self.feature_importance_
 
 class LGBMRegressor(LGBMModel, LGBMRegressorBase):
 

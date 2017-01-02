@@ -127,7 +127,7 @@ public:
   explicit BinaryErrorMetric(const MetricConfig& config) :BinaryMetric<BinaryErrorMetric>(config) {}
 
   inline static score_t LossOnPoint(float label, score_t prob) {
-    if (prob < 0.5f) {
+    if (prob <= 0.5f) {
       return label;
     } else {
       return 1.0f - label;
