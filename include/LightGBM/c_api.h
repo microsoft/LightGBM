@@ -557,12 +557,14 @@ DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
 /*!
 * \brief dump model to json
 * \param handle handle
+* \param num_iteration, <= 0 means save all
 * \param buffer_len string buffer length, if buffer_len < out_len, re-allocate buffer
 * \param out_len actual output length
 * \param out_str json format string of model, need to pre-allocate memory before call this
 * \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
+  int num_iteration,
   int buffer_len,
   int64_t* out_len,
   char* out_str);

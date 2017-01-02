@@ -148,7 +148,7 @@ public:
   * \brief Dump model to json format string
   * \return Json format string of model
   */
-  std::string DumpModel() const override;
+  std::string DumpModel(int num_iteration) const override;
 
   /*!
   * \brief Save model to file
@@ -175,7 +175,6 @@ public:
   */
   inline int LabelIdx() const override { return label_idx_; }
 
-
   /*!
   * \brief Get number of weak sub-models
   * \return Number of weak sub-models
@@ -192,13 +191,10 @@ public:
   * \brief Set number of iterations for prediction
   */
   inline void SetNumIterationForPred(int num_iteration) override {
+    num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_class_;
     if (num_iteration > 0) {
-      num_iteration_for_pred_ = num_iteration;
-    } else {
-      num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_class_;
+      num_iteration_for_pred_ = std::min(num_iteration, num_iteration_for_pred_);
     }
-    num_iteration_for_pred_ = std::min(num_iteration_for_pred_, 
-      static_cast<int>(models_.size()) / num_class_);
   }
 
   inline double GetLeafValue(int tree_idx, int leaf_idx) const {

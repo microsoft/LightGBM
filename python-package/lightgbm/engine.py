@@ -190,7 +190,7 @@ def train(params, train_set, num_boost_round=100,
     if booster.attr('best_iteration') is not None:
         booster.best_iteration = int(booster.attr('best_iteration')) + 1
     else:
-        booster.best_iteration = num_boost_round
+        booster.best_iteration = -1
     return booster
 
 

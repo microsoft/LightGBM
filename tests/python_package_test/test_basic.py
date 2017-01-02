@@ -1,6 +1,6 @@
 # coding: utf-8
 # pylint: skip-file
-import unittest, tempfile
+import unittest, tempfile, os
 import numpy as np
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
@@ -31,9 +31,11 @@ class TestBasic(unittest.TestCase):
         bst.save_model("model.txt")
         pred_from_matr = bst.predict(X_test)
         with tempfile.NamedTemporaryFile() as f:
+            tname = f.name
+        with open(tname, "w+b") as f:
             np.savetxt(f, X_test, delimiter=',')
-            f.flush()
-            pred_from_file = bst.predict(f.name)
+        pred_from_file = bst.predict(tname)
+        os.remove(tname)
         self.assertEqual(len(pred_from_matr), len(pred_from_file))
         for preds in zip(pred_from_matr, pred_from_file):
             self.assertAlmostEqual(*preds, places=5)

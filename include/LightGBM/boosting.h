@@ -136,7 +136,7 @@ public:
   * \brief Dump model to json format string
   * \return Json format string of model
   */
-  virtual std::string DumpModel() const = 0;
+  virtual std::string DumpModel(int num_iteration) const = 0;
 
   /*!
   * \brief Save model to file

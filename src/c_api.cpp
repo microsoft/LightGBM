@@ -181,8 +181,8 @@ public:
     boosting_->SaveModelToFile(num_iteration, filename);
   }
 
-  std::string DumpModel() {
-    return boosting_->DumpModel();
+  std::string DumpModel(int num_iteration) {
+    return boosting_->DumpModel(num_iteration);
   }
 
   double GetLeafValue(int tree_idx, int leaf_idx) const {
@@ -581,8 +581,7 @@ DllExport int LGBM_BoosterCreateFromModelfile(
   BoosterHandle* out) {
   API_BEGIN();
   auto ret = std::unique_ptr<Booster>(new Booster(filename));
-  *out_num_iterations = static_cast<int64_t>(ret->GetBoosting()->NumberOfTotalModel()
-    / ret->GetBoosting()->NumberOfClasses());
+  *out_num_iterations = static_cast<int64_t>(ret->GetBoosting()->GetCurrentIteration());
   *out = ret.release();
   API_END();
 }
@@ -872,12 +871,13 @@ DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
 }
 
 DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
+  int num_iteration,
   int buffer_len,
   int64_t* out_len,
   char* out_str) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  std::string model = ref_booster->DumpModel();
+  std::string model = ref_booster->DumpModel(num_iteration);
   *out_len = static_cast<int64_t>(model.size()) + 1;
   if (*out_len <= buffer_len) {
     std::strcpy(out_str, model.c_str());
