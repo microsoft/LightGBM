@@ -132,7 +132,7 @@ def param_dict_to_str(data):
                             % (key, type(val).__name__))
     return ' '.join(pairs)
 
-class _temp_file:
+class _temp_file(object):
     def __enter__(self):
         with NamedTemporaryFile(prefix="lightgbm_tmp_", delete=True) as f:
             self.name = f.name
@@ -146,7 +146,7 @@ class _temp_file:
         return ret
     def writelines(self, lines):
         with open(self.name, "w+") as f:
-            ret = f.writelines(lines)
+            f.writelines(lines)
 
 """marco definition of data type in c_api of LightGBM"""
 C_API_DTYPE_FLOAT32 = 0
