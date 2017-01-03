@@ -852,7 +852,7 @@ class _InnerDataset(object):
             Init score for booster
         """
         if score is not None:
-            score = list_to_1d_numpy(score, name='init score')
+            score = list_to_1d_numpy(score, name='init_score')
         self.set_field('init_score', score)
 
     def set_group(self, group):
@@ -986,7 +986,7 @@ class Dataset(object):
         Parameters
         ----------
         data : string/numpy array/scipy.sparse
-            Data source of _InnerDataset.
+            Data source of Dataset.
             When data type is string, it represents the path of txt file
         label : list or numpy 1-D array, optional
             Label of the training data.
@@ -1396,6 +1396,8 @@ class Booster(object):
         name : String
             Name of validation data
         """
+        if not isinstance(data, Dataset):
+            raise TypeError('valid data should be Dataset instance, met {}'.format(type(train_set).__name__))
         if data._predictor is not self.__init_predictor:
             raise LightGBMError("Add validation data failed, you should use same predictor for these data")
         _safe_call(_LIB.LGBM_BoosterAddValidData(
@@ -1447,6 +1449,8 @@ class Booster(object):
 
         """need reset training data"""
         if train_set is not None and train_set is not self.train_set:
+            if not isinstance(train_set, Dataset):
+                raise TypeError('Training data should be Dataset instance, met {}'.format(type(train_set).__name__))
             if train_set._predictor is not self.__init_predictor:
                 raise LightGBMError("Replace training data failed, you should use same predictor for these data")
             self.train_set = train_set
@@ -1517,7 +1521,7 @@ class Booster(object):
 
         Parameters
         ----------
-        data : _InnerDataset object
+        data : Dataset object
         name :
             Name of data
         feval : function
@@ -1527,8 +1531,8 @@ class Booster(object):
         result: list
             Evaluation result list.
         """
-        if not isinstance(data, _InnerDataset):
-            raise TypeError("Can only eval for _InnerDataset instance")
+        if not isinstance(data, Dataset):
+            raise TypeError("Can only eval for Dataset instance")
         data_idx = -1
         if data is self.train_set:
             data_idx = 0
