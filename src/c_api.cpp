@@ -496,6 +496,20 @@ DllExport int LGBM_DatasetSetFeatureNames(
   API_END();
 }
 
+DllExport int LGBM_DatasetGetFeatureNames(
+  DatasetHandle handle,
+  char** feature_names,
+  int64_t* num_feature_names) {
+  API_BEGIN();
+  auto dataset = reinterpret_cast<Dataset*>(handle);
+  auto inside_feature_name = dataset->feature_names();
+  *num_feature_names = static_cast<int64_t>(inside_feature_name.size());
+  for (int64_t i = 0; i < *num_feature_names; ++i) {
+    std::strcpy(feature_names[i], inside_feature_name[i].c_str());
+  }
+  API_END();
+}
+
 DllExport int LGBM_DatasetFree(DatasetHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Dataset*>(handle);

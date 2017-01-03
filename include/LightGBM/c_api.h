@@ -165,6 +165,20 @@ DllExport int LGBM_DatasetSetFeatureNames(
   const char** feature_names,
   int64_t num_feature_names);
 
+
+/*!
+* \brief get feature names of Dataset
+* \param handle handle
+* \param feature_names feature names, should pre-allocate memory
+* \param num_feature_names number of feature names
+* \return 0 when succeed, -1 when failure happens
+*/
+DllExport int LGBM_DatasetGetFeatureNames(
+  DatasetHandle handle,
+  char** feature_names,
+  int64_t* num_feature_names);
+
+
 /*!
 * \brief free space for dataset
 * \return 0 when succeed, -1 when failure happens
