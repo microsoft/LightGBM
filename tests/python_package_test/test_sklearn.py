@@ -86,19 +86,28 @@ class TestSklearn(unittest.TestCase):
         gbm.fit(X_train, y_train)
         self.assertIn(gbm.best_params_['n_estimators'], [15, 20])
 
-    def test_clone(self):
+    def test_clone_and_property(self):
         gbm = test_template(return_model=True)
         gbm_clone = clone(gbm)
+        self.assertIsInstance(gbm.booster_, lgb.Booster)
+        self.assertIsInstance(gbm.feature_importance_, np.ndarray)
+        clf = test_template(load_digits(2, True), model=lgb.LGBMClassifier, return_model=True)
+        self.assertListEqual(sorted(clf.classes_), [0, 1])
+        self.assertEqual(clf.n_classes_, 2)
+        self.assertIsInstance(clf.booster_, lgb.Booster)
+        self.assertIsInstance(clf.feature_importance_, np.ndarray)
 
     def test_joblib(self):
         gbm = test_template(num_round=10, return_model=True)
         joblib.dump(gbm, 'lgb.pkl')
         gbm_pickle = joblib.load('lgb.pkl')
+        self.assertIsInstance(gbm_pickle.booster_, lgb.Booster)
         self.assertDictEqual(gbm.get_params(), gbm_pickle.get_params())
+        self.assertListEqual(list(gbm.feature_importance_), list(gbm_pickle.feature_importance_))
         X_train, X_test, y_train, y_test = test_template(return_data=True)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
         gbm_pickle.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
-        self.assertDictEqual(gbm.evals_result(), gbm_pickle.evals_result())
+        self.assertDictEqual(gbm.evals_result_, gbm_pickle.evals_result_)
         pred_origin = gbm.predict(X_test)
         pred_pickle = gbm_pickle.predict(X_test)
         self.assertEqual(len(pred_origin), len(pred_pickle))
