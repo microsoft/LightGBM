@@ -408,8 +408,8 @@ SEXP LGBM_BoosterGetNumPredict_R(SEXP handle,
   SEXP data_idx,
   SEXP out,
   SEXP call_state) {
-  int64_t len;
   R_API_BEGIN();
+  int64_t len;
   CHECK_CALL(LGBM_BoosterGetNumPredict(R_GET_PTR(handle), R_AS_INT(data_idx), &len));
   R_INT_PTR(out)[0] = static_cast<int>(len);
   R_API_END();
@@ -465,10 +465,11 @@ SEXP LGBM_BoosterCalcNumPredict_R(SEXP handle,
   int64_t len = 0;
   CHECK_CALL(LGBM_BoosterCalcNumPredict(R_GET_PTR(handle), R_AS_INT(num_row),
     pred_type, R_AS_INT(num_iteration), &len));
+  R_INT_PTR(out_len)[0] = static_cast<int>(len);
   R_API_END();
 }
 
-DllExport SEXP LGBM_BoosterPredictForCSC_R(SEXP handle,
+SEXP LGBM_BoosterPredictForCSC_R(SEXP handle,
   SEXP indptr,
   SEXP indices,
   SEXP data,
@@ -491,9 +492,6 @@ DllExport SEXP LGBM_BoosterPredictForCSC_R(SEXP handle,
   int64_t nindptr = R_AS_INT(num_indptr);
   int64_t ndata = R_AS_INT(nelem);
   int64_t nrow = R_AS_INT(num_row);
-  int64_t len = 0;
-  CHECK_CALL(LGBM_BoosterCalcNumPredict(R_GET_PTR(handle), nrow,
-    pred_type, R_AS_INT(num_iteration), &len));
   double* ptr_ret = R_REAL_PTR(out_result);
   int64_t out_len;
   CHECK_CALL(LGBM_BoosterPredictForCSR(R_GET_PTR(handle),
@@ -520,10 +518,6 @@ SEXP LGBM_BoosterPredictForMat_R(SEXP handle,
   int32_t ncol = R_AS_INT(num_col);
 
   double* p_mat = R_REAL_PTR(data);
-
-  int64_t len = 0;
-  CHECK_CALL(LGBM_BoosterCalcNumPredict(R_GET_PTR(handle), nrow,
-    pred_type, R_AS_INT(num_iteration), &len));
   double* ptr_ret = R_REAL_PTR(out_result);
   int64_t out_len;
   CHECK_CALL(LGBM_BoosterPredictForMat(R_GET_PTR(handle),
