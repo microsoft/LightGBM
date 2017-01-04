@@ -25,6 +25,7 @@ except ImportError:
     LGBMRegressorBase = object
     LGBMLabelEncoder = None
 
+
 def _objective_function_wrapper(func):
     """Decorate an objective function
     Note: for multi-class task, the y_pred is group by class_id first, then group by row_id
@@ -62,7 +63,7 @@ def _objective_function_wrapper(func):
         elif argc == 3:
             grad, hess = func(labels, preds, dataset.get_group())
         else:
-            raise TypeError("Self-defined objective function should have 2 or 3 arguments, got %d" %(argc))
+            raise TypeError("Self-defined objective function should have 2 or 3 arguments, got %d" % argc)
         """weighted for objective"""
         weight = dataset.get_weight()
         if weight is not None:
@@ -82,6 +83,7 @@ def _objective_function_wrapper(func):
                         hess[idx] *= weight[i]
         return grad, hess
     return inner
+
 
 def _eval_function_wrapper(func):
     """Decorate an eval function
@@ -128,8 +130,9 @@ def _eval_function_wrapper(func):
         elif argc == 4:
             return func(labels, preds, dataset.get_weight(), dataset.get_group())
         else:
-            raise TypeError("Self-defined eval function should have 2, 3 or 4 arguments, got %d" %(argc))
+            raise TypeError("Self-defined eval function should have 2, 3 or 4 arguments, got %d" % argc)
     return inner
+
 
 class LGBMModel(LGBMModelBase):
 
@@ -354,9 +357,9 @@ class LGBMModel(LGBMModelBase):
         if hasattr(self, 'eval_at'):
             params['ndcg_eval_at'] = self.eval_at
         if self.fobj:
-            params['objective'] = 'None' # objective = nullptr for unknown objective
+            params['objective'] = 'None'  # objective = nullptr for unknown objective
         if 'label_gain' in params and params['label_gain'] is None:
-            del params['label_gain'] # use default of cli version
+            del params['label_gain']  # use default of cli version
 
         if callable(eval_metric):
             feval = _eval_function_wrapper(eval_metric)
@@ -474,6 +477,7 @@ class LGBMModel(LGBMModelBase):
     def feature_importance(self):
         return self.feature_importance_
 
+
 class LGBMRegressor(LGBMModel, LGBMRegressorBase):
 
     def fit(self, X, y,
@@ -494,6 +498,7 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
                                        categorical_feature=categorical_feature,
                                        callbacks=callbacks)
         return self
+
 
 class LGBMClassifier(LGBMModel, LGBMClassifierBase):
 
@@ -595,6 +600,7 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
             raise LightGBMError('No classes found. Need to call fit beforehand.')
         return self.n_classes
 
+
 class LGBMRanker(LGBMModel):
 
     def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
@@ -646,7 +652,7 @@ class LGBMRanker(LGBMModel):
             elif len(eval_group) != len(eval_set):
                 raise ValueError("Length of eval_group should equal to eval_set")
             elif (isinstance(eval_group, dict) and any(i not in eval_group or eval_group[i] is None for i in range(len(eval_group)))) \
-                or (isinstance(eval_group, list) and any(group is None for group in eval_group)):
+                    or (isinstance(eval_group, list) and any(group is None for group in eval_group)):
                 raise ValueError("Should set group for all eval dataset for ranking task; if you use dict, the index should start from 0")
 
         if eval_at is not None:

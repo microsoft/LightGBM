@@ -1,10 +1,14 @@
 # coding: utf-8
 # pylint: skip-file
-import unittest, tempfile, os
+import os
+import tempfile
+import unittest
+
+import lightgbm as lgb
 import numpy as np
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
-import lightgbm as lgb
+
 
 class TestBasic(unittest.TestCase):
 
@@ -14,11 +18,11 @@ class TestBasic(unittest.TestCase):
         valid_data = train_data.create_valid(X_test, label=y_test)
 
         params = {
-            "objective" : "binary",
-            "metric" : "auc",
-            "min_data" : 1,
-            "num_leaves" : 15,
-            "verbose" : -1
+            "objective": "binary",
+            "metric": "auc",
+            "min_data": 1,
+            "num_leaves": 15,
+            "verbose": -1
         }
         bst = lgb.Booster(params, train_data)
         bst.add_valid(valid_data, "valid_1")
@@ -38,12 +42,13 @@ class TestBasic(unittest.TestCase):
         self.assertEqual(len(pred_from_matr), len(pred_from_file))
         for preds in zip(pred_from_matr, pred_from_file):
             self.assertAlmostEqual(*preds, places=15)
-        #check saved model persistence
+        # check saved model persistence
         bst = lgb.Booster(params, model_file="model.txt")
         pred_from_model_file = bst.predict(X_test)
         self.assertEqual(len(pred_from_matr), len(pred_from_model_file))
         for preds in zip(pred_from_matr, pred_from_model_file):
             self.assertAlmostEqual(*preds, places=15)
+
 
 print("----------------------------------------------------------------------")
 print("running test_basic.py")

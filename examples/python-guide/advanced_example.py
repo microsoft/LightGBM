@@ -27,15 +27,15 @@ lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train,
 
 # specify your configurations as a dict
 params = {
-    'boosting_type' : 'gbdt',
-    'objective' : 'binary',
-    'metric' : 'binary_logloss',
-    'num_leaves' : 31,
-    'learning_rate' : 0.05,
-    'feature_fraction' : 0.9,
-    'bagging_fraction' : 0.8,
+    'boosting_type': 'gbdt',
+    'objective': 'binary',
+    'metric': 'binary_logloss',
+    'num_leaves': 31,
+    'learning_rate': 0.05,
+    'feature_fraction': 0.9,
+    'bagging_fraction': 0.8,
     'bagging_freq': 5,
-    'verbose' : 0
+    'verbose': 0
 }
 
 # generate a feature name
@@ -46,7 +46,7 @@ print('Start training...')
 gbm = lgb.train(params,
                 lgb_train,
                 num_boost_round=10,
-                valid_sets=lgb_train, # eval training data
+                valid_sets=lgb_train,  # eval training data
                 feature_name=feature_name,
                 categorical_feature=[21])
 
@@ -88,9 +88,10 @@ gbm = lgb.train(params,
                 num_boost_round=10,
                 init_model=gbm,
                 valid_sets=lgb_eval,
-                callbacks=[lgb.reset_parameter(bagging_fraction=[0.7]*5+[0.6]*5)])
+                callbacks=[lgb.reset_parameter(bagging_fraction=[0.7] * 5 + [0.6] * 5)])
 
 print('Finish 30 - 40 rounds with changing bagging_fraction...')
+
 
 # self-defined objective function
 # f(preds: array, train_data: Dataset) -> grad: array, hess: array
@@ -102,12 +103,14 @@ def loglikelood(preds, train_data):
     hess = preds * (1. - preds)
     return grad, hess
 
+
 # self-defined eval metric
 # f(preds: array, train_data: Dataset) -> name: string, value: array, is_higher_better: bool
 # binary error
 def binary_error(preds, train_data):
     labels = train_data.get_label()
     return 'error', np.mean(labels != (preds > 0.5)), False
+
 
 gbm = lgb.train(params,
                 lgb_train,
@@ -120,6 +123,8 @@ gbm = lgb.train(params,
 print('Finish 40 - 50 rounds with self-defined objective function and eval metric...')
 
 print('Start a new training job...')
+
+
 # callback
 def reset_metrics():
     def callback(env):
@@ -130,6 +135,7 @@ def reset_metrics():
     callback.before_iteration = True
     callback.order = 0
     return callback
+
 
 gbm = lgb.train(params,
                 lgb_train,

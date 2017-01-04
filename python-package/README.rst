@@ -31,3 +31,9 @@ Troubleshooting
     setup.py directory, *never* absolute paths.
 
 - **Solution 1**: please check `here <http://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path>`__.
+
+
+Developments
+--------
+
+The code style of python package follows `pep-8 <https://www.python.org/dev/peps/pep-0008/>`__. If you would like to make a contribution and not familiar with pep-8, please check the pep-8 style guide first. You can ignore E501 (line too long).

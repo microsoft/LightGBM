@@ -1,31 +1,41 @@
 # coding: utf-8
 # pylint: skip-file
-import os, unittest
-import numpy as np
+import unittest
+
 import lightgbm as lgb
-from sklearn.metrics import log_loss, mean_squared_error
-from sklearn.datasets import load_breast_cancer, load_boston, load_digits, load_svmlight_file
-from sklearn.model_selection import train_test_split, GridSearchCV
+import numpy as np
 from sklearn.base import clone
+from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
+                              load_svmlight_file)
 from sklearn.externals import joblib
+from sklearn.metrics import log_loss, mean_squared_error
+from sklearn.model_selection import GridSearchCV, train_test_split
+
 
 def test_template(X_y=load_boston(True), model=lgb.LGBMRegressor,
                   feval=mean_squared_error, num_round=100,
                   custom_obj=None, predict_proba=False,
                   return_data=False, return_model=False):
     X_train, X_test, y_train, y_test = train_test_split(*X_y, test_size=0.1, random_state=42)
-    if return_data: return X_train, X_test, y_train, y_test
-    arguments = {'n_estimators' : num_round, 'silent' : True}
-    if custom_obj: arguments['objective'] = custom_obj
+    if return_data:
+        return X_train, X_test, y_train, y_test
+    arguments = {'n_estimators': num_round, 'silent': True}
+    if custom_obj:
+        arguments['objective'] = custom_obj
     gbm = model(**arguments)
     gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=10, verbose=False)
-    if return_model: return gbm
-    else: return feval(y_test, gbm.predict_proba(X_test) if predict_proba else gbm.predict(X_test))
+    if return_model:
+        return gbm
+    elif predict_proba:
+        return feval(y_test, gbm.predict_proba(X_test))
+    else:
+        return feval(y_test, gbm.predict(X_test))
+
 
 class TestSklearn(unittest.TestCase):
 
     def test_binary(self):
-        X_y= load_breast_cancer(True)
+        X_y = load_breast_cancer(True)
         ret = test_template(X_y, lgb.LGBMClassifier, log_loss, predict_proba=True)
         self.assertLess(ret, 0.15)
 
@@ -34,6 +44,7 @@ class TestSklearn(unittest.TestCase):
 
     def test_multiclass(self):
         X_y = load_digits(10, True)
+
         def multi_error(y_true, y_pred):
             return np.mean(y_true != y_pred)
         ret = test_template(X_y, lgb.LGBMClassifier, multi_error)
@@ -67,6 +78,7 @@ class TestSklearn(unittest.TestCase):
             hess = y_pred * (1.0 - y_pred)
             return grad, hess
         X_y = load_digits(2, True)
+
         def binary_error(y_test, y_pred):
             return np.mean([int(p > 0.5) != y for y, p in zip(y_test, y_pred)])
         ret = test_template(X_y, lgb.LGBMClassifier, feval=binary_error, custom_obj=logregobj)
@@ -81,7 +93,8 @@ class TestSklearn(unittest.TestCase):
     def test_grid_search(self):
         X_train, X_test, y_train, y_test = test_template(return_data=True)
         params = {'boosting_type': ['dart', 'gbdt'],
-                  'n_estimators': [15, 20], 'drop_rate':[0.1, 0.2]}
+                  'n_estimators': [15, 20],
+                  'drop_rate': [0.1, 0.2]}
         gbm = GridSearchCV(lgb.LGBMRegressor(), params, cv=3)
         gbm.fit(X_train, y_train)
         self.assertIn(gbm.best_params_['n_estimators'], [15, 20])
@@ -113,6 +126,7 @@ class TestSklearn(unittest.TestCase):
         self.assertEqual(len(pred_origin), len(pred_pickle))
         for preds in zip(pred_origin, pred_pickle):
             self.assertAlmostEqual(*preds, places=5)
+
 
 print("----------------------------------------------------------------------")
 print("running test_sklearn.py")
