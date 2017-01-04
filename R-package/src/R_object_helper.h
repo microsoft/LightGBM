@@ -6,6 +6,8 @@
 #ifndef R_OBJECT_HELPER_H_
 #define R_OBJECT_HELPER_H_
 
+#include <cstdint>
+
 #define TYPE_BITS 5
 struct sxpinfo_struct {
   unsigned int type : 5;
@@ -90,11 +92,15 @@ typedef union { VECTOR_SEXPREC s; double align; } SEXPREC_ALIGN;
 
 #define R_REAL_PTR(x)     ((double *) DATAPTR(x))
 
-#define R_ADDR(x)  ((int64_t *) DATAPTR(x))
-
 #define R_AS_INT(x) (*((int *) DATAPTR(x)))
 
 #define R_IS_NULL(x) ((*(SEXP)(x)).sxpinfo.type == 0)
+
+
+// 64bit pointer
+#if INTPTR_MAX == INT64_MAX
+
+#define R_ADDR(x)  ((int64_t *) DATAPTR(x))
 
 inline void R_SET_PTR(SEXP x, void* ptr) {
   if (ptr == nullptr) {
@@ -115,5 +121,31 @@ inline void* R_GET_PTR(SEXP x) {
     return ret;
   }
 }
+
+#else
+
+#define R_ADDR(x)  ((int32_t *) DATAPTR(x))
+
+inline void R_SET_PTR(SEXP x, void* ptr) {
+  if (ptr == nullptr) {
+    R_ADDR(x)[0] = (int32_t)(NULL);
+  } else {
+    R_ADDR(x)[0] = (int32_t)(ptr);
+  }
+}
+
+inline void* R_GET_PTR(SEXP x) {
+  if (R_IS_NULL(x)) {
+    return nullptr;
+  } else {
+    auto ret = (void *)(R_ADDR(x)[0]);
+    if (ret == NULL) {
+      ret = nullptr;
+    }
+    return ret;
+  }
+}
+
+#endif
 
 #endif // R_OBJECT_HELPER_H_
