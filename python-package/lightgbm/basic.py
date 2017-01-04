@@ -5,11 +5,11 @@
 """Wrapper c_api of LightGBM"""
 from __future__ import absolute_import
 
-import sys
 import ctypes
 import json
-from tempfile import NamedTemporaryFile
 import os
+import sys
+from tempfile import NamedTemporaryFile
 
 import numpy as np
 import scipy.sparse
@@ -22,10 +22,12 @@ try:
 except ImportError:
     class Series(object):
         pass
+
     class DataFrame(object):
         pass
 
 IS_PY3 = (sys.version_info[0] == 3)
+
 
 def _load_lib():
     """Load LightGBM Library."""
@@ -36,11 +38,14 @@ def _load_lib():
     lib.LGBM_GetLastError.restype = ctypes.c_char_p
     return lib
 
+
 _LIB = _load_lib()
+
 
 class LightGBMError(Exception):
     """Error throwed by LightGBM"""
     pass
+
 
 def _safe_call(ret):
     """Check the return value of C API call
@@ -52,12 +57,14 @@ def _safe_call(ret):
     if ret != 0:
         raise LightGBMError(_LIB.LGBM_GetLastError())
 
+
 def is_str(s):
     """Check is a str or not"""
     if IS_PY3:
         return isinstance(s, str)
     else:
         return isinstance(s, basestring)
+
 
 def is_numeric(obj):
     """Check is a number or not, include numpy number etc."""
@@ -67,18 +74,22 @@ def is_numeric(obj):
     except:
         return False
 
+
 def is_numpy_object(data):
     """Check is numpy object"""
     return type(data).__module__ == np.__name__
+
 
 def is_numpy_1d_array(data):
     """Check is 1d numpy array"""
     return isinstance(data, np.ndarray) and len(data.shape) == 1
 
+
 def is_1d_list(data):
     """Check is 1d list"""
     return isinstance(data, list) and \
         (not data or isinstance(data[0], (int, float, bool)))
+
 
 def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     """convert to 1d numpy array"""
@@ -94,6 +105,7 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     else:
         raise TypeError("Wrong type({}) for {}, should be list or numpy array".format(type(data).__name__, name))
 
+
 def cfloat32_array_to_numpy(cptr, length):
     """Convert a ctypes float pointer array to a numpy array.
     """
@@ -101,6 +113,7 @@ def cfloat32_array_to_numpy(cptr, length):
         return np.fromiter(cptr, dtype=np.float32, count=length)
     else:
         raise RuntimeError('Expected float pointer')
+
 
 def cint32_array_to_numpy(cptr, length):
     """Convert a ctypes float pointer array to a numpy array.
@@ -110,13 +123,16 @@ def cint32_array_to_numpy(cptr, length):
     else:
         raise RuntimeError('Expected int pointer')
 
+
 def c_str(string):
     """Convert a python string to cstring."""
     return ctypes.c_char_p(string.encode('utf-8'))
 
+
 def c_array(ctype, values):
     """Convert a python array to c array."""
     return (ctype * len(values))(*values)
+
 
 def param_dict_to_str(data):
     if data is None or not data:
@@ -124,29 +140,34 @@ def param_dict_to_str(data):
     pairs = []
     for key, val in data.items():
         if isinstance(val, (list, tuple, set)) or is_numpy_1d_array(val):
-            pairs.append(str(key)+'='+','.join(map(str, val)))
+            pairs.append(str(key) + '=' + ','.join(map(str, val)))
         elif is_str(val) or isinstance(val, (int, float, bool)) or is_numeric(val):
-            pairs.append(str(key)+'='+str(val))
+            pairs.append(str(key) + '=' + str(val))
         else:
             raise TypeError('Unknown type of parameter:%s, got:%s'
                             % (key, type(val).__name__))
     return ' '.join(pairs)
+
 
 class _temp_file(object):
     def __enter__(self):
         with NamedTemporaryFile(prefix="lightgbm_tmp_", delete=True) as f:
             self.name = f.name
         return self
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         if os.path.isfile(self.name):
             os.remove(self.name)
+
     def readlines(self):
         with open(self.name, "r+") as f:
             ret = f.readlines()
         return ret
+
     def writelines(self, lines):
         with open(self.name, "w+") as f:
             f.writelines(lines)
+
 
 """marco definition of data type in c_api of LightGBM"""
 C_API_DTYPE_FLOAT32 = 0
@@ -168,6 +189,7 @@ FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
                      "init_score": C_API_DTYPE_FLOAT32,
                      "group": C_API_DTYPE_INT32}
 
+
 def c_float_array(data):
     """get pointer of float numpy array / list"""
     if is_1d_list(data):
@@ -186,6 +208,7 @@ def c_float_array(data):
         raise TypeError("Unknown type({})".format(type(data).__name__))
     return (ptr_data, type_data)
 
+
 def c_int_array(data):
     """get pointer of int numpy array / list"""
     if is_1d_list(data):
@@ -203,6 +226,7 @@ def c_int_array(data):
     else:
         raise TypeError("Unknown type({})".format(type(data).__name__))
     return (ptr_data, type_data)
+
 
 class _InnerPredictor(object):
     """
@@ -254,7 +278,6 @@ class _InnerPredictor(object):
     def __del__(self):
         if self.__is_manage_handle:
             _safe_call(_LIB.LGBM_BoosterFree(self.handle))
-
 
     def predict(self, data, num_iteration=-1,
                 raw_score=False, pred_leaf=False, data_has_header=False,
@@ -374,8 +397,7 @@ class _InnerPredictor(object):
             predict_type,
             num_iteration,
             ctypes.byref(out_num_preds),
-            preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-            ))
+            preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
         if n_preds != out_num_preds.value:
             raise ValueError("Wrong length for predict results")
         return preds, mat.shape[0]
@@ -405,8 +427,7 @@ class _InnerPredictor(object):
             predict_type,
             num_iteration,
             ctypes.byref(out_num_preds),
-            preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-            ))
+            preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
         if n_preds != out_num_preds.value:
             raise ValueError("Wrong length for predict results")
         return preds, nrow
@@ -436,16 +457,17 @@ class _InnerPredictor(object):
             predict_type,
             num_iteration,
             ctypes.byref(out_num_preds),
-            preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-            ))
+            preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
         if n_preds != out_num_preds.value:
             raise ValueError("Wrong length for predict results")
         return preds, nrow
+
 
 PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
                        'int64': 'int', 'uint8': 'int', 'uint16': 'int',
                        'uint32': 'int', 'uint64': 'int', 'float16': 'float',
                        'float32': 'float', 'float64': 'float', 'bool': 'int'}
+
 
 def _data_from_pandas(data):
     if isinstance(data, DataFrame):
@@ -459,6 +481,7 @@ def _data_from_pandas(data):
         data = data.values.astype('float')
     return data
 
+
 def _label_from_pandas(label):
     if isinstance(label, DataFrame):
         if len(label.columns) > 1:
@@ -468,6 +491,7 @@ def _label_from_pandas(label):
             raise ValueError('DataFrame.dtypes for label must be int, float or bool')
         label = label.values.astype('float')
     return label
+
 
 class _InnerDataset(object):
     """_InnerDataset used in LightGBM.
@@ -536,8 +560,8 @@ class _InnerDataset(object):
                 elif isinstance(name, int):
                     categorical_indices.add(name)
                 else:
-                    raise TypeError("Wrong type({}) or unknown name({}) in categorical_feature" \
-                        .format(type(name).__name__, name))
+                    raise TypeError("Wrong type({}) or unknown name({}) in categorical_feature"
+                                    .format(type(name).__name__, name))
 
             params['categorical_column'] = sorted(categorical_indices)
 
@@ -552,7 +576,7 @@ class _InnerDataset(object):
         if is_str(data):
             """check data has header or not"""
             if str(params.get("has_header", "")).lower() == "true" \
-                or str(params.get("header", "")).lower() == "true":
+                    or str(params.get("header", "")).lower() == "true":
                 self.data_has_header = True
             self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_DatasetCreateFromFile(
@@ -927,6 +951,7 @@ class _InnerDataset(object):
                                                   ctypes.byref(ret)))
         return ret.value
 
+
 class Dataset(object):
     """High level Dataset used in LightGBM.
     """
@@ -1140,7 +1165,6 @@ class Dataset(object):
         """
         self._get_inner_dataset().save_binary(filename)
 
-
     def set_label(self, label):
         """
         Set label of Dataset
@@ -1273,6 +1297,7 @@ class Dataset(object):
         else:
             raise LightGBMError("Cannot call num_feature before construct, please call it explicitly")
 
+
 class Booster(object):
     """"A Booster of LightGBM.
     """
@@ -1397,7 +1422,7 @@ class Booster(object):
             Name of validation data
         """
         if not isinstance(data, Dataset):
-            raise TypeError('valid data should be Dataset instance, met {}'.format(type(train_set).__name__))
+            raise TypeError('valid data should be Dataset instance, met {}'.format(type(data).__name__))
         if data._predictor is not self.__init_predictor:
             raise LightGBMError("Add validation data failed, you should use same predictor for these data")
         _safe_call(_LIB.LGBM_BoosterAddValidData(
@@ -1578,8 +1603,8 @@ class Booster(object):
         result: str
             Evaluation result list.
         """
-        return [item for i in range(1, self.__num_dataset) \
-            for item in self.__inner_eval(self.name_valid_sets[i-1], i, feval)]
+        return [item for i in range(1, self.__num_dataset)
+                for item in self.__inner_eval(self.name_valid_sets[i - 1], i, feval)]
 
     def save_model(self, filename, num_iteration=-1):
         """
@@ -1684,6 +1709,7 @@ class Booster(object):
             raise KeyError("importance_type must be split or gain")
         dump_model = self.dump_model()
         ret = [0] * (dump_model["max_feature_idx"] + 1)
+
         def dfs(root):
             if "split_feature" in root:
                 if importance_type == 'split':
@@ -1773,7 +1799,7 @@ class Booster(object):
                 """Get name of evals"""
                 tmp_out_len = ctypes.c_int64(0)
                 string_buffers = [ctypes.create_string_buffer(255) for i in range(self.__num_inner_eval)]
-                ptr_string_buffers = (ctypes.c_char_p*self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))
+                ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))
                 _safe_call(_LIB.LGBM_BoosterGetEvalNames(
                     self.handle,
                     ctypes.byref(tmp_out_len),

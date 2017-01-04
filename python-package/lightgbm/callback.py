@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 import collections
 
+
 class EarlyStopException(Exception):
     """Exception of early stopping.
     Parameters
@@ -14,6 +15,7 @@ class EarlyStopException(Exception):
         super(EarlyStopException, self).__init__()
         self.best_iteration = best_iteration
 
+
 # Callback environment used by callbacks
 CallbackEnv = collections.namedtuple(
     "LightGBMCallbackEnv",
@@ -23,6 +25,7 @@ CallbackEnv = collections.namedtuple(
      "begin_iteration",
      "end_iteration",
      "evaluation_result_list"])
+
 
 def _format_eval_result(value, show_stdv=True):
     """format metric string"""
@@ -58,8 +61,9 @@ def print_evaluation(period=1, show_stdv=True):
         if not env.evaluation_result_list or period <= 0:
             return
         if (env.iteration + 1) % period == 0:
-            result = '\t'.join([_format_eval_result(x, show_stdv) \
-                for x in env.evaluation_result_list])
+            result = '\t'.join(
+                [_format_eval_result(x, show_stdv) for x in env.evaluation_result_list]
+            )
             print('[%d]\t%s' % (env.iteration + 1, result))
     callback.order = 10
     return callback
@@ -152,6 +156,7 @@ def early_stopping(stopping_rounds, verbose=True):
     best_score = {}
     best_iter = {}
     best_msg = {}
+
     def init(env):
         """internal function"""
         if not env.evaluation_result_list:
@@ -178,8 +183,11 @@ def early_stopping(stopping_rounds, verbose=True):
                 best_score[i] = score
                 best_iter[i] = env.iteration
                 if verbose:
-                    best_msg[i] = '[%d]\t%s' % (env.iteration + 1, \
-                        '\t'.join([_format_eval_result(x) for x in env.evaluation_result_list]))
+                    best_msg[i] = '[%d]\t%s' % (
+                        env.iteration + 1, '\t'.join(
+                            [_format_eval_result(x) for x in env.evaluation_result_list]
+                        )
+                    )
             else:
                 if env.iteration - best_iter[i] >= stopping_rounds:
                     if env.model is not None:

@@ -6,8 +6,6 @@ Contributors: https://github.com/Microsoft/LightGBM/graphs/contributors
 
 from __future__ import absolute_import
 
-import os
-
 from .basic import Dataset, Booster
 from .engine import train, cv
 from .callback import print_evaluation, record_evaluation, reset_parameter, early_stopping
@@ -23,4 +21,3 @@ __all__ = ['Dataset', 'Booster',
            'train', 'cv',
            'LGBMModel', 'LGBMRegressor', 'LGBMClassifier', 'LGBMRanker',
            'print_evaluation', 'record_evaluation', 'reset_parameter', 'early_stopping']
-

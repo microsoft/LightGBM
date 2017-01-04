@@ -9,6 +9,7 @@ import numpy as np
 from .basic import LightGBMError, _InnerPredictor, Dataset, Booster, is_str
 from . import callback
 
+
 def train(params, train_set, num_boost_round=100,
           valid_sets=None, valid_names=None,
           fobj=None, feval=None, init_model=None,
@@ -121,7 +122,7 @@ def train(params, train_set, num_boost_round=100,
             if valid_names is not None and len(valid_names) > i:
                 name_valid_sets.append(valid_names[i])
             else:
-                name_valid_sets.append('valid_'+str(i))
+                name_valid_sets.append('valid_' + str(i))
         for valid_data in valid_sets:
             valid_data._update_params(params)
     """process callbacks"""
@@ -211,6 +212,7 @@ class CVBooster(object):
         """"Evaluate the CVBooster for one iteration."""
         return self.booster.eval_valid(feval)
 
+
 try:
     from sklearn.model_selection import StratifiedKFold
     SKLEARN_StratifiedKFold = True
@@ -220,6 +222,7 @@ except ImportError:
         SKLEARN_StratifiedKFold = True
     except ImportError:
         SKLEARN_StratifiedKFold = False
+
 
 def _make_n_folds(full_data, nfold, params, seed, fpreproc=None, stratified=False, shuffle=True):
     """
@@ -251,6 +254,7 @@ def _make_n_folds(full_data, nfold, params, seed, fpreproc=None, stratified=Fals
         ret.append(CVBooster(train_set, valid_set, tparam))
     return ret
 
+
 def _agg_cv_result(raw_results):
     """
     Aggregate cross-validation results.
@@ -262,6 +266,7 @@ def _agg_cv_result(raw_results):
             metric_type[one_line[1]] = one_line[3]
             cvmap[one_line[1]].append(one_line[2])
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
+
 
 def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
        shuffle=True, metrics=None, fobj=None, feval=None, init_model=None,
