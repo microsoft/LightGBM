@@ -48,7 +48,7 @@ def test_load_from_file(filename, reference):
     LIB.LGBM_DatasetGetNumData(handle, ctypes.byref(num_data))
     num_feature = ctypes.c_long()
     LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature))
-    print ('#data:%d #feature:%d' % (num_data.value, num_feature.value))
+    print('#data:%d #feature:%d' % (num_data.value, num_feature.value))
     return handle
 
 
@@ -89,7 +89,7 @@ def test_load_from_csr(filename, reference):
     num_feature = ctypes.c_long()
     LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature))
     LIB.LGBM_DatasetSetField(handle, c_str('label'), c_array(ctypes.c_float, label), len(label), 0)
-    print ('#data:%d #feature:%d' % (num_data.value, num_feature.value))
+    print('#data:%d #feature:%d' % (num_data.value, num_feature.value))
     return handle
 
 
@@ -126,7 +126,7 @@ def test_load_from_csc(filename, reference):
     num_feature = ctypes.c_long()
     LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature))
     LIB.LGBM_DatasetSetField(handle, c_str('label'), c_array(ctypes.c_float, label), len(label), 0)
-    print ('#data:%d #feature:%d' % (num_data.value, num_feature.value))
+    print('#data:%d #feature:%d' % (num_data.value, num_feature.value))
     return handle
 
 
@@ -160,7 +160,7 @@ def test_load_from_mat(filename, reference):
     num_feature = ctypes.c_long()
     LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature))
     LIB.LGBM_DatasetSetField(handle, c_str('label'), c_array(ctypes.c_float, label), len(label), 0)
-    print ('#data:%d #feature:%d' % (num_data.value, num_feature.value))
+    print('#data:%d #feature:%d' % (num_data.value, num_feature.value))
     return handle
 
 
@@ -194,7 +194,7 @@ def test_booster():
         result = np.array([0.0], dtype=np.float64)
         out_len = ctypes.c_ulong(0)
         LIB.LGBM_BoosterGetEval(booster, 0, ctypes.byref(out_len), result.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
-        print ('%d Iteration test AUC %f' % (i, result[0]))
+        print('%d Iteration test AUC %f' % (i, result[0]))
     LIB.LGBM_BoosterSaveModel(booster, -1, c_str('model.txt'))
     LIB.LGBM_BoosterFree(booster)
     test_free_dataset(train)
