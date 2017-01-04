@@ -4,7 +4,7 @@
 Contributors: https://github.com/Microsoft/LightGBM/graphs/contributors
 """
 
-from __future__ import absolute_import 
+from __future__ import absolute_import
 
 from .basic import Dataset, Booster
 from .engine import train, cv
