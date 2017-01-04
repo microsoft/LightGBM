@@ -152,7 +152,7 @@ std::string Tree::ToString() {
 
 std::string Tree::ToJSON() {
   std::stringstream str_buf;
-  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   str_buf << "\"num_leaves\":" << num_leaves_ << "," << std::endl;
 
   str_buf << "\"tree_structure\":" << NodeToJSON(0) << std::endl;
@@ -162,7 +162,7 @@ std::string Tree::ToJSON() {
 
 std::string Tree::NodeToJSON(int index) {
   std::stringstream str_buf;
-  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   if (index >= 0) {
     // non-leaf
     str_buf << "{" << std::endl;

@@ -247,7 +247,7 @@ inline static std::string ArrayToString(const std::vector<T>& arr, char delimite
     return std::string("");
   }
   std::stringstream str_buf;
-  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   str_buf << arr[0];
   for (size_t i = 1; i < arr.size(); ++i) {
     str_buf << delimiter;
@@ -262,7 +262,7 @@ inline static std::string ArrayToString(const std::vector<T>& arr, size_t n, cha
     return std::string("");
   }
   std::stringstream str_buf;
-  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   str_buf << arr[0];
   for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
     str_buf << delimiter;
@@ -312,7 +312,7 @@ inline static std::string Join(const std::vector<T>& strs, const char* delimiter
     return std::string("");
   }
   std::stringstream str_buf;
-  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   str_buf << strs[0];
   for (size_t i = 1; i < strs.size(); ++i) {
     str_buf << delimiter;
@@ -329,7 +329,7 @@ inline static std::string Join(const std::vector<T>& strs, size_t start, size_t 
   start = std::min(start, static_cast<size_t>(strs.size()) - 1);
   end = std::min(end, static_cast<size_t>(strs.size()));
   std::stringstream str_buf;
-  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   str_buf << strs[start];
   for (size_t i = start + 1; i < end; ++i) {
     str_buf << delimiter;

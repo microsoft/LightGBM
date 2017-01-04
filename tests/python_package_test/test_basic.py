@@ -47,7 +47,7 @@ class TestBasic(unittest.TestCase):
         pred_from_model_file = bst.predict(X_test)
         self.assertEqual(len(pred_from_matr), len(pred_from_model_file))
         for preds in zip(pred_from_matr, pred_from_model_file):
-            self.assertAlmostEqual(*preds, places=15)
+            self.assertEqual(*preds)
 
 
 print("----------------------------------------------------------------------")
