@@ -135,11 +135,12 @@ class LGBMModel(LGBMModelBase):
 
     def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
                  learning_rate=0.1, n_estimators=10, max_bin=255,
-                 silent=True, objective="regression",
-                 nthread=-1, min_split_gain=0, min_child_weight=5, min_child_samples=10,
+                 subsample_for_bin=50000, objective="regression",
+                 min_split_gain=0, min_child_weight=5, min_child_samples=10,
                  subsample=1, subsample_freq=1, colsample_bytree=1,
                  reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
-                 is_unbalance=False, seed=0,
+                 is_unbalance=False, seed=0, nthread=-1, silent=True,
+                 sigmoid=1.0, max_position=20, label_gain=None,
                  drop_rate=0.1, skip_drop=0.5, max_drop=50,
                  uniform_drop=False, xgboost_dart_mode=False):
         """
@@ -160,14 +161,12 @@ class LGBMModel(LGBMModelBase):
             Number of boosted trees to fit.
         max_bin : int
             Number of bucketed bin for feature values
-        silent : boolean
-            Whether to print messages while running boosting.
+        subsample_for_bin : int
+            Number of samples for constructing bins.
         objective : string or callable
             Specify the learning task and the corresponding learning objective or
             a custom objective function to be used (see note below).
             default: binary for LGBMClassifier, lambdarank for LGBMRanker
-        nthread : int
-            Number of parallel threads
         min_split_gain : float
             Minimum loss reduction required to make a further partition on a leaf node of the tree.
         min_child_weight : int
@@ -190,6 +189,18 @@ class LGBMModel(LGBMModelBase):
             Is unbalance for binary classification
         seed : int
             Random number seed.
+        nthread : int
+            Number of parallel threads
+        silent : boolean
+            Whether to print messages while running boosting.
+        sigmoid : float
+            Only used in binary classification and lambdarank. Parameter for sigmoid function.
+        max_position : int
+            Only used in lambdarank, will optimize NDCG at this position.
+        label_gain : list of float
+            Only used in lambdarank, relevant gain for labels.
+            For example, the gain of label 2 is 3 if using default label gains.
+            None (default) means use default value of CLI version: {0,1,3,7,15,31,63,...}.
         drop_rate : float
             Only used when boosting_type='dart'. Probablity to select dropping trees.
         skip_drop : float
@@ -232,9 +243,8 @@ class LGBMModel(LGBMModelBase):
         self.learning_rate = learning_rate
         self.n_estimators = n_estimators
         self.max_bin = max_bin
-        self.silent = silent
+        self.subsample_for_bin = subsample_for_bin
         self.objective = objective
-        self.nthread = nthread
         self.min_split_gain = min_split_gain
         self.min_child_weight = min_child_weight
         self.min_child_samples = min_child_samples
@@ -246,6 +256,11 @@ class LGBMModel(LGBMModelBase):
         self.scale_pos_weight = scale_pos_weight
         self.is_unbalance = is_unbalance
         self.seed = seed
+        self.nthread = nthread
+        self.silent = silent
+        self.sigmoid = sigmoid
+        self.max_position = max_position
+        self.label_gain = label_gain
         self.drop_rate = drop_rate
         self.skip_drop = skip_drop
         self.max_drop = max_drop
@@ -339,8 +354,9 @@ class LGBMModel(LGBMModelBase):
         if hasattr(self, 'eval_at'):
             params['ndcg_eval_at'] = self.eval_at
         if self.fobj:
-            # objective = nullptr for unknown objective
-            params['objective'] = 'None'
+            params['objective'] = 'None' # objective = nullptr for unknown objective
+        if 'label_gain' in params and params['label_gain'] is None:
+            del params['label_gain'] # use default of cli version
 
         if callable(eval_metric):
             feval = _eval_function_wrapper(eval_metric)
@@ -483,23 +499,25 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
 
     def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
                  learning_rate=0.1, n_estimators=10, max_bin=255,
-                 silent=True, objective="binary",
-                 nthread=-1, min_split_gain=0, min_child_weight=5, min_child_samples=10,
+                 subsample_for_bin=50000, objective="binary",
+                 min_split_gain=0, min_child_weight=5, min_child_samples=10,
                  subsample=1, subsample_freq=1, colsample_bytree=1,
                  reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
-                 is_unbalance=False, seed=0,
+                 is_unbalance=False, seed=0, nthread=-1,
+                 silent=True, sigmoid=1.0,
                  drop_rate=0.1, skip_drop=0.5, max_drop=50,
                  uniform_drop=False, xgboost_dart_mode=False):
         self.classes, self.n_classes = None, None
         super(LGBMClassifier, self).__init__(boosting_type=boosting_type, num_leaves=num_leaves,
                                              max_depth=max_depth, learning_rate=learning_rate,
                                              n_estimators=n_estimators, max_bin=max_bin,
-                                             silent=silent, objective=objective, nthread=nthread,
+                                             subsample_for_bin=subsample_for_bin, objective=objective,
                                              min_split_gain=min_split_gain, min_child_weight=min_child_weight,
                                              min_child_samples=min_child_samples, subsample=subsample,
                                              subsample_freq=subsample_freq, colsample_bytree=colsample_bytree,
                                              reg_alpha=reg_alpha, reg_lambda=reg_lambda,
-                                             scale_pos_weight=scale_pos_weight, is_unbalance=is_unbalance, seed=seed,
+                                             scale_pos_weight=scale_pos_weight, is_unbalance=is_unbalance,
+                                             seed=seed, nthread=nthread, silent=silent, sigmoid=sigmoid,
                                              drop_rate=drop_rate, skip_drop=skip_drop, max_drop=max_drop,
                                              uniform_drop=uniform_drop, xgboost_dart_mode=xgboost_dart_mode)
 
@@ -581,22 +599,25 @@ class LGBMRanker(LGBMModel):
 
     def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
                  learning_rate=0.1, n_estimators=10, max_bin=255,
-                 silent=True, objective="lambdarank",
-                 nthread=-1, min_split_gain=0, min_child_weight=5, min_child_samples=10,
+                 subsample_for_bin=50000, objective="lambdarank",
+                 min_split_gain=0, min_child_weight=5, min_child_samples=10,
                  subsample=1, subsample_freq=1, colsample_bytree=1,
                  reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
-                 is_unbalance=False, seed=0,
+                 is_unbalance=False, seed=0, nthread=-1, silent=True,
+                 sigmoid=1.0, max_position=20, label_gain=None,
                  drop_rate=0.1, skip_drop=0.5, max_drop=50,
                  uniform_drop=False, xgboost_dart_mode=False):
         super(LGBMRanker, self).__init__(boosting_type=boosting_type, num_leaves=num_leaves,
                                          max_depth=max_depth, learning_rate=learning_rate,
                                          n_estimators=n_estimators, max_bin=max_bin,
-                                         silent=silent, objective=objective, nthread=nthread,
+                                         subsample_for_bin=subsample_for_bin, objective=objective,
                                          min_split_gain=min_split_gain, min_child_weight=min_child_weight,
                                          min_child_samples=min_child_samples, subsample=subsample,
                                          subsample_freq=subsample_freq, colsample_bytree=colsample_bytree,
                                          reg_alpha=reg_alpha, reg_lambda=reg_lambda,
-                                         scale_pos_weight=scale_pos_weight, is_unbalance=is_unbalance, seed=seed,
+                                         scale_pos_weight=scale_pos_weight, is_unbalance=is_unbalance,
+                                         seed=seed, nthread=nthread, silent=silent,
+                                         sigmoid=sigmoid, max_position=max_position, label_gain=label_gain,
                                          drop_rate=drop_rate, skip_drop=skip_drop, max_drop=max_drop,
                                          uniform_drop=uniform_drop, xgboost_dart_mode=xgboost_dart_mode)
 

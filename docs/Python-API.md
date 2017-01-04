@@ -576,7 +576,7 @@ The methods of each Class is in alphabetical order.
 
 ###Common Methods
 
-####__init__(boosting_type="gbdt", num_leaves=31, max_depth=-1, learning_rate=0.1, n_estimators=10, max_bin=255, silent=True, objective="regression", nthread=-1, min_split_gain=0, min_child_weight=5, min_child_samples=10, subsample=1, subsample_freq=1, colsample_bytree=1, reg_alpha=0, reg_lambda=0, scale_pos_weight=1, is_unbalance=False, seed=0)
+####__init__(boosting_type="gbdt", num_leaves=31, max_depth=-1, learning_rate=0.1, n_estimators=10, max_bin=255, subsample_for_bin=50000, objective="regression", min_split_gain=0, min_child_weight=5, min_child_samples=10, subsample=1, subsample_freq=1, colsample_bytree=1, reg_alpha=0, reg_lambda=0, scale_pos_weight=1, is_unbalance=False, seed=0, nthread=-1, silent=True, sigmoid=1.0, max_position=20, label_gain=None, drop_rate=0.1, skip_drop=0.5, max_drop=50, uniform_drop=False, xgboost_dart_mode=False)
 
     Implementation of the Scikit-Learn API for LightGBM.
 
@@ -595,14 +595,12 @@ The methods of each Class is in alphabetical order.
         Number of boosted trees to fit.
     max_bin : int
         Number of bucketed bin for feature values
-    silent : boolean
-        Whether to print messages while running boosting.
+    subsample_for_bin : int
+        Number of samples for constructing bins.
     objective : str or callable
         Specify the learning task and the corresponding learning objective or
         a custom objective function to be used (see note below).
         default: binary for LGBMClassifier, regression for LGBMRegressor, lambdarank for LGBMRanker
-    nthread : int
-        Number of parallel threads
     min_split_gain : float
         Minimum loss reduction required to make a further partition on a leaf node of the tree.
     min_child_weight : int
@@ -625,6 +623,18 @@ The methods of each Class is in alphabetical order.
         Is unbalance for binary classification
     seed : int
         Random number seed.
+    nthread : int
+        Number of parallel threads
+    silent : boolean
+        Whether to print messages while running boosting.
+    sigmoid : float
+        Only used in binary classification and lambdarank. Parameter for sigmoid function.
+    max_position : int
+        Only used in lambdarank, will optimize NDCG at this position.
+    label_gain : list of float
+        Only used in lambdarank, relevant gain for labels.
+        For example, the gain of label 2 is 3 if using default label gains.
+        None (default) means use default value of CLI version: {0,1,3,7,15,31,63,...}.
     drop_rate : float
         Only used when boosting_type='dart'. Probablity to select dropping trees.
     skip_drop : float
