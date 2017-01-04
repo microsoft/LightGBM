@@ -37,7 +37,13 @@ class TestBasic(unittest.TestCase):
         os.remove(tname)
         self.assertEqual(len(pred_from_matr), len(pred_from_file))
         for preds in zip(pred_from_matr, pred_from_file):
-            self.assertAlmostEqual(*preds, places=5)
+            self.assertAlmostEqual(*preds, places=15)
+        #check saved model persistence
+        bst = lgb.Booster(params, model_file="model.txt")
+        pred_from_model_file = bst.predict(X_test)
+        self.assertEqual(len(pred_from_matr), len(pred_from_model_file))
+        for preds in zip(pred_from_matr, pred_from_model_file):
+            self.assertAlmostEqual(*preds, places=15)
 
 print("----------------------------------------------------------------------")
 print("running test_basic.py")
