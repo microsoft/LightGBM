@@ -457,6 +457,15 @@ lgb.Dataset <- function(data,
   )
 }
 
+# internal helper method
+lgb.is.Dataset <- function(x){
+  if(lgb.check.r6.class(reference, "lgb.Dataset")){
+    return(TRUE)
+  } else{
+    return(FALSE)
+  }
+}
+
 #' Contruct a validation data according to training data
 #' @param dataset \code{lgb.Dataset} object, training data
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
@@ -473,7 +482,10 @@ lgb.Dataset <- function(data,
 #' @export
 lgb.Dataset.create.valid <-
   function(dataset, data, info = list(),  ...) {
-    dataset$create_valid(data, info, ...)
+    if(!lgb.is.Dataset(dataset)) {
+      stop("lgb.Dataset.create.valid: input data should be lgb.Dataset object")
+    }
+    return(dataset$create_valid(data, info, ...))
   }
 
 #' Construct Dataset explicit
@@ -486,13 +498,16 @@ lgb.Dataset.create.valid <-
 #' lgb.Dataset.construct(dtrain)
 #' @export
 lgb.Dataset.construct <- function(dataset) {
-  dataset$construct()
+  if(!lgb.is.Dataset(dataset)) {
+    stop("lgb.Dataset.construct: input data should be lgb.Dataset object")
+  }
+  return(dataset$construct())
 }
 
 #' Dimensions of lgb.Dataset
 #'
 #' Returns a vector of numbers of rows and of columns in an \code{lgb.Dataset}.
-#' @param object Object of class \code{lgb.Dataset}
+#' @param dataset Object of class \code{lgb.Dataset}
 #' @param ... other parameters
 #' @return a vector of numbers of rows and of columns
 #'
@@ -512,7 +527,10 @@ lgb.Dataset.construct <- function(dataset) {
 #' @rdname dim
 #' @export
 dim.lgb.Dataset <- function(dataset, ...) {
-  dataset$dim()
+  if(!lgb.is.Dataset(dataset)) {
+    stop("dim.lgb.Dataset: input data should be lgb.Dataset object")
+  }
+  return(dataset$dim())
 }
 
 #' Handling of column names of \code{lgb.Dataset}
@@ -520,7 +538,7 @@ dim.lgb.Dataset <- function(dataset, ...) {
 #' Only column names are supported for \code{lgb.Dataset}, thus setting of
 #' row names would have no effect and returnten row names would be NULL.
 #'
-#' @param x object of class \code{lgb.Dataset}
+#' @param dataset object of class \code{lgb.Dataset}
 #' @param value a list of two elements: the first one is ignored
 #'        and the second one is column names
 #'
@@ -539,8 +557,11 @@ dim.lgb.Dataset <- function(dataset, ...) {
 #'
 #' @rdname dimnames.lgb.Dataset
 #' @export
-dimnames.lgb.Dataset <- function(x) {
-  list(NULL, x$get_colnames())
+dimnames.lgb.Dataset <- function(dataset) {
+  if(!lgb.is.Dataset(dataset)) {
+    stop("dimnames.lgb.Dataset: input data should be lgb.Dataset object")
+  }
+  return(list(NULL, dataset$get_colnames()))
 }
 
 #' @rdname dimnames.lgb.Dataset
@@ -567,7 +588,7 @@ dimnames.lgb.Dataset <- function(x) {
 #' Get a new Dataset containing the specified rows of
 #' orginal lgb.Dataset object
 #'
-#' @param object Object of class "lgb.Dataset"
+#' @param dataset Object of class "lgb.Dataset"
 #' @param idxset a integer vector of indices of rows needed
 #' @param ... other parameters (currently not used)
 #' @return constructed sub dataset
@@ -584,20 +605,23 @@ dimnames.lgb.Dataset <- function(x) {
 #' all.equal(labels1, labels2)
 #'
 #' @export
-slice <- function(object, ...)
+slice <- function(dataset, ...)
   UseMethod("slice")
 
 #' @rdname slice
 #' @export
-slice.lgb.Dataset <- function(object, idxset, ...) {
-  object$slice(idxset, ...)
+slice.lgb.Dataset <- function(dataset, idxset, ...) {
+  if(!lgb.is.Dataset(dataset)) {
+    stop("slice.lgb.Dataset: input data should be lgb.Dataset object")
+  }
+  return(dataset$slice(idxset, ...))
 }
 
 
 #' Get information of an lgb.Dataset object
 #'
 #' Get information of an lgb.Dataset object
-#' @param object Object of class \code{lgb.Dataset}
+#' @param dataset Object of class \code{lgb.Dataset}
 #' @param name the name of the information field to get (see details)
 #' @param ... other parameters
 #' @return info data
@@ -623,18 +647,21 @@ slice.lgb.Dataset <- function(object, idxset, ...) {
 #' labels2 <- getinfo(dtrain, 'label')
 #' stopifnot(all(labels2 == 1-labels))
 #' @export
-getinfo <- function(object, ...)
+getinfo <- function(dataset, ...)
   UseMethod("getinfo")
 
 #' @rdname getinfo
 #' @export
-getinfo.lgb.Dataset <- function(object, name, ...) {
-  object$getinfo(name)
+getinfo.lgb.Dataset <- function(dataset, name, ...) {
+  if(!lgb.is.Dataset(dataset)) {
+    stop("getinfo.lgb.Dataset: input data should be lgb.Dataset object")
+  }
+  return(dataset$getinfo(name))
 }
 
 #' Set information of an lgb.Dataset object
 #'
-#' @param object Object of class "lgb.Dataset"
+#' @param dataset Object of class "lgb.Dataset"
 #' @param name the name of the field to get
 #' @param info the specific field of information to set
 #' @param ... other parameters
@@ -660,13 +687,16 @@ getinfo.lgb.Dataset <- function(object, name, ...) {
 #' labels2 <- getinfo(dtrain, 'label')
 #' stopifnot(all.equal(labels2, 1-labels))
 #' @export
-setinfo <- function(object, ...)
+setinfo <- function(dataset, ...)
   UseMethod("setinfo")
 
 #' @rdname setinfo
 #' @export
-setinfo.lgb.Dataset <- function(object, name, info, ...) {
-  object$setinfo(name, info)
+setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
+  if(!lgb.is.Dataset(dataset)) {
+    stop("setinfo.lgb.Dataset: input data should be lgb.Dataset object")
+  }
+  return(dataset$setinfo(name, info))
 }
 
 #' set categorical feature of \code{lgb.Dataset}
@@ -677,7 +707,10 @@ setinfo.lgb.Dataset <- function(object, name, info, ...) {
 #' @export
 lgb.Dataset.set.categorical <-
   function(dataset, categorical_feature) {
-    dataset$set_categorical_feature(categorical_feature)
+    if(!lgb.is.Dataset(dataset)) {
+      stop("lgb.Dataset.set.categorical: input data should be lgb.Dataset object")
+    }
+    return(dataset$set_categorical_feature(categorical_feature))
   }
 
 #' set reference of \code{lgb.Dataset}
@@ -687,7 +720,10 @@ lgb.Dataset.set.categorical <-
 #' @rdname lgb.Dataset.set.reference
 #' @export
 lgb.Dataset.set.reference <- function(dataset, reference) {
-  dataset$set_reference(reference)
+  if(!lgb.is.Dataset(dataset)) {
+    stop("lgb.Dataset.set.reference: input data should be lgb.Dataset object")
+  }
+  return(dataset$set_reference(reference))
 }
 
 #' save \code{lgb.Dataset} to binary file
@@ -697,5 +733,11 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 #' @rdname lgb.Dataset.save
 #' @export
 lgb.Dataset.save <- function(dataset, fname) {
-  dataset$save_binary(fname)
+  if(!lgb.is.Dataset(dataset)) {
+    stop("lgb.Dataset.set: input data should be lgb.Dataset object")
+  }
+  if(!is.character(fname)) {
+    stop("lgb.Dataset.set: filename should be character type")
+  }
+  return(dataset$save_binary(fname))
 }

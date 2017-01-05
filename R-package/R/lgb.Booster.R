@@ -303,6 +303,15 @@ Booster <- R6Class(
   )
 )
 
+# internal helper method
+lgb.is.Booster <- function(x){
+  if(lgb.check.r6.class(reference, "lgb.Booster")){
+    return(TRUE)
+  } else{
+    return(FALSE)
+  }
+}
+
 #' Predict method for LightGBM model
 #' 
 #' Predicted values based on either lightgbm model or model handle object.
@@ -351,7 +360,28 @@ predict.lgb.Booster <- function(booster,
                         predleaf = FALSE,
                         header = FALSE,
                         reshape = FALSE) {
+  if(!lgb.is.booster(booster)){
+    stop("predict.lgb.Booster: should input lgb.Booster object")
+  }
   booster$predict(data, num_iteration, rawscore, predleaf, header, reshape)
+}
+
+#' Load LightGBM model
+#' 
+#' Load LightGBM model
+#' 
+#' @param filename path of model file
+#' 
+#' @return booster
+#' 
+#'
+#' @rdname lgb.load 
+#' @export
+lgb.load <- function(filename){
+  if(!lgb.is.character(filename)){
+    stop("lgb.load: filename should be character")
+  }
+  Booster$new(modelfile=filename)
 }
 
 #' Save LightGBM model
@@ -368,6 +398,12 @@ predict.lgb.Booster <- function(booster,
 #' @rdname lgb.save 
 #' @export
 lgb.save <- function(booster, filename, num_iteration=NULL){
+  if(!lgb.is.booster(booster)){
+    stop("lgb.save: should input lgb.Booster object")
+  }
+  if(!lgb.is.character(filename)){
+    stop("lgb.save: filename should be character")
+  }
   booster$save_model(booster, filename, num_iteration)
 }
 
@@ -384,5 +420,8 @@ lgb.save <- function(booster, filename, num_iteration=NULL){
 #' @rdname lgb.dump 
 #' @export
 lgb.dump <- function(booster, num_iteration=NULL){
+  if(!lgb.is.booster(booster)){
+    stop("lgb.dump: should input lgb.Booster object")
+  }
   booster$dump_model(booster, num_iteration)
 }
