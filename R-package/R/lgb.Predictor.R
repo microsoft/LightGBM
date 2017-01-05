@@ -1,5 +1,6 @@
 Predictor <- R6Class(
   "lgb.Predictor",
+  cloneable=FALSE,
   public = list(
     finalize = function() {
       if(self$need_free_handle & !lgb.is.null.handle(private$handle)){
@@ -8,14 +9,14 @@ Predictor <- R6Class(
 		private$handle <- NULL
       }
     }, 
-    initialize = function(modelfile, need_free_handle=FALSE) {
+    initialize = function(modelfile) {
       handle <- lgb.new.handle()
       if(typeof(modelfile) == "character") {
         handle <- lgb.call("LGBM_BoosterCreateFromModelfile_R", ret=handle, lgb.c_str(modelfile))
         private$need_free_handle = TRUE
       } else if (typeof(modelfile) == "lgb.Booster.handle") {
         handle <- modelfile
-        private$need_free_handle = need_free_handle
+        private$need_free_handle = FALSE
       } else {
         stop("lgb.Predictor: modelfile must be either character filename, or lgb.Booster.handle")
       }

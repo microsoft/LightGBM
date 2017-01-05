@@ -1,5 +1,6 @@
 Dataset <- R6Class(
   "lgb.Dataset",
+  cloneable=FALSE,
   public = list(
     finalize = function() {
       if (!lgb.is.null.handle(private$handle)) {
