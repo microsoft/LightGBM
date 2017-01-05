@@ -3,7 +3,9 @@ Predictor <- R6Class(
   public = list(
     finalize = function() {
       if(self$need_free_handle & !lgb.is.null.handle(private$handle)){
+        print("free booster handle")
         lgb.call("LGBM_BoosterFree_R", ret=NULL, private$handle)
+		private$handle <- NULL
       }
     }, 
     initialize = function(modelfile, need_free_handle=FALSE) {
@@ -20,7 +22,6 @@ Predictor <- R6Class(
       class(handle) <- "lgb.Booster.handle"
       private$handle <- handle
     },
-
     predict = function(data, 
       num_iteration = NULL, rawscore = FALSE, predleaf = FALSE, header = FALSE, 
       reshape = FALSE) {
