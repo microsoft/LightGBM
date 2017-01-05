@@ -48,7 +48,6 @@ Also note that \code{ntreelimit} would currently do nothing for predictions from
 since gblinear doesn't keep its boosting history. 
 
 One possible practical applications of the \code{predleaf} option is to use the model 
-as a generator of new features which capture non-linearity and interactions, 
-e.g., as implemented in \code{\link{xgb.create.features}}.
+as a generator of new features which capture non-linearity and interactions,
 }
 

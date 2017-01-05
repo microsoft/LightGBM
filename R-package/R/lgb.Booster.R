@@ -123,7 +123,7 @@ Booster <- R6Class(
     },
     current_iter = function() {
       cur_iter <- as.integer(0)
-      return(lgb.call("LGBM_BoosterGetCurrentIteration_R",  ret=cur_iter, private$handle))
+      return(lgb.call("LGBM_BoosterGetCurrentIteration_R",  ret=cur_iter, private$handle) + 1)
     },
     eval = function(data, name, feval = NULL) {
       if (!lgb.check.r6.class(data, "lgb.Dataset")) {
@@ -153,8 +153,8 @@ Booster <- R6Class(
       ret = list()
       for (i in 1:length(private$valid_sets)) {
         ret <-
-          c(ret,
-            private$inner_eval(private$name_valid_sets[i], i + 1, feval))
+          append(ret,
+            list(private$inner_eval(private$name_valid_sets[i], i + 1, feval)))
       }
       return(ret)
     },
@@ -241,7 +241,7 @@ Booster <- R6Class(
       if (is.null(private$eval_names)) {
         names <-
           lgb.call.return.str("LGBM_BoosterGetEvalNames_R", private$handle)
-        private$eval_names <- as.list(strsplit(names, "\t"))
+        private$eval_names <- strsplit(names, "\t")
         if (!is.null(private$eval_names)) {
           private$higher_better_inner_eval <-
             rep(FALSE, length(private$eval_names))
@@ -265,22 +265,18 @@ Booster <- R6Class(
       private$get_eval_info()
       ret <- list()
       if (length(private$eval_names) > 0) {
-        tmp_res <- rep(0.0, length(private$eval_names))
-        tmp_res <-
-          lgb.call("LGBM_BoosterGetEval_R", ret=tmp_res,
+        tmp_vals <- rep(0.0, length(private$eval_names))
+        tmp_vals <-
+          lgb.call("LGBM_BoosterGetEval_R", ret=tmp_vals,
                 private$handle,
                 data_idx - 1)
-        for (i in 1:length(tmp_res)) {
-          ret <-
-            c(
-              ret,
-              c(
-                data_name,
-                private$eval_names[i],
-                tmp_res[i],
-                private$higher_better_inner_eval[i]
-              )
-            )
+        for (i in 1:length(tmp_vals)) {
+          res <- list()
+          res$data_name <- data_name
+          res$name <- private$eval_names[i]
+          res$value <- tmp_vals[i]
+          res$higher_better <- private$higher_better_inner_eval[i]
+          ret <- append(ret, list(res))
         }
       }
       if (!is.null(feval)) {
@@ -292,11 +288,7 @@ Booster <- R6Class(
           data <- private$valid_sets[data_idx - 1]
         }
         res <- feval(private$inner_predict(data_idx), data)
-        for (i in 1:length(res)) {
-          ret <-
-            c(ret,
-              c(data_name, res[i]$name, res[i]$value, res[i]$higher_better))
-        }
+        ret <- append(ret, list(res))
       }
       return(ret)
     }
@@ -339,7 +331,6 @@ lgb.is.Booster <- function(x){
 #' 
 #' One possible practical applications of the \code{predleaf} option is to use the model 
 #' as a generator of new features which capture non-linearity and interactions, 
-#' e.g., as implemented in \code{\link{xgb.create.features}}. 
 #' 
 #' @return 
 #' For regression or binary classification, it returns a vector of length \code{nrows(data)}.
