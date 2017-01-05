@@ -150,6 +150,18 @@ DllExport SEXP LGBM_DatasetSetField_R(SEXP handle,
   SEXP call_state);
 
 /*!
+* \brief get size of info vector from dataset
+* \param handle a instance of dataset
+* \param field_name field name
+* \param out size of info vector from dataset
+* \return 0 when succeed, -1 when failure happens
+*/
+DllExport SEXP LGBM_DatasetGetFieldSize_R(SEXP handle,
+  SEXP field_name,
+  SEXP out,
+  SEXP call_state);
+
+/*!
 * \brief get info vector from dataset
 * \param handle a instance of dataset
 * \param field_name field name

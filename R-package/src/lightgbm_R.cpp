@@ -81,7 +81,6 @@ SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
   int64_t nindptr = static_cast<int64_t>(R_AS_INT(num_indptr));
   int64_t ndata = static_cast<int64_t>(R_AS_INT(nelem));
   int64_t nrow = static_cast<int64_t>(R_AS_INT(num_row));
-
   DatasetHandle handle;
   CHECK_CALL(LGBM_DatasetCreateFromCSC(p_indptr, C_API_DTYPE_INT32, p_indices,
     p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
@@ -185,6 +184,7 @@ SEXP LGBM_DatasetFree_R(SEXP handle,
   R_API_BEGIN();
   if (R_GET_PTR(handle) != nullptr) {
     CHECK_CALL(LGBM_DatasetFree(R_GET_PTR(handle)));
+    R_SET_PTR(handle, nullptr);
   }
   R_API_END();
 }
@@ -244,6 +244,24 @@ SEXP LGBM_DatasetGetField_R(SEXP handle,
   R_API_END();
 }
 
+SEXP LGBM_DatasetGetFieldSize_R(SEXP handle,
+  SEXP field_name,
+  SEXP out,
+  SEXP call_state) {
+
+  R_API_BEGIN();
+  const char* name = R_CHAR_PTR(field_name);
+  int64_t out_len = 0;
+  int out_type = 0;
+  const void* res;
+  CHECK_CALL(LGBM_DatasetGetField(R_GET_PTR(handle), name, &out_len, &res, &out_type));
+  if (!strcmp("group", name) || !strcmp("query", name)) {
+    out_len -= 1;
+  }
+  R_INT_PTR(out)[0] = static_cast<int>(out_len);
+  R_API_END();
+}
+
 SEXP LGBM_DatasetGetNumData_R(SEXP handle, SEXP out,
   SEXP call_state) {
   int64_t nrow;
@@ -270,6 +288,7 @@ SEXP LGBM_BoosterFree_R(SEXP handle,
   R_API_BEGIN();
   if (R_GET_PTR(handle) != nullptr) {
     CHECK_CALL(LGBM_BoosterFree(R_GET_PTR(handle)));
+    R_SET_PTR(handle, nullptr);
   }
   R_API_END();
 }

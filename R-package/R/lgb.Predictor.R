@@ -1,16 +1,15 @@
 Predictor <- R6Class(
   "lgb.Predictor",
   public = list(
-    handle = NULL,
     finalize = function() {
-      if(self$need_free_handle & !is.null(self$handle) & !lgb.is.null.handle(self$handle)){
-        lgb.call("LGBM_BoosterFree_R", ret=NULL, self$handle)
+      if(self$need_free_handle & !lgb.is.null.handle(private$handle)){
+        lgb.call("LGBM_BoosterFree_R", ret=NULL, private$handle)
       }
     }, 
     initialize = function(modelfile, need_free_handle=FALSE) {
       handle <- lgb.new.handle()
       if(typeof(modelfile) == "character") {
-        handle <- lgb.call("LGBM_BoosterCreateFromModelfile_R", ret=handle, modelfile)
+        handle <- lgb.call("LGBM_BoosterCreateFromModelfile_R", ret=handle, lgb.c_str(modelfile))
         private$need_free_handle = TRUE
       } else if (typeof(modelfile) == "lgb.Booster.handle") {
         handle <- modelfile
@@ -19,7 +18,7 @@ Predictor <- R6Class(
         stop("lgb.Predictor: modelfile must be either character filename, or lgb.Booster.handle")
       }
       class(handle) <- "lgb.Booster.handle"
-      self$handle <- handle
+      private$handle <- handle
     },
 
     predict = function(data, 
@@ -34,11 +33,11 @@ Predictor <- R6Class(
       num_row <- 0
       if (typeof(data) == "character") {
         tmp_filename <- tempfile(pattern = "lightgbm_")
-        lgb.call("LGBM_BoosterPredictForFile_R", ret=NULL, self$handle, data, as.integer(header),
+        lgb.call("LGBM_BoosterPredictForFile_R", ret=NULL, private$handle, data, as.integer(header),
           as.integer(rawscore),
           as.integer(predleaf),
           as.integer(num_iteration),
-          as.character(tmp_filename))
+          lgb.c_str(tmp_filename))
         preds <- read.delim(tmp_filename, header=FALSE, seq="\t")
         num_row <- nrow(preds)
         preds <- as.vector(t(preds))
@@ -46,18 +45,18 @@ Predictor <- R6Class(
         if(file.exists(tmp_filename)) { file.remove(tmp_filename) }
       } else {
         num_row <- nrow(data)
-        npred <- 0
+        npred <- as.integer(0)
         npred <- lgb.call("LGBM_BoosterCalcNumPredict_R", ret=npred,
-          self$handle,
-          as.integer(num_row)
+          private$handle,
+          as.integer(num_row),
           as.integer(rawscore),
           as.integer(predleaf),
           as.integer(num_iteration))
-		# allocte space for prediction
+		    # allocte space for prediction
         preds <- rep(0.0, npred)
         if (is.matrix(data)) {
           preds <- lgb.call("LGBM_BoosterPredictForMat_R", ret=preds, 
-            self$handle, 
+            private$handle, 
             data,
             as.integer(nrow(data)),
             as.integer(ncol(data)),
@@ -66,7 +65,7 @@ Predictor <- R6Class(
             as.integer(num_iteration))
         } else if (class(data) == "dgCMatrix") {
           preds <- lgb.call("LGBM_BoosterPredictForCSC_R", ret=preds,
-            self$handle, 
+            private$handle, 
             data@p, 
             data@i, 
             data@x,
@@ -93,6 +92,7 @@ Predictor <- R6Class(
     }
   ), 
   private = list(
+    handle = NULL,
     need_free_handle = FALSE
   )
 )
