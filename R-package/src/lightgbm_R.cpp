@@ -32,9 +32,21 @@
 
 using namespace LightGBM;
 
-SEXP LGBM_GetLastError_R(SEXP err_msg) {
-  std::strcpy(R_CHAR_PTR(err_msg), LGBM_GetLastError());
-  return err_msg;
+SEXP EncodeChar(SEXP dest, const char* src, SEXP buf_len, SEXP actual_len) {
+  int str_len = std::strlen(src);
+  R_INT_PTR(actual_len)[0] = str_len;
+  if (R_AS_INT(buf_len) < str_len) { return dest; }
+  auto ptr = R_CHAR_PTR(dest);
+  int i = 0;
+  while (src[i] != '\0') {
+    ptr[i] = src[i];
+    ++i;
+  }
+  return dest;
+}
+
+SEXP LGBM_GetLastError_R(SEXP buf_len, SEXP actual_len, SEXP err_msg) {
+  return EncodeChar(err_msg, LGBM_GetLastError(), buf_len, actual_len);
 }
 
 SEXP LGBM_DatasetCreateFromFile_R(SEXP filename,
@@ -136,6 +148,8 @@ SEXP LGBM_DatasetSetFeatureNames_R(SEXP handle,
 }
 
 SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle,
+  SEXP buf_len,
+  SEXP actual_len,
   SEXP feature_names,
   SEXP call_state) {
 
@@ -153,7 +167,7 @@ SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle,
     ptr_names.data(), &out_len));
   CHECK(len == out_len);
   auto merge_str = Common::Join<char*>(ptr_names, "\t");
-  std::strcpy(R_CHAR_PTR(feature_names), merge_str.c_str());
+  EncodeChar(feature_names, merge_str.c_str(), buf_len, actual_len);
   R_API_END();
 }
 
@@ -370,6 +384,8 @@ SEXP LGBM_BoosterGetCurrentIteration_R(SEXP handle,
 }
 
 SEXP LGBM_BoosterGetEvalNames_R(SEXP handle,
+  SEXP buf_len,
+  SEXP actual_len,
   SEXP eval_names,
   SEXP call_state) {
 
@@ -386,7 +402,7 @@ SEXP LGBM_BoosterGetEvalNames_R(SEXP handle,
   CHECK_CALL(LGBM_BoosterGetEvalNames(R_GET_PTR(handle), &out_len, ptr_names.data()));
   CHECK(out_len == len);
   auto merge_names = Common::Join<char*>(ptr_names, "\t");
-  std::strcpy(R_CHAR_PTR(eval_names), merge_names.c_str());
+  EncodeChar(eval_names, merge_names.c_str(), buf_len, actual_len);
   R_API_END();
 }
 
@@ -538,13 +554,17 @@ SEXP LGBM_BoosterSaveModel_R(SEXP handle,
 
 SEXP LGBM_BoosterDumpModel_R(SEXP handle,
   SEXP num_iteration,
-  SEXP out_str,
   SEXP buffer_len,
   SEXP actual_len,
+  SEXP out_str,
   SEXP call_state) {
   R_API_BEGIN();
   int64_t out_len = 0;
-  CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), R_AS_INT(num_iteration), R_AS_INT(buffer_len), &out_len, R_CHAR_PTR(out_str)));
-  R_INT_PTR(actual_len)[0] = out_len;
+  std::unique_ptr<char[]> inner_char_buf;
+  inner_char_buf.reset(new char[R_AS_INT(buffer_len)]);
+  CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), R_AS_INT(num_iteration), R_AS_INT(buffer_len), &out_len, inner_char_buf.get()));
+  if (out_len < R_AS_INT(buffer_len)) {
+    EncodeChar(out_str, inner_char_buf.get(), buffer_len, actual_len);
+  }
   R_API_END();
 }

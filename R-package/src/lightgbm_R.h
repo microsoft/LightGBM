@@ -16,7 +16,7 @@
 * \return err_msg error inforomation
 * \return error inforomation
 */
-DllExport SEXP LGBM_GetLastError_R(SEXP err_msg);
+DllExport SEXP LGBM_GetLastError_R(SEXP buf_len, SEXP actual_len, SEXP err_msg);
 
 // --- start Dataset interface
 
@@ -96,7 +96,7 @@ DllExport SEXP LGBM_DatasetGetSubset_R(SEXP handle,
 /*!
 * \brief save feature names to Dataset
 * \param handle handle
-* \param num_feature_names number of feature names
+* \param feature_names feature names
 * \return 0 when succeed, -1 when failure happens
 */
 DllExport SEXP LGBM_DatasetSetFeatureNames_R(SEXP handle,
@@ -110,6 +110,8 @@ DllExport SEXP LGBM_DatasetSetFeatureNames_R(SEXP handle,
 * \return 0 when succeed, -1 when failure happens
 */
 DllExport SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle,
+  SEXP buf_len,
+  SEXP actual_len,
   SEXP feature_names,
   SEXP call_state);
 
@@ -165,7 +167,8 @@ DllExport SEXP LGBM_DatasetGetField_R(SEXP handle,
 * \param out The address to hold number of data
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport SEXP LGBM_DatasetGetNumData_R(SEXP handle, SEXP out,
+DllExport SEXP LGBM_DatasetGetNumData_R(SEXP handle,
+  SEXP out,
   SEXP call_state);
 
 /*!
@@ -174,7 +177,8 @@ DllExport SEXP LGBM_DatasetGetNumData_R(SEXP handle, SEXP out,
 * \param out The output of number of features
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport SEXP LGBM_DatasetGetNumFeature_R(SEXP handle, SEXP out,
+DllExport SEXP LGBM_DatasetGetNumFeature_R(SEXP handle,
+  SEXP out,
   SEXP call_state);
 
 // --- start Booster interfaces
@@ -205,7 +209,8 @@ DllExport SEXP LGBM_BoosterFree_R(SEXP handle,
 * \prama out handle of created Booster
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport SEXP LGBM_BoosterCreateFromModelfile_R(SEXP filename, SEXP out,
+DllExport SEXP LGBM_BoosterCreateFromModelfile_R(SEXP filename,
+  SEXP out,
   SEXP call_state);
 
 /*!
@@ -244,7 +249,8 @@ DllExport SEXP LGBM_BoosterResetTrainingData_R(SEXP handle,
 * \param parameters format: 'key1=value1 key2=value2'
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport SEXP LGBM_BoosterResetParameter_R(SEXP handle, SEXP parameters,
+DllExport SEXP LGBM_BoosterResetParameter_R(SEXP handle,
+  SEXP parameters,
   SEXP call_state);
 
 /*!
@@ -253,7 +259,8 @@ DllExport SEXP LGBM_BoosterResetParameter_R(SEXP handle, SEXP parameters,
 * \param out number of classes
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport SEXP LGBM_BoosterGetNumClasses_R(SEXP handle, SEXP out,
+DllExport SEXP LGBM_BoosterGetNumClasses_R(SEXP handle, 
+  SEXP out,
   SEXP call_state);
 
 /*!
@@ -292,7 +299,8 @@ DllExport SEXP LGBM_BoosterRollbackOneIter_R(SEXP handle,
 * \param out iteration of boosting rounds
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport SEXP LGBM_BoosterGetCurrentIteration_R(SEXP handle, SEXP out,
+DllExport SEXP LGBM_BoosterGetCurrentIteration_R(SEXP handle, 
+  SEXP out,
   SEXP call_state);
 
 /*!
@@ -300,7 +308,10 @@ DllExport SEXP LGBM_BoosterGetCurrentIteration_R(SEXP handle, SEXP out,
 * \param eval_names eval names
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport SEXP LGBM_BoosterGetEvalNames_R(SEXP handle, SEXP eval_names,
+DllExport SEXP LGBM_BoosterGetEvalNames_R(SEXP handle, 
+  SEXP buf_len,
+  SEXP actual_len,
+  SEXP eval_names,
   SEXP call_state);
 
 /*!
@@ -455,9 +466,9 @@ DllExport SEXP LGBM_BoosterSaveModel_R(SEXP handle,
 */
 DllExport SEXP LGBM_BoosterDumpModel_R(SEXP handle,
   SEXP num_iteration,
-  SEXP out_str,
   SEXP buffer_len,
   SEXP actual_len,
+  SEXP out_str,
   SEXP call_state);
 
 #endif // LIGHTGBM_R_H_
