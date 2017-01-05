@@ -189,12 +189,13 @@ def test_booster():
     LIB.LGBM_BoosterCreate(train, c_str("app=binary metric=auc num_leaves=31 verbose=0"), ctypes.byref(booster))
     LIB.LGBM_BoosterAddValidData(booster, test)
     is_finished = ctypes.c_int(0)
-    for i in range(100):
+    for i in range(1, 101):
         LIB.LGBM_BoosterUpdateOneIter(booster, ctypes.byref(is_finished))
         result = np.array([0.0], dtype=np.float64)
         out_len = ctypes.c_ulong(0)
         LIB.LGBM_BoosterGetEval(booster, 0, ctypes.byref(out_len), result.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
-        print('%d Iteration test AUC %f' % (i, result[0]))
+        if i % 10 == 0:
+            print('%d Iteration test AUC %f' % (i, result[0]))
     LIB.LGBM_BoosterSaveModel(booster, -1, c_str('model.txt'))
     LIB.LGBM_BoosterFree(booster)
     test_free_dataset(train)
