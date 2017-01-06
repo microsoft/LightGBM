@@ -3,8 +3,7 @@
 \name{slice}
 \alias{slice}
 \alias{slice.lgb.Dataset}
-\title{Get a new Dataset containing the specified rows of
-orginal lgb.Dataset object}
+\title{Slice an dataset}
 \usage{
 slice(dataset, ...)
 

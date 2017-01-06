@@ -16,10 +16,13 @@
 and the second one is column names}
 }
 \description{
-Only column names are supported for \code{lgb.Dataset}, thus setting of
-row names would have no effect and returnten row names would be NULL.
+Handling of column names of \code{lgb.Dataset}
 }
 \details{
+Only column names are supported for \code{lgb.Dataset}, thus setting of
+row names would have no effect and returnten row names would be NULL.
+
+
 Generic \code{dimnames} methods are used by \code{colnames}.
 Since row names are irrelevant, it is recommended to use \code{colnames} directly.
 }

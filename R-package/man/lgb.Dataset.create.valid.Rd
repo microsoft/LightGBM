@@ -2,7 +2,7 @@
 % Please edit documentation in R/lgb.Dataset.R
 \name{lgb.Dataset.create.valid}
 \alias{lgb.Dataset.create.valid}
-\title{Contruct a validation data according to training data}
+\title{Contruct a validation data}
 \usage{
 lgb.Dataset.create.valid(dataset, data, info = list(), ...)
 }

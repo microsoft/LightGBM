@@ -15,9 +15,12 @@
 a vector of numbers of rows and of columns
 }
 \description{
-Returns a vector of numbers of rows and of columns in an \code{lgb.Dataset}.
+Dimensions of lgb.Dataset
 }
 \details{
+Returns a vector of numbers of rows and of columns in an \code{lgb.Dataset}.
+
+
 Note: since \code{nrow} and \code{ncol} internally use \code{dim}, they can also
 be directly used with an \code{lgb.Dataset} object.
 }

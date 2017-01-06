@@ -3,13 +3,11 @@ CB_ENV <- R6Class(
   cloneable=FALSE,
   public = list(
     model=NULL,
-    cvfolds=NULL,
     iteration=NULL,
     begin_iteration=NULL,
     end_iteration=NULL,
     eval_list=list(),
     eval_err_list=list(),
-    record_evals=list(),
     best_iter=-1,
     met_early_stop=FALSE
   )
@@ -25,8 +23,8 @@ cb.reset.parameters <- function(new_params) {
   init <- function(env) {
     nrounds <<- env$end_iteration - env$begin_iteration + 1
     
-    if (is.null(env$model) & is.null(env$cvfolds))
-      stop("Env should has neither 'model' nor 'cvfolds'")
+    if (is.null(env$model))
+      stop("Env should has 'model'")
     
     # Some parameters are not allowed to be changed,
     # since changing them would simply wreck some chaos
@@ -62,10 +60,7 @@ cb.reset.parameters <- function(new_params) {
     # to-do check pars
     if (!is.null(env$model)) {
       env$model$reset_parameter(pars)
-    } else {
-      for (fd in env$cvfolds)
-        fd$reset_parameter(pars)
-    }
+    } 
   }
   attr(callback, 'call') <- match.call()
   attr(callback, 'is_pre_iteration') <- TRUE
@@ -123,13 +118,7 @@ cb.print.evaluation <- function(period=1){
 }
 
 cb.record.evaluation <- function() {
-  init <- function(env){
-
-  }
   callback <- function(env){
-    if(length(env$record_evals) == 0){
-      init(env)
-    }
     is_eval_err <- FALSE
     if(length(env$eval_err_list) > 0){
       is_eval_err <- TRUE
@@ -140,7 +129,7 @@ cb.record.evaluation <- function() {
       if(is_eval_err){
         eval_err <- env$eval_err_list[[j]]
       }
-      env$record_evals <- c(env$record_evals, list(c(iter=env$iteration, c(eval_res, eval_err))))
+      env$model$record_evals <- c(env$model$record_evals, list(c(iter=env$iteration, c(eval_res, eval_err))))
     }
     
   }

@@ -3,10 +3,10 @@ Predictor <- R6Class(
   cloneable=FALSE,
   public = list(
     finalize = function() {
-      if(self$need_free_handle & !lgb.is.null.handle(private$handle)){
+      if(private$need_free_handle & !lgb.is.null.handle(private$handle)){
         print("free booster handle")
         lgb.call("LGBM_BoosterFree_R", ret=NULL, private$handle)
-		private$handle <- NULL
+        private$handle <- NULL
       }
     }, 
     initialize = function(modelfile) {
@@ -58,7 +58,7 @@ Predictor <- R6Class(
           as.integer(rawscore),
           as.integer(predleaf),
           as.integer(num_iteration))
-		    # allocte space for prediction
+        # allocte space for prediction
         preds <- rep(0.0, npred)
         if (is.matrix(data)) {
           preds <- lgb.call("LGBM_BoosterPredictForMat_R", ret=preds, 

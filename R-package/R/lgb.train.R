@@ -1,7 +1,43 @@
-#' Main training logic
+#' Main training logic for LightGBM
 #' 
-#' Main training logic
+#' Main training logic for LightGBM
 #' 
+#' @param params List of parameters
+#' @param data a \code{lgb.Dataset} object, used for training
+#' @param nrounds number of training rounds
+#' @param valids a list of \code{lgb.Dataset} object, used for validation
+#' @param obj objective function, can be character or custom objective function
+#' @param eval evaluation function, can be (list of) character or custom eval function
+#' @param verbose verbosity for output
+#'        if verbose > 0 , also will record iteration message to booster$record_evals
+#' @param eval_freq evalutaion output frequence
+#' @param init_model path of model file of \code{lgb.Booster} object, will continue train from this model
+#' @param colnames feature names, if not null, will use this to overwrite the names in dataset
+#' @param categorical_feature list of str or int
+#'        type int represents index,
+#'        type str represents feature names
+#' @param early_stopping_rounds int
+#'        Activates early stopping.
+#'        Requires at least one validation data and one metric
+#'        If there's more than one, will check all of them
+#'        Returns the model with (best_iter + early_stopping_rounds)
+#'        If early stopping occurs, the model will have 'best_iter' field
+#' @param callbacks list of callback functions
+#'        List of callback functions that are applied at each iteration.
+#' @param ... other parameters, see parameters.md for more informations
+#' @return a trained booster model \code{lgb.Booster}. 
+#' @examples
+#' library("lightgbm")
+#' data(agaricus.train, package='lightgbm')
+#' train <- agaricus.train
+#' dtrain <- lgb.Dataset(train$data, label=train$label)
+#' data(agaricus.test, package='lightgbm')
+#' test <- agaricus.test
+#' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label=test$label)
+#' params <- list(objective="regression", metric="l2")
+#' valids <- list(test=dtest)
+#' model <- lgb.train(params, dtrain, 100, valids, min_data=1, learning_rate=1, early_stopping_rounds=10)
+#'
 #' @rdname lgb.train
 #' @export
 lgb.train <- function(params=list(), data, nrounds, 

@@ -17,4 +17,12 @@ passed dataset
 \description{
 set categorical feature of \code{lgb.Dataset}
 }
+\examples{
+data(agaricus.train, package='lightgbm')
+train <- agaricus.train
+dtrain <- lgb.Dataset(train$data, label=train$label)
+lgb.Dataset.save(dtrain, 'lgb.Dataset.data')
+dtrain <- lgb.Dataset('lgb.Dataset.data')
+lgb.Dataset.set.categorical(dtrain, 1:2)
+}
 

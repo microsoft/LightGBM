@@ -3,6 +3,7 @@ Booster <- R6Class(
   cloneable=FALSE,
   public = list(
     best_iter = -1,
+    record_evals = list(),
     finalize = function() {
       if(!lgb.is.null.handle(private$handle)){
         print("free booster handle")
@@ -315,32 +316,19 @@ lgb.is.Booster <- function(x){
 
 #' Predict method for LightGBM model
 #' 
-#' Predicted values based on either lightgbm model or model handle object.
+#' Predicted values based on class \code{lgb.Booster}
 #' 
 #' @param booster Object of class \code{lgb.Booster}
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
-#' @param num_iteration number of iteration want to predict with, <= 0 means use best iteration
+#' @param num_iteration number of iteration want to predict with, NULL or <= 0 means use best iteration
 #' @param rawscore whether the prediction should be returned in the for of original untransformed 
 #'        sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE} for 
 #'        logistic regression would result in predictions for log-odds instead of probabilities.
 #' @param predleaf whether predict leaf index instead. 
 #' @param header only used for prediction for text file. True if text file has header
 #' @param reshape whether to reshape the vector of predictions to a matrix form when there are several 
-#'        prediction outputs per case.
-#' 
-#' @details  
-#' Note that \code{ntreelimit} is not necessarily equal to the number of boosting iterations
-#' and it is not necessarily equal to the number of trees in a model.
-#' E.g., in a random forest-like model, \code{ntreelimit} would limit the number of trees.
-#' But for multiclass classification, there are multiple trees per iteration, 
-#' but \code{ntreelimit} limits the number of boosting iterations.
-#' 
-#' Also note that \code{ntreelimit} would currently do nothing for predictions from gblinear, 
-#' since gblinear doesn't keep its boosting history. 
-#' 
-#' One possible practical applications of the \code{predleaf} option is to use the model 
-#' as a generator of new features which capture non-linearity and interactions, 
-#' 
+#'        prediction outputs per case. 
+
 #' @return 
 #' For regression or binary classification, it returns a vector of length \code{nrows(data)}.
 #' For multiclass classification, either a \code{num_class * nrows(data)} vector or 
@@ -349,8 +337,19 @@ lgb.is.Booster <- function(x){
 #' 
 #' When \code{predleaf = TRUE}, the output is a matrix object with the 
 #' number of columns corresponding to the number of trees.
+#' @examples
+#' library("lightgbm")
+#' data(agaricus.train, package='lightgbm')
+#' train <- agaricus.train
+#' dtrain <- lgb.Dataset(train$data, label=train$label)
+#' data(agaricus.test, package='lightgbm')
+#' test <- agaricus.test
+#' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label=test$label)
+#' params <- list(objective="regression", metric="l2")
+#' valids <- list(test=dtest)
+#' model <- lgb.train(params, dtrain, 100, valids, min_data=1, learning_rate=1, early_stopping_rounds=10)
+#' preds <- predict(model, test$data)
 #' 
-#'
 #' @rdname predict.lgb.Booster
 #' @export
 predict.lgb.Booster <- function(booster, 
@@ -368,13 +367,24 @@ predict.lgb.Booster <- function(booster,
 
 #' Load LightGBM model
 #' 
-#' Load LightGBM model
+#' Load LightGBM model from saved model file
 #' 
 #' @param filename path of model file
 #' 
 #' @return booster
-#' 
-#'
+#' @examples
+#' library("lightgbm")
+#' data(agaricus.train, package='lightgbm')
+#' train <- agaricus.train
+#' dtrain <- lgb.Dataset(train$data, label=train$label)
+#' data(agaricus.test, package='lightgbm')
+#' test <- agaricus.test
+#' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label=test$label)
+#' params <- list(objective="regression", metric="l2")
+#' valids <- list(test=dtest)
+#' model <- lgb.train(params, dtrain, 100, valids, min_data=1, learning_rate=1, early_stopping_rounds=10)
+#' lgb.save(model, "model.txt")
+#' load_booster <- lgb.load("model.txt")
 #' @rdname lgb.load 
 #' @export
 lgb.load <- function(filename){
@@ -390,11 +400,21 @@ lgb.load <- function(filename){
 #' 
 #' @param booster Object of class \code{lgb.Booster}
 #' @param filename saved filename
-#' @param num_iteration number of iteration want to predict with, <= 0 means use best iteration
+#' @param num_iteration number of iteration want to predict with, NULL or <= 0 means use best iteration
 #' 
 #' @return booster
-#' 
-#'
+#' @examples
+#' library("lightgbm")
+#' data(agaricus.train, package='lightgbm')
+#' train <- agaricus.train
+#' dtrain <- lgb.Dataset(train$data, label=train$label)
+#' data(agaricus.test, package='lightgbm')
+#' test <- agaricus.test
+#' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label=test$label)
+#' params <- list(objective="regression", metric="l2")
+#' valids <- list(test=dtest)
+#' model <- lgb.train(params, dtrain, 100, valids, min_data=1, learning_rate=1, early_stopping_rounds=10)
+#' lgb.save(model, "model.txt")
 #' @rdname lgb.save 
 #' @export
 lgb.save <- function(booster, filename, num_iteration=NULL){
@@ -412,11 +432,21 @@ lgb.save <- function(booster, filename, num_iteration=NULL){
 #' Dump LightGBM model to json
 #' 
 #' @param booster Object of class \code{lgb.Booster}
-#' @param num_iteration number of iteration want to predict with, <= 0 means use best iteration
+#' @param num_iteration number of iteration want to predict with, NULL or <= 0 means use best iteration
 #' 
 #' @return json format of model
-#' 
-#'
+#' @examples
+#' library("lightgbm")
+#' data(agaricus.train, package='lightgbm')
+#' train <- agaricus.train
+#' dtrain <- lgb.Dataset(train$data, label=train$label)
+#' data(agaricus.test, package='lightgbm')
+#' test <- agaricus.test
+#' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label=test$label)
+#' params <- list(objective="regression", metric="l2")
+#' valids <- list(test=dtest)
+#' model <- lgb.train(params, dtrain, 100, valids, min_data=1, learning_rate=1, early_stopping_rounds=10)
+#' json_model <- lgb.dump(model)
 #' @rdname lgb.dump 
 #' @export
 lgb.dump <- function(booster, num_iteration=NULL){

@@ -17,4 +17,10 @@ passed dataset
 \description{
 save \code{lgb.Dataset} to binary file
 }
+\examples{
+data(agaricus.train, package='lightgbm')
+train <- agaricus.train
+dtrain <- lgb.Dataset(train$data, label=train$label)
+lgb.Dataset.save(dtarin, "data.bin")
+}
 

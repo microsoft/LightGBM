@@ -580,8 +580,11 @@ SEXP LGBM_BoosterDumpModel_R(SEXP handle,
   int64_t out_len = 0;
   std::vector<char> inner_char_buf(R_AS_INT(buffer_len));
   CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), R_AS_INT(num_iteration), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
+  EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len);
   if (out_len < R_AS_INT(buffer_len)) {
     EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len);
+  } else {
+    R_INT_PTR(actual_len)[0] = static_cast<int>(out_len);
   }
   R_API_END();
 }

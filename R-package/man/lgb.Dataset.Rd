@@ -28,6 +28,9 @@ lgb.Dataset(data, params = list(), reference = NULL, colnames = NULL,
 constructed dataset
 }
 \description{
+Contruct lgb.Dataset object
+}
+\details{
 Contruct lgb.Dataset object from dense matrix, sparse matrix
 or local file (that was created previously by saving an \code{lgb.Dataset}).
 }

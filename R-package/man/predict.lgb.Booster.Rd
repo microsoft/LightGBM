@@ -12,7 +12,7 @@
 
 \item{data}{a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename}
 
-\item{num_iteration}{number of iteration want to predict with, <= 0 means use best iteration}
+\item{num_iteration}{number of iteration want to predict with, NULL or <= 0 means use best iteration}
 
 \item{rawscore}{whether the prediction should be returned in the for of original untransformed 
 sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE} for 
@@ -35,19 +35,20 @@ When \code{predleaf = TRUE}, the output is a matrix object with the
 number of columns corresponding to the number of trees.
 }
 \description{
-Predicted values based on either lightgbm model or model handle object.
+Predicted values based on class \code{lgb.Booster}
 }
-\details{
-Note that \code{ntreelimit} is not necessarily equal to the number of boosting iterations
-and it is not necessarily equal to the number of trees in a model.
-E.g., in a random forest-like model, \code{ntreelimit} would limit the number of trees.
-But for multiclass classification, there are multiple trees per iteration, 
-but \code{ntreelimit} limits the number of boosting iterations.
+\examples{
+library("lightgbm")
+data(agaricus.train, package='lightgbm')
+train <- agaricus.train
+dtrain <- lgb.Dataset(train$data, label=train$label)
+data(agaricus.test, package='lightgbm')
+test <- agaricus.test
+dtest <- lgb.Dataset.create.valid(dtrain, test$data, label=test$label)
+params <- list(objective="regression", metric="l2")
+valids <- list(test=dtest)
+model <- lgb.train(params, dtrain, 100, valids, min_data=1, learning_rate=1, early_stopping_rounds=10)
+preds <- predict(model, test$data)
 
-Also note that \code{ntreelimit} would currently do nothing for predictions from gblinear, 
-since gblinear doesn't keep its boosting history. 
-
-One possible practical applications of the \code{predleaf} option is to use the model 
-as a generator of new features which capture non-linearity and interactions,
 }
 

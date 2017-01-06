@@ -2,14 +2,68 @@
 % Please edit documentation in R/lgb.train.R
 \name{lgb.train}
 \alias{lgb.train}
-\title{Main training logic}
+\title{Main training logic for LightGBM}
 \usage{
 lgb.train(params = list(), data, nrounds, valids = list(), obj = NULL,
   eval = NULL, verbose = 1, eval_freq = 1, init_model = NULL,
   colnames = NULL, categorical_feature = NULL,
   early_stopping_rounds = NULL, callbacks = list(), ...)
 }
+\arguments{
+\item{params}{List of parameters}
+
+\item{data}{a \code{lgb.Dataset} object, used for training}
+
+\item{nrounds}{number of training rounds}
+
+\item{valids}{a list of \code{lgb.Dataset} object, used for validation}
+
+\item{obj}{objective function, can be character or custom objective function}
+
+\item{eval}{evaluation function, can be (list of) character or custom eval function}
+
+\item{verbose}{verbosity for output
+if verbose > 0 , also will record iteration message to booster$record_evals}
+
+\item{eval_freq}{evalutaion output frequence}
+
+\item{init_model}{path of model file of \code{lgb.Booster} object, will continue train from this model}
+
+\item{colnames}{feature names, if not null, will use this to overwrite the names in dataset}
+
+\item{categorical_feature}{list of str or int
+type int represents index,
+type str represents feature names}
+
+\item{early_stopping_rounds}{int
+Activates early stopping.
+Requires at least one validation data and one metric
+If there's more than one, will check all of them
+Returns the model with (best_iter + early_stopping_rounds)
+If early stopping occurs, the model will have 'best_iter' field}
+
+\item{callbacks}{list of callback functions
+List of callback functions that are applied at each iteration.}
+
+\item{...}{other parameters, see parameters.md for more informations}
+}
+\value{
+a trained booster model \code{lgb.Booster}.
+}
 \description{
-Main training logic
+Main training logic for LightGBM
+}
+\examples{
+library("lightgbm")
+data(agaricus.train, package='lightgbm')
+train <- agaricus.train
+dtrain <- lgb.Dataset(train$data, label=train$label)
+data(agaricus.test, package='lightgbm')
+test <- agaricus.test
+dtest <- lgb.Dataset.create.valid(dtrain, test$data, label=test$label)
+params <- list(objective="regression", metric="l2")
+valids <- list(test=dtest)
+model <- lgb.train(params, dtrain, 100, valids, min_data=1, learning_rate=1, early_stopping_rounds=10)
+
 }
 

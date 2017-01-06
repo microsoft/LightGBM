@@ -15,6 +15,16 @@ lgb.Dataset.set.reference(dataset, reference)
 passed dataset
 }
 \description{
-set reference of \code{lgb.Dataset}
+set reference of \code{lgb.Dataset}. 
+If you want to use validation data, you should set its reference to training data
+}
+\examples{
+data(agaricus.train, package='lightgbm')
+train <- agaricus.train
+dtrain <- lgb.Dataset(train$data, label=train$label)
+data(agaricus.test, package='lightgbm')
+test <- agaricus.test
+dtest <- lgb.Dataset(test$data, test=train$label)
+lgb.Dataset.set.reference(dtest, dtrain)
 }
 

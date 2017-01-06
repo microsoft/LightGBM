@@ -418,6 +418,8 @@ Dataset <- R6Class(
 
 #' Contruct lgb.Dataset object
 #'
+#' Contruct lgb.Dataset object
+#'
 #' Contruct lgb.Dataset object from dense matrix, sparse matrix
 #' or local file (that was created previously by saving an \code{lgb.Dataset}).
 #'
@@ -469,7 +471,10 @@ lgb.is.Dataset <- function(x){
   }
 }
 
+#' Contruct a validation data
+#'
 #' Contruct a validation data according to training data
+#'
 #' @param dataset \code{lgb.Dataset} object, training data
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
 #' @param info a list of information of the lgb.Dataset object
@@ -493,6 +498,8 @@ lgb.Dataset.create.valid <-
 
 #' Construct Dataset explicit
 #'
+#' Construct Dataset explicit
+#'
 #' @param dataset Object of class \code{lgb.Dataset}
 #' @examples
 #' data(agaricus.train, package='lightgbm')
@@ -507,6 +514,8 @@ lgb.Dataset.construct <- function(dataset) {
   return(dataset$construct())
 }
 
+#' Dimensions of lgb.Dataset
+#'
 #' Dimensions of lgb.Dataset
 #'
 #' Returns a vector of numbers of rows and of columns in an \code{lgb.Dataset}.
@@ -536,6 +545,8 @@ dim.lgb.Dataset <- function(dataset, ...) {
   return(dataset$dim())
 }
 
+#' Handling of column names of \code{lgb.Dataset}
+#'
 #' Handling of column names of \code{lgb.Dataset}
 #'
 #' Only column names are supported for \code{lgb.Dataset}, thus setting of
@@ -588,6 +599,8 @@ dimnames.lgb.Dataset <- function(dataset) {
   return(x)
 }
 
+#' Slice an dataset
+#'
 #' Get a new Dataset containing the specified rows of
 #' orginal lgb.Dataset object
 #'
@@ -624,6 +637,7 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
 #' Get information of an lgb.Dataset object
 #'
 #' Get information of an lgb.Dataset object
+#'
 #' @param dataset Object of class \code{lgb.Dataset}
 #' @param name the name of the information field to get (see details)
 #' @param ... other parameters
@@ -662,6 +676,8 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
   return(dataset$getinfo(name))
 }
 
+#' Set information of an lgb.Dataset object
+#'
 #' Set information of an lgb.Dataset object
 #'
 #' @param dataset Object of class "lgb.Dataset"
@@ -703,9 +719,19 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
 }
 
 #' set categorical feature of \code{lgb.Dataset}
+#'
+#' set categorical feature of \code{lgb.Dataset}
+#'
 #' @param dataset object of class \code{lgb.Dataset}
 #' @param categorical_feature categorical features
 #' @return passed dataset
+#' @examples
+#' data(agaricus.train, package='lightgbm')
+#' train <- agaricus.train
+#' dtrain <- lgb.Dataset(train$data, label=train$label)
+#' lgb.Dataset.save(dtrain, 'lgb.Dataset.data')
+#' dtrain <- lgb.Dataset('lgb.Dataset.data')
+#' lgb.Dataset.set.categorical(dtrain, 1:2)
 #' @rdname lgb.Dataset.set.categorical
 #' @export
 lgb.Dataset.set.categorical <-
@@ -717,9 +743,21 @@ lgb.Dataset.set.categorical <-
   }
 
 #' set reference of \code{lgb.Dataset}
+#'
+#' set reference of \code{lgb.Dataset}. 
+#' If you want to use validation data, you should set its reference to training data
+#'
 #' @param dataset object of class \code{lgb.Dataset}
 #' @param reference object of class \code{lgb.Dataset}
 #' @return passed dataset
+#' @examples
+#' data(agaricus.train, package='lightgbm')
+#' train <- agaricus.train
+#' dtrain <- lgb.Dataset(train$data, label=train$label)
+#' data(agaricus.test, package='lightgbm')
+#' test <- agaricus.test
+#' dtest <- lgb.Dataset(test$data, test=train$label)
+#' lgb.Dataset.set.reference(dtest, dtrain)
 #' @rdname lgb.Dataset.set.reference
 #' @export
 lgb.Dataset.set.reference <- function(dataset, reference) {
@@ -730,9 +768,17 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 }
 
 #' save \code{lgb.Dataset} to binary file
+#' 
+#' save \code{lgb.Dataset} to binary file
+#' 
 #' @param dataset object of class \code{lgb.Dataset}
 #' @param fname object filename of output file
 #' @return passed dataset
+#' @examples
+#' data(agaricus.train, package='lightgbm')
+#' train <- agaricus.train
+#' dtrain <- lgb.Dataset(train$data, label=train$label)
+#' lgb.Dataset.save(dtarin, "data.bin")
 #' @rdname lgb.Dataset.save
 #' @export
 lgb.Dataset.save <- function(dataset, fname) {
