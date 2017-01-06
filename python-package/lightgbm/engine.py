@@ -164,6 +164,7 @@ def train(params, train_set, num_boost_round=100,
     for i in range(init_iteration, init_iteration + num_boost_round):
         for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=booster,
+                                    params=params,
                                     cvfolds=None,
                                     iteration=i,
                                     begin_iteration=init_iteration,
@@ -181,6 +182,7 @@ def train(params, train_set, num_boost_round=100,
         try:
             for cb in callbacks_after_iter:
                 cb(callback.CallbackEnv(model=booster,
+                                        params=params,
                                         cvfolds=None,
                                         iteration=i,
                                         begin_iteration=init_iteration,
@@ -198,20 +200,23 @@ def train(params, train_set, num_boost_round=100,
 class CVBooster(object):
     """"Auxiliary datastruct to hold one fold of CV."""
     def __init__(self, train_set, valid_test, params):
-        """"Initialize the CVBooster"""
+        """Initialize the CVBooster"""
         self.train_set = train_set
         self.valid_test = valid_test
         self.booster = Booster(params=params, train_set=train_set)
         self.booster.add_valid(valid_test, 'valid')
 
     def update(self, fobj):
-        """"Update the boosters for one iteration"""
+        """Update the booster for one iteration"""
         self.booster.update(fobj=fobj)
 
     def eval(self, feval):
-        """"Evaluate the CVBooster for one iteration."""
+        """Evaluate the CVBooster for one iteration."""
         return self.booster.eval_valid(feval)
 
+    def reset_parameter(self, params):
+        """Reset parameters of the booster"""
+        self.booster.reset_parameter(params)
 
 try:
     from sklearn.model_selection import StratifiedKFold
@@ -378,6 +383,7 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
     for i in range(num_boost_round):
         for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=None,
+                                    params=params,
                                     cvfolds=cvfolds,
                                     iteration=i,
                                     begin_iteration=0,
@@ -392,6 +398,7 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
         try:
             for cb in callbacks_after_iter:
                 cb(callback.CallbackEnv(model=None,
+                                        params=params,
                                         cvfolds=cvfolds,
                                         iteration=i,
                                         begin_iteration=0,

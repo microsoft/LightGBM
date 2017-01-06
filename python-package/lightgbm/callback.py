@@ -20,6 +20,7 @@ class EarlyStopException(Exception):
 CallbackEnv = collections.namedtuple(
     "LightGBMCallbackEnv",
     ["model",
+     "params",
      "cvfolds",
      "iteration",
      "begin_iteration",
@@ -121,13 +122,24 @@ def reset_parameter(**kwargs):
     """
     def callback(env):
         """internal function"""
+        new_parameters = {}
         for key, value in kwargs.items():
+            if key in ['num_class', 'boosting_type', 'metric']:
+                raise RuntimeError("cannot reset {} during training".format(repr(key)))
             if isinstance(value, list):
                 if len(value) != env.end_iteration - env.begin_iteration:
                     raise ValueError("Length of list {} has to equal to 'num_boost_round'.".format(repr(key)))
-                env.model.reset_parameter({key: value[env.iteration - env.begin_iteration]})
+                new_param = value[env.iteration - env.begin_iteration]
             else:
-                env.model.reset_parameter({key: value(env.iteration - env.begin_iteration)})
+                new_param = value(env.iteration - env.begin_iteration)
+            if new_param != env.params.get(key, None):
+                new_parameters[key] = new_param
+        if new_parameters:
+            if env.model is not None:
+                env.model.reset_parameter(new_parameters)
+            elif env.cvfolds is not None:
+                for model in env.cvfolds:
+                    model.reset_parameter(new_parameters)
     callback.before_iteration = True
     callback.order = 10
     return callback
