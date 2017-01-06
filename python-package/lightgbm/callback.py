@@ -135,6 +135,7 @@ def reset_parameter(**kwargs):
                 new_parameters[key] = new_param
         if new_parameters:
             env.model.reset_parameter(new_parameters)
+            env.params.update(new_parameters)
     callback.before_iteration = True
     callback.order = 10
     return callback
