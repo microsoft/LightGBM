@@ -134,8 +134,7 @@ def reset_parameter(**kwargs):
             if new_param != env.params.get(key, None):
                 new_parameters[key] = new_param
         if new_parameters:
-            if env.model is not None:
-                env.model.reset_parameter(new_parameters)
+            env.model.reset_parameter(new_parameters)
     callback.before_iteration = True
     callback.order = 10
     return callback
@@ -198,8 +197,7 @@ def early_stopping(stopping_rounds, verbose=True):
                     )
             else:
                 if env.iteration - best_iter[i] >= stopping_rounds:
-                    if env.model is not None:
-                        env.model.set_attr(best_iteration=str(best_iter[i]))
+                    env.model.set_attr(best_iteration=str(best_iter[i]))
                     if verbose:
                         print('Early stopping, best iteration is:')
                         print(best_msg[i])
