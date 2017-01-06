@@ -113,7 +113,8 @@ class TestEngine(unittest.TestCase):
     def test_cv(self):
         lgb_train, _ = test_template(return_data=True)
         lgb.cv({'verbose': 0}, lgb_train, num_boost_round=20, nfold=5,
-               metrics='l1', verbose_eval=False)
+               metrics='l1', verbose_eval=False,
+               callbacks=[lgb.reset_parameter(learning_rate=lambda i: 0.1 - 0.001 * i)])
 
     def test_save_load_copy_pickle(self):
         gbm = test_template(num_round=20, return_model=True)

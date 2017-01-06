@@ -20,7 +20,7 @@ class EarlyStopException(Exception):
 CallbackEnv = collections.namedtuple(
     "LightGBMCallbackEnv",
     ["model",
-     "cvfolds",
+     "params",
      "iteration",
      "begin_iteration",
      "end_iteration",
@@ -121,13 +121,21 @@ def reset_parameter(**kwargs):
     """
     def callback(env):
         """internal function"""
+        new_parameters = {}
         for key, value in kwargs.items():
+            if key in ['num_class', 'boosting_type', 'metric']:
+                raise RuntimeError("cannot reset {} during training".format(repr(key)))
             if isinstance(value, list):
                 if len(value) != env.end_iteration - env.begin_iteration:
                     raise ValueError("Length of list {} has to equal to 'num_boost_round'.".format(repr(key)))
-                env.model.reset_parameter({key: value[env.iteration - env.begin_iteration]})
+                new_param = value[env.iteration - env.begin_iteration]
             else:
-                env.model.reset_parameter({key: value(env.iteration - env.begin_iteration)})
+                new_param = value(env.iteration - env.begin_iteration)
+            if new_param != env.params.get(key, None):
+                new_parameters[key] = new_param
+        if new_parameters:
+            env.model.reset_parameter(new_parameters)
+            env.params.update(new_parameters)
     callback.before_iteration = True
     callback.order = 10
     return callback
@@ -190,8 +198,7 @@ def early_stopping(stopping_rounds, verbose=True):
                     )
             else:
                 if env.iteration - best_iter[i] >= stopping_rounds:
-                    if env.model is not None:
-                        env.model.set_attr(best_iteration=str(best_iter[i]))
+                    env.model.set_attr(best_iteration=str(best_iter[i]))
                     if verbose:
                         print('Early stopping, best iteration is:')
                         print(best_msg[i])
