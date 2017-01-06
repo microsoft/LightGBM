@@ -18,7 +18,7 @@ json format of model
 Dump LightGBM model to json
 }
 \examples{
-library("lightgbm")
+library(lightgbm)
 data(agaricus.train, package='lightgbm')
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label=train$label)

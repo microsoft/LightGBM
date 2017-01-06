@@ -38,7 +38,7 @@ number of columns corresponding to the number of trees.
 Predicted values based on class \code{lgb.Booster}
 }
 \examples{
-library("lightgbm")
+library(lightgbm)
 data(agaricus.train, package='lightgbm')
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label=train$label)

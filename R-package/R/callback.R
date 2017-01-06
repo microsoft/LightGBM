@@ -91,7 +91,7 @@ merge.eval.string <- function(env){
   if(length(env$eval_err_list) > 0){
     is_eval_err <- TRUE
   }
-  for( j in 1:length(env$eval_list)) {
+  for(j in 1:length(env$eval_list)) {
     eval_err <- NULL
     if(is_eval_err){
       eval_err <- env$eval_err_list[[j]]
@@ -119,11 +119,12 @@ cb.print.evaluation <- function(period=1){
 
 cb.record.evaluation <- function() {
   callback <- function(env){
+    if(length(env$eval_list) <= 0) return()
     is_eval_err <- FALSE
     if(length(env$eval_err_list) > 0){
       is_eval_err <- TRUE
     }
-    for( j in 1:length(env$eval_list)) {
+    for(j in 1:length(env$eval_list)) {
       eval_res <- env$eval_list[[j]]
       eval_err <- NULL
       if(is_eval_err){

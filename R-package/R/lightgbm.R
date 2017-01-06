@@ -1,3 +1,28 @@
+# Simple interface for training an lightgbm model.
+# Its documentation is combined with lgb.train.
+#
+#' @rdname lgb.train
+#' @export
+lightgbm <- function(data, label = NULL, weight = NULL,
+                    params = list(), nrounds=10,
+                    verbose = 1, eval_freq = 1L, 
+                    early_stopping_rounds = NULL,
+                    save_name = "lightgbm.model",
+                    init_model = NULL, callbacks = list(), ...) {
+
+  dtrain <- lgb.Dataset(data, label=label, weight=weight)
+
+  valids <- list()
+  if (verbose > 0)
+    valids$train = dtrain
+
+  bst <- lgb.train(params, dtrain, nrounds, valids, verbose = verbose, eval_freq=eval_freq,
+                   early_stopping_rounds = early_stopping_rounds,
+                   init_model = init_model, callbacks = callbacks, ...)
+  bst$save_model(save_name)
+  return(bst)
+}
+
 #' Training part from Mushroom Data Set
 #' 
 #' This data set is originally from the Mushroom data set,

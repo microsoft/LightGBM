@@ -27,7 +27,7 @@
 #' @param ... other parameters, see parameters.md for more informations
 #' @return a trained booster model \code{lgb.Booster}. 
 #' @examples
-#' library("lightgbm")
+#' library(lightgbm)
 #' data(agaricus.train, package='lightgbm')
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label=train$label)
@@ -40,10 +40,10 @@
 #'
 #' @rdname lgb.train
 #' @export
-lgb.train <- function(params=list(), data, nrounds, 
+lgb.train <- function(params=list(), data, nrounds=10, 
                       valids=list(), 
                       obj=NULL, eval=NULL,
-                      verbose=1, eval_freq=1,
+                      verbose=1, eval_freq=1L,
                       init_model=NULL, 
                       colnames=NULL,
                       categorical_feature=NULL,

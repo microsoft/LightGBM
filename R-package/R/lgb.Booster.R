@@ -144,10 +144,12 @@ Booster <- R6Class(
       if (identical(data, private$train_set)) {
         data_idx <- 1
       } else {
-        for (i in 1:length(private$valid_sets)) {
-          if (identical(data, private$valid_sets[[i]])) {
-            data_idx <- i + 1
-            break
+        if(length(private$valid_sets) > 0){
+          for (i in 1:length(private$valid_sets)) {
+            if (identical(data, private$valid_sets[[i]])) {
+              data_idx <- i + 1
+              break
+            }
           }
         }
       }
@@ -162,6 +164,7 @@ Booster <- R6Class(
     },
     eval_valid = function(feval = NULL) {
       ret = list()
+      if(length(private$valid_sets) <= 0) return(ret)
       for (i in 1:length(private$valid_sets)) {
         ret <-
           append(ret, private$inner_eval(private$name_valid_sets[[i]], i + 1, feval))
@@ -338,7 +341,7 @@ lgb.is.Booster <- function(x){
 #' When \code{predleaf = TRUE}, the output is a matrix object with the 
 #' number of columns corresponding to the number of trees.
 #' @examples
-#' library("lightgbm")
+#' library(lightgbm)
 #' data(agaricus.train, package='lightgbm')
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label=train$label)
@@ -373,7 +376,7 @@ predict.lgb.Booster <- function(booster,
 #' 
 #' @return booster
 #' @examples
-#' library("lightgbm")
+#' library(lightgbm)
 #' data(agaricus.train, package='lightgbm')
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label=train$label)
@@ -404,7 +407,7 @@ lgb.load <- function(filename){
 #' 
 #' @return booster
 #' @examples
-#' library("lightgbm")
+#' library(lightgbm)
 #' data(agaricus.train, package='lightgbm')
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label=train$label)
@@ -436,7 +439,7 @@ lgb.save <- function(booster, filename, num_iteration=NULL){
 #' 
 #' @return json format of model
 #' @examples
-#' library("lightgbm")
+#' library(lightgbm)
 #' data(agaricus.train, package='lightgbm')
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label=train$label)

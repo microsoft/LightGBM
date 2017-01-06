@@ -20,7 +20,7 @@ booster
 Save LightGBM model
 }
 \examples{
-library("lightgbm")
+library(lightgbm)
 data(agaricus.train, package='lightgbm')
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label=train$label)
