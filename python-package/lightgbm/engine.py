@@ -165,7 +165,6 @@ def train(params, train_set, num_boost_round=100,
         for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=booster,
                                     params=params,
-                                    cvfolds=None,
                                     iteration=i,
                                     begin_iteration=init_iteration,
                                     end_iteration=init_iteration + num_boost_round,
@@ -183,7 +182,6 @@ def train(params, train_set, num_boost_round=100,
             for cb in callbacks_after_iter:
                 cb(callback.CallbackEnv(model=booster,
                                         params=params,
-                                        cvfolds=None,
                                         iteration=i,
                                         begin_iteration=init_iteration,
                                         end_iteration=init_iteration + num_boost_round,
@@ -198,25 +196,23 @@ def train(params, train_set, num_boost_round=100,
 
 
 class CVBooster(object):
-    """"Auxiliary datastruct to hold one fold of CV."""
-    def __init__(self, train_set, valid_test, params):
-        """Initialize the CVBooster"""
-        self.train_set = train_set
-        self.valid_test = valid_test
-        self.booster = Booster(params=params, train_set=train_set)
-        self.booster.add_valid(valid_test, 'valid')
+    """"Auxiliary data struct to hold all boosters of CV."""
+    def __init__(self):
+        self.boosters = []
 
-    def update(self, fobj):
-        """Update the booster for one iteration"""
-        self.booster.update(fobj=fobj)
+    def append(self, booster):
+        """add a booster to CVBooster"""
+        self.boosters.append(booster)
 
-    def eval(self, feval):
-        """Evaluate the CVBooster for one iteration."""
-        return self.booster.eval_valid(feval)
-
-    def reset_parameter(self, params):
-        """Reset parameters of the booster"""
-        self.booster.reset_parameter(params)
+    def __getattr__(self, name):
+        """redirect methods call of CVBooster"""
+        def handlerFunction(*args, **kwargs):
+            """call methods with each booster, and concatenate their results"""
+            ret = []
+            for booster in self.boosters:
+                ret.append(getattr(booster, name)(*args, **kwargs))
+            return ret
+        return handlerFunction
 
 try:
     from sklearn.model_selection import StratifiedKFold
@@ -231,7 +227,7 @@ except ImportError:
 
 def _make_n_folds(full_data, nfold, params, seed, fpreproc=None, stratified=False, shuffle=True):
     """
-    Make an n-fold list of CVBooster from random indices.
+    Make an n-fold list of Booster from random indices.
     """
     np.random.seed(seed)
     if stratified:
@@ -247,7 +243,7 @@ def _make_n_folds(full_data, nfold, params, seed, fpreproc=None, stratified=Fals
         kstep = int(len(randidx) / nfold)
         idset = [randidx[(i * kstep): min(len(randidx), (i + 1) * kstep)] for i in range(nfold)]
 
-    ret = []
+    ret = CVBooster()
     for k in range(nfold):
         train_set = full_data.subset(np.concatenate([idset[i] for i in range(nfold) if k != i]))
         valid_set = full_data.subset(idset[k])
@@ -256,7 +252,9 @@ def _make_n_folds(full_data, nfold, params, seed, fpreproc=None, stratified=Fals
             train_set, valid_set, tparam = fpreproc(train_set, valid_set, params.copy())
         else:
             tparam = params
-        ret.append(CVBooster(train_set, valid_set, tparam))
+        cvbooster = Booster(tparam, train_set)
+        cvbooster.add_valid(valid_set, 'valid')
+        ret.append(cvbooster)
     return ret
 
 
@@ -382,24 +380,21 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
 
     for i in range(num_boost_round):
         for cb in callbacks_before_iter:
-            cb(callback.CallbackEnv(model=None,
+            cb(callback.CallbackEnv(model=cvfolds,
                                     params=params,
-                                    cvfolds=cvfolds,
                                     iteration=i,
                                     begin_iteration=0,
                                     end_iteration=num_boost_round,
                                     evaluation_result_list=None))
-        for fold in cvfolds:
-            fold.update(fobj)
-        res = _agg_cv_result([f.eval(feval) for f in cvfolds])
+        cvfolds.update(fobj)
+        res = _agg_cv_result(cvfolds.eval_valid(feval))
         for _, key, mean, _, std in res:
             results[key + '-mean'].append(mean)
             results[key + '-stdv'].append(std)
         try:
             for cb in callbacks_after_iter:
-                cb(callback.CallbackEnv(model=None,
+                cb(callback.CallbackEnv(model=cvfolds,
                                         params=params,
-                                        cvfolds=cvfolds,
                                         iteration=i,
                                         begin_iteration=0,
                                         end_iteration=num_boost_round,

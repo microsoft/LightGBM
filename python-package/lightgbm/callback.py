@@ -21,7 +21,6 @@ CallbackEnv = collections.namedtuple(
     "LightGBMCallbackEnv",
     ["model",
      "params",
-     "cvfolds",
      "iteration",
      "begin_iteration",
      "end_iteration",
@@ -137,9 +136,6 @@ def reset_parameter(**kwargs):
         if new_parameters:
             if env.model is not None:
                 env.model.reset_parameter(new_parameters)
-            elif env.cvfolds is not None:
-                for model in env.cvfolds:
-                    model.reset_parameter(new_parameters)
     callback.before_iteration = True
     callback.order = 10
     return callback
