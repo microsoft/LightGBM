@@ -14,7 +14,7 @@ Predictor <- R6Class(
       if(typeof(modelfile) == "character") {
         handle <- lgb.call("LGBM_BoosterCreateFromModelfile_R", ret=handle, lgb.c_str(modelfile))
         private$need_free_handle = TRUE
-      } else if (typeof(modelfile) == "lgb.Booster.handle") {
+      } else if (class(modelfile) == "lgb.Booster.handle") {
         handle <- modelfile
         private$need_free_handle = FALSE
       } else {
@@ -22,6 +22,10 @@ Predictor <- R6Class(
       }
       class(handle) <- "lgb.Booster.handle"
       private$handle <- handle
+    },
+    current_iter = function() {
+      cur_iter <- as.integer(0)
+      return(lgb.call("LGBM_BoosterGetCurrentIteration_R",  ret=cur_iter, private$handle))
     },
     predict = function(data, 
       num_iteration = NULL, rawscore = FALSE, predleaf = FALSE, header = FALSE, 

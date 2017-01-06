@@ -79,6 +79,7 @@ lgb.params2str <- function(params, ...) {
   for (key in names(params)) {
     # join multi value first
     val <- paste0(params[[key]], collapse = ",")
+    if(nchar(val) <= 0) next
     # join key value
     pair <- paste0(c(key, val), collapse = "=")
     ret <- c(ret, pair)
@@ -105,3 +106,36 @@ lgb.check.r6.class <- function(object, name) {
   }
   return(TRUE)
 }
+
+lgb.check.params <- function(params){
+  # To-do
+  return(params)
+}
+
+lgb.check.obj <- function(params, obj) {
+  if(!is.null(obj)){
+    params$objective <- obj
+  }
+  if(is.character(params$objective)){ 
+    if(!(params$objective %in% c("regression", "binary", "multiclass", "lambdarank"))){
+      stop("lgb.check.obj: objective name error should be (regression, binary, multiclass, lambdarank)")
+    }
+  } else if(typeof(params$objective) != "closure"){
+    stop("lgb.check.obj: objective should be character or function")
+  }
+  return(params)
+}
+
+lgb.check.eval <- function(params, eval) {
+  if(is.null(params$metric)){
+    params$metric <- list()
+  }
+  if(!is.null(eval)){
+    # append metric
+    if(is.character(eval) || is.list(eval) || length(eval) > 0){
+      params$metric <- append(params$metric, eval)
+    }
+  }
+  return(params)
+}
+

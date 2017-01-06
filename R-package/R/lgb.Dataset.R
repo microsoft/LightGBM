@@ -19,7 +19,7 @@ Dataset <- R6Class(
                           used_indices = NULL,
                           info = list(),
                           ...) {
-      addiction_params = list(...)
+      addiction_params <- list(...)
       for (key in names(addiction_params)) {
         if (key %in% c('label', 'weight', 'init_score', 'group')) {
           info[[key]] <- addiction_params[[key]]
@@ -329,6 +329,9 @@ Dataset <- R6Class(
       )
       return(ret)
     },
+    update_params = function(params){
+      private$params <- modifyList(private$params, params)
+    },
     set_categorical_feature = function(categorical_feature) {
       if (identical(private$categorical_feature, categorical_feature)) {
         return(self)
@@ -459,7 +462,7 @@ lgb.Dataset <- function(data,
 
 # internal helper method
 lgb.is.Dataset <- function(x){
-  if(lgb.check.r6.class(reference, "lgb.Dataset")){
+  if(lgb.check.r6.class(x, "lgb.Dataset")){
     return(TRUE)
   } else{
     return(FALSE)

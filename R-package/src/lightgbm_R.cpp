@@ -528,7 +528,7 @@ SEXP LGBM_BoosterPredictForCSC_R(SEXP handle,
   int64_t nrow = R_AS_INT(num_row);
   double* ptr_ret = R_REAL_PTR(out_result);
   int64_t out_len;
-  CHECK_CALL(LGBM_BoosterPredictForCSR(R_GET_PTR(handle),
+  CHECK_CALL(LGBM_BoosterPredictForCSC(R_GET_PTR(handle),
     p_indptr, C_API_DTYPE_INT32, p_indices,
     p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
     nrow, pred_type, R_AS_INT(num_iteration), &out_len, ptr_ret));

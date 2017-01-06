@@ -559,7 +559,7 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
   // get feature names
   line = Common::FindFromLines(lines, "feature_names=");
   if (line.size() > 0) {
-    feature_names_ = Common::Split(Common::Split(line.c_str(), '=')[1].c_str(), ' ');
+    feature_names_ = Common::Split(line.substr(std::strlen("feature_names=")).c_str(), " ");
     if (feature_names_.size() != static_cast<size_t>(max_feature_idx_ + 1)) {
       Log::Fatal("Wrong size of feature_names");
       return;

@@ -15,8 +15,6 @@ CB_ENV <- R6Class(
   )
 )
 
-#' 
-#' @export
 cb.reset.parameters <- function(new_params) {
   if (typeof(new_params) != "list") 
     stop("'new_params' must be a list")
@@ -51,7 +49,7 @@ cb.reset.parameters <- function(new_params) {
     }
   }
   
-  callback <- function(env = parent.frame()) {
+  callback <- function(env) {
     if (is.null(nrounds))
       init(env)
     
@@ -69,9 +67,9 @@ cb.reset.parameters <- function(new_params) {
         fd$reset_parameter(pars)
     }
   }
+  attr(callback, 'call') <- match.call()
   attr(callback, 'is_pre_iteration') <- TRUE
   attr(callback, 'name') <- 'cb.reset.parameters'
-  attr(callback, 'order') <- 10
   return(callback)
 }
 
@@ -90,7 +88,10 @@ format.eval.string <- function(eval_res, eval_err=NULL) {
 }
 
 merge.eval.string <- function(env){
-  msg <- list(sprintf('[%d]:',i))
+  if(length(env$eval_list) <= 0){
+    return("")
+  }
+  msg <- list(sprintf('[%d]:',env$iteration))
   is_eval_err <- FALSE
   if(length(env$eval_err_list) > 0){
     is_eval_err <- TRUE
@@ -112,12 +113,12 @@ cb.print.evaluation <- function(period=1){
       if( (i - 1) %% period == 0
          | i == env$begin_iteration
          | i == env$end_iteration ){
-        print(merge.eval.string(env))
+        cat(merge.eval.string(env), "\n")
       }
     }
   }
+  attr(callback, 'call') <- match.call()
   attr(callback, 'name') <- 'cb.print.evaluation'
-  attr(callback, 'order') <- 10
   return(callback)
 }
 
@@ -130,21 +131,21 @@ cb.record.evaluation <- function() {
       init(env)
     }
     is_eval_err <- FALSE
-    if(length(eval_err_list) > 0){
+    if(length(env$eval_err_list) > 0){
       is_eval_err <- TRUE
     }
     for( j in 1:length(env$eval_list)) {
       eval_res <- env$eval_list[[j]]
       eval_err <- NULL
-      if(is_err){
+      if(is_eval_err){
         eval_err <- env$eval_err_list[[j]]
       }
       env$record_evals <- c(env$record_evals, list(c(iter=env$iteration, c(eval_res, eval_err))))
     }
     
   }
+  attr(callback, 'call') <- match.call()
   attr(callback, 'name') <- 'cb.record.evaluation'
-  attr(callback, 'order') <- 20
   return(callback)
 }
 
@@ -156,39 +157,37 @@ cb.early.stop <- function(stopping_rounds, verbose=TRUE) {
   best_msg <- NULL
   eval_len <- NULL
   init <- function(env) {
-    eval_len <-  length(env$eval_list) 
+    eval_len <<-  length(env$eval_list)
     if (eval_len == 0)
       stop("For early stopping, valids must have at least one element")
     
     if (verbose)
-      cat("Will train until ", metric_name, " hasn't improved in ", 
+      cat("Will train until hasn't improved in ", 
           stopping_rounds, " rounds.\n\n", sep = '')
 
-    factor_to_bigger_better <- rep(1.0, eval_len)
-    best_iter <- rep(-1, eval_len)
-    best_score <- rep(-Inf, eval_len)
-    best_msg <- list()
+    factor_to_bigger_better <<- rep(1.0, eval_len)
+    best_iter <<- rep(-1, eval_len)
+    best_score <<- rep(-Inf, eval_len)
+    best_msg <<- list()
     for(i in 1:eval_len){
-      best_msg <- c(best_msg, "")
+      best_msg <<- c(best_msg, "")
       if(!env$eval_list[[i]]$higher_better){
-        factor_to_bigger_better[i] <- -1.0
+        factor_to_bigger_better[i] <<- -1.0
       }
     }
   }
   
-  callback <- function(env = parent.frame(), finalize = FALSE) {
+  callback <- function(env, finalize = FALSE) {
     if (is.null(eval_len))
       init(env)
-    
     cur_iter <- env$iteration
-
     for(i in 1:eval_len){
       score <- env$eval_list[[i]]$value * factor_to_bigger_better[i]
       if(score > best_score[i]){
-        best_score[i] <- score
-        best_iter[i] <- cur_iter
+        best_score[i] <<- score
+        best_iter[i] <<- cur_iter
         if(verbose){
-          best_msg[i] <- merge.eval.string(env)
+          best_msg[[i]] <<- as.character(merge.eval.string(env))
         }
       } else {
         if(cur_iter - best_iter[i] >= stopping_rounds){
@@ -196,8 +195,8 @@ cb.early.stop <- function(stopping_rounds, verbose=TRUE) {
             env$model$best_iter <- best_iter[i]
           }
           if(verbose){
-            print('Early stopping, best iteration is:')
-            print(best_msg[i])
+            cat('Early stopping, best iteration is:',"\n")
+            cat(best_msg[[i]],"\n")
           }
           env$best_iter <- best_iter[i]
           env$met_early_stop <- TRUE
@@ -205,8 +204,40 @@ cb.early.stop <- function(stopping_rounds, verbose=TRUE) {
       }
     }
   }
+  attr(callback, 'call') <- match.call()
   attr(callback, 'name') <- 'cb.early.stop'
-  attr(callback, 'order') <- 30
   return(callback)
 }
 
+# Extract callback names from the list of callbacks
+callback.names <- function(cb_list) {
+  unlist(lapply(cb_list, function(x) attr(x, 'name')))
+}
+
+add.cb <- function(cb_list, cb) {
+  cb_list <- c(cb_list, cb)
+  names(cb_list) <- callback.names(cb_list)
+  if ('cb.early.stop' %in% names(cb_list)) {
+    cb_list <- c(cb_list, cb_list['cb.early.stop'])
+    # this removes only the first one
+    cb_list['cb.early.stop'] <- NULL 
+  }
+  if ('cb.cv.predict' %in% names(cb_list)) {
+    cb_list <- c(cb_list, cb_list['cb.cv.predict'])
+    cb_list['cb.cv.predict'] <- NULL 
+  }
+  cb_list
+}
+
+categorize.callbacks <- function(cb_list) {
+  list(
+    pre_iter = Filter(function(x) {
+        pre <- attr(x, 'is_pre_iteration')
+        !is.null(pre) && pre 
+      }, cb_list),
+    post_iter = Filter(function(x) {
+        pre <- attr(x, 'is_pre_iteration')
+        is.null(pre) || !pre
+      }, cb_list)
+  )
+}

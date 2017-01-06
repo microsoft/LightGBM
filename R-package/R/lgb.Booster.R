@@ -3,6 +3,13 @@ Booster <- R6Class(
   cloneable=FALSE,
   public = list(
     best_iter = -1,
+    finalize = function() {
+      if(!lgb.is.null.handle(private$handle)){
+        print("free booster handle")
+        lgb.call("LGBM_BoosterFree_R", ret=NULL, private$handle)
+        private$handle <- NULL
+      }
+    }, 
     initialize = function(params = list(),
                           train_set = NULL,
                           modelfile = NULL,
@@ -30,11 +37,11 @@ Booster <- R6Class(
       } else if (!is.null(modelfile)) {
         if (!is.character(modelfile)) {
           stop("lgb.Booster: Only can use string as model file path")
-          handle <-
-            lgb.call("LGBM_BoosterCreateFromModelfile_R",
-              ret=handle,
-              lgb.c_str(modelfile))
         }
+        handle <-
+          lgb.call("LGBM_BoosterCreateFromModelfile_R",
+            ret=handle,
+            lgb.c_str(modelfile))
       } else {
         stop(
           "lgb.Booster: Need at least one training dataset or model file to create booster instance"
@@ -58,6 +65,9 @@ Booster <- R6Class(
         stop(
           "lgb.Booster.add_valid: Add validation data failed, you should use same predictor for these data"
         )
+      }
+      if(!is.character(name)){
+        stop("only can use character as data name")
       }
       lgb.call("LGBM_BoosterAddValidData_R", ret=NULL, private$handle, data$.__enclos_env__$private$get_handle())
       private$valid_sets <- c(private$valid_sets, data)
@@ -90,7 +100,7 @@ Booster <- R6Class(
               private$handle,
               train_set$.__enclos_env__$private$get_handle())
         private$train_set = train_set
-        private$predict_buffer[1] <- NULL
+        private$predict_buffer[[1]] <- NULL
       }
       if (is.null(fobj)) {
         ret <-
@@ -110,20 +120,20 @@ Booster <- R6Class(
           )
       }
       for (i in 1:length(private$is_predicted_cur_iter)) {
-        private$is_predicted_cur_iter[i] <- FALSE
+        private$is_predicted_cur_iter[[i]] <- FALSE
       }
       return(ret)
     },
     rollback_one_iter = function() {
       lgb.call("LGBM_BoosterRollbackOneIter_R", ret=NULL, private$handle)
       for (i in 1:length(private$is_predicted_cur_iter)) {
-        private$is_predicted_cur_iter[i] <- FALSE
+        private$is_predicted_cur_iter[[i]] <- FALSE
       }
       return(self)
     },
     current_iter = function() {
       cur_iter <- as.integer(0)
-      return(lgb.call("LGBM_BoosterGetCurrentIteration_R",  ret=cur_iter, private$handle) + 1)
+      return(lgb.call("LGBM_BoosterGetCurrentIteration_R",  ret=cur_iter, private$handle))
     },
     eval = function(data, name, feval = NULL) {
       if (!lgb.check.r6.class(data, "lgb.Dataset")) {
@@ -134,7 +144,7 @@ Booster <- R6Class(
         data_idx <- 1
       } else {
         for (i in 1:length(private$valid_sets)) {
-          if (identical(data, private$valid_sets[i])) {
+          if (identical(data, private$valid_sets[[i]])) {
             data_idx <- i + 1
             break
           }
@@ -153,8 +163,7 @@ Booster <- R6Class(
       ret = list()
       for (i in 1:length(private$valid_sets)) {
         ret <-
-          append(ret,
-            list(private$inner_eval(private$name_valid_sets[i], i + 1, feval)))
+          append(ret, private$inner_eval(private$name_valid_sets[[i]], i + 1, feval))
       }
       return(ret)
     },
@@ -166,7 +175,7 @@ Booster <- R6Class(
         "LGBM_BoosterSaveModel_R",
         ret = NULL,
         private$handle,
-        num_iteration,
+        as.integer(num_iteration),
         lgb.c_str(filename)
       )
       return(self)
@@ -179,7 +188,7 @@ Booster <- R6Class(
         lgb.call.return.str(
           "LGBM_BoosterDumpModel_R",
           private$handle,
-          num_iteration
+          as.integer(num_iteration)
         )
       )
     },
@@ -216,50 +225,50 @@ Booster <- R6Class(
       if (idx > private$num_dataset) {
         stop("data_idx should not be greater than num_dataset")
       }
-      if (is.null(private$predict_buffer[idx])) {
+      if (is.null(private$predict_buffer[[idx]])) {
         npred <- as.integer(0)
         npred <-
           lgb.call("LGBM_BoosterGetNumPredict_R",
                 ret = npred,
                 private$handle,
-                idx - 1)
-        private$predict_buffer[idx] <- rep(0.0, npred)
+                as.integer(idx - 1))
+        private$predict_buffer[[idx]] <- rep(0.0, npred)
       }
-      if (!private$is_predicted_cur_iter[idx]) {
-        private$predict_buffer[idx] <- 
+      if (!private$is_predicted_cur_iter[[idx]]) {
+        private$predict_buffer[[idx]] <- 
           lgb.call(
             "LGBM_BoosterGetPredict_R",
-            ret=private$predict_buffer[idx],
+            ret=private$predict_buffer[[idx]],
             private$handle,
-            idx - 1
+            as.integer(idx - 1)
           )
-        private$is_predicted_cur_iter[idx] <- TRUE
+        private$is_predicted_cur_iter[[idx]] <- TRUE
       }
-      return(private$predict_buffer[idx])
+      return(private$predict_buffer[[idx]])
     },
     get_eval_info = function() {
       if (is.null(private$eval_names)) {
+        private$eval_names <- list()
         names <-
           lgb.call.return.str("LGBM_BoosterGetEvalNames_R", private$handle)
-        private$eval_names <- strsplit(names, "\t")
-        if (!is.null(private$eval_names)) {
+        if(nchar(names) > 0){
+          names <- as.list(strsplit(names, "\t"))
+          private$eval_names <- names
           private$higher_better_inner_eval <-
-            rep(FALSE, length(private$eval_names))
-          for (i in 1:length(private$eval_names)) {
-            if (startsWith(private$eval_names[i], "auc")
-                | startsWith(private$eval_names[i], "ndcg")) {
+            rep(FALSE, length(names))
+          for (i in 1:length(names)) {
+            if (startsWith(names[[i]], "auc")
+                | startsWith(names[[i]], "ndcg")) {
               private$higher_better_inner_eval[i] <- TRUE
             }
           }
+          
         }
-      }
-      if (is.null(private$eval_names)) {
-        private$eval_names <- list()
       }
       return(private$eval_names)
     },
     inner_eval = function(data_name, data_idx, feval = NULL) {
-      if (idx > private$num_dataset) {
+      if (data_idx > private$num_dataset) {
         stop("data_idx should not be greater than num_dataset")
       }
       private$get_eval_info()
@@ -269,11 +278,11 @@ Booster <- R6Class(
         tmp_vals <-
           lgb.call("LGBM_BoosterGetEval_R", ret=tmp_vals,
                 private$handle,
-                data_idx - 1)
-        for (i in 1:length(tmp_vals)) {
+                as.integer(data_idx - 1))
+        for (i in 1:length(private$eval_names)) {
           res <- list()
           res$data_name <- data_name
-          res$name <- private$eval_names[i]
+          res$name <- private$eval_names[[i]]
           res$value <- tmp_vals[i]
           res$higher_better <- private$higher_better_inner_eval[i]
           ret <- append(ret, list(res))
@@ -285,7 +294,7 @@ Booster <- R6Class(
         }
         data <- private$train_set
         if (data_idx > 1) {
-          data <- private$valid_sets[data_idx - 1]
+          data <- private$valid_sets[[data_idx - 1]]
         }
         res <- feval(private$inner_predict(data_idx), data)
         ret <- append(ret, list(res))
@@ -297,7 +306,7 @@ Booster <- R6Class(
 
 # internal helper method
 lgb.is.Booster <- function(x){
-  if(lgb.check.r6.class(reference, "lgb.Booster")){
+  if(lgb.check.r6.class(x, "lgb.Booster")){
     return(TRUE)
   } else{
     return(FALSE)
@@ -351,7 +360,7 @@ predict.lgb.Booster <- function(booster,
                         predleaf = FALSE,
                         header = FALSE,
                         reshape = FALSE) {
-  if(!lgb.is.booster(booster)){
+  if(!lgb.is.Booster(booster)){
     stop("predict.lgb.Booster: should input lgb.Booster object")
   }
   booster$predict(data, num_iteration, rawscore, predleaf, header, reshape)
@@ -369,7 +378,7 @@ predict.lgb.Booster <- function(booster,
 #' @rdname lgb.load 
 #' @export
 lgb.load <- function(filename){
-  if(!lgb.is.character(filename)){
+  if(!is.character(filename)){
     stop("lgb.load: filename should be character")
   }
   Booster$new(modelfile=filename)
@@ -389,13 +398,13 @@ lgb.load <- function(filename){
 #' @rdname lgb.save 
 #' @export
 lgb.save <- function(booster, filename, num_iteration=NULL){
-  if(!lgb.is.booster(booster)){
+  if(!lgb.is.Booster(booster)){
     stop("lgb.save: should input lgb.Booster object")
   }
-  if(!lgb.is.character(filename)){
+  if(!is.character(filename)){
     stop("lgb.save: filename should be character")
   }
-  booster$save_model(booster, filename, num_iteration)
+  booster$save_model(filename, num_iteration)
 }
 
 #' Dump LightGBM model to json
@@ -411,8 +420,8 @@ lgb.save <- function(booster, filename, num_iteration=NULL){
 #' @rdname lgb.dump 
 #' @export
 lgb.dump <- function(booster, num_iteration=NULL){
-  if(!lgb.is.booster(booster)){
+  if(!lgb.is.Booster(booster)){
     stop("lgb.dump: should input lgb.Booster object")
   }
-  booster$dump_model(booster, num_iteration)
+  booster$dump_model(num_iteration)
 }
