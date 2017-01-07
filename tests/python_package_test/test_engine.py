@@ -59,7 +59,7 @@ class TestEngine(unittest.TestCase):
         }
         evals_result, ret = test_template(params, X_y, log_loss)
         self.assertLess(ret, 0.15)
-        self.assertAlmostEqual(min(evals_result['eval']['logloss']), ret, places=5)
+        self.assertAlmostEqual(min(evals_result['eval']['binary_logloss']), ret, places=5)
 
     def test_regreesion(self):
         evals_result, ret = test_template()
