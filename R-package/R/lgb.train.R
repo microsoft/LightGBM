@@ -98,7 +98,7 @@ lgb.train <- function(params=list(), data, nrounds=10,
   data$set_categorical_feature(categorical_feature)
 
   vaild_contain_train <- FALSE
-  train_data_name <- "training"
+  train_data_name <- "train"
   reduced_valid_sets <- list()
   if(length(valids) > 0){
     for (key in names(valids)) {

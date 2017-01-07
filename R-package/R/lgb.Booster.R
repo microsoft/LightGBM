@@ -252,17 +252,16 @@ Booster <- R6Class(
     },
     get_eval_info = function() {
       if (is.null(private$eval_names)) {
-        private$eval_names <- list()
         names <-
           lgb.call.return.str("LGBM_BoosterGetEvalNames_R", private$handle)
         if(nchar(names) > 0){
-          names <- as.list(strsplit(names, "\t"))
+          names <- strsplit(names, "\t")[[1]]
           private$eval_names <- names
           private$higher_better_inner_eval <-
             rep(FALSE, length(names))
           for (i in 1:length(names)) {
-            if (startsWith(names[[i]], "auc")
-                | startsWith(names[[i]], "ndcg")) {
+            if (startsWith(names[i], "auc") |
+                startsWith(names[i], "ndcg")) {
               private$higher_better_inner_eval[i] <- TRUE
             }
           }
@@ -286,7 +285,7 @@ Booster <- R6Class(
         for (i in 1:length(private$eval_names)) {
           res <- list()
           res$data_name <- data_name
-          res$name <- private$eval_names[[i]]
+          res$name <- private$eval_names[i]
           res$value <- tmp_vals[i]
           res$higher_better <- private$higher_better_inner_eval[i]
           ret <- append(ret, list(res))
@@ -458,3 +457,42 @@ lgb.dump <- function(booster, num_iteration=NULL){
   }
   booster$dump_model(num_iteration)
 }
+
+#' Get record evaluation result from booster
+#' 
+#' Get record evaluation result from booster
+#' @param booster Object of class \code{lgb.Booster}
+#' @param data_name name of dataset
+#' @param data_name name of evaluation
+#' @param iters iterations, NULL will return all
+#' @param is_err TRUE will return evaluation error instead
+#' @return vector of evaluation result
+#' 
+#' @rdname lgb.get.eval.result
+#' @export
+lgb.get.eval.result <- function(booster, data_name, eval_name, iters=NULL, is_err=FALSE){
+  if(!lgb.is.Booster(booster)){
+    stop("lgb.get.eval.result: only can use booster to get eval result")
+  }
+  if(!is.character(data_name) | !is.character(eval_name)){
+    stop("lgb.get.eval.result: data_name and eval_name should be character")
+  }
+  if(is.null(booster$record_evals[[data_name]])){
+    stop("lgb.get.eval.result: wrong data name")
+  }
+  if(is.null(booster$record_evals[[data_name]][[eval_name]])){
+    stop("lgb.get.eval.result: wrong eval name")
+  }
+  result <- booster$record_evals[[data_name]][[eval_name]]$eval
+  if(is_err){
+    result <- booster$record_evals[[data_name]][[eval_name]]$eval_err
+  }
+  if(is.null(iters)){
+    return(as.numeric(result))
+  }
+  iters <- as.integer(iters)
+  delta <- booster$record_evals$start_iter - 1
+  iters <- iters - delta
+  return(as.numeric(result[iters]))
+}
+

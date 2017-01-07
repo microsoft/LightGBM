@@ -116,7 +116,7 @@ public:
   }
 
   inline static const char* Name() {
-    return "logloss";
+    return "binary_logloss";
   }
 };
 /*!
@@ -135,7 +135,7 @@ public:
   }
 
   inline static const char* Name() {
-    return "error";
+    return "binary_error";
   }
 };
 

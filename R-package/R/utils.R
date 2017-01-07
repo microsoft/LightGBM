@@ -136,6 +136,22 @@ lgb.check.eval <- function(params, eval) {
       params$metric <- append(params$metric, eval)
     }
   }
+  if (typeof(eval) != "closure"){
+    if(is.null(params$metric) | length(params$metric) == 0) {
+      # add default metric
+      if(is.character(params$objective)){
+        if(parameters$objective == "regression"){
+          params$metric <- "l2"
+        } else if(parameters$objective == "binary"){
+          params$metric <- "binary_logloss"
+        } else if(parameters$objective == "multiclass"){
+          params$metric <- "multi_logloss"
+        } else if(parameters$objective == "lambdarank"){
+          params$metric <- "ndcg"
+        }
+      }
+    }
+  }
   return(params)
 }
 

@@ -124,13 +124,29 @@ cb.record.evaluation <- function() {
     if(length(env$eval_err_list) > 0){
       is_eval_err <- TRUE
     }
+    if(length(env$model$record_evals) == 0){
+      for(j in 1:length(env$eval_list)) {
+        data_name <- env$eval_list[[j]]$data_name
+        name <- env$eval_list[[j]]$name
+        env$model$record_evals$start_iter <- env$begin_iteration
+        if(is.null(env$model$record_evals[[data_name]])){
+          env$model$record_evals[[data_name]] <- list()
+        }
+        env$model$record_evals[[data_name]][[name]] <- list()
+        env$model$record_evals[[data_name]][[name]]$eval <- list()
+        env$model$record_evals[[data_name]][[name]]$eval_err <- list()
+      }
+    }
     for(j in 1:length(env$eval_list)) {
       eval_res <- env$eval_list[[j]]
       eval_err <- NULL
       if(is_eval_err){
         eval_err <- env$eval_err_list[[j]]
       }
-      env$model$record_evals <- c(env$model$record_evals, list(c(iter=env$iteration, c(eval_res, eval_err))))
+      data_name <- eval_res$data_name
+      name <- eval_res$name
+      env$model$record_evals[[data_name]][[name]]$eval <- c(env$model$record_evals[[data_name]][[name]]$eval, eval_res$value)
+      env$model$record_evals[[data_name]][[name]]$eval_err <- c(env$model$record_evals[[data_name]][[name]]$eval_err, eval_err)
     }
     
   }
