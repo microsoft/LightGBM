@@ -2,11 +2,14 @@
 # pylint: disable = invalid-name, W0105, C0111, C0301
 """Scikit-Learn Wrapper interface for LightGBM."""
 from __future__ import absolute_import
+
 import inspect
 
 import numpy as np
-from .basic import LightGBMError, Dataset, IS_PY3
+
+from .basic import IS_PY3, Dataset, LightGBMError
 from .engine import train
+
 '''sklearn'''
 try:
     from sklearn.base import BaseEstimator

@@ -1,6 +1,7 @@
 # coding: utf-8
 # pylint: disable = invalid-name, W0105, C0301
 from __future__ import absolute_import
+
 import collections
 
 
@@ -30,12 +31,12 @@ CallbackEnv = collections.namedtuple(
 def _format_eval_result(value, show_stdv=True):
     """format metric string"""
     if len(value) == 4:
-        return '%s\'s %s:%g' % (value[0], value[1], value[2])
+        return '%s\'s %s: %g' % (value[0], value[1], value[2])
     elif len(value) == 5:
         if show_stdv:
-            return '%s\'s %s:%g+%g' % (value[0], value[1], value[2], value[4])
+            return '%s\'s %s: %g + %g' % (value[0], value[1], value[2], value[4])
         else:
-            return '%s\'s %s:%g' % (value[0], value[1], value[2])
+            return '%s\'s %s: %g' % (value[0], value[1], value[2])
     else:
         raise ValueError("Wrong metric value")
 
@@ -58,12 +59,8 @@ def print_evaluation(period=1, show_stdv=True):
     """
     def callback(env):
         """internal function"""
-        if not env.evaluation_result_list or period <= 0:
-            return
-        if (env.iteration + 1) % period == 0:
-            result = '\t'.join(
-                [_format_eval_result(x, show_stdv) for x in env.evaluation_result_list]
-            )
+        if period > 0 and env.evaluation_result_list and (env.iteration + 1) % period == 0:
+            result = '\t'.join([_format_eval_result(x, show_stdv) for x in env.evaluation_result_list])
             print('[%d]\t%s' % (env.iteration + 1, result))
     callback.order = 10
     return callback

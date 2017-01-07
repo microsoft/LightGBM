@@ -5,9 +5,11 @@ from __future__ import absolute_import
 
 import collections
 from operator import attrgetter
+
 import numpy as np
-from .basic import LightGBMError, _InnerPredictor, Dataset, Booster, is_str
+
 from . import callback
+from .basic import Booster, Dataset, LightGBMError, _InnerPredictor, is_str
 
 
 def train(params, train_set, num_boost_round=100,
@@ -213,6 +215,7 @@ class CVBooster(object):
                 ret.append(getattr(booster, name)(*args, **kwargs))
             return ret
         return handlerFunction
+
 
 try:
     from sklearn.model_selection import StratifiedKFold

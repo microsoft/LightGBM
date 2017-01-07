@@ -20,14 +20,14 @@ Refer to the walk through examples in `python-guide folder <https://github.com/M
 Troubleshooting
 --------
 
-Refer to `FAQ <https://github.com/Microsoft/LightGBM/tree/master/python-package/FAQ.md>`__ 
+Refer to `FAQ <https://github.com/Microsoft/LightGBM/tree/master/docs/FAQ.md>`__ 
 
 Developments
 --------
 
-The code style of python package follows `pep-8 <https://www.python.org/dev/peps/pep-0008/>`__. If you would like to make a contribution and not familiar with pep-8, please check the pep-8 style guide first. Otherwise, you won't pass the check. You should be careful about:
+The code style of python package follows `pep8 <https://www.python.org/dev/peps/pep-0008/>`__. If you would like to make a contribution and not familiar with pep-8, please check the pep8 style guide first. Otherwise, you won't pass the check. You should be careful about:
 
-- E1 Indentation (check pep-8 link above)
+- E1 Indentation (check pep8 link above)
 - E202 whitespace before and after brackets
 - E225 missing whitespace around operator
 - E226 missing whitespace around arithmetic operator

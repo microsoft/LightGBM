@@ -1,16 +1,22 @@
 LightGBM FAQ
 =======================
 
+###Catalog
+
+- [Python-package](FAQ.md#python-package)
+
+###Python-package
+
 - **Question 1**: I see error messages like this when install from github using `python setup.py install`.
 
-```
-error: Error: setup script specifies an absolute path:
+    ```
+    error: Error: setup script specifies an absolute path:
 
-/Users/Microsoft/LightGBM/python-package/lightgbm/../../lib_lightgbm.so
+    /Users/Microsoft/LightGBM/python-package/lightgbm/../../lib_lightgbm.so
 
-setup() arguments must *always* be /-separated paths relative to the
-setup.py directory, *never* absolute paths.
-```
+    setup() arguments must *always* be /-separated paths relative to the
+    setup.py directory, *never* absolute paths.
+    ```
 
 - **Solution 1**: please check [this thread on stackoverflow](http://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path).
 
@@ -20,6 +26,5 @@ setup.py directory, *never* absolute paths.
 
   + get label(or weight/init_score/group) before contruct dataset, it's same as get `self.label`
   + set label(or weight/init_score/group) before contruct dataset, it's same as `self.label=some_label_array`
-  + get num_data(or num_feature) before contruct dataset, you can get data with `self.data`, then use some code like `self.data.shape`
-  + set predictor(or reference/categorical feature) after contruct dataset, you should set free_raw_data as False or init a Dataset object with the same raw data again
-  + you can also use Dataset.contruct() to contruct dataset manually, but it's not recommended.
+  + get num_data(or num_feature) before contruct dataset, you can get data with `self.data`, then if your data is `numpy.ndarray`, use some code like `self.data.shape`
+  + set predictor(or reference/categorical feature) after contruct dataset, you should set free_raw_data=False or init a Dataset object with the same raw data
