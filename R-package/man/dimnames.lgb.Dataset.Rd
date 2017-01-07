@@ -5,12 +5,12 @@
 \alias{dimnames<-.lgb.Dataset}
 \title{Handling of column names of \code{lgb.Dataset}}
 \usage{
-\method{dimnames}{lgb.Dataset}(dataset)
+\method{dimnames}{lgb.Dataset}(x)
 
 \method{dimnames}{lgb.Dataset}(x) <- value
 }
 \arguments{
-\item{dataset}{object of class \code{lgb.Dataset}}
+\item{x}{object of class \code{lgb.Dataset}}
 
 \item{value}{a list of two elements: the first one is ignored
 and the second one is column names}
@@ -30,6 +30,7 @@ Since row names are irrelevant, it is recommended to use \code{colnames} directl
 data(agaricus.train, package='lightgbm')
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label=train$label)
+lgb.Dataset.construct(dtrain)
 dimnames(dtrain)
 colnames(dtrain)
 colnames(dtrain) <- make.names(1:ncol(train$data))

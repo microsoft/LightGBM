@@ -30,9 +30,6 @@ dtrain <- lgb.Dataset(train$data, label=train$label)
 
 dsub <- slice(dtrain, 1:42)
 labels1 <- getinfo(dsub, 'label')
-dsub <- dtrain[1:42, ]
-labels2 <- getinfo(dsub, 'label')
-all.equal(labels1, labels2)
 
 }
 

@@ -4,11 +4,11 @@
 \alias{predict.lgb.Booster}
 \title{Predict method for LightGBM model}
 \usage{
-\method{predict}{lgb.Booster}(booster, data, num_iteration = NULL,
+\method{predict}{lgb.Booster}(object, data, num_iteration = NULL,
   rawscore = FALSE, predleaf = FALSE, header = FALSE, reshape = FALSE)
 }
 \arguments{
-\item{booster}{Object of class \code{lgb.Booster}}
+\item{object}{Object of class \code{lgb.Booster}}
 
 \item{data}{a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename}
 

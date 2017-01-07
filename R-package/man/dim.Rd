@@ -4,10 +4,10 @@
 \alias{dim.lgb.Dataset}
 \title{Dimensions of lgb.Dataset}
 \usage{
-\method{dim}{lgb.Dataset}(dataset, ...)
+\method{dim}{lgb.Dataset}(x, ...)
 }
 \arguments{
-\item{dataset}{Object of class \code{lgb.Dataset}}
+\item{x}{Object of class \code{lgb.Dataset}}
 
 \item{...}{other parameters}
 }

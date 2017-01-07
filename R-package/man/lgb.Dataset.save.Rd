@@ -21,6 +21,6 @@ save \code{lgb.Dataset} to binary file
 data(agaricus.train, package='lightgbm')
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label=train$label)
-lgb.Dataset.save(dtarin, "data.bin")
+lgb.Dataset.save(dtrain, "data.bin")
 }
 

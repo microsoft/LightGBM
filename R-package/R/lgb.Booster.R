@@ -322,7 +322,7 @@ lgb.is.Booster <- function(x){
 #' 
 #' Predicted values based on class \code{lgb.Booster}
 #' 
-#' @param booster Object of class \code{lgb.Booster}
+#' @param object Object of class \code{lgb.Booster}
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
 #' @param num_iteration number of iteration want to predict with, NULL or <= 0 means use best iteration
 #' @param rawscore whether the prediction should be returned in the for of original untransformed 
@@ -356,17 +356,17 @@ lgb.is.Booster <- function(x){
 #' 
 #' @rdname predict.lgb.Booster
 #' @export
-predict.lgb.Booster <- function(booster, 
+predict.lgb.Booster <- function(object, 
                         data,
                         num_iteration = NULL,
                         rawscore = FALSE,
                         predleaf = FALSE,
                         header = FALSE,
                         reshape = FALSE) {
-  if(!lgb.is.Booster(booster)){
+  if(!lgb.is.Booster(object)){
     stop("predict.lgb.Booster: should input lgb.Booster object")
   }
-  booster$predict(data, num_iteration, rawscore, predleaf, header, reshape)
+  object$predict(data, num_iteration, rawscore, predleaf, header, reshape)
 }
 
 #' Load LightGBM model
@@ -465,7 +465,7 @@ lgb.dump <- function(booster, num_iteration=NULL){
 #' Get record evaluation result from booster
 #' @param booster Object of class \code{lgb.Booster}
 #' @param data_name name of dataset
-#' @param data_name name of evaluation
+#' @param eval_name name of evaluation
 #' @param iters iterations, NULL will return all
 #' @param is_err TRUE will return evaluation error instead
 #' @return vector of evaluation result

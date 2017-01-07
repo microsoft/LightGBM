@@ -524,7 +524,7 @@ lgb.Dataset.construct <- function(dataset) {
 #' Dimensions of lgb.Dataset
 #'
 #' Returns a vector of numbers of rows and of columns in an \code{lgb.Dataset}.
-#' @param dataset Object of class \code{lgb.Dataset}
+#' @param x Object of class \code{lgb.Dataset}
 #' @param ... other parameters
 #' @return a vector of numbers of rows and of columns
 #'
@@ -543,11 +543,11 @@ lgb.Dataset.construct <- function(dataset) {
 #'
 #' @rdname dim
 #' @export
-dim.lgb.Dataset <- function(dataset, ...) {
-  if(!lgb.is.Dataset(dataset)) {
+dim.lgb.Dataset <- function(x, ...) {
+  if(!lgb.is.Dataset(x)) {
     stop("dim.lgb.Dataset: input data should be lgb.Dataset object")
   }
-  return(dataset$dim())
+  return(x$dim())
 }
 
 #' Handling of column names of \code{lgb.Dataset}
@@ -557,7 +557,7 @@ dim.lgb.Dataset <- function(dataset, ...) {
 #' Only column names are supported for \code{lgb.Dataset}, thus setting of
 #' row names would have no effect and returnten row names would be NULL.
 #'
-#' @param dataset object of class \code{lgb.Dataset}
+#' @param x object of class \code{lgb.Dataset}
 #' @param value a list of two elements: the first one is ignored
 #'        and the second one is column names
 #'
@@ -569,6 +569,7 @@ dim.lgb.Dataset <- function(dataset, ...) {
 #' data(agaricus.train, package='lightgbm')
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label=train$label)
+#' lgb.Dataset.construct(dtrain)
 #' dimnames(dtrain)
 #' colnames(dtrain)
 #' colnames(dtrain) <- make.names(1:ncol(train$data))
@@ -576,11 +577,11 @@ dim.lgb.Dataset <- function(dataset, ...) {
 #'
 #' @rdname dimnames.lgb.Dataset
 #' @export
-dimnames.lgb.Dataset <- function(dataset) {
-  if(!lgb.is.Dataset(dataset)) {
+dimnames.lgb.Dataset <- function(x) {
+  if(!lgb.is.Dataset(x)) {
     stop("dimnames.lgb.Dataset: input data should be lgb.Dataset object")
   }
-  return(list(NULL, dataset$get_colnames()))
+  return(list(NULL, x$get_colnames()))
 }
 
 #' @rdname dimnames.lgb.Dataset
@@ -621,9 +622,6 @@ dimnames.lgb.Dataset <- function(dataset) {
 #'
 #' dsub <- slice(dtrain, 1:42)
 #' labels1 <- getinfo(dsub, 'label')
-#' dsub <- dtrain[1:42, ]
-#' labels2 <- getinfo(dsub, 'label')
-#' all.equal(labels1, labels2)
 #'
 #' @export
 slice <- function(dataset, ...)
@@ -662,7 +660,7 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
 #' data(agaricus.train, package='lightgbm')
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label=train$label)
-#'
+#' lgb.Dataset.construct(dtrain)
 #' labels <- getinfo(dtrain, 'label')
 #' setinfo(dtrain, 'label', 1-labels)
 #'
@@ -705,7 +703,7 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
 #' data(agaricus.train, package='lightgbm')
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label=train$label)
-#'
+#' lgb.Dataset.construct(dtrain)
 #' labels <- getinfo(dtrain, 'label')
 #' setinfo(dtrain, 'label', 1-labels)
 #' labels2 <- getinfo(dtrain, 'label')
@@ -783,7 +781,7 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 #' data(agaricus.train, package='lightgbm')
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label=train$label)
-#' lgb.Dataset.save(dtarin, "data.bin")
+#' lgb.Dataset.save(dtrain, "data.bin")
 #' @rdname lgb.Dataset.save
 #' @export
 lgb.Dataset.save <- function(dataset, fname) {

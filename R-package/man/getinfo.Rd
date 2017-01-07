@@ -36,7 +36,7 @@ The \code{name} field can be one of the following:
 data(agaricus.train, package='lightgbm')
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label=train$label)
-
+lgb.Dataset.construct(dtrain)
 labels <- getinfo(dtrain, 'label')
 setinfo(dtrain, 'label', 1-labels)
 

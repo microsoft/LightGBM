@@ -12,11 +12,11 @@ lgb.get.eval.result(booster, data_name, eval_name, iters = NULL,
 
 \item{data_name}{name of dataset}
 
+\item{eval_name}{name of evaluation}
+
 \item{iters}{iterations, NULL will return all}
 
 \item{is_err}{TRUE will return evaluation error instead}
-
-\item{data_name}{name of evaluation}
 }
 \value{
 vector of evaluation result
