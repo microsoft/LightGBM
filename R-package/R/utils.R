@@ -140,13 +140,13 @@ lgb.check.eval <- function(params, eval) {
     if(is.null(params$metric) | length(params$metric) == 0) {
       # add default metric
       if(is.character(params$objective)){
-        if(parameters$objective == "regression"){
+        if(params$objective == "regression"){
           params$metric <- "l2"
-        } else if(parameters$objective == "binary"){
+        } else if(params$objective == "binary"){
           params$metric <- "binary_logloss"
-        } else if(parameters$objective == "multiclass"){
+        } else if(params$objective == "multiclass"){
           params$metric <- "multi_logloss"
-        } else if(parameters$objective == "lambdarank"){
+        } else if(params$objective == "lambdarank"){
           params$metric <- "ndcg"
         }
       }

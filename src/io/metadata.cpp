@@ -8,9 +8,17 @@
 namespace LightGBM {
 
 Metadata::Metadata() {
+  num_weights_ = 0;
+  num_init_score_ = 0;
+  num_data_ = 0;
+  num_queries_ = 0;
 }
 
 void Metadata::Init(const char * data_filename) {
+  num_weights_ = 0;
+  num_init_score_ = 0;
+  num_data_ = 0;
+  num_queries_ = 0;
   data_filename_ = data_filename;
   // for lambdarank, it needs query data for partition data in parallel learning
   LoadQueryBoundaries();
@@ -23,6 +31,9 @@ Metadata::~Metadata() {
 }
 
 void Metadata::Init(data_size_t num_data, int weight_idx, int query_idx) {
+  num_weights_ = 0;
+  num_init_score_ = 0;
+  num_queries_ = 0;
   num_data_ = num_data;
   label_ = std::vector<float>(num_data_);
   if (weight_idx >= 0) {

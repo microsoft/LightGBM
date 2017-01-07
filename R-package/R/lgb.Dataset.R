@@ -64,7 +64,7 @@ Dataset <- R6Class(
       return(ret)
     },
     construct = function() {
-      if (!is.null(private$handle)) {
+      if (!lgb.is.null.handle(private$handle)) {
         return(self)
       }
       # Get feature names
@@ -74,8 +74,8 @@ Dataset <- R6Class(
         cnames <- colnames(private$raw_data)
       }
       # set feature names if not exist
-      if (is.null(private$colnames)) {
-        private$colnames <- as.list(cnames)
+      if (is.null(private$colnames) & !is.null(cnames)) {
+        private$colnames <- as.character(cnames)
       }
       # Get categorical feature index
       if (!is.null(private$categorical_feature)) {
@@ -194,11 +194,9 @@ Dataset <- R6Class(
         init_score <- as.vector(init_score)
         private$info$init_score <- init_score
       }
-      
-      if (private$free_raw_data) {
+      if (private$free_raw_data & !is.character(private$raw_data)) {
         private$raw_data <- NULL
       }
-      
       if (length(private$info) > 0) {
         # set infos
         for (i in 1:length(private$info)) {
@@ -206,14 +204,13 @@ Dataset <- R6Class(
           self$setinfo(names(p), p[[1]])
         }
       }
-      
       if (is.null(self$getinfo("label"))) {
         stop("lgb.Dataset.construct: label should be set")
       }
       return(self)
     },
     dim = function() {
-      if (!is.null(private$handle)) {
+      if (!lgb.is.null.handle(private$handle)) {
         num_row <- as.integer(0)
         num_col <- as.integer(0)
         
@@ -226,24 +223,32 @@ Dataset <- R6Class(
         return(dim(private$raw_data))
       } else {
         stop(
-          "dim: cannot get Dimensions before dataset constructed, please call construct.lgb.Dataset explicit"
+          "dim: cannot get Dimensions before dataset constructed, please call lgb.Dataset.construct explicit"
         )
       }
     },
     get_colnames = function() {
-      if (is.null(private$colnames) & !is.null(private$handle)) {
+      if (!lgb.is.null.handle(private$handle)) {
         cnames <- lgb.call.return.str("LGBM_DatasetGetFeatureNames_R",
-                                      private$handle,
-                                      PACKAGE = "lightgbm")
-        private$colnames <- as.list(strsplit(cnames, "\t"))
+                                      private$handle)
+        private$colnames <- as.character(strsplit(cnames, "\t")[[1]])
+        return(private$colnames)
+      } else if (is.matrix(private$raw_data) |
+                 class(private$raw_data) == "dgCMatrix") {
+        return(colnames(private$raw_data))
+      } else {
+        stop(
+          "colnames: cannot get colnames before dataset constructed, please call lgb.Dataset.construct explicit"
+        )
       }
-      return(private$colnames)
     },
     set_colnames = function(colnames) {
-      private$colnames <- as.list(colnames)
-      if (!is.null(private$colnames) &
-          !lgb.is.null.handle(private$handle)) {
-        merged_name <- as.character(paste(private$colnames, collapse = "\t"))
+      if(is.null(colnames)) return(self)
+      colnames <- as.character(colnames)
+      if(length(colnames) == 0) return(self)
+      private$colnames <- colnames
+      if (!lgb.is.null.handle(private$handle)) {
+        merged_name <- paste0(as.list(private$colnames), collapse = "\t")
         lgb.call("LGBM_DatasetSetFeatureNames_R",
                  ret = NULL,
                  private$handle,
@@ -261,7 +266,7 @@ Dataset <- R6Class(
         )
       }
       if (is.null(private$info[[name]]) &
-          !is.null(private$handle)) {
+          !lgb.is.null.handle(private$handle)) {
         info_len <- as.integer(0)
         info_len <-
           lgb.call("LGBM_DatasetGetFieldSize_R",
@@ -300,7 +305,7 @@ Dataset <- R6Class(
         info <- as.numeric(info)
       }
       private$info[[name]] <- info
-      if (!is.null(private$handle) & !is.null(info)) {
+      if (!lgb.is.null.handle(private$handle) & !is.null(info)) {
         if (length(info) > 0) {
           lgb.call(
             "LGBM_DatasetSetField_R",
@@ -595,7 +600,7 @@ dimnames.lgb.Dataset <- function(dataset) {
          " colnames to a ",
          ncol(x),
          " column lgb.Dataset")
-  x$set_colnames(value[2])
+  x$set_colnames(value[[2]])
   return(x)
 }
 

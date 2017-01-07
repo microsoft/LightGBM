@@ -137,7 +137,7 @@ SEXP LGBM_DatasetSetFeatureNames_R(SEXP handle,
   R_API_BEGIN();
   auto vec_names = Common::Split(R_CHAR_PTR(feature_names), "\t");
   std::vector<const char*> vec_sptr;
-  int64_t len = static_cast<int64_t>(vec_names.size());
+  int len = static_cast<int>(vec_names.size());
   for (int i = 0; i < len; ++i) {
     vec_sptr.push_back(vec_names[i].c_str());
   }
@@ -159,6 +159,7 @@ SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle,
   std::vector<char*> ptr_names(len);
   for (int i = 0; i < len; ++i) {
     names[i].resize(256);
+    ptr_names[i] = names[i].data();
   }
   int out_len;
   CHECK_CALL(LGBM_DatasetGetFeatureNames(R_GET_PTR(handle),
