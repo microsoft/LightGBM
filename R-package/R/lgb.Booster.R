@@ -32,7 +32,6 @@ Booster <- R6Class(
                 handle,
                 private$init_predictor$.__enclos_env__$private$handle)
         }
-        private$predict_buffer <- c(private$predict_buffer, NULL)
         private$is_predicted_cur_iter <-
           c(private$is_predicted_cur_iter, FALSE)
       } else if (!is.null(modelfile)) {
@@ -74,7 +73,6 @@ Booster <- R6Class(
       private$valid_sets <- c(private$valid_sets, data)
       private$name_valid_sets <- c(private$name_valid_sets, name)
       private$num_dataset <- private$num_dataset + 1
-      private$predict_buffer <- c(private$predict_buffer, NULL)
       private$is_predicted_cur_iter <-
         c(private$is_predicted_cur_iter, FALSE)
       return(self)
@@ -101,7 +99,6 @@ Booster <- R6Class(
               private$handle,
               train_set$.__enclos_env__$private$get_handle())
         private$train_set = train_set
-        private$predict_buffer[[1]] <- NULL
       }
       if (is.null(fobj)) {
         ret <-
@@ -226,29 +223,33 @@ Booster <- R6Class(
     eval_names = NULL,
     higher_better_inner_eval = NULL,
     inner_predict = function(idx) {
+      data_name <- private$name_train_set
+      if(idx > 1){
+        data_name <- private$name_valid_sets[[idx - 1]]
+      }
       if (idx > private$num_dataset) {
         stop("data_idx should not be greater than num_dataset")
       }
-      if (is.null(private$predict_buffer[[idx]])) {
+      if (is.null(private$predict_buffer[[data_name]])) {
         npred <- as.integer(0)
         npred <-
           lgb.call("LGBM_BoosterGetNumPredict_R",
                 ret = npred,
                 private$handle,
                 as.integer(idx - 1))
-        private$predict_buffer[[idx]] <- rep(0.0, npred)
+        private$predict_buffer[[data_name]] <- rep(0.0, npred)
       }
       if (!private$is_predicted_cur_iter[[idx]]) {
-        private$predict_buffer[[idx]] <- 
+        private$predict_buffer[[data_name]] <- 
           lgb.call(
             "LGBM_BoosterGetPredict_R",
-            ret=private$predict_buffer[[idx]],
+            ret=private$predict_buffer[[data_name]],
             private$handle,
             as.integer(idx - 1)
           )
         private$is_predicted_cur_iter[[idx]] <- TRUE
       }
-      return(private$predict_buffer[[idx]])
+      return(private$predict_buffer[[data_name]])
     },
     get_eval_info = function() {
       if (is.null(private$eval_names)) {
@@ -300,6 +301,7 @@ Booster <- R6Class(
           data <- private$valid_sets[[data_idx - 1]]
         }
         res <- feval(private$inner_predict(data_idx), data)
+        res$data_name <- data_name
         ret <- append(ret, list(res))
       }
       return(ret)

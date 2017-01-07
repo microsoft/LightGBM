@@ -61,9 +61,8 @@ lgb.train <- function(params=list(), data, nrounds=10,
     params$objective <- "NONE"
   } 
   if (typeof(eval) == "closure"){
-    feavl <- eval
+    feval <- eval
   }
-
   lgb.check.params(params)
   predictor <- NULL
   if(is.character(init_model)){
@@ -159,11 +158,10 @@ lgb.train <- function(params=list(), data, nrounds=10,
     eval_list <- list()
     if(length(valids) > 0){
       if(vaild_contain_train){
-        eval_list <- append(eval_list, booster$eval_train())
+        eval_list <- append(eval_list, booster$eval_train(feval=feval))
       }
-      eval_list <- append(eval_list, booster$eval_valid())
+      eval_list <- append(eval_list, booster$eval_valid(feval=feval))
     }
-
     env$eval_list <- eval_list
     
     for (f in cb$post_iter) f(env)

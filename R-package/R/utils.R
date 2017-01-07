@@ -132,7 +132,7 @@ lgb.check.eval <- function(params, eval) {
   }
   if(!is.null(eval)){
     # append metric
-    if(is.character(eval) || is.list(eval) || length(eval) > 0){
+    if(is.character(eval) || is.list(eval)){
       params$metric <- append(params$metric, eval)
     }
   }
