@@ -485,11 +485,11 @@ DllExport int LGBM_DatasetGetSubset(
 DllExport int LGBM_DatasetSetFeatureNames(
   DatasetHandle handle,
   const char** feature_names,
-  int64_t num_feature_names) {
+  int num_feature_names) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
   std::vector<std::string> feature_names_str;
-  for (int64_t i = 0; i < num_feature_names; ++i) {
+  for (int i = 0; i < num_feature_names; ++i) {
     feature_names_str.emplace_back(feature_names[i]);
   }
   dataset->set_feature_names(feature_names_str);
@@ -499,12 +499,12 @@ DllExport int LGBM_DatasetSetFeatureNames(
 DllExport int LGBM_DatasetGetFeatureNames(
   DatasetHandle handle,
   char** feature_names,
-  int64_t* num_feature_names) {
+  int* num_feature_names) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
   auto inside_feature_name = dataset->feature_names();
-  *num_feature_names = static_cast<int64_t>(inside_feature_name.size());
-  for (int64_t i = 0; i < *num_feature_names; ++i) {
+  *num_feature_names = static_cast<int>(inside_feature_name.size());
+  for (int i = 0; i < *num_feature_names; ++i) {
     std::strcpy(feature_names[i], inside_feature_name[i].c_str());
   }
   API_END();
@@ -527,7 +527,7 @@ DllExport int LGBM_DatasetSaveBinary(DatasetHandle handle,
 DllExport int LGBM_DatasetSetField(DatasetHandle handle,
   const char* field_name,
   const void* field_data,
-  int64_t num_element,
+  int num_element,
   int type) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
@@ -543,7 +543,7 @@ DllExport int LGBM_DatasetSetField(DatasetHandle handle,
 
 DllExport int LGBM_DatasetGetField(DatasetHandle handle,
   const char* field_name,
-  int64_t* out_len,
+  int* out_len,
   const void** out_ptr,
   int* out_type) {
   API_BEGIN();
@@ -562,7 +562,7 @@ DllExport int LGBM_DatasetGetField(DatasetHandle handle,
 }
 
 DllExport int LGBM_DatasetGetNumData(DatasetHandle handle,
-  int64_t* out) {
+  int* out) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
   *out = dataset->num_data();
@@ -570,7 +570,7 @@ DllExport int LGBM_DatasetGetNumData(DatasetHandle handle,
 }
 
 DllExport int LGBM_DatasetGetNumFeature(DatasetHandle handle,
-  int64_t* out) {
+  int* out) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
   *out = dataset->num_total_features();
@@ -591,11 +591,11 @@ DllExport int LGBM_BoosterCreate(const DatasetHandle train_data,
 
 DllExport int LGBM_BoosterCreateFromModelfile(
   const char* filename,
-  int64_t* out_num_iterations,
+  int* out_num_iterations,
   BoosterHandle* out) {
   API_BEGIN();
   auto ret = std::unique_ptr<Booster>(new Booster(filename));
-  *out_num_iterations = static_cast<int64_t>(ret->GetBoosting()->GetCurrentIteration());
+  *out_num_iterations = ret->GetBoosting()->GetCurrentIteration();
   *out = ret.release();
   API_END();
 }
@@ -640,7 +640,7 @@ DllExport int LGBM_BoosterResetParameter(BoosterHandle handle, const char* param
   API_END();
 }
 
-DllExport int LGBM_BoosterGetNumClasses(BoosterHandle handle, int64_t* out_len) {
+DllExport int LGBM_BoosterGetNumClasses(BoosterHandle handle, int* out_len) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetBoosting()->NumberOfClasses();
@@ -679,21 +679,21 @@ DllExport int LGBM_BoosterRollbackOneIter(BoosterHandle handle) {
   API_END();
 }
 
-DllExport int LGBM_BoosterGetCurrentIteration(BoosterHandle handle, int64_t* out_iteration) {
+DllExport int LGBM_BoosterGetCurrentIteration(BoosterHandle handle, int* out_iteration) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_iteration = ref_booster->GetBoosting()->GetCurrentIteration();
   API_END();
 }
 
-DllExport int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int64_t* out_len) {
+DllExport int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int* out_len) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetEvalCounts();
   API_END();
 }
 
-DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int64_t* out_len, char** out_strs) {
+DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int* out_len, char** out_strs) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetEvalNames(out_strs);
@@ -702,13 +702,13 @@ DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int64_t* out_len, c
 
 DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
   int data_idx,
-  int64_t* out_len,
+  int* out_len,
   double* out_results) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto boosting = ref_booster->GetBoosting();
   auto result_buf = boosting->GetEvalAt(data_idx);
-  *out_len = static_cast<int64_t>(result_buf.size());
+  *out_len = static_cast<int>(result_buf.size());
   for (size_t i = 0; i < result_buf.size(); ++i) {
     (out_results)[i] = static_cast<double>(result_buf[i]);
   }
@@ -738,7 +738,7 @@ DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
   const char* data_filename,
   int data_has_header,
   int predict_type,
-  int64_t num_iteration,
+  int num_iteration,
   const char* result_filename) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
@@ -762,9 +762,9 @@ int64_t GetNumPredOneRow(const Booster* ref_booster, int predict_type, int64_t n
 }
 
 DllExport int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
-  int64_t num_row,
+  int num_row,
   int predict_type,
-  int64_t num_iteration,
+  int num_iteration,
   int64_t* out_len) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
@@ -782,7 +782,7 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   int64_t nelem,
   int64_t,
   int predict_type,
-  int64_t num_iteration,
+  int num_iteration,
   int64_t* out_len,
   double* out_result) {
   API_BEGIN();
@@ -813,7 +813,7 @@ DllExport int LGBM_BoosterPredictForCSC(BoosterHandle handle,
   int64_t nelem,
   int64_t num_row,
   int predict_type,
-  int64_t num_iteration,
+  int num_iteration,
   int64_t* out_len,
   double* out_result) {
   API_BEGIN();
@@ -855,7 +855,7 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
   int32_t ncol,
   int is_row_major,
   int predict_type,
-  int64_t num_iteration,
+  int num_iteration,
   int64_t* out_len,
   double* out_result) {
   API_BEGIN();
@@ -887,12 +887,12 @@ DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
 DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
   int num_iteration,
   int buffer_len,
-  int64_t* out_len,
+  int* out_len,
   char* out_str) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   std::string model = ref_booster->DumpModel(num_iteration);
-  *out_len = static_cast<int64_t>(model.size()) + 1;
+  *out_len = static_cast<int>(model.size()) + 1;
   if (*out_len <= buffer_len) {
     std::strcpy(out_str, model.c_str());
   }

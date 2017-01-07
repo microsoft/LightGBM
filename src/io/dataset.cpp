@@ -98,7 +98,7 @@ bool Dataset::SetIntField(const char* field_name, const int* field_data, data_si
   return true;
 }
 
-bool Dataset::GetFloatField(const char* field_name, int64_t* out_len, const float** out_ptr) {
+bool Dataset::GetFloatField(const char* field_name, data_size_t* out_len, const float** out_ptr) {
   std::string name(field_name);
   name = Common::Trim(name);
   if (name == std::string("label") || name == std::string("target")) {
@@ -116,7 +116,7 @@ bool Dataset::GetFloatField(const char* field_name, int64_t* out_len, const floa
   return true;
 }
 
-bool Dataset::GetIntField(const char* field_name, int64_t* out_len, const int** out_ptr) {
+bool Dataset::GetIntField(const char* field_name, data_size_t* out_len, const int** out_ptr) {
   std::string name(field_name);
   name = Common::Trim(name);
   if (name == std::string("query") || name == std::string("group")) {

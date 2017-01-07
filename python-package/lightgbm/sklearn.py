@@ -5,7 +5,7 @@ from __future__ import absolute_import
 import inspect
 
 import numpy as np
-from .basic import LightGBMError, Dataset
+from .basic import LightGBMError, Dataset, IS_PY3
 from .engine import train
 '''sklearn'''
 try:
@@ -24,6 +24,13 @@ except ImportError:
     LGBMClassifierBase = object
     LGBMRegressorBase = object
     LGBMLabelEncoder = None
+
+
+def _argc(func):
+    if IS_PY3:
+        return len(inspect.signature(func).parameters)
+    else:
+        return len(inspect.getargspec(func).args)
 
 
 def _objective_function_wrapper(func):
@@ -57,7 +64,7 @@ def _objective_function_wrapper(func):
     def inner(preds, dataset):
         """internal function"""
         labels = dataset.get_label()
-        argc = len(inspect.getargspec(func).args)
+        argc = _argc(func)
         if argc == 2:
             grad, hess = func(labels, preds)
         elif argc == 3:
@@ -122,7 +129,7 @@ def _eval_function_wrapper(func):
     def inner(preds, dataset):
         """internal function"""
         labels = dataset.get_label()
-        argc = len(inspect.getargspec(func).args)
+        argc = _argc(func)
         if argc == 2:
             return func(labels, preds)
         elif argc == 3:

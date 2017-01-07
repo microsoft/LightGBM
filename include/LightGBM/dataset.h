@@ -336,9 +336,9 @@ public:
 
   bool SetIntField(const char* field_name, const int* field_data, data_size_t num_element);
 
-  bool GetFloatField(const char* field_name, int64_t* out_len, const float** out_ptr);
+  bool GetFloatField(const char* field_name, data_size_t* out_len, const float** out_ptr);
 
-  bool GetIntField(const char* field_name, int64_t* out_len, const int** out_ptr);
+  bool GetIntField(const char* field_name, data_size_t* out_len, const int** out_ptr);
 
   /*!
   * \brief Save current dataset into binary file, will save to "filename.bin"
