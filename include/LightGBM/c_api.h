@@ -163,7 +163,7 @@ DllExport int LGBM_DatasetGetSubset(
 DllExport int LGBM_DatasetSetFeatureNames(
   DatasetHandle handle,
   const char** feature_names,
-  int64_t num_feature_names);
+  int num_feature_names);
 
 
 /*!
@@ -176,7 +176,7 @@ DllExport int LGBM_DatasetSetFeatureNames(
 DllExport int LGBM_DatasetGetFeatureNames(
   DatasetHandle handle,
   char** feature_names,
-  int64_t* num_feature_names);
+  int* num_feature_names);
 
 
 /*!
@@ -208,7 +208,7 @@ DllExport int LGBM_DatasetSaveBinary(DatasetHandle handle,
 DllExport int LGBM_DatasetSetField(DatasetHandle handle,
   const char* field_name,
   const void* field_data,
-  int64_t num_element,
+  int num_element,
   int type);
 
 /*!
@@ -222,7 +222,7 @@ DllExport int LGBM_DatasetSetField(DatasetHandle handle,
 */
 DllExport int LGBM_DatasetGetField(DatasetHandle handle,
   const char* field_name,
-  int64_t* out_len,
+  int* out_len,
   const void** out_ptr,
   int* out_type);
 
@@ -233,7 +233,7 @@ DllExport int LGBM_DatasetGetField(DatasetHandle handle,
 * \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_DatasetGetNumData(DatasetHandle handle,
-  int64_t* out);
+  int* out);
 
 /*!
 * \brief get number of features
@@ -242,7 +242,7 @@ DllExport int LGBM_DatasetGetNumData(DatasetHandle handle,
 * \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_DatasetGetNumFeature(DatasetHandle handle,
-  int64_t* out);
+  int* out);
 
 // --- start Booster interfaces
 
@@ -266,7 +266,7 @@ DllExport int LGBM_BoosterCreate(const DatasetHandle train_data,
 */
 DllExport int LGBM_BoosterCreateFromModelfile(
   const char* filename,
-  int64_t* out_num_iterations,
+  int* out_num_iterations,
   BoosterHandle* out);
 
 
@@ -313,12 +313,12 @@ DllExport int LGBM_BoosterResetTrainingData(BoosterHandle handle,
 DllExport int LGBM_BoosterResetParameter(BoosterHandle handle, const char* parameters);
 
 /*!
-* \brief Get number of class 
+* \brief Get number of class
 * \param handle handle
 * \param out_len number of class
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterGetNumClasses(BoosterHandle handle, int64_t* out_len);
+DllExport int LGBM_BoosterGetNumClasses(BoosterHandle handle, int* out_len);
 
 /*!
 * \brief update the model in one round
@@ -354,14 +354,14 @@ DllExport int LGBM_BoosterRollbackOneIter(BoosterHandle handle);
 * \param out_iteration iteration of boosting rounds
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterGetCurrentIteration(BoosterHandle handle, int64_t* out_iteration);
+DllExport int LGBM_BoosterGetCurrentIteration(BoosterHandle handle, int* out_iteration);
 
 /*!
-* \brief Get number of eval 
+* \brief Get number of eval
 * \param out_len total number of eval results
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int64_t* out_len);
+DllExport int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int* out_len);
 
 /*!
 * \brief Get Name of eval
@@ -369,12 +369,12 @@ DllExport int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int64_t* out_len);
 * \param out_strs names of eval result, need to pre-allocate memory before call this
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int64_t* out_len, char** out_strs);
+DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int* out_len, char** out_strs);
 
 /*!
 * \brief get evaluation for training data and validation data
-         Note: 1. you should call LGBM_BoosterGetEvalNames first to get the name of evaluation results
-         2. should pre-allocate memory for out_results, you can get its length by LGBM_BoosterGetEvalCounts
+Note: 1. you should call LGBM_BoosterGetEvalNames first to get the name of evaluation results
+2. should pre-allocate memory for out_results, you can get its length by LGBM_BoosterGetEvalCounts
 * \param handle handle
 * \param data_idx 0:training data, 1: 1st valid data, 2:2nd valid data ...
 * \param out_len len of output result
@@ -383,7 +383,7 @@ DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int64_t* out_len, c
 */
 DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
   int data_idx,
-  int64_t* out_len,
+  int* out_len,
   double* out_results);
 
 /*!
@@ -401,8 +401,8 @@ DllExport int LGBM_BoosterGetNumPredict(BoosterHandle handle,
 
 /*!
 * \brief Get prediction for training data and validation data
-         this can be used to support customized eval function
-         Note:  should pre-allocate memory for out_result, its length is equal to num_class * num_data 
+this can be used to support customized eval function
+Note:  should pre-allocate memory for out_result, its length is equal to num_class * num_data
 * \param handle handle
 * \param data_idx 0:training data, 1: 1st valid data, 2:2nd valid data ...
 * \param out_len len of output result
@@ -431,13 +431,13 @@ DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
   const char* data_filename,
   int data_has_header,
   int predict_type,
-  int64_t num_iteration,
+  int num_iteration,
   const char* result_filename);
 
 /*!
 * \brief Get number of prediction
 * \param handle handle
-* \param num_row 
+* \param num_row
 * \param predict_type
 *          C_API_PREDICT_NORMAL: normal prediction, with transform (if needed)
 *          C_API_PREDICT_RAW_SCORE: raw score
@@ -447,14 +447,14 @@ DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
 * \return 0 when succeed, -1 when failure happens
 */
 DllExport int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
-  int64_t num_row,
+  int num_row,
   int predict_type,
-  int64_t num_iteration,
+  int num_iteration,
   int64_t* out_len);
 
 /*!
 * \brief make prediction for an new data set
-*        Note:  should pre-allocate memory for out_result, 
+*        Note:  should pre-allocate memory for out_result,
 *               for noraml and raw score: its length is equal to num_class * num_data
 *               for leaf index, its length is equal to num_class * num_data * num_iteration
 * \param handle handle
@@ -485,7 +485,7 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   int64_t nelem,
   int64_t num_col,
   int predict_type,
-  int64_t num_iteration,
+  int num_iteration,
   int64_t* out_len,
   double* out_result);
 
@@ -522,7 +522,7 @@ DllExport int LGBM_BoosterPredictForCSC(BoosterHandle handle,
   int64_t nelem,
   int64_t num_row,
   int predict_type,
-  int64_t num_iteration,
+  int num_iteration,
   int64_t* out_len,
   double* out_result);
 
@@ -553,7 +553,7 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
   int32_t ncol,
   int is_row_major,
   int predict_type,
-  int64_t num_iteration,
+  int num_iteration,
   int64_t* out_len,
   double* out_result);
 
@@ -580,11 +580,11 @@ DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
 DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
   int num_iteration,
   int buffer_len,
-  int64_t* out_len,
+  int* out_len,
   char* out_str);
 
 /*!
-* \brief Get leaf value 
+* \brief Get leaf value
 * \param handle handle
 * \param tree_idx index of tree
 * \param leaf_idx index of leaf
