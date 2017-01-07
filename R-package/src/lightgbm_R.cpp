@@ -153,14 +153,14 @@ SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle,
   SEXP call_state) {
 
   R_API_BEGIN();
-  int64_t len = 0;
+  int len = 0;
   CHECK_CALL(LGBM_DatasetGetNumFeature(R_GET_PTR(handle), &len));
   std::vector<std::vector<char>> names(len);
   std::vector<char*> ptr_names(len);
   for (int i = 0; i < len; ++i) {
     names[i].resize(256);
   }
-  int64_t out_len;
+  int out_len;
   CHECK_CALL(LGBM_DatasetGetFeatureNames(R_GET_PTR(handle),
     ptr_names.data(), &out_len));
   CHECK(len == out_len);
@@ -194,19 +194,19 @@ SEXP LGBM_DatasetSetField_R(SEXP handle,
   SEXP num_element,
   SEXP call_state) {
   R_API_BEGIN();
-  int64_t len = static_cast<int64_t>(R_AS_INT(num_element));
+  int len = static_cast<int>(R_AS_INT(num_element));
   const char* name = R_CHAR_PTR(field_name);
   if (!strcmp("group", name) || !strcmp("query", name)) {
     std::vector<int32_t> vec(len);
 #pragma omp parallel for schedule(static)
-    for (int64_t i = 0; i < len; ++i) {
+    for (int i = 0; i < len; ++i) {
       vec[i] = static_cast<int32_t>(R_INT_PTR(field_data)[i]);
     }
     CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, vec.data(), len, C_API_DTYPE_INT32));
   } else {
     std::vector<float> vec(len);
 #pragma omp parallel for schedule(static)
-    for (int64_t i = 0; i < len; ++i) {
+    for (int i = 0; i < len; ++i) {
       vec[i] = static_cast<float>(R_REAL_PTR(field_data)[i]);
     }
     CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, vec.data(), len, C_API_DTYPE_FLOAT32));
@@ -221,7 +221,7 @@ SEXP LGBM_DatasetGetField_R(SEXP handle,
 
   R_API_BEGIN();
   const char* name = R_CHAR_PTR(field_name);
-  int64_t out_len = 0;
+  int out_len = 0;
   int out_type = 0;
   const void* res;
   CHECK_CALL(LGBM_DatasetGetField(R_GET_PTR(handle), name, &out_len, &res, &out_type));
@@ -230,13 +230,13 @@ SEXP LGBM_DatasetGetField_R(SEXP handle,
     auto p_data = reinterpret_cast<const int32_t*>(res);
     // convert from boundaries to size
 #pragma omp parallel for schedule(static)
-    for (int64_t i = 0; i < out_len - 1; ++i) {
+    for (int i = 0; i < out_len - 1; ++i) {
       R_INT_PTR(field_data)[i] = p_data[i + 1] - p_data[i];
     }
   } else {
     auto p_data = reinterpret_cast<const float*>(res);
 #pragma omp parallel for schedule(static)
-    for (int64_t i = 0; i < out_len; ++i) {
+    for (int i = 0; i < out_len; ++i) {
       R_REAL_PTR(field_data)[i] = p_data[i];
     }
   }
@@ -250,7 +250,7 @@ SEXP LGBM_DatasetGetFieldSize_R(SEXP handle,
 
   R_API_BEGIN();
   const char* name = R_CHAR_PTR(field_name);
-  int64_t out_len = 0;
+  int out_len = 0;
   int out_type = 0;
   const void* res;
   CHECK_CALL(LGBM_DatasetGetField(R_GET_PTR(handle), name, &out_len, &res, &out_type));
@@ -263,7 +263,7 @@ SEXP LGBM_DatasetGetFieldSize_R(SEXP handle,
 
 SEXP LGBM_DatasetGetNumData_R(SEXP handle, SEXP out,
   SEXP call_state) {
-  int64_t nrow;
+  int nrow;
   R_API_BEGIN();
   CHECK_CALL(LGBM_DatasetGetNumData(R_GET_PTR(handle), &nrow));
   R_INT_PTR(out)[0] = static_cast<int>(nrow);
@@ -273,7 +273,7 @@ SEXP LGBM_DatasetGetNumData_R(SEXP handle, SEXP out,
 SEXP LGBM_DatasetGetNumFeature_R(SEXP handle,
   SEXP out,
   SEXP call_state) {
-  int64_t nfeature;
+  int nfeature;
   R_API_BEGIN();
   CHECK_CALL(LGBM_DatasetGetNumFeature(R_GET_PTR(handle), &nfeature));
   R_INT_PTR(out)[0] = static_cast<int>(nfeature);
@@ -308,7 +308,7 @@ SEXP LGBM_BoosterCreateFromModelfile_R(SEXP filename,
   SEXP call_state) {
 
   R_API_BEGIN();
-  int64_t out_num_iterations = 0;
+  int out_num_iterations = 0;
   BoosterHandle handle;
   CHECK_CALL(LGBM_BoosterCreateFromModelfile(R_CHAR_PTR(filename), &out_num_iterations, &handle));
   R_SET_PTR(out, handle);
@@ -350,7 +350,7 @@ SEXP LGBM_BoosterResetParameter_R(SEXP handle,
 SEXP LGBM_BoosterGetNumClasses_R(SEXP handle,
   SEXP out,
   SEXP call_state) {
-  int64_t num_class;
+  int num_class;
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterGetNumClasses(R_GET_PTR(handle), &num_class));
   R_INT_PTR(out)[0] = static_cast<int>(num_class);
@@ -372,7 +372,7 @@ SEXP LGBM_BoosterUpdateOneIterCustom_R(SEXP handle,
   SEXP call_state) {
   int is_finished = 0;
   R_API_BEGIN();
-  int64_t int_len = R_AS_INT(len);
+  int int_len = R_AS_INT(len);
   std::vector<float> tgrad(int_len), thess(int_len);
 #pragma omp parallel for schedule(static)
   for (int j = 0; j < int_len; ++j) {
@@ -394,7 +394,7 @@ SEXP LGBM_BoosterGetCurrentIteration_R(SEXP handle,
   SEXP out,
   SEXP call_state) {
 
-  int64_t out_iteration;
+  int out_iteration;
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterGetCurrentIteration(R_GET_PTR(handle), &out_iteration));
   R_INT_PTR(out)[0] = static_cast<int>(out_iteration);
@@ -408,7 +408,7 @@ SEXP LGBM_BoosterGetEvalNames_R(SEXP handle,
   SEXP call_state) {
 
   R_API_BEGIN();
-  int64_t len;
+  int len;
   CHECK_CALL(LGBM_BoosterGetEvalCounts(R_GET_PTR(handle), &len));
   std::vector<std::vector<char>> names(len);
   std::vector<char*> ptr_names(len);
@@ -416,7 +416,7 @@ SEXP LGBM_BoosterGetEvalNames_R(SEXP handle,
     names[i].resize(128);
     ptr_names[i] = names[i].data();
   }
-  int64_t out_len;
+  int out_len;
   CHECK_CALL(LGBM_BoosterGetEvalNames(R_GET_PTR(handle), &out_len, ptr_names.data()));
   CHECK(out_len == len);
   auto merge_names = Common::Join<char*>(ptr_names, "\t");
@@ -429,10 +429,10 @@ SEXP LGBM_BoosterGetEval_R(SEXP handle,
   SEXP out_result,
   SEXP call_state) {
   R_API_BEGIN();
-  int64_t len;
+  int len;
   CHECK_CALL(LGBM_BoosterGetEvalCounts(R_GET_PTR(handle), &len));
   double* ptr_ret = R_REAL_PTR(out_result);
-  int64_t out_len;
+  int out_len;
   CHECK_CALL(LGBM_BoosterGetEval(R_GET_PTR(handle), R_AS_INT(data_idx), &out_len, ptr_ret));
   CHECK(out_len == len);
   R_API_END();
@@ -577,7 +577,7 @@ SEXP LGBM_BoosterDumpModel_R(SEXP handle,
   SEXP out_str,
   SEXP call_state) {
   R_API_BEGIN();
-  int64_t out_len = 0;
+  int out_len = 0;
   std::vector<char> inner_char_buf(R_AS_INT(buffer_len));
   CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), R_AS_INT(num_iteration), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
   EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len);

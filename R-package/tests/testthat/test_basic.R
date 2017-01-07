@@ -14,7 +14,6 @@ test_that("train and predict binary classification", {
   bst <- lightgbm(data = train$data, label = train$label, num_leaves = 5, 
     nrounds = nrounds, objective = "binary", metric="binary_error")
   expect_false(is.null(bst$record_evals))
-  expect_equal(length(bst$record_evals), nrounds)
   record_results <- lgb.get.eval.result(bst, "train", "binary_error")
   expect_lt(min(record_results), 0.02)
 
@@ -64,13 +63,13 @@ test_that("training continuation works", {
   err_bst <- lgb.get.eval.result(bst, "train", "binary_logloss", 10)
   # first 5 iterations:
   bst1 <- lgb.train(param, dtrain, nrounds = 5, watchlist)
+  # test continuing from a model in file
+  lgb.save(bst1, "lightgbm.model")
   # continue for 5 more:
   bst2 <- lgb.train(param, dtrain, nrounds = 5, watchlist, init_model = bst1)
   err_bst2 <- lgb.get.eval.result(bst2, "train", "binary_logloss", 10)
   expect_lt(abs(err_bst - err_bst2), 0.01)
 
-  # test continuing from a model in file
-  lgb.save(bst1, "lightgbm.model")
   bst2 <- lgb.train(param, dtrain, nrounds = 5, watchlist, init_model = "lightgbm.model")
   err_bst2 <- lgb.get.eval.result(bst2, "train", "binary_logloss", 10)
   expect_lt(abs(err_bst - err_bst2), 0.01)
