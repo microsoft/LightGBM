@@ -1,7 +1,6 @@
 # coding: utf-8
 # pylint: disable = invalid-name, C0111, C0301
 # pylint: disable = R0912, R0913, R0914, W0105, W0201, W0212
-# pylint: disable = E1101
 """Wrapper c_api of LightGBM"""
 from __future__ import absolute_import
 
@@ -546,13 +545,10 @@ class Dataset(object):
     def __del__(self):
         self._free_handle()
 
-    def _is_constructed(self):
-        return self.handle is not None
-
     def _free_handle(self):
-        if self._is_constructed():
+        if self.handle is not None:
             _safe_call(_LIB.LGBM_DatasetFree(self.handle))
-        self.handle = None
+            self.handle = None
 
     def _lazy_init(self, data, label=None, max_bin=255, reference=None,
                    weight=None, group=None, predictor=None,
@@ -725,7 +721,7 @@ class Dataset(object):
 
     def construct(self):
         """Lazy init"""
-        if not self._is_constructed():
+        if self.handle is None:
             if self.reference is not None:
                 if self.used_indices is None:
                     """create valid"""
@@ -829,8 +825,8 @@ class Dataset(object):
         data: numpy array or list or None
             The array ofdata to be set
         """
-        if not self._is_constructed():
-            raise Exception("cannot set filed before construct dataset handle")
+        if self.handle is None:
+            raise Exception("Cannot set %s before construct dataset" % field_name)
         if data is None:
             """set to None"""
             _safe_call(_LIB.LGBM_DatasetSetField(
@@ -872,8 +868,8 @@ class Dataset(object):
         info : array
             A numpy array of information of the data
         """
-        if not self._is_constructed():
-            raise Exception("cannot Get filed before construct dataset handle")
+        if self.handle is None:
+            raise Exception("Cannot get %s before construct dataset" % field_name)
         tmp_out_len = ctypes.c_int()
         out_type = ctypes.c_int()
         ret = ctypes.POINTER(ctypes.c_void_p)()
@@ -910,8 +906,7 @@ class Dataset(object):
             self.categorical_feature = categorical_feature
             self._free_handle()
         else:
-            raise LightGBMError("Cannot set categorical feature after freed raw data,\
-             Set free_raw_data=False when construct Dataset to avoid this.")
+            raise LightGBMError("Cannot set categorical feature after freed raw data, set free_raw_data=False when construct Dataset to avoid this.")
 
     def _set_predictor(self, predictor):
         """
@@ -924,7 +919,7 @@ class Dataset(object):
             self._predictor = predictor
             self._free_handle()
         else:
-            raise LightGBMError("Cannot set predictor after freed raw data,Set free_raw_data=False when construct Dataset to avoid this.")
+            raise LightGBMError("Cannot set predictor after freed raw data, set free_raw_data=False when construct Dataset to avoid this.")
 
     def set_reference(self, reference):
         """
@@ -944,8 +939,7 @@ class Dataset(object):
             self.reference = reference
             self._free_handle()
         else:
-            raise LightGBMError("Cannot set reference after freed raw data,\
-             Set free_raw_data=False when construct Dataset to avoid this.")
+            raise LightGBMError("Cannot set reference after freed raw data, set free_raw_data=False when construct Dataset to avoid this.")
 
     def set_feature_name(self, feature_name):
         """
@@ -957,7 +951,7 @@ class Dataset(object):
             Feature names
         """
         self.feature_name = feature_name
-        if self._is_constructed() and feature_name is not None:
+        if self.handle is not None and feature_name is not None:
             if len(feature_name) != self.num_feature():
                 raise ValueError("Length of feature_name({}) and num_feature({}) don't match".format(len(feature_name), self.num_feature()))
             c_feature_name = [c_str(name) for name in feature_name]
@@ -976,7 +970,7 @@ class Dataset(object):
             The label information to be set into Dataset
         """
         self.label = label
-        if self._is_constructed():
+        if self.handle is not None:
             label = list_to_1d_numpy(label, name='label')
             self.set_field('label', label)
 
@@ -990,7 +984,7 @@ class Dataset(object):
             Weight for each data point
         """
         self.weight = weight
-        if self._is_constructed() and weight is not None:
+        if self.handle is not None and weight is not None:
             weight = list_to_1d_numpy(weight, name='weight')
             self.set_field('weight', weight)
 
@@ -1004,7 +998,7 @@ class Dataset(object):
             Init score for booster
         """
         self.init_score = init_score
-        if self._is_constructed() and init_score is not None:
+        if self.handle is not None and init_score is not None:
             init_score = list_to_1d_numpy(init_score, name='init_score')
             self.set_field('init_score', init_score)
 
@@ -1018,7 +1012,7 @@ class Dataset(object):
             Group size of each group
         """
         self.group = group
-        if self._is_constructed() and group is not None:
+        if self.handle is not None and group is not None:
             group = list_to_1d_numpy(group, np.int32, name='group')
             self.set_field('group', group)
 
@@ -1030,7 +1024,7 @@ class Dataset(object):
         -------
         label : array
         """
-        if self.label is None and self._is_constructed():
+        if self.label is None and self.handle is not None:
             self.label = self.get_field('label')
         return self.label
 
@@ -1042,7 +1036,7 @@ class Dataset(object):
         -------
         weight : array
         """
-        if self.weight is None and self._is_constructed():
+        if self.weight is None and self.handle is not None:
             self.weight = self.get_field('weight')
         return self.weight
 
@@ -1054,7 +1048,7 @@ class Dataset(object):
         -------
         init_score : array
         """
-        if self.init_score is None and self._is_constructed():
+        if self.init_score is None and self.handle is not None:
             self.init_score = self.get_field('init_score')
         return self.init_score
 
@@ -1066,7 +1060,7 @@ class Dataset(object):
         -------
         init_score : array
         """
-        if self.group is None and self._is_constructed():
+        if self.group is None and self.handle is not None:
             self.group = self.get_field('group')
             if self.group is not None:
                 # group data from LightGBM is boundaries data, need to convert to group size
@@ -1084,13 +1078,13 @@ class Dataset(object):
         -------
         number of rows : int
         """
-        if self._is_constructed():
+        if self.handle is not None:
             ret = ctypes.c_int()
             _safe_call(_LIB.LGBM_DatasetGetNumData(self.handle,
                                                    ctypes.byref(ret)))
             return ret.value
         else:
-            raise LightGBMError("Cannot call num_data before construct, please call it explicitly")
+            raise LightGBMError("Cannot get num_data before construct dataset")
 
     def num_feature(self):
         """
@@ -1100,13 +1094,13 @@ class Dataset(object):
         -------
         number of columns : int
         """
-        if self._is_constructed():
+        if self.handle is not None:
             ret = ctypes.c_int()
             _safe_call(_LIB.LGBM_DatasetGetNumFeature(self.handle,
                                                       ctypes.byref(ret)))
             return ret.value
         else:
-            raise LightGBMError("Cannot call num_feature before construct, please call it explicitly")
+            raise LightGBMError("Cannot get num_feature before construct dataset")
 
 
 class Booster(object):

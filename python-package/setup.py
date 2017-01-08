@@ -2,9 +2,11 @@
 # pylint: disable=invalid-name, exec-used
 """Setup lightgbm package."""
 from __future__ import absolute_import
-import sys
+
 import os
-from setuptools import setup, find_packages
+import sys
+
+from setuptools import find_packages, setup
 
 sys.path.insert(0, '.')
 
