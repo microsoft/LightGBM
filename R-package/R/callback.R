@@ -228,10 +228,6 @@ add.cb <- function(cb_list, cb) {
     # this removes only the first one
     cb_list['cb.early.stop'] <- NULL 
   }
-  if ('cb.cv.predict' %in% names(cb_list)) {
-    cb_list <- c(cb_list, cb_list['cb.cv.predict'])
-    cb_list['cb.cv.predict'] <- NULL 
-  }
   cb_list
 }
 
