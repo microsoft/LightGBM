@@ -9,8 +9,10 @@ lightgbm <- function(data, label = NULL, weight = NULL,
                     early_stopping_rounds = NULL,
                     save_name = "lightgbm.model",
                     init_model = NULL, callbacks = list(), ...) {
-
-  dtrain <- lgb.Dataset(data, label=label, weight=weight)
+  dtrain <- data
+  if(!lgb.is.Dataset(dtrain)) {
+    dtrain <- lgb.Dataset(data, label=label, weight=weight)
+  }
 
   valids <- list()
   if (verbose > 0)
@@ -78,6 +80,7 @@ NULL
 NULL
 
 # Various imports
+#' @import methods
 #' @importFrom R6 R6Class
 #' @useDynLib lightgbm
 NULL

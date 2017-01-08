@@ -95,7 +95,7 @@ lgb.train <- function(params=list(), data, nrounds=10,
     data$set_colnames(colnames)
   }
   data$set_categorical_feature(categorical_feature)
-
+  data$construct()
   vaild_contain_train <- FALSE
   train_data_name <- "train"
   reduced_valid_sets <- list()

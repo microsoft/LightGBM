@@ -33,5 +33,6 @@ Depends:
     R (>= 3.0),
     R6
 Imports:
-    Matrix (>= 1.1-0)
+    Matrix (>= 1.1-0),
+    methods
 RoxygenNote: 5.0.1

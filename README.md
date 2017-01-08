@@ -16,10 +16,12 @@ For more details, please refer to [Features](https://github.com/Microsoft/LightG
 
 News
 ----
+01/08/2017 : Release [**R-package**](./R-package) beta version, welcome to have a try and provide feedback.
+
 12/05/2016 : **Categorical Features as input directly**(without one-hot coding). Experiment on [Expo data](http://stat-computing.org/dataexpo/2009/) shows about 8x speed-up with same accuracy compared with one-hot coding (refer to [categorical log]( https://github.com/guolinke/boosting_tree_benchmarks/blob/master/lightgbm/lightgbm_dataexpo_speed.log) and [one-hot log]( https://github.com/guolinke/boosting_tree_benchmarks/blob/master/lightgbm/lightgbm_dataexpo_onehot_speed.log)).
 For the setting details, please refer to [IO Parameters](./docs/Parameters.md#io-parameters).
 
-12/02/2016 : Release [**python-package**](./python-package) beta version, welcome to have a try and provide issues and feedback.
+12/02/2016 : Release [**python-package**](./python-package) beta version, welcome to have a try and provide feedback.
 
 Get Started And Documents
 -------------------------
