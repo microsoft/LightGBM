@@ -137,6 +137,8 @@ struct ObjectiveConfig: public ConfigBase {
 public:
   virtual ~ObjectiveConfig() {}
   double sigmoid = 1.0f;
+  // for Huber loss
+  double delta = 1.0f;
   // for lambdarank
   std::vector<double> label_gain;
   // for lambdarank
@@ -156,6 +158,8 @@ public:
   virtual ~MetricConfig() {}
   int num_class = 1;
   double sigmoid = 1.0f;
+  // for Huber loss
+  double delta = 1.0f;
   std::vector<double> label_gain;
   std::vector<int> eval_at;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
@@ -196,6 +200,7 @@ struct BoostingConfig: public ConfigBase {
 public:
   virtual ~BoostingConfig() {}
   double sigmoid = 1.0f;
+  double delta = 1.0f;
   int output_freq = 1;
   bool is_provide_training_metric = false;
   int num_iterations = 10;

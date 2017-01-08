@@ -217,6 +217,7 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
 void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetBool(params, "is_unbalance", &is_unbalance);
   GetDouble(params, "sigmoid", &sigmoid);
+  GetDouble(params, "huber_delta", &delta);
   GetInt(params, "max_position", &max_position);
   CHECK(max_position > 0);
   GetInt(params, "num_class", &num_class);
@@ -239,6 +240,7 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
 
 void MetricConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetDouble(params, "sigmoid", &sigmoid);
+  GetDouble(params, "huber_delta", &delta);
   GetInt(params, "num_class", &num_class);
   std::string tmp_str = "";
   if (GetString(params, "label_gain", &tmp_str)) {
@@ -293,6 +295,7 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
 void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "num_iterations", &num_iterations);
   GetDouble(params, "sigmoid", &sigmoid);
+  GetDouble(params, "huber_delta", &delta);
   CHECK(num_iterations >= 0);
   GetInt(params, "bagging_seed", &bagging_seed);
   GetInt(params, "bagging_freq", &bagging_freq);

@@ -9,6 +9,8 @@ namespace LightGBM {
 ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string& type, const ObjectiveConfig& config) {
   if (type == std::string("regression")) {
     return new RegressionL2loss(config);
+  } else if (type == std::string("huber_loss")) {
+    return new RegressionLHuberLoss(config);
   } else if (type == std::string("binary")) {
     return new BinaryLogloss(config);
   } else if (type == std::string("lambdarank")) {

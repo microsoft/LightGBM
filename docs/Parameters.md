@@ -165,6 +165,8 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
 
 * ```sigmoid```, default=```1.0```, type=double
   * parameter for sigmoid function. Will be used in binary classification and lambdarank.
+* ```huber_delta```, default=```1.0```, type=double
+  * parameter for [Huber loss](https://en.wikipedia.org/wiki/Huber_loss "Huber loss - Wikipedia"). Will be used in regression task.
 * ```scale_pos_weight```, default=```1.0```, type=double
   * weight of positive class in binary classification task
 * ```is_unbalance```, default=```false```, type=bool
