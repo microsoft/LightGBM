@@ -54,7 +54,7 @@ private:
 class RegressionLHuberLoss: public ObjectiveFunction {
 public:
   explicit RegressionLHuberLoss(const ObjectiveConfig& config) {
-    delta_ = config.delta;
+    delta_ = config.huber_delta;
   }
 
   ~RegressionLHuberLoss() {

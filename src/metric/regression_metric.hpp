@@ -54,13 +54,13 @@ public:
 #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], delta_);
+        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], huber_delta_);
       }
     } else {
 #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], delta_) * weights_[i];
+        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], huber_delta_) * weights_[i];
       }
     }
     double loss = PointWiseLossCalculator::AverageLoss(sum_loss, sum_weights_);
@@ -74,7 +74,7 @@ public:
 
 protected:
   /*! \brief delta for Huber loss */
-  double delta_;
+  double huber_delta_;
 
 private:
   /*! \brief Number of data */
@@ -122,10 +122,10 @@ public:
 };
 
 /*! \brief Huber loss for regression task */
-class HuberLoss: public RegressionMetric<HuberLoss> {
+class HuberLossMetric: public RegressionMetric<HuberLossMetric> {
 public:
-    explicit HuberLoss(const MetricConfig& config) :RegressionMetric<HuberLoss>(config) {
-        delta_ = config.delta;
+    explicit HuberLossMetric(const MetricConfig& config) :RegressionMetric<HuberLossMetric>(config) {
+        huber_delta_ = config.huber_delta;
     }
 
     inline static score_t LossOnPoint(float label, score_t score, float delta=1.0f) {

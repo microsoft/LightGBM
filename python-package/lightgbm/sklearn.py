@@ -498,9 +498,9 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
                  subsample_for_bin=50000, objective="regression",
                  min_split_gain=0, min_child_weight=5, min_child_samples=10,
                  subsample=1, subsample_freq=1, colsample_bytree=1,
-                 reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
-                 is_unbalance=False, seed=0, nthread=-1, silent=True,
-                 sigmoid=1.0, huber_delta=1.0, max_position=20, label_gain=None,
+                 reg_alpha=0, reg_lambda=0,
+                 seed=0, nthread=-1, silent=True,
+                 huber_delta=1.0,
                  drop_rate=0.1, skip_drop=0.5, max_drop=50,
                  uniform_drop=False, xgboost_dart_mode=False):
         super(LGBMRegressor, self).__init__(boosting_type=boosting_type, num_leaves=num_leaves,
@@ -511,10 +511,8 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
                                             min_child_samples=min_child_samples, subsample=subsample,
                                             subsample_freq=subsample_freq, colsample_bytree=colsample_bytree,
                                             reg_alpha=reg_alpha, reg_lambda=reg_lambda,
-                                            scale_pos_weight=scale_pos_weight, is_unbalance=is_unbalance,
                                             seed=seed, nthread=nthread, silent=silent,
-                                            sigmoid=sigmoid, huber_delta=huber_delta,
-                                            max_position=max_position, label_gain=label_gain,
+                                            huber_delta=huber_delta,
                                             drop_rate=drop_rate, skip_drop=skip_drop, max_drop=max_drop,
                                             uniform_drop=uniform_drop, xgboost_dart_mode=xgboost_dart_mode)
 
