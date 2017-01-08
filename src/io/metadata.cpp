@@ -8,6 +8,10 @@
 namespace LightGBM {
 
 Metadata::Metadata() {
+  num_weights_ = 0;
+  num_init_score_ = 0;
+  num_data_ = 0;
+  num_queries_ = 0;
 }
 
 void Metadata::Init(const char * data_filename) {
