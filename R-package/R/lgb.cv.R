@@ -7,6 +7,12 @@ CVBooster <- R6Class(
     boosters=list(),
     initialize=function(x){
       self$boosters <- x
+    },
+    reset_parameter=function(new_paramas){
+      for(x in boosters){
+        x$reset_parameter(new_paramas)
+      }
+      return(self)
     }
   )
 )
@@ -270,7 +276,13 @@ lgb.stratified.folds <- function(y, k = 10)
 }
 
 lgb.merge.cv.result <- function(msg, showsd=TRUE){
+  if(length(msg) == 0){
+    stop("lgb.cv: size of cv result error")
+  }
   eval_len <- length(msg[[1]])
+  if(eval_len == 0){
+    stop("lgb.cv: should provide at least metric for CV")
+  }
   eval_result <- lapply(1:eval_len, function(j) {
     as.numeric(lapply(1:length(msg), function(i){
       msg[[i]][[j]]$value
