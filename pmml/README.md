@@ -1,6 +1,6 @@
 PMML Generator 
 ==============
-The script pmml.py can be used to translate the LightGBM models, found in LightGBM_model.txt, to  predictive model markup language (PMML). These models can then be imported by other analytics applications. The models that the language can describe includes decision trees. The specification of PMML can be found here at the Data Mining Group's [website](http://dmg.org/pmml/v4-3/GeneralStructure.html). 
+The script pmml.py can be used to translate the LightGBM models, found in LightGBM_model.txt, to  predictive model markup language (PMML). These models can then be imported by other analytics applications. The models that the language can describe includes decision trees. The specification of PMML can be found here at the Data Mining Group's [website](http://dmg.org/pmml/v4-3/GeneralStructure.html).
 
 In order to generate pmml files do the following steps.
 ```
