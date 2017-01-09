@@ -20,12 +20,12 @@ def get_array_ints(line):
 
 
 def get_field_name(node_id, prev_node_idx, is_child):
-    idx = leaf_parent[node_id - 1] if is_child else prev_node_idx
+    idx = leaf_parent[node_id] if is_child else prev_node_idx
     return feature_names[split_feature[idx]]
 
 
 def get_threshold(node_id, prev_node_idx, is_child):
-    idx = leaf_parent[node_id - 1] if is_child else prev_node_idx
+    idx = leaf_parent[node_id] if is_child else prev_node_idx
     return threshold[idx]
 
 
