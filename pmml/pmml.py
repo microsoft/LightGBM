@@ -8,7 +8,7 @@ from itertools import count
 
 
 def get_value_string(line):
-    return line[line.index('=') + 1:]
+    return line[line.find('=') + 1:]
 
 
 def get_array_strings(line):
@@ -48,7 +48,8 @@ def print_nodes_pmml(node_id, tab_len, is_left_child, prev_node_idx):
         score = internal_value[node_id]
         recordCount = internal_count[node_id]
         is_leaf = False
-    out_('\t' * tab_len + ("<Node id=\"{0}\" score=\"{1}\" " + " recordCount=\"{2}\">").format(next(unique_id), score, recordCount))
+    out_('\t' * tab_len + ("<Node id=\"{0}\" score=\"{1}\" " + " recordCount=\"{2}\">").format(
+        next(unique_id), score, recordCount))
     print_simple_predicate(tab_len, node_id, is_left_child, prev_node_idx, is_leaf)
     if not is_leaf:
         print_nodes_pmml(left_child[node_id], tab_len + 1, True, node_id)
@@ -75,6 +76,7 @@ def print_pmml():
     print_nodes_pmml(right_child[0], 6, False, 0)
     out_("\t\t\t\t\t</Node>")
     out_("\t\t\t\t</TreeModel>")
+
 
 if len(argv) != 2:
     raise ValueError('usage: pmml.py <input model file>')
@@ -116,15 +118,15 @@ with open('LightGBM_pmml.xml', 'w') as pmml_out:
     # read each array that contains pertinent information for the pmml
     # these arrays will be used to recreate the traverse the decision tree
     while True:
-        tree_start = next(model_content)
-        if tree_start[:4] != 'Tree':
+        tree_start = next(model_content, '')
+        if not tree_start.startswith('Tree'):
             break
         out_("\t\t\t<Segment id=\"%d\">" % next(segment_id))
         out_("\t\t\t\t<True/>")
         tree_no = tree_start[5:]
         num_leaves = int(get_value_string(next(model_content)))
         split_feature = get_array_ints(next(model_content))
-        split_gain = next(model_content)
+        split_gain = next(model_content)  # unused
         threshold = get_array_strings(next(model_content))
         decision_type = get_array_ints(next(model_content))
         left_child = get_array_ints(next(model_content))
