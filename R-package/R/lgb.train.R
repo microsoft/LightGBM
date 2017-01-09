@@ -84,7 +84,7 @@ lgb.train <- function(params = list(), data, nrounds = 10,
       stop("lgb.train: valids must be a list of lgb.Dataset elements")
     }
     evnames <- names(valids)
-    if (is.null(evnames) || !all(nzchars(evnames))) {
+    if (is.null(evnames) || !all(nzchar(evnames))) {
       stop("lgb.train: each element of the valids must have a name tag")
     }
   }
