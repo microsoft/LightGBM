@@ -76,7 +76,7 @@ public:
         } else {
           gradients[i] = -1.0;
         }
-        hessians[i] = Common::ApproximateHessianWithGaussian(score[i], label_[i]);
+        hessians[i] = Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i]);
       }
     } else {
       #pragma omp parallel for schedule(static)
@@ -87,7 +87,7 @@ public:
         } else {
           gradients[i] = -weights_[i];
         }
-        hessians[i] = Common::ApproximateHessianWithGaussian(score[i], label_[i], weights_[i]);
+        hessians[i] = Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], weights_[i]);
       }
     }
   }
@@ -137,7 +137,7 @@ public:
             } else {
               gradients[i] = -delta_;
             }
-            hessians[i] = Common::ApproximateHessianWithGaussian(score[i], label_[i]);
+            hessians[i] = Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i]);
         }
       }
     } else {
@@ -154,7 +154,7 @@ public:
             } else {
               gradients[i] = -delta_ * weights_[i];
             }
-            hessians[i] = Common::ApproximateHessianWithGaussian(score[i], label_[i], weights_[i]);
+            hessians[i] = Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], weights_[i]);
         }
       }
     }
