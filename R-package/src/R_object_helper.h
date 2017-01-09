@@ -1,7 +1,7 @@
 /*
-* A simple wrapper for access data in R object.
+* A simple wrapper for accessing data in R object.
 * Due to license issue(GPLv2), we cannot include R's header file, so use this simple wrapper instead.
-* However, If R change its define of object, this file need to be updated as well.
+* However, if R changes the way it defines objects, this file will need to be updated as well.
 */
 #ifndef R_OBJECT_HELPER_H_
 #define R_OBJECT_HELPER_H_
