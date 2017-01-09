@@ -1,52 +1,53 @@
 Dataset <- R6Class(
   "lgb.Dataset",
-  cloneable=FALSE,
+  cloneable = FALSE,
   public = list(
     finalize = function() {
       if (!lgb.is.null.handle(private$handle)) {
-        print("free dataset handle")
+        cat("free dataset handle\n")
         lgb.call("LGBM_DatasetFree_R", ret = NULL, private$handle)
         private$handle <- NULL
       }
     },
     initialize = function(data,
-                          params = list(),
-                          reference = NULL,
-                          colnames = NULL,
+                          params              = list(),
+                          reference           = NULL,
+                          colnames            = NULL,
                           categorical_feature = NULL,
-                          predictor = NULL,
-                          free_raw_data = TRUE,
-                          used_indices = NULL,
-                          info = list(),
+                          predictor           = NULL,
+                          free_raw_data       = TRUE,
+                          used_indices        = NULL,
+                          info                = list(),
                           ...) {
-      addiction_params <- list(...)
-      for (key in names(addiction_params)) {
-        if (key %in% c('label', 'weight', 'init_score', 'group')) {
-          info[[key]] <- addiction_params[[key]]
+      addition_params <- list(...)
+      INFO_KEYS <- c('label', 'weight', 'init_score', 'group')
+      for (key in names(addition_params)) {
+        if (key %in% INFO_KEYS) {
+          info[[key]] <- addition_params[[key]]
         } else {
-          params[[key]] <- addiction_params[[key]]
+          params[[key]] <- addition_params[[key]]
         }
       }
       if (!is.null(reference)) {
         if (!lgb.check.r6.class(reference, "lgb.Dataset")) {
-          stop("lgb.Dataset: Only can use lgb.Dataset as reference")
+          stop("lgb.Dataset: Can only use ", sQuote("lgb.Dataset"), " as reference")
         }
       }
       if (!is.null(predictor)) {
         if (!lgb.check.r6.class(predictor, "lgb.Predictor")) {
-          stop("lgb.Dataset: Only can use lgb.Predictor as predictor")
+          stop("lgb.Dataset: Only can use ", sQuote("lgb.Predictor"), " as predictor")
         }
       }
-      private$raw_data <- data
-      private$params <- params
+      private$raw_data  <- data
+      private$params    <- params
       private$reference <- reference
-      private$colnames <- colnames
-      
+      private$colnames  <- colnames
+
       private$categorical_feature <- categorical_feature
-      private$predictor <- predictor
-      private$free_raw_data <- free_raw_data
-      private$used_indices <- used_indices
-      private$info <- info
+      private$predictor           <- predictor
+      private$free_raw_data       <- free_raw_data
+      private$used_indices        <- used_indices
+      private$info                <- info
     },
     create_valid = function(data, info = list(),  ...) {
       ret <- Dataset$new(
@@ -61,7 +62,7 @@ Dataset <- R6Class(
         info,
         ...
       )
-      return(ret)
+      ret
     },
     construct = function() {
       if (!lgb.is.null.handle(private$handle)) {
@@ -69,29 +70,28 @@ Dataset <- R6Class(
       }
       # Get feature names
       cnames <- NULL
-      if (is.matrix(private$raw_data) |
-          class(private$raw_data) == "dgCMatrix") {
+      if (is.matrix(private$raw_data) || is(private$raw_data, "dgCMatrix")) {
         cnames <- colnames(private$raw_data)
       }
       # set feature names if not exist
-      if (is.null(private$colnames) & !is.null(cnames)) {
+      if (is.null(private$colnames) && !is.null(cnames)) {
         private$colnames <- as.character(cnames)
       }
       # Get categorical feature index
       if (!is.null(private$categorical_feature)) {
         fname_dict <- list()
         if (!is.null(private$colnames)) {
-          fname_dict <-
-            as.list(setNames(0:(length(
+          fname_dict <- `names<-`(
+              list((seq_along(private$colnames) - 1)),
               private$colnames
-            ) - 1), private$colnames))
+            )
         }
         cate_indices <- list()
         for (key in private$categorical_feature) {
           if (is.character(key)) {
             idx <- fname_dict[[key]]
             if (is.null(idx)) {
-              stop(paste("lgb.self.get.handle: cannot find feature name ", key))
+              stop("lgb.self.get.handle: cannot find feature name ", sQuote(key))
             }
             cate_indices <- c(cate_indices, idx)
           } else {
@@ -104,10 +104,10 @@ Dataset <- R6Class(
       }
       # Check has header or not
       has_header <- FALSE
-      if (!is.null(private$params$has_header) |
+      if (!is.null(private$params$has_header) ||
           !is.null(private$params$header)) {
         if (tolower(as.character(private$params$has_header)) == "true"
-            |
+            ||
             tolower(as.character(private$params$header)) == "true") {
           has_header <- TRUE
         }
@@ -122,9 +122,8 @@ Dataset <- R6Class(
       handle <- lgb.new.handle()
       # not subset
       if (is.null(private$used_indices)) {
-        if (typeof(private$raw_data) == "character") {
-          handle <-
-            lgb.call(
+        if (is.character(private$raw_data)) {
+          handle <- lgb.call(
               "LGBM_DatasetCreateFromFile_R",
               ret = handle,
               lgb.c_str(private$raw_data),
@@ -132,8 +131,7 @@ Dataset <- R6Class(
               ref_handle
             )
         } else if (is.matrix(private$raw_data)) {
-          handle <-
-            lgb.call(
+          handle <- lgb.call(
               "LGBM_DatasetCreateFromMat_R",
               ret = handle,
               private$raw_data,
@@ -142,7 +140,7 @@ Dataset <- R6Class(
               params_str,
               ref_handle
             )
-        } else if (class(private$raw_data) == "dgCMatrix") {
+        } else if (is(private$raw_data, "dgCMatrix")) {
           handle <- lgb.call(
             "LGBM_DatasetCreateFromCSC_R",
             ret = handle,
@@ -156,18 +154,16 @@ Dataset <- R6Class(
             ref_handle
           )
         } else {
-          stop(paste(
-            "lgb.Dataset.construct: does not support to construct from ",
-            typeof(private$raw_data)
-          ))
+          stop(
+            "lgb.Dataset.construct: does not support constructing from ", sQuote(class(private$raw_data))
+          )
         }
       } else {
         # construct subset
         if (is.null(private$reference)) {
-          stop("lgb.Dataset.construct: reference cannot be NULL if construct subset")
+          stop("lgb.Dataset.construct: reference cannot be NULL for constructing data subset")
         }
-        handle <-
-          lgb.call(
+        handle <- lgb.call(
             "LGBM_DatasetGetSubset_R",
             ret = handle,
             ref_handle,
@@ -179,27 +175,20 @@ Dataset <- R6Class(
       class(handle) <- "lgb.Dataset.handle"
       private$handle <- handle
       # set feature names
-      if (!is.null(private$colnames)) {
-        self$set_colnames(private$colnames)
-      }
-      
+      if (!is.null(private$colnames)) { self$set_colnames(private$colnames) }
+
       # load init score
-      if (!is.null(private$predictor) &
+      if (!is.null(private$predictor) &&
           is.null(private$used_indices)) {
-        init_score <-
-          private$predictor$predict(private$raw_data,
-                                    rawscore = TRUE,
-                                    reshape = TRUE)
-        # not need to transpose, for is col_marjor
+        init_score <- private$predictor$predict(private$raw_data, rawscore = TRUE, reshape = TRUE)
+        # do not need to transpose, for is col_marjor
         init_score <- as.vector(init_score)
         private$info$init_score <- init_score
       }
-      if (private$free_raw_data & !is.character(private$raw_data)) {
-        private$raw_data <- NULL
-      }
+      if (isTRUE(private$free_raw_data)) { private$raw_data <- NULL }
       if (length(private$info) > 0) {
         # set infos
-        for (i in 1:length(private$info)) {
+        for (i in seq_along(private$info)) {
           p <- private$info[i]
           self$setinfo(names(p), p[[1]])
         }
@@ -207,13 +196,13 @@ Dataset <- R6Class(
       if (is.null(self$getinfo("label"))) {
         stop("lgb.Dataset.construct: label should be set")
       }
-      return(self)
+      self
     },
     dim = function() {
       if (!lgb.is.null.handle(private$handle)) {
         num_row <- as.integer(0)
         num_col <- as.integer(0)
-        
+
         return(c(
           lgb.call("LGBM_DatasetGetNumData_R", ret = num_row, private$handle),
           lgb.call("LGBM_DatasetGetNumFeature_R", ret = num_col, private$handle)
@@ -747,7 +736,7 @@ lgb.Dataset.set.categorical <-
 
 #' set reference of \code{lgb.Dataset}
 #'
-#' set reference of \code{lgb.Dataset}. 
+#' set reference of \code{lgb.Dataset}.
 #' If you want to use validation data, you should set its reference to training data
 #'
 #' @param dataset object of class \code{lgb.Dataset}
@@ -771,9 +760,9 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 }
 
 #' save \code{lgb.Dataset} to binary file
-#' 
+#'
 #' save \code{lgb.Dataset} to binary file
-#' 
+#'
 #' @param dataset object of class \code{lgb.Dataset}
 #' @param fname object filename of output file
 #' @return passed dataset
