@@ -1,6 +1,6 @@
-lgb.is.Booster <- function(x) { lgb.check.r6.class(x, "lgb.Booster")) }
+lgb.is.Booster <- function(x) { lgb.check.r6.class(x, "lgb.Booster") }
 
-lgb.is.Dataset <- function(x) { lgb.check.r6.class(x, "lgb.Dataset")) }
+lgb.is.Dataset <- function(x) { lgb.check.r6.class(x, "lgb.Dataset") }
 
 # use 64bit data to store address
 lgb.new.handle <- function() { 0.0 }

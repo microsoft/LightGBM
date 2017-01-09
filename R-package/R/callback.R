@@ -14,7 +14,7 @@ CB_ENV <- R6Class(
 )
 
 cb.reset.parameters <- function(new_params) {
-  if (!is.list(new_params))) { stop(sQuote("new_params"), " must be a list") }
+  if (!is.list(new_params)) { stop(sQuote("new_params"), " must be a list") }
   pnames  <- gsub("\\.", "_", names(new_params))
   nrounds <- NULL
 

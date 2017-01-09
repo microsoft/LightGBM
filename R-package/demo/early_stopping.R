@@ -33,7 +33,6 @@ evalerror <- function(preds, dtrain) {
 }
 print ('start training with early Stopping setting')
 
-bst <- lgb.train(param, dtrain, num_round, valids, 
+bst <- lgb.train(param, dtrain, num_round, valids,
                  objective = logregobj, eval = evalerror,
                  early_stopping_round = 3)
-

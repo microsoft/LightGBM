@@ -26,7 +26,7 @@ bst <- lightgbm(data = as.matrix(train$data), label = train$label, num_leaves = 
 # you can also put in lgb.Dataset object, which stores label, data and other meta datas needed for advanced features
 print("Training lightgbm with lgb.Dataset")
 dtrain <- lgb.Dataset(data = train$data, label = train$label)
-bst <- lightgbm(data = dtrain, num_leaves = 4, learning_rate = 1, nrounds = 2, 
+bst <- lightgbm(data = dtrain, num_leaves = 4, learning_rate = 1, nrounds = 2,
                objective = "binary")
 
 # Verbose = 0,1,2
@@ -46,7 +46,7 @@ bst <- lightgbm(data = dtrain, num_leaves = 4, learning_rate = 1, nrounds = 2,
 
 #--------------------basic prediction using lightgbm--------------
 # you can do prediction using the following line
-# you can put in Matrix, sparseMatrix, or lgb.Dataset 
+# you can put in Matrix, sparseMatrix, or lgb.Dataset
 pred <- predict(bst, test$data)
 err <- mean(as.numeric(pred > 0.5) != test$label)
 print(paste("test-error=", err))
@@ -69,7 +69,7 @@ dtest <- lgb.Dataset(data = test$data, label=test$label, free_raw_data=FALSE)
 # valids is a list of lgb.Dataset, each of them is tagged with name
 valids <- list(train=dtrain, test=dtest)
 # to train with valids, use lgb.train, which contains more advanced features
-# valids allows us to monitor the evaluation result on all data in the list 
+# valids allows us to monitor the evaluation result on all data in the list
 print("Train lightgbm using lgb.train with valids")
 bst <- lgb.train(data=dtrain, num_leaves=4, learning_rate=1, nrounds=2, valids=valids,
                  nthread = 2, objective = "binary")
@@ -90,5 +90,3 @@ label = getinfo(dtest, "label")
 pred <- predict(bst, test$data)
 err <- as.numeric(sum(as.integer(pred > 0.5) != label))/length(label)
 print(paste("test-error=", err))
-
-
