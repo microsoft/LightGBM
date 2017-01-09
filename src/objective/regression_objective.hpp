@@ -106,13 +106,13 @@ private:
 };
 
 
-class RegressionLHuberLoss: public ObjectiveFunction {
+class RegressionHuberLoss: public ObjectiveFunction {
 public:
-  explicit RegressionLHuberLoss(const ObjectiveConfig& config) {
+  explicit RegressionHuberLoss(const ObjectiveConfig& config) {
     delta_ = config.huber_delta;
   }
 
-  ~RegressionLHuberLoss() {
+  ~RegressionHuberLoss() {
   }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
