@@ -57,11 +57,6 @@ public:
     }
   }
 
-  void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
-    const std::vector<const Metric*>& training_metrics) {
-    GBDT::ResetTrainingData(config, train_data, object_function, training_metrics);
-  }
-
   /*!
   * \brief Get current training score
   * \param out_len length of returned score
