@@ -1,11 +1,10 @@
+# coding: utf-8
+# pylint: disable = C0111
 from __future__ import print_function
-from builtins import map
-from builtins import next
+
 from decimal import Decimal
 
 import sys
-import os
-import traceback
 import itertools
 
 
