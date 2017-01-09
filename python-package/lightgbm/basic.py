@@ -5,7 +5,6 @@
 from __future__ import absolute_import
 
 import ctypes
-import json
 import os
 from tempfile import NamedTemporaryFile
 
@@ -14,6 +13,14 @@ import scipy.sparse
 
 from .compat import integer_types, numeric_types, range_, string_type
 from .libpath import find_lib_path
+
+"""json"""
+try:
+    import simplejson as json
+except (ImportError, SyntaxError):
+    # simplejson does not support Python 3.2, it throws a SyntaxError
+    # because of u'...' Unicode literals.
+    import json
 
 """pandas"""
 try:
