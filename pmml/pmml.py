@@ -45,9 +45,9 @@ def print_simple_predicate(
 
 def print_nodes_pmml(node_id, tab_len, is_left_child, prev_node_idx):
     if node_id < 0:
-        node_id = -1 * node_id
-        score = leaf_value[node_id - 1]
-        recordCount = leaf_count[node_id - 1]
+        node_id = ~node_id
+        score = leaf_value[node_id]
+        recordCount = leaf_count[node_id]
         is_leaf = True
     else:
         score = internal_value[node_id]
