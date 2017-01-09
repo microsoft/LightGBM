@@ -1,18 +1,11 @@
-lgb.is.Booster <- function(x) {
-  if (lgb.check.r6.class(x, "lgb.Booster")) { TRUE } else { FALSE }
-}
+lgb.is.Booster <- function(x) { lgb.check.r6.class(x, "lgb.Booster")) }
 
-lgb.new.handle <- function() {
-  # use 64bit data to store address
-  0.0
-}
+lgb.is.Dataset <- function(x) { lgb.check.r6.class(x, "lgb.Dataset")) }
 
-lgb.is.null.handle <- function(x) {
-  if (is.null(x)) {
-    return(TRUE)
-  }
-  x == 0
-}
+# use 64bit data to store address
+lgb.new.handle <- function() { 0.0 }
+
+lgb.is.null.handle <- function(x) { is.null(x) || x == 0 }
 
 lgb.encode.char <- function(arr, len) {
   if (!is.raw(arr)) {
