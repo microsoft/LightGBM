@@ -13,7 +13,7 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
   } else if (type == std::string("regression_l1") || type == std::string("mean_absolute_error")  || type == std::string("mae")) {
     return new RegressionL1loss(config);
   } else if (type == std::string("huber")) {
-    return new RegressionLHuberLoss(config);
+    return new RegressionHuberLoss(config);
   } else if (type == std::string("binary")) {
     return new BinaryLogloss(config);
   } else if (type == std::string("lambdarank")) {

@@ -76,7 +76,7 @@ public:
         } else {
           gradients[i] = -1.0;
         }
-        hessians[i] = Common::ApproximateHessianWithGaussian(score[i], label_[i]);
+        hessians[i] = Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i]);
       }
     } else {
       #pragma omp parallel for schedule(static)
@@ -87,7 +87,7 @@ public:
         } else {
           gradients[i] = -weights_[i];
         }
-        hessians[i] = Common::ApproximateHessianWithGaussian(score[i], label_[i], weights_[i]);
+        hessians[i] = Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], weights_[i]);
       }
     }
   }
@@ -106,13 +106,13 @@ private:
 };
 
 
-class RegressionLHuberLoss: public ObjectiveFunction {
+class RegressionHuberLoss: public ObjectiveFunction {
 public:
-  explicit RegressionLHuberLoss(const ObjectiveConfig& config) {
+  explicit RegressionHuberLoss(const ObjectiveConfig& config) {
     delta_ = config.huber_delta;
   }
 
-  ~RegressionLHuberLoss() {
+  ~RegressionHuberLoss() {
   }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
@@ -127,6 +127,7 @@ public:
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
+
         if (std::abs(diff) <= delta_) {
           gradients[i] = diff;
           hessians[i] = 1.0;
@@ -136,13 +137,14 @@ public:
             } else {
               gradients[i] = -delta_;
             }
-            hessians[i] = 0.0;
+            hessians[i] = Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i]);
         }
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
+
         if (std::abs(diff) <= delta_) {
           gradients[i] = diff * weights_[i];
           hessians[i] = weights_[i];
@@ -152,7 +154,7 @@ public:
             } else {
               gradients[i] = -delta_ * weights_[i];
             }
-            hessians[i] = 0.0;
+            hessians[i] = Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], weights_[i]);
         }
       }
     }
