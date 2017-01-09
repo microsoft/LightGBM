@@ -187,12 +187,6 @@ public:
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
-/*! \brief Types of tree learning algorithms */
-enum TreeLearnerType {
-  kSerialTreeLearner, kFeatureParallelTreelearner,
-  kDataParallelTreeLearner, KVotingParallelTreeLearner
-};
-
 /*! \brief Config for Boosting */
 struct BoostingConfig: public ConfigBase {
 public:
@@ -213,7 +207,7 @@ public:
   bool xgboost_dart_mode = false;
   bool uniform_drop = false;
   int drop_seed = 4;
-  TreeLearnerType tree_learner_type = TreeLearnerType::kSerialTreeLearner;
+  std::string tree_learner_type = "serial";
   TreeConfig tree_config;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
 private:

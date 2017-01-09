@@ -5,14 +5,14 @@
 
 namespace LightGBM {
 
-TreeLearner* TreeLearner::CreateTreeLearner(TreeLearnerType type, const TreeConfig* tree_config) {
-  if (type == TreeLearnerType::kSerialTreeLearner) {
+TreeLearner* TreeLearner::CreateTreeLearner(const std::string& type, const TreeConfig* tree_config) {
+  if (type == std::string("serial")) {
     return new SerialTreeLearner(tree_config);
-  } else if (type == TreeLearnerType::kFeatureParallelTreelearner) {
+  } else if (type == std::string("feature")) {
     return new FeatureParallelTreeLearner(tree_config);
-  } else if (type == TreeLearnerType::kDataParallelTreeLearner) {
+  } else if (type == std::string("data")) {
     return new DataParallelTreeLearner(tree_config);
-  } else if (type == TreeLearnerType::KVotingParallelTreeLearner) {
+  } else if (type == std::string("voting")) {
     return new VotingParallelTreeLearner(tree_config);
   }
   return nullptr;

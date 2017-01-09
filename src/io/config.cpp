@@ -159,20 +159,22 @@ void OverallConfig::CheckParamConflict() {
     is_parallel = true;
   } else {
     is_parallel = false;
-    boosting_config.tree_learner_type = TreeLearnerType::kSerialTreeLearner;
+    boosting_config.tree_learner_type = "serial";
   }
 
-  if (boosting_config.tree_learner_type == TreeLearnerType::kSerialTreeLearner) {
+  if (boosting_config.tree_learner_type == std::string("serial")) {
     is_parallel = false;
     network_config.num_machines = 1;
   }
 
-  if (boosting_config.tree_learner_type == TreeLearnerType::kSerialTreeLearner ||
-    boosting_config.tree_learner_type == TreeLearnerType::kFeatureParallelTreelearner) {
+  if (boosting_config.tree_learner_type == std::string("serial") 
+      || boosting_config.tree_learner_type == std::string("feature")) {
     is_parallel_find_bin = false;
-  } else if (boosting_config.tree_learner_type == TreeLearnerType::kDataParallelTreeLearner) {
+  } else if (boosting_config.tree_learner_type == std::string("data")
+             || boosting_config.tree_learner_type == std::string("voting")) {
     is_parallel_find_bin = true;
-    if (boosting_config.tree_config.histogram_pool_size >= 0) {
+    if (boosting_config.tree_config.histogram_pool_size >= 0 
+        && boosting_config.tree_learner_type == std::string("data")) {
       Log::Warning("Histogram LRU queue was enabled (histogram_pool_size=%f). Will disable this to reduce communication costs"
         , boosting_config.tree_config.histogram_pool_size);
       // Change pool size to -1 (not limit) when using data parallel to reduce communication costs
@@ -326,13 +328,13 @@ void BoostingConfig::GetTreeLearnerType(const std::unordered_map<std::string, st
   if (GetString(params, "tree_learner", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("serial")) {
-      tree_learner_type = TreeLearnerType::kSerialTreeLearner;
+      tree_learner_type = "serial";
     } else if (value == std::string("feature") || value == std::string("feature_parallel")) {
-      tree_learner_type = TreeLearnerType::kFeatureParallelTreelearner;
+      tree_learner_type = "feature";
     } else if (value == std::string("data") || value == std::string("data_parallel")) {
-      tree_learner_type = TreeLearnerType::kDataParallelTreeLearner;
+      tree_learner_type = "data";
     } else if (value == std::string("voting") || value == std::string("voting_parallel")) {
-      tree_learner_type = TreeLearnerType::KVotingParallelTreeLearner;
+      tree_learner_type = "voting";
     } else {
       Log::Fatal("Unknown tree learner type %s", value.c_str());
     }

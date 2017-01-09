@@ -66,7 +66,7 @@ public:
   * \param type Type of tree learner
   * \param tree_config config of tree
   */
-  static TreeLearner* CreateTreeLearner(TreeLearnerType type,
+  static TreeLearner* CreateTreeLearner(const std::string& type,
     const TreeConfig* tree_config);
 };
 
