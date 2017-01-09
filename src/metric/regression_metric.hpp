@@ -15,7 +15,7 @@ namespace LightGBM {
 template<typename PointWiseLossCalculator>
 class RegressionMetric: public Metric {
 public:
-  explicit RegressionMetric(const MetricConfig&) :huber_delta_(1.0f) {
+  explicit RegressionMetric(const MetricConfig&) :huber_delta_(1.0f), fair_c_(1.0f) {
   }
 
   virtual ~RegressionMetric() {
@@ -54,13 +54,13 @@ public:
 #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], huber_delta_);
+        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], huber_delta_, fair_c_);
       }
     } else {
 #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], huber_delta_) * weights_[i];
+        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], huber_delta_, fair_c_) * weights_[i];
       }
     }
     double loss = PointWiseLossCalculator::AverageLoss(sum_loss, sum_weights_);
@@ -75,6 +75,8 @@ public:
 protected:
   /*! \brief delta for Huber loss */
   double huber_delta_;
+  /*! \brief c for Fair loss */
+  double fair_c_;
 
 private:
   /*! \brief Number of data */
@@ -94,7 +96,7 @@ class L2Metric: public RegressionMetric<L2Metric> {
 public:
   explicit L2Metric(const MetricConfig& config) :RegressionMetric<L2Metric>(config) {}
 
-  inline static score_t LossOnPoint(float label, score_t score, float) {
+  inline static score_t LossOnPoint(float label, score_t score, float, float) {
     return (score - label)*(score - label);
   }
 
@@ -113,7 +115,7 @@ class L1Metric: public RegressionMetric<L1Metric> {
 public:
   explicit L1Metric(const MetricConfig& config) :RegressionMetric<L1Metric>(config) {}
 
-  inline static score_t LossOnPoint(float label, score_t score, float) {
+  inline static score_t LossOnPoint(float label, score_t score, float, float) {
     return std::fabs(score - label);
   }
   inline static const char* Name() {
@@ -128,7 +130,7 @@ public:
         huber_delta_ = config.huber_delta;
     }
 
-    inline static score_t LossOnPoint(float label, score_t score, float delta) {
+    inline static score_t LossOnPoint(float label, score_t score, float delta, float) {
         const double diff = score - label;
         if (std::abs(diff) <= delta) {
             return 0.5 * diff * diff;
@@ -139,6 +141,24 @@ public:
 
     inline static const char* Name() {
         return "huber";
+    }
+};
+
+/*! \brief Fair loss for regression task */
+// http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
+class FairLossMetric: public RegressionMetric<FairLossMetric> {
+public:
+    explicit FairLossMetric(const MetricConfig& config) :RegressionMetric<FairLossMetric>(config) {
+        fair_c_ = config.fair_c;
+    }
+
+    inline static score_t LossOnPoint(float label, score_t score, float, float c) {
+        const double x = std::abs(score - label);
+        return c * x - c * c * std::log(1.0 + x / c);
+    }
+
+    inline static const char* Name() {
+        return "fair";
     }
 };
 
