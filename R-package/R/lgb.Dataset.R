@@ -19,13 +19,13 @@ Dataset <- R6Class(
                           used_indices        = NULL,
                           info                = list(),
                           ...) {
-      addition_params <- list(...)
+      additional_params <- list(...)
       INFO_KEYS <- c('label', 'weight', 'init_score', 'group')
-      for (key in names(addition_params)) {
+      for (key in names(additional_params)) {
         if (key %in% INFO_KEYS) {
-          info[[key]] <- addition_params[[key]]
+          info[[key]] <- additional_params[[key]]
         } else {
-          params[[key]] <- addition_params[[key]]
+          params[[key]] <- additional_params[[key]]
         }
       }
       if (!is.null(reference)) {
