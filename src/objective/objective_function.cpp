@@ -7,8 +7,11 @@
 namespace LightGBM {
 
 ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string& type, const ObjectiveConfig& config) {
-  if (type == std::string("regression")) {
+  if (type == std::string("regression") || type == std::string("regression_l2")
+      || type == std::string("mean_squared_error") || type == std::string("mse")) {
     return new RegressionL2loss(config);
+  } else if (type == std::string("regression_l1") || type == std::string("mean_absolute_error")  || type == std::string("mae")) {
+    return new RegressionL1loss(config);
   } else if (type == std::string("huber")) {
     return new RegressionLHuberLoss(config);
   } else if (type == std::string("binary")) {

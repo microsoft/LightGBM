@@ -2,6 +2,7 @@
 #define LIGHTGBM_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_
 
 #include <LightGBM/objective_function.h>
+#include <LightGBM/utils/common.h>
 
 namespace LightGBM {
 /*!
@@ -50,6 +51,60 @@ private:
   /*! \brief Pointer of weights */
   const float* weights_;
 };
+
+
+class RegressionL1loss: public ObjectiveFunction {
+public:
+  explicit RegressionL1loss(const ObjectiveConfig& config) {}
+
+  ~RegressionL1loss() {}
+
+  void Init(const Metadata& metadata, data_size_t num_data) override {
+    num_data_ = num_data;
+    label_ = metadata.label();
+    weights_ = metadata.weights();
+  }
+
+  void GetGradients(const score_t* score, score_t* gradients,
+                    score_t* hessians) const override {
+    if (weights_ == nullptr) {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        const double diff = score[i] - label_[i];
+        if (diff >= 0.0) {
+          gradients[i] = 1.0;
+        } else {
+          gradients[i] = -1.0;
+        }
+        hessians[i] = Common::ApproximateHessianWithGaussian(score[i], label_[i]);
+      }
+    } else {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        const double diff = score[i] - label_[i];
+        if (diff >= 0.0) {
+          gradients[i] = weights_[i];
+        } else {
+          gradients[i] = -weights_[i];
+        }
+        hessians[i] = Common::ApproximateHessianWithGaussian(score[i], label_[i], weights_[i]);
+      }
+    }
+  }
+
+  const char* GetName() const override {
+    return "regression_l1";
+  }
+
+private:
+  /*! \brief Number of data */
+  data_size_t num_data_;
+  /*! \brief Pointer of label */
+  const float* label_;
+  /*! \brief Pointer of weights */
+  const float* weights_;
+};
+
 
 class RegressionLHuberLoss: public ObjectiveFunction {
 public:
