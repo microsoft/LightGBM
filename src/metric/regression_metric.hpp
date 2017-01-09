@@ -15,8 +15,7 @@ namespace LightGBM {
 template<typename PointWiseLossCalculator>
 class RegressionMetric: public Metric {
 public:
-  explicit RegressionMetric(const MetricConfig&) {
-
+  explicit RegressionMetric(const MetricConfig&) :huber_delta_(1.0f) {
   }
 
   virtual ~RegressionMetric() {
@@ -55,13 +54,13 @@ public:
 #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i]);
+        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], huber_delta_);
       }
     } else {
 #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i]) * weights_[i];
+        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], huber_delta_) * weights_[i];
       }
     }
     double loss = PointWiseLossCalculator::AverageLoss(sum_loss, sum_weights_);
@@ -72,6 +71,10 @@ public:
   inline static double AverageLoss(double sum_loss, double sum_weights) {
     return sum_loss / sum_weights;
   }
+
+protected:
+  /*! \brief delta for Huber loss */
+  double huber_delta_;
 
 private:
   /*! \brief Number of data */
@@ -91,7 +94,7 @@ class L2Metric: public RegressionMetric<L2Metric> {
 public:
   explicit L2Metric(const MetricConfig& config) :RegressionMetric<L2Metric>(config) {}
 
-  inline static score_t LossOnPoint(float label, score_t score) {
+  inline static score_t LossOnPoint(float label, score_t score, float) {
     return (score - label)*(score - label);
   }
 
@@ -110,12 +113,33 @@ class L1Metric: public RegressionMetric<L1Metric> {
 public:
   explicit L1Metric(const MetricConfig& config) :RegressionMetric<L1Metric>(config) {}
 
-  inline static score_t LossOnPoint(float label, score_t score) {
+  inline static score_t LossOnPoint(float label, score_t score, float) {
     return std::fabs(score - label);
   }
   inline static const char* Name() {
     return "l1";
   }
+};
+
+/*! \brief Huber loss for regression task */
+class HuberLossMetric: public RegressionMetric<HuberLossMetric> {
+public:
+    explicit HuberLossMetric(const MetricConfig& config) :RegressionMetric<HuberLossMetric>(config) {
+        huber_delta_ = config.huber_delta;
+    }
+
+    inline static score_t LossOnPoint(float label, score_t score, float delta) {
+        const double diff = score - label;
+        if (std::abs(diff) <= delta) {
+            return 0.5 * diff * diff;
+        } else {
+            return delta * (std::abs(diff) - 0.5 * delta);
+        }
+    }
+
+    inline static const char* Name() {
+        return "huber";
+    }
 };
 
 }  // namespace LightGBM

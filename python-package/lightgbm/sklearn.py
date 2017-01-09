@@ -153,7 +153,7 @@ class LGBMModel(LGBMModelBase):
                  subsample=1, subsample_freq=1, colsample_bytree=1,
                  reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
                  is_unbalance=False, seed=0, nthread=-1, silent=True,
-                 sigmoid=1.0, max_position=20, label_gain=None,
+                 sigmoid=1.0, huber_delta=1.0, max_position=20, label_gain=None,
                  drop_rate=0.1, skip_drop=0.5, max_drop=50,
                  uniform_drop=False, xgboost_dart_mode=False):
         """
@@ -208,6 +208,8 @@ class LGBMModel(LGBMModelBase):
             Whether to print messages while running boosting.
         sigmoid : float
             Only used in binary classification and lambdarank. Parameter for sigmoid function.
+        huber_delta : float
+            Only used in regression. Parameter for Huber loss function.
         max_position : int
             Only used in lambdarank, will optimize NDCG at this position.
         label_gain : list of float
@@ -272,6 +274,7 @@ class LGBMModel(LGBMModelBase):
         self.nthread = nthread
         self.silent = silent
         self.sigmoid = sigmoid
+        self.huber_delta = huber_delta
         self.max_position = max_position
         self.label_gain = label_gain
         self.drop_rate = drop_rate
@@ -489,6 +492,29 @@ class LGBMModel(LGBMModelBase):
 
 
 class LGBMRegressor(LGBMModel, LGBMRegressorBase):
+
+    def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
+                 learning_rate=0.1, n_estimators=10, max_bin=255,
+                 subsample_for_bin=50000, objective="regression",
+                 min_split_gain=0, min_child_weight=5, min_child_samples=10,
+                 subsample=1, subsample_freq=1, colsample_bytree=1,
+                 reg_alpha=0, reg_lambda=0,
+                 seed=0, nthread=-1, silent=True,
+                 huber_delta=1.0,
+                 drop_rate=0.1, skip_drop=0.5, max_drop=50,
+                 uniform_drop=False, xgboost_dart_mode=False):
+        super(LGBMRegressor, self).__init__(boosting_type=boosting_type, num_leaves=num_leaves,
+                                            max_depth=max_depth, learning_rate=learning_rate,
+                                            n_estimators=n_estimators, max_bin=max_bin,
+                                            subsample_for_bin=subsample_for_bin, objective=objective,
+                                            min_split_gain=min_split_gain, min_child_weight=min_child_weight,
+                                            min_child_samples=min_child_samples, subsample=subsample,
+                                            subsample_freq=subsample_freq, colsample_bytree=colsample_bytree,
+                                            reg_alpha=reg_alpha, reg_lambda=reg_lambda,
+                                            seed=seed, nthread=nthread, silent=silent,
+                                            huber_delta=huber_delta,
+                                            drop_rate=drop_rate, skip_drop=skip_drop, max_drop=max_drop,
+                                            uniform_drop=uniform_drop, xgboost_dart_mode=xgboost_dart_mode)
 
     def fit(self, X, y,
             sample_weight=None, init_score=None,
