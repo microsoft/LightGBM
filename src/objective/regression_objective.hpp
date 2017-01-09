@@ -104,7 +104,7 @@ public:
   }
 
   const char* GetName() const override {
-    return "huber_loss";
+    return "huber";
   }
 
 private:

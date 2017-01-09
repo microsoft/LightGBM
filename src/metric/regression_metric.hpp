@@ -15,7 +15,7 @@ namespace LightGBM {
 template<typename PointWiseLossCalculator>
 class RegressionMetric: public Metric {
 public:
-  explicit RegressionMetric(const MetricConfig&) {
+  explicit RegressionMetric(const MetricConfig&) :huber_delta_(1.0f) {
   }
 
   virtual ~RegressionMetric() {
@@ -94,7 +94,7 @@ class L2Metric: public RegressionMetric<L2Metric> {
 public:
   explicit L2Metric(const MetricConfig& config) :RegressionMetric<L2Metric>(config) {}
 
-  inline static score_t LossOnPoint(float label, score_t score, float delta=0.0f) {
+  inline static score_t LossOnPoint(float label, score_t score, float) {
     return (score - label)*(score - label);
   }
 
@@ -113,7 +113,7 @@ class L1Metric: public RegressionMetric<L1Metric> {
 public:
   explicit L1Metric(const MetricConfig& config) :RegressionMetric<L1Metric>(config) {}
 
-  inline static score_t LossOnPoint(float label, score_t score, float delta=0.0f) {
+  inline static score_t LossOnPoint(float label, score_t score, float) {
     return std::fabs(score - label);
   }
   inline static const char* Name() {
@@ -128,7 +128,7 @@ public:
         huber_delta_ = config.huber_delta;
     }
 
-    inline static score_t LossOnPoint(float label, score_t score, float delta=1.0f) {
+    inline static score_t LossOnPoint(float label, score_t score, float delta) {
         const double diff = score - label;
         if (std::abs(diff) <= delta) {
             return 0.5 * diff * diff;
@@ -138,7 +138,7 @@ public:
     }
 
     inline static const char* Name() {
-        return "huber_loss";
+        return "huber";
     }
 };
 

@@ -11,7 +11,7 @@ Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config
     return new L2Metric(config);
   } else if (type == std::string("l1")) {
     return new L1Metric(config);
-  } else if (type == std::string("huber_loss")) {
+  } else if (type == std::string("huber")) {
     return new HuberLossMetric(config);
   } else if (type == std::string("binary_logloss")) {
     return new BinaryLoglossMetric(config);

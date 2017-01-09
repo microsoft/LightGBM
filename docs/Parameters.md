@@ -16,9 +16,9 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
 * ```task```, default=```train```, type=enum, options=```train```,```prediction```
   * ```train``` for training
   * ```prediction``` for prediction.
-* ```application```, default=```regression```, type=enum, options=```regression```,```huber_loss```,```binary```,```lambdarank```,```multiclass```, alias=```objective```,```app```
+* ```application```, default=```regression```, type=enum, options=```regression```,```huber```,```binary```,```lambdarank```,```multiclass```, alias=```objective```,```app```
   * ```regression```, regression application
-  * ```huber_loss```, regression application
+  * ```huber```, [Huber loss](https://en.wikipedia.org/wiki/Huber_loss "Huber loss - Wikipedia") for regression task
   * ```binary```, binary classification application 
   * ```lambdarank```, lambdarank application
   * ```multiclass```, multi-class classification application, should set ```num_class``` as well
