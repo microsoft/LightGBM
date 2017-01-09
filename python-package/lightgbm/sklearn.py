@@ -153,7 +153,7 @@ class LGBMModel(LGBMModelBase):
                  subsample=1, subsample_freq=1, colsample_bytree=1,
                  reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
                  is_unbalance=False, seed=0, nthread=-1, silent=True,
-                 sigmoid=1.0, huber_delta=1.0, max_position=20, label_gain=None,
+                 sigmoid=1.0, huber_delta=1.0, fair_c=1.0, max_position=20, label_gain=None,
                  drop_rate=0.1, skip_drop=0.5, max_drop=50,
                  uniform_drop=False, xgboost_dart_mode=False):
         """
@@ -210,6 +210,8 @@ class LGBMModel(LGBMModelBase):
             Only used in binary classification and lambdarank. Parameter for sigmoid function.
         huber_delta : float
             Only used in regression. Parameter for Huber loss function.
+        fair_c : float
+            Only used in regression. Parameter for Fair loss function.
         max_position : int
             Only used in lambdarank, will optimize NDCG at this position.
         label_gain : list of float
@@ -275,6 +277,7 @@ class LGBMModel(LGBMModelBase):
         self.silent = silent
         self.sigmoid = sigmoid
         self.huber_delta = huber_delta
+        self.fair_c = fair_c
         self.max_position = max_position
         self.label_gain = label_gain
         self.drop_rate = drop_rate
@@ -500,7 +503,7 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
                  subsample=1, subsample_freq=1, colsample_bytree=1,
                  reg_alpha=0, reg_lambda=0,
                  seed=0, nthread=-1, silent=True,
-                 huber_delta=1.0,
+                 huber_delta=1.0, fair_c=1.0,
                  drop_rate=0.1, skip_drop=0.5, max_drop=50,
                  uniform_drop=False, xgboost_dart_mode=False):
         super(LGBMRegressor, self).__init__(boosting_type=boosting_type, num_leaves=num_leaves,
@@ -512,7 +515,7 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
                                             subsample_freq=subsample_freq, colsample_bytree=colsample_bytree,
                                             reg_alpha=reg_alpha, reg_lambda=reg_lambda,
                                             seed=seed, nthread=nthread, silent=silent,
-                                            huber_delta=huber_delta,
+                                            huber_delta=huber_delta, fair_c=fair_c,
                                             drop_rate=drop_rate, skip_drop=skip_drop, max_drop=max_drop,
                                             uniform_drop=uniform_drop, xgboost_dart_mode=xgboost_dart_mode)
 

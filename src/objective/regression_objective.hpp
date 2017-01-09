@@ -175,5 +175,57 @@ private:
   double delta_;
 };
 
+
+// http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
+class RegressionFairLoss: public ObjectiveFunction {
+public:
+  explicit RegressionFairLoss(const ObjectiveConfig& config) {
+    c_ = config.fair_c;
+  }
+
+  ~RegressionFairLoss() {}
+
+  void Init(const Metadata& metadata, data_size_t num_data) override {
+    num_data_ = num_data;
+    label_ = metadata.label();
+    weights_ = metadata.weights();
+  }
+
+  void GetGradients(const score_t* score, score_t* gradients,
+                    score_t* hessians) const override {
+    if (weights_ == nullptr) {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        const double x = score[i] - label_[i];
+        gradients[i] = c_ * x / (std::fabs(x) + c_);
+        hessians[i] = c_ * c_ / ((std::fabs(x) + c_) * (std::fabs(x) + c_));
+      }
+    } else {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        const double x = score[i] - label_[i];
+        gradients[i] = c_ * x / (std::fabs(x) + c_);
+        gradients[i] *= weights_[i];
+        hessians[i] = c_ * c_ / ((std::fabs(x) + c_) * (std::fabs(x) + c_));
+        hessians[i] *= weights_[i];
+      }
+    }
+  }
+
+  const char* GetName() const override {
+    return "fair";
+  }
+
+private:
+  /*! \brief Number of data */
+  data_size_t num_data_;
+  /*! \brief Pointer of label */
+  const float* label_;
+  /*! \brief Pointer of weights */
+  const float* weights_;
+  /*! \brief c for Fair loss */
+  double c_;
+};
+
 }  // namespace LightGBM
 #endif   // LightGBM_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_

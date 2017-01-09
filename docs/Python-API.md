@@ -631,6 +631,8 @@ The methods of each Class is in alphabetical order.
         Only used in binary classification and lambdarank. Parameter for sigmoid function.
     huber_delta : float
         Only used in regression. Parameter for Huber loss function.
+    fair_c : float
+        Only used in regression. Parameter for Fair loss function.
     max_position : int
         Only used in lambdarank, will optimize NDCG at this position.
     label_gain : list of float

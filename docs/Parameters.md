@@ -21,6 +21,7 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
     * ```regression_l2```, L2 loss, alias=```mean_squared_error```,```mse```
     * ```regression_l1```, L1 loss, alias=```mean_absolute_error```,```mae```
     * ```huber```, [Huber loss](https://en.wikipedia.org/wiki/Huber_loss "Huber loss - Wikipedia")
+    * ```fair```, [Fair loss](http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html)
   * ```binary```, binary classification application 
   * ```lambdarank```, lambdarank application
   * ```multiclass```, multi-class classification application, should set ```num_class``` as well
@@ -170,6 +171,8 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * parameter for sigmoid function. Will be used in binary classification and lambdarank.
 * ```huber_delta```, default=```1.0```, type=double
   * parameter for [Huber loss](https://en.wikipedia.org/wiki/Huber_loss "Huber loss - Wikipedia"). Will be used in regression task.
+* ```fair_c```, default=```1.0```, type=double
+  * parameter for [Fair loss](http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html). Will be used in regression task.
 * ```scale_pos_weight```, default=```1.0```, type=double
   * weight of positive class in binary classification task
 * ```is_unbalance```, default=```false```, type=bool
@@ -187,6 +190,8 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
 * ```metric```, default={```l2``` for regression}, {```binary_logloss``` for binary classification},{```ndcg``` for lambdarank}, type=multi-enum, options=```l1```,```l2```,```ndcg```,```auc```,```binary_logloss```,```binary_error```
   * ```l1```, absolute loss
   * ```l2```, square loss
+  * ```huber```, [Huber loss](https://en.wikipedia.org/wiki/Huber_loss "Huber loss - Wikipedia")
+  * ```fair```, [Fair loss](http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html)
   * ```ndcg```, [NDCG](https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG)
   * ```auc```, [AUC](https://en.wikipedia.org/wiki/Area_under_the_curve_(pharmacokinetics))
   * ```binary_logloss```, [log loss](https://www.kaggle.com/wiki/LogarithmicLoss)

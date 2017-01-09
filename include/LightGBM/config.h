@@ -138,6 +138,7 @@ public:
   virtual ~ObjectiveConfig() {}
   double sigmoid = 1.0f;
   double huber_delta = 1.0f;
+  double fair_c = 1.0f;
   // for lambdarank
   std::vector<double> label_gain;
   // for lambdarank
@@ -158,6 +159,7 @@ public:
   int num_class = 1;
   double sigmoid = 1.0f;
   double huber_delta = 1.0f;
+  double fair_c = 1.0f;
   std::vector<double> label_gain;
   std::vector<int> eval_at;
   void Set(const std::unordered_map<std::string, std::string>& params) override;
