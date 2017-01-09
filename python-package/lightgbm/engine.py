@@ -10,7 +10,7 @@ import numpy as np
 
 from . import callback
 from .basic import Booster, Dataset, LightGBMError, _InnerPredictor
-from .compat import integer_types, string_type
+from .compat import integer_types, range_, string_type
 
 
 def train(params, train_set, num_boost_round=100,
@@ -164,7 +164,7 @@ def train(params, train_set, num_boost_round=100,
         booster.add_valid(valid_set, name_valid_set)
 
     """start training"""
-    for i in range(init_iteration, init_iteration + num_boost_round):
+    for i in range_(init_iteration, init_iteration + num_boost_round):
         for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=booster,
                                     params=params,
@@ -245,11 +245,11 @@ def _make_n_folds(full_data, nfold, params, seed, fpreproc=None, stratified=Fals
         if shuffle:
             randidx = np.random.permutation(full_data.num_data())
         kstep = int(len(randidx) / nfold)
-        idset = [randidx[(i * kstep): min(len(randidx), (i + 1) * kstep)] for i in range(nfold)]
+        idset = [randidx[(i * kstep): min(len(randidx), (i + 1) * kstep)] for i in range_(nfold)]
 
     ret = CVBooster()
-    for k in range(nfold):
-        train_set = full_data.subset(np.concatenate([idset[i] for i in range(nfold) if k != i]))
+    for k in range_(nfold):
+        train_set = full_data.subset(np.concatenate([idset[i] for i in range_(nfold) if k != i]))
         valid_set = full_data.subset(idset[k])
         # run preprocessing on the data set if needed
         if fpreproc is not None:
@@ -382,7 +382,7 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
     callbacks_before_iter = sorted(callbacks_before_iter, key=attrgetter('order'))
     callbacks_after_iter = sorted(callbacks_after_iter, key=attrgetter('order'))
 
-    for i in range(num_boost_round):
+    for i in range_(num_boost_round):
         for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=cvfolds,
                                     params=params,

@@ -8,7 +8,7 @@ import inspect
 import numpy as np
 
 from .basic import Dataset, LightGBMError
-from .compat import is_py3
+from .compat import is_py3, range_
 from .engine import train
 
 '''sklearn'''
@@ -87,8 +87,8 @@ def _objective_function_wrapper(func):
                 num_class = len(grad) // num_data
                 if num_class * num_data != len(grad):
                     raise ValueError("Length of grad and hess should equal to num_class * num_data")
-                for k in range(num_class):
-                    for i in range(num_data):
+                for k in range_(num_class):
+                    for i in range_(num_data):
                         idx = k * num_data + i
                         grad[idx] *= weight[i]
                         hess[idx] *= weight[i]
@@ -691,7 +691,7 @@ class LGBMRanker(LGBMModel):
                 raise ValueError("Eval_group cannot be None when eval_set is not None")
             elif len(eval_group) != len(eval_set):
                 raise ValueError("Length of eval_group should equal to eval_set")
-            elif (isinstance(eval_group, dict) and any(i not in eval_group or eval_group[i] is None for i in range(len(eval_group)))) \
+            elif (isinstance(eval_group, dict) and any(i not in eval_group or eval_group[i] is None for i in range_(len(eval_group)))) \
                     or (isinstance(eval_group, list) and any(group is None for group in eval_group)):
                 raise ValueError("Should set group for all eval dataset for ranking task; if you use dict, the index should start from 0")
 
