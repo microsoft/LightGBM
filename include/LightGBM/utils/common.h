@@ -411,7 +411,7 @@ inline void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, size_t s
 */
 inline static double ApproximateHessianWithGaussian(const double y, const double t, const double g, const double w=1.0f) {
   const double diff = y - t;
-  const double pi = M_PI;
+  const double pi = std::atan(1.0);
   const double x = std::fabs(diff);
   const double a = 2.0 * std::fabs(g) * w;  // difference of two first derivatives, (zero to inf) and (zero to -inf).
   const double b = 0.0;
