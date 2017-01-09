@@ -400,6 +400,24 @@ inline void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, size_t s
 
 }
 
+/*
+* approximate hessians of absolute loss with Gaussian function
+* cf. https://en.wikipedia.org/wiki/Gaussian_function
+*
+* y is a prediction.
+* t mesas true target.
+* w means weights.
+*/
+inline static double ApproximateHessianWithGaussian(double y, double t, double w=1.0f) {
+  const double diff = y - t;
+  const double pi = M_PI;
+  const double x = (std::fabs(diff) > 0.0) ? std::fabs(diff) : 1.0e-6;
+  const double a = 2.0 * w;  // difference of two first derivatives, (zero to inf) and (zero to -inf).
+  const double b = 0.0;
+  const double c = (std::fabs(y) + std::fabs(t)) / 1.0e3;
+  return w * std::exp(-(x - b) * (x - b) / 2.0 * c * c) * a / std::sqrt(2.0 * pi) * c;
+}
+
 }  // namespace Common
 
 }  // namespace LightGBM

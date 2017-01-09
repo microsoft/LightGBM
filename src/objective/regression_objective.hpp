@@ -2,6 +2,7 @@
 #define LIGHTGBM_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_
 
 #include <LightGBM/objective_function.h>
+#include <LightGBM/utils/common.h>
 
 namespace LightGBM {
 /*!
@@ -70,44 +71,23 @@ public:
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
-
         if (diff >= 0.0) {
           gradients[i] = 1.0;
         } else {
           gradients[i] = -1.0;
         }
-
-        /*
-         * approximate hessians with Gaussian function
-         * cf. https://en.wikipedia.org/wiki/Gaussian_function
-         */
-        const double x = (std::fabs(diff) > 0.0) ? std::fabs(diff) : 1.0e-6;
-        const double a = 2.0;  // difference of two first derivatives, (zero to inf) and (zero to -inf)
-        const double b = 0.0;
-        const double c = (std::fabs(score[i]) + std::fabs(label_[i])) / 1.0e3;
-        hessians[i] = std::exp(-(x - b) * (x - b) / 2.0 * c * c) / a;
+        hessians[i] = Common::ApproximateHessianWithGaussian(score[i], label_[i]);
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
-
         if (diff >= 0.0) {
           gradients[i] = weights_[i];
         } else {
           gradients[i] = -weights_[i];
         }
-
-        /*
-         * approximate hessians with Gaussian function
-         * cf. https://en.wikipedia.org/wiki/Gaussian_function
-         */
-        const double x = (std::fabs(diff) > 0.0) ? std::fabs(diff) : 1.0e-6;
-        const double a = 2.0 * weights_[i];  // difference of two first derivatives, (zero to inf) and (zero to -inf).
-        const double b = 0.0;
-        const double c = (std::fabs(score[i]) + std::fabs(label_[i])) / 1.0e3;
-        hessians[i] = std::exp(-(x - b) * (x - b) / 2.0 * c * c) / a;
-        hessians[i] *= weights_[i];
+        hessians[i] = Common::ApproximateHessianWithGaussian(score[i], label_[i], weights_[i]);
       }
     }
   }
