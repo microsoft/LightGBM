@@ -16,7 +16,7 @@ def get_array_strings(line):
 
 
 def get_array_ints(line):
-    return map(int, get_array_strings(line))
+    return [int(token) for token in get_array_strings(line)]
 
 
 def get_field_name(node_id, prev_node_idx, is_child):
@@ -29,17 +29,12 @@ def get_threshold(node_id, prev_node_idx, is_child):
     return threshold[idx]
 
 
-def print_simple_predicate(
-        tab_length,
-        node_id,
-        is_left_child,
-        prev_node_idx,
-        is_leaf):
+def print_simple_predicate(tab_len, node_id, is_left_child, prev_node_idx, is_leaf):
     if is_left_child:
         op = 'equal' if decision_type[prev_node_idx] == 1 else 'lessOrEqual'
     else:
         op = 'notEqual' if decision_type[prev_node_idx] == 1 else 'greaterThan'
-    out_('\t' * (tab_length + 1) + ("<SimplePredicate field=\"{0}\" " + " operator=\"{1}\" value=\"{2}\" />") .format(
+    out_('\t' * (tab_len + 1) + ("<SimplePredicate field=\"{0}\" " + " operator=\"{1}\" value=\"{2}\" />").format(
         get_field_name(node_id, prev_node_idx, is_leaf), op, get_threshold(node_id, prev_node_idx, is_leaf)))
 
 
@@ -86,7 +81,8 @@ if len(argv) != 2:
 
 # open the model file and then process it
 with open(argv[1], 'r') as model_in:
-    model_content = iter([line for line in model_in.read().splitlines() if line][6:])  # ignore first 6 lines
+    # ignore first 6 and empty lines
+    model_content = iter([line for line in model_in.read().splitlines() if line][6:])
 
 feature_names = get_array_strings(next(model_content))
 segment_id = count(1)
