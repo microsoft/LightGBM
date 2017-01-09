@@ -9,7 +9,8 @@ from operator import attrgetter
 import numpy as np
 
 from . import callback
-from .basic import Booster, Dataset, LightGBMError, _InnerPredictor, is_str
+from .basic import Booster, Dataset, LightGBMError, _InnerPredictor
+from .compat import integer_types, string_type
 
 
 def train(params, train_set, num_boost_round=100,
@@ -85,7 +86,7 @@ def train(params, train_set, num_boost_round=100,
     booster : a trained booster model
     """
     """create predictor first"""
-    if is_str(init_model):
+    if isinstance(init_model, string_type):
         predictor = _InnerPredictor(model_file=init_model)
     elif isinstance(init_model, Booster):
         predictor = init_model._to_predictor()
@@ -108,7 +109,7 @@ def train(params, train_set, num_boost_round=100,
     if valid_sets is not None:
         if isinstance(valid_sets, Dataset):
             valid_sets = [valid_sets]
-        if isinstance(valid_names, str):
+        if isinstance(valid_names, string_type):
             valid_names = [valid_names]
         for i, valid_data in enumerate(valid_sets):
             """reduce cost for prediction training data"""
@@ -138,7 +139,7 @@ def train(params, train_set, num_boost_round=100,
     # Most of legacy advanced options becomes callbacks
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation())
-    elif isinstance(verbose_eval, int):
+    elif isinstance(verbose_eval, integer_types):
         callbacks.add(callback.print_evaluation(verbose_eval))
 
     if early_stopping_rounds is not None:
@@ -341,7 +342,7 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
     if not isinstance(train_set, Dataset):
         raise TypeError("Traninig only accepts Dataset object")
 
-    if is_str(init_model):
+    if isinstance(init_model, string_type):
         predictor = _InnerPredictor(model_file=init_model)
     elif isinstance(init_model, Booster):
         predictor = init_model._to_predictor()
@@ -354,7 +355,7 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
 
     if metrics:
         params.setdefault('metric', [])
-        if is_str(metrics):
+        if isinstance(metrics, string_type):
             params['metric'].append(metrics)
         else:
             params['metric'].extend(metrics)
@@ -373,7 +374,7 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
         callbacks.add(callback.early_stopping(early_stopping_rounds, verbose=False))
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation(show_stdv=show_stdv))
-    elif isinstance(verbose_eval, int):
+    elif isinstance(verbose_eval, integer_types):
         callbacks.add(callback.print_evaluation(verbose_eval, show_stdv=show_stdv))
 
     callbacks_before_iter = {cb for cb in callbacks if getattr(cb, 'before_iteration', False)}

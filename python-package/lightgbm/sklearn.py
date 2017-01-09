@@ -7,7 +7,8 @@ import inspect
 
 import numpy as np
 
-from .basic import IS_PY3, Dataset, LightGBMError
+from .basic import Dataset, LightGBMError
+from .compat import is_py3
 from .engine import train
 
 '''sklearn'''
@@ -30,7 +31,7 @@ except ImportError:
 
 
 def _argc(func):
-    if IS_PY3:
+    if is_py3:
         return len(inspect.signature(func).parameters)
     else:
         return len(inspect.getargspec(func).args)

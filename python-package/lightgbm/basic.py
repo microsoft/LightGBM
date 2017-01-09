@@ -7,12 +7,12 @@ from __future__ import absolute_import
 import ctypes
 import json
 import os
-import sys
 from tempfile import NamedTemporaryFile
 
 import numpy as np
 import scipy.sparse
 
+from .compat import integer_types, numeric_types, string_type
 from .libpath import find_lib_path
 
 """pandas"""
@@ -24,8 +24,6 @@ except ImportError:
 
     class DataFrame(object):
         pass
-
-IS_PY3 = (sys.version_info[0] == 3)
 
 
 def _load_lib():
@@ -57,14 +55,6 @@ def _safe_call(ret):
         raise LightGBMError(_LIB.LGBM_GetLastError())
 
 
-def is_str(s):
-    """Check is a str or not"""
-    if IS_PY3:
-        return isinstance(s, str)
-    else:
-        return isinstance(s, basestring)
-
-
 def is_numeric(obj):
     """Check is a number or not, include numpy number etc."""
     try:
@@ -87,7 +77,7 @@ def is_numpy_1d_array(data):
 def is_1d_list(data):
     """Check is 1d list"""
     return isinstance(data, list) and \
-        (not data or isinstance(data[0], (int, float, bool)))
+        (not data or isinstance(data[0], numeric_types))
 
 
 def list_to_1d_numpy(data, dtype=np.float32, name='list'):
@@ -140,7 +130,7 @@ def param_dict_to_str(data):
     for key, val in data.items():
         if isinstance(val, (list, tuple, set)) or is_numpy_1d_array(val):
             pairs.append(str(key) + '=' + ','.join(map(str, val)))
-        elif is_str(val) or isinstance(val, (int, float, bool)) or is_numeric(val):
+        elif isinstance(val, string_type) or isinstance(val, numeric_types) or is_numeric(val):
             pairs.append(str(key) + '=' + str(val))
         else:
             raise TypeError('Unknown type of parameter:%s, got:%s'
@@ -314,7 +304,7 @@ class _InnerPredictor(object):
         int_data_has_header = 1 if data_has_header else 0
         if num_iteration > self.num_total_iteration:
             num_iteration = self.num_total_iteration
-        if is_str(data):
+        if isinstance(data, string_type):
             with _temp_file() as f:
                 _safe_call(_LIB.LGBM_BoosterPredictForFile(
                     self.handle,
@@ -576,9 +566,9 @@ class Dataset(object):
             if feature_name is not None:
                 feature_dict = {name: i for i, name in enumerate(feature_name)}
             for name in categorical_feature:
-                if is_str(name) and name in feature_dict:
+                if isinstance(name, string_type) and name in feature_dict:
                     categorical_indices.add(feature_dict[name])
-                elif isinstance(name, int):
+                elif isinstance(name, integer_types):
                     categorical_indices.add(name)
                 else:
                     raise TypeError("Wrong type({}) or unknown name({}) in categorical_feature"
