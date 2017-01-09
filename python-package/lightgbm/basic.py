@@ -60,7 +60,9 @@ def is_numeric(obj):
     try:
         float(obj)
         return True
-    except:
+    except (TypeError, ValueError):
+        # TypeError: obj is not a string or a number
+        # ValueError: invalid literal
         return False
 
 

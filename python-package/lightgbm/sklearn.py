@@ -3,15 +3,13 @@
 """Scikit-Learn Wrapper interface for LightGBM."""
 from __future__ import absolute_import
 
-import inspect
-
 import numpy as np
 
 from .basic import Dataset, LightGBMError
-from .compat import is_py3, range_
+from .compat import argc_, range_
 from .engine import train
 
-'''sklearn'''
+"""sklearn"""
 try:
     from sklearn.base import BaseEstimator
     from sklearn.base import RegressorMixin, ClassifierMixin
@@ -28,13 +26,6 @@ except ImportError:
     LGBMClassifierBase = object
     LGBMRegressorBase = object
     LGBMLabelEncoder = None
-
-
-def _argc(func):
-    if is_py3:
-        return len(inspect.signature(func).parameters)
-    else:
-        return len(inspect.getargspec(func).args)
 
 
 def _objective_function_wrapper(func):
@@ -68,7 +59,7 @@ def _objective_function_wrapper(func):
     def inner(preds, dataset):
         """internal function"""
         labels = dataset.get_label()
-        argc = _argc(func)
+        argc = argc_(func)
         if argc == 2:
             grad, hess = func(labels, preds)
         elif argc == 3:
@@ -133,7 +124,7 @@ def _eval_function_wrapper(func):
     def inner(preds, dataset):
         """internal function"""
         labels = dataset.get_label()
-        argc = _argc(func)
+        argc = argc_(func)
         if argc == 2:
             return func(labels, preds)
         elif argc == 3:
