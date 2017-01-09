@@ -413,7 +413,7 @@ inline static double ApproximateHessianWithGaussian(const double y, const double
   const double diff = y - t;
   const double pi = M_PI;
   const double x = std::fabs(diff);
-  const double a = 2.0 * g * w;  // difference of two first derivatives, (zero to inf) and (zero to -inf).
+  const double a = 2.0 * std::fabs(g) * w;  // difference of two first derivatives, (zero to inf) and (zero to -inf).
   const double b = 0.0;
   const double c = std::max(std::fabs(y) + std::fabs(t), 1.0e-10);
   return w * std::exp(-(x - b) * (x - b) / (2.0 * c * c)) * a / (c * std::sqrt(2 * pi));
