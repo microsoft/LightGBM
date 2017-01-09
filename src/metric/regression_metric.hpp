@@ -74,9 +74,9 @@ public:
 
 protected:
   /*! \brief delta for Huber loss */
-  double huber_delta_;
+  score_t huber_delta_;
   /*! \brief c for Fair loss */
-  double fair_c_;
+  score_t fair_c_;
 
 private:
   /*! \brief Number of data */
@@ -126,40 +126,40 @@ public:
 /*! \brief Huber loss for regression task */
 class HuberLossMetric: public RegressionMetric<HuberLossMetric> {
 public:
-    explicit HuberLossMetric(const MetricConfig& config) :RegressionMetric<HuberLossMetric>(config) {
-        huber_delta_ = config.huber_delta;
-    }
+  explicit HuberLossMetric(const MetricConfig& config) :RegressionMetric<HuberLossMetric>(config) {
+    huber_delta_ = static_cast<score_t>(config.huber_delta);
+  }
 
-    inline static score_t LossOnPoint(float label, score_t score, float delta, float) {
-        const double diff = score - label;
-        if (std::abs(diff) <= delta) {
-            return 0.5 * diff * diff;
-        } else {
-            return delta * (std::abs(diff) - 0.5 * delta);
-        }
+  inline static score_t LossOnPoint(float label, score_t score, float delta, float) {
+    const score_t diff = score - label;
+    if (std::abs(diff) <= delta) {
+      return 0.5f * diff * diff;
+    } else {
+      return delta * (std::abs(diff) - 0.5f * delta);
     }
+  }
 
-    inline static const char* Name() {
-        return "huber";
-    }
+  inline static const char* Name() {
+    return "huber";
+  }
 };
 
 /*! \brief Fair loss for regression task */
 // http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
 class FairLossMetric: public RegressionMetric<FairLossMetric> {
 public:
-    explicit FairLossMetric(const MetricConfig& config) :RegressionMetric<FairLossMetric>(config) {
-        fair_c_ = config.fair_c;
-    }
+  explicit FairLossMetric(const MetricConfig& config) :RegressionMetric<FairLossMetric>(config) {
+    fair_c_ = static_cast<score_t>(config.fair_c);
+  }
 
-    inline static score_t LossOnPoint(float label, score_t score, float, float c) {
-        const double x = std::abs(score - label);
-        return c * x - c * c * std::log(1.0 + x / c);
-    }
+  inline static score_t LossOnPoint(float label, score_t score, float, float c) {
+    const score_t x = std::fabs(score - label);
+    return c * x - c * c * std::log(1.0f + x / c);
+  }
 
-    inline static const char* Name() {
-        return "fair";
-    }
+  inline static const char* Name() {
+    return "fair";
+  }
 };
 
 }  // namespace LightGBM
