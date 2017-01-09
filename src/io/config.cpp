@@ -221,6 +221,7 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
   GetDouble(params, "sigmoid", &sigmoid);
   GetDouble(params, "huber_delta", &huber_delta);
   GetDouble(params, "fair_c", &fair_c);
+  GetDouble(params, "gaussian_eta", &gaussian_eta);
   GetInt(params, "max_position", &max_position);
   CHECK(max_position > 0);
   GetInt(params, "num_class", &num_class);

@@ -631,6 +631,9 @@ The methods of each Class is in alphabetical order.
         Only used in binary classification and lambdarank. Parameter for sigmoid function.
     huber_delta : float
         Only used in regression. Parameter for Huber loss function.
+    gaussian_eta : float
+        Only used in regression. Parameter for L1 and Huber loss function.
+        It is used to control the width of Gaussian function to approximate hessian.
     fair_c : float
         Only used in regression. Parameter for Fair loss function.
     max_position : int

@@ -57,7 +57,9 @@ private:
 */
 class RegressionL1loss: public ObjectiveFunction {
 public:
-  explicit RegressionL1loss(const ObjectiveConfig&) {}
+  explicit RegressionL1loss(const ObjectiveConfig& config) {
+    eta_ = static_cast<score_t>(config.gaussian_eta);
+  }
 
   ~RegressionL1loss() {}
 
@@ -78,7 +80,7 @@ public:
         } else {
           gradients[i] = -1.0f;
         }
-        hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i]));
+        hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], eta_));
       }
     } else {
 #pragma omp parallel for schedule(static)
@@ -89,7 +91,7 @@ public:
         } else {
           gradients[i] = -weights_[i];
         }
-        hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], weights_[i]));
+        hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], eta_, weights_[i]));
       }
     }
   }
@@ -105,6 +107,8 @@ private:
   const float* label_;
   /*! \brief Pointer of weights */
   const float* weights_;
+  /*! \brief a parameter to control the width of Gaussian function to approximate hessian */
+  score_t eta_;
 };
 
 /*!
@@ -114,6 +118,7 @@ class RegressionHuberLoss: public ObjectiveFunction {
 public:
   explicit RegressionHuberLoss(const ObjectiveConfig& config) {
     delta_ = static_cast<score_t>(config.huber_delta);
+    eta_ = static_cast<score_t>(config.gaussian_eta);
   }
 
   ~RegressionHuberLoss() {
@@ -141,7 +146,7 @@ public:
           } else {
             gradients[i] = -delta_;
           }
-          hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i]));
+          hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], eta_));
         }
       }
     } else {
@@ -158,7 +163,7 @@ public:
           } else {
             gradients[i] = -delta_ * weights_[i];
           }
-          hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], weights_[i]));
+          hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], eta_, weights_[i]));
         }
       }
     }
@@ -177,6 +182,8 @@ private:
   const float* weights_;
   /*! \brief delta for Huber loss */
   score_t delta_;
+  /*! \brief a parameter to control the width of Gaussian function to approximate hessian */
+  score_t eta_;
 };
 
 

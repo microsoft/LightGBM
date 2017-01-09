@@ -139,6 +139,8 @@ public:
   double sigmoid = 1.0f;
   double huber_delta = 1.0f;
   double fair_c = 1.0f;
+  // for ApproximateHessianWithGaussian
+  double gaussian_eta = 1.0f;
   // for lambdarank
   std::vector<double> label_gain;
   // for lambdarank
