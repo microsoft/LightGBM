@@ -158,7 +158,7 @@ public:
         ++cur_sample_cnt;
       }
       else {
-        const size_t idx = static_cast<size_t>(random.NextInt(0, line_idx + 1));
+        const size_t idx = static_cast<size_t>(random.NextInt(0, static_cast<int>(line_idx + 1)));
         if (idx < static_cast<size_t>(sample_cnt)) {
           out_sampled_data->operator[](idx) = std::string(buffer, size);
         }
@@ -198,7 +198,7 @@ public:
           ++cur_sample_cnt;
         }
         else {
-          const size_t idx = static_cast<size_t>(random.NextInt(0, out_used_data_indices->size()));
+          const size_t idx = static_cast<size_t>(random.NextInt(0, static_cast<int>(out_used_data_indices->size())));
           if (idx < static_cast<size_t>(sample_cnt) ) {
             out_sampled_data->operator[](idx) = std::string(buffer, size);
           }
