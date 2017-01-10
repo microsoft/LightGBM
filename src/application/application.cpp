@@ -190,13 +190,14 @@ void Application::InitTrain() {
     Network::Init(config_.network_config);
     Log::Info("Finished initializing network");
     // sync global random seed for feature patition
-    if (config_.boosting_type == BoostingType::kGBDT || config_.boosting_type == BoostingType::kDART) {
-      config_.boosting_config.tree_config.feature_fraction_seed =
-        GlobalSyncUpByMin<int>(config_.boosting_config.tree_config.feature_fraction_seed);
-      config_.boosting_config.tree_config.feature_fraction =
-        GlobalSyncUpByMin<double>(config_.boosting_config.tree_config.feature_fraction);
-    }
+    config_.boosting_config.tree_config.feature_fraction_seed =
+      GlobalSyncUpByMin<int>(config_.boosting_config.tree_config.feature_fraction_seed);
+    config_.boosting_config.tree_config.feature_fraction =
+      GlobalSyncUpByMin<double>(config_.boosting_config.tree_config.feature_fraction);
+    config_.boosting_config.drop_seed =
+      GlobalSyncUpByMin<int>(config_.boosting_config.drop_seed);
   }
+
   // create boosting
   boosting_.reset(
     Boosting::CreateBoosting(config_.boosting_type,

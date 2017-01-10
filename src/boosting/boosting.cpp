@@ -4,15 +4,10 @@
 
 namespace LightGBM {
 
-BoostingType GetBoostingTypeFromModelFile(const char* filename) {
+std::string GetBoostingTypeFromModelFile(const char* filename) {
   TextReader<size_t> model_reader(filename, true);
   std::string type = model_reader.first_line();
-  if (type == std::string("gbdt")) {
-    return BoostingType::kGBDT;
-  } else if (type == std::string("dart")) {
-    return BoostingType::kDART;
-  }
-  return BoostingType::kUnknow;
+  return type;
 }
 
 void Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
@@ -27,11 +22,11 @@ void Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
   }
 }
 
-Boosting* Boosting::CreateBoosting(BoostingType type, const char* filename) {
+Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename) {
   if (filename == nullptr || filename[0] == '\0') {
-    if (type == BoostingType::kGBDT) {
+    if (type == std::string("gbdt")) {
       return new GBDT();
-    } else if (type == BoostingType::kDART) {
+    } else if (type == std::string("dart")) {
       return new DART();
     } else {
       return nullptr;
@@ -39,15 +34,15 @@ Boosting* Boosting::CreateBoosting(BoostingType type, const char* filename) {
   } else {
     std::unique_ptr<Boosting> ret;
     auto type_in_file = GetBoostingTypeFromModelFile(filename);
-    if (type_in_file == type) {
-      if (type == BoostingType::kGBDT) {
+    if (type_in_file == std::string("tree")) {
+      if (type == std::string("gbdt")) {
         ret.reset(new GBDT());
-      } else if (type == BoostingType::kDART) {
+      } else if (type == std::string("dart")) {
         ret.reset(new DART());
       }
       LoadFileToBoosting(ret.get(), filename);
     } else {
-      Log::Fatal("Boosting type in parameter is not the same as the type in the model file");
+      Log::Fatal("unknow submodel type in model file %s", filename);
     }
     return ret.release();
   }
@@ -56,10 +51,10 @@ Boosting* Boosting::CreateBoosting(BoostingType type, const char* filename) {
 Boosting* Boosting::CreateBoosting(const char* filename) {
   auto type = GetBoostingTypeFromModelFile(filename);
   std::unique_ptr<Boosting> ret;
-  if (type == BoostingType::kGBDT) {
+  if (type == std::string("tree")) {
     ret.reset(new GBDT());
-  } else if (type == BoostingType::kDART) {
-    ret.reset(new DART());
+  } else {
+    Log::Fatal("unknow submodel type in model file %s", filename);
   }
   LoadFileToBoosting(ret.get(), filename);
   return ret.release();

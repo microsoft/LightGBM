@@ -76,9 +76,9 @@ void OverallConfig::GetBoostingType(const std::unordered_map<std::string, std::s
   if (GetString(params, "boosting_type", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("gbdt") || value == std::string("gbrt")) {
-      boosting_type = BoostingType::kGBDT;
+      boosting_type = "gbdt";
     } else if (value == std::string("dart")) {
-      boosting_type = BoostingType::kDART;
+      boosting_type = "dart";
     } else {
       Log::Fatal("Unknown boosting type %s", value.c_str());
     }

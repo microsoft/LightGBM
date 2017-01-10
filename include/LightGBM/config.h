@@ -76,12 +76,6 @@ public:
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
 };
 
-/*! \brief Types of boosting */
-enum BoostingType {
-  kGBDT, kDART, kUnknow
-};
-
-
 /*! \brief Types of tasks */
 enum TaskType {
   kTrain, kPredict
@@ -240,7 +234,7 @@ public:
   bool is_parallel = false;
   bool is_parallel_find_bin = false;
   IOConfig io_config;
-  BoostingType boosting_type = BoostingType::kGBDT;
+  std::string boosting_type = "gbdt";
   BoostingConfig boosting_config;
   std::string objective_type = "regression";
   ObjectiveConfig objective_config;

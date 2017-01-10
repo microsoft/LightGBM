@@ -182,9 +182,9 @@ public:
   virtual void SetNumIterationForPred(int num_iteration) = 0;
   
   /*!
-  * \brief Get Type name of this boosting object
+  * \brief Name of submodel
   */
-  virtual const char* Name() const = 0;
+  virtual const char* SubModelName() const = 0;
 
   Boosting() = default;
   /*! \brief Disable copy */
@@ -201,7 +201,7 @@ public:
   * \param filename name of model file, if existing will continue to train from this model
   * \return The boosting object
   */
-  static Boosting* CreateBoosting(BoostingType type, const char* filename);
+  static Boosting* CreateBoosting(const std::string& type, const char* filename);
 
   /*!
   * \brief Create boosting object from model file

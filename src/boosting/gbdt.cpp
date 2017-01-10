@@ -439,7 +439,7 @@ std::string GBDT::DumpModel(int num_iteration) const {
   std::stringstream str_buf;
 
   str_buf << "{";
-  str_buf << "\"name\":\"" << Name() << "\"," << std::endl;
+  str_buf << "\"name\":\"" << SubModelName() << "\"," << std::endl;
   str_buf << "\"num_class\":" << num_class_ << "," << std::endl;
   str_buf << "\"label_index\":" << label_idx_ << "," << std::endl;
   str_buf << "\"max_feature_idx\":" << max_feature_idx_ << "," << std::endl;
@@ -481,7 +481,7 @@ void GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
   std::ofstream output_file;
   output_file.open(filename);
   // output model type
-  output_file << Name() << std::endl;
+  output_file << SubModelName() << std::endl;
   // output number of class
   output_file << "num_class=" << num_class_ << std::endl;
   // output label index

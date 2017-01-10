@@ -212,7 +212,7 @@ public:
   /*!
   * \brief Get Type name of this boosting object
   */
-  virtual const char* Name() const override { return "gbdt"; }
+  virtual const char* SubModelName() const override { return "tree"; }
 
 protected:
   /*!

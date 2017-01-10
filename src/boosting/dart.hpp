@@ -72,11 +72,6 @@ public:
     return train_score_updater_->score();
   }
 
-  /*!
-  * \brief Get Type name of this boosting object
-  */
-  const char* Name() const override { return "dart"; }
-
 private:
   /*!
   * \brief drop trees based on drop_rate
