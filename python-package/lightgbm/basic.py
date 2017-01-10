@@ -56,11 +56,6 @@ def is_numeric(obj):
         return False
 
 
-def is_numpy_object(data):
-    """Check is numpy object"""
-    return type(data).__module__ == np.__name__
-
-
 def is_numpy_1d_array(data):
     """Check is 1d numpy array"""
     return isinstance(data, np.ndarray) and len(data.shape) == 1

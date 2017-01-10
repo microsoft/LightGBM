@@ -1,4 +1,5 @@
 # coding: utf-8
+# pylint: disable = C0103
 """Compatibility"""
 from __future__ import absolute_import
 
@@ -7,6 +8,7 @@ import sys
 
 is_py3 = (sys.version_info[0] == 3)
 
+"""compatibility between python2 and python3"""
 if is_py3:
     string_type = str
     numeric_types = (int, float, bool)
