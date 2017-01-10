@@ -219,7 +219,16 @@ protected:
   * \brief Implement bagging logic
   * \param iter Current interation
   */
-  void Bagging(int iter);
+  virtual void Bagging(int iter);
+
+  /*!
+  * \brief Helper function for bagging, used for multi-threading optimization
+  * \param start start indice of bagging
+  * \param cnt count
+  * \param buffer output buffer
+  * \return count of left size
+  */
+  virtual data_size_t BaggingHelper(data_size_t start, data_size_t cnt, data_size_t* buffer);
   /*!
   * \brief updating score for out-of-bag data.
   *        Data should be update since we may re-bagging data on training
@@ -282,20 +291,18 @@ protected:
   std::vector<score_t> gradients_;
   /*! \brief Secend order derivative of training data */
   std::vector<score_t> hessians_;
-  /*! \brief Store the data indices of out-of-bag */
-  std::vector<data_size_t> out_of_bag_data_indices_;
-  /*! \brief Number of out-of-bag data */
-  data_size_t out_of_bag_data_cnt_;
   /*! \brief Store the indices of in-bag data */
   std::vector<data_size_t> bag_data_indices_;
   /*! \brief Number of in-bag data */
   data_size_t bag_data_cnt_;
+  /*! \brief Store the indices of in-bag data */
+  std::vector<data_size_t> tmp_indices_;
   /*! \brief Number of training data */
   data_size_t num_data_;
   /*! \brief Number of classes */
   int num_class_;
   /*! \brief Random generator, used for bagging */
-  Random random_;
+  std::vector<Random> random_;
   /*!
   *   \brief Sigmoid parameter, used for prediction.
   *          if > 0 means output score will transform by sigmoid function
@@ -311,6 +318,18 @@ protected:
   int num_init_iteration_;
   /*! \brief Feature names */
   std::vector<std::string> feature_names_;
+  /*! \brief number of threads */
+  int num_threads_;
+  /*! \brief Buffer for multi-threading bagging */
+  std::vector<data_size_t> offsets_buf_;
+  /*! \brief Buffer for multi-threading bagging */
+  std::vector<data_size_t> left_cnts_buf_;
+  /*! \brief Buffer for multi-threading bagging */
+  std::vector<data_size_t> right_cnts_buf_;
+  /*! \brief Buffer for multi-threading bagging */
+  std::vector<data_size_t> left_write_pos_buf_;
+  /*! \brief Buffer for multi-threading bagging */
+  std::vector<data_size_t> right_write_pos_buf_;
 };
 
 }  // namespace LightGBM
