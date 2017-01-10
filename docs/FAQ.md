@@ -18,7 +18,7 @@ LightGBM FAQ
     setup.py directory, *never* absolute paths.
     ```
 
-- **Solution 1**: please check [this thread on stackoverflow](http://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path).
+- **Solution 1**: this error should be solved in latest version. If you still meet this error, try to remove lightgbm.egg-info folder in your python-package and reinstall, or check [this thread on stackoverflow](http://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path).
 
 - **Question 2**: I see error messages like `Cannot get/set label/weight/init_score/group/num_data/num_feature before construct dataset`, but I already contruct dataset by some code like `train = lightgbm.Dataset(X_train, y_train)`, or error messages like `Cannot set predictor/reference/categorical feature after freed raw data, set free_raw_data=False when construct Dataset to avoid this.`.
 
