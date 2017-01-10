@@ -22,18 +22,18 @@ public:
     weights_ = metadata.weights();
   }
 
-  void GetGradients(const score_t* score, score_t* gradients,
+  void GetGradients(const double* score, score_t* gradients,
     score_t* hessians) const override {
     if (weights_ == nullptr) {
 #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        gradients[i] = (score[i] - label_[i]);
-        hessians[i] = 1.0;
+        gradients[i] = static_cast<score_t>(score[i] - label_[i]);
+        hessians[i] = 1.0f;
       }
     } else {
 #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        gradients[i] = (score[i] - label_[i]) * weights_[i];
+        gradients[i] = static_cast<score_t>(score[i] - label_[i]) * weights_[i];
         hessians[i] = weights_[i];
       }
     }
@@ -58,7 +58,7 @@ private:
 class RegressionL1loss: public ObjectiveFunction {
 public:
   explicit RegressionL1loss(const ObjectiveConfig& config) {
-    eta_ = static_cast<score_t>(config.gaussian_eta);
+    eta_ = static_cast<double>(config.gaussian_eta);
   }
 
   ~RegressionL1loss() {}
@@ -69,12 +69,12 @@ public:
     weights_ = metadata.weights();
   }
 
-  void GetGradients(const score_t* score, score_t* gradients,
+  void GetGradients(const double* score, score_t* gradients,
     score_t* hessians) const override {
     if (weights_ == nullptr) {
 #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        const score_t diff = score[i] - label_[i];
+        const double diff = score[i] - label_[i];
         if (diff >= 0.0f) {
           gradients[i] = 1.0f;
         } else {
@@ -85,7 +85,7 @@ public:
     } else {
 #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        const score_t diff = score[i] - label_[i];
+        const double diff = score[i] - label_[i];
         if (diff >= 0.0f) {
           gradients[i] = weights_[i];
         } else {
@@ -108,7 +108,7 @@ private:
   /*! \brief Pointer of weights */
   const float* weights_;
   /*! \brief a parameter to control the width of Gaussian function to approximate hessian */
-  score_t eta_;
+  double eta_;
 };
 
 /*!
@@ -117,8 +117,8 @@ private:
 class RegressionHuberLoss: public ObjectiveFunction {
 public:
   explicit RegressionHuberLoss(const ObjectiveConfig& config) {
-    delta_ = static_cast<score_t>(config.huber_delta);
-    eta_ = static_cast<score_t>(config.gaussian_eta);
+    delta_ = static_cast<double>(config.huber_delta);
+    eta_ = static_cast<double>(config.gaussian_eta);
   }
 
   ~RegressionHuberLoss() {
@@ -130,21 +130,21 @@ public:
     weights_ = metadata.weights();
   }
 
-  void GetGradients(const score_t* score, score_t* gradients,
+  void GetGradients(const double* score, score_t* gradients,
     score_t* hessians) const override {
     if (weights_ == nullptr) {
 #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        const score_t diff = score[i] - label_[i];
+        const double diff = score[i] - label_[i];
 
         if (std::abs(diff) <= delta_) {
-          gradients[i] = diff;
+          gradients[i] = static_cast<score_t>(diff);
           hessians[i] = 1.0f;
         } else {
           if (diff >= 0.0f) {
-            gradients[i] = delta_;
+            gradients[i] = static_cast<score_t>(delta_);
           } else {
-            gradients[i] = -delta_;
+            gradients[i] = static_cast<score_t>(-delta_);
           }
           hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], eta_));
         }
@@ -152,16 +152,16 @@ public:
     } else {
 #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        const score_t diff = score[i] - label_[i];
+        const double diff = score[i] - label_[i];
 
         if (std::abs(diff) <= delta_) {
-          gradients[i] = diff * weights_[i];
+          gradients[i] = static_cast<score_t>(diff * weights_[i]);
           hessians[i] = weights_[i];
         } else {
           if (diff >= 0.0f) {
-            gradients[i] = delta_ * weights_[i];
+            gradients[i] = static_cast<score_t>(delta_ * weights_[i]);
           } else {
-            gradients[i] = -delta_ * weights_[i];
+            gradients[i] = static_cast<score_t>(-delta_ * weights_[i]);
           }
           hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], eta_, weights_[i]));
         }
@@ -181,9 +181,9 @@ private:
   /*! \brief Pointer of weights */
   const float* weights_;
   /*! \brief delta for Huber loss */
-  score_t delta_;
+  double delta_;
   /*! \brief a parameter to control the width of Gaussian function to approximate hessian */
-  score_t eta_;
+  double eta_;
 };
 
 
@@ -191,7 +191,7 @@ private:
 class RegressionFairLoss: public ObjectiveFunction {
 public:
   explicit RegressionFairLoss(const ObjectiveConfig& config) {
-    c_ = static_cast<score_t>(config.fair_c);
+    c_ = static_cast<double>(config.fair_c);
   }
 
   ~RegressionFairLoss() {}
@@ -202,23 +202,21 @@ public:
     weights_ = metadata.weights();
   }
 
-  void GetGradients(const score_t* score, score_t* gradients,
+  void GetGradients(const double* score, score_t* gradients,
     score_t* hessians) const override {
     if (weights_ == nullptr) {
 #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        const score_t x = score[i] - label_[i];
-        gradients[i] = c_ * x / (std::fabs(x) + c_);
-        hessians[i] = c_ * c_ / ((std::fabs(x) + c_) * (std::fabs(x) + c_));
+        const double x = score[i] - label_[i];
+        gradients[i] = static_cast<score_t>(c_ * x / (std::fabs(x) + c_));
+        hessians[i] = static_cast<score_t>(c_ * c_ / ((std::fabs(x) + c_) * (std::fabs(x) + c_)));
       }
     } else {
 #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        const score_t x = score[i] - label_[i];
-        gradients[i] = c_ * x / (std::fabs(x) + c_);
-        gradients[i] *= weights_[i];
-        hessians[i] = c_ * c_ / ((std::fabs(x) + c_) * (std::fabs(x) + c_));
-        hessians[i] *= weights_[i];
+        const double x = score[i] - label_[i];
+        gradients[i] = static_cast<score_t>(c_ * x / (std::fabs(x) + c_) * weights_[i]);
+        hessians[i] = static_cast<score_t>(c_ * c_ / ((std::fabs(x) + c_) * (std::fabs(x) + c_)) * weights_[i]);
       }
     }
   }
@@ -235,7 +233,7 @@ private:
   /*! \brief Pointer of weights */
   const float* weights_;
   /*! \brief c for Fair loss */
-  score_t c_;
+  double c_;
 };
 
 }  // namespace LightGBM

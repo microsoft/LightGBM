@@ -279,6 +279,25 @@ void Metadata::SetInitScore(const float* init_score, data_size_t len) {
   }
 }
 
+void Metadata::SetInitScore(const double* init_score, data_size_t len) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  // save to nullptr
+  if (init_score == nullptr || len == 0) {
+    init_score_.clear();
+    num_init_score_ = 0;
+    return;
+  }
+  if ((len % num_data_) != 0) {
+    Log::Fatal("Initial score size doesn't match data size");
+  }
+  if (!init_score_.empty()) { init_score_.clear(); }
+  num_init_score_ = len;
+  init_score_ = std::vector<float>(len);
+  for (data_size_t i = 0; i < len; ++i) {
+    init_score_[i] = static_cast<float>(init_score[i]);
+  }
+}
+
 void Metadata::SetLabel(const float* label, data_size_t len) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (label == nullptr) {

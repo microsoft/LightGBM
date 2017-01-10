@@ -53,7 +53,7 @@ public:
   * \brief Using last trained tree to predict score then adding to out_score;
   * \param out_score output score
   */
-  virtual void AddPredictionToScore(score_t *out_score) const = 0;
+  virtual void AddPredictionToScore(double* out_score) const = 0;
 
   TreeLearner() = default;
   /*! \brief Disable copy */

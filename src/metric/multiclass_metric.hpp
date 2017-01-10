@@ -45,11 +45,11 @@ public:
     return name_;
   }
 
-  score_t factor_to_bigger_better() const override {
+  double factor_to_bigger_better() const override {
     return -1.0f;
   }
   
-  std::vector<double> Eval(const score_t* score) const override {
+  std::vector<double> Eval(const double* score) const override {
     double sum_loss = 0.0;
     if (weights_ == nullptr) {
       #pragma omp parallel for schedule(static) reduction(+:sum_loss)
@@ -100,7 +100,7 @@ class MultiErrorMetric: public MulticlassMetric<MultiErrorMetric> {
 public:
   explicit MultiErrorMetric(const MetricConfig& config) :MulticlassMetric<MultiErrorMetric>(config) {}
 
-  inline static score_t LossOnPoint(float label, std::vector<double> score) {
+  inline static double LossOnPoint(float label, std::vector<double> score) {
     size_t k = static_cast<size_t>(label);
     for (size_t i = 0; i < score.size(); ++i){
         if (i != k && score[i] >= score[k]) {
@@ -120,11 +120,11 @@ class MultiLoglossMetric: public MulticlassMetric<MultiLoglossMetric> {
 public:
   explicit MultiLoglossMetric(const MetricConfig& config) :MulticlassMetric<MultiLoglossMetric>(config) {}
 
-  inline static score_t LossOnPoint(float label, std::vector<double> score) {
+  inline static double LossOnPoint(float label, std::vector<double> score) {
     size_t k = static_cast<size_t>(label);
     Common::Softmax(&score);
     if (score[k] > kEpsilon) {
-      return static_cast<score_t>(-std::log(score[k]));
+      return static_cast<double>(-std::log(score[k]));
     } else {
       return -std::log(kEpsilon);
     }

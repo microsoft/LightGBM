@@ -40,10 +40,10 @@ public:
     data_partition_->SetUsedDataIndices(used_indices, num_data);
   }
 
-  void AddPredictionToScore(score_t* out_score) const override {
+  void AddPredictionToScore(double* out_score) const override {
     #pragma omp parallel for schedule(guided)
     for (int i = 0; i < data_partition_->num_leaves(); ++i) {
-      score_t output = static_cast<score_t>(last_trained_tree_->LeafOutput(i));
+      double output = static_cast<double>(last_trained_tree_->LeafOutput(i));
       data_size_t cnt_leaf_data = 0;
       auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
       for (data_size_t j = 0; j < cnt_leaf_data; ++j) {

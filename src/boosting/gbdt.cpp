@@ -407,7 +407,7 @@ std::vector<double> GBDT::GetEvalAt(int data_idx) const {
 }
 
 /*! \brief Get training scores result */
-const score_t* GBDT::GetTrainingScore(int64_t* out_len) {
+const double* GBDT::GetTrainingScore(int64_t* out_len) {
   *out_len = static_cast<int64_t>(train_score_updater_->num_data()) * num_class_;
   return train_score_updater_->score();
 }
@@ -415,7 +415,7 @@ const score_t* GBDT::GetTrainingScore(int64_t* out_len) {
 void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
   CHECK(data_idx >= 0 && data_idx <= static_cast<int>(valid_score_updater_.size()));
 
-  const score_t* raw_scores = nullptr;
+  const double* raw_scores = nullptr;
   data_size_t num_data = 0;
   if (data_idx == 0) {
     raw_scores = GetTrainingScore(out_len);

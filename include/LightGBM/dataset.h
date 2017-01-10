@@ -96,6 +96,8 @@ public:
   */
   void SetInitScore(const float* init_score, data_size_t len);
 
+  void SetInitScore(const double* init_score, data_size_t len);
+
 
   /*!
   * \brief Save binary data to file

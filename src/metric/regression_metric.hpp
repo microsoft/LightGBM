@@ -26,7 +26,7 @@ public:
     return name_;
   }
 
-  score_t factor_to_bigger_better() const override {
+  double factor_to_bigger_better() const override {
     return -1.0f;
   }
 
@@ -48,7 +48,7 @@ public:
     }
   }
 
-  std::vector<double> Eval(const score_t* score) const override {
+  std::vector<double> Eval(const double* score) const override {
     double sum_loss = 0.0f;
     if (weights_ == nullptr) {
 #pragma omp parallel for schedule(static) reduction(+:sum_loss)
@@ -74,9 +74,9 @@ public:
 
 protected:
   /*! \brief delta for Huber loss */
-  score_t huber_delta_;
+  double huber_delta_;
   /*! \brief c for Fair loss */
-  score_t fair_c_;
+  double fair_c_;
 
 private:
   /*! \brief Number of data */
@@ -96,7 +96,7 @@ class L2Metric: public RegressionMetric<L2Metric> {
 public:
   explicit L2Metric(const MetricConfig& config) :RegressionMetric<L2Metric>(config) {}
 
-  inline static score_t LossOnPoint(float label, score_t score, float, float) {
+  inline static double LossOnPoint(float label, double score, double, double) {
     return (score - label)*(score - label);
   }
 
@@ -115,7 +115,7 @@ class L1Metric: public RegressionMetric<L1Metric> {
 public:
   explicit L1Metric(const MetricConfig& config) :RegressionMetric<L1Metric>(config) {}
 
-  inline static score_t LossOnPoint(float label, score_t score, float, float) {
+  inline static double LossOnPoint(float label, double score, double, double) {
     return std::fabs(score - label);
   }
   inline static const char* Name() {
@@ -127,11 +127,11 @@ public:
 class HuberLossMetric: public RegressionMetric<HuberLossMetric> {
 public:
   explicit HuberLossMetric(const MetricConfig& config) :RegressionMetric<HuberLossMetric>(config) {
-    huber_delta_ = static_cast<score_t>(config.huber_delta);
+    huber_delta_ = static_cast<double>(config.huber_delta);
   }
 
-  inline static score_t LossOnPoint(float label, score_t score, float delta, float) {
-    const score_t diff = score - label;
+  inline static double LossOnPoint(float label, double score, double delta, double) {
+    const double diff = score - label;
     if (std::abs(diff) <= delta) {
       return 0.5f * diff * diff;
     } else {
@@ -149,11 +149,11 @@ public:
 class FairLossMetric: public RegressionMetric<FairLossMetric> {
 public:
   explicit FairLossMetric(const MetricConfig& config) :RegressionMetric<FairLossMetric>(config) {
-    fair_c_ = static_cast<score_t>(config.fair_c);
+    fair_c_ = static_cast<double>(config.fair_c);
   }
 
-  inline static score_t LossOnPoint(float label, score_t score, float, float c) {
-    const score_t x = std::fabs(score - label);
+  inline static double LossOnPoint(float label, double score, double, double c) {
+    const double x = std::fabs(score - label);
     return c * x - c * c * std::log(1.0f + x / c);
   }
 

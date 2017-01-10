@@ -72,7 +72,7 @@ public:
     tree->AddPredictionToScore(data_, data_indices, data_cnt, score_.data() + curr_class * num_data_);
   }
   /*! \brief Pointer of score */
-  inline const score_t* score() const { return score_.data(); }
+  inline const double* score() const { return score_.data(); }
   inline const data_size_t num_data() const { return num_data_; }
 
   /*! \brief Disable copy */
@@ -85,7 +85,7 @@ private:
   /*! \brief Pointer of data set */
   const Dataset* data_;
   /*! \brief Scores for data set */
-  std::vector<score_t> score_;
+  std::vector<double> score_;
 };
 
 }  // namespace LightGBM

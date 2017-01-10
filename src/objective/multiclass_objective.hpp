@@ -32,7 +32,7 @@ public:
     }
   }
 
-  void GetGradients(const score_t* score, score_t* gradients, score_t* hessians) const override {
+  void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
     if (weights_ == nullptr) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
@@ -43,14 +43,14 @@ public:
         }
         Common::Softmax(&rec);
         for (int k = 0; k < num_class_; ++k) {
-          score_t p = static_cast<score_t>(rec[k]);
+          auto p = rec[k];
           size_t idx = static_cast<size_t>(num_data_) * k + i;
           if (label_int_[i] == k) {
-            gradients[idx] = p - 1.0f;
+            gradients[idx] = static_cast<score_t>(p - 1.0f);
           } else {
-            gradients[idx] = p;
+            gradients[idx] = static_cast<score_t>(p);
           }
-          hessians[idx] = 2.0f * p * (1.0f - p);
+          hessians[idx] = static_cast<score_t>(2.0f * p * (1.0f - p));
         }
       }
     } else {
@@ -63,14 +63,14 @@ public:
         }
         Common::Softmax(&rec);
         for (int k = 0; k < num_class_; ++k) {
-          score_t p = static_cast<score_t>(rec[k]);
+          auto p = rec[k];
           size_t idx = static_cast<size_t>(num_data_) * k + i;
           if (label_int_[i] == k) {
-            gradients[idx] = (p - 1.0f) * weights_[i];
+            gradients[idx] = static_cast<score_t>((p - 1.0f) * weights_[i]);
           } else {
-            gradients[idx] = p * weights_[i];
+            gradients[idx] = static_cast<score_t>(p * weights_[i]);
           }
-          hessians[idx] = 2.0f * p * (1.0f - p) * weights_[i];
+          hessians[idx] = static_cast<score_t>(2.0f * p * (1.0f - p) * weights_[i]);
         }
       }
     }

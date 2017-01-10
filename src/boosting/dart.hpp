@@ -62,7 +62,7 @@ public:
   * \param out_len length of returned score
   * \return training score
   */
-  const score_t* GetTrainingScore(int64_t* out_len) override {
+  const double* GetTrainingScore(int64_t* out_len) override {
     if (!is_update_score_cur_iter_) {
       // only drop one time in one iteration
       DroppingTrees();

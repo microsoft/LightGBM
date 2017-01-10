@@ -28,7 +28,7 @@ public:
   * \gradients Output gradients
   * \hessians Output hessians
   */
-  virtual void GetGradients(const score_t* score,
+  virtual void GetGradients(const double* score,
     score_t* gradients, score_t* hessians) const = 0;
 
   virtual const char* GetName() const = 0;

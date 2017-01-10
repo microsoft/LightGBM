@@ -19,7 +19,7 @@ template<typename PointWiseLossCalculator>
 class BinaryMetric: public Metric {
 public:
   explicit BinaryMetric(const MetricConfig& config) {
-    sigmoid_ = static_cast<score_t>(config.sigmoid);
+    sigmoid_ = static_cast<double>(config.sigmoid);
     if (sigmoid_ <= 0.0f) {
       Log::Fatal("Sigmoid parameter %f should greater than zero", sigmoid_);
     }
@@ -53,17 +53,17 @@ public:
     return name_;
   }
 
-  score_t factor_to_bigger_better() const override {
+  double factor_to_bigger_better() const override {
     return -1.0f;
   }
 
-  std::vector<double> Eval(const score_t* score) const override {
+  std::vector<double> Eval(const double* score) const override {
     double sum_loss = 0.0f;
     if (weights_ == nullptr) {
 #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // sigmoid transform
-        score_t prob = 1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * score[i]));
+        double prob = 1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * score[i]));
         // add loss
         sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob);
       }
@@ -71,7 +71,7 @@ public:
 #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // sigmoid transform
-        score_t prob = 1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * score[i]));
+        double prob = 1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * score[i]));
         // add loss
         sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob) * weights_[i];
       }
@@ -92,7 +92,7 @@ private:
   /*! \brief Name of test set */
   std::vector<std::string> name_;
   /*! \brief Sigmoid parameter */
-  score_t sigmoid_;
+  double sigmoid_;
 };
 
 /*!
@@ -102,7 +102,7 @@ class BinaryLoglossMetric: public BinaryMetric<BinaryLoglossMetric> {
 public:
   explicit BinaryLoglossMetric(const MetricConfig& config) :BinaryMetric<BinaryLoglossMetric>(config) {}
 
-  inline static score_t LossOnPoint(float label, score_t prob) {
+  inline static double LossOnPoint(float label, double prob) {
     if (label == 0) {
       if (1.0f - prob > kEpsilon) {
         return -std::log(1.0f - prob);
@@ -126,7 +126,7 @@ class BinaryErrorMetric: public BinaryMetric<BinaryErrorMetric> {
 public:
   explicit BinaryErrorMetric(const MetricConfig& config) :BinaryMetric<BinaryErrorMetric>(config) {}
 
-  inline static score_t LossOnPoint(float label, score_t prob) {
+  inline static double LossOnPoint(float label, double prob) {
     if (prob <= 0.5f) {
       return label;
     } else {
@@ -155,7 +155,7 @@ public:
     return name_;
   }
 
-  score_t factor_to_bigger_better() const override {
+  double factor_to_bigger_better() const override {
     return 1.0f;
   }
 
@@ -178,7 +178,7 @@ public:
     }
   }
 
-  std::vector<double> Eval(const score_t* score) const override {
+  std::vector<double> Eval(const double* score) const override {
     // get indices sorted by score, descent order
     std::vector<data_size_t> sorted_idx;
     for (data_size_t i = 0; i < num_data_; ++i) {
@@ -193,11 +193,11 @@ public:
     double accum = 0.0f;
     // temp sum of negative label
     double cur_neg = 0.0f;
-    score_t threshold = score[sorted_idx[0]];
+    double threshold = score[sorted_idx[0]];
     if (weights_ == nullptr) {  // no weights
       for (data_size_t i = 0; i < num_data_; ++i) {
         const float cur_label = label_[sorted_idx[i]];
-        const score_t cur_score = score[sorted_idx[i]];
+        const double cur_score = score[sorted_idx[i]];
         // new threshold
         if (cur_score != threshold) {
           threshold = cur_score;
@@ -213,7 +213,7 @@ public:
     } else {  // has weights
       for (data_size_t i = 0; i < num_data_; ++i) {
         const float cur_label = label_[sorted_idx[i]];
-        const score_t cur_score = score[sorted_idx[i]];
+        const double cur_score = score[sorted_idx[i]];
         const float cur_weight = weights_[sorted_idx[i]];
         // new threshold
         if (cur_score != threshold) {

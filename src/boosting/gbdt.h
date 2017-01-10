@@ -105,7 +105,7 @@ public:
   * \param out_len length of returned score
   * \return training score
   */
-  virtual const score_t* GetTrainingScore(int64_t* out_len) override;
+  virtual const double* GetTrainingScore(int64_t* out_len) override;
 
   virtual int64_t GetNumPredictAt(int data_idx) const override {
     CHECK(data_idx >= 0 && data_idx <= static_cast<int>(valid_score_updater_.size()));

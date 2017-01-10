@@ -65,7 +65,7 @@ public:
   * \param score Will add prediction to score
   */
   void AddPredictionToScore(const Dataset* data, data_size_t num_data,
-                                                       score_t* score) const;
+                                                       double* score) const;
 
   /*!
   * \brief Adding prediction value of this tree model to scorese
@@ -76,7 +76,7 @@ public:
   */
   void AddPredictionToScore(const Dataset* data,
                             const data_size_t* used_data_indices,
-                            data_size_t num_data, score_t* score) const;
+                            data_size_t num_data, double* score) const;
 
   /*!
   * \brief Prediction on one record 

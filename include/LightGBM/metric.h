@@ -28,12 +28,12 @@ public:
 
   virtual const std::vector<std::string>& GetName() const = 0;
 
-  virtual score_t factor_to_bigger_better() const = 0;
+  virtual double factor_to_bigger_better() const = 0;
   /*!
   * \brief Calcaluting and printing metric result
   * \param score Current prediction score
   */
-  virtual std::vector<double> Eval(const score_t* score) const = 0;
+  virtual std::vector<double> Eval(const double* score) const = 0;
 
   Metric() = default;
   /*! \brief Disable copy */
@@ -69,8 +69,8 @@ public:
   * \param num_data Number of data
   * \return The DCG score
   */
-  static score_t CalDCGAtK(data_size_t k, const float* label,
-    const score_t* score, data_size_t num_data);
+  static double CalDCGAtK(data_size_t k, const float* label,
+    const double* score, data_size_t num_data);
 
   /*!
   * \brief Calculate the DCG score at multi position
@@ -81,8 +81,8 @@ public:
   * \param out Output result
   */
   static void CalDCG(const std::vector<data_size_t>& ks,
-    const float* label, const score_t* score,
-    data_size_t num_data, std::vector<score_t>* out);
+    const float* label, const double* score,
+    data_size_t num_data, std::vector<double>* out);
 
   /*!
   * \brief Calculate the Max DCG score at position k
@@ -91,7 +91,7 @@ public:
   * \param num_data Number of data
   * \return The max DCG score
   */
-  static score_t CalMaxDCGAtK(data_size_t k,
+  static double CalMaxDCGAtK(data_size_t k,
     const float* label, data_size_t num_data);
 
   /*!
@@ -102,22 +102,22 @@ public:
   * \param out Output result
   */
   static void CalMaxDCG(const std::vector<data_size_t>& ks,
-    const float* label, data_size_t num_data, std::vector<score_t>* out);
+    const float* label, data_size_t num_data, std::vector<double>* out);
 
   /*!
   * \brief Get discount score of position k
   * \param k The position
   * \return The discount of this position
   */
-  inline static score_t GetDiscount(data_size_t k) { return discount_[k]; }
+  inline static double GetDiscount(data_size_t k) { return discount_[k]; }
 
 private:
   /*! \brief True if inited, avoid init multi times */
   static bool is_inited_;
   /*! \brief store gains for different label */
-  static std::vector<score_t> label_gain_;
+  static std::vector<double> label_gain_;
   /*! \brief store discount score for different position */
-  static std::vector<score_t> discount_;
+  static std::vector<double> discount_;
   /*! \brief max position for eval */
   static const data_size_t kMaxPosition;
 };

@@ -78,17 +78,17 @@ public:
     return name_;
   }
 
-  score_t factor_to_bigger_better() const override {
+  double factor_to_bigger_better() const override {
     return 1.0f;
   }
 
-  std::vector<double> Eval(const score_t* score) const override {
+  std::vector<double> Eval(const double* score) const override {
     // some buffers for multi-threading sum up
     std::vector<std::vector<double>> result_buffer_;
     for (int i = 0; i < num_threads_; ++i) {
       result_buffer_.emplace_back(eval_at_.size(), 0.0f);
     }
-    std::vector<score_t> tmp_dcg(eval_at_.size(), 0.0f);
+    std::vector<double> tmp_dcg(eval_at_.size(), 0.0f);
     if (query_weights_ == nullptr) {
 #pragma omp parallel for schedule(guided) firstprivate(tmp_dcg)
       for (data_size_t i = 0; i < num_queries_; ++i) {
@@ -159,7 +159,7 @@ private:
   /*! \brief Evaluate position of NDCG */
   std::vector<data_size_t> eval_at_;
   /*! \brief Cache the inverse max dcg for all queries */
-  std::vector<std::vector<score_t>> inverse_max_dcgs_;
+  std::vector<std::vector<double>> inverse_max_dcgs_;
   /*! \brief Number of threads */
   int num_threads_;
 };

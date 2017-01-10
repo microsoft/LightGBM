@@ -793,7 +793,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
     }
   } else {
     // if need to prediction with initial model
-    std::vector<score_t> init_score(dataset->num_data_ * num_class_);
+    std::vector<double> init_score(dataset->num_data_ * num_class_);
 #pragma omp parallel for schedule(guided) private(oneline_features) firstprivate(tmp_label)
     for (data_size_t i = 0; i < dataset->num_data_; ++i) {
       const int tid = omp_get_thread_num();
@@ -803,7 +803,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
       // set initial score
       std::vector<double> oneline_init_score = predict_fun_(oneline_features);
       for (int k = 0; k < num_class_; ++k) {
-        init_score[k * dataset->num_data_ + i] = static_cast<float>(oneline_init_score[k]);
+        init_score[k * dataset->num_data_ + i] = static_cast<double>(oneline_init_score[k]);
       }
       // set label
       dataset->metadata_.SetLabelAt(i, static_cast<float>(tmp_label));
@@ -837,9 +837,9 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
 
 /*! \brief Extract local features from file */
 void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* parser, const std::vector<data_size_t>& used_data_indices, Dataset* dataset) {
-  std::vector<score_t> init_score;
+  std::vector<double> init_score;
   if (predict_fun_ != nullptr) {
-    init_score = std::vector<score_t>(dataset->num_data_ * num_class_);
+    init_score = std::vector<double>(dataset->num_data_ * num_class_);
   }
   std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
     [this, &init_score, &parser, &dataset]
@@ -856,7 +856,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
       if (!init_score.empty()) {
         std::vector<double> oneline_init_score = predict_fun_(oneline_features);
         for (int k = 0; k < num_class_; ++k) {
-          init_score[k * dataset->num_data_ + start_idx + i] = static_cast<float>(oneline_init_score[k]);
+          init_score[k * dataset->num_data_ + start_idx + i] = static_cast<double>(oneline_init_score[k]);
         }
       }
       // set label
