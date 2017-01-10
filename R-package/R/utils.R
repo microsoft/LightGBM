@@ -110,7 +110,7 @@ lgb.check.obj <- function(params, obj) {
     if (!(params$objective %in% OBJECTIVES)) {
       stop("lgb.check.obj: objective name error should be one of (", paste0(OBJECTIVES, collapse = ", "), ")")
     }
-  } else if (!is.function(objective)) {
+  } else if (!is.function(params$objective)) {
     stop("lgb.check.obj: objective should be a character or a function")
   }
   params

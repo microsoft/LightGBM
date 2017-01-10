@@ -1,5 +1,3 @@
-require(lightgbm)
-
 context("basic functions")
 
 data(agaricus.train, package='lightgbm')
@@ -11,17 +9,17 @@ windows_flag = grepl('Windows', Sys.info()[['sysname']])
 
 test_that("train and predict binary classification", {
   nrounds = 10
-  bst <- lightgbm(data = train$data, label = train$label, num_leaves = 5, 
+  bst <- lightgbm(data = train$data, label = train$label, num_leaves = 5,
     nrounds = nrounds, objective = "binary", metric="binary_error")
   expect_false(is.null(bst$record_evals))
   record_results <- lgb.get.eval.result(bst, "train", "binary_error")
   expect_lt(min(record_results), 0.02)
 
   pred <- predict(bst, test$data)
-  expect_length(pred, 1611)
-  
+  expect_equal(length(pred), 1611)
+
   pred1 <- predict(bst, train$data, num_iteration = 1)
-  expect_length(pred1, 6513)
+  expect_equal(length(pred1), 6513)
   err_pred1 <- sum((pred1 > 0.5) != train$label)/length(train$label)
   err_log <- record_results[1]
   expect_lt(abs(err_pred1 - err_log), 10e-6)
@@ -38,7 +36,7 @@ test_that("train and predict softmax", {
   expect_false(is.null(bst$record_evals))
   record_results <- lgb.get.eval.result(bst, "train", "multi_error")
   expect_lt(min(record_results), 0.03)
-  
+
   pred <- predict(bst, as.matrix(iris[, -5]))
   expect_length(pred, nrow(iris) * 3)
 
@@ -82,4 +80,3 @@ test_that("cv works", {
   bst <- lgb.cv(params, dtrain, 10, nflod=5, min_data=1, learning_rate=1, early_stopping_rounds=10)
   expect_false(is.null(bst$record_evals))
 })
-
