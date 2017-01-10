@@ -6,26 +6,10 @@ from __future__ import absolute_import
 import numpy as np
 
 from .basic import Dataset, LightGBMError
-from .compat import argc_, range_
+from .compat import (SKLEARN_INSTALLED, LGBMClassifierBase, LGBMDeprecated,
+                     LGBMLabelEncoder, LGBMModelBase, LGBMRegressorBase, argc_,
+                     range_)
 from .engine import train
-
-"""sklearn"""
-try:
-    from sklearn.base import BaseEstimator
-    from sklearn.base import RegressorMixin, ClassifierMixin
-    from sklearn.preprocessing import LabelEncoder
-    from sklearn.utils import deprecated
-    SKLEARN_INSTALLED = True
-    LGBMModelBase = BaseEstimator
-    LGBMRegressorBase = RegressorMixin
-    LGBMClassifierBase = ClassifierMixin
-    LGBMLabelEncoder = LabelEncoder
-except ImportError:
-    SKLEARN_INSTALLED = False
-    LGBMModelBase = object
-    LGBMClassifierBase = object
-    LGBMRegressorBase = object
-    LGBMLabelEncoder = None
 
 
 def _objective_function_wrapper(func):
@@ -477,11 +461,11 @@ class LGBMModel(LGBMModelBase):
         importace_array = self.booster_.feature_importance().astype(np.float32)
         return importace_array / importace_array.sum()
 
-    @deprecated('Use attribute booster_ instead.')
+    @LGBMDeprecated('Use attribute booster_ instead.')
     def booster(self):
         return self.booster_
 
-    @deprecated('Use attribute feature_importance_ instead.')
+    @LGBMDeprecated('Use attribute feature_importance_ instead.')
     def feature_importance(self):
         return self.feature_importance_
 

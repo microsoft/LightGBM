@@ -10,7 +10,8 @@ import numpy as np
 
 from . import callback
 from .basic import Booster, Dataset, LightGBMError, _InnerPredictor
-from .compat import integer_types, range_, string_type
+from .compat import (SKLEARN_INSTALLED, LGBMStratifiedKFold, integer_types,
+                     range_, string_type)
 
 
 def train(params, train_set, num_boost_round=100,
@@ -218,25 +219,14 @@ class CVBooster(object):
         return handlerFunction
 
 
-try:
-    from sklearn.model_selection import StratifiedKFold
-    SKLEARN_StratifiedKFold = True
-except ImportError:
-    try:
-        from sklearn.cross_validation import StratifiedKFold
-        SKLEARN_StratifiedKFold = True
-    except ImportError:
-        SKLEARN_StratifiedKFold = False
-
-
 def _make_n_folds(full_data, nfold, params, seed, fpreproc=None, stratified=False, shuffle=True):
     """
     Make an n-fold list of Booster from random indices.
     """
     np.random.seed(seed)
     if stratified:
-        if SKLEARN_StratifiedKFold:
-            sfk = StratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
+        if SKLEARN_INSTALLED:
+            sfk = LGBMStratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
             idset = [x[1] for x in sfk.split(X=full_data.get_label(), y=full_data.get_label())]
         else:
             raise LightGBMError('Scikit-learn is required for stratified cv')

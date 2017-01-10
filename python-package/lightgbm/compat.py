@@ -37,3 +37,29 @@ except ImportError:
 
     class DataFrame(object):
         pass
+
+"""sklearn"""
+try:
+    from sklearn.base import BaseEstimator
+    from sklearn.base import RegressorMixin, ClassifierMixin
+    from sklearn.preprocessing import LabelEncoder
+    from sklearn.utils import deprecated
+    try:
+        from sklearn.model_selection import StratifiedKFold
+    except ImportError:
+        from sklearn.cross_validation import StratifiedKFold
+    SKLEARN_INSTALLED = True
+    LGBMModelBase = BaseEstimator
+    LGBMRegressorBase = RegressorMixin
+    LGBMClassifierBase = ClassifierMixin
+    LGBMLabelEncoder = LabelEncoder
+    LGBMDeprecated = deprecated
+    LGBMStratifiedKFold = StratifiedKFold
+except ImportError:
+    SKLEARN_INSTALLED = False
+    LGBMModelBase = object
+    LGBMClassifierBase = object
+    LGBMRegressorBase = object
+    LGBMLabelEncoder = None
+    LGBMDeprecated = None
+    LGBMStratifiedKFold = None
