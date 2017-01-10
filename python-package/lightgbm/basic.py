@@ -571,7 +571,7 @@ class Dataset(object):
         elif reference is not None:
             raise TypeError('Reference dataset should be None or dataset instance')
         """start construct data"""
-        if is_str(data):
+        if isinstance(data, string_type):
             """check data has header or not"""
             if str(params.get("has_header", "")).lower() == "true" \
                     or str(params.get("header", "")).lower() == "true":
@@ -1619,7 +1619,7 @@ class Booster(object):
         """
         for key, value in kwargs.items():
             if value is not None:
-                if not is_str(value):
+                if not isinstance(value, string_type):
                     raise ValueError("Set attr only accepts strings")
                 self.__attr[key] = value
             else:
