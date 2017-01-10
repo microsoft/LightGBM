@@ -11,16 +11,8 @@ from tempfile import NamedTemporaryFile
 import numpy as np
 import scipy.sparse
 
-from .compat import integer_types, numeric_types, range_, string_type
+from .compat import integer_types, json, numeric_types, range_, string_type
 from .libpath import find_lib_path
-
-"""json"""
-try:
-    import simplejson as json
-except (ImportError, SyntaxError):
-    # simplejson does not support Python 3.2, it throws a SyntaxError
-    # because of u'...' Unicode literals.
-    import json
 
 """pandas"""
 try:

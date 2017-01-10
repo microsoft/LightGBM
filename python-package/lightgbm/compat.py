@@ -19,3 +19,11 @@ else:
     integer_types = (int, long)
     range_ = xrange
     argc_ = lambda func: len(inspect.getargspec(func).args)
+
+"""json"""
+try:
+    import simplejson as json
+except (ImportError, SyntaxError):
+    # simplejson does not support Python 3.2, it throws a SyntaxError
+    # because of u'...' Unicode literals.
+    import json
