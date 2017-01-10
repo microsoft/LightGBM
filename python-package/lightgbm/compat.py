@@ -14,13 +14,19 @@ if is_py3:
     numeric_types = (int, float, bool)
     integer_types = int
     range_ = range
-    argc_ = lambda func: len(inspect.signature(func).parameters)
+
+    def argc_(func):
+        """return number of arguments of a function"""
+        return len(inspect.signature(func).parameters)
 else:
     string_type = basestring
     numeric_types = (int, long, float, bool)
     integer_types = (int, long)
     range_ = xrange
-    argc_ = lambda func: len(inspect.getargspec(func).args)
+
+    def argc_(func):
+        """return number of arguments of a function"""
+        return len(inspect.getargspec(func).args)
 
 """json"""
 try:
