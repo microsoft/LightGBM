@@ -90,6 +90,14 @@ def cfloat32_array_to_numpy(cptr, length):
     else:
         raise RuntimeError('Expected float pointer')
 
+def cfloat64_array_to_numpy(cptr, length):
+    """Convert a ctypes double pointer array to a numpy array.
+    """
+    if isinstance(cptr, ctypes.POINTER(ctypes.c_double)):
+        return np.fromiter(cptr, dtype=np.float64, count=length)
+    else:
+        raise RuntimeError('Expected double pointer')
+
 
 def cint32_array_to_numpy(cptr, length):
     """Convert a ctypes float pointer array to a numpy array.
@@ -162,7 +170,7 @@ C_API_PREDICT_LEAF_INDEX = 2
 """data type of data field"""
 FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
                      "weight": C_API_DTYPE_FLOAT32,
-                     "init_score": C_API_DTYPE_FLOAT32,
+                     "init_score": C_API_DTYPE_FLOAT64,
                      "group": C_API_DTYPE_INT32}
 
 
@@ -616,7 +624,6 @@ class Dataset(object):
                     for j in range_(self.predictor.num_class):
                         new_init_score[j * num_data + i] = init_score[i * self.predictor.num_class + j]
                 init_score = new_init_score
-            init_score = init_score.astype(dtype=np.float32, copy=False)
             self.set_init_score(init_score)
         elif self.predictor is not None:
             raise TypeError('wrong predictor type {}'.format(type(self.predictor).__name__))
@@ -813,16 +820,23 @@ class Dataset(object):
                 ctypes.c_int(0),
                 ctypes.c_int(FIELD_TYPE_MAPPER[field_name])))
             return
-        dtype = np.int32 if field_name == 'group' else np.float32
+        dtype = np.float32
+        if field_name == 'group':
+            dtype = np.int32
+        elif field_name == 'init_score':
+            dtype = np.float64
         data = list_to_1d_numpy(data, dtype, name=field_name)
         if data.dtype == np.float32:
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
             type_data = C_API_DTYPE_FLOAT32
+        elif data.dtype == np.float64:
+            ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+            type_data = C_API_DTYPE_FLOAT64
         elif data.dtype == np.int32:
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_int32))
             type_data = C_API_DTYPE_INT32
         else:
-            raise TypeError("Excepted np.float32 or np.int32, meet type({})".format(data.dtype))
+            raise TypeError("Excepted np.float32/64 or np.int32, meet type({})".format(data.dtype))
         if type_data != FIELD_TYPE_MAPPER[field_name]:
             raise TypeError("Input type error for set_field")
         _safe_call(_LIB.LGBM_DatasetSetField(
@@ -864,6 +878,8 @@ class Dataset(object):
             return cint32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int32)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT32:
             return cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
+        elif out_type.value == C_API_DTYPE_FLOAT64:
+            return cfloat64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value)
         else:
             raise TypeError("Unknown type")
 
@@ -976,7 +992,7 @@ class Dataset(object):
         """
         self.init_score = init_score
         if self.handle is not None and init_score is not None:
-            init_score = list_to_1d_numpy(init_score, name='init_score')
+            init_score = list_to_1d_numpy(init_score, np.float64, name='init_score')
             self.set_field('init_score', init_score)
 
     def set_group(self, group):

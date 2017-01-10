@@ -204,6 +204,8 @@ SEXP LGBM_DatasetSetField_R(SEXP handle,
       vec[i] = static_cast<int32_t>(R_INT_PTR(field_data)[i]);
     }
     CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, vec.data(), len, C_API_DTYPE_INT32));
+  } else if(!strcmp("init_score", name)) {
+    CHECK_CALL(LGBM_DatasetSetField(R_GET_PTR(handle), name, R_REAL_PTR(field_data), len, C_API_DTYPE_FLOAT64));
   } else {
     std::vector<float> vec(len);
 #pragma omp parallel for schedule(static)
@@ -233,6 +235,12 @@ SEXP LGBM_DatasetGetField_R(SEXP handle,
 #pragma omp parallel for schedule(static)
     for (int i = 0; i < out_len - 1; ++i) {
       R_INT_PTR(field_data)[i] = p_data[i + 1] - p_data[i];
+    }
+  } else if (!strcmp("init_score", name)) {
+    auto p_data = reinterpret_cast<const double*>(res);
+#pragma omp parallel for schedule(static)
+    for (int i = 0; i < out_len; ++i) {
+      R_REAL_PTR(field_data)[i] = p_data[i];
     }
   } else {
     auto p_data = reinterpret_cast<const float*>(res);

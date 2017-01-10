@@ -94,8 +94,6 @@ public:
   * \brief Set initial scores
   * \param init_score Initial scores, this class will manage memory for init_score.
   */
-  void SetInitScore(const float* init_score, data_size_t len);
-
   void SetInitScore(const double* init_score, data_size_t len);
 
 
@@ -195,7 +193,7 @@ public:
   * \brief Get initial scores, if not exists, will return nullptr
   * \return Pointer of initial scores
   */
-  inline const float* init_score() const { 
+  inline const double* init_score() const { 
     if (!init_score_.empty()) {
       return init_score_.data();
     } else {
@@ -206,7 +204,7 @@ public:
   /*!
   * \brief Get size of initial scores
   */
-  inline data_size_t num_init_score() const { return num_init_score_; }
+  inline int64_t num_init_score() const { return num_init_score_; }
 
   /*! \brief Disable copy */
   Metadata& operator=(const Metadata&) = delete;
@@ -239,9 +237,9 @@ private:
   /*! \brief Number of querys */
   data_size_t num_queries_;
   /*! \brief Number of Initial score, used to check correct weight file */
-  data_size_t num_init_score_;
+  int64_t num_init_score_;
   /*! \brief Initial score */
-  std::vector<float> init_score_;
+  std::vector<double> init_score_;
   /*! \brief Queries data */
   std::vector<data_size_t> queries_;
   /*! \brief mutex for threading safe call */
@@ -336,9 +334,13 @@ public:
 
   bool SetFloatField(const char* field_name, const float* field_data, data_size_t num_element);
 
+  bool SetDoubleField(const char* field_name, const double* field_data, data_size_t num_element);
+
   bool SetIntField(const char* field_name, const int* field_data, data_size_t num_element);
 
   bool GetFloatField(const char* field_name, data_size_t* out_len, const float** out_ptr);
+
+  bool GetDoubleField(const char* field_name, data_size_t* out_len, const double** out_ptr);
 
   bool GetIntField(const char* field_name, data_size_t* out_len, const int** out_ptr);
 

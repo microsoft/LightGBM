@@ -20,7 +20,10 @@ public:
     : num_data_(num_data) {
     data_.resize(num_data_);
     VAL_T default_bin_T = static_cast<VAL_T>(default_bin);
-    std::fill(data_.begin(), data_.end(), default_bin_T);
+#pragma omp parallel for schedule(static)
+    for (data_size_t i = 0; i < num_data_; ++i) {
+      data_[i] = default_bin_T;
+    }
   }
 
   ~DenseBin() {

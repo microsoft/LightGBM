@@ -536,6 +536,8 @@ DllExport int LGBM_DatasetSetField(DatasetHandle handle,
     is_success = dataset->SetFloatField(field_name, reinterpret_cast<const float*>(field_data), static_cast<int32_t>(num_element));
   } else if (type == C_API_DTYPE_INT32) {
     is_success = dataset->SetIntField(field_name, reinterpret_cast<const int*>(field_data), static_cast<int32_t>(num_element));
+  } else if (type == C_API_DTYPE_FLOAT64) {
+    is_success = dataset->SetDoubleField(field_name, reinterpret_cast<const double*>(field_data), static_cast<int32_t>(num_element));
   }
   if (!is_success) { throw std::runtime_error("Input data type erorr or field not found"); }
   API_END();
@@ -554,6 +556,9 @@ DllExport int LGBM_DatasetGetField(DatasetHandle handle,
     is_success = true;
   } else if (dataset->GetIntField(field_name, out_len, reinterpret_cast<const int**>(out_ptr))) {
     *out_type = C_API_DTYPE_INT32;
+    is_success = true;
+  } else if (dataset->GetDoubleField(field_name, out_len, reinterpret_cast<const double**>(out_ptr))) {
+    *out_type = C_API_DTYPE_FLOAT64;
     is_success = true;
   }
   if (!is_success) { throw std::runtime_error("Field not found"); }

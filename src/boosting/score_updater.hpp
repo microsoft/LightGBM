@@ -20,18 +20,22 @@ public:
   */
   ScoreUpdater(const Dataset* data, int num_class) : data_(data) {
     num_data_ = data->num_data();
-    size_t total_size = static_cast<size_t>(num_data_) * num_class;
+    int64_t total_size = static_cast<int64_t>(num_data_) * num_class;
     score_.resize(total_size);
     // default start score is zero
-    std::fill(score_.begin(), score_.end(), 0.0f);
-    const float* init_score = data->metadata().init_score();
+#pragma omp parallel for schedule(static)
+    for (int64_t i = 0; i < total_size; ++i) {
+      score_[i] = 0.0f;
+    }
+    const double* init_score = data->metadata().init_score();
     // if exists initial score, will start from it
     if (init_score != nullptr) {
       if ((data->metadata().num_init_score() % num_data_) != 0 
         || (data->metadata().num_init_score() / num_data_) != num_class) {
         Log::Fatal("number of class for initial score error");
       }
-      for (size_t i = 0; i < total_size; ++i) {
+#pragma omp parallel for schedule(static)
+      for (int64_t i = 0; i < total_size; ++i) {
         score_[i] = init_score[i];
       }
     }

@@ -77,7 +77,16 @@ bool Dataset::SetFloatField(const char* field_name, const float* field_data, dat
     metadata_.SetLabel(field_data, num_element);
   } else if (name == std::string("weight") || name == std::string("weights")) {
     metadata_.SetWeights(field_data, num_element);
-  } else if (name == std::string("init_score")) {
+  } else {
+    return false;
+  }
+  return true;
+}
+
+bool Dataset::SetDoubleField(const char* field_name, const double* field_data, data_size_t num_element) {
+  std::string name(field_name);
+  name = Common::Trim(name);
+  if (name == std::string("init_score")) {
     metadata_.SetInitScore(field_data, num_element);
   } else {
     return false;
@@ -107,9 +116,18 @@ bool Dataset::GetFloatField(const char* field_name, data_size_t* out_len, const 
   } else if (name == std::string("weight") || name == std::string("weights")) {
     *out_ptr = metadata_.weights();
     *out_len = num_data_;
-  } else if (name == std::string("init_score")) {
+  } else {
+    return false;
+  }
+  return true;
+}
+
+bool Dataset::GetDoubleField(const char* field_name, data_size_t* out_len, const double** out_ptr) {
+  std::string name(field_name);
+  name = Common::Trim(name);
+  if (name == std::string("init_score")) {
     *out_ptr = metadata_.init_score();
-    *out_len = num_data_;
+    *out_len = static_cast<data_size_t>(metadata_.num_init_score());
   } else {
     return false;
   }
