@@ -16,7 +16,7 @@ libpath_py = os.path.join(CURRENT_DIR, 'lightgbm/libpath.py')
 libpath = {'__file__': libpath_py}
 exec(compile(open(libpath_py, "rb").read(), libpath_py, 'exec'), libpath, libpath)
 
-LIB_PATH = libpath['find_lib_path']()
+LIB_PATH = [os.path.relpath(path, CURRENT_DIR) for path in libpath['find_lib_path']()]
 print("Install lib_lightgbm from: %s" % LIB_PATH)
 
 
