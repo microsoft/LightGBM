@@ -38,8 +38,7 @@ test_that("train and predict softmax", {
   expect_lt(min(record_results), 0.03)
 
   pred <- predict(bst, as.matrix(iris[, -5]))
-  expect_length(pred, nrow(iris) * 3)
-
+  expect_equal(length(pred), nrow(iris) * 3)
 })
 
 
