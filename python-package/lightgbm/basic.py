@@ -90,6 +90,7 @@ def cfloat32_array_to_numpy(cptr, length):
     else:
         raise RuntimeError('Expected float pointer')
 
+
 def cfloat64_array_to_numpy(cptr, length):
     """Convert a ctypes double pointer array to a numpy array.
     """

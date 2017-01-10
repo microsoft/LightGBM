@@ -181,6 +181,7 @@ public:
   }
 
   void GetFastIndex() {
+
     fast_index_.clear();
     // get shift cnt
     data_size_t mod_size = (num_data_ + kNumFastIndex - 1) / kNumFastIndex;
@@ -195,7 +196,7 @@ public:
     data_size_t cur_pos = 0;
     data_size_t next_threshold = 0;
     while (NextNonzero(&i_delta, &cur_pos)) {
-      while (next_threshold < cur_pos) {
+      while (next_threshold <= cur_pos) {
         fast_index_.emplace_back(i_delta, cur_pos);
         next_threshold += pow2_mod_size;
       }
