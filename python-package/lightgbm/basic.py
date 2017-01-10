@@ -5,27 +5,15 @@
 from __future__ import absolute_import
 
 import ctypes
-import json
 import os
-import sys
 from tempfile import NamedTemporaryFile
 
 import numpy as np
 import scipy.sparse
 
+from .compat import (DataFrame, Series, integer_types, json, numeric_types,
+                     range_, string_type)
 from .libpath import find_lib_path
-
-"""pandas"""
-try:
-    from pandas import Series, DataFrame
-except ImportError:
-    class Series(object):
-        pass
-
-    class DataFrame(object):
-        pass
-
-IS_PY3 = (sys.version_info[0] == 3)
 
 
 def _load_lib():
@@ -57,26 +45,15 @@ def _safe_call(ret):
         raise LightGBMError(_LIB.LGBM_GetLastError())
 
 
-def is_str(s):
-    """Check is a str or not"""
-    if IS_PY3:
-        return isinstance(s, str)
-    else:
-        return isinstance(s, basestring)
-
-
 def is_numeric(obj):
     """Check is a number or not, include numpy number etc."""
     try:
         float(obj)
         return True
-    except:
+    except (TypeError, ValueError):
+        # TypeError: obj is not a string or a number
+        # ValueError: invalid literal
         return False
-
-
-def is_numpy_object(data):
-    """Check is numpy object"""
-    return type(data).__module__ == np.__name__
 
 
 def is_numpy_1d_array(data):
@@ -87,7 +64,7 @@ def is_numpy_1d_array(data):
 def is_1d_list(data):
     """Check is 1d list"""
     return isinstance(data, list) and \
-        (not data or isinstance(data[0], (int, float, bool)))
+        (not data or isinstance(data[0], numeric_types))
 
 
 def list_to_1d_numpy(data, dtype=np.float32, name='list'):
@@ -140,7 +117,7 @@ def param_dict_to_str(data):
     for key, val in data.items():
         if isinstance(val, (list, tuple, set)) or is_numpy_1d_array(val):
             pairs.append(str(key) + '=' + ','.join(map(str, val)))
-        elif is_str(val) or isinstance(val, (int, float, bool)) or is_numeric(val):
+        elif isinstance(val, string_type) or isinstance(val, numeric_types) or is_numeric(val):
             pairs.append(str(key) + '=' + str(val))
         else:
             raise TypeError('Unknown type of parameter:%s, got:%s'
@@ -314,7 +291,7 @@ class _InnerPredictor(object):
         int_data_has_header = 1 if data_has_header else 0
         if num_iteration > self.num_total_iteration:
             num_iteration = self.num_total_iteration
-        if is_str(data):
+        if isinstance(data, string_type):
             with _temp_file() as f:
                 _safe_call(_LIB.LGBM_BoosterPredictForFile(
                     self.handle,
@@ -576,9 +553,9 @@ class Dataset(object):
             if feature_name is not None:
                 feature_dict = {name: i for i, name in enumerate(feature_name)}
             for name in categorical_feature:
-                if is_str(name) and name in feature_dict:
+                if isinstance(name, string_type) and name in feature_dict:
                     categorical_indices.add(feature_dict[name])
-                elif isinstance(name, int):
+                elif isinstance(name, integer_types):
                     categorical_indices.add(name)
                 else:
                     raise TypeError("Wrong type({}) or unknown name({}) in categorical_feature"
@@ -594,7 +571,7 @@ class Dataset(object):
         elif reference is not None:
             raise TypeError('Reference dataset should be None or dataset instance')
         """start construct data"""
-        if is_str(data):
+        if isinstance(data, string_type):
             """check data has header or not"""
             if str(params.get("has_header", "")).lower() == "true" \
                     or str(params.get("header", "")).lower() == "true":
@@ -635,8 +612,8 @@ class Dataset(object):
                 # need re group init score
                 new_init_score = np.zeros(init_score.size, dtype=np.float32)
                 num_data = self.num_data()
-                for i in range(num_data):
-                    for j in range(self.predictor.num_class):
+                for i in range_(num_data):
+                    for j in range_(self.predictor.num_class):
                         new_init_score[j * num_data + i] = init_score[i * self.predictor.num_class + j]
                 init_score = new_init_score
             init_score = init_score.astype(dtype=np.float32, copy=False)
@@ -1065,7 +1042,7 @@ class Dataset(object):
             if self.group is not None:
                 # group data from LightGBM is boundaries data, need to convert to group size
                 new_group = []
-                for i in range(len(self.group) - 1):
+                for i in range_(len(self.group) - 1):
                     new_group.append(self.group[i + 1] - self.group[i])
                 self.group = new_group
         return self.group
@@ -1292,7 +1269,7 @@ class Booster(object):
             _safe_call(_LIB.LGBM_BoosterUpdateOneIter(
                 self.handle,
                 ctypes.byref(is_finished)))
-            self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
+            self.__is_predicted_cur_iter = [False for _ in range_(self.__num_dataset)]
             return is_finished.value == 1
         else:
             grad, hess = fobj(self.__inner_predict(0), self.train_set)
@@ -1326,7 +1303,7 @@ class Booster(object):
             grad.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
             hess.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
             ctypes.byref(is_finished)))
-        self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
+        self.__is_predicted_cur_iter = [False for _ in range_(self.__num_dataset)]
         return is_finished.value == 1
 
     def rollback_one_iter(self):
@@ -1335,7 +1312,7 @@ class Booster(object):
         """
         _safe_call(_LIB.LGBM_BoosterRollbackOneIter(
             self.handle))
-        self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
+        self.__is_predicted_cur_iter = [False for _ in range_(self.__num_dataset)]
 
     def current_iteration(self):
         out_cur_iter = ctypes.c_int(0)
@@ -1366,7 +1343,7 @@ class Booster(object):
         if data is self.train_set:
             data_idx = 0
         else:
-            for i in range(len(self.valid_sets)):
+            for i in range_(len(self.valid_sets)):
                 if data is self.valid_sets[i]:
                     data_idx = i + 1
                     break
@@ -1407,7 +1384,7 @@ class Booster(object):
         result: str
             Evaluation result list.
         """
-        return [item for i in range(1, self.__num_dataset)
+        return [item for i in range_(1, self.__num_dataset)
                 for item in self.__inner_eval(self.name_valid_sets[i - 1], i, feval)]
 
     def save_model(self, filename, num_iteration=-1):
@@ -1535,7 +1512,7 @@ class Booster(object):
         self.__get_eval_info()
         ret = []
         if self.__num_inner_eval > 0:
-            result = np.array([0.0 for _ in range(self.__num_inner_eval)], dtype=np.float64)
+            result = np.array([0.0 for _ in range_(self.__num_inner_eval)], dtype=np.float64)
             tmp_out_len = ctypes.c_int(0)
             _safe_call(_LIB.LGBM_BoosterGetEval(
                 self.handle,
@@ -1544,7 +1521,7 @@ class Booster(object):
                 result.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
             if tmp_out_len.value != self.__num_inner_eval:
                 raise ValueError("Wrong length of eval results")
-            for i in range(self.__num_inner_eval):
+            for i in range_(self.__num_inner_eval):
                 ret.append((data_name, self.__name_inner_eval[i], result[i], self.__higher_better_inner_eval[i]))
         if feval is not None:
             if data_idx == 0:
@@ -1572,7 +1549,7 @@ class Booster(object):
             else:
                 n_preds = self.valid_sets[data_idx - 1].num_data() * self.__num_class
             self.__inner_predict_buffer[data_idx] = \
-                np.array([0.0 for _ in range(n_preds)], dtype=np.float64, copy=False)
+                np.array([0.0 for _ in range_(n_preds)], dtype=np.float64, copy=False)
         """avoid to predict many time in one iteration"""
         if not self.__is_predicted_cur_iter[data_idx]:
             tmp_out_len = ctypes.c_int64(0)
@@ -1602,7 +1579,7 @@ class Booster(object):
             if self.__num_inner_eval > 0:
                 """Get name of evals"""
                 tmp_out_len = ctypes.c_int(0)
-                string_buffers = [ctypes.create_string_buffer(255) for i in range(self.__num_inner_eval)]
+                string_buffers = [ctypes.create_string_buffer(255) for i in range_(self.__num_inner_eval)]
                 ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))
                 _safe_call(_LIB.LGBM_BoosterGetEvalNames(
                     self.handle,
@@ -1611,7 +1588,7 @@ class Booster(object):
                 if self.__num_inner_eval != tmp_out_len.value:
                     raise ValueError("Length of eval names doesn't equal with num_evals")
                 self.__name_inner_eval = \
-                    [string_buffers[i].value.decode() for i in range(self.__num_inner_eval)]
+                    [string_buffers[i].value.decode() for i in range_(self.__num_inner_eval)]
                 self.__higher_better_inner_eval = \
                     [name.startswith(('auc', 'ndcg')) for name in self.__name_inner_eval]
 
@@ -1642,7 +1619,7 @@ class Booster(object):
         """
         for key, value in kwargs.items():
             if value is not None:
-                if not is_str(value):
+                if not isinstance(value, string_type):
                     raise ValueError("Set attr only accepts strings")
                 self.__attr[key] = value
             else:

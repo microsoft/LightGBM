@@ -4,6 +4,8 @@ from __future__ import absolute_import
 
 import collections
 
+from .compat import range_
+
 
 class EarlyStopException(Exception):
     """Exception of early stopping.
@@ -171,7 +173,7 @@ def early_stopping(stopping_rounds, verbose=True):
             msg = "Train until valid scores didn't improve in {} rounds."
             print(msg.format(stopping_rounds))
 
-        for i in range(len(env.evaluation_result_list)):
+        for i in range_(len(env.evaluation_result_list)):
             best_score[i] = float('-inf')
             best_iter[i] = 0
             if verbose:
@@ -182,7 +184,7 @@ def early_stopping(stopping_rounds, verbose=True):
         """internal function"""
         if not best_score:
             init(env)
-        for i in range(len(env.evaluation_result_list)):
+        for i in range_(len(env.evaluation_result_list)):
             score = env.evaluation_result_list[i][2] * factor_to_bigger_better[i]
             if score > best_score[i]:
                 best_score[i] = score

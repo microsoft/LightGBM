@@ -1,0 +1,73 @@
+# coding: utf-8
+# pylint: disable = C0103
+"""Compatibility"""
+from __future__ import absolute_import
+
+import inspect
+import sys
+
+is_py3 = (sys.version_info[0] == 3)
+
+"""compatibility between python2 and python3"""
+if is_py3:
+    string_type = str
+    numeric_types = (int, float, bool)
+    integer_types = int
+    range_ = range
+
+    def argc_(func):
+        """return number of arguments of a function"""
+        return len(inspect.signature(func).parameters)
+else:
+    string_type = basestring
+    numeric_types = (int, long, float, bool)
+    integer_types = (int, long)
+    range_ = xrange
+
+    def argc_(func):
+        """return number of arguments of a function"""
+        return len(inspect.getargspec(func).args)
+
+"""json"""
+try:
+    import simplejson as json
+except (ImportError, SyntaxError):
+    # simplejson does not support Python 3.2, it throws a SyntaxError
+    # because of u'...' Unicode literals.
+    import json
+
+"""pandas"""
+try:
+    from pandas import Series, DataFrame
+except ImportError:
+    class Series(object):
+        pass
+
+    class DataFrame(object):
+        pass
+
+"""sklearn"""
+try:
+    from sklearn.base import BaseEstimator
+    from sklearn.base import RegressorMixin, ClassifierMixin
+    from sklearn.preprocessing import LabelEncoder
+    from sklearn.utils import deprecated
+    try:
+        from sklearn.model_selection import StratifiedKFold
+    except ImportError:
+        from sklearn.cross_validation import StratifiedKFold
+    SKLEARN_INSTALLED = True
+    LGBMModelBase = BaseEstimator
+    LGBMRegressorBase = RegressorMixin
+    LGBMClassifierBase = ClassifierMixin
+    LGBMLabelEncoder = LabelEncoder
+    LGBMDeprecated = deprecated
+    LGBMStratifiedKFold = StratifiedKFold
+except ImportError:
+    SKLEARN_INSTALLED = False
+    LGBMModelBase = object
+    LGBMClassifierBase = object
+    LGBMRegressorBase = object
+    LGBMLabelEncoder = None
+    LGBMDeprecated = None
+    LGBMStratifiedKFold = None

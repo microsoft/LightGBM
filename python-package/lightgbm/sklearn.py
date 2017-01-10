@@ -3,37 +3,13 @@
 """Scikit-Learn Wrapper interface for LightGBM."""
 from __future__ import absolute_import
 
-import inspect
-
 import numpy as np
 
-from .basic import IS_PY3, Dataset, LightGBMError
+from .basic import Dataset, LightGBMError
+from .compat import (SKLEARN_INSTALLED, LGBMClassifierBase, LGBMDeprecated,
+                     LGBMLabelEncoder, LGBMModelBase, LGBMRegressorBase, argc_,
+                     range_)
 from .engine import train
-
-'''sklearn'''
-try:
-    from sklearn.base import BaseEstimator
-    from sklearn.base import RegressorMixin, ClassifierMixin
-    from sklearn.preprocessing import LabelEncoder
-    from sklearn.utils import deprecated
-    SKLEARN_INSTALLED = True
-    LGBMModelBase = BaseEstimator
-    LGBMRegressorBase = RegressorMixin
-    LGBMClassifierBase = ClassifierMixin
-    LGBMLabelEncoder = LabelEncoder
-except ImportError:
-    SKLEARN_INSTALLED = False
-    LGBMModelBase = object
-    LGBMClassifierBase = object
-    LGBMRegressorBase = object
-    LGBMLabelEncoder = None
-
-
-def _argc(func):
-    if IS_PY3:
-        return len(inspect.signature(func).parameters)
-    else:
-        return len(inspect.getargspec(func).args)
 
 
 def _objective_function_wrapper(func):
@@ -67,7 +43,7 @@ def _objective_function_wrapper(func):
     def inner(preds, dataset):
         """internal function"""
         labels = dataset.get_label()
-        argc = _argc(func)
+        argc = argc_(func)
         if argc == 2:
             grad, hess = func(labels, preds)
         elif argc == 3:
@@ -86,8 +62,8 @@ def _objective_function_wrapper(func):
                 num_class = len(grad) // num_data
                 if num_class * num_data != len(grad):
                     raise ValueError("Length of grad and hess should equal to num_class * num_data")
-                for k in range(num_class):
-                    for i in range(num_data):
+                for k in range_(num_class):
+                    for i in range_(num_data):
                         idx = k * num_data + i
                         grad[idx] *= weight[i]
                         hess[idx] *= weight[i]
@@ -132,7 +108,7 @@ def _eval_function_wrapper(func):
     def inner(preds, dataset):
         """internal function"""
         labels = dataset.get_label()
-        argc = _argc(func)
+        argc = argc_(func)
         if argc == 2:
             return func(labels, preds)
         elif argc == 3:
@@ -490,11 +466,11 @@ class LGBMModel(LGBMModelBase):
         importace_array = self.booster_.feature_importance().astype(np.float32)
         return importace_array / importace_array.sum()
 
-    @deprecated('Use attribute booster_ instead.')
+    @LGBMDeprecated('Use attribute booster_ instead.')
     def booster(self):
         return self.booster_
 
-    @deprecated('Use attribute feature_importance_ instead.')
+    @LGBMDeprecated('Use attribute feature_importance_ instead.')
     def feature_importance(self):
         return self.feature_importance_
 
@@ -695,7 +671,7 @@ class LGBMRanker(LGBMModel):
                 raise ValueError("Eval_group cannot be None when eval_set is not None")
             elif len(eval_group) != len(eval_set):
                 raise ValueError("Length of eval_group should equal to eval_set")
-            elif (isinstance(eval_group, dict) and any(i not in eval_group or eval_group[i] is None for i in range(len(eval_group)))) \
+            elif (isinstance(eval_group, dict) and any(i not in eval_group or eval_group[i] is None for i in range_(len(eval_group)))) \
                     or (isinstance(eval_group, list) and any(group is None for group in eval_group)):
                 raise ValueError("Should set group for all eval dataset for ranking task; if you use dict, the index should start from 0")
 

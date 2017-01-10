@@ -9,7 +9,9 @@ from operator import attrgetter
 import numpy as np
 
 from . import callback
-from .basic import Booster, Dataset, LightGBMError, _InnerPredictor, is_str
+from .basic import Booster, Dataset, LightGBMError, _InnerPredictor
+from .compat import (SKLEARN_INSTALLED, LGBMStratifiedKFold, integer_types,
+                     range_, string_type)
 
 
 def train(params, train_set, num_boost_round=100,
@@ -85,7 +87,7 @@ def train(params, train_set, num_boost_round=100,
     booster : a trained booster model
     """
     """create predictor first"""
-    if is_str(init_model):
+    if isinstance(init_model, string_type):
         predictor = _InnerPredictor(model_file=init_model)
     elif isinstance(init_model, Booster):
         predictor = init_model._to_predictor()
@@ -108,7 +110,7 @@ def train(params, train_set, num_boost_round=100,
     if valid_sets is not None:
         if isinstance(valid_sets, Dataset):
             valid_sets = [valid_sets]
-        if isinstance(valid_names, str):
+        if isinstance(valid_names, string_type):
             valid_names = [valid_names]
         for i, valid_data in enumerate(valid_sets):
             """reduce cost for prediction training data"""
@@ -138,7 +140,7 @@ def train(params, train_set, num_boost_round=100,
     # Most of legacy advanced options becomes callbacks
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation())
-    elif isinstance(verbose_eval, int):
+    elif isinstance(verbose_eval, integer_types):
         callbacks.add(callback.print_evaluation(verbose_eval))
 
     if early_stopping_rounds is not None:
@@ -163,7 +165,7 @@ def train(params, train_set, num_boost_round=100,
         booster.add_valid(valid_set, name_valid_set)
 
     """start training"""
-    for i in range(init_iteration, init_iteration + num_boost_round):
+    for i in range_(init_iteration, init_iteration + num_boost_round):
         for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=booster,
                                     params=params,
@@ -217,25 +219,14 @@ class CVBooster(object):
         return handlerFunction
 
 
-try:
-    from sklearn.model_selection import StratifiedKFold
-    SKLEARN_StratifiedKFold = True
-except ImportError:
-    try:
-        from sklearn.cross_validation import StratifiedKFold
-        SKLEARN_StratifiedKFold = True
-    except ImportError:
-        SKLEARN_StratifiedKFold = False
-
-
 def _make_n_folds(full_data, nfold, params, seed, fpreproc=None, stratified=False, shuffle=True):
     """
     Make an n-fold list of Booster from random indices.
     """
     np.random.seed(seed)
     if stratified:
-        if SKLEARN_StratifiedKFold:
-            sfk = StratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
+        if SKLEARN_INSTALLED:
+            sfk = LGBMStratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
             idset = [x[1] for x in sfk.split(X=full_data.get_label(), y=full_data.get_label())]
         else:
             raise LightGBMError('Scikit-learn is required for stratified cv')
@@ -244,11 +235,11 @@ def _make_n_folds(full_data, nfold, params, seed, fpreproc=None, stratified=Fals
         if shuffle:
             randidx = np.random.permutation(full_data.num_data())
         kstep = int(len(randidx) / nfold)
-        idset = [randidx[(i * kstep): min(len(randidx), (i + 1) * kstep)] for i in range(nfold)]
+        idset = [randidx[(i * kstep): min(len(randidx), (i + 1) * kstep)] for i in range_(nfold)]
 
     ret = CVBooster()
-    for k in range(nfold):
-        train_set = full_data.subset(np.concatenate([idset[i] for i in range(nfold) if k != i]))
+    for k in range_(nfold):
+        train_set = full_data.subset(np.concatenate([idset[i] for i in range_(nfold) if k != i]))
         valid_set = full_data.subset(idset[k])
         # run preprocessing on the data set if needed
         if fpreproc is not None:
@@ -341,7 +332,7 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
     if not isinstance(train_set, Dataset):
         raise TypeError("Traninig only accepts Dataset object")
 
-    if is_str(init_model):
+    if isinstance(init_model, string_type):
         predictor = _InnerPredictor(model_file=init_model)
     elif isinstance(init_model, Booster):
         predictor = init_model._to_predictor()
@@ -354,7 +345,7 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
 
     if metrics:
         params.setdefault('metric', [])
-        if is_str(metrics):
+        if isinstance(metrics, string_type):
             params['metric'].append(metrics)
         else:
             params['metric'].extend(metrics)
@@ -373,7 +364,7 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
         callbacks.add(callback.early_stopping(early_stopping_rounds, verbose=False))
     if verbose_eval is True:
         callbacks.add(callback.print_evaluation(show_stdv=show_stdv))
-    elif isinstance(verbose_eval, int):
+    elif isinstance(verbose_eval, integer_types):
         callbacks.add(callback.print_evaluation(verbose_eval, show_stdv=show_stdv))
 
     callbacks_before_iter = {cb for cb in callbacks if getattr(cb, 'before_iteration', False)}
@@ -381,7 +372,7 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
     callbacks_before_iter = sorted(callbacks_before_iter, key=attrgetter('order'))
     callbacks_after_iter = sorted(callbacks_after_iter, key=attrgetter('order'))
 
-    for i in range(num_boost_round):
+    for i in range_(num_boost_round):
         for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=cvfolds,
                                     params=params,
