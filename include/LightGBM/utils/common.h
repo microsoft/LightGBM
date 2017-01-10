@@ -407,15 +407,17 @@ inline void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, size_t s
 * y is a prediction.
 * t means true target.
 * g means gradient.
+* eta is a parameter to control the width of Gaussian function.
 * w means weights.
 */
-inline static double ApproximateHessianWithGaussian(const double y, const double t, const double g, const double w=1.0f) {
+inline static double ApproximateHessianWithGaussian(const double y, const double t, const double g,
+                                                    const double eta, const double w=1.0f) {
   const double diff = y - t;
   const double pi = 4.0 * std::atan(1.0);
   const double x = std::fabs(diff);
   const double a = 2.0 * std::fabs(g) * w;  // difference of two first derivatives, (zero to inf) and (zero to -inf).
   const double b = 0.0;
-  const double c = std::max(std::fabs(y) + std::fabs(t), 1.0e-10);
+  const double c = std::max((std::fabs(y) + std::fabs(t)) * eta, 1.0e-10);
   return w * std::exp(-(x - b) * (x - b) / (2.0 * c * c)) * a / (c * std::sqrt(2 * pi));
 }
 
