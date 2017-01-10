@@ -11,18 +11,9 @@ from tempfile import NamedTemporaryFile
 import numpy as np
 import scipy.sparse
 
-from .compat import integer_types, json, numeric_types, range_, string_type
+from .compat import (DataFrame, Series, integer_types, json, numeric_types,
+                     range_, string_type)
 from .libpath import find_lib_path
-
-"""pandas"""
-try:
-    from pandas import Series, DataFrame
-except ImportError:
-    class Series(object):
-        pass
-
-    class DataFrame(object):
-        pass
 
 
 def _load_lib():

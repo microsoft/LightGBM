@@ -27,3 +27,13 @@ except (ImportError, SyntaxError):
     # simplejson does not support Python 3.2, it throws a SyntaxError
     # because of u'...' Unicode literals.
     import json
+
+"""pandas"""
+try:
+    from pandas import Series, DataFrame
+except ImportError:
+    class Series(object):
+        pass
+
+    class DataFrame(object):
+        pass
