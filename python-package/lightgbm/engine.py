@@ -42,12 +42,14 @@ def train(params, train_set, num_boost_round=100,
         Note: should return (eval_name, eval_result, is_higher_better) of list of this
     init_model : file name of lightgbm model or 'Booster' instance
         model used for continued train
-    feature_name : list of str
+    feature_name : list of str, or 'auto'
         Feature names
-    categorical_feature : list of str or int
+        If 'auto' and data is pandas DataFrame, use data columns name
+    categorical_feature : list of str or int, or 'auto'
         Categorical features,
         type int represents index,
         type str represents feature names (need to specify feature_name as well)
+        If 'auto' and data is pandas DataFrame, use pandas categorical columns
     early_stopping_rounds: int
         Activates early stopping.
         Requires at least one validation data and one metric
@@ -298,11 +300,14 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
         Custom evaluation function.
     init_model : file name of lightgbm model or 'Booster' instance
         model used for continued train
-    feature_name : list of str
+    feature_name : list of str, or 'auto'
         Feature names
-    categorical_feature : list of str or int
-        Categorical features, type int represents index,
+        If 'auto' and data is pandas DataFrame, use data columns name
+    categorical_feature : list of str or int, or 'auto'
+        Categorical features,
+        type int represents index,
         type str represents feature names (need to specify feature_name as well)
+        If 'auto' and data is pandas DataFrame, use pandas categorical columns
     early_stopping_rounds: int
         Activates early stopping. CV error needs to decrease at least
         every <early_stopping_rounds> round(s) to continue.

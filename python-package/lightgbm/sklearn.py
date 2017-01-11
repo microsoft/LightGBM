@@ -311,12 +311,14 @@ class LGBMModel(LGBMModelBase):
         early_stopping_rounds : int
         verbose : bool
             If `verbose` and an evaluation set is used, writes the evaluation
-        feature_name : list of str
+        feature_name : list of str, or 'auto'
             Feature names
-        categorical_feature : list of str or int
+            If 'auto' and data is pandas DataFrame, use data columns name
+        categorical_feature : list of str or int, or 'auto'
             Categorical features,
             type int represents index,
             type str represents feature names (need to specify feature_name as well)
+            If 'auto' and data is pandas DataFrame, use pandas categorical columns
         callbacks : list of callback functions
             List of callback functions that are applied at each iteration.
             See Callbacks in Python-API.md for more information.

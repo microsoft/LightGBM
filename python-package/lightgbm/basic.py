@@ -454,8 +454,16 @@ PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
                        'float32': 'float', 'float64': 'float', 'bool': 'int'}
 
 
-def _data_from_pandas(data):
+def _data_from_pandas(data, feature_name, categorical_feature):
     if isinstance(data, DataFrame):
+        feat_name, cat_cols = None, None
+        if categorical_feature == 'auto':
+            if feature_name is None:
+                feat_name = data.columns
+            cat_cols = data.select_dtypes(include=['category']).columns
+            data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes)
+        elif feature_name == 'auto':
+            feat_name = data.columns
         data_dtypes = data.dtypes
         if not all(dtype.name in PANDAS_DTYPE_MAPPER for dtype in data_dtypes):
             bad_fields = [data.columns[i] for i, dtype in
@@ -464,7 +472,7 @@ def _data_from_pandas(data):
             msg = """DataFrame.dtypes for data must be int, float or bool. Did not expect the data types in fields """
             raise ValueError(msg + ', '.join(bad_fields))
         data = data.values.astype('float')
-    return data
+    return data, feat_name, cat_cols
 
 
 def _label_from_pandas(label):
@@ -502,12 +510,14 @@ class Dataset(object):
             Group/query size for dataset
         silent : boolean, optional
             Whether print messages during construction
-        feature_name : list of str
+        feature_name : list of str, or 'auto'
             Feature names
-        categorical_feature : list of str or int
+            If 'auto' and data is pandas DataFrame, use data columns name
+        categorical_feature : list of str or int, or 'auto'
             Categorical features,
             type int represents index,
             type str represents feature names (need to specify feature_name as well)
+            If 'auto' and data is pandas DataFrame, use pandas categorical columns
         params: dict, optional
             Other parameters
         free_raw_data: Bool
@@ -543,7 +553,7 @@ class Dataset(object):
         if data is None:
             self.handle = None
             return
-        data = _data_from_pandas(data)
+        data, feature_name, categorical_feature = _data_from_pandas(data, feature_name, categorical_feature)
         label = _label_from_pandas(label)
         self.data_has_header = False
         """process for args"""
