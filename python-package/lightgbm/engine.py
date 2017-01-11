@@ -17,7 +17,7 @@ from .compat import (SKLEARN_INSTALLED, LGBMStratifiedKFold, integer_types,
 def train(params, train_set, num_boost_round=100,
           valid_sets=None, valid_names=None,
           fobj=None, feval=None, init_model=None,
-          feature_name=None, categorical_feature=None,
+          feature_name='auto', categorical_feature='auto',
           early_stopping_rounds=None, evals_result=None,
           verbose_eval=True, learning_rates=None, callbacks=None):
     """
@@ -269,7 +269,7 @@ def _agg_cv_result(raw_results):
 
 def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
        shuffle=True, metrics=None, fobj=None, feval=None, init_model=None,
-       feature_name=None, categorical_feature=None,
+       feature_name='auto', categorical_feature='auto',
        early_stopping_rounds=None, fpreproc=None,
        verbose_eval=None, show_stdv=True, seed=0,
        callbacks=None):

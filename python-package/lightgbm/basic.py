@@ -475,6 +475,11 @@ def _data_from_pandas(data, feature_name, categorical_feature):
             msg = """DataFrame.dtypes for data must be int, float or bool. Did not expect the data types in fields """
             raise ValueError(msg + ', '.join(bad_fields))
         data = data.values.astype('float')
+    else:
+        if feature_name == 'auto':
+            feature_name = None
+        if categorical_feature == 'auto':
+            categorical_feature = None
     return data, feature_name, categorical_feature
 
 
@@ -493,7 +498,7 @@ class Dataset(object):
     """Dataset in LightGBM."""
     def __init__(self, data, label=None, max_bin=255, reference=None,
                  weight=None, group=None, silent=False,
-                 feature_name=None, categorical_feature=None, params=None,
+                 feature_name='auto', categorical_feature='auto', params=None,
                  free_raw_data=True):
         """
         Parameters
@@ -551,8 +556,8 @@ class Dataset(object):
 
     def _lazy_init(self, data, label=None, max_bin=255, reference=None,
                    weight=None, group=None, predictor=None,
-                   silent=False, feature_name=None,
-                   categorical_feature=None, params=None):
+                   silent=False, feature_name='auto',
+                   categorical_feature='auto', params=None):
         if data is None:
             self.handle = None
             return
