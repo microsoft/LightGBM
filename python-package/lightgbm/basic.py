@@ -787,7 +787,7 @@ class Dataset(object):
         ret = Dataset(data, label=label, max_bin=self.max_bin, reference=self,
                       weight=weight, group=group, silent=silent, params=params,
                       free_raw_data=self.free_raw_data)
-        ret._set_predictor(self._predictor)
+        ret._predictor = self._predictor
         ret.pandas_categorical = self.pandas_categorical
         return ret
 
