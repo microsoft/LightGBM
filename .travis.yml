@@ -14,7 +14,7 @@ before_install:
 
 install:
 - sudo apt-get install -y libopenmpi-dev openmpi-bin build-essential
-- conda install --yes atlas numpy scipy scikit-learn
+- conda install --yes atlas numpy scipy scikit-learn pandas
 - pip install pep8
 
 

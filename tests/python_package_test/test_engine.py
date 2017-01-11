@@ -13,8 +13,14 @@ from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error
 from sklearn.model_selection import train_test_split
 
 try:
+    import pandas as pd
+    IS_PANDAS_INSTALLED = True
+except ImportError:
+    IS_PANDAS_INSTALLED = False
+
+try:
     import cPickle as pickle
-except:
+except ImportError:
     import pickle
 
 
@@ -135,6 +141,20 @@ class TestEngine(unittest.TestCase):
         other_ret.append(test_template(init_model=gbm_pickles)[1])
         for ret in other_ret:
             self.assertAlmostEqual(ret_origin, ret, places=5)
+
+    @unittest.skipIf(not IS_PANDAS_INSTALLED, 'pandas not installed')
+    def test_pandas_categorical(self):
+        df_X = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 75),
+                             "B": np.random.permutation([1, 2, 3] * 100)})
+        df_X["A"] = df_X["A"].astype('category')
+        df_X["B"] = df_X["B"].astype('category')
+        ser_y = np.random.permutation([0, 1] * 150)
+        lgb_train, lgb_eval = test_template(X_y=(df_X, ser_y), return_data=True)
+        params = {
+            'objective': 'binary',
+            'metric': 'binary_logloss'
+        }
+        gbm = lgb.train(params, lgb_train, num_boost_round=10, valid_sets=lgb_eval)
 
 
 print("----------------------------------------------------------------------")

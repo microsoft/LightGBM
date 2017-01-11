@@ -473,7 +473,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
                 categorical_feature = cat_cols
             else:
                 categorical_feature += cat_cols
-        elif feature_name == 'auto':
+        if feature_name == 'auto':
             feature_name = data.columns
         data_dtypes = data.dtypes
         if not all(dtype.name in PANDAS_DTYPE_MAPPER for dtype in data_dtypes):
