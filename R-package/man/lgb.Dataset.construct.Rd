@@ -2,7 +2,7 @@
 % Please edit documentation in R/lgb.Dataset.R
 \name{lgb.Dataset.construct}
 \alias{lgb.Dataset.construct}
-\title{Construct Dataset explicit}
+\title{Construct Dataset explicitly}
 \usage{
 lgb.Dataset.construct(dataset)
 }
@@ -10,12 +10,14 @@ lgb.Dataset.construct(dataset)
 \item{dataset}{Object of class \code{lgb.Dataset}}
 }
 \description{
-Construct Dataset explicit
+Construct Dataset explicitly
 }
 \examples{
-data(agaricus.train, package='lightgbm')
-train <- agaricus.train
-dtrain <- lgb.Dataset(train$data, label=train$label)
-lgb.Dataset.construct(dtrain)
+\dontrun{
+  data(agaricus.train, package='lightgbm')
+  train <- agaricus.train
+  dtrain <- lgb.Dataset(train$data, label=train$label)
+  lgb.Dataset.construct(dtrain)
+}
 }
 

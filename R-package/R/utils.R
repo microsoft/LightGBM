@@ -1,70 +1,61 @@
-lgb.new.handle <- function() {
-  # use 64bit data to store address
-  return(0.0)
-}
-lgb.is.null.handle <- function(x) {
-  if (is.null(x)) {
-    return(TRUE)
-  }
-  if (x == 0) {
-    return(TRUE)
-  }
-  return(FALSE)
-}
+lgb.is.Booster <- function(x) { lgb.check.r6.class(x, "lgb.Booster") }
+
+lgb.is.Dataset <- function(x) { lgb.check.r6.class(x, "lgb.Dataset") }
+
+# use 64bit data to store address
+lgb.new.handle <- function() { 0.0 }
+
+lgb.is.null.handle <- function(x) { is.null(x) || x == 0 }
 
 lgb.encode.char <- function(arr, len) {
-  if (typeof(arr) != "raw") {
-    stop("lgb.encode.char: only can encode from raw type")
+  if (!is.raw(arr)) {
+    stop("lgb.encode.char: Can only encode from raw type")
   }
-  return(rawToChar(arr[1:len]))
+  rawToChar(arr[seq_len(len)])
 }
 
 lgb.call <- function(fun_name, ret, ...) {
-  call_state <- as.integer(0)
+  call_state <- 0L
   if (!is.null(ret)) {
-    call_state <-
-      .Call(fun_name, ..., ret, call_state , PACKAGE = "lightgbm")
+    call_state <- .Call(fun_name, ..., ret, call_state, PACKAGE = "lightgbm")
   } else {
-    call_state <- .Call(fun_name, ..., call_state , PACKAGE = "lightgbm")
+    call_state <- .Call(fun_name, ..., call_state, PACKAGE = "lightgbm")
   }
-  if (call_state != as.integer(0)) {
-    buf_len <- as.integer(200)
-    act_len <- as.integer(0)
+  if (call_state != 0L) {
+    buf_len <- 200L
+    act_len <- 0L
     err_msg <- raw(buf_len)
-    err_msg <-
-      .Call("LGBM_GetLastError_R", buf_len, act_len, err_msg, PACKAGE = "lightgbm")
+    err_msg <- .Call("LGBM_GetLastError_R", buf_len, act_len, err_msg, PACKAGE = "lightgbm")
     if (act_len > buf_len) {
       buf_len <- act_len
       err_msg <- raw(buf_len)
-      err_msg <-
-        .Call("LGBM_GetLastError_R",
-              buf_len,
-              act_len,
-              err_msg,
-              PACKAGE = "lightgbm")
+      err_msg <- .Call("LGBM_GetLastError_R",
+                        buf_len,
+                        act_len,
+                        err_msg,
+                        PACKAGE = "lightgbm")
     }
     stop(paste0("api error: ", lgb.encode.char(err_msg, act_len)))
   }
-  return(ret)
+  ret
 }
 
 
 lgb.call.return.str <- function(fun_name, ...) {
   buf_len <- as.integer(1024 * 1024)
-  act_len <- as.integer(0)
+  act_len <- 0L
   buf <- raw(buf_len)
   buf <- lgb.call(fun_name, ret = buf, ..., buf_len, act_len)
   if (act_len > buf_len) {
     buf_len <- act_len
-    buf <- raw(buf_len)
-    buf <- lgb.call(fun_name, ret = buf, ..., buf_len, act_len)
+    buf     <- raw(buf_len)
+    buf     <- lgb.call(fun_name, ret = buf, ..., buf_len, act_len)
   }
-  return(lgb.encode.char(buf, act_len))
+  lgb.encode.char(buf, act_len)
 }
 
 lgb.params2str <- function(params, ...) {
-  if (typeof(params) != "list")
-    stop("params must be a list")
+  if (!is.list(params)) { stop("params must be a list") }
   names(params) <- gsub("\\.", "_", names(params))
   # merge parameters from the params and the dots-expansion
   dot_params <- list(...)
@@ -72,29 +63,29 @@ lgb.params2str <- function(params, ...) {
   if (length(intersect(names(params),
                        names(dot_params))) > 0)
     stop(
-      "Same parameters in 'params' and in the call are not allowed. Please check your 'params' list."
+      "Same parameters in ", sQuote("params"), " and in the call are not allowed. Please check your ", sQuote("params"), " list"
     )
   params <- c(params, dot_params)
-  ret <- list()
+  ret    <- list()
   for (key in names(params)) {
     # join multi value first
     val <- paste0(params[[key]], collapse = ",")
-    if(nchar(val) <= 0) next
+    if (nchar(val) <= 0) next
     # join key value
     pair <- paste0(c(key, val), collapse = "=")
-    ret <- c(ret, pair)
+    ret  <- c(ret, pair)
   }
   if (length(ret) == 0) {
-    return(lgb.c_str(""))
-  } else{
-    return(lgb.c_str(paste0(ret, collapse = " ")))
+    lgb.c_str("")
+  } else {
+    lgb.c_str(paste0(ret, collapse = " "))
   }
 }
 
 lgb.c_str <- function(x) {
   ret <- charToRaw(as.character(x))
   ret <- c(ret, as.raw(0))
-  return(ret)
+  ret
 }
 
 lgb.check.r6.class <- function(object, name) {
@@ -104,54 +95,47 @@ lgb.check.r6.class <- function(object, name) {
   if (!(name %in% class(object))) {
     return(FALSE)
   }
-  return(TRUE)
+  TRUE
 }
 
-lgb.check.params <- function(params){
+lgb.check.params <- function(params) {
   # To-do
-  return(params)
+  params
 }
 
 lgb.check.obj <- function(params, obj) {
-  if(!is.null(obj)){
-    params$objective <- obj
-  }
-  if(is.character(params$objective)){ 
-    if(!(params$objective %in% c("regression", "binary", "multiclass", "lambdarank"))){
-      stop("lgb.check.obj: objective name error should be (regression, binary, multiclass, lambdarank)")
+  OBJECTIVES <- c("regression", "binary", "multiclass", "lambdarank")
+  if (!is.null(obj)) { params$objective <- obj }
+  if (is.character(params$objective)) {
+    if (!(params$objective %in% OBJECTIVES)) {
+      stop("lgb.check.obj: objective name error should be one of (", paste0(OBJECTIVES, collapse = ", "), ")")
     }
-  } else if(typeof(params$objective) != "closure"){
-    stop("lgb.check.obj: objective should be character or function")
+  } else if (!is.function(params$objective)) {
+    stop("lgb.check.obj: objective should be a character or a function")
   }
-  return(params)
+  params
 }
 
 lgb.check.eval <- function(params, eval) {
-  if(is.null(params$metric)){
-    params$metric <- list()
-  }
-  if(!is.null(eval)){
+  if (is.null(params$metric)) { params$metric <- list() }
+  if (!is.null(eval)) {
     # append metric
-    if(is.character(eval) || is.list(eval)){
+    if (is.character(eval) || is.list(eval)) {
       params$metric <- append(params$metric, eval)
     }
   }
-  if (typeof(eval) != "closure"){
-    if(is.null(params$metric) | length(params$metric) == 0) {
+  if (!is.function(eval)) {
+    if (length(params$metric) == 0) {
       # add default metric
-      if(is.character(params$objective)){
-        if(params$objective == "regression"){
-          params$metric <- "l2"
-        } else if(params$objective == "binary"){
-          params$metric <- "binary_logloss"
-        } else if(params$objective == "multiclass"){
-          params$metric <- "multi_logloss"
-        } else if(params$objective == "lambdarank"){
-          params$metric <- "ndcg"
-        }
-      }
+      params$metric <- switch(
+        params$objective,
+        regression = "l2",
+        binary     = "binary_logloss",
+        multiclass = "multi_logloss",
+        lambdarank = "ndcg",
+        stop("lgb.check.eval: No default metric available for objective ", sQuote(params$objective))
+      )
     }
   }
-  return(params)
+  params
 }
-

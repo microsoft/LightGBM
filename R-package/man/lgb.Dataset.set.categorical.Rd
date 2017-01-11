@@ -2,7 +2,7 @@
 % Please edit documentation in R/lgb.Dataset.R
 \name{lgb.Dataset.set.categorical}
 \alias{lgb.Dataset.set.categorical}
-\title{set categorical feature of \code{lgb.Dataset}}
+\title{Set categorical feature of \code{lgb.Dataset}}
 \usage{
 lgb.Dataset.set.categorical(dataset, categorical_feature)
 }
@@ -15,14 +15,16 @@ lgb.Dataset.set.categorical(dataset, categorical_feature)
 passed dataset
 }
 \description{
-set categorical feature of \code{lgb.Dataset}
+Set categorical feature of \code{lgb.Dataset}
 }
 \examples{
-data(agaricus.train, package='lightgbm')
-train <- agaricus.train
-dtrain <- lgb.Dataset(train$data, label=train$label)
-lgb.Dataset.save(dtrain, 'lgb.Dataset.data')
-dtrain <- lgb.Dataset('lgb.Dataset.data')
-lgb.Dataset.set.categorical(dtrain, 1:2)
+\dontrun{
+  data(agaricus.train, package='lightgbm')
+  train <- agaricus.train
+  dtrain <- lgb.Dataset(train$data, label=train$label)
+  lgb.Dataset.save(dtrain, 'lgb.Dataset.data')
+  dtrain <- lgb.Dataset('lgb.Dataset.data')
+  lgb.Dataset.set.categorical(dtrain, 1:2)
+}
 }
 

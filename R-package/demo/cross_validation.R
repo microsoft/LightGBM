@@ -42,4 +42,3 @@ evalerror <- function(preds, dtrain) {
 
 # train with customized objective
 lgb.cv(params = param, data = dtrain, nrounds = nround, obj=logregobj, eval=evalerror, nfold = 5)
-

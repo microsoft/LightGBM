@@ -16,25 +16,23 @@
 and the second one is column names}
 }
 \description{
-Handling of column names of \code{lgb.Dataset}
+Only column names are supported for \code{lgb.Dataset}, thus setting of
+row names would have no effect and returned row names would be NULL.
 }
 \details{
-Only column names are supported for \code{lgb.Dataset}, thus setting of
-row names would have no effect and returnten row names would be NULL.
-
-
 Generic \code{dimnames} methods are used by \code{colnames}.
 Since row names are irrelevant, it is recommended to use \code{colnames} directly.
 }
 \examples{
-data(agaricus.train, package='lightgbm')
-train <- agaricus.train
-dtrain <- lgb.Dataset(train$data, label=train$label)
-lgb.Dataset.construct(dtrain)
-dimnames(dtrain)
-colnames(dtrain)
-colnames(dtrain) <- make.names(1:ncol(train$data))
-print(dtrain, verbose=TRUE)
-
+dontrun{
+  data(agaricus.train, package='lightgbm')
+  train <- agaricus.train
+  dtrain <- lgb.Dataset(train$data, label=train$label)
+  lgb.Dataset.construct(dtrain)
+  dimnames(dtrain)
+  colnames(dtrain)
+  colnames(dtrain) <- make.names(1:ncol(train$data))
+  print(dtrain, verbose=TRUE)
+}
 }
 

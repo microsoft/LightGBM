@@ -2,7 +2,7 @@
 % Please edit documentation in R/lgb.Dataset.R
 \name{dim.lgb.Dataset}
 \alias{dim.lgb.Dataset}
-\title{Dimensions of lgb.Dataset}
+\title{Dimensions of an lgb.Dataset}
 \usage{
 \method{dim}{lgb.Dataset}(x, ...)
 }
@@ -15,23 +15,21 @@
 a vector of numbers of rows and of columns
 }
 \description{
-Dimensions of lgb.Dataset
+Returns a vector of numbers of rows and of columns in an \code{lgb.Dataset}.
 }
 \details{
-Returns a vector of numbers of rows and of columns in an \code{lgb.Dataset}.
-
-
 Note: since \code{nrow} and \code{ncol} internally use \code{dim}, they can also
 be directly used with an \code{lgb.Dataset} object.
 }
 \examples{
-data(agaricus.train, package='lightgbm')
-train <- agaricus.train
-dtrain <- lgb.Dataset(train$data, label=train$label)
+dontrun{
+  data(agaricus.train, package='lightgbm')
+  train <- agaricus.train
+  dtrain <- lgb.Dataset(train$data, label=train$label)
 
-stopifnot(nrow(dtrain) == nrow(train$data))
-stopifnot(ncol(dtrain) == ncol(train$data))
-stopifnot(all(dim(dtrain) == dim(train$data)))
-
+  stopifnot(nrow(dtrain) == nrow(train$data))
+  stopifnot(ncol(dtrain) == ncol(train$data))
+  stopifnot(all(dim(dtrain) == dim(train$data)))
+}
 }
 

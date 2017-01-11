@@ -1,7 +1,5 @@
 context('Test models with custom objective')
 
-require(lightgbm)
-
 data(agaricus.train, package='lightgbm')
 data(agaricus.test, package='lightgbm')
 dtrain <- lgb.Dataset(agaricus.train$data, label = agaricus.train$label)
@@ -27,10 +25,6 @@ param <- list(num_leaves=8, learning_rate=1,
 num_round <- 10
 
 test_that("custom objective works", {
-  bst <- lgb.train(param, dtrain, num_round, watchlist, eval=evalerror)
+  bst <- lgb.train(param, dtrain, num_round, watchlist, eval = evalerror)
   expect_false(is.null(bst$record_evals))
 })
-
-
-
-

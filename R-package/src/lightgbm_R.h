@@ -8,11 +8,10 @@
 #include "R_object_helper.h"
 
 
-
 /*!
 * \brief get string message of the last error
-*  all function in this file will return 0 when succeed
-*  and -1 when an error occured,
+*  all functions in this file will return 0 on success
+*  and -1 when an error occured
 * \return err_msg error inforomation
 * \return error inforomation
 */
@@ -21,10 +20,10 @@ DllExport SEXP LGBM_GetLastError_R(SEXP buf_len, SEXP actual_len, SEXP err_msg);
 // --- start Dataset interface
 
 /*!
-* \brief load data set from file like the command_line LightGBM do
+* \brief load data set from file like the command_line LightGBM does
 * \param filename the name of the file
 * \param parameters additional parameters
-* \param reference used to align bin mapper with other dataset, nullptr means don't used
+* \param reference used to align bin mapper with other dataset, nullptr means not used
 * \param out created dataset
 * \return 0 when succeed, -1 when failure happens
 */
@@ -43,7 +42,7 @@ DllExport SEXP LGBM_DatasetCreateFromFile_R(SEXP filename,
 * \param nelem number of nonzero elements in the matrix
 * \param num_row number of rows
 * \param parameters additional parameters
-* \param reference used to align bin mapper with other dataset, nullptr means don't used
+* \param reference used to align bin mapper with other dataset, nullptr means not used
 * \param out created dataset
 * \return 0 when succeed, -1 when failure happens
 */
@@ -65,7 +64,7 @@ DllExport SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
 * \param nrow number of rows
 * \param ncol number columns
 * \param parameters additional parameters
-* \param reference used to align bin mapper with other dataset, nullptr means don't used
+* \param reference used to align bin mapper with other dataset, nullptr means not used
 * \param out created dataset
 * \return 0 when succeed, -1 when failure happens
 */
@@ -117,7 +116,7 @@ DllExport SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle,
 
 /*!
 * \brief save dateset to binary file
-* \param handle a instance of dataset
+* \param handle an instance of dataset
 * \param filename file name
 * \return 0 when succeed, -1 when failure happens
 */
@@ -127,7 +126,7 @@ DllExport SEXP LGBM_DatasetSaveBinary_R(SEXP handle,
 
 /*!
 * \brief free dataset
-* \param handle a instance of dataset
+* \param handle an instance of dataset
 * \return 0 when succeed, -1 when failure happens
 */
 DllExport SEXP LGBM_DatasetFree_R(SEXP handle,
@@ -135,9 +134,9 @@ DllExport SEXP LGBM_DatasetFree_R(SEXP handle,
 
 /*!
 * \brief set vector to a content in info
-*        Note: group and group only work for C_API_DTYPE_INT32
+*        Note: group and group_id only work for C_API_DTYPE_INT32
 *              label and weight only work for C_API_DTYPE_FLOAT32
-* \param handle a instance of dataset
+* \param handle an instance of dataset
 * \param field_name field name, can be label, weight, group, group_id
 * \param field_data pointer to vector
 * \param num_element number of element in field_data
@@ -151,7 +150,7 @@ DllExport SEXP LGBM_DatasetSetField_R(SEXP handle,
 
 /*!
 * \brief get size of info vector from dataset
-* \param handle a instance of dataset
+* \param handle an instance of dataset
 * \param field_name field name
 * \param out size of info vector from dataset
 * \return 0 when succeed, -1 when failure happens
@@ -163,7 +162,7 @@ DllExport SEXP LGBM_DatasetGetFieldSize_R(SEXP handle,
 
 /*!
 * \brief get info vector from dataset
-* \param handle a instance of dataset
+* \param handle an instance of dataset
 * \param field_name field name
 * \param field_data pointer to vector
 * \return 0 when succeed, -1 when failure happens
@@ -226,7 +225,7 @@ DllExport SEXP LGBM_BoosterCreateFromModelfile_R(SEXP filename,
   SEXP call_state);
 
 /*!
-* \brief Merge model in two booster to first handle
+* \brief Merge model in two boosters to first handle
 * \param handle handle, will merge other handle to this
 * \param other_handle
 * \return 0 when succeed, -1 when failure happens
@@ -266,12 +265,12 @@ DllExport SEXP LGBM_BoosterResetParameter_R(SEXP handle,
   SEXP call_state);
 
 /*!
-* \brief Get number of class
+* \brief Get number of classes
 * \param handle handle
 * \param out number of classes
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport SEXP LGBM_BoosterGetNumClasses_R(SEXP handle, 
+DllExport SEXP LGBM_BoosterGetNumClasses_R(SEXP handle,
   SEXP out,
   SEXP call_state);
 
@@ -311,7 +310,7 @@ DllExport SEXP LGBM_BoosterRollbackOneIter_R(SEXP handle,
 * \param out iteration of boosting rounds
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport SEXP LGBM_BoosterGetCurrentIteration_R(SEXP handle, 
+DllExport SEXP LGBM_BoosterGetCurrentIteration_R(SEXP handle,
   SEXP out,
   SEXP call_state);
 
@@ -320,7 +319,7 @@ DllExport SEXP LGBM_BoosterGetCurrentIteration_R(SEXP handle,
 * \param eval_names eval names
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport SEXP LGBM_BoosterGetEvalNames_R(SEXP handle, 
+DllExport SEXP LGBM_BoosterGetEvalNames_R(SEXP handle,
   SEXP buf_len,
   SEXP actual_len,
   SEXP eval_names,
@@ -351,8 +350,8 @@ DllExport SEXP LGBM_BoosterGetNumPredict_R(SEXP handle,
   SEXP call_state);
 
 /*!
-* \brief Get prediction for training data and validation data
-this can be used to support customized eval function
+* \brief Get prediction for training data and validation data.
+*        This can be used to support customized eval function
 * \param handle handle
 * \param data_idx 0:training data, 1: 1st valid data, 2:2nd valid data ...
 * \param out_result, used to store predict result, should pre-allocate memory
@@ -404,14 +403,14 @@ DllExport SEXP LGBM_BoosterCalcNumPredict_R(SEXP handle,
 /*!
 * \brief make prediction for an new data set
 *        Note:  should pre-allocate memory for out_result,
-*               for noraml and raw score: its length is equal to num_class * num_data
+*               for normal and raw score: its length is equal to num_class * num_data
 *               for leaf index, its length is equal to num_class * num_data * num_iteration
 * \param handle handle
 * \param indptr pointer to row headers
 * \param indices findex
 * \param data fvalue
 * \param nindptr number of cols in the matrix + 1
-* \param nelem number of nonzero elements in the matrix
+* \param nelem number of non-zero elements in the matrix
 * \param num_row number of rows
 * \param is_rawscore
 * \param is_leafidx
@@ -433,9 +432,9 @@ DllExport SEXP LGBM_BoosterPredictForCSC_R(SEXP handle,
   SEXP call_state);
 
 /*!
-* \brief make prediction for an new data set
+* \brief make prediction for a new data set
 *        Note:  should pre-allocate memory for out_result,
-*               for noraml and raw score: its length is equal to num_class * num_data
+*               for normal and raw score: its length is equal to num_class * num_data
 *               for leaf index, its length is equal to num_class * num_data * num_iteration
 * \param handle handle
 * \param data pointer to the data space

@@ -16,17 +16,19 @@ booster
 Load LightGBM model from saved model file
 }
 \examples{
-library(lightgbm)
-data(agaricus.train, package='lightgbm')
-train <- agaricus.train
-dtrain <- lgb.Dataset(train$data, label=train$label)
-data(agaricus.test, package='lightgbm')
-test <- agaricus.test
-dtest <- lgb.Dataset.create.valid(dtrain, test$data, label=test$label)
-params <- list(objective="regression", metric="l2")
-valids <- list(test=dtest)
-model <- lgb.train(params, dtrain, 100, valids, min_data=1, learning_rate=1, early_stopping_rounds=10)
-lgb.save(model, "model.txt")
-load_booster <- lgb.load("model.txt")
+\dontrun{
+  library(lightgbm)
+  data(agaricus.train, package='lightgbm')
+  train <- agaricus.train
+  dtrain <- lgb.Dataset(train$data, label=train$label)
+  data(agaricus.test, package='lightgbm')
+  test <- agaricus.test
+  dtest <- lgb.Dataset.create.valid(dtrain, test$data, label=test$label)
+  params <- list(objective="regression", metric="l2")
+  valids <- list(test=dtest)
+  model <- lgb.train(params, dtrain, 100, valids, min_data=1, learning_rate=1, early_stopping_rounds=10)
+  lgb.save(model, "model.txt")
+  load_booster <- lgb.load("model.txt")
+}
 }
 

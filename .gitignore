@@ -363,5 +363,8 @@ ENV/
 # Rope project settings
 .ropeproject
 
+# R testing artefact
+lightgbm.model
+
 # macOS
 .DS_Store

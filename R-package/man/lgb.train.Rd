@@ -46,11 +46,11 @@ if verbose > 0 , also will record iteration message to booster$record_evals}
 
 \item{showsd}{\code{boolean}, whether to show standard deviation of cross validation}
 
-\item{stratified}{a \code{boolean} indicating whether sampling of folds should be stratified 
+\item{stratified}{a \code{boolean} indicating whether sampling of folds should be stratified
 by the values of outcome labels.}
 
 \item{folds}{\code{list} provides a possibility to use a list of pre-defined CV folds
-(each element must be a vector of test fold's indices). When folds are supplied, 
+(each element must be a vector of test fold's indices). When folds are supplied,
 the \code{nfold} and \code{stratified} parameters are ignored.}
 
 \item{init_model}{path of model file of \code{lgb.Booster} object, will continue train from this model}
@@ -73,7 +73,7 @@ List of callback functions that are applied at each iteration.}
 
 \item{...}{other parameters, see parameters.md for more informations}
 
-\item{valids}{a list of \code{lgb.Dataset} object, used for validation}
+\item{valids}{a list of \code{lgb.Dataset} objects, used for validation}
 
 \item{params}{List of parameters}
 
@@ -83,14 +83,14 @@ List of callback functions that are applied at each iteration.}
 
 \item{obj}{objective function, can be character or custom objective function}
 
-\item{eval}{evaluation function, can be (list of) character or custom eval function}
+\item{eval}{evaluation function, can be (a list of) character or custom eval function}
 
 \item{verbose}{verbosity for output
-if verbose > 0 , also will record iteration message to booster$record_evals}
+if \code{verbose > 0}, also will record iteration message to \code{booster$record_evals}}
 
-\item{eval_freq}{evalutaion output frequence}
+\item{eval_freq}{evalutaion output frequency}
 
-\item{init_model}{path of model file of \code{lgb.Booster} object, will continue train from this model}
+\item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
 
 \item{colnames}{feature names, if not null, will use this to overwrite the names in dataset}
 
@@ -119,25 +119,30 @@ a trained booster model \code{lgb.Booster}.
 Main CV logic for LightGBM
 
 Main training logic for LightGBM
+
+Simple interface for training an lightgbm model.
+Its documentation is combined with lgb.train.
 }
 \examples{
-library(lightgbm)
-data(agaricus.train, package='lightgbm')
-train <- agaricus.train
-dtrain <- lgb.Dataset(train$data, label=train$label)
-params <- list(objective="regression", metric="l2")
-model <- lgb.cv(params, dtrain, 10, nfold=5, min_data=1, learning_rate=1, early_stopping_rounds=10)
-
-library(lightgbm)
-data(agaricus.train, package='lightgbm')
-train <- agaricus.train
-dtrain <- lgb.Dataset(train$data, label=train$label)
-data(agaricus.test, package='lightgbm')
-test <- agaricus.test
-dtest <- lgb.Dataset.create.valid(dtrain, test$data, label=test$label)
-params <- list(objective="regression", metric="l2")
-valids <- list(test=dtest)
-model <- lgb.train(params, dtrain, 100, valids, min_data=1, learning_rate=1, early_stopping_rounds=10)
-
+\dontrun{
+  library(lightgbm)
+  data(agaricus.train, package='lightgbm')
+  train <- agaricus.train
+  dtrain <- lgb.Dataset(train$data, label=train$label)
+  params <- list(objective="regression", metric="l2")
+  model <- lgb.cv(params, dtrain, 10, nfold=5, min_data=1, learning_rate=1, early_stopping_rounds=10)
+}
+\dontrun{
+  library(lightgbm)
+  data(agaricus.train, package='lightgbm')
+  train <- agaricus.train
+  dtrain <- lgb.Dataset(train$data, label=train$label)
+  data(agaricus.test, package='lightgbm')
+  test <- agaricus.test
+  dtest <- lgb.Dataset.create.valid(dtrain, test$data, label=test$label)
+  params <- list(objective="regression", metric="l2")
+  valids <- list(test=dtest)
+  model <- lgb.train(params, dtrain, 100, valids, min_data=1, learning_rate=1, early_stopping_rounds=10)
+}
 }
 

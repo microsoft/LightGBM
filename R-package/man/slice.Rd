@@ -3,7 +3,7 @@
 \name{slice}
 \alias{slice}
 \alias{slice.lgb.Dataset}
-\title{Slice an dataset}
+\title{Slice a dataset}
 \usage{
 slice(dataset, ...)
 
@@ -20,16 +20,17 @@ slice(dataset, ...)
 constructed sub dataset
 }
 \description{
-Get a new Dataset containing the specified rows of
+Get a new \code{lgb.Dataset} containing the specified rows of
 orginal lgb.Dataset object
 }
 \examples{
-data(agaricus.train, package='lightgbm')
-train <- agaricus.train
-dtrain <- lgb.Dataset(train$data, label=train$label)
+\dontrun{
+  data(agaricus.train, package='lightgbm')
+  train <- agaricus.train
+  dtrain <- lgb.Dataset(train$data, label=train$label)
 
-dsub <- slice(dtrain, 1:42)
-labels1 <- getinfo(dsub, 'label')
-
+  dsub <- slice(dtrain, 1:42)
+  labels1 <- getinfo(dsub, 'label')
+}
 }
 
