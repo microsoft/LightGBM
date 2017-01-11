@@ -243,8 +243,7 @@ Booster <- R6Class(
           private$eval_names <- names
           private$higher_better_inner_eval <- rep(FALSE, length(names))
           for (i in seq_along(names)) {
-            if (names[i]) == "auc" |
-                grepl("^ndcg", names[i])) {
+            if ((names[i] == "auc") | grepl("^ndcg", names[i])) {
               private$higher_better_inner_eval[i] <- TRUE
             }
           }
