@@ -456,14 +456,17 @@ PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
 
 def _data_from_pandas(data, feature_name, categorical_feature):
     if isinstance(data, DataFrame):
-        feat_name, cat_cols = None, None
-        if categorical_feature == 'auto':
+        cat_cols = data.select_dtypes(include=['category']).columns
+        data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes)
+        if categorical_feature is not None:
             if feature_name is None:
-                feat_name = data.columns
-            cat_cols = data.select_dtypes(include=['category']).columns
-            data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes)
+                feature_name = data.columns
+            if categorical_feature == 'auto':
+                categorical_feature = cat_cols
+            else:
+                categorical_feature += cat_cols
         elif feature_name == 'auto':
-            feat_name = data.columns
+            feature_name = data.columns
         data_dtypes = data.dtypes
         if not all(dtype.name in PANDAS_DTYPE_MAPPER for dtype in data_dtypes):
             bad_fields = [data.columns[i] for i, dtype in
@@ -472,7 +475,7 @@ def _data_from_pandas(data, feature_name, categorical_feature):
             msg = """DataFrame.dtypes for data must be int, float or bool. Did not expect the data types in fields """
             raise ValueError(msg + ', '.join(bad_fields))
         data = data.values.astype('float')
-    return data, feat_name, cat_cols
+    return data, feature_name, categorical_feature
 
 
 def _label_from_pandas(label):
