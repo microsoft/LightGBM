@@ -465,7 +465,9 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
             for col, category in zip(cat_cols, pandas_categorical):
                 if data[col].cat.categories != category:
                     data[col] = data[col].cat.set_categories(category)
-        data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes)
+        if len(cat_cols):  # cat_cols is pandas Index object
+            data = data.copy()  # not alter origin DataFrame
+            data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes)
         if categorical_feature is not None:
             if feature_name is None:
                 feature_name = data.columns
