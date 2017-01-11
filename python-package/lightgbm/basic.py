@@ -454,9 +454,17 @@ PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
                        'float32': 'float', 'float64': 'float', 'bool': 'int'}
 
 
-def _data_from_pandas(data, feature_name, categorical_feature):
+def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
     if isinstance(data, DataFrame):
         cat_cols = data.select_dtypes(include=['category']).columns
+        if not pandas_categorical:  # train dataset
+            pandas_categorical = (data[col].cat.categories for col in cat_cols)
+        else:
+            if len(cat_cols) != len(pandas_categorical):
+                raise ValueError('train and valid dataset categorical_feature do not match.')
+            for col, category in zip(cat_cols, pandas_categorical):
+                if data[col].cat.categories != category:
+                    data[col].cat.set_categories(category, inplace=True)
         data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes)
         if categorical_feature is not None:
             if feature_name is None:
@@ -480,7 +488,7 @@ def _data_from_pandas(data, feature_name, categorical_feature):
             feature_name = None
         if categorical_feature == 'auto':
             categorical_feature = None
-    return data, feature_name, categorical_feature
+    return data, feature_name, categorical_feature, pandas_categorical
 
 
 def _label_from_pandas(label):
@@ -545,6 +553,7 @@ class Dataset(object):
         self.free_raw_data = free_raw_data
         self.used_indices = None
         self._predictor = None
+        self.pandas_categorical = None
 
     def __del__(self):
         self._free_handle()
@@ -561,7 +570,7 @@ class Dataset(object):
         if data is None:
             self.handle = None
             return
-        data, feature_name, categorical_feature = _data_from_pandas(data, feature_name, categorical_feature)
+        data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data, feature_name, categorical_feature, self.pandas_categorical)
         label = _label_from_pandas(label)
         self.data_has_header = False
         """process for args"""
@@ -779,6 +788,7 @@ class Dataset(object):
                       weight=weight, group=group, silent=silent, params=params,
                       free_raw_data=self.free_raw_data)
         ret._set_predictor(self._predictor)
+        ret.pandas_categorical = self.pandas_categorical
         return ret
 
     def subset(self, used_indices, params=None):
@@ -795,6 +805,7 @@ class Dataset(object):
         ret = Dataset(None, reference=self, feature_name=self.feature_name,
                       categorical_feature=self.categorical_feature, params=params)
         ret._predictor = self._predictor
+        ret.pandas_categorical = self.pandas_categorical
         ret.used_indices = used_indices
         return ret
 
