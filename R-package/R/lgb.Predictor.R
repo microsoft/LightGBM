@@ -31,7 +31,7 @@ Predictor <- R6Class(
       predleaf = FALSE, header = FALSE, reshape = FALSE) {
 
       if (is.null(num_iteration)) { num_iteration <- -1 }
-      num_row <- 0
+      num_row <- 0L
       if (is.character(data)) {
         tmp_filename <- tempfile(pattern = "lightgbm_")
         on.exit(unlink(tmp_filename), add = TRUE)
@@ -46,7 +46,7 @@ Predictor <- R6Class(
         preds   <- as.vector(t(preds))
       } else {
         num_row <- nrow(data)
-        npred   <- as.integer(0)
+        npred   <- 0L
         npred   <- lgb.call("LGBM_BoosterCalcNumPredict_R", ret = npred,
           private$handle,
           as.integer(num_row),

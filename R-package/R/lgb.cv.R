@@ -28,9 +28,9 @@ CVBooster <- R6Class(
 #' @param weight vector of response values. If not NULL, will set to dataset
 #' @param obj objective function, can be character or custom objective function
 #' @param eval evaluation function, can be (list of) character or custom eval function
-#' @param verbose verbosity for output
-#'        if verbose > 0 , also will record iteration message to booster$record_evals
-#' @param eval_freq evalutaion output frequence
+#' @param verbose verbosity for output, if <= 0, also will disable the print of evalutaion during training
+#' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals} 
+#' @param eval_freq evalutaion output frequence, only effect when verbose > 0
 #' @param showsd \code{boolean}, whether to show standard deviation of cross validation
 #' @param stratified a \code{boolean} indicating whether sampling of folds should be stratified
 #'        by the values of outcome labels.
@@ -51,7 +51,7 @@ CVBooster <- R6Class(
 #' @param callbacks list of callback functions
 #'        List of callback functions that are applied at each iteration.
 #' @param ... other parameters, see parameters.md for more informations
-#' @return a trained booster model \code{lgb.Booster}.
+#' @return a trained model \code{lgb.CVBooster}.
 #' @examples
 #' \dontrun{
 #'   library(lightgbm)
@@ -63,16 +63,23 @@ CVBooster <- R6Class(
 #' }
 #' @rdname lgb.train
 #' @export
-lgb.cv <- function(params=list(), data, nrounds = 10, nfold = 3,
-                  label = NULL, weight = NULL,
-                  obj = NULL, eval = NULL,
-                  verbose = 1, eval_freq = 1L, showsd = TRUE,
-                  stratified = TRUE, folds = NULL,
-                  init_model = NULL,
-                  colnames= NULL,
-                  categorical_feature = NULL,
-                  early_stopping_rounds = NULL,
-                  callbacks = list(), ...) {
+lgb.cv <- function(params=list(), data, nrounds = 10, 
+                   nfold                 = 3,
+                   label                 = NULL,
+                   weight                = NULL,
+                   obj                   = NULL,
+                   eval                  = NULL,
+                   verbose               = 1,
+                   record                = TRUE,
+                   eval_freq             = 1L,
+                   showsd                = TRUE,
+                   stratified            = TRUE,
+                   folds                 = NULL,
+                   init_model            = NULL,
+                   colnames              = NULL,
+                   categorical_feature   = NULL,
+                   early_stopping_rounds = NULL,
+                   callbacks             = list(), ...) {
   addiction_params <- list(...)
   params           <- append(params, addiction_params)
   params$verbose   <- verbose
@@ -112,7 +119,7 @@ lgb.cv <- function(params=list(), data, nrounds = 10, nfold = 3,
   data$construct()
 
   if (!is.null(folds)) {
-    if (!is.list(folds) || length(folds) < 2)
+    if (!is.list(folds) | length(folds) < 2)
       stop(sQuote("folds"), " must be a list with 2 or more elements that are vectors of indices for each CV-fold")
     nfold <- length(folds)
   } else {
@@ -120,11 +127,11 @@ lgb.cv <- function(params=list(), data, nrounds = 10, nfold = 3,
     folds <- generate.cv.folds(nfold, nrow(data), stratified, getinfo(data, 'label'), params)
   }
 
-  if (eval_freq > 0) {
+  if (verbose > 0 & eval_freq > 0) {
     callbacks <- add.cb(callbacks, cb.print.evaluation(eval_freq))
   }
 
-  if (verbose > 0) { callbacks <- add.cb(callbacks, cb.record.evaluation()) }
+  if (record) { callbacks <- add.cb(callbacks, cb.record.evaluation()) }
 
   if (!is.null(early_stopping_rounds)) {
     if (early_stopping_rounds > 0) {

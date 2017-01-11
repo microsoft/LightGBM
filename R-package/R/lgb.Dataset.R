@@ -4,7 +4,6 @@ Dataset <- R6Class(
   public = list(
     finalize = function() {
       if (!lgb.is.null.handle(private$handle)) {
-        cat("free dataset handle\n")
         lgb.call("LGBM_DatasetFree_R", ret = NULL, private$handle)
         private$handle <- NULL
       }
@@ -200,8 +199,8 @@ Dataset <- R6Class(
     },
     dim = function() {
       if (!lgb.is.null.handle(private$handle)) {
-        num_row <- as.integer(0)
-        num_col <- as.integer(0)
+        num_row <- 0L
+        num_col <- 0L
 
         c(
           lgb.call("LGBM_DatasetGetNumData_R",    ret = num_row, private$handle),
@@ -252,7 +251,7 @@ Dataset <- R6Class(
         )
       }
       if (is.null(private$info[[name]]) && !lgb.is.null.handle(private$handle)) {
-        info_len <- as.integer(0)
+        info_len <- 0L
         info_len <- lgb.call("LGBM_DatasetGetFieldSize_R",
                              ret = info_len,
                              private$handle,

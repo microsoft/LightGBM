@@ -6,9 +6,9 @@
 #' @param valids a list of \code{lgb.Dataset} objects, used for validation
 #' @param obj objective function, can be character or custom objective function
 #' @param eval evaluation function, can be (a list of) character or custom eval function
-#' @param verbose verbosity for output
-#'        if \code{verbose > 0}, also will record iteration message to \code{booster$record_evals}
-#' @param eval_freq evalutaion output frequency
+#' @param verbose verbosity for output, if <= 0, also will disable the print of evalutaion during training
+#' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals} 
+#' @param eval_freq evalutaion output frequency, only effect when verbose > 0
 #' @param init_model path of model file of \code{lgb.Booster} object, will continue training from this model
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
 #' @param categorical_feature list of str or int
@@ -44,6 +44,7 @@ lgb.train <- function(params = list(), data, nrounds = 10,
                       obj                   = NULL,
                       eval                  = NULL,
                       verbose               = 1,
+                      record                = TRUE,
                       eval_freq             = 1L,
                       init_model            = NULL,
                       colnames              = NULL,
@@ -111,11 +112,11 @@ lgb.train <- function(params = list(), data, nrounds = 10,
     }
   }
   # process callbacks
-  if (eval_freq > 0) {
+  if (verbose > 0 & eval_freq > 0) {
     callbacks <- add.cb(callbacks, cb.print.evaluation(eval_freq))
   }
 
-  if (verbose > 0 && length(valids) > 0) {
+  if (record & length(valids) > 0) {
     callbacks <- add.cb(callbacks, cb.record.evaluation())
   }
 
