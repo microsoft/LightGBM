@@ -979,7 +979,7 @@ class Dataset(object):
         if self.handle is not None and feature_name is not None:
             if len(feature_name) != self.num_feature():
                 raise ValueError("Length of feature_name({}) and num_feature({}) don't match".format(len(feature_name), self.num_feature()))
-            c_feature_name = [c_str(name) for name in feature_name]
+            c_feature_name = [c_str(str(name)) for name in feature_name]
             _safe_call(_LIB.LGBM_DatasetSetFeatureNames(
                 self.handle,
                 c_array(ctypes.c_char_p, c_feature_name),
