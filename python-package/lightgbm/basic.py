@@ -464,7 +464,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
                 raise ValueError('train and valid dataset categorical_feature do not match.')
             for col, category in zip(cat_cols, pandas_categorical):
                 if data[col].cat.categories != category:
-                    data[col].cat.set_categories(category, inplace=True)
+                    data[col] = data[col].cat.set_categories(category)
         data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes)
         if categorical_feature is not None:
             if feature_name is None:
