@@ -105,12 +105,12 @@ class TestSklearn(unittest.TestCase):
         gbm = template.test_template(return_model=True)
         gbm_clone = clone(gbm)
         self.assertIsInstance(gbm.booster_, lgb.Booster)
-        self.assertIsInstance(gbm.feature_importance_, np.ndarray)
+        self.assertIsInstance(gbm.feature_importances_, np.ndarray)
         clf = template.test_template(load_digits(2, True), model=lgb.LGBMClassifier, return_model=True)
         self.assertListEqual(sorted(clf.classes_), [0, 1])
         self.assertEqual(clf.n_classes_, 2)
         self.assertIsInstance(clf.booster_, lgb.Booster)
-        self.assertIsInstance(clf.feature_importance_, np.ndarray)
+        self.assertIsInstance(clf.feature_importances_, np.ndarray)
 
     def test_joblib(self):
         gbm = template.test_template(num_round=10, return_model=True)
@@ -118,7 +118,7 @@ class TestSklearn(unittest.TestCase):
         gbm_pickle = joblib.load('lgb.pkl')
         self.assertIsInstance(gbm_pickle.booster_, lgb.Booster)
         self.assertDictEqual(gbm.get_params(), gbm_pickle.get_params())
-        self.assertListEqual(list(gbm.feature_importance_), list(gbm_pickle.feature_importance_))
+        self.assertListEqual(list(gbm.feature_importances_), list(gbm_pickle.feature_importances_))
         X_train, X_test, y_train, y_test = template.test_template(return_data=True)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
         gbm_pickle.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)

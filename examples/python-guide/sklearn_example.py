@@ -34,7 +34,7 @@ print('The rmse of prediction is:', mean_squared_error(y_test, y_pred) ** 0.5)
 
 print('Calculate feature importances...')
 # feature importances
-print('Feature importances:', list(gbm.feature_importance_))
+print('Feature importances:', list(gbm.feature_importances_))
 
 # other scikit-learn modules
 estimator = lgb.LGBMRegressor(num_leaves=31)
