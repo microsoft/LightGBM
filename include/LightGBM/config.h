@@ -5,6 +5,7 @@
 #include <LightGBM/utils/log.h>
 
 #include <LightGBM/meta.h>
+#include <LightGBM/export.h>
 
 #include <vector>
 #include <string>
@@ -123,7 +124,7 @@ public:
   * And add an prefix "name:" while using column name
   * Note: when using Index, it dosen't count the label index */
   std::string categorical_column = "";
-  void Set(const std::unordered_map<std::string, std::string>& params) override;
+  LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
 /*! \brief Config for objective function */
@@ -145,7 +146,7 @@ public:
   int num_class = 1;
   // Balancing of positive and negative weights
   double scale_pos_weight = 1.0f;
-  void Set(const std::unordered_map<std::string, std::string>& params) override;
+  LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
 /*! \brief Config for metrics interface*/
@@ -158,7 +159,7 @@ public:
   double fair_c = 1.0f;
   std::vector<double> label_gain;
   std::vector<int> eval_at;
-  void Set(const std::unordered_map<std::string, std::string>& params) override;
+  LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
 
@@ -182,7 +183,7 @@ public:
   // max_depth < 0 means not limit
   int max_depth = -1;
   int top_k = 20;
-  void Set(const std::unordered_map<std::string, std::string>& params) override;
+  LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
 /*! \brief Config for Boosting */
@@ -207,7 +208,7 @@ public:
   int drop_seed = 4;
   std::string tree_learner_type = "serial";
   TreeConfig tree_config;
-  void Set(const std::unordered_map<std::string, std::string>& params) override;
+  LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 private:
   void GetTreeLearnerType(const std::unordered_map<std::string,
     std::string>& params);
@@ -220,7 +221,7 @@ public:
   int local_listen_port = 12400;
   int time_out = 120;  // in minutes
   std::string machine_list_filename = "";
-  void Set(const std::unordered_map<std::string, std::string>& params) override;
+  LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
 
@@ -241,7 +242,7 @@ public:
   std::vector<std::string> metric_types;
   MetricConfig metric_config;
 
-  void Set(const std::unordered_map<std::string, std::string>& params) override;
+  LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 
 private:
   void GetBoostingType(const std::unordered_map<std::string, std::string>& params);

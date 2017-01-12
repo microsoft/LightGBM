@@ -280,14 +280,14 @@ class Dataset {
 public:
   friend DatasetLoader;
 
-  Dataset();
+  LIGHTGBM_EXPORT Dataset();
 
-  Dataset(data_size_t num_data);
+  LIGHTGBM_EXPORT Dataset(data_size_t num_data);
 
   /*! \brief Destructor */
-  ~Dataset();
+  LIGHTGBM_EXPORT ~Dataset();
 
-  bool CheckAlign(const Dataset& other) const {
+  LIGHTGBM_EXPORT bool CheckAlign(const Dataset& other) const {
     if (num_features_ != other.num_features_) {
       return false;
     }
@@ -330,26 +330,26 @@ public:
 
   Dataset* Subset(const data_size_t* used_indices, data_size_t num_used_indices, bool is_enable_sparse) const;
 
-  void FinishLoad();
+  LIGHTGBM_EXPORT void FinishLoad();
 
-  bool SetFloatField(const char* field_name, const float* field_data, data_size_t num_element);
+  LIGHTGBM_EXPORT bool SetFloatField(const char* field_name, const float* field_data, data_size_t num_element);
 
-  bool SetDoubleField(const char* field_name, const double* field_data, data_size_t num_element);
+  LIGHTGBM_EXPORT bool SetDoubleField(const char* field_name, const double* field_data, data_size_t num_element);
 
-  bool SetIntField(const char* field_name, const int* field_data, data_size_t num_element);
+  LIGHTGBM_EXPORT bool SetIntField(const char* field_name, const int* field_data, data_size_t num_element);
 
-  bool GetFloatField(const char* field_name, data_size_t* out_len, const float** out_ptr);
+  LIGHTGBM_EXPORT bool GetFloatField(const char* field_name, data_size_t* out_len, const float** out_ptr);
 
-  bool GetDoubleField(const char* field_name, data_size_t* out_len, const double** out_ptr);
+  LIGHTGBM_EXPORT bool GetDoubleField(const char* field_name, data_size_t* out_len, const double** out_ptr);
 
-  bool GetIntField(const char* field_name, data_size_t* out_len, const int** out_ptr);
+  LIGHTGBM_EXPORT bool GetIntField(const char* field_name, data_size_t* out_len, const int** out_ptr);
 
   /*!
   * \brief Save current dataset into binary file, will save to "filename.bin"
   */
-  void SaveBinaryFile(const char* bin_filename);
+  LIGHTGBM_EXPORT void SaveBinaryFile(const char* bin_filename);
 
-  void CopyFeatureMapperFrom(const Dataset* dataset, bool is_enable_sparse);
+  LIGHTGBM_EXPORT void CopyFeatureMapperFrom(const Dataset* dataset, bool is_enable_sparse);
 
   /*!
   * \brief Get a feature pointer for specific index

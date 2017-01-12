@@ -8,21 +8,21 @@ namespace LightGBM {
 class DatasetLoader {
 public:
 
-  DatasetLoader(const IOConfig& io_config, const PredictFunction& predict_fun, int num_class, const char* filename);
+  LIGHTGBM_EXPORT DatasetLoader(const IOConfig& io_config, const PredictFunction& predict_fun, int num_class, const char* filename);
 
-  ~DatasetLoader();
+  LIGHTGBM_EXPORT ~DatasetLoader();
 
-  Dataset* LoadFromFile(const char* filename, int rank, int num_machines);
+  LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename, int rank, int num_machines);
 
-  Dataset* LoadFromFile(const char* filename) {
+  LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename) {
     return LoadFromFile(filename, 0, 1);
   }
 
-  Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data);
+  LIGHTGBM_EXPORT Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data);
 
-  Dataset* LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines);
+  LIGHTGBM_EXPORT Dataset* LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines);
 
-  Dataset* CostructFromSampleData(std::vector<std::vector<double>>& sample_values, size_t total_sample_size, data_size_t num_data);
+  LIGHTGBM_EXPORT Dataset* CostructFromSampleData(std::vector<std::vector<double>>& sample_values, size_t total_sample_size, data_size_t num_data);
 
   /*! \brief Disable copy */
   DatasetLoader& operator=(const DatasetLoader&) = delete;
