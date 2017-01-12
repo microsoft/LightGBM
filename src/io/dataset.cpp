@@ -2,7 +2,7 @@
 
 #include <LightGBM/feature.h>
 
-#include <omp.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <cstdio>
 #include <unordered_map>

@@ -4,7 +4,7 @@
 #include <cstring>
 #include <cstdio>
 #include <sstream>
-#include <omp.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 #include <cstdint>
 #include <memory>
 

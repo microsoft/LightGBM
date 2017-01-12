@@ -6,7 +6,7 @@
 
 #include <LightGBM/metric.h>
 
-#include <omp.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <sstream>
 #include <vector>

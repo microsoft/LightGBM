@@ -5,7 +5,7 @@
 
 #include <LightGBM/bin.h>
 
-#include <omp.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <cstring>
 #include <cstdint>

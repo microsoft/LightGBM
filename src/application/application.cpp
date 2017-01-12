@@ -12,7 +12,7 @@
 
 #include "predictor.hpp"
 
-#include <omp.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <cstdio>
 #include <ctime>

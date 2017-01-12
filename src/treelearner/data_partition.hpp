@@ -4,7 +4,7 @@
 #include <LightGBM/meta.h>
 #include <LightGBM/feature.h>
 
-#include <omp.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <cstring>
 

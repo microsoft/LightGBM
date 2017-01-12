@@ -1,4 +1,4 @@
-#include <omp.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <LightGBM/utils/log.h>
 #include <LightGBM/dataset_loader.h>

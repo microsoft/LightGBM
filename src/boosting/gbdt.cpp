@@ -1,6 +1,6 @@
 #include "gbdt.h"
 
-#include <omp.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <LightGBM/utils/common.h>
 

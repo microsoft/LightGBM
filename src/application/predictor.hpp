@@ -6,7 +6,7 @@
 #include <LightGBM/utils/text_reader.h>
 #include <LightGBM/dataset.h>
 
-#include <omp.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <cstring>
 #include <cstdio>
