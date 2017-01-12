@@ -22,7 +22,7 @@
         + [print_evaluation](Python-API.md#print_evaluationperiod1-show_stdvtrue)
         + [record_evaluation](Python-API.md#record_evaluationeval_result)
         + [early_stopping](Python-API.md#early_stoppingstopping_rounds-verbosetrue)
-    
+
 The methods of each Class is in alphabetical order.
 
 ----
@@ -62,7 +62,7 @@ The methods of each Class is in alphabetical order.
         Other parameters
     free_raw_data : Bool
         True if need to free raw data after construct inner dataset
-    
+
 
 ####create_valid(data, label=None, weight=None, group=None, silent=False, params=None)
 
@@ -83,7 +83,7 @@ The methods of each Class is in alphabetical order.
         Whether print messages during construction
     params : dict, optional
         Other parameters
-    
+
 
 ####get_group()
 
@@ -92,7 +92,7 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     init_score : array
-    
+
 
 ####get_init_score()
 
@@ -101,7 +101,7 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     init_score : array
-    
+
 
 ####get_label()
 
@@ -110,7 +110,7 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     label : array
-    
+
 
 ####get_weight()
 
@@ -119,7 +119,7 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     weight : array
-    
+
 
 ####num_data()
 
@@ -128,7 +128,7 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     number of rows : int
-    
+
 
 ####num_feature()
 
@@ -137,7 +137,7 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     number of columns : int
-    
+
 
 ####save_binary(filename)
 
@@ -147,7 +147,7 @@ The methods of each Class is in alphabetical order.
     ----------
     filename : str
         Name of the output file.
-    
+
 
 ####set_categorical_feature(categorical_feature)
 
@@ -158,7 +158,7 @@ The methods of each Class is in alphabetical order.
     categorical_feature : list of str or list of int
         Name (str) or index (int) of categorical features
 
-    
+
 
 ####set_feature_name(feature_name)
 
@@ -168,7 +168,7 @@ The methods of each Class is in alphabetical order.
     ----------
     feature_name : list of str
         Feature names
-    
+
 
 ####set_group(group)
 
@@ -178,7 +178,7 @@ The methods of each Class is in alphabetical order.
     ----------
     group : numpy array or list or None
         Group size of each group
-    
+
 
 ####set_init_score(init_score)
 
@@ -188,7 +188,7 @@ The methods of each Class is in alphabetical order.
     ----------
     init_score : numpy array or list or None
         Init score for booster
-    
+
 
 ####set_label(label)
 
@@ -198,7 +198,7 @@ The methods of each Class is in alphabetical order.
     ----------
     label : numpy array or list or None
         The label information to be set into Dataset
-    
+
 
 ####set_reference(reference)
 
@@ -208,7 +208,7 @@ The methods of each Class is in alphabetical order.
     ----------
     reference : Dataset
         Will use reference as template to consturct current dataset
-    
+
 
 ####set_weight(weight)
 
@@ -218,7 +218,7 @@ The methods of each Class is in alphabetical order.
     ----------
     weight : numpy array or list or None
         Weight for each data point
-    
+
 
 ####subset(used_indices, params=None)
 
@@ -230,7 +230,7 @@ The methods of each Class is in alphabetical order.
         Used indices of this subset
     params : dict
         Other parameters
-    
+
 
 ###Booster
 
@@ -248,7 +248,7 @@ The methods of each Class is in alphabetical order.
         Path to the model file.
     silent : boolean, optional
         Whether print messages during construction
-    
+
 
 ####add_valid(data, name)
 
@@ -260,7 +260,7 @@ The methods of each Class is in alphabetical order.
         Validation data
     name : str
         Name of validation data
-    
+
 
 ####attr(key)
 
@@ -275,7 +275,7 @@ The methods of each Class is in alphabetical order.
     -------
     value : str
         The attribute value of the key, returns None if attribute do not exist.
-    
+
 
 ####current_iteration()
 
@@ -294,7 +294,7 @@ The methods of each Class is in alphabetical order.
     -------
     result : dict or list
         Json format of model
-    
+
 
 ####eval(data, name, feval=None)
 
@@ -311,7 +311,7 @@ The methods of each Class is in alphabetical order.
     -------
     result : list
         Evaluation result list.
-    
+
 
 ####eval_train(feval=None)
 
@@ -326,7 +326,7 @@ The methods of each Class is in alphabetical order.
     -------
     result: str
         Evaluation result list.
-    
+
 
 ####eval_valid(feval=None)
 
@@ -341,7 +341,7 @@ The methods of each Class is in alphabetical order.
     -------
     result : str
         Evaluation result list.
-    
+
 
 ####feature_importance(importance_type="split")
 
@@ -351,7 +351,7 @@ The methods of each Class is in alphabetical order.
     -------
     result : array
         Array of feature importances
-    
+
 
 ####predict(data, num_iteration=-1, raw_score=False, pred_leaf=False, data_has_header=False, is_reshape=True)
 
@@ -376,7 +376,7 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     Prediction result
-    
+
 
 ####reset_parameter(params)
 
@@ -388,12 +388,12 @@ The methods of each Class is in alphabetical order.
         New parameters for boosters
     silent : boolean, optional
         Whether print messages during construction
-    
+
 
 ####rollback_one_iter()
 
     Rollback one iteration.
-    
+
 
 ####save_model(filename, num_iteration=-1)
 
@@ -405,7 +405,7 @@ The methods of each Class is in alphabetical order.
         Filename to save
     num_iteration : int
         Number of iteration that want to save. < 0 means save all
-    
+
 
 ####set_attr(**kwargs)
 
@@ -415,7 +415,7 @@ The methods of each Class is in alphabetical order.
     ----------
     **kwargs
         The attributes to set. Setting a value to None deletes an attribute.
-    
+
 
 ####set_train_data_name(name)
 
@@ -443,7 +443,7 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     is_finished, bool
-    
+
 
 ##Training API
 
@@ -515,7 +515,7 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     booster : a trained booster model
-    
+
 
 ####cv(params, train_set, num_boost_round=10, nfold=5, stratified=False, shuffle=True, metrics=None, fobj=None, feval=None, init_model=None, feature_name='auto', categorical_feature='auto', early_stopping_rounds=None, fpreproc=None, verbose_eval=None, show_stdv=True, seed=0, callbacks=None)
 
@@ -577,7 +577,7 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     evaluation history : list of str
-    
+
 
 ##Scikit-learn API
 
@@ -664,7 +664,7 @@ The methods of each Class is in alphabetical order.
     ----
     A custom objective function can be provided for the ``objective``
     parameter. In this case, it should have the signature
-    ``objective(y_true, y_pred) -> grad, hess`` 
+    ``objective(y_true, y_pred) -> grad, hess``
         or ``objective(y_true, y_pred, group) -> grad, hess``:
 
         y_true: array_like of shape [n_samples]
@@ -681,7 +681,7 @@ The methods of each Class is in alphabetical order.
     for multi-class task, the y_pred is group by class_id first, then group by row_id
         if you want to get i-th row y_pred in j-th class, the access way is y_pred[j*num_data+i]
         and you should group grad and hess in this way as well
-    
+
 
 ####apply(X, num_iteration=0)
 
@@ -698,7 +698,7 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     X_leaves : array_like, shape=[n_samples, n_trees]
-    
+
 
 ####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric=None, early_stopping_rounds=None, verbose=True, feature_name='auto', categorical_feature='auto', callbacks=None)
 
@@ -796,7 +796,7 @@ The methods of each Class is in alphabetical order.
 
     Get the evaluation results.
 
-####feature_importance_
+####feature_importances_
 
     Get normailized feature importances.
 
@@ -826,7 +826,7 @@ The methods of each Class is in alphabetical order.
 ####n_classes_
 
     Get number of classes.
-    
+
 
 ###LGBMRegressor
 

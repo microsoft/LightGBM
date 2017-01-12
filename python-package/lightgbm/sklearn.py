@@ -463,7 +463,7 @@ class LGBMModel(LGBMModelBase):
         return self.evals_result
 
     @property
-    def feature_importance_(self):
+    def feature_importances_(self):
         """Get normailized feature importances."""
         importace_array = self.booster_.feature_importance().astype(np.float32)
         return importace_array / importace_array.sum()
@@ -472,9 +472,9 @@ class LGBMModel(LGBMModelBase):
     def booster(self):
         return self.booster_
 
-    @LGBMDeprecated('Use attribute feature_importance_ instead.')
+    @LGBMDeprecated('Use attribute feature_importances_ instead.')
     def feature_importance(self):
-        return self.feature_importance_
+        return self.feature_importances_
 
 
 class LGBMRegressor(LGBMModel, LGBMRegressorBase):
