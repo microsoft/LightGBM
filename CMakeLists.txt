@@ -5,6 +5,10 @@ PROJECT(lightgbm)
 OPTION(USE_MPI "MPI based parallel learning" OFF)
 OPTION(USE_OPENMP "Enable OpenMP" ON)
 
+if(APPLE)
+    OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
+endif()
+
 if(USE_MPI)
     find_package(MPI REQUIRED)
     ADD_DEFINITIONS(-DUSE_MPI)
@@ -65,7 +69,11 @@ SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 include_directories (${LightGBM_HEADER_DIR})
 
 if(APPLE)
-  SET(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
+  if (APPLE_OUTPUT_DYLIB)
+    SET(CMAKE_SHARED_LIBRARY_SUFFIX ".dylib")
+  else()
+    SET(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
+  endif()
 endif(APPLE)
 
 if(USE_MPI)
