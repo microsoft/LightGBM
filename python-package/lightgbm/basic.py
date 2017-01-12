@@ -454,8 +454,29 @@ PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
                        'float32': 'float', 'float64': 'float', 'bool': 'int'}
 
 
-def _data_from_pandas(data):
+def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
     if isinstance(data, DataFrame):
+        cat_cols = data.select_dtypes(include=['category']).columns
+        if not pandas_categorical:  # train dataset
+            pandas_categorical = (data[col].cat.categories for col in cat_cols)
+        else:
+            if len(cat_cols) != len(pandas_categorical):
+                raise ValueError('train and valid dataset categorical_feature do not match.')
+            for col, category in zip(cat_cols, pandas_categorical):
+                if data[col].cat.categories != category:
+                    data[col] = data[col].cat.set_categories(category)
+        if len(cat_cols):  # cat_cols is pandas Index object
+            data = data.copy()  # not alter origin DataFrame
+            data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes)
+        if categorical_feature is not None:
+            if feature_name is None:
+                feature_name = data.columns
+            if categorical_feature == 'auto':
+                categorical_feature = cat_cols
+            else:
+                categorical_feature += cat_cols
+        if feature_name == 'auto':
+            feature_name = data.columns
         data_dtypes = data.dtypes
         if not all(dtype.name in PANDAS_DTYPE_MAPPER for dtype in data_dtypes):
             bad_fields = [data.columns[i] for i, dtype in
@@ -464,7 +485,12 @@ def _data_from_pandas(data):
             msg = """DataFrame.dtypes for data must be int, float or bool. Did not expect the data types in fields """
             raise ValueError(msg + ', '.join(bad_fields))
         data = data.values.astype('float')
-    return data
+    else:
+        if feature_name == 'auto':
+            feature_name = None
+        if categorical_feature == 'auto':
+            categorical_feature = None
+    return data, feature_name, categorical_feature, pandas_categorical
 
 
 def _label_from_pandas(label):
@@ -482,7 +508,7 @@ class Dataset(object):
     """Dataset in LightGBM."""
     def __init__(self, data, label=None, max_bin=255, reference=None,
                  weight=None, group=None, silent=False,
-                 feature_name=None, categorical_feature=None, params=None,
+                 feature_name='auto', categorical_feature='auto', params=None,
                  free_raw_data=True):
         """
         Parameters
@@ -502,12 +528,14 @@ class Dataset(object):
             Group/query size for dataset
         silent : boolean, optional
             Whether print messages during construction
-        feature_name : list of str
+        feature_name : list of str, or 'auto'
             Feature names
-        categorical_feature : list of str or int
+            If 'auto' and data is pandas DataFrame, use data columns name
+        categorical_feature : list of str or int, or 'auto'
             Categorical features,
             type int represents index,
             type str represents feature names (need to specify feature_name as well)
+            If 'auto' and data is pandas DataFrame, use pandas categorical columns
         params: dict, optional
             Other parameters
         free_raw_data: Bool
@@ -527,6 +555,7 @@ class Dataset(object):
         self.free_raw_data = free_raw_data
         self.used_indices = None
         self._predictor = None
+        self.pandas_categorical = None
 
     def __del__(self):
         self._free_handle()
@@ -538,12 +567,12 @@ class Dataset(object):
 
     def _lazy_init(self, data, label=None, max_bin=255, reference=None,
                    weight=None, group=None, predictor=None,
-                   silent=False, feature_name=None,
-                   categorical_feature=None, params=None):
+                   silent=False, feature_name='auto',
+                   categorical_feature='auto', params=None):
         if data is None:
             self.handle = None
             return
-        data = _data_from_pandas(data)
+        data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data, feature_name, categorical_feature, self.pandas_categorical)
         label = _label_from_pandas(label)
         self.data_has_header = False
         """process for args"""
@@ -760,7 +789,8 @@ class Dataset(object):
         ret = Dataset(data, label=label, max_bin=self.max_bin, reference=self,
                       weight=weight, group=group, silent=silent, params=params,
                       free_raw_data=self.free_raw_data)
-        ret._set_predictor(self._predictor)
+        ret._predictor = self._predictor
+        ret.pandas_categorical = self.pandas_categorical
         return ret
 
     def subset(self, used_indices, params=None):
@@ -777,6 +807,7 @@ class Dataset(object):
         ret = Dataset(None, reference=self, feature_name=self.feature_name,
                       categorical_feature=self.categorical_feature, params=params)
         ret._predictor = self._predictor
+        ret.pandas_categorical = self.pandas_categorical
         ret.used_indices = used_indices
         return ret
 
@@ -948,7 +979,7 @@ class Dataset(object):
         if self.handle is not None and feature_name is not None:
             if len(feature_name) != self.num_feature():
                 raise ValueError("Length of feature_name({}) and num_feature({}) don't match".format(len(feature_name), self.num_feature()))
-            c_feature_name = [c_str(name) for name in feature_name]
+            c_feature_name = [c_str(str(name)) for name in feature_name]
             _safe_call(_LIB.LGBM_DatasetSetFeatureNames(
                 self.handle,
                 c_array(ctypes.c_char_p, c_feature_name),

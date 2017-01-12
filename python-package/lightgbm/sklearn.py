@@ -280,7 +280,7 @@ class LGBMModel(LGBMModelBase):
             eval_init_score=None, eval_group=None,
             eval_metric=None,
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None,
+            feature_name='auto', categorical_feature='auto',
             callbacks=None):
         """
         Fit the gradient boosting model
@@ -311,12 +311,14 @@ class LGBMModel(LGBMModelBase):
         early_stopping_rounds : int
         verbose : bool
             If `verbose` and an evaluation set is used, writes the evaluation
-        feature_name : list of str
+        feature_name : list of str, or 'auto'
             Feature names
-        categorical_feature : list of str or int
+            If 'auto' and data is pandas DataFrame, use data columns name
+        categorical_feature : list of str or int, or 'auto'
             Categorical features,
             type int represents index,
             type str represents feature names (need to specify feature_name as well)
+            If 'auto' and data is pandas DataFrame, use pandas categorical columns
         callbacks : list of callback functions
             List of callback functions that are applied at each iteration.
             See Callbacks in Python-API.md for more information.
@@ -506,7 +508,7 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
             eval_init_score=None,
             eval_metric="l2",
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None, callbacks=None):
+            feature_name='auto', categorical_feature='auto', callbacks=None):
 
         super(LGBMRegressor, self).fit(X, y, sample_weight=sample_weight,
                                        init_score=init_score, eval_set=eval_set,
@@ -552,7 +554,7 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
             eval_init_score=None,
             eval_metric="binary_logloss",
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None,
+            feature_name='auto', categorical_feature='auto',
             callbacks=None):
         self._le = LGBMLabelEncoder().fit(y)
         y = self._le.transform(y)
@@ -653,7 +655,7 @@ class LGBMRanker(LGBMModel):
             eval_init_score=None, eval_group=None,
             eval_metric='ndcg', eval_at=1,
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None,
+            feature_name='auto', categorical_feature='auto',
             callbacks=None):
         """
         Most arguments like common methods except following:
