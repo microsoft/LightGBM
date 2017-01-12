@@ -1,4 +1,4 @@
-#include <omp.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/random.h>
