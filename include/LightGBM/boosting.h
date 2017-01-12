@@ -17,7 +17,7 @@ class Metric;
 /*!
 * \brief The interface for Boosting
 */
-class Boosting {
+class LIGHTGBM_EXPORT Boosting {
 public:
   /*! \brief virtual destructor */
   virtual ~Boosting() {}

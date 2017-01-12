@@ -14,17 +14,7 @@
 * The reason is because they are called frequently, the type-conversion on them maybe time cost.
 */
 
-#ifdef __cplusplus
-#define DLL_EXTERN_C extern "C"
-#else
-#define DLL_EXTERN_C
-#endif
-
-#ifdef _MSC_VER
-#define DllExport DLL_EXTERN_C __declspec(dllexport)
-#else
-#define DllExport DLL_EXTERN_C
-#endif
+#include <LightGBM/export.h>
 
 typedef void* DatasetHandle;
 typedef void* BoosterHandle;
@@ -44,7 +34,7 @@ typedef void* BoosterHandle;
 *  and -1 when an error occured,
 * \return const char* error inforomation
 */
-DllExport const char* LGBM_GetLastError();
+LIGHTGBM_C_EXPORT const char* LGBM_GetLastError();
 
 
 // --- start Dataset interface
@@ -57,7 +47,7 @@ DllExport const char* LGBM_GetLastError();
 * \param out a loaded dataset
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_DatasetCreateFromFile(const char* filename,
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromFile(const char* filename,
   const char* parameters,
   const DatasetHandle reference,
   DatasetHandle* out);
@@ -77,7 +67,7 @@ DllExport int LGBM_DatasetCreateFromFile(const char* filename,
 * \param out created dataset
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSR(const void* indptr,
   int indptr_type,
   const int32_t* indices,
   const void* data,
@@ -104,7 +94,7 @@ DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
 * \param out created dataset
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   int col_ptr_type,
   const int32_t* indices,
   const void* data,
@@ -128,7 +118,7 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
 * \param out created dataset
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_DatasetCreateFromMat(const void* data,
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
   int data_type,
   int32_t nrow,
   int32_t ncol,
@@ -146,7 +136,7 @@ DllExport int LGBM_DatasetCreateFromMat(const void* data,
 * \param out subset of data
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_DatasetGetSubset(
+LIGHTGBM_C_EXPORT int LGBM_DatasetGetSubset(
   const DatasetHandle handle,
   const int32_t* used_row_indices,
   int32_t num_used_row_indices,
@@ -160,7 +150,7 @@ DllExport int LGBM_DatasetGetSubset(
 * \param num_feature_names number of feature names
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_DatasetSetFeatureNames(
+LIGHTGBM_C_EXPORT int LGBM_DatasetSetFeatureNames(
   DatasetHandle handle,
   const char** feature_names,
   int num_feature_names);
@@ -173,7 +163,7 @@ DllExport int LGBM_DatasetSetFeatureNames(
 * \param num_feature_names number of feature names
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_DatasetGetFeatureNames(
+LIGHTGBM_C_EXPORT int LGBM_DatasetGetFeatureNames(
   DatasetHandle handle,
   char** feature_names,
   int* num_feature_names);
@@ -183,7 +173,7 @@ DllExport int LGBM_DatasetGetFeatureNames(
 * \brief free space for dataset
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_DatasetFree(DatasetHandle handle);
+LIGHTGBM_C_EXPORT int LGBM_DatasetFree(DatasetHandle handle);
 
 /*!
 * \brief save dateset to binary file
@@ -191,7 +181,7 @@ DllExport int LGBM_DatasetFree(DatasetHandle handle);
 * \param filename file name
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_DatasetSaveBinary(DatasetHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_DatasetSaveBinary(DatasetHandle handle,
   const char* filename);
 
 /*!
@@ -205,7 +195,7 @@ DllExport int LGBM_DatasetSaveBinary(DatasetHandle handle,
 * \param type C_API_DTYPE_FLOAT32 or C_API_DTYPE_INT32
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_DatasetSetField(DatasetHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_DatasetSetField(DatasetHandle handle,
   const char* field_name,
   const void* field_data,
   int num_element,
@@ -220,7 +210,7 @@ DllExport int LGBM_DatasetSetField(DatasetHandle handle,
 * \param out_type  C_API_DTYPE_FLOAT32 or C_API_DTYPE_INT32
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_DatasetGetField(DatasetHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_DatasetGetField(DatasetHandle handle,
   const char* field_name,
   int* out_len,
   const void** out_ptr,
@@ -232,7 +222,7 @@ DllExport int LGBM_DatasetGetField(DatasetHandle handle,
 * \param out The address to hold number of data
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_DatasetGetNumData(DatasetHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumData(DatasetHandle handle,
   int* out);
 
 /*!
@@ -241,7 +231,7 @@ DllExport int LGBM_DatasetGetNumData(DatasetHandle handle,
 * \param out The output of number of features
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_DatasetGetNumFeature(DatasetHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumFeature(DatasetHandle handle,
   int* out);
 
 // --- start Booster interfaces
@@ -253,7 +243,7 @@ DllExport int LGBM_DatasetGetNumFeature(DatasetHandle handle,
 * \prama out handle of created Booster
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterCreate(const DatasetHandle train_data,
+LIGHTGBM_C_EXPORT int LGBM_BoosterCreate(const DatasetHandle train_data,
   const char* parameters,
   BoosterHandle* out);
 
@@ -264,7 +254,7 @@ DllExport int LGBM_BoosterCreate(const DatasetHandle train_data,
 * \param out handle of created Booster
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterCreateFromModelfile(
+LIGHTGBM_C_EXPORT int LGBM_BoosterCreateFromModelfile(
   const char* filename,
   int* out_num_iterations,
   BoosterHandle* out);
@@ -275,7 +265,7 @@ DllExport int LGBM_BoosterCreateFromModelfile(
 * \param handle handle to be freed
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterFree(BoosterHandle handle);
+LIGHTGBM_C_EXPORT int LGBM_BoosterFree(BoosterHandle handle);
 
 /*!
 * \brief Merge model in two booster to first handle
@@ -283,7 +273,7 @@ DllExport int LGBM_BoosterFree(BoosterHandle handle);
 * \param other_handle
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterMerge(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterMerge(BoosterHandle handle,
   BoosterHandle other_handle);
 
 /*!
@@ -292,7 +282,7 @@ DllExport int LGBM_BoosterMerge(BoosterHandle handle,
 * \param valid_data validation data set
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterAddValidData(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterAddValidData(BoosterHandle handle,
   const DatasetHandle valid_data);
 
 /*!
@@ -301,7 +291,7 @@ DllExport int LGBM_BoosterAddValidData(BoosterHandle handle,
 * \param train_data training data set
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterResetTrainingData(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterResetTrainingData(BoosterHandle handle,
   const DatasetHandle train_data);
 
 /*!
@@ -310,7 +300,7 @@ DllExport int LGBM_BoosterResetTrainingData(BoosterHandle handle,
 * \param parameters format: 'key1=value1 key2=value2'
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterResetParameter(BoosterHandle handle, const char* parameters);
+LIGHTGBM_C_EXPORT int LGBM_BoosterResetParameter(BoosterHandle handle, const char* parameters);
 
 /*!
 * \brief Get number of class
@@ -318,7 +308,7 @@ DllExport int LGBM_BoosterResetParameter(BoosterHandle handle, const char* param
 * \param out_len number of class
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterGetNumClasses(BoosterHandle handle, int* out_len);
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumClasses(BoosterHandle handle, int* out_len);
 
 /*!
 * \brief update the model in one round
@@ -326,7 +316,7 @@ DllExport int LGBM_BoosterGetNumClasses(BoosterHandle handle, int* out_len);
 * \param is_finished 1 means finised(cannot split any more)
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished);
+LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished);
 
 /*!
 * \brief update the model, by directly specify gradient and second order gradient,
@@ -337,7 +327,7 @@ DllExport int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished);
 * \param is_finished 1 means finised(cannot split any more)
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
   const float* grad,
   const float* hess,
   int* is_finished);
@@ -347,21 +337,21 @@ DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
 * \param handle handle
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterRollbackOneIter(BoosterHandle handle);
+LIGHTGBM_C_EXPORT int LGBM_BoosterRollbackOneIter(BoosterHandle handle);
 
 /*!
 * \brief Get iteration of current boosting rounds
 * \param out_iteration iteration of boosting rounds
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterGetCurrentIteration(BoosterHandle handle, int* out_iteration);
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetCurrentIteration(BoosterHandle handle, int* out_iteration);
 
 /*!
 * \brief Get number of eval
 * \param out_len total number of eval results
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int* out_len);
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int* out_len);
 
 /*!
 * \brief Get Name of eval
@@ -369,7 +359,7 @@ DllExport int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int* out_len);
 * \param out_strs names of eval result, need to pre-allocate memory before call this
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int* out_len, char** out_strs);
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalNames(BoosterHandle handle, int* out_len, char** out_strs);
 
 /*!
 * \brief get evaluation for training data and validation data
@@ -381,7 +371,7 @@ Note: 1. you should call LGBM_BoosterGetEvalNames first to get the name of evalu
 * \param out_result float arrary contains result
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetEval(BoosterHandle handle,
   int data_idx,
   int* out_len,
   double* out_results);
@@ -395,7 +385,7 @@ Note:  should pre-allocate memory for out_result, its length is equal to num_cla
 * \param out_len len of output result
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterGetNumPredict(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumPredict(BoosterHandle handle,
   int data_idx,
   int64_t* out_len);
 
@@ -409,7 +399,7 @@ Note:  should pre-allocate memory for out_result, its length is equal to num_cla
 * \param out_result used to set a pointer to array, should allocate memory before call this function
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetPredict(BoosterHandle handle,
   int data_idx,
   int64_t* out_len,
   double* out_result);
@@ -427,7 +417,7 @@ DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
 * \param result_filename filename of result file
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForFile(BoosterHandle handle,
   const char* data_filename,
   int data_has_header,
   int predict_type,
@@ -446,7 +436,7 @@ DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
 * \param out_len lenght of prediction
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
   int num_row,
   int predict_type,
   int num_iteration,
@@ -475,7 +465,7 @@ DllExport int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
 * \param out_result used to set a pointer to array, should allocate memory before call this function
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   const void* indptr,
   int indptr_type,
   const int32_t* indices,
@@ -512,7 +502,7 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
 * \param out_result used to set a pointer to array, should allocate memory before call this function
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterPredictForCSC(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSC(BoosterHandle handle,
   const void* col_ptr,
   int col_ptr_type,
   const int32_t* indices,
@@ -546,7 +536,7 @@ DllExport int LGBM_BoosterPredictForCSC(BoosterHandle handle,
 * \param out_result used to set a pointer to array, should allocate memory before call this function
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
   const void* data,
   int data_type,
   int32_t nrow,
@@ -564,7 +554,7 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
 * \param filename file name
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel(BoosterHandle handle,
   int num_iteration,
   const char* filename);
 
@@ -577,7 +567,7 @@ DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
 * \param out_str json format string of model, need to pre-allocate memory before call this
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterDumpModel(BoosterHandle handle,
   int num_iteration,
   int buffer_len,
   int* out_len,
@@ -591,7 +581,7 @@ DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
 * \param out_val out result
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterGetLeafValue(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetLeafValue(BoosterHandle handle,
   int tree_idx,
   int leaf_idx,
   double* out_val);
@@ -604,7 +594,7 @@ DllExport int LGBM_BoosterGetLeafValue(BoosterHandle handle,
 * \param val leaf value
 * \return 0 when succeed, -1 when failure happens
 */
-DllExport int LGBM_BoosterSetLeafValue(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterSetLeafValue(BoosterHandle handle,
   int tree_idx,
   int leaf_idx,
   double val);

@@ -44,7 +44,7 @@ public:
   * \param type Specific type of objective function
   * \param config Config for objective function
   */
-  static ObjectiveFunction* CreateObjectiveFunction(const std::string& type,
+  LIGHTGBM_EXPORT static ObjectiveFunction* CreateObjectiveFunction(const std::string& type,
     const ObjectiveConfig& config);
 };
 

@@ -267,11 +267,11 @@ private:
 
 // start of c_api functions
 
-DllExport const char* LGBM_GetLastError() {
+LIGHTGBM_C_EXPORT const char* LGBM_GetLastError() {
   return LastErrorMsg();
 }
 
-DllExport int LGBM_DatasetCreateFromFile(const char* filename,
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromFile(const char* filename,
   const char* parameters,
   const DatasetHandle reference,
   DatasetHandle* out) {
@@ -289,7 +289,7 @@ DllExport int LGBM_DatasetCreateFromFile(const char* filename,
   API_END();
 }
 
-DllExport int LGBM_DatasetCreateFromMat(const void* data,
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
   int data_type,
   int32_t nrow,
   int32_t ncol,
@@ -338,7 +338,7 @@ DllExport int LGBM_DatasetCreateFromMat(const void* data,
   API_END();
 }
 
-DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSR(const void* indptr,
   int indptr_type,
   const int32_t* indices,
   const void* data,
@@ -400,7 +400,7 @@ DllExport int LGBM_DatasetCreateFromCSR(const void* indptr,
   API_END();
 }
 
-DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   int col_ptr_type,
   const int32_t* indices,
   const void* data,
@@ -462,7 +462,7 @@ DllExport int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   API_END();
 }
 
-DllExport int LGBM_DatasetGetSubset(
+LIGHTGBM_C_EXPORT int LGBM_DatasetGetSubset(
   const DatasetHandle handle,
   const int32_t* used_row_indices,
   int32_t num_used_row_indices,
@@ -482,7 +482,7 @@ DllExport int LGBM_DatasetGetSubset(
   API_END();
 }
 
-DllExport int LGBM_DatasetSetFeatureNames(
+LIGHTGBM_C_EXPORT int LGBM_DatasetSetFeatureNames(
   DatasetHandle handle,
   const char** feature_names,
   int num_feature_names) {
@@ -496,7 +496,7 @@ DllExport int LGBM_DatasetSetFeatureNames(
   API_END();
 }
 
-DllExport int LGBM_DatasetGetFeatureNames(
+LIGHTGBM_C_EXPORT int LGBM_DatasetGetFeatureNames(
   DatasetHandle handle,
   char** feature_names,
   int* num_feature_names) {
@@ -510,13 +510,13 @@ DllExport int LGBM_DatasetGetFeatureNames(
   API_END();
 }
 
-DllExport int LGBM_DatasetFree(DatasetHandle handle) {
+LIGHTGBM_C_EXPORT int LGBM_DatasetFree(DatasetHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Dataset*>(handle);
   API_END();
 }
 
-DllExport int LGBM_DatasetSaveBinary(DatasetHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_DatasetSaveBinary(DatasetHandle handle,
   const char* filename) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
@@ -524,7 +524,7 @@ DllExport int LGBM_DatasetSaveBinary(DatasetHandle handle,
   API_END();
 }
 
-DllExport int LGBM_DatasetSetField(DatasetHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_DatasetSetField(DatasetHandle handle,
   const char* field_name,
   const void* field_data,
   int num_element,
@@ -543,7 +543,7 @@ DllExport int LGBM_DatasetSetField(DatasetHandle handle,
   API_END();
 }
 
-DllExport int LGBM_DatasetGetField(DatasetHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_DatasetGetField(DatasetHandle handle,
   const char* field_name,
   int* out_len,
   const void** out_ptr,
@@ -566,7 +566,7 @@ DllExport int LGBM_DatasetGetField(DatasetHandle handle,
   API_END();
 }
 
-DllExport int LGBM_DatasetGetNumData(DatasetHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumData(DatasetHandle handle,
   int* out) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
@@ -574,7 +574,7 @@ DllExport int LGBM_DatasetGetNumData(DatasetHandle handle,
   API_END();
 }
 
-DllExport int LGBM_DatasetGetNumFeature(DatasetHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumFeature(DatasetHandle handle,
   int* out) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
@@ -584,7 +584,7 @@ DllExport int LGBM_DatasetGetNumFeature(DatasetHandle handle,
 
 // ---- start of booster
 
-DllExport int LGBM_BoosterCreate(const DatasetHandle train_data,
+LIGHTGBM_C_EXPORT int LGBM_BoosterCreate(const DatasetHandle train_data,
   const char* parameters,
   BoosterHandle* out) {
   API_BEGIN();
@@ -594,7 +594,7 @@ DllExport int LGBM_BoosterCreate(const DatasetHandle train_data,
   API_END();
 }
 
-DllExport int LGBM_BoosterCreateFromModelfile(
+LIGHTGBM_C_EXPORT int LGBM_BoosterCreateFromModelfile(
   const char* filename,
   int* out_num_iterations,
   BoosterHandle* out) {
@@ -605,13 +605,13 @@ DllExport int LGBM_BoosterCreateFromModelfile(
   API_END();
 }
 
-DllExport int LGBM_BoosterFree(BoosterHandle handle) {
+LIGHTGBM_C_EXPORT int LGBM_BoosterFree(BoosterHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Booster*>(handle);
   API_END();
 }
 
-DllExport int LGBM_BoosterMerge(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterMerge(BoosterHandle handle,
   BoosterHandle other_handle) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
@@ -620,7 +620,7 @@ DllExport int LGBM_BoosterMerge(BoosterHandle handle,
   API_END();
 }
 
-DllExport int LGBM_BoosterAddValidData(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterAddValidData(BoosterHandle handle,
   const DatasetHandle valid_data) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
@@ -629,7 +629,7 @@ DllExport int LGBM_BoosterAddValidData(BoosterHandle handle,
   API_END();
 }
 
-DllExport int LGBM_BoosterResetTrainingData(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterResetTrainingData(BoosterHandle handle,
   const DatasetHandle train_data) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
@@ -638,21 +638,21 @@ DllExport int LGBM_BoosterResetTrainingData(BoosterHandle handle,
   API_END();
 }
 
-DllExport int LGBM_BoosterResetParameter(BoosterHandle handle, const char* parameters) {
+LIGHTGBM_C_EXPORT int LGBM_BoosterResetParameter(BoosterHandle handle, const char* parameters) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->ResetConfig(parameters);
   API_END();
 }
 
-DllExport int LGBM_BoosterGetNumClasses(BoosterHandle handle, int* out_len) {
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumClasses(BoosterHandle handle, int* out_len) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetBoosting()->NumberOfClasses();
   API_END();
 }
 
-DllExport int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished) {
+LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   if (ref_booster->TrainOneIter()) {
@@ -663,7 +663,7 @@ DllExport int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished) 
   API_END();
 }
 
-DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
   const float* grad,
   const float* hess,
   int* is_finished) {
@@ -677,35 +677,35 @@ DllExport int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
   API_END();
 }
 
-DllExport int LGBM_BoosterRollbackOneIter(BoosterHandle handle) {
+LIGHTGBM_C_EXPORT int LGBM_BoosterRollbackOneIter(BoosterHandle handle) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->RollbackOneIter();
   API_END();
 }
 
-DllExport int LGBM_BoosterGetCurrentIteration(BoosterHandle handle, int* out_iteration) {
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetCurrentIteration(BoosterHandle handle, int* out_iteration) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_iteration = ref_booster->GetBoosting()->GetCurrentIteration();
   API_END();
 }
 
-DllExport int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int* out_len) {
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int* out_len) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetEvalCounts();
   API_END();
 }
 
-DllExport int LGBM_BoosterGetEvalNames(BoosterHandle handle, int* out_len, char** out_strs) {
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalNames(BoosterHandle handle, int* out_len, char** out_strs) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetEvalNames(out_strs);
   API_END();
 }
 
-DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetEval(BoosterHandle handle,
   int data_idx,
   int* out_len,
   double* out_results) {
@@ -720,7 +720,7 @@ DllExport int LGBM_BoosterGetEval(BoosterHandle handle,
   API_END();
 }
 
-DllExport int LGBM_BoosterGetNumPredict(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumPredict(BoosterHandle handle,
   int data_idx,
   int64_t* out_len) {
   API_BEGIN();
@@ -729,7 +729,7 @@ DllExport int LGBM_BoosterGetNumPredict(BoosterHandle handle,
   API_END();
 }
 
-DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetPredict(BoosterHandle handle,
   int data_idx,
   int64_t* out_len,
   double* out_result) {
@@ -739,7 +739,7 @@ DllExport int LGBM_BoosterGetPredict(BoosterHandle handle,
   API_END();
 }
 
-DllExport int LGBM_BoosterPredictForFile(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForFile(BoosterHandle handle,
   const char* data_filename,
   int data_has_header,
   int predict_type,
@@ -766,7 +766,7 @@ int64_t GetNumPredOneRow(const Booster* ref_booster, int predict_type, int64_t n
   return num_preb_in_one_row;
 }
 
-DllExport int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
   int num_row,
   int predict_type,
   int num_iteration,
@@ -777,7 +777,7 @@ DllExport int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
   API_END();
 }
 
-DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   const void* indptr,
   int indptr_type,
   const int32_t* indices,
@@ -808,7 +808,7 @@ DllExport int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   API_END();
 }
 
-DllExport int LGBM_BoosterPredictForCSC(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSC(BoosterHandle handle,
   const void* col_ptr,
   int col_ptr_type,
   const int32_t* indices,
@@ -853,7 +853,7 @@ DllExport int LGBM_BoosterPredictForCSC(BoosterHandle handle,
   API_END();
 }
 
-DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
   const void* data,
   int data_type,
   int32_t nrow,
@@ -880,7 +880,7 @@ DllExport int LGBM_BoosterPredictForMat(BoosterHandle handle,
   API_END();
 }
 
-DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel(BoosterHandle handle,
   int num_iteration,
   const char* filename) {
   API_BEGIN();
@@ -889,7 +889,7 @@ DllExport int LGBM_BoosterSaveModel(BoosterHandle handle,
   API_END();
 }
 
-DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterDumpModel(BoosterHandle handle,
   int num_iteration,
   int buffer_len,
   int* out_len,
@@ -904,7 +904,7 @@ DllExport int LGBM_BoosterDumpModel(BoosterHandle handle,
   API_END();
 }
 
-DllExport int LGBM_BoosterGetLeafValue(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetLeafValue(BoosterHandle handle,
   int tree_idx,
   int leaf_idx,
   double* out_val) {
@@ -914,7 +914,7 @@ DllExport int LGBM_BoosterGetLeafValue(BoosterHandle handle,
   API_END();
 }
 
-DllExport int LGBM_BoosterSetLeafValue(BoosterHandle handle,
+LIGHTGBM_C_EXPORT int LGBM_BoosterSetLeafValue(BoosterHandle handle,
   int tree_idx,
   int leaf_idx,
   double val) {
