@@ -36,8 +36,9 @@ The default installation cannot successfully in OSX due to clang in OSX doesn't 
 You can use following scirpts to change default compiler to gcc, then complie LightGBM R-package:
 ```
 brew install gcc --without-multilib
+mkdir -p ~/.R
 touch ~/.R/Makevars
-cat <<EOF >~/.R/Makevars
+cat <<EOF >>~/.R/Makevars
 C=gcc-6
 CXX=g++-6
 CXX1X=g++-6
@@ -45,7 +46,7 @@ SHLIB_OPENMP_CFLAGS = -fopenmp
 SHLIB_OPENMP_CXXFLAGS = -fopenmp
 SHLIB_OPENMP_FCFLAGS = -fopenmp
 SHLIB_OPENMP_FFLAGS = -fopenmp
-EOF 
+EOF
 ```
 
 
