@@ -272,7 +272,7 @@ inline bool ConfigBase::GetInt(
   const std::string& name, int* out) {
   if (params.count(name) > 0) {
     if (!Common::AtoiAndCheck(params.at(name).c_str(), out)) {
-      Log::Fatal("Parameter %s should be of type int, got [%s]",
+      Log::Fatal("Parameter %s should be of type int, got \"%s\"",
         name.c_str(), params.at(name).c_str());
     }
     return true;
@@ -285,7 +285,7 @@ inline bool ConfigBase::GetDouble(
   const std::string& name, double* out) {
   if (params.count(name) > 0) {
     if (!Common::AtofAndCheck(params.at(name).c_str(), out)) {
-      Log::Fatal("Parameter %s should be of type double, got [%s]",
+      Log::Fatal("Parameter %s should be of type double, got \"%s\"",
         name.c_str(), params.at(name).c_str());
     }
     return true;
@@ -304,7 +304,7 @@ inline bool ConfigBase::GetBool(
     } else if (value == std::string("true") || value == std::string("+")) {
       *out = true;
     } else {
-      Log::Fatal("Parameter %s should be \"true\"/\"+\" or \"false\"/\"-\", got [%s]",
+      Log::Fatal("Parameter %s should be \"true\"/\"+\" or \"false\"/\"-\", got \"%s\"",
         name.c_str(), params.at(name).c_str());
     }
     return true;
