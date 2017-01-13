@@ -19,11 +19,6 @@ You can also install directly from R using the repository with `devtools`:
 devtools::install_github("Microsoft/LightGBM", subdir = "R-package")
 ```
 
-To install LightGBM from a specific commit, you can specify the reference, such as the following to install the first release of the R package for LightGBM:
-
-```r
-devtools::install_github("Microsoft/LightGBM", ref = "1b7643b", subdir = "R-package")
-```
 
 You can check quickly if your LightGBM R package is working by running the following:
 
@@ -35,6 +30,24 @@ dtrain <- lgb.Dataset(train$data, label=train$label)
 params <- list(objective="regression", metric="l2")
 model <- lgb.cv(params, dtrain, 10, nfold=5, min_data=1, learning_rate=1, early_stopping_rounds=10)
 ```
+### OSX installation 
+
+The default installation cannot successfully in OSX due to clang in OSX doesn't support openmp.
+You can use following scirpts to change default compiler to gcc, then complie LightGBM R-package:
+```
+brew install gcc --without-multilib
+touch ~/.R/Makevars
+cat <<EOF >~/.R/Makevars
+C=gcc-6
+CXX=g++-6
+CXX1X=g++-6
+SHLIB_OPENMP_CFLAGS = -fopenmp
+SHLIB_OPENMP_CXXFLAGS = -fopenmp
+SHLIB_OPENMP_FCFLAGS = -fopenmp
+SHLIB_OPENMP_FFLAGS = -fopenmp
+EOF 
+```
+
 
 Examples
 ------------
