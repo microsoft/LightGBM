@@ -7,13 +7,13 @@
 \title{Main CV logic for LightGBM}
 \usage{
 lgb.cv(params = list(), data, nrounds = 10, nfold = 3, label = NULL,
-  weight = NULL, obj = NULL, eval = NULL, verbose = 1, eval_freq = 1L,
-  showsd = TRUE, stratified = TRUE, folds = NULL, init_model = NULL,
-  colnames = NULL, categorical_feature = NULL,
+  weight = NULL, obj = NULL, eval = NULL, verbose = 1, record = TRUE,
+  eval_freq = 1L, showsd = TRUE, stratified = TRUE, folds = NULL,
+  init_model = NULL, colnames = NULL, categorical_feature = NULL,
   early_stopping_rounds = NULL, callbacks = list(), ...)
 
 lgb.train(params = list(), data, nrounds = 10, valids = list(),
-  obj = NULL, eval = NULL, verbose = 1, eval_freq = 1L,
+  obj = NULL, eval = NULL, verbose = 1, record = TRUE, eval_freq = 1L,
   init_model = NULL, colnames = NULL, categorical_feature = NULL,
   early_stopping_rounds = NULL, callbacks = list(), ...)
 
@@ -35,14 +35,17 @@ lightgbm(data, label = NULL, weight = NULL, params = list(),
 
 \item{weight}{vector of response values. If not NULL, will set to dataset}
 
-\item{obj}{objective function, can be character or custom objective function}
+\item{obj}{objective function, can be character or custom objective function. Examples include 
+\code{regression}, \code{regression_l1}, \code{huber},
+\code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}}
 
 \item{eval}{evaluation function, can be (list of) character or custom eval function}
 
-\item{verbose}{verbosity for output
-if verbose > 0 , also will record iteration message to booster$record_evals}
+\item{verbose}{verbosity for output, if <= 0, also will disable the print of evalutaion during training}
 
-\item{eval_freq}{evalutaion output frequence}
+\item{record}{Boolean, TRUE will record iteration message to \code{booster$record_evals}}
+
+\item{eval_freq}{evalutaion output frequence, only effect when verbose > 0}
 
 \item{showsd}{\code{boolean}, whether to show standard deviation of cross validation}
 
@@ -75,20 +78,41 @@ List of callback functions that are applied at each iteration.}
 
 \item{valids}{a list of \code{lgb.Dataset} objects, used for validation}
 
+\item{boosting}{boosting type. \code{gbdt}, \code{dart}}
+
+\item{num_leaves}{number of leaves in one tree. defaults to 127}
+
+\item{max_depth}{Limit the max depth for tree model. This is used to deal with overfit when #data is small. 
+Tree still grow by leaf-wise.}
+
+\item{num_threads}{Number of threads for LightGBM. For the best speed, set this to the number of real CPU cores, not the number of threads (most CPU using hyper-threading to generate 2 threads per CPU core).}
+
 \item{params}{List of parameters}
 
 \item{data}{a \code{lgb.Dataset} object, used for training}
 
 \item{nrounds}{number of training rounds}
 
-\item{obj}{objective function, can be character or custom objective function}
+\item{obj}{objective function, can be character or custom objective function. Examples include 
+\code{regression}, \code{regression_l1}, \code{huber},
+\code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}}
+
+\item{boosting}{boosting type. \code{gbdt}, \code{dart}}
+
+\item{num_leaves}{number of leaves in one tree. defaults to 127}
+
+\item{max_depth}{Limit the max depth for tree model. This is used to deal with overfit when #data is small. 
+Tree still grow by leaf-wise.}
+
+\item{num_threads}{Number of threads for LightGBM. For the best speed, set this to the number of real CPU cores, not the number of threads (most CPU using hyper-threading to generate 2 threads per CPU core).}
 
 \item{eval}{evaluation function, can be (a list of) character or custom eval function}
 
-\item{verbose}{verbosity for output
-if \code{verbose > 0}, also will record iteration message to \code{booster$record_evals}}
+\item{verbose}{verbosity for output, if <= 0, also will disable the print of evalutaion during training}
 
-\item{eval_freq}{evalutaion output frequency}
+\item{record}{Boolean, TRUE will record iteration message to \code{booster$record_evals}}
+
+\item{eval_freq}{evalutaion output frequency, only effect when verbose > 0}
 
 \item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
 
@@ -111,7 +135,7 @@ List of callback functions that are applied at each iteration.}
 \item{...}{other parameters, see parameters.md for more informations}
 }
 \value{
-a trained booster model \code{lgb.Booster}.
+a trained model \code{lgb.CVBooster}.
 
 a trained booster model \code{lgb.Booster}.
 }

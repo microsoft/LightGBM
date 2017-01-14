@@ -4,7 +4,14 @@
 #' @param data a \code{lgb.Dataset} object, used for training
 #' @param nrounds number of training rounds
 #' @param valids a list of \code{lgb.Dataset} objects, used for validation
-#' @param obj objective function, can be character or custom objective function
+#' @param obj objective function, can be character or custom objective function. Examples include 
+#'        \code{regression}, \code{regression_l1}, \code{huber},
+#'        \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
+#' @param boosting boosting type. \code{gbdt}, \code{dart}
+#' @param num_leaves number of leaves in one tree. defaults to 127
+#' @param max_depth Limit the max depth for tree model. This is used to deal with overfit when #data is small. 
+#'        Tree still grow by leaf-wise.
+#' @param num_threads Number of threads for LightGBM. For the best speed, set this to the number of real CPU cores, not the number of threads (most CPU using hyper-threading to generate 2 threads per CPU core).
 #' @param eval evaluation function, can be (a list of) character or custom eval function
 #' @param verbose verbosity for output, if <= 0, also will disable the print of evalutaion during training
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals} 
