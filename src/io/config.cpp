@@ -147,11 +147,13 @@ void OverallConfig::CheckParamConflict() {
       Log::Fatal("Number of classes must be 1 for non-multiclass training");
     }
   }
-  for (std::string metric_type : metric_types) {
-    bool metric_type_multiclass = (metric_type == std::string("multi_logloss") || metric_type == std::string("multi_error"));
-    if ((objective_type_multiclass && !metric_type_multiclass)
-      || (!objective_type_multiclass && metric_type_multiclass)) {
-      Log::Fatal("Objective and metrics don't match");
+  if (boosting_config.is_provide_training_metric || !io_config.valid_data_filenames.empty()) {
+    for (std::string metric_type : metric_types) {
+      bool metric_type_multiclass = (metric_type == std::string("multi_logloss") || metric_type == std::string("multi_error"));
+      if ((objective_type_multiclass && !metric_type_multiclass)
+        || (!objective_type_multiclass && metric_type_multiclass)) {
+        Log::Fatal("Objective and metrics don't match");
+      }
     }
   }
 

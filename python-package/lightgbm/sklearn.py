@@ -564,7 +564,7 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
         if self.n_classes > 2:
             # Switch to using a multiclass objective in the underlying LGBM instance
             self.objective = "multiclass"
-            if eval_set is not None and eval_metric == "binary_logloss":
+            if eval_metric == "binary_logloss":
                 eval_metric = "multi_logloss"
 
         if eval_set is not None:
