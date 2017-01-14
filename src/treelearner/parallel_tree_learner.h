@@ -22,7 +22,7 @@ class FeatureParallelTreeLearner: public SerialTreeLearner {
 public:
   explicit FeatureParallelTreeLearner(const TreeConfig* tree_config);
   ~FeatureParallelTreeLearner();
-  virtual void Init(const Dataset* train_data);
+  void Init(const Dataset* train_data) override;
 
 protected:
   void BeforeTrain() override;
