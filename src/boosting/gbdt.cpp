@@ -109,6 +109,16 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
     label_idx_ = train_data->label_idx();
     // get feature names
     feature_names_ = train_data->feature_names();
+    // get feature infos
+    feature_infos_.clear();
+    for (int i = 0; i < max_feature_idx_ + 1; ++i) {
+      int feature_idx = train_data->GetInnerFeatureIndex(i);
+      if (feature_idx < 0) { 
+        feature_infos_.push_back("trival feature"); 
+      } else {
+        feature_infos_.push_back(train_data->FeatureAt(feature_idx)->bin_mapper()->bin_info());
+      }
+    }
   }
 
   if ((train_data_ != train_data && train_data != nullptr)
@@ -536,6 +546,12 @@ void GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
   for (size_t i = 0; i < pairs.size(); ++i) {
     output_file << pairs[i].second << "=" << std::to_string(pairs[i].first) << std::endl;
   }
+
+  output_file << std::endl << "feature information:" << std::endl;
+  for (size_t i = 0; i < max_feature_idx_ + 1; ++i) {
+    output_file << feature_names_[i] << "=" << feature_infos_[i] << std::endl;
+  }
+
   output_file.close();
 }
 

@@ -83,7 +83,8 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
     distinct_values.push_back(0);
     counts.push_back(zero_cnt);
   }
-
+  min_val_ = distinct_values.front();
+  max_val_ = distinct_values.back();
   int num_values = static_cast<int>(distinct_values.size());
   int cnt_in_bin0 = 0;
   if (bin_type_ == BinType::NumericalBin) {

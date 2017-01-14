@@ -1,11 +1,14 @@
 #ifndef LIGHTGBM_BIN_H_
 #define LIGHTGBM_BIN_H_
 
+#include <LightGBM/utils/common.h>
+
 #include <LightGBM/meta.h>
 
 #include <vector>
 #include <functional>
 #include <unordered_map>
+#include <sstream>
 
 namespace LightGBM {
 
@@ -150,8 +153,22 @@ public:
   * \param buffer The source
   */
   void CopyFrom(const char* buffer);
-
+  /*!
+  * \brief Get bin types
+  */
   inline BinType bin_type() const { return bin_type_; }
+  /*!
+  * \brief Get bin info
+  */
+  inline std::string bin_info() const {
+    if (bin_type_ == BinType::CategoricalBin) {
+      return Common::Join(bin_2_categorical_, ",");
+    } else {
+      std::stringstream str_buf;
+      str_buf << '[' << min_val_ << ',' << max_val_ << ']';
+      return str_buf.str();
+    }
+  }
 private:
   /*! \brief Number of bins */
   int num_bin_;
@@ -167,6 +184,10 @@ private:
   std::unordered_map<int, unsigned int> categorical_2_bin_;
   /*! \brief Mapper from bin to categorical */
   std::vector<int> bin_2_categorical_;
+  /*! \brief minimal feature vaule */
+  double min_val_;
+  /*! \brief maximum feature value */
+  double max_val_;
 };
 
 /*!
