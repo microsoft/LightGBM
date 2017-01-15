@@ -133,7 +133,7 @@ private:
   int PutFeatureValuesToBuffer(const std::vector<std::pair<int, double>>& features) {
     int tid = omp_get_thread_num();
     // init feature value
-    std::memset(features_[tid].data(), 0, sizeof(double)*num_features_);
+    std::fill(features_[tid].begin(), features_[tid].end(), 0.0f);
     // put feature value
     for (const auto& p : features) {
       if (p.first < num_features_) {

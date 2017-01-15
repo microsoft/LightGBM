@@ -122,9 +122,6 @@ public:
   }
   data_size_t num_data() const override { return num_data_; }
 
-  /*! \brief not ordered bin for dense feature */
-  OrderedBin* CreateOrderedBin() const override { return nullptr; }
-
   void FinishLoad() override {}
 
   void LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices) override {

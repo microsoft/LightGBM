@@ -57,9 +57,6 @@
     <ClInclude Include="..\src\io\dense_bin.hpp">
       <Filter>src\io</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\io\ordered_sparse_bin.hpp">
-      <Filter>src\io</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\io\parser.hpp">
       <Filter>src\io</Filter>
     </ClInclude>
@@ -170,6 +167,9 @@
     </ClInclude>
     <ClInclude Include="..\src\boosting\dart.hpp">
       <Filter>src\boosting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\treelearner\sparse_bin_pool.hpp">
+      <Filter>src\treelearner</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

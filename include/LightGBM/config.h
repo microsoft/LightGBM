@@ -183,6 +183,7 @@ public:
   // max_depth < 0 means not limit
   int max_depth = -1;
   int top_k = 20;
+  bool sparse_aware = false;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 

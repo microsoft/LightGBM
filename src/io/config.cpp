@@ -296,6 +296,7 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   GetInt(params, "max_depth", &max_depth);
   GetInt(params, "top_k", &top_k);
   CHECK(max_depth > 1 || max_depth < 0);
+  GetBool(params, "sparse_aware", &sparse_aware);
 }
 
 

@@ -121,8 +121,6 @@ public:
 
   data_size_t num_data() const override { return num_data_; }
 
-  OrderedBin* CreateOrderedBin() const override;
-
   void FinishLoad() override {
     // get total non zero size
     size_t non_zero_size = 0;

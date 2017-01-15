@@ -3,7 +3,6 @@
 
 #include "dense_bin.hpp"
 #include "sparse_bin.hpp"
-#include "ordered_sparse_bin.hpp"
 
 #include <cmath>
 #include <cstring>
@@ -284,15 +283,10 @@ template class SparseCategoricalBin<uint8_t>;
 template class SparseCategoricalBin<uint16_t>;
 template class SparseCategoricalBin<uint32_t>;
 
-template class OrderedSparseBin<uint8_t>;
-template class OrderedSparseBin<uint16_t>;
-template class OrderedSparseBin<uint32_t>;
-
-
 Bin* Bin::CreateBin(data_size_t num_data, int num_bin, double sparse_rate, 
   bool is_enable_sparse, bool* is_sparse, int default_bin, BinType bin_type) {
   // sparse threshold
-  const double kSparseThreshold = 0.8f;
+  const double kSparseThreshold = 0.6f;
   if (sparse_rate >= kSparseThreshold && is_enable_sparse) {
     *is_sparse = true;
     return CreateSparseBin(num_data, num_bin, default_bin, bin_type);

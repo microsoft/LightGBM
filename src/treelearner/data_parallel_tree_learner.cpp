@@ -125,69 +125,59 @@ void DataParallelTreeLearner::BeforeTrain() {
 }
 
 void DataParallelTreeLearner::FindBestThresholds() {
+  if (has_sparse_) {
+    ConstructSparse();
+  }
+  if (has_dense_) {
+    ConstrcutDense();
+  }
   // construct local histograms
-  #pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(guided)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if ((!is_feature_used_.empty() && is_feature_used_[feature_index] == false)) continue;
-    // construct histograms for smaller leaf
-    if (ordered_bins_[feature_index] == nullptr) {
-      smaller_leaf_histogram_array_[feature_index].Construct(smaller_leaf_splits_->data_indices(),
-                                                             smaller_leaf_splits_->num_data_in_leaf(),
-                                                             smaller_leaf_splits_->sum_gradients(),
-                                                             smaller_leaf_splits_->sum_hessians(),
-                                                             ptr_to_ordered_gradients_smaller_leaf_,
-                                                             ptr_to_ordered_hessians_smaller_leaf_);
-    } else {
-      smaller_leaf_histogram_array_[feature_index].Construct(ordered_bins_[feature_index].get(),
-                                                             smaller_leaf_splits_->LeafIndex(),
-                                                             smaller_leaf_splits_->num_data_in_leaf(),
-                                                             smaller_leaf_splits_->sum_gradients(),
-                                                             smaller_leaf_splits_->sum_hessians(),
-                                                             gradients_,
-                                                             hessians_);
-    }
+
     // copy to buffer
     std::memcpy(input_buffer_.data() + buffer_write_start_pos_[feature_index],
-                smaller_leaf_histogram_array_[feature_index].HistogramData(),
-                smaller_leaf_histogram_array_[feature_index].SizeOfHistgram());
+      smaller_leaf_histogram_array_[feature_index].HistogramData(),
+      smaller_leaf_histogram_array_[feature_index].SizeOfHistgram());
   }
 
   // Reduce scatter for histogram
   Network::ReduceScatter(input_buffer_.data(), reduce_scatter_size_, block_start_.data(),
-                         block_len_.data(), output_buffer_.data(), &HistogramBinEntry::SumReducer);
-  #pragma omp parallel for schedule(guided)
+    block_len_.data(), output_buffer_.data(), &HistogramBinEntry::SumReducer);
+#pragma omp parallel for schedule(guided)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!is_feature_aggregated_[feature_index]) continue;
-    // copy global sumup info
-    smaller_leaf_histogram_array_[feature_index].SetSumup(
-        GetGlobalDataCountInLeaf(smaller_leaf_splits_->LeafIndex()),
-                                smaller_leaf_splits_->sum_gradients(), 
-                                smaller_leaf_splits_->sum_hessians());
 
     // restore global histograms from buffer
     smaller_leaf_histogram_array_[feature_index].FromMemory(
-        output_buffer_.data() + buffer_read_start_pos_[feature_index]);
+      output_buffer_.data() + buffer_read_start_pos_[feature_index]);
 
     // find best threshold for smaller child
     smaller_leaf_histogram_array_[feature_index].FindBestThreshold(
-        &smaller_leaf_splits_->BestSplitPerFeature()[feature_index]);
+      smaller_leaf_splits_->sum_gradients(),
+      smaller_leaf_splits_->sum_hessians(),
+      GetGlobalDataCountInLeaf(smaller_leaf_splits_->LeafIndex()),
+      &smaller_leaf_splits_->BestSplitPerFeature()[feature_index]);
 
     // only root leaf
     if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->LeafIndex() < 0) continue;
 
     // construct histgroms for large leaf, we init larger leaf as the parent, so we can just subtract the smaller leaf's histograms
     larger_leaf_histogram_array_[feature_index].Subtract(
-        smaller_leaf_histogram_array_[feature_index]);
-    // set sumup info for histogram
-    larger_leaf_histogram_array_[feature_index].SetSumup(
-        GetGlobalDataCountInLeaf(larger_leaf_splits_->LeafIndex()),
-                                                         larger_leaf_splits_->sum_gradients(), larger_leaf_splits_->sum_hessians());
+      smaller_leaf_histogram_array_[feature_index]);
+
     // find best threshold for larger child
     larger_leaf_histogram_array_[feature_index].FindBestThreshold(
-        &larger_leaf_splits_->BestSplitPerFeature()[feature_index]);
+      larger_leaf_splits_->sum_gradients(),
+      larger_leaf_splits_->sum_hessians(),
+      GetGlobalDataCountInLeaf(larger_leaf_splits_->LeafIndex()),
+      &larger_leaf_splits_->BestSplitPerFeature()[feature_index]);
   }
 
 }
+
+
 
 void DataParallelTreeLearner::FindBestSplitsForLeaves() {
   int smaller_best_feature = -1, larger_best_feature = -1;

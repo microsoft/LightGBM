@@ -21,12 +21,11 @@ enum BinType {
 struct HistogramBinEntry {
 public:
   /*! \brief Sum of gradients on this bin */
-  double sum_gradients = 0.0;
+  double sum_gradients = 0.0f;
   /*! \brief Sum of hessians on this bin */
-  double sum_hessians = 0.0;
+  double sum_hessians = 0.0f;
   /*! \brief Number of data on this bin */
   data_size_t cnt = 0;
-
   /*!
   * \brief Sum up (reducers) functions for histogram bin
   */
@@ -190,48 +189,6 @@ private:
   double max_val_;
 };
 
-/*!
-* \brief Interface for ordered bin data. efficient for construct histogram, especially for sparse bin
-*        There are 2 advantages by using ordered bin.
-*        1. group the data by leafs to improve the cache hit.
-*        2. only store the non-zero bin, which can speed up the histogram consturction for sparse features.
-*        However it brings additional cost: it need re-order the bins after every split, which will cost much for dense feature.
-*        So we only using ordered bin for sparse situations.
-*/
-class OrderedBin {
-public:
-  /*! \brief virtual destructor */
-  virtual ~OrderedBin() {}
-
-  /*!
-  * \brief Initialization logic.
-  * \param used_indices If used_indices.size() == 0 means using all data, otherwise, used_indices[i] == true means i-th data is used
-           (this logic was build for bagging logic)
-  * \param num_leaves Number of leaves on this iteration
-  */
-  virtual void Init(const char* used_idices, data_size_t num_leaves) = 0;
-
-  /*!
-  * \brief Construct histogram by using this bin
-  *        Note: Unlike Bin, OrderedBin doesn't use ordered gradients and ordered hessians.
-  *        Because it is hard to know the relative index in one leaf for sparse bin, since we skipped zero bins.
-  * \param leaf Using which leaf's data to construct
-  * \param gradients Gradients, Note:non-oredered by leaf
-  * \param hessians Hessians, Note:non-oredered by leaf
-  * \param out Output Result
-  */
-  virtual void ConstructHistogram(int leaf, const score_t* gradients,
-    const score_t* hessians, HistogramBinEntry* out) const = 0;
-
-  /*!
-  * \brief Split current bin, and perform re-order by leaf
-  * \param leaf Using which leaf's to split
-  * \param right_leaf The new leaf index after perform this split
-  * \param left_indices left_indices[i] == true means the i-th data will be on left leaf after split
-  */
-  virtual void Split(int leaf, int right_leaf, const char* left_indices) = 0;
-};
-
 /*! \brief Iterator for one bin column */
 class BinIterator {
 public:
@@ -320,12 +277,6 @@ public:
     unsigned int threshold,
     data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
-
-  /*!
-  * \brief Create the ordered bin for this bin
-  * \return Pointer to ordered bin
-  */
-  virtual OrderedBin* CreateOrderedBin() const = 0;
 
   /*!
   * \brief After pushed all feature data, call this could have better refactor for bin data
