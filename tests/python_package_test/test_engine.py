@@ -151,12 +151,33 @@ class TestEngine(unittest.TestCase):
         X["A"] = X["A"].astype('category')
         X["B"] = X["B"].astype('category')
         y = np.random.permutation([0, 1] * 150)
+        X_test = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 30),
+                               "B": np.random.permutation([1, 2, 3] * 40)})
+        X_test["A"] = X_test["A"].astype('category')
+        X_test["B"] = X_test["B"].astype('category')
         params = {
             'objective': 'binary',
             'metric': 'binary_logloss',
             'verbose': -1
         }
-        gbm = template.test_template(params=params, X_y=(X, y), return_model=True)
+        lgb_train = lgb.Dataset(X, y)
+        gbm0 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False)
+        pred0 = list(gbm0.predict(X_test))
+        lgb_train = lgb.Dataset(X, y)
+        gbm1 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
+                         categorical_feature=[0])
+        pred1 = list(gbm1.predict(X_test))
+        lgb_train = lgb.Dataset(X, y)
+        gbm2 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
+                         categorical_feature=['A'])
+        pred2 = list(gbm2.predict(X_test))
+        lgb_train = lgb.Dataset(X, y)
+        gbm3 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
+                         categorical_feature=['A', 'B'])
+        pred3 = list(gbm3.predict(X_test))
+        self.assertListEqual(pred0, pred1)
+        self.assertListEqual(pred0, pred2)
+        self.assertListEqual(pred0, pred3)
 
 
 print("----------------------------------------------------------------------")
