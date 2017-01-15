@@ -175,9 +175,14 @@ class TestEngine(unittest.TestCase):
         gbm3 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
                          categorical_feature=['A', 'B'])
         pred3 = list(gbm3.predict(X_test))
+        lgb_train = lgb.Dataset(X, y)
+        gbm3.save_model('categorical.model')
+        gbm4 = lgb.Booster(model_file='categorical.model')
+        pred4 = list(gbm4.predict(X_test))
         self.assertListEqual(pred0, pred1)
         self.assertListEqual(pred0, pred2)
         self.assertListEqual(pred0, pred3)
+        self.assertListEqual(pred0, pred4)
 
 
 print("----------------------------------------------------------------------")
