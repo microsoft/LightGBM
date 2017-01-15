@@ -222,7 +222,7 @@ PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
 def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
     if isinstance(data, DataFrame):
         cat_cols = data.select_dtypes(include=['category']).columns
-        if not pandas_categorical:  # train dataset
+        if pandas_categorical is None:  # train dataset
             pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
         else:
             if len(cat_cols) != len(pandas_categorical):
