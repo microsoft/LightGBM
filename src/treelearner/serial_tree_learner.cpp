@@ -64,12 +64,6 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
   Log::Info("Number of data: %d, number of features: %d", num_data_, num_features_);
   
   int num_sparse_feature = train_data_->num_sparse_feature();
-  int num_threads = 1;
-#pragma omp parallel
-#pragma omp master
-  {
-    num_threads = omp_get_num_threads();
-  }
   has_sparse_ = true;
   has_dense_ = true;
   if (num_features_ == num_sparse_feature || tree_config_->sparse_aware) {
@@ -78,7 +72,7 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
   if (num_sparse_feature == 0 && has_dense_) {
     has_sparse_ = false;
   }
-  sparse_bin_pool_.reset(new SparseBinPool(train_data_, num_threads, tree_config_->sparse_aware));
+  sparse_bin_pool_.reset(new SparseBinPool(train_data_, tree_config_->sparse_aware));
 }
 
 
@@ -292,7 +286,7 @@ void SerialTreeLearner::FindBestThresholds() {
   if (has_dense_) {
     ConstrcutDense();
   }
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     // feature is not used
     if ((!is_feature_used_.empty() && is_feature_used_[feature_index] == false)) continue;
@@ -348,7 +342,7 @@ void SerialTreeLearner::ConstructSparse() {
 }
 
 void SerialTreeLearner::ConstrcutDense() {
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     // feature is not used
     if ((!is_feature_used_.empty() && is_feature_used_[feature_index] == false)) continue;
