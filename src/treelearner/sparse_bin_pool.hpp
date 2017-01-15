@@ -87,39 +87,40 @@ public:
     const score_t* ordered_gradients, const score_t* ordered_hessians,
     FeatureHistogram* histogram_array) {
     auto start_time = std::chrono::steady_clock::now();
+#pragma omp parallel for schedule(guided)
+    for (int i = 0; i < static_cast<int>(hist_buf_.size()); ++i) {
+      std::memset(hist_buf_[i].data(), 0, sizeof(HistogramBinEntry) * total_bin_);
+    }
+
     if (data_indices == nullptr) {
-      Threading::For<data_size_t>(0, num_data,
-        [this, ordered_gradients, ordered_hessians](int tid, data_size_t start, data_size_t end) {
-        std::memset(hist_buf_[tid].data(), 0, total_bin_ * sizeof(HistogramBinEntry));
+#pragma omp parallel for schedule(guided)
+      for (data_size_t i = 0; i < num_data; ++i) {
+        const int tid = omp_get_thread_num();
         auto buf_ptr = hist_buf_[tid].data();
-        for (data_size_t i = start; i < end; ++i) {
-          auto col_begin = row_boundaries_[i];
-          auto col_end = row_boundaries_[i + 1];
-          for (data_size_t j = col_begin; j < col_end; ++j) {
-            auto cur_bin = bins_[j];
-            buf_ptr[cur_bin].sum_gradients += ordered_gradients[i];
-            buf_ptr[cur_bin].sum_hessians += ordered_hessians[i];
-            ++buf_ptr[cur_bin].cnt;
-          }
+        auto begin = row_boundaries_[i];
+        auto end = row_boundaries_[i + 1];
+        for (data_size_t j = begin; j < end; ++j) {
+          auto cur_bin = bins_[j];
+          buf_ptr[cur_bin].sum_gradients += ordered_gradients[i];
+          buf_ptr[cur_bin].sum_hessians += ordered_hessians[i];
+          ++buf_ptr[cur_bin].cnt;
         }
-      });
+      }
     } else {
-      Threading::For<data_size_t>(0, num_data,
-        [this, ordered_gradients, ordered_hessians, data_indices](int tid, data_size_t start, data_size_t end) {
-        std::memset(hist_buf_[tid].data(), 0, total_bin_ * sizeof(HistogramBinEntry));
+#pragma omp parallel for schedule(guided)
+      for (data_size_t i = 0; i < num_data; ++i) {
+        const int tid = omp_get_thread_num();
         auto buf_ptr = hist_buf_[tid].data();
-        for (data_size_t i = start; i < end; ++i) {
-          auto row_idx = data_indices[i];
-          auto col_begin = row_boundaries_[row_idx];
-          auto col_end = row_boundaries_[row_idx + 1];
-          for (data_size_t j = col_begin; j < col_end; ++j) {
-            auto cur_bin = bins_[j];
-            buf_ptr[cur_bin].sum_gradients += ordered_gradients[i];
-            buf_ptr[cur_bin].sum_hessians += ordered_hessians[i];
-            ++buf_ptr[cur_bin].cnt;
-          }
+        auto row_idx = data_indices[i];
+        auto begin = row_boundaries_[row_idx];
+        auto end = row_boundaries_[row_idx + 1];
+        for (data_size_t j = begin; j < end; ++j) {
+          auto cur_bin = bins_[j];
+          buf_ptr[cur_bin].sum_gradients += ordered_gradients[i];
+          buf_ptr[cur_bin].sum_hessians += ordered_hessians[i];
+          ++buf_ptr[cur_bin].cnt;
         }
-      });
+      }
     }
     add_time_ += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start_time);
     start_time = std::chrono::steady_clock::now();
