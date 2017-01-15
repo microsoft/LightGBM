@@ -223,7 +223,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
     if isinstance(data, DataFrame):
         cat_cols = data.select_dtypes(include=['category']).columns
         if not pandas_categorical:  # train dataset
-            pandas_categorical = [data[col].cat.categories for col in cat_cols]
+            pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
         else:
             if len(cat_cols) != len(pandas_categorical):
                 raise ValueError('train and valid dataset categorical_feature do not match.')
@@ -1186,6 +1186,7 @@ class Booster(object):
             self.__inner_predict_buffer = [None]
             self.__is_predicted_cur_iter = [False]
             self.__get_eval_info()
+            self.pandas_categorical = train_set.pandas_categorical
         elif model_file is not None:
             """Prediction task"""
             out_num_iterations = ctypes.c_int(0)
@@ -1198,6 +1199,12 @@ class Booster(object):
                 self.handle,
                 ctypes.byref(out_num_class)))
             self.__num_class = out_num_class.value
+            with open(model_file, 'r') as f:
+                last_line = f.readlines()[-1]
+                if last_line.startswith('pandas_categorical:'):
+                    self.pandas_categorical = eval(last_line[len('pandas_categorical:'):])
+                else:
+                    self.pandas_categorical = None
         else:
             raise TypeError('Need at least one training dataset or model file to create booster instance')
 
@@ -1454,6 +1461,8 @@ class Booster(object):
             self.handle,
             ctypes.c_int(num_iteration),
             c_str(filename)))
+        with open(filename, 'a') as f:
+            f.write('\npandas_categorical:' + repr(self.pandas_categorical))
 
     def dump_model(self, num_iteration=-1):
         """
@@ -1526,8 +1535,7 @@ class Booster(object):
         """Convert to predictor
         """
         predictor = _InnerPredictor(booster_handle=self.handle)
-        if getattr(self, 'train_set', None) is not None:
-            predictor.pandas_categorical = self.train_set.pandas_categorical
+        predictor.pandas_categorical = self.pandas_categorical
         return predictor
 
     def feature_importance(self, importance_type='split'):
