@@ -548,7 +548,7 @@ void GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
   }
 
   output_file << std::endl << "feature information:" << std::endl;
-  for (size_t i = 0; i < max_feature_idx_ + 1; ++i) {
+  for (int i = 0; i < max_feature_idx_ + 1; ++i) {
     output_file << feature_names_[i] << "=" << feature_infos_[i] << std::endl;
   }
 

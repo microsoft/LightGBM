@@ -286,7 +286,7 @@ void SerialTreeLearner::FindBestThresholds() {
   if (has_dense_) {
     ConstrcutDense();
   }
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(guided)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     // feature is not used
     if ((!is_feature_used_.empty() && is_feature_used_[feature_index] == false)) continue;
@@ -342,7 +342,7 @@ void SerialTreeLearner::ConstructSparse() {
 }
 
 void SerialTreeLearner::ConstrcutDense() {
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(guided)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     // feature is not used
     if ((!is_feature_used_.empty() && is_feature_used_[feature_index] == false)) continue;
