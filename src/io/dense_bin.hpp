@@ -17,13 +17,8 @@ template <typename VAL_T>
 class DenseBin: public Bin {
 public:
   DenseBin(data_size_t num_data, int default_bin)
-    : num_data_(num_data) {
-    data_.resize(num_data_);
-    VAL_T default_bin_T = static_cast<VAL_T>(default_bin);
-#pragma omp parallel for schedule(static)
-    for (data_size_t i = 0; i < num_data_; ++i) {
-      data_[i] = default_bin_T;
-    }
+    : num_data_(num_data), 
+    data_(num_data_, static_cast<VAL_T>(default_bin)){
   }
 
   ~DenseBin() {

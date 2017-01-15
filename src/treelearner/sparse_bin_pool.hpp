@@ -90,7 +90,7 @@ public:
     if (data_indices == nullptr) {
       Threading::For<data_size_t>(0, num_data,
         [this, ordered_gradients, ordered_hessians](int tid, data_size_t start, data_size_t end) {
-        std::fill(hist_buf_[tid].begin(), hist_buf_[tid].end(), HistogramBinEntry());
+        std::memset(hist_buf_[tid].data(), 0, total_bin_ * sizeof(HistogramBinEntry));
         auto buf_ptr = hist_buf_[tid].data();
         for (data_size_t i = start; i < end; ++i) {
           auto col_begin = row_boundaries_[i];
@@ -106,7 +106,7 @@ public:
     } else {
       Threading::For<data_size_t>(0, num_data,
         [this, ordered_gradients, ordered_hessians, data_indices](int tid, data_size_t start, data_size_t end) {
-        std::fill(hist_buf_[tid].begin(), hist_buf_[tid].end(), HistogramBinEntry());
+        std::memset(hist_buf_[tid].data(), 0, total_bin_ * sizeof(HistogramBinEntry));
         auto buf_ptr = hist_buf_[tid].data();
         for (data_size_t i = start; i < end; ++i) {
           auto row_idx = data_indices[i];

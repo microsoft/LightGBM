@@ -45,7 +45,7 @@ public:
   }
 
   HistogramBinEntry* GetData() {
-    std::fill(data_.begin(), data_.end(), HistogramBinEntry());
+    std::memset(data_.data(), 0, num_bin_ * sizeof(HistogramBinEntry));
     return data_.data();
   }
 
