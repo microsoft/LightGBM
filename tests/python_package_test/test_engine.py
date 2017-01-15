@@ -151,8 +151,8 @@ class TestEngine(unittest.TestCase):
         X["A"] = X["A"].astype('category')
         X["B"] = X["B"].astype('category')
         y = np.random.permutation([0, 1] * 150)
-        X_test = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 30),
-                               "B": np.random.permutation([1, 2, 3] * 40)})
+        X_test = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'e'] * 20),
+                               "B": np.random.permutation([1, 3] * 30)})
         X_test["A"] = X_test["A"].astype('category')
         X_test["B"] = X_test["B"].astype('category')
         params = {
