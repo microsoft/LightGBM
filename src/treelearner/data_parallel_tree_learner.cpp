@@ -132,7 +132,7 @@ void DataParallelTreeLearner::FindBestThresholds() {
     ConstrcutDense();
   }
   // construct local histograms
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(guided)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if ((!is_feature_used_.empty() && is_feature_used_[feature_index] == false)) continue;
 
@@ -145,7 +145,7 @@ void DataParallelTreeLearner::FindBestThresholds() {
   // Reduce scatter for histogram
   Network::ReduceScatter(input_buffer_.data(), reduce_scatter_size_, block_start_.data(),
     block_len_.data(), output_buffer_.data(), &HistogramBinEntry::SumReducer);
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(guided)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!is_feature_aggregated_[feature_index]) continue;
 

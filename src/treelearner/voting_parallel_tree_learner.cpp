@@ -264,7 +264,7 @@ void VotingParallelTreeLearner::FindBestThresholds() {
   Network::ReduceScatter(input_buffer_.data(), reduce_scatter_size_, block_start_.data(), block_len_.data(),
                          output_buffer_.data(), &HistogramBinEntry::SumReducer);
   // find best split from local aggregated histograms
-  #pragma omp parallel for schedule(static)
+  #pragma omp parallel for schedule(guided)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
 
     if (smaller_is_feature_aggregated_[feature_index]) {
