@@ -79,7 +79,7 @@ Dataset <- R6Class(
       # Get categorical feature index
       if (!is.null(private$categorical_feature)) {
         if (typeof(private$categorical_feature) == "character") {
-            cate_indices <- as.list(match(private$categorical_feature, private$colnames))
+            cate_indices <- as.list(match(private$categorical_feature, private$colnames) - 1)
           } else {
             cate_indices <- as.list(private$categorical_feature - 1)
           }
