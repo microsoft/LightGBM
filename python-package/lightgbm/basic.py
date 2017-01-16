@@ -213,6 +213,64 @@ def c_int_array(data):
     return (ptr_data, type_data)
 
 
+PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
+                       'int64': 'int', 'uint8': 'int', 'uint16': 'int',
+                       'uint32': 'int', 'uint64': 'int', 'float16': 'float',
+                       'float32': 'float', 'float64': 'float', 'bool': 'int'}
+
+
+def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
+    if isinstance(data, DataFrame):
+        if feature_name == 'auto' or feature_name is None:
+            data.rename(columns=str, inplace=True)
+        cat_cols = data.select_dtypes(include=['category']).columns
+        if pandas_categorical is None:  # train dataset
+            pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
+        else:
+            if len(cat_cols) != len(pandas_categorical):
+                raise ValueError('train and valid dataset categorical_feature do not match.')
+            for col, category in zip(cat_cols, pandas_categorical):
+                if list(data[col].cat.categories) != list(category):
+                    data[col] = data[col].cat.set_categories(category)
+        if len(cat_cols):  # cat_cols is pandas Index object
+            data = data.copy()  # not alter origin DataFrame
+            data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes)
+        if categorical_feature is not None:
+            if feature_name is None:
+                feature_name = list(data.columns)
+            if categorical_feature == 'auto':
+                categorical_feature = list(cat_cols)
+            else:
+                categorical_feature += list(cat_cols)
+        if feature_name == 'auto':
+            feature_name = list(data.columns)
+        data_dtypes = data.dtypes
+        if not all(dtype.name in PANDAS_DTYPE_MAPPER for dtype in data_dtypes):
+            bad_fields = [data.columns[i] for i, dtype in
+                          enumerate(data_dtypes) if dtype.name not in PANDAS_DTYPE_MAPPER]
+
+            msg = """DataFrame.dtypes for data must be int, float or bool. Did not expect the data types in fields """
+            raise ValueError(msg + ', '.join(bad_fields))
+        data = data.values.astype('float')
+    else:
+        if feature_name == 'auto':
+            feature_name = None
+        if categorical_feature == 'auto':
+            categorical_feature = None
+    return data, feature_name, categorical_feature, pandas_categorical
+
+
+def _label_from_pandas(label):
+    if isinstance(label, DataFrame):
+        if len(label.columns) > 1:
+            raise ValueError('DataFrame for label cannot have multiple columns')
+        label_dtypes = label.dtypes
+        if not all(dtype.name in PANDAS_DTYPE_MAPPER for dtype in label_dtypes):
+            raise ValueError('DataFrame.dtypes for label must be int, float or bool')
+        label = label.values.astype('float')
+    return label
+
+
 class _InnerPredictor(object):
     """
     A _InnerPredictor of LightGBM.
@@ -244,6 +302,12 @@ class _InnerPredictor(object):
                 ctypes.byref(out_num_class)))
             self.num_class = out_num_class.value
             self.num_total_iteration = out_num_iterations.value
+            with open(model_file, 'r') as f:
+                last_line = f.readlines()[-1]
+                if last_line.startswith('pandas_categorical:'):
+                    self.pandas_categorical = eval(last_line[len('pandas_categorical:'):])
+                else:
+                    self.pandas_categorical = None
         elif booster_handle is not None:
             self.__is_manage_handle = False
             self.handle = booster_handle
@@ -257,6 +321,7 @@ class _InnerPredictor(object):
                 self.handle,
                 ctypes.byref(out_num_iterations)))
             self.num_total_iteration = out_num_iterations.value
+            self.pandas_categorical = None
         else:
             raise TypeError('Need Model file or Booster handle to create a predictor')
 
@@ -292,6 +357,7 @@ class _InnerPredictor(object):
         """
         if isinstance(data, Dataset):
             raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
+        data = _data_from_pandas(data, None, None, self.pandas_categorical)[0]
         predict_type = C_API_PREDICT_NORMAL
         if raw_score:
             predict_type = C_API_PREDICT_RAW_SCORE
@@ -446,62 +512,6 @@ class _InnerPredictor(object):
         if n_preds != out_num_preds.value:
             raise ValueError("Wrong length for predict results")
         return preds, nrow
-
-
-PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
-                       'int64': 'int', 'uint8': 'int', 'uint16': 'int',
-                       'uint32': 'int', 'uint64': 'int', 'float16': 'float',
-                       'float32': 'float', 'float64': 'float', 'bool': 'int'}
-
-
-def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
-    if isinstance(data, DataFrame):
-        cat_cols = data.select_dtypes(include=['category']).columns
-        if not pandas_categorical:  # train dataset
-            pandas_categorical = (data[col].cat.categories for col in cat_cols)
-        else:
-            if len(cat_cols) != len(pandas_categorical):
-                raise ValueError('train and valid dataset categorical_feature do not match.')
-            for col, category in zip(cat_cols, pandas_categorical):
-                if data[col].cat.categories != category:
-                    data[col] = data[col].cat.set_categories(category)
-        if len(cat_cols):  # cat_cols is pandas Index object
-            data = data.copy()  # not alter origin DataFrame
-            data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes)
-        if categorical_feature is not None:
-            if feature_name is None:
-                feature_name = data.columns
-            if categorical_feature == 'auto':
-                categorical_feature = cat_cols
-            else:
-                categorical_feature += cat_cols
-        if feature_name == 'auto':
-            feature_name = data.columns
-        data_dtypes = data.dtypes
-        if not all(dtype.name in PANDAS_DTYPE_MAPPER for dtype in data_dtypes):
-            bad_fields = [data.columns[i] for i, dtype in
-                          enumerate(data_dtypes) if dtype.name not in PANDAS_DTYPE_MAPPER]
-
-            msg = """DataFrame.dtypes for data must be int, float or bool. Did not expect the data types in fields """
-            raise ValueError(msg + ', '.join(bad_fields))
-        data = data.values.astype('float')
-    else:
-        if feature_name == 'auto':
-            feature_name = None
-        if categorical_feature == 'auto':
-            categorical_feature = None
-    return data, feature_name, categorical_feature, pandas_categorical
-
-
-def _label_from_pandas(label):
-    if isinstance(label, DataFrame):
-        if len(label.columns) > 1:
-            raise ValueError('DataFrame for label cannot have multiple columns')
-        label_dtypes = label.dtypes
-        if not all(dtype.name in PANDAS_DTYPE_MAPPER for dtype in label_dtypes):
-            raise ValueError('DataFrame.dtypes for label must be int, float or bool')
-        label = label.values.astype('float')
-    return label
 
 
 class Dataset(object):
@@ -976,10 +986,10 @@ class Dataset(object):
             Feature names
         """
         self.feature_name = feature_name
-        if self.handle is not None and feature_name is not None:
+        if self.handle is not None and feature_name is not None and feature_name != 'auto':
             if len(feature_name) != self.num_feature():
                 raise ValueError("Length of feature_name({}) and num_feature({}) don't match".format(len(feature_name), self.num_feature()))
-            c_feature_name = [c_str(str(name)) for name in feature_name]
+            c_feature_name = [c_str(name) for name in feature_name]
             _safe_call(_LIB.LGBM_DatasetSetFeatureNames(
                 self.handle,
                 c_array(ctypes.c_char_p, c_feature_name),
@@ -1184,6 +1194,7 @@ class Booster(object):
             self.__inner_predict_buffer = [None]
             self.__is_predicted_cur_iter = [False]
             self.__get_eval_info()
+            self.pandas_categorical = train_set.pandas_categorical
         elif model_file is not None:
             """Prediction task"""
             out_num_iterations = ctypes.c_int(0)
@@ -1196,6 +1207,12 @@ class Booster(object):
                 self.handle,
                 ctypes.byref(out_num_class)))
             self.__num_class = out_num_class.value
+            with open(model_file, 'r') as f:
+                last_line = f.readlines()[-1]
+                if last_line.startswith('pandas_categorical:'):
+                    self.pandas_categorical = eval(last_line[len('pandas_categorical:'):])
+                else:
+                    self.pandas_categorical = None
         else:
             raise TypeError('Need at least one training dataset or model file to create booster instance')
 
@@ -1452,6 +1469,8 @@ class Booster(object):
             self.handle,
             ctypes.c_int(num_iteration),
             c_str(filename)))
+        with open(filename, 'a') as f:
+            f.write('\npandas_categorical:' + repr(self.pandas_categorical))
 
     def dump_model(self, num_iteration=-1):
         """
@@ -1515,7 +1534,7 @@ class Booster(object):
         -------
         Prediction result
         """
-        predictor = _InnerPredictor(booster_handle=self.handle)
+        predictor = self._to_predictor()
         if num_iteration <= 0:
             num_iteration = self.best_iteration
         return predictor.predict(data, num_iteration, raw_score, pred_leaf, data_has_header, is_reshape)
@@ -1524,6 +1543,7 @@ class Booster(object):
         """Convert to predictor
         """
         predictor = _InnerPredictor(booster_handle=self.handle)
+        predictor.pandas_categorical = self.pandas_categorical
         return predictor
 
     def feature_importance(self, importance_type='split'):
