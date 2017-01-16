@@ -1,4 +1,5 @@
 #include <LightGBM/utils/common.h>
+#include <LightGBM/utils/array_args.h>
 #include <LightGBM/bin.h>
 
 #include "dense_bin.hpp"
@@ -85,7 +86,7 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
   min_val_ = distinct_values.front();
   max_val_ = distinct_values.back();
   int num_values = static_cast<int>(distinct_values.size());
-  int cnt_in_bin0 = 0;
+  std::vector<int> cnt_in_bin;
   if (bin_type_ == BinType::NumericalBin) {
     if (num_values <= max_bin) {
       std::sort(distinct_values.begin(), distinct_values.end());
@@ -95,7 +96,7 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
       for (int i = 0; i < num_values - 1; ++i) {
         bin_upper_bound_[i] = (distinct_values[i] + distinct_values[i + 1]) / 2;
       }
-      cnt_in_bin0 = counts[0];
+      cnt_in_bin = counts;
       bin_upper_bound_[num_values - 1] = std::numeric_limits<double>::infinity();
     } else {
       // mean size for one bin
@@ -127,9 +128,7 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
         if (is_big_count_value[i] || cur_cnt_inbin >= mean_bin_size ||
           (is_big_count_value[i + 1] && cur_cnt_inbin >= std::max(1.0, mean_bin_size * 0.5f))) {
           upper_bounds[bin_cnt] = distinct_values[i];
-          if (bin_cnt == 0) {
-            cnt_in_bin0 = cur_cnt_inbin;
-          }
+          cnt_in_bin.push_back(cur_cnt_inbin);
           ++bin_cnt;
           lower_bounds[bin_cnt] = distinct_values[i + 1];
           if (bin_cnt >= max_bin - 1) { break; }
@@ -182,7 +181,8 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
       Log::Warning("Too many categoricals are ignored, \
                    please use bigger max_bin or partition this column ");
     }
-    cnt_in_bin0 = static_cast<int>(sample_size) - used_cnt + counts_int[0];
+    cnt_in_bin = counts_int;
+    cnt_in_bin[0] += static_cast<int>(sample_size) - used_cnt;
   }
 
   // check trival(num_bin_ == 1) feature
@@ -191,8 +191,10 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
   } else {
     is_trival_ = false;
   }
+  CHECK(num_bin_ <= max_bin);
+  max_heavy_bin_ = static_cast<uint32_t>(ArrayArgs<int>::ArgMax(cnt_in_bin));
   // calculate sparse rate
-  sparse_rate_ = static_cast<double>(cnt_in_bin0) / static_cast<double>(sample_size);
+  sparse_rate_ = static_cast<double>(max_heavy_bin_) / static_cast<double>(sample_size);
 }
 
 
@@ -231,6 +233,12 @@ void BinMapper::CopyFrom(const char * buffer) {
   buffer += sizeof(sparse_rate_);
   std::memcpy(&bin_type_, buffer, sizeof(bin_type_));
   buffer += sizeof(bin_type_);
+  std::memcpy(&min_val_, buffer, sizeof(min_val_));
+  buffer += sizeof(min_val_);
+  std::memcpy(&max_val_, buffer, sizeof(max_val_));
+  buffer += sizeof(max_val_);
+  std::memcpy(&max_heavy_bin_, buffer, sizeof(max_heavy_bin_));
+  buffer += sizeof(max_heavy_bin_);
   if (bin_type_ == BinType::NumericalBin) {
     bin_upper_bound_ = std::vector<double>(num_bin_);
     std::memcpy(bin_upper_bound_.data(), buffer, num_bin_ * sizeof(double));
@@ -249,6 +257,9 @@ void BinMapper::SaveBinaryToFile(FILE* file) const {
   fwrite(&is_trival_, sizeof(is_trival_), 1, file);
   fwrite(&sparse_rate_, sizeof(sparse_rate_), 1, file);
   fwrite(&bin_type_, sizeof(bin_type_), 1, file);
+  fwrite(&min_val_, sizeof(min_val_), 1, file);
+  fwrite(&max_val_, sizeof(max_val_), 1, file);
+  fwrite(&max_heavy_bin_, sizeof(max_heavy_bin_), 1, file);
   if (bin_type_ == BinType::NumericalBin) {
     fwrite(bin_upper_bound_.data(), sizeof(double), num_bin_, file);
   } else {
@@ -258,7 +269,7 @@ void BinMapper::SaveBinaryToFile(FILE* file) const {
 
 size_t BinMapper::SizesInByte() const {
   size_t ret = sizeof(num_bin_) + sizeof(is_trival_) + sizeof(sparse_rate_)
-    + sizeof(bin_type_);
+    + sizeof(bin_type_) + sizeof(min_val_) + sizeof(max_val_) + sizeof(max_heavy_bin_);
   if (bin_type_ == BinType::NumericalBin) {
     ret += sizeof(double) *  num_bin_;
   } else {
@@ -284,31 +295,31 @@ template class SparseCategoricalBin<uint16_t>;
 template class SparseCategoricalBin<uint32_t>;
 
 Bin* Bin::CreateBin(data_size_t num_data, int num_bin, double sparse_rate, 
-  bool is_enable_sparse, bool* is_sparse, int default_bin, BinType bin_type) {
+  bool is_enable_sparse, bool* is_sparse, uint32_t default_bin, uint32_t max_heavy_bin, BinType bin_type) {
   // sparse threshold
   const double kSparseThreshold = 0.6f;
   if (sparse_rate >= kSparseThreshold && is_enable_sparse) {
     *is_sparse = true;
-    return CreateSparseBin(num_data, num_bin, default_bin, bin_type);
+    return CreateSparseBin(num_data, num_bin, default_bin, max_heavy_bin, bin_type);
   } else {
     *is_sparse = false;
     return CreateDenseBin(num_data, num_bin, default_bin, bin_type);
   }
 }
 
-Bin* Bin::CreateDenseBin(data_size_t num_data, int num_bin, int default_bin, BinType bin_type) {
+Bin* Bin::CreateDenseBin(data_size_t num_data, int num_bin, uint32_t default_bin, BinType bin_type) {
   if (bin_type == BinType::NumericalBin) {
-    if (num_bin <= 256) {
+    if (num_bin <= 255) {
       return new DenseBin<uint8_t>(num_data, default_bin);
-    } else if (num_bin <= 65536) {
+    } else if (num_bin <= 65535) {
       return new DenseBin<uint16_t>(num_data, default_bin);
     } else {
       return new DenseBin<uint32_t>(num_data, default_bin);
     }
   } else {
-    if (num_bin <= 256) {
+    if (num_bin <= 255) {
       return new DenseCategoricalBin<uint8_t>(num_data, default_bin);
-    } else if (num_bin <= 65536) {
+    } else if (num_bin <= 65535) {
       return new DenseCategoricalBin<uint16_t>(num_data, default_bin);
     } else {
       return new DenseCategoricalBin<uint32_t>(num_data, default_bin);
@@ -316,22 +327,22 @@ Bin* Bin::CreateDenseBin(data_size_t num_data, int num_bin, int default_bin, Bin
   }
 }
 
-Bin* Bin::CreateSparseBin(data_size_t num_data, int num_bin, int default_bin, BinType bin_type) {
+Bin* Bin::CreateSparseBin(data_size_t num_data, int num_bin, uint32_t default_bin, uint32_t max_heavy_bin, BinType bin_type) {
   if (bin_type == BinType::NumericalBin) {
-    if (num_bin <= 256) {
-      return new SparseBin<uint8_t>(num_data, default_bin);
-    } else if (num_bin <= 65536) {
-      return new SparseBin<uint16_t>(num_data, default_bin);
+    if (num_bin <= 255) {
+      return new SparseBin<uint8_t>(num_data, default_bin, max_heavy_bin);
+    } else if (num_bin <= 65535) {
+      return new SparseBin<uint16_t>(num_data, default_bin, max_heavy_bin);
     } else {
-      return new SparseBin<uint32_t>(num_data, default_bin);
+      return new SparseBin<uint32_t>(num_data, default_bin, max_heavy_bin);
     }
   } else {
-    if (num_bin <= 256) {
-      return new SparseCategoricalBin<uint8_t>(num_data, default_bin);
-    } else if (num_bin <= 65536) {
-      return new SparseCategoricalBin<uint16_t>(num_data, default_bin);
+    if (num_bin <= 255) {
+      return new SparseCategoricalBin<uint8_t>(num_data, default_bin, max_heavy_bin);
+    } else if (num_bin <= 65535) {
+      return new SparseCategoricalBin<uint16_t>(num_data, default_bin, max_heavy_bin);
     } else {
-      return new SparseCategoricalBin<uint32_t>(num_data, default_bin);
+      return new SparseCategoricalBin<uint32_t>(num_data, default_bin, max_heavy_bin);
     }
   }
 }

@@ -50,12 +50,10 @@ public:
   friend class SparseBinIterator<VAL_T>;
   friend class OrderedSparseBin<VAL_T>;
 
-  SparseBin(data_size_t num_data, int default_bin)
+  SparseBin(data_size_t num_data, uint32_t default_bin, uint32_t max_heavy_bin)
     : num_data_(num_data) {
     default_bin_ = static_cast<VAL_T>(default_bin);
-    if (default_bin_ != 0) {
-      Log::Info("Warning: sparse feature with negative values, treating negative values as zero");
-    }
+    max_heavy_bin_= static_cast<VAL_T>(max_heavy_bin);
 #pragma omp parallel
 #pragma omp master
     {
@@ -67,11 +65,10 @@ public:
   }
 
   ~SparseBin() {
+
   }
 
   void Push(int tid, data_size_t idx, uint32_t value) override {
-    // not store zero data
-    if (value <= default_bin_) { return; }
     push_buffers_[tid].emplace_back(idx, static_cast<VAL_T>(value));
   }
 
@@ -79,16 +76,16 @@ public:
 
   void ConstructHistogram(const data_size_t*, data_size_t, const score_t*,
     const score_t*, HistogramBinEntry*) const override {
-    // Will use OrderedSparseBin->ConstructHistogram() instead
-    Log::Fatal("Using OrderedSparseBin->ConstructHistogram() instead");
+    Log::Fatal("Not ConstructHistogram for sparse bin");
   }
 
   inline bool NextNonzero(data_size_t* i_delta,
     data_size_t* cur_pos) const {
+    const VAL_T not_data_flag = std::numeric_limits<VAL_T>::max();
     ++(*i_delta);
     *cur_pos += deltas_[*i_delta];
     data_size_t factor = 1;
-    while (*i_delta < num_vals_ && vals_[*i_delta] == 0) {
+    while (*i_delta < num_vals_ && vals_[*i_delta] == not_data_flag) {
       ++(*i_delta);
       factor *= kMaxDelta;
       *cur_pos += deltas_[*i_delta] * factor;
@@ -123,43 +120,43 @@ public:
 
   void FinishLoad() override {
     // get total non zero size
-    size_t non_zero_size = 0;
+    size_t pair_cnt = 0;
     for (size_t i = 0; i < push_buffers_.size(); ++i) {
-      non_zero_size += push_buffers_[i].size();
+      pair_cnt += push_buffers_[i].size();
     }
-    // merge
-    non_zero_pair_.reserve(non_zero_size);
+    std::vector<std::pair<data_size_t, VAL_T>> idx_val_pairs(pair_cnt);
     for (size_t i = 0; i < push_buffers_.size(); ++i) {
-      non_zero_pair_.insert(non_zero_pair_.end(), push_buffers_[i].begin(), push_buffers_[i].end());
+      idx_val_pairs.insert(idx_val_pairs.end(), push_buffers_[i].begin(), push_buffers_[i].end());
       push_buffers_[i].clear();
       push_buffers_[i].shrink_to_fit();
     }
     push_buffers_.clear();
     push_buffers_.shrink_to_fit();
     // sort by data index
-    std::sort(non_zero_pair_.begin(), non_zero_pair_.end(),
+    std::sort(idx_val_pairs.begin(), idx_val_pairs.end(),
       [](const std::pair<data_size_t, VAL_T>& a, const std::pair<data_size_t, VAL_T>& b) {
       return a.first < b.first;
     });
     // load detla array
-    LoadFromPair(non_zero_pair_);
+    LoadFromPair(idx_val_pairs);
     // free memory
-    non_zero_pair_.clear();
-    non_zero_pair_.shrink_to_fit();
+    idx_val_pairs.clear();
+    idx_val_pairs.shrink_to_fit();
   }
 
-  void LoadFromPair(const std::vector<std::pair<data_size_t, VAL_T>>& non_zero_pair) {
+  void LoadFromPair(const std::vector<std::pair<data_size_t, VAL_T>>& idx_val_pair) {
     deltas_.clear();
     vals_.clear();
+    const VAL_T not_data_flag = std::numeric_limits<VAL_T>::max();
     // transform to delta array
     data_size_t last_idx = 0;
-    for (size_t i = 0; i < non_zero_pair.size(); ++i) {
-      const data_size_t cur_idx = non_zero_pair[i].first;
-      const VAL_T bin = non_zero_pair[i].second;
+    for (size_t i = 0; i < idx_val_pair.size(); ++i) {
+      const data_size_t cur_idx = idx_val_pair[i].first;
+      const VAL_T bin = idx_val_pair[i].second;
       data_size_t cur_delta = cur_idx - last_idx;
       while (cur_delta > kMaxDelta) {
         deltas_.push_back(cur_delta %  kMaxDelta);
-        vals_.push_back(0);
+        vals_.push_back(not_data_flag);
         cur_delta /= kMaxDelta;
       }
       deltas_.push_back(static_cast<uint8_t>(cur_delta));
@@ -262,7 +259,6 @@ public:
 
 protected:
   data_size_t num_data_;
-  std::vector<std::pair<data_size_t, VAL_T>> non_zero_pair_;
   std::vector<uint8_t> deltas_;
   std::vector<VAL_T> vals_;
   data_size_t num_vals_;
@@ -271,6 +267,7 @@ protected:
   std::vector<std::pair<data_size_t, data_size_t>> fast_index_;
   data_size_t fast_index_shift_;
   VAL_T default_bin_;
+  VAL_T max_heavy_bin_;
 };
 
 template <typename VAL_T>
@@ -281,7 +278,7 @@ inline VAL_T SparseBinIterator<VAL_T>::InnerGet(data_size_t idx) {
   if (cur_pos_ == idx && i_delta_ < bin_data_->num_vals_ && i_delta_ >= 0) {
     return bin_data_->vals_[i_delta_];
   } else {
-    return 0;
+    return bin_data_->default_bin_;
   }
 }
 
@@ -301,8 +298,8 @@ BinIterator* SparseBin<VAL_T>::GetIterator(data_size_t start_idx) const {
 template <typename VAL_T>
 class SparseCategoricalBin: public SparseBin<VAL_T> {
 public:
-  SparseCategoricalBin(data_size_t num_data, int default_bin)
-    : SparseBin<VAL_T>(num_data, default_bin) {
+  SparseCategoricalBin(data_size_t num_data, uint32_t default_bin, uint32_t max_heavy_bin)
+    : SparseBin<VAL_T>(num_data, default_bin, max_heavy_bin) {
   }
 
   virtual data_size_t Split(unsigned int threshold, data_size_t* data_indices, data_size_t num_data,

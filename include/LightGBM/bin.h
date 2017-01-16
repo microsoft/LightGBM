@@ -126,6 +126,10 @@ public:
       return 0;
     }
   }
+
+  inline uint32_t GetMaxHeavyBin() const {
+    return max_heavy_bin_;
+  }
   /*!
   * \brief Construct feature value to bin mapper according feature values
   * \param values (Sampled) values of this feature
@@ -187,6 +191,8 @@ private:
   double min_val_;
   /*! \brief maximum feature value */
   double max_val_;
+  /*! \brief default bin value */
+  uint32_t max_heavy_bin_;
 };
 
 /*! \brief Iterator for one bin column */
@@ -292,12 +298,13 @@ public:
   * \param is_enable_sparse True if enable sparse feature
   * \param is_sparse Will set to true if this bin is sparse
   * \param default_bin Default bin for zeros value
+  * \param max_heavy_bin max heavy bin value
   * \param bin_type type of bin
   * \return The bin data object
   */
   static Bin* CreateBin(data_size_t num_data, int num_bin,
     double sparse_rate, bool is_enable_sparse, 
-    bool* is_sparse, int default_bin, BinType bin_type);
+    bool* is_sparse, uint32_t default_bin, uint32_t max_heavy_bin, BinType bin_type);
 
   /*!
   * \brief Create object for bin data of one feature, used for dense feature
@@ -308,18 +315,19 @@ public:
   * \return The bin data object
   */
   static Bin* CreateDenseBin(data_size_t num_data, int num_bin, 
-    int default_bin, BinType bin_type);
+    uint32_t default_bin, BinType bin_type);
 
   /*!
   * \brief Create object for bin data of one feature, used for sparse feature
   * \param num_data Total number of data
   * \param num_bin Number of bin
   * \param default_bin Default bin for zeros value
+  * \param max_heavy_bin max heavy bin value
   * \param bin_type type of bin
   * \return The bin data object
   */
   static Bin* CreateSparseBin(data_size_t num_data,
-    int num_bin, int default_bin, BinType bin_type);
+    int num_bin, uint32_t default_bin, uint32_t max_heavy_bin, BinType bin_type);
 };
 
 inline unsigned int BinMapper::ValueToBin(double value) const {
