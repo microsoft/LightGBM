@@ -69,5 +69,4 @@ except ImportError:
     LGBMClassifierBase = object
     LGBMRegressorBase = object
     LGBMLabelEncoder = None
-    LGBMDeprecated = None
     LGBMStratifiedKFold = None
