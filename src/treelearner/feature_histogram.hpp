@@ -30,11 +30,10 @@ public:
   * \param min_num_dataone_leaf minimal number of data in one leaf
   */
   void Init(const Feature* feature, int feature_idx, const TreeConfig* tree_config) {
+    feature_ = feature;
     feature_idx_ = feature_idx;
     tree_config_ = tree_config;
-    num_bin_ = feature->num_bin();
-    is_sparse_ = feature->is_sparse();
-    data_.resize(num_bin_);
+    data_.resize(feature_->num_bin());
     if (feature->bin_type() == BinType::NumericalBin) {
       find_best_threshold_fun_ = std::bind(&FeatureHistogram::FindBestThresholdForNumerical, this, std::placeholders::_1
         , std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
@@ -45,7 +44,7 @@ public:
   }
 
   HistogramBinEntry* GetData() {
-    std::memset(data_.data(), 0, num_bin_ * sizeof(HistogramBinEntry));
+    std::memset(data_.data(), 0, feature_->num_bin() * sizeof(HistogramBinEntry));
     return data_.data();
   }
 
@@ -54,19 +53,39 @@ public:
   * \param other The histogram that want to subtract
   */
   void Subtract(const FeatureHistogram& other) {
-    for (int i = 0; i < num_bin_; ++i) {
+    for (int i = 0; i < feature_->num_bin(); ++i) {
       data_[i].cnt -= other.data_[i].cnt;
       data_[i].sum_gradients -= other.data_[i].sum_gradients;
       data_[i].sum_hessians -= other.data_[i].sum_hessians;
     }
   }
-
+  void FixIgnoreBin(double sum_gradient, double sum_hessian, data_size_t num_data) {
+    if (tree_config_->sparse_aware || feature_->is_sparse()) {
+      // not need to Fix if max heavy bin is 0
+      if (feature_->bin_type() == BinType::NumericalBin 
+          && feature_->bin_mapper()->GetMaxHeavyBin() == 0) {
+        return;
+      }
+      int max_heavy_bin = static_cast<int>(feature_->bin_mapper()->GetMaxHeavyBin());
+      data_[max_heavy_bin].sum_gradients = sum_gradient;
+      data_[max_heavy_bin].sum_hessians = sum_hessian;
+      data_[max_heavy_bin].cnt = num_data;
+      for (int t = feature_->num_bin() - 1; t >= 0; --t) {
+        if (t != max_heavy_bin) {
+          data_[max_heavy_bin].sum_gradients -= data_[t].sum_gradients;
+          data_[max_heavy_bin].sum_hessians -= data_[t].sum_hessians;
+          data_[max_heavy_bin].cnt -= data_[t].cnt;
+        }
+      }
+    }
+  }
   /*!
   * \brief Find best threshold for this histogram
   * \param output The best split result
   */
   void FindBestThreshold(double sum_gradient, double sum_hessian, data_size_t num_data,
     SplitInfo* output) {
+    FixIgnoreBin(sum_gradient, sum_hessian, num_data);
     find_best_threshold_fun_(sum_gradient, sum_hessian, num_data, output);
     if (output->gain > kMinScore) {
       is_splittable_ = true;
@@ -81,7 +100,7 @@ public:
     double best_sum_left_hessian = NAN;
     double best_gain = kMinScore;
     data_size_t best_left_count = 0;
-    unsigned int best_threshold = static_cast<unsigned int>(num_bin_);
+    unsigned int best_threshold = static_cast<unsigned int>(feature_->num_bin());
     double sum_right_gradient = 0.0f;
     double sum_right_hessian = kEpsilon;
     data_size_t right_count = 0;
@@ -89,7 +108,7 @@ public:
     double min_gain_shift = gain_shift + tree_config_->min_gain_to_split;
     bool is_splittable = false;
     // from right to left, and we don't need data in bin0
-    for (int t = num_bin_ - 1; t > 0; --t) {
+    for (int t = feature_->num_bin() - 1; t > 0; --t) {
       sum_right_gradient += data_[t].sum_gradients;
       sum_right_hessian += data_[t].sum_hessians;
       right_count += data_[t].cnt;
@@ -150,23 +169,12 @@ public:
   void FindBestThresholdForCategorical(double sum_gradient, double sum_hessian, data_size_t num_data,
     SplitInfo* output) {
     double best_gain = kMinScore;
-    unsigned int best_threshold = static_cast<unsigned int>(num_bin_);
+    unsigned int best_threshold = static_cast<unsigned int>(feature_->num_bin());
 
     double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian);
     double min_gain_shift = gain_shift + tree_config_->min_gain_to_split;
     bool is_splittable = false;
-    // need give bin data at 0 for categorical feature
-    if (is_sparse_) {
-      data_[0].sum_gradients = sum_gradient;
-      data_[0].sum_hessians = sum_hessian;
-      data_[0].cnt = num_data;
-      for (int t = num_bin_ - 1; t > 0; --t) {
-        data_[0].sum_gradients -= data_[t].sum_gradients;
-        data_[0].sum_hessians -= data_[t].sum_hessians;
-        data_[0].cnt -= data_[t].cnt;
-      }
-    }
-    for (int t = num_bin_ - 1; t >= 0; --t) {
+    for (int t = feature_->num_bin() - 1; t >= 0; --t) {
       double sum_current_gradient = data_[t].sum_gradients;
       double sum_current_hessian = data_[t].sum_hessians;
       data_size_t current_count = data_[t].cnt;
@@ -223,7 +231,7 @@ public:
   * \brief Binary size of this histogram
   */
   int SizeOfHistgram() const {
-    return num_bin_ * sizeof(HistogramBinEntry);
+    return feature_->num_bin() * sizeof(HistogramBinEntry);
   }
 
   /*!
@@ -237,7 +245,7 @@ public:
   * \brief Restore histogram from memory
   */
   void FromMemory(char* memory_data)  {
-    std::memcpy(data_.data(), memory_data, num_bin_ * sizeof(HistogramBinEntry));
+    std::memcpy(data_.data(), memory_data, feature_->num_bin() * sizeof(HistogramBinEntry));
   }
 
   /*!
@@ -285,13 +293,10 @@ private:
     }
     return 0.0f;
   }
-
   int feature_idx_;
+  const Feature* feature_;
   /*! \brief pointer of tree config */
   const TreeConfig* tree_config_;
-  bool is_sparse_;
-  /*! \brief number of bin of histogram */
-  int num_bin_;
   /*! \brief sum of gradient of each bin */
   std::vector<HistogramBinEntry> data_;
   /*! \brief False if this histogram cannot split */
