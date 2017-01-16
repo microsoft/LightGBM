@@ -78,27 +78,11 @@ Dataset <- R6Class(
       }
       # Get categorical feature index
       if (!is.null(private$categorical_feature)) {
-        fname_dict <- list()
-        if (!is.null(private$colnames)) {
-          fname_dict <- `names<-`(
-              list((seq_along(private$colnames) - 1)),
-              private$colnames
-            )
-        }
-        cate_indices <- list()
-        for (key in private$categorical_feature) {
-          if (is.character(key)) {
-            idx <- fname_dict[[key]]
-            if (is.null(idx)) {
-              stop("lgb.self.get.handle: cannot find feature name ", sQuote(key))
-            }
-            cate_indices <- c(cate_indices, idx)
+        if (typeof(private$categorical_feature) == "character") {
+            cate_indices <- as.list(match(private$categorical_feature, private$colnames))
           } else {
-            # one-based indices to zero-based
-            idx <- as.integer(key - 1)
-            cate_indices <- c(cate_indices, idx)
+            cate_indices <- as.list(private$categorical_feature - 1)
           }
-        }
         private$params$categorical_feature <- cate_indices
       }
       # Check has header or not
