@@ -302,6 +302,12 @@ class _InnerPredictor(object):
                 ctypes.byref(out_num_class)))
             self.num_class = out_num_class.value
             self.num_total_iteration = out_num_iterations.value
+            with open(model_file, 'r') as f:
+                last_line = f.readlines()[-1]
+                if last_line.startswith('pandas_categorical:'):
+                    self.pandas_categorical = eval(last_line[len('pandas_categorical:'):])
+                else:
+                    self.pandas_categorical = None
         elif booster_handle is not None:
             self.__is_manage_handle = False
             self.handle = booster_handle
@@ -315,9 +321,9 @@ class _InnerPredictor(object):
                 self.handle,
                 ctypes.byref(out_num_iterations)))
             self.num_total_iteration = out_num_iterations.value
+            self.pandas_categorical = None
         else:
             raise TypeError('Need Model file or Booster handle to create a predictor')
-        self.pandas_categorical = None
 
     def __del__(self):
         if self.__is_manage_handle:
