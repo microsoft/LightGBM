@@ -509,7 +509,7 @@ std::string GBDT::DumpModel(int num_iteration) const {
   return str_buf.str();
 }
 
-void GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
+bool GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
   /*! \brief File to write models */
   std::ofstream output_file;
   output_file.open(filename);
@@ -553,9 +553,11 @@ void GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
   }
 
   output_file.close();
+
+  return (bool)output_file;
 }
 
-void GBDT::LoadModelFromString(const std::string& model_str) {
+bool GBDT::LoadModelFromString(const std::string& model_str) {
   // use serialized string to restore this object
   models_.clear();
   std::vector<std::string> lines = Common::Split(model_str.c_str(), '\n');
@@ -566,7 +568,7 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
     Common::Atoi(Common::Split(line.c_str(), '=')[1].c_str(), &num_class_);
   } else {
     Log::Fatal("Model file doesn't specify the number of classes");
-    return;
+    return false;
   }
   // get index of label
   line = Common::FindFromLines(lines, "label_index=");
@@ -574,7 +576,7 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
     Common::Atoi(Common::Split(line.c_str(), '=')[1].c_str(), &label_idx_);
   } else {
     Log::Fatal("Model file doesn't specify the label index");
-    return;
+    return false;
   }
   // get max_feature_idx first
   line = Common::FindFromLines(lines, "max_feature_idx=");
@@ -582,7 +584,7 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
     Common::Atoi(Common::Split(line.c_str(), '=')[1].c_str(), &max_feature_idx_);
   } else {
     Log::Fatal("Model file doesn't specify max_feature_idx");
-    return;
+    return false;
   }
   // get sigmoid parameter
   line = Common::FindFromLines(lines, "sigmoid=");
@@ -597,11 +599,11 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
     feature_names_ = Common::Split(line.substr(std::strlen("feature_names=")).c_str(), " ");
     if (feature_names_.size() != static_cast<size_t>(max_feature_idx_ + 1)) {
       Log::Fatal("Wrong size of feature_names");
-      return;
+      return false;
     }
   } else {
     Log::Fatal("Model file doesn't contain feature names");
-    return;
+    return false;
   }
 
   // get tree models
@@ -624,6 +626,8 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
   num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_class_;
   num_init_iteration_ = num_iteration_for_pred_;
   iter_ = 0;
+
+  return true;
 }
 
 std::vector<std::pair<size_t, std::string>> GBDT::FeatureImportance() const {
