@@ -116,6 +116,8 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * ```true``` if training data are pre-partitioned, and different machines using different partition.
 * ```is_sparse```, default=```true```, type=bool, alias=```is_enable_sparse```
   * used to enable/disable sparse optimization. Set to ```false``` to disable sparse optimization.
+* ```sparse_aware```, default=```false```, type=bool
+  * used to enable/disable very specific sparse optimization routines. Do not set to ```true``` when you have features with negative values.
 * ```two_round```, default=```false```, type=bool, alias=```two_round_loading```,```use_two_round_loading```
   * by default, LightGBM will map data file to memory and load features from memory. This will provide faster data loading speed. But it may out of memory when the data file is very big.
   * set this to ```true``` if data file is too big to fit in memory.
