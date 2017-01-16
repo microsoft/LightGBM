@@ -221,6 +221,8 @@ PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
 
 def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
     if isinstance(data, DataFrame):
+        if feature_name == 'auto' or feature_name is None:
+            data.rename(columns=str, inplace=True)
         cat_cols = data.select_dtypes(include=['category']).columns
         if pandas_categorical is None:  # train dataset
             pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
@@ -981,7 +983,7 @@ class Dataset(object):
         if self.handle is not None and feature_name is not None and feature_name != 'auto':
             if len(feature_name) != self.num_feature():
                 raise ValueError("Length of feature_name({}) and num_feature({}) don't match".format(len(feature_name), self.num_feature()))
-            c_feature_name = [c_str(str(name)) for name in feature_name]
+            c_feature_name = [c_str(name) for name in feature_name]
             _safe_call(_LIB.LGBM_DatasetSetFeatureNames(
                 self.handle,
                 c_array(ctypes.c_char_p, c_feature_name),
