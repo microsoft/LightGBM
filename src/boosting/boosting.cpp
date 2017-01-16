@@ -10,7 +10,7 @@ std::string GetBoostingTypeFromModelFile(const char* filename) {
   return type;
 }
 
-void Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
+bool Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
   if (boosting != nullptr) {
     TextReader<size_t> model_reader(filename, true);
     model_reader.ReadAllLines();
@@ -18,8 +18,11 @@ void Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
     for (auto& line : model_reader.Lines()) {
       str_buf << line << '\n';
     }
-    boosting->LoadModelFromString(str_buf.str());
+    if (!boosting->LoadModelFromString(str_buf.str()))
+        return false;
   }
+
+  return true;
 }
 
 Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename) {
