@@ -78,13 +78,13 @@ LightGBM can use categorical features as input directly. It doesn't need to cove
 
 #### Weights can be set when needed:
 ```python
-w = np.random.rand(500, 1)
+w = np.random.rand(500, )
 train_data = lgb.Dataset(data, label=label, weight=w)
 ```
 or
 ```python
 train_data = lgb.Dataset(data, label=label)
-w = np.random.rand(500, 1)
+w = np.random.rand(500, )
 train_data.set_weight(w)
 ```
 

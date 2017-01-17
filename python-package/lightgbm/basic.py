@@ -222,7 +222,7 @@ PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
 def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
     if isinstance(data, DataFrame):
         if feature_name == 'auto' or feature_name is None:
-            data.rename(columns=str, inplace=True)
+            data = data.rename(columns=str)
         cat_cols = data.select_dtypes(include=['category']).columns
         if pandas_categorical is None:  # train dataset
             pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
@@ -241,7 +241,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
             if categorical_feature == 'auto':
                 categorical_feature = list(cat_cols)
             else:
-                categorical_feature += list(cat_cols)
+                categorical_feature = list(categorical_feature) + list(cat_cols)
         if feature_name == 'auto':
             feature_name = list(data.columns)
         data_dtypes = data.dtypes
