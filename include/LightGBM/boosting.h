@@ -148,6 +148,13 @@ public:
   virtual bool SaveModelToFile(int num_iterations, const char* filename) const = 0;
 
   /*!
+  * \brief Save model to string
+  * \param num_used_model Number of model that want to save, -1 means save all
+  * \return Non-empty string if succeeded
+  */
+  virtual std::string SaveModelToString(int num_iterations) const = 0;
+
+  /*!
   * \brief Restore from a serialized string
   * \param model_str The string of model
   * \return true if succeeded
