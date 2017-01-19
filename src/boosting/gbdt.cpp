@@ -547,7 +547,7 @@ std::string GBDT::SaveModelToString(int num_iterations) const {
     }
 
     ss << std::endl << "feature information:" << std::endl;
-    for (size_t i = 0; i < max_feature_idx_ + 1; ++i) {
+    for (int i = 0; i < max_feature_idx_ + 1; ++i) {
       ss << feature_names_[i] << "=" << feature_infos_[i] << std::endl;
     }
 
