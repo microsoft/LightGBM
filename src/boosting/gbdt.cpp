@@ -615,6 +615,46 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
     return false;
   }
 
+  // returns offset, or lines.size() if not found.
+  auto find_string_lineno = [&lines](const std::string &str, size_t start_line=0)
+  {
+    size_t i = start_line;
+    size_t featinfo_find_pos = std::string::npos;
+    while (i < lines.size()) {
+      featinfo_find_pos = lines[i].find(str);
+      if (featinfo_find_pos != std::string::npos)
+        break;
+      ++i;
+    }
+
+    return i;
+  };
+
+  // load feature information
+  {
+    size_t finfo_line_idx = find_string_lineno("feature information:");
+
+    if (finfo_line_idx >= lines.size()) {
+      Log::Fatal("Model file doesn't contain feature information");
+      return false;
+    }
+
+    feature_infos_.resize(max_feature_idx_ + 1);
+
+    // search for each feature name
+    for (int i=0; i < max_feature_idx_ + 1; i++) {
+      const auto feat_name = feature_names_[i];
+      size_t line_idx = find_string_lineno(feat_name + "=", finfo_line_idx + 1);
+      if (line_idx >= lines.size()) {
+        Log::Fatal(("Model file doesn't contain feature information for feature " + feat_name).c_str());
+        return false;
+      }
+
+      const auto this_line = lines[line_idx];
+      feature_infos_[i] = this_line.substr((feat_name + "=").size());
+    }
+  }
+
   // get tree models
   size_t i = 0;
   while (i < lines.size()) {
