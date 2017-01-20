@@ -1213,6 +1213,8 @@ class Booster(object):
                     self.pandas_categorical = eval(last_line[len('pandas_categorical:'):])
                 else:
                     self.pandas_categorical = None
+        elif 'model_str' in params:
+            self.__load_model_from_string(params['model_str'])
         else:
             raise TypeError('Need at least one training dataset or model file to create booster instance')
 
@@ -1224,9 +1226,10 @@ class Booster(object):
         return self.__deepcopy__(None)
 
     def __deepcopy__(self, _):
-        with _temp_file() as f:
-            self.save_model(f.name)
-            return Booster(model_file=f.name)
+        model_str = self.__save_model_to_string()
+        booster = Booster({'model_str': model_str})
+        booster.pandas_categorical = self.pandas_categorical
+        return booster
 
     def __getstate__(self):
         this = self.__dict__.copy()
@@ -1234,22 +1237,20 @@ class Booster(object):
         this.pop('train_set', None)
         this.pop('valid_sets', None)
         if handle is not None:
-            with _temp_file() as f:
-                self.save_model(f.name)
-                this["handle"] = f.readlines()
+            this["handle"] = self.__save_model_to_string()
         return this
 
     def __setstate__(self, state):
-        model = state['handle']
-        if model is not None:
+        model_str = state.get('handle', None)
+        if model_str is not None:
+            boosting_type = 'gbdt'
             handle = ctypes.c_void_p()
             out_num_iterations = ctypes.c_int(0)
-            with _temp_file() as f:
-                f.writelines(model)
-                _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
-                    c_str(f.name),
-                    ctypes.byref(out_num_iterations),
-                    ctypes.byref(handle)))
+            _safe_call(_LIB.LGBM_BoosterLoadModelFromString(
+                c_str(model_str),
+                c_str(boosting_type),
+                ctypes.byref(out_num_iterations),
+                ctypes.byref(handle)))
             state['handle'] = handle
         self.__dict__.update(state)
 
@@ -1471,6 +1472,47 @@ class Booster(object):
             c_str(filename)))
         with open(filename, 'a') as f:
             f.write('\npandas_categorical:' + repr(self.pandas_categorical))
+
+    def __load_model_from_string(self, model_str, boosting_type='gbdt'):
+        """[Private] Load model from string"""
+        out_num_iterations = ctypes.c_int(0)
+        _safe_call(_LIB.LGBM_BoosterLoadModelFromString(
+            c_str(model_str),
+            c_str(boosting_type),
+            ctypes.byref(out_num_iterations),
+            ctypes.byref(self.handle)))
+        out_num_class = ctypes.c_int(0)
+        _safe_call(_LIB.LGBM_BoosterGetNumClasses(
+            self.handle,
+            ctypes.byref(out_num_class)))
+        self.__num_class = out_num_class.value
+
+    def __save_model_to_string(self, num_iteration=-1):
+        """[Private] Save model to string"""
+        if num_iteration <= 0:
+            num_iteration = self.best_iteration
+        buffer_len = 1 << 20
+        tmp_out_len = ctypes.c_int(0)
+        string_buffer = ctypes.create_string_buffer(buffer_len)
+        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        _safe_call(_LIB.LGBM_BoosterSaveModelToString(
+            self.handle,
+            ctypes.c_int(num_iteration),
+            ctypes.c_int(buffer_len),
+            ctypes.byref(tmp_out_len),
+            ptr_string_buffer))
+        actual_len = tmp_out_len.value
+        '''if buffer length is not long enough, re-allocate a buffer'''
+        if actual_len > buffer_len:
+            string_buffer = ctypes.create_string_buffer(actual_len)
+            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            _safe_call(_LIB.LGBM_BoosterSaveModelToString(
+                self.handle,
+                ctypes.c_int(num_iteration),
+                ctypes.c_int(actual_len),
+                ctypes.byref(tmp_out_len),
+                ptr_string_buffer))
+        return string_buffer.value.decode()
 
     def dump_model(self, num_iteration=-1):
         """
