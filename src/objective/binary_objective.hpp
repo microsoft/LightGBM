@@ -67,10 +67,10 @@ public:
         const int label = label_val_[static_cast<int>(label_[i])];
         const double label_weight = label_weights_[static_cast<int>(label_[i])];
         // calculate gradients and hessians
-        const double response = -2.0f * label * sigmoid_ / (1.0f + std::exp(2.0f * label * sigmoid_ * score[i]));
+        const double response = -label * sigmoid_ / (1.0f + std::exp(label * sigmoid_ * score[i]));
         const double abs_response = fabs(response);
         gradients[i] = static_cast<score_t>(response * label_weight);
-        hessians[i] = static_cast<score_t>(abs_response * (2.0f * sigmoid_ - abs_response) * label_weight);
+        hessians[i] = static_cast<score_t>(abs_response * (sigmoid_ - abs_response) * label_weight);
       }
     } else {
       #pragma omp parallel for schedule(static)
@@ -79,10 +79,10 @@ public:
         const int label = label_val_[static_cast<int>(label_[i])];
         const double label_weight = label_weights_[static_cast<int>(label_[i])];
         // calculate gradients and hessians
-        const double response = -2.0f * label * sigmoid_ / (1.0f + std::exp(2.0f * label * sigmoid_ * score[i]));
+        const double response = -label * sigmoid_ / (1.0f + std::exp(label * sigmoid_ * score[i]));
         const double abs_response = fabs(response);
         gradients[i] = static_cast<score_t>(response * label_weight  * weights_[i]);
-        hessians[i] = static_cast<score_t>(abs_response * (2.0f * sigmoid_ - abs_response) * label_weight * weights_[i]);
+        hessians[i] = static_cast<score_t>(abs_response * (sigmoid_ - abs_response) * label_weight * weights_[i]);
       }
     }
   }
