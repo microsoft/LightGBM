@@ -339,6 +339,7 @@ struct ParameterAlias {
       { "tranining_metric", "is_training_metric" },
       { "train_metric", "is_training_metric" },
       { "ndcg_at", "ndcg_eval_at" },
+      { "eval_at", "ndcg_eval_at" },
       { "min_data_per_leaf", "min_data_in_leaf" },
       { "min_data", "min_data_in_leaf" },
       { "min_child_samples", "min_data_in_leaf" },
