@@ -35,7 +35,7 @@ public:
   * \return The random integer between [lower_bound, upper_bound)
   */
   inline int NextInt(int lower_bound, int upper_bound) {
-    return (next()) % (upper_bound - lower_bound + 1) + lower_bound;
+    return (next()) % (upper_bound - lower_bound) + lower_bound;
   }
   /*!
   * \brief Generate random float data
