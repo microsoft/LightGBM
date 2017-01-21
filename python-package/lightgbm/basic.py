@@ -1243,12 +1243,10 @@ class Booster(object):
     def __setstate__(self, state):
         model_str = state.get('handle', None)
         if model_str is not None:
-            boosting_type = 'gbdt'
             handle = ctypes.c_void_p()
             out_num_iterations = ctypes.c_int(0)
             _safe_call(_LIB.LGBM_BoosterLoadModelFromString(
                 c_str(model_str),
-                c_str(boosting_type),
                 ctypes.byref(out_num_iterations),
                 ctypes.byref(handle)))
             state['handle'] = handle
@@ -1473,12 +1471,11 @@ class Booster(object):
         with open(filename, 'a') as f:
             f.write('\npandas_categorical:' + repr(self.pandas_categorical))
 
-    def __load_model_from_string(self, model_str, boosting_type='gbdt'):
+    def __load_model_from_string(self, model_str):
         """[Private] Load model from string"""
         out_num_iterations = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterLoadModelFromString(
             c_str(model_str),
-            c_str(boosting_type),
             ctypes.byref(out_num_iterations),
             ctypes.byref(self.handle)))
         out_num_class = ctypes.c_int(0)

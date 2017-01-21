@@ -262,14 +262,12 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterCreateFromModelfile(
 /*!
 * \brief load an existing boosting from string
 * \param model_str model string
-* \param boosting_type boosting type
 * \param out_num_iterations number of iterations of this booster
 * \param out handle of created Booster
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT int LGBM_BoosterLoadModelFromString(
   const char* model_str,
-  const char* boosting_type,
   int* out_num_iterations,
   BoosterHandle* out);
 

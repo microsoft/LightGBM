@@ -31,9 +31,8 @@ public:
     boosting_.reset(Boosting::CreateBoosting(filename));
   }
 
-  Booster(const char* boosting_type, const char* model_str) {
-    boosting_.reset(Boosting::CreateBoosting(boosting_type, nullptr));
-    boosting_->LoadModelFromString(model_str);
+  Booster() {
+    boosting_.reset(Boosting::CreateBoosting("gbdt", nullptr));
   }
 
   Booster(const Dataset* train_data,
@@ -184,6 +183,10 @@ public:
 
   void SaveModelToFile(int num_iteration, const char* filename) {
     boosting_->SaveModelToFile(num_iteration, filename);
+  }
+
+  void LoadModelFromString(const char* model_str) {
+    boosting_->LoadModelFromString(model_str);
   }
 
   std::string SaveModelToString(int num_iteration) {
@@ -616,11 +619,11 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterCreateFromModelfile(
 
 LIGHTGBM_C_EXPORT int LGBM_BoosterLoadModelFromString(
   const char* model_str,
-  const char* boosting_type,
   int* out_num_iterations,
   BoosterHandle* out) {
   API_BEGIN();
-  auto ret = std::unique_ptr<Booster>(new Booster(boosting_type, model_str));
+  auto ret = std::unique_ptr<Booster>(new Booster());
+  ret->LoadModelFromString(model_str);
   *out_num_iterations = ret->GetBoosting()->GetCurrentIteration();
   *out = ret.release();
   API_END();
