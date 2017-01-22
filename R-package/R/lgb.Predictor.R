@@ -85,7 +85,11 @@ Predictor <- R6Class(
         stop("predict: prediction length ", sQuote(length(preds))," is not a multiple of nrows(data): ", sQuote(num_row))
       }
       npred_per_case <- length(preds) / num_row
-      if (reshape && npred_per_case > 1) { preds <- matrix(preds, ncol = npred_per_case) }
+      if (predleaf) {
+        preds <- matrix(preds, ncol = npred_per_case, byrow = TRUE)
+      } else if (reshape && npred_per_case > 1) {
+        preds <- matrix(preds, ncol = npred_per_case, byrow = TRUE)
+      }
       preds
     }
   ),
