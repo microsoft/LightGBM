@@ -31,6 +31,10 @@ public:
     boosting_.reset(Boosting::CreateBoosting(filename));
   }
 
+  Booster() {
+    boosting_.reset(Boosting::CreateBoosting("gbdt", nullptr));
+  }
+
   Booster(const Dataset* train_data,
     const char* parameters) {
     auto param = ConfigBase::Str2Map(parameters);
@@ -179,6 +183,14 @@ public:
 
   void SaveModelToFile(int num_iteration, const char* filename) {
     boosting_->SaveModelToFile(num_iteration, filename);
+  }
+
+  void LoadModelFromString(const char* model_str) {
+    boosting_->LoadModelFromString(model_str);
+  }
+
+  std::string SaveModelToString(int num_iteration) {
+    return boosting_->SaveModelToString(num_iteration);
   }
 
   std::string DumpModel(int num_iteration) {
@@ -605,6 +617,18 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterCreateFromModelfile(
   API_END();
 }
 
+LIGHTGBM_C_EXPORT int LGBM_BoosterLoadModelFromString(
+  const char* model_str,
+  int* out_num_iterations,
+  BoosterHandle* out) {
+  API_BEGIN();
+  auto ret = std::unique_ptr<Booster>(new Booster());
+  ret->LoadModelFromString(model_str);
+  *out_num_iterations = ret->GetBoosting()->GetCurrentIteration();
+  *out = ret.release();
+  API_END();
+}
+
 LIGHTGBM_C_EXPORT int LGBM_BoosterFree(BoosterHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Booster*>(handle);
@@ -886,6 +910,21 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel(BoosterHandle handle,
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->SaveModelToFile(num_iteration, filename);
+  API_END();
+}
+
+LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(BoosterHandle handle,
+  int num_iteration,
+  int buffer_len,
+  int* out_len,
+  char* out_str) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  std::string model = ref_booster->SaveModelToString(num_iteration);
+  *out_len = static_cast<int>(model.size()) + 1;
+  if (*out_len <= buffer_len) {
+    std::strcpy(out_str, model.c_str());
+  }
   API_END();
 }
 

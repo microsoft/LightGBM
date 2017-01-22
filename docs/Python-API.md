@@ -23,6 +23,8 @@
         + [record_evaluation](Python-API.md#record_evaluationeval_result)
         + [early_stopping](Python-API.md#early_stoppingstopping_rounds-verbosetrue)
 
+* [Plotting](Python-API.md#plotting)
+
 The methods of each Class is in alphabetical order.
 
 ----
@@ -346,6 +348,13 @@ The methods of each Class is in alphabetical order.
 ####feature_importance(importance_type="split")
 
     Feature importances.
+
+    Parameters
+    ----------
+    importance_type : str, default "split"
+    How the importance is calculated: "split" or "gain"
+    "split" is the number of times a feature is used in a model
+    "gain" is the total gain of splits which use the feature
 
     Returns
     -------
@@ -916,3 +925,45 @@ The methods of each Class is in alphabetical order.
     -------
     callback : function
         The requested callback function.
+
+##Plotting
+
+####plot_importance(booster, ax=None, height=0.2, xlim=None, ylim=None, title='Feature importance', xlabel='Feature importance', ylabel='Features', importance_type='split', max_num_features=None, ignore_zero=True, grid=True, **kwargs):
+
+    Plot model feature importances.
+
+    Parameters
+    ----------
+    booster : Booster, LGBMModel or array
+        Booster or LGBMModel instance, or array of feature importances
+    ax : matplotlib Axes
+        Target axes instance. If None, new figure and axes will be created.
+    height : float
+        Bar height, passed to ax.barh()
+    xlim : tuple
+        Tuple passed to axes.xlim()
+    ylim : tuple
+        Tuple passed to axes.ylim()
+    title : str
+        Axes title. Pass None to disable.
+    xlabel : str
+        X axis title label. Pass None to disable.
+    ylabel : str
+        Y axis title label. Pass None to disable.
+    importance_type : str
+        How the importance is calculated: "split" or "gain"
+        "split" is the number of times a feature is used in a model
+        "gain" is the total gain of splits which use the feature
+    max_num_features : int
+        Max number of top features displayed on plot.
+        If None or smaller than 1, all features will be displayed.
+    ignore_zero : bool
+        Ignore features with zero importance
+    grid : bool
+        Whether add grid for axes
+    **kwargs :
+        Other keywords passed to ax.barh()
+
+    Returns
+    -------
+    ax : matplotlib Axes

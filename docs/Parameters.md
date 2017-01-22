@@ -179,7 +179,7 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * used in binary classification. Set this to ```true``` if training data are unbalance.
 * ```max_position```, default=```20```, type=int
   * used in lambdarank, will optimize NDCG at this position.
-* ```label_gain```, default=```{0,1,3,7,15,31,63,...}```, type=multi-double
+* ```label_gain```, default=```0,1,3,7,15,31,63,...```, type=multi-double
   * used in lambdarank, relevant gain for labels. For example, the gain of label ```2``` is ```3``` if using default label gains.
   * Separate by ```,```
 * ```num_class```, default=```1```, type=int, alias=```num_classes```
@@ -193,6 +193,7 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * ```huber```, [Huber loss](https://en.wikipedia.org/wiki/Huber_loss "Huber loss - Wikipedia")
   * ```fair```, [Fair loss](http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html)
   * ```ndcg```, [NDCG](https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG)
+  * ```map```, [MAP](https://www.kaggle.com/wiki/MeanAveragePrecision)
   * ```auc```, [AUC](https://en.wikipedia.org/wiki/Area_under_the_curve_(pharmacokinetics))
   * ```binary_logloss```, [log loss](https://www.kaggle.com/wiki/LogarithmicLoss)
   * ```binary_error```. For one sample ```0``` for correct classification, ```1``` for error classification.
@@ -203,7 +204,7 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * frequency for metric output
 * ```is_training_metric```, default=```false```, type=bool
   * set this to true if need to output metric result of training
-* ```ndcg_at```, default=```{1,2,3,4,5}```, type=multi-int, alias=```ndcg_eval_at```
+* ```ndcg_at```, default=```1,2,3,4,5```, type=multi-int, alias=```ndcg_eval_at```,```eval_at```
   * NDCG evaluation position, separate by ```,```
 
 ## Network parameters

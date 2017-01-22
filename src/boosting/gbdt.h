@@ -156,12 +156,19 @@ public:
   * \param is_finish Is training finished or not
   * \param filename Filename that want to save to
   */
-  virtual void SaveModelToFile(int num_iterations, const char* filename) const override ;
+  virtual bool SaveModelToFile(int num_iterations, const char* filename) const override ;
+
+  /*!
+  * \brief Save model to string
+  * \param num_used_model Number of model that want to save, -1 means save all
+  * \return Non-empty string if succeeded
+  */
+  virtual std::string SaveModelToString(int num_iterations) const override ;
 
   /*!
   * \brief Restore from a serialized string
   */
-  void LoadModelFromString(const std::string& model_str) override;
+  bool LoadModelFromString(const std::string& model_str) override;
 
   /*!
   * \brief Get max feature index of this model

@@ -259,6 +259,17 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterCreateFromModelfile(
   int* out_num_iterations,
   BoosterHandle* out);
 
+/*!
+* \brief load an existing boosting from string
+* \param model_str model string
+* \param out_num_iterations number of iterations of this booster
+* \param out handle of created Booster
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_BoosterLoadModelFromString(
+  const char* model_str,
+  int* out_num_iterations,
+  BoosterHandle* out);
 
 /*!
 * \brief free obj in handle
@@ -557,6 +568,21 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
 LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel(BoosterHandle handle,
   int num_iteration,
   const char* filename);
+
+/*!
+* \brief save model to string
+* \param handle handle
+* \param num_iteration, <= 0 means save all
+* \param buffer_len string buffer length, if buffer_len < out_len, re-allocate buffer
+* \param out_len actual output length
+* \param out_str string of model, need to pre-allocate memory before call this
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(BoosterHandle handle,
+  int num_iteration,
+  int buffer_len,
+  int* out_len,
+  char* out_str);
 
 /*!
 * \brief dump model to json

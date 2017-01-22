@@ -6,10 +6,9 @@ Here is an example for LightGBM to use python package.
 
 For the installation, check the wiki [here](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide).
 
-You also need scikit-learn and pandas to run the examples, but they are not required for the package itself. You can install them with pip:
+You also need scikit-learn, pandas and matplotlib (only for plot example) to run the examples, but they are not required for the package itself. You can install them with pip:
 ```
-pip install -U scikit-learn
-pip install -U pandas
+pip install scikit-learn pandas matplotlib -U
 ```
 
 Now you can run examples in this folder, for example:

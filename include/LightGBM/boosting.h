@@ -143,14 +143,23 @@ public:
   * \param num_used_model Number of model that want to save, -1 means save all
   * \param is_finish Is training finished or not
   * \param filename Filename that want to save to
+  * \return true if succeeded
   */
-  virtual void SaveModelToFile(int num_iterations, const char* filename) const = 0;
+  virtual bool SaveModelToFile(int num_iterations, const char* filename) const = 0;
+
+  /*!
+  * \brief Save model to string
+  * \param num_used_model Number of model that want to save, -1 means save all
+  * \return Non-empty string if succeeded
+  */
+  virtual std::string SaveModelToString(int num_iterations) const = 0;
 
   /*!
   * \brief Restore from a serialized string
   * \param model_str The string of model
+  * \return true if succeeded
   */
-  virtual void LoadModelFromString(const std::string& model_str) = 0;
+  virtual bool LoadModelFromString(const std::string& model_str) = 0;
 
   /*!
   * \brief Get max feature index of this model
@@ -192,7 +201,7 @@ public:
   /*! \brief Disable copy */
   Boosting(const Boosting&) = delete;
 
-  static void LoadFileToBoosting(Boosting* boosting, const char* filename);
+  static bool LoadFileToBoosting(Boosting* boosting, const char* filename);
 
   /*!
   * \brief Create boosting object

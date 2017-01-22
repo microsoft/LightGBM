@@ -98,7 +98,7 @@ def train(params, train_set, num_boost_round=100,
     init_iteration = predictor.num_total_iteration if predictor is not None else 0
     """check dataset"""
     if not isinstance(train_set, Dataset):
-        raise TypeError("Traninig only accepts Dataset object")
+        raise TypeError("Training only accepts Dataset object")
 
     train_set._update_params(params)
     train_set._set_predictor(predictor)

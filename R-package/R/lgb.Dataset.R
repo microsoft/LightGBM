@@ -78,27 +78,17 @@ Dataset <- R6Class(
       }
       # Get categorical feature index
       if (!is.null(private$categorical_feature)) {
-        fname_dict <- list()
-        if (!is.null(private$colnames)) {
-          fname_dict <- `names<-`(
-              list((seq_along(private$colnames) - 1)),
-              private$colnames
-            )
-        }
-        cate_indices <- list()
-        for (key in private$categorical_feature) {
-          if (is.character(key)) {
-            idx <- fname_dict[[key]]
-            if (is.null(idx)) {
-              stop("lgb.self.get.handle: cannot find feature name ", sQuote(key))
+        if (typeof(private$categorical_feature) == "character") {
+            cate_indices <- as.list(match(private$categorical_feature, private$colnames) - 1)
+            if (sum(is.na(cate_indices)) > 0) {
+              stop("lgb.self.get.handle: supplied an unknown feature in categorical_feature: ", sQuote(private$categorical_feature[is.na(cate_indices)]))
             }
-            cate_indices <- c(cate_indices, idx)
           } else {
-            # one-based indices to zero-based
-            idx <- as.integer(key - 1)
-            cate_indices <- c(cate_indices, idx)
+            if (max(private$categorical_feature) > length(private$colnames)) {
+              stop("lgb.self.get.handle: supplied a too large value in categorical_feature: ", max(private$categorical_feature), " but only ", length(private$colnames), " features")
+            }
+            cate_indices <- as.list(private$categorical_feature - 1)
           }
-        }
         private$params$categorical_feature <- cate_indices
       }
       # Check has header or not

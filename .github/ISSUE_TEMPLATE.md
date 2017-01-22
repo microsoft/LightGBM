@@ -1,11 +1,13 @@
-[](For bugs and unexpected issues, please provide the following information, so that we could reproduce in our system)
+Please search your question on previous issues, stackoverflow or other search engines before you open a new one.
+
+For bugs and unexpected issues, please provide following information, so that we could reproduce on our system.
 
 ## Environment info
 Operating System:
 CPU:
+C++/Python/R version:
 
 ## Error Message:
-
 
 ## Reproducible examples
 

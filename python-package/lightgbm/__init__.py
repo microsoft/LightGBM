@@ -13,6 +13,10 @@ try:
     from .sklearn import LGBMModel, LGBMRegressor, LGBMClassifier, LGBMRanker
 except ImportError:
     pass
+try:
+    from .plotting import plot_importance
+except ImportError:
+    pass
 
 
 __version__ = 0.1
@@ -20,4 +24,5 @@ __version__ = 0.1
 __all__ = ['Dataset', 'Booster',
            'train', 'cv',
            'LGBMModel', 'LGBMRegressor', 'LGBMClassifier', 'LGBMRanker',
-           'print_evaluation', 'record_evaluation', 'reset_parameter', 'early_stopping']
+           'print_evaluation', 'record_evaluation', 'reset_parameter', 'early_stopping',
+           'plot_importance']

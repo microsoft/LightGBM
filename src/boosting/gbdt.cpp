@@ -509,53 +509,64 @@ std::string GBDT::DumpModel(int num_iteration) const {
   return str_buf.str();
 }
 
-void GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
+std::string GBDT::SaveModelToString(int num_iterations) const {
+    std::stringstream ss;
+
+    // output model type
+    ss << SubModelName() << std::endl;
+    // output number of class
+    ss << "num_class=" << num_class_ << std::endl;
+    // output label index
+    ss << "label_index=" << label_idx_ << std::endl;
+    // output max_feature_idx
+    ss << "max_feature_idx=" << max_feature_idx_ << std::endl;
+    // output objective name
+    if (object_function_ != nullptr) {
+      ss << "objective=" << object_function_->GetName() << std::endl;
+    }
+    // output sigmoid parameter
+    ss << "sigmoid=" << sigmoid_ << std::endl;
+
+    ss << "feature_names=" << Common::Join(feature_names_, " ") << std::endl;
+
+    ss << std::endl;
+    int num_used_model = static_cast<int>(models_.size());
+    if (num_iterations > 0) {
+      num_used_model = std::min(num_iterations * num_class_, num_used_model);
+    }
+    // output tree models
+    for (int i = 0; i < num_used_model; ++i) {
+      ss << "Tree=" << i << std::endl;
+      ss << models_[i]->ToString() << std::endl;
+    }
+
+    std::vector<std::pair<size_t, std::string>> pairs = FeatureImportance();
+    ss << std::endl << "feature importances:" << std::endl;
+    for (size_t i = 0; i < pairs.size(); ++i) {
+      ss << pairs[i].second << "=" << std::to_string(pairs[i].first) << std::endl;
+    }
+
+    ss << std::endl << "feature information:" << std::endl;
+    for (int i = 0; i < max_feature_idx_ + 1; ++i) {
+      ss << feature_names_[i] << "=" << feature_infos_[i] << std::endl;
+    }
+
+    return ss.str();
+}
+
+bool GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
   /*! \brief File to write models */
   std::ofstream output_file;
   output_file.open(filename);
-  // output model type
-  output_file << SubModelName() << std::endl;
-  // output number of class
-  output_file << "num_class=" << num_class_ << std::endl;
-  // output label index
-  output_file << "label_index=" << label_idx_ << std::endl;
-  // output max_feature_idx
-  output_file << "max_feature_idx=" << max_feature_idx_ << std::endl;
-  // output objective name
-  if (object_function_ != nullptr) {
-    output_file << "objective=" << object_function_->GetName() << std::endl;
-  }
-  // output sigmoid parameter
-  output_file << "sigmoid=" << sigmoid_ << std::endl;
 
-  output_file << "feature_names=" << Common::Join(feature_names_, " ") << std::endl;
-
-  output_file << std::endl;
-  int num_used_model = static_cast<int>(models_.size());
-  if (num_iteration > 0) {
-    num_used_model = std::min(num_iteration * num_class_, num_used_model);
-  }
-  // output tree models
-  for (int i = 0; i < num_used_model; ++i) {
-    output_file << "Tree=" << i << std::endl;
-    output_file << models_[i]->ToString() << std::endl;
-  }
-
-  std::vector<std::pair<size_t, std::string>> pairs = FeatureImportance();
-  output_file << std::endl << "feature importances:" << std::endl;
-  for (size_t i = 0; i < pairs.size(); ++i) {
-    output_file << pairs[i].second << "=" << std::to_string(pairs[i].first) << std::endl;
-  }
-
-  output_file << std::endl << "feature information:" << std::endl;
-  for (int i = 0; i < max_feature_idx_ + 1; ++i) {
-    output_file << feature_names_[i] << "=" << feature_infos_[i] << std::endl;
-  }
+  output_file << SaveModelToString(num_iteration);
 
   output_file.close();
+
+  return (bool)output_file;
 }
 
-void GBDT::LoadModelFromString(const std::string& model_str) {
+bool GBDT::LoadModelFromString(const std::string& model_str) {
   // use serialized string to restore this object
   models_.clear();
   std::vector<std::string> lines = Common::Split(model_str.c_str(), '\n');
@@ -566,7 +577,7 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
     Common::Atoi(Common::Split(line.c_str(), '=')[1].c_str(), &num_class_);
   } else {
     Log::Fatal("Model file doesn't specify the number of classes");
-    return;
+    return false;
   }
   // get index of label
   line = Common::FindFromLines(lines, "label_index=");
@@ -574,7 +585,7 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
     Common::Atoi(Common::Split(line.c_str(), '=')[1].c_str(), &label_idx_);
   } else {
     Log::Fatal("Model file doesn't specify the label index");
-    return;
+    return false;
   }
   // get max_feature_idx first
   line = Common::FindFromLines(lines, "max_feature_idx=");
@@ -582,7 +593,7 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
     Common::Atoi(Common::Split(line.c_str(), '=')[1].c_str(), &max_feature_idx_);
   } else {
     Log::Fatal("Model file doesn't specify max_feature_idx");
-    return;
+    return false;
   }
   // get sigmoid parameter
   line = Common::FindFromLines(lines, "sigmoid=");
@@ -597,11 +608,51 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
     feature_names_ = Common::Split(line.substr(std::strlen("feature_names=")).c_str(), " ");
     if (feature_names_.size() != static_cast<size_t>(max_feature_idx_ + 1)) {
       Log::Fatal("Wrong size of feature_names");
-      return;
+      return false;
     }
   } else {
     Log::Fatal("Model file doesn't contain feature names");
-    return;
+    return false;
+  }
+
+  // returns offset, or lines.size() if not found.
+  auto find_string_lineno = [&lines](const std::string &str, size_t start_line=0)
+  {
+    size_t i = start_line;
+    size_t featinfo_find_pos = std::string::npos;
+    while (i < lines.size()) {
+      featinfo_find_pos = lines[i].find(str);
+      if (featinfo_find_pos != std::string::npos)
+        break;
+      ++i;
+    }
+
+    return i;
+  };
+
+  // load feature information
+  {
+    size_t finfo_line_idx = find_string_lineno("feature information:");
+
+    if (finfo_line_idx >= lines.size()) {
+      Log::Fatal("Model file doesn't contain feature information");
+      return false;
+    }
+
+    feature_infos_.resize(max_feature_idx_ + 1);
+
+    // search for each feature name
+    for (int i=0; i < max_feature_idx_ + 1; i++) {
+      const auto feat_name = feature_names_[i];
+      size_t line_idx = find_string_lineno(feat_name + "=", finfo_line_idx + 1);
+      if (line_idx >= lines.size()) {
+        Log::Fatal(("Model file doesn't contain feature information for feature " + feat_name).c_str());
+        return false;
+      }
+
+      const auto this_line = lines[line_idx];
+      feature_infos_[i] = this_line.substr((feat_name + "=").size());
+    }
   }
 
   // get tree models
@@ -624,6 +675,8 @@ void GBDT::LoadModelFromString(const std::string& model_str) {
   num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_class_;
   num_init_iteration_ = num_iteration_for_pred_;
   iter_ = 0;
+
+  return true;
 }
 
 std::vector<std::pair<size_t, std::string>> GBDT::FeatureImportance() const {
