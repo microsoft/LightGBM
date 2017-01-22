@@ -17,6 +17,7 @@ namespace LightGBM {
 class SparseBinPool {
 public:
   ~SparseBinPool() {
+    Log::Debug("buf time %f", buf_time_* 1e-3);
     Log::Debug("add time %f", add_time_* 1e-3);
     Log::Debug("merge time %f", merge_time_* 1e-3);
   }
@@ -93,7 +94,8 @@ public:
     for (int i = 0; i < static_cast<int>(hist_buf_.size()); ++i) {
       std::memset(hist_buf_[i].data(), 0, sizeof(HistogramBinEntry) * total_bin_);
     }
-
+    buf_time_ += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start_time);
+    start_time = std::chrono::steady_clock::now();
     if (data_indices == nullptr) {
 #pragma omp parallel for schedule(guided)
       for (data_size_t i = 0; i < num_data; ++i) {
@@ -151,6 +153,7 @@ private:
   std::vector<data_size_t> row_boundaries_;
   std::vector<unsigned int> bins_;
   std::vector<std::vector<HistogramBinEntry>> hist_buf_;
+  std::chrono::duration<double, std::milli> buf_time_;
   std::chrono::duration<double, std::milli> add_time_;
   std::chrono::duration<double, std::milli> merge_time_;
 
