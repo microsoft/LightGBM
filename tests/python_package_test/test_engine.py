@@ -146,15 +146,18 @@ class TestEngine(unittest.TestCase):
 
     @unittest.skipIf(not IS_PANDAS_INSTALLED, 'pandas not installed')
     def test_pandas_categorical(self):
-        X = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 75),
-                          "B": np.random.permutation([1, 2, 3] * 100)})
-        X["A"] = X["A"].astype('category')
-        X["B"] = X["B"].astype('category')
+        X = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 75),  # str
+                          "B": np.random.permutation([1, 2, 3] * 100),  # int
+                          "C": np.random.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
+                          "D": np.random.permutation([True, False] * 150)})  # bool
         y = np.random.permutation([0, 1] * 150)
         X_test = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'e'] * 20),
-                               "B": np.random.permutation([1, 3] * 30)})
-        X_test["A"] = X_test["A"].astype('category')
-        X_test["B"] = X_test["B"].astype('category')
+                               "B": np.random.permutation([1, 3] * 30),
+                               "C": np.random.permutation([0.1, -0.1, 0.2, 0.2] * 15),
+                               "D": np.random.permutation([True, False] * 30)})
+        for col in ["A", "B", "C", "D"]:
+            X[col] = X[col].astype('category')
+            X_test[col] = X_test[col].astype('category')
         params = {
             'objective': 'binary',
             'metric': 'binary_logloss',
@@ -173,7 +176,7 @@ class TestEngine(unittest.TestCase):
         pred2 = list(gbm2.predict(X_test))
         lgb_train = lgb.Dataset(X, y)
         gbm3 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
-                         categorical_feature=['A', 'B'])
+                         categorical_feature=['A', 'B', 'C', 'D'])
         pred3 = list(gbm3.predict(X_test))
         lgb_train = lgb.Dataset(X, y)
         gbm3.save_model('categorical.model')
