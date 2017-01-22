@@ -11,8 +11,9 @@ from tempfile import NamedTemporaryFile
 import numpy as np
 import scipy.sparse
 
-from .compat import (DataFrame, Series, integer_types, json, numeric_types,
-                     range_, string_type)
+from .compat import (DataFrame, Series, integer_types, json,
+                     json_default_with_numpy, numeric_types, range_,
+                     string_type)
 from .libpath import find_lib_path
 
 
@@ -273,7 +274,7 @@ def _label_from_pandas(label):
 
 def _save_pandas_categorical(file_name, pandas_categorical):
     with open(file_name, 'a') as f:
-        f.write('\npandas_categorical:' + json.dumps(pandas_categorical))
+        f.write('\npandas_categorical:' + json.dumps(pandas_categorical, default=json_default_with_numpy))
 
 
 def _load_pandas_categorical(file_name):

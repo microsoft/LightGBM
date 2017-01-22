@@ -6,6 +6,8 @@ from __future__ import absolute_import
 import inspect
 import sys
 
+import numpy as np
+
 is_py3 = (sys.version_info[0] == 3)
 
 """compatibility between python2 and python3"""
@@ -35,6 +37,16 @@ except (ImportError, SyntaxError):
     # simplejson does not support Python 3.2, it throws a SyntaxError
     # because of u'...' Unicode literals.
     import json
+
+
+def json_default_with_numpy(obj):
+    if isinstance(obj, (np.integer, np.floating, np.bool_)):
+        return obj.item()
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    else:
+        return obj
+
 
 """pandas"""
 try:
