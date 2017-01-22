@@ -616,7 +616,7 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
   }
 
   // returns offset, or lines.size() if not found.
-  auto find_string_lineno = [&lines](const std::string &str, size_t start_line=0)
+  auto find_string_lineno = [&lines](const std::string &str, size_t start_line)
   {
     size_t i = start_line;
     size_t featinfo_find_pos = std::string::npos;
@@ -632,7 +632,7 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
 
   // load feature information
   {
-    size_t finfo_line_idx = find_string_lineno("feature information:");
+    size_t finfo_line_idx = find_string_lineno("feature information:", 0);
 
     if (finfo_line_idx >= lines.size()) {
       Log::Fatal("Model file doesn't contain feature information");
