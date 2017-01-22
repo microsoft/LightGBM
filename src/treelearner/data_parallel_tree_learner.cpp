@@ -96,7 +96,7 @@ void DataParallelTreeLearner::BeforeTrain() {
 
   // sync global data sumup info
   std::tuple<data_size_t, double, double> data(smaller_leaf_splits_->num_data_in_leaf(),
-             smaller_leaf_splits_->sum_gradients(), smaller_leaf_splits_->sum_hessians());
+    smaller_leaf_splits_->sum_gradients(), smaller_leaf_splits_->sum_hessians());
   int size = sizeof(data);
   std::memcpy(input_buffer_.data(), &data, size);
   // global sumup reduce
@@ -126,65 +126,67 @@ void DataParallelTreeLearner::BeforeTrain() {
 
 void DataParallelTreeLearner::FindBestThresholds() {
   // construct local histograms
-  #pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(guided)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if ((!is_feature_used_.empty() && is_feature_used_[feature_index] == false)) continue;
     // construct histograms for smaller leaf
     if (ordered_bins_[feature_index] == nullptr) {
-      smaller_leaf_histogram_array_[feature_index].Construct(smaller_leaf_splits_->data_indices(),
-                                                             smaller_leaf_splits_->num_data_in_leaf(),
-                                                             smaller_leaf_splits_->sum_gradients(),
-                                                             smaller_leaf_splits_->sum_hessians(),
-                                                             ptr_to_ordered_gradients_smaller_leaf_,
-                                                             ptr_to_ordered_hessians_smaller_leaf_);
+      smaller_leaf_histogram_array_[feature_index].Construct(
+        train_data_->FeatureAt(feature_index)->bin_data(),
+        smaller_leaf_splits_->data_indices(),
+        smaller_leaf_splits_->num_data_in_leaf(),
+        smaller_leaf_splits_->sum_gradients(),
+        smaller_leaf_splits_->sum_hessians(),
+        ptr_to_ordered_gradients_smaller_leaf_,
+        ptr_to_ordered_hessians_smaller_leaf_);
     } else {
       smaller_leaf_histogram_array_[feature_index].Construct(ordered_bins_[feature_index].get(),
-                                                             smaller_leaf_splits_->LeafIndex(),
-                                                             smaller_leaf_splits_->num_data_in_leaf(),
-                                                             smaller_leaf_splits_->sum_gradients(),
-                                                             smaller_leaf_splits_->sum_hessians(),
-                                                             gradients_,
-                                                             hessians_);
+        smaller_leaf_splits_->LeafIndex(),
+        smaller_leaf_splits_->num_data_in_leaf(),
+        smaller_leaf_splits_->sum_gradients(),
+        smaller_leaf_splits_->sum_hessians(),
+        gradients_,
+        hessians_);
     }
     // copy to buffer
     std::memcpy(input_buffer_.data() + buffer_write_start_pos_[feature_index],
-                smaller_leaf_histogram_array_[feature_index].HistogramData(),
-                smaller_leaf_histogram_array_[feature_index].SizeOfHistgram());
+      smaller_leaf_histogram_array_[feature_index].HistogramData(),
+      smaller_leaf_histogram_array_[feature_index].SizeOfHistgram());
   }
 
   // Reduce scatter for histogram
   Network::ReduceScatter(input_buffer_.data(), reduce_scatter_size_, block_start_.data(),
-                         block_len_.data(), output_buffer_.data(), &HistogramBinEntry::SumReducer);
-  #pragma omp parallel for schedule(guided)
+    block_len_.data(), output_buffer_.data(), &HistogramBinEntry::SumReducer);
+#pragma omp parallel for schedule(guided)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!is_feature_aggregated_[feature_index]) continue;
     // copy global sumup info
     smaller_leaf_histogram_array_[feature_index].SetSumup(
-        GetGlobalDataCountInLeaf(smaller_leaf_splits_->LeafIndex()),
-                                smaller_leaf_splits_->sum_gradients(), 
-                                smaller_leaf_splits_->sum_hessians());
+      GetGlobalDataCountInLeaf(smaller_leaf_splits_->LeafIndex()),
+      smaller_leaf_splits_->sum_gradients(),
+      smaller_leaf_splits_->sum_hessians());
 
     // restore global histograms from buffer
     smaller_leaf_histogram_array_[feature_index].FromMemory(
-        output_buffer_.data() + buffer_read_start_pos_[feature_index]);
+      output_buffer_.data() + buffer_read_start_pos_[feature_index]);
 
     // find best threshold for smaller child
     smaller_leaf_histogram_array_[feature_index].FindBestThreshold(
-        &smaller_leaf_splits_->BestSplitPerFeature()[feature_index]);
+      &smaller_leaf_splits_->BestSplitPerFeature()[feature_index]);
 
     // only root leaf
     if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->LeafIndex() < 0) continue;
 
     // construct histgroms for large leaf, we init larger leaf as the parent, so we can just subtract the smaller leaf's histograms
     larger_leaf_histogram_array_[feature_index].Subtract(
-        smaller_leaf_histogram_array_[feature_index]);
+      smaller_leaf_histogram_array_[feature_index]);
     // set sumup info for histogram
     larger_leaf_histogram_array_[feature_index].SetSumup(
-        GetGlobalDataCountInLeaf(larger_leaf_splits_->LeafIndex()),
-                                                         larger_leaf_splits_->sum_gradients(), larger_leaf_splits_->sum_hessians());
+      GetGlobalDataCountInLeaf(larger_leaf_splits_->LeafIndex()),
+      larger_leaf_splits_->sum_gradients(), larger_leaf_splits_->sum_hessians());
     // find best threshold for larger child
     larger_leaf_histogram_array_[feature_index].FindBestThreshold(
-        &larger_leaf_splits_->BestSplitPerFeature()[feature_index]);
+      &larger_leaf_splits_->BestSplitPerFeature()[feature_index]);
   }
 
 }
@@ -214,7 +216,7 @@ void DataParallelTreeLearner::FindBestSplitsForLeaves() {
   std::memcpy(input_buffer_.data() + sizeof(SplitInfo), &larger_best, sizeof(SplitInfo));
 
   Network::Allreduce(input_buffer_.data(), sizeof(SplitInfo) * 2, sizeof(SplitInfo),
-                     output_buffer_.data(), &SplitInfo::MaxReducer);
+    output_buffer_.data(), &SplitInfo::MaxReducer);
 
   std::memcpy(&smaller_best, output_buffer_.data(), sizeof(SplitInfo));
   std::memcpy(&larger_best, output_buffer_.data() + sizeof(SplitInfo), sizeof(SplitInfo));

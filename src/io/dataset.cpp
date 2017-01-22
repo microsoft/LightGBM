@@ -22,6 +22,7 @@ Dataset::Dataset() {
 }
 
 Dataset::Dataset(data_size_t num_data) {
+  data_filename_ = "noname";
   num_data_ = num_data;
   metadata_.Init(num_data_, -1, -1);
 }
@@ -56,7 +57,8 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset, bool is_enable_spars
   label_idx_ = dataset->label_idx_;
 }
 
-Dataset* Dataset::Subset(const data_size_t* used_indices, data_size_t num_used_indices, bool is_enable_sparse) const {
+Dataset* Dataset::Subset(const data_size_t* used_indices, data_size_t num_used_indices,
+  bool is_enable_sparse, bool need_meta_data) const {
   auto ret = std::unique_ptr<Dataset>(new Dataset(num_used_indices));
   ret->CopyFeatureMapperFrom(this, is_enable_sparse);
 #pragma omp parallel for schedule(guided)
@@ -66,7 +68,9 @@ Dataset* Dataset::Subset(const data_size_t* used_indices, data_size_t num_used_i
       ret->features_[fidx]->PushBin(0, i, iterator->Get(used_indices[i]));
     }
   }
-  ret->metadata_.Init(metadata_, used_indices, num_used_indices);
+  if (need_meta_data) {
+    ret->metadata_.Init(metadata_, used_indices, num_used_indices);
+  }
   return ret.release();
 }
 

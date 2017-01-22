@@ -22,6 +22,10 @@ public:
       best_split_per_feature_[i].feature = i;
     }
   }
+  void ResetNumData(data_size_t num_data) {
+    num_data_ = num_data;
+    num_data_in_leaf_ = num_data;
+  }
   ~LeafSplits() {
   }
 

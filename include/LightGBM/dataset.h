@@ -328,7 +328,7 @@ public:
     return used_feature_map_[col_idx];
   }
 
-  Dataset* Subset(const data_size_t* used_indices, data_size_t num_used_indices, bool is_enable_sparse) const;
+  Dataset* Subset(const data_size_t* used_indices, data_size_t num_used_indices, bool is_enable_sparse, bool need_meta_data) const;
 
   LIGHTGBM_EXPORT void FinishLoad();
 

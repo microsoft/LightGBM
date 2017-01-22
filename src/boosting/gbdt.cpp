@@ -134,10 +134,17 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
       right_cnts_buf_.resize(num_threads_);
       left_write_pos_buf_.resize(num_threads_);
       right_write_pos_buf_.resize(num_threads_);
+      double average_bag_rate = new_config->bagging_fraction / new_config->bagging_freq;
+      is_use_subset_ = false;
+      if (average_bag_rate < 0.3) {
+        is_use_subset_ = true;
+        Log::Debug("use subset for bagging");
+      }
     } else {
       bag_data_cnt_ = num_data_;
       bag_data_indices_.clear();
       tmp_indices_.clear();
+      is_use_subset_ = false;
     }
   }
   train_data_ = train_data;
@@ -196,6 +203,7 @@ data_size_t GBDT::BaggingHelper(data_size_t start, data_size_t cnt, data_size_t*
       buffer[bag_data_cnt + cur_right_cnt++] = start + i;
     }
   }
+  CHECK(buffer[bag_data_cnt - 1] > buffer[bag_data_cnt]);
   CHECK(cur_left_cnt == bag_data_cnt);
   return cur_left_cnt;
 }
@@ -240,15 +248,24 @@ void GBDT::Bagging(int iter) {
           tmp_indices_.data() + offsets_buf_[i] + left_cnts_buf_[i], right_cnts_buf_[i] * sizeof(data_size_t));
       }
     }
+    bag_data_cnt_ = left_cnt;
+    CHECK(bag_data_indices_[bag_data_cnt_ - 1] > bag_data_indices_[bag_data_cnt_]);
     Log::Debug("Re-bagging, using %d data to train", bag_data_cnt_);
     // set bagging data to tree learner
-    tree_learner_->SetBaggingData(bag_data_indices_.data(), bag_data_cnt_);
+    if (!is_use_subset_) {
+      tree_learner_->SetBaggingData(bag_data_indices_.data(), bag_data_cnt_);
+    } else {
+      // get subset
+      tmp_subset_.reset(train_data_->Subset(bag_data_indices_.data(), bag_data_cnt_, false, false));
+      tmp_subset_->FinishLoad();
+      tree_learner_->ResetTrainingData(tmp_subset_.get());
+    }
   }
 }
 
 void GBDT::UpdateScoreOutOfBag(const Tree* tree, const int curr_class) {
   // we need to predict out-of-bag socres of data for boosting
-  if (num_data_ - bag_data_cnt_ > 0) {
+  if (num_data_ - bag_data_cnt_ > 0 && !is_use_subset_) {
     train_score_updater_->AddScore(tree, bag_data_indices_.data() + bag_data_cnt_, num_data_ - bag_data_cnt_, curr_class);
   }
 }
@@ -262,8 +279,24 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
   }
   // bagging logic
   Bagging(iter_);
+  if (is_use_subset_ && bag_data_cnt_ < num_data_) {
+    if (gradients_.empty()) {
+      size_t total_size = static_cast<size_t>(num_data_) * num_class_;
+      gradients_.resize(total_size);
+      hessians_.resize(total_size);
+    }    
+    // get sub gradients
+    for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
+      auto bias = curr_class * num_data_;
+      for (int i = 0; i < bag_data_cnt_; ++i) {
+        gradients_[bias + i] = gradient[bias + bag_data_indices_[i]];
+        hessians_[bias + i] = hessian[bias + bag_data_indices_[i]];
+      }
+    }
+    gradient = gradients_.data();
+    hessian = hessians_.data();
+  }
   for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-
     // train a new tree
     std::unique_ptr<Tree> new_tree(tree_learner_->Train(gradient + curr_class * num_data_, hessian + curr_class * num_data_));
     // if cannot learn a new tree, then stop
@@ -328,7 +361,11 @@ bool GBDT::EvalAndCheckEarlyStopping() {
 
 void GBDT::UpdateScore(const Tree* tree, const int curr_class) {
   // update training score
-  train_score_updater_->AddScore(tree_learner_.get(), curr_class);
+  if (!is_use_subset_) {
+    train_score_updater_->AddScore(tree_learner_.get(), curr_class);
+  } else {
+    train_score_updater_->AddScore(tree, curr_class);
+  }
   // update validation score
   for (auto& score_updater : valid_score_updater_) {
     score_updater->AddScore(tree, curr_class);

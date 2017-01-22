@@ -339,6 +339,8 @@ protected:
   std::vector<data_size_t> left_write_pos_buf_;
   /*! \brief Buffer for multi-threading bagging */
   std::vector<data_size_t> right_write_pos_buf_;
+  std::unique_ptr<Dataset> tmp_subset_;
+  bool is_use_subset_;
 };
 
 }  // namespace LightGBM

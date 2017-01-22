@@ -488,7 +488,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetSubset(
   auto ret = std::unique_ptr<Dataset>(
     full_dataset->Subset(used_row_indices,
       num_used_row_indices,
-      io_config.is_enable_sparse));
+      io_config.is_enable_sparse,
+      true));
   ret->FinishLoad();
   *out = ret.release();
   API_END();

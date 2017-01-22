@@ -31,7 +31,6 @@ public:
   void Init(const Feature* feature, int feature_idx, const TreeConfig* tree_config) {
     feature_idx_ = feature_idx;
     tree_config_ = tree_config;
-    bin_data_ = feature->bin_data();
     num_bins_ = feature->num_bin();
     data_.resize(num_bins_);
     if (feature->bin_type() == BinType::NumericalBin) {
@@ -51,13 +50,13 @@ public:
   * \param ordered_hessians  Ordered hessians
   * \param data_indices data indices of current leaf
   */
-  void Construct(const data_size_t* data_indices, data_size_t num_data, double sum_gradients,
+  void Construct(const Bin* bin_data, const data_size_t* data_indices, data_size_t num_data, double sum_gradients,
     double sum_hessians, const score_t* ordered_gradients, const score_t* ordered_hessians) {
     std::memset(data_.data(), 0, sizeof(HistogramBinEntry)* num_bins_);
     num_data_ = num_data;
     sum_gradients_ = sum_gradients;
     sum_hessians_ = sum_hessians + 2 * kEpsilon;
-    bin_data_->ConstructHistogram(data_indices, num_data, ordered_gradients, ordered_hessians, data_.data());
+    bin_data->ConstructHistogram(data_indices, num_data, ordered_gradients, ordered_hessians, data_.data());
   }
 
   /*!
@@ -315,8 +314,6 @@ private:
   int feature_idx_;
   /*! \brief pointer of tree config */
   const TreeConfig* tree_config_;
-  /*! \brief the bin data of current feature */
-  const Bin* bin_data_;
   /*! \brief number of bin of histogram */
   unsigned int num_bins_;
   /*! \brief sum of gradient of each bin */
