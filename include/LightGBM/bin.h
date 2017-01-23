@@ -129,11 +129,13 @@ public:
   }
   /*!
   * \brief Construct feature value to bin mapper according feature values
-  * \param values (Sampled) values of this feature
+  * \param column_name name of this column
+  * \param values (Sampled) values of this feature, Note: not include zero. 
+  * \param total_sample_cnt number of total sample count, equal with values.size() + num_zeros
   * \param max_bin The maximal number of bin
   * \param bin_type Type of this bin
   */
-  void FindBin(std::vector<double>* values, size_t total_sample_cnt, int max_bin, BinType bin_type);
+  void FindBin(const std::string& column_name, std::vector<double>* values, size_t total_sample_cnt, int max_bin, BinType bin_type);
 
   /*!
   * \brief Use specific number of bin to calculate the size of this class

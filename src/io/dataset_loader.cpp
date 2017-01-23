@@ -433,6 +433,14 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
 
 Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>& sample_values, size_t total_sample_size, data_size_t num_data) {
   std::vector<std::unique_ptr<BinMapper>> bin_mappers(sample_values.size());
+  // fill feature_names_ if not header
+  if (feature_names_.empty()) {
+    for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
+      std::stringstream str_buf;
+      str_buf << "Column_" << i;
+      feature_names_.push_back(str_buf.str());
+    }
+  }
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
     bin_mappers[i].reset(new BinMapper());
@@ -440,7 +448,7 @@ Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>&
     if (categorical_features_.count(i)) {
       bin_type = BinType::CategoricalBin;
     }
-    bin_mappers[i]->FindBin(&sample_values[i], total_sample_size, io_config_.max_bin, bin_type);
+    bin_mappers[i]->FindBin(feature_names_[i], &sample_values[i], total_sample_size, io_config_.max_bin, bin_type);
   }
 
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
@@ -467,14 +475,6 @@ Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>&
     }
   }
   dataset->features_.shrink_to_fit();
-  // fill feature_names_ if not header
-  if (feature_names_.empty()) {
-    for (int i = 0; i < dataset->num_total_features_; ++i) {
-      std::stringstream str_buf;
-      str_buf << "Column_" << i;
-      feature_names_.push_back(str_buf.str());
-    }
-  }
   dataset->feature_names_ = feature_names_;
   dataset->num_features_ = static_cast<int>(dataset->features_.size());
   dataset->metadata_.Init(dataset->num_data_, NO_SPECIFIC, NO_SPECIFIC);
@@ -668,7 +668,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
       if (categorical_features_.count(i)) {
         bin_type = BinType::CategoricalBin;
       }
-      bin_mappers[i]->FindBin(&sample_values[i], sample_data.size(), io_config_.max_bin, bin_type);
+      bin_mappers[i]->FindBin(feature_names_[i], &sample_values[i], sample_data.size(), io_config_.max_bin, bin_type);
     }
 
     for (size_t i = 0; i < sample_values.size(); ++i) {
@@ -722,7 +722,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
       if (categorical_features_.count(start[rank] + i)) {
         bin_type = BinType::CategoricalBin;
       }
-      bin_mapper.FindBin(&sample_values[start[rank] + i], sample_data.size(), io_config_.max_bin, bin_type);
+      bin_mapper.FindBin(feature_names_[start[rank] + i], &sample_values[start[rank] + i], sample_data.size(), io_config_.max_bin, bin_type);
       bin_mapper.CopyTo(input_buffer.data() + i * type_size);
     }
     // convert to binary size

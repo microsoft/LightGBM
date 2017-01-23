@@ -25,7 +25,7 @@ GBDT::GBDT()
   early_stopping_round_(0),
   max_feature_idx_(0),
   num_class_(1),
-  sigmoid_(1.0f),
+  sigmoid_(-1.0f),
   num_iteration_for_pred_(0),
   shrinkage_rate_(0.1f),
   num_init_iteration_(0) {
@@ -187,6 +187,9 @@ void GBDT::AddValidDataset(const Dataset* valid_data,
 }
 
 data_size_t GBDT::BaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer){
+  if (cnt <= 0) {
+    return 0;
+  }
   data_size_t bag_data_cnt =
     static_cast<data_size_t>(gbdt_config_->bagging_fraction * cnt);
   data_size_t cur_left_cnt = 0;
@@ -492,7 +495,7 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
   } else if(sigmoid_ > 0.0f){
 #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_data; ++i) {
-      out_result[i] = static_cast<double>(1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * raw_scores[i])));
+      out_result[i] = static_cast<double>(1.0f / (1.0f + std::exp(- sigmoid_ * raw_scores[i])));
     }
   } else {
 #pragma omp parallel for schedule(static)
@@ -761,7 +764,7 @@ std::vector<double> GBDT::Predict(const double* value) const {
   }
   // if need sigmoid transform
   if (sigmoid_ > 0 && num_class_ == 1) {
-    ret[0] = 1.0f / (1.0f + std::exp(- 2.0f * sigmoid_ * ret[0]));
+    ret[0] = 1.0f / (1.0f + std::exp(-sigmoid_ * ret[0]));
   } else if (num_class_ > 1) {
     Common::Softmax(&ret);
   }
