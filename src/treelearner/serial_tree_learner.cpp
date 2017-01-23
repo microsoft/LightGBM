@@ -390,26 +390,25 @@ void SerialTreeLearner::FindBestThresholds() {
     // construct histograms for smaller leaf
     if (ordered_bins_[feature_index] == nullptr) {
       // if not use ordered bin
-      smaller_leaf_histogram_array_[feature_index].Construct(
-        train_data_->FeatureAt(feature_index)->bin_data(),
+      train_data_->FeatureAt(feature_index)->bin_data()->ConstructHistogram(
         smaller_leaf_splits_->data_indices(),
         smaller_leaf_splits_->num_data_in_leaf(),
-        smaller_leaf_splits_->sum_gradients(),
-        smaller_leaf_splits_->sum_hessians(),
         ptr_to_ordered_gradients_smaller_leaf_,
-        ptr_to_ordered_hessians_smaller_leaf_);
+        ptr_to_ordered_hessians_smaller_leaf_,
+        smaller_leaf_histogram_array_[feature_index].GetData());
     } else {
       // used ordered bin
-      smaller_leaf_histogram_array_[feature_index].Construct(ordered_bins_[feature_index].get(),
-        smaller_leaf_splits_->LeafIndex(),
-        smaller_leaf_splits_->num_data_in_leaf(),
-        smaller_leaf_splits_->sum_gradients(),
-        smaller_leaf_splits_->sum_hessians(),
+      ordered_bins_[feature_index]->ConstructHistogram(smaller_leaf_splits_->LeafIndex(),
         gradients_,
-        hessians_);
+        hessians_,
+        smaller_leaf_histogram_array_[feature_index].GetData());
     }
     // find best threshold for smaller child
-    smaller_leaf_histogram_array_[feature_index].FindBestThreshold(&smaller_leaf_splits_->BestSplitPerFeature()[feature_index]);
+    smaller_leaf_histogram_array_[feature_index].FindBestThreshold(
+      smaller_leaf_splits_->sum_gradients(),
+      smaller_leaf_splits_->sum_hessians(),
+      smaller_leaf_splits_->num_data_in_leaf(),
+      &smaller_leaf_splits_->BestSplitPerFeature()[feature_index]);
 
     // only has root leaf
     if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->LeafIndex() < 0) continue;
@@ -421,28 +420,27 @@ void SerialTreeLearner::FindBestThresholds() {
     } else {
       if (ordered_bins_[feature_index] == nullptr) {
         // if not use ordered bin
-        larger_leaf_histogram_array_[feature_index].Construct(
-          train_data_->FeatureAt(feature_index)->bin_data(),
+        train_data_->FeatureAt(feature_index)->bin_data()->ConstructHistogram(
           larger_leaf_splits_->data_indices(),
           larger_leaf_splits_->num_data_in_leaf(),
-          larger_leaf_splits_->sum_gradients(),
-          larger_leaf_splits_->sum_hessians(),
           ptr_to_ordered_gradients_larger_leaf_,
-          ptr_to_ordered_hessians_larger_leaf_);
+          ptr_to_ordered_hessians_larger_leaf_,
+          larger_leaf_histogram_array_[feature_index].GetData());
       } else {
         // used ordered bin
-        larger_leaf_histogram_array_[feature_index].Construct(ordered_bins_[feature_index].get(),
-          larger_leaf_splits_->LeafIndex(),
-          larger_leaf_splits_->num_data_in_leaf(),
-          larger_leaf_splits_->sum_gradients(),
-          larger_leaf_splits_->sum_hessians(),
+        ordered_bins_[feature_index]->ConstructHistogram(larger_leaf_splits_->LeafIndex(),
           gradients_,
-          hessians_);
+          hessians_,
+          larger_leaf_histogram_array_[feature_index].GetData());
       }
     }
 
     // find best threshold for larger child
-    larger_leaf_histogram_array_[feature_index].FindBestThreshold(&larger_leaf_splits_->BestSplitPerFeature()[feature_index]);
+    larger_leaf_histogram_array_[feature_index].FindBestThreshold(
+      larger_leaf_splits_->sum_gradients(),
+      larger_leaf_splits_->sum_hessians(),
+      larger_leaf_splits_->num_data_in_leaf(),
+      &larger_leaf_splits_->BestSplitPerFeature()[feature_index]);
   }
 }
 

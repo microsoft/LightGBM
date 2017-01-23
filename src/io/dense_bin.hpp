@@ -33,6 +33,13 @@ public:
     data_[idx] = static_cast<VAL_T>(value);
   }
 
+  void ReSize(data_size_t num_data) override {
+    if (num_data_ != num_data) {
+      num_data_ = num_data;
+      data_.resize(num_data_);
+    }
+  }
+
   inline uint32_t Get(data_size_t idx) const {
     return static_cast<uint32_t>(data_[idx]);
   }

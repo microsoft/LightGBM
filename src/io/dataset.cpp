@@ -40,38 +40,44 @@ void Dataset::FinishLoad() {
 
 void Dataset::CopyFeatureMapperFrom(const Dataset* dataset, bool is_enable_sparse) {
   features_.clear();
+  num_features_ = dataset->num_features_;
   // copy feature bin mapper data
-  for (const auto& feature : dataset->features_) {
-    features_.emplace_back(std::unique_ptr<Feature>(
-      new Feature(feature->feature_index(), 
-        new BinMapper(*feature->bin_mapper()), 
-        num_data_, 
-        is_enable_sparse)
-      ));
+  for(int i = 0;i < num_features_;++i){
+    features_.emplace_back(new Feature(dataset->features_[i]->feature_index(),
+      new BinMapper(*(dataset->features_[i]->bin_mapper())),
+      num_data_,
+      is_enable_sparse));
   }
   features_.shrink_to_fit();
   used_feature_map_ = dataset->used_feature_map_;
-  num_features_ = static_cast<int>(features_.size());
   num_total_features_ = dataset->num_total_features_;
   feature_names_ = dataset->feature_names_;
   label_idx_ = dataset->label_idx_;
 }
 
-Dataset* Dataset::Subset(const data_size_t* used_indices, data_size_t num_used_indices,
-  bool is_enable_sparse, bool need_meta_data) const {
-  auto ret = std::unique_ptr<Dataset>(new Dataset(num_used_indices));
-  ret->CopyFeatureMapperFrom(this, is_enable_sparse);
+void Dataset::ReSize(data_size_t num_data) {
+  if (num_data_ != num_data) {
+    num_data_ = num_data;
+#pragma omp parallel for schedule(guided)
+    for (int fidx = 0; fidx < num_features_; ++fidx) {
+      features_[fidx]->ReSize(num_data_);
+    }
+  }
+}
+
+void Dataset::CopySubset(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data) {
+  CHECK(num_used_indices == num_data_);
 #pragma omp parallel for schedule(guided)
   for (int fidx = 0; fidx < num_features_; ++fidx) {
-    auto iterator = features_[fidx]->bin_data()->GetIterator(0);
+    auto iterator = fullset->features_[fidx]->bin_data()->GetIterator(used_indices[0]);
     for (data_size_t i = 0; i < num_used_indices; ++i) {
-      ret->features_[fidx]->PushBin(0, i, iterator->Get(used_indices[i]));
+      features_[fidx]->PushBin(0, i, iterator->Get(used_indices[i]));
     }
   }
   if (need_meta_data) {
-    ret->metadata_.Init(metadata_, used_indices, num_used_indices);
+    metadata_.Init(metadata_, used_indices, num_used_indices);
   }
-  return ret.release();
+  FinishLoad();
 }
 
 bool Dataset::SetFloatField(const char* field_name, const float* field_data, data_size_t num_element) {

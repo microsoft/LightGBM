@@ -67,6 +67,11 @@ public:
   }
 
   ~SparseBin() {
+
+  }
+
+  void ReSize(data_size_t num_data) override {
+    num_data_ = num_data;
   }
 
   void Push(int tid, data_size_t idx, uint32_t value) override {

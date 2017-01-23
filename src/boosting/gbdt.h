@@ -235,7 +235,7 @@ protected:
   * \param buffer output buffer
   * \return count of left size
   */
-  virtual data_size_t BaggingHelper(data_size_t start, data_size_t cnt, data_size_t* buffer);
+  data_size_t BaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer);
   /*!
   * \brief updating score for out-of-bag data.
   *        Data should be update since we may re-bagging data on training
@@ -308,8 +308,6 @@ protected:
   data_size_t num_data_;
   /*! \brief Number of classes */
   int num_class_;
-  /*! \brief Random generator, used for bagging */
-  std::vector<Random> random_;
   /*!
   *   \brief Sigmoid parameter, used for prediction.
   *          if > 0 means output score will transform by sigmoid function

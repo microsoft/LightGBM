@@ -31,62 +31,20 @@ public:
   void Init(const Feature* feature, int feature_idx, const TreeConfig* tree_config) {
     feature_idx_ = feature_idx;
     tree_config_ = tree_config;
-    num_bins_ = feature->num_bin();
-    data_.resize(num_bins_);
+    feature_ = feature;
+    data_.resize(feature_->num_bin());
     if (feature->bin_type() == BinType::NumericalBin) {
-      find_best_threshold_fun_ = std::bind(&FeatureHistogram::FindBestThresholdForNumerical, this, std::placeholders::_1);
+      find_best_threshold_fun_ = std::bind(&FeatureHistogram::FindBestThresholdForNumerical, this, std::placeholders::_1
+        , std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
     } else {
-      find_best_threshold_fun_ = std::bind(&FeatureHistogram::FindBestThresholdForCategorical, this, std::placeholders::_1);
+      find_best_threshold_fun_ = std::bind(&FeatureHistogram::FindBestThresholdForCategorical, this, std::placeholders::_1
+        , std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
     }
   }
 
-
-  /*!
-  * \brief Construct a histogram
-  * \param num_data number of data in current leaf
-  * \param sum_gradients sum of gradients of current leaf
-  * \param sum_hessians sum of hessians of current leaf
-  * \param ordered_gradients Orederd gradients
-  * \param ordered_hessians  Ordered hessians
-  * \param data_indices data indices of current leaf
-  */
-  void Construct(const Bin* bin_data, const data_size_t* data_indices, data_size_t num_data, double sum_gradients,
-    double sum_hessians, const score_t* ordered_gradients, const score_t* ordered_hessians) {
-    std::memset(data_.data(), 0, sizeof(HistogramBinEntry)* num_bins_);
-    num_data_ = num_data;
-    sum_gradients_ = sum_gradients;
-    sum_hessians_ = sum_hessians + 2 * kEpsilon;
-    bin_data->ConstructHistogram(data_indices, num_data, ordered_gradients, ordered_hessians, data_.data());
-  }
-
-  /*!
-  * \brief Construct a histogram by ordered bin
-  * \param leaf current leaf
-  * \param num_data number of data in current leaf
-  * \param sum_gradients sum of gradients of current leaf
-  * \param sum_hessians sum of hessians of current leaf
-  * \param gradients
-  * \param hessian
-  */
-  void Construct(const OrderedBin* ordered_bin, int leaf, data_size_t num_data, double sum_gradients,
-    double sum_hessians, const score_t* gradients, const score_t* hessians) {
-    std::memset(data_.data(), 0, sizeof(HistogramBinEntry)* num_bins_);
-    num_data_ = num_data;
-    sum_gradients_ = sum_gradients;
-    sum_hessians_ = sum_hessians + 2 * kEpsilon;
-    ordered_bin->ConstructHistogram(leaf, gradients, hessians, data_.data());
-  }
-
-  /*!
-  * \brief Set sumup information for current histogram
-  * \param num_data number of data in current leaf
-  * \param sum_gradients sum of gradients of current leaf
-  * \param sum_hessians sum of hessians of current leaf
-  */
-  void SetSumup(data_size_t num_data, double sum_gradients, double sum_hessians) {
-    num_data_ = num_data;
-    sum_gradients_ = sum_gradients;
-    sum_hessians_ = sum_hessians + 2 * kEpsilon;
+  HistogramBinEntry* GetData() {
+    std::memset(data_.data(), 0, feature_->num_bin() * sizeof(HistogramBinEntry));
+    return data_.data();
   }
 
   /*!
@@ -94,53 +52,56 @@ public:
   * \param other The histogram that want to subtract
   */
   void Subtract(const FeatureHistogram& other) {
-    num_data_ -= other.num_data_;
-    sum_gradients_ -= other.sum_gradients_;
-    sum_hessians_ -= other.sum_hessians_;
-    for (unsigned int i = 0; i < num_bins_; ++i) {
+    for (int i = 0; i < feature_->num_bin(); ++i) {
       data_[i].cnt -= other.data_[i].cnt;
       data_[i].sum_gradients -= other.data_[i].sum_gradients;
       data_[i].sum_hessians -= other.data_[i].sum_hessians;
     }
   }
-
   /*!
   * \brief Find best threshold for this histogram
   * \param output The best split result
   */
-  void FindBestThreshold(SplitInfo* output) {
-    find_best_threshold_fun_(output);
+  void FindBestThreshold(double sum_gradient, double sum_hessian, data_size_t num_data,
+    SplitInfo* output) {
+    find_best_threshold_fun_(sum_gradient, sum_hessian, num_data, output);
+    if (output->gain > kMinScore) {
+      is_splittable_ = true;
+    } else {
+      is_splittable_ = false;
+    }
   }
 
-  void FindBestThresholdForNumerical(SplitInfo* output) {
+  void FindBestThresholdForNumerical(double sum_gradient, double sum_hessian, data_size_t num_data,
+    SplitInfo* output) {
     double best_sum_left_gradient = NAN;
     double best_sum_left_hessian = NAN;
     double best_gain = kMinScore;
     data_size_t best_left_count = 0;
-    unsigned int best_threshold = static_cast<unsigned int>(num_bins_);
+    unsigned int best_threshold = static_cast<unsigned int>(feature_->num_bin());
     double sum_right_gradient = 0.0f;
     double sum_right_hessian = kEpsilon;
     data_size_t right_count = 0;
-    double gain_shift = GetLeafSplitGain(sum_gradients_, sum_hessians_);
+    double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian);
     double min_gain_shift = gain_shift + tree_config_->min_gain_to_split;
-    is_splittable_ = false;
+    bool is_splittable = false;
     // from right to left, and we don't need data in bin0
-    for (unsigned int t = num_bins_ - 1; t > 0; --t) {
+    for (int t = feature_->num_bin() - 1; t > 0; --t) {
       sum_right_gradient += data_[t].sum_gradients;
       sum_right_hessian += data_[t].sum_hessians;
       right_count += data_[t].cnt;
       // if data not enough, or sum hessian too small
-      if (right_count < tree_config_->min_data_in_leaf 
-          || sum_right_hessian < tree_config_->min_sum_hessian_in_leaf) continue;
-      data_size_t left_count = num_data_ - right_count;
+      if (right_count < tree_config_->min_data_in_leaf
+        || sum_right_hessian < tree_config_->min_sum_hessian_in_leaf) continue;
+      data_size_t left_count = num_data - right_count;
       // if data not enough
       if (left_count < tree_config_->min_data_in_leaf) break;
 
-      double sum_left_hessian = sum_hessians_ - sum_right_hessian;
+      double sum_left_hessian = sum_hessian - sum_right_hessian;
       // if sum hessian too small
       if (sum_left_hessian < tree_config_->min_sum_hessian_in_leaf) break;
 
-      double sum_left_gradient = sum_gradients_ - sum_right_gradient;
+      double sum_left_gradient = sum_gradient - sum_right_gradient;
       // current split gain
       double current_gain = GetLeafSplitGain(sum_left_gradient, sum_left_hessian)
         + GetLeafSplitGain(sum_right_gradient, sum_right_hessian);
@@ -148,18 +109,18 @@ public:
       if (current_gain < min_gain_shift) continue;
 
       // mark to is splittable
-      is_splittable_ = true;
+      is_splittable = true;
       // better split point
       if (current_gain > best_gain) {
         best_left_count = left_count;
         best_sum_left_gradient = sum_left_gradient;
         best_sum_left_hessian = sum_left_hessian;
         // left is <= threshold, right is > threshold.  so this is t-1
-        best_threshold = t - 1;
+        best_threshold = static_cast<unsigned int>(t - 1);
         best_gain = current_gain;
       }
     }
-    if (is_splittable_) {
+    if (is_splittable) {
       // update split information
       output->feature = feature_idx_;
       output->threshold = best_threshold;
@@ -167,11 +128,11 @@ public:
       output->left_count = best_left_count;
       output->left_sum_gradient = best_sum_left_gradient;
       output->left_sum_hessian = best_sum_left_hessian;
-      output->right_output = CalculateSplittedLeafOutput(sum_gradients_ - best_sum_left_gradient,
-        sum_hessians_ - best_sum_left_hessian);
-      output->right_count = num_data_ - best_left_count;
-      output->right_sum_gradient = sum_gradients_ - best_sum_left_gradient;
-      output->right_sum_hessian = sum_hessians_ - best_sum_left_hessian;
+      output->right_output = CalculateSplittedLeafOutput(sum_gradient - best_sum_left_gradient,
+        sum_hessian - best_sum_left_hessian);
+      output->right_count = num_data - best_left_count;
+      output->right_sum_gradient = sum_gradient - best_sum_left_gradient;
+      output->right_sum_hessian = sum_hessian - best_sum_left_hessian;
       output->gain = best_gain - gain_shift;
     } else {
       output->feature = feature_idx_;
@@ -183,38 +144,38 @@ public:
   * \brief Find best threshold for this histogram
   * \param output The best split result
   */
-  void FindBestThresholdForCategorical(SplitInfo* output) {
+  void FindBestThresholdForCategorical(double sum_gradient, double sum_hessian, data_size_t num_data,
+    SplitInfo* output) {
     double best_gain = kMinScore;
-    unsigned int best_threshold = static_cast<unsigned int>(num_bins_);
+    unsigned int best_threshold = static_cast<unsigned int>(feature_->num_bin());
 
-    double gain_shift = GetLeafSplitGain(sum_gradients_, sum_hessians_);
+    double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian);
     double min_gain_shift = gain_shift + tree_config_->min_gain_to_split;
-    is_splittable_ = false;
-
-    for (int t = num_bins_ - 1; t >= 0; --t) {
+    bool is_splittable = false;
+    for (int t = feature_->num_bin() - 1; t >= 0; --t) {
       double sum_current_gradient = data_[t].sum_gradients;
       double sum_current_hessian = data_[t].sum_hessians;
       data_size_t current_count = data_[t].cnt;
       // if data not enough, or sum hessian too small
       if (current_count < tree_config_->min_data_in_leaf
-          || sum_current_hessian < tree_config_->min_sum_hessian_in_leaf) continue;
-      data_size_t other_count = num_data_ - current_count;
+        || sum_current_hessian < tree_config_->min_sum_hessian_in_leaf) continue;
+      data_size_t other_count = num_data - current_count;
       // if data not enough
       if (other_count < tree_config_->min_data_in_leaf) continue;
 
-      double sum_other_hessian = sum_hessians_ - sum_current_hessian;
+      double sum_other_hessian = sum_hessian - sum_current_hessian;
       // if sum hessian too small
       if (sum_other_hessian < tree_config_->min_sum_hessian_in_leaf) continue;
 
-      double sum_other_gradient = sum_gradients_ - sum_current_gradient;
+      double sum_other_gradient = sum_gradient - sum_current_gradient;
       // current split gain
-      double current_gain = GetLeafSplitGain(sum_other_gradient, sum_other_hessian) 
+      double current_gain = GetLeafSplitGain(sum_other_gradient, sum_other_hessian)
         + GetLeafSplitGain(sum_current_gradient, sum_current_hessian);
       // gain with split is worse than without split
       if (current_gain < min_gain_shift) continue;
 
       // mark to is splittable
-      is_splittable_ = true;
+      is_splittable = true;
       // better split point
       if (current_gain > best_gain) {
         best_threshold = static_cast<unsigned int>(t);
@@ -222,7 +183,7 @@ public:
       }
     }
     // update split information
-    if (is_splittable_) {
+    if (is_splittable) {
       output->feature = feature_idx_;
       output->threshold = best_threshold;
       output->left_output = CalculateSplittedLeafOutput(data_[best_threshold].sum_gradients,
@@ -231,11 +192,11 @@ public:
       output->left_sum_gradient = data_[best_threshold].sum_gradients;
       output->left_sum_hessian = data_[best_threshold].sum_hessians;
 
-      output->right_output = CalculateSplittedLeafOutput(sum_gradients_ - data_[best_threshold].sum_gradients,
-        sum_hessians_ - data_[best_threshold].sum_hessians);
-      output->right_count = num_data_ - data_[best_threshold].cnt;
-      output->right_sum_gradient = sum_gradients_ - data_[best_threshold].sum_gradients;
-      output->right_sum_hessian = sum_hessians_ - data_[best_threshold].sum_hessians;
+      output->right_output = CalculateSplittedLeafOutput(sum_gradient - data_[best_threshold].sum_gradients,
+        sum_hessian - data_[best_threshold].sum_hessians);
+      output->right_count = num_data - data_[best_threshold].cnt;
+      output->right_sum_gradient = sum_gradient - data_[best_threshold].sum_gradients;
+      output->right_sum_hessian = sum_hessian - data_[best_threshold].sum_hessians;
 
       output->gain = best_gain - gain_shift;
     } else {
@@ -243,12 +204,11 @@ public:
       output->gain = kMinScore;
     }
   }
-
   /*!
   * \brief Binary size of this histogram
   */
   int SizeOfHistgram() const {
-    return num_bins_ * sizeof(HistogramBinEntry);
+    return feature_->num_bin() * sizeof(HistogramBinEntry);
   }
 
   /*!
@@ -262,7 +222,7 @@ public:
   * \brief Restore histogram from memory
   */
   void FromMemory(char* memory_data)  {
-    std::memcpy(data_.data(), memory_data, num_bins_ * sizeof(HistogramBinEntry));
+    std::memcpy(data_.data(), memory_data, feature_->num_bin() * sizeof(HistogramBinEntry));
   }
 
   /*!
@@ -312,22 +272,15 @@ private:
   }
 
   int feature_idx_;
+  const Feature* feature_;
   /*! \brief pointer of tree config */
   const TreeConfig* tree_config_;
-  /*! \brief number of bin of histogram */
-  unsigned int num_bins_;
   /*! \brief sum of gradient of each bin */
   std::vector<HistogramBinEntry> data_;
-  /*! \brief number of all data */
-  data_size_t num_data_;
-  /*! \brief sum of gradient of current leaf */
-  double sum_gradients_;
-  /*! \brief sum of hessians of current leaf */
-  double sum_hessians_;
   /*! \brief False if this histogram cannot split */
   bool is_splittable_ = true;
   /*! \brief function that used to find best threshold */
-  std::function<void(SplitInfo*)> find_best_threshold_fun_;
+  std::function<void(double, double, data_size_t, SplitInfo*)> find_best_threshold_fun_;
 };
 
 

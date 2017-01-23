@@ -78,7 +78,7 @@ private:
   */
   void DroppingTrees() {
     drop_index_.clear();
-    bool is_skip = random_for_drop_.NextDouble() < gbdt_config_->skip_drop;
+    bool is_skip = random_for_drop_.NextFloat() < gbdt_config_->skip_drop;
     // select dropping tree indexes based on drop_rate and tree weights
     if (!is_skip) {
       double drop_rate = gbdt_config_->drop_rate;
@@ -88,7 +88,7 @@ private:
           drop_rate = std::min(drop_rate, gbdt_config_->max_drop * inv_average_weight / sum_weight_);
         }
         for (int i = 0; i < iter_; ++i) {
-          if (random_for_drop_.NextDouble() < drop_rate * tree_weight_[i] * inv_average_weight) {
+          if (random_for_drop_.NextFloat() < drop_rate * tree_weight_[i] * inv_average_weight) {
             drop_index_.push_back(i);
           }
         }
@@ -97,7 +97,7 @@ private:
           drop_rate = std::min(drop_rate, gbdt_config_->max_drop / static_cast<double>(iter_));
         }
         for (int i = 0; i < iter_; ++i) {
-          if (random_for_drop_.NextDouble() < drop_rate) {
+          if (random_for_drop_.NextFloat() < drop_rate) {
             drop_index_.push_back(i);
           }
         }

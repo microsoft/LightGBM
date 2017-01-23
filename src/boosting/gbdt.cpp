@@ -46,9 +46,6 @@ void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const O
   num_iteration_for_pred_ = 0;
   max_feature_idx_ = 0;
   num_class_ = config->num_class;
-  for (int i = 0; i < num_threads_; ++i) {
-    random_.emplace_back(config->bagging_seed + i);
-  }
   train_data_ = nullptr;
   gbdt_config_ = nullptr;
   tree_learner_ = nullptr;
@@ -136,7 +133,9 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
       right_write_pos_buf_.resize(num_threads_);
       double average_bag_rate = new_config->bagging_fraction / new_config->bagging_freq;
       is_use_subset_ = false;
-      if (average_bag_rate < 0.3) {
+      if (average_bag_rate < 0.5) {
+        tmp_subset_.reset(new Dataset(bag_data_cnt_));
+        tmp_subset_->CopyFeatureMapperFrom(train_data, false);
         is_use_subset_ = true;
         Log::Debug("use subset for bagging");
       }
@@ -187,20 +186,20 @@ void GBDT::AddValidDataset(const Dataset* valid_data,
   valid_metrics_.back().shrink_to_fit();
 }
 
-data_size_t GBDT::BaggingHelper(data_size_t start, data_size_t cnt, data_size_t* buffer){
-  const int tid = omp_get_thread_num();
+data_size_t GBDT::BaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer){
   data_size_t bag_data_cnt =
     static_cast<data_size_t>(gbdt_config_->bagging_fraction * cnt);
   data_size_t cur_left_cnt = 0;
   data_size_t cur_right_cnt = 0;
+  auto right_buffer = buffer + bag_data_cnt;
   // random bagging, minimal unit is one record
   for (data_size_t i = 0; i < cnt; ++i) {
-    double prob =
-      (bag_data_cnt - cur_left_cnt) / static_cast<double>(cnt - i);
-    if (random_[tid].NextDouble() < prob) {
+    float prob =
+      (bag_data_cnt - cur_left_cnt) / static_cast<float>(cnt - i);
+    if (cur_rand.NextFloat() < prob) {
       buffer[cur_left_cnt++] = start + i;
     } else {
-      buffer[bag_data_cnt + cur_right_cnt++] = start + i;
+      right_buffer[cur_right_cnt++] = start + i;
     }
   }
   CHECK(buffer[bag_data_cnt - 1] > buffer[bag_data_cnt]);
@@ -208,14 +207,16 @@ data_size_t GBDT::BaggingHelper(data_size_t start, data_size_t cnt, data_size_t*
   return cur_left_cnt;
 }
 
+
+
 void GBDT::Bagging(int iter) {
   // if need bagging
   if (bag_data_cnt_ < num_data_ && iter % gbdt_config_->bagging_freq == 0) {
-    const data_size_t min_inner_size = 10000;
+    const data_size_t min_inner_size = 1000;
     data_size_t inner_size = (num_data_ + num_threads_ - 1) / num_threads_;
     if (inner_size < min_inner_size) { inner_size = min_inner_size; }
 
-#pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for schedule(static,1)
     for (int i = 0; i < num_threads_; ++i) {
       left_cnts_buf_[i] = 0;
       right_cnts_buf_[i] = 0;
@@ -223,7 +224,8 @@ void GBDT::Bagging(int iter) {
       if (cur_start > num_data_) { continue; }
       data_size_t cur_cnt = inner_size;
       if (cur_start + cur_cnt > num_data_) { cur_cnt = num_data_ - cur_start; }
-      data_size_t cur_left_count = BaggingHelper(cur_start, cur_cnt, tmp_indices_.data() + cur_start);
+      Random cur_rand(gbdt_config_->bagging_seed + iter * num_threads_ + i);
+      data_size_t cur_left_count = BaggingHelper(cur_rand, cur_start, cur_cnt, tmp_indices_.data() + cur_start);
       offsets_buf_[i] = cur_start;
       left_cnts_buf_[i] = cur_left_count;
       right_cnts_buf_[i] = cur_cnt - cur_left_count;
@@ -256,8 +258,8 @@ void GBDT::Bagging(int iter) {
       tree_learner_->SetBaggingData(bag_data_indices_.data(), bag_data_cnt_);
     } else {
       // get subset
-      tmp_subset_.reset(train_data_->Subset(bag_data_indices_.data(), bag_data_cnt_, false, false));
-      tmp_subset_->FinishLoad();
+      tmp_subset_->ReSize(bag_data_cnt_);
+      tmp_subset_->CopySubset(train_data_, bag_data_indices_.data(), bag_data_cnt_, false);
       tree_learner_->ResetTrainingData(tmp_subset_.get());
     }
   }

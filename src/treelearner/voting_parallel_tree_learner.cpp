@@ -262,31 +262,32 @@ void VotingParallelTreeLearner::FindBestThresholds() {
 
   // Reduce scatter for histogram
   Network::ReduceScatter(input_buffer_.data(), reduce_scatter_size_, block_start_.data(), block_len_.data(),
-                         output_buffer_.data(), &HistogramBinEntry::SumReducer);
+    output_buffer_.data(), &HistogramBinEntry::SumReducer);
   // find best split from local aggregated histograms
-  #pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(guided)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
 
     if (smaller_is_feature_aggregated_[feature_index]) {
-      smaller_leaf_histogram_array_global_[feature_index].SetSumup(
-                                   GetGlobalDataCountInLeaf(smaller_leaf_splits_global_->LeafIndex()),
-                                                            smaller_leaf_splits_global_->sum_gradients(),
-                                                            smaller_leaf_splits_global_->sum_hessians());
       // restore from buffer
       smaller_leaf_histogram_array_global_[feature_index].FromMemory(
-                                   output_buffer_.data() + smaller_buffer_read_start_pos_[feature_index]);
+        output_buffer_.data() + smaller_buffer_read_start_pos_[feature_index]);
       // find best threshold
       smaller_leaf_histogram_array_global_[feature_index].FindBestThreshold(
-                                   &smaller_leaf_splits_global_->BestSplitPerFeature()[feature_index]);
+        smaller_leaf_splits_global_->sum_gradients(),
+        smaller_leaf_splits_global_->sum_hessians(),
+        GetGlobalDataCountInLeaf(smaller_leaf_splits_global_->LeafIndex()),
+        &smaller_leaf_splits_global_->BestSplitPerFeature()[feature_index]);
     }
 
     if (larger_is_feature_aggregated_[feature_index]) {
-      larger_leaf_histogram_array_global_[feature_index].SetSumup(GetGlobalDataCountInLeaf(larger_leaf_splits_global_->LeafIndex()),
-                                                                  larger_leaf_splits_global_->sum_gradients(), larger_leaf_splits_global_->sum_hessians());
       // restore from buffer
       larger_leaf_histogram_array_global_[feature_index].FromMemory(output_buffer_.data() + larger_buffer_read_start_pos_[feature_index]);
       // find best threshold
-      larger_leaf_histogram_array_global_[feature_index].FindBestThreshold(&larger_leaf_splits_global_->BestSplitPerFeature()[feature_index]);
+      larger_leaf_histogram_array_global_[feature_index].FindBestThreshold(
+        larger_leaf_splits_global_->sum_gradients(),
+        larger_leaf_splits_global_->sum_hessians(),
+        GetGlobalDataCountInLeaf(larger_leaf_splits_global_->LeafIndex()),
+        &larger_leaf_splits_global_->BestSplitPerFeature()[feature_index]);
     }
   }
 
@@ -336,18 +337,18 @@ void VotingParallelTreeLearner::Split(Tree* tree, int best_Leaf, int* left_leaf,
   // init the global sumup info
   if (best_split_info.left_count < best_split_info.right_count) {
     smaller_leaf_splits_global_->Init(*left_leaf, data_partition_.get(),
-                                      best_split_info.left_sum_gradient,
-                                      best_split_info.left_sum_hessian);
+      best_split_info.left_sum_gradient,
+      best_split_info.left_sum_hessian);
     larger_leaf_splits_global_->Init(*right_leaf, data_partition_.get(),
-                                     best_split_info.right_sum_gradient,
-                                     best_split_info.right_sum_hessian);
+      best_split_info.right_sum_gradient,
+      best_split_info.right_sum_hessian);
   } else {
     smaller_leaf_splits_global_->Init(*right_leaf, data_partition_.get(),
-                                      best_split_info.right_sum_gradient,
-                                      best_split_info.right_sum_hessian);
+      best_split_info.right_sum_gradient,
+      best_split_info.right_sum_hessian);
     larger_leaf_splits_global_->Init(*left_leaf, data_partition_.get(),
-                                     best_split_info.left_sum_gradient,
-                                     best_split_info.left_sum_hessian);
+      best_split_info.left_sum_gradient,
+      best_split_info.left_sum_hessian);
   }
 }
 

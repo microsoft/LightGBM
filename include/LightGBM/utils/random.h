@@ -35,15 +35,15 @@ public:
   * \return The random integer between [lower_bound, upper_bound)
   */
   inline int NextInt(int lower_bound, int upper_bound) {
-    return (next()) % (upper_bound - lower_bound) + lower_bound;
+    return (fastrand()) % (upper_bound - lower_bound) + lower_bound;
   }
   /*!
   * \brief Generate random float data
   * \return The random float between [0.0, 1.0)
   */
-  inline double NextDouble() {
+  inline float NextFloat() {
     // get random float in [0,1)
-    return static_cast<double>(next() % 2047) / 2047.0f;
+    return static_cast<float>(fastrand()) / (32768.0f);
   }
   /*!
   * \brief Sample K data from {0,1,...,N-1}
@@ -58,26 +58,18 @@ public:
     }
     for (int i = 0; i < N; ++i) {
       double prob = (K - ret.size()) / static_cast<double>(N - i);
-      if (NextDouble() < prob) {
+      if (NextFloat() < prob) {
         ret.push_back(i);
       }
     }
     return ret;
   }
 private:
-  unsigned next() {
-    x ^= x << 16;
-    x ^= x >> 5;
-    x ^= x << 1;
-    auto t = x;
-    x = y;
-    y = z;
-    z = t ^ x ^ y;
-    return z;
+  inline int fastrand() {
+    x = (214013 * x + 2531011);
+    return (x >> 16) & 0x7FFF;
   }
-  unsigned int x = 123456789;
-  unsigned int y = 362436069;
-  unsigned int z = 521288629;
+  int x = 123456789;
 };
 
 

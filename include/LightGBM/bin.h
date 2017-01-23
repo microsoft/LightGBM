@@ -289,6 +289,8 @@ public:
   /*! \brief Number of all data */
   virtual data_size_t num_data() const = 0;
 
+  virtual void ReSize(data_size_t num_data) = 0;
+
   /*!
   * \brief Construct histogram of this feature,
   *        Note: We use ordered_gradients and ordered_hessians to improve cache hit chance
