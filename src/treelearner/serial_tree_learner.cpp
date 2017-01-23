@@ -75,6 +75,45 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
   sparse_bin_pool_.reset(new SparseBinPool(train_data_, tree_config_->sparse_aware));
 }
 
+void SerialTreeLearner::ResetTrainingData(const Dataset* train_data) {
+  train_data_ = train_data;
+  num_data_ = train_data_->num_data();
+  num_features_ = train_data_->num_features();
+
+  // initialize ordered_bins_ with nullptr
+  ordered_bins_.resize(num_features_);
+
+  // get ordered bin
+#pragma omp parallel for schedule(guided)
+  for (int i = 0; i < num_features_; ++i) {
+    ordered_bins_[i].reset(train_data_->FeatureAt(i)->bin_data()->CreateOrderedBin());
+  }
+  has_ordered_bin_ = false;
+  // check existing for ordered bin
+  for (int i = 0; i < num_features_; ++i) {
+    if (ordered_bins_[i] != nullptr) {
+      has_ordered_bin_ = true;
+      break;
+    }
+  }
+  // initialize splits for leaf
+  smaller_leaf_splits_->ResetNumData(num_data_);
+  larger_leaf_splits_->ResetNumData(num_data_);
+
+  // initialize data partition
+  data_partition_->ResetNumData(num_data_);
+
+  is_feature_used_.resize(num_features_);
+
+  // initialize ordered gradients and hessians
+  ordered_gradients_.resize(num_data_);
+  ordered_hessians_.resize(num_data_);
+  // if has ordered bin, need to allocate a buffer to fast split
+  if (has_ordered_bin_) {
+    is_data_in_leaf_.resize(num_data_);
+  }
+
+}
 
 void SerialTreeLearner::ResetConfig(const TreeConfig* tree_config) {
   if (tree_config_->num_leaves != tree_config->num_leaves) {

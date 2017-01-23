@@ -96,7 +96,7 @@ void DataParallelTreeLearner::BeforeTrain() {
 
   // sync global data sumup info
   std::tuple<data_size_t, double, double> data(smaller_leaf_splits_->num_data_in_leaf(),
-             smaller_leaf_splits_->sum_gradients(), smaller_leaf_splits_->sum_hessians());
+    smaller_leaf_splits_->sum_gradients(), smaller_leaf_splits_->sum_hessians());
   int size = sizeof(data);
   std::memcpy(input_buffer_.data(), &data, size);
   // global sumup reduce
@@ -204,7 +204,7 @@ void DataParallelTreeLearner::FindBestSplitsForLeaves() {
   std::memcpy(input_buffer_.data() + sizeof(SplitInfo), &larger_best, sizeof(SplitInfo));
 
   Network::Allreduce(input_buffer_.data(), sizeof(SplitInfo) * 2, sizeof(SplitInfo),
-                     output_buffer_.data(), &SplitInfo::MaxReducer);
+    output_buffer_.data(), &SplitInfo::MaxReducer);
 
   std::memcpy(&smaller_best, output_buffer_.data(), sizeof(SplitInfo));
   std::memcpy(&larger_best, output_buffer_.data() + sizeof(SplitInfo), sizeof(SplitInfo));

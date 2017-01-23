@@ -138,8 +138,8 @@ public:
     }
   }
 
-  static std::vector<std::function<bool(unsigned int, unsigned int)>> inner_decision_funs;
-  static std::vector<std::function<bool(double, double)>> decision_funs;
+  static std::vector<bool(*)(unsigned int, unsigned int)> inner_decision_funs;
+  static std::vector<bool(*)(double, double)> decision_funs;
 
 private:
   /*!

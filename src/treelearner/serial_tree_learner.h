@@ -33,6 +33,8 @@ public:
 
   void Init(const Dataset* train_data) override;
 
+  void ResetTrainingData(const Dataset* train_data) override;
+
   void ResetConfig(const TreeConfig* tree_config) override;
 
   Tree* Train(const score_t* gradients, const score_t *hessians) override;

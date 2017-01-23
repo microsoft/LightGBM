@@ -41,7 +41,12 @@ public:
     leaf_begin_.resize(num_leaves_);
     leaf_count_.resize(num_leaves_);
   }
-
+  void ResetNumData(int num_data) {
+    num_data_ = num_data;
+    indices_.resize(num_data_);
+    temp_left_indices_.resize(num_data_);
+    temp_right_indices_.resize(num_data_);
+  }
   ~DataPartition() {
 
   }

@@ -41,7 +41,7 @@ BinMapper::~BinMapper() {
 
 }
 
-void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, int max_bin, BinType bin_type) {
+void BinMapper::FindBin(const std::string& column_name, std::vector<double>* values, size_t total_sample_cnt, int max_bin, BinType bin_type) {
   bin_type_ = bin_type;
   std::vector<double>& ref_values = (*values);
   size_t sample_size = total_sample_cnt;
@@ -179,7 +179,7 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
     }
     if (used_cnt / static_cast<double>(sample_size) < 0.95f) {
       Log::Warning("Too many categoricals are ignored, \
-                   please use bigger max_bin or partition this column ");
+                   please use bigger max_bin or partition column \"%s\" ", column_name.c_str());
     }
     cnt_in_bin = counts_int;
     cnt_in_bin[0] += static_cast<int>(sample_size) - used_cnt;

@@ -19,6 +19,10 @@ public:
     data_indices_(nullptr) {
     best_split_per_feature_.resize(num_features_);
   }
+  void ResetNumData(data_size_t num_data) {
+    num_data_ = num_data;
+    num_data_in_leaf_ = num_data;
+  }
   ~LeafSplits() {
   }
 

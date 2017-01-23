@@ -11,8 +11,9 @@ from tempfile import NamedTemporaryFile
 import numpy as np
 import scipy.sparse
 
-from .compat import (DataFrame, Series, integer_types, json, numeric_types,
-                     range_, string_type)
+from .compat import (DataFrame, Series, integer_types, json,
+                     json_default_with_numpy, numeric_types, range_,
+                     string_type)
 from .libpath import find_lib_path
 
 
@@ -271,6 +272,19 @@ def _label_from_pandas(label):
     return label
 
 
+def _save_pandas_categorical(file_name, pandas_categorical):
+    with open(file_name, 'a') as f:
+        f.write('\npandas_categorical:' + json.dumps(pandas_categorical, default=json_default_with_numpy))
+
+
+def _load_pandas_categorical(file_name):
+    with open(file_name, 'r') as f:
+        last_line = f.readlines()[-1]
+        if last_line.startswith('pandas_categorical:'):
+            return json.loads(last_line[len('pandas_categorical:'):])
+    return None
+
+
 class _InnerPredictor(object):
     """
     A _InnerPredictor of LightGBM.
@@ -302,12 +316,7 @@ class _InnerPredictor(object):
                 ctypes.byref(out_num_class)))
             self.num_class = out_num_class.value
             self.num_total_iteration = out_num_iterations.value
-            with open(model_file, 'r') as f:
-                last_line = f.readlines()[-1]
-                if last_line.startswith('pandas_categorical:'):
-                    self.pandas_categorical = eval(last_line[len('pandas_categorical:'):])
-                else:
-                    self.pandas_categorical = None
+            self.pandas_categorical = _load_pandas_categorical(model_file)
         elif booster_handle is not None:
             self.__is_manage_handle = False
             self.handle = booster_handle
@@ -1207,12 +1216,7 @@ class Booster(object):
                 self.handle,
                 ctypes.byref(out_num_class)))
             self.__num_class = out_num_class.value
-            with open(model_file, 'r') as f:
-                last_line = f.readlines()[-1]
-                if last_line.startswith('pandas_categorical:'):
-                    self.pandas_categorical = eval(last_line[len('pandas_categorical:'):])
-                else:
-                    self.pandas_categorical = None
+            self.pandas_categorical = _load_pandas_categorical(model_file)
         elif 'model_str' in params:
             self.__load_model_from_string(params['model_str'])
         else:
@@ -1468,8 +1472,7 @@ class Booster(object):
             self.handle,
             ctypes.c_int(num_iteration),
             c_str(filename)))
-        with open(filename, 'a') as f:
-            f.write('\npandas_categorical:' + repr(self.pandas_categorical))
+        _save_pandas_categorical(filename, self.pandas_categorical)
 
     def __load_model_from_string(self, model_str):
         """[Private] Load model from string"""

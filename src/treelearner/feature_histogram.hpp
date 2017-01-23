@@ -191,7 +191,7 @@ public:
 
       double sum_other_gradient = sum_gradient - sum_current_gradient;
       // current split gain
-      double current_gain = GetLeafSplitGain(sum_other_gradient, sum_other_hessian) 
+      double current_gain = GetLeafSplitGain(sum_other_gradient, sum_other_hessian)
         + GetLeafSplitGain(sum_current_gradient, sum_current_hessian);
       // gain with split is worse than without split
       if (current_gain < min_gain_shift) continue;
@@ -226,7 +226,6 @@ public:
       output->gain = kMinScore;
     }
   }
-
   /*!
   * \brief Binary size of this histogram
   */
