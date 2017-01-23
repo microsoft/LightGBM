@@ -16,11 +16,10 @@
 
 namespace LightGBM {
 
-std::vector<std::function<bool(unsigned int, unsigned int)>> Tree::inner_decision_funs = 
+std::vector<bool(*)(unsigned int, unsigned int)> Tree::inner_decision_funs =
           {Tree::NumericalDecision<unsigned int>, Tree::CategoricalDecision<unsigned int> };
-std::vector<std::function<bool(double, double)>> Tree::decision_funs = 
+std::vector<bool(*)(double, double)> Tree::decision_funs =
           { Tree::NumericalDecision<double>, Tree::CategoricalDecision<double> };
-
 
 Tree::Tree(int max_leaves)
   :max_leaves_(max_leaves) {
