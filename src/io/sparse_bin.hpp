@@ -73,7 +73,10 @@ public:
   }
 
   void Push(int tid, data_size_t idx, uint32_t value) override {
-    push_buffers_[tid].emplace_back(idx, static_cast<VAL_T>(value));
+    auto cur_bin = static_cast<VAL_T>(value);
+    if (cur_bin != default_bin_) {
+      push_buffers_[tid].emplace_back(idx, cur_bin);
+    }
   }
 
   BinIterator* GetIterator(data_size_t start_idx) const override;
@@ -263,7 +266,7 @@ public:
     std::vector<std::pair<data_size_t, VAL_T>> tmp_pair;
     for (data_size_t i = 0; i < num_used_indices; ++i) {
       VAL_T bin = iterator.InnerGet(used_indices[i]);
-      if (bin > 0) {
+      if (bin != default_bin_) {
         tmp_pair.emplace_back(i, bin);
       }
     }

@@ -30,6 +30,9 @@ BinMapper::BinMapper(const BinMapper& other) {
     bin_2_categorical_ = other.bin_2_categorical_;
     categorical_2_bin_ = other.categorical_2_bin_;
   }
+  max_heavy_bin_ = other.max_heavy_bin_;
+  min_val_ = other.min_val_;
+  max_val_ = other.max_val_;
 
 }
 

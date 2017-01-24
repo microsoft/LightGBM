@@ -79,7 +79,7 @@ void Dataset::CopySubset(const Dataset* fullset, const data_size_t* used_indices
     features_[fidx]->CopySubset(fullset->features_[fidx].get(), used_indices, num_used_indices);
   }
   if (need_meta_data) {
-    metadata_.Init(metadata_, used_indices, num_used_indices);
+    metadata_.Init(fullset->metadata_, used_indices, num_used_indices);
   }
 }
 
