@@ -29,17 +29,18 @@ public:
   struct SparsePair {
     data_size_t ridx;  // data(row) index
     VAL_T bin;  // bin for this data
-    SparsePair(data_size_t r, VAL_T b) : ridx(r), bin(b) {}
+    SparsePair() : ridx(0), bin(0) {}
   };
 
   OrderedSparseBin(const SparseBin<VAL_T>* bin_data)
     :bin_data_(bin_data) {
     data_size_t cur_pos = 0;
     data_size_t i_delta = -1;
+    int non_zero_cnt = 0;
     while (bin_data_->NextNonzero(&i_delta, &cur_pos)) {
-      ordered_pair_.emplace_back(cur_pos, static_cast<VAL_T>(0));
+      ++non_zero_cnt;
     }
-    ordered_pair_.shrink_to_fit();
+    ordered_pair_.resize(non_zero_cnt);
   }
 
   ~OrderedSparseBin() {

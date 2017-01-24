@@ -133,9 +133,9 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
       right_write_pos_buf_.resize(num_threads_);
       double average_bag_rate = new_config->bagging_fraction / new_config->bagging_freq;
       is_use_subset_ = false;
-      if (average_bag_rate < 0.5) {
+      if (average_bag_rate <= 0.5) {
         tmp_subset_.reset(new Dataset(bag_data_cnt_));
-        tmp_subset_->CopyFeatureMapperFrom(train_data, false);
+        tmp_subset_->CopyFeatureMapperFrom(train_data);
         is_use_subset_ = true;
         Log::Debug("use subset for bagging");
       }

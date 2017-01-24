@@ -147,6 +147,13 @@ public:
     }
   }
 
+  void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override {
+    auto other_bin = reinterpret_cast<const DenseBin<VAL_T>*>(full_bin);
+    for (int i = 0; i < num_used_indices; ++i) {
+      data_[i] = other_bin->data_[used_indices[i]];
+    }
+  }
+
   void SaveBinaryToFile(FILE* file) const override {
     fwrite(data_.data(), sizeof(VAL_T), num_data_, file);
   }

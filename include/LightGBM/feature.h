@@ -80,12 +80,21 @@ public:
     unsigned int bin = bin_mapper_->ValueToBin(value);
     bin_data_->Push(tid, line_idx, bin);
   }
+
   inline void PushBin(int tid, data_size_t line_idx, unsigned int bin) {
     bin_data_->Push(tid, line_idx, bin);
   }
-  void ReSize(data_size_t num_data) {
+
+  inline void CopySubset(const Feature* full_feature, const data_size_t* used_indices, data_size_t num_used_indices) {
+    bin_data_->CopySubset(full_feature->bin_data_.get(), used_indices, num_used_indices);
+  }
+
+  inline void ReSize(data_size_t num_data) {
     bin_data_->ReSize(num_data);
   }
+
+  inline bool is_sparse() const { return is_sparse_; }
+
   inline void FinishLoad() { bin_data_->FinishLoad(); }
   /*! \brief Index of this feature */
   inline int feature_index() const { return feature_index_; }

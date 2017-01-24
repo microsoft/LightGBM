@@ -263,6 +263,8 @@ public:
   */
   virtual void Push(int tid, data_size_t idx, uint32_t value) = 0;
 
+
+  virtual void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) = 0;
   /*!
   * \brief Get bin interator of this bin
   * \param start_idx start index of this 

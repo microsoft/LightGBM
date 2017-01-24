@@ -351,7 +351,7 @@ public:
   */
   LIGHTGBM_EXPORT void SaveBinaryFile(const char* bin_filename);
 
-  LIGHTGBM_EXPORT void CopyFeatureMapperFrom(const Dataset* dataset, bool is_enable_sparse);
+  LIGHTGBM_EXPORT void CopyFeatureMapperFrom(const Dataset* dataset);
 
   /*!
   * \brief Get a feature pointer for specific index

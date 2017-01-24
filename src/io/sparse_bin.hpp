@@ -134,25 +134,23 @@ public:
     for (size_t i = 0; i < push_buffers_.size(); ++i) {
       non_zero_size += push_buffers_[i].size();
     }
+    std::vector<std::pair<data_size_t, VAL_T>> non_zero_pair;
     // merge
-    non_zero_pair_.reserve(non_zero_size);
+    non_zero_pair.reserve(non_zero_size);
     for (size_t i = 0; i < push_buffers_.size(); ++i) {
-      non_zero_pair_.insert(non_zero_pair_.end(), push_buffers_[i].begin(), push_buffers_[i].end());
+      non_zero_pair.insert(non_zero_pair.end(), push_buffers_[i].begin(), push_buffers_[i].end());
       push_buffers_[i].clear();
       push_buffers_[i].shrink_to_fit();
     }
     push_buffers_.clear();
     push_buffers_.shrink_to_fit();
     // sort by data index
-    std::sort(non_zero_pair_.begin(), non_zero_pair_.end(),
+    std::sort(non_zero_pair.begin(), non_zero_pair.end(),
       [](const std::pair<data_size_t, VAL_T>& a, const std::pair<data_size_t, VAL_T>& b) {
       return a.first < b.first;
     });
     // load detla array
-    LoadFromPair(non_zero_pair_);
-    // free memory
-    non_zero_pair_.clear();
-    non_zero_pair_.shrink_to_fit();
+    LoadFromPair(non_zero_pair);
   }
 
   void LoadFromPair(const std::vector<std::pair<data_size_t, VAL_T>>& non_zero_pair) {
@@ -264,12 +262,23 @@ public:
       }
       LoadFromPair(tmp_pair);
     }
+  }
 
+  void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override {
+    auto other_bin = reinterpret_cast<const SparseBin<VAL_T>*>(full_bin);
+    SparseBinIterator<VAL_T> iterator(other_bin, used_indices[0]);
+    std::vector<std::pair<data_size_t, VAL_T>> tmp_pair;
+    for (data_size_t i = 0; i < num_used_indices; ++i) {
+      VAL_T bin = iterator.InnerGet(used_indices[i]);
+      if (bin > 0) {
+        tmp_pair.emplace_back(i, bin);
+      }
+    }
+    LoadFromPair(tmp_pair);
   }
 
 protected:
   data_size_t num_data_;
-  std::vector<std::pair<data_size_t, VAL_T>> non_zero_pair_;
   std::vector<uint8_t> deltas_;
   std::vector<VAL_T> vals_;
   data_size_t num_vals_;
