@@ -86,7 +86,7 @@ public:
   void FindBestThreshold(double sum_gradient, double sum_hessian, data_size_t num_data,
     SplitInfo* output) {
     FixIgnoreBin(sum_gradient, sum_hessian, num_data);
-    find_best_threshold_fun_(sum_gradient, sum_hessian, num_data, output);
+    find_best_threshold_fun_(sum_gradient, sum_hessian + 2 * kEpsilon, num_data, output);
     if (output->gain > kMinScore) {
       is_splittable_ = true;
     } else {

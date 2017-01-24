@@ -335,8 +335,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
   } else {
     ret.reset(new Dataset(nrow));
     ret->CopyFeatureMapperFrom(
-      reinterpret_cast<const Dataset*>(reference),
-      io_config.is_enable_sparse);
+      reinterpret_cast<const Dataset*>(reference));
   }
 
 #pragma omp parallel for schedule(guided)
@@ -397,8 +396,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSR(const void* indptr,
   } else {
     ret.reset(new Dataset(nrow));
     ret->CopyFeatureMapperFrom(
-      reinterpret_cast<const Dataset*>(reference),
-      io_config.is_enable_sparse);
+      reinterpret_cast<const Dataset*>(reference));
   }
 
 #pragma omp parallel for schedule(guided)
@@ -450,8 +448,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   } else {
     ret.reset(new Dataset(nrow));
     ret->CopyFeatureMapperFrom(
-      reinterpret_cast<const Dataset*>(reference),
-      io_config.is_enable_sparse);
+      reinterpret_cast<const Dataset*>(reference));
   }
 
 #pragma omp parallel for schedule(guided)
@@ -486,7 +483,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetSubset(
   io_config.Set(param);
   auto full_dataset = reinterpret_cast<const Dataset*>(handle);
   auto ret = std::unique_ptr<Dataset>(new Dataset(num_used_row_indices));
-  ret->CopyFeatureMapperFrom(full_dataset, io_config.is_enable_sparse);
+  ret->CopyFeatureMapperFrom(full_dataset);
   ret->CopySubset(full_dataset, used_row_indices, num_used_row_indices, true);
   *out = ret.release();
   API_END();

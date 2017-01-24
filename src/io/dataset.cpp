@@ -38,9 +38,16 @@ void Dataset::FinishLoad() {
   }
 }
 
-void Dataset::CopyFeatureMapperFrom(const Dataset* dataset, bool is_enable_sparse) {
+void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   features_.clear();
   num_features_ = dataset->num_features_;
+  bool is_enable_sparse = false;
+  for (int i = 0; i < num_features_; ++i) {
+    if (dataset->features_[i]->is_sparse()) {
+      is_enable_sparse = true;
+      break;
+    }
+  }
   // copy feature bin mapper data
   for(int i = 0;i < num_features_;++i){
     features_.emplace_back(new Feature(dataset->features_[i]->feature_index(),
@@ -69,15 +76,11 @@ void Dataset::CopySubset(const Dataset* fullset, const data_size_t* used_indices
   CHECK(num_used_indices == num_data_);
 #pragma omp parallel for schedule(guided)
   for (int fidx = 0; fidx < num_features_; ++fidx) {
-    auto iterator = fullset->features_[fidx]->bin_data()->GetIterator(used_indices[0]);
-    for (data_size_t i = 0; i < num_used_indices; ++i) {
-      features_[fidx]->PushBin(0, i, iterator->Get(used_indices[i]));
-    }
+    features_[fidx]->CopySubset(fullset->features_[fidx].get(), used_indices, num_used_indices);
   }
   if (need_meta_data) {
     metadata_.Init(metadata_, used_indices, num_used_indices);
   }
-  FinishLoad();
 }
 
 bool Dataset::SetFloatField(const char* field_name, const float* field_data, data_size_t num_element) {

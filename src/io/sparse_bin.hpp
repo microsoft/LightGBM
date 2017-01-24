@@ -143,9 +143,6 @@ public:
     });
     // load detla array
     LoadFromPair(idx_val_pairs);
-    // free memory
-    idx_val_pairs.clear();
-    idx_val_pairs.shrink_to_fit();
   }
 
   void LoadFromPair(const std::vector<std::pair<data_size_t, VAL_T>>& idx_val_pair) {
@@ -258,7 +255,19 @@ public:
       }
       LoadFromPair(tmp_pair);
     }
+  }
 
+  void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override {
+    auto other_bin = reinterpret_cast<const SparseBin<VAL_T>*>(full_bin);
+    SparseBinIterator<VAL_T> iterator(other_bin, used_indices[0]);
+    std::vector<std::pair<data_size_t, VAL_T>> tmp_pair;
+    for (data_size_t i = 0; i < num_used_indices; ++i) {
+      VAL_T bin = iterator.InnerGet(used_indices[i]);
+      if (bin > 0) {
+        tmp_pair.emplace_back(i, bin);
+      }
+    }
+    LoadFromPair(tmp_pair);
   }
 
 protected:
