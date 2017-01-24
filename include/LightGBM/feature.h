@@ -114,8 +114,6 @@ public:
   inline double BinToValue(unsigned int bin)
     const { return bin_mapper_->BinToValue(bin); }
 
-  inline bool is_sparse() const { return is_sparse_; }
-
   /*!
   * \brief Save binary data to file
   * \param file File want to write

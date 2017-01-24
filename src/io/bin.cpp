@@ -194,7 +194,7 @@ void BinMapper::FindBin(const std::string& column_name, std::vector<double>* val
   CHECK(num_bin_ <= max_bin);
   max_heavy_bin_ = static_cast<uint32_t>(ArrayArgs<int>::ArgMax(cnt_in_bin));
   // calculate sparse rate
-  sparse_rate_ = static_cast<double>(max_heavy_bin_) / static_cast<double>(sample_size);
+  sparse_rate_ = static_cast<double>(cnt_in_bin[max_heavy_bin_]) / static_cast<double>(sample_size);
 }
 
 
@@ -297,7 +297,7 @@ template class SparseCategoricalBin<uint32_t>;
 Bin* Bin::CreateBin(data_size_t num_data, int num_bin, double sparse_rate, 
   bool is_enable_sparse, bool* is_sparse, uint32_t default_bin, uint32_t max_heavy_bin, BinType bin_type) {
   // sparse threshold
-  const double kSparseThreshold = 0.6f;
+  const double kSparseThreshold = 0.8f;
   if (sparse_rate >= kSparseThreshold && is_enable_sparse) {
     *is_sparse = true;
     return CreateSparseBin(num_data, num_bin, default_bin, max_heavy_bin, bin_type);
