@@ -960,7 +960,7 @@ The methods of each Class is in alphabetical order.
     ignore_zero : bool
         Ignore features with zero importance.
     figsize : tuple of 2 elements
-        Figure size
+        Figure size.
     grid : bool
         Whether add grid for axes.
     **kwargs :

@@ -8,14 +8,20 @@ from sklearn.model_selection import train_test_split
 
 try:
     from matplotlib.axes import Axes
-    MATPLOTLIB_INSTALLED = True
+    matplotlib_installed = True
 except ImportError:
-    MATPLOTLIB_INSTALLED = False
+    matplotlib_installed = False
+
+try:
+    from graphviz import Digraph
+    graphviz_installed = True
+except ImportError:
+    graphviz_installed = False
 
 
 class TestBasic(unittest.TestCase):
 
-    @unittest.skipIf(not MATPLOTLIB_INSTALLED, 'matplotlib not installed')
+    @unittest.skipIf(not matplotlib_installed, 'matplotlib not installed')
     def test_plot_importance(self):
         X_train, _, y_train, _ = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=1)
         train_data = lgb.Dataset(X_train, y_train)
@@ -57,6 +63,23 @@ class TestBasic(unittest.TestCase):
         self.assertTupleEqual(ax2.patches[1].get_facecolor(), (.75, .75, 0, 1.))  # y
         self.assertTupleEqual(ax2.patches[2].get_facecolor(), (0, .5, 0, 1.))  # g
         self.assertTupleEqual(ax2.patches[3].get_facecolor(), (0, 0, 1., 1.))  # b
+
+    @unittest.skipIf(not matplotlib_installed or not graphviz_installed, 'matplotlib or graphviz not installed')
+    def test_plot_tree(self):
+        X_train, _, y_train, _ = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=1)
+        train_data = lgb.Dataset(X_train, y_train)
+
+        params = {
+            "objective": "binary",
+            "verbose": -1,
+            "num_leaves": 3
+        }
+        gbm0 = lgb.train(params, train_data, num_boost_round=10)
+        lgb.plot_tree(gbm0)
+
+        gbm1 = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, silent=True)
+        gbm1.fit(X_train, y_train)
+        lgb.plot_tree(gbm1)
 
 
 print("----------------------------------------------------------------------")
