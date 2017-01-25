@@ -59,22 +59,23 @@ public:
       data_[i].sum_hessians -= other.data_[i].sum_hessians;
     }
   }
+
   void FixIgnoreBin(double sum_gradient, double sum_hessian, data_size_t num_data) {
-    if (tree_config_->sparse_aware || feature_->is_sparse()) {
+    if (feature_->is_sparse()) {
       // not need to Fix if max heavy bin is 0
-      if (feature_->bin_type() == BinType::NumericalBin 
-          && feature_->bin_mapper()->GetMaxHeavyBin() == 0) {
+      if (feature_->bin_type() == BinType::NumericalBin
+        && feature_->bin_mapper()->GetDefaultBin() == 0) {
         return;
       }
-      int max_heavy_bin = static_cast<int>(feature_->bin_mapper()->GetMaxHeavyBin());
-      data_[max_heavy_bin].sum_gradients = sum_gradient;
-      data_[max_heavy_bin].sum_hessians = sum_hessian;
-      data_[max_heavy_bin].cnt = num_data;
+      int default_bin = static_cast<int>(feature_->bin_mapper()->GetDefaultBin());
+      data_[default_bin].sum_gradients = sum_gradient;
+      data_[default_bin].sum_hessians = sum_hessian;
+      data_[default_bin].cnt = num_data;
       for (int t = feature_->num_bin() - 1; t >= 0; --t) {
-        if (t != max_heavy_bin) {
-          data_[max_heavy_bin].sum_gradients -= data_[t].sum_gradients;
-          data_[max_heavy_bin].sum_hessians -= data_[t].sum_hessians;
-          data_[max_heavy_bin].cnt -= data_[t].cnt;
+        if (t != default_bin) {
+          data_[default_bin].sum_gradients -= data_[t].sum_gradients;
+          data_[default_bin].sum_hessians -= data_[t].sum_hessians;
+          data_[default_bin].cnt -= data_[t].cnt;
         }
       }
     }

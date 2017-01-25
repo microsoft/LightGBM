@@ -1,5 +1,4 @@
 #include <LightGBM/utils/common.h>
-#include <LightGBM/utils/array_args.h>
 #include <LightGBM/bin.h>
 
 #include "dense_bin.hpp"
@@ -30,7 +29,6 @@ BinMapper::BinMapper(const BinMapper& other) {
     bin_2_categorical_ = other.bin_2_categorical_;
     categorical_2_bin_ = other.categorical_2_bin_;
   }
-  max_heavy_bin_ = other.max_heavy_bin_;
   min_val_ = other.min_val_;
   max_val_ = other.max_val_;
 
@@ -88,8 +86,8 @@ void BinMapper::FindBin(const std::string& column_name, std::vector<double>* val
   }
   min_val_ = distinct_values.front();
   max_val_ = distinct_values.back();
-  int num_values = static_cast<int>(distinct_values.size());
   std::vector<int> cnt_in_bin;
+  int num_values = static_cast<int>(distinct_values.size());
   if (bin_type_ == BinType::NumericalBin) {
     if (num_values <= max_bin) {
       std::sort(distinct_values.begin(), distinct_values.end());
@@ -194,10 +192,9 @@ void BinMapper::FindBin(const std::string& column_name, std::vector<double>* val
   } else {
     is_trival_ = false;
   }
-  CHECK(num_bin_ <= max_bin);
-  max_heavy_bin_ = static_cast<uint32_t>(ArrayArgs<int>::ArgMax(cnt_in_bin));
   // calculate sparse rate
-  sparse_rate_ = static_cast<double>(cnt_in_bin[max_heavy_bin_]) / static_cast<double>(sample_size);
+  CHECK(num_bin_ <= max_bin);
+  sparse_rate_ = static_cast<double>(cnt_in_bin[GetDefaultBin()]) / static_cast<double>(sample_size);
 }
 
 
@@ -220,6 +217,11 @@ void BinMapper::CopyTo(char * buffer) {
   buffer += sizeof(sparse_rate_);
   std::memcpy(buffer, &bin_type_, sizeof(bin_type_));
   buffer += sizeof(bin_type_);
+  std::memcpy(&min_val_, buffer, sizeof(min_val_));
+  buffer += sizeof(min_val_);
+  std::memcpy(&max_val_, buffer, sizeof(max_val_));
+  buffer += sizeof(max_val_);
+
   if (bin_type_ == BinType::NumericalBin) {
     std::memcpy(buffer, bin_upper_bound_.data(), num_bin_ * sizeof(double));
   } else {
@@ -240,8 +242,7 @@ void BinMapper::CopyFrom(const char * buffer) {
   buffer += sizeof(min_val_);
   std::memcpy(&max_val_, buffer, sizeof(max_val_));
   buffer += sizeof(max_val_);
-  std::memcpy(&max_heavy_bin_, buffer, sizeof(max_heavy_bin_));
-  buffer += sizeof(max_heavy_bin_);
+
   if (bin_type_ == BinType::NumericalBin) {
     bin_upper_bound_ = std::vector<double>(num_bin_);
     std::memcpy(bin_upper_bound_.data(), buffer, num_bin_ * sizeof(double));
@@ -262,7 +263,6 @@ void BinMapper::SaveBinaryToFile(FILE* file) const {
   fwrite(&bin_type_, sizeof(bin_type_), 1, file);
   fwrite(&min_val_, sizeof(min_val_), 1, file);
   fwrite(&max_val_, sizeof(max_val_), 1, file);
-  fwrite(&max_heavy_bin_, sizeof(max_heavy_bin_), 1, file);
   if (bin_type_ == BinType::NumericalBin) {
     fwrite(bin_upper_bound_.data(), sizeof(double), num_bin_, file);
   } else {
@@ -272,7 +272,7 @@ void BinMapper::SaveBinaryToFile(FILE* file) const {
 
 size_t BinMapper::SizesInByte() const {
   size_t ret = sizeof(num_bin_) + sizeof(is_trival_) + sizeof(sparse_rate_)
-    + sizeof(bin_type_) + sizeof(min_val_) + sizeof(max_val_) + sizeof(max_heavy_bin_);
+    + sizeof(bin_type_) + sizeof(min_val_) + sizeof(max_val_);
   if (bin_type_ == BinType::NumericalBin) {
     ret += sizeof(double) *  num_bin_;
   } else {
@@ -298,12 +298,12 @@ template class SparseCategoricalBin<uint16_t>;
 template class SparseCategoricalBin<uint32_t>;
 
 Bin* Bin::CreateBin(data_size_t num_data, int num_bin, double sparse_rate, 
-  bool is_enable_sparse, bool* is_sparse, uint32_t default_bin, uint32_t max_heavy_bin, BinType bin_type) {
+  bool is_enable_sparse, bool* is_sparse, uint32_t default_bin, BinType bin_type) {
   // sparse threshold
   const double kSparseThreshold = 0.8f;
   if (sparse_rate >= kSparseThreshold && is_enable_sparse) {
     *is_sparse = true;
-    return CreateSparseBin(num_data, num_bin, default_bin, max_heavy_bin, bin_type);
+    return CreateSparseBin(num_data, num_bin, default_bin, bin_type);
   } else {
     *is_sparse = false;
     return CreateDenseBin(num_data, num_bin, default_bin, bin_type);
@@ -330,22 +330,22 @@ Bin* Bin::CreateDenseBin(data_size_t num_data, int num_bin, uint32_t default_bin
   }
 }
 
-Bin* Bin::CreateSparseBin(data_size_t num_data, int num_bin, uint32_t default_bin, uint32_t max_heavy_bin, BinType bin_type) {
+Bin* Bin::CreateSparseBin(data_size_t num_data, int num_bin, uint32_t default_bin, BinType bin_type) {
   if (bin_type == BinType::NumericalBin) {
     if (num_bin <= 255) {
-      return new SparseBin<uint8_t>(num_data, default_bin, max_heavy_bin);
+      return new SparseBin<uint8_t>(num_data, default_bin);
     } else if (num_bin <= 65535) {
-      return new SparseBin<uint16_t>(num_data, default_bin, max_heavy_bin);
+      return new SparseBin<uint16_t>(num_data, default_bin);
     } else {
-      return new SparseBin<uint32_t>(num_data, default_bin, max_heavy_bin);
+      return new SparseBin<uint32_t>(num_data, default_bin);
     }
   } else {
     if (num_bin <= 255) {
-      return new SparseCategoricalBin<uint8_t>(num_data, default_bin, max_heavy_bin);
+      return new SparseCategoricalBin<uint8_t>(num_data, default_bin);
     } else if (num_bin <= 65535) {
-      return new SparseCategoricalBin<uint16_t>(num_data, default_bin, max_heavy_bin);
+      return new SparseCategoricalBin<uint16_t>(num_data, default_bin);
     } else {
-      return new SparseCategoricalBin<uint32_t>(num_data, default_bin, max_heavy_bin);
+      return new SparseCategoricalBin<uint32_t>(num_data, default_bin);
     }
   }
 }

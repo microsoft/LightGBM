@@ -9,7 +9,7 @@
 
 #include <cstring>
 #include <cstdint>
-
+#include <limits>
 #include <vector>
 
 namespace LightGBM {
@@ -50,10 +50,9 @@ public:
   friend class SparseBinIterator<VAL_T>;
   friend class OrderedSparseBin<VAL_T>;
 
-  SparseBin(data_size_t num_data, uint32_t default_bin, uint32_t max_heavy_bin)
+  SparseBin(data_size_t num_data, uint32_t default_bin)
     : num_data_(num_data) {
     default_bin_ = static_cast<VAL_T>(default_bin);
-    max_heavy_bin_= static_cast<VAL_T>(max_heavy_bin);
 #pragma omp parallel
 #pragma omp master
     {
@@ -88,11 +87,11 @@ public:
 
   inline bool NextNonzero(data_size_t* i_delta,
     data_size_t* cur_pos) const {
-    const VAL_T not_data_flag = std::numeric_limits<VAL_T>::max();
+    const VAL_T non_data_flag = std::numeric_limits<VAL_T>::max();
     ++(*i_delta);
     *cur_pos += deltas_[*i_delta];
     data_size_t factor = 1;
-    while (*i_delta < num_vals_ && vals_[*i_delta] == not_data_flag) {
+    while (*i_delta < num_vals_ && vals_[*i_delta] == non_data_flag) {
       ++(*i_delta);
       factor *= kMaxDelta;
       *cur_pos += deltas_[*i_delta] * factor;
@@ -131,7 +130,9 @@ public:
     for (size_t i = 0; i < push_buffers_.size(); ++i) {
       pair_cnt += push_buffers_[i].size();
     }
-    std::vector<std::pair<data_size_t, VAL_T>> idx_val_pairs(pair_cnt);
+    std::vector<std::pair<data_size_t, VAL_T>> idx_val_pairs;
+    // merge
+    idx_val_pairs.reserve(pair_cnt);
     for (size_t i = 0; i < push_buffers_.size(); ++i) {
       idx_val_pairs.insert(idx_val_pairs.end(), push_buffers_[i].begin(), push_buffers_[i].end());
       push_buffers_[i].clear();
@@ -148,19 +149,19 @@ public:
     LoadFromPair(idx_val_pairs);
   }
 
-  void LoadFromPair(const std::vector<std::pair<data_size_t, VAL_T>>& idx_val_pair) {
+  void LoadFromPair(const std::vector<std::pair<data_size_t, VAL_T>>& idx_val_pairs) {
     deltas_.clear();
     vals_.clear();
-    const VAL_T not_data_flag = std::numeric_limits<VAL_T>::max();
+    const VAL_T non_data_flag = std::numeric_limits<VAL_T>::max();
     // transform to delta array
     data_size_t last_idx = 0;
-    for (size_t i = 0; i < idx_val_pair.size(); ++i) {
-      const data_size_t cur_idx = idx_val_pair[i].first;
-      const VAL_T bin = idx_val_pair[i].second;
+    for (size_t i = 0; i < idx_val_pairs.size(); ++i) {
+      const data_size_t cur_idx = idx_val_pairs[i].first;
+      const VAL_T bin = idx_val_pairs[i].second;
       data_size_t cur_delta = cur_idx - last_idx;
       while (cur_delta > kMaxDelta) {
         deltas_.push_back(cur_delta %  kMaxDelta);
-        vals_.push_back(not_data_flag);
+        vals_.push_back(non_data_flag);
         cur_delta /= kMaxDelta;
       }
       deltas_.push_back(static_cast<uint8_t>(cur_delta));
@@ -283,7 +284,6 @@ protected:
   std::vector<std::pair<data_size_t, data_size_t>> fast_index_;
   data_size_t fast_index_shift_;
   VAL_T default_bin_;
-  VAL_T max_heavy_bin_;
 };
 
 template <typename VAL_T>
@@ -314,8 +314,8 @@ BinIterator* SparseBin<VAL_T>::GetIterator(data_size_t start_idx) const {
 template <typename VAL_T>
 class SparseCategoricalBin: public SparseBin<VAL_T> {
 public:
-  SparseCategoricalBin(data_size_t num_data, uint32_t default_bin, uint32_t max_heavy_bin)
-    : SparseBin<VAL_T>(num_data, default_bin, max_heavy_bin) {
+  SparseCategoricalBin(data_size_t num_data, uint32_t default_bin)
+    : SparseBin<VAL_T>(num_data, default_bin) {
   }
 
   virtual data_size_t Split(unsigned int threshold, data_size_t* data_indices, data_size_t num_data,

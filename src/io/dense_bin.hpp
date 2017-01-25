@@ -16,9 +16,8 @@ namespace LightGBM {
 template <typename VAL_T>
 class DenseBin: public Bin {
 public:
-  DenseBin(data_size_t num_data, int default_bin)
-    : num_data_(num_data), 
-    data_(num_data_, static_cast<VAL_T>(default_bin)){
+  DenseBin(data_size_t num_data, uint32_t default_bin)
+    : num_data_(num_data), data_(num_data_, static_cast<VAL_T>(default_bin)) {
   }
 
   ~DenseBin() {

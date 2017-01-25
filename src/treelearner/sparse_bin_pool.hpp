@@ -48,15 +48,15 @@ public:
     Threading::For<data_size_t>(0, train_data->num_data(),
       [this, &bin_buf, train_data](int, data_size_t start, data_size_t end) {
       std::vector<std::unique_ptr<BinIterator>> iterators(total_feature_);
-      std::vector<uint32_t> max_heavy_bins;
+      std::vector<uint32_t> default_bin;
       for (int i = 0; i < total_feature_; ++i) {
         iterators[i].reset(train_data->FeatureAt(feature_mapper_[i])->bin_data()->GetIterator(start));
-        max_heavy_bins.push_back(train_data->FeatureAt(feature_mapper_[i])->bin_mapper()->GetMaxHeavyBin());
+        default_bin.push_back(train_data->FeatureAt(feature_mapper_[i])->bin_mapper()->GetDefaultBin());
       }
       for (int i = start; i < end; ++i) {
         for (int j = 0; j < total_feature_; ++j) {
           auto cur_bin = iterators[j]->Get(i);
-          if (cur_bin != max_heavy_bins[j]) {
+          if (cur_bin != default_bin[j]) {
             bin_buf[i].push_back(cur_bin + bin_boundaries_[j]);
           }
         }
