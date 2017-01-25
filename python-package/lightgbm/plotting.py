@@ -3,17 +3,24 @@
 """Plotting Library."""
 from __future__ import absolute_import
 
+from io import BytesIO
+
 import numpy as np
 
 from .basic import Booster, is_numpy_1d_array
 from .sklearn import LGBMModel
 
 
+def check_not_tuple_of_2_elements(obj):
+    """check object is not tuple or does not have 2 elements"""
+    return not isinstance(obj, tuple) or len(obj) != 2
+
+
 def plot_importance(booster, ax=None, height=0.2,
                     xlim=None, ylim=None, title='Feature importance',
                     xlabel='Feature importance', ylabel='Features',
                     importance_type='split', max_num_features=None,
-                    ignore_zero=True, grid=True, **kwargs):
+                    ignore_zero=True, figsize=None, grid=True, **kwargs):
     """Plot model feature importances.
 
     Parameters
@@ -24,9 +31,9 @@ def plot_importance(booster, ax=None, height=0.2,
         Target axes instance. If None, new figure and axes will be created.
     height : float
         Bar height, passed to ax.barh()
-    xlim : tuple
+    xlim : tuple of 2 elements
         Tuple passed to axes.xlim()
-    ylim : tuple
+    ylim : tuple of 2 elements
         Tuple passed to axes.ylim()
     title : str
         Axes title. Pass None to disable.
@@ -43,6 +50,8 @@ def plot_importance(booster, ax=None, height=0.2,
         If None or smaller than 1, all features will be displayed.
     ignore_zero : bool
         Ignore features with zero importance
+    figsize : tuple of 2 elements
+        Figure size
     grid : bool
         Whether add grid for axes
     **kwargs :
@@ -55,7 +64,7 @@ def plot_importance(booster, ax=None, height=0.2,
     try:
         import matplotlib.pyplot as plt
     except ImportError:
-        raise ImportError('You must install matplotlib for plotting library')
+        raise ImportError('You must install matplotlib to plot importance.')
 
     if isinstance(booster, LGBMModel):
         importance = booster.booster_.feature_importance(importance_type=importance_type)
@@ -64,10 +73,10 @@ def plot_importance(booster, ax=None, height=0.2,
     elif is_numpy_1d_array(booster) or isinstance(booster, list):
         importance = booster
     else:
-        raise ValueError('booster must be Booster or array instance')
+        raise TypeError('booster must be Booster, LGBMModel or array instance.')
 
     if not len(importance):
-        raise ValueError('Booster feature_importances are empty')
+        raise ValueError('Booster feature_importances are empty.')
 
     tuples = sorted(enumerate(importance), key=lambda x: x[1])
     if ignore_zero:
@@ -77,7 +86,9 @@ def plot_importance(booster, ax=None, height=0.2,
     labels, values = zip(*tuples)
 
     if ax is None:
-        _, ax = plt.subplots(1, 1)
+        if figsize is not None and check_not_tuple_of_2_elements(figsize):
+            raise TypeError('figsize must be a tuple of 2 elements.')
+        _, ax = plt.subplots(1, 1, figsize=figsize)
 
     ylocs = np.arange(len(values))
     ax.barh(ylocs, values, align='center', height=height, **kwargs)
@@ -89,15 +100,15 @@ def plot_importance(booster, ax=None, height=0.2,
     ax.set_yticklabels(labels)
 
     if xlim is not None:
-        if not isinstance(xlim, tuple) or len(xlim) != 2:
-            raise ValueError('xlim must be a tuple of 2 elements')
+        if check_not_tuple_of_2_elements(xlim):
+            raise TypeError('xlim must be a tuple of 2 elements.')
     else:
         xlim = (0, max(values) * 1.1)
     ax.set_xlim(xlim)
 
     if ylim is not None:
-        if not isinstance(ylim, tuple) or len(ylim) != 2:
-            raise ValueError('ylim must be a tuple of 2 elements')
+        if check_not_tuple_of_2_elements(ylim):
+            raise TypeError('ylim must be a tuple of 2 elements.')
     else:
         ylim = (-1, len(values))
     ax.set_ylim(ylim)
@@ -109,4 +120,95 @@ def plot_importance(booster, ax=None, height=0.2,
     if ylabel is not None:
         ax.set_ylabel(ylabel)
     ax.grid(grid)
+    return ax
+
+
+def _to_graphviz(graph, tree_info):
+    """Convert specified tree to graphviz instance."""
+
+    def add(root, parent=None, decision=None):
+        """recursively add node or edge"""
+        if 'split_index' in root:  # non-leaf
+            name = 'split' + str(root['split_index'])
+            graph.node(name, label='threshold:' + str(root['split_feature']))
+            if root['decision_type'] == 'no_greater':
+                l_dec, r_dec = '<', '>'
+            else:
+                l_dec, r_dec = 'is', "isn't"
+            add(root['left_child'], name, l_dec)
+            add(root['right_child'], name, r_dec)
+        else:  # leaf
+            name = 'left' + str(root['leaf_index'])
+            graph.node(name, label='leaf_value:' + str(root['leaf_value']))
+        if parent is not None:
+            graph.edge(parent, name, decision)
+
+    add(tree_info['tree_structure'])
+    return graph
+
+
+def plot_tree(booster, ax=None, tree_index=0, figsize=None,
+              graph_attr=None, node_attr=None, edge_attr=None):
+    """Plot specified tree.
+
+    Parameters
+    ----------
+    booster : Booster, LGBMModel
+        Booster or LGBMModel instance.
+    ax : matplotlib Axes
+        Target axes instance. If None, new figure and axes will be created.
+    tree_index : int, default 0
+        Specify tree index of target tree.
+    figsize : tuple
+        Figure size.
+    graph_attr: dict
+        Mapping of (attribute, value) pairs for the graph.
+    node_attr: dict
+        Mapping of (attribute, value) pairs set for all nodes.
+    edge_attr: dict
+        Mapping of (attribute, value) pairs set for all edges.
+
+    Returns
+    -------
+    ax : matplotlib Axes
+    """
+    try:
+        import matplotlib.pyplot as plt
+        import matplotlib.image as image
+    except ImportError:
+        raise ImportError('You must install matplotlib to plot tree.')
+
+    try:
+        from graphviz import Digraph
+    except ImportError:
+        raise ImportError('You must install graphviz to plot tree.')
+
+    if ax is None:
+        if figsize is not None and check_not_tuple_of_2_elements(figsize):
+            raise TypeError('xlim must be a tuple of 2 elements.')
+        _, ax = plt.subplots(1, 1, figsize=figsize)
+
+    if isinstance(booster, LGBMModel):
+        booster = booster.booster_
+    elif not isinstance(booster, Booster):
+        raise TypeError('booster must be Booster or LGBMModel.')
+
+    tree_infos = booster.dump_model()['tree_info']
+
+    if tree_index < len(tree_infos):
+        tree_info = tree_infos[tree_index]
+    else:
+        raise IndexError('tree_index is out of range.')
+
+    graph = Digraph(graph_attr=graph_attr, node_attr=node_attr, edge_attr=edge_attr)
+
+    ret = _to_graphviz(graph, tree_info)
+
+    s = BytesIO()
+    s.write(ret.pipe(format='png'))
+    s.seek(0)
+    img = image.imread(s)
+
+    ax.imshow(img)
+    ax.axis('off')
     return ax
