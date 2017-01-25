@@ -61,7 +61,7 @@ public:
   }
 
   void FixIgnoreBin(double sum_gradient, double sum_hessian, data_size_t num_data) {
-    if (feature_->is_sparse()) {
+    if (feature_->is_sparse() || tree_config_->sparse_aware) {
       // not need to Fix if max heavy bin is 0
       if (feature_->bin_type() == BinType::NumericalBin
         && feature_->bin_mapper()->GetDefaultBin() == 0) {
