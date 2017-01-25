@@ -20,6 +20,7 @@ lgb_train = lgb.Dataset(X_train, y_train)
 
 # specify your configurations as a dict
 params = {
+    'num_leaves': 5,
     'verbose': 0
 }
 
@@ -27,9 +28,16 @@ print('Start training...')
 # train
 gbm = lgb.train(params,
                 lgb_train,
-                num_boost_round=10)
+                num_boost_round=100,
+                feature_name=['f' + str(i + 1) for i in range(28)],
+                categorical_feature=[21])
 
 print('Plot feature importances...')
 # plot feature importances
 ax = lgb.plot_importance(gbm, max_num_features=10)
+plt.show()
+
+print('Plot 84th tree...')
+# plot tree
+lgb.plot_tree(gbm, tree_index=83, figsize=(20, 8), show_info=['split_gain'])
 plt.show()

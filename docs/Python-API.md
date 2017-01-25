@@ -928,22 +928,22 @@ The methods of each Class is in alphabetical order.
 
 ##Plotting
 
-####plot_importance(booster, ax=None, height=0.2, xlim=None, ylim=None, title='Feature importance', xlabel='Feature importance', ylabel='Features', importance_type='split', max_num_features=None, ignore_zero=True, grid=True, **kwargs):
+####plot_importance(booster, ax=None, height=0.2, xlim=None, ylim=None, title='Feature importance', xlabel='Feature importance', ylabel='Features', importance_type='split', max_num_features=None, ignore_zero=True, figsize=None, grid=True, **kwargs):
 
     Plot model feature importances.
 
     Parameters
     ----------
     booster : Booster, LGBMModel or array
-        Booster or LGBMModel instance, or array of feature importances
+        Booster or LGBMModel instance, or array of feature importances.
     ax : matplotlib Axes
         Target axes instance. If None, new figure and axes will be created.
     height : float
-        Bar height, passed to ax.barh()
-    xlim : tuple
-        Tuple passed to axes.xlim()
-    ylim : tuple
-        Tuple passed to axes.ylim()
+        Bar height, passed to ax.barh().
+    xlim : tuple of 2 elements
+        Tuple passed to axes.xlim().
+    ylim : tuple of 2 elements
+        Tuple passed to axes.ylim().
     title : str
         Axes title. Pass None to disable.
     xlabel : str
@@ -951,18 +951,47 @@ The methods of each Class is in alphabetical order.
     ylabel : str
         Y axis title label. Pass None to disable.
     importance_type : str
-        How the importance is calculated: "split" or "gain"
-        "split" is the number of times a feature is used in a model
-        "gain" is the total gain of splits which use the feature
+        How the importance is calculated: "split" or "gain".
+        "split" is the number of times a feature is used in a model.
+        "gain" is the total gain of splits which use the feature.
     max_num_features : int
         Max number of top features displayed on plot.
         If None or smaller than 1, all features will be displayed.
     ignore_zero : bool
-        Ignore features with zero importance
+        Ignore features with zero importance.
+    figsize : tuple of 2 elements
+        Figure size.
     grid : bool
-        Whether add grid for axes
+        Whether add grid for axes.
     **kwargs :
-        Other keywords passed to ax.barh()
+        Other keywords passed to ax.barh().
+
+    Returns
+    -------
+    ax : matplotlib Axes
+
+####plot_tree(booster, ax=None, tree_index=0, figsize=None, graph_attr=None, node_attr=None, edge_attr=None, show_info=None):
+    Plot specified tree.
+
+    Parameters
+    ----------
+    booster : Booster, LGBMModel
+        Booster or LGBMModel instance.
+    ax : matplotlib Axes
+        Target axes instance. If None, new figure and axes will be created.
+    tree_index : int, default 0
+        Specify tree index of target tree.
+    figsize : tuple of 2 elements
+        Figure size.
+    graph_attr: dict
+        Mapping of (attribute, value) pairs for the graph.
+    node_attr: dict
+        Mapping of (attribute, value) pairs set for all nodes.
+    edge_attr: dict
+        Mapping of (attribute, value) pairs set for all edges.
+    show_info : list
+        Information shows on nodes.
+        options: 'split_gain', 'internal_value', 'internal_count' or 'leaf_count'.
 
     Returns
     -------

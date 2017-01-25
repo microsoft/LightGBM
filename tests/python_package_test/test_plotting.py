@@ -7,15 +7,16 @@ from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 
 try:
-    from matplotlib.axes import Axes
-    MATPLOTLIB_INSTALLED = True
+    import matplotlib
+    matplotlib.use('Agg')
+    matplotlib_installed = True
 except ImportError:
-    MATPLOTLIB_INSTALLED = False
+    matplotlib_installed = False
 
 
 class TestBasic(unittest.TestCase):
 
-    @unittest.skipIf(not MATPLOTLIB_INSTALLED, 'matplotlib not installed')
+    @unittest.skipIf(not matplotlib_installed, 'matplotlib not installed')
     def test_plot_importance(self):
         X_train, _, y_train, _ = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=1)
         train_data = lgb.Dataset(X_train, y_train)
@@ -27,7 +28,7 @@ class TestBasic(unittest.TestCase):
         }
         gbm0 = lgb.train(params, train_data, num_boost_round=10)
         ax0 = lgb.plot_importance(gbm0)
-        self.assertIsInstance(ax0, Axes)
+        self.assertIsInstance(ax0, matplotlib.axes.Axes)
         self.assertEqual(ax0.get_title(), 'Feature importance')
         self.assertEqual(ax0.get_xlabel(), 'Feature importance')
         self.assertEqual(ax0.get_ylabel(), 'Features')
@@ -37,7 +38,7 @@ class TestBasic(unittest.TestCase):
         gbm1.fit(X_train, y_train)
 
         ax1 = lgb.plot_importance(gbm1, color='r', title='t', xlabel='x', ylabel='y')
-        self.assertIsInstance(ax1, Axes)
+        self.assertIsInstance(ax1, matplotlib.axes.Axes)
         self.assertEqual(ax1.get_title(), 't')
         self.assertEqual(ax1.get_xlabel(), 'x')
         self.assertEqual(ax1.get_ylabel(), 'y')
@@ -48,7 +49,7 @@ class TestBasic(unittest.TestCase):
         ax2 = lgb.plot_importance(gbm0.feature_importance(),
                                   color=['r', 'y', 'g', 'b'],
                                   title=None, xlabel=None, ylabel=None)
-        self.assertIsInstance(ax2, Axes)
+        self.assertIsInstance(ax2, matplotlib.axes.Axes)
         self.assertEqual(ax2.get_title(), '')
         self.assertEqual(ax2.get_xlabel(), '')
         self.assertEqual(ax2.get_ylabel(), '')
@@ -57,6 +58,10 @@ class TestBasic(unittest.TestCase):
         self.assertTupleEqual(ax2.patches[1].get_facecolor(), (.75, .75, 0, 1.))  # y
         self.assertTupleEqual(ax2.patches[2].get_facecolor(), (0, .5, 0, 1.))  # g
         self.assertTupleEqual(ax2.patches[3].get_facecolor(), (0, 0, 1., 1.))  # b
+
+    @unittest.skip('Graphviz are not executables on Travis')
+    def test_plot_tree(self):
+        pass
 
 
 print("----------------------------------------------------------------------")

@@ -14,7 +14,7 @@ try:
 except ImportError:
     pass
 try:
-    from .plotting import plot_importance
+    from .plotting import plot_importance, plot_tree
 except ImportError:
     pass
 
@@ -25,4 +25,4 @@ __all__ = ['Dataset', 'Booster',
            'train', 'cv',
            'LGBMModel', 'LGBMRegressor', 'LGBMClassifier', 'LGBMRanker',
            'print_evaluation', 'record_evaluation', 'reset_parameter', 'early_stopping',
-           'plot_importance']
+           'plot_importance', 'plot_tree']
