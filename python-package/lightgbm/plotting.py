@@ -123,14 +123,19 @@ def plot_importance(booster, ax=None, height=0.2,
     return ax
 
 
-def _to_graphviz(graph, tree_info):
+def _to_graphviz(graph, tree_info, show_info):
     """Convert specified tree to graphviz instance."""
 
     def add(root, parent=None, decision=None):
         """recursively add node or edge"""
         if 'split_index' in root:  # non-leaf
             name = 'split' + str(root['split_index'])
-            graph.node(name, label='threshold:' + str(root['split_feature']))
+            label = 'split_feature:' + str(root['split_feature'])
+            label += '\nthreshold:' + str(root['threshold'])
+            for info in show_info:
+                if info in {'split_gain', 'internal_value', 'internal_count'}:
+                    label += '\n' + info + ':' + str(root[info])
+            graph.node(name, label=label)
             if root['decision_type'] == 'no_greater':
                 l_dec, r_dec = '<=', '>'
             elif root['decision_type'] == 'is':
@@ -141,7 +146,10 @@ def _to_graphviz(graph, tree_info):
             add(root['right_child'], name, r_dec)
         else:  # leaf
             name = 'left' + str(root['leaf_index'])
-            graph.node(name, label='leaf_value:' + str(root['leaf_value']))
+            label = 'leaf_value:' + str(root['leaf_value'])
+            if 'leaf_count' in show_info:
+                label += '\nleaf_count:' + str(root['leaf_count'])
+            graph.node(name, label=label)
         if parent is not None:
             graph.edge(parent, name, decision)
 
@@ -150,7 +158,8 @@ def _to_graphviz(graph, tree_info):
 
 
 def plot_tree(booster, ax=None, tree_index=0, figsize=None,
-              graph_attr=None, node_attr=None, edge_attr=None):
+              graph_attr=None, node_attr=None, edge_attr=None,
+              show_info=None):
     """Plot specified tree.
 
     Parameters
@@ -163,12 +172,15 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
         Specify tree index of target tree.
     figsize : tuple
         Figure size.
-    graph_attr: dict
+    graph_attr : dict
         Mapping of (attribute, value) pairs for the graph.
-    node_attr: dict
+    node_attr : dict
         Mapping of (attribute, value) pairs set for all nodes.
-    edge_attr: dict
+    edge_attr : dict
         Mapping of (attribute, value) pairs set for all edges.
+    show_info : list
+        Information shows on nodes.
+        options: 'split_gain', 'internal_value', 'internal_count' or 'leaf_count'.
 
     Returns
     -------
@@ -204,7 +216,9 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
 
     graph = Digraph(graph_attr=graph_attr, node_attr=node_attr, edge_attr=edge_attr)
 
-    ret = _to_graphviz(graph, tree_info)
+    if show_info is None:
+        show_info = []
+    ret = _to_graphviz(graph, tree_info, show_info)
 
     s = BytesIO()
     s.write(ret.pipe(format='png'))

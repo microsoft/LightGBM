@@ -38,5 +38,5 @@ plt.show()
 
 print('Plot 84th tree...')
 # plot tree
-lgb.plot_tree(gbm, tree_index=83, figsize=(20, 5))
+lgb.plot_tree(gbm, tree_index=83, figsize=(20, 8), show_info=['split_gain'])
 plt.show()

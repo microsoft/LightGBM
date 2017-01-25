@@ -970,7 +970,7 @@ The methods of each Class is in alphabetical order.
     -------
     ax : matplotlib Axes
 
-####plot_tree(booster, ax=None, tree_index=0, figsize=None, graph_attr=None, node_attr=None, edge_attr=None):
+####plot_tree(booster, ax=None, tree_index=0, figsize=None, graph_attr=None, node_attr=None, edge_attr=None, show_info=None):
     Plot specified tree.
 
     Parameters
@@ -989,6 +989,9 @@ The methods of each Class is in alphabetical order.
         Mapping of (attribute, value) pairs set for all nodes.
     edge_attr: dict
         Mapping of (attribute, value) pairs set for all edges.
+    show_info : list
+        Information shows on nodes.
+        options: 'split_gain', 'internal_value', 'internal_count' or 'leaf_count'.
 
     Returns
     -------
