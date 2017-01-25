@@ -132,9 +132,11 @@ def _to_graphviz(graph, tree_info):
             name = 'split' + str(root['split_index'])
             graph.node(name, label='threshold:' + str(root['split_feature']))
             if root['decision_type'] == 'no_greater':
-                l_dec, r_dec = '<', '>'
-            else:
+                l_dec, r_dec = '<=', '>'
+            elif root['decision_type'] == 'is':
                 l_dec, r_dec = 'is', "isn't"
+            else:
+                raise ValueError('Invalid decision type in tree model.')
             add(root['left_child'], name, l_dec)
             add(root['right_child'], name, r_dec)
         else:  # leaf
