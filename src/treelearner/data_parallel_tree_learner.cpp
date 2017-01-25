@@ -166,7 +166,7 @@ void DataParallelTreeLearner::FindBestThresholds() {
     smaller_leaf_histogram_array_[feature_index].FindBestThreshold(
       smaller_leaf_splits_->sum_gradients(),
       smaller_leaf_splits_->sum_hessians(),
-      smaller_leaf_splits_->num_data_in_leaf(),
+      GetGlobalDataCountInLeaf(smaller_leaf_splits_->LeafIndex()),
       &smaller_leaf_splits_->BestSplitPerFeature()[feature_index]);
 
     // only root leaf
@@ -180,7 +180,7 @@ void DataParallelTreeLearner::FindBestThresholds() {
     larger_leaf_histogram_array_[feature_index].FindBestThreshold(
       larger_leaf_splits_->sum_gradients(),
       larger_leaf_splits_->sum_hessians(),
-      larger_leaf_splits_->num_data_in_leaf(),
+      GetGlobalDataCountInLeaf(larger_leaf_splits_->LeafIndex()),
       &larger_leaf_splits_->BestSplitPerFeature()[feature_index]);
   }
 
