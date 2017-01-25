@@ -112,8 +112,6 @@ bool Dataset::SetIntField(const char* field_name, const int* field_data, data_si
   name = Common::Trim(name);
   if (name == std::string("query") || name == std::string("group")) {
     metadata_.SetQuery(field_data, num_element);
-  } else if (name == std::string("query_id") || name == std::string("group_id")) {
-    metadata_.SetQueryId(field_data, num_element);
   } else {
     return false;
   }

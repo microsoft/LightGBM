@@ -88,8 +88,6 @@ public:
 
   void SetQuery(const data_size_t* query, data_size_t len);
 
-  void SetQueryId(const data_size_t* query_id, data_size_t len);
-
   /*!
   * \brief Set initial scores
   * \param init_score Initial scores, this class will manage memory for init_score.
@@ -244,6 +242,9 @@ private:
   std::vector<data_size_t> queries_;
   /*! \brief mutex for threading safe call */
   std::mutex mutex_;
+  bool weight_load_from_file_;
+  bool query_load_from_file_;
+  bool init_score_load_from_file_;
 };
 
 

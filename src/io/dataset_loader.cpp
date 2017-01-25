@@ -209,7 +209,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     }
   } else {
     // load data from binary file
-    dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), rank, num_machines));
+    dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), rank, num_machines, &num_global_data, &used_data_indices));
   }
   // check meta data
   dataset->metadata_.CheckOrPartition(num_global_data, used_data_indices);
@@ -255,7 +255,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
     }
   } else {
     // load data from binary file
-    dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), 0, 1));
+    dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), 0, 1, &num_global_data, &used_data_indices));
   }
   // not need to check validation data
   // check meta data
@@ -263,7 +263,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   return dataset.release();
 }
 
-Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines) {
+Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices) {
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
   FILE* file;
 #ifdef _MSC_VER
@@ -364,8 +364,8 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   // load meta data
   dataset->metadata_.LoadFromMemory(buffer.data());
 
-  std::vector<data_size_t> used_data_indices;
-  data_size_t num_global_data = dataset->num_data_;
+  *num_global_data = dataset->num_data_;
+  used_data_indices->clear();
   // sample local used data if need to partition
   if (num_machines > 1 && !io_config_.is_pre_partition) {
     const data_size_t* query_boundaries = dataset->metadata_.query_boundaries();
@@ -373,7 +373,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
       // if not contain query file, minimal sample unit is one record
       for (data_size_t i = 0; i < dataset->num_data_; ++i) {
         if (random_.NextInt(0, num_machines) == rank) {
-          used_data_indices.push_back(i);
+          used_data_indices->push_back(i);
         }
       }
     } else {
@@ -394,13 +394,13 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
           ++qid;
         }
         if (is_query_used) {
-          used_data_indices.push_back(i);
+          used_data_indices->push_back(i);
         }
       }
     }
-    dataset->num_data_ = static_cast<data_size_t>(used_data_indices.size());
+    dataset->num_data_ = static_cast<data_size_t>((*used_data_indices).size());
   }
-  dataset->metadata_.PartitionLabel(used_data_indices);
+  dataset->metadata_.PartitionLabel(*used_data_indices);
   // read feature data
   for (int i = 0; i < dataset->num_features_; ++i) {
     // read feature size
@@ -422,8 +422,8 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     }
     dataset->features_.emplace_back(std::unique_ptr<Feature>(
       new Feature(buffer.data(), 
-        num_global_data, 
-        used_data_indices)
+        *num_global_data, 
+        *used_data_indices)
     ));
   }
   dataset->features_.shrink_to_fit();

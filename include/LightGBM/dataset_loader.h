@@ -20,8 +20,6 @@ public:
 
   LIGHTGBM_EXPORT Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data);
 
-  LIGHTGBM_EXPORT Dataset* LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines);
-
   LIGHTGBM_EXPORT Dataset* CostructFromSampleData(std::vector<std::vector<double>>& sample_values, size_t total_sample_size, data_size_t num_data);
 
   /*! \brief Disable copy */
@@ -30,6 +28,8 @@ public:
   DatasetLoader(const DatasetLoader&) = delete;
 
 private:
+
+  Dataset* LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
 
   void SetHeader(const char* filename);
 
