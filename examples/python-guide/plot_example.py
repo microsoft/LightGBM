@@ -29,6 +29,7 @@ print('Start training...')
 gbm = lgb.train(params,
                 lgb_train,
                 num_boost_round=100,
+                feature_name=['f' + str(i + 1) for i in range(28)],
                 categorical_feature=[21])
 
 print('Plot feature importances...')

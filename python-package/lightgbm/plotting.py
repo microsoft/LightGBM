@@ -123,14 +123,17 @@ def plot_importance(booster, ax=None, height=0.2,
     return ax
 
 
-def _to_graphviz(graph, tree_info, show_info):
+def _to_graphviz(graph, tree_info, show_info, feature_names):
     """Convert specified tree to graphviz instance."""
 
     def add(root, parent=None, decision=None):
         """recursively add node or edge"""
         if 'split_index' in root:  # non-leaf
             name = 'split' + str(root['split_index'])
-            label = 'split_feature:' + str(root['split_feature'])
+            if feature_names is not None:
+                label = 'split_feature_name:' + str(feature_names[root['split_feature']])
+            else:
+                label = 'split_feature_index:' + str(root['split_feature'])
             label += '\nthreshold:' + str(root['threshold'])
             for info in show_info:
                 if info in {'split_gain', 'internal_value', 'internal_count'}:
@@ -207,7 +210,12 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
     elif not isinstance(booster, Booster):
         raise TypeError('booster must be Booster or LGBMModel.')
 
-    tree_infos = booster.dump_model()['tree_info']
+    model = booster.dump_model()
+    tree_infos = model['tree_info']
+    if 'feature_names' in model:
+        feature_names = model['feature_names']
+    else:
+        feature_names = None
 
     if tree_index < len(tree_infos):
         tree_info = tree_infos[tree_index]
@@ -218,7 +226,7 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
 
     if show_info is None:
         show_info = []
-    ret = _to_graphviz(graph, tree_info, show_info)
+    ret = _to_graphviz(graph, tree_info, show_info, feature_names)
 
     s = BytesIO()
     s.write(ret.pipe(format='png'))
