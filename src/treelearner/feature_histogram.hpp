@@ -58,12 +58,34 @@ public:
       data_[i].sum_hessians -= other.data_[i].sum_hessians;
     }
   }
+
+  void FixIgnoreBin(double sum_gradient, double sum_hessian, data_size_t num_data) {
+    if (feature_->is_sparse()) {
+      // not need to Fix if max heavy bin is 0
+      if (feature_->bin_type() == BinType::NumericalBin
+        && feature_->bin_mapper()->GetDefaultBin() == 0) {
+        return;
+      }
+      int default_bin = static_cast<int>(feature_->bin_mapper()->GetDefaultBin());
+      data_[default_bin].sum_gradients = sum_gradient;
+      data_[default_bin].sum_hessians = sum_hessian;
+      data_[default_bin].cnt = num_data;
+      for (int t = feature_->num_bin() - 1; t >= 0; --t) {
+        if (t != default_bin) {
+          data_[default_bin].sum_gradients -= data_[t].sum_gradients;
+          data_[default_bin].sum_hessians -= data_[t].sum_hessians;
+          data_[default_bin].cnt -= data_[t].cnt;
+        }
+      }
+    }
+  }
   /*!
   * \brief Find best threshold for this histogram
   * \param output The best split result
   */
   void FindBestThreshold(double sum_gradient, double sum_hessian, data_size_t num_data,
     SplitInfo* output) {
+    FixIgnoreBin(sum_gradient, sum_hessian, num_data);
     find_best_threshold_fun_(sum_gradient, sum_hessian + 2 * kEpsilon, num_data, output);
     if (output->gain > kMinScore) {
       is_splittable_ = true;
