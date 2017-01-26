@@ -970,6 +970,42 @@ The methods of each Class is in alphabetical order.
     -------
     ax : matplotlib Axes
 
+####plot_metrics(booster, metric=None, dataset_names=None, ax=None, xlim=None, ylim=None, title='Metrics during training', xlabel='Iterations', ylabel='auto', figsize=None, grid=True):
+    
+    Plot one metrics during training.
+
+    Parameters
+    ----------
+    booster : dict or LGBMModel
+        Evals_result recorded by lightgbm.train() or LGBMModel instance
+    metric : str or None
+        The metric name to plot.
+        Only one metric supported because different metrics have various scales.
+        Pass None to choose one randomly.
+    dataset_names : None or list of str
+        List of the dataset names to plot.
+        Pass None to plot all datasets.
+    ax : matplotlib Axes
+        Target axes instance. If None, new figure and axes will be created.
+    xlim : tuple of 2 elements
+        Tuple passed to axes.xlim()
+    ylim : tuple of 2 elements
+        Tuple passed to axes.ylim()
+    title : str
+        Axes title. Pass None to disable.
+    xlabel : str
+        X axis title label. Pass None to disable.
+    ylabel : str
+        Y axis title label. Pass None to disable. Pass 'auto' to use `metric`.
+    figsize : tuple of 2 elements
+        Figure size
+    grid : bool
+        Whether add grid for axes
+
+    Returns
+    -------
+    ax : matplotlib Axes
+
 ####plot_tree(booster, ax=None, tree_index=0, figsize=None, graph_attr=None, node_attr=None, edge_attr=None, show_info=None):
     Plot specified tree.
 

@@ -6,15 +6,17 @@ Contributors: https://github.com/Microsoft/LightGBM/graphs/contributors
 
 from __future__ import absolute_import
 
-from .basic import Dataset, Booster
-from .engine import train, cv
-from .callback import print_evaluation, record_evaluation, reset_parameter, early_stopping
+from .basic import Booster, Dataset
+from .callback import (early_stopping, print_evaluation, record_evaluation,
+                       reset_parameter)
+from .engine import cv, train
+
 try:
     from .sklearn import LGBMModel, LGBMRegressor, LGBMClassifier, LGBMRanker
 except ImportError:
     pass
 try:
-    from .plotting import plot_importance, plot_tree
+    from .plotting import plot_importance, plot_metrics, plot_tree
 except ImportError:
     pass
 
@@ -25,4 +27,4 @@ __all__ = ['Dataset', 'Booster',
            'train', 'cv',
            'LGBMModel', 'LGBMRegressor', 'LGBMClassifier', 'LGBMRanker',
            'print_evaluation', 'record_evaluation', 'reset_parameter', 'early_stopping',
-           'plot_importance', 'plot_tree']
+           'plot_importance', 'plot_metrics', 'plot_tree']

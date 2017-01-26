@@ -3,6 +3,7 @@
 """Plotting Library."""
 from __future__ import absolute_import
 
+from copy import deepcopy
 from io import BytesIO
 
 import numpy as np
@@ -123,6 +124,129 @@ def plot_importance(booster, ax=None, height=0.2,
     return ax
 
 
+def plot_metrics(booster, metric=None, dataset_names=None,
+                 ax=None, xlim=None, ylim=None,
+                 title='Metrics during training',
+                 xlabel='Iterations', ylabel='auto',
+                 figsize=None, grid=True):
+    """Plot one metrics during training.
+
+    Parameters
+    ----------
+    booster : dict or LGBMModel
+        Evals_result recorded by lightgbm.train() or LGBMModel instance
+    metric : str or None
+        The metric name to plot.
+        Only one metric supported because different metrics have various scales.
+        Pass None to choose one randomly.
+    dataset_names : None or list of str
+        List of the dataset names to plot.
+        Pass None to plot all datasets.
+    ax : matplotlib Axes
+        Target axes instance. If None, new figure and axes will be created.
+    xlim : tuple of 2 elements
+        Tuple passed to axes.xlim()
+    ylim : tuple of 2 elements
+        Tuple passed to axes.ylim()
+    title : str
+        Axes title. Pass None to disable.
+    xlabel : str
+        X axis title label. Pass None to disable.
+    ylabel : str
+        Y axis title label. Pass None to disable. Pass 'auto' to use `metric`.
+    figsize : tuple of 2 elements
+        Figure size
+    grid : bool
+        Whether add grid for axes
+
+    Returns
+    -------
+    ax : matplotlib Axes
+    """
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        raise ImportError('You must install matplotlib to plot metrics.')
+
+    if isinstance(booster, LGBMModel):
+        eval_results = deepcopy(booster.evals_result_)
+    elif isinstance(booster, dict):
+        eval_results = deepcopy(booster)
+    else:
+        raise TypeError('booster must be dict or LGBMModel.')
+
+    num_data = len(eval_results)
+
+    if not num_data:
+        raise ValueError('eval results cannot be empty.')
+
+    if ax is None:
+        if figsize is not None and check_not_tuple_of_2_elements(figsize):
+            raise TypeError('figsize must be a tuple of 2 elements.')
+        _, ax = plt.subplots(1, 1, figsize=figsize)
+
+    if dataset_names is None:
+        dataset_names = iter(eval_results.keys())
+    elif not isinstance(dataset_names, (list, tuple, set)) or not dataset_names:
+        raise ValueError('dataset_names should be iterable and cannot be empty')
+    else:
+        dataset_names = iter(dataset_names)
+
+    name = next(dataset_names)  # peek one as sample
+    metrics_for_one = eval_results[name]
+    num_metric = len(metrics_for_one)
+    if metric is None:
+        if num_metric > 1:
+            print('Warning: more than one metric available, randomly choosing one to plot.')
+        metric, results = metrics_for_one.popitem()
+    else:
+        if metric not in metrics_for_one:
+            raise KeyError('No given metric in eval results.')
+        results = metrics_for_one[metric]
+    num_iteration, max_result, min_result = len(results), max(results), min(results)
+    x_ = range(num_iteration)
+    ax.plot(x_, results, label=name)
+
+    while True:
+        try:
+            name = next(dataset_names)
+            metrics_for_one = eval_results[name]
+            results = metrics_for_one[metric]
+            max_result, min_result = max(max(results), max_result), min(min(results), min_result)
+            ax.plot(x_, results, label=name)
+        except StopIteration:
+            break
+
+    ax.legend(loc='best')
+
+    if xlim is not None:
+        if check_not_tuple_of_2_elements(xlim):
+            raise TypeError('xlim must be a tuple of 2 elements.')
+    else:
+        xlim = (0, num_iteration)
+    ax.set_xlim(xlim)
+
+    if ylim is not None:
+        if check_not_tuple_of_2_elements(ylim):
+            raise TypeError('ylim must be a tuple of 2 elements.')
+    else:
+        range_result = max_result - min_result
+        ylim = (min_result - range_result * 0.2, max_result + range_result * 0.2)
+    ax.set_ylim(ylim)
+
+    if ylabel == 'auto':
+        ylabel = metric
+
+    if title is not None:
+        ax.set_title(title)
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
+    if ylabel is not None:
+        ax.set_ylabel(ylabel)
+    ax.grid(grid)
+    return ax
+
+
 def _to_graphviz(graph, tree_info, show_info, feature_names):
     """Convert specified tree to graphviz instance."""
 
@@ -173,7 +297,7 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
         Target axes instance. If None, new figure and axes will be created.
     tree_index : int, default 0
         Specify tree index of target tree.
-    figsize : tuple
+    figsize : tuple of 2 elements
         Figure size.
     graph_attr : dict
         Mapping of (attribute, value) pairs for the graph.

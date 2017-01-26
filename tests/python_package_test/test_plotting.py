@@ -63,6 +63,49 @@ class TestBasic(unittest.TestCase):
     def test_plot_tree(self):
         pass
 
+    @unittest.skipIf(not matplotlib_installed, 'matplotlib not installed')
+    def test_plot_metrics(self):
+        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=1)
+        train_data = lgb.Dataset(X_train, y_train)
+        test_data = lgb.Dataset(X_test, y_test, reference=train_data)
+
+        params = {
+            "objective": "binary",
+            "metric": {"binary_logloss", "binary_error"},
+            "verbose": -1,
+            "num_leaves": 3
+        }
+
+        evals_result0 = {}
+        gbm0 = lgb.train(params, train_data,
+                         valid_sets=[train_data, test_data],
+                         valid_names=['v1', 'v2'],
+                         num_boost_round=10,
+                         evals_result=evals_result0,
+                         verbose_eval=False)
+        ax0 = lgb.plot_metrics(evals_result0)
+        self.assertIsInstance(ax0, matplotlib.axes.Axes)
+        self.assertEqual(ax0.get_title(), 'Metrics during training')
+        self.assertEqual(ax0.get_xlabel(), 'Iterations')
+        self.assertIn(ax0.get_ylabel(), {'binary_logloss', 'binary_error'})
+        ax0 = lgb.plot_metrics(evals_result0, metric='binary_error')
+        ax0 = lgb.plot_metrics(evals_result0, dataset_names=['v2'])
+
+        evals_result1 = {}
+        gbm1 = lgb.train(params, train_data,
+                         num_boost_round=10,
+                         evals_result=evals_result1,
+                         verbose_eval=False)
+        self.assertRaises(ValueError, lgb.plot_metrics, evals_result1)
+
+        gbm2 = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, silent=True)
+        gbm2.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+        ax2 = lgb.plot_metrics(gbm2, title=None, xlabel=None, ylabel=None)
+        self.assertIsInstance(ax2, matplotlib.axes.Axes)
+        self.assertEqual(ax2.get_title(), '')
+        self.assertEqual(ax2.get_xlabel(), '')
+        self.assertEqual(ax2.get_ylabel(), '')
+
 
 print("----------------------------------------------------------------------")
 print("running test_plotting.py")
