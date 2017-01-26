@@ -43,7 +43,7 @@ BinMapper::~BinMapper() {
 
 }
 
-void BinMapper::FindBin(const std::string& column_name, std::vector<double>* values, size_t total_sample_cnt, int max_bin, BinType bin_type) {
+void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, int max_bin, BinType bin_type) {
   bin_type_ = bin_type;
   std::vector<double>& ref_values = (*values);
   size_t sample_size = total_sample_cnt;
@@ -89,7 +89,6 @@ void BinMapper::FindBin(const std::string& column_name, std::vector<double>* val
   max_val_ = distinct_values.back();
   std::vector<int> cnt_in_bin;
   int num_values = static_cast<int>(distinct_values.size());
-  int cnt_in_bin0 = 0;
   if (bin_type_ == BinType::NumericalBin) {
     if (num_values <= max_bin) {
       std::sort(distinct_values.begin(), distinct_values.end());
@@ -142,7 +141,6 @@ void BinMapper::FindBin(const std::string& column_name, std::vector<double>* val
           }
         }
       }
-      //
       ++bin_cnt;
       // update bin upper bound
       bin_upper_bound_ = std::vector<double>(bin_cnt);
