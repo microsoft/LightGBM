@@ -171,18 +171,17 @@ void BinMapper::FindBin(const std::string& column_name, std::vector<double>* val
     // sort by counts
     Common::SortForPair<int, int>(counts_int, distinct_values_int, 0, true);
     // will ingore the categorical of small counts
-    num_bin_ = std::min(max_bin, static_cast<int>(counts_int.size()));
+    const int cut_cnt = static_cast<int>(sample_size * 0.95f);
     categorical_2_bin_.clear();
-    bin_2_categorical_ = std::vector<int>(num_bin_);
+    bin_2_categorical_.clear();
+    num_bin_ = 0;
     int used_cnt = 0;
-    for (int i = 0; i < num_bin_; ++i) {
-      bin_2_categorical_[i] = distinct_values_int[i];
-      categorical_2_bin_[distinct_values_int[i]] = static_cast<unsigned int>(i);
-      used_cnt += counts_int[i];
-    }
-    if (used_cnt / static_cast<double>(sample_size) < 0.95f) {
-      Log::Warning("Too many categoricals are ignored, \
-                   please use bigger max_bin or partition column \"%s\" ", column_name.c_str());
+    max_bin = std::min(static_cast<int>(distinct_values_int.size()), max_bin);
+    while (used_cnt < cut_cnt || num_bin_ < max_bin ) {
+      bin_2_categorical_.push_back(distinct_values_int[num_bin_]);
+      categorical_2_bin_[distinct_values_int[num_bin_]] = static_cast<unsigned int>(num_bin_);
+      used_cnt += counts_int[num_bin_];
+      ++num_bin_;
     }
     cnt_in_bin = counts_int;
     cnt_in_bin[0] += static_cast<int>(sample_size) - used_cnt;
