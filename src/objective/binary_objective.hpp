@@ -35,7 +35,7 @@ public:
         ++cnt_negative;
       }
     }
-    Log::Info("Number of postive: %d, number of negative: %d", cnt_positive, cnt_negative);
+    Log::Info("Number of positive: %d, number of negative: %d", cnt_positive, cnt_negative);
     // cannot continue if all sample are same class
     if (cnt_positive == 0 || cnt_negative == 0) {
       Log::Fatal("Training data only contains one class");
