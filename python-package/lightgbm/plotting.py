@@ -123,12 +123,12 @@ def plot_importance(booster, ax=None, height=0.2,
     return ax
 
 
-def plot_metrics(booster, metric=None, dataset_names=None,
-                 ax=None, xlim=None, ylim=None,
-                 title='Metrics during training',
-                 xlabel='Iterations', ylabel='auto',
-                 figsize=None, grid=True):
-    """Plot one metrics during training.
+def plot_metric(booster, metric=None, dataset_names=None,
+                ax=None, xlim=None, ylim=None,
+                title='Metrics during training',
+                xlabel='Iterations', ylabel='auto',
+                figsize=None, grid=True):
+    """Plot one metric during training.
 
     Parameters
     ----------
@@ -165,7 +165,7 @@ def plot_metrics(booster, metric=None, dataset_names=None,
     try:
         import matplotlib.pyplot as plt
     except ImportError:
-        raise ImportError('You must install matplotlib to plot metrics.')
+        raise ImportError('You must install matplotlib to plot metric.')
 
     if isinstance(booster, LGBMModel):
         eval_results = deepcopy(booster.evals_result_)
@@ -206,15 +206,11 @@ def plot_metrics(booster, metric=None, dataset_names=None,
     x_ = range(num_iteration)
     ax.plot(x_, results, label=name)
 
-    while True:
-        try:
-            name = next(dataset_names)
-            metrics_for_one = eval_results[name]
-            results = metrics_for_one[metric]
-            max_result, min_result = max(max(results), max_result), min(min(results), min_result)
-            ax.plot(x_, results, label=name)
-        except StopIteration:
-            break
+    for name in dataset_names:
+        metrics_for_one = eval_results[name]
+        results = metrics_for_one[metric]
+        max_result, min_result = max(max(results), max_result), min(min(results), min_result)
+        ax.plot(x_, results, label=name)
 
     ax.legend(loc='best')
 

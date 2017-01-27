@@ -43,7 +43,7 @@ gbm = lgb.train(params,
                 verbose_eval=10)
 
 print('Plot metrics during training...')
-ax = lgb.plot_metrics(evals_result, metric='l1')
+ax = lgb.plot_metric(evals_result, metric='l1')
 plt.show()
 
 print('Plot feature importances...')

@@ -970,9 +970,9 @@ The methods of each Class is in alphabetical order.
     -------
     ax : matplotlib Axes
 
-####plot_metrics(booster, metric=None, dataset_names=None, ax=None, xlim=None, ylim=None, title='Metrics during training', xlabel='Iterations', ylabel='auto', figsize=None, grid=True):
+####plot_metric(booster, metric=None, dataset_names=None, ax=None, xlim=None, ylim=None, title='Metrics during training', xlabel='Iterations', ylabel='auto', figsize=None, grid=True):
     
-    Plot one metrics during training.
+    Plot one metric during training.
 
     Parameters
     ----------

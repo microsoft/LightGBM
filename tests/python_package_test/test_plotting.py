@@ -83,24 +83,24 @@ class TestBasic(unittest.TestCase):
                          num_boost_round=10,
                          evals_result=evals_result0,
                          verbose_eval=False)
-        ax0 = lgb.plot_metrics(evals_result0)
+        ax0 = lgb.plot_metric(evals_result0)
         self.assertIsInstance(ax0, matplotlib.axes.Axes)
         self.assertEqual(ax0.get_title(), 'Metrics during training')
         self.assertEqual(ax0.get_xlabel(), 'Iterations')
         self.assertIn(ax0.get_ylabel(), {'binary_logloss', 'binary_error'})
-        ax0 = lgb.plot_metrics(evals_result0, metric='binary_error')
-        ax0 = lgb.plot_metrics(evals_result0, dataset_names=['v2'])
+        ax0 = lgb.plot_metric(evals_result0, metric='binary_error')
+        ax0 = lgb.plot_metric(evals_result0, metric='binary_logloss', dataset_names=['v2'])
 
         evals_result1 = {}
         gbm1 = lgb.train(params, train_data,
                          num_boost_round=10,
                          evals_result=evals_result1,
                          verbose_eval=False)
-        self.assertRaises(ValueError, lgb.plot_metrics, evals_result1)
+        self.assertRaises(ValueError, lgb.plot_metric, evals_result1)
 
         gbm2 = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, silent=True)
         gbm2.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
-        ax2 = lgb.plot_metrics(gbm2, title=None, xlabel=None, ylabel=None)
+        ax2 = lgb.plot_metric(gbm2, title=None, xlabel=None, ylabel=None)
         self.assertIsInstance(ax2, matplotlib.axes.Axes)
         self.assertEqual(ax2.get_title(), '')
         self.assertEqual(ax2.get_xlabel(), '')
