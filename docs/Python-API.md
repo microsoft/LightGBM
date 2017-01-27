@@ -981,7 +981,7 @@ The methods of each Class is in alphabetical order.
     metric : str or None
         The metric name to plot.
         Only one metric supported because different metrics have various scales.
-        Pass None to choose one randomly.
+        Pass None to pick `first` one (according to dict hashcode).
     dataset_names : None or list of str
         List of the dataset names to plot.
         Pass None to plot all datasets.

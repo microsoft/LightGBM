@@ -137,7 +137,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
     metric : str or None
         The metric name to plot.
         Only one metric supported because different metrics have various scales.
-        Pass None to choose one randomly.
+        Pass None to pick `first` one (according to dict hashcode).
     dataset_names : None or list of str
         List of the dataset names to plot.
         Pass None to plot all datasets.
@@ -196,7 +196,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
     num_metric = len(metrics_for_one)
     if metric is None:
         if num_metric > 1:
-            print('Warning: more than one metric available, randomly choosing one to plot.')
+            print('Warning: more than one metric available, picking one to plot.')
         metric, results = metrics_for_one.popitem()
     else:
         if metric not in metrics_for_one:
