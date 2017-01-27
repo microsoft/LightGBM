@@ -385,7 +385,7 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
                                     begin_iteration=0,
                                     end_iteration=num_boost_round,
                                     evaluation_result_list=None))
-        cvfolds.update(fobj)
+        cvfolds.update(fobj=fobj)
         res = _agg_cv_result(cvfolds.eval_valid(feval))
         for _, key, mean, _, std in res:
             results[key + '-mean'].append(mean)
