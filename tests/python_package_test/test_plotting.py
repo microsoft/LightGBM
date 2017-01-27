@@ -85,7 +85,7 @@ class TestBasic(unittest.TestCase):
                          verbose_eval=False)
         ax0 = lgb.plot_metric(evals_result0)
         self.assertIsInstance(ax0, matplotlib.axes.Axes)
-        self.assertEqual(ax0.get_title(), 'Metrics during training')
+        self.assertEqual(ax0.get_title(), 'Metric during training')
         self.assertEqual(ax0.get_xlabel(), 'Iterations')
         self.assertIn(ax0.get_ylabel(), {'binary_logloss', 'binary_error'})
         ax0 = lgb.plot_metric(evals_result0, metric='binary_error')

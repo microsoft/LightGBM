@@ -125,7 +125,7 @@ def plot_importance(booster, ax=None, height=0.2,
 
 def plot_metric(booster, metric=None, dataset_names=None,
                 ax=None, xlim=None, ylim=None,
-                title='Metrics during training',
+                title='Metric during training',
                 xlabel='Iterations', ylabel='auto',
                 figsize=None, grid=True):
     """Plot one metric during training.
