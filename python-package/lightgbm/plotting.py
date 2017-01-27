@@ -12,9 +12,10 @@ from .basic import Booster, is_numpy_1d_array
 from .sklearn import LGBMModel
 
 
-def check_not_tuple_of_2_elements(obj):
+def check_not_tuple_of_2_elements(obj, obj_name='obj'):
     """check object is not tuple or does not have 2 elements"""
-    return not isinstance(obj, tuple) or len(obj) != 2
+    if not isinstance(obj, tuple) or len(obj) != 2:
+        raise TypeError('%s must be a tuple of 2 elements.' % obj_name)
 
 
 def plot_importance(booster, ax=None, height=0.2,
@@ -87,8 +88,8 @@ def plot_importance(booster, ax=None, height=0.2,
     labels, values = zip(*tuples)
 
     if ax is None:
-        if figsize is not None and check_not_tuple_of_2_elements(figsize):
-            raise TypeError('figsize must be a tuple of 2 elements.')
+        if figsize is not None:
+            check_not_tuple_of_2_elements(figsize, 'figsize')
         _, ax = plt.subplots(1, 1, figsize=figsize)
 
     ylocs = np.arange(len(values))
@@ -101,15 +102,13 @@ def plot_importance(booster, ax=None, height=0.2,
     ax.set_yticklabels(labels)
 
     if xlim is not None:
-        if check_not_tuple_of_2_elements(xlim):
-            raise TypeError('xlim must be a tuple of 2 elements.')
+        check_not_tuple_of_2_elements(xlim, 'xlim')
     else:
         xlim = (0, max(values) * 1.1)
     ax.set_xlim(xlim)
 
     if ylim is not None:
-        if check_not_tuple_of_2_elements(ylim):
-            raise TypeError('ylim must be a tuple of 2 elements.')
+        check_not_tuple_of_2_elements(ylim, 'ylim')
     else:
         ylim = (-1, len(values))
     ax.set_ylim(ylim)
@@ -181,8 +180,8 @@ def plot_metrics(booster, metric=None, dataset_names=None,
         raise ValueError('eval results cannot be empty.')
 
     if ax is None:
-        if figsize is not None and check_not_tuple_of_2_elements(figsize):
-            raise TypeError('figsize must be a tuple of 2 elements.')
+        if figsize is not None:
+            check_not_tuple_of_2_elements(figsize, 'figsize')
         _, ax = plt.subplots(1, 1, figsize=figsize)
 
     if dataset_names is None:
@@ -220,15 +219,13 @@ def plot_metrics(booster, metric=None, dataset_names=None,
     ax.legend(loc='best')
 
     if xlim is not None:
-        if check_not_tuple_of_2_elements(xlim):
-            raise TypeError('xlim must be a tuple of 2 elements.')
+        check_not_tuple_of_2_elements(xlim, 'xlim')
     else:
         xlim = (0, num_iteration)
     ax.set_xlim(xlim)
 
     if ylim is not None:
-        if check_not_tuple_of_2_elements(ylim):
-            raise TypeError('ylim must be a tuple of 2 elements.')
+        check_not_tuple_of_2_elements(ylim, 'ylim')
     else:
         range_result = max_result - min_result
         ylim = (min_result - range_result * 0.2, max_result + range_result * 0.2)
@@ -325,8 +322,8 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
         raise ImportError('You must install graphviz to plot tree.')
 
     if ax is None:
-        if figsize is not None and check_not_tuple_of_2_elements(figsize):
-            raise TypeError('xlim must be a tuple of 2 elements.')
+        if figsize is not None:
+            check_not_tuple_of_2_elements(figsize, 'figsize')
         _, ax = plt.subplots(1, 1, figsize=figsize)
 
     if isinstance(booster, LGBMModel):
