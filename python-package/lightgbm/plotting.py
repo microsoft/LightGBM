@@ -191,7 +191,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
     else:
         dataset_names = iter(dataset_names)
 
-    name = next(dataset_names)  # peek one as sample
+    name = next(dataset_names)  # take one as sample
     metrics_for_one = eval_results[name]
     num_metric = len(metrics_for_one)
     if metric is None:
