@@ -205,7 +205,6 @@ data_size_t GBDT::BaggingHelper(Random& cur_rand, data_size_t start, data_size_t
       right_buffer[cur_right_cnt++] = start + i;
     }
   }
-  CHECK(buffer[bag_data_cnt - 1] > buffer[bag_data_cnt]);
   CHECK(cur_left_cnt == bag_data_cnt);
   return cur_left_cnt;
 }
