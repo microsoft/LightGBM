@@ -652,6 +652,8 @@ The methods of each Class is in alphabetical order.
         It is used to control the width of Gaussian function to approximate hessian.
     fair_c : float
         Only used in regression. Parameter for Fair loss function.
+    poisson_max_delta_step : float
+        parameter used to safeguard optimization in Poisson regression.
     max_position : int
         Only used in lambdarank, will optimize NDCG at this position.
     label_gain : list of float

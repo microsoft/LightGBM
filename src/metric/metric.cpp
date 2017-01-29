@@ -16,6 +16,8 @@ Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config
     return new HuberLossMetric(config);
   } else if (type == std::string("fair")) {
     return new FairLossMetric(config);
+  } else if (type == std::string("poisson")) {
+    return new PoissonMetric(config);
   } else if (type == std::string("binary_logloss")) {
     return new BinaryLoglossMetric(config);
   } else if (type == std::string("binary_error")) {
