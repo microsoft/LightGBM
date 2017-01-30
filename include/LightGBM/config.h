@@ -136,6 +136,7 @@ public:
   double fair_c = 1.0f;
   // for ApproximateHessianWithGaussian
   double gaussian_eta = 1.0f;
+  double poisson_max_delta_step = 0.7f;
   // for lambdarank
   std::vector<double> label_gain;
   // for lambdarank

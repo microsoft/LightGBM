@@ -16,12 +16,13 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
 * ```task```, default=```train```, type=enum, options=```train```,```prediction```
   * ```train``` for training
   * ```prediction``` for prediction.
-* ```application```, default=```regression```, type=enum, options=```regression```,```regression_l1```,```huber```,```binary```,```lambdarank```,```multiclass```, alias=```objective```,```app```
+* ```application```, default=```regression```, type=enum, options=```regression```,```regression_l1```,```huber```,```fair```,```poisson```,```binary```,```lambdarank```,```multiclass```, alias=```objective```,```app```
   * ```regression```, regression application
     * ```regression_l2```, L2 loss, alias=```mean_squared_error```,```mse```
     * ```regression_l1```, L1 loss, alias=```mean_absolute_error```,```mae```
     * ```huber```, [Huber loss](https://en.wikipedia.org/wiki/Huber_loss "Huber loss - Wikipedia")
     * ```fair```, [Fair loss](http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html)
+    * ```poisson```, [Poisson regression](https://en.wikipedia.org/wiki/Poisson_regression "Poisson regression")
   * ```binary```, binary classification application 
   * ```lambdarank```, lambdarank application
   * ```multiclass```, multi-class classification application, should set ```num_class``` as well
@@ -173,6 +174,8 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * parameter for [Huber loss](https://en.wikipedia.org/wiki/Huber_loss "Huber loss - Wikipedia"). Will be used in regression task.
 * ```fair_c```, default=```1.0```, type=double
   * parameter for [Fair loss](http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html). Will be used in regression task.
+* ```poission_max_delta_step```, default=```0.7```, type=double
+  * parameter used to safeguard optimization
 * ```scale_pos_weight```, default=```1.0```, type=double
   * weight of positive class in binary classification task
 * ```is_unbalance```, default=```false```, type=bool
@@ -192,6 +195,7 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * ```l2```, square loss, alias=```mean_squared_error```, ```mse```
   * ```huber```, [Huber loss](https://en.wikipedia.org/wiki/Huber_loss "Huber loss - Wikipedia")
   * ```fair```, [Fair loss](http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html)
+  * ```poisson```, [Poisson regression](https://en.wikipedia.org/wiki/Poisson_regression "Poisson regression")
   * ```ndcg```, [NDCG](https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG)
   * ```map```, [MAP](https://www.kaggle.com/wiki/MeanAveragePrecision)
   * ```auc```, [AUC](https://en.wikipedia.org/wiki/Area_under_the_curve_(pharmacokinetics))
