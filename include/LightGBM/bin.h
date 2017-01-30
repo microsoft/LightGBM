@@ -242,6 +242,7 @@ public:
   * \return Bin data
   */
   virtual uint32_t Get(data_size_t idx) = 0;
+  virtual ~BinIterator() = default;
 };
 
 /*!

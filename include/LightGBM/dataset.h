@@ -173,7 +173,7 @@ public:
   * \brief Get Number of queries
   * \return Number of queries
   */
-  inline const data_size_t num_queries() const { return num_queries_; }
+  inline data_size_t num_queries() const { return num_queries_; }
 
   /*!
   * \brief Get weights for queries, if not exists, will return nullptr
