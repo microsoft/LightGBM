@@ -225,6 +225,15 @@ public:
     return idx;
   }
 
+  int GetFeatureNames(char** out_strs) const {
+    int idx = 0;
+    for (const auto& name : boosting_->FeatureNames()) {
+      std::strcpy(out_strs[idx], name.c_str());
+      ++idx;
+    }
+    return idx;
+  }
+
   const Boosting* GetBoosting() const { return boosting_.get(); }
 
 private:
@@ -721,6 +730,20 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalNames(BoosterHandle handle, int* out_le
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetEvalNames(out_strs);
+  API_END();
+}
+
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetFeatureNames(BoosterHandle handle, int* out_len, char** out_strs) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_len = ref_booster->GetFeatureNames(out_strs);
+  API_END();
+}
+
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumFeature(BoosterHandle handle, int* out_len) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_len = ref_booster->GetBoosting()->MaxFeatureIdx() + 1;
   API_END();
 }
 

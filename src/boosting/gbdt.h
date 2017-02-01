@@ -177,6 +177,12 @@ public:
   inline int MaxFeatureIdx() const override { return max_feature_idx_; }
 
   /*!
+  * \brief Get feature names of this model
+  * \return Feature names of this model
+  */
+  inline std::vector<std::string> FeatureNames() const override { return feature_names_; }
+
+  /*!
   * \brief Get index of label column
   * \return index of label column
   */

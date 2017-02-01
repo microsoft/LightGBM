@@ -168,6 +168,12 @@ public:
   virtual int MaxFeatureIdx() const = 0;
 
   /*!
+  * \brief Get feature names of this model
+  * \return Feature names of this model
+  */
+  virtual std::vector<std::string> FeatureNames() const = 0;
+
+  /*!
   * \brief Get index of label column
   * \return index of label column
   */

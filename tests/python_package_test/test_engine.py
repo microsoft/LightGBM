@@ -124,6 +124,12 @@ class TestEngine(unittest.TestCase):
                metrics='l1', verbose_eval=False,
                callbacks=[lgb.reset_parameter(learning_rate=lambda i: 0.1 - 0.001 * i)])
 
+    def test_feature_name(self):
+        lgb_train, _ = template.test_template(return_data=True)
+        feature_names = ['f' + str(i) for i in range(13)]
+        gbm = lgb.train({'verbose': -1}, lgb_train, num_boost_round=10, feature_name=feature_names)
+        self.assertListEqual(feature_names, gbm.feature_name())
+
     def test_save_load_copy_pickle(self):
         gbm = template.test_template(num_round=20, return_model=True)
         _, ret_origin = template.test_template(init_model=gbm)

@@ -58,7 +58,8 @@ model_json = gbm.dump_model()
 with open('model.json', 'w+') as f:
     json.dump(model_json, f, indent=4)
 
+print('Feature names:', gbm.feature_name())
+
 print('Calculate feature importances...')
 # feature importances
 print('Feature importances:', list(gbm.feature_importance()))
-# print('Feature importances:', list(gbm.feature_importance("gain")))

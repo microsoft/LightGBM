@@ -1582,15 +1582,41 @@ class Booster(object):
         return predictor.predict(data, num_iteration, raw_score, pred_leaf, data_has_header, is_reshape)
 
     def _to_predictor(self):
-        """Convert to predictor
-        """
+        """Convert to predictor"""
         predictor = _InnerPredictor(booster_handle=self.handle)
         predictor.pandas_categorical = self.pandas_categorical
         return predictor
 
+    def feature_name(self):
+        """
+        Get feature names.
+
+        Returns
+        -------
+        result : array
+            Array of feature names.
+        """
+        out_num_feature = ctypes.c_int(0)
+        """Get num of features"""
+        _safe_call(_LIB.LGBM_BoosterGetNumFeature(
+            self.handle,
+            ctypes.byref(out_num_feature)))
+        num_feature = out_num_feature.value
+        """Get name of features"""
+        tmp_out_len = ctypes.c_int(0)
+        string_buffers = [ctypes.create_string_buffer(255) for i in range_(num_feature)]
+        ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
+        _safe_call(_LIB.LGBM_BoosterGetFeatureNames(
+            self.handle,
+            ctypes.byref(tmp_out_len),
+            ptr_string_buffers))
+        if num_feature != tmp_out_len.value:
+            raise ValueError("Length of feature names doesn't equal with num_feature")
+        return [string_buffers[i].value.decode() for i in range_(num_feature)]
+
     def feature_importance(self, importance_type='split'):
         """
-        Feature importances
+        Get feature importances
 
         Parameters
         ----------
@@ -1601,7 +1627,8 @@ class Booster(object):
 
         Returns
         -------
-        Array of feature importances
+        result : array
+            Array of feature importances.
         """
         if importance_type not in ["split", "gain"]:
             raise KeyError("importance_type must be split or gain")
