@@ -103,7 +103,7 @@ For example, following command line will keep 'num_trees=10' and ignore same par
 
 ## Examples
 
-* [Binary Classifiaction](../examples/binary_classification)
+* [Binary Classification](../examples/binary_classification)
 * [Regression](../examples/regression)
 * [Lambdarank](../examples/lambdarank)
 * [Parallel Learning](../examples/parallel_learning)
