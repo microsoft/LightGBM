@@ -10,7 +10,6 @@ from io import BytesIO
 import numpy as np
 
 from .basic import Booster
-from .compat import MATPLOTLIB_INSTALLED, plt
 from .sklearn import LGBMModel
 
 
@@ -65,7 +64,9 @@ def plot_importance(booster, ax=None, height=0.2,
     -------
     ax : matplotlib Axes
     """
-    if not MATPLOTLIB_INSTALLED:
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
         raise ImportError('You must install matplotlib to plot importance.')
 
     if isinstance(booster, LGBMModel):
@@ -161,7 +162,9 @@ def plot_metric(booster, metric=None, dataset_names=None,
     -------
     ax : matplotlib Axes
     """
-    if not MATPLOTLIB_INSTALLED:
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
         raise ImportError('You must install matplotlib to plot metric.')
 
     if isinstance(booster, LGBMModel):
@@ -304,10 +307,11 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
     -------
     ax : matplotlib Axes
     """
-    if not MATPLOTLIB_INSTALLED:
+    try:
+        import matplotlib.pyplot as plt
+        import matplotlib.image as image
+    except ImportError:
         raise ImportError('You must install matplotlib to plot tree.')
-
-    import matplotlib.image as image
 
     try:
         from graphviz import Digraph

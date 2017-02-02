@@ -9,5 +9,6 @@ Documents
 * [Parameters Tuning](./Parameters-tuning.md)
 * [Python API Reference](./Python-API.md)
 * [Parallel Learning Guide](https://github.com/Microsoft/LightGBM/wiki/Parallel-Learning-Guide)
+* [FAQ](./FAQ.md)
 * [Development Guide](./development.md)
 
