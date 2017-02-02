@@ -46,8 +46,7 @@ class TestBasic(unittest.TestCase):
         for patch in ax1.patches:
             self.assertTupleEqual(patch.get_facecolor(), (1., 0, 0, 1.))  # red
 
-        ax2 = lgb.plot_importance(gbm0.feature_importance(),
-                                  color=['r', 'y', 'g', 'b'],
+        ax2 = lgb.plot_importance(gbm0, color=['r', 'y', 'g', 'b'],
                                   title=None, xlabel=None, ylabel=None)
         self.assertIsInstance(ax2, matplotlib.axes.Axes)
         self.assertEqual(ax2.get_title(), '')

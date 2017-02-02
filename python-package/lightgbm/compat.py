@@ -82,3 +82,10 @@ except ImportError:
     LGBMRegressorBase = object
     LGBMLabelEncoder = None
     LGBMStratifiedKFold = None
+
+"""matplotlib"""
+try:
+    import matplotlib.pyplot as plt
+    MATPLOTLIB_INSTALLED = True
+except ImportError:
+    MATPLOTLIB_INSTALLED = True
