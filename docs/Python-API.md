@@ -345,9 +345,19 @@ The methods of each Class is in alphabetical order.
         Evaluation result list.
 
 
+####feature_name()
+
+    Get feature names.
+
+    Returns
+    -------
+    result : array
+        Array of feature names.
+
+
 ####feature_importance(importance_type="split")
 
-    Feature importances.
+    Get feature importances.
 
     Parameters
     ----------
@@ -359,7 +369,7 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     result : array
-        Array of feature importances
+        Array of feature importances.
 
 
 ####predict(data, num_iteration=-1, raw_score=False, pred_leaf=False, data_has_header=False, is_reshape=True)
