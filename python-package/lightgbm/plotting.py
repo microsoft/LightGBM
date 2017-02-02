@@ -3,6 +3,7 @@
 """Plotting Library."""
 from __future__ import absolute_import
 
+import warnings
 from copy import deepcopy
 from io import BytesIO
 
@@ -192,7 +193,8 @@ def plot_metric(booster, metric=None, dataset_names=None,
     num_metric = len(metrics_for_one)
     if metric is None:
         if num_metric > 1:
-            print('Warning: more than one metric available, picking one to plot.')
+            msg = """more than one metric available, picking one to plot."""
+            warnings.warn(msg, stacklevel=2)
         metric, results = metrics_for_one.popitem()
     else:
         if metric not in metrics_for_one:
