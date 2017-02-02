@@ -223,11 +223,14 @@ PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
 
 def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
     if isinstance(data, DataFrame):
-        if (feature_name == 'auto' or feature_name is None) and any(isinstance(name, integer_types) for name in data.columns):
-            msg = """Using Pandas default integer column names, not column indexes. You can use indexes with DataFrame.values."""
-            warnings.filterwarnings('once')
-            warnings.warn(msg, stacklevel=5)
-            data = data.rename(columns=str)
+        if feature_name == 'auto' or feature_name is None:
+            is_column_name_int = [isinstance(name, integer_types) for name in data.columns]
+            if all(is_column_name_int):
+                msg = """Using Pandas (default) integer column names, not column indexes. You can use indexes with DataFrame.values."""
+                warnings.filterwarnings('once')
+                warnings.warn(msg, stacklevel=5)
+            if any(is_column_name_int):
+                data = data.rename(columns=str)
         cat_cols = data.select_dtypes(include=['category']).columns
         if pandas_categorical is None:  # train dataset
             pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
