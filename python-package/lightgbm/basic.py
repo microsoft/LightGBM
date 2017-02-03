@@ -6,6 +6,7 @@ from __future__ import absolute_import
 
 import ctypes
 import os
+import warnings
 from tempfile import NamedTemporaryFile
 
 import numpy as np
@@ -223,6 +224,10 @@ PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
 def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
     if isinstance(data, DataFrame):
         if feature_name == 'auto' or feature_name is None:
+            if all([isinstance(name, integer_types + (np.integer, )) for name in data.columns]):
+                msg = """Using Pandas (default) integer column names, not column indexes. You can use indexes with DataFrame.values."""
+                warnings.filterwarnings('once')
+                warnings.warn(msg, stacklevel=5)
             data = data.rename(columns=str)
         cat_cols = data.select_dtypes(include=['category']).columns
         if pandas_categorical is None:  # train dataset

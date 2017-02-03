@@ -946,8 +946,8 @@ The methods of each Class is in alphabetical order.
 
     Parameters
     ----------
-    booster : Booster, LGBMModel or array
-        Booster or LGBMModel instance, or array of feature importances.
+    booster : Booster or LGBMModel
+        Booster or LGBMModel instance.
     ax : matplotlib Axes
         Target axes instance. If None, new figure and axes will be created.
     height : float

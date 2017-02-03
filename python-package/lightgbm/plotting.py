@@ -3,12 +3,13 @@
 """Plotting Library."""
 from __future__ import absolute_import
 
+import warnings
 from copy import deepcopy
 from io import BytesIO
 
 import numpy as np
 
-from .basic import Booster, is_numpy_1d_array
+from .basic import Booster
 from .sklearn import LGBMModel
 
 
@@ -27,8 +28,8 @@ def plot_importance(booster, ax=None, height=0.2,
 
     Parameters
     ----------
-    booster : Booster, LGBMModel or array
-        Booster or LGBMModel instance, or array of feature importances
+    booster : Booster or LGBMModel
+        Booster or LGBMModel instance
     ax : matplotlib Axes
         Target axes instance. If None, new figure and axes will be created.
     height : float
@@ -69,18 +70,17 @@ def plot_importance(booster, ax=None, height=0.2,
         raise ImportError('You must install matplotlib to plot importance.')
 
     if isinstance(booster, LGBMModel):
-        importance = booster.booster_.feature_importance(importance_type=importance_type)
-    elif isinstance(booster, Booster):
-        importance = booster.feature_importance(importance_type=importance_type)
-    elif is_numpy_1d_array(booster) or isinstance(booster, list):
-        importance = booster
-    else:
-        raise TypeError('booster must be Booster, LGBMModel or array instance.')
+        booster = booster.booster_
+    elif not isinstance(booster, Booster):
+        raise TypeError('booster must be Booster or LGBMModel.')
+
+    importance = booster.feature_importance(importance_type=importance_type)
+    feature_name = booster.feature_name()
 
     if not len(importance):
         raise ValueError('Booster feature_importances are empty.')
 
-    tuples = sorted(enumerate(importance), key=lambda x: x[1])
+    tuples = sorted(zip(feature_name, importance), key=lambda x: x[1])
     if ignore_zero:
         tuples = [x for x in tuples if x[1] > 0]
     if max_num_features is not None and max_num_features > 0:
@@ -196,7 +196,8 @@ def plot_metric(booster, metric=None, dataset_names=None,
     num_metric = len(metrics_for_one)
     if metric is None:
         if num_metric > 1:
-            print('Warning: more than one metric available, picking one to plot.')
+            msg = """more than one metric available, picking one to plot."""
+            warnings.warn(msg, stacklevel=2)
         metric, results = metrics_for_one.popitem()
     else:
         if metric not in metrics_for_one:
