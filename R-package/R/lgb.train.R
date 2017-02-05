@@ -100,7 +100,7 @@ lgb.train <- function(params = list(), data, nrounds = 10,
   data$update_params(params)
   data$.__enclos_env__$private$set_predictor(predictor)
   if (!is.null(colnames)) { data$set_colnames(colnames) }
-  data$set_categorical_feature(categorical_feature)
+  if (!is.null(categorical_feature)) { data$set_categorical_feature(categorical_feature) }
   data$construct()
   vaild_contain_train <- FALSE
   train_data_name     <- "train"
