@@ -123,7 +123,7 @@ def _eval_function_wrapper(func):
 class LGBMModel(LGBMModelBase):
 
     def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
-                 learning_rate=0.1, n_estimators=10, max_bin=255,
+                 learning_rate=0.1, n_estimators=10, max_bin=255, feature_fraction=1.0,
                  subsample_for_bin=50000, objective="regression",
                  min_split_gain=0, min_child_weight=5, min_child_samples=10,
                  subsample=1, subsample_freq=1, colsample_bytree=1,
@@ -152,6 +152,8 @@ class LGBMModel(LGBMModelBase):
             Number of boosted trees to fit.
         max_bin : int
             Number of bucketed bin for feature values
+        feature_fraction: float
+            Random select part of features on each iteration.
         subsample_for_bin : int
             Number of samples for constructing bins.
         objective : string or callable
@@ -243,6 +245,7 @@ class LGBMModel(LGBMModelBase):
         self.learning_rate = learning_rate
         self.n_estimators = n_estimators
         self.max_bin = max_bin
+        self.feature_fraction = feature_fraction
         self.subsample_for_bin = subsample_for_bin
         self.objective = objective
         self.min_split_gain = min_split_gain
@@ -484,7 +487,7 @@ class LGBMModel(LGBMModelBase):
 class LGBMRegressor(LGBMModel, LGBMRegressorBase):
 
     def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
-                 learning_rate=0.1, n_estimators=10, max_bin=255,
+                 learning_rate=0.1, n_estimators=10, max_bin=255, feature_fraction=1.0,
                  subsample_for_bin=50000, objective="regression",
                  min_split_gain=0, min_child_weight=5, min_child_samples=10,
                  subsample=1, subsample_freq=1, colsample_bytree=1,
@@ -496,7 +499,7 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
                  uniform_drop=False, xgboost_dart_mode=False):
         super(LGBMRegressor, self).__init__(boosting_type=boosting_type, num_leaves=num_leaves,
                                             max_depth=max_depth, learning_rate=learning_rate,
-                                            n_estimators=n_estimators, max_bin=max_bin,
+                                            n_estimators=n_estimators, max_bin=max_bin, feature_fraction=feature_fraction,
                                             subsample_for_bin=subsample_for_bin, objective=objective,
                                             min_split_gain=min_split_gain, min_child_weight=min_child_weight,
                                             min_child_samples=min_child_samples, subsample=subsample,
@@ -531,7 +534,7 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
 class LGBMClassifier(LGBMModel, LGBMClassifierBase):
 
     def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
-                 learning_rate=0.1, n_estimators=10, max_bin=255,
+                 learning_rate=0.1, n_estimators=10, max_bin=255, feature_fraction=1.0,
                  subsample_for_bin=50000, objective="binary",
                  min_split_gain=0, min_child_weight=5, min_child_samples=10,
                  subsample=1, subsample_freq=1, colsample_bytree=1,
@@ -543,7 +546,7 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
         self.classes, self.n_classes = None, None
         super(LGBMClassifier, self).__init__(boosting_type=boosting_type, num_leaves=num_leaves,
                                              max_depth=max_depth, learning_rate=learning_rate,
-                                             n_estimators=n_estimators, max_bin=max_bin,
+                                             n_estimators=n_estimators, max_bin=max_bin, feature_fraction=feature_fraction,
                                              subsample_for_bin=subsample_for_bin, objective=objective,
                                              min_split_gain=min_split_gain, min_child_weight=min_child_weight,
                                              min_child_samples=min_child_samples, subsample=subsample,
@@ -632,7 +635,7 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
 class LGBMRanker(LGBMModel):
 
     def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
-                 learning_rate=0.1, n_estimators=10, max_bin=255,
+                 learning_rate=0.1, n_estimators=10, max_bin=255, feature_fraction=1.0,
                  subsample_for_bin=50000, objective="lambdarank",
                  min_split_gain=0, min_child_weight=5, min_child_samples=10,
                  subsample=1, subsample_freq=1, colsample_bytree=1,
@@ -643,7 +646,7 @@ class LGBMRanker(LGBMModel):
                  uniform_drop=False, xgboost_dart_mode=False):
         super(LGBMRanker, self).__init__(boosting_type=boosting_type, num_leaves=num_leaves,
                                          max_depth=max_depth, learning_rate=learning_rate,
-                                         n_estimators=n_estimators, max_bin=max_bin,
+                                         n_estimators=n_estimators, max_bin=max_bin, feature_fraction=feature_fraction,
                                          subsample_for_bin=subsample_for_bin, objective=objective,
                                          min_split_gain=min_split_gain, min_child_weight=min_child_weight,
                                          min_child_samples=min_child_samples, subsample=subsample,
