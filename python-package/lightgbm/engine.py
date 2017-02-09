@@ -236,6 +236,8 @@ def _make_n_folds(full_data, nfold, params, seed, fpreproc=None, stratified=Fals
         full_data.construct()
         if shuffle:
             randidx = np.random.permutation(full_data.num_data())
+        else:
+            randidx = np.arange(full_data.num_data())
         kstep = int(len(randidx) / nfold)
         idset = [randidx[(i * kstep): min(len(randidx), (i + 1) * kstep)] for i in range_(nfold)]
 
