@@ -161,16 +161,20 @@ void OverallConfig::CheckParamConflict() {
     is_parallel = true;
   } else {
     is_parallel = false;
-    boosting_config.tree_learner_type = "serial";
+    if (boosting_config.tree_learner_type != std::string("gpu")) {
+      boosting_config.tree_learner_type = "serial";
+    }
   }
 
-  if (boosting_config.tree_learner_type == std::string("serial")) {
+  if (boosting_config.tree_learner_type == std::string("serial") || 
+      boosting_config.tree_learner_type == std::string("gpu")) {
     is_parallel = false;
     network_config.num_machines = 1;
   }
 
   if (boosting_config.tree_learner_type == std::string("serial") 
-      || boosting_config.tree_learner_type == std::string("feature")) {
+      || boosting_config.tree_learner_type == std::string("feature")
+      || boosting_config.tree_learner_type == std::string("gpu")) {
     is_parallel_find_bin = false;
   } else if (boosting_config.tree_learner_type == std::string("data")
              || boosting_config.tree_learner_type == std::string("voting")) {
@@ -335,6 +339,8 @@ void BoostingConfig::GetTreeLearnerType(const std::unordered_map<std::string, st
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("serial")) {
       tree_learner_type = "serial";
+    } else if (value == std::string("gpu")) {
+      tree_learner_type = "gpu";
     } else if (value == std::string("feature") || value == std::string("feature_parallel")) {
       tree_learner_type = "feature";
     } else if (value == std::string("data") || value == std::string("data_parallel")) {
