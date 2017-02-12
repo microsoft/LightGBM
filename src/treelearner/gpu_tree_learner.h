@@ -207,7 +207,9 @@ protected:
   std::unique_ptr<boost::compute::vector<char>> device_subhistograms_;
   std::unique_ptr<boost::compute::vector<char>> device_histogram_outputs_;
   std::unique_ptr<GPUHistogramBinEntry[]> host_histogram_outputs_;
-
+  boost::compute::future<void> indices_future_;
+  boost::compute::future<void> gradients_future_;
+  boost::compute::future<void> hessians_future_;
 };
 
 

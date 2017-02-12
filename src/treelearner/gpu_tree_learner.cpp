@@ -170,7 +170,10 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* h
   // process one feature4 tuple
 
   histogram_kernels_[exp_workgroups_per_feature].set_arg(2, leaf_num_data);
-
+  indices_future_.wait();
+  hessians_future_.wait();
+  gradients_future_.wait();
+  // printf("launching kernel!\n");
   // there will be 2^exp_workgroups_per_feature = num_workgroups / num_feature4 sub-histogram per feature4
   // and we will launch num_feature workgroups for this kernel
   // will launch threads for all features
@@ -450,10 +453,10 @@ void GPUTreeLearner::BeforeTrain() {
     #ifdef GPU_DEBUG
     printf("Copying intial indices, gradients and hessians to device\n");
     #endif
-    boost::compute::copy(gradients_, gradients_ + num_data_, device_gradients_->begin(), queue_);
-    boost::compute::copy(hessians_,  hessians_  + num_data_, device_hessians_->begin(),  queue_);
-    boost::compute::copy(data_partition_->indices(), data_partition_->indices() + num_data_, 
+    indices_future_ = boost::compute::copy_async(data_partition_->indices(), data_partition_->indices() + num_data_, 
                          device_data_indices_->begin(), queue_);
+    hessians_future_ = boost::compute::copy_async(hessians_,  hessians_  + num_data_, device_hessians_->begin(),  queue_);
+    gradients_future_ = boost::compute::copy_async(gradients_, gradients_ + num_data_, device_gradients_->begin(), queue_);
     // use all data
     smaller_leaf_splits_->Init(gradients_, hessians_);
     // point to gradients, avoid copy
@@ -573,22 +576,26 @@ bool GPUTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
     #ifdef DEBUG_GPU
     Log::Info("Copying indices, gradients and hessians to GPU...");
     #endif
-    boost::compute::copy(indices + begin, indices + end, device_data_indices_->begin(), queue_);
+    indices_future_ = boost::compute::copy_async(indices + begin, indices + end, device_data_indices_->begin(), queue_);
 
     // This is about 7% of time, to re-order gradient and hessians
     #pragma omp parallel for schedule(static)
     for (data_size_t i = begin; i < end; ++i) {
-      ordered_gradients_[i - begin] = gradients_[indices[i]];
       ordered_hessians_[i - begin] = hessians_[indices[i]];
     }
+    // copy ordered hessians to the GPU:
+    hessians_future_ = boost::compute::copy_async(ordered_hessians_.begin(), ordered_hessians_.begin() + end - begin, device_hessians_->begin(), queue_);
+    #pragma omp parallel for schedule(static)
+    for (data_size_t i = begin; i < end; ++i) {
+      ordered_gradients_[i - begin] = gradients_[indices[i]];
+    }
+    // copy ordered gradients to the GPU:
+    gradients_future_ = boost::compute::copy_async(ordered_gradients_.begin(), ordered_gradients_.begin() + end - begin, device_gradients_->begin(), queue_);
     // assign pointer
     ptr_to_ordered_gradients_smaller_leaf_ = ordered_gradients_.data();
     ptr_to_ordered_hessians_smaller_leaf_ = ordered_hessians_.data();
     
 
-    // copy ordered gradients and hessians to the GPU:
-    boost::compute::copy(ordered_gradients_.begin(), ordered_gradients_.begin() + end - begin, device_gradients_->begin(), queue_);
-    boost::compute::copy(ordered_hessians_.begin(), ordered_hessians_.begin() + end - begin, device_hessians_->begin(), queue_);
     #ifdef DEBUG_GPU
     Log::Info("gradients/hessians/indiex copied to device with size %d", end - begin);
     #endif
