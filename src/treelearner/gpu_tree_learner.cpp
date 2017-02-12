@@ -88,35 +88,88 @@ void GPUTreeLearner::Init(const Dataset* train_data) {
   InitGPU(-1, -1);
 }
 
+void PrintHistograms(HistogramBinEntry* h, size_t size) {
+  for (size_t i = 0; i < size; ++i) {
+    printf("[%3lu]=%9.3g,%9.3g,%8d\t", i, h[i].sum_gradients, h[i].sum_hessians, h[i].cnt);
+    if ((i & 3) == 3)
+        printf("\n");
+  }
+  printf("\n");
+}
+
+union Float_t
+{
+    int32_t i;
+    float f;
+    static int32_t ulp_diff(Float_t a, Float_t b) {
+      return abs(a.i - b.i);
+    }
+};
+  
+
+void CompareHistograms(HistogramBinEntry* h1, HistogramBinEntry* h2, size_t size) {
+  size_t i;
+  Float_t a, b;
+  for (i = 0; i < size; ++i) {
+    a.f = h1[i].sum_gradients;
+    b.f = h2[i].sum_gradients;
+    int32_t ulps = Float_t::ulp_diff(a, b);
+    if (ulps > 65536) {
+      printf("%g != %g (%d ULPs)\n", h1[i].sum_gradients, h2[i].sum_gradients, ulps);
+      goto err;
+    }
+    a.f = h1[i].sum_hessians;
+    b.f = h2[i].sum_hessians;
+    ulps = Float_t::ulp_diff(a, b);
+    if (ulps > 65536) {
+      printf("%g != %g (%d ULPs)\n", h1[i].sum_hessians, h2[i].sum_hessians, ulps);
+      goto err;
+    }
+    if (fabs(h1[i].cnt           - h2[i].cnt != 0)) {
+      printf("%d != %d\n", h1[i].cnt, h2[i].cnt);
+      goto err;
+    }
+  }
+  return;
+err:
+  PrintHistograms(h1, size);
+  PrintHistograms(h2, size);
+  Log::Fatal("Mismatched histograms found at location %lu.", i);
+}
+
 void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* histograms) {
   // we have already copied ordered gradients, ordered hessians and indices to GPU
   // decide the best number of workgroups working on one feature4 tuple
   // we roughly want 256 workgroups per device, and we have num_feature4_ feature tuples.
   // also guarantee that there are at least 2K examples per workgroup
-  printf("Computing histogram for %d examples and (4 * %d) features\n", leaf_num_data, num_feature4_);
   double x = 256.0 / num_feature4_;
   int exp_workgroups_per_feature = ceil(log(x)/log(2.0));
   double t = leaf_num_data / 1024.0;
+  #ifdef DEBUG_GPU
+  printf("Computing histogram for %d examples and (4 * %d) features\n", leaf_num_data, num_feature4_);
   printf("We can have at most %d workgroups per feature4 for efficiency reasons.\n"
          "Best workgroup size per feature for full utilization is %d\n", (int)ceil(t), (1 << exp_workgroups_per_feature));
+  #endif
   exp_workgroups_per_feature = std::min(exp_workgroups_per_feature, (int)ceil(log((double)t)/log(2.0)));
   if (exp_workgroups_per_feature < 0)
       exp_workgroups_per_feature = 0;
   if (exp_workgroups_per_feature > max_exp_workgroups_per_feature_)
       exp_workgroups_per_feature = max_exp_workgroups_per_feature_;
-  printf("setting exp_workgroups_per_feature to %d\n", exp_workgroups_per_feature);
   // set work group size based on feature size
   // each 2^exp_workgroups_per_feature workgroups work on a feature4 tuple
   int num_workgroups = (1 << exp_workgroups_per_feature) * num_feature4_;
   if (num_workgroups > max_num_workgroups_)
     num_workgroups = max_num_workgroups_;
-  printf("Using %u work groups\n", num_workgroups);
+  #ifdef DEBUG_GPU
+  printf("setting exp_workgroups_per_feature to %d, using %u work groups\n", exp_workgroups_per_feature, num_workgroups);
+  #endif
+  // std::cin.get();
   
   // the kernel will process all features, and each
   // 2^exp_workgroups_per_feature (compile time constant) workgroup will
   // process one feature4 tuple
 
-  histogram_kernels_[exp_workgroups_per_feature].set_arg(2, 4, &leaf_num_data);
+  histogram_kernels_[exp_workgroups_per_feature].set_arg(2, leaf_num_data);
 
   // there will be 2^exp_workgroups_per_feature = num_workgroups / num_feature4 sub-histogram per feature4
   // and we will launch num_feature workgroups for this kernel
@@ -124,19 +177,21 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* h
   queue_.enqueue_1d_range_kernel(histogram_kernels_[exp_workgroups_per_feature], 0, num_workgroups * 256, 256);
   queue_.finish();
   // all features finished, copy results to out
-  printf("Copying histogram back to host...\n");
+  // printf("Copying histogram back to host...\n");
   boost::compute::copy(device_histogram_outputs_->begin(), device_histogram_outputs_->end(), (char*)host_histogram_outputs_.get(), queue_);
   for(int i = 0; i < num_features_; ++i) {
-  auto old_histogram_array = histograms[i].GetData();
-  int bin_size = histograms[i].SizeOfHistgram() / sizeof(HistogramBinEntry);
-  printf("copying feature %d size %d\n", i, bin_size);
-  // histogram size can be smaller than 255 (not a fixed number for each feature)
-  // but the GPU code can only handle up to 256
+    auto old_histogram_array = histograms[i].GetData();
+    int bin_size = histograms[i].SizeOfHistgram() / sizeof(HistogramBinEntry);
+    // printf("copying feature %d size %d\n", i, bin_size);
+    // histogram size can be smaller than 255 (not a fixed number for each feature)
+    // but the GPU code can only handle up to 256
     for (int j = 0; j < bin_size; ++j) {
+      // printf("%f\n", host_histogram_outputs_[i * 256 + j].sum_gradients);
       old_histogram_array[j].sum_gradients = host_histogram_outputs_[i * 256 + j].sum_gradients;
       old_histogram_array[j].sum_hessians = host_histogram_outputs_[i * 256 + j].sum_hessians;
       old_histogram_array[j].cnt = host_histogram_outputs_[i * 256 + j].cnt;
     }
+    // PrintHistograms(old_histogram_array, bin_size);
   }
 }
 
@@ -226,6 +281,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
         host4[j].s2 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(i+2)->bin_data())->Get(j);
         host4[j].s3 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(i+3)->bin_data())->Get(j);
     }
+    printf("first example of features are: %d %d %d %d\n", host4[0].s0, host4[0].s1, host4[0].s2, host4[0].s3);
     boost::compute::copy(host4.begin(), host4.end(), device_features_->begin() + (i/4) * num_data_, queue_);
     printf("Feature %d, %d, %d, %d copied to device\n", i, i+1, i+2, i+3);
   }
@@ -390,6 +446,14 @@ void GPUTreeLearner::BeforeTrain() {
 
   // Sumup for root
   if (data_partition_->leaf_count(0) == num_data_) {
+    // copy indices, gradients and hessians to device (TODO: async)
+    #ifdef GPU_DEBUG
+    printf("Copying intial indices, gradients and hessians to device\n");
+    #endif
+    boost::compute::copy(gradients_, gradients_ + num_data_, device_gradients_->begin(), queue_);
+    boost::compute::copy(hessians_,  hessians_  + num_data_, device_hessians_->begin(),  queue_);
+    boost::compute::copy(data_partition_->indices(), data_partition_->indices() + num_data_, 
+                         device_data_indices_->begin(), queue_);
     // use all data
     smaller_leaf_splits_->Init(gradients_, hessians_);
     // point to gradients, avoid copy
@@ -506,7 +570,10 @@ bool GPUTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
     data_size_t end = begin + data_partition_->leaf_count(smaller_leaf);
 
     // copy indices to the GPU:
-    boost::compute::copy(indices, indices + end - begin, device_data_indices_->begin(), queue_);
+    #ifdef DEBUG_GPU
+    Log::Info("Copying indices, gradients and hessians to GPU...");
+    #endif
+    boost::compute::copy(indices + begin, indices + end, device_data_indices_->begin(), queue_);
 
     // This is about 7% of time, to re-order gradient and hessians
     #pragma omp parallel for schedule(static)
@@ -522,7 +589,9 @@ bool GPUTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
     // copy ordered gradients and hessians to the GPU:
     boost::compute::copy(ordered_gradients_.begin(), ordered_gradients_.begin() + end - begin, device_gradients_->begin(), queue_);
     boost::compute::copy(ordered_hessians_.begin(), ordered_hessians_.begin() + end - begin, device_hessians_->begin(), queue_);
-    Log::Info("gradients/hessians/indiex copied to device with size %d\n", end - begin);
+    #ifdef DEBUG_GPU
+    Log::Info("gradients/hessians/indiex copied to device with size %d", end - begin);
+    #endif
 
     // usually we can substract to get the histogram for the larger leaf,
     // but sometimes we don't have that histogram available
@@ -565,6 +634,7 @@ bool GPUTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
   return true;
 }
 
+
 // this function will go over all features on the smaller leaf,
 // and call ConstructHistogram to build histograms for all features
 // then call FindBestThreshold for all features to find the best split in each feature
@@ -591,14 +661,23 @@ void GPUTreeLearner::FindBestThresholds() {
     if (ordered_bins_[feature_index] == nullptr) {
       // if not use ordered bin
       // this is the major computation step, for dense data
-      /*
+      #if DEBUG_COMPARE
+      printf("Comparing histogram for feature %d\n", feature_index);
+      size_t size = smaller_leaf_histogram_array_[feature_index].SizeOfHistgram() / sizeof(HistogramBinEntry);
+      HistogramBinEntry* current_histogram = smaller_leaf_histogram_array_[feature_index].GetData(false);
+      HistogramBinEntry* gpu_histogram = new HistogramBinEntry[size];
+      std::copy(current_histogram, current_histogram + size, gpu_histogram);
+      // PrintHistograms(smaller_leaf_histogram_array_[feature_index].GetData(false), 
+      //                smaller_leaf_histogram_array_[feature_index].SizeOfHistgram() / sizeof(HistogramBinEntry));
       train_data_->FeatureAt(feature_index)->bin_data()->ConstructHistogram(
         smaller_leaf_splits_->data_indices(),
         smaller_leaf_splits_->num_data_in_leaf(),
         ptr_to_ordered_gradients_smaller_leaf_,
         ptr_to_ordered_hessians_smaller_leaf_,
         smaller_leaf_histogram_array_[feature_index].GetData());
-      */
+      CompareHistograms(gpu_histogram, current_histogram, size);
+      delete [] gpu_histogram;
+      #endif
     } else {
       // used ordered bin
       ordered_bins_[feature_index]->ConstructHistogram(smaller_leaf_splits_->LeafIndex(),

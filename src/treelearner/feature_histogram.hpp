@@ -42,8 +42,10 @@ public:
     }
   }
 
-  HistogramBinEntry* GetData() {
-    std::memset(data_.data(), 0, feature_->num_bin() * sizeof(HistogramBinEntry));
+  HistogramBinEntry* GetData(bool clear = true) {
+    if (clear) {
+      std::memset(data_.data(), 0, feature_->num_bin() * sizeof(HistogramBinEntry));
+    }
     return data_.data();
   }
 

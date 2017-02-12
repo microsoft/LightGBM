@@ -64,12 +64,12 @@ public:
 protected:
   struct Feature4 {
 	  union {
-		  score_t s[4];
+		  unsigned char s[4];
 		  struct {
-			  score_t s0;
-			  score_t s1;
-			  score_t s2;
-			  score_t s3;
+			  unsigned char s0;
+			  unsigned char s1;
+			  unsigned char s2;
+			  unsigned char s3;
 		  };
 	  };
   };
