@@ -4,6 +4,7 @@ PROJECT(lightgbm)
 
 OPTION(USE_MPI "MPI based parallel learning" OFF)
 OPTION(USE_OPENMP "Enable OpenMP" ON)
+OPTION(USE_GPU "Enable GPU-acclerated training (EXPERIMENTAL)" ON)
 
 if(APPLE)
     OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
@@ -29,10 +30,13 @@ else()
     endif()
 endif(USE_OPENMP)
 
-
+if(USE_GPU)
+    find_package(OpenCL REQUIRED)
+    include_directories(${OpenCL_INCLUDE_DIRS})
+endif(USE_GPU)
 
 if(UNIX OR MINGW OR CYGWIN)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -O3 -Wall -std=c++11")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -O3 -fno-omit-frame-pointer -Wall -std=c++11")
 endif()
 
 if(MSVC)
@@ -101,6 +105,11 @@ if(USE_MPI)
   TARGET_LINK_LIBRARIES(lightgbm ${MPI_CXX_LIBRARIES})
   TARGET_LINK_LIBRARIES(_lightgbm ${MPI_CXX_LIBRARIES})
 endif(USE_MPI)
+
+if(USE_GPU)
+  TARGET_LINK_LIBRARIES(lightgbm ${OpenCL_LIBRARY})
+  TARGET_LINK_LIBRARIES(_lightgbm ${OpenCL_LIBRARY})
+endif(USE_GPU)
 
 if(WIN32 AND (MINGW OR CYGWIN))
     TARGET_LINK_LIBRARIES(lightgbm Ws2_32)

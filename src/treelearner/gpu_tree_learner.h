@@ -18,8 +18,15 @@
 #include <random>
 #include <cmath>
 #include <memory>
+// #include <boost/timer/timer.hpp>
+#include <boost/compute/core.hpp>
+#include <boost/compute/memory/local_buffer.hpp>
+#include <boost/compute/algorithm/transform.hpp>
+#include <boost/compute/container/vector.hpp>
+#include <boost/compute/functional/math.hpp>
 
 namespace LightGBM {
+
 
 /*!
 * \brief Used for learning a tree by single machine
@@ -55,6 +62,23 @@ public:
   }
 
 protected:
+  struct Feature4 {
+	  union {
+		  score_t s[4];
+		  struct {
+			  score_t s0;
+			  score_t s1;
+			  score_t s2;
+			  score_t s3;
+		  };
+	  };
+  };
+  struct GPUHistogramBinEntry {
+    score_t sum_gradients;
+    score_t sum_hessians;
+    uint32_t cnt;
+  };
+
   /*!
   * \brief Some initial works before training
   */
@@ -87,6 +111,10 @@ protected:
   * \param right_leaf The index of right leaf after splitted.
   */
   virtual void Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf);
+
+  virtual void InitGPU(int platform_id, int device_id);
+
+  void GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* histograms);
 
   /*!
   * \brief Get the number of data in a leaf
@@ -158,6 +186,28 @@ protected:
   HistogramPool histogram_pool_;
   /*! \brief config of tree learner*/
   const TreeConfig* tree_config_;
+
+  /*! \brief GPU related members */
+  boost::compute::device dev_;
+  boost::compute::context ctx_;
+  boost::compute::command_queue queue_;
+  boost::compute::program program_;
+  /*! \brief a array of histogram kernels with different number
+     of workgroups per feature */
+  std::vector<boost::compute::kernel> histogram_kernels_;
+  boost::compute::kernel reduction_kernel_;
+  int num_feature4_;
+  const int max_exp_workgroups_per_feature_ = 10; // 2^10
+  const int max_num_workgroups_ = 1024;
+  std::unique_ptr<boost::compute::vector<Feature4>> device_features_;
+  std::unique_ptr<boost::compute::vector<score_t>> device_gradients_;
+  std::unique_ptr<boost::compute::vector<score_t>> device_hessians_;
+  std::unique_ptr<boost::compute::vector<data_size_t>> device_data_indices_;
+  std::unique_ptr<boost::compute::vector<int>> sync_counters_;
+  std::unique_ptr<boost::compute::vector<char>> device_subhistograms_;
+  std::unique_ptr<boost::compute::vector<char>> device_histogram_outputs_;
+  std::unique_ptr<GPUHistogramBinEntry[]> host_histogram_outputs_;
+
 };
 
 
