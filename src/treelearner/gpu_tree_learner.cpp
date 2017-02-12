@@ -116,7 +116,7 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* h
   // 2^exp_workgroups_per_feature (compile time constant) workgroup will
   // process one feature4 tuple
 
-  histogram_kernels_[exp_workgroups_per_feature].set_arg(2, leaf_num_data);
+  histogram_kernels_[exp_workgroups_per_feature].set_arg(2, 4, &leaf_num_data);
 
   // there will be 2^exp_workgroups_per_feature = num_workgroups / num_feature4 sub-histogram per feature4
   // and we will launch num_feature workgroups for this kernel
@@ -127,8 +127,12 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* h
   printf("Copying histogram back to host...\n");
   boost::compute::copy(device_histogram_outputs_->begin(), device_histogram_outputs_->end(), (char*)host_histogram_outputs_.get(), queue_);
   for(int i = 0; i < num_features_; ++i) {
-    for (int j = 0; j < 256; ++j) {
-      auto old_histogram_array = histograms[i].GetData();
+  auto old_histogram_array = histograms[i].GetData();
+  int bin_size = histograms[i].SizeOfHistgram() / sizeof(HistogramBinEntry);
+  printf("copying feature %d size %d\n", i, bin_size);
+  // histogram size can be smaller than 255 (not a fixed number for each feature)
+  // but the GPU code can only handle up to 256
+    for (int j = 0; j < bin_size; ++j) {
       old_histogram_array[j].sum_gradients = host_histogram_outputs_[i * 256 + j].sum_gradients;
       old_histogram_array[j].sum_hessians = host_histogram_outputs_[i * 256 + j].sum_hessians;
       old_histogram_array[j].cnt = host_histogram_outputs_[i * 256 + j].cnt;
@@ -182,8 +186,8 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   // create OpenCL kernels for different number of workgroups per feature
   Log::Info("Using GPU Device: %s, Vendor: %s", dev_.name().c_str(), dev_.vendor().c_str());
   Log::Info("Compiling OpenCL Kernels...");
-  program_ = boost::compute::program::create_with_source_file("histogram.cl", ctx_);
   for (int i = 0; i <= max_exp_workgroups_per_feature_; ++i) {
+      auto program_ = boost::compute::program::create_with_source_file("histogram.cl", ctx_);
       std::ostringstream opts;
       // FIXME: sparse data
       opts << "-D FEATURE_SIZE=" << num_data_ << " -D POWER_FEATURE_WORKGROUPS=" << i
@@ -196,7 +200,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
       catch (boost::compute::opencl_error &e) {
         Log::Fatal("GPU program built failure:\n %s", program_.build_log().c_str());
       }
-      histogram_kernels_.emplace_back(program_.create_kernel("histogram256"));
+      histogram_kernels_.push_back(program_.create_kernel("histogram256"));
       // setup kernel arguments
       // The only argument that needs to be changed is num_data_
       histogram_kernels_.back().set_args(*device_features_,
