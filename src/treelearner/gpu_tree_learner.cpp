@@ -138,13 +138,13 @@ err:
 }
 
 int GPUTreeLearner::GetNumWorkgroupsPerFeature(data_size_t leaf_num_data) {
-  // we roughly want 256 workgroups per device, and we have num_feature4_ feature tuples.
+  // we roughly want 256 workgroups per device, and we have num_dense_feature4_ feature tuples.
   // also guarantee that there are at least 2K examples per workgroup
-  double x = 256.0 / num_feature4_;
+  double x = 256.0 / num_dense_feature4_;
   int exp_workgroups_per_feature = ceil(log(x)/log(2.0));
   double t = leaf_num_data / 1024.0;
   #ifdef DEBUG_GPU
-  printf("Computing histogram for %d examples and (4 * %d) features\n", leaf_num_data, num_feature4_);
+  printf("Computing histogram for %d examples and (4 * %d) features\n", leaf_num_data, num_dense_feature4_);
   printf("We can have at most %d workgroups per feature4 for efficiency reasons.\n"
          "Best workgroup size per feature for full utilization is %d\n", (int)ceil(t), (1 << exp_workgroups_per_feature));
   #endif
@@ -162,7 +162,7 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* h
   // set work group size based on feature size
   // each 2^exp_workgroups_per_feature workgroups work on a feature4 tuple
   int exp_workgroups_per_feature = GetNumWorkgroupsPerFeature(leaf_num_data);
-  int num_workgroups = (1 << exp_workgroups_per_feature) * num_feature4_;
+  int num_workgroups = (1 << exp_workgroups_per_feature) * num_dense_feature4_;
   if (num_workgroups > max_num_workgroups_) {
     num_workgroups = max_num_workgroups_;
     Log::Warning("BUG detected, num_workgroups too large!");
@@ -184,7 +184,7 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* h
   hessians_future_.wait();
   gradients_future_.wait();
   // printf("launching kernel!\n");
-  // there will be 2^exp_workgroups_per_feature = num_workgroups / num_feature4 sub-histogram per feature4
+  // there will be 2^exp_workgroups_per_feature = num_workgroups / num_dense_feature4 sub-histogram per feature4
   // and we will launch num_feature workgroups for this kernel
   // will launch threads for all features
   if (leaf_num_data == num_data_) {
@@ -199,10 +199,11 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* h
   // printf("Copying histogram back to host...\n");
   boost::compute::copy(device_histogram_outputs_->begin(), device_histogram_outputs_->end(), (char*)host_histogram_outputs_.get(), queue_);
   #pragma omp parallel for schedule(static)
-  for(int i = 0; i < num_features_; ++i) {
-    auto old_histogram_array = histograms[i].GetData();
-    int bin_size = histograms[i].SizeOfHistgram() / sizeof(HistogramBinEntry);
-    // printf("copying feature %d size %d\n", i, bin_size);
+  for(int i = 0; i < num_dense_features_; ++i) {
+    int dense_index = dense_feature_map_[i];
+    auto old_histogram_array = histograms[dense_index].GetData();
+    int bin_size = histograms[dense_index].SizeOfHistgram() / sizeof(HistogramBinEntry);
+    // printf("copying dense feature %d (index %d) size %d\n", i, dense_index, bin_size);
     // histogram size can be smaller than 255 (not a fixed number for each feature)
     // but the GPU code can only handle up to 256
     for (int j = 0; j < bin_size; ++j) {
@@ -217,12 +218,20 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* h
 
 // Copy data to GPU
 void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
+  num_dense_features_ = 0;
+  for (int i = 0; i < num_features_; ++i) {
+    if (ordered_bins_[i] == nullptr) {
+      printf("feature %d is dense\n", i);
+      num_dense_features_++;
+    }
+  }
   // how many 4-feature tuples we have
-  num_feature4_ = (num_features_ + 3) / 4;
+  num_dense_feature4_ = (num_dense_features_ + 3) / 4;
   // leave some safe margin for prefetching
   int allocated_num_data_ = num_data_ + 256 * (1 << max_exp_workgroups_per_feature_);
   // currently we don't use constant memory
   int use_constants = 0;
+  // printf("%d %d %d\n", num_dense_features_, num_dense_feature4_, allocated_num_data_);
 
   // initialize GPU
   dev_ = boost::compute::system::default_device();
@@ -239,7 +248,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   ctx_ = boost::compute::context(dev_);
   queue_ = boost::compute::command_queue(ctx_, dev_);
   // allocate memory for all features (FIXME: 4 GB barrier)
-  device_features_ = std::unique_ptr<boost::compute::vector<Feature4>>(new boost::compute::vector<Feature4>(num_feature4_ * num_data_, ctx_));
+  device_features_ = std::unique_ptr<boost::compute::vector<Feature4>>(new boost::compute::vector<Feature4>(num_dense_feature4_ * num_data_, ctx_));
   // allocate space for gradients and hessians on device
   // we will copy gradients and hessians in after ordered_gradients_ and ordered_hessians_ are constructed
   device_gradients_ = std::unique_ptr<boost::compute::vector<score_t>>(new boost::compute::vector<score_t>(allocated_num_data_, ctx_));
@@ -253,11 +262,11 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
                           max_num_workgroups_ * 4 * 256 * sizeof(GPUHistogramBinEntry), ctx_));
   // create atomic counters for inter-group synchronization
   sync_counters_ = std::unique_ptr<boost::compute::vector<int>>(new boost::compute::vector<int>(
-                    num_feature4_, ctx_));
+                    num_dense_feature4_, ctx_));
   boost::compute::fill(sync_counters_->begin(), sync_counters_->end(), 0, queue_);
   // FIXME: bin size 256 fixed
   device_histogram_outputs_ = std::unique_ptr<boost::compute::vector<char>>(new boost::compute::vector<char>(
-                    num_feature4_ * 4 * 256 * sizeof(GPUHistogramBinEntry), ctx_));
+                    num_dense_feature4_ * 4 * 256 * sizeof(GPUHistogramBinEntry), ctx_));
   // create OpenCL kernels for different number of workgroups per feature
   Log::Info("Using GPU Device: %s, Vendor: %s", dev_.name().c_str(), dev_.vendor().c_str());
   Log::Info("Compiling OpenCL Kernels...");
@@ -306,51 +315,66 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   *device_subhistograms_, *sync_counters_, *device_histogram_outputs_);
 
   // Now generate new data structure feature4, and copy data to the device
-  int i;
-  for (i = 0; i + 3 < num_features_; i += 4) {
-    std::vector<Feature4> host4(num_data_);
-    // FIXME: sparse data
-    printf("Copying feature %d, %d, %d, %d to device\n", i, i+1, i+2, i+3);
-    printf("feature size: %d, %d, %d, %d, %d\n", 
-    static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(i+0)->bin_data())->num_data(),
-    static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(i+1)->bin_data())->num_data(),
-    static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(i+2)->bin_data())->num_data(),
-    static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(i+3)->bin_data())->num_data(),
-    num_data_);
-    for (int j = 0; j < num_data_; ++j) {
-        host4[j].s0 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(i)->bin_data())->Get(j);
-        host4[j].s1 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(i+1)->bin_data())->Get(j); 
-        host4[j].s2 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(i+2)->bin_data())->Get(j);
-        host4[j].s3 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(i+3)->bin_data())->Get(j);
+  int i, k, copied_feature4 = 0, dense_ind[4];
+  for (i = 0, k = 0; i < num_features_; ++i) {
+    // looking for 4 non-sparse features
+    if (ordered_bins_[i] == nullptr) {
+      dense_ind[k++] = i;
     }
-    printf("first example of features are: %d %d %d %d\n", host4[0].s0, host4[0].s1, host4[0].s2, host4[0].s3);
-    boost::compute::copy(host4.begin(), host4.end(), device_features_->begin() + (i/4) * num_data_, queue_);
-    printf("Feature %d, %d, %d, %d copied to device\n", i, i+1, i+2, i+3);
-  }
-  if (i != num_features_) {
-    std::vector<Feature4> host4(num_data_);
-    printf("%d features left\n", num_features_ - i);
-    int start;
-    for (start = i; i < num_features_; ++i) {
-      printf("copying feature %d to s%d\n", i, i - start);
+    // found 
+    if (k == 4) {
+      k = 0;
+      std::vector<Feature4> host4(num_data_);
+      printf("Copying feature %d, %d, %d, %d to device\n", dense_ind[0], dense_ind[1], dense_ind[2], dense_ind[3]);
+      printf("feature size: %d, %d, %d, %d, %d\n", 
+      static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[0])->bin_data())->num_data(),
+      static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[1])->bin_data())->num_data(),
+      static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[2])->bin_data())->num_data(),
+      static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[3])->bin_data())->num_data(),
+      num_data_);
       for (int j = 0; j < num_data_; ++j) {
-        host4[j].s[i -start] = static_cast<const LightGBM::DenseBin<score_t>*>(train_data_->FeatureAt(i)->bin_data())->Get(j);
+          host4[j].s0 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[0])->bin_data())->Get(j);
+          host4[j].s1 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[1])->bin_data())->Get(j); 
+          host4[j].s2 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[2])->bin_data())->Get(j);
+          host4[j].s3 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[3])->bin_data())->Get(j);
       }
+      printf("first example of features are: %d %d %d %d\n", host4[0].s0, host4[0].s1, host4[0].s2, host4[0].s3);
+      boost::compute::copy(host4.begin(), host4.end(), device_features_->begin() + copied_feature4 * num_data_, queue_);
+      printf("Feature %d, %d, %d, %d copied to device\n", dense_ind[0], dense_ind[1], dense_ind[2], dense_ind[3]);
+      dense_feature_map_.push_back(dense_ind[0]);
+      dense_feature_map_.push_back(dense_ind[1]);
+      dense_feature_map_.push_back(dense_ind[2]);
+      dense_feature_map_.push_back(dense_ind[3]);
+      copied_feature4++;
     }
-    // for the 'empty' features, we fill in "random" numbers (all zeros can be bad for GPU)
-    for (; i - start < 4; ++i) {
-      printf("filling s%d\n", i - start);
-      for (int j = 0; j < num_data_; ++j) {
-        host4[j].s[i - start] = j;
+  }
+  if (k != 0) {
+    std::vector<Feature4> host4(num_data_);
+    printf("%d features left\n", k);
+    for (int j = 0; j < num_data_; ++j) {
+      for (i = 0; i < k; ++i) {
+        host4[j].s[i] = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[i])->bin_data())->Get(j);
+      }
+      for (i = k; i < 4; ++i) {
+        // fill this empty feature to some "random" value
+        host4[j].s[i] = j;
       }
     }
     // copying the last 1-3 features
-    boost::compute::copy(host4.begin(), host4.end(), device_features_->begin() + (num_feature4_ - 1) * num_data_, queue_);
+    boost::compute::copy(host4.begin(), host4.end(), device_features_->begin() + (num_dense_feature4_ - 1) * num_data_, queue_);
     printf("Last features copied to device\n");
+    for (i = 0; i < k; ++i) {
+      dense_feature_map_.push_back(dense_ind[i]);
+    }
   }
+  printf("Dense feature list (size %lu): ", dense_feature_map_.size());
+  for (i = 0; i < num_dense_features_; ++i) {
+    printf("%d ", dense_feature_map_[i]);
+  }
+  printf("\n");
 
   // host memory for transferring histograms
-  host_histogram_outputs_ = std::unique_ptr<GPUHistogramBinEntry[]>(new GPUHistogramBinEntry[256 * num_feature4_ * 4]());
+  host_histogram_outputs_ = std::unique_ptr<GPUHistogramBinEntry[]>(new GPUHistogramBinEntry[256 * num_dense_feature4_ * 4]());
 }
 
 void GPUTreeLearner::ResetTrainingData(const Dataset* train_data) {

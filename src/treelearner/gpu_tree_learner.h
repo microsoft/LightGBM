@@ -198,9 +198,11 @@ protected:
   std::vector<boost::compute::kernel> histogram_kernels_;
   boost::compute::kernel histogram_fulldata_kernel_;
   boost::compute::kernel reduction_kernel_;
-  int num_feature4_;
+  int num_dense_features_;
+  int num_dense_feature4_;
   const int max_exp_workgroups_per_feature_ = 10; // 2^10
   const int max_num_workgroups_ = 1024;
+  std::vector<int> dense_feature_map_;
   std::unique_ptr<boost::compute::vector<Feature4>> device_features_;
   std::unique_ptr<boost::compute::vector<score_t>> device_gradients_;
   std::unique_ptr<boost::compute::vector<score_t>> device_hessians_;
