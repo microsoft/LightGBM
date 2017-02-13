@@ -137,9 +137,7 @@ err:
   Log::Fatal("Mismatched histograms found at location %lu.", i);
 }
 
-void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* histograms) {
-  // we have already copied ordered gradients, ordered hessians and indices to GPU
-  // decide the best number of workgroups working on one feature4 tuple
+int GPUTreeLearner::GetNumWorkgroupsPerFeature(data_size_t leaf_num_data) {
   // we roughly want 256 workgroups per device, and we have num_feature4_ feature tuples.
   // also guarantee that there are at least 2K examples per workgroup
   double x = 256.0 / num_feature4_;
@@ -155,11 +153,20 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* h
       exp_workgroups_per_feature = 0;
   if (exp_workgroups_per_feature > max_exp_workgroups_per_feature_)
       exp_workgroups_per_feature = max_exp_workgroups_per_feature_;
+  return exp_workgroups_per_feature;
+}
+
+void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* histograms) {
+  // we have already copied ordered gradients, ordered hessians and indices to GPU
+  // decide the best number of workgroups working on one feature4 tuple
   // set work group size based on feature size
   // each 2^exp_workgroups_per_feature workgroups work on a feature4 tuple
+  int exp_workgroups_per_feature = GetNumWorkgroupsPerFeature(leaf_num_data);
   int num_workgroups = (1 << exp_workgroups_per_feature) * num_feature4_;
-  if (num_workgroups > max_num_workgroups_)
+  if (num_workgroups > max_num_workgroups_) {
     num_workgroups = max_num_workgroups_;
+    Log::Warning("BUG detected, num_workgroups too large!");
+  }
   #ifdef DEBUG_GPU
   printf("setting exp_workgroups_per_feature to %d, using %u work groups\n", exp_workgroups_per_feature, num_workgroups);
   #endif
@@ -170,14 +177,23 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* h
   // process one feature4 tuple
 
   histogram_kernels_[exp_workgroups_per_feature].set_arg(2, leaf_num_data);
-  indices_future_.wait();
+  // for the root node, indices are not copied
+  if (leaf_num_data != num_data_) {
+    indices_future_.wait();
+  }
   hessians_future_.wait();
   gradients_future_.wait();
   // printf("launching kernel!\n");
   // there will be 2^exp_workgroups_per_feature = num_workgroups / num_feature4 sub-histogram per feature4
   // and we will launch num_feature workgroups for this kernel
   // will launch threads for all features
-  queue_.enqueue_1d_range_kernel(histogram_kernels_[exp_workgroups_per_feature], 0, num_workgroups * 256, 256);
+  if (leaf_num_data == num_data_) {
+    // printf("using full data kernel with exp_workgroups_per_feature = %d and %d workgroups\n", exp_workgroups_per_feature, num_workgroups);
+    queue_.enqueue_1d_range_kernel(histogram_fulldata_kernel_, 0, num_workgroups * 256, 256);
+  }
+  else {
+    queue_.enqueue_1d_range_kernel(histogram_kernels_[exp_workgroups_per_feature], 0, num_workgroups * 256, 256);
+  }
   queue_.finish();
   // all features finished, copy results to out
   // printf("Copying histogram back to host...\n");
@@ -245,26 +261,48 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   Log::Info("Using GPU Device: %s, Vendor: %s", dev_.name().c_str(), dev_.vendor().c_str());
   Log::Info("Compiling OpenCL Kernels...");
   for (int i = 0; i <= max_exp_workgroups_per_feature_; ++i) {
-      auto program_ = boost::compute::program::create_with_source_file("histogram.cl", ctx_);
-      std::ostringstream opts;
-      // FIXME: sparse data
-      opts << "-D FEATURE_SIZE=" << num_data_ << " -D POWER_FEATURE_WORKGROUPS=" << i
-           << " -D USE_CONSTANT_BUF=" << use_constants 
-           << " -cl-strict-aliasing -cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math -save-temps";
-      std::cout << "Building options: " << opts.str() << std::endl;
-      try {
-        program_.build(opts.str());
-      }
-      catch (boost::compute::opencl_error &e) {
-        Log::Fatal("GPU program built failure:\n %s", program_.build_log().c_str());
-      }
-      histogram_kernels_.push_back(program_.create_kernel("histogram256"));
-      // setup kernel arguments
-      // The only argument that needs to be changed is num_data_
-      histogram_kernels_.back().set_args(*device_features_,
-      *device_data_indices_, num_data_, *device_gradients_, *device_hessians_,
-      *device_subhistograms_, *sync_counters_, *device_histogram_outputs_);
+    auto program = boost::compute::program::create_with_source_file("histogram.cl", ctx_);
+    std::ostringstream opts;
+    // FIXME: sparse data
+    opts << "-D FEATURE_SIZE=" << num_data_ << " -D POWER_FEATURE_WORKGROUPS=" << i
+         << " -D USE_CONSTANT_BUF=" << use_constants 
+         << " -cl-strict-aliasing -cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math -save-temps";
+    std::cout << "Building options: " << opts.str() << std::endl;
+    try {
+      program.build(opts.str());
+    }
+    catch (boost::compute::opencl_error &e) {
+      Log::Fatal("GPU program built failure:\n %s", program.build_log().c_str());
+    }
+    histogram_kernels_.push_back(program.create_kernel("histogram256"));
+    // setup kernel arguments
+    // The only argument that needs to be changed is num_data_
+    histogram_kernels_.back().set_args(*device_features_,
+    *device_data_indices_, num_data_, *device_gradients_, *device_hessians_,
+    *device_subhistograms_, *sync_counters_, *device_histogram_outputs_);
   }
+  // create the OpenCL kernel for the root node (all data)
+  int full_exp_workgroups_per_feature = GetNumWorkgroupsPerFeature(num_data_);
+  auto program = boost::compute::program::create_with_source_file("histogram.cl", ctx_);
+  std::ostringstream opts;
+  // FIXME: sparse data
+  opts << "-D FEATURE_SIZE=" << num_data_ << " -D POWER_FEATURE_WORKGROUPS=" << full_exp_workgroups_per_feature
+       << " -D IGNORE_INDICES=1" 
+       << " -D USE_CONSTANT_BUF=" << use_constants 
+       << " -cl-strict-aliasing -cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math -save-temps";
+  std::cout << "Building options: " << opts.str() << std::endl;
+  try {
+    program.build(opts.str());
+  }
+  catch (boost::compute::opencl_error &e) {
+    Log::Fatal("GPU program built failure:\n %s", program.build_log().c_str());
+  }
+  histogram_fulldata_kernel_ = program.create_kernel("histogram256");
+  // setup kernel arguments
+  // The only argument that needs to be changed is num_data_
+  histogram_fulldata_kernel_.set_args(*device_features_,
+  *device_data_indices_, num_data_, *device_gradients_, *device_hessians_,
+  *device_subhistograms_, *sync_counters_, *device_histogram_outputs_);
 
   // Now generate new data structure feature4, and copy data to the device
   int i;
@@ -426,6 +464,13 @@ Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians) {
 
 void GPUTreeLearner::BeforeTrain() {
 
+  // copy indices, gradients and hessians to device, start as early as possible
+  #ifdef GPU_DEBUG
+  printf("Copying intial full gradients and hessians to device\n");
+  #endif
+  hessians_future_ = boost::compute::copy_async(hessians_,  hessians_  + num_data_, device_hessians_->begin(),  queue_);
+  gradients_future_ = boost::compute::copy_async(gradients_, gradients_ + num_data_, device_gradients_->begin(), queue_);
+
   // reset histogram pool
   histogram_pool_.ResetMap();
   // initialize used features
@@ -449,14 +494,9 @@ void GPUTreeLearner::BeforeTrain() {
 
   // Sumup for root
   if (data_partition_->leaf_count(0) == num_data_) {
-    // copy indices, gradients and hessians to device (TODO: async)
-    #ifdef GPU_DEBUG
-    printf("Copying intial indices, gradients and hessians to device\n");
-    #endif
-    indices_future_ = boost::compute::copy_async(data_partition_->indices(), data_partition_->indices() + num_data_, 
-                         device_data_indices_->begin(), queue_);
-    hessians_future_ = boost::compute::copy_async(hessians_,  hessians_  + num_data_, device_hessians_->begin(),  queue_);
-    gradients_future_ = boost::compute::copy_async(gradients_, gradients_ + num_data_, device_gradients_->begin(), queue_);
+    // No need to copy the index for the root
+    // indices_future_ = boost::compute::copy_async(data_partition_->indices(), data_partition_->indices() + num_data_, 
+    //                     device_data_indices_->begin(), queue_);
     // use all data
     smaller_leaf_splits_->Init(gradients_, hessians_);
     // point to gradients, avoid copy

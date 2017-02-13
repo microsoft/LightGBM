@@ -112,7 +112,9 @@ protected:
   */
   virtual void Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf);
 
-  virtual void InitGPU(int platform_id, int device_id);
+  int GetNumWorkgroupsPerFeature(data_size_t leaf_num_data);
+  
+  void InitGPU(int platform_id, int device_id);
 
   void GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* histograms);
 
@@ -191,10 +193,10 @@ protected:
   boost::compute::device dev_;
   boost::compute::context ctx_;
   boost::compute::command_queue queue_;
-  boost::compute::program program_;
   /*! \brief a array of histogram kernels with different number
      of workgroups per feature */
   std::vector<boost::compute::kernel> histogram_kernels_;
+  boost::compute::kernel histogram_fulldata_kernel_;
   boost::compute::kernel reduction_kernel_;
   int num_feature4_;
   const int max_exp_workgroups_per_feature_ = 10; // 2^10
