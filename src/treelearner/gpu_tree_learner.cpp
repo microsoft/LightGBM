@@ -189,15 +189,25 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* h
   // will launch threads for all features
   if (leaf_num_data == num_data_) {
     // printf("using full data kernel with exp_workgroups_per_feature = %d and %d workgroups\n", exp_workgroups_per_feature, num_workgroups);
-    queue_.enqueue_1d_range_kernel(histogram_fulldata_kernel_, 0, num_workgroups * 256, 256);
+    kernel_wait_obj_ = boost::compute::wait_list(queue_.enqueue_1d_range_kernel(histogram_fulldata_kernel_, 0, num_workgroups * 256, 256));
   }
   else {
-    queue_.enqueue_1d_range_kernel(histogram_kernels_[exp_workgroups_per_feature], 0, num_workgroups * 256, 256);
+    kernel_wait_obj_ = boost::compute::wait_list(
+                       queue_.enqueue_1d_range_kernel(histogram_kernels_[exp_workgroups_per_feature], 0, num_workgroups * 256, 256));
   }
-  queue_.finish();
+  // the queue should be asynchrounous, and we will can WaitAndGetHistograms() before we start processing dense features
+  // copy the results asynchronously
+  size_t size = num_dense_feature4_ * 4 * 256 * sizeof(GPUHistogramBinEntry);
+  histograms_wait_obj_ = boost::compute::wait_list(
+                        queue_.enqueue_read_buffer_async(device_histogram_outputs_, 0, size, (char*)host_histogram_outputs_.get(), kernel_wait_obj_));
+}
+
+void GPUTreeLearner::WaitAndGetHistograms(FeatureHistogram* histograms) {
+  histograms_wait_obj_.wait();
+  // queue_.finish();
   // all features finished, copy results to out
   // printf("Copying histogram back to host...\n");
-  boost::compute::copy(device_histogram_outputs_->begin(), device_histogram_outputs_->end(), (char*)host_histogram_outputs_.get(), queue_);
+  // boost::compute::copy(device_histogram_outputs_->begin(), device_histogram_outputs_->end(), (char*)host_histogram_outputs_.get(), queue_);
   #pragma omp parallel for schedule(static)
   for(int i = 0; i < num_dense_features_; ++i) {
     int dense_index = dense_feature_map_[i];
@@ -214,6 +224,7 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* h
     }
     // PrintHistograms(old_histogram_array, bin_size);
   }
+
 }
 
 // Copy data to GPU
@@ -265,9 +276,11 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
                     num_dense_feature4_, ctx_));
   boost::compute::fill(sync_counters_->begin(), sync_counters_->end(), 0, queue_);
   // FIXME: bin size 256 fixed
-  device_histogram_outputs_ = std::unique_ptr<boost::compute::vector<char>>(new boost::compute::vector<char>(
-                    num_dense_feature4_ * 4 * 256 * sizeof(GPUHistogramBinEntry), ctx_));
+  // device_histogram_outputs_ = std::unique_ptr<boost::compute::vector<char>>(new boost::compute::vector<char>(
+  //                  num_dense_feature4_ * 4 * 256 * sizeof(GPUHistogramBinEntry), ctx_));
   // create OpenCL kernels for different number of workgroups per feature
+  device_histogram_outputs_ = boost::compute::buffer(ctx_, num_dense_feature4_ * 4 * 256 * sizeof(GPUHistogramBinEntry), 
+                           boost::compute::memory_object::write_only, nullptr);
   Log::Info("Using GPU Device: %s, Vendor: %s", dev_.name().c_str(), dev_.vendor().c_str());
   Log::Info("Compiling OpenCL Kernels...");
   for (int i = 0; i <= max_exp_workgroups_per_feature_; ++i) {
@@ -289,7 +302,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
     // The only argument that needs to be changed is num_data_
     histogram_kernels_.back().set_args(*device_features_,
     *device_data_indices_, num_data_, *device_gradients_, *device_hessians_,
-    *device_subhistograms_, *sync_counters_, *device_histogram_outputs_);
+    *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
   }
   // create the OpenCL kernel for the root node (all data)
   int full_exp_workgroups_per_feature = GetNumWorkgroupsPerFeature(num_data_);
@@ -312,7 +325,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   // The only argument that needs to be changed is num_data_
   histogram_fulldata_kernel_.set_args(*device_features_,
   *device_data_indices_, num_data_, *device_gradients_, *device_hessians_,
-  *device_subhistograms_, *sync_counters_, *device_histogram_outputs_);
+  *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
 
   // Now generate new data structure feature4, and copy data to the device
   int i, k, copied_feature4 = 0, dense_ind[4];
@@ -320,6 +333,9 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
     // looking for 4 non-sparse features
     if (ordered_bins_[i] == nullptr) {
       dense_ind[k++] = i;
+    }
+    else {
+      sparse_feature_map_.push_back(i);
     }
     // found 
     if (k == 4) {
@@ -370,6 +386,11 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   printf("Dense feature list (size %lu): ", dense_feature_map_.size());
   for (i = 0; i < num_dense_features_; ++i) {
     printf("%d ", dense_feature_map_[i]);
+  }
+  printf("\n");
+  printf("Sparse feature list (size %lu): ", sparse_feature_map_.size());
+  for (i = 0; i < num_features_ - num_dense_features_; ++i) {
+    printf("%d ", sparse_feature_map_[i]);
   }
   printf("\n");
 
@@ -715,11 +736,11 @@ void GPUTreeLearner::FindBestThresholds() {
 
   // Find histograms using GPU
   GPUHistogram(smaller_leaf_splits_->num_data_in_leaf(), smaller_leaf_histogram_array_);
-
+  
+  // When GPU is computing the dense bins, CPU works on the sparse bins
   #pragma omp parallel for schedule(guided)
-  // go over all features, find the best split
-  // feature parallel here
-  for (int feature_index = 0; feature_index < num_features_; feature_index++) {
+  for (int i = 0; i < num_features_ - num_dense_features_; ++i) {
+    int feature_index = sparse_feature_map_[i];
     // feature is not used
     if ((!is_feature_used_.empty() && is_feature_used_[feature_index] == false)) continue;
     // if parent(larger) leaf cannot split at current feature
@@ -730,33 +751,58 @@ void GPUTreeLearner::FindBestThresholds() {
 
     // construct histograms for smaller leaf
     // histograms for the larger leaf can thus be computed
-    if (ordered_bins_[feature_index] == nullptr) {
-      // if not use ordered bin
-      // this is the major computation step, for dense data
-      #if DEBUG_COMPARE
-      printf("Comparing histogram for feature %d\n", feature_index);
-      size_t size = smaller_leaf_histogram_array_[feature_index].SizeOfHistgram() / sizeof(HistogramBinEntry);
-      HistogramBinEntry* current_histogram = smaller_leaf_histogram_array_[feature_index].GetData(false);
-      HistogramBinEntry* gpu_histogram = new HistogramBinEntry[size];
-      std::copy(current_histogram, current_histogram + size, gpu_histogram);
-      // PrintHistograms(smaller_leaf_histogram_array_[feature_index].GetData(false), 
-      //                smaller_leaf_histogram_array_[feature_index].SizeOfHistgram() / sizeof(HistogramBinEntry));
-      train_data_->FeatureAt(feature_index)->bin_data()->ConstructHistogram(
-        smaller_leaf_splits_->data_indices(),
-        smaller_leaf_splits_->num_data_in_leaf(),
-        ptr_to_ordered_gradients_smaller_leaf_,
-        ptr_to_ordered_hessians_smaller_leaf_,
-        smaller_leaf_histogram_array_[feature_index].GetData());
-      CompareHistograms(gpu_histogram, current_histogram, size);
-      delete [] gpu_histogram;
-      #endif
+    // used ordered bin (we know it is a sparse feature)
+    ordered_bins_[feature_index]->ConstructHistogram(smaller_leaf_splits_->LeafIndex(),
+      gradients_,
+      hessians_,
+      smaller_leaf_histogram_array_[feature_index].GetData());
+    // find best threshold for smaller child
+    smaller_leaf_histogram_array_[feature_index].FindBestThreshold(
+      smaller_leaf_splits_->sum_gradients(),
+      smaller_leaf_splits_->sum_hessians(),
+      smaller_leaf_splits_->num_data_in_leaf(),
+      &smaller_leaf_splits_->BestSplitPerFeature()[feature_index]);
+
+    // only has root leaf
+    if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->LeafIndex() < 0) continue;
+
+    if (parent_leaf_histogram_array_ != nullptr) {
+      // construct histgroms for large leaf, we initialize larger leaf as the parent,
+      // so we can just subtract the smaller leaf's histograms
+      // this is the most common case
+      larger_leaf_histogram_array_[feature_index].Subtract(smaller_leaf_histogram_array_[feature_index]);
     } else {
-      // used ordered bin
-      ordered_bins_[feature_index]->ConstructHistogram(smaller_leaf_splits_->LeafIndex(),
+      ordered_bins_[feature_index]->ConstructHistogram(larger_leaf_splits_->LeafIndex(),
         gradients_,
         hessians_,
-        smaller_leaf_histogram_array_[feature_index].GetData());
+        larger_leaf_histogram_array_[feature_index].GetData());
     }
+
+    // Now we have constructed for the larger child as well, by substracting if possible
+    // find best threshold for larger child, for each feature
+    larger_leaf_histogram_array_[feature_index].FindBestThreshold(
+      larger_leaf_splits_->sum_gradients(),
+      larger_leaf_splits_->sum_hessians(),
+      larger_leaf_splits_->num_data_in_leaf(),
+      &larger_leaf_splits_->BestSplitPerFeature()[feature_index]);
+  }
+  
+  // wait for GPU, and then we will process the dense bins (find thresholds)
+  WaitAndGetHistograms(smaller_leaf_histogram_array_);
+
+  #pragma omp parallel for schedule(guided)
+  // go over all features, find the best split
+  // feature parallel here
+  for (int i = 0; i < num_dense_features_; ++i) {
+    int feature_index = dense_feature_map_[i];
+    // feature is not used
+    if ((!is_feature_used_.empty() && is_feature_used_[feature_index] == false)) continue;
+    // if parent(larger) leaf cannot split at current feature
+    if (parent_leaf_histogram_array_ != nullptr && !parent_leaf_histogram_array_[feature_index].is_splittable()) {
+      smaller_leaf_histogram_array_[feature_index].set_is_splittable(false);
+      continue;
+    }
+
     // find best threshold for smaller child
     smaller_leaf_histogram_array_[feature_index].FindBestThreshold(
       smaller_leaf_splits_->sum_gradients(),
@@ -776,22 +822,14 @@ void GPUTreeLearner::FindBestThresholds() {
       // no parent histogram, we have to construct the histogram for the larger leaf
       Log::Info("No parent histogram. Doing more calculation!");
       // this can happen if the histogram pool is not large enough
-      if (ordered_bins_[feature_index] == nullptr) {
         // if not use ordered bin
         // call ConstructHistogram in dense_bin to construct histogram for this feature
-        train_data_->FeatureAt(feature_index)->bin_data()->ConstructHistogram(
-          larger_leaf_splits_->data_indices(),
-          larger_leaf_splits_->num_data_in_leaf(),
-          ptr_to_ordered_gradients_larger_leaf_,
-          ptr_to_ordered_hessians_larger_leaf_,
-          larger_leaf_histogram_array_[feature_index].GetData());
-      } else {
-        // used ordered bin
-        ordered_bins_[feature_index]->ConstructHistogram(larger_leaf_splits_->LeafIndex(),
-          gradients_,
-          hessians_,
-          larger_leaf_histogram_array_[feature_index].GetData());
-      }
+      train_data_->FeatureAt(feature_index)->bin_data()->ConstructHistogram(
+        larger_leaf_splits_->data_indices(),
+        larger_leaf_splits_->num_data_in_leaf(),
+        ptr_to_ordered_gradients_larger_leaf_,
+        ptr_to_ordered_hessians_larger_leaf_,
+        larger_leaf_histogram_array_[feature_index].GetData());
     }
 
     // Now we have constructed for the larger child as well, by substracting if possible

@@ -117,6 +117,8 @@ protected:
   void InitGPU(int platform_id, int device_id);
 
   void GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* histograms);
+  
+  void WaitAndGetHistograms(FeatureHistogram* histograms); 
 
   /*!
   * \brief Get the number of data in a leaf
@@ -203,13 +205,16 @@ protected:
   const int max_exp_workgroups_per_feature_ = 10; // 2^10
   const int max_num_workgroups_ = 1024;
   std::vector<int> dense_feature_map_;
+  std::vector<int> sparse_feature_map_;
   std::unique_ptr<boost::compute::vector<Feature4>> device_features_;
   std::unique_ptr<boost::compute::vector<score_t>> device_gradients_;
   std::unique_ptr<boost::compute::vector<score_t>> device_hessians_;
   std::unique_ptr<boost::compute::vector<data_size_t>> device_data_indices_;
   std::unique_ptr<boost::compute::vector<int>> sync_counters_;
   std::unique_ptr<boost::compute::vector<char>> device_subhistograms_;
-  std::unique_ptr<boost::compute::vector<char>> device_histogram_outputs_;
+  boost::compute::buffer device_histogram_outputs_;
+  boost::compute::wait_list kernel_wait_obj_;
+  boost::compute::wait_list histograms_wait_obj_;
   std::unique_ptr<GPUHistogramBinEntry[]> host_histogram_outputs_;
   boost::compute::future<void> indices_future_;
   boost::compute::future<void> gradients_future_;
