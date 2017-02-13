@@ -198,6 +198,7 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* h
   // all features finished, copy results to out
   // printf("Copying histogram back to host...\n");
   boost::compute::copy(device_histogram_outputs_->begin(), device_histogram_outputs_->end(), (char*)host_histogram_outputs_.get(), queue_);
+  #pragma omp parallel for schedule(static)
   for(int i = 0; i < num_features_; ++i) {
     auto old_histogram_array = histograms[i].GetData();
     int bin_size = histograms[i].SizeOfHistgram() / sizeof(HistogramBinEntry);
