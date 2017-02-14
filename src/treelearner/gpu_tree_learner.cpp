@@ -38,10 +38,12 @@ void GPUTreeLearner::Init(const Dataset* train_data) {
   }
   // Get the max bin size, used for selecting best GPU kernel
   max_num_bin_ = 0;
+  printf("bin size: ");
   for (int i = 0; i < train_data_->num_features(); ++i) {
-    printf("bin size for feature %d is %d\n", i, train_data_->FeatureAt(i)->num_bin());
+    printf("%d, ", train_data_->FeatureAt(i)->num_bin());
     max_num_bin_ = std::max(max_num_bin_, train_data_->FeatureAt(i)->num_bin());
   }
+  printf("\n");
   
   // at least need 2 leaves
   max_cache_size = std::max(2, max_cache_size);
@@ -98,7 +100,7 @@ void GPUTreeLearner::Init(const Dataset* train_data) {
 
 void PrintHistograms(HistogramBinEntry* h, size_t size) {
   for (size_t i = 0; i < size; ++i) {
-    printf("[%3lu]=%9.3g,%9.3g,%8d\t", i, h[i].sum_gradients, h[i].sum_hessians, h[i].cnt);
+    printf("%03lu=%9.3g,%9.3g,%7d\t", i, h[i].sum_gradients, h[i].sum_hessians, h[i].cnt);
     if ((i & 3) == 3)
         printf("\n");
   }
@@ -115,7 +117,7 @@ union Float_t
 };
   
 
-void CompareHistograms(HistogramBinEntry* h1, HistogramBinEntry* h2, size_t size) {
+void CompareHistograms(HistogramBinEntry* h1, HistogramBinEntry* h2, size_t size, int feature_id) {
   size_t i;
   Float_t a, b;
   for (i = 0; i < size; ++i) {
@@ -128,21 +130,22 @@ void CompareHistograms(HistogramBinEntry* h1, HistogramBinEntry* h2, size_t size
     }
     if (ulps > 65536) {
       printf("%g != %g (%d ULPs)\n", h1[i].sum_gradients, h2[i].sum_gradients, ulps);
-      goto err;
+      // goto err;
     }
     a.f = h1[i].sum_hessians;
     b.f = h2[i].sum_hessians;
     ulps = Float_t::ulp_diff(a, b);
     if (ulps > 65536) {
       printf("%g != %g (%d ULPs)\n", h1[i].sum_hessians, h2[i].sum_hessians, ulps);
-      goto err;
+      // goto err;
     }
   }
   return;
 err:
-  Log::Warning("Mismatched histograms found at location %lu.", i);
+  Log::Warning("Mismatched histograms found for feature %d at location %lu.", feature_id, i);
   std::cin.get();
   PrintHistograms(h1, size);
+  printf("\n");
   PrintHistograms(h2, size);
   std::cin.get();
 }
@@ -163,6 +166,7 @@ int GPUTreeLearner::GetNumWorkgroupsPerFeature(data_size_t leaf_num_data) {
       exp_workgroups_per_feature = 0;
   if (exp_workgroups_per_feature > max_exp_workgroups_per_feature_)
       exp_workgroups_per_feature = max_exp_workgroups_per_feature_;
+  // return 0;
   return exp_workgroups_per_feature;
 }
 
@@ -243,7 +247,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   num_dense_features_ = 0;
   for (int i = 0; i < num_features_; ++i) {
     if (ordered_bins_[i] == nullptr) {
-      printf("feature %d is dense\n", i);
+      // printf("feature %d is dense\n", i);
       num_dense_features_++;
     }
   }
@@ -846,7 +850,7 @@ void GPUTreeLearner::FindBestThresholds() {
   #ifdef DEBUG_COMPARE
   for (int i = 0; i < num_dense_features_; ++i) {
     int feature_index = dense_feature_map_[i];
-    printf("Comparing histogram for feature %d\n", feature_index);
+    // printf("Comparing histogram for feature %d\n", feature_index);
     size_t size = smaller_leaf_histogram_array_[feature_index].SizeOfHistgram() / sizeof(HistogramBinEntry);
     HistogramBinEntry* current_histogram = smaller_leaf_histogram_array_[feature_index].GetData(false);
     HistogramBinEntry* gpu_histogram = new HistogramBinEntry[size];
@@ -859,7 +863,7 @@ void GPUTreeLearner::FindBestThresholds() {
       ptr_to_ordered_gradients_smaller_leaf_,
       ptr_to_ordered_hessians_smaller_leaf_,
       smaller_leaf_histogram_array_[feature_index].GetData());
-    CompareHistograms(gpu_histogram, current_histogram, size);
+    CompareHistograms(gpu_histogram, current_histogram, size, feature_index);
     std::copy(gpu_histogram, gpu_histogram + size, current_histogram);
     delete [] gpu_histogram;
   }
