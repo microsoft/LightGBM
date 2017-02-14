@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <vector>
 
+
 namespace LightGBM {
 
 GPUTreeLearner::GPUTreeLearner(const TreeConfig* tree_config)
@@ -35,6 +36,13 @@ void GPUTreeLearner::Init(const Dataset* train_data) {
     }
     max_cache_size = static_cast<int>(tree_config_->histogram_pool_size * 1024 * 1024 / total_histogram_size);
   }
+  // Get the max bin size, used for selecting best GPU kernel
+  max_num_bin_ = 0;
+  for (int i = 0; i < train_data_->num_features(); ++i) {
+    printf("bin size for feature %d is %d\n", i, train_data_->FeatureAt(i)->num_bin());
+    max_num_bin_ = std::max(max_num_bin_, train_data_->FeatureAt(i)->num_bin());
+  }
+  
   // at least need 2 leaves
   max_cache_size = std::max(2, max_cache_size);
   max_cache_size = std::min(max_cache_size, tree_config_->num_leaves);
@@ -85,7 +93,7 @@ void GPUTreeLearner::Init(const Dataset* train_data) {
     is_data_in_leaf_.resize(num_data_);
   }
   Log::Info("Number of data: %d, number of features: %d", num_data_, num_features_);
-  InitGPU(-1, -1);
+  InitGPU(tree_config_->gpu_platform_id, tree_config_->gpu_device_id);
 }
 
 void PrintHistograms(HistogramBinEntry* h, size_t size) {
@@ -114,6 +122,10 @@ void CompareHistograms(HistogramBinEntry* h1, HistogramBinEntry* h2, size_t size
     a.f = h1[i].sum_gradients;
     b.f = h2[i].sum_gradients;
     int32_t ulps = Float_t::ulp_diff(a, b);
+    if (fabs(h1[i].cnt           - h2[i].cnt != 0)) {
+      printf("%d != %d\n", h1[i].cnt, h2[i].cnt);
+      goto err;
+    }
     if (ulps > 65536) {
       printf("%g != %g (%d ULPs)\n", h1[i].sum_gradients, h2[i].sum_gradients, ulps);
       goto err;
@@ -125,16 +137,14 @@ void CompareHistograms(HistogramBinEntry* h1, HistogramBinEntry* h2, size_t size
       printf("%g != %g (%d ULPs)\n", h1[i].sum_hessians, h2[i].sum_hessians, ulps);
       goto err;
     }
-    if (fabs(h1[i].cnt           - h2[i].cnt != 0)) {
-      printf("%d != %d\n", h1[i].cnt, h2[i].cnt);
-      goto err;
-    }
   }
   return;
 err:
+  Log::Warning("Mismatched histograms found at location %lu.", i);
+  std::cin.get();
   PrintHistograms(h1, size);
   PrintHistograms(h2, size);
-  Log::Fatal("Mismatched histograms found at location %lu.", i);
+  std::cin.get();
 }
 
 int GPUTreeLearner::GetNumWorkgroupsPerFeature(data_size_t leaf_num_data) {
@@ -169,6 +179,7 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* h
   }
   #ifdef DEBUG_GPU
   printf("setting exp_workgroups_per_feature to %d, using %u work groups\n", exp_workgroups_per_feature, num_workgroups);
+  printf("Constructing histogram with %d examples\n", leaf_num_data);
   #endif
   // std::cin.get();
   
@@ -197,7 +208,7 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* h
   }
   // the queue should be asynchrounous, and we will can WaitAndGetHistograms() before we start processing dense features
   // copy the results asynchronously
-  size_t size = num_dense_feature4_ * 4 * 256 * sizeof(GPUHistogramBinEntry);
+  size_t size = num_dense_feature4_ * 4 * device_bin_size_ * sizeof(GPUHistogramBinEntry);
   histograms_wait_obj_ = boost::compute::wait_list(
                         queue_.enqueue_read_buffer_async(device_histogram_outputs_, 0, size, (char*)host_histogram_outputs_.get(), kernel_wait_obj_));
 }
@@ -217,10 +228,10 @@ void GPUTreeLearner::WaitAndGetHistograms(FeatureHistogram* histograms) {
     // histogram size can be smaller than 255 (not a fixed number for each feature)
     // but the GPU code can only handle up to 256
     for (int j = 0; j < bin_size; ++j) {
-      // printf("%f\n", host_histogram_outputs_[i * 256 + j].sum_gradients);
-      old_histogram_array[j].sum_gradients = host_histogram_outputs_[i * 256 + j].sum_gradients;
-      old_histogram_array[j].sum_hessians = host_histogram_outputs_[i * 256 + j].sum_hessians;
-      old_histogram_array[j].cnt = host_histogram_outputs_[i * 256 + j].cnt;
+      // printf("%f\n", host_histogram_outputs_[i * device_bin_size_ + j].sum_gradients);
+      old_histogram_array[j].sum_gradients = host_histogram_outputs_[i * device_bin_size_+ j].sum_gradients;
+      old_histogram_array[j].sum_hessians = host_histogram_outputs_[i * device_bin_size_ + j].sum_hessians;
+      old_histogram_array[j].cnt = host_histogram_outputs_[i * device_bin_size_ + j].cnt;
     }
     // PrintHistograms(old_histogram_array, bin_size);
   }
@@ -256,6 +267,21 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
       }   
     }   
   }   
+  std::string kernel_source;
+  std::string kernel_name;
+  if (max_num_bin_ <= 64) {
+    kernel_source = "histogram64.cl";
+    kernel_name = "histogram64";
+    device_bin_size_ = 64;
+  }
+  else if ( max_num_bin_ <= 256) {
+    kernel_source = "histogram256.cl";
+    kernel_name = "histogram256";
+    device_bin_size_ = 256;
+  }
+  else {
+    Log::Fatal("bin size %d cannot run on GPU", max_num_bin_);
+  }
   ctx_ = boost::compute::context(dev_);
   queue_ = boost::compute::command_queue(ctx_, dev_);
   // allocate memory for all features (FIXME: 4 GB barrier)
@@ -267,24 +293,23 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   // copy indices to the device
   device_data_indices_ = std::unique_ptr<boost::compute::vector<data_size_t>>(new boost::compute::vector<data_size_t>(allocated_num_data_, ctx_));
   boost::compute::fill(device_data_indices_->begin(), device_data_indices_->end(), 0, queue_);
-  // create output buffer, each feature has a histogram with 256 bins,
+  // create output buffer, each feature has a histogram with device_bin_size_ bins,
   // each work group generates a sub-histogram of 4 features.
   device_subhistograms_ = std::unique_ptr<boost::compute::vector<char>>(new boost::compute::vector<char>(
-                          max_num_workgroups_ * 4 * 256 * sizeof(GPUHistogramBinEntry), ctx_));
+                          max_num_workgroups_ * 4 * device_bin_size_ * sizeof(GPUHistogramBinEntry), ctx_));
   // create atomic counters for inter-group synchronization
   sync_counters_ = std::unique_ptr<boost::compute::vector<int>>(new boost::compute::vector<int>(
                     num_dense_feature4_, ctx_));
   boost::compute::fill(sync_counters_->begin(), sync_counters_->end(), 0, queue_);
-  // FIXME: bin size 256 fixed
   // device_histogram_outputs_ = std::unique_ptr<boost::compute::vector<char>>(new boost::compute::vector<char>(
-  //                  num_dense_feature4_ * 4 * 256 * sizeof(GPUHistogramBinEntry), ctx_));
+  //                  num_dense_feature4_ * 4 * device_bin_size_ * sizeof(GPUHistogramBinEntry), ctx_));
   // create OpenCL kernels for different number of workgroups per feature
-  device_histogram_outputs_ = boost::compute::buffer(ctx_, num_dense_feature4_ * 4 * 256 * sizeof(GPUHistogramBinEntry), 
+  device_histogram_outputs_ = boost::compute::buffer(ctx_, num_dense_feature4_ * 4 * device_bin_size_ * sizeof(GPUHistogramBinEntry), 
                            boost::compute::memory_object::write_only, nullptr);
   Log::Info("Using GPU Device: %s, Vendor: %s", dev_.name().c_str(), dev_.vendor().c_str());
-  Log::Info("Compiling OpenCL Kernels...");
+  Log::Info("Compiling OpenCL Kernel from %s...", kernel_source.c_str());
   for (int i = 0; i <= max_exp_workgroups_per_feature_; ++i) {
-    auto program = boost::compute::program::create_with_source_file("histogram.cl", ctx_);
+    auto program = boost::compute::program::create_with_source_file(kernel_source, ctx_);
     std::ostringstream opts;
     // FIXME: sparse data
     opts << "-D FEATURE_SIZE=" << num_data_ << " -D POWER_FEATURE_WORKGROUPS=" << i
@@ -297,7 +322,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
     catch (boost::compute::opencl_error &e) {
       Log::Fatal("GPU program built failure:\n %s", program.build_log().c_str());
     }
-    histogram_kernels_.push_back(program.create_kernel("histogram256"));
+    histogram_kernels_.push_back(program.create_kernel(kernel_name));
     // setup kernel arguments
     // The only argument that needs to be changed is num_data_
     histogram_kernels_.back().set_args(*device_features_,
@@ -306,7 +331,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   }
   // create the OpenCL kernel for the root node (all data)
   int full_exp_workgroups_per_feature = GetNumWorkgroupsPerFeature(num_data_);
-  auto program = boost::compute::program::create_with_source_file("histogram.cl", ctx_);
+  auto program = boost::compute::program::create_with_source_file(kernel_source, ctx_);
   std::ostringstream opts;
   // FIXME: sparse data
   opts << "-D FEATURE_SIZE=" << num_data_ << " -D POWER_FEATURE_WORKGROUPS=" << full_exp_workgroups_per_feature
@@ -320,7 +345,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   catch (boost::compute::opencl_error &e) {
     Log::Fatal("GPU program built failure:\n %s", program.build_log().c_str());
   }
-  histogram_fulldata_kernel_ = program.create_kernel("histogram256");
+  histogram_fulldata_kernel_ = program.create_kernel(kernel_name);
   // setup kernel arguments
   // The only argument that needs to be changed is num_data_
   histogram_fulldata_kernel_.set_args(*device_features_,
@@ -395,7 +420,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   printf("\n");
 
   // host memory for transferring histograms
-  host_histogram_outputs_ = std::unique_ptr<GPUHistogramBinEntry[]>(new GPUHistogramBinEntry[256 * num_dense_feature4_ * 4]());
+  host_histogram_outputs_ = std::unique_ptr<GPUHistogramBinEntry[]>(new GPUHistogramBinEntry[device_bin_size_ * num_dense_feature4_ * 4]());
 }
 
 void GPUTreeLearner::ResetTrainingData(const Dataset* train_data) {
@@ -661,6 +686,7 @@ bool GPUTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
     // copy indices to the GPU:
     #ifdef DEBUG_GPU
     Log::Info("Copying indices, gradients and hessians to GPU...");
+    printf("indices size %d being copied (left = %d, right = %d)\n", end - begin,num_data_in_left_child,num_data_in_right_child);
     #endif
     indices_future_ = boost::compute::copy_async(indices + begin, indices + end, device_data_indices_->begin(), queue_);
 
@@ -735,8 +761,31 @@ bool GPUTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
 void GPUTreeLearner::FindBestThresholds() {
 
   // Find histograms using GPU
-  GPUHistogram(smaller_leaf_splits_->num_data_in_leaf(), smaller_leaf_histogram_array_);
-  
+  bool use_gpu = smaller_leaf_splits_->num_data_in_leaf() > 0;
+  if (use_gpu) {
+    GPUHistogram(smaller_leaf_splits_->num_data_in_leaf(), smaller_leaf_histogram_array_);
+  }
+  else {
+    printf("Not using GPU because data size <= 0\n");
+    // size is 0, so directly fill histogram with all 0s
+    #pragma omp parallel for schedule(static)
+    for(int i = 0; i < num_dense_features_; ++i) {
+      int dense_index = dense_feature_map_[i];
+      auto old_histogram_array = smaller_leaf_histogram_array_[dense_index].GetData();
+      int bin_size = smaller_leaf_histogram_array_[dense_index].SizeOfHistgram() / sizeof(HistogramBinEntry);
+      // printf("copying dense feature %d (index %d) size %d\n", i, dense_index, bin_size);
+      // histogram size can be smaller than 255 (not a fixed number for each feature)
+      // but the GPU code can only handle up to 256
+      for (int j = 0; j < bin_size; ++j) {
+        // printf("%f\n", host_histogram_outputs_[i * device_bin_size_ + j].sum_gradients);
+        old_histogram_array[j].sum_gradients = 0.0;
+        old_histogram_array[j].sum_hessians = 0.0;
+        old_histogram_array[j].cnt = 0;
+      }
+      // PrintHistograms(old_histogram_array, bin_size);
+    }
+  }
+
   // When GPU is computing the dense bins, CPU works on the sparse bins
   #pragma omp parallel for schedule(guided)
   for (int i = 0; i < num_features_ - num_dense_features_; ++i) {
@@ -788,7 +837,33 @@ void GPUTreeLearner::FindBestThresholds() {
   }
   
   // wait for GPU, and then we will process the dense bins (find thresholds)
-  WaitAndGetHistograms(smaller_leaf_histogram_array_);
+  if (use_gpu) {
+    WaitAndGetHistograms(smaller_leaf_histogram_array_);
+  }
+
+  // check GPU results
+  // #define DEBUG_COMPARE
+  #ifdef DEBUG_COMPARE
+  for (int i = 0; i < num_dense_features_; ++i) {
+    int feature_index = dense_feature_map_[i];
+    printf("Comparing histogram for feature %d\n", feature_index);
+    size_t size = smaller_leaf_histogram_array_[feature_index].SizeOfHistgram() / sizeof(HistogramBinEntry);
+    HistogramBinEntry* current_histogram = smaller_leaf_histogram_array_[feature_index].GetData(false);
+    HistogramBinEntry* gpu_histogram = new HistogramBinEntry[size];
+    std::copy(current_histogram, current_histogram + size, gpu_histogram);
+    // PrintHistograms(smaller_leaf_histogram_array_[feature_index].GetData(false), 
+    //                smaller_leaf_histogram_array_[feature_index].SizeOfHistgram() / sizeof(HistogramBinEntry));
+    train_data_->FeatureAt(feature_index)->bin_data()->ConstructHistogram(
+      smaller_leaf_splits_->data_indices(),
+      smaller_leaf_splits_->num_data_in_leaf(),
+      ptr_to_ordered_gradients_smaller_leaf_,
+      ptr_to_ordered_hessians_smaller_leaf_,
+      smaller_leaf_histogram_array_[feature_index].GetData());
+    CompareHistograms(gpu_histogram, current_histogram, size);
+    std::copy(gpu_histogram, gpu_histogram + size, current_histogram);
+    delete [] gpu_histogram;
+  }
+  #endif
 
   #pragma omp parallel for schedule(guided)
   // go over all features, find the best split
@@ -878,9 +953,19 @@ void GPUTreeLearner::Split(Tree* tree, int best_Leaf, int* left_leaf, int* right
     larger_leaf_splits_->Init(*right_leaf, data_partition_.get(),
                                best_split_info.right_sum_gradient,
                                best_split_info.right_sum_hessian);
+    if ((best_split_info.left_count != smaller_leaf_splits_->num_data_in_leaf()) ||
+        (best_split_info.right_count!= larger_leaf_splits_->num_data_in_leaf())) {
+          Log::Warning("Bug in GPU histogram!!");
+          printf("split %d: %d, smaller_leaf: %d, larger_leaf: %d\n", best_split_info.left_count, best_split_info.right_count, smaller_leaf_splits_->num_data_in_leaf(), larger_leaf_splits_->num_data_in_leaf());
+        }
   } else {
     smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(), best_split_info.right_sum_gradient, best_split_info.right_sum_hessian);
     larger_leaf_splits_->Init(*left_leaf, data_partition_.get(), best_split_info.left_sum_gradient, best_split_info.left_sum_hessian);
+    if ((best_split_info.left_count != larger_leaf_splits_->num_data_in_leaf()) ||
+        (best_split_info.right_count!= smaller_leaf_splits_->num_data_in_leaf())) {
+          Log::Warning("Bug in GPU histogram!!");
+          printf("split %d: %d, smaller_leaf: %d, larger_leaf: %d\n", best_split_info.left_count, best_split_info.right_count, smaller_leaf_splits_->num_data_in_leaf(), larger_leaf_splits_->num_data_in_leaf());
+        }
   }
 }
 

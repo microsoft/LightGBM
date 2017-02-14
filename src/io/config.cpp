@@ -301,6 +301,8 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   GetInt(params, "max_depth", &max_depth);
   GetInt(params, "top_k", &top_k);
   CHECK(max_depth > 1 || max_depth < 0);
+  GetInt(params, "gpu_platform_id", &gpu_platform_id);
+  GetInt(params, "gpu_device_id", &gpu_device_id);
 }
 
 

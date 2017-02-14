@@ -204,6 +204,8 @@ protected:
   int num_dense_feature4_;
   const int max_exp_workgroups_per_feature_ = 10; // 2^10
   const int max_num_workgroups_ = 1024;
+  int max_num_bin_;
+  int device_bin_size_;
   std::vector<int> dense_feature_map_;
   std::vector<int> sparse_feature_map_;
   std::unique_ptr<boost::compute::vector<Feature4>> device_features_;

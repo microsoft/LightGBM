@@ -184,6 +184,8 @@ public:
   // max_depth < 0 means not limit
   int max_depth = -1;
   int top_k = 20;
+  int gpu_platform_id = -1;
+  int gpu_device_id = -1;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
