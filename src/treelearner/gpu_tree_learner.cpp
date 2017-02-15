@@ -129,14 +129,14 @@ void CompareHistograms(HistogramBinEntry* h1, HistogramBinEntry* h2, size_t size
       goto err;
     }
     if (ulps > 65536) {
-      printf("%g != %g (%d ULPs)\n", h1[i].sum_gradients, h2[i].sum_gradients, ulps);
+      // printf("grad %g != %g (%d ULPs)\n", h1[i].sum_gradients, h2[i].sum_gradients, ulps);
       // goto err;
     }
     a.f = h1[i].sum_hessians;
     b.f = h2[i].sum_hessians;
     ulps = Float_t::ulp_diff(a, b);
     if (ulps > 65536) {
-      printf("%g != %g (%d ULPs)\n", h1[i].sum_hessians, h2[i].sum_hessians, ulps);
+      // printf("hessian %g != %g (%d ULPs)\n", h1[i].sum_hessians, h2[i].sum_hessians, ulps);
       // goto err;
     }
   }
@@ -318,7 +318,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
     // FIXME: sparse data
     opts << "-D FEATURE_SIZE=" << num_data_ << " -D POWER_FEATURE_WORKGROUPS=" << i
          << " -D USE_CONSTANT_BUF=" << use_constants 
-         << " -cl-strict-aliasing -cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math -save-temps";
+         << " -cl-strict-aliasing -cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math";
     std::cout << "Building options: " << opts.str() << std::endl;
     try {
       program.build(opts.str());
@@ -341,7 +341,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   opts << "-D FEATURE_SIZE=" << num_data_ << " -D POWER_FEATURE_WORKGROUPS=" << full_exp_workgroups_per_feature
        << " -D IGNORE_INDICES=1" 
        << " -D USE_CONSTANT_BUF=" << use_constants 
-       << " -cl-strict-aliasing -cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math -save-temps";
+       << " -cl-strict-aliasing -cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math";
   std::cout << "Building options: " << opts.str() << std::endl;
   try {
     program.build(opts.str());
