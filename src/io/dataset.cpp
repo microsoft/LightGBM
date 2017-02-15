@@ -53,7 +53,8 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
     features_.emplace_back(new Feature(dataset->features_[i]->feature_index(),
       new BinMapper(*(dataset->features_[i]->bin_mapper())),
       num_data_,
-      is_enable_sparse));
+      is_enable_sparse,
+      dataset->features_[i]->get_sparse_threshold()));
   }
   features_.shrink_to_fit();
   used_feature_map_ = dataset->used_feature_map_;

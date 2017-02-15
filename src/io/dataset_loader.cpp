@@ -467,7 +467,7 @@ Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>&
         new Feature(static_cast<int>(i),
           bin_mappers[i].release(),
           dataset->num_data_, 
-          io_config_.is_enable_sparse)
+          io_config_.is_enable_sparse, io_config_.sparse_threshold)
         ));
     } else {
       // if feature is trival(only 1 bin), free spaces
@@ -682,7 +682,8 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
           new Feature(static_cast<int>(i), 
             bin_mappers[i].release(),
             dataset->num_data_,
-            io_config_.is_enable_sparse)
+            io_config_.is_enable_sparse,
+            io_config_.sparse_threshold)
           ));
       } else {
         // if feature is trival(only 1 bin), free spaces
@@ -746,7 +747,8 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
           new Feature(static_cast<int>(i),
             bin_mapper.release(),
             dataset->num_data_,
-            io_config_.is_enable_sparse)
+            io_config_.is_enable_sparse,
+            io_config_.sparse_threshold)
           ));
       } else {
         Log::Warning("Ignoring feature %s, only has one value", feature_names_[i].c_str());

@@ -351,7 +351,7 @@ public:
   * \return The bin data object
   */
   static Bin* CreateBin(data_size_t num_data, int num_bin,
-    double sparse_rate, bool is_enable_sparse, 
+    double sparse_rate, bool is_enable_sparse, double sparse_threshold,
     bool* is_sparse, uint32_t default_bin, BinType bin_type);
 
   /*!

@@ -97,6 +97,7 @@ public:
   int num_iteration_predict = -1;
   bool is_pre_partition = false;
   bool is_enable_sparse = true;
+  double sparse_threshold = 0.8;
   bool use_two_round_loading = false;
   bool is_save_binary_file = false;
   bool enable_load_from_binary_file = true;

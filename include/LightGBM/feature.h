@@ -23,11 +23,11 @@ public:
   * \param is_enable_sparse True if enable sparse feature
   */
   Feature(int feature_idx, BinMapper* bin_mapper,
-    data_size_t num_data, bool is_enable_sparse)
-    :bin_mapper_(bin_mapper) {
+    data_size_t num_data, bool is_enable_sparse, double sparse_threshold)
+    :bin_mapper_(bin_mapper), sparse_threshold_(sparse_threshold) {
     feature_index_ = feature_idx;
     bin_data_.reset(Bin::CreateBin(num_data, bin_mapper_->num_bin(),
-      bin_mapper_->sparse_rate(), is_enable_sparse, &is_sparse_, bin_mapper_->GetDefaultBin(), bin_mapper_->bin_type()));
+      bin_mapper_->sparse_rate(), is_enable_sparse, sparse_threshold, &is_sparse_, bin_mapper_->GetDefaultBin(), bin_mapper_->bin_type()));
   }
   /*!
   * \brief Constructor from memory
@@ -44,6 +44,8 @@ public:
     // get is_sparse
     is_sparse_ = *(reinterpret_cast<const bool*>(memory_ptr));
     memory_ptr += sizeof(is_sparse_);
+    sparse_threshold_ = *(reinterpret_cast<const double*>(memory_ptr));
+    memory_ptr += sizeof(sparse_threshold_);
     // get bin mapper
     bin_mapper_.reset(new BinMapper(memory_ptr));
     memory_ptr += bin_mapper_->SizesInByte();
@@ -94,6 +96,8 @@ public:
   }
 
   inline bool is_sparse() const { return is_sparse_; }
+  
+  inline double get_sparse_threshold() const { return sparse_threshold_; }
 
   inline void FinishLoad() { bin_data_->FinishLoad(); }
   /*! \brief Index of this feature */
@@ -121,6 +125,7 @@ public:
   void SaveBinaryToFile(FILE* file) const {
     fwrite(&feature_index_, sizeof(feature_index_), 1, file);
     fwrite(&is_sparse_, sizeof(is_sparse_), 1, file);
+    fwrite(&sparse_threshold_, sizeof(sparse_threshold_), 1, file);
     bin_mapper_->SaveBinaryToFile(file);
     bin_data_->SaveBinaryToFile(file);
   }
@@ -128,7 +133,7 @@ public:
   * \brief Get sizes in byte of this object
   */
   size_t SizesInByte() const {
-    return sizeof(feature_index_) + sizeof(is_sparse_) +
+    return sizeof(feature_index_) + sizeof(is_sparse_) + sizeof(sparse_threshold_) +
       bin_mapper_->SizesInByte() + bin_data_->SizesInByte();
   }
   /*! \brief Disable copy */
@@ -145,6 +150,8 @@ private:
   std::unique_ptr<Bin> bin_data_;
   /*! \brief True if this feature is sparse */
   bool is_sparse_;
+  /*! \brief Threshold for using dense or ordered bin*/
+  double sparse_threshold_;
 };
 
 

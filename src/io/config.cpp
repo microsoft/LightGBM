@@ -201,6 +201,7 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "bin_construct_sample_cnt", &bin_construct_sample_cnt);
   GetBool(params, "is_pre_partition", &is_pre_partition);
   GetBool(params, "is_enable_sparse", &is_enable_sparse);
+  GetDouble(params, "sparse_threshold", &sparse_threshold);
   GetBool(params, "use_two_round_loading", &use_two_round_loading);
   GetBool(params, "is_save_binary_file", &is_save_binary_file);
   GetBool(params, "enable_load_from_binary_file", &enable_load_from_binary_file);
