@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <vector>
 
+#define GPU_DEBUG 0
 
 namespace LightGBM {
 
@@ -154,9 +155,9 @@ int GPUTreeLearner::GetNumWorkgroupsPerFeature(data_size_t leaf_num_data) {
   // we roughly want 256 workgroups per device, and we have num_dense_feature4_ feature tuples.
   // also guarantee that there are at least 2K examples per workgroup
   double x = 256.0 / num_dense_feature4_;
-  int exp_workgroups_per_feature = ceil(log(x)/log(2.0));
+  int exp_workgroups_per_feature = ceil(log2(x));
   double t = leaf_num_data / 1024.0;
-  #ifdef DEBUG_GPU
+  #if GPU_DEBUG >= 2
   printf("Computing histogram for %d examples and (4 * %d) features\n", leaf_num_data, num_dense_feature4_);
   printf("We can have at most %d workgroups per feature4 for efficiency reasons.\n"
          "Best workgroup size per feature for full utilization is %d\n", (int)ceil(t), (1 << exp_workgroups_per_feature));
@@ -179,9 +180,9 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* h
   int num_workgroups = (1 << exp_workgroups_per_feature) * num_dense_feature4_;
   if (num_workgroups > max_num_workgroups_) {
     num_workgroups = max_num_workgroups_;
-    Log::Warning("BUG detected, num_workgroups too large!");
+    Log::Warning("BUG detected, num_workgroups %d too large!", num_workgroups);
   }
-  #ifdef DEBUG_GPU
+  #if GPU_DEBUG >= 2
   printf("setting exp_workgroups_per_feature to %d, using %u work groups\n", exp_workgroups_per_feature, num_workgroups);
   printf("Constructing histogram with %d examples\n", leaf_num_data);
   #endif
@@ -338,7 +339,9 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
     opts << "-D FEATURE_SIZE=" << num_data_ << " -D POWER_FEATURE_WORKGROUPS=" << i
          << " -D USE_CONSTANT_BUF=" << use_constants 
          << " -cl-strict-aliasing -cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math";
+    #if GPU_DEBUG >= 1
     std::cout << "Building options: " << opts.str() << std::endl;
+    #endif
     try {
       program.build(opts.str());
     }
@@ -361,7 +364,9 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
        << " -D IGNORE_INDICES=1" 
        << " -D USE_CONSTANT_BUF=" << use_constants 
        << " -cl-strict-aliasing -cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math";
+  #if GPU_DEBUG >= 1
   std::cout << "Building options: " << opts.str() << std::endl;
+  #endif
   try {
     program.build(opts.str());
   }
@@ -386,7 +391,9 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
       // multiplier must be a power of 2
       device_bin_mults_.push_back((int)round(pow(2, floor(log2(t)))));
       // device_bin_mults_.push_back(1);
+      #if GPU_DEBUG >= 1
       printf("feature %d using multiplier %d\n", i, device_bin_mults_.back());
+      #endif
       dev_bin_mult[k++] = device_bin_mults_.back();
     }
     else {
@@ -396,6 +403,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
     if (k == 4) {
       k = 0;
       std::vector<Feature4> host4(num_data_);
+      #if GPU_DEBUG >= 1
       printf("Copying feature %d, %d, %d, %d to device\n", dense_ind[0], dense_ind[1], dense_ind[2], dense_ind[3]);
       printf("feature size: %d, %d, %d, %d, %d\n", 
       static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[0])->bin_data())->num_data(),
@@ -403,6 +411,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
       static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[2])->bin_data())->num_data(),
       static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[3])->bin_data())->num_data(),
       num_data_);
+      #endif
       for (int j = 0; j < num_data_; ++j) {
         host4[j].s0 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[0])->bin_data())->Get(j)
                       * dev_bin_mult[0] + ((j+0) & (dev_bin_mult[0] - 1));
@@ -413,10 +422,12 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
         host4[j].s3 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[3])->bin_data())->Get(j)
                       * dev_bin_mult[3] + ((j+3) & (dev_bin_mult[3] - 1));
       }
-      printf("first example of features are: %d %d %d %d\n", host4[0].s0, host4[0].s1, host4[0].s2, host4[0].s3);
       boost::compute::copy(host4.begin(), host4.end(), device_features_->begin() + copied_feature4 * num_data_, queue_);
+      #if GPU_DEBUG >= 1
+      printf("first example of features are: %d %d %d %d\n", host4[0].s0, host4[0].s1, host4[0].s2, host4[0].s3);
       printf("Feature %d, %d, %d, %d copied to device with multiplier %d %d %d %d\n", 
              dense_ind[0], dense_ind[1], dense_ind[2], dense_ind[3], dev_bin_mult[0], dev_bin_mult[1], dev_bin_mult[2], dev_bin_mult[3]);
+      #endif
       dense_feature_map_.push_back(dense_ind[0]);
       dense_feature_map_.push_back(dense_ind[1]);
       dense_feature_map_.push_back(dense_ind[2]);
@@ -426,7 +437,9 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   }
   if (k != 0) {
     std::vector<Feature4> host4(num_data_);
+    #if GPU_DEBUG >= 1
     printf("%d features left\n", k);
+    #endif
     for (int j = 0; j < num_data_; ++j) {
       for (i = 0; i < k; ++i) {
         host4[j].s[i] = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[i])->bin_data())->Get(j)
@@ -439,7 +452,9 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
     }
     // copying the last 1-3 features
     boost::compute::copy(host4.begin(), host4.end(), device_features_->begin() + (num_dense_feature4_ - 1) * num_data_, queue_);
+    #if GPU_DEBUG >= 1
     printf("Last features copied to device\n");
+    #endif
     for (i = 0; i < k; ++i) {
       dense_feature_map_.push_back(dense_ind[i]);
     }
@@ -572,7 +587,7 @@ Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians) {
 void GPUTreeLearner::BeforeTrain() {
 
   // copy indices, gradients and hessians to device, start as early as possible
-  #ifdef GPU_DEBUG
+  #if GPU_DEBUG >= 2
   printf("Copying intial full gradients and hessians to device\n");
   #endif
   hessians_future_ = boost::compute::copy_async(hessians_,  hessians_  + num_data_, device_hessians_->begin(),  queue_);
@@ -720,7 +735,7 @@ bool GPUTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
     data_size_t end = begin + data_partition_->leaf_count(smaller_leaf);
 
     // copy indices to the GPU:
-    #ifdef DEBUG_GPU
+    #if GPU_DEBUG >= 2
     Log::Info("Copying indices, gradients and hessians to GPU...");
     printf("indices size %d being copied (left = %d, right = %d)\n", end - begin,num_data_in_left_child,num_data_in_right_child);
     #endif
@@ -744,7 +759,7 @@ bool GPUTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
     ptr_to_ordered_hessians_smaller_leaf_ = ordered_hessians_.data();
     
 
-    #ifdef DEBUG_GPU
+    #if GPU_DEBUG >= 2
     Log::Info("gradients/hessians/indiex copied to device with size %d", end - begin);
     #endif
 
