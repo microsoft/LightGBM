@@ -548,8 +548,8 @@ The methods of each Class is in alphabetical order.
         Data to be trained.
     num_boost_round : int
         Number of boosting iterations.
-    data_splitter : an instance with split() method
-        Instance with split() method.
+    data_splitter : an instance with split(X) method
+        Instance with split(X) method.
     nfold : int
         Number of folds in CV.
     stratified : bool

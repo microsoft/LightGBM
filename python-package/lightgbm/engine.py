@@ -231,21 +231,20 @@ def _make_n_folds(full_data, data_splitter, nfold, params, seed, fpreproc=None, 
         if not hasattr(data_splitter, 'split'):
             raise AttributeError("data_splitter has no method 'split'")
         folds = data_splitter.split(np.arange(num_data))
+    elif stratified:
+        if not SKLEARN_INSTALLED:
+            raise LightGBMError('Scikit-learn is required for stratified cv')
+        sfk = LGBMStratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
+        folds = sfk.split(X=np.zeros(num_data), y=full_data.get_label())
     else:
-        if stratified:
-            if not SKLEARN_INSTALLED:
-                raise LightGBMError('Scikit-learn is required for stratified cv')
-            sfk = LGBMStratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
-            folds = sfk.split(X=np.zeros(num_data), y=full_data.get_label())
+        if shuffle:
+            randidx = np.random.permutation(num_data)
         else:
-            if shuffle:
-                randidx = np.random.permutation(num_data)
-            else:
-                randidx = np.arange(num_data)
-            kstep = int(num_data / nfold)
-            test_id = [randidx[(i * kstep): min(num_data, (i + 1) * kstep)] for i in range_(nfold)]
-            train_id = [np.concatenate([test_id[i] for i in range_(nfold) if k != i]) for k in range_(nfold)]
-            folds = zip(train_id, test_id)
+            randidx = np.arange(num_data)
+        kstep = int(num_data / nfold)
+        test_id = [randidx[i: i + kstep] for i in range_(0, num_data, kstep)]
+        train_id = [np.concatenate([test_id[i] for i in range_(nfold) if k != i]) for k in range_(nfold)]
+        folds = zip(train_id, test_id)
 
     ret = CVBooster()
     for train_idx, test_idx in folds:
@@ -293,8 +292,8 @@ def cv(params, train_set, num_boost_round=10,
         Data to be trained.
     num_boost_round : int
         Number of boosting iterations.
-    data_splitter : an instance with split() method
-        Instance with split() method.
+    data_splitter : an instance with split(X) method
+        Instance with split(X) method.
     nfold : int
         Number of folds in CV.
     stratified : bool
