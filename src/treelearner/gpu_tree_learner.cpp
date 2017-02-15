@@ -231,11 +231,30 @@ void GPUTreeLearner::WaitAndGetHistograms(FeatureHistogram* histograms) {
     // printf("copying dense feature %d (index %d) size %d\n", i, dense_index, bin_size);
     // histogram size can be smaller than 255 (not a fixed number for each feature)
     // but the GPU code can only handle up to 256
-    for (int j = 0; j < bin_size; ++j) {
-      // printf("%f\n", host_histogram_outputs_[i * device_bin_size_ + j].sum_gradients);
-      old_histogram_array[j].sum_gradients = host_histogram_outputs_[i * device_bin_size_+ j].sum_gradients;
-      old_histogram_array[j].sum_hessians = host_histogram_outputs_[i * device_bin_size_ + j].sum_hessians;
-      old_histogram_array[j].cnt = host_histogram_outputs_[i * device_bin_size_ + j].cnt;
+    if (device_bin_mults_[i] == 1) {
+      for (int j = 0; j < bin_size; ++j) {
+        // printf("%f\n", host_histogram_outputs_[i * device_bin_size_ + j].sum_gradients);
+        old_histogram_array[j].sum_gradients = host_histogram_outputs_[i * device_bin_size_+ j].sum_gradients;
+        old_histogram_array[j].sum_hessians = host_histogram_outputs_[i * device_bin_size_ + j].sum_hessians;
+        old_histogram_array[j].cnt = host_histogram_outputs_[i * device_bin_size_ + j].cnt;
+      }
+    }
+    else {
+      // values of this feature has been scatter to multiple bins; need a reduction here
+      int ind = 0;
+      for (int j = 0; j < bin_size; ++j) {
+        double sum_g = 0.0, sum_h = 0.0;
+        size_t cnt = 0;
+        for (int k = 0; k < device_bin_mults_[i]; ++k) {
+          sum_g += host_histogram_outputs_[i * device_bin_size_+ ind].sum_gradients;
+          sum_h += host_histogram_outputs_[i * device_bin_size_+ ind].sum_hessians;
+          cnt += host_histogram_outputs_[i * device_bin_size_ + ind].cnt;
+          ind++;
+        }
+        old_histogram_array[j].sum_gradients = sum_g;
+        old_histogram_array[j].sum_hessians = sum_h;
+        old_histogram_array[j].cnt = cnt;
+      }
     }
     // PrintHistograms(old_histogram_array, bin_size);
   }
@@ -357,11 +376,18 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
 
   // Now generate new data structure feature4, and copy data to the device
-  int i, k, copied_feature4 = 0, dense_ind[4];
+  int i, k, copied_feature4 = 0, dense_ind[4], dev_bin_mult[4];
   for (i = 0, k = 0; i < num_features_; ++i) {
     // looking for 4 non-sparse features
     if (ordered_bins_[i] == nullptr) {
-      dense_ind[k++] = i;
+      dense_ind[k] = i;
+      // decide if we need to "scatter" the bin
+      double t = device_bin_size_ / (double)train_data_->FeatureAt(i)->num_bin();
+      // multiplier must be a power of 2
+      device_bin_mults_.push_back((int)round(pow(2, floor(log2(t)))));
+      // device_bin_mults_.push_back(1);
+      printf("feature %d using multiplier %d\n", i, device_bin_mults_.back());
+      dev_bin_mult[k++] = device_bin_mults_.back();
     }
     else {
       sparse_feature_map_.push_back(i);
@@ -378,14 +404,19 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
       static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[3])->bin_data())->num_data(),
       num_data_);
       for (int j = 0; j < num_data_; ++j) {
-          host4[j].s0 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[0])->bin_data())->Get(j);
-          host4[j].s1 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[1])->bin_data())->Get(j); 
-          host4[j].s2 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[2])->bin_data())->Get(j);
-          host4[j].s3 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[3])->bin_data())->Get(j);
+        host4[j].s0 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[0])->bin_data())->Get(j)
+                      * dev_bin_mult[0] + ((j+0) & (dev_bin_mult[0] - 1));
+        host4[j].s1 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[1])->bin_data())->Get(j)
+                      * dev_bin_mult[1] + ((j+1) & (dev_bin_mult[1] - 1)); 
+        host4[j].s2 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[2])->bin_data())->Get(j)
+                      * dev_bin_mult[2] + ((j+2) & (dev_bin_mult[2] - 1));
+        host4[j].s3 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[3])->bin_data())->Get(j)
+                      * dev_bin_mult[3] + ((j+3) & (dev_bin_mult[3] - 1));
       }
       printf("first example of features are: %d %d %d %d\n", host4[0].s0, host4[0].s1, host4[0].s2, host4[0].s3);
       boost::compute::copy(host4.begin(), host4.end(), device_features_->begin() + copied_feature4 * num_data_, queue_);
-      printf("Feature %d, %d, %d, %d copied to device\n", dense_ind[0], dense_ind[1], dense_ind[2], dense_ind[3]);
+      printf("Feature %d, %d, %d, %d copied to device with multiplier %d %d %d %d\n", 
+             dense_ind[0], dense_ind[1], dense_ind[2], dense_ind[3], dev_bin_mult[0], dev_bin_mult[1], dev_bin_mult[2], dev_bin_mult[3]);
       dense_feature_map_.push_back(dense_ind[0]);
       dense_feature_map_.push_back(dense_ind[1]);
       dense_feature_map_.push_back(dense_ind[2]);
@@ -398,7 +429,8 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
     printf("%d features left\n", k);
     for (int j = 0; j < num_data_; ++j) {
       for (i = 0; i < k; ++i) {
-        host4[j].s[i] = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[i])->bin_data())->Get(j);
+        host4[j].s[i] = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[i])->bin_data())->Get(j)
+                        * dev_bin_mult[k] + (j & (dev_bin_mult[k] - 1));
       }
       for (i = k; i < 4; ++i) {
         // fill this empty feature to some "random" value

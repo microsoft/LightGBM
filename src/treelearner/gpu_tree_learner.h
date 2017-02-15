@@ -208,6 +208,7 @@ protected:
   int device_bin_size_;
   std::vector<int> dense_feature_map_;
   std::vector<int> sparse_feature_map_;
+  std::vector<int> device_bin_mults_;
   std::unique_ptr<boost::compute::vector<Feature4>> device_features_;
   std::unique_ptr<boost::compute::vector<score_t>> device_gradients_;
   std::unique_ptr<boost::compute::vector<score_t>> device_hessians_;
