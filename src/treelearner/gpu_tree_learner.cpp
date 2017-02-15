@@ -430,7 +430,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
     for (int j = 0; j < num_data_; ++j) {
       for (i = 0; i < k; ++i) {
         host4[j].s[i] = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[i])->bin_data())->Get(j)
-                        * dev_bin_mult[k] + (j & (dev_bin_mult[k] - 1));
+                        * dev_bin_mult[i] + ((j+i) & (dev_bin_mult[i] - 1));
       }
       for (i = k; i < 4; ++i) {
         // fill this empty feature to some "random" value
