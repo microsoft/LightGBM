@@ -134,7 +134,7 @@ public:
   double sigmoid = 1.0f;
   double huber_delta = 1.0f;
   double fair_c = 1.0f;
-  // for ApproximateHessianWithGaussian
+  // for Approximate Hessian With Gaussian
   double gaussian_eta = 1.0f;
   double poisson_max_delta_step = 0.7f;
   // for lambdarank

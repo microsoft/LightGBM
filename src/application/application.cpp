@@ -33,7 +33,7 @@ Application::Application(int argc, char** argv) {
     omp_set_num_threads(config_.num_threads);
   }
   if (config_.io_config.data_filename.size() == 0) {
-	  Log::Fatal("No training/prediction data, application quit");
+    Log::Fatal("No training/prediction data, application quit");
   }
 }
 
