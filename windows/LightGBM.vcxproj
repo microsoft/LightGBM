@@ -211,9 +211,9 @@
     <ClInclude Include="..\include\LightGBM\utils\text_reader.h" />
     <ClInclude Include="..\include\LightGBM\utils\threading.h" />
     <ClInclude Include="..\src\application\predictor.hpp" />
-    <ClInclude Include="..\src\boosting\asgb.hpp" />
     <ClInclude Include="..\src\boosting\gbdt.h" />
     <ClInclude Include="..\src\boosting\dart.hpp" />
+    <ClInclude Include="..\src\boosting\goss.hpp" />
     <ClInclude Include="..\src\boosting\score_updater.hpp" />
     <ClInclude Include="..\src\io\dense_bin.hpp" />
     <ClInclude Include="..\src\io\ordered_sparse_bin.hpp" />
