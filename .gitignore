@@ -368,5 +368,9 @@ ENV/
 # R testing artefact
 lightgbm.model
 
+# saved or dumped model
+*.model
+*.pkl
+
 # macOS
 .DS_Store
