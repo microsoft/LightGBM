@@ -12,11 +12,6 @@
 
 namespace LightGBM {
 
-enum BinType {
-  NumericalBin,
-  CategoricalBin
-};
-
 /*! \brief Store data for one histogram bin */
 struct HistogramBinEntry {
 public:
@@ -26,7 +21,6 @@ public:
   double sum_hessians = 0.0f;
   /*! \brief Number of data on this bin */
   data_size_t cnt = 0;
-
   /*!
   * \brief Sum up (reducers) functions for histogram bin
   */
@@ -59,24 +53,14 @@ public:
   explicit BinMapper(const void* memory);
   ~BinMapper();
 
+  static double kSparseThreshold;
   bool CheckAlign(const BinMapper& other) const {
     if (num_bin_ != other.num_bin_) {
       return false;
     }
-    if (bin_type_ != other.bin_type_) {
-      return false;
-    }
-    if (bin_type_ == BinType::NumericalBin) {
-      for (int i = 0; i < num_bin_; ++i) {
-        if (bin_upper_bound_[i] != other.bin_upper_bound_[i]) {
-          return false;
-        }
-      }
-    } else {
-      for (int i = 0; i < num_bin_; i++) {
-        if (bin_2_categorical_[i] != other.bin_2_categorical_[i]) {
-          return false;
-        }
+    for (int i = 0; i < num_bin_; ++i) {
+      if (bin_upper_bound_[i] != other.bin_upper_bound_[i]) {
+        return false;
       }
     }
     return true;
@@ -98,12 +82,8 @@ public:
   * \param bin
   * \return Feature value of this bin
   */
-  inline double BinToValue(unsigned int bin) const {
-    if (bin_type_ == BinType::NumericalBin) {
-      return bin_upper_bound_[bin];
-    } else {
-      return bin_2_categorical_[bin];
-    }
+  inline double BinToValue(uint32_t bin) const {
+    return bin_upper_bound_[bin];
   }
   /*!
   * \brief Get sizes in byte of this object
@@ -114,27 +94,24 @@ public:
   * \param value
   * \return bin for this feature value
   */
-  inline unsigned int ValueToBin(double value) const;
+  inline uint32_t ValueToBin(double value) const;
 
   /*!
   * \brief Get the default bin when value is 0 or is firt categorical
   * \return default bin
   */
   inline uint32_t GetDefaultBin() const {
-    if (bin_type_ == BinType::NumericalBin) {
-      return ValueToBin(0);
-    } else {
-      return 0;
-    }
+    return default_bin_;
   }
   /*!
   * \brief Construct feature value to bin mapper according feature values
   * \param values (Sampled) values of this feature, Note: not include zero. 
   * \param total_sample_cnt number of total sample count, equal with values.size() + num_zeros
   * \param max_bin The maximal number of bin
+  * \param min_data_in_bin min number of data in one bin
   * \param bin_type Type of this bin
   */
-  void FindBin(std::vector<double>* values, size_t total_sample_cnt, int max_bin, BinType bin_type);
+  void FindBin(std::vector<double>& values, size_t total_sample_cnt, int max_bin, int min_data_in_bin, int min_split_data);
 
   /*!
   * \brief Use specific number of bin to calculate the size of this class
@@ -155,21 +132,14 @@ public:
   */
   void CopyFrom(const char* buffer);
   /*!
-  * \brief Get bin types
-  */
-  inline BinType bin_type() const { return bin_type_; }
-  /*!
   * \brief Get bin info
   */
   inline std::string bin_info() const {
-    if (bin_type_ == BinType::CategoricalBin) {
-      return Common::Join(bin_2_categorical_, ",");
-    } else {
-      std::stringstream str_buf;
-      str_buf << '[' << min_val_ << ',' << max_val_ << ']';
-      return str_buf.str();
-    }
+    std::stringstream str_buf;
+    str_buf << '[' << min_val_ << ',' << max_val_ << ']';
+    return str_buf.str();
   }
+
 private:
   /*! \brief Number of bins */
   int num_bin_;
@@ -179,16 +149,12 @@ private:
   bool is_trival_;
   /*! \brief Sparse rate of this bins( num_bin0/num_data ) */
   double sparse_rate_;
-  /*! \brief Type of this bin */
-  BinType bin_type_;
-  /*! \brief Mapper from categorical to bin */
-  std::unordered_map<int, unsigned int> categorical_2_bin_;
-  /*! \brief Mapper from bin to categorical */
-  std::vector<int> bin_2_categorical_;
   /*! \brief minimal feature vaule */
   double min_val_;
   /*! \brief maximum feature value */
   double max_val_;
+  /*! \brief bin value of feature value 0 */
+  uint32_t default_bin_;
 };
 
 /*!
@@ -228,9 +194,12 @@ public:
   * \brief Split current bin, and perform re-order by leaf
   * \param leaf Using which leaf's to split
   * \param right_leaf The new leaf index after perform this split
-  * \param left_indices left_indices[i] == true means the i-th data will be on left leaf after split
+  * \param is_in_leaf is_in_leaf[i] == mark means the i-th data will be on left leaf after split
+  * \param mark is_in_leaf[i] == mark means the i-th data will be on left leaf after split
   */
-  virtual void Split(int leaf, int right_leaf, const char* left_indices) = 0;
+  virtual void Split(int leaf, int right_leaf, const char* is_in_leaf, char mark) = 0;
+
+  virtual data_size_t NonZeroCount(int leaf) const = 0;
 };
 
 /*! \brief Iterator for one bin column */
@@ -238,10 +207,12 @@ class BinIterator {
 public:
   /*!
   * \brief Get bin data on specific row index
+  * \param tid thread_id
   * \param idx Index of this data
   * \return Bin data
   */
   virtual uint32_t Get(data_size_t idx) = 0;
+  virtual void Reset(data_size_t idx) = 0;
   virtual ~BinIterator() = default;
 };
 
@@ -266,11 +237,14 @@ public:
 
   virtual void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) = 0;
   /*!
-  * \brief Get bin interator of this bin
+  * \brief Get bin interator of this bin for specific feature
+  * \param min_bin min_bin of current used feature
+  * \param max_bin max_bin of current used feature
+  * \param default_bin defualt bin if bin not in [min_bin, max_bin]
   * \param start_idx start index of this 
   * \return Iterator of this bin
   */
-  virtual BinIterator* GetIterator(data_size_t start_idx) const = 0;
+  virtual BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const = 0;
 
   /*!
   * \brief Save binary data to file
@@ -315,6 +289,10 @@ public:
 
   /*!
   * \brief Split data according to threshold, if bin <= threshold, will put into left(lte_indices), else put into right(gt_indices)
+  * \param min_bin min_bin of current used feature
+  * \param max_bin max_bin of current used feature
+  * \param default_bin defualt bin if bin not in [min_bin, max_bin]
+  * \param bin_type split type
   * \param threshold The split threshold.
   * \param data_indices Used data indices. After called this function. The less than or equal data indices will store on this object.
   * \param num_data Number of used data
@@ -322,8 +300,8 @@ public:
   * \param gt_indices After called this function. The greater data indices will store on this object.
   * \return The number of less than or equal data.
   */
-  virtual data_size_t Split(
-    unsigned int threshold,
+  virtual data_size_t Split(uint32_t min_bin, uint32_t max_bin, 
+    uint32_t default_bin, uint32_t threshold,
     data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
 
@@ -351,8 +329,7 @@ public:
   * \return The bin data object
   */
   static Bin* CreateBin(data_size_t num_data, int num_bin,
-    double sparse_rate, bool is_enable_sparse, 
-    bool* is_sparse, uint32_t default_bin, BinType bin_type);
+    double sparse_rate, bool is_enable_sparse, bool* is_sparse);
 
   /*!
   * \brief Create object for bin data of one feature, used for dense feature
@@ -362,8 +339,7 @@ public:
   * \param bin_type type of bin
   * \return The bin data object
   */
-  static Bin* CreateDenseBin(data_size_t num_data, int num_bin, 
-    uint32_t default_bin, BinType bin_type);
+  static Bin* CreateDenseBin(data_size_t num_data, int num_bin);
 
   /*!
   * \brief Create object for bin data of one feature, used for sparse feature
@@ -373,32 +349,22 @@ public:
   * \param bin_type type of bin
   * \return The bin data object
   */
-  static Bin* CreateSparseBin(data_size_t num_data,
-    int num_bin, uint32_t default_bin, BinType bin_type);
+  static Bin* CreateSparseBin(data_size_t num_data, int num_bin);
 };
 
-inline unsigned int BinMapper::ValueToBin(double value) const {
+inline uint32_t BinMapper::ValueToBin(double value) const {
   // binary search to find bin
-  if (bin_type_ == BinType::NumericalBin) {
-    int l = 0;
-    int r = num_bin_ - 1;
-    while (l < r) {
-      int m = (r + l - 1) / 2;
-      if (value <= bin_upper_bound_[m]) {
-        r = m;
-      } else {
-        l = m + 1;
-      }
-    }
-    return l;
-  } else {
-    int int_value = static_cast<int>(value);
-    if (categorical_2_bin_.count(int_value)) {
-      return categorical_2_bin_.at(int_value);
+  int l = 0;
+  int r = num_bin_ - 1;
+  while (l < r) {
+    int m = (r + l - 1) / 2;
+    if (value <= bin_upper_bound_[m]) {
+      r = m;
     } else {
-      return num_bin_ - 1;
+      l = m + 1;
     }
   }
+  return l;
 }
 
 }  // namespace LightGBM

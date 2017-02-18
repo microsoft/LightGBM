@@ -39,11 +39,11 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
   // generate seeds by seed.
   if (GetInt(params, "seed", &seed)) {
     Random rand(seed);
-    int int_max = std::numeric_limits<int>::max();
-    io_config.data_random_seed = static_cast<int>(rand.NextInt(0, int_max));
-    boosting_config.bagging_seed = static_cast<int>(rand.NextInt(0, int_max));
-    boosting_config.drop_seed = static_cast<int>(rand.NextInt(0, int_max));
-    boosting_config.tree_config.feature_fraction_seed = static_cast<int>(rand.NextInt(0, int_max));
+    int int_max = std::numeric_limits<short>::max();
+    io_config.data_random_seed = static_cast<int>(rand.NextShort(0, int_max));
+    boosting_config.bagging_seed = static_cast<int>(rand.NextShort(0, int_max));
+    boosting_config.drop_seed = static_cast<int>(rand.NextShort(0, int_max));
+    boosting_config.tree_config.feature_fraction_seed = static_cast<int>(rand.NextShort(0, int_max));
   }
   GetTaskType(params);
   GetBoostingType(params);
@@ -79,6 +79,8 @@ void OverallConfig::GetBoostingType(const std::unordered_map<std::string, std::s
       boosting_type = "gbdt";
     } else if (value == std::string("dart")) {
       boosting_type = "dart";
+    } else if (value == std::string("goss")) {
+      boosting_type = "goss";
     } else {
       Log::Fatal("Unknown boosting type %s", value.c_str());
     }
@@ -214,7 +216,11 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetString(params, "weight_column", &weight_column);
   GetString(params, "group_column", &group_column);
   GetString(params, "ignore_column", &ignore_column);
-  GetString(params, "categorical_column", &categorical_column);
+  GetInt(params, "min_data_in_leaf", &min_data_in_leaf);
+  GetInt(params, "min_dato_in_bin", &min_data_in_bin);
+  GetDouble(params, "max_conflict_rate", &max_conflict_rate);
+  GetBool(params, "enable_bundle", &enable_bundle);
+  GetBool(params, "adjacent_bundle", &adjacent_bundle);
 }
 
 
@@ -323,6 +329,8 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   GetInt(params, "max_drop", &max_drop);
   GetBool(params, "xgboost_dart_mode", &xgboost_dart_mode);
   GetBool(params, "uniform_drop", &uniform_drop);
+  GetDouble(params, "top_rate", &top_rate);
+  GetDouble(params, "other_rate", &other_rate);
   CHECK(drop_rate <= 1.0 && drop_rate >= 0.0);
   CHECK(skip_drop <= 1.0 && skip_drop >= 0.0);
   GetTreeLearnerType(params);

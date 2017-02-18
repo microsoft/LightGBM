@@ -100,10 +100,14 @@ public:
   bool use_two_round_loading = false;
   bool is_save_binary_file = false;
   bool enable_load_from_binary_file = true;
-  int bin_construct_sample_cnt = 50000;
+  int bin_construct_sample_cnt = 200000;
   bool is_predict_leaf_index = false;
   bool is_predict_raw_score = false;
-
+  int min_data_in_leaf = 100;
+  int min_data_in_bin = 5;
+  double max_conflict_rate = 0.0000f;
+  bool enable_bundle = true;
+  bool adjacent_bundle = false;
   bool has_header = false;
   /*! \brief Index or column name of label, default is the first column
    * And add an prefix "name:" while using column name */
@@ -120,10 +124,6 @@ public:
   * And add an prefix "name:" while using column name
   * Note: when using Index, it dosen't count the label index */
   std::string ignore_column = "";
-  /*! \brief specific categorical columns, Note:only support for integer type categorical
-  * And add an prefix "name:" while using column name
-  * Note: when using Index, it dosen't count the label index */
-  std::string categorical_column = "";
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -207,6 +207,8 @@ public:
   bool xgboost_dart_mode = false;
   bool uniform_drop = false;
   int drop_seed = 4;
+  double top_rate = 0.2f;
+  double other_rate = 0.1f;
   std::string tree_learner_type = "serial";
   TreeConfig tree_config;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;

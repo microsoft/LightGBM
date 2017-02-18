@@ -2,7 +2,7 @@
 #define LIGHTGBM_TREELEARNER_DATA_PARTITION_HPP_
 
 #include <LightGBM/meta.h>
-#include <LightGBM/feature.h>
+#include <LightGBM/dataset.h>
 
 #include <LightGBM/utils/openmp_wrapper.h>
 
@@ -93,7 +93,7 @@ public:
   * \param threshold threshold that want to split
   * \param right_leaf index of right leaf
   */
-  void Split(int leaf, const Bin* feature_bins, unsigned int threshold, int right_leaf) {
+  void Split(int leaf, const Dataset* dataset, int feature, uint32_t threshold, int right_leaf) {
     const data_size_t min_inner_size = 1000;
     // get leaf boundary
     const data_size_t begin = leaf_begin_[leaf];
@@ -111,7 +111,7 @@ public:
       data_size_t cur_cnt = inner_size;
       if (cur_start + cur_cnt > cnt) { cur_cnt = cnt - cur_start; }
       // split data inner, reduce the times of function called
-      data_size_t cur_left_count = feature_bins->Split(threshold, indices_.data() + begin + cur_start, cur_cnt,
+      data_size_t cur_left_count = dataset->Split(feature, threshold, indices_.data() + begin + cur_start, cur_cnt,
         temp_left_indices_.data() + cur_start, temp_right_indices_.data() + cur_start);
       offsets_buf_[i] = cur_start;
       left_cnts_buf_[i] = cur_left_count;
