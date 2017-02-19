@@ -390,6 +390,16 @@ public:
   /*! \brief Get Number of data */
   inline data_size_t num_data() const { return num_data_; }
 
+  inline int num_sparse_feature() const {
+    data_size_t ret = 0;
+    for (int i = 0; i < num_features_; ++i) {
+      if (features_[i]->is_sparse()) {
+        ++ret;
+      }
+    }
+    return ret;
+  }
+
   /*! \brief Disable copy */
   Dataset& operator=(const Dataset&) = delete;
   /*! \brief Disable copy */

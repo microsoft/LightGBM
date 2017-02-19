@@ -125,26 +125,17 @@ void DataParallelTreeLearner::BeforeTrain() {
 }
 
 void DataParallelTreeLearner::FindBestThresholds() {
+  if (has_sparse_) {
+    ConstructSparse();
+  }
+  if (has_dense_) {
+    ConstrcutDense();
+  }
   // construct local histograms
 #pragma omp parallel for schedule(guided)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if ((!is_feature_used_.empty() && is_feature_used_[feature_index] == false)) continue;
-    // construct histograms for smaller leaf
-    if (ordered_bins_[feature_index] == nullptr) {
-      // if not use ordered bin
-      train_data_->FeatureAt(feature_index)->bin_data()->ConstructHistogram(
-        smaller_leaf_splits_->data_indices(),
-        smaller_leaf_splits_->num_data_in_leaf(),
-        ptr_to_ordered_gradients_smaller_leaf_,
-        ptr_to_ordered_hessians_smaller_leaf_,
-        smaller_leaf_histogram_array_[feature_index].GetData());
-    } else {
-      // used ordered bin
-      ordered_bins_[feature_index]->ConstructHistogram(smaller_leaf_splits_->LeafIndex(),
-        gradients_,
-        hessians_,
-        smaller_leaf_histogram_array_[feature_index].GetData());
-    }
+
     // copy to buffer
     std::memcpy(input_buffer_.data() + buffer_write_start_pos_[feature_index],
       smaller_leaf_histogram_array_[feature_index].HistogramData(),
@@ -185,6 +176,8 @@ void DataParallelTreeLearner::FindBestThresholds() {
   }
 
 }
+
+
 
 void DataParallelTreeLearner::FindBestSplitsForLeaves() {
   int smaller_best_feature = -1, larger_best_feature = -1;

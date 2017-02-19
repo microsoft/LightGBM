@@ -2,6 +2,7 @@
 #define LIGHTGBM_TREELEARNER_FEATURE_HISTOGRAM_HPP_
 
 #include "split_info.hpp"
+
 #include <LightGBM/feature.h>
 
 #include <cstring>
@@ -26,12 +27,12 @@ public:
   /*!
   * \brief Init the feature histogram
   * \param feature the feature data for this histogram
-  * \param min_num_data_one_leaf minimal number of data in one leaf
+  * \param min_num_dataone_leaf minimal number of data in one leaf
   */
   void Init(const Feature* feature, int feature_idx, const TreeConfig* tree_config) {
+    feature_ = feature;
     feature_idx_ = feature_idx;
     tree_config_ = tree_config;
-    feature_ = feature;
     data_.resize(feature_->num_bin());
     if (feature->bin_type() == BinType::NumericalBin) {
       find_best_threshold_fun_ = std::bind(&FeatureHistogram::FindBestThresholdForNumerical, this, std::placeholders::_1
@@ -60,7 +61,7 @@ public:
   }
 
   void FixIgnoreBin(double sum_gradient, double sum_hessian, data_size_t num_data) {
-    if (feature_->is_sparse()) {
+    if (feature_->is_sparse() || tree_config_->sparse_aware) {
       // not need to Fix if max heavy bin is 0
       if (feature_->bin_type() == BinType::NumericalBin
         && feature_->bin_mapper()->GetDefaultBin() == 0) {
@@ -94,7 +95,7 @@ public:
     }
   }
 
-  void FindBestThresholdForNumerical(double sum_gradient, double sum_hessian, data_size_t num_data,
+  void FindBestThresholdForNumerical(double sum_gradient, double sum_hessian, data_size_t num_data, 
     SplitInfo* output) {
     double best_sum_left_gradient = NAN;
     double best_sum_left_hessian = NAN;
@@ -113,8 +114,8 @@ public:
       sum_right_hessian += data_[t].sum_hessians;
       right_count += data_[t].cnt;
       // if data not enough, or sum hessian too small
-      if (right_count < tree_config_->min_data_in_leaf
-        || sum_right_hessian < tree_config_->min_sum_hessian_in_leaf) continue;
+      if (right_count < tree_config_->min_data_in_leaf 
+          || sum_right_hessian < tree_config_->min_sum_hessian_in_leaf) continue;
       data_size_t left_count = num_data - right_count;
       // if data not enough
       if (left_count < tree_config_->min_data_in_leaf) break;
@@ -180,7 +181,7 @@ public:
       data_size_t current_count = data_[t].cnt;
       // if data not enough, or sum hessian too small
       if (current_count < tree_config_->min_data_in_leaf
-        || sum_current_hessian < tree_config_->min_sum_hessian_in_leaf) continue;
+          || sum_current_hessian < tree_config_->min_sum_hessian_in_leaf) continue;
       data_size_t other_count = num_data - current_count;
       // if data not enough
       if (other_count < tree_config_->min_data_in_leaf) continue;
@@ -292,7 +293,6 @@ private:
     }
     return 0.0f;
   }
-
   int feature_idx_;
   const Feature* feature_;
   /*! \brief pointer of tree config */

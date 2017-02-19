@@ -12,6 +12,7 @@
 #include "data_partition.hpp"
 #include "split_info.hpp"
 #include "leaf_splits.hpp"
+#include "sparse_bin_pool.hpp"
 
 #include <cstdio>
 #include <vector>
@@ -72,6 +73,10 @@ protected:
   *  This function will be called in FindBestSplit.
   */
   virtual void FindBestThresholds();
+
+  virtual void ConstrcutDense();
+
+  virtual void ConstructSparse();
 
   /*!
   * \brief Find best features for leaves from smaller_leaf_splits_ and larger_leaf_splits_.
@@ -148,12 +153,12 @@ protected:
   const score_t* ptr_to_ordered_gradients_larger_leaf_;
   /*! \brief Pointer to ordered_hessians_, use this to avoid copy at BeforeTrain*/
   const score_t* ptr_to_ordered_hessians_larger_leaf_;
-  /*! \brief Store ordered bin */
-  std::vector<std::unique_ptr<OrderedBin>> ordered_bins_;
-  /*! \brief True if has ordered bin */
-  bool has_ordered_bin_ = false;
-  /*! \brief  is_data_in_leaf_[i] != 0 means i-th data is marked */
-  std::vector<char> is_data_in_leaf_;
+  /*! \brief true if have sparse feature*/
+  bool has_sparse_;
+  /*! \brief true if have dense feature*/
+  bool has_dense_;
+  /*! \brief One pool for all sparse feature*/
+  std::unique_ptr<SparseBinPool> sparse_bin_pool_;
   /*! \brief used to cache historical histogram to speed up*/
   HistogramPool histogram_pool_;
   /*! \brief config of tree learner*/
@@ -186,7 +191,6 @@ inline void SerialTreeLearner::FindBestSplitForLeaf(LeafSplits* leaf_splits) {
   int best_feature = static_cast<int>(ArrayArgs<double>::ArgMax(gains));
   int leaf = leaf_splits->LeafIndex();
   best_split_per_leaf_[leaf] = leaf_splits->BestSplitPerFeature()[best_feature];
-  best_split_per_leaf_[leaf].feature = best_feature;
 }
 
 }  // namespace LightGBM

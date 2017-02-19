@@ -215,7 +215,6 @@
     <ClInclude Include="..\src\boosting\dart.hpp" />
     <ClInclude Include="..\src\boosting\score_updater.hpp" />
     <ClInclude Include="..\src\io\dense_bin.hpp" />
-    <ClInclude Include="..\src\io\ordered_sparse_bin.hpp" />
     <ClInclude Include="..\src\io\parser.hpp" />
     <ClInclude Include="..\src\io\sparse_bin.hpp" />
     <ClInclude Include="..\src\metric\binary_metric.hpp" />
@@ -233,6 +232,7 @@
     <ClInclude Include="..\src\treelearner\leaf_splits.hpp" />
     <ClInclude Include="..\src\treelearner\parallel_tree_learner.h" />
     <ClInclude Include="..\src\treelearner\serial_tree_learner.h" />
+    <ClInclude Include="..\src\treelearner\sparse_bin_pool.hpp" />
     <ClInclude Include="..\src\treelearner\split_info.hpp" />
   </ItemGroup>
   <ItemGroup>

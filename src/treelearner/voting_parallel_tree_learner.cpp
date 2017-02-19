@@ -268,6 +268,7 @@ void VotingParallelTreeLearner::FindBestThresholds() {
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
 
     if (smaller_is_feature_aggregated_[feature_index]) {
+
       // restore from buffer
       smaller_leaf_histogram_array_global_[feature_index].FromMemory(
         output_buffer_.data() + smaller_buffer_read_start_pos_[feature_index]);
@@ -284,7 +285,7 @@ void VotingParallelTreeLearner::FindBestThresholds() {
       larger_leaf_histogram_array_global_[feature_index].FromMemory(output_buffer_.data() + larger_buffer_read_start_pos_[feature_index]);
       // find best threshold
       larger_leaf_histogram_array_global_[feature_index].FindBestThreshold(
-        larger_leaf_splits_global_->sum_gradients(),
+        larger_leaf_splits_global_->sum_gradients(), 
         larger_leaf_splits_global_->sum_hessians(),
         GetGlobalDataCountInLeaf(larger_leaf_splits_global_->LeafIndex()),
         &larger_leaf_splits_global_->BestSplitPerFeature()[feature_index]);
@@ -352,4 +353,4 @@ void VotingParallelTreeLearner::Split(Tree* tree, int best_Leaf, int* left_leaf,
   }
 }
 
-}  // namespace FTLBoost
+}  // namespace LightGBM

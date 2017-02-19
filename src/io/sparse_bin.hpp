@@ -82,8 +82,7 @@ public:
 
   void ConstructHistogram(const data_size_t*, data_size_t, const score_t*,
     const score_t*, HistogramBinEntry*) const override {
-    // Will use OrderedSparseBin->ConstructHistogram() instead
-    Log::Fatal("Using OrderedSparseBin->ConstructHistogram() instead");
+    Log::Fatal("Not ConstructHistogram for sparse bin");
   }
 
   inline bool NextNonzero(data_size_t* i_delta,
@@ -124,8 +123,6 @@ public:
   }
 
   data_size_t num_data() const override { return num_data_; }
-
-  OrderedBin* CreateOrderedBin() const override;
 
   void FinishLoad() override {
     // get total non zero size
