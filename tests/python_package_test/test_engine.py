@@ -32,7 +32,7 @@ class template(object):
     @staticmethod
     def test_template(params={'objective': 'regression', 'metric': 'l2'},
                       X_y=load_boston(True), feval=mean_squared_error,
-                      num_round=100, init_model=None, custom_eval=None,
+                      num_round=150, init_model=None, custom_eval=None,
                       early_stopping_rounds=10,
                       return_data=False, return_model=False):
         params['verbose'], params['seed'] = -1, 42
@@ -152,49 +152,6 @@ class TestEngine(unittest.TestCase):
         other_ret.append(template.test_template(init_model=gbm_pickles)[1])
         for ret in other_ret:
             self.assertAlmostEqual(ret_origin, ret, places=5)
-
-    @unittest.skipIf(not IS_PANDAS_INSTALLED, 'pandas not installed')
-    def test_pandas_categorical(self):
-        X = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 75),  # str
-                          "B": np.random.permutation([1, 2, 3] * 100),  # int
-                          "C": np.random.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
-                          "D": np.random.permutation([True, False] * 150)})  # bool
-        y = np.random.permutation([0, 1] * 150)
-        X_test = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'e'] * 20),
-                               "B": np.random.permutation([1, 3] * 30),
-                               "C": np.random.permutation([0.1, -0.1, 0.2, 0.2] * 15),
-                               "D": np.random.permutation([True, False] * 30)})
-        for col in ["A", "B", "C", "D"]:
-            X[col] = X[col].astype('category')
-            X_test[col] = X_test[col].astype('category')
-        params = {
-            'objective': 'binary',
-            'metric': 'binary_logloss',
-            'verbose': -1
-        }
-        lgb_train = lgb.Dataset(X, y)
-        gbm0 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False)
-        pred0 = list(gbm0.predict(X_test))
-        lgb_train = lgb.Dataset(X, y)
-        gbm1 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
-                         categorical_feature=[0])
-        pred1 = list(gbm1.predict(X_test))
-        lgb_train = lgb.Dataset(X, y)
-        gbm2 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
-                         categorical_feature=['A'])
-        pred2 = list(gbm2.predict(X_test))
-        lgb_train = lgb.Dataset(X, y)
-        gbm3 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
-                         categorical_feature=['A', 'B', 'C', 'D'])
-        pred3 = list(gbm3.predict(X_test))
-        lgb_train = lgb.Dataset(X, y)
-        gbm3.save_model('categorical.model')
-        gbm4 = lgb.Booster(model_file='categorical.model')
-        pred4 = list(gbm4.predict(X_test))
-        self.assertListEqual(pred0, pred1)
-        self.assertListEqual(pred0, pred2)
-        self.assertListEqual(pred0, pred3)
-        self.assertListEqual(pred0, pred4)
 
 
 print("----------------------------------------------------------------------")

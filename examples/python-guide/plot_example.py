@@ -38,7 +38,6 @@ gbm = lgb.train(params,
                 num_boost_round=100,
                 valid_sets=[lgb_train, lgb_test],
                 feature_name=['f' + str(i + 1) for i in range(28)],
-                categorical_feature=[21],
                 evals_result=evals_result,
                 verbose_eval=10)
 
@@ -50,6 +49,6 @@ print('Plot feature importances...')
 ax = lgb.plot_importance(gbm, max_num_features=10)
 plt.show()
 
-print('Plot 84th tree...')  # one tree use categorical feature to split
+print('Plot 84th tree...')
 ax = lgb.plot_tree(gbm, tree_index=83, figsize=(20, 8), show_info=['split_gain'])
 plt.show()

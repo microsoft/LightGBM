@@ -1,6 +1,8 @@
 #ifndef LIGHTGBM_BOOSTING_SCORE_UPDATER_HPP_
 #define LIGHTGBM_BOOSTING_SCORE_UPDATER_HPP_
 
+
+#include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/meta.h>
 #include <LightGBM/dataset.h>
 #include <LightGBM/tree.h>

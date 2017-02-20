@@ -1,6 +1,7 @@
 #include <LightGBM/boosting.h>
 #include "gbdt.h"
 #include "dart.hpp"
+#include "goss.hpp"
 
 namespace LightGBM {
 
@@ -31,6 +32,8 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
       return new GBDT();
     } else if (type == std::string("dart")) {
       return new DART();
+    } else if (type == std::string("goss")) {
+      return new GOSS();
     } else {
       return nullptr;
     }
@@ -42,6 +45,10 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
         ret.reset(new GBDT());
       } else if (type == std::string("dart")) {
         ret.reset(new DART());
+      } else if (type == std::string("goss")) {
+        ret.reset(new GOSS());
+      } else {
+        Log::Fatal("unknow boosting type %s", type.c_str());
       }
       LoadFileToBoosting(ret.get(), filename);
     } else {

@@ -41,6 +41,7 @@ public:
       ++non_zero_cnt;
     }
     ordered_pair_.resize(non_zero_cnt);
+    leaf_cnt_.push_back(non_zero_cnt);
   }
 
   ~OrderedSparseBin() {
@@ -92,7 +93,7 @@ public:
     }
   }
 
-  void Split(int leaf, int right_leaf, const char* left_indices) override {
+  void Split(int leaf, int right_leaf, const char* is_in_leaf, char mark) override {
     // get current leaf boundary
     const data_size_t l_start = leaf_start_[leaf];
     const data_size_t l_end = l_start + leaf_cnt_[leaf];
@@ -100,7 +101,7 @@ public:
     data_size_t new_left_end = l_start;
 
     for (data_size_t i = l_start; i < l_end; ++i) {
-      if (left_indices[ordered_pair_[i].ridx]) {
+      if (is_in_leaf[ordered_pair_[i].ridx] == mark) {
         std::swap(ordered_pair_[new_left_end], ordered_pair_[i]);
         ++new_left_end;
       }
@@ -110,7 +111,9 @@ public:
     leaf_cnt_[leaf] = new_left_end - l_start;
     leaf_cnt_[right_leaf] = l_end - new_left_end;
   }
-
+  data_size_t NonZeroCount(int leaf) const override {
+    return static_cast<data_size_t>(leaf_cnt_[leaf]);
+  }
   /*! \brief Disable copy */
   OrderedSparseBin<VAL_T>& operator=(const OrderedSparseBin<VAL_T>&) = delete;
   /*! \brief Disable copy */

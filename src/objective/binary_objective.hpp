@@ -28,8 +28,9 @@ public:
     data_size_t cnt_positive = 0;
     data_size_t cnt_negative = 0;
     // count for positive and negative samples
+#pragma omp parallel for schedule(static) reduction(+:cnt_positive, cnt_negative)
     for (data_size_t i = 0; i < num_data_; ++i) {
-      if (label_[i] == 1) {
+      if (label_[i] > 0) {
         ++cnt_positive;
       } else {
         ++cnt_negative;
@@ -64,8 +65,9 @@ public:
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // get label and label weights
-        const int label = label_val_[static_cast<int>(label_[i])];
-        const double label_weight = label_weights_[static_cast<int>(label_[i])];
+        const int is_pos = label_[i] > 0;
+        const int label = label_val_[is_pos];
+        const double label_weight = label_weights_[is_pos];
         // calculate gradients and hessians
         const double response = -label * sigmoid_ / (1.0f + std::exp(label * sigmoid_ * score[i]));
         const double abs_response = fabs(response);
@@ -76,8 +78,9 @@ public:
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // get label and label weights
-        const int label = label_val_[static_cast<int>(label_[i])];
-        const double label_weight = label_weights_[static_cast<int>(label_[i])];
+        const int is_pos = label_[i] > 0;
+        const int label = label_val_[is_pos];
+        const double label_weight = label_weights_[is_pos];
         // calculate gradients and hessians
         const double response = -label * sigmoid_ / (1.0f + std::exp(label * sigmoid_ * score[i]));
         const double abs_response = fabs(response);

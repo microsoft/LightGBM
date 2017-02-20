@@ -2,7 +2,6 @@
 #define LIGHTGBM_TREE_H_
 
 #include <LightGBM/meta.h>
-#include <LightGBM/feature.h>
 #include <LightGBM/dataset.h>
 
 #include <string>
@@ -35,7 +34,6 @@ public:
   * \brief Performing a split on tree leaves.
   * \param leaf Index of leaf to be split
   * \param feature Index of feature; the converted index after removing useless features
-  * \param bin_type type of this feature, numerical or categorical
   * \param threshold Threshold(bin) of split
   * \param real_feature Index of feature, the original index on data
   * \param threshold_double Threshold on feature value
@@ -46,7 +44,7 @@ public:
   * \param gain Split gain
   * \return The index of new leaf.
   */
-  int Split(int leaf, int feature, BinType bin_type, unsigned int threshold, int real_feature,
+  int Split(int leaf, int feature, uint32_t threshold, int real_feature,
     double threshold_double, double left_value,
     double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain);
 
@@ -64,8 +62,9 @@ public:
   * \param num_data Number of total data
   * \param score Will add prediction to score
   */
-  void AddPredictionToScore(const Dataset* data, data_size_t num_data,
-                                                       double* score) const;
+  void AddPredictionToScore(const Dataset* data, 
+    data_size_t num_data,
+    double* score) const;
 
   /*!
   * \brief Adding prediction value of this tree model to scorese
@@ -93,7 +92,7 @@ public:
   inline int leaf_depth(int leaf_idx) const { return leaf_depth_[leaf_idx]; }
 
   /*! \brief Get feature of specific split*/
-  inline int split_feature_real(int split_idx) const { return split_feature_real_[split_idx]; }
+  inline int split_feature(int split_idx) const { return split_feature_[split_idx]; }
 
   /*!
   * \brief Shrinkage for the tree's output
@@ -101,8 +100,9 @@ public:
   * \param rate The factor of shrinkage
   */
   inline void Shrinkage(double rate) {
+#pragma omp parallel for schedule(static)
     for (int i = 0; i < num_leaves_; ++i) {
-      leaf_value_[i] = leaf_value_[i] * rate;
+      leaf_value_[i] *= rate;
     }
   }
 
@@ -113,15 +113,6 @@ public:
   std::string ToJSON();
 
   template<typename T>
-  static bool CategoricalDecision(T fval, T threshold) {
-    if (static_cast<int>(fval) == static_cast<int>(threshold)) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  template<typename T>
   static bool NumericalDecision(T fval, T threshold) {
     if (fval <= threshold) {
       return true;
@@ -130,26 +121,13 @@ public:
     }
   }
 
-  static const char* GetDecisionTypeName(int8_t type) {
-    if (type == 0) {
-      return "no_greater";
-    } else {
-      return "is";
-    }
-  }
-
-  static std::vector<bool(*)(unsigned int, unsigned int)> inner_decision_funs;
-  static std::vector<bool(*)(double, double)> decision_funs;
-
 private:
-  /*!
-  * \brief Find leaf index of which record belongs by data
-  * \param data The dataset
-  * \param data_idx Index of record
-  * \return Leaf index
-  */
-  inline int GetLeaf(const std::vector<std::unique_ptr<BinIterator>>& iterators,
-                                           data_size_t data_idx) const;
+
+  inline int GetLeaf(std::vector<std::unique_ptr<BinIterator>>& iterators, 
+    data_size_t data_idx) const;
+
+  inline int GetLeafRaw(std::vector<std::unique_ptr<BinIterator>>& iterators,
+    data_size_t data_idx) const;
 
   /*!
   * \brief Find leaf index of which record belongs by features
@@ -171,15 +149,13 @@ private:
   /*! \brief A non-leaf node's right child */
   std::vector<int> right_child_;
   /*! \brief A non-leaf node's split feature */
-  std::vector<int> split_feature_;
+  std::vector<int> split_feature_inner;
   /*! \brief A non-leaf node's split feature, the original index */
-  std::vector<int> split_feature_real_;
+  std::vector<int> split_feature_;
   /*! \brief A non-leaf node's split threshold in bin */
-  std::vector<unsigned int> threshold_in_bin_;
+  std::vector<uint32_t> threshold_in_bin_;
   /*! \brief A non-leaf node's split threshold in feature value */
   std::vector<double> threshold_;
-  /*! \brief Decision type, 0 for '<='(numerical feature), 1 for 'is'(categorical feature) */
-  std::vector<int8_t> decision_type_;
   /*! \brief A non-leaf node's split gain */
   std::vector<double> split_gain_;
   // used for leaf node
@@ -208,13 +184,28 @@ inline int Tree::PredictLeafIndex(const double* feature_values) const {
   return leaf;
 }
 
-inline int Tree::GetLeaf(const std::vector<std::unique_ptr<BinIterator>>& iterators,
-                                       data_size_t data_idx) const {
+inline int Tree::GetLeaf(std::vector<std::unique_ptr<BinIterator>>& iterators,
+  data_size_t data_idx) const {
   int node = 0;
   while (node >= 0) {
-    if (inner_decision_funs[decision_type_[node]](
-        iterators[split_feature_[node]]->Get(data_idx),
-        threshold_in_bin_[node])) {
+    if (NumericalDecision<uint32_t>(
+      iterators[node]->Get(data_idx),
+      threshold_in_bin_[node])) {
+      node = left_child_[node];
+    } else {
+      node = right_child_[node];
+    }
+  }
+  return ~node;
+}
+
+inline int Tree::GetLeafRaw(std::vector<std::unique_ptr<BinIterator>>& iterators,
+  data_size_t data_idx) const {
+  int node = 0;
+  while (node >= 0) {
+    if (NumericalDecision<uint32_t>(
+      iterators[split_feature_inner[node]]->Get(data_idx),
+      threshold_in_bin_[node])) {
       node = left_child_[node];
     } else {
       node = right_child_[node];
@@ -226,8 +217,8 @@ inline int Tree::GetLeaf(const std::vector<std::unique_ptr<BinIterator>>& iterat
 inline int Tree::GetLeaf(const double* feature_values) const {
   int node = 0;
   while (node >= 0) {
-    if (decision_funs[decision_type_[node]](
-        feature_values[split_feature_real_[node]],
+    if (NumericalDecision<double>(
+        feature_values[split_feature_[node]],
         threshold_[node])) {
       node = left_child_[node];
     } else {

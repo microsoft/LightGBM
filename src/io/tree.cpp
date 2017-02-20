@@ -4,7 +4,6 @@
 #include <LightGBM/utils/common.h>
 
 #include <LightGBM/dataset.h>
-#include <LightGBM/feature.h>
 
 #include <sstream>
 #include <unordered_map>
@@ -16,22 +15,16 @@
 
 namespace LightGBM {
 
-std::vector<bool(*)(unsigned int, unsigned int)> Tree::inner_decision_funs =
-          {Tree::NumericalDecision<unsigned int>, Tree::CategoricalDecision<unsigned int> };
-std::vector<bool(*)(double, double)> Tree::decision_funs =
-          { Tree::NumericalDecision<double>, Tree::CategoricalDecision<double> };
-
 Tree::Tree(int max_leaves)
   :max_leaves_(max_leaves) {
 
   num_leaves_ = 0;
   left_child_ = std::vector<int>(max_leaves_ - 1);
   right_child_ = std::vector<int>(max_leaves_ - 1);
+  split_feature_inner = std::vector<int>(max_leaves_ - 1);
   split_feature_ = std::vector<int>(max_leaves_ - 1);
-  split_feature_real_ = std::vector<int>(max_leaves_ - 1);
-  threshold_in_bin_ = std::vector<unsigned int>(max_leaves_ - 1);
+  threshold_in_bin_ = std::vector<uint32_t>(max_leaves_ - 1);
   threshold_ = std::vector<double>(max_leaves_ - 1);
-  decision_type_ = std::vector<int8_t>(max_leaves_ - 1);
   split_gain_ = std::vector<double>(max_leaves_ - 1);
   leaf_parent_ = std::vector<int>(max_leaves_);
   leaf_value_ = std::vector<double>(max_leaves_);
@@ -48,7 +41,7 @@ Tree::~Tree() {
 
 }
 
-int Tree::Split(int leaf, int feature, BinType bin_type, unsigned int threshold_bin, int real_feature,
+int Tree::Split(int leaf, int feature, uint32_t threshold_bin, int real_feature,
     double threshold_double, double left_value,
     double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain) {
   int new_node_idx = num_leaves_ - 1;
@@ -63,15 +56,10 @@ int Tree::Split(int leaf, int feature, BinType bin_type, unsigned int threshold_
     }
   }
   // add new node
-  split_feature_[new_node_idx] = feature;
-  split_feature_real_[new_node_idx] = real_feature;
+  split_feature_inner[new_node_idx] = feature;
+  split_feature_[new_node_idx] = real_feature;
   threshold_in_bin_[new_node_idx] = threshold_bin;
   threshold_[new_node_idx] = threshold_double;
-  if (bin_type == BinType::NumericalBin) {
-    decision_type_[new_node_idx] = 0;
-  } else {
-    decision_type_[new_node_idx] = 1;
-  }
   split_gain_[new_node_idx] = gain;
   // add two new leaves
   left_child_[new_node_idx] = ~leaf;
@@ -95,42 +83,74 @@ int Tree::Split(int leaf, int feature, BinType bin_type, unsigned int threshold_
 }
 
 void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, double* score) const {
-  Threading::For<data_size_t>(0, num_data, [this, data, score](int, data_size_t start, data_size_t end) {
-    std::vector<std::unique_ptr<BinIterator>> iterators(data->num_features());
-    for (int i = 0; i < data->num_features(); ++i) {
-      iterators[i].reset(data->FeatureAt(i)->bin_data()->GetIterator(start));
-    }
-    for (data_size_t i = start; i < end; ++i) {
-      score[i] += static_cast<double>(leaf_value_[GetLeaf(iterators, i)]);
-    }
-  });
+  if (data->num_features() > num_leaves_ - 1) {
+    Threading::For<data_size_t>(0, num_data,
+      [this, &data, score](int, data_size_t start, data_size_t end) {
+      std::vector<std::unique_ptr<BinIterator>> iter(num_leaves_ - 1);
+      for (int i = 0; i < num_leaves_ - 1; ++i) {
+        const int fidx = split_feature_inner[i];
+        iter[i].reset(data->FeatureIterator(fidx));
+        iter[i]->Reset(start);
+      }
+      for (data_size_t i = start; i < end; ++i) {
+        score[i] += static_cast<double>(leaf_value_[GetLeaf(iter, i)]);
+      }
+    });
+  } else {
+    Threading::For<data_size_t>(0, num_data,
+      [this, &data, score](int, data_size_t start, data_size_t end) {
+      std::vector<std::unique_ptr<BinIterator>> iter(data->num_features());
+      for (int i = 0; i < data->num_features(); ++i) {
+        iter[i].reset(data->FeatureIterator(i));
+        iter[i]->Reset(start);
+      }
+      for (data_size_t i = start; i < end; ++i) {
+        score[i] += static_cast<double>(leaf_value_[GetLeafRaw(iter, i)]);
+      }
+    });
+  }
 }
 
-void Tree::AddPredictionToScore(const Dataset* data, const data_size_t* used_data_indices,
-                                             data_size_t num_data, double* score) const {
-  Threading::For<data_size_t>(0, num_data,
+void Tree::AddPredictionToScore(const Dataset* data,
+  const data_size_t* used_data_indices,
+  data_size_t num_data, double* score) const {
+  if (data->num_features() > num_leaves_ - 1) {
+    Threading::For<data_size_t>(0, num_data,
       [this, data, used_data_indices, score](int, data_size_t start, data_size_t end) {
-    std::vector<std::unique_ptr<BinIterator>> iterators(data->num_features());
-    for (int i = 0; i < data->num_features(); ++i) {
-      iterators[i].reset(data->FeatureAt(i)->bin_data()->GetIterator(used_data_indices[start]));
-    }
-    for (data_size_t i = start; i < end; ++i) {
-      score[used_data_indices[i]] += static_cast<double>(leaf_value_[GetLeaf(iterators, used_data_indices[i])]);
-    }
-  });
+      std::vector<std::unique_ptr<BinIterator>> iter(num_leaves_ - 1);
+      for (int i = 0; i < num_leaves_ - 1; ++i) {
+        const int fidx = split_feature_inner[i];
+        iter[i].reset(data->FeatureIterator(fidx));
+        iter[i]->Reset(used_data_indices[start]);
+      }
+      for (data_size_t i = start; i < end; ++i) {
+        score[used_data_indices[i]] += static_cast<double>(leaf_value_[GetLeaf(iter, used_data_indices[i])]);
+      }
+    });
+  } else {
+    Threading::For<data_size_t>(0, num_data,
+      [this, data, used_data_indices, score](int, data_size_t start, data_size_t end) {
+      std::vector<std::unique_ptr<BinIterator>> iter(data->num_features());
+      for (int i = 0; i < data->num_features(); ++i) {
+        iter[i].reset(data->FeatureIterator(i));
+        iter[i]->Reset(used_data_indices[start]);
+      }
+      for (data_size_t i = start; i < end; ++i) {
+        score[used_data_indices[i]] += static_cast<double>(leaf_value_[GetLeafRaw(iter, used_data_indices[i])]);
+      }
+    });
+  }
 }
 
 std::string Tree::ToString() {
   std::stringstream str_buf;
   str_buf << "num_leaves=" << num_leaves_ << std::endl;
   str_buf << "split_feature="
-    << Common::ArrayToString<int>(split_feature_real_, num_leaves_ - 1, ' ') << std::endl;
+    << Common::ArrayToString<int>(split_feature_, num_leaves_ - 1, ' ') << std::endl;
   str_buf << "split_gain="
     << Common::ArrayToString<double>(split_gain_, num_leaves_ - 1, ' ') << std::endl;
   str_buf << "threshold="
     << Common::ArrayToString<double>(threshold_, num_leaves_ - 1, ' ') << std::endl;
-  str_buf << "decision_type="
-    << Common::ArrayToString<int>(Common::ArrayCast<int8_t, int>(decision_type_), num_leaves_ - 1, ' ') << std::endl;
   str_buf << "left_child="
     << Common::ArrayToString<int>(left_child_, num_leaves_ - 1, ' ') << std::endl;
   str_buf << "right_child="
@@ -166,10 +186,9 @@ std::string Tree::NodeToJSON(int index) {
     // non-leaf
     str_buf << "{" << std::endl;
     str_buf << "\"split_index\":" << index << "," << std::endl;
-    str_buf << "\"split_feature\":" << split_feature_real_[index] << "," << std::endl;
+    str_buf << "\"split_feature\":" << split_feature_[index] << "," << std::endl;
     str_buf << "\"split_gain\":" << split_gain_[index] << "," << std::endl;
     str_buf << "\"threshold\":" << threshold_[index] << "," << std::endl;
-    str_buf << "\"decision_type\":\"" << Tree::GetDecisionTypeName(decision_type_[index]) << "\"," << std::endl;
     str_buf << "\"internal_value\":" << internal_value_[index] << "," << std::endl;
     str_buf << "\"internal_count\":" << internal_count_[index] << "," << std::endl;
     str_buf << "\"left_child\":" << NodeToJSON(left_child_[index]) << "," << std::endl;
@@ -207,7 +226,7 @@ Tree::Tree(const std::string& str) {
     || key_vals.count("left_child") <= 0 || key_vals.count("right_child") <= 0
     || key_vals.count("leaf_parent") <= 0 || key_vals.count("leaf_value") <= 0
     || key_vals.count("internal_value") <= 0 || key_vals.count("internal_count") <= 0
-    || key_vals.count("leaf_count") <= 0 || key_vals.count("decision_type") <= 0
+    || key_vals.count("leaf_count") <= 0
     ) {
     Log::Fatal("Tree model string format error");
   }
@@ -216,12 +235,11 @@ Tree::Tree(const std::string& str) {
 
   left_child_ = Common::StringToArray<int>(key_vals["left_child"], ' ', num_leaves_ - 1);
   right_child_ = Common::StringToArray<int>(key_vals["right_child"], ' ', num_leaves_ - 1);
-  split_feature_real_ = Common::StringToArray<int>(key_vals["split_feature"], ' ', num_leaves_ - 1);
+  split_feature_ = Common::StringToArray<int>(key_vals["split_feature"], ' ', num_leaves_ - 1);
   threshold_ = Common::StringToArray<double>(key_vals["threshold"], ' ', num_leaves_ - 1);
   split_gain_ = Common::StringToArray<double>(key_vals["split_gain"], ' ', num_leaves_ - 1);
   internal_count_ = Common::StringToArray<data_size_t>(key_vals["internal_count"], ' ', num_leaves_ - 1);
   internal_value_ = Common::StringToArray<double>(key_vals["internal_value"], ' ', num_leaves_ - 1);
-  decision_type_ = Common::StringToArray<int8_t>(key_vals["decision_type"], ' ', num_leaves_ - 1);
 
   leaf_count_ = Common::StringToArray<data_size_t>(key_vals["leaf_count"], ' ', num_leaves_);
   leaf_parent_ = Common::StringToArray<int>(key_vals["leaf_parent"], ' ', num_leaves_);

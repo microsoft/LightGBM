@@ -170,6 +170,10 @@ private:
   std::unique_ptr<FeatureHistogram[]> smaller_leaf_histogram_array_global_;
   /*! \brief Store global histogram for larger leaf  */
   std::unique_ptr<FeatureHistogram[]> larger_leaf_histogram_array_global_;
+
+  std::vector<HistogramBinEntry> smaller_leaf_histogram_data_;
+  std::vector<HistogramBinEntry> larger_leaf_histogram_data_;
+  std::vector<FeatureMetainfo> feature_metas_;
 };
 
 }  // namespace LightGBM
