@@ -150,7 +150,7 @@ inline static const char* Atof(const char* p, double* out) {
     frac = 0;
     scale = 1.0;
     if ((*p == 'e') || (*p == 'E')) {
-      unsigned int expon;
+      uint32_t expon;
       // Get sign of exponent, if any.
       ++p;
       if (*p == '-') {

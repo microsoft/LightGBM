@@ -196,7 +196,7 @@
     <ClInclude Include="..\include\LightGBM\c_api.h" />
     <ClInclude Include="..\include\LightGBM\dataset.h" />
     <ClInclude Include="..\include\LightGBM\dataset_loader.h" />
-    <ClInclude Include="..\include\LightGBM\feature.h" />
+    <ClInclude Include="..\include\LightGBM\feature_group.h" />
     <ClInclude Include="..\include\LightGBM\meta.h" />
     <ClInclude Include="..\include\LightGBM\metric.h" />
     <ClInclude Include="..\include\LightGBM\network.h" />
@@ -213,6 +213,7 @@
     <ClInclude Include="..\src\application\predictor.hpp" />
     <ClInclude Include="..\src\boosting\gbdt.h" />
     <ClInclude Include="..\src\boosting\dart.hpp" />
+    <ClInclude Include="..\src\boosting\goss.hpp" />
     <ClInclude Include="..\src\boosting\score_updater.hpp" />
     <ClInclude Include="..\src\io\dense_bin.hpp" />
     <ClInclude Include="..\src\io\ordered_sparse_bin.hpp" />

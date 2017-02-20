@@ -330,20 +330,22 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
     const int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
     std::vector<std::vector<double>> sample_values(ncol);
+    std::vector<std::vector<int>> sample_idx(ncol);
     for (size_t i = 0; i < sample_indices.size(); ++i) {
       auto idx = sample_indices[i];
       auto row = get_row_fun(static_cast<int>(idx));
       for (size_t j = 0; j < row.size(); ++j) {
-        if (std::fabs(row[j]) > 1e-15) {
-          sample_values[j].push_back(row[j]);
+        if (std::fabs(row[j]) > kEpsilon) {
+          sample_values[j].emplace_back(row[j]);
+          sample_idx[j].emplace_back(static_cast<int>(i));
         }
       }
     }
     DatasetLoader loader(io_config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(sample_values, sample_cnt, nrow));
+    ret.reset(loader.CostructFromSampleData(sample_values, sample_idx, sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
-    ret->CopyFeatureMapperFrom(
+    ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
   }
 
@@ -382,29 +384,28 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSR(const void* indptr,
     const int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
     std::vector<std::vector<double>> sample_values;
+    std::vector<std::vector<int>> sample_idx;
     for (size_t i = 0; i < sample_indices.size(); ++i) {
       auto idx = sample_indices[i];
       auto row = get_row_fun(static_cast<int>(idx));
       for (std::pair<int, double>& inner_data : row) {
         if (static_cast<size_t>(inner_data.first) >= sample_values.size()) {
-          // if need expand feature set
-          size_t need_size = inner_data.first - sample_values.size() + 1;
-          for (size_t j = 0; j < need_size; ++j) {
-            sample_values.emplace_back();
-          }
+          sample_values.resize(inner_data.first + 1);
+          sample_idx.resize(inner_data.first + 1);
         }
-        if (std::fabs(inner_data.second) > 1e-15) {
+        if (std::fabs(inner_data.second) > kEpsilon) {
           // edit the feature value
-          sample_values[inner_data.first].push_back(inner_data.second);
+          sample_values[inner_data.first].emplace_back(inner_data.second);
+          sample_idx[inner_data.first].emplace_back(static_cast<int>(i));
         }
       }
     }
     CHECK(num_col >= static_cast<int>(sample_values.size()));
     DatasetLoader loader(io_config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(sample_values, sample_cnt, nrow));
+    ret.reset(loader.CostructFromSampleData(sample_values, sample_idx, sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
-    ret->CopyFeatureMapperFrom(
+    ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
   }
 
@@ -442,29 +443,33 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     const int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
     std::vector<std::vector<double>> sample_values(ncol_ptr - 1);
+    std::vector<std::vector<int>> sample_idx(ncol_ptr - 1);
 #pragma omp parallel for schedule(guided)
     for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
       CSC_RowIterator col_it(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i);
       for (int j = 0; j < sample_cnt; j++) {
         auto val = col_it.Get(sample_indices[j]);
         if (std::fabs(val) > kEpsilon) {
-          sample_values[i].push_back(val);
+          sample_values[i].emplace_back(val);
+          sample_idx[i].emplace_back(j);
         }
       }
     }
     DatasetLoader loader(io_config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(sample_values, sample_cnt, nrow));
+    ret.reset(loader.CostructFromSampleData(sample_values, sample_idx, sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
-    ret->CopyFeatureMapperFrom(
+    ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
   }
 
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < ncol_ptr - 1; ++i) {
     const int tid = omp_get_thread_num();
-    int feature_idx = ret->GetInnerFeatureIndex(i);
+    int feature_idx = ret->InnerFeatureIndex(i);
     if (feature_idx < 0) { continue; }
+    int group = ret->Feature2Group(feature_idx);
+    int sub_feature = ret->Feture2SubFeature(feature_idx);
     CSC_RowIterator col_it(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i);
     int row_idx = 0;
     while (row_idx < nrow) {
@@ -472,7 +477,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
       row_idx = pair.first;
       // no more data
       if (row_idx < 0) { break; }
-      ret->FeatureAt(feature_idx)->PushData(tid, row_idx, pair.second);
+      ret->PushOneData(tid, row_idx, group, sub_feature, pair.second);
     }
   }
   ret->FinishLoad();

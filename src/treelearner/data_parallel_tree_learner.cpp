@@ -24,7 +24,7 @@ void DataParallelTreeLearner::Init(const Dataset* train_data) {
   // allocate buffer for communication
   size_t buffer_size = 0;
   for (int i = 0; i < num_features_; ++i) {
-    buffer_size += train_data_->FeatureAt(i)->num_bin() * sizeof(HistogramBinEntry);
+    buffer_size += train_data_->FeatureNumBin(i) * sizeof(HistogramBinEntry);
   }
 
   input_buffer_.resize(buffer_size);
@@ -54,7 +54,7 @@ void DataParallelTreeLearner::BeforeTrain() {
     if (is_feature_used_[i]) {
       int cur_min_machine = static_cast<int>(ArrayArgs<int>::ArgMin(num_bins_distributed));
       feature_distribution[cur_min_machine].push_back(i);
-      num_bins_distributed[cur_min_machine] += train_data_->FeatureAt(i)->num_bin();
+      num_bins_distributed[cur_min_machine] += train_data_->FeatureNumBin(i);
     }
     is_feature_aggregated_[i] = false;
   }
@@ -68,7 +68,7 @@ void DataParallelTreeLearner::BeforeTrain() {
   for (int i = 0; i < num_machines_; ++i) {
     block_len_[i] = 0;
     for (auto fid : feature_distribution[i]) {
-      block_len_[i] += train_data_->FeatureAt(fid)->num_bin() * sizeof(HistogramBinEntry);
+      block_len_[i] += train_data_->FeatureNumBin(fid) * sizeof(HistogramBinEntry);
     }
     reduce_scatter_size_ += block_len_[i];
   }
@@ -83,7 +83,7 @@ void DataParallelTreeLearner::BeforeTrain() {
   for (int i = 0; i < num_machines_; ++i) {
     for (auto fid : feature_distribution[i]) {
       buffer_write_start_pos_[fid] = bin_size;
-      bin_size += train_data_->FeatureAt(fid)->num_bin() * sizeof(HistogramBinEntry);
+      bin_size += train_data_->FeatureNumBin(fid) * sizeof(HistogramBinEntry);
     }
   }
 
@@ -91,7 +91,7 @@ void DataParallelTreeLearner::BeforeTrain() {
   bin_size = 0;
   for (auto fid : feature_distribution[rank_]) {
     buffer_read_start_pos_[fid] = bin_size;
-    bin_size += train_data_->FeatureAt(fid)->num_bin() * sizeof(HistogramBinEntry);
+    bin_size += train_data_->FeatureNumBin(fid) * sizeof(HistogramBinEntry);
   }
 
   // sync global data sumup info
@@ -125,49 +125,51 @@ void DataParallelTreeLearner::BeforeTrain() {
 }
 
 void DataParallelTreeLearner::FindBestThresholds() {
+  train_data_->ConstructHistograms(is_feature_used_,
+    smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
+    smaller_leaf_splits_->LeafIndex(),
+    ordered_bins_, gradients_, hessians_,
+    ordered_gradients_.data(), ordered_hessians_.data(),
+    smaller_leaf_histogram_array_[0].RawData() - 1);
   // construct local histograms
 #pragma omp parallel for schedule(guided)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if ((!is_feature_used_.empty() && is_feature_used_[feature_index] == false)) continue;
-    // construct histograms for smaller leaf
-    if (ordered_bins_[feature_index] == nullptr) {
-      // if not use ordered bin
-      train_data_->FeatureAt(feature_index)->bin_data()->ConstructHistogram(
-        smaller_leaf_splits_->data_indices(),
-        smaller_leaf_splits_->num_data_in_leaf(),
-        ptr_to_ordered_gradients_smaller_leaf_,
-        ptr_to_ordered_hessians_smaller_leaf_,
-        smaller_leaf_histogram_array_[feature_index].GetData());
-    } else {
-      // used ordered bin
-      ordered_bins_[feature_index]->ConstructHistogram(smaller_leaf_splits_->LeafIndex(),
-        gradients_,
-        hessians_,
-        smaller_leaf_histogram_array_[feature_index].GetData());
-    }
     // copy to buffer
     std::memcpy(input_buffer_.data() + buffer_write_start_pos_[feature_index],
-      smaller_leaf_histogram_array_[feature_index].HistogramData(),
+      smaller_leaf_histogram_array_[feature_index].RawData(),
       smaller_leaf_histogram_array_[feature_index].SizeOfHistgram());
   }
-
   // Reduce scatter for histogram
   Network::ReduceScatter(input_buffer_.data(), reduce_scatter_size_, block_start_.data(),
     block_len_.data(), output_buffer_.data(), &HistogramBinEntry::SumReducer);
+
+  std::vector<SplitInfo> smaller_best(num_threads_, SplitInfo());
+  std::vector<SplitInfo> larger_best(num_threads_, SplitInfo());
 #pragma omp parallel for schedule(guided)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!is_feature_aggregated_[feature_index]) continue;
-
+    const int tid = omp_get_thread_num();
     // restore global histograms from buffer
     smaller_leaf_histogram_array_[feature_index].FromMemory(
       output_buffer_.data() + buffer_read_start_pos_[feature_index]);
 
+
+    train_data_->FixHistogram(feature_index,
+      smaller_leaf_splits_->sum_gradients(), smaller_leaf_splits_->sum_hessians(),
+      smaller_leaf_splits_->num_data_in_leaf(),
+      smaller_leaf_histogram_array_[feature_index].RawData());
+    SplitInfo smaller_split;
     // find best threshold for smaller child
     smaller_leaf_histogram_array_[feature_index].FindBestThreshold(
       smaller_leaf_splits_->sum_gradients(),
       smaller_leaf_splits_->sum_hessians(),
       GetGlobalDataCountInLeaf(smaller_leaf_splits_->LeafIndex()),
-      &smaller_leaf_splits_->BestSplitPerFeature()[feature_index]);
+      &smaller_split);
+
+    if (smaller_split.gain > smaller_best[tid].gain) {
+      smaller_best[tid] = smaller_split;
+    }
 
     // only root leaf
     if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->LeafIndex() < 0) continue;
@@ -175,35 +177,36 @@ void DataParallelTreeLearner::FindBestThresholds() {
     // construct histgroms for large leaf, we init larger leaf as the parent, so we can just subtract the smaller leaf's histograms
     larger_leaf_histogram_array_[feature_index].Subtract(
       smaller_leaf_histogram_array_[feature_index]);
-
+    SplitInfo larger_split;
     // find best threshold for larger child
     larger_leaf_histogram_array_[feature_index].FindBestThreshold(
       larger_leaf_splits_->sum_gradients(),
       larger_leaf_splits_->sum_hessians(),
       GetGlobalDataCountInLeaf(larger_leaf_splits_->LeafIndex()),
-      &larger_leaf_splits_->BestSplitPerFeature()[feature_index]);
+      &larger_split);
+    if (larger_split.gain > larger_best[tid].gain) {
+      larger_best[tid] = larger_split;
+    }
   }
+  auto smaller_best_idx = ArrayArgs<SplitInfo>::ArgMax(smaller_best);
+  int leaf = smaller_leaf_splits_->LeafIndex();
+  best_split_per_leaf_[leaf] = smaller_best[smaller_best_idx];
+
+
+  if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->LeafIndex() < 0) { return; }
+
+  leaf = larger_leaf_splits_->LeafIndex();
+  auto larger_best_idx = ArrayArgs<SplitInfo>::ArgMax(larger_best);
+  best_split_per_leaf_[leaf] = larger_best[larger_best_idx];
 
 }
 
 void DataParallelTreeLearner::FindBestSplitsForLeaves() {
-  int smaller_best_feature = -1, larger_best_feature = -1;
   SplitInfo smaller_best, larger_best;
-  std::vector<double> gains;
-  // find local best split for smaller leaf
-  for (size_t i = 0; i < smaller_leaf_splits_->BestSplitPerFeature().size(); ++i) {
-    gains.push_back(smaller_leaf_splits_->BestSplitPerFeature()[i].gain);
-  }
-  smaller_best_feature = static_cast<int>(ArrayArgs<double>::ArgMax(gains));
-  smaller_best = smaller_leaf_splits_->BestSplitPerFeature()[smaller_best_feature];
+  smaller_best = best_split_per_leaf_[smaller_leaf_splits_->LeafIndex()];
   // find local best split for larger leaf
   if (larger_leaf_splits_->LeafIndex() >= 0) {
-    gains.clear();
-    for (size_t i = 0; i < larger_leaf_splits_->BestSplitPerFeature().size(); ++i) {
-      gains.push_back(larger_leaf_splits_->BestSplitPerFeature()[i].gain);
-    }
-    larger_best_feature = static_cast<int>(ArrayArgs<double>::ArgMax(gains));
-    larger_best = larger_leaf_splits_->BestSplitPerFeature()[larger_best_feature];
+    larger_best = best_split_per_leaf_[larger_leaf_splits_->LeafIndex()];
   }
 
   // sync global best info

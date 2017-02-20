@@ -14,7 +14,7 @@ LightGBM supports input data file with [CSV](https://en.wikipedia.org/wiki/Comma
 
 Label is the data of first column, and there is no header in the file.
 
-### Categorical feature support
+### [deprecated in v2] Categorical feature support
 
 update 12/5/2016:
 

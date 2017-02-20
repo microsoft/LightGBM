@@ -4,7 +4,6 @@
 
 #include <LightGBM/utils/common.h>
 
-#include <LightGBM/feature.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/metric.h>
 
@@ -37,7 +36,6 @@ GBDT::GBDT()
 }
 
 GBDT::~GBDT() {
-
 }
 
 void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
@@ -106,16 +104,6 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
     label_idx_ = train_data->label_idx();
     // get feature names
     feature_names_ = train_data->feature_names();
-    // get feature infos
-    feature_infos_.clear();
-    for (int i = 0; i < max_feature_idx_ + 1; ++i) {
-      int feature_idx = train_data->GetInnerFeatureIndex(i);
-      if (feature_idx < 0) { 
-        feature_infos_.push_back("trival feature"); 
-      } else {
-        feature_infos_.push_back(train_data->FeatureAt(feature_idx)->bin_mapper()->bin_info());
-      }
-    }
   }
 
   if ((train_data_ != train_data && train_data != nullptr)
@@ -587,11 +575,6 @@ std::string GBDT::SaveModelToString(int num_iterations) const {
       ss << pairs[i].second << "=" << std::to_string(pairs[i].first) << std::endl;
     }
 
-    ss << std::endl << "feature information:" << std::endl;
-    for (int i = 0; i < max_feature_idx_ + 1; ++i) {
-      ss << feature_names_[i] << "=" << feature_infos_[i] << std::endl;
-    }
-
     return ss.str();
 }
 
@@ -651,49 +634,10 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
       Log::Fatal("Wrong size of feature_names");
       return false;
     }
-  } else {
+  }
+  else {
     Log::Fatal("Model file doesn't contain feature names");
     return false;
-  }
-
-  // returns offset, or lines.size() if not found.
-  auto find_string_lineno = [&lines](const std::string &str, size_t start_line)
-  {
-    size_t i = start_line;
-    size_t featinfo_find_pos = std::string::npos;
-    while (i < lines.size()) {
-      featinfo_find_pos = lines[i].find(str);
-      if (featinfo_find_pos != std::string::npos)
-        break;
-      ++i;
-    }
-
-    return i;
-  };
-
-  // load feature information
-  {
-    size_t finfo_line_idx = find_string_lineno("feature information:", 0);
-
-    if (finfo_line_idx >= lines.size()) {
-      Log::Fatal("Model file doesn't contain feature information");
-      return false;
-    }
-
-    feature_infos_.resize(max_feature_idx_ + 1);
-
-    // search for each feature name
-    for (int i=0; i < max_feature_idx_ + 1; i++) {
-      const auto feat_name = feature_names_[i];
-      size_t line_idx = find_string_lineno(feat_name + "=", finfo_line_idx + 1);
-      if (line_idx >= lines.size()) {
-        Log::Fatal(("Model file doesn't contain feature information for feature " + feat_name).c_str());
-        return false;
-      }
-
-      const auto this_line = lines[line_idx];
-      feature_infos_[i] = this_line.substr((feat_name + "=").size());
-    }
   }
 
   // get tree models
@@ -725,7 +669,7 @@ std::vector<std::pair<size_t, std::string>> GBDT::FeatureImportance() const {
   std::vector<size_t> feature_importances(max_feature_idx_ + 1, 0);
     for (size_t iter = 0; iter < models_.size(); ++iter) {
         for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
-            ++feature_importances[models_[iter]->split_feature_real(split_idx)];
+            ++feature_importances[models_[iter]->split_feature(split_idx)];
         }
     }
     // store the importance first

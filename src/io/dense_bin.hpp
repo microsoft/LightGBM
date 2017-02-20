@@ -9,15 +9,41 @@
 
 namespace LightGBM {
 
+template <typename VAL_T>
+class DenseBin;
+
+template <typename VAL_T>
+class DenseBinIterator : public BinIterator {
+public:
+  explicit DenseBinIterator(const DenseBin<VAL_T>* bin_data, uint32_t min_bin, uint32_t max_bin, uint32_t default_bin)
+    : bin_data_(bin_data), min_bin_(static_cast<VAL_T>(min_bin)),
+    max_bin_(static_cast<VAL_T>(max_bin)),
+    default_bin_(static_cast<uint8_t>(default_bin)) {
+    if (default_bin_ == 0) {
+      bias_ = 1;
+    } else {
+      bias_ = 0;
+    }
+  }
+  inline uint32_t Get(data_size_t idx) override;
+  inline void Reset(data_size_t) override { }
+private:
+  const DenseBin<VAL_T>* bin_data_;
+  VAL_T min_bin_;
+  VAL_T max_bin_;
+  VAL_T default_bin_;
+  uint8_t bias_;
+};
 /*!
 * \brief Used to store bins for dense feature
 * Use template to reduce memory cost
 */
 template <typename VAL_T>
-class DenseBin: public Bin {
+class DenseBin : public Bin {
 public:
-  DenseBin(data_size_t num_data, uint32_t default_bin)
-    : num_data_(num_data), data_(num_data_, static_cast<VAL_T>(default_bin)) {
+  friend DenseBinIterator<VAL_T>;
+  DenseBin(data_size_t num_data)
+    : num_data_(num_data), data_(num_data_, static_cast<VAL_T>(0)) {
   }
 
   ~DenseBin() {
@@ -34,24 +60,20 @@ public:
     }
   }
 
-  inline uint32_t Get(data_size_t idx) const {
-    return static_cast<uint32_t>(data_[idx]);
-  }
-
-  BinIterator* GetIterator(data_size_t start_idx) const override;
+  BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const override;
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
     HistogramBinEntry* out) const override {
     // use 4-way unrolling, will be faster
     if (data_indices != nullptr) {  // if use part of data
-      data_size_t rest = num_data % 4;
+      const data_size_t rest = num_data % 4;
       data_size_t i = 0;
       for (; i < num_data - rest; i += 4) {
-        VAL_T bin0 = data_[data_indices[i]];
-        VAL_T bin1 = data_[data_indices[i + 1]];
-        VAL_T bin2 = data_[data_indices[i + 2]];
-        VAL_T bin3 = data_[data_indices[i + 3]];
+        const VAL_T bin0 = data_[data_indices[i]];
+        const VAL_T bin1 = data_[data_indices[i + 1]];
+        const VAL_T bin2 = data_[data_indices[i + 2]];
+        const VAL_T bin3 = data_[data_indices[i + 3]];
 
         out[bin0].sum_gradients += ordered_gradients[i];
         out[bin1].sum_gradients += ordered_gradients[i + 1];
@@ -69,19 +91,19 @@ public:
         ++out[bin3].cnt;
       }
       for (; i < num_data; ++i) {
-        VAL_T bin = data_[data_indices[i]];
+        const VAL_T bin = data_[data_indices[i]];
         out[bin].sum_gradients += ordered_gradients[i];
         out[bin].sum_hessians += ordered_hessians[i];
         ++out[bin].cnt;
       }
     } else {  // use full data
-      data_size_t rest = num_data % 4;
+      const data_size_t rest = num_data % 4;
       data_size_t i = 0;
       for (; i < num_data - rest; i += 4) {
-        VAL_T bin0 = data_[i];
-        VAL_T bin1 = data_[i + 1];
-        VAL_T bin2 = data_[i + 2];
-        VAL_T bin3 = data_[i + 3];
+        const VAL_T bin0 = data_[i];
+        const VAL_T bin1 = data_[i + 1];
+        const VAL_T bin2 = data_[i + 2];
+        const VAL_T bin3 = data_[i + 3];
 
         out[bin0].sum_gradients += ordered_gradients[i];
         out[bin1].sum_gradients += ordered_gradients[i + 1];
@@ -99,7 +121,7 @@ public:
         ++out[bin3].cnt;
       }
       for (; i < num_data; ++i) {
-        VAL_T bin = data_[i];
+        const VAL_T bin = data_[i];
         out[bin].sum_gradients += ordered_gradients[i];
         out[bin].sum_hessians += ordered_hessians[i];
         ++out[bin].cnt;
@@ -107,13 +129,31 @@ public:
     }
   }
 
-  virtual data_size_t Split(unsigned int threshold, data_size_t* data_indices, data_size_t num_data,
+  virtual data_size_t Split(
+    uint32_t min_bin, uint32_t max_bin, uint32_t default_bin,
+    uint32_t threshold, data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const override {
+    if (num_data <= 0) { return 0; }
+    VAL_T th = static_cast<VAL_T>(threshold + min_bin);
+    VAL_T minb = static_cast<VAL_T>(min_bin);
+    VAL_T maxb = static_cast<VAL_T>(max_bin);
+    if (default_bin == 0) {
+      th -= 1;
+    }
     data_size_t lte_count = 0;
     data_size_t gt_count = 0;
+    data_size_t* default_indices = gt_indices;
+    data_size_t* default_count = &gt_count;
+    if (default_bin <= threshold) {
+      default_indices = lte_indices;
+      default_count = &lte_count;
+    }
     for (data_size_t i = 0; i < num_data; ++i) {
-      data_size_t idx = data_indices[i];
-      if (data_[idx] > threshold) {
+      const data_size_t idx = data_indices[i];
+      VAL_T bin = data_[idx];
+      if (bin > maxb || bin < minb) {
+        default_indices[(*default_count)++] = idx;
+      } else if (bin > th) {
         gt_indices[gt_count++] = idx;
       } else {
         lte_indices[lte_count++] = idx;
@@ -162,45 +202,19 @@ protected:
 };
 
 template <typename VAL_T>
-class DenseBinIterator: public BinIterator {
-public:
-  explicit DenseBinIterator(const DenseBin<VAL_T>* bin_data)
-    : bin_data_(bin_data) {
+uint32_t DenseBinIterator<VAL_T>::Get(data_size_t idx) {
+  auto ret = bin_data_->data_[idx];
+  if (ret >= min_bin_ && ret <= max_bin_) {
+    return ret - min_bin_ + bias_;
+  } else {
+    return default_bin_;
   }
-  uint32_t Get(data_size_t idx) override {
-    return bin_data_->Get(idx);
-  }
-private:
-  const DenseBin<VAL_T>* bin_data_;
-};
-
-template <typename VAL_T>
-BinIterator* DenseBin<VAL_T>::GetIterator(data_size_t) const {
-  return new DenseBinIterator<VAL_T>(this);
 }
 
 template <typename VAL_T>
-class DenseCategoricalBin: public DenseBin<VAL_T> {
-public:
-  DenseCategoricalBin(data_size_t num_data, int default_bin)
-    : DenseBin<VAL_T>(num_data, default_bin) {
-  }
-
-  virtual data_size_t Split(unsigned int threshold, data_size_t* data_indices, data_size_t num_data,
-    data_size_t* lte_indices, data_size_t* gt_indices) const override {
-    data_size_t lte_count = 0;
-    data_size_t gt_count = 0;
-    for (data_size_t i = 0; i < num_data; ++i) {
-      data_size_t idx = data_indices[i];
-      if (DenseBin<VAL_T>::data_[idx] != threshold) {
-        gt_indices[gt_count++] = idx;
-      } else {
-        lte_indices[lte_count++] = idx;
-      }
-    }
-    return lte_count;
-  }
-};
+BinIterator* DenseBin<VAL_T>::GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const {
+  return new DenseBinIterator<VAL_T>(this, min_bin, max_bin, default_bin);
+}
 
 }  // namespace LightGBM
 #endif   // LightGBM_IO_DENSE_BIN_HPP_

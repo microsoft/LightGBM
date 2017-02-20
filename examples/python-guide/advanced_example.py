@@ -42,13 +42,11 @@ params = {
 feature_name = ['feature_' + str(col) for col in range(num_feature)]
 
 print('Start training...')
-# feature_name and categorical_feature
 gbm = lgb.train(params,
                 lgb_train,
                 num_boost_round=10,
                 valid_sets=lgb_train,  # eval training data
-                feature_name=feature_name,
-                categorical_feature=[21])
+                feature_name=feature_name)
 
 # check feature name
 print('Finish first 10 rounds...')
