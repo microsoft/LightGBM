@@ -527,14 +527,14 @@ The methods of each Class is in alphabetical order.
         Data to be trained.
     num_boost_round : int
         Number of boosting iterations.
+    data_splitter : an instance with split(X) method
+        Instance with split(X) method.
     nfold : int
         Number of folds in CV.
     stratified : bool
         Perform stratified sampling.
     shuffle: bool
         Whether shuffle before split data.
-    folds : a KFold or StratifiedKFold instance
-        Sklearn KFolds or StratifiedKFolds.
     metrics : str or list of str
         Evaluation metrics to be watched in CV.
     fobj : function

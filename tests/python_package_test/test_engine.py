@@ -10,7 +10,7 @@ import numpy as np
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
                               load_iris)
 from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, TimeSeriesSplit
 
 try:
     import pandas as pd
@@ -120,9 +120,12 @@ class TestEngine(unittest.TestCase):
 
     def test_cv(self):
         lgb_train, _ = template.test_template(return_data=True)
-        lgb.cv({'verbose': -1}, lgb_train, num_boost_round=20, nfold=5,
+        lgb.cv({'verbose': -1}, lgb_train, num_boost_round=20, nfold=5, shuffle=False,
                metrics='l1', verbose_eval=False,
                callbacks=[lgb.reset_parameter(learning_rate=lambda i: 0.1 - 0.001 * i)])
+        tss = TimeSeriesSplit(3)
+        lgb.cv({'verbose': -1}, lgb_train, num_boost_round=20, data_splitter=tss, nfold=5,  # test if wrong nfold is ignored
+               metrics='l2', verbose_eval=False)
 
     def test_feature_name(self):
         lgb_train, _ = template.test_template(return_data=True)
