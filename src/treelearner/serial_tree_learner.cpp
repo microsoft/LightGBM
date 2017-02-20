@@ -146,6 +146,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   last_trained_tree_ = tree.get();
   // root leaf
   int left_leaf = 0;
+  int cur_depth = 1;
   // only root leaf can be splitted on first time
   int right_leaf = -1;
   for (int split = 0; split < tree_config_->num_leaves - 1; ++split) {
@@ -162,13 +163,14 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
     const SplitInfo& best_leaf_SplitInfo = best_split_per_leaf_[best_leaf];
     // cannot split, quit
     if (best_leaf_SplitInfo.gain <= 0.0) {
-      Log::Info("No further splits with positive gain, best gain: %f, leaves: %d",
-                   best_leaf_SplitInfo.gain, split + 1);
+      Log::Info("No further splits with positive gain, best gain: %f", best_leaf_SplitInfo.gain);
       break;
     }
     // split tree with best leaf
     Split(tree.get(), best_leaf, &left_leaf, &right_leaf);
+    cur_depth = std::max(cur_depth, tree->leaf_depth(left_leaf));
   }
+  Log::Info("Trained a tree with leaves=%d and max_depth=%d", tree->num_leaves(), cur_depth);
   return tree.release();
 }
 
