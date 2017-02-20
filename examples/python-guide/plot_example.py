@@ -49,6 +49,6 @@ print('Plot feature importances...')
 ax = lgb.plot_importance(gbm, max_num_features=10)
 plt.show()
 
-print('Plot 84th tree...') 
+print('Plot 84th tree...')
 ax = lgb.plot_tree(gbm, tree_index=83, figsize=(20, 8), show_info=['split_gain'])
 plt.show()

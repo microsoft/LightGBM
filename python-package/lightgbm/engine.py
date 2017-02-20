@@ -268,9 +268,9 @@ def _agg_cv_result(raw_results):
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
 
 
-def cv(params, train_set, num_boost_round=10, 
+def cv(params, train_set, num_boost_round=10,
        data_splitter=None, nfold=5, stratified=False, shuffle=True,
-	   metrics=None, fobj=None, feval=None, init_model=None,
+       metrics=None, fobj=None, feval=None, init_model=None,
        feature_name='auto',
        early_stopping_rounds=None, fpreproc=None,
        verbose_eval=None, show_stdv=True, seed=0,

@@ -256,7 +256,6 @@ def _label_from_pandas(label):
     return label
 
 
-
 class _InnerPredictor(object):
     """
     A _InnerPredictor of LightGBM.
@@ -550,7 +549,7 @@ class Dataset(object):
     def _lazy_init(self, data, label=None, max_bin=255, reference=None,
                    weight=None, group=None, predictor=None,
                    silent=False, feature_name='auto',
-                params=None):
+                   params=None):
         if data is None:
             self.handle = None
             return
@@ -768,7 +767,7 @@ class Dataset(object):
         params : dict
             Other parameters
         """
-        ret = Dataset(None, reference=self, feature_name=self.feature_name, 
+        ret = Dataset(None, reference=self, feature_name=self.feature_name,
                       params=params)
         ret._predictor = self._predictor
         ret.used_indices = used_indices
