@@ -104,7 +104,7 @@ void OverallConfig::GetMetricType(const std::unordered_map<std::string, std::str
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     // split
     std::vector<std::string> metrics = Common::Split(value.c_str(), ',');
-    // remove dumplicate
+    // remove duplicate
     std::unordered_set<std::string> metric_sets;
     for (auto& metric : metrics) {
       std::transform(metric.begin(), metric.end(), metric.begin(), Common::tolower);
