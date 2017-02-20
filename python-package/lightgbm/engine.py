@@ -17,7 +17,7 @@ from .compat import (SKLEARN_INSTALLED, LGBMStratifiedKFold, integer_types,
 def train(params, train_set, num_boost_round=100,
           valid_sets=None, valid_names=None,
           fobj=None, feval=None, init_model=None,
-          feature_name='auto', categorical_feature='auto',
+          feature_name='auto',
           early_stopping_rounds=None, evals_result=None,
           verbose_eval=True, learning_rates=None, callbacks=None):
     """
@@ -45,11 +45,6 @@ def train(params, train_set, num_boost_round=100,
     feature_name : list of str, or 'auto'
         Feature names
         If 'auto' and data is pandas DataFrame, use data columns name
-    categorical_feature : list of str or int, or 'auto'
-        Categorical features,
-        type int represents index,
-        type str represents feature names (need to specify feature_name as well)
-        If 'auto' and data is pandas DataFrame, use pandas categorical columns
     early_stopping_rounds: int
         Activates early stopping.
         Requires at least one validation data and one metric
@@ -103,7 +98,6 @@ def train(params, train_set, num_boost_round=100,
     train_set._update_params(params)
     train_set._set_predictor(predictor)
     train_set.set_feature_name(feature_name)
-    train_set.set_categorical_feature(categorical_feature)
 
     is_valid_contain_train = False
     train_data_name = "training"
@@ -271,7 +265,7 @@ def _agg_cv_result(raw_results):
 
 def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
        shuffle=True, metrics=None, fobj=None, feval=None, init_model=None,
-       feature_name='auto', categorical_feature='auto',
+       feature_name='auto',
        early_stopping_rounds=None, fpreproc=None,
        verbose_eval=None, show_stdv=True, seed=0,
        callbacks=None):
@@ -305,11 +299,6 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
     feature_name : list of str, or 'auto'
         Feature names
         If 'auto' and data is pandas DataFrame, use data columns name
-    categorical_feature : list of str or int, or 'auto'
-        Categorical features,
-        type int represents index,
-        type str represents feature names (need to specify feature_name as well)
-        If 'auto' and data is pandas DataFrame, use pandas categorical columns
     early_stopping_rounds: int
         Activates early stopping. CV error needs to decrease at least
         every <early_stopping_rounds> round(s) to continue.
@@ -348,7 +337,6 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
     train_set._update_params(params)
     train_set._set_predictor(predictor)
     train_set.set_feature_name(feature_name)
-    train_set.set_categorical_feature(categorical_feature)
 
     if metrics:
         params.setdefault('metric', [])

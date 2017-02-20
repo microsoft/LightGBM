@@ -34,7 +34,6 @@ public:
   * \brief Performing a split on tree leaves.
   * \param leaf Index of leaf to be split
   * \param feature Index of feature; the converted index after removing useless features
-  * \param bin_type type of this feature, numerical or categorical
   * \param threshold Threshold(bin) of split
   * \param real_feature Index of feature, the original index on data
   * \param threshold_double Threshold on feature value

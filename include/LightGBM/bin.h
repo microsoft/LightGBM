@@ -97,7 +97,7 @@ public:
   inline uint32_t ValueToBin(double value) const;
 
   /*!
-  * \brief Get the default bin when value is 0 or is firt categorical
+  * \brief Get the default bin when value is 0
   * \return default bin
   */
   inline uint32_t GetDefaultBin() const {
