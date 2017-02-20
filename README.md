@@ -16,6 +16,8 @@ For more details, please refer to [Features](https://github.com/Microsoft/LightG
 
 News
 ----
+02/20/2017 : Update to LightGBM v2. Add two new features: Gradient-based One-Side Sampling(GOSS) and Exclusive Feature Bundling(EFB). With GOSS and EFB, LightGBM can further speed up the training. Details are avaliable in [Features](https://github.com/Microsoft/LightGBM/wiki/Features).
+
 01/08/2017 : Release [**R-package**](./R-package) beta version, welcome to have a try and provide feedback.
 
 12/05/2016 : [deprecated in v2]**Categorical Features as input directly**(without one-hot coding). Experiment on [Expo data](http://stat-computing.org/dataexpo/2009/) shows about 8x speed-up with same accuracy compared with one-hot coding (refer to [categorical log]( https://github.com/guolinke/boosting_tree_benchmarks/blob/master/lightgbm/lightgbm_dataexpo_speed.log) and [one-hot log]( https://github.com/guolinke/boosting_tree_benchmarks/blob/master/lightgbm/lightgbm_dataexpo_onehot_speed.log)).
