@@ -142,7 +142,7 @@ public:
     }
   }
 
-  inline static void MaxK(const std::vector<VAL_T>& array, int k, std::vector<VAL_T>* out) {
+  inline static void MaxK(const std::vector<VAL_T>& array, size_t k, std::vector<VAL_T>* out) {
     out->clear();
     if (k <= 0) {
       return;
