@@ -132,7 +132,7 @@ void DataParallelTreeLearner::FindBestThresholds() {
     ordered_gradients_.data(), ordered_hessians_.data(),
     smaller_leaf_histogram_array_[0].RawData() - 1);
   // construct local histograms
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if ((!is_feature_used_.empty() && is_feature_used_[feature_index] == false)) continue;
     // copy to buffer
@@ -146,7 +146,7 @@ void DataParallelTreeLearner::FindBestThresholds() {
 
   std::vector<SplitInfo> smaller_best(num_threads_, SplitInfo());
   std::vector<SplitInfo> larger_best(num_threads_, SplitInfo());
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!is_feature_aggregated_[feature_index]) continue;
     const int tid = omp_get_thread_num();

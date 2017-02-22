@@ -250,7 +250,7 @@ void VotingParallelTreeLearner::CopyLocalHistogram(const std::vector<int>& small
 void VotingParallelTreeLearner::FindBestThresholds() {
   // use local data to find local best splits
   std::vector<int8_t> is_feature_used(num_features_, 0);
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!is_feature_used_[feature_index]) continue;
     if (parent_leaf_histogram_array_ != nullptr
@@ -288,7 +288,7 @@ void VotingParallelTreeLearner::FindBestThresholds() {
   std::vector<SplitInfo> larger_bestsplit_per_features(num_features_);
 
   // find splits
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!is_feature_used[feature_index]) { continue; }
     train_data_->FixHistogram(feature_index,
@@ -360,7 +360,7 @@ void VotingParallelTreeLearner::FindBestThresholds() {
   std::vector<SplitInfo> smaller_best(num_threads_);
   std::vector<SplitInfo> larger_best(num_threads_);
   // find best split from local aggregated histograms
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     const int tid = omp_get_thread_num();
     if (smaller_is_feature_aggregated_[feature_index]) {

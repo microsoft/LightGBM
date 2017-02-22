@@ -43,7 +43,7 @@ public:
   }
 
   void AddPredictionToScore(double* out_score) const override {
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < data_partition_->num_leaves(); ++i) {
       double output = static_cast<double>(last_trained_tree_->LeafOutput(i));
       data_size_t cnt_leaf_data = 0;
@@ -144,6 +144,7 @@ protected:
   /*! \brief config of tree learner*/
   const TreeConfig* tree_config_;
   int num_threads_;
+  std::vector<int> order_bin_indices_;
 };
 
 inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leafIdx) const {
