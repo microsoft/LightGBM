@@ -1,5 +1,5 @@
-#ifndef LIGHTGBM_IO_DENSE_BIN_HPP_
-#define LIGHTGBM_IO_DENSE_BIN_HPP_
+#ifndef LIGHTGBM_IO_DENSE_NBITS_BIN_HPP_
+#define LIGHTGBM_IO_DENSE_NBITS_BIN_HPP_
 
 #include <LightGBM/bin.h>
 
@@ -9,15 +9,13 @@
 
 namespace LightGBM {
 
-template <typename VAL_T>
-class DenseBin;
+class Dense4bitsBin;
 
-template <typename VAL_T>
-class DenseBinIterator : public BinIterator {
+class Dense4bitsBinIterator: public BinIterator {
 public:
-  explicit DenseBinIterator(const DenseBin<VAL_T>* bin_data, uint32_t min_bin, uint32_t max_bin, uint32_t default_bin)
-    : bin_data_(bin_data), min_bin_(static_cast<VAL_T>(min_bin)),
-    max_bin_(static_cast<VAL_T>(max_bin)),
+  explicit Dense4bitsBinIterator(const Dense4bitsBin* bin_data, uint32_t min_bin, uint32_t max_bin, uint32_t default_bin)
+    : bin_data_(bin_data), min_bin_(static_cast<uint8_t>(min_bin)),
+    max_bin_(static_cast<uint8_t>(max_bin)),
     default_bin_(static_cast<uint8_t>(default_bin)) {
     if (default_bin_ == 0) {
       bias_ = 1;
@@ -28,35 +26,51 @@ public:
   inline uint32_t Get(data_size_t idx) override;
   inline void Reset(data_size_t) override { }
 private:
-  const DenseBin<VAL_T>* bin_data_;
-  VAL_T min_bin_;
-  VAL_T max_bin_;
-  VAL_T default_bin_;
+  const Dense4bitsBin* bin_data_;
+  uint8_t min_bin_;
+  uint8_t max_bin_;
+  uint8_t default_bin_;
   uint8_t bias_;
 };
-/*!
-* \brief Used to store bins for dense feature
-* Use template to reduce memory cost
-*/
-template <typename VAL_T>
-class DenseBin : public Bin {
+
+class Dense4bitsBin: public Bin {
 public:
-  friend DenseBinIterator<VAL_T>;
-  DenseBin(data_size_t num_data)
-    : num_data_(num_data), data_(num_data_, static_cast<VAL_T>(0)) {
+  friend Dense4bitsBinIterator;
+  Dense4bitsBin(data_size_t num_data)
+    : num_data_(num_data) {
+    int len = (num_data_ + 1) / 2;
+    data_ = std::vector<uint8_t>(len, static_cast<uint8_t>(0));
   }
 
-  ~DenseBin() {
+  ~Dense4bitsBin() {
+
   }
 
   void Push(int, data_size_t idx, uint32_t value) override {
-    data_[idx] = static_cast<VAL_T>(value);
+    if (buf_.empty()) {
+#pragma omp critical
+      {
+        if (buf_.empty()) {
+          int len = (num_data_ + 1) / 2;
+          buf_ = std::vector<uint8_t>(len, static_cast<uint8_t>(0));
+        }
+      }
+    }
+    const int i1 = idx >> 1;
+    const int i2 = (idx & 1) << 2;
+    const uint8_t val = static_cast<uint8_t>(value) << i2;
+    if (i2 == 0) {
+      data_[i1] = val;
+    } else {
+      buf_[i1] = val;
+    }
   }
 
   void ReSize(data_size_t num_data) override {
     if (num_data_ != num_data) {
       num_data_ = num_data;
-      data_.resize(num_data_);
+      int len = (num_data_ + 1) / 2;
+      data_.resize(len);
     }
   }
 
@@ -65,15 +79,25 @@ public:
   void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
     HistogramBinEntry* out) const override {
-    // use 4-way unrolling, will be faster
     if (data_indices != nullptr) {  // if use part of data
+
       const data_size_t rest = num_data & 0x3;
       data_size_t i = 0;
+
       for (; i < num_data - rest; i += 4) {
-        const VAL_T bin0 = data_[data_indices[i]];
-        const VAL_T bin1 = data_[data_indices[i + 1]];
-        const VAL_T bin2 = data_[data_indices[i + 2]];
-        const VAL_T bin3 = data_[data_indices[i + 3]];
+
+        data_size_t idx = data_indices[i];
+        const auto bin0 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 1];
+        const auto bin1 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 2];
+        const auto bin2 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 3];
+        const auto bin3 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
 
         out[bin0].sum_gradients += ordered_gradients[i];
         out[bin1].sum_gradients += ordered_gradients[i + 1];
@@ -89,9 +113,12 @@ public:
         ++out[bin1].cnt;
         ++out[bin2].cnt;
         ++out[bin3].cnt;
+
       }
+
       for (; i < num_data; ++i) {
-        const VAL_T bin = data_[data_indices[i]];
+        const data_size_t idx = data_indices[i];
+        const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
         out[bin].sum_gradients += ordered_gradients[i];
         out[bin].sum_hessians += ordered_hessians[i];
         ++out[bin].cnt;
@@ -100,10 +127,12 @@ public:
       const data_size_t rest = num_data & 0x3;
       data_size_t i = 0;
       for (; i < num_data - rest; i += 4) {
-        const VAL_T bin0 = data_[i];
-        const VAL_T bin1 = data_[i + 1];
-        const VAL_T bin2 = data_[i + 2];
-        const VAL_T bin3 = data_[i + 3];
+        int j = i >> 1;
+        const auto bin0 = (data_[j]) & 0xf;
+        const auto bin1 = (data_[j] >> 4) & 0xf;
+        ++j;
+        const auto bin2 = (data_[j]) & 0xf;
+        const auto bin3 = (data_[j] >> 4) & 0xf;
 
         out[bin0].sum_gradients += ordered_gradients[i];
         out[bin1].sum_gradients += ordered_gradients[i + 1];
@@ -121,7 +150,7 @@ public:
         ++out[bin3].cnt;
       }
       for (; i < num_data; ++i) {
-        const VAL_T bin = data_[i];
+        const auto bin = (data_[i >> 1] >> ((i & 1) << 2)) & 0xf;
         out[bin].sum_gradients += ordered_gradients[i];
         out[bin].sum_hessians += ordered_hessians[i];
         ++out[bin].cnt;
@@ -134,9 +163,9 @@ public:
     uint32_t threshold, data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const override {
     if (num_data <= 0) { return 0; }
-    VAL_T th = static_cast<VAL_T>(threshold + min_bin);
-    VAL_T minb = static_cast<VAL_T>(min_bin);
-    VAL_T maxb = static_cast<VAL_T>(max_bin);
+    uint8_t th = static_cast<uint8_t>(threshold + min_bin);
+    uint8_t minb = static_cast<uint8_t>(min_bin);
+    uint8_t maxb = static_cast<uint8_t>(max_bin);
     if (default_bin == 0) {
       th -= 1;
     }
@@ -150,7 +179,7 @@ public:
     }
     for (data_size_t i = 0; i < num_data; ++i) {
       const data_size_t idx = data_indices[i];
-      VAL_T bin = data_[idx];
+      const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
       if (bin > maxb || bin < minb) {
         default_indices[(*default_count)++] = idx;
       } else if (bin > th) {
@@ -166,55 +195,66 @@ public:
   /*! \brief not ordered bin for dense feature */
   OrderedBin* CreateOrderedBin() const override { return nullptr; }
 
-  void FinishLoad() override {}
+  void FinishLoad() override {
+    int len = (num_data_ + 1) / 2;
+    for (int i = 0; i < len; ++i) {
+      data_[i] |= buf_[i];
+    }
+    buf_.clear();
+  }
 
   void LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices) override {
-    const VAL_T* mem_data = reinterpret_cast<const VAL_T*>(memory);
+    const uint8_t* mem_data = reinterpret_cast<const uint8_t*>(memory);
     if (!local_used_indices.empty()) {
       for (int i = 0; i < num_data_; ++i) {
-        data_[i] = mem_data[local_used_indices[i]];
+        // get old bins
+        const data_size_t idx = local_used_indices[i];
+        const auto bin = (mem_data[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+        // add
+        Push(0, i, bin);
       }
     } else {
-      for (int i = 0; i < num_data_; ++i) {
+      for (size_t i = 0; i < data_.size(); ++i) {
         data_[i] = mem_data[i];
       }
     }
   }
 
   void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override {
-    auto other_bin = reinterpret_cast<const DenseBin<VAL_T>*>(full_bin);
+    auto other_bin = reinterpret_cast<const Dense4bitsBin*>(full_bin);
     for (int i = 0; i < num_used_indices; ++i) {
-      data_[i] = other_bin->data_[used_indices[i]];
+      const data_size_t idx = used_indices[i];
+      const auto bin = (other_bin->data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      Push(0, i, bin);
     }
   }
 
   void SaveBinaryToFile(FILE* file) const override {
-    fwrite(data_.data(), sizeof(VAL_T), num_data_, file);
+    fwrite(data_.data(), sizeof(uint8_t), data_.size(), file);
   }
 
   size_t SizesInByte() const override {
-    return sizeof(VAL_T) * num_data_;
+    return sizeof(uint8_t) * data_.size();
   }
 
 protected:
   data_size_t num_data_;
-  std::vector<VAL_T> data_;
+  std::vector<uint8_t> data_;
+  std::vector<uint8_t> buf_;
 };
 
-template <typename VAL_T>
-uint32_t DenseBinIterator<VAL_T>::Get(data_size_t idx) {
-  auto ret = bin_data_->data_[idx];
-  if (ret >= min_bin_ && ret <= max_bin_) {
-    return ret - min_bin_ + bias_;
+uint32_t Dense4bitsBinIterator::Get(data_size_t idx) {
+  const auto bin = (bin_data_->data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+  if (bin >= min_bin_ && bin <= max_bin_) {
+    return bin - min_bin_ + bias_;
   } else {
     return default_bin_;
   }
 }
 
-template <typename VAL_T>
-BinIterator* DenseBin<VAL_T>::GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const {
-  return new DenseBinIterator<VAL_T>(this, min_bin, max_bin, default_bin);
+BinIterator* Dense4bitsBin::GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const {
+  return new Dense4bitsBinIterator(this, min_bin, max_bin, default_bin);
 }
 
 }  // namespace LightGBM
-#endif   // LightGBM_IO_DENSE_BIN_HPP_
+#endif   // LIGHTGBM_IO_DENSE_NBITS_BIN_HPP_
