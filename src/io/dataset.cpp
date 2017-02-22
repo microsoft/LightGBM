@@ -16,8 +16,6 @@ namespace LightGBM {
 
 const char* Dataset::binary_file_token = "______LightGBM_Binary_File_Token______\n";
 
-
-
 Dataset::Dataset() {
   data_filename_ = "noname";
   num_data_ = 0;
@@ -424,7 +422,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
 void Dataset::ReSize(data_size_t num_data) {
   if (num_data_ != num_data) {
     num_data_ = num_data;
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(static)
     for (int group = 0; group < num_groups_; ++group) {
       feature_groups_[group]->bin_data_->ReSize(num_data_);
     }
@@ -433,7 +431,7 @@ void Dataset::ReSize(data_size_t num_data) {
 
 void Dataset::CopySubset(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data) {
   CHECK(num_used_indices == num_data_);
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(static)
   for (int group = 0; group < num_groups_; ++group) {
     feature_groups_[group]->CopySubset(fullset->feature_groups_[group].get(), used_indices, num_used_indices);
   }
@@ -625,7 +623,8 @@ void Dataset::ConstructHistograms(
     ptr_ordered_grad = ordered_gradients;
     ptr_ordered_hess = ordered_hessians;
   }
-#pragma omp parallel for schedule(guided)
+
+#pragma omp parallel for schedule(static)
   for (int group = 0; group < num_groups_; ++group) {
     bool is_groud_used = false;
     const int f_cnt = group_feature_cnt_[group];

@@ -67,6 +67,12 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
   if (has_ordered_bin_) {
     is_data_in_leaf_.resize(num_data_);
     std::fill(is_data_in_leaf_.begin(), is_data_in_leaf_.end(), 0);
+    order_bin_indices_.clear();
+    for (int i = 0; i < static_cast<int>(ordered_bins_.size()); i++) {
+      if (ordered_bins_[i] != nullptr) {
+        order_bin_indices_.push_back(i);
+      }
+    }
   }
   Log::Info("Number of data: %d, number of used features: %d", num_data_, num_features_);
 }
@@ -103,6 +109,12 @@ void SerialTreeLearner::ResetTrainingData(const Dataset* train_data) {
   if (has_ordered_bin_) {
     is_data_in_leaf_.resize(num_data_);
     std::fill(is_data_in_leaf_.begin(), is_data_in_leaf_.end(), 0);
+    order_bin_indices_.clear();
+    for (int i = 0; i < static_cast<int>(ordered_bins_.size()); i++) {
+      if (ordered_bins_[i] != nullptr) {
+        order_bin_indices_.push_back(i);
+      }
+    }
   }
 
 }
@@ -220,12 +232,9 @@ void SerialTreeLearner::BeforeTrain() {
   if (has_ordered_bin_) {
     if (data_partition_->leaf_count(0) == num_data_) {
       // use all data, pass nullptr
-      #pragma omp parallel for schedule(guided)
-      for (int i = 0; i < static_cast<int>(ordered_bins_.size()); ++i) {
-        auto ptr = ordered_bins_[i].get();
-        if (ptr != nullptr) {
-          ptr->Init(nullptr, tree_config_->num_leaves);
-        }
+      #pragma omp parallel for schedule(static)
+      for (int i = 0; i < static_cast<int>(order_bin_indices_.size()); ++i) {
+        ordered_bins_[order_bin_indices_[i]]->Init(nullptr, tree_config_->num_leaves);
       }
     } else {
       // bagging, only use part of data
@@ -239,12 +248,9 @@ void SerialTreeLearner::BeforeTrain() {
         is_data_in_leaf_[indices[i]] = 1;
       }
       // initialize ordered bin
-      #pragma omp parallel for schedule(guided)
-      for (int i = 0; i < static_cast<int>(ordered_bins_.size()); ++i) {
-        auto ptr = ordered_bins_[i].get();
-        if (ptr != nullptr) {
-          ptr->Init(is_data_in_leaf_.data(), tree_config_->num_leaves);
-        }
+      #pragma omp parallel for schedule(static)
+      for (int i = 0; i < static_cast<int>(order_bin_indices_.size()); ++i) {
+        ordered_bins_[order_bin_indices_[i]]->Init(is_data_in_leaf_.data(), tree_config_->num_leaves);
       }
 #pragma omp parallel for schedule(static)
       for (data_size_t i = begin; i < end; ++i) {
@@ -312,11 +318,8 @@ bool SerialTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
     }
     // split the ordered bin
     #pragma omp parallel for schedule(guided)
-    for (int i = 0; i < static_cast<int>(ordered_bins_.size()); ++i) {
-      auto ptr = ordered_bins_[i].get();
-      if (ptr != nullptr) {
-        ptr->Split(left_leaf, right_leaf, is_data_in_leaf_.data(), mark);
-      }
+    for (int i = 0; i < static_cast<int>(order_bin_indices_.size()); ++i) {
+      ordered_bins_[order_bin_indices_[i]]->Split(left_leaf, right_leaf, is_data_in_leaf_.data(), mark);
     }
 #pragma omp parallel for schedule(static)
     for (data_size_t i = begin; i < end; ++i) {
@@ -328,7 +331,7 @@ bool SerialTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
 
 void SerialTreeLearner::FindBestThresholds() {
   std::vector<int8_t> is_feature_used(num_features_, 0);
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!is_feature_used_[feature_index]) continue;
     if (parent_leaf_histogram_array_ != nullptr 
@@ -364,7 +367,7 @@ void SerialTreeLearner::FindBestThresholds() {
   std::vector<SplitInfo> smaller_best(num_threads_);
   std::vector<SplitInfo> larger_best(num_threads_);
   // find splits
-  #pragma omp parallel for schedule(guided)
+  #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!is_feature_used[feature_index]) { continue; }
     const int tid = omp_get_thread_num();

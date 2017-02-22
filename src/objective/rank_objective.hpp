@@ -52,7 +52,7 @@ public:
     num_queries_ = metadata.num_queries();
     // cache inverse max DCG, avoid computation many times
     inverse_max_dcgs_.resize(num_queries_);
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_queries_; ++i) {
       inverse_max_dcgs_[i] = DCGCalculator::CalMaxDCGAtK(optimize_pos_at_,
         label_ + query_boundaries_[i],

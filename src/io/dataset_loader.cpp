@@ -748,7 +748,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
   double tmp_label = 0.0f;
   if (predict_fun_ == nullptr) {
     // if doesn't need to prediction with initial model
-#pragma omp parallel for schedule(guided) private(oneline_features) firstprivate(tmp_label)
+#pragma omp parallel for schedule(static) private(oneline_features) firstprivate(tmp_label)
     for (data_size_t i = 0; i < dataset->num_data_; ++i) {
       const int tid = omp_get_thread_num();
       oneline_features.clear();
@@ -781,7 +781,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
   } else {
     // if need to prediction with initial model
     std::vector<double> init_score(dataset->num_data_ * num_class_);
-#pragma omp parallel for schedule(guided) private(oneline_features) firstprivate(tmp_label)
+#pragma omp parallel for schedule(static) private(oneline_features) firstprivate(tmp_label)
     for (data_size_t i = 0; i < dataset->num_data_; ++i) {
       const int tid = omp_get_thread_num();
       oneline_features.clear();
