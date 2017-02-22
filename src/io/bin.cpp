@@ -2,6 +2,7 @@
 #include <LightGBM/bin.h>
 
 #include "dense_bin.hpp"
+#include "dense_nbits_bin.hpp"
 #include "sparse_bin.hpp"
 #include "ordered_sparse_bin.hpp"
 
@@ -277,14 +278,15 @@ Bin* Bin::CreateBin(data_size_t num_data, int num_bin, double sparse_rate,
 }
 
 Bin* Bin::CreateDenseBin(data_size_t num_data, int num_bin) {
-  if (num_bin <= 256) {
+  if (num_bin <= 16) {
+    return new Dense4bitsBin(num_data);
+  } else if (num_bin <= 256) {
     return new DenseBin<uint8_t>(num_data);
   } else if (num_bin <= 65536) {
     return new DenseBin<uint16_t>(num_data);
   } else {
     return new DenseBin<uint32_t>(num_data);
   }
-
 }
 
 Bin* Bin::CreateSparseBin(data_size_t num_data, int num_bin) {
