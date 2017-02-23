@@ -12,9 +12,8 @@ from tempfile import NamedTemporaryFile
 import numpy as np
 import scipy.sparse
 
-from .compat import (DataFrame, Series, integer_types, json,
-                     json_default_with_numpy, numeric_types, range_,
-                     string_type)
+from .compat import (DataFrame, Series, integer_types, json, numeric_types,
+                     range_, string_type)
 from .libpath import find_lib_path
 
 
@@ -223,25 +222,19 @@ PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
 
 def _data_from_pandas(data, feature_name):
     if isinstance(data, DataFrame):
-        if feature_name == 'auto' or feature_name is None:
+        bad_fields = [data.columns[i] for i, dtype in enumerate(data.dtypes) if dtype.name not in PANDAS_DTYPE_MAPPER]
+        if bad_fields:
+            msg = """DataFrame.dtypes for data must be int, float or bool. Did not expect the data types in fields: """
+            raise ValueError(msg + ', '.join(bad_fields))
+        if feature_name == 'auto':
             if all([isinstance(name, integer_types + (np.integer, )) for name in data.columns]):
                 msg = """Using Pandas (default) integer column names, not column indexes. You can use indexes with DataFrame.values."""
                 warnings.filterwarnings('once')
                 warnings.warn(msg, stacklevel=5)
-            data = data.rename(columns=str)
-        if feature_name == 'auto':
-            feature_name = list(data.columns)
-        data_dtypes = data.dtypes
-        if not all(dtype.name in PANDAS_DTYPE_MAPPER for dtype in data_dtypes):
-            bad_fields = [data.columns[i] for i, dtype in
-                          enumerate(data_dtypes) if dtype.name not in PANDAS_DTYPE_MAPPER]
-
-            msg = """DataFrame.dtypes for data must be int, float or bool. Did not expect the data types in fields """
-            raise ValueError(msg + ', '.join(bad_fields))
+            feature_name = [str(name) for name in data.columns]
         data = data.values.astype('float')
-    else:
-        if feature_name == 'auto':
-            feature_name = None
+    elif feature_name == 'auto':
+        feature_name = None
     return data, feature_name
 
 
@@ -365,9 +358,6 @@ class _InnerPredictor(object):
                                               predict_type)
         elif isinstance(data, np.ndarray):
             preds, nrow = self.__pred_for_np2d(data, num_iteration,
-                                               predict_type)
-        elif isinstance(data, DataFrame):
-            preds, nrow = self.__pred_for_np2d(data.values, num_iteration,
                                                predict_type)
         else:
             try:
