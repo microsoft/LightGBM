@@ -104,6 +104,8 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
     label_idx_ = train_data->label_idx();
     // get feature names
     feature_names_ = train_data->feature_names();
+
+    feature_infos_ = train_data->feature_infos();
   }
 
   if ((train_data_ != train_data && train_data != nullptr)
@@ -558,6 +560,8 @@ std::string GBDT::SaveModelToString(int num_iterations) const {
 
     ss << "feature_names=" << Common::Join(feature_names_, " ") << std::endl;
 
+    ss << "feature_infos=" << Common::Join(feature_infos_, " ") << std::endl;
+
     ss << std::endl;
     int num_used_model = static_cast<int>(models_.size());
     if (num_iterations > 0) {
@@ -637,6 +641,18 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
   }
   else {
     Log::Fatal("Model file doesn't contain feature names");
+    return false;
+  }
+
+  line = Common::FindFromLines(lines, "feature_infos=");
+  if (line.size() > 0) {
+    feature_infos_ = Common::Split(line.substr(std::strlen("feature_infos=")).c_str(), " ");
+    if (feature_infos_.size() != static_cast<size_t>(max_feature_idx_ + 1)) {
+      Log::Fatal("Wrong size of feature_infos");
+      return false;
+    }
+  } else {
+    Log::Fatal("Model file doesn't contain feature infos");
     return false;
   }
 
