@@ -329,6 +329,7 @@ protected:
   int num_init_iteration_;
   /*! \brief Feature names */
   std::vector<std::string> feature_names_;
+  std::vector<std::string> feature_infos_;
   /*! \brief number of threads */
   int num_threads_;
   /*! \brief Buffer for multi-threading bagging */

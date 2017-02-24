@@ -471,6 +471,20 @@ public:
     feature_names_ = std::vector<std::string>(feature_names);
   }
 
+  inline std::vector<std::string> feature_infos() const {
+    std::vector<std::string> bufs;
+    for (int i = 0; i < num_total_features_; i++) {
+      int fidx = used_feature_map_[i];
+      if (fidx == -1) {
+        bufs.push_back("none");
+      } else {
+        const auto bin_mapper = FeatureBinMapper(fidx);
+        bufs.push_back(bin_mapper->bin_info());
+      }
+    }
+    return bufs;
+  }
+
   /*! \brief Get Number of data */
   inline data_size_t num_data() const { return num_data_; }
 

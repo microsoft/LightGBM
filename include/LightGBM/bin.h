@@ -136,7 +136,8 @@ public:
   */
   inline std::string bin_info() const {
     std::stringstream str_buf;
-    str_buf << '[' << min_val_ << ',' << max_val_ << ']';
+    str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
+    str_buf << '[' << min_val_ << ':' << max_val_ << ']';
     return str_buf.str();
   }
 
