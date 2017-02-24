@@ -47,7 +47,6 @@ class TestSklearn(unittest.TestCase):
         X_without_columns = np.ones(shape=(_X.shape[0], 0))
         X_y = (X_without_columns, y)
         ret = template.test_template(X_y, lgb.LGBMClassifier, log_loss, predict_proba=True)
-        self.assertLess(ret, 0.15)
 
     def test_regreesion(self):
         self.assertLess(template.test_template() ** 0.5, 4)
