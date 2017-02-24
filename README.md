@@ -16,7 +16,7 @@ For more details, please refer to [Features](https://github.com/Microsoft/LightG
 
 News
 ----
-02/20/2017 : Update to LightGBM v2. Add two new features: Gradient-based One-Side Sampling(GOSS) and Exclusive Feature Bundling(EFB). With GOSS and EFB, LightGBM can further speed up the training. Details are avaliable in [Features](https://github.com/Microsoft/LightGBM/wiki/Features).
+02/20/2017 : Update to LightGBM v2.
 
 01/08/2017 : Release [**R-package**](./R-package) beta version, welcome to have a try and provide feedback.
 
