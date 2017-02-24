@@ -150,7 +150,7 @@ public:
     for (auto val : array) {
       out->push_back(val);
     }
-    if (k >= array.size()) {
+    if (static_cast<size_t>(k) >= array.size()) {
       return;
     }
     ArgMaxAtK(out, 0, static_cast<int>(out->size()), k - 1);
