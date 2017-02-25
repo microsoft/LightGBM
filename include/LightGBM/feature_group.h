@@ -114,7 +114,7 @@ public:
     bin_data_->CopySubset(full_feature->bin_data_.get(), used_indices, num_used_indices);
   }
 
-  inline BinIterator* SubFetureIterator(int sub_feature) {
+  inline BinIterator* SubFeatureIterator(int sub_feature) {
     uint32_t min_bin = bin_offsets_[sub_feature];
     uint32_t max_bin = bin_offsets_[sub_feature + 1] - 1;
     uint32_t default_bin = bin_mappers_[sub_feature]->GetDefaultBin();
