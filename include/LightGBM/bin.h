@@ -177,7 +177,7 @@ public:
            (this logic was build for bagging logic)
   * \param num_leaves Number of leaves on this iteration
   */
-  virtual void Init(const char* used_idices, data_size_t num_leaves) = 0;
+  virtual void Init(const char* used_indices, data_size_t num_leaves) = 0;
 
   /*!
   * \brief Construct histogram by using this bin
@@ -208,7 +208,6 @@ class BinIterator {
 public:
   /*!
   * \brief Get bin data on specific row index
-  * \param tid thread_id
   * \param idx Index of this data
   * \return Bin data
   */
