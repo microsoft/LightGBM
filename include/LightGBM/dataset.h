@@ -428,7 +428,7 @@ public:
   inline BinIterator* FeatureIterator(int i) const {
     const int group = feature2group_[i];
     const int sub_feature = feature2subfeature_[i];
-    return feature_groups_[group]->SubFetureIterator(sub_feature);
+    return feature_groups_[group]->SubFeatureIterator(sub_feature);
   }
 
   inline double RealThreshold(int i, uint32_t threshold) const {
