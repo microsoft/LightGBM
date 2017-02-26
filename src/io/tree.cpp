@@ -36,6 +36,7 @@ Tree::Tree(int max_leaves)
   leaf_depth_[0] = 0;
   num_leaves_ = 1;
   leaf_parent_[0] = -1;
+  shrinkage_ = 1.0f;
 }
 Tree::~Tree() {
 
@@ -165,6 +166,7 @@ std::string Tree::ToString() {
     << Common::ArrayToString<double>(internal_value_, num_leaves_ - 1, ' ') << std::endl;
   str_buf << "internal_count="
     << Common::ArrayToString<data_size_t>(internal_count_, num_leaves_ - 1, ' ') << std::endl;
+  str_buf << "shrinkage=" << shrinkage_ << std::endl;
   str_buf << std::endl;
   return str_buf.str();
 }
@@ -173,7 +175,7 @@ std::string Tree::ToJSON() {
   std::stringstream str_buf;
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   str_buf << "\"num_leaves\":" << num_leaves_ << "," << std::endl;
-
+  str_buf << "\"shrinkage\":" << shrinkage_ << "," << std::endl;
   str_buf << "\"tree_structure\":" << NodeToJSON(0) << std::endl;
 
   return str_buf.str();
@@ -226,7 +228,7 @@ Tree::Tree(const std::string& str) {
     || key_vals.count("left_child") <= 0 || key_vals.count("right_child") <= 0
     || key_vals.count("leaf_parent") <= 0 || key_vals.count("leaf_value") <= 0
     || key_vals.count("internal_value") <= 0 || key_vals.count("internal_count") <= 0
-    || key_vals.count("leaf_count") <= 0
+    || key_vals.count("leaf_count") <= 0 || key_vals.count("shrinkage") <= 0
     ) {
     Log::Fatal("Tree model string format error");
   }
@@ -244,7 +246,7 @@ Tree::Tree(const std::string& str) {
   leaf_count_ = Common::StringToArray<data_size_t>(key_vals["leaf_count"], ' ', num_leaves_);
   leaf_parent_ = Common::StringToArray<int>(key_vals["leaf_parent"], ' ', num_leaves_);
   leaf_value_ = Common::StringToArray<double>(key_vals["leaf_value"], ' ', num_leaves_);
-
+  Common::Atof(key_vals["shrinkage"].c_str(), &shrinkage_);
 }
 
 }  // namespace LightGBM
