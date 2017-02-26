@@ -104,6 +104,7 @@ public:
     for (int i = 0; i < num_leaves_; ++i) {
       leaf_value_[i] *= rate;
     }
+    shrinkage_ *= rate;
   }
 
   /*! \brief Serialize this object to string*/
@@ -171,6 +172,7 @@ private:
   std::vector<data_size_t> internal_count_;
   /*! \brief Depth for leaves */
   std::vector<int> leaf_depth_;
+  double shrinkage_;
 };
 
 
