@@ -109,7 +109,7 @@ public:
   * \param total_sample_cnt number of total sample count, equal with values.size() + num_zeros
   * \param max_bin The maximal number of bin
   * \param min_data_in_bin min number of data in one bin
-  * \param bin_type Type of this bin
+  * \param min_split_data
   */
   void FindBin(std::vector<double>& values, size_t total_sample_cnt, int max_bin, int min_data_in_bin, int min_split_data);
 
@@ -237,11 +237,10 @@ public:
 
   virtual void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) = 0;
   /*!
-  * \brief Get bin interator of this bin for specific feature
+  * \brief Get bin iterator of this bin for specific feature
   * \param min_bin min_bin of current used feature
   * \param max_bin max_bin of current used feature
-  * \param default_bin defualt bin if bin not in [min_bin, max_bin]
-  * \param start_idx start index of this 
+  * \param default_bin default bin if bin not in [min_bin, max_bin]
   * \return Iterator of this bin
   */
   virtual BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const = 0;
@@ -254,7 +253,8 @@ public:
 
   /*!
   * \brief Load from memory
-  * \param file File want to write
+  * \param memory
+  * \param local_used_indices
   */
   virtual void LoadFromMemory(const void* memory,
     const std::vector<data_size_t>& local_used_indices) = 0;
@@ -272,7 +272,7 @@ public:
   /*!
   * \brief Construct histogram of this feature,
   *        Note: We use ordered_gradients and ordered_hessians to improve cache hit chance
-  *        The navie solution is use gradients[data_indices[i]] for data_indices[i] to get gradients, 
+  *        The naive solution is using gradients[data_indices[i]] for data_indices[i] to get gradients,
            which is not cache friendly, since the access of memory is not continuous.
   *        ordered_gradients and ordered_hessians are preprocessed, and they are re-ordered by data_indices.
   *        Ordered_gradients[i] is aligned with data_indices[i]'s gradients (same for ordered_hessians).
@@ -292,7 +292,6 @@ public:
   * \param min_bin min_bin of current used feature
   * \param max_bin max_bin of current used feature
   * \param default_bin defualt bin if bin not in [min_bin, max_bin]
-  * \param bin_type split type
   * \param threshold The split threshold.
   * \param data_indices Used data indices. After called this function. The less than or equal data indices will store on this object.
   * \param num_data Number of used data
@@ -320,12 +319,10 @@ public:
   * \brief Create object for bin data of one feature, will call CreateDenseBin or CreateSparseBin according to "is_sparse"
   * \param num_data Total number of data
   * \param num_bin Number of bin
-  * \param is_sparse True if this feature is sparse
   * \param sparse_rate Sparse rate of this bins( num_bin0/num_data )
   * \param is_enable_sparse True if enable sparse feature
   * \param is_sparse Will set to true if this bin is sparse
   * \param default_bin Default bin for zeros value
-  * \param bin_type type of bin
   * \return The bin data object
   */
   static Bin* CreateBin(data_size_t num_data, int num_bin,
@@ -335,8 +332,6 @@ public:
   * \brief Create object for bin data of one feature, used for dense feature
   * \param num_data Total number of data
   * \param num_bin Number of bin
-  * \param default_bin Default bin for zeros value
-  * \param bin_type type of bin
   * \return The bin data object
   */
   static Bin* CreateDenseBin(data_size_t num_data, int num_bin);
@@ -345,8 +340,6 @@ public:
   * \brief Create object for bin data of one feature, used for sparse feature
   * \param num_data Total number of data
   * \param num_bin Number of bin
-  * \param default_bin Default bin for zeros value
-  * \param bin_type type of bin
   * \return The bin data object
   */
   static Bin* CreateSparseBin(data_size_t num_data, int num_bin);
