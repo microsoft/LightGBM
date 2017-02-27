@@ -20,6 +20,7 @@ namespace LightGBM {
 #ifdef TIMETAG
 std::chrono::duration<double, std::milli> boosting_time;
 std::chrono::duration<double, std::milli> train_score_time;
+std::chrono::duration<double, std::milli> out_of_bag_score_time;
 std::chrono::duration<double, std::milli> valid_score_time;
 std::chrono::duration<double, std::milli> metric_time;
 std::chrono::duration<double, std::milli> bagging_time;
@@ -49,6 +50,7 @@ GBDT::~GBDT() {
 #ifdef TIMETAG
   Log::Info("GBDT::boosting costs %f", boosting_time * 1e-3);
   Log::Info("GBDT::train_score costs %f", train_score_time * 1e-3);
+  Log::Info("GBDT::out_of_bag_score costs %f", out_of_bag_score_time * 1e-3);
   Log::Info("GBDT::valid_score costs %f", valid_score_time * 1e-3);
   Log::Info("GBDT::metric costs %f", metric_time * 1e-3);
   Log::Info("GBDT::bagging costs %f", bagging_time * 1e-3);
@@ -285,7 +287,7 @@ void GBDT::UpdateScoreOutOfBag(const Tree* tree, const int curr_class) {
     train_score_updater_->AddScore(tree, bag_data_indices_.data() + bag_data_cnt_, num_data_ - bag_data_cnt_, curr_class);
   }
 #ifdef TIMETAG
-  train_score_time += std::chrono::steady_clock::now() - start_time;
+  out_of_bag_score_time += std::chrono::steady_clock::now() - start_time;
 #endif
 }
 

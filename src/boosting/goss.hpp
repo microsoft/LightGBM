@@ -26,7 +26,6 @@ public:
 
   }
 
-
   ~GOSS() {
 
   }
@@ -37,7 +36,7 @@ public:
     CHECK(gbdt_config_->top_rate + gbdt_config_->other_rate <= 1.0f);
     CHECK(gbdt_config_->top_rate > 0.0f && gbdt_config_->other_rate > 0.0f);
     if (gbdt_config_->bagging_freq > 0 && gbdt_config_->bagging_fraction != 1.0f) {
-      Log::Fatal("cannot used bagging in GOSS");
+      Log::Fatal("cannot use bagging in GOSS");
     }
     Log::Info("using GOSS");
   }
@@ -45,7 +44,7 @@ public:
   void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
     const std::vector<const Metric*>& training_metrics) override {
     if (config->bagging_freq > 0 && config->bagging_fraction != 1.0f) {
-      Log::Fatal("cannot used bagging in GOSS");
+      Log::Fatal("cannot use bagging in GOSS");
     }
     GBDT::ResetTrainingData(config, train_data, object_function, training_metrics);
     if (train_data_ == nullptr) { return; }
@@ -118,7 +117,7 @@ public:
     // not subsample for first iterations
     if (iter < static_cast<int>(1.0f / gbdt_config_->learning_rate)) { return; }
 
-    const data_size_t min_inner_size = 1000;
+    const data_size_t min_inner_size = 100;
     data_size_t inner_size = (num_data_ + num_threads_ - 1) / num_threads_;
     if (inner_size < min_inner_size) { inner_size = min_inner_size; }
 

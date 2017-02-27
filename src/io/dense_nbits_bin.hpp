@@ -211,7 +211,10 @@ public:
         const data_size_t idx = local_used_indices[i];
         const auto bin = (mem_data[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
         // add
-        Push(0, i, bin);
+        const int i1 = i >> 1;
+        const int i2 = (i & 1) << 2;
+        const uint8_t val = static_cast<uint8_t>(bin) << i2;
+        data_[i1] |= val;
       }
     } else {
       for (size_t i = 0; i < data_.size(); ++i) {
@@ -225,7 +228,10 @@ public:
     for (int i = 0; i < num_used_indices; ++i) {
       const data_size_t idx = used_indices[i];
       const auto bin = (other_bin->data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
-      Push(0, i, bin);
+      const int i1 = i >> 1;
+      const int i2 = (i & 1) << 2;
+      const uint8_t val = static_cast<uint8_t>(bin) << i2;
+      data_[i1] |= val;
     }
   }
 
