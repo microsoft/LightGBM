@@ -1,3 +1,4 @@
+#ifdef USE_GPU
 #include "gpu_tree_learner.h"
 #include "../io/dense_bin.hpp"
 
@@ -811,6 +812,23 @@ bool GPUTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
 // this is the core function we need to replace~!
 void GPUTreeLearner::FindBestThresholds() {
 
+  // #define DEBUG_COMPARE
+  #ifdef DEBUG_COMPARE
+  // initialize the subhistgram buffer to some known values
+  for(int i = 0; i < 1; ++i) {
+    for (int j = 0; j < device_bin_size_; ++j) {
+      // printf("%f\n", host_histogram_outputs_[i * device_bin_size_ + j].sum_gradients);
+      host_histogram_outputs_[i * device_bin_size_+ j].sum_gradients = std::numeric_limits<float>::quiet_NaN();
+      host_histogram_outputs_[i * device_bin_size_ + j].sum_hessians = std::numeric_limits<float>::quiet_NaN();
+      host_histogram_outputs_[i * device_bin_size_ + j].cnt = 99999999;
+    }
+  }
+  for(int i = 0; i < max_num_workgroups_ * 4; ++i) {
+    boost::compute::copy((const char *)(host_histogram_outputs_.get()), 
+                         (const char*)(host_histogram_outputs_.get()) + device_bin_size_ * sizeof(GPUHistogramBinEntry), 
+                         device_subhistograms_->begin() + i * device_bin_size_ * sizeof(GPUHistogramBinEntry), queue_);
+  }
+  #endif
   // Find histograms using GPU
   bool use_gpu = smaller_leaf_splits_->num_data_in_leaf() > 0;
   if (use_gpu) {
@@ -893,7 +911,6 @@ void GPUTreeLearner::FindBestThresholds() {
   }
 
   // check GPU results
-  // #define DEBUG_COMPARE
   #ifdef DEBUG_COMPARE
   for (int i = 0; i < num_dense_features_; ++i) {
     int feature_index = dense_feature_map_[i];
@@ -1021,3 +1038,5 @@ void GPUTreeLearner::Split(Tree* tree, int best_Leaf, int* left_leaf, int* right
 }
 
 }  // namespace LightGBM
+
+#endif // USE_GPU

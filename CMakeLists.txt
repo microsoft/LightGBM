@@ -33,10 +33,11 @@ endif(USE_OPENMP)
 if(USE_GPU)
     find_package(OpenCL REQUIRED)
     include_directories(${OpenCL_INCLUDE_DIRS})
+    ADD_DEFINITIONS(-DUSE_GPU)
 endif(USE_GPU)
 
 if(UNIX OR MINGW OR CYGWIN)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -O3 -fno-omit-frame-pointer -Wall -std=c++11")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -O3 -Wall -std=c++11")
 endif()
 
 if(MSVC)
