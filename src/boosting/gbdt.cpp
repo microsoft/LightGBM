@@ -347,7 +347,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
 #endif
     // if cannot learn a new tree, then stop
     if (new_tree->num_leaves() <= 1) {
-      Log::Info("Stopped training because there are no more leafs that meet the split requirements.");
+      Log::Info("Stopped training because there are no more leaves that meet the split requirements.");
       return true;
     }
 
