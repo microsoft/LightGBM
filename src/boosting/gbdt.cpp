@@ -17,6 +17,16 @@
 
 namespace LightGBM {
 
+#ifdef TIMETAG
+std::chrono::duration<double, std::milli> boosting_time;
+std::chrono::duration<double, std::milli> train_score_time;
+std::chrono::duration<double, std::milli> valid_score_time;
+std::chrono::duration<double, std::milli> metric_time;
+std::chrono::duration<double, std::milli> bagging_time;
+std::chrono::duration<double, std::milli> sub_gradient_time;
+std::chrono::duration<double, std::milli> tree_time;
+#endif // TIMETAG
+
 GBDT::GBDT()
   :iter_(0),
   train_data_(nullptr),
@@ -36,6 +46,15 @@ GBDT::GBDT()
 }
 
 GBDT::~GBDT() {
+#ifdef TIMETAG
+  Log::Info("GBDT::boosting costs %f", boosting_time * 1e-3);
+  Log::Info("GBDT::train_score costs %f", train_score_time * 1e-3);
+  Log::Info("GBDT::valid_score costs %f", valid_score_time * 1e-3);
+  Log::Info("GBDT::metric costs %f", metric_time * 1e-3);
+  Log::Info("GBDT::bagging costs %f", bagging_time * 1e-3);
+  Log::Info("GBDT::sub_gradient costs %f", sub_gradient_time * 1e-3);
+  Log::Info("GBDT::tree costs %f", tree_time * 1e-3);
+#endif
 }
 
 void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
@@ -258,22 +277,43 @@ void GBDT::Bagging(int iter) {
 }
 
 void GBDT::UpdateScoreOutOfBag(const Tree* tree, const int curr_class) {
+#ifdef TIMETAG
+  auto start_time = std::chrono::steady_clock::now();
+#endif
   // we need to predict out-of-bag socres of data for boosting
   if (num_data_ - bag_data_cnt_ > 0 && !is_use_subset_) {
     train_score_updater_->AddScore(tree, bag_data_indices_.data() + bag_data_cnt_, num_data_ - bag_data_cnt_, curr_class);
   }
+#ifdef TIMETAG
+  train_score_time += std::chrono::steady_clock::now() - start_time;
+#endif
 }
 
 bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) {
   // boosting first
   if (gradient == nullptr || hessian == nullptr) {
+#ifdef TIMETAG
+    auto start_time = std::chrono::steady_clock::now();
+#endif
     Boosting();
     gradient = gradients_.data();
     hessian = hessians_.data();
+#ifdef TIMETAG
+    boosting_time += std::chrono::steady_clock::now() - start_time;
+#endif
   }
+#ifdef TIMETAG
+  auto start_time = std::chrono::steady_clock::now();
+#endif
   // bagging logic
   Bagging(iter_);
+#ifdef TIMETAG
+  bagging_time += std::chrono::steady_clock::now() - start_time;
+#endif
   if (is_use_subset_ && bag_data_cnt_ < num_data_) {
+#ifdef TIMETAG
+    start_time = std::chrono::steady_clock::now();
+#endif
     if (gradients_.empty()) {
       size_t total_size = static_cast<size_t>(num_data_) * num_class_;
       gradients_.resize(total_size);
@@ -282,6 +322,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
     // get sub gradients
     for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
       auto bias = curr_class * num_data_;
+      // cannot multi-threding
       for (int i = 0; i < bag_data_cnt_; ++i) {
         gradients_[bias + i] = gradient[bias + bag_data_indices_[i]];
         hessians_[bias + i] = hessian[bias + bag_data_indices_[i]];
@@ -289,10 +330,19 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
     }
     gradient = gradients_.data();
     hessian = hessians_.data();
+#ifdef TIMETAG
+    sub_gradient_time += std::chrono::steady_clock::now() - start_time;
+#endif
   }
   for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
+#ifdef TIMETAG
+    start_time = std::chrono::steady_clock::now();
+#endif
     // train a new tree
     std::unique_ptr<Tree> new_tree(tree_learner_->Train(gradient + curr_class * num_data_, hessian + curr_class * num_data_));
+#ifdef TIMETAG
+    tree_time += std::chrono::steady_clock::now() - start_time;
+#endif
     // if cannot learn a new tree, then stop
     if (new_tree->num_leaves() <= 1) {
       Log::Info("Stopped training because there are no more leafs that meet the split requirements.");
@@ -338,8 +388,14 @@ void GBDT::RollbackOneIter() {
 
 bool GBDT::EvalAndCheckEarlyStopping() {
   bool is_met_early_stopping = false;
+#ifdef TIMETAG
+  auto start_time = std::chrono::steady_clock::now();
+#endif
   // print message for metric
   auto best_msg = OutputMetric(iter_);
+#ifdef TIMETAG
+  metric_time += std::chrono::steady_clock::now() - start_time;
+#endif
   is_met_early_stopping = !best_msg.empty();
   if (is_met_early_stopping) {
     Log::Info("Early stopping at iteration %d, the best iteration round is %d",
@@ -354,16 +410,28 @@ bool GBDT::EvalAndCheckEarlyStopping() {
 }
 
 void GBDT::UpdateScore(const Tree* tree, const int curr_class) {
+#ifdef TIMETAG
+  auto start_time = std::chrono::steady_clock::now();
+#endif
   // update training score
   if (!is_use_subset_) {
     train_score_updater_->AddScore(tree_learner_.get(), curr_class);
   } else {
     train_score_updater_->AddScore(tree, curr_class);
   }
+#ifdef TIMETAG
+  train_score_time += std::chrono::steady_clock::now() - start_time;
+#endif
+#ifdef TIMETAG
+  start_time = std::chrono::steady_clock::now();
+#endif
   // update validation score
   for (auto& score_updater : valid_score_updater_) {
     score_updater->AddScore(tree, curr_class);
   }
+#ifdef TIMETAG
+  valid_score_time += std::chrono::steady_clock::now() - start_time;
+#endif
 }
 
 std::string GBDT::OutputMetric(int iter) {
