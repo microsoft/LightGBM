@@ -102,8 +102,11 @@ public:
         double prob = (rest_need) / static_cast<double>(rest_all);
         if (cur_rand.NextFloat() < prob) {
           buffer[cur_left_cnt++] = start + i;
-          gradients_[start + i] *= multiply;
-          hessians_[start + i] *= multiply;
+          for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
+            int idx = curr_class * num_data_ + start + i;
+            gradients_[idx] *= multiply;
+            hessians_[idx] *= multiply;
+          }
         } else {
           buffer_right[cur_right_cnt++] = start + i;
         }
