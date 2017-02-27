@@ -7,6 +7,15 @@
 
 namespace LightGBM {
 
+#ifdef TIMETAG
+std::chrono::duration<double, std::milli> init_train_time;
+std::chrono::duration<double, std::milli> init_split_time;
+std::chrono::duration<double, std::milli> hist_time;
+std::chrono::duration<double, std::milli> find_split_time;
+std::chrono::duration<double, std::milli> split_time;
+std::chrono::duration<double, std::milli> ordered_bin_time;
+#endif // TIMETAG
+
 SerialTreeLearner::SerialTreeLearner(const TreeConfig* tree_config)
   :tree_config_(tree_config){
   random_ = Random(tree_config_->feature_fraction_seed);
@@ -18,6 +27,14 @@ SerialTreeLearner::SerialTreeLearner(const TreeConfig* tree_config)
 }
 
 SerialTreeLearner::~SerialTreeLearner() {
+#ifdef TIMETAG
+  Log::Info("SerialTreeLearner::init_train costs %f", init_train_time * 1e-3);
+  Log::Info("SerialTreeLearner::init_split costs %f", init_split_time * 1e-3);
+  Log::Info("SerialTreeLearner::hist_build costs %f", hist_time * 1e-3);
+  Log::Info("SerialTreeLearner::find_split costs %f", find_split_time * 1e-3);
+  Log::Info("SerialTreeLearner::split costs %f", split_time * 1e-3);
+  Log::Info("SerialTreeLearner::ordered_bin costs %f", ordered_bin_time * 1e-3);
+#endif
 }
 
 void SerialTreeLearner::Init(const Dataset* train_data) {
@@ -151,8 +168,17 @@ void SerialTreeLearner::ResetConfig(const TreeConfig* tree_config) {
 Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians) {
   gradients_ = gradients;
   hessians_ = hessians;
+
+#ifdef TIMETAG
+  auto start_time = std::chrono::steady_clock::now();
+#endif
   // some initial works before training
   BeforeTrain();
+
+#ifdef TIMETAG
+  init_train_time += std::chrono::steady_clock::now() - start_time;
+#endif
+
   auto tree = std::unique_ptr<Tree>(new Tree(tree_config_->num_leaves));
   // save pointer to last trained tree
   last_trained_tree_ = tree.get();
@@ -162,8 +188,14 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   // only root leaf can be splitted on first time
   int right_leaf = -1;
   for (int split = 0; split < tree_config_->num_leaves - 1; ++split) {
+#ifdef TIMETAG
+    start_time = std::chrono::steady_clock::now();
+#endif
     // some initial works before finding best split
     if (BeforeFindBestSplit(left_leaf, right_leaf)) {
+#ifdef TIMETAG
+      init_split_time += std::chrono::steady_clock::now() - start_time;
+#endif
       // find best threshold for every feature
       FindBestThresholds();
       // find best split from all features
@@ -178,8 +210,14 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
       Log::Info("No further splits with positive gain, best gain: %f", best_leaf_SplitInfo.gain);
       break;
     }
+#ifdef TIMETAG
+    start_time = std::chrono::steady_clock::now();
+#endif
     // split tree with best leaf
     Split(tree.get(), best_leaf, &left_leaf, &right_leaf);
+#ifdef TIMETAG
+    split_time += std::chrono::steady_clock::now() - start_time;
+#endif
     cur_depth = std::max(cur_depth, tree->leaf_depth(left_leaf));
   }
   Log::Info("Trained a tree with leaves=%d and max_depth=%d", tree->num_leaves(), cur_depth);
@@ -230,6 +268,9 @@ void SerialTreeLearner::BeforeTrain() {
 
   // if has ordered bin, need to initialize the ordered bin
   if (has_ordered_bin_) {
+#ifdef TIMETAG
+    auto start_time = std::chrono::steady_clock::now();
+#endif
     if (data_partition_->leaf_count(0) == num_data_) {
       // use all data, pass nullptr
       #pragma omp parallel for schedule(static)
@@ -257,6 +298,9 @@ void SerialTreeLearner::BeforeTrain() {
         is_data_in_leaf_[indices[i]] = 0;
       }
     }
+#ifdef TIMETAG
+    ordered_bin_time += std::chrono::steady_clock::now() - start_time;
+#endif
   }
 }
 
@@ -300,6 +344,9 @@ bool SerialTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
   }
   // split for the ordered bin
   if (has_ordered_bin_ && right_leaf >= 0) {
+#ifdef TIMETAG
+    auto start_time = std::chrono::steady_clock::now();
+#endif
     // mark data that at left-leaf
     const data_size_t* indices = data_partition_->indices();
     const auto left_cnt = data_partition_->leaf_count(left_leaf);
@@ -317,7 +364,7 @@ bool SerialTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
       is_data_in_leaf_[indices[i]] = 1;
     }
     // split the ordered bin
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < static_cast<int>(order_bin_indices_.size()); ++i) {
       ordered_bins_[order_bin_indices_[i]]->Split(left_leaf, right_leaf, is_data_in_leaf_.data(), mark);
     }
@@ -325,11 +372,17 @@ bool SerialTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
     for (data_size_t i = begin; i < end; ++i) {
       is_data_in_leaf_[indices[i]] = 0;
     }
+#ifdef TIMETAG
+    ordered_bin_time += std::chrono::steady_clock::now() - start_time;
+#endif
   }
   return true;
 }
 
 void SerialTreeLearner::FindBestThresholds() {
+#ifdef TIMETAG
+  auto start_time = std::chrono::steady_clock::now();
+#endif
   std::vector<int8_t> is_feature_used(num_features_, 0);
 #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
@@ -364,6 +417,12 @@ void SerialTreeLearner::FindBestThresholds() {
       ordered_gradients_.data(), ordered_hessians_.data(),
       ptr_larger_leaf_hist_data);
   }
+#ifdef TIMETAG
+  hist_time += std::chrono::steady_clock::now() - start_time;
+#endif
+#ifdef TIMETAG
+  start_time = std::chrono::steady_clock::now();
+#endif
   std::vector<SplitInfo> smaller_best(num_threads_);
   std::vector<SplitInfo> larger_best(num_threads_);
   // find splits
@@ -416,6 +475,9 @@ void SerialTreeLearner::FindBestThresholds() {
     auto larger_best_idx = ArrayArgs<SplitInfo>::ArgMax(larger_best);
     best_split_per_leaf_[leaf] = larger_best[larger_best_idx];
   }
+#ifdef TIMETAG
+  find_split_time += std::chrono::steady_clock::now() - start_time;
+#endif
 }
 
 void SerialTreeLearner::FindBestSplitsForLeaves() {
