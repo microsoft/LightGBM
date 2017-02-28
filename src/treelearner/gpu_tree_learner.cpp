@@ -295,12 +295,12 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   std::string kernel_source;
   std::string kernel_name;
   if (max_num_bin_ <= 64) {
-    kernel_source = "histogram64.cl";
+    kernel_source = kernel64_src_;
     kernel_name = "histogram64";
     device_bin_size_ = 64;
   }
   else if ( max_num_bin_ <= 256) {
-    kernel_source = "histogram256.cl";
+    kernel_source = kernel256_src_;
     kernel_name = "histogram256";
     device_bin_size_ = 256;
   }
@@ -332,9 +332,10 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   device_histogram_outputs_ = boost::compute::buffer(ctx_, num_dense_feature4_ * 4 * device_bin_size_ * sizeof(GPUHistogramBinEntry), 
                            boost::compute::memory_object::write_only, nullptr);
   Log::Info("Using GPU Device: %s, Vendor: %s", dev_.name().c_str(), dev_.vendor().c_str());
-  Log::Info("Compiling OpenCL Kernel from %s...", kernel_source.c_str());
+  Log::Info("Compiling OpenCL Kernel with %d bins...", device_bin_size_);
+  // Log::Info("Compiling OpenCL Kernel:\n%s", kernel_source.c_str());
   for (int i = 0; i <= max_exp_workgroups_per_feature_; ++i) {
-    auto program = boost::compute::program::create_with_source_file(kernel_source, ctx_);
+    auto program = boost::compute::program::create_with_source(kernel_source, ctx_);
     std::ostringstream opts;
     // FIXME: sparse data
     opts << "-D FEATURE_SIZE=" << num_data_ << " -D POWER_FEATURE_WORKGROUPS=" << i
@@ -358,7 +359,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   }
   // create the OpenCL kernel for the root node (all data)
   int full_exp_workgroups_per_feature = GetNumWorkgroupsPerFeature(num_data_);
-  auto program = boost::compute::program::create_with_source_file(kernel_source, ctx_);
+  auto program = boost::compute::program::create_with_source(kernel_source, ctx_);
   std::ostringstream opts;
   // FIXME: sparse data
   opts << "-D FEATURE_SIZE=" << num_data_ << " -D POWER_FEATURE_WORKGROUPS=" << full_exp_workgroups_per_feature

@@ -1,3 +1,18 @@
+// this file can either be read and passed to an OpenCL compiler directly,
+// or included in a C++11 source file as a string literal
+#ifndef __OPENCL_VERSION__
+// If we are including this file in C++,
+// the entire source file following (except the last #endif) will become
+// a raw string literal. The extra ")" is just for mathcing parentheses
+// to make the editor happy. The extra ")" and extra endif will be skipped.
+// DO NOT add anything between here and the next #ifdef, otherwise you need
+// to modify the skip count at the end of this file.
+R""()
+#endif
+
+#ifndef _HISTOGRAM_64_KERNEL_
+#define _HISTOGRAM_64_KERNEL_
+
 #pragma OPENCL EXTENSION cl_khr_local_int32_base_atomics : enable
 #pragma OPENCL EXTENSION cl_khr_local_int32_extended_atomics : enable
 
@@ -502,4 +517,9 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
         within_kernel_reduction64x4(feature4_subhists, skip_id, g_val, h_val, cnt_val, 1 << POWER_FEATURE_WORKGROUPS, hist_buf, shared_array);
     }
 }
+
+// The following line ends the string literal, adds an extra #endif at the end
+// the +9 skips extra characters ")", newline, "#endif" and newline at the beginning
+// )"" "\n#endif" + 9
+#endif
 
