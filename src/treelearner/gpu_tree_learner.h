@@ -228,7 +228,7 @@ protected:
   boost::compute::buffer device_histogram_outputs_;
   boost::compute::wait_list kernel_wait_obj_;
   boost::compute::wait_list histograms_wait_obj_;
-  std::unique_ptr<GPUHistogramBinEntry[]> host_histogram_outputs_;
+  GPUHistogramBinEntry* host_histogram_outputs_;
   boost::compute::future<void> indices_future_;
   boost::compute::future<void> gradients_future_;
   boost::compute::future<void> hessians_future_;

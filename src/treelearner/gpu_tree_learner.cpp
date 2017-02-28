@@ -215,8 +215,9 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* h
   // the queue should be asynchrounous, and we will can WaitAndGetHistograms() before we start processing dense features
   // copy the results asynchronously
   size_t size = num_dense_feature4_ * 4 * device_bin_size_ * sizeof(GPUHistogramBinEntry);
-  histograms_wait_obj_ = boost::compute::wait_list(
-                        queue_.enqueue_read_buffer_async(device_histogram_outputs_, 0, size, (char*)host_histogram_outputs_.get(), kernel_wait_obj_));
+  boost::compute::event histogram_wait_event;
+  host_histogram_outputs_ = (GPUHistogramBinEntry*)queue_.enqueue_map_buffer_async(device_histogram_outputs_, boost::compute::command_queue::map_read, 0, size, histogram_wait_event, kernel_wait_obj_);
+  histograms_wait_obj_ = boost::compute::wait_list(histogram_wait_event);
 }
 
 void GPUTreeLearner::WaitAndGetHistograms(FeatureHistogram* histograms) {
@@ -224,7 +225,6 @@ void GPUTreeLearner::WaitAndGetHistograms(FeatureHistogram* histograms) {
   // queue_.finish();
   // all features finished, copy results to out
   // printf("Copying histogram back to host...\n");
-  // boost::compute::copy(device_histogram_outputs_->begin(), device_histogram_outputs_->end(), (char*)host_histogram_outputs_.get(), queue_);
   #pragma omp parallel for schedule(static)
   for(int i = 0; i < num_dense_features_; ++i) {
     int dense_index = dense_feature_map_[i];
@@ -260,6 +260,7 @@ void GPUTreeLearner::WaitAndGetHistograms(FeatureHistogram* histograms) {
     }
     // PrintHistograms(old_histogram_array, bin_size);
   }
+  queue_.enqueue_unmap_buffer(device_histogram_outputs_, host_histogram_outputs_);
 
 }
 
@@ -330,7 +331,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   //                  num_dense_feature4_ * 4 * device_bin_size_ * sizeof(GPUHistogramBinEntry), ctx_));
   // create OpenCL kernels for different number of workgroups per feature
   device_histogram_outputs_ = boost::compute::buffer(ctx_, num_dense_feature4_ * 4 * device_bin_size_ * sizeof(GPUHistogramBinEntry), 
-                           boost::compute::memory_object::write_only, nullptr);
+                           boost::compute::memory_object::write_only | boost::compute::memory_object::alloc_host_ptr, nullptr);
   Log::Info("Using GPU Device: %s, Vendor: %s", dev_.name().c_str(), dev_.vendor().c_str());
   Log::Info("Compiling OpenCL Kernel with %d bins...", device_bin_size_);
   // Log::Info("Compiling OpenCL Kernel:\n%s", kernel_source.c_str());
@@ -473,7 +474,8 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   printf("\n");
 
   // host memory for transferring histograms
-  host_histogram_outputs_ = std::unique_ptr<GPUHistogramBinEntry[]>(new GPUHistogramBinEntry[device_bin_size_ * num_dense_feature4_ * 4]());
+  // use map buffer instead
+  // host_histogram_outputs_ = std::unique_ptr<GPUHistogramBinEntry[]>(new GPUHistogramBinEntry[device_bin_size_ * num_dense_feature4_ * 4]());
 }
 
 void GPUTreeLearner::ResetTrainingData(const Dataset* train_data) {
@@ -815,18 +817,19 @@ void GPUTreeLearner::FindBestThresholds() {
 
   // #define DEBUG_COMPARE
   #ifdef DEBUG_COMPARE
+  auto tmp_histogram_outputs_ = std::unique_ptr<GPUHistogramBinEntry[]>(new GPUHistogramBinEntry[device_bin_size_ * num_dense_feature4_ * 4]());
   // initialize the subhistgram buffer to some known values
   for(int i = 0; i < 1; ++i) {
     for (int j = 0; j < device_bin_size_; ++j) {
-      // printf("%f\n", host_histogram_outputs_[i * device_bin_size_ + j].sum_gradients);
-      host_histogram_outputs_[i * device_bin_size_+ j].sum_gradients = std::numeric_limits<float>::quiet_NaN();
-      host_histogram_outputs_[i * device_bin_size_ + j].sum_hessians = std::numeric_limits<float>::quiet_NaN();
-      host_histogram_outputs_[i * device_bin_size_ + j].cnt = 99999999;
+      // printf("%f\n", tmp_histogram_outputs_[i * device_bin_size_ + j].sum_gradients);
+      tmp_histogram_outputs_[i * device_bin_size_+ j].sum_gradients = std::numeric_limits<float>::quiet_NaN();
+      tmp_histogram_outputs_[i * device_bin_size_ + j].sum_hessians = std::numeric_limits<float>::quiet_NaN();
+      tmp_histogram_outputs_[i * device_bin_size_ + j].cnt = 99999999;
     }
   }
   for(int i = 0; i < max_num_workgroups_ * 4; ++i) {
-    boost::compute::copy((const char *)(host_histogram_outputs_.get()), 
-                         (const char*)(host_histogram_outputs_.get()) + device_bin_size_ * sizeof(GPUHistogramBinEntry), 
+    boost::compute::copy((const char *)(tmp_histogram_outputs_.get()), 
+                         (const char*)(tmp_histogram_outputs_.get()) + device_bin_size_ * sizeof(GPUHistogramBinEntry), 
                          device_subhistograms_->begin() + i * device_bin_size_ * sizeof(GPUHistogramBinEntry), queue_);
   }
   #endif
