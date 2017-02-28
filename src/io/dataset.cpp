@@ -4,6 +4,7 @@
 #include <LightGBM/utils/threading.h>
 #include <LightGBM/utils/array_args.h>
 
+#include <chrono>
 #include <cstdio>
 #include <unordered_map>
 #include <limits>
