@@ -37,7 +37,7 @@ if(USE_GPU)
 endif(USE_GPU)
 
 if(UNIX OR MINGW OR CYGWIN)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -O3 -Wall -std=c++11")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -O3 -Wall -std=c++11 -Wno-ignored-attributes")
 endif()
 
 if(MSVC)
@@ -67,11 +67,13 @@ endif()
 
 
 SET(LightGBM_HEADER_DIR ${PROJECT_SOURCE_DIR}/include)
+SET(BOOST_COMPUTE_HEADER_DIR ${PROJECT_SOURCE_DIR}/compute/include)
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 
 include_directories (${LightGBM_HEADER_DIR})
+include_directories (${BOOST_COMPUTE_HEADER_DIR})
 
 if(APPLE)
   if (APPLE_OUTPUT_DYLIB)
