@@ -20,7 +20,8 @@ GPUTreeLearner::GPUTreeLearner(const TreeConfig* tree_config)
 }
 
 GPUTreeLearner::~GPUTreeLearner() {
-
+  queue_.enqueue_unmap_buffer(pinned_gradients_, ptr_pinned_gradients_);
+  queue_.enqueue_unmap_buffer(pinned_hessians_, ptr_pinned_hessians_);
 }
 
 void GPUTreeLearner::Init(const Dataset* train_data) {
@@ -314,8 +315,27 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   device_features_ = std::unique_ptr<boost::compute::vector<Feature4>>(new boost::compute::vector<Feature4>(num_dense_feature4_ * num_data_, ctx_));
   // allocate space for gradients and hessians on device
   // we will copy gradients and hessians in after ordered_gradients_ and ordered_hessians_ are constructed
-  device_gradients_ = std::unique_ptr<boost::compute::vector<score_t>>(new boost::compute::vector<score_t>(allocated_num_data_, ctx_));
-  device_hessians_ = std::unique_ptr<boost::compute::vector<score_t>>(new boost::compute::vector<score_t>(allocated_num_data_, ctx_));
+  // device_gradients_ = std::unique_ptr<boost::compute::vector<score_t>>(new boost::compute::vector<score_t>(allocated_num_data_, ctx_));
+  // device_hessians_ = std::unique_ptr<boost::compute::vector<score_t>>(new boost::compute::vector<score_t>(allocated_num_data_, ctx_));
+  // Use mapped GPU buffers as ordered gradient and hessian buffers
+  ordered_gradients_.reserve(allocated_num_data_);
+  ordered_hessians_.reserve(allocated_num_data_);
+  pinned_gradients_ = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(score_t), 
+                                             boost::compute::memory_object::read_write | boost::compute::memory_object::use_host_ptr, 
+                                             ordered_gradients_.data());
+  ptr_pinned_gradients_ = queue_.enqueue_map_buffer(pinned_gradients_, boost::compute::command_queue::map_write_invalidate_region, 
+                                                    0, allocated_num_data_ * sizeof(score_t));
+  pinned_hessians_  = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(score_t), 
+                                             boost::compute::memory_object::read_write | boost::compute::memory_object::use_host_ptr, 
+                                             ordered_hessians_.data());
+  ptr_pinned_hessians_ = queue_.enqueue_map_buffer(pinned_hessians_, boost::compute::command_queue::map_write_invalidate_region, 
+                                                   0, allocated_num_data_ * sizeof(score_t));
+  Log::Info("gradients=%p, pinned_gradients=%p, hessian=%p, pinned_hessian=%p\n", 
+            ordered_gradients_.data(), ptr_pinned_gradients_, ordered_hessians_.data(), ptr_pinned_hessians_);
+  device_gradients_ = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(score_t), 
+                      boost::compute::memory_object::read_only, nullptr);
+  device_hessians_  = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(score_t), 
+                      boost::compute::memory_object::read_only, nullptr);
   // copy indices to the device
   device_data_indices_ = std::unique_ptr<boost::compute::vector<data_size_t>>(new boost::compute::vector<data_size_t>(allocated_num_data_, ctx_));
   boost::compute::fill(device_data_indices_->begin(), device_data_indices_->end(), 0, queue_);
@@ -330,6 +350,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   // device_histogram_outputs_ = std::unique_ptr<boost::compute::vector<char>>(new boost::compute::vector<char>(
   //                  num_dense_feature4_ * 4 * device_bin_size_ * sizeof(GPUHistogramBinEntry), ctx_));
   // create OpenCL kernels for different number of workgroups per feature
+  // The output buffer is allocated to host directly, to overlap compute and data transfer
   device_histogram_outputs_ = boost::compute::buffer(ctx_, num_dense_feature4_ * 4 * device_bin_size_ * sizeof(GPUHistogramBinEntry), 
                            boost::compute::memory_object::write_only | boost::compute::memory_object::alloc_host_ptr, nullptr);
   Log::Info("Using GPU Device: %s, Vendor: %s", dev_.name().c_str(), dev_.vendor().c_str());
@@ -355,7 +376,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
     // setup kernel arguments
     // The only argument that needs to be changed is num_data_
     histogram_kernels_.back().set_args(*device_features_,
-    *device_data_indices_, num_data_, *device_gradients_, *device_hessians_,
+    *device_data_indices_, num_data_, device_gradients_, device_hessians_,
     *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
   }
   // create the OpenCL kernel for the root node (all data)
@@ -380,7 +401,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   // setup kernel arguments
   // The only argument that needs to be changed is num_data_
   histogram_fulldata_kernel_.set_args(*device_features_,
-  *device_data_indices_, num_data_, *device_gradients_, *device_hessians_,
+  *device_data_indices_, num_data_, device_gradients_, device_hessians_,
   *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
 
   // Now generate new data structure feature4, and copy data to the device
@@ -554,6 +575,7 @@ void GPUTreeLearner::ResetConfig(const TreeConfig* tree_config) {
 Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians) {
   gradients_ = gradients;
   hessians_ = hessians;
+
   // some initial works before training
   BeforeTrain();
   auto tree = std::unique_ptr<Tree>(new Tree(tree_config_->num_leaves));
@@ -594,8 +616,11 @@ void GPUTreeLearner::BeforeTrain() {
   #if GPU_DEBUG >= 2
   printf("Copying intial full gradients and hessians to device\n");
   #endif
-  hessians_future_ = boost::compute::copy_async(hessians_,  hessians_  + num_data_, device_hessians_->begin(),  queue_);
-  gradients_future_ = boost::compute::copy_async(gradients_, gradients_ + num_data_, device_gradients_->begin(), queue_);
+  // TODO: use bagging
+  // initial copy will just use an equeue write buffer
+  hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, num_data_ * sizeof(score_t), hessians_);
+  gradients_future_ = queue_.enqueue_write_buffer_async(device_gradients_, 0, num_data_ * sizeof(score_t), gradients_);
+
 
   // reset histogram pool
   histogram_pool_.ResetMap();
@@ -745,19 +770,25 @@ bool GPUTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
     #endif
     indices_future_ = boost::compute::copy_async(indices + begin, indices + end, device_data_indices_->begin(), queue_);
 
+
     // This is about 7% of time, to re-order gradient and hessians
     #pragma omp parallel for schedule(static)
     for (data_size_t i = begin; i < end; ++i) {
       ordered_hessians_[i - begin] = hessians_[indices[i]];
     }
     // copy ordered hessians to the GPU:
-    hessians_future_ = boost::compute::copy_async(ordered_hessians_.begin(), ordered_hessians_.begin() + end - begin, device_hessians_->begin(), queue_);
+    // hessians_future_ = boost::compute::copy_async(ordered_hessians_.begin(), ordered_hessians_.begin() + end - begin, device_hessians_->begin(), queue_);
+    hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, (end - begin) * sizeof(score_t), ptr_pinned_hessians_);
+
+
     #pragma omp parallel for schedule(static)
     for (data_size_t i = begin; i < end; ++i) {
       ordered_gradients_[i - begin] = gradients_[indices[i]];
     }
     // copy ordered gradients to the GPU:
-    gradients_future_ = boost::compute::copy_async(ordered_gradients_.begin(), ordered_gradients_.begin() + end - begin, device_gradients_->begin(), queue_);
+    // gradients_future_ = boost::compute::copy_async(ordered_gradients_.begin(), ordered_gradients_.begin() + end - begin, device_gradients_->begin(), queue_);
+    gradients_future_ = queue_.enqueue_write_buffer_async(device_gradients_, 0, (end - begin) * sizeof(score_t), ptr_pinned_gradients_);
+
     // assign pointer
     ptr_to_ordered_gradients_smaller_leaf_ = ordered_gradients_.data();
     ptr_to_ordered_hessians_smaller_leaf_ = ordered_hessians_.data();

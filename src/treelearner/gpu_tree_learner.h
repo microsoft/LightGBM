@@ -24,6 +24,7 @@
 #include <boost/compute/algorithm/transform.hpp>
 #include <boost/compute/container/vector.hpp>
 #include <boost/compute/functional/math.hpp>
+#include <boost/align/aligned_allocator.hpp>
 
 namespace LightGBM {
 
@@ -167,9 +168,9 @@ protected:
   std::unique_ptr<LeafSplits> larger_leaf_splits_;
 
   /*! \brief gradients of current iteration, ordered for cache optimized */
-  std::vector<score_t> ordered_gradients_;
+  std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized */
-  std::vector<score_t> ordered_hessians_;
+  std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_hessians_;
 
   /*! \brief Pointer to ordered_gradients_, use this to avoid copy at BeforeTrain */
   const score_t* ptr_to_ordered_gradients_smaller_leaf_;
@@ -220,8 +221,14 @@ protected:
   std::vector<int> sparse_feature_map_;
   std::vector<int> device_bin_mults_;
   std::unique_ptr<boost::compute::vector<Feature4>> device_features_;
-  std::unique_ptr<boost::compute::vector<score_t>> device_gradients_;
-  std::unique_ptr<boost::compute::vector<score_t>> device_hessians_;
+  // std::unique_ptr<boost::compute::vector<score_t>> device_gradients_;
+  boost::compute::buffer device_gradients_;
+  boost::compute::buffer pinned_gradients_;
+  void * ptr_pinned_gradients_;
+  // std::unique_ptr<boost::compute::vector<score_t>> device_hessians_;
+  boost::compute::buffer device_hessians_;
+  boost::compute::buffer pinned_hessians_;
+  void * ptr_pinned_hessians_;
   std::unique_ptr<boost::compute::vector<data_size_t>> device_data_indices_;
   std::unique_ptr<boost::compute::vector<int>> sync_counters_;
   std::unique_ptr<boost::compute::vector<char>> device_subhistograms_;
@@ -230,8 +237,8 @@ protected:
   boost::compute::wait_list histograms_wait_obj_;
   GPUHistogramBinEntry* host_histogram_outputs_;
   boost::compute::future<void> indices_future_;
-  boost::compute::future<void> gradients_future_;
-  boost::compute::future<void> hessians_future_;
+  boost::compute::event gradients_future_;
+  boost::compute::event hessians_future_;
 };
 
 
