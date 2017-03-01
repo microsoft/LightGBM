@@ -1,21 +1,24 @@
-#ifndef LIGHTGBM_DATA_H_
-#define LIGHTGBM_DATA_H_
+#ifndef LIGHTGBM_DATASET_H_
+#define LIGHTGBM_DATASET_H_
 
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/text_reader.h>
 
 #include <LightGBM/meta.h>
+#include <LightGBM/config.h>
+#include <LightGBM/feature_group.h>
 
 #include <vector>
 #include <utility>
 #include <functional>
 #include <string>
+#include <unordered_set>
+#include <mutex>
 
 namespace LightGBM {
 
 /*! \brief forward declaration */
-class Feature;
-
+class DatasetLoader;
 /*!
 * \brief This class is used to store some meta(non-feature) data for training data,
 *        e.g. labels, weights, initial scores, qurey level informations.
@@ -39,14 +42,15 @@ public:
   * \brief Initialization will load qurey level informations, since it is need for sampling data
   * \param data_filename Filename of data
   * \param init_score_filename Filename of initial score
-  * \param is_int_label True if label is int type
   */
-  void Init(const char* data_filename, const char* init_score_filename);
+  void Init(const char* data_filename);
   /*!
-  * \brief Initialize, only load initial score
-  * \param init_score_filename Filename of initial score
+  * \brief init as subset
+  * \param metadata Filename of data
+  * \param used_indices 
+  * \param num_used_indices
   */
-  void Init(const char* init_score_filename);
+  void Init(const Metadata& metadata, const data_size_t* used_indices, data_size_t num_used_indices);
   /*!
   * \brief Initial with binary memory
   * \param memory Pointer to memory
@@ -56,10 +60,12 @@ public:
   ~Metadata();
 
   /*!
-  * \brief Initial work, will auto load weight, inital scores
+  * \brief Initial work, will allocate space for label, weight(if exists) and query(if exists)
   * \param num_data Number of training data
+  * \param weight_idx Index of weight column, < 0 means doesn't exists
+  * \param query_idx Index of query id column, < 0 means doesn't exists
   */
-  void InitLabel(data_size_t num_data);
+  void Init(data_size_t num_data, int weight_idx, int query_idx);
 
   /*!
   * \brief Partition label by used indices
@@ -75,11 +81,17 @@ public:
   void CheckOrPartition(data_size_t num_all_data,
     const std::vector<data_size_t>& used_data_indices);
 
+  void SetLabel(const float* label, data_size_t len);
+
+  void SetWeights(const float* weights, data_size_t len);
+
+  void SetQuery(const data_size_t* query, data_size_t len);
+
   /*!
   * \brief Set initial scores
   * \param init_score Initial scores, this class will manage memory for init_score.
   */
-  void SetInitScore(score_t* init_score);
+  void SetInitScore(const double* init_score, data_size_t len);
 
 
   /*!
@@ -97,24 +109,49 @@ public:
   * \brief Get pointer of label
   * \return Pointer of label
   */
-  inline const float* label() const { return label_; }
+  inline const float* label() const { return label_.data(); }
 
   /*!
   * \brief Set label for one record
   * \param idx Index of this record
   * \param value Label value of this record
   */
-  inline void SetLabelAt(data_size_t idx, double value)
+  inline void SetLabelAt(data_size_t idx, float value)
   {
-    label_[idx] = static_cast<float>(value);
+    label_[idx] = value;
+  }
+
+  /*!
+  * \brief Set Weight for one record
+  * \param idx Index of this record
+  * \param value Weight value of this record
+  */
+  inline void SetWeightAt(data_size_t idx, float value)
+  {
+    weights_[idx] = value;
+  }
+
+  /*!
+  * \brief Set Query Id for one record
+  * \param idx Index of this record
+  * \param value Query Id value of this record
+  */
+  inline void SetQueryAt(data_size_t idx, data_size_t value)
+  {
+    queries_[idx] = static_cast<data_size_t>(value);
   }
 
   /*!
   * \brief Get weights, if not exists, will return nullptr
   * \return Pointer of weights
   */
-  inline const float* weights()
-            const { return weights_; }
+  inline const float* weights() const {
+    if (!weights_.empty()) {
+      return weights_.data();
+    } else {
+      return nullptr;
+    }
+  }
 
   /*!
   * \brief Get data boundaries on queries, if not exists, will return nullptr
@@ -123,31 +160,57 @@ public:
   *        is the data indices for query i.
   * \return Pointer of data boundaries on queries
   */
-  inline const data_size_t* query_boundaries()
-           const { return query_boundaries_; }
+  inline const data_size_t* query_boundaries() const { 
+    if (!query_boundaries_.empty()) {
+      return query_boundaries_.data();
+    } else {
+      return nullptr;
+    }
+  }
 
   /*!
   * \brief Get Number of queries
   * \return Number of queries
   */
-  inline const data_size_t num_queries() const { return num_queries_; }
+  inline data_size_t num_queries() const { return num_queries_; }
 
   /*!
   * \brief Get weights for queries, if not exists, will return nullptr
   * \return Pointer of weights for queries
   */
-  inline const float* query_weights() const { return query_weights_; }
+  inline const float* query_weights() const { 
+    if (!query_weights_.empty()) {
+      return query_weights_.data();
+    } else {
+      return nullptr;
+    }
+  }
 
   /*!
   * \brief Get initial scores, if not exists, will return nullptr
   * \return Pointer of initial scores
   */
-  inline const score_t* init_score() const { return init_score_; }
+  inline const double* init_score() const { 
+    if (!init_score_.empty()) {
+      return init_score_.data();
+    } else {
+      return nullptr;
+    }
+  }
 
-  /*! \brief Load initial scores from file */
-  void LoadInitialScore();
+  /*!
+  * \brief Get size of initial scores
+  */
+  inline int64_t num_init_score() const { return num_init_score_; }
+
+  /*! \brief Disable copy */
+  Metadata& operator=(const Metadata&) = delete;
+  /*! \brief Disable copy */
+  Metadata(const Metadata&) = delete;
 
 private:
+  /*! \brief Load initial scores from file */
+  void LoadInitialScore();
   /*! \brief Load wights from file */
   void LoadWeights();
   /*! \brief Load query boundaries from file */
@@ -156,141 +219,231 @@ private:
   void LoadQueryWeights();
   /*! \brief Filename of current data */
   const char* data_filename_;
-  /*! \brief Filename of initial scores */
-  const char* init_score_filename_;
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Number of weights, used to check correct weight file */
   data_size_t num_weights_;
   /*! \brief Label data */
-  float* label_;
-  /*! \brief Label data, int type */
-  int16_t* label_int_;
+  std::vector<float> label_;
   /*! \brief Weights data */
-  float* weights_;
+  std::vector<float> weights_;
   /*! \brief Query boundaries */
-  data_size_t* query_boundaries_;
+  std::vector<data_size_t> query_boundaries_;
   /*! \brief Query weights */
-  float* query_weights_;
+  std::vector<float> query_weights_;
   /*! \brief Number of querys */
   data_size_t num_queries_;
   /*! \brief Number of Initial score, used to check correct weight file */
-  data_size_t num_init_score_;
+  int64_t num_init_score_;
   /*! \brief Initial score */
-  score_t* init_score_;
+  std::vector<double> init_score_;
+  /*! \brief Queries data */
+  std::vector<data_size_t> queries_;
+  /*! \brief mutex for threading safe call */
+  std::mutex mutex_;
+  bool weight_load_from_file_;
+  bool query_load_from_file_;
+  bool init_score_load_from_file_;
 };
 
 
 /*! \brief Interface for Parser */
 class Parser {
 public:
+
   /*! \brief virtual destructor */
   virtual ~Parser() {}
-  /*!
-  * \brief Parse one line with label
-  * \param str One line record, string format, should end with '\0'
-  * \param out_features Output features, store in (feature_idx, feature_value)
-  * \param out_label Output label
-  */
-  virtual void ParseOneLine(const char* str,
-    std::vector<std::pair<int, double>>* out_features,
-    double* out_label) const = 0;
 
   /*!
   * \brief Parse one line with label
   * \param str One line record, string format, should end with '\0'
-  * \param out_features Output features, store in (feature_idx, feature_value)
-  * \param out_label Output label
+  * \param out_features Output columns, store in (column_idx, values)
+  * \param out_label Label will store to this if exists
   */
   virtual void ParseOneLine(const char* str,
-    std::vector<std::pair<int, double>>* out_features) const = 0;
+    std::vector<std::pair<int, double>>* out_features, double* out_label) const = 0;
 
   /*!
   * \brief Create a object of parser, will auto choose the format depend on file
   * \param filename One Filename of data
   * \param num_features Pass num_features of this data file if you know, <=0 means don't know
-  * \param has_label output, if num_features > 0, will output this data has label or not
+  * \param label_idx index of label column
   * \return Object of parser
   */
-  static Parser* CreateParser(const char* filename, int num_features, bool* has_label);
+  static Parser* CreateParser(const char* filename, bool has_header, int num_features, int label_idx);
 };
-
-using PredictFunction =
-  std::function<double(const std::vector<std::pair<int, double>>&)>;
 
 /*! \brief The main class of data set,
 *          which are used to traning or validation
 */
 class Dataset {
 public:
-  /*!
-  * \brief Constructor
-  * \param data_filename Filename of dataset
-  * \param init_score_filename Filename of initial score
-  * \param is_int_label True if label is int type
-  * \param max_bin The maximal number of bin that feature values will bucket in
-  * \param random_seed The seed for random generator
-  * \param is_enable_sparse True for sparse feature
-  * \param predict_fun Used for initial model, will give a prediction score based on this function, then set as initial score
-  */
-  Dataset(const char* data_filename, const char* init_score_filename,
-    int max_bin, int random_seed, bool is_enable_sparse, const PredictFunction& predict_fun);
+  friend DatasetLoader;
 
-  /*!
-  * \brief Constructor
-  * \param data_filename Filename of dataset
-  * \param is_int_label True if label is int type
-  * \param max_bin The maximal number of bin that feature values will bucket in
-  * \param random_seed The seed for random generator
-  * \param is_enable_sparse True for sparse feature
-  * \param predict_fun Used for initial model, will give a prediction score based on this function, then set as initial score
-  */
-  Dataset(const char* data_filename,
-    int max_bin, int random_seed, bool is_enable_sparse,
-                     const PredictFunction& predict_fun)
-    : Dataset(data_filename, "", max_bin, random_seed,
-                                    is_enable_sparse, predict_fun) {
-  }
+  LIGHTGBM_EXPORT Dataset();
+
+  LIGHTGBM_EXPORT Dataset(data_size_t num_data);
+
+  void Construct(
+    std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
+    const std::vector<std::vector<int>>& sample_non_zero_indices,
+    size_t total_sample_cnt,
+    const IOConfig& io_config);
 
   /*! \brief Destructor */
-  ~Dataset();
+  LIGHTGBM_EXPORT ~Dataset();
 
-  /*!
-  * \brief Load training data on parallel training
-  * \param rank Rank of local machine
-  * \param num_machines Total number of all machines
-  * \param is_pre_partition True if data file is pre-partitioned
-  * \param use_two_round_loading True if need to use two round loading
-  */
-  void LoadTrainData(int rank, int num_machines, bool is_pre_partition,
-                                           bool use_two_round_loading);
-
-  /*!
-  * \brief Load training data on single machine training
-  * \param use_two_round_loading True if need to use two round loading
-  */
-  inline void LoadTrainData(bool use_two_round_loading) {
-    LoadTrainData(0, 1, false, use_two_round_loading);
+  LIGHTGBM_EXPORT bool CheckAlign(const Dataset& other) const {
+    if (num_features_ != other.num_features_) {
+      return false;
+    }
+    if (num_total_features_ != other.num_total_features_) {
+      return false;
+    }
+    if (label_idx_ != other.label_idx_) {
+      return false;
+    }
+    for (int i = 0; i < num_features_; ++i) {
+      if (!FeatureBinMapper(i)->CheckAlign(*(other.FeatureBinMapper(i)))) {
+        return false;
+      }
+    }
+    return true;
   }
 
-  /*!
-  * \brief Load data and use bin mapper from other data set, general this function is used to extract feature for validation data
-  * \param train_set Other loaded data set
-  * \param use_two_round_loading True if need to use two round loading
-  */
-  void LoadValidationData(const Dataset* train_set, bool use_two_round_loading);
+  inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<double>& feature_values) {
+    for (size_t i = 0; i < feature_values.size() && i < static_cast<size_t>(num_total_features_); ++i) {
+      int feature_idx = used_feature_map_[i];
+      if (feature_idx >= 0) {
+        const int group = feature2group_[feature_idx];
+        const int sub_feature = feature2subfeature_[feature_idx];
+        feature_groups_[group]->PushData(tid, sub_feature, row_idx, feature_values[i]);
+      }
+    }
+  }
+
+  inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<std::pair<int, double>>& feature_values) {
+    for (auto& inner_data : feature_values) {
+      if (inner_data.first >= num_total_features_) { continue; }
+      int feature_idx = used_feature_map_[inner_data.first];
+      if (feature_idx >= 0) {
+        const int group = feature2group_[feature_idx];
+        const int sub_feature = feature2subfeature_[feature_idx];
+        feature_groups_[group]->PushData(tid, sub_feature, row_idx, inner_data.second);
+      }
+    }
+  }
+
+  inline void PushOneData(int tid, data_size_t row_idx, int group, int sub_feature, double value) {
+    feature_groups_[group]->PushData(tid, sub_feature, row_idx, value);
+  }
+
+  inline int RealFeatureIndex(int fidx) const {
+    return real_feature_idx_[fidx];
+  }
+
+  inline int InnerFeatureIndex(int col_idx) const {
+    return used_feature_map_[col_idx];
+  }
+  inline int Feature2Group(int feature_idx) const {
+    return feature2group_[feature_idx];
+  }
+  inline int Feture2SubFeature(int feature_idx) const {
+    return feature2subfeature_[feature_idx];
+  }
+  inline uint64_t NumTotalBin() const {
+    return group_bin_boundaries_.back();
+  }
+
+  void ReSize(data_size_t num_data);
+
+  void CopySubset(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data);
+
+  LIGHTGBM_EXPORT void FinishLoad();
+
+  LIGHTGBM_EXPORT bool SetFloatField(const char* field_name, const float* field_data, data_size_t num_element);
+
+  LIGHTGBM_EXPORT bool SetDoubleField(const char* field_name, const double* field_data, data_size_t num_element);
+
+  LIGHTGBM_EXPORT bool SetIntField(const char* field_name, const int* field_data, data_size_t num_element);
+
+  LIGHTGBM_EXPORT bool GetFloatField(const char* field_name, data_size_t* out_len, const float** out_ptr);
+
+  LIGHTGBM_EXPORT bool GetDoubleField(const char* field_name, data_size_t* out_len, const double** out_ptr);
+
+  LIGHTGBM_EXPORT bool GetIntField(const char* field_name, data_size_t* out_len, const int** out_ptr);
 
   /*!
   * \brief Save current dataset into binary file, will save to "filename.bin"
   */
-  void SaveBinaryFile();
+  LIGHTGBM_EXPORT void SaveBinaryFile(const char* bin_filename);
 
-  /*!
-  * \brief Get a feature pointer for specific index
-  * \param i Index for feature
-  * \return Pointer of feature
-  */
-  inline const Feature* FeatureAt(int i) const { return features_[i]; }
+  LIGHTGBM_EXPORT void CopyFeatureMapperFrom(const Dataset* dataset);
+
+  LIGHTGBM_EXPORT void CreateValid(const Dataset* dataset);
+
+  void ConstructHistograms(
+    const std::vector<int8_t>& is_feature_used,
+    const data_size_t* data_indices, data_size_t num_data,
+    int leaf_idx,
+    std::vector<std::unique_ptr<OrderedBin>>& ordered_bins,
+    const score_t* gradients, const score_t* hessians,
+    score_t* ordered_gradients, score_t* ordered_hessians,
+    HistogramBinEntry* histogram_data) const;
+
+  void FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, data_size_t num_data,
+    HistogramBinEntry* data) const;
+
+  inline data_size_t Split(
+    int feature,
+    uint32_t threshold,
+    data_size_t* data_indices, data_size_t num_data,
+    data_size_t* lte_indices, data_size_t* gt_indices) const {
+    const int group = feature2group_[feature];
+    const int sub_feature = feature2subfeature_[feature];
+    return feature_groups_[group]->Split(sub_feature, threshold, data_indices, num_data, lte_indices, gt_indices);
+  }
+
+  inline int SubFeatureBinOffset(int i) const {
+    const int sub_feature = feature2subfeature_[i];
+    if (sub_feature == 0) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
+  inline int FeatureNumBin(int i) const {
+    const int group = feature2group_[i];
+    const int sub_feature = feature2subfeature_[i];
+	  return feature_groups_[group]->bin_mappers_[sub_feature]->num_bin();
+  }
+  
+  inline const BinMapper* FeatureBinMapper(int i) const {
+    const int group = feature2group_[i];
+    const int sub_feature = feature2subfeature_[i];
+    return feature_groups_[group]->bin_mappers_[sub_feature].get();
+  }
+
+  inline BinIterator* FeatureIterator(int i) const {
+    const int group = feature2group_[i];
+    const int sub_feature = feature2subfeature_[i];
+    return feature_groups_[group]->SubFeatureIterator(sub_feature);
+  }
+
+  inline double RealThreshold(int i, uint32_t threshold) const {
+    const int group = feature2group_[i];
+    const int sub_feature = feature2subfeature_[i];
+    return feature_groups_[group]->bin_mappers_[sub_feature]->BinToValue(threshold);
+  }
+
+  inline void CreateOrderedBins(std::vector<std::unique_ptr<OrderedBin>>* ordered_bins) const {
+    ordered_bins->resize(num_groups_);
+#pragma omp parallel for schedule(guided)
+    for (int i = 0; i < num_groups_; ++i) {
+       ordered_bins->at(i).reset(feature_groups_[i]->bin_data_->CreateOrderedBin());
+    }
+  }
 
   /*!
   * \brief Get meta data pointer
@@ -304,6 +457,34 @@ public:
   /*! \brief Get Number of total features */
   inline int num_total_features() const { return num_total_features_; }
 
+  /*! \brief Get the index of label column */
+  inline int label_idx() const { return label_idx_; }
+
+  /*! \brief Get names of current data set */
+  inline const std::vector<std::string>& feature_names() const { return feature_names_; }
+
+  inline void set_feature_names(const std::vector<std::string>& feature_names) {
+    if (feature_names.size() != static_cast<size_t>(num_total_features_)) {
+      Log::Warning("size of feature_names error, should equal with total number of features");
+      return;
+    }
+    feature_names_ = std::vector<std::string>(feature_names);
+  }
+
+  inline std::vector<std::string> feature_infos() const {
+    std::vector<std::string> bufs;
+    for (int i = 0; i < num_total_features_; i++) {
+      int fidx = used_feature_map_[i];
+      if (fidx == -1) {
+        bufs.push_back("none");
+      } else {
+        const auto bin_mapper = FeatureBinMapper(fidx);
+        bufs.push_back(bin_mapper->bin_info());
+      }
+    }
+    return bufs;
+  }
+
   /*! \brief Get Number of data */
   inline data_size_t num_data() const { return num_data_; }
 
@@ -313,67 +494,9 @@ public:
   Dataset(const Dataset&) = delete;
 
 private:
-  /*!
-  * \brief Load data content on memory. if num_machines > 1 and !is_pre_partition, will partition data
-  * \param rank Rank of local machine
-  * \param num_machines Total number of all machines
-  * \param is_pre_partition True if data file is pre-partitioned
-  */
-  void LoadDataToMemory(int rank, int num_machines, bool is_pre_partition);
-
-  /*!
-  * \brief Sample data from memory, need load data to memory first
-  * \param out_data Store the sampled data
-  */
-  void SampleDataFromMemory(std::vector<std::string>* out_data);
-
-  /*!
-  * \brief Sample data from file
-  * \param rank Rank of local machine
-  * \param num_machines Total number of all machines
-  * \param is_pre_partition True if data file is pre-partitioned
-  * \param out_data Store the sampled data
-  */
-  void SampleDataFromFile(int rank, int num_machines,
-    bool is_pre_partition, std::vector<std::string>* out_data);
-
-  /*!
-  * \brief Get feature bin mapper from sampled data.
-  * if num_machines > 1, differnt machines will construct bin mapper for different features, then have a global sync up
-  * \param rank Rank of local machine
-  * \param num_machines Total number of all machines
-  */
-  void ConstructBinMappers(int rank, int num_machines,
-         const std::vector<std::string>& sample_data);
-
-  /*! \brief Extract local features from memory */
-  void ExtractFeaturesFromMemory();
-
-  /*! \brief Extract local features from file */
-  void ExtractFeaturesFromFile();
-
-  /*! \brief Check can load from binary file */
-  void CheckCanLoadFromBin();
-
-  /*!
-  * \brief Load data set from binary file
-  * \param rank Rank of local machine
-  * \param num_machines Total number of all machines
-  * \param is_pre_partition True if data file is pre-partitioned
-  */
-  void LoadDataFromBinFile(int rank, int num_machines, bool is_pre_partition);
-
-  /*! \brief Check this data set is null or not */
-  void CheckDataset();
-
-  /*! \brief Filename of data */
   const char* data_filename_;
-  /*! \brief A reader class that can read text data */
-  TextReader<data_size_t>* text_reader_;
-  /*! \brief A parser class that can parse data */
-  Parser* parser_;
   /*! \brief Store used features */
-  std::vector<Feature*> features_;
+  std::vector<std::unique_ptr<FeatureGroup>> feature_groups_;
   /*! \brief Mapper from real feature index to used index*/
   std::vector<int> used_feature_map_;
   /*! \brief Number of used features*/
@@ -384,20 +507,19 @@ private:
   data_size_t num_data_;
   /*! \brief Store some label level data*/
   Metadata metadata_;
-  /*! \brief Random generator*/
-  Random random_;
-  /*! \brief The maximal number of bin that feature values will bucket in */
-  int max_bin_;
-  /*! \brief True if enable sparse */
-  bool is_enable_sparse_;
-  /*! \brief True if dataset is loaded from binary file */
-  bool is_loading_from_binfile_;
-  /*! \brief Number of global data, used for distributed learning */
-  size_t global_num_data_ = 0;
-  // used to local used data indices
-  std::vector<data_size_t> used_data_indices_;
-  // prediction function for initial model
-  const PredictFunction& predict_fun_;
+  /*! \brief index of label column */
+  int label_idx_ = 0;
+  /*! \brief store feature names */
+  std::vector<std::string> feature_names_;
+  /*! \brief store feature names */
+  static const char* binary_file_token;
+  int num_groups_;
+  std::vector<int> real_feature_idx_;
+  std::vector<int> feature2group_;
+  std::vector<int> feature2subfeature_;
+  std::vector<uint64_t> group_bin_boundaries_;
+  std::vector<int> group_feature_start_;
+  std::vector<int> group_feature_cnt_;
 };
 
 }  // namespace LightGBM

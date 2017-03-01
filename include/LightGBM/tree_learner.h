@@ -22,10 +22,18 @@ public:
   virtual ~TreeLearner() {}
 
   /*!
-  * \brief Initialize tree learner with training dataset and configs
+  * \brief Initialize tree learner with training dataset
   * \param train_data The used training data
   */
   virtual void Init(const Dataset* train_data) = 0;
+
+  virtual void ResetTrainingData(const Dataset* train_data) = 0;
+
+  /*!
+  * \brief Reset tree configs
+  * \param tree_config config of tree
+  */
+  virtual void ResetConfig(const TreeConfig* tree_config) = 0;
 
   /*!
   * \brief training tree model on dataset 
@@ -47,14 +55,21 @@ public:
   * \brief Using last trained tree to predict score then adding to out_score;
   * \param out_score output score
   */
-  virtual void AddPredictionToScore(score_t *out_score) const = 0;
+  virtual void AddPredictionToScore(double* out_score) const = 0;
+
+  TreeLearner() = default;
+  /*! \brief Disable copy */
+  TreeLearner& operator=(const TreeLearner&) = delete;
+  /*! \brief Disable copy */
+  TreeLearner(const TreeLearner&) = delete;
 
   /*!
   * \brief Create object of tree learner
   * \param type Type of tree learner
+  * \param tree_config config of tree
   */
-  static TreeLearner* CreateTreeLearner(TreeLearnerType type,
-    const TreeConfig& tree_config);
+  static TreeLearner* CreateTreeLearner(const std::string& type,
+    const TreeConfig* tree_config);
 };
 
 }  // namespace LightGBM

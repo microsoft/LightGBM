@@ -5,16 +5,30 @@ dist: trusty
 before_install:
 - test -n $CC  && unset CC
 - test -n $CXX && unset CXX
+- wget -O conda.sh https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+- chmod +x conda.sh
+- bash conda.sh -b -p $HOME/miniconda
+- export PATH="$HOME/miniconda/bin:$PATH"
+- conda config --set always_yes yes --set changeps1 no
+- conda update -q conda
 
 install:
 - sudo apt-get install -y libopenmpi-dev openmpi-bin build-essential
+- conda install --yes atlas numpy scipy scikit-learn pandas matplotlib
+- pip install pep8
 
 
 script:
 - cd $TRAVIS_BUILD_DIR
 - mkdir build && cd build && cmake .. && make -j
-- cd $TRAVIS_BUILD_DIR
+- cd $TRAVIS_BUILD_DIR/tests/c_api_test && python test.py
+- cd $TRAVIS_BUILD_DIR/python-package && python setup.py install
+- cd $TRAVIS_BUILD_DIR/tests/python_package_test && python test_basic.py && python test_engine.py && python test_sklearn.py && python test_plotting.py
+- cd $TRAVIS_BUILD_DIR && pep8 --ignore=E501 .
 - rm -rf build && mkdir build && cd build && cmake -DUSE_MPI=ON ..&& make -j
+- cd $TRAVIS_BUILD_DIR/tests/c_api_test && python test.py
+- cd $TRAVIS_BUILD_DIR/python-package && python setup.py install
+- cd $TRAVIS_BUILD_DIR/tests/python_package_test && python test_basic.py && python test_engine.py && python test_sklearn.py && python test_plotting.py
 
 notifications:
   email: false

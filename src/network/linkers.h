@@ -1,19 +1,21 @@
 #ifndef LIGHTGBM_NETWORK_LINKERS_H_
 #define LIGHTGBM_NETWORK_LINKERS_H_
 
+
 #include <LightGBM/meta.h>
 #include <LightGBM/config.h>
 #include <LightGBM/network.h>
 
+#include <algorithm>
 #include <chrono>
 #include <ctime>
-
 #ifdef USE_SOCKET
 #include "socket_wrapper.hpp"
 #include <LightGBM/utils/common.h>
 #include <thread>
 #include <vector>
 #include <string>
+#include <memory>
 #endif
 
 #ifdef USE_MPI
@@ -143,9 +145,9 @@ private:
   /*! \brief Local listen ports */
   int local_listen_port_;
   /*! \brief Linkers */
-  std::vector<TcpSocket*> linkers_;
+  std::vector<std::unique_ptr<TcpSocket>> linkers_;
   /*! \brief Local socket listener */
-  TcpSocket* listener_;
+  std::unique_ptr<TcpSocket> listener_;
   #endif  // USE_SOCKET
 };
 
@@ -171,9 +173,9 @@ inline const RecursiveHalvingMap& Linkers::recursive_halving_map() {
 inline void Linkers::Recv(int rank, char* data, int len) const {
   int recv_cnt = 0;
   while (recv_cnt < len) {
-    recv_cnt += linkers_[rank]->Recv(data + recv_cnt ,
+    recv_cnt += linkers_[rank]->Recv(data + recv_cnt,
       //len - recv_cnt
-      Common::Min<int>(len - recv_cnt, SocketConfig::kMaxReceiveSize)
+      std::min(len - recv_cnt, SocketConfig::kMaxReceiveSize)
     );
   }
 }

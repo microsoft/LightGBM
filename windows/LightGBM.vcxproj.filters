@@ -75,6 +75,9 @@
     <ClInclude Include="..\src\metric\regression_metric.hpp">
       <Filter>src\metric</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\metric\multiclass_metric.hpp">
+      <Filter>src\metric</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\network\socket_wrapper.hpp">
       <Filter>src\network</Filter>
     </ClInclude>
@@ -87,16 +90,13 @@
     <ClInclude Include="..\src\objective\regression_objective.hpp">
       <Filter>src\objective</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\objective\multiclass_objective.hpp">
+      <Filter>src\objective</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\treelearner\data_partition.hpp">
       <Filter>src\treelearner</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\treelearner\feature_histogram.hpp">
-      <Filter>src\treelearner</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\treelearner\leaf_splits.hpp">
-      <Filter>src\treelearner</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\treelearner\split_info.hpp">
       <Filter>src\treelearner</Filter>
     </ClInclude>
     <ClInclude Include="..\include\LightGBM\application.h">
@@ -112,9 +112,6 @@
       <Filter>include\LightGBM</Filter>
     </ClInclude>
     <ClInclude Include="..\include\LightGBM\dataset.h">
-      <Filter>include\LightGBM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\LightGBM\feature.h">
       <Filter>include\LightGBM</Filter>
     </ClInclude>
     <ClInclude Include="..\include\LightGBM\meta.h">
@@ -156,8 +153,29 @@
     <ClInclude Include="..\include\LightGBM\utils\threading.h">
       <Filter>include\LightGBM\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\LightGBM\utils\lru_pool.h">
-      <Filter>include\LightGBM\utils</Filter>
+    <ClInclude Include="..\include\LightGBM\c_api.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\dataset_loader.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\boosting\dart.hpp">
+      <Filter>src\boosting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\feature_group.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\treelearner\feature_histogram.hpp">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\treelearner\split_info.hpp">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\boosting\goss.hpp">
+      <Filter>src\boosting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\io\dense_nbits_bin.hpp">
+      <Filter>src\io</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -223,6 +241,15 @@
     </ClCompile>
     <ClCompile Include="..\src\main.cpp">
       <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\c_api.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\io\dataset_loader.cpp">
+      <Filter>src\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\treelearner\voting_parallel_tree_learner.cpp">
+      <Filter>src\treelearner</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

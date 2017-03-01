@@ -15,18 +15,24 @@ namespace LightGBM {
 template<typename PointWiseLossCalculator>
 class RegressionMetric: public Metric {
 public:
-  explicit RegressionMetric(const MetricConfig& config) {
-    early_stopping_round_ = config.early_stopping_round;
-    output_freq_ = config.output_freq;
-    the_bigger_the_better = false;
+  explicit RegressionMetric(const MetricConfig&) :huber_delta_(1.0f), fair_c_(1.0f) {
   }
 
   virtual ~RegressionMetric() {
 
   }
 
-  void Init(const char* test_name, const Metadata& metadata, data_size_t num_data) override {
-    name = test_name;
+  const std::vector<std::string>& GetName() const override {
+    return name_;
+  }
+
+  double factor_to_bigger_better() const override {
+    return -1.0f;
+  }
+
+  void Init(const Metadata& metadata, data_size_t num_data) override {
+    name_.emplace_back(PointWiseLossCalculator::Name());
+
     num_data_ = num_data;
     // get label
     label_ = metadata.label();
@@ -41,39 +47,38 @@ public:
       }
     }
   }
-  
-  score_t PrintAndGetLoss(int iter, const score_t* score) const override {
-    if (early_stopping_round_ > 0 || (output_freq_ > 0 && iter % output_freq_ == 0)) {
-      score_t sum_loss = 0.0;
-      if (weights_ == nullptr) {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
-        for (data_size_t i = 0; i < num_data_; ++i) {
-          // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i]);
-        }
-      } else {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
-        for (data_size_t i = 0; i < num_data_; ++i) {
-          // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i]) * weights_[i];
-        }
+
+  std::vector<double> Eval(const double* score) const override {
+    double sum_loss = 0.0f;
+    if (weights_ == nullptr) {
+#pragma omp parallel for schedule(static) reduction(+:sum_loss)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        // add loss
+        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], huber_delta_, fair_c_);
       }
-      score_t loss = PointWiseLossCalculator::AverageLoss(sum_loss, sum_weights_);
-      if (output_freq_ > 0 && iter % output_freq_ == 0){
-        Log::Info("Iteration:%d, %s's %s : %f", iter, name, PointWiseLossCalculator::Name(), loss);
+    } else {
+#pragma omp parallel for schedule(static) reduction(+:sum_loss)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        // add loss
+        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], huber_delta_, fair_c_) * weights_[i];
       }
-      return loss;
     }
-    return 0.0f;
+    double loss = PointWiseLossCalculator::AverageLoss(sum_loss, sum_weights_);
+    return std::vector<double>(1, loss);
+
   }
 
-  inline static score_t AverageLoss(score_t sum_loss, score_t sum_weights) {
+  inline static double AverageLoss(double sum_loss, double sum_weights) {
     return sum_loss / sum_weights;
   }
 
+protected:
+  /*! \brief delta for Huber loss */
+  double huber_delta_;
+  /*! \brief c for Fair loss */
+  double fair_c_;
+
 private:
-  /*! \brief Output frequency */
-  int output_freq_;
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
@@ -83,7 +88,7 @@ private:
   /*! \brief Sum weights */
   double sum_weights_;
   /*! \brief Name of this test set */
-  const char* name;
+  std::vector<std::string> name_;
 };
 
 /*! \brief L2 loss for regression task */
@@ -91,17 +96,17 @@ class L2Metric: public RegressionMetric<L2Metric> {
 public:
   explicit L2Metric(const MetricConfig& config) :RegressionMetric<L2Metric>(config) {}
 
-  inline static score_t LossOnPoint(float label, score_t score) {
+  inline static double LossOnPoint(float label, double score, double, double) {
     return (score - label)*(score - label);
   }
 
-  inline static score_t AverageLoss(score_t sum_loss, score_t sum_weights) {
+  inline static double AverageLoss(double sum_loss, double sum_weights) {
     // need sqrt the result for L2 loss
     return std::sqrt(sum_loss / sum_weights);
   }
 
   inline static const char* Name() {
-    return "l2 loss";
+    return "l2";
   }
 };
 
@@ -110,11 +115,68 @@ class L1Metric: public RegressionMetric<L1Metric> {
 public:
   explicit L1Metric(const MetricConfig& config) :RegressionMetric<L1Metric>(config) {}
 
-  inline static score_t LossOnPoint(float label, score_t score) {
+  inline static double LossOnPoint(float label, double score, double, double) {
     return std::fabs(score - label);
   }
   inline static const char* Name() {
-    return "l1 loss";
+    return "l1";
+  }
+};
+
+/*! \brief Huber loss for regression task */
+class HuberLossMetric: public RegressionMetric<HuberLossMetric> {
+public:
+  explicit HuberLossMetric(const MetricConfig& config) :RegressionMetric<HuberLossMetric>(config) {
+    huber_delta_ = static_cast<double>(config.huber_delta);
+  }
+
+  inline static double LossOnPoint(float label, double score, double delta, double) {
+    const double diff = score - label;
+    if (std::abs(diff) <= delta) {
+      return 0.5f * diff * diff;
+    } else {
+      return delta * (std::abs(diff) - 0.5f * delta);
+    }
+  }
+
+  inline static const char* Name() {
+    return "huber";
+  }
+};
+
+/*! \brief Fair loss for regression task */
+// http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
+class FairLossMetric: public RegressionMetric<FairLossMetric> {
+public:
+  explicit FairLossMetric(const MetricConfig& config) :RegressionMetric<FairLossMetric>(config) {
+    fair_c_ = static_cast<double>(config.fair_c);
+  }
+
+  inline static double LossOnPoint(float label, double score, double, double c) {
+    const double x = std::fabs(score - label);
+    return c * x - c * c * std::log(1.0f + x / c);
+  }
+
+  inline static const char* Name() {
+    return "fair";
+  }
+};
+
+/*! \brief Poisson regression loss for regression task */
+class PoissonMetric: public RegressionMetric<PoissonMetric> {
+public:
+  explicit PoissonMetric(const MetricConfig& config) :RegressionMetric<PoissonMetric>(config) {
+  }
+
+  inline static double LossOnPoint(float label, double score, double, double) {
+    const double eps = 1e-10f;
+    if (score < eps) {
+      score = eps;
+    }
+    return score - label * std::log(score);
+  }
+  inline static const char* Name() {
+    return "poisson";
   }
 };
 

@@ -16,35 +16,45 @@ public:
   /*!
   * \brief Constructor, with random seed
   */
-  Random() 
-    :distribution_zero_to_one_(0.0, 1.0) {
+  Random() {
     std::random_device rd;
-    generator_ = std::mt19937(rd());
+    auto genrator = std::mt19937(rd());
+    std::uniform_int_distribution<int> distribution(0, x);
+    x = distribution(genrator);
   }
   /*!
   * \brief Constructor, with specific seed
   */
-  Random(int seed)
-    :generator_(seed), distribution_zero_to_one_(0.0, 1.0) {
+  Random(int seed) {
+    x = seed;
   }
   /*!
-  * \brief Generate random integer
+  * \brief Generate random integer, int16 range. [0, 65536]
   * \param lower_bound lower bound
   * \param upper_bound upper bound
   * \return The random integer between [lower_bound, upper_bound)
   */
-  inline int64_t NextInt(int64_t lower_bound, int64_t upper_bound) {
-    // get random interge in [a,b)
-    std::uniform_int_distribution<int64_t> distribution(lower_bound, upper_bound - 1);
-    return distribution(generator_);
+  inline int NextShort(int lower_bound, int upper_bound) {
+    return (RandInt16()) % (upper_bound - lower_bound) + lower_bound;
   }
+
+  /*!
+  * \brief Generate random integer, int32 range
+  * \param lower_bound lower bound
+  * \param upper_bound upper bound
+  * \return The random integer between [lower_bound, upper_bound)
+  */
+  inline int NextInt(int lower_bound, int upper_bound) {
+    return (RandInt32()) % (upper_bound - lower_bound) + lower_bound;
+  }
+
   /*!
   * \brief Generate random float data
   * \return The random float between [0.0, 1.0)
   */
-  inline double NextDouble() {
+  inline float NextFloat() {
     // get random float in [0,1)
-    return distribution_zero_to_one_(generator_);
+    return static_cast<float>(RandInt16()) / (32768.0f);
   }
   /*!
   * \brief Sample K data from {0,1,...,N-1}
@@ -52,25 +62,33 @@ public:
   * \param K
   * \return K Ordered sampled data from {0,1,...,N-1}
   */
-  inline std::vector<size_t> Sample(size_t N, size_t K) {
-    std::vector<size_t> ret;
+  inline std::vector<int> Sample(int N, int K) {
+    std::vector<int> ret;
     if (K > N || K < 0) {
       return ret;
     }
-    for (size_t i = 0; i < N; ++i) {
+    for (int i = 0; i < N; ++i) {
       double prob = (K - ret.size()) / static_cast<double>(N - i);
-      if (NextDouble() < prob) {
+      if (NextFloat() < prob) {
         ret.push_back(i);
       }
     }
     return ret;
   }
 private:
-  /*! \brief Random generator */
-  std::mt19937 generator_;
-  /*! \brief Cache distribution for [0.0, 1.0) */
-  std::uniform_real_distribution<double> distribution_zero_to_one_;
+  inline int RandInt16() {
+    x = (214013 * x + 2531011);
+    return (x >> 16) & 0x7FFF;
+  }
+
+  inline int RandInt32() {
+    x = (214013 * x + 2531011);
+    return x & 0x7FFFFFF;
+  }
+
+  int x = 123456789;
 };
+
 
 }  // namespace LightGBM
 

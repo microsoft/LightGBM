@@ -27,7 +27,7 @@ BruckMap BruckMap::Construct(int rank, int num_machines) {
   // distance at k-th communication, distance[k] = 2^k
   std::vector<int> distance;
   int k = 0;
-  for (k = 0; (1 << k) < num_machines; k++) {
+  for (k = 0; (1 << k) < num_machines; ++k) {
     distance.push_back(1 << k);
   }
   BruckMap bruckMap(k);

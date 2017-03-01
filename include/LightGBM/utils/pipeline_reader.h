@@ -5,9 +5,10 @@
 
 #include <cstdio>
 
-#include <algorithm>
 #include <functional>
 #include <thread>
+#include <memory>
+#include <algorithm>
 
 namespace LightGBM{
 
@@ -21,7 +22,7 @@ public:
   * \param filename Filename of data
   * \process_fun Process function
   */
-  static size_t Read(const char* filename, const std::function<size_t (const char*, size_t)>& process_fun) {
+  static size_t Read(const char* filename, int skip_bytes, const std::function<size_t (const char*, size_t)>& process_fun) {
     FILE* file;
 
 #ifdef _MSC_VER
@@ -35,29 +36,32 @@ public:
     size_t cnt = 0;
     const size_t buffer_size =  16 * 1024 * 1024 ;
     // buffer used for the process_fun
-    char* buffer_process = new char[buffer_size];
+    auto buffer_process = std::vector<char>(buffer_size);
     // buffer used for the file reading
-    char* buffer_read = new char[buffer_size];
+    auto buffer_read = std::vector<char>(buffer_size);
+    size_t read_cnt = 0;
+    if (skip_bytes > 0) {
+      // skip first k bytes
+      read_cnt = fread(buffer_process.data(), 1, skip_bytes, file);
+    }
     // read first block
-    size_t read_cnt = fread(buffer_process, 1, buffer_size, file);
+    read_cnt = fread(buffer_process.data(), 1, buffer_size, file);
     size_t last_read_cnt = 0;
     while (read_cnt > 0) {
       // strat read thread
       std::thread read_worker = std::thread(
-        [file, buffer_read, buffer_size, &last_read_cnt] {
-        last_read_cnt = fread(buffer_read, 1, buffer_size, file);
+        [file, &buffer_read, buffer_size, &last_read_cnt] {
+        last_read_cnt = fread(buffer_read.data(), 1, buffer_size, file);
       }
       );
       // start process
-      cnt += process_fun(buffer_process, read_cnt);
+      cnt += process_fun(buffer_process.data(), read_cnt);
       // wait for read thread
       read_worker.join();
       // exchange the buffer
       std::swap(buffer_process, buffer_read);
       read_cnt = last_read_cnt;
     }
-    delete[] buffer_process;
-    delete[] buffer_read;
     // close file
     fclose(file);
     return cnt;

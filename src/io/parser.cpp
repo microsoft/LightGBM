@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <functional>
+#include <memory>
 
 namespace LightGBM {
 
@@ -20,53 +22,74 @@ void GetStatistic(const char* str, int* comma_cnt, int* tab_cnt, int* colon_cnt)
   }
 }
 
-bool CheckHasLabelForLibsvm(std::string& str) {
+int GetLabelIdxForLibsvm(std::string& str, int num_features, int label_idx) {
+  if (num_features <= 0) {
+    return label_idx;
+  }
   str = Common::Trim(str);
   auto pos_space = str.find_first_of(" \f\n\r\t\v");
   auto pos_colon = str.find_first_of(":");
-  if (pos_colon == std::string::npos || pos_colon > pos_space) {
-    return true;
+  if (pos_space == std::string::npos || pos_space < pos_colon) {
+    return label_idx;
   } else {
-    return false;
+    return -1;
   }
 }
 
-bool CheckHasLabelForTSV(std::string& str, int num_features) {
+int GetLabelIdxForTSV(std::string& str, int num_features, int label_idx) {
+  if (num_features <= 0) {
+    return label_idx;
+  }
   str = Common::Trim(str);
   auto tokens = Common::Split(str.c_str(), '\t');
   if (static_cast<int>(tokens.size()) == num_features) {
-    return false;
+    return -1;
   } else {
-    return true;
+    return label_idx;
   }
 }
 
-bool CheckHasLabelForCSV(std::string& str, int num_features) {
+int GetLabelIdxForCSV(std::string& str, int num_features, int label_idx) {
+  if (num_features <= 0) {
+    return label_idx;
+  }
   str = Common::Trim(str);
   auto tokens = Common::Split(str.c_str(), ',');
   if (static_cast<int>(tokens.size()) == num_features) {
-    return false;
+    return -1;
   } else {
-    return true;
+    return label_idx;
   }
 }
 
-Parser* Parser::CreateParser(const char* filename, int num_features, bool* has_label) {
+enum DataType {
+  INVALID,
+  CSV,
+  TSV,
+  LIBSVM
+};
+
+Parser* Parser::CreateParser(const char* filename, bool has_header, int num_features, int label_idx) {
   std::ifstream tmp_file;
   tmp_file.open(filename);
   if (!tmp_file.is_open()) {
-    Log::Fatal("Data file: %s doesn't exist", filename);
+    Log::Fatal("Data file %s doesn't exist'", filename);
   }
   std::string line1, line2;
+  if (has_header) {
+    if (!tmp_file.eof()) {
+      std::getline(tmp_file, line1);
+    }
+  }
   if (!tmp_file.eof()) {
     std::getline(tmp_file, line1);
   } else {
-    Log::Fatal("Data file: %s at least should have one line", filename);
+    Log::Fatal("Data file %s should have at least one line", filename);
   }
   if (!tmp_file.eof()) {
     std::getline(tmp_file, line2);
   } else {
-    Log::Error("Data file: %s only have one line", filename);
+    Log::Warning("Data file %s only has one line", filename);
   }
   tmp_file.close();
   int comma_cnt = 0, comma_cnt2 = 0;
@@ -75,45 +98,49 @@ Parser* Parser::CreateParser(const char* filename, int num_features, bool* has_l
   // Get some statistic from 2 line
   GetStatistic(line1.c_str(), &comma_cnt, &tab_cnt, &colon_cnt);
   GetStatistic(line2.c_str(), &comma_cnt2, &tab_cnt2, &colon_cnt2);
-  Parser* ret = nullptr;
+
+
+
+  DataType type = DataType::INVALID;
   if (line2.size() == 0) {
     // if only have one line on file
     if (colon_cnt > 0) {
-      ret =  new LibSVMParser();
-      if (num_features > 0 && has_label != nullptr) {
-        *has_label = CheckHasLabelForLibsvm(line1);
-      }
+      type = DataType::LIBSVM;
     } else if (tab_cnt > 0) {
-      ret = new TSVParser();
-      if (num_features > 0 && has_label != nullptr) {
-        *has_label = CheckHasLabelForTSV(line1, num_features);
-      }
+      type = DataType::TSV;
     } else if (comma_cnt > 0) {
-      ret = new CSVParser();
-      if (num_features > 0 && has_label != nullptr) {
-        *has_label = CheckHasLabelForCSV(line1, num_features);
-      }
-    } 
+      type = DataType::CSV;
+    }
   } else {
     if (colon_cnt > 0 || colon_cnt2 > 0) {
-      ret = new LibSVMParser();
-      if (num_features > 0 && has_label != nullptr) {
-        *has_label = CheckHasLabelForLibsvm(line1);
-      }
-    }
-    else if (tab_cnt == tab_cnt2 && tab_cnt > 0) {
-      ret = new TSVParser();
-      if (num_features > 0 && has_label != nullptr) {
-        *has_label = CheckHasLabelForTSV(line1, num_features);
-      }
+      type = DataType::LIBSVM;
+    } else if (tab_cnt == tab_cnt2 && tab_cnt > 0) {
+      type = DataType::TSV;
     } else if (comma_cnt == comma_cnt2 && comma_cnt > 0) {
-      ret = new CSVParser();
-      if (num_features > 0 && has_label != nullptr) {
-        *has_label = CheckHasLabelForCSV(line1, num_features);
-      }
+      type = DataType::CSV;
     }
   }
-  return ret;
+  if (type == DataType::INVALID) {
+    Log::Fatal("Unknown format of training data");
+  }
+  std::unique_ptr<Parser> ret;
+  if (type == DataType::LIBSVM) {
+    label_idx = GetLabelIdxForLibsvm(line1, num_features, label_idx);
+    ret.reset(new LibSVMParser(label_idx));
+  }
+  else if (type == DataType::TSV) {
+    label_idx = GetLabelIdxForTSV(line1, num_features, label_idx);
+    ret.reset(new TSVParser(label_idx));
+  }
+  else if (type == DataType::CSV) {
+    label_idx = GetLabelIdxForCSV(line1, num_features, label_idx);
+    ret.reset(new CSVParser(label_idx));
+  }
+
+  if (label_idx < 0) {
+    Log::Info("Data file %s doesn't contain a label column", filename);
+  }
+  return ret.release();
 }
 
 }  // namespace LightGBM

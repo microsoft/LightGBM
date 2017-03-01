@@ -1,10 +1,13 @@
 #ifndef LIGHTGBM_UTILS_LOG_H_
 #define LIGHTGBM_UTILS_LOG_H_
 
+#include <iostream>
 #include <cstdio>
 #include <cstdlib>
 #include <cstdarg>
 #include <cstring>
+#include <exception>
+#include <stdexcept>
 
 namespace LightGBM {
 
@@ -17,20 +20,20 @@ namespace LightGBM {
 
 #ifndef CHECK_NOTNULL
 #define CHECK_NOTNULL(pointer)                             \
-  if ((pointer) == nullptr) LightGBM::Log::Fatal(#pointer " Can't be NULL");
+  if ((pointer) == nullptr) LightGBM::Log::Fatal(#pointer " Can't be NULL at %s, line %d .\n", __FILE__,  __LINE__);
 #endif
 
 
 enum class LogLevel: int {
   Fatal = -1,
-  Error = 0,
+  Warning = 0,
   Info = 1,
   Debug = 2,
 };
 
 
 /*!
-* \brief A static Log class 
+* \brief A static Log class
 */
 class Log {
 public:
@@ -54,21 +57,23 @@ public:
     Write(LogLevel::Info, "Info", format, val);
     va_end(val);
   }
-  static void Error(const char *format, ...) {
+  static void Warning(const char *format, ...) {
     va_list val;
     va_start(val, format);
-    Write(LogLevel::Error, "Error", format, val);
+    Write(LogLevel::Warning, "Warning", format, val);
     va_end(val);
   }
   static void Fatal(const char *format, ...) {
     va_list val;
+    char str_buf[1024];
     va_start(val, format);
-    fprintf(stderr, "[LightGBM] [Fatal] ");
-    vfprintf(stderr, format, val);
-    fprintf(stderr, "\n");
-    fflush(stderr);
+#ifdef _MSC_VER
+    vsprintf_s(str_buf, format, val);
+#else
+    vsprintf(str_buf, format, val);
+#endif
     va_end(val);
-    exit(1);
+    throw std::runtime_error(std::string(str_buf));
   }
 
 private:
@@ -83,10 +88,14 @@ private:
     }
   }
 
-  // a trick to use static variable in header file. 
+  // a trick to use static variable in header file.
   // May be not good, but avoid to use an additional cpp file
-  static LogLevel& GetLevel() { static LogLevel level; return level; }
-  
+#if defined(_MSC_VER)
+  static LogLevel& GetLevel() { static __declspec(thread) LogLevel level = LogLevel::Info; return level; }
+#else
+  static LogLevel& GetLevel() { static thread_local LogLevel level = LogLevel::Info; return level; }
+#endif
+
 };
 
 }  // namespace LightGBM

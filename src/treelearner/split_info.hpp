@@ -21,37 +21,39 @@ public:
   /*! \brief Split threshold */
   unsigned int threshold;
   /*! \brief Left output after split */
-  score_t left_output;
+  double left_output;
   /*! \brief Right output after split */
-  score_t right_output;
+  double right_output;
   /*! \brief Split gain */
-  score_t gain;
+  double gain;
   /*! \brief Left number of data after split */
   data_size_t left_count;
   /*! \brief Right number of data after split */
   data_size_t right_count;
   /*! \brief Left sum gradient after split */
-  score_t left_sum_gradient;
+  double left_sum_gradient;
   /*! \brief Left sum hessian after split */
-  score_t left_sum_hessian;
+  double left_sum_hessian;
   /*! \brief Right sum gradient after split */
-  score_t right_sum_gradient;
+  double right_sum_gradient;
   /*! \brief Right sum hessian after split */
-  score_t right_sum_hessian;
+  double right_sum_hessian;
 
   SplitInfo() {
-    // initilize with -1 and -inf gain
+    // initialize with -1 and -inf gain
     feature = -1;
     gain = kMinScore;
   }
 
   inline void Reset() {
-    // initilize with -1 and -inf gain
+    // initialize with -1 and -inf gain
     feature = -1;
     gain = kMinScore;
   }
 
   inline bool operator > (const SplitInfo &si) const;
+
+  inline bool operator == (const SplitInfo &si) const;
 
   inline static void MaxReducer(const char* src, char* dst, int len) {
     const int type_size = sizeof(SplitInfo);
@@ -75,8 +77,8 @@ public:
 
 
 inline bool SplitInfo::operator > (const SplitInfo& si) const {
-  score_t local_gain = this->gain;
-  score_t other_gain = si.gain;
+  double local_gain = this->gain;
+  double other_gain = si.gain;
   // replace nan with -inf
   if (local_gain == NAN) {
     local_gain = kMinScore;
@@ -100,6 +102,35 @@ inline bool SplitInfo::operator > (const SplitInfo& si) const {
   } else {
     // if same gain, use smaller feature
     return local_feature < other_feature;
+  }
+}
+
+inline bool SplitInfo::operator == (const SplitInfo& si) const {
+  double local_gain = this->gain;
+  double other_gain = si.gain;
+  // replace nan with -inf
+  if (local_gain == NAN) {
+    local_gain = kMinScore;
+  }
+  // replace nan with -inf
+  if (other_gain == NAN) {
+    other_gain = kMinScore;
+  }
+  int local_feature = this->feature;
+  int other_feature = si.feature;
+  // replace -1 with max int
+  if (local_feature == -1) {
+    local_feature = INT32_MAX;
+  }
+  // replace -1 with max int
+  if (other_feature == -1) {
+    other_feature = INT32_MAX;
+  }
+  if (local_gain != other_gain) {
+    return local_gain == other_gain;
+  } else {
+    // if same gain, use smaller feature
+    return local_feature == other_feature;
   }
 }
 

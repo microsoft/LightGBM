@@ -4,77 +4,151 @@
 #include <LightGBM/utils/log.h>
 
 #include <LightGBM/bin.h>
-#include "ordered_sparse_bin.hpp"
 
-#include <omp.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <cstring>
 #include <cstdint>
-
+#include <limits>
 #include <vector>
 
 namespace LightGBM {
 
+template <typename VAL_T> class SparseBin;
+
 const size_t kNumFastIndex = 64;
 
-template <typename VAL_T> class SparseBinIterator;
+template <typename VAL_T>
+class SparseBinIterator: public BinIterator {
+public:
+  SparseBinIterator(const SparseBin<VAL_T>* bin_data,
+    uint32_t min_bin, uint32_t max_bin, uint32_t default_bin)
+    : bin_data_(bin_data), min_bin_(static_cast<VAL_T>(min_bin)),
+    max_bin_(static_cast<VAL_T>(max_bin)),
+    default_bin_(static_cast<uint8_t>(default_bin)) {
+    if (default_bin_ == 0) {
+      bias_ = 1;
+    } else {
+      bias_ = 0;
+    }
+    Reset(0);
+  }
+  SparseBinIterator(const SparseBin<VAL_T>* bin_data, data_size_t start_idx)
+    : bin_data_(bin_data) {
+    Reset(start_idx);
+  }
+
+  inline VAL_T RawGet(data_size_t idx);
+
+  inline uint32_t Get( data_size_t idx) override {
+    VAL_T ret = RawGet(idx);
+    if (ret >= min_bin_ && ret <= max_bin_) {
+      return ret - min_bin_ + bias_;
+    } else {
+      return default_bin_;
+    }
+  }
+
+  inline void Reset(data_size_t idx) override;
+private:
+  const SparseBin<VAL_T>* bin_data_;
+  data_size_t cur_pos_;
+  data_size_t i_delta_;
+  VAL_T min_bin_;
+  VAL_T max_bin_;
+  VAL_T default_bin_;
+  uint8_t bias_;
+};
 
 template <typename VAL_T>
-class SparseBin:public Bin {
+class OrderedSparseBin;
+
+template <typename VAL_T>
+class SparseBin: public Bin {
 public:
   friend class SparseBinIterator<VAL_T>;
+  friend class OrderedSparseBin<VAL_T>;
 
-  explicit SparseBin(data_size_t num_data, int default_bin)
+  SparseBin(data_size_t num_data)
     : num_data_(num_data) {
-    default_bin_ = static_cast<VAL_T>(default_bin);
-    if (default_bin_ != 0) {
-      Log::Info("Warning: Having sparse feature with negative values. Will let negative values equal zero as well");
-    }
-    #pragma omp parallel
-    #pragma omp master
+    int num_threads = 1;
+#pragma omp parallel
+#pragma omp master
     {
-      num_threads_ = omp_get_num_threads();
+      num_threads = omp_get_num_threads();
     }
-    for (int i = 0; i < num_threads_; ++i) {
-      push_buffers_.emplace_back();
-    }
+    push_buffers_.resize(num_threads);
   }
 
   ~SparseBin() {
+
+  }
+
+  void ReSize(data_size_t num_data) override {
+    num_data_ = num_data;
   }
 
   void Push(int tid, data_size_t idx, uint32_t value) override {
-    // not store zero data
-    if (value <= default_bin_) { return; }
-    push_buffers_[tid].emplace_back(idx, static_cast<VAL_T>(value));
+    auto cur_bin = static_cast<VAL_T>(value);
+    if (cur_bin != 0) {
+      push_buffers_[tid].emplace_back(idx, cur_bin);
+    }
   }
 
-  BinIterator* GetIterator(data_size_t start_idx) const override;
+  BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const override;
 
-  void ConstructHistogram(data_size_t*, data_size_t , const score_t* ,
-                 const score_t* , HistogramBinEntry*) const override {
+  void ConstructHistogram(const data_size_t*, data_size_t, const score_t*,
+    const score_t*, HistogramBinEntry*) const override {
     // Will use OrderedSparseBin->ConstructHistogram() instead
-    Log::Info("Should use OrderedSparseBin->ConstructHistogram() instead");
+    Log::Fatal("Using OrderedSparseBin->ConstructHistogram() instead");
   }
 
-  data_size_t Split(unsigned int threshold, data_size_t* data_indices, data_size_t num_data,
-                         data_size_t* lte_indices, data_size_t* gt_indices) const override {
-    const auto fast_pair = fast_index_[(data_indices[0]) >> fast_index_shift_];
-    data_size_t j = fast_pair.first;
-    data_size_t cur_pos = fast_pair.second;
+  inline bool NextNonzero(data_size_t* i_delta,
+    data_size_t* cur_pos) const {
+    ++(*i_delta);
+    data_size_t shift = 0;
+    data_size_t delta = deltas_[*i_delta];
+    while (*i_delta < num_vals_ && vals_[*i_delta] == 0) {
+      ++(*i_delta);
+      shift += 8;
+      delta |=  static_cast<data_size_t>(deltas_[*i_delta]) << shift;
+    }
+    *cur_pos += delta;
+    if (*i_delta < num_vals_) {
+      return true;
+    } else {
+      *cur_pos = num_data_;
+      return false;
+    }
+  }
+
+  virtual data_size_t Split(
+    uint32_t min_bin, uint32_t max_bin, uint32_t default_bin,
+    uint32_t threshold, data_size_t* data_indices, data_size_t num_data,
+    data_size_t* lte_indices, data_size_t* gt_indices) const override {
+    // not need to split
+    if (num_data <= 0) { return 0; }
+    VAL_T th = static_cast<VAL_T>(threshold + min_bin);
+    VAL_T minb = static_cast<VAL_T>(min_bin);
+    VAL_T maxb = static_cast<VAL_T>(max_bin);
+    if (default_bin == 0) {
+      th -= 1;
+    }
+    SparseBinIterator<VAL_T> iterator(this, data_indices[0]);
     data_size_t lte_count = 0;
     data_size_t gt_count = 0;
-    for (data_size_t i = 0; i < num_data; i++) {
+    data_size_t* default_indices = gt_indices;
+    data_size_t* default_count = &gt_count;
+    if (default_bin <= threshold) {
+      default_indices = lte_indices;
+      default_count = &lte_count;
+    }
+    for (data_size_t i = 0; i < num_data; ++i) {
       const data_size_t idx = data_indices[i];
-      while (cur_pos < idx && j < num_vals_) {
-        ++j;
-        cur_pos += delta_[j];
-      }
-      VAL_T bin = 0;
-      if (cur_pos == idx && j < num_vals_) {
-        bin = vals_[j];
-      }
-      if (bin > threshold) {
+      VAL_T bin = iterator.RawGet(idx);
+      if (bin > maxb || bin < minb) {
+        default_indices[(*default_count)++] = idx;
+      } else if (bin > th) {
         gt_indices[gt_count++] = idx;
       } else {
         lte_indices[lte_count++] = idx;
@@ -85,62 +159,55 @@ public:
 
   data_size_t num_data() const override { return num_data_; }
 
-  OrderedBin* CreateOrderedBin() const override {
-    return new OrderedSparseBin<VAL_T>(delta_, vals_);
-  }
+  OrderedBin* CreateOrderedBin() const override;
 
   void FinishLoad() override {
     // get total non zero size
-    size_t non_zero_size = 0;
-    for (size_t i = 0; i < push_buffers_.size(); i++) {
-      non_zero_size += push_buffers_[i].size();
+    size_t pair_cnt = 0;
+    for (size_t i = 0; i < push_buffers_.size(); ++i) {
+      pair_cnt += push_buffers_[i].size();
     }
-    // merge
-    non_zero_pair_.reserve(non_zero_size);
-    for (size_t i = 0; i < push_buffers_.size(); i++) {
-      non_zero_pair_.insert(non_zero_pair_.end(), push_buffers_[i].begin(), push_buffers_[i].end());
+    std::vector<std::pair<data_size_t, VAL_T>>& idx_val_pairs = push_buffers_[0];
+    idx_val_pairs.reserve(pair_cnt);
+
+    for (size_t i = 1; i < push_buffers_.size(); ++i) {
+      idx_val_pairs.insert(idx_val_pairs.end(), push_buffers_[i].begin(), push_buffers_[i].end());
       push_buffers_[i].clear();
       push_buffers_[i].shrink_to_fit();
     }
-    push_buffers_.clear();
-    push_buffers_.shrink_to_fit();
     // sort by data index
-    std::sort(non_zero_pair_.begin(), non_zero_pair_.end(),
+    std::sort(idx_val_pairs.begin(), idx_val_pairs.end(),
       [](const std::pair<data_size_t, VAL_T>& a, const std::pair<data_size_t, VAL_T>& b) {
       return a.first < b.first;
     });
     // load detla array
-    LoadFromPair(non_zero_pair_);
-    // free memory
-    non_zero_pair_.clear();
-    non_zero_pair_.shrink_to_fit();
+    LoadFromPair(idx_val_pairs);
   }
 
-  void LoadFromPair(const std::vector<std::pair<data_size_t, VAL_T>>& non_zero_pair) {
-    delta_.clear();
+  void LoadFromPair(const std::vector<std::pair<data_size_t, VAL_T>>& idx_val_pairs) {
+    deltas_.clear();
     vals_.clear();
     // transform to delta array
-    const uint8_t kMaxDelta = 255;
     data_size_t last_idx = 0;
-    for (size_t i = 0; i < non_zero_pair.size(); i++) {
-      const data_size_t cur_idx = non_zero_pair[i].first;
-      const VAL_T bin = non_zero_pair[i].second;
+    for (size_t i = 0; i < idx_val_pairs.size(); ++i) {
+      const data_size_t cur_idx = idx_val_pairs[i].first;
+      const VAL_T bin = idx_val_pairs[i].second;
       data_size_t cur_delta = cur_idx - last_idx;
-      while (cur_delta > kMaxDelta) {
-        delta_.push_back(255);
+      while (cur_delta >= 256) {
+        deltas_.push_back(cur_delta & 0xff);
         vals_.push_back(0);
-        cur_delta -= kMaxDelta;
+        cur_delta >>= 8;
       }
-      delta_.push_back(static_cast<uint8_t>(cur_delta));
+      deltas_.push_back(static_cast<uint8_t>(cur_delta));
       vals_.push_back(bin);
       last_idx = cur_idx;
     }
     // avoid out of range
-    delta_.push_back(0);
+    deltas_.push_back(0);
     num_vals_ = static_cast<data_size_t>(vals_.size());
 
     // reduce memory cost
-    delta_.shrink_to_fit();
+    deltas_.shrink_to_fit();
     vals_.shrink_to_fit();
 
     // generate fast index
@@ -148,6 +215,7 @@ public:
   }
 
   void GetFastIndex() {
+
     fast_index_.clear();
     // get shift cnt
     data_size_t mod_size = (num_data_ + kNumFastIndex - 1) / kNumFastIndex;
@@ -158,26 +226,26 @@ public:
       ++fast_index_shift_;
     }
     // build fast index
-    data_size_t next_i = 0;
+    data_size_t i_delta = -1;
     data_size_t cur_pos = 0;
-    for (data_size_t i = 0; i < num_vals_; ++i) {
-      cur_pos += delta_[i];
-      while (next_i < cur_pos) {
-        fast_index_.emplace_back(i, cur_pos);
-        next_i += pow2_mod_size;
+    data_size_t next_threshold = 0;
+    while (NextNonzero(&i_delta, &cur_pos)) {
+      while (next_threshold <= cur_pos) {
+        fast_index_.emplace_back(i_delta, cur_pos);
+        next_threshold += pow2_mod_size;
       }
     }
     // avoid out of range
-    while (next_i < num_data_) {
+    while (next_threshold < num_data_) {
       fast_index_.emplace_back(num_vals_ - 1, cur_pos);
-      next_i += pow2_mod_size;
+      next_threshold += pow2_mod_size;
     }
     fast_index_.shrink_to_fit();
   }
 
   void SaveBinaryToFile(FILE* file) const override {
     fwrite(&num_vals_, sizeof(num_vals_), 1, file);
-    fwrite(delta_.data(), sizeof(uint8_t), num_vals_ + 1, file);
+    fwrite(deltas_.data(), sizeof(uint8_t), num_vals_ + 1, file);
     fwrite(vals_.data(), sizeof(VAL_T), num_vals_, file);
   }
 
@@ -194,89 +262,104 @@ public:
     mem_ptr += sizeof(uint8_t) * (tmp_num_vals + 1);
     const VAL_T* tmp_vals = reinterpret_cast<const VAL_T*>(mem_ptr);
 
-    if (local_used_indices.size() <= 0) {
-      delta_.clear();
-      vals_.clear();
-      num_vals_ = tmp_num_vals;
-      for (data_size_t i = 0; i < num_vals_; i++) {
-        delta_.push_back(tmp_delta[i]);
-        vals_.push_back(tmp_vals[i]);
-      }
-      delta_.push_back(0);
-      // reduce memory cost
-      delta_.shrink_to_fit();
-      vals_.shrink_to_fit();
+    deltas_.clear();
+    vals_.clear();
+    num_vals_ = tmp_num_vals;
+    for (data_size_t i = 0; i < num_vals_; ++i) {
+      deltas_.push_back(tmp_delta[i]);
+      vals_.push_back(tmp_vals[i]);
+    }
+    deltas_.push_back(0);
+    // reduce memory cost
+    deltas_.shrink_to_fit();
+    vals_.shrink_to_fit();
 
+    if (local_used_indices.empty()) {
       // generate fast index
       GetFastIndex();
-
     } else {
       std::vector<std::pair<data_size_t, VAL_T>> tmp_pair;
-      data_size_t cur_pos = tmp_delta[0];
-      data_size_t j = 0;
+      data_size_t cur_pos = 0;
+      data_size_t j = -1;
       for (data_size_t i = 0; i < static_cast<data_size_t>(local_used_indices.size()); ++i) {
         const data_size_t idx = local_used_indices[i];
-        while (cur_pos < idx && j < tmp_num_vals) {
-          ++j;
-          cur_pos += tmp_delta[j];
+        while (cur_pos < idx && j < num_vals_) {
+          NextNonzero(&j, &cur_pos);
         }
-        VAL_T bin = 0;
-        if (cur_pos == idx && j < tmp_num_vals) {
-          bin = tmp_vals[j];
-        }
-        if (bin > 0) {
+        if (cur_pos == idx && j < num_vals_) {
           // new row index is i
-          tmp_pair.emplace_back(i, bin);
+          tmp_pair.emplace_back(i, vals_[j]);
         }
       }
       LoadFromPair(tmp_pair);
     }
-
   }
 
-private:
+  void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override {
+    auto other_bin = reinterpret_cast<const SparseBin<VAL_T>*>(full_bin);
+    SparseBinIterator<VAL_T> iterator(other_bin, used_indices[0]);
+    deltas_.clear();
+    vals_.clear();
+    // transform to delta array
+    data_size_t last_idx = 0;
+    for (data_size_t i = 0; i < num_used_indices; ++i) {
+      VAL_T bin = iterator.RawGet(used_indices[i]);
+      if (bin > 0) {
+        data_size_t cur_delta = i - last_idx;
+        while (cur_delta >= 256) {
+          deltas_.push_back(cur_delta & 0xff);
+          vals_.push_back(0);
+          cur_delta >>= 8;
+        }
+        deltas_.push_back(static_cast<uint8_t>(cur_delta));
+        vals_.push_back(bin);
+        last_idx = i;
+      }
+    }
+    // avoid out of range
+    deltas_.push_back(0);
+    num_vals_ = static_cast<data_size_t>(vals_.size());
+
+    // reduce memory cost
+    deltas_.shrink_to_fit();
+    vals_.shrink_to_fit();
+
+    // generate fast index
+    GetFastIndex();
+  }
+
+protected:
   data_size_t num_data_;
-  std::vector<std::pair<data_size_t, VAL_T>> non_zero_pair_;
-  std::vector<uint8_t> delta_;
+  std::vector<uint8_t> deltas_;
   std::vector<VAL_T> vals_;
   data_size_t num_vals_;
-  int num_threads_;
   std::vector<std::vector<std::pair<data_size_t, VAL_T>>> push_buffers_;
   std::vector<std::pair<data_size_t, data_size_t>> fast_index_;
   data_size_t fast_index_shift_;
-  VAL_T default_bin_;
 };
 
 template <typename VAL_T>
-class SparseBinIterator: public BinIterator {
-public:
-  SparseBinIterator(const SparseBin<VAL_T>* bin_data, data_size_t start_idx)
-    : bin_data_(bin_data) {
-    const auto fast_pair = bin_data->fast_index_[start_idx >> bin_data->fast_index_shift_];
-    i_delta_ = fast_pair.first;
-    cur_pos_ = fast_pair.second;
+inline VAL_T SparseBinIterator<VAL_T>::RawGet(data_size_t idx) {
+  while (cur_pos_ < idx) {
+    bin_data_->NextNonzero(&i_delta_, &cur_pos_);
   }
-  uint32_t Get(data_size_t idx) override {
-    while (cur_pos_ < idx && i_delta_ < bin_data_->num_vals_) {
-      ++i_delta_;
-      cur_pos_ += bin_data_->delta_[i_delta_];
-    }
-    if (idx == cur_pos_ && i_delta_ >= 0 
-      && i_delta_ < bin_data_->vals_.size()) {
-      return bin_data_->vals_[i_delta_];
-    } else { return 0; }
+  if (cur_pos_ == idx) {
+    return bin_data_->vals_[i_delta_];
+  } else {
+    return 0;
   }
-
-private:
-  const SparseBin<VAL_T>* bin_data_;
-  data_size_t cur_pos_ = 0;
-  data_size_t i_delta_ = 0;
-};
-
+}
 
 template <typename VAL_T>
-BinIterator* SparseBin<VAL_T>::GetIterator(data_size_t start_idx) const {
-  return new SparseBinIterator<VAL_T>(this, start_idx);
+inline void SparseBinIterator<VAL_T>::Reset(data_size_t start_idx) {
+  const auto fast_pair = bin_data_->fast_index_[start_idx >> bin_data_->fast_index_shift_];
+  i_delta_ = fast_pair.first;
+  cur_pos_ = fast_pair.second;
+}
+
+template <typename VAL_T>
+BinIterator* SparseBin<VAL_T>::GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const {
+  return new SparseBinIterator<VAL_T>(this, min_bin, max_bin, default_bin);
 }
 
 }  // namespace LightGBM

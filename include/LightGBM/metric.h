@@ -11,7 +11,7 @@ namespace LightGBM {
 
 /*!
 * \brief The interface of metric.
-*        Metric is used to calculate and output metric result on training / validation data.
+*        Metric is used to calculate metric result
 */
 class Metric {
 public:
@@ -24,25 +24,30 @@ public:
   * \param metadata Label data
   * \param num_data Number of data
   */
-  virtual void Init(const char* test_name,
-    const Metadata& metadata, data_size_t num_data) = 0;
+  virtual void Init(const Metadata& metadata, data_size_t num_data) = 0;
 
+  virtual const std::vector<std::string>& GetName() const = 0;
+
+  virtual double factor_to_bigger_better() const = 0;
   /*!
   * \brief Calcaluting and printing metric result
-  * \param iter Current iteration
   * \param score Current prediction score
   */
-  virtual score_t PrintAndGetLoss(int iter, const score_t* score) const = 0;
+  virtual std::vector<double> Eval(const double* score) const = 0;
+
+  Metric() = default;
+  /*! \brief Disable copy */
+  Metric& operator=(const Metric&) = delete;
+  /*! \brief Disable copy */
+  Metric(const Metric&) = delete;
 
   /*!
   * \brief Create object of metrics
   * \param type Specific type of metric
   * \param config Config for metric
   */
-  static Metric* CreateMetric(const std::string& type, const MetricConfig& config);
+  LIGHTGBM_EXPORT static Metric* CreateMetric(const std::string& type, const MetricConfig& config);
 
-  bool the_bigger_the_better = false;
-  int early_stopping_round_ = 0;
 };
 
 /*!
@@ -65,7 +70,7 @@ public:
   * \return The DCG score
   */
   static double CalDCGAtK(data_size_t k, const float* label,
-    const score_t* score, data_size_t num_data);
+    const double* score, data_size_t num_data);
 
   /*!
   * \brief Calculate the DCG score at multi position
@@ -76,7 +81,7 @@ public:
   * \param out Output result
   */
   static void CalDCG(const std::vector<data_size_t>& ks,
-    const float* label, const score_t* score,
+    const float* label, const double* score,
     data_size_t num_data, std::vector<double>* out);
 
   /*!
