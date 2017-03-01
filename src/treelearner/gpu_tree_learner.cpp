@@ -41,9 +41,13 @@ void GPUTreeLearner::Init(const Dataset* train_data) {
   }
   // Get the max bin size, used for selecting best GPU kernel
   max_num_bin_ = 0;
+  #if GPU_DEBUG >= 1
   printf("bin size: ");
+  #endif
   for (int i = 0; i < train_data_->num_features(); ++i) {
+    #if GPU_DEBUG >= 1
     printf("%d, ", train_data_->FeatureAt(i)->num_bin());
+    #endif
     max_num_bin_ = std::max(max_num_bin_, train_data_->FeatureAt(i)->num_bin());
   }
   printf("\n");
@@ -132,14 +136,14 @@ void CompareHistograms(HistogramBinEntry* h1, HistogramBinEntry* h2, size_t size
       goto err;
     }
     if (ulps > 65536) {
-      // printf("grad %g != %g (%d ULPs)\n", h1[i].sum_gradients, h2[i].sum_gradients, ulps);
+      printf("grad %g != %g (%d ULPs)\n", h1[i].sum_gradients, h2[i].sum_gradients, ulps);
       // goto err;
     }
     a.f = h1[i].sum_hessians;
     b.f = h2[i].sum_hessians;
     ulps = Float_t::ulp_diff(a, b);
     if (ulps > 65536) {
-      // printf("hessian %g != %g (%d ULPs)\n", h1[i].sum_hessians, h2[i].sum_hessians, ulps);
+      printf("hessian %g != %g (%d ULPs)\n", h1[i].sum_hessians, h2[i].sum_hessians, ulps);
       // goto err;
     }
   }
@@ -243,7 +247,7 @@ void GPUTreeLearner::WaitAndGetHistograms(FeatureHistogram* histograms) {
       }
     }
     else {
-      // values of this feature has been scatter to multiple bins; need a reduction here
+      // values of this feature has been redistributed to multiple bins; need a reduction here
       int ind = 0;
       for (int j = 0; j < bin_size; ++j) {
         double sum_g = 0.0, sum_h = 0.0;
@@ -330,8 +334,8 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
                                              ordered_hessians_.data());
   ptr_pinned_hessians_ = queue_.enqueue_map_buffer(pinned_hessians_, boost::compute::command_queue::map_write_invalidate_region, 
                                                    0, allocated_num_data_ * sizeof(score_t));
-  Log::Info("gradients=%p, pinned_gradients=%p, hessian=%p, pinned_hessian=%p\n", 
-            ordered_gradients_.data(), ptr_pinned_gradients_, ordered_hessians_.data(), ptr_pinned_hessians_);
+  // Log::Info("gradients=%p, pinned_gradients=%p, hessian=%p, pinned_hessian=%p\n", 
+  //          ordered_gradients_.data(), ptr_pinned_gradients_, ordered_hessians_.data(), ptr_pinned_hessians_);
   device_gradients_ = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(score_t), 
                       boost::compute::memory_object::read_only, nullptr);
   device_hessians_  = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(score_t), 
@@ -410,7 +414,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
     // looking for 4 non-sparse features
     if (ordered_bins_[i] == nullptr) {
       dense_ind[k] = i;
-      // decide if we need to "scatter" the bin
+      // decide if we need to redistribute the bin
       double t = device_bin_size_ / (double)train_data_->FeatureAt(i)->num_bin();
       // multiplier must be a power of 2
       device_bin_mults_.push_back((int)round(pow(2, floor(log2(t)))));
@@ -483,6 +487,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
       dense_feature_map_.push_back(dense_ind[i]);
     }
   }
+  #if GPU_DEBUG >= 1
   printf("Dense feature list (size %lu): ", dense_feature_map_.size());
   for (i = 0; i < num_dense_features_; ++i) {
     printf("%d ", dense_feature_map_[i]);
@@ -493,6 +498,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
     printf("%d ", sparse_feature_map_[i]);
   }
   printf("\n");
+  #endif
 
   // host memory for transferring histograms
   // use map buffer instead
@@ -600,8 +606,8 @@ Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians) {
     const SplitInfo& best_leaf_SplitInfo = best_split_per_leaf_[best_leaf];
     // cannot split, quit
     if (best_leaf_SplitInfo.gain <= 0.0) {
-      Log::Info("No further splits with positive gain, best gain: %f, leaves: %d",
-                   best_leaf_SplitInfo.gain, split + 1);
+      Log::Info("No further splits with positive gain, best gain: %f, leaves: %d, left count: %d, right count: %d",
+                   best_leaf_SplitInfo.gain, split + 1, best_leaf_SplitInfo.left_count, best_leaf_SplitInfo.right_count);
       break;
     }
     // split tree with best leaf
