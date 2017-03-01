@@ -12,6 +12,12 @@
 
 namespace LightGBM {
 
+enum BinType {
+  NumericalBin,
+  CategoricalBin
+};
+
+
 /*! \brief Store data for one histogram bin */
 struct HistogramBinEntry {
 public:
@@ -58,9 +64,17 @@ public:
     if (num_bin_ != other.num_bin_) {
       return false;
     }
-    for (int i = 0; i < num_bin_; ++i) {
-      if (bin_upper_bound_[i] != other.bin_upper_bound_[i]) {
-        return false;
+    if (bin_type_ == BinType::NumericalBin) {
+      for (int i = 0; i < num_bin_; ++i) {
+        if (bin_upper_bound_[i] != other.bin_upper_bound_[i]) {
+          return false;
+        }
+      }
+    } else {
+      for (int i = 0; i < num_bin_; i++) {
+        if (bin_2_categorical_[i] != other.bin_2_categorical_[i]) {
+          return false;
+        }
       }
     }
     return true;
@@ -83,7 +97,11 @@ public:
   * \return Feature value of this bin
   */
   inline double BinToValue(uint32_t bin) const {
-    return bin_upper_bound_[bin];
+    if (bin_type_ == BinType::NumericalBin) {
+      return bin_upper_bound_[bin];
+    } else {
+      return bin_2_categorical_[bin];
+    }
   }
   /*!
   * \brief Get sizes in byte of this object
@@ -110,8 +128,9 @@ public:
   * \param max_bin The maximal number of bin
   * \param min_data_in_bin min number of data in one bin
   * \param min_split_data
+  * \param bin_type Type of this bin
   */
-  void FindBin(std::vector<double>& values, size_t total_sample_cnt, int max_bin, int min_data_in_bin, int min_split_data);
+  void FindBin(std::vector<double>& values, size_t total_sample_cnt, int max_bin, int min_data_in_bin, int min_split_data, BinType bin_type);
 
   /*!
   * \brief Use specific number of bin to calculate the size of this class
@@ -131,14 +150,24 @@ public:
   * \param buffer The source
   */
   void CopyFrom(const char* buffer);
+
+  /*!
+  * \brief Get bin types
+  */
+  inline BinType bin_type() const { return bin_type_; }
+
   /*!
   * \brief Get bin info
   */
   inline std::string bin_info() const {
-    std::stringstream str_buf;
-    str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
-    str_buf << '[' << min_val_ << ':' << max_val_ << ']';
-    return str_buf.str();
+    if (bin_type_ == BinType::CategoricalBin) {
+      return Common::Join(bin_2_categorical_, ":");
+    } else {
+      std::stringstream str_buf;
+      str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
+      str_buf << '[' << min_val_ << ':' << max_val_ << ']';
+      return str_buf.str();
+    }
   }
 
 private:
@@ -150,6 +179,12 @@ private:
   bool is_trival_;
   /*! \brief Sparse rate of this bins( num_bin0/num_data ) */
   double sparse_rate_;
+  /*! \brief Type of this bin */
+  BinType bin_type_;
+  /*! \brief Mapper from categorical to bin */
+  std::unordered_map<int, unsigned int> categorical_2_bin_;
+  /*! \brief Mapper from bin to categorical */
+  std::vector<int> bin_2_categorical_;
   /*! \brief minimal feature vaule */
   double min_val_;
   /*! \brief maximum feature value */
@@ -297,12 +332,13 @@ public:
   * \param num_data Number of used data
   * \param lte_indices After called this function. The less or equal data indices will store on this object.
   * \param gt_indices After called this function. The greater data indices will store on this object.
+  * \param bin_type type of bin
   * \return The number of less than or equal data.
   */
   virtual data_size_t Split(uint32_t min_bin, uint32_t max_bin, 
     uint32_t default_bin, uint32_t threshold,
     data_size_t* data_indices, data_size_t num_data,
-    data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
+    data_size_t* lte_indices, data_size_t* gt_indices, BinType bin_type) const = 0;
 
   /*!
   * \brief Create the ordered bin for this bin
@@ -346,18 +382,27 @@ public:
 };
 
 inline uint32_t BinMapper::ValueToBin(double value) const {
-  // binary search to find bin
-  int l = 0;
-  int r = num_bin_ - 1;
-  while (l < r) {
-    int m = (r + l - 1) / 2;
-    if (value <= bin_upper_bound_[m]) {
-      r = m;
+  if (bin_type_ == BinType::NumericalBin) {
+    // binary search to find bin
+    int l = 0;
+    int r = num_bin_ - 1;
+    while (l < r) {
+      int m = (r + l - 1) / 2;
+      if (value <= bin_upper_bound_[m]) {
+        r = m;
+      } else {
+        l = m + 1;
+      }
+    }
+    return l;
+  } else {
+    int int_value = static_cast<int>(value);
+    if (categorical_2_bin_.count(int_value)) {
+      return categorical_2_bin_.at(int_value);
     } else {
-      l = m + 1;
+      return num_bin_ - 1;
     }
   }
-  return l;
 }
 
 }  // namespace LightGBM

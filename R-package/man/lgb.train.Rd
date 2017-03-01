@@ -9,12 +9,12 @@
 lgb.cv(params = list(), data, nrounds = 10, nfold = 3, label = NULL,
   weight = NULL, obj = NULL, eval = NULL, verbose = 1, record = TRUE,
   eval_freq = 1L, showsd = TRUE, stratified = TRUE, folds = NULL,
-  init_model = NULL, colnames = NULL, 
+  init_model = NULL, colnames = NULL, categorical_feature = NULL,
   early_stopping_rounds = NULL, callbacks = list(), ...)
 
 lgb.train(params = list(), data, nrounds = 10, valids = list(),
   obj = NULL, eval = NULL, verbose = 1, record = TRUE, eval_freq = 1L,
-  init_model = NULL, colnames = NULL, 
+  init_model = NULL, colnames = NULL, categorical_feature = NULL,
   early_stopping_rounds = NULL, callbacks = list(), ...)
 
 lightgbm(data, label = NULL, weight = NULL, params = list(),
@@ -59,6 +59,10 @@ the \code{nfold} and \code{stratified} parameters are ignored.}
 \item{init_model}{path of model file of \code{lgb.Booster} object, will continue train from this model}
 
 \item{colnames}{feature names, if not null, will use this to overwrite the names in dataset}
+
+\item{categorical_feature}{list of str or int
+type int represents index,
+type str represents feature names}
 
 \item{early_stopping_rounds}{int
 Activates early stopping.
@@ -113,6 +117,10 @@ Tree still grow by leaf-wise.}
 \item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
 
 \item{colnames}{feature names, if not null, will use this to overwrite the names in dataset}
+
+\item{categorical_feature}{list of str or int
+type int represents index,
+type str represents feature names}
 
 \item{early_stopping_rounds}{int
 Activates early stopping.

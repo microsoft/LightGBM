@@ -12,6 +12,7 @@ Dataset <- R6Class(
                           params              = list(),
                           reference           = NULL,
                           colnames            = NULL,
+                          categorical_feature = NULL,
                           predictor           = NULL,
                           free_raw_data       = TRUE,
                           used_indices        = NULL,
@@ -41,6 +42,7 @@ Dataset <- R6Class(
       private$reference <- reference
       private$colnames  <- colnames
 
+      private$categorical_feature <- categorical_feature
       private$predictor           <- predictor
       private$free_raw_data       <- free_raw_data
       private$used_indices        <- used_indices
@@ -52,6 +54,7 @@ Dataset <- R6Class(
         private$params,
         self,
         private$colnames,
+        private$categorical_feature,
         private$predictor,
         private$free_raw_data,
         NULL,
@@ -72,6 +75,21 @@ Dataset <- R6Class(
       # set feature names if not exist
       if (is.null(private$colnames) && !is.null(cnames)) {
         private$colnames <- as.character(cnames)
+      }
+      # Get categorical feature index
+      if (!is.null(private$categorical_feature)) {
+        if (typeof(private$categorical_feature) == "character") {
+            cate_indices <- as.list(match(private$categorical_feature, private$colnames) - 1)
+            if (sum(is.na(cate_indices)) > 0) {
+              stop("lgb.self.get.handle: supplied an unknown feature in categorical_feature: ", sQuote(private$categorical_feature[is.na(cate_indices)]))
+            }
+          } else {
+            if (max(private$categorical_feature) > length(private$colnames)) {
+              stop("lgb.self.get.handle: supplied a too large value in categorical_feature: ", max(private$categorical_feature), " but only ", length(private$colnames), " features")
+            }
+            cate_indices <- as.list(private$categorical_feature - 1)
+          }
+        private$params$categorical_feature <- cate_indices
       }
       # Check has header or not
       has_header <- FALSE
@@ -271,6 +289,7 @@ Dataset <- R6Class(
         private$params,
         self,
         private$colnames,
+        private$categorical_feature,
         private$predictor,
         private$free_raw_data,
         idxset,
@@ -282,7 +301,20 @@ Dataset <- R6Class(
       private$params <- modifyList(private$params, params)
       self
     },
+    set_categorical_feature = function(categorical_feature) {
+      if (identical(private$categorical_feature, categorical_feature)) { return(self) }
+      if (is.null(private$raw_data)) {
+        stop(
+          "set_categorical_feature: cannot set categorical feature after freeing raw data,
+          please set ", sQuote("free_raw_data = FALSE"), " when you construct lgb.Dataset"
+        )
+      }
+      private$categorical_feature <- categorical_feature
+      self$finalize()
+      self
+    },
     set_reference = function(reference) {
+      self$set_categorical_feature(reference$.__enclos_env__$private$categorical_feature)
       self$set_colnames(reference$get_colnames())
       private$set_predictor(reference$.__enclos_env__$private$predictor)
       if (identical(private$reference, reference)) { return(self) }
@@ -316,6 +348,7 @@ Dataset <- R6Class(
     params              = list(),
     reference           = NULL,
     colnames            = NULL,
+    categorical_feature = NULL,
     predictor           = NULL,
     free_raw_data       = TRUE,
     used_indices        = NULL,
@@ -353,6 +386,7 @@ Dataset <- R6Class(
 #' @param params a list of parameters
 #' @param reference reference dataset
 #' @param colnames names of columns
+#' @param categorical_feature categorical features
 #' @param free_raw_data TRUE for need to free raw data after construct
 #' @param info a list of information of the lgb.Dataset object
 #' @param ... other information to pass to \code{info} or parameters pass to \code{params}
@@ -371,6 +405,7 @@ lgb.Dataset <- function(data,
                         params              = list(),
                         reference           = NULL,
                         colnames            = NULL,
+                        categorical_feature = NULL,
                         free_raw_data       = TRUE,
                         info                = list(),
                         ...) {
@@ -379,6 +414,7 @@ lgb.Dataset <- function(data,
     params,
     reference,
     colnames,
+    categorical_feature,
     NULL,
     free_raw_data,
     NULL,
@@ -626,6 +662,29 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
     stop("setinfo.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
   dataset$setinfo(name, info)
+}
+
+#' Set categorical feature of \code{lgb.Dataset}
+#'
+#' @param dataset object of class \code{lgb.Dataset}
+#' @param categorical_feature categorical features
+#' @return passed dataset
+#' @examples
+#' \dontrun{
+#'   data(agaricus.train, package='lightgbm')
+#'   train <- agaricus.train
+#'   dtrain <- lgb.Dataset(train$data, label=train$label)
+#'   lgb.Dataset.save(dtrain, 'lgb.Dataset.data')
+#'   dtrain <- lgb.Dataset('lgb.Dataset.data')
+#'   lgb.Dataset.set.categorical(dtrain, 1:2)
+#' }
+#' @rdname lgb.Dataset.set.categorical
+#' @export
+lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
+  if (!lgb.is.Dataset(dataset)) {
+    stop("lgb.Dataset.set.categorical: input dataset should be an lgb.Dataset object")
+  }
+  dataset$set_categorical_feature(categorical_feature)
 }
 
 #' Set reference of \code{lgb.Dataset}

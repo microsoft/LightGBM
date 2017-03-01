@@ -161,7 +161,7 @@ public:
   virtual data_size_t Split(
     uint32_t min_bin, uint32_t max_bin, uint32_t default_bin,
     uint32_t threshold, data_size_t* data_indices, data_size_t num_data,
-    data_size_t* lte_indices, data_size_t* gt_indices) const override {
+    data_size_t* lte_indices, data_size_t* gt_indices, BinType bin_type) const override {
     if (num_data <= 0) { return 0; }
     uint8_t th = static_cast<uint8_t>(threshold + min_bin);
     uint8_t minb = static_cast<uint8_t>(min_bin);
@@ -173,19 +173,37 @@ public:
     data_size_t gt_count = 0;
     data_size_t* default_indices = gt_indices;
     data_size_t* default_count = &gt_count;
-    if (default_bin <= threshold) {
-      default_indices = lte_indices;
-      default_count = &lte_count;
-    }
-    for (data_size_t i = 0; i < num_data; ++i) {
-      const data_size_t idx = data_indices[i];
-      const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
-      if (bin > maxb || bin < minb) {
-        default_indices[(*default_count)++] = idx;
-      } else if (bin > th) {
-        gt_indices[gt_count++] = idx;
-      } else {
-        lte_indices[lte_count++] = idx;
+    if (bin_type == BinType::NumericalBin) {
+      if (default_bin <= threshold) {
+        default_indices = lte_indices;
+        default_count = &lte_count;
+      }
+      for (data_size_t i = 0; i < num_data; ++i) {
+        const data_size_t idx = data_indices[i];
+        const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+        if (bin > maxb || bin < minb) {
+          default_indices[(*default_count)++] = idx;
+        } else if (bin > th) {
+          gt_indices[gt_count++] = idx;
+        } else {
+          lte_indices[lte_count++] = idx;
+        }
+      }
+    } else {
+      if (default_bin == threshold) {
+        default_indices = lte_indices;
+        default_count = &lte_count;
+      }
+      for (data_size_t i = 0; i < num_data; ++i) {
+        const data_size_t idx = data_indices[i];
+        const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+        if (bin > maxb || bin < minb) {
+          default_indices[(*default_count)++] = idx;
+        } else if (bin != th) {
+          gt_indices[gt_count++] = idx;
+        } else {
+          lte_indices[lte_count++] = idx;
+        }
       }
     }
     return lte_count;

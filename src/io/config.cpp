@@ -216,6 +216,7 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetString(params, "weight_column", &weight_column);
   GetString(params, "group_column", &group_column);
   GetString(params, "ignore_column", &ignore_column);
+  GetString(params, "categorical_column", &categorical_column);
   GetInt(params, "min_data_in_leaf", &min_data_in_leaf);
   GetInt(params, "min_dato_in_bin", &min_data_in_bin);
   GetDouble(params, "max_conflict_rate", &max_conflict_rate);

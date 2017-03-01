@@ -19,6 +19,7 @@
 #'  \item \code{leaf_parent}: ID of the parent node for current leaf (integer)
 #'  \item \code{split_gain}: Split gain of a node
 #'  \item \code{threshold}: Spliting threshold value of a node
+#'  \item \code{decision_type}: Decision type of a node
 #'  \item \code{internal_value}: Node value
 #'  \item \code{internal_count}: The number of observation collected by a node
 #'  \item \code{leaf_value}: Leaf value
@@ -62,14 +63,14 @@ single.tree.parse <- function(lgb_tree) {
   single_tree_dt <- data.table::data.table(tree_index = integer(0),
                                            split_index = integer(0), split_feature = integer(0), node_parent = integer(0),
                                            leaf_index = integer(0), leaf_parent = integer(0),
-                                           split_gain = numeric(0), threshold = numeric(0),
+                                           split_gain = numeric(0), threshold = numeric(0), decision_type = character(0),
                                            internal_value = integer(0), internal_count = integer(0),
                                            leaf_value = integer(0), leaf_count = integer(0))
   pre_order_traversal <- function(tree_node_leaf, parent_index = NA) {
     if (!is.null(tree_node_leaf$split_index)) {
       single_tree_dt <<- data.table::rbindlist(l = list(single_tree_dt,
                                                         c(tree_node_leaf[c("split_index", "split_feature",
-                                                                           "split_gain", "threshold",
+                                                                           "split_gain", "threshold", "decision_type",
                                                                            "internal_value", "internal_count")],
                                                           "node_parent" = parent_index)),
                                                use.names = TRUE, fill = TRUE)

@@ -68,6 +68,13 @@ test_data = lgb.Dataset('test.svm', reference=train_data)
 
 In LightGBM, the validation data should be aligned with training data.
 
+#### Specific feature names and categorical features
+
+```python
+train_data = lgb.Dataset(data, label=label, feature_name=['c1', 'c2', 'c3'], categorical_feature=['c3'])
+```
+LightGBM can use categorical features as input directly. It doesn't need to covert to one-hot coding, and is much faster than one-hot coding (about 8x speed-up). 
+**Note:You should convert your categorical features to int type before you construct `Dataset`.**
 
 #### Weights can be set when needed:
 ```python

@@ -124,6 +124,10 @@ public:
   * And add an prefix "name:" while using column name
   * Note: when using Index, it dosen't count the label index */
   std::string ignore_column = "";
+  /*! \brief specific categorical columns, Note:only support for integer type categorical
+  * And add an prefix "name:" while using column name
+  * Note: when using Index, it dosen't count the label index */
+  std::string categorical_column = "";
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -381,6 +385,9 @@ struct ParameterAlias {
       { "query_column", "group_column" },
       { "ignore_feature", "ignore_column" },
       { "blacklist", "ignore_column" },
+      { "categorical_feature", "categorical_column" },
+      { "cat_column", "categorical_column" },
+      { "cat_feature", "categorical_column" },
       { "predict_raw_score", "is_predict_raw_score" },
       { "predict_leaf_index", "is_predict_leaf_index" }, 
       { "raw_score", "is_predict_raw_score" },

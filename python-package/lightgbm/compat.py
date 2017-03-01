@@ -39,6 +39,15 @@ except (ImportError, SyntaxError):
     import json
 
 
+def json_default_with_numpy(obj):
+    if isinstance(obj, (np.integer, np.floating, np.bool_)):
+        return obj.item()
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    else:
+        return obj
+
+
 """pandas"""
 try:
     from pandas import Series, DataFrame

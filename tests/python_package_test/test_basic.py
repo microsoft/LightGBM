@@ -49,7 +49,7 @@ class TestBasic(unittest.TestCase):
         for preds in zip(pred_from_matr, pred_from_model_file):
             self.assertEqual(*preds)
         # check pmml
-        # os.system('python ../../pmml/pmml.py model.txt')
+        os.system('python ../../pmml/pmml.py model.txt')
 
 
 print("----------------------------------------------------------------------")

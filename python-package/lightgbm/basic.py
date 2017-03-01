@@ -12,8 +12,9 @@ from tempfile import NamedTemporaryFile
 import numpy as np
 import scipy.sparse
 
-from .compat import (DataFrame, Series, integer_types, json, numeric_types,
-                     range_, string_type)
+from .compat import (DataFrame, Series, integer_types, json,
+                     json_default_with_numpy, numeric_types, range_,
+                     string_type)
 from .libpath import find_lib_path
 
 
@@ -220,22 +221,49 @@ PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
                        'float32': 'float', 'float64': 'float', 'bool': 'int'}
 
 
-def _data_from_pandas(data, feature_name):
+def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
     if isinstance(data, DataFrame):
-        bad_fields = [data.columns[i] for i, dtype in enumerate(data.dtypes) if dtype.name not in PANDAS_DTYPE_MAPPER]
-        if bad_fields:
-            msg = """DataFrame.dtypes for data must be int, float or bool. Did not expect the data types in fields: """
-            raise ValueError(msg + ', '.join(bad_fields))
-        if feature_name == 'auto':
+        if feature_name == 'auto' or feature_name is None:
             if all([isinstance(name, integer_types + (np.integer, )) for name in data.columns]):
                 msg = """Using Pandas (default) integer column names, not column indexes. You can use indexes with DataFrame.values."""
                 warnings.filterwarnings('once')
                 warnings.warn(msg, stacklevel=5)
-            feature_name = [str(name) for name in data.columns]
+            data = data.rename(columns=str)
+        cat_cols = data.select_dtypes(include=['category']).columns
+        if pandas_categorical is None:  # train dataset
+            pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
+        else:
+            if len(cat_cols) != len(pandas_categorical):
+                raise ValueError('train and valid dataset categorical_feature do not match.')
+            for col, category in zip(cat_cols, pandas_categorical):
+                if list(data[col].cat.categories) != list(category):
+                    data[col] = data[col].cat.set_categories(category)
+        if len(cat_cols):  # cat_cols is pandas Index object
+            data = data.copy()  # not alter origin DataFrame
+            data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes)
+        if categorical_feature is not None:
+            if feature_name is None:
+                feature_name = list(data.columns)
+            if categorical_feature == 'auto':
+                categorical_feature = list(cat_cols)
+            else:
+                categorical_feature = list(categorical_feature) + list(cat_cols)
+        if feature_name == 'auto':
+            feature_name = list(data.columns)
+        data_dtypes = data.dtypes
+        if not all(dtype.name in PANDAS_DTYPE_MAPPER for dtype in data_dtypes):
+            bad_fields = [data.columns[i] for i, dtype in
+                          enumerate(data_dtypes) if dtype.name not in PANDAS_DTYPE_MAPPER]
+
+            msg = """DataFrame.dtypes for data must be int, float or bool. Did not expect the data types in fields """
+            raise ValueError(msg + ', '.join(bad_fields))
         data = data.values.astype('float')
-    elif feature_name == 'auto':
-        feature_name = None
-    return data, feature_name
+    else:
+        if feature_name == 'auto':
+            feature_name = None
+        if categorical_feature == 'auto':
+            categorical_feature = None
+    return data, feature_name, categorical_feature, pandas_categorical
 
 
 def _label_from_pandas(label):
@@ -247,6 +275,19 @@ def _label_from_pandas(label):
             raise ValueError('DataFrame.dtypes for label must be int, float or bool')
         label = label.values.astype('float')
     return label
+
+
+def _save_pandas_categorical(file_name, pandas_categorical):
+    with open(file_name, 'a') as f:
+        f.write('\npandas_categorical:' + json.dumps(pandas_categorical, default=json_default_with_numpy))
+
+
+def _load_pandas_categorical(file_name):
+    with open(file_name, 'r') as f:
+        last_line = f.readlines()[-1]
+        if last_line.startswith('pandas_categorical:'):
+            return json.loads(last_line[len('pandas_categorical:'):])
+    return None
 
 
 class _InnerPredictor(object):
@@ -280,6 +321,7 @@ class _InnerPredictor(object):
                 ctypes.byref(out_num_class)))
             self.num_class = out_num_class.value
             self.num_total_iteration = out_num_iterations.value
+            self.pandas_categorical = _load_pandas_categorical(model_file)
         elif booster_handle is not None:
             self.__is_manage_handle = False
             self.handle = booster_handle
@@ -293,6 +335,7 @@ class _InnerPredictor(object):
                 self.handle,
                 ctypes.byref(out_num_iterations)))
             self.num_total_iteration = out_num_iterations.value
+            self.pandas_categorical = None
         else:
             raise TypeError('Need Model file or Booster handle to create a predictor')
 
@@ -328,7 +371,7 @@ class _InnerPredictor(object):
         """
         if isinstance(data, Dataset):
             raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
-        data = _data_from_pandas(data, None)[0]
+        data = _data_from_pandas(data, None, None, self.pandas_categorical)[0]
         predict_type = C_API_PREDICT_NORMAL
         if raw_score:
             predict_type = C_API_PREDICT_RAW_SCORE
@@ -358,6 +401,9 @@ class _InnerPredictor(object):
                                               predict_type)
         elif isinstance(data, np.ndarray):
             preds, nrow = self.__pred_for_np2d(data, num_iteration,
+                                               predict_type)
+        elif isinstance(data, DataFrame):
+            preds, nrow = self.__pred_for_np2d(data.values, num_iteration,
                                                predict_type)
         else:
             try:
@@ -486,7 +532,7 @@ class Dataset(object):
     """Dataset in LightGBM."""
     def __init__(self, data, label=None, max_bin=255, reference=None,
                  weight=None, group=None, silent=False,
-                 feature_name='auto', params=None,
+                 feature_name='auto', categorical_feature='auto', params=None,
                  free_raw_data=True):
         """
         Parameters
@@ -509,6 +555,11 @@ class Dataset(object):
         feature_name : list of str, or 'auto'
             Feature names
             If 'auto' and data is pandas DataFrame, use data columns name
+        categorical_feature : list of str or int, or 'auto'
+            Categorical features,
+            type int represents index,
+            type str represents feature names (need to specify feature_name as well)
+            If 'auto' and data is pandas DataFrame, use pandas categorical columns
         params: dict, optional
             Other parameters
         free_raw_data: Bool
@@ -523,10 +574,12 @@ class Dataset(object):
         self.group = group
         self.silent = silent
         self.feature_name = feature_name
+        self.categorical_feature = categorical_feature
         self.params = params
         self.free_raw_data = free_raw_data
         self.used_indices = None
         self._predictor = None
+        self.pandas_categorical = None
 
     def __del__(self):
         self._free_handle()
@@ -539,11 +592,11 @@ class Dataset(object):
     def _lazy_init(self, data, label=None, max_bin=255, reference=None,
                    weight=None, group=None, predictor=None,
                    silent=False, feature_name='auto',
-                   params=None):
+                   categorical_feature='auto', params=None):
         if data is None:
             self.handle = None
             return
-        data, feature_name, = _data_from_pandas(data, feature_name)
+        data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data, feature_name, categorical_feature, self.pandas_categorical)
         label = _label_from_pandas(label)
         self.data_has_header = False
         """process for args"""
@@ -555,6 +608,23 @@ class Dataset(object):
             params["verbose"] = 0
         elif "verbose" not in params:
             params["verbose"] = 1
+        """get categorical features"""
+        if categorical_feature is not None:
+            categorical_indices = set()
+            feature_dict = {}
+            if feature_name is not None:
+                feature_dict = {name: i for i, name in enumerate(feature_name)}
+            for name in categorical_feature:
+                if isinstance(name, string_type) and name in feature_dict:
+                    categorical_indices.add(feature_dict[name])
+                elif isinstance(name, integer_types):
+                    categorical_indices.add(name)
+                else:
+                    raise TypeError("Wrong type({}) or unknown name({}) in categorical_feature"
+                                    .format(type(name).__name__, name))
+
+            params['categorical_column'] = sorted(categorical_indices)
+
         params_str = param_dict_to_str(params)
         """process for reference dataset"""
         ref_dataset = None
@@ -714,7 +784,7 @@ class Dataset(object):
                 self._lazy_init(self.data, label=self.label, max_bin=self.max_bin,
                                 weight=self.weight, group=self.group, predictor=self._predictor,
                                 silent=self.silent, feature_name=self.feature_name,
-                                params=self.params)
+                                categorical_feature=self.categorical_feature, params=self.params)
             if self.free_raw_data:
                 self.data = None
         return self
@@ -744,6 +814,7 @@ class Dataset(object):
                       weight=weight, group=group, silent=silent, params=params,
                       free_raw_data=self.free_raw_data)
         ret._predictor = self._predictor
+        ret.pandas_categorical = self.pandas_categorical
         return ret
 
     def subset(self, used_indices, params=None):
@@ -758,8 +829,9 @@ class Dataset(object):
             Other parameters
         """
         ret = Dataset(None, reference=self, feature_name=self.feature_name,
-                      params=params)
+                      categorical_feature=self.categorical_feature, params=params)
         ret._predictor = self._predictor
+        ret.pandas_categorical = self.pandas_categorical
         ret.used_indices = used_indices
         return ret
 
@@ -867,6 +939,24 @@ class Dataset(object):
         else:
             raise TypeError("Unknown type")
 
+    def set_categorical_feature(self, categorical_feature):
+        """
+        Set categorical features
+
+        Parameters
+        ----------
+        categorical_feature : list of int or str
+            Name/index of categorical features
+
+        """
+        if self.categorical_feature == categorical_feature:
+            return
+        if self.data is not None:
+            self.categorical_feature = categorical_feature
+            self._free_handle()
+        else:
+            raise LightGBMError("Cannot set categorical feature after freed raw data, set free_raw_data=False when construct Dataset to avoid this.")
+
     def _set_predictor(self, predictor):
         """
         Set predictor for continued training, not recommand for user to call this function.
@@ -889,6 +979,7 @@ class Dataset(object):
         reference : Dataset
             Will use reference as template to consturct current dataset
         """
+        self.set_categorical_feature(reference.categorical_feature)
         self.set_feature_name(reference.feature_name)
         self._set_predictor(reference._predictor)
         if self.reference is reference:
@@ -1117,6 +1208,7 @@ class Booster(object):
             self.__inner_predict_buffer = [None]
             self.__is_predicted_cur_iter = [False]
             self.__get_eval_info()
+            self.pandas_categorical = train_set.pandas_categorical
         elif model_file is not None:
             """Prediction task"""
             out_num_iterations = ctypes.c_int(0)
@@ -1129,6 +1221,7 @@ class Booster(object):
                 self.handle,
                 ctypes.byref(out_num_class)))
             self.__num_class = out_num_class.value
+            self.pandas_categorical = _load_pandas_categorical(model_file)
         elif 'model_str' in params:
             self.__load_model_from_string(params['model_str'])
         else:
@@ -1144,6 +1237,7 @@ class Booster(object):
     def __deepcopy__(self, _):
         model_str = self.__save_model_to_string()
         booster = Booster({'model_str': model_str})
+        booster.pandas_categorical = self.pandas_categorical
         return booster
 
     def __getstate__(self):
@@ -1383,6 +1477,7 @@ class Booster(object):
             self.handle,
             ctypes.c_int(num_iteration),
             c_str(filename)))
+        _save_pandas_categorical(filename, self.pandas_categorical)
 
     def __load_model_from_string(self, model_str):
         """[Private] Load model from string"""
@@ -1494,6 +1589,7 @@ class Booster(object):
     def _to_predictor(self):
         """Convert to predictor"""
         predictor = _InnerPredictor(booster_handle=self.handle)
+        predictor.pandas_categorical = self.pandas_categorical
         return predictor
 
     def feature_name(self):

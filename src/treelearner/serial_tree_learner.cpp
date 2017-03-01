@@ -490,7 +490,8 @@ void SerialTreeLearner::Split(Tree* tree, int best_Leaf, int* left_leaf, int* ri
   // left = parent
   *left_leaf = best_Leaf;
   // split tree, will return right leaf
-  *right_leaf = tree->Split(best_Leaf, best_split_info.feature, 
+  *right_leaf = tree->Split(best_Leaf, best_split_info.feature,
+    train_data_->FeatureBinMapper(best_split_info.feature)->bin_type(),
     best_split_info.threshold,
     train_data_->RealFeatureIndex(best_split_info.feature),
     train_data_->RealThreshold(best_split_info.feature, best_split_info.threshold),

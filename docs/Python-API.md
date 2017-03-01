@@ -5,8 +5,8 @@
     - [Booster](Python-API.md#booster)
 
 * [Training API](Python-API.md#training-api)
-    - [train](Python-API.md#trainparams-train_set-num_boost_round100-valid_setsnone-valid_namesnone-fobjnone-fevalnone-init_modelnone-feature_nameauto-early_stopping_roundsnone-evals_resultnone-verbose_evaltrue-learning_ratesnone-callbacksnone)
-    - [cv](Python-API.md#cvparams-train_set-num_boost_round10-data_splitternone-nfold5-stratifiedfalse-shuffletrue-metricsnone-fobjnone-fevalnone-init_modelnone-feature_nameauto-early_stopping_roundsnone-fpreprocnone-verbose_evalnone-show_stdvtrue-seed0-callbacksnone)
+    - [train](Python-API.md#trainparams-train_set-num_boost_round100-valid_setsnone-valid_namesnone-fobjnone-fevalnone-init_modelnone-feature_nameauto-categorical_featureauto-early_stopping_roundsnone-evals_resultnone-verbose_evaltrue-learning_ratesnone-callbacksnone)
+    - [cv](Python-API.md#cvparams-train_set-num_boost_round10-data_splitternone-nfold5-stratifiedfalse-shuffletrue-metricsnone-fobjnone-fevalnone-init_modelnone-feature_nameauto-categorical_featureauto-early_stopping_roundsnone-fpreprocnone-verbose_evalnone-show_stdvtrue-seed0-callbacksnone)
 
 * [Scikit-learn API](Python-API.md#scikit-learn-api)
     - [Common Methods](Python-API.md#common-methods)
@@ -33,7 +33,7 @@ The methods of each Class is in alphabetical order.
 
 ###Dataset
 
-####__init__(data, label=None, max_bin=255, reference=None, weight=None, group=None, silent=False, feature_name='auto', params=None, free_raw_data=True)
+####__init__(data, label=None, max_bin=255, reference=None, weight=None, group=None, silent=False, feature_name='auto', categorical_feature='auto', params=None, free_raw_data=True)
 
     Parameters
     ----------
@@ -55,6 +55,11 @@ The methods of each Class is in alphabetical order.
     feature_name : list of str, or 'auto'
         Feature names
         If 'auto' and data is pandas DataFrame, use data columns name
+    categorical_feature : list of str or int, or 'auto'
+        Categorical features,
+        type int represents index,
+        type str represents feature names (need to specify feature_name as well)
+        If 'auto' and data is pandas DataFrame, use pandas categorical columns
     params : dict, optional
         Other parameters
     free_raw_data : Bool
@@ -144,6 +149,17 @@ The methods of each Class is in alphabetical order.
     ----------
     filename : str
         Name of the output file.
+
+
+####set_categorical_feature(categorical_feature)
+
+    Set categorical features.
+
+    Parameters
+    ----------
+    categorical_feature : list of str or list of int
+        Name (str) or index (int) of categorical features
+
 
 
 ####set_feature_name(feature_name)
@@ -450,7 +466,7 @@ The methods of each Class is in alphabetical order.
 
 ##Training API
 
-####train(params, train_set, num_boost_round=100, valid_sets=None, valid_names=None, fobj=None, feval=None, init_model=None, feature_name='auto', early_stopping_rounds=None, evals_result=None, verbose_eval=True, learning_rates=None, callbacks=None)
+####train(params, train_set, num_boost_round=100, valid_sets=None, valid_names=None, fobj=None, feval=None, init_model=None, feature_name='auto', categorical_feature='auto', early_stopping_rounds=None, evals_result=None, verbose_eval=True, learning_rates=None, callbacks=None)
 
     Train with given parameters.
 
@@ -476,6 +492,11 @@ The methods of each Class is in alphabetical order.
     feature_name : list of str, or 'auto'
         Feature names
         If 'auto' and data is pandas DataFrame, use data columns name
+    categorical_feature : list of str or int, or 'auto'
+        Categorical features,
+        type int represents index,
+        type str represents feature names (need to specify feature_name as well)
+        If 'auto' and data is pandas DataFrame, use pandas categorical columns
     early_stopping_rounds: int
         Activates early stopping.
         Requires at least one validation data and one metric
@@ -515,7 +536,7 @@ The methods of each Class is in alphabetical order.
     booster : a trained booster model
 
 
-####cv(params, train_set, num_boost_round=10, data_splitter=None, nfold=5, stratified=False, shuffle=True, metrics=None, fobj=None, feval=None, init_model=None, feature_name='auto', early_stopping_rounds=None, fpreproc=None, verbose_eval=None, show_stdv=True, seed=0, callbacks=None)
+####cv(params, train_set, num_boost_round=10, data_splitter=None, nfold=5, stratified=False, shuffle=True, metrics=None, fobj=None, feval=None, init_model=None, feature_name='auto', categorical_feature='auto', early_stopping_rounds=None, fpreproc=None, verbose_eval=None, show_stdv=True, seed=0, callbacks=None)
 
     Cross-validation with given paramaters.
 
@@ -546,6 +567,11 @@ The methods of each Class is in alphabetical order.
     feature_name : list of str, or 'auto'
         Feature names
         If 'auto' and data is pandas DataFrame, use data columns name
+    categorical_feature : list of str or int, or 'auto'
+        Categorical features,
+        type int represents index,
+        type str represents feature names (need to specify feature_name as well)
+        If 'auto' and data is pandas DataFrame, use pandas categorical columns
     early_stopping_rounds: int
         Activates early stopping. CV error needs to decrease at least
         every <early_stopping_rounds> round(s) to continue.
@@ -695,7 +721,7 @@ The methods of each Class is in alphabetical order.
     X_leaves : array_like, shape=[n_samples, n_trees]
 
 
-####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric=None, early_stopping_rounds=None, verbose=True, feature_name='auto', callbacks=None)
+####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric=None, early_stopping_rounds=None, verbose=True, feature_name='auto', categorical_feature='auto', callbacks=None)
 
     Fit the gradient boosting model.
 
@@ -729,6 +755,11 @@ The methods of each Class is in alphabetical order.
     feature_name : list of str, or 'auto'
         Feature names
         If 'auto' and data is pandas DataFrame, use data columns name
+    categorical_feature : list of str or int, or 'auto'
+        Categorical features,
+        type int represents index,
+        type str represents feature names (need to specify feature_name as well)
+        If 'auto' and data is pandas DataFrame, use pandas categorical columns
     callbacks : list of callback functions
         List of callback functions that are applied at each iteration.
         See Callbacks in Python-API.md for more information.

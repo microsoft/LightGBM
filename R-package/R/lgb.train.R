@@ -18,6 +18,9 @@
 #' @param eval_freq evalutaion output frequency, only effect when verbose > 0
 #' @param init_model path of model file of \code{lgb.Booster} object, will continue training from this model
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
+#' @param categorical_feature list of str or int
+#'        type int represents index,
+#'        type str represents feature names
 #' @param early_stopping_rounds int
 #'        Activates early stopping.
 #'        Requires at least one validation data and one metric
@@ -52,6 +55,7 @@ lgb.train <- function(params = list(), data, nrounds = 10,
                       eval_freq             = 1L,
                       init_model            = NULL,
                       colnames              = NULL,
+                      categorical_feature   = NULL,
                       early_stopping_rounds = NULL,
                       callbacks             = list(), ...) {
   additional_params <- list(...)
@@ -96,6 +100,7 @@ lgb.train <- function(params = list(), data, nrounds = 10,
   data$update_params(params)
   data$.__enclos_env__$private$set_predictor(predictor)
   if (!is.null(colnames)) { data$set_colnames(colnames) }
+  if (!is.null(categorical_feature)) { data$set_categorical_feature(categorical_feature) }
   data$construct()
   vaild_contain_train <- FALSE
   train_data_name     <- "train"
