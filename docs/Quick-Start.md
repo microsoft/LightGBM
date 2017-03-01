@@ -14,11 +14,11 @@ LightGBM supports input data file with [CSV](https://en.wikipedia.org/wiki/Comma
 
 Label is the data of first column, and there is no header in the file.
 
-### [deprecated in v2] Categorical feature support
+### Categorical feature support
 
 update 12/5/2016:
 
-LightGBM can use categorical feature directly (without one-hot coding). The experiment on [Expo data](http://stat-computing.org/dataexpo/2009/) shows about 8x speed-up compared with one-hot coding (refer to [categorical log]( https://github.com/guolinke/boosting_tree_benchmarks/blob/master/lightgbm/lightgbm_dataexpo_speed.log) and [one-hot log]( https://github.com/guolinke/boosting_tree_benchmarks/blob/master/lightgbm/lightgbm_dataexpo_onehot_speed.log)).
+LightGBM can use categorical feature directly (without one-hot coding). The experiment on [Expo data](http://stat-computing.org/dataexpo/2009/) shows about 8x speed-up compared with one-hot coding.
 
 For the setting details, please refer to [Parameters](./Parameters.md#io-parameters).
 

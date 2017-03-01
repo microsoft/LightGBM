@@ -41,9 +41,16 @@ public:
   * \param feature the feature data for this histogram
   * \param min_num_data_one_leaf minimal number of data in one leaf
   */
-  void Init(HistogramBinEntry* data, const FeatureMetainfo* meta) {
+  void Init(HistogramBinEntry* data, const FeatureMetainfo* meta, BinType bin_type) {
     meta_ = meta;
     data_ = data;
+    if (bin_type == BinType::NumericalBin) {
+      find_best_threshold_fun_ = std::bind(&FeatureHistogram::FindBestThresholdNumerical, this, std::placeholders::_1
+        , std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
+    } else {
+      find_best_threshold_fun_ = std::bind(&FeatureHistogram::FindBestThresholdCategorical, this, std::placeholders::_1
+        , std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
+    }
   }
 
   HistogramBinEntry* RawData() {
@@ -60,9 +67,14 @@ public:
       data_[i].sum_hessians -= other.data_[i].sum_hessians;
     }
   }
+
   void FindBestThreshold(double sum_gradient, double sum_hessian, data_size_t num_data,
     SplitInfo* output) {
-    sum_hessian += 2 * kEpsilon;
+    find_best_threshold_fun_(sum_gradient, sum_hessian + 2 * kEpsilon, num_data, output);
+  }
+
+  void FindBestThresholdNumerical(double sum_gradient, double sum_hessian, data_size_t num_data,
+    SplitInfo* output) {
     double best_sum_left_gradient = NAN;
     double best_sum_left_hessian = NAN;
     double best_gain = kMinScore;
@@ -131,6 +143,97 @@ public:
       output->gain = kMinScore;
     }
   }
+
+  void FindBestThresholdCategorical(double sum_gradient, double sum_hessian, data_size_t num_data,
+    SplitInfo* output) {
+    double best_gain = kMinScore;
+    uint32_t best_threshold = static_cast<uint32_t>(meta_->num_bin);
+    double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian);
+    double min_gain_shift = gain_shift + meta_->tree_config->min_gain_to_split;
+    is_splittable_ = false;
+    const int bias = meta_->bias;
+    int t = meta_->num_bin - 1 - bias;
+    const int t_end = 0;
+    // from right to left, and we don't need data in bin0
+    for (; t >= t_end; --t) {
+      // if data not enough, or sum hessian too small
+      if (data_[t].cnt < meta_->tree_config->min_data_in_leaf
+        || data_[t].sum_hessians < meta_->tree_config->min_sum_hessian_in_leaf) continue;
+      data_size_t other_count = num_data - data_[t].cnt;
+      // if data not enough
+      if (other_count < meta_->tree_config->min_data_in_leaf) continue;
+
+      double sum_other_hessian = sum_hessian - data_[t].sum_hessians - kEpsilon;
+      // if sum hessian too small
+      if (sum_other_hessian < meta_->tree_config->min_sum_hessian_in_leaf) continue;
+
+      double sum_other_gradient = sum_gradient - data_[t].sum_gradients;
+      // current split gain
+      double current_gain = GetLeafSplitGain(sum_other_gradient, sum_other_hessian)
+        + GetLeafSplitGain(data_[t].sum_gradients, data_[t].sum_hessians + kEpsilon);
+      // gain with split is worse than without split
+      if (current_gain <= min_gain_shift) continue;
+
+      // mark to is splittable
+      is_splittable_ = true;
+      // better split point
+      if (current_gain > best_gain) {
+        best_threshold = static_cast<uint32_t>(t + bias);
+        best_gain = current_gain;
+      }
+    }
+    // need restore zero bin
+    if (bias == 1) {
+      t = meta_->num_bin - 1 - bias;
+      double sum_bin0_gradient = sum_gradient;
+      double sum_bin0_hessian = sum_hessian;
+      data_size_t cnt_bin0 = num_data;
+      for (; t >= 0; --t) {
+        sum_bin0_gradient -= data_[t].sum_gradients;
+        sum_bin0_hessian -= data_[t].sum_hessians;
+        cnt_bin0 -= data_[t].cnt;
+      }
+      data_size_t other_count = num_data - cnt_bin0;
+      double sum_other_hessian = sum_hessian - sum_bin0_hessian - kEpsilon;
+      if (cnt_bin0 >= meta_->tree_config->min_data_in_leaf
+        && sum_bin0_hessian >= meta_->tree_config->min_sum_hessian_in_leaf
+        && other_count >= meta_->tree_config->min_data_in_leaf
+        && sum_other_hessian >= meta_->tree_config->min_sum_hessian_in_leaf) {
+        double sum_other_gradient = sum_gradient - sum_bin0_gradient;
+        double current_gain = GetLeafSplitGain(sum_other_gradient, sum_other_hessian)
+          + GetLeafSplitGain(sum_bin0_gradient, sum_bin0_hessian + kEpsilon);
+        if (current_gain > min_gain_shift) {
+          is_splittable_ = true;
+          // better split point
+          if (current_gain > best_gain) {
+            best_threshold = static_cast<uint32_t>(0);
+            best_gain = current_gain;
+          }
+        }
+      }
+    }
+    if (is_splittable_) {
+      // update split information
+      output->feature =  meta_->feature_idx;
+      output->threshold = best_threshold;
+      output->left_output = CalculateSplittedLeafOutput(data_[best_threshold].sum_gradients,
+        data_[best_threshold].sum_hessians + kEpsilon);
+      output->left_count = data_[best_threshold].cnt;
+      output->left_sum_gradient = data_[best_threshold].sum_gradients;
+      output->left_sum_hessian = data_[best_threshold].sum_hessians + kEpsilon;
+
+      output->right_output = CalculateSplittedLeafOutput(sum_gradient - data_[best_threshold].sum_gradients,
+        sum_hessian - data_[best_threshold].sum_hessians - kEpsilon);
+      output->right_count = num_data - data_[best_threshold].cnt;
+      output->right_sum_gradient = sum_gradient - data_[best_threshold].sum_gradients;
+      output->right_sum_hessian = sum_hessian - data_[best_threshold].sum_hessians - kEpsilon;
+      output->gain = best_gain - gain_shift;
+    } else {
+      output->feature = meta_->feature_idx;
+      output->gain = kMinScore;
+    }
+  }
+
   /*!
   * \brief Binary size of this histogram
   */
@@ -188,6 +291,8 @@ private:
   //std::vector<HistogramBinEntry> data_;
   /*! \brief False if this histogram cannot split */
   bool is_splittable_ = true;
+
+  std::function<void(double, double, data_size_t, SplitInfo*)> find_best_threshold_fun_;
 };
 class HistogramPool {
 public:
@@ -264,7 +369,7 @@ public:
       uint64_t offset = 0;
       for (int j = 0; j < train_data->num_features(); ++j) {
         offset += static_cast<uint64_t>(train_data->SubFeatureBinOffset(j));
-        pool_[i][j].Init(data_[i].data() + offset, &feature_metas_[j]);
+        pool_[i][j].Init(data_[i].data() + offset, &feature_metas_[j], train_data->FeatureBinMapper(j)->bin_type());
         auto num_bin = train_data->FeatureNumBin(j);
         if (train_data->FeatureBinMapper(j)->GetDefaultBin() == 0) {
           num_bin -= 1;

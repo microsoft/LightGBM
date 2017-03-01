@@ -257,7 +257,12 @@ def _to_graphviz(graph, tree_info, show_info, feature_names):
                 if info in {'split_gain', 'internal_value', 'internal_count'}:
                     label += '\n' + info + ':' + str(root[info])
             graph.node(name, label=label)
-            l_dec, r_dec = '<=', '>'
+            if root['decision_type'] == 'no_greater':
+                l_dec, r_dec = '<=', '>'
+            elif root['decision_type'] == 'is':
+                l_dec, r_dec = 'is', "isn't"
+            else:
+                raise ValueError('Invalid decision type in tree model.')
             add(root['left_child'], name, l_dec)
             add(root['right_child'], name, r_dec)
         else:  # leaf

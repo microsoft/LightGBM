@@ -131,6 +131,29 @@ void DatasetLoader::SetHeader(const char* filename) {
       ignore_features_.emplace(group_idx_);
     }
   }
+  if (io_config_.categorical_column.size() > 0) {
+    if (Common::StartsWith(io_config_.categorical_column, name_prefix)) {
+      std::string names = io_config_.categorical_column.substr(name_prefix.size());
+      for (auto name : Common::Split(names.c_str(), ',')) {
+        if (name2idx.count(name) > 0) {
+          int tmp = name2idx[name];
+          categorical_features_.emplace(tmp);
+        } else {
+          Log::Fatal("Could not find categorical_column %s in data file", name.c_str());
+        }
+      }
+    } else {
+      for (auto token : Common::Split(io_config_.categorical_column.c_str(), ',')) {
+        int tmp = 0;
+        if (!Common::AtoiAndCheck(token.c_str(), &tmp)) {
+          Log::Fatal("categorical_column is not a number, \
+                        if you want to use a column name, \
+                        please add the prefix \"name:\" to the column name");
+        }
+        categorical_features_.emplace(tmp);
+      }
+    }
+  }
 }
 
 Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_machines) {
@@ -471,9 +494,13 @@ Dataset* DatasetLoader::CostructFromSampleData(std::vector<std::vector<double>>&
       bin_mappers[i] = nullptr;
       continue;
     }
+    BinType bin_type = BinType::NumericalBin;
+    if (categorical_features_.count(i)) {
+      bin_type = BinType::CategoricalBin;
+    }
     bin_mappers[i].reset(new BinMapper());
     bin_mappers[i]->FindBin(sample_values[i], total_sample_size,
-      io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt);
+      io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt, bin_type);
   }
   auto dataset = std::unique_ptr<Dataset>(new Dataset(num_data));
   dataset->feature_names_ = feature_names_;
@@ -684,9 +711,13 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
         bin_mappers[i] = nullptr;
         continue;
       }
+      BinType bin_type = BinType::NumericalBin;
+      if (categorical_features_.count(i)) {
+        bin_type = BinType::CategoricalBin;
+      }
       bin_mappers[i].reset(new BinMapper());
       bin_mappers[i]->FindBin(sample_values[i], sample_data.size(),
-        io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt);
+        io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt, bin_type);
     }
   } else {
     // if have multi-machines, need find bin distributed
@@ -716,9 +747,13 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     // find local feature bins and copy to buffer
 #pragma omp parallel for schedule(guided)
     for (int i = 0; i < len[rank]; ++i) {
+      BinType bin_type = BinType::NumericalBin;
+      if (categorical_features_.count(start[rank] + i)) {
+        bin_type = BinType::CategoricalBin;
+      }
       BinMapper bin_mapper;
       bin_mapper.FindBin(sample_values[start[rank] + i], sample_data.size(), 
-        io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt);
+        io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt, bin_type);
       bin_mapper.CopyTo(input_buffer.data() + i * type_size);
     }
     // convert to binary size

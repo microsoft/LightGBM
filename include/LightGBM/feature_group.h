@@ -131,7 +131,7 @@ public:
     uint32_t max_bin = bin_offsets_[sub_feature + 1] - 1;
     uint32_t default_bin = bin_mappers_[sub_feature]->GetDefaultBin();
     return bin_data_->Split(min_bin, max_bin, default_bin,
-      threshold, data_indices, num_data, lte_indices, gt_indices);
+      threshold, data_indices, num_data, lte_indices, gt_indices, bin_mappers_[sub_feature]->bin_type());
   }
   /*!
   * \brief From bin to feature value

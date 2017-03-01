@@ -46,6 +46,9 @@ CVBooster <- R6Class(
 #'        the \code{nfold} and \code{stratified} parameters are ignored.
 #' @param init_model path of model file of \code{lgb.Booster} object, will continue train from this model
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
+#' @param categorical_feature list of str or int
+#'        type int represents index,
+#'        type str represents feature names
 #' @param early_stopping_rounds int
 #'        Activates early stopping.
 #'        Requires at least one validation data and one metric
@@ -81,6 +84,7 @@ lgb.cv <- function(params=list(), data, nrounds = 10,
                    folds                 = NULL,
                    init_model            = NULL,
                    colnames              = NULL,
+                   categorical_feature   = NULL,
                    early_stopping_rounds = NULL,
                    callbacks             = list(), ...) {
   addiction_params <- list(...)
@@ -118,6 +122,7 @@ lgb.cv <- function(params=list(), data, nrounds = 10,
   data$update_params(params)
   data$.__enclos_env__$private$set_predictor(predictor)
   if (!is.null(colnames)) { data$set_colnames(colnames) }
+  if (!is.null(categorical_feature)) { data$set_categorical_feature(categorical_feature) }
   data$construct()
 
   if (!is.null(folds)) {

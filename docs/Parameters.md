@@ -150,6 +150,11 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * Use number for index, e.g. ```ignore_column=0,1,2``` means column_0, column_1 and column_2 will be ignored.
   * Add a prefix ```name:``` for column name, e.g. ```ignore_column=name:c1,c2,c3``` means c1, c2 and c3 will be ignored.
   * Note: Index start from ```0```. And it doesn't count the label column.
+* ```categorical_feature```, default=```""```, type=string, alias=```categorical_column```,```cat_feature```,```cat_column```
+  * specific categorical features
+  * Use number for index, e.g. ```categorical_feature=0,1,2``` means column_0, column_1 and column_2 are categorical features.
+  * Add a prefix ```name:``` for column name, e.g. ```categorical_feature=name:c1,c2,c3``` means c1, c2 and c3 are categorical features.
+  * Note: Only support categorical with ```int``` type. Index start from ```0```. And it doesn't count the label column.
 * ```predict_raw_score```, default=```false```, type=bool, alias=```raw_score```,```is_predict_raw_score```
   * only used in prediction task
   * Set to ```true``` will only predict the raw scores.

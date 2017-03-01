@@ -79,8 +79,8 @@ void VotingParallelTreeLearner::Init(const Dataset* train_data) {
   uint64_t offset = 0;
   for (int j = 0; j < train_data->num_features(); ++j) {
     offset += static_cast<uint64_t>(train_data->SubFeatureBinOffset(j));
-    smaller_leaf_histogram_array_global_[j].Init(smaller_leaf_histogram_data_.data() + offset, &feature_metas_[j]);
-    larger_leaf_histogram_array_global_[j].Init(larger_leaf_histogram_data_.data() + offset, &feature_metas_[j]);
+    smaller_leaf_histogram_array_global_[j].Init(smaller_leaf_histogram_data_.data() + offset, &feature_metas_[j], train_data->FeatureBinMapper(j)->bin_type());
+    larger_leaf_histogram_array_global_[j].Init(larger_leaf_histogram_data_.data() + offset, &feature_metas_[j], train_data->FeatureBinMapper(j)->bin_type());
     auto num_bin = train_data->FeatureNumBin(j);
     if (train_data->FeatureBinMapper(j)->GetDefaultBin() == 0) {
       num_bin -= 1;

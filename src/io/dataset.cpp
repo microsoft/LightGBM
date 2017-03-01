@@ -43,8 +43,8 @@ std::vector<std::vector<int>> NoGroup(
 
 void Dataset::Construct(
   std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
-  const std::vector<std::vector<int>>& sample_indices,
-  size_t total_sample_cnt,
+  const std::vector<std::vector<int>>&,
+  size_t,
   const IOConfig& io_config) {
   num_total_features_ = static_cast<int>(bin_mappers.size());
   // get num_features

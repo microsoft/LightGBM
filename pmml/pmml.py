@@ -31,9 +31,9 @@ def get_threshold(node_id, prev_node_idx, is_child):
 
 def print_simple_predicate(tab_len, node_id, is_left_child, prev_node_idx, is_leaf):
     if is_left_child:
-        op = 'lessOrEqual'
+        op = 'equal' if decision_type[prev_node_idx] == 1 else 'lessOrEqual'
     else:
-        op = 'greaterThan'
+        op = 'notEqual' if decision_type[prev_node_idx] == 1 else 'greaterThan'
     out_('\t' * (tab_len + 1) + ("<SimplePredicate field=\"{0}\" " + " operator=\"{1}\" value=\"{2}\" />").format(
         get_field_name(node_id, prev_node_idx, is_leaf), op, get_threshold(node_id, prev_node_idx, is_leaf)))
 
@@ -128,6 +128,7 @@ with open('LightGBM_pmml.xml', 'w') as pmml_out:
         split_feature = get_array_ints(next(model_content))
         split_gain = next(model_content)  # unused
         threshold = get_array_strings(next(model_content))
+        decision_type = get_array_ints(next(model_content))
         left_child = get_array_ints(next(model_content))
         right_child = get_array_ints(next(model_content))
         leaf_parent = get_array_ints(next(model_content))

@@ -71,7 +71,8 @@ private:
   std::unordered_set<int> ignore_features_;
   /*! \brief store feature names */
   std::vector<std::string> feature_names_;
-
+  /*! \brief Mapper from real feature index to used index*/
+  std::unordered_set<int> categorical_features_;
 };
 
 }
