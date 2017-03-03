@@ -368,6 +368,12 @@ void VotingParallelTreeLearner::FindBestThresholds() {
       // restore from buffer
       smaller_leaf_histogram_array_global_[feature_index].FromMemory(
         output_buffer_.data() + smaller_buffer_read_start_pos_[feature_index]);
+
+      train_data_->FixHistogram(feature_index,
+        smaller_leaf_splits_global_->sum_gradients(), smaller_leaf_splits_global_->sum_hessians(),
+        GetGlobalDataCountInLeaf(smaller_leaf_splits_global_->LeafIndex()),
+        smaller_leaf_histogram_array_global_[feature_index].RawData());
+
       // find best threshold
       smaller_leaf_histogram_array_global_[feature_index].FindBestThreshold(
         smaller_leaf_splits_global_->sum_gradients(),
@@ -383,6 +389,12 @@ void VotingParallelTreeLearner::FindBestThresholds() {
       SplitInfo larger_split;
       // restore from buffer
       larger_leaf_histogram_array_global_[feature_index].FromMemory(output_buffer_.data() + larger_buffer_read_start_pos_[feature_index]);
+
+      train_data_->FixHistogram(feature_index,
+        larger_leaf_splits_global_->sum_gradients(), larger_leaf_splits_global_->sum_hessians(),
+        GetGlobalDataCountInLeaf(larger_leaf_splits_global_->LeafIndex()),
+        larger_leaf_histogram_array_global_[feature_index].RawData());
+
       // find best threshold
       larger_leaf_histogram_array_global_[feature_index].FindBestThreshold(
         larger_leaf_splits_global_->sum_gradients(),
