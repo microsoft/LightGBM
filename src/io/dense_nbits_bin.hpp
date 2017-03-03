@@ -214,6 +214,7 @@ public:
   OrderedBin* CreateOrderedBin() const override { return nullptr; }
 
   void FinishLoad() override {
+    if (buf_.empty()) { return; }
     int len = (num_data_ + 1) / 2;
     for (int i = 0; i < len; ++i) {
       data_[i] |= buf_[i];

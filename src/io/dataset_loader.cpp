@@ -747,6 +747,9 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     // find local feature bins and copy to buffer
 #pragma omp parallel for schedule(guided)
     for (int i = 0; i < len[rank]; ++i) {
+      if (ignore_features_.count(start[rank] + i) > 0) {
+        continue;
+      }
       BinType bin_type = BinType::NumericalBin;
       if (categorical_features_.count(start[rank] + i)) {
         bin_type = BinType::CategoricalBin;
