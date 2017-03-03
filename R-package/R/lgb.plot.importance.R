@@ -44,7 +44,7 @@ lgb.plot.importance <- function(tree_imp, top_n = 10, measure = "Gain", left_mar
   on.exit(par(op))
   par(mar = op$mar %>% magrittr::inset(., 2, left_margin))
   tree_imp[.N:1,
-           barplot(height = get(measure), names.arg = Feature, horiz = TRUE,
+           barplot(height = get(measure), names.arg = Feature, horiz = TRUE, border = NA,
                    main = "Feature Importance", xlab = measure, cex.names = cex, las = 1)]
   invisible(tree_imp)
 }
