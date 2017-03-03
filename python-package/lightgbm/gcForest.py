@@ -70,9 +70,23 @@ class MultiGrainedScanning(object):
         self.window_size = window_size
 
     def _iter_over_matrix(self, X):
-        # to do
+        # to do : support all dims (only support 2d and 3d now)
         # matrix -> list of matrix
-        pass
+        ret = []
+        dim = len(X.shape)
+        def slide_window(array):
+            for i in range_(len(array.shape[1]) - self.window_size + 1):
+                ret.append(array[..., i: i + self.window_size])
+        if dim is 2:
+            slide_window(X)
+        elif dim is 3:
+            def slide_window_2D(X):
+                for i in range_(X.shape[-1]):
+                    slide_window(X[..., i])
+            slide_window_2D(X)
+            np.transpose(X, [0, 2, 1])
+            slide_window_2D(X)
+        return ret
 
     def fit(self, X, y, raw_data=True):
         if raw_data:
