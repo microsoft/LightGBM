@@ -2,10 +2,10 @@
 # pylint: disable = C0103
 
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
 
 from .basic import LightGBMError
 from .compat import range_
+from .sklearn import LGBMClassifier
 
 
 class ForestLayer(object):
@@ -18,8 +18,8 @@ class ForestLayer(object):
 
     def fit(self, X, y):
         self.forests = []
-        for _ in range_(self.num_forest):
-            forest = RandomForestClassifier(self.num_tree)  # to do
+        for i in range_(self.num_forest):
+            forest = LGBMClassifier(n_estimators=self.num_tree, seed=i)  # to do
             forest.fit(X, y)
             self.forests.append(forest)
 
@@ -45,19 +45,20 @@ class CascadeForest(object):
         self.num_tree = num_tree
         self.layers = []
 
-    def train(self, X, y):
-        classVector = np.array([])
-        while True:  # to do: 1. change condition 2. add cv
-            X = np.concatenate([X, classVector], axis=1)
+    def train(self, X, y, num_layer=1, classVector=None):
+        for _ in range_(num_layer):  # to do: 1. change condition 2. add cv
+            if classVector is not None:
+                X = np.concatenate([X, classVector], axis=1)
             forestLayer = ForestLayer(self.num_forest, self.num_tree)
             classVector = forestLayer.fit_transfrom(X, y)
             self.layers.append(forestLayer)
-        return classVector
+        return X, classVector
 
     def predict(self, X):
-        classVector = np.array([])
+        classVector = None
         for forestLayer in self.layers:
-            X = np.concatenate([X, classVector], axis=1)
+            if classVector is not None:
+                X = np.concatenate([X, classVector], axis=1)
             classVector = forestLayer.transfrom(X)
         return np.argmax(classVector, axis=1)
 
@@ -74,6 +75,7 @@ class MultiGrainedScanning(object):
         # matrix -> list of matrix
         ret = []
         dim = len(X.shape)
+
         def slide_window(array):
             for i in range_(len(array.shape[1]) - self.window_size + 1):
                 ret.append(array[..., i: i + self.window_size])
