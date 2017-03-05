@@ -2,6 +2,7 @@
 # pylint: disable = C0103
 
 import numpy as np
+from sklearn.ensemble import RandomForestClassifier
 
 from .basic import LightGBMError
 from .compat import range_
@@ -19,22 +20,22 @@ class ForestLayer(object):
     def fit(self, X, y):
         self.forests = []
         for i in range_(self.num_forest):
-            forest = LGBMClassifier(n_estimators=self.num_tree, seed=i)  # to do
+            forest = RandomForestClassifier(self.num_tree)  # to do
             forest.fit(X, y)
             self.forests.append(forest)
 
-    def transfrom(self, X):
+    def transform(self, X):
         if self.forests is None:
-            raise LightGBMError('Need to call fit before transfrom.')
+            raise LightGBMError('Need to call fit before transform.')
         ret = []
         for forest in self.forests:
             classVector = forest.predict_proba(X)  # to do
             ret.append(classVector)
         return np.concatenate(ret, axis=1)
 
-    def fit_transfrom(self, X, y):
+    def fit_transform(self, X, y):
         self.fit(X, y)
-        return self.transfrom(X)
+        return self.transform(X)
 
 
 class CascadeForest(object):
@@ -50,7 +51,7 @@ class CascadeForest(object):
             if classVector is not None:
                 X = np.concatenate([X, classVector], axis=1)
             forestLayer = ForestLayer(self.num_forest, self.num_tree)
-            classVector = forestLayer.fit_transfrom(X, y)
+            classVector = forestLayer.fit_transform(X, y)
             self.layers.append(forestLayer)
         return X, classVector
 
@@ -59,8 +60,13 @@ class CascadeForest(object):
         for forestLayer in self.layers:
             if classVector is not None:
                 X = np.concatenate([X, classVector], axis=1)
-            classVector = forestLayer.transfrom(X)
-        return np.argmax(classVector, axis=1)
+            classVector = forestLayer.transform(X)
+        row, col = classVector.shape
+        num_class = col // self.num_forest
+        ret = np.zeros((row, num_class))
+        for i in range_(self.num_forest):
+            ret = np.add(ret, classVector[:, num_class * i: num_class * (i + 1)])
+        return np.argmax(ret, axis=1)
 
 
 class MultiGrainedScanning(object):
@@ -77,7 +83,7 @@ class MultiGrainedScanning(object):
         dim = len(X.shape)
 
         def slide_window(array):
-            for i in range_(len(array.shape[1]) - self.window_size + 1):
+            for i in range_(array.shape[1] - self.window_size + 1):
                 ret.append(array[..., i: i + self.window_size])
         if dim is 2:
             slide_window(X)
@@ -97,15 +103,15 @@ class MultiGrainedScanning(object):
         X = np.concatenate(X)
         self.forestLayer.fit(X, y)
 
-    def transfrom(self, X, raw_data=True):
+    def transform(self, X, raw_data=True):
         if raw_data:
             X = self._iter_over_matrix(X)
         ret = []
         for subX in X:
-            ret.append(self.forestLayer.transfrom(subX))
+            ret.append(self.forestLayer.transform(subX))
         return np.concatenate(ret, axis=1)
 
-    def fit_transfrom(self, X, y):
+    def fit_transform(self, X, y):
         X = self._iter_over_matrix(X)
         self.fit(X, y, False)
-        return self.transfrom(X, False)
+        return self.transform(X, False)
