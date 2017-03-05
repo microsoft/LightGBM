@@ -180,12 +180,12 @@ public:
   int num_leaves = 127;
   int feature_fraction_seed = 2;
   double feature_fraction = 1.0f;
-  // max cache size(unit:MB) for historical histogram. < 0 means not limit
+  // max cache size(unit:MB) for historical histogram. < 0 means no limit
   double histogram_pool_size = -1.0f;
   // max depth of tree model.
   // Still grow tree by leaf-wise, but limit the max depth to avoid over-fitting
-  // And the max leaves will be min(num_leaves, pow(2, max_depth - 1))
-  // max_depth < 0 means not limit
+  // And the max leaves will be min(num_leaves, pow(2, max_depth))
+  // max_depth < 0 means no limit
   int max_depth = -1;
   int top_k = 20;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;

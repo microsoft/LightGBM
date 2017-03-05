@@ -181,7 +181,7 @@ void OverallConfig::CheckParamConflict() {
         && boosting_config.tree_learner_type == std::string("data")) {
       Log::Warning("Histogram LRU queue was enabled (histogram_pool_size=%f). Will disable this to reduce communication costs"
         , boosting_config.tree_config.histogram_pool_size);
-      // Change pool size to -1 (not limit) when using data parallel to reduce communication costs
+      // Change pool size to -1 (no limit) when using data parallel to reduce communication costs
       boosting_config.tree_config.histogram_pool_size = -1;
     }
 
