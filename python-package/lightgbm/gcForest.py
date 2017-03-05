@@ -56,11 +56,11 @@ class CascadeForest(object):
         return X, classVector
 
     def predict(self, X):
-        classVector = None
+        X_test, classVector = X, None
         for forestLayer in self.layers:
             if classVector is not None:
-                X = np.concatenate([X, classVector], axis=1)
-            classVector = forestLayer.transform(X)
+                X_test = np.concatenate([X_test, classVector], axis=1)
+            classVector = forestLayer.transform(X_test)
         row, col = classVector.shape
         num_class = col // self.num_forest
         ret = np.zeros((row, num_class))
