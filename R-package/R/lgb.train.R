@@ -1,4 +1,4 @@
-#' Main training logic for LightGBM
+#' Main training logic for LightGBM 
 #'
 #' @param params List of parameters
 #' @param data a \code{lgb.Dataset} object, used for training
