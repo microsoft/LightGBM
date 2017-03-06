@@ -25,7 +25,7 @@ public:
     uint32_t min_bin, uint32_t max_bin, uint32_t default_bin)
     : bin_data_(bin_data), min_bin_(static_cast<VAL_T>(min_bin)),
     max_bin_(static_cast<VAL_T>(max_bin)),
-    default_bin_(static_cast<uint8_t>(default_bin)) {
+    default_bin_(static_cast<VAL_T>(default_bin)) {
     if (default_bin_ == 0) {
       bias_ = 1;
     } else {
@@ -198,7 +198,7 @@ public:
       [](const std::pair<data_size_t, VAL_T>& a, const std::pair<data_size_t, VAL_T>& b) {
       return a.first < b.first;
     });
-    // load detla array
+    // load delta array
     LoadFromPair(idx_val_pairs);
   }
 
