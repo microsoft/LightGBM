@@ -43,6 +43,7 @@ public:
   }
 
   void AddPredictionToScore(double* out_score) const override {
+    if (last_trained_tree_->num_leaves() <= 1) { return; }
     #pragma omp parallel for schedule(static)
     for (int i = 0; i < data_partition_->num_leaves(); ++i) {
       double output = static_cast<double>(last_trained_tree_->LeafOutput(i));
