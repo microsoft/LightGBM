@@ -195,13 +195,21 @@ private:
 
 
 inline double Tree::Predict(const double* feature_values) const {
-  int leaf = GetLeaf(feature_values);
-  return LeafOutput(leaf);
+  if (num_leaves_ > 1) {
+    int leaf = GetLeaf(feature_values);
+    return LeafOutput(leaf);
+  } else {
+    return 0.0f;
+  }
 }
 
 inline int Tree::PredictLeafIndex(const double* feature_values) const {
-  int leaf = GetLeaf(feature_values);
-  return leaf;
+  if (num_leaves_ > 1) {
+    int leaf = GetLeaf(feature_values);
+    return leaf;
+  } else {
+    return 0;
+  }
 }
 
 inline int Tree::GetLeaf(const double* feature_values) const {

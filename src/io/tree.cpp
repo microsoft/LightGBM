@@ -97,6 +97,7 @@ int Tree::Split(int leaf, int feature, BinType bin_type, uint32_t threshold_bin,
 }
 
 void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, double* score) const {
+  if (num_leaves_ <= 1) { return; }
   if (has_categorical_) {
     if (data->num_features() > num_leaves_ - 1) {
       Threading::For<data_size_t>(0, num_data,
@@ -193,6 +194,7 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
 void Tree::AddPredictionToScore(const Dataset* data,
   const data_size_t* used_data_indices,
   data_size_t num_data, double* score) const {
+  if (num_leaves_ <= 1) { return; }
   if (has_categorical_) {
     if (data->num_features() > num_leaves_ - 1) {
       Threading::For<data_size_t>(0, num_data,

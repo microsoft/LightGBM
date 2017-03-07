@@ -336,6 +336,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
     sub_gradient_time += std::chrono::steady_clock::now() - start_time;
 #endif
   }
+  bool shouldContinue = false;
   for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
 #ifdef TIMETAG
     start_time = std::chrono::steady_clock::now();
@@ -345,10 +346,9 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
 #ifdef TIMETAG
     tree_time += std::chrono::steady_clock::now() - start_time;
 #endif
-    // if cannot learn a new tree, then stop
-    if (new_tree->num_leaves() <= 1) {
-      Log::Info("Stopped training because there are no more leaves that meet the split requirements.");
-      return true;
+
+    if (new_tree->num_leaves() > 1) {
+      shouldContinue = true;
     }
 
     // shrinkage by learning rate
@@ -359,6 +359,13 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
 
     // add model
     models_.push_back(std::move(new_tree));
+  }
+  if (!shouldContinue) {
+    Log::Warning("Stopped training because there are no more leaves that meet the split requirements.");
+    for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
+      models_.pop_back();
+    }
+    return true;
   }
   ++iter_;
   if (is_eval) {
