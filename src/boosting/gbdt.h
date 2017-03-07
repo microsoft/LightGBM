@@ -344,6 +344,7 @@ protected:
   std::vector<data_size_t> right_write_pos_buf_;
   std::unique_ptr<Dataset> tmp_subset_;
   bool is_use_subset_;
+  std::vector<bool> is_class_end_;
 };
 
 }  // namespace LightGBM
