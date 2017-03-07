@@ -748,7 +748,8 @@ The methods of each Class is in alphabetical order.
     eval_metric : str, list of str, callable, optional
         If a str, should be a built-in evaluation metric to use.
         If callable, a custom evaluation metric, see note for more details.
-        default: binary_error for LGBMClassifier, l2 for LGBMRegressor, ndcg for LGBMRanker
+        default: logloss for LGBMClassifier, l2 for LGBMRegressor, ndcg for LGBMRanker
+        Can directly use 'logloss' or 'error' for LGBMClassifier.
     early_stopping_rounds : int
     verbose : bool
         If `verbose` and an evaluation set is used, writes the evaluation
