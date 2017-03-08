@@ -558,7 +558,7 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
             sample_weight=None, init_score=None,
             eval_set=None, eval_sample_weight=None,
             eval_init_score=None,
-            eval_metric="binary_logloss",
+            eval_metric="logloss",
             early_stopping_rounds=None, verbose=True,
             feature_name='auto', categorical_feature='auto',
             callbacks=None):
@@ -570,8 +570,15 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
         if self.n_classes > 2:
             # Switch to using a multiclass objective in the underlying LGBM instance
             self.objective = "multiclass"
-            if eval_metric == "binary_logloss":
+            if eval_metric == 'logloss' or eval_metric == 'binary_logloss':
                 eval_metric = "multi_logloss"
+            elif eval_metric == 'error' or eval_metric == 'binary_error':
+                eval_metric = "multi_error"
+        else:
+            if eval_metric == 'logloss' or eval_metric == 'multi_logloss':
+                eval_metric = 'binary_logloss'
+            elif eval_metric == 'error' or eval_metric == 'multi_error':
+                eval_metric = 'binary_error'
 
         if eval_set is not None:
             eval_set = [(x[0], self._le.transform(x[1])) for x in eval_set]
