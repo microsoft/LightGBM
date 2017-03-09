@@ -16,17 +16,45 @@ R""()
 #pragma OPENCL EXTENSION cl_khr_local_int32_base_atomics : enable
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 
+// Configurable options:
+// NUM_BANKS should be a power of 2
+#ifndef NUM_BANKS
+#define NUM_BANKS 4
+#endif
+// how many bits in thread ID represent the bank = log2(NUM_BANKS)
+#ifndef BANK_BITS
+#define BANK_BITS 2
+#endif
+// use double precision or not
+#ifndef USE_DP_FLOAT
+#define USE_DP_FLOAT 0
+#endif
+
+
 #define LOCAL_SIZE_0 256
 #define NUM_BINS 64
-// NUM_BANKS should be a power of 2
-#define NUM_BANKS 4
-// how many bits in thread ID represent the bank = log2(NUM_BANKS)
-#define BANK_BITS 2
+// if USE_DP_FLOAT is set to 1, we will use double precision for the accumulator
+#if USE_DP_FLOAT == 1
+#pragma OPENCL EXTENSION cl_khr_fp64 : enable
+#pragma OPENCL EXTENSION cl_khr_int64_base_atomics : enable
+typedef double acc_type;
+typedef ulong acc_int_type;
+#define as_acc_type as_double
+#define as_acc_int_type as_ulong
+#else
+typedef float acc_type;
+typedef uint acc_int_type;
+#define as_acc_type as_float
+#define as_acc_int_type as_uint
+#endif
 // mask for getting the bank ID
 #define BANK_MASK (NUM_BANKS - 1)
+// 4 features, each has a gradient and a hessian
 #define HG_BIN_MULT (NUM_BANKS * 4 * 2)
+// 4 features, each has a counter
 #define CNT_BIN_MULT (NUM_BANKS * 4)
-#define LOCAL_MEM_SIZE (4 * 3 * NUM_BINS * NUM_BANKS)
+// local memory size in bytes
+#define LOCAL_MEM_SIZE (4 * (sizeof(uint) + 2 * sizeof(acc_type)) * NUM_BINS * NUM_BANKS)
 
 // unroll the atomic operation for a few times. Takes more code space, 
 // but compiler can generate better code for faster atomics.
@@ -46,18 +74,11 @@ R""()
 typedef uint data_size_t;
 typedef float score_t;
 
-struct HistogramBinEntry {
-    score_t sum_gradients;
-    score_t sum_hessians;
-    uint  cnt;
-};
-
-
 #define ATOMIC_FADD_SUB1 { \
-    expected.f32 = current.f32; \
-    next.f32 = expected.f32 + val; \
-    current.u32 = atom_cmpxchg((volatile __local uint *)addr, expected.u32, next.u32); \
-    if (current.u32 == expected.u32) \
+    expected.f_val = current.f_val; \
+    next.f_val = expected.f_val + val; \
+    current.u_val = atom_cmpxchg((volatile __local acc_int_type *)addr, expected.u_val, next.u_val); \
+    if (current.u_val == expected.u_val) \
         goto end; \
     }
 #define ATOMIC_FADD_SUB2  ATOMIC_FADD_SUB1 \
@@ -75,81 +96,70 @@ struct HistogramBinEntry {
 
 
 // atomic add for float number in local memory
-inline void atomic_local_add_f(__local float *addr, const float val)
+inline void atomic_local_add_f(__local acc_type *addr, const float val)
 {
-#if NVIDIA == 1
+    union{
+        acc_int_type u_val;
+        acc_type f_val;
+    } next, expected, current;
+#if (NVIDIA == 1 && USE_DP_FLOAT == 0)
     float res = 0;
     asm volatile ("atom.shared.add.f32 %0, [%1], %2;" : "=f"(res) : "l"(addr), "f"(val));
-#elif UNROLL_ATOMIC == 1
-    union{
-        uint u32;
-        float f32;
-    } next, expected, current;
-    current.f32 = *addr;
+#else
+    current.f_val = *addr;
+    #if UNROLL_ATOMIC == 1
     // provide a fast path
     // then do the complete loop
     // this should work on all devices
     ATOMIC_FADD_SUB16
+    #endif
     do {
-        expected.f32 = current.f32;
-        next.f32 = expected.f32 + val;
-        current.u32 = atom_cmpxchg((volatile __local uint *)addr, expected.u32, next.u32);
-    } while (current.u32 != expected.u32);
+        expected.f_val = current.f_val;
+        next.f_val = expected.f_val + val;
+        current.u_val = atom_cmpxchg((volatile __local acc_int_type *)addr, expected.u_val, next.u_val);
+    } while (current.u_val != expected.u_val);
     end:
         ;
-#else
-    // slow version
-    union{
-        uint u32;
-        float f32;
-    } next, expected, current;
-    current.f32 = *addr;
-    do{
-        expected.f32 = current.f32;
-        next.f32 = expected.f32 + val;
-        current.u32 = atom_cmpxchg((volatile __local uint *)addr, expected.u32, next.u32);
-    }while(current.u32 != expected.u32);
 #endif
 }
 
 // this function will be called by histogram64
 // we have one sub-histogram of one feature in registers, and need to read others
-void within_kernel_reduction64x4(__global const float* restrict feature4_sub_hist, 
+void within_kernel_reduction64x4(__global const acc_type* restrict feature4_sub_hist, 
                            const uint skip_id,
-                           float g_val, float h_val, uint cnt_val,
+                           acc_type g_val, acc_type h_val, uint cnt_val,
                            const ushort num_sub_hist,
-                           __global float* restrict output_buf,
-                           __local float * restrict local_hist) {
+                           __global acc_type* restrict output_buf,
+                           __local acc_type * restrict local_hist) {
     const ushort ltid = get_local_id(0); // range 0 - 255
     const ushort lsize = LOCAL_SIZE_0;
     ushort feature_id = ltid & 3; // range 0 - 4
     const ushort bin_id = ltid >> 2; // range 0 - 63W
     #if POWER_FEATURE_WORKGROUPS != 0 
     // if there is only 1 work group, no need to do the reduction
-    // printf("%d-pre(skip %d): %f %f %f %f %f %f %f %f %d %d %d %d", ltid, skip_id, f0_grad_bin, f1_grad_bin, f2_grad_bin, f3_grad_bin, f0_hess_bin, f1_hess_bin, f2_hess_bin, f3_hess_bin, f0_cont_bin, f1_cont_bin, f2_cont_bin, f3_cont_bin);
     // add all sub-histograms for 4 features
-    __global const float* restrict p = feature4_sub_hist + ltid;
+    __global const acc_type* restrict p = feature4_sub_hist + ltid;
     ushort i;
     for (i = 0; i < skip_id; ++i) {
             g_val += *p;            p += NUM_BINS * 4; // 256 threads working on 4 features' 64 bins
             h_val += *p;            p += NUM_BINS * 4;
-            cnt_val += as_uint(*p); p += NUM_BINS * 4;
+            cnt_val += as_acc_int_type(*p); p += NUM_BINS * 4;
     }
     // skip the counters we already have
     p += 3 * 4 * NUM_BINS;
     for (i = i + 1; i < num_sub_hist; ++i) {
             g_val += *p;            p += NUM_BINS * 4;
             h_val += *p;            p += NUM_BINS * 4;
-            cnt_val += as_uint(*p); p += NUM_BINS * 4;
+            cnt_val += as_acc_int_type(*p); p += NUM_BINS * 4;
     }
     #endif
-    // printf("%d-aft: %f %f %f %f %f %f %f %f %d %d %d %d", ltid, f0_grad_bin, f1_grad_bin, f2_grad_bin, f3_grad_bin, f0_hess_bin, f1_hess_bin, f2_hess_bin, f3_hess_bin, f0_cont_bin, f1_cont_bin, f2_cont_bin, f3_cont_bin);
+    // printf("thread %d: g_val=%f, h_val=%f cnt=%d", ltid, g_val, h_val, cnt_val);
     // now overwrite the local_hist for final reduction and output
     // reverse the f3...f0 order to match the real order
     feature_id = 3 - feature_id;
     local_hist[feature_id * 3 * NUM_BINS + bin_id * 3 + 0] = g_val;
     local_hist[feature_id * 3 * NUM_BINS + bin_id * 3 + 1] = h_val;
-    local_hist[feature_id * 3 * NUM_BINS + bin_id * 3 + 2] = as_float(cnt_val);
+    local_hist[feature_id * 3 * NUM_BINS + bin_id * 3 + 2] = as_acc_type((acc_int_type)cnt_val);
     barrier(CLK_LOCAL_MEM_FENCE);
     for (ushort i = ltid; i < 4 * 3 * NUM_BINS; i += lsize) {
         output_buf[i] = local_hist[i];
@@ -165,7 +175,7 @@ __kernel void histogram64(__global const uchar4* restrict feature_data_base,
                       __constant const score_t* restrict ordered_hessians __attribute__((max_constant_size(65536))),
                       __global char* restrict output_buf,
                       __global volatile int * sync_counters,
-                      __global float* restrict hist_buf_base) {
+                      __global acc_type* restrict hist_buf_base) {
 #else
 __kernel void histogram64(__global const uchar4* feature_data_base, 
                       __global const data_size_t* data_indices, 
@@ -174,9 +184,11 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
                       __global const score_t*  ordered_hessians,
                       __global char* restrict output_buf, 
                       __global volatile int * sync_counters,
-                      __global float* restrict hist_buf_base) {
+                      __global acc_type* restrict hist_buf_base) {
 #endif
-    __local float shared_array[LOCAL_MEM_SIZE];
+    // allocate the local memory array aligned with float2, to guarantee correct alignment on NVIDIA platforms
+    // otherwise a "Misaligned Address" exception may occur
+    __local float2 shared_array[LOCAL_MEM_SIZE/sizeof(float2)];
     const uint gtid = get_global_id(0);
     const uint gsize = get_global_size(0);
     const ushort ltid = get_local_id(0);
@@ -186,7 +198,7 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     // local memory per workgroup is 12 KB
     // clear local memory
     __local uint * ptr = (__local uint *) shared_array;
-    for (int i = ltid; i < LOCAL_MEM_SIZE; i += lsize) {
+    for (int i = ltid; i < LOCAL_MEM_SIZE/sizeof(uint); i += lsize) {
         ptr[i] = 0;
     }
     barrier(CLK_LOCAL_MEM_FENCE);
@@ -214,7 +226,7 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     // with this organization, the LDS/shared memory bank is independent of the bin value
     // all threads within a quarter-wavefront (half-warp) will not have any bank conflict
 
-    __local float * gh_hist = (__local float *)shared_array;
+    __local acc_type * gh_hist = (__local acc_type *)shared_array;
     // counter histogram
     // each bank: 4 * 64 * size_of(uint) = 1 KB
     // there are 4 banks used by 256 threads total 4 KB
@@ -414,8 +426,8 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
        bk3_c_f0_bin255 bk3_c_f1_bin255 bk3_c_f2_bin255 bk3_c_f3_bin255
        -----------------------------------------------
     */
-    float g_val = 0.0f;
-    float h_val = 0.0f;
+    acc_type g_val = 0.0f;
+    acc_type h_val = 0.0f;
     uint cnt_val = 0;
     // 256 threads, working on 4 features and 64 bins,
     // so each thread has an independent feature/bin to work on.
@@ -453,13 +465,14 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     // if there is only one workgroup processing this feature4, don't even need to write
     uint feature4_id = (group_id >> POWER_FEATURE_WORKGROUPS);
     #if POWER_FEATURE_WORKGROUPS != 0
-    __global float * restrict output = (__global float * restrict)output_buf + group_id * 4 * 3 * NUM_BINS;
+    __global acc_type * restrict output = (__global acc_type * restrict)output_buf + group_id * 4 * 3 * NUM_BINS;
+    // if g_val and h_val are double, they are converted to float here
     // write gradients for 4 features
     output[0 * 4 * NUM_BINS + ltid] = g_val;
     // write hessians for 4 features
     output[1 * 4 * NUM_BINS + ltid] = h_val;
     // write counts for 4 features
-    output[2 * 4 * NUM_BINS + ltid] = as_float(cnt_val);
+    output[2 * 4 * NUM_BINS + ltid] = as_acc_type((acc_int_type)cnt_val);
     barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
     mem_fence(CLK_GLOBAL_MEM_FENCE);
     // To avoid the cost of an extra reducting kernel, we have to deal with some 
@@ -508,12 +521,12 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     #endif
         // locate our feature4's block in output memory
         uint output_offset = (feature4_id << POWER_FEATURE_WORKGROUPS);
-        __global float const * restrict feature4_subhists = 
-                 (__global float *)output_buf + output_offset * 4 * 3 * NUM_BINS;
+        __global acc_type const * restrict feature4_subhists = 
+                 (__global acc_type *)output_buf + output_offset * 4 * 3 * NUM_BINS;
         // skip reading the data already in local memory
         uint skip_id = group_id ^ output_offset;
         // locate output histogram location for this feature4
-        __global float* restrict hist_buf = hist_buf_base + feature4_id * 4 * 3 * NUM_BINS;
+        __global acc_type* restrict hist_buf = hist_buf_base + feature4_id * 4 * 3 * NUM_BINS;
         within_kernel_reduction64x4(feature4_subhists, skip_id, g_val, h_val, cnt_val, 1 << POWER_FEATURE_WORKGROUPS, hist_buf, shared_array);
     }
 }

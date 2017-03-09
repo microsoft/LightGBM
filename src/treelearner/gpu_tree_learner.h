@@ -74,6 +74,7 @@ protected:
 		  };
 	  };
   };
+  
   struct GPUHistogramBinEntry {
     score_t sum_gradients;
     score_t sum_hessians;
@@ -119,6 +120,7 @@ protected:
 
   void GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* histograms);
   
+  template <typename HistType>
   void WaitAndGetHistograms(FeatureHistogram* histograms); 
 
   /*!
@@ -204,7 +206,6 @@ protected:
   const char *kernel64_src_ = 
   #include "ocl/histogram64.cl"
   ;
-  /*! \brief GPU kernel for 64 bins */
 
   /*! \brief a array of histogram kernels with different number
      of workgroups per feature */
@@ -235,7 +236,7 @@ protected:
   boost::compute::buffer device_histogram_outputs_;
   boost::compute::wait_list kernel_wait_obj_;
   boost::compute::wait_list histograms_wait_obj_;
-  GPUHistogramBinEntry* host_histogram_outputs_;
+  void * host_histogram_outputs_;
   boost::compute::future<void> indices_future_;
   boost::compute::event gradients_future_;
   boost::compute::event hessians_future_;

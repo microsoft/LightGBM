@@ -187,6 +187,7 @@ public:
   int top_k = 20;
   int gpu_platform_id = -1;
   int gpu_device_id = -1;
+  bool gpu_use_dp = false;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
