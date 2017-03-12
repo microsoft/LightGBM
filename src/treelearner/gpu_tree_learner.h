@@ -48,6 +48,15 @@ public:
 
   void SetBaggingData(const data_size_t* used_indices, data_size_t num_data) override {
     data_partition_->SetUsedDataIndices(used_indices, num_data);
+    // determine if we are using bagging before we construct the data partition
+    // thus we can start data movement to GPU earlier
+    if (used_indices != nullptr) {
+      if (num_data != num_data_) {
+        use_bagging_ = true;
+        return;
+      }
+    }
+    use_bagging_ = false;
   }
 
   void AddPredictionToScore(double* out_score) const override {
@@ -117,6 +126,8 @@ protected:
   int GetNumWorkgroupsPerFeature(data_size_t leaf_num_data);
   
   void InitGPU(int platform_id, int device_id);
+
+  void AllocateGPUMemory();
 
   void GPUHistogram(data_size_t leaf_num_data, FeatureHistogram* histograms);
   
@@ -193,6 +204,8 @@ protected:
   HistogramPool histogram_pool_;
   /*! \brief config of tree learner*/
   const TreeConfig* tree_config_;
+  /*! \brief True if bagging is used */
+  bool use_bagging_;
 
   /*! \brief GPU related members */
   boost::compute::device dev_;
@@ -210,7 +223,7 @@ protected:
   /*! \brief a array of histogram kernels with different number
      of workgroups per feature */
   std::vector<boost::compute::kernel> histogram_kernels_;
-  boost::compute::kernel histogram_fulldata_kernel_;
+  std::vector<boost::compute::kernel> histogram_fulldata_kernels_;
   boost::compute::kernel reduction_kernel_;
   int num_dense_features_;
   int num_dense_feature4_;
@@ -225,11 +238,11 @@ protected:
   // std::unique_ptr<boost::compute::vector<score_t>> device_gradients_;
   boost::compute::buffer device_gradients_;
   boost::compute::buffer pinned_gradients_;
-  void * ptr_pinned_gradients_;
+  void * ptr_pinned_gradients_ = nullptr;
   // std::unique_ptr<boost::compute::vector<score_t>> device_hessians_;
   boost::compute::buffer device_hessians_;
   boost::compute::buffer pinned_hessians_;
-  void * ptr_pinned_hessians_;
+  void * ptr_pinned_hessians_ = nullptr;
   std::unique_ptr<boost::compute::vector<data_size_t>> device_data_indices_;
   std::unique_ptr<boost::compute::vector<int>> sync_counters_;
   std::unique_ptr<boost::compute::vector<char>> device_subhistograms_;

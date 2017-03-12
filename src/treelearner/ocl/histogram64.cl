@@ -63,7 +63,6 @@ typedef uint acc_int_type;
 // Options passed by compiler at run time:
 // IGNORE_INDICES will be set when the kernel does not 
 // #define IGNORE_INDICES
-// #define FEATURE_SIZE (32768 * 1024)
 // #define POWER_FEATURE_WORKGROUPS 10
 
 // detect Nvidia platforms
@@ -169,6 +168,7 @@ void within_kernel_reduction64x4(__global const acc_type* restrict feature4_sub_
 __attribute__((reqd_work_group_size(LOCAL_SIZE_0, 1, 1)))
 #if USE_CONSTANT_BUF == 1
 __kernel void histogram64(__global const uchar4* restrict feature_data_base, 
+                      const data_size_t feature_size,
                       __constant const data_size_t* restrict data_indices __attribute__((max_constant_size(65536))), 
                       const data_size_t num_data, 
                       __constant const score_t* restrict ordered_gradients __attribute__((max_constant_size(65536))), 
@@ -178,6 +178,7 @@ __kernel void histogram64(__global const uchar4* restrict feature_data_base,
                       __global acc_type* restrict hist_buf_base) {
 #else
 __kernel void histogram64(__global const uchar4* feature_data_base, 
+                      const data_size_t feature_size,
                       __global const data_size_t* data_indices, 
                       const data_size_t num_data, 
                       __global const score_t*  ordered_gradients, 
@@ -256,10 +257,9 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     // thread 0-7 write result to bank0, 8-15 to bank1, 16-23 to bank2, 24-31 to bank3
     ushort bank = (ltid >> 3) & BANK_MASK;
     
-    // each 2^POWER_FEATURE_WORKGROUPS workgroups process on one feature
-    // FEATURE_SIZE is the number of examples per feature
-    // they are compile-time constants
-    __global const uchar4* feature_data = feature_data_base + (group_id >> POWER_FEATURE_WORKGROUPS) * FEATURE_SIZE;
+    // each 2^POWER_FEATURE_WORKGROUPS workgroups process on one feature (compile-time constant)
+    // feature_size is the number of examples per feature
+    __global const uchar4* feature_data = feature_data_base + (group_id >> POWER_FEATURE_WORKGROUPS) * feature_size;
     // size of threads that process this feature4
     const uint subglobal_size = lsize * (1 << POWER_FEATURE_WORKGROUPS);
     // equavalent thread ID in this subgroup for this feature4
