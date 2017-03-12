@@ -321,8 +321,8 @@ void GPUTreeLearner::AllocateGPUMemory() {
   device_histogram_outputs_ = boost::compute::buffer(); // deallocate
   device_histogram_outputs_ = boost::compute::buffer(ctx_, num_dense_feature4_ * 4 * device_bin_size_ * hist_bin_entry_sz, 
                            boost::compute::memory_object::write_only | boost::compute::memory_object::alloc_host_ptr, nullptr);
-  // Now generate new data structure feature4, and copy data to the device
-  int i, k, copied_feature4 = 0, dense_ind[4], dev_bin_mult[4];
+  // find the dense features and group then into feature4
+  int i, k, copied_feature4 = 0, dense_ind[4];
   dense_feature_map_.clear();
   device_bin_mults_.clear();
   sparse_feature_map_.clear();
@@ -338,7 +338,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
       #if GPU_DEBUG >= 1
       printf("feature %d using multiplier %d\n", i, device_bin_mults_.back());
       #endif
-      dev_bin_mult[k++] = device_bin_mults_.back();
+      k++;
     }
     else {
       sparse_feature_map_.push_back(i);
@@ -346,38 +346,44 @@ void GPUTreeLearner::AllocateGPUMemory() {
     // found 
     if (k == 4) {
       k = 0;
-      std::vector<Feature4> host4(num_data_);
-      #if GPU_DEBUG >= 1
-      printf("Copying feature %d, %d, %d, %d to device\n", dense_ind[0], dense_ind[1], dense_ind[2], dense_ind[3]);
-      printf("feature size: %d, %d, %d, %d, %d\n", 
-      static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[0])->bin_data())->num_data(),
-      static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[1])->bin_data())->num_data(),
-      static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[2])->bin_data())->num_data(),
-      static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[3])->bin_data())->num_data(),
-      num_data_);
-      #endif
-      for (int j = 0; j < num_data_; ++j) {
-        host4[j].s0 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[0])->bin_data())->Get(j)
-                      * dev_bin_mult[0] + ((j+0) & (dev_bin_mult[0] - 1));
-        host4[j].s1 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[1])->bin_data())->Get(j)
-                      * dev_bin_mult[1] + ((j+1) & (dev_bin_mult[1] - 1)); 
-        host4[j].s2 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[2])->bin_data())->Get(j)
-                      * dev_bin_mult[2] + ((j+2) & (dev_bin_mult[2] - 1));
-        host4[j].s3 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[3])->bin_data())->Get(j)
-                      * dev_bin_mult[3] + ((j+3) & (dev_bin_mult[3] - 1));
-      }
-      boost::compute::copy(host4.begin(), host4.end(), device_features_->begin() + copied_feature4 * num_data_, queue_);
-      #if GPU_DEBUG >= 1
-      printf("first example of features are: %d %d %d %d\n", host4[0].s0, host4[0].s1, host4[0].s2, host4[0].s3);
-      printf("Feature %d, %d, %d, %d copied to device with multiplier %d %d %d %d\n", 
-             dense_ind[0], dense_ind[1], dense_ind[2], dense_ind[3], dev_bin_mult[0], dev_bin_mult[1], dev_bin_mult[2], dev_bin_mult[3]);
-      #endif
       dense_feature_map_.push_back(dense_ind[0]);
       dense_feature_map_.push_back(dense_ind[1]);
       dense_feature_map_.push_back(dense_ind[2]);
       dense_feature_map_.push_back(dense_ind[3]);
       copied_feature4++;
     }
+  }
+  // Now generate new data structure feature4, and copy data to the device
+  #pragma omp parallel for schedule(static)
+  for (unsigned int i = 0; i < dense_feature_map_.size() / 4; ++i) {
+    std::vector<Feature4> host4(num_data_);
+    auto dense_ind = dense_feature_map_.begin() + i * 4;
+    auto dev_bin_mult = device_bin_mults_.begin() + i * 4;
+    #if GPU_DEBUG >= 1
+    printf("Copying feature %d, %d, %d, %d to device\n", dense_ind[0], dense_ind[1], dense_ind[2], dense_ind[3]);
+    printf("feature size: %d, %d, %d, %d, %d\n", 
+    static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[0])->bin_data())->num_data(),
+    static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[1])->bin_data())->num_data(),
+    static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[2])->bin_data())->num_data(),
+    static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[3])->bin_data())->num_data(),
+    num_data_);
+    #endif
+    for (int j = 0; j < num_data_; ++j) {
+      host4[j].s0 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[0])->bin_data())->Get(j)
+                    * dev_bin_mult[0] + ((j+0) & (dev_bin_mult[0] - 1));
+      host4[j].s1 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[1])->bin_data())->Get(j)
+                    * dev_bin_mult[1] + ((j+1) & (dev_bin_mult[1] - 1)); 
+      host4[j].s2 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[2])->bin_data())->Get(j)
+                    * dev_bin_mult[2] + ((j+2) & (dev_bin_mult[2] - 1));
+      host4[j].s3 = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[3])->bin_data())->Get(j)
+                    * dev_bin_mult[3] + ((j+3) & (dev_bin_mult[3] - 1));
+    }
+    boost::compute::copy(host4.begin(), host4.end(), device_features_->begin() + i * num_data_, queue_);
+    #if GPU_DEBUG >= 1
+    printf("first example of features are: %d %d %d %d\n", host4[0].s0, host4[0].s1, host4[0].s2, host4[0].s3);
+    printf("Feature %d, %d, %d, %d copied to device with multiplier %d %d %d %d\n", 
+           dense_ind[0], dense_ind[1], dense_ind[2], dense_ind[3], dev_bin_mult[0], dev_bin_mult[1], dev_bin_mult[2], dev_bin_mult[3]);
+    #endif
   }
   if (k != 0) {
     std::vector<Feature4> host4(num_data_);
@@ -387,7 +393,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
     for (int j = 0; j < num_data_; ++j) {
       for (i = 0; i < k; ++i) {
         host4[j].s[i] = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[i])->bin_data())->Get(j)
-                        * dev_bin_mult[i] + ((j+i) & (dev_bin_mult[i] - 1));
+                        * device_bin_mults_[copied_feature4 * 4 + i] + ((j+i) & (device_bin_mults_[copied_feature4 * 4 + i] - 0));
       }
       for (i = k; i < 4; ++i) {
         // fill this empty feature to some "random" value
@@ -442,7 +448,9 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
     #endif
     max_num_bin_ = std::max(max_num_bin_, train_data_->FeatureAt(i)->num_bin());
   }
+  #if GPU_DEBUG >= 1
   printf("\n");
+  #endif
   // initialize GPU
   dev_ = boost::compute::system::default_device();
   if (platform_id >= 0 && device_id >= 0) {
@@ -478,6 +486,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   // create OpenCL kernels for different number of workgroups per feature
   histogram_kernels_.resize(max_exp_workgroups_per_feature_+1);
   histogram_fulldata_kernels_.resize(max_exp_workgroups_per_feature_+1);
+  #pragma omp parallel for schedule(guided)
   for (int i = 0; i <= max_exp_workgroups_per_feature_; ++i) {
     auto program = boost::compute::program::create_with_source(kernel_source, ctx_);
     std::ostringstream opts;
