@@ -419,6 +419,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
                                         *device_data_indices_, num_data_, device_gradients_, device_hessians_,
                                         *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
   }
+  Log::Info("%d dense features transfered to GPU. %d sparse features.", dense_feature_map_.size(), sparse_feature_map_.size());
   #if GPU_DEBUG >= 1
   printf("Dense feature list (size %lu): ", dense_feature_map_.size());
   for (i = 0; i < num_dense_features_; ++i) {
@@ -525,6 +526,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
     }
     histogram_fulldata_kernels_[i] = program.create_kernel(kernel_name);
   }
+  Log::Info("GPU programs have been built");
   AllocateGPUMemory();
 }
 

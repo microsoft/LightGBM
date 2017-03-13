@@ -110,7 +110,9 @@ inline void atomic_local_add_f(__local acc_type *addr, const float val)
     // provide a fast path
     // then do the complete loop
     // this should work on all devices
-    ATOMIC_FADD_SUB16
+    ATOMIC_FADD_SUB8
+    ATOMIC_FADD_SUB4
+    ATOMIC_FADD_SUB2
     #endif
     do {
         expected.f_val = current.f_val;
@@ -165,6 +167,8 @@ void within_kernel_reduction64x4(__global const acc_type* restrict feature4_sub_
     }
 }
 
+#define printf
+
 __attribute__((reqd_work_group_size(LOCAL_SIZE_0, 1, 1)))
 #if USE_CONSTANT_BUF == 1
 __kernel void histogram64(__global const uchar4* restrict feature_data_base, 
@@ -218,10 +222,10 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
        bk2_g_f0_bin1   bk2_g_f1_bin1   bk2_g_f2_bin1   bk2_g_f3_bin1   bk2_h_f0_bin1   bk2_h_f1_bin1   bk2_h_f2_bin1   bk2_h_f3_bin1
        bk3_g_f0_bin1   bk3_g_f1_bin1   bk3_g_f2_bin1   bk3_g_f3_bin1   bk3_h_f0_bin1   bk3_h_f1_bin1   bk3_h_f2_bin1   bk3_h_f3_bin1
        ...
-       bk0_g_f0_bin255 bk0_g_f1_bin255 bk0_g_f2_bin255 bk0_g_f3_bin255 bk0_h_f0_bin255 bk0_h_f1_bin255 bk0_h_f2_bin255 bk0_h_f3_bin255
-       bk1_g_f0_bin255 bk1_g_f1_bin255 bk1_g_f2_bin255 bk1_g_f3_bin255 bk1_h_f0_bin255 bk1_h_f1_bin255 bk1_h_f2_bin255 bk1_h_f3_bin255
-       bk2_g_f0_bin255 bk2_g_f1_bin255 bk2_g_f2_bin255 bk2_g_f3_bin255 bk2_h_f0_bin255 bk2_h_f1_bin255 bk2_h_f2_bin255 bk2_h_f3_bin255
-       bk3_g_f0_bin255 bk3_g_f1_bin255 bk3_g_f2_bin255 bk3_g_f3_bin255 bk3_h_f0_bin255 bk3_h_f1_bin255 bk3_h_f2_bin255 bk3_h_f3_bin255
+       bk0_g_f0_bin64 bk0_g_f1_bin64 bk0_g_f2_bin64 bk0_g_f3_bin64 bk0_h_f0_bin64 bk0_h_f1_bin64 bk0_h_f2_bin64 bk0_h_f3_bin64
+       bk1_g_f0_bin64 bk1_g_f1_bin64 bk1_g_f2_bin64 bk1_g_f3_bin64 bk1_h_f0_bin64 bk1_h_f1_bin64 bk1_h_f2_bin64 bk1_h_f3_bin64
+       bk2_g_f0_bin64 bk2_g_f1_bin64 bk2_g_f2_bin64 bk2_g_f3_bin64 bk2_h_f0_bin64 bk2_h_f1_bin64 bk2_h_f2_bin64 bk2_h_f3_bin64
+       bk3_g_f0_bin64 bk3_g_f1_bin64 bk3_g_f2_bin64 bk3_g_f3_bin64 bk3_h_f0_bin64 bk3_h_f1_bin64 bk3_h_f2_bin64 bk3_h_f3_bin64
        -----------------------------------------------------------------------------------------------
     */
     // with this organization, the LDS/shared memory bank is independent of the bin value
@@ -242,10 +246,10 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
        bk2_c_f0_bin1   bk2_c_f1_bin1   bk2_c_f2_bin1   bk2_c_f3_bin1
        bk3_c_f0_bin1   bk3_c_f1_bin1   bk3_c_f2_bin1   bk3_c_f3_bin1
        ...
-       bk0_c_f0_bin255 bk0_c_f1_bin255 bk0_c_f2_bin255 bk0_c_f3_bin255
-       bk1_c_f0_bin255 bk1_c_f1_bin255 bk1_c_f2_bin255 bk1_c_f3_bin255
-       bk2_c_f0_bin255 bk2_c_f1_bin255 bk2_c_f2_bin255 bk2_c_f3_bin255
-       bk3_c_f0_bin255 bk3_c_f1_bin255 bk3_c_f2_bin255 bk3_c_f3_bin255
+       bk0_c_f0_bin64 bk0_c_f1_bin64 bk0_c_f2_bin64 bk0_c_f3_bin64
+       bk1_c_f0_bin64 bk1_c_f1_bin64 bk1_c_f2_bin64 bk1_c_f3_bin64
+       bk2_c_f0_bin64 bk2_c_f1_bin64 bk2_c_f2_bin64 bk2_c_f3_bin64
+       bk3_c_f0_bin64 bk3_c_f1_bin64 bk3_c_f2_bin64 bk3_c_f3_bin64
        -----------------------------------------------
     */
     __local uint * cnt_hist = (__local uint *)(gh_hist + 2 * 4 * NUM_BINS * NUM_BANKS);
@@ -271,9 +275,13 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     // We will prefetch data into the "next" variable at the beginning of each iteration
     uchar4 feature4;
     uchar4 feature4_next;
+    uchar4 feature4_prev;
+    // offset used to rotate feature4 vector
+    ushort offset = (ltid & 0x3);
     // store gradient and hessian
     float stat1, stat2;
     float stat1_next, stat2_next;
+    ushort bin, addr, addr2;
     data_size_t ind;
     data_size_t ind_next;
     stat1 = ordered_gradients[subglobal_tid];
@@ -284,6 +292,13 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     ind = data_indices[subglobal_tid];
     #endif
     feature4 = feature_data[ind];
+    feature4 &= as_uchar4(0x3f3f3f3f);
+    feature4_prev = feature4;
+    feature4_prev = as_uchar4(rotate(as_uint(feature4_prev), (uint)offset*8));
+    acc_type s3_stat1 = 0.0f, s3_stat2 = 0.0f;
+    acc_type s2_stat1 = 0.0f, s2_stat2 = 0.0f;
+    acc_type s1_stat1 = 0.0f, s1_stat2 = 0.0f;
+    acc_type s0_stat1 = 0.0f, s0_stat2 = 0.0f;
 
     // there are 2^POWER_FEATURE_WORKGROUPS workgroups processing each feature4
     for (uint i = subglobal_tid; i < num_data; i += subglobal_size) {
@@ -299,8 +314,6 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
         #else
         ind_next = data_indices[i + subglobal_size];
         #endif
-        // offset used to rotate feature4 vector
-        ushort offset = (ltid & 0x3);
         // swap gradient and hessian for threads 4, 5, 6, 7
         float tmp = stat1;
         stat1 = is_hessian_first ? stat2 : stat1;
@@ -309,87 +322,161 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
         // stat2 = select(stat2, tmp, is_hessian_first);
 
         // STAGE 2: accumulate gradient and hessian
-        ushort bin, addr;
+        offset = (ltid & 0x3);
         feature4 = as_uchar4(rotate(as_uint(feature4), (uint)offset*8));
-        // thread 0, 1, 2, 3 now process feature 0, 1, 2, 3's gradients for example 0, 1, 2, 3
-        // thread 4, 5, 6, 7 now process feature 0, 1, 2, 3's hessians  for example 4, 5, 6, 7
-        bin = feature4.s3 & 0x3f;
-        addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
-        atomic_local_add_f(gh_hist + addr, stat1);
-        // thread 0, 1, 2, 3 now process feature 0, 1, 2, 3's hessians  for example 0, 1, 2, 3
-        // thread 4, 5, 6, 7 now process feature 0, 1, 2, 3's gradients for example 4, 5, 6, 7
-        addr += 4 - 8 * is_hessian_first;
-        atomic_local_add_f(gh_hist + addr, stat2);
-        // thread 0, 1, 2, 3 now process feature 1, 2, 3, 0's gradients for example 0, 1, 2, 3
-        // thread 4, 5, 6, 7 now process feature 1, 2, 3, 0's hessians  for example 4, 5, 6, 7
-        bin = feature4.s2 & 0x3f;
+        bin = feature4.s3;
+        if (bin != feature4_prev.s3) {
+            printf("%3d (%4d): writing s3 %d %d offset %d", ltid, i, bin, feature4_prev.s3, offset);
+            bin = feature4_prev.s3;
+            feature4_prev.s3 = feature4.s3;
+            addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
+            addr2 = addr + 4 - 8 * is_hessian_first;
+            // thread 0, 1, 2, 3 now process feature 0, 1, 2, 3's gradients for example 0, 1, 2, 3
+            // thread 4, 5, 6, 7 now process feature 0, 1, 2, 3's hessians  for example 4, 5, 6, 7
+            atomic_local_add_f(gh_hist + addr, s3_stat1);
+            // thread 0, 1, 2, 3 now process feature 0, 1, 2, 3's hessians  for example 0, 1, 2, 3
+            // thread 4, 5, 6, 7 now process feature 0, 1, 2, 3's gradients for example 4, 5, 6, 7
+            atomic_local_add_f(gh_hist + addr2, s3_stat2);
+            s3_stat1 = stat1;
+            s3_stat2 = stat2;
+        }
+        else {
+            printf("%3d (%4d): acc s3 %d", ltid, i, bin);
+            s3_stat1 += stat1;
+            s3_stat2 += stat2;
+        }
+
+        bin = feature4.s2;
         offset = (offset + 1) & 0x3;
-        addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
-        atomic_local_add_f(gh_hist + addr, stat1);
-        // thread 0, 1, 2, 3 now process feature 1, 2, 3, 0's hessians  for example 0, 1, 2, 3
-        // thread 4, 5, 6, 7 now process feature 1, 2, 3, 0's gradients for example 4, 5, 6, 7
-        addr += 4 - 8 * is_hessian_first;
-        atomic_local_add_f(gh_hist + addr, stat2);
-        // thread 0, 1, 2, 3 now process feature 2, 3, 0, 1's gradients for example 0, 1, 2, 3
-        // thread 4, 5, 6, 7 now process feature 2, 3, 0, 1's hessians  for example 4, 5, 6, 7
-        bin = feature4.s1 & 0x3f;
-        offset = (offset + 1) & 0x3;
-        addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
-        atomic_local_add_f(gh_hist + addr, stat1);
-        // thread 0, 1, 2, 3 now process feature 2, 3, 0, 1's hessians  for example 0, 1, 2, 3
-        // thread 4, 5, 6, 7 now process feature 2, 3, 0, 1's gradients for example 4, 5, 6, 7
-        addr += 4 - 8 * is_hessian_first;
-        atomic_local_add_f(gh_hist + addr, stat2);
+        if (bin != feature4_prev.s2) {
+            printf("%3d (%4d): writing s2 %d %d feature %d", ltid, i, bin, feature4_prev.s2, offset);
+            bin = feature4_prev.s2;
+            feature4_prev.s2 = feature4.s2;
+            addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
+            addr2 = addr + 4 - 8 * is_hessian_first;
+            // thread 0, 1, 2, 3 now process feature 1, 2, 3, 0's gradients for example 0, 1, 2, 3
+            // thread 4, 5, 6, 7 now process feature 1, 2, 3, 0's hessians  for example 4, 5, 6, 7
+            atomic_local_add_f(gh_hist + addr, s2_stat1);
+            // thread 0, 1, 2, 3 now process feature 1, 2, 3, 0's hessians  for example 0, 1, 2, 3
+            // thread 4, 5, 6, 7 now process feature 1, 2, 3, 0's gradients for example 4, 5, 6, 7
+            atomic_local_add_f(gh_hist + addr2, s2_stat2);
+            s2_stat1 = stat1;
+            s2_stat2 = stat2;
+        }
+        else {
+            printf("%3d (%4d): acc s2 %d", ltid, i, bin);
+            s2_stat1 += stat1;
+            s2_stat2 += stat2;
+        }
+
 
         // prefetch the next iteration variables
         // we don't need bondary check because if it is out of boundary, ind_next = 0
-        /*
-        if (i + subglobal_size >= num_data) {
-            if (ind_next)
-                printf("%d:%d outof bound index: %d\n", gtid, group_id, ind_next);
-        }
-        else 
-        */
         #ifndef IGNORE_INDICES
         feature4_next = feature_data[ind_next];
         #endif
 
-        // thread 0, 1, 2, 3 now process feature 3, 0, 1, 2's gradients for example 0, 1, 2, 3
-        // thread 4, 5, 6, 7 now process feature 3, 0, 1, 2's hessians  for example 4, 5, 6, 7
-        bin = feature4.s0 & 0x3f;
+        bin = feature4.s1 & 0x3f;
         offset = (offset + 1) & 0x3;
-        addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
-        atomic_local_add_f(gh_hist + addr, stat1);
-        // thread 0, 1, 2, 3 now process feature 3, 0, 1, 2's hessians  for example 0, 1, 2, 3
-        // thread 4, 5, 6, 7 now process feature 3, 0, 1, 2's gradients for example 4, 5, 6, 7
-        addr += 4 - 8 * is_hessian_first;
-        atomic_local_add_f(gh_hist + addr, stat2);
+        if (bin != feature4_prev.s1) {
+            printf("%3d (%4d): writing s1 %d %d feature %d", ltid, i, bin, feature4_prev.s1, offset);
+            bin = feature4_prev.s1;
+            feature4_prev.s1 = feature4.s1;
+            addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
+            addr2 = addr + 4 - 8 * is_hessian_first;
+            // thread 0, 1, 2, 3 now process feature 2, 3, 0, 1's gradients for example 0, 1, 2, 3
+            // thread 4, 5, 6, 7 now process feature 2, 3, 0, 1's hessians  for example 4, 5, 6, 7
+            atomic_local_add_f(gh_hist + addr, s1_stat1);
+            // thread 0, 1, 2, 3 now process feature 2, 3, 0, 1's hessians  for example 0, 1, 2, 3
+            // thread 4, 5, 6, 7 now process feature 2, 3, 0, 1's gradients for example 4, 5, 6, 7
+            atomic_local_add_f(gh_hist + addr2, s1_stat2);
+            s1_stat1 = stat1;
+            s1_stat2 = stat2;
+        }
+        else {
+            printf("%3d (%4d): acc s1 %d", ltid, i, bin);
+            s1_stat1 += stat1;
+            s1_stat2 += stat2;
+        }
+
+        bin = feature4.s0;
+        offset = (offset + 1) & 0x3;
+        if (bin != feature4_prev.s0) {
+            printf("%3d (%4d): writing s0 %d %d feature %d", ltid, i, bin, feature4_prev.s0, offset);
+            bin = feature4_prev.s0;
+            feature4_prev.s0 = feature4.s0;
+            addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
+            addr2 = addr + 4 - 8 * is_hessian_first;
+            // thread 0, 1, 2, 3 now process feature 3, 0, 1, 2's gradients for example 0, 1, 2, 3
+            // thread 4, 5, 6, 7 now process feature 3, 0, 1, 2's hessians  for example 4, 5, 6, 7
+            atomic_local_add_f(gh_hist + addr, s0_stat1);
+            // thread 0, 1, 2, 3 now process feature 3, 0, 1, 2's hessians  for example 0, 1, 2, 3
+            // thread 4, 5, 6, 7 now process feature 3, 0, 1, 2's gradients for example 4, 5, 6, 7
+            atomic_local_add_f(gh_hist + addr2, s0_stat2);
+            s0_stat1 = stat1;
+            s0_stat2 = stat2;
+        }
+        else {
+            printf("%3d (%4d): acc s0 %d", ltid, i, bin);
+            s0_stat1 += stat1;
+            s0_stat2 += stat2;
+        }
+
         // STAGE 3: accumulate counter
         // there are 4 counters for 4 features
         // thread 0, 1, 2, 3 now process feature 0, 1, 2, 3's counts for example 0, 1, 2, 3
-        bin = feature4.s3 & 0x3f;
+        bin = feature4.s3;
         offset = (ltid & 0x3);
         addr = bin * CNT_BIN_MULT + bank * 4 + offset;
         atom_inc(cnt_hist + addr);
         // thread 0, 1, 2, 3 now process feature 1, 2, 3, 0's counts for example 0, 1, 2, 3
-        bin = feature4.s2 & 0x3f;
+        bin = feature4.s2;
         offset = (offset + 1) & 0x3;
         addr = bin * CNT_BIN_MULT + bank * 4 + offset;
         atom_inc(cnt_hist + addr);
         // thread 0, 1, 2, 3 now process feature 2, 3, 0, 1's counts for example 0, 1, 2, 3
-        bin = feature4.s1 & 0x3f;
+        bin = feature4.s1;
         offset = (offset + 1) & 0x3;
         addr = bin * CNT_BIN_MULT + bank * 4 + offset;
         atom_inc(cnt_hist + addr);
         // thread 0, 1, 2, 3 now process feature 3, 0, 1, 2's counts for example 0, 1, 2, 3
-        bin = feature4.s0 & 0x3f;
+        bin = feature4.s0;
         offset = (offset + 1) & 0x3;
         addr = bin * CNT_BIN_MULT + bank * 4 + offset;
         atom_inc(cnt_hist + addr);
         stat1 = stat1_next;
         stat2 = stat2_next;
         feature4 = feature4_next;
+        feature4 &= as_uchar4(0x3f3f3f3f);
     }
+
+    bin = feature4_prev.s3;
+    offset = (ltid & 0x3);
+    addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
+    addr2 = addr + 4 - 8 * is_hessian_first;
+    atomic_local_add_f(gh_hist + addr, s3_stat1);
+    atomic_local_add_f(gh_hist + addr2, s3_stat2);
+
+    bin = feature4_prev.s2;
+    offset = (offset + 1) & 0x3;
+    addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
+    addr2 = addr + 4 - 8 * is_hessian_first;
+    atomic_local_add_f(gh_hist + addr, s2_stat1);
+    atomic_local_add_f(gh_hist + addr2, s2_stat2);
+
+    bin = feature4_prev.s1;
+    offset = (offset + 1) & 0x3;
+    addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
+    addr2 = addr + 4 - 8 * is_hessian_first;
+    atomic_local_add_f(gh_hist + addr, s1_stat1);
+    atomic_local_add_f(gh_hist + addr2, s1_stat2);
+
+    bin = feature4_prev.s0;
+    offset = (offset + 1) & 0x3;
+    addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
+    addr2 = addr + 4 - 8 * is_hessian_first;
+    atomic_local_add_f(gh_hist + addr, s0_stat1);
+    atomic_local_add_f(gh_hist + addr2, s0_stat2);
     barrier(CLK_LOCAL_MEM_FENCE);
     // now reduce the 4 banks of subhistograms into 1
     /* memory layout of gh_hist:
@@ -403,10 +490,10 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
        bk2_g_f0_bin1   bk2_g_f1_bin1   bk2_g_f2_bin1   bk2_g_f3_bin1   bk2_h_f0_bin1   bk2_h_f1_bin1   bk2_h_f2_bin1   bk2_h_f3_bin1
        bk3_g_f0_bin1   bk3_g_f1_bin1   bk3_g_f2_bin1   bk3_g_f3_bin1   bk3_h_f0_bin1   bk3_h_f1_bin1   bk3_h_f2_bin1   bk3_h_f3_bin1
        ...
-       bk0_g_f0_bin255 bk0_g_f1_bin255 bk0_g_f2_bin255 bk0_g_f3_bin255 bk0_h_f0_bin255 bk0_h_f1_bin255 bk0_h_f2_bin255 bk0_h_f3_bin255
-       bk1_g_f0_bin255 bk1_g_f1_bin255 bk1_g_f2_bin255 bk1_g_f3_bin255 bk1_h_f0_bin255 bk1_h_f1_bin255 bk1_h_f2_bin255 bk1_h_f3_bin255
-       bk2_g_f0_bin255 bk2_g_f1_bin255 bk2_g_f2_bin255 bk2_g_f3_bin255 bk2_h_f0_bin255 bk2_h_f1_bin255 bk2_h_f2_bin255 bk2_h_f3_bin255
-       bk3_g_f0_bin255 bk3_g_f1_bin255 bk3_g_f2_bin255 bk3_g_f3_bin255 bk3_h_f0_bin255 bk3_h_f1_bin255 bk3_h_f2_bin255 bk3_h_f3_bin255
+       bk0_g_f0_bin64 bk0_g_f1_bin64 bk0_g_f2_bin64 bk0_g_f3_bin64 bk0_h_f0_bin64 bk0_h_f1_bin64 bk0_h_f2_bin64 bk0_h_f3_bin64
+       bk1_g_f0_bin64 bk1_g_f1_bin64 bk1_g_f2_bin64 bk1_g_f3_bin64 bk1_h_f0_bin64 bk1_h_f1_bin64 bk1_h_f2_bin64 bk1_h_f3_bin64
+       bk2_g_f0_bin64 bk2_g_f1_bin64 bk2_g_f2_bin64 bk2_g_f3_bin64 bk2_h_f0_bin64 bk2_h_f1_bin64 bk2_h_f2_bin64 bk2_h_f3_bin64
+       bk3_g_f0_bin64 bk3_g_f1_bin64 bk3_g_f2_bin64 bk3_g_f3_bin64 bk3_h_f0_bin64 bk3_h_f1_bin64 bk3_h_f2_bin64 bk3_h_f3_bin64
        -----------------------------------------------------------------------------------------------
     */
     /* memory layout in cnt_hist:
@@ -420,10 +507,10 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
        bk2_c_f0_bin1   bk2_c_f1_bin1   bk2_c_f2_bin1   bk2_c_f3_bin1
        bk3_c_f0_bin1   bk3_c_f1_bin1   bk3_c_f2_bin1   bk3_c_f3_bin1
        ...
-       bk0_c_f0_bin255 bk0_c_f1_bin255 bk0_c_f2_bin255 bk0_c_f3_bin255
-       bk1_c_f0_bin255 bk1_c_f1_bin255 bk1_c_f2_bin255 bk1_c_f3_bin255
-       bk2_c_f0_bin255 bk2_c_f1_bin255 bk2_c_f2_bin255 bk2_c_f3_bin255
-       bk3_c_f0_bin255 bk3_c_f1_bin255 bk3_c_f2_bin255 bk3_c_f3_bin255
+       bk0_c_f0_bin64 bk0_c_f1_bin64 bk0_c_f2_bin64 bk0_c_f3_bin64
+       bk1_c_f0_bin64 bk1_c_f1_bin64 bk1_c_f2_bin64 bk1_c_f3_bin64
+       bk2_c_f0_bin64 bk2_c_f1_bin64 bk2_c_f2_bin64 bk2_c_f3_bin64
+       bk3_c_f0_bin64 bk3_c_f1_bin64 bk3_c_f2_bin64 bk3_c_f3_bin64
        -----------------------------------------------
     */
     acc_type g_val = 0.0f;
@@ -433,7 +520,7 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     // so each thread has an independent feature/bin to work on.
     const ushort feature_id = ltid & 3; // range 0 - 4
     const ushort bin_id = ltid >> 2; // range 0 - 63
-    const ushort offset = (ltid >> 2) & BANK_MASK; // helps avoid LDS bank conflicts
+    offset = (ltid >> 2) & BANK_MASK; // helps avoid LDS bank conflicts
     for (int i = 0; i < NUM_BANKS; ++i) {
         ushort bank_id = (i + offset) & BANK_MASK;
         g_val += gh_hist[bin_id * HG_BIN_MULT + bank_id * 8 + feature_id];

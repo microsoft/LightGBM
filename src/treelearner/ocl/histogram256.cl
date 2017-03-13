@@ -17,7 +17,7 @@ R""()
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 
 #ifndef USE_DP_FLOAT
-#define USE_DP_FLOAT 1
+#define USE_DP_FLOAT 0
 #endif
 
 #define LOCAL_SIZE_0 256
@@ -216,6 +216,8 @@ void within_kernel_reduction256x4(__global const acc_type* restrict feature4_sub
     #endif
 }
 
+#define printf
+
 __attribute__((reqd_work_group_size(LOCAL_SIZE_0, 1, 1)))
 #if USE_CONSTANT_BUF == 1
 __kernel void histogram256(__global const uchar4* restrict feature_data_base, 
@@ -283,9 +285,13 @@ __kernel void histogram256(__global const uchar4* feature_data_base,
     // We will prefetch data into the "next" variable at the beginning of each iteration
     uchar4 feature4;
     uchar4 feature4_next;
+    uchar4 feature4_prev;
+    // offset used to rotate feature4 vector
+    ushort offset = (ltid & 0x3);
     // store gradient and hessian
     float stat1, stat2;
     float stat1_next, stat2_next;
+    ushort bin, addr, addr2;
     data_size_t ind;
     data_size_t ind_next;
     stat1 = ordered_gradients[subglobal_tid];
@@ -296,6 +302,12 @@ __kernel void histogram256(__global const uchar4* feature_data_base,
     ind = data_indices[subglobal_tid];
     #endif
     feature4 = feature_data[ind];
+    feature4_prev = feature4;
+    feature4_prev = as_uchar4(rotate(as_uint(feature4_prev), (uint)offset*8));
+    acc_type s3_stat1 = 0.0f, s3_stat2 = 0.0f;
+    acc_type s2_stat1 = 0.0f, s2_stat2 = 0.0f;
+    acc_type s1_stat1 = 0.0f, s1_stat2 = 0.0f;
+    acc_type s0_stat1 = 0.0f, s0_stat2 = 0.0f;
 
     // there are 2^POWER_FEATURE_WORKGROUPS workgroups processing each feature4
     for (uint i = subglobal_tid; i < num_data; i += subglobal_size) {
@@ -311,8 +323,6 @@ __kernel void histogram256(__global const uchar4* feature_data_base,
         #else
         ind_next = data_indices[i + subglobal_size];
         #endif
-        // offset used to rotate feature4 vector
-        ushort offset = (ltid & 0x3);
         // swap gradient and hessian for threads 4, 5, 6, 7
         float tmp = stat1;
         stat1 = is_hessian_first ? stat2 : stat1;
@@ -321,61 +331,106 @@ __kernel void histogram256(__global const uchar4* feature_data_base,
         // stat2 = select(stat2, tmp, is_hessian_first);
 
         // STAGE 2: accumulate gradient and hessian
-        ushort bin, addr;
+        offset = (ltid & 0x3);
         feature4 = as_uchar4(rotate(as_uint(feature4), (uint)offset*8));
-        // thread 0, 1, 2, 3 now process feature 0, 1, 2, 3's gradients for example 0, 1, 2, 3
-        // thread 4, 5, 6, 7 now process feature 0, 1, 2, 3's hessians  for example 4, 5, 6, 7
         bin = feature4.s3;
-        addr = bin * 8 + is_hessian_first * 4 + offset;
-        atomic_local_add_f(gh_hist + addr, stat1);
-        // thread 0, 1, 2, 3 now process feature 0, 1, 2, 3's hessians  for example 0, 1, 2, 3
-        // thread 4, 5, 6, 7 now process feature 0, 1, 2, 3's gradients for example 4, 5, 6, 7
-        addr += 4 - 8 * is_hessian_first;
-        atomic_local_add_f(gh_hist + addr, stat2);
-        // thread 0, 1, 2, 3 now process feature 1, 2, 3, 0's gradients for example 0, 1, 2, 3
-        // thread 4, 5, 6, 7 now process feature 1, 2, 3, 0's hessians  for example 4, 5, 6, 7
+        if (bin != feature4_prev.s3) {
+            printf("%3d (%4d): writing s3 %d %d offset %d", ltid, i, bin, feature4_prev.s3, offset);
+            bin = feature4_prev.s3;
+            feature4_prev.s3 = feature4.s3;
+            addr = bin * 8 + is_hessian_first * 4 + offset;
+            addr2 = addr + 4 - 8 * is_hessian_first;
+            atomic_local_add_f(gh_hist + addr, s3_stat1);
+            // thread 0, 1, 2, 3 now process feature 0, 1, 2, 3's gradients for example 0, 1, 2, 3
+            // thread 4, 5, 6, 7 now process feature 0, 1, 2, 3's hessians  for example 4, 5, 6, 7
+            atomic_local_add_f(gh_hist + addr2, s3_stat2);
+            // thread 0, 1, 2, 3 now process feature 0, 1, 2, 3's hessians  for example 0, 1, 2, 3
+            // thread 4, 5, 6, 7 now process feature 0, 1, 2, 3's gradients for example 4, 5, 6, 7
+            s3_stat1 = stat1;
+            s3_stat2 = stat2;
+        }
+        else {
+            printf("%3d (%4d): acc s3 %d", ltid, i, bin);
+            s3_stat1 += stat1;
+            s3_stat2 += stat2;
+        }
+
         bin = feature4.s2;
         offset = (offset + 1) & 0x3;
-        addr = bin * 8 + is_hessian_first * 4 + offset;
-        atomic_local_add_f(gh_hist + addr, stat1);
-        // thread 0, 1, 2, 3 now process feature 1, 2, 3, 0's hessians  for example 0, 1, 2, 3
-        // thread 4, 5, 6, 7 now process feature 1, 2, 3, 0's gradients for example 4, 5, 6, 7
-        addr += 4 - 8 * is_hessian_first;
-        atomic_local_add_f(gh_hist + addr, stat2);
-        // thread 0, 1, 2, 3 now process feature 2, 3, 0, 1's gradients for example 0, 1, 2, 3
-        // thread 4, 5, 6, 7 now process feature 2, 3, 0, 1's hessians  for example 4, 5, 6, 7
-        bin = feature4.s1;
-        offset = (offset + 1) & 0x3;
-        addr = bin * 8 + is_hessian_first * 4 + offset;
-        atomic_local_add_f(gh_hist + addr, stat1);
-        // thread 0, 1, 2, 3 now process feature 2, 3, 0, 1's hessians  for example 0, 1, 2, 3
-        // thread 4, 5, 6, 7 now process feature 2, 3, 0, 1's gradients for example 4, 5, 6, 7
-        addr += 4 - 8 * is_hessian_first;
-        atomic_local_add_f(gh_hist + addr, stat2);
+        if (bin != feature4_prev.s2) {
+            printf("%3d (%4d): writing s2 %d %d feature %d", ltid, i, bin, feature4_prev.s2, offset);
+            bin = feature4_prev.s2;
+            feature4_prev.s2 = feature4.s2;
+            addr = bin * 8 + is_hessian_first * 4 + offset;
+            addr2 = addr + 4 - 8 * is_hessian_first;
+            atomic_local_add_f(gh_hist + addr, s2_stat1);
+            // thread 0, 1, 2, 3 now process feature 1, 2, 3, 0's gradients for example 0, 1, 2, 3
+            // thread 4, 5, 6, 7 now process feature 1, 2, 3, 0's hessians  for example 4, 5, 6, 7
+            atomic_local_add_f(gh_hist + addr2, s2_stat2);
+            // thread 0, 1, 2, 3 now process feature 1, 2, 3, 0's hessians  for example 0, 1, 2, 3
+            // thread 4, 5, 6, 7 now process feature 1, 2, 3, 0's gradients for example 4, 5, 6, 7
+            s2_stat1 = stat1;
+            s2_stat2 = stat2;
+        }
+        else {
+            printf("%3d (%4d): acc s2 %d", ltid, i, bin);
+            s2_stat1 += stat1;
+            s2_stat2 += stat2;
+        }
+
 
         // prefetch the next iteration variables
         // we don't need bondary check because if it is out of boundary, ind_next = 0
-        /*
-        if (i + subglobal_size >= num_data) {
-            if (ind_next)
-                printf("%d:%d outof bound index: %d\n", gtid, group_id, ind_next);
-        }
-        else 
-        */
         #ifndef IGNORE_INDICES
         feature4_next = feature_data[ind_next];
         #endif
 
-        // thread 0, 1, 2, 3 now process feature 3, 0, 1, 2's gradients for example 0, 1, 2, 3
-        // thread 4, 5, 6, 7 now process feature 3, 0, 1, 2's hessians  for example 4, 5, 6, 7
+        bin = feature4.s1;
+        offset = (offset + 1) & 0x3;
+        if (bin != feature4_prev.s1) {
+            printf("%3d (%4d): writing s1 %d %d feature %d", ltid, i, bin, feature4_prev.s1, offset);
+            bin = feature4_prev.s1;
+            feature4_prev.s1 = feature4.s1;
+            addr = bin * 8 + is_hessian_first * 4 + offset;
+            addr2 = addr + 4 - 8 * is_hessian_first;
+            atomic_local_add_f(gh_hist + addr, s1_stat1);
+            // thread 0, 1, 2, 3 now process feature 2, 3, 0, 1's gradients for example 0, 1, 2, 3
+            // thread 4, 5, 6, 7 now process feature 2, 3, 0, 1's hessians  for example 4, 5, 6, 7
+            atomic_local_add_f(gh_hist + addr2, s1_stat2);
+            // thread 0, 1, 2, 3 now process feature 2, 3, 0, 1's hessians  for example 0, 1, 2, 3
+            // thread 4, 5, 6, 7 now process feature 2, 3, 0, 1's gradients for example 4, 5, 6, 7
+            s1_stat1 = stat1;
+            s1_stat2 = stat2;
+        }
+        else {
+            printf("%3d (%4d): acc s1 %d", ltid, i, bin);
+            s1_stat1 += stat1;
+            s1_stat2 += stat2;
+        }
+
         bin = feature4.s0;
         offset = (offset + 1) & 0x3;
-        addr = bin * 8 + is_hessian_first * 4 + offset;
-        atomic_local_add_f(gh_hist + addr, stat1);
-        // thread 0, 1, 2, 3 now process feature 3, 0, 1, 2's hessians  for example 0, 1, 2, 3
-        // thread 4, 5, 6, 7 now process feature 3, 0, 1, 2's gradients for example 4, 5, 6, 7
-        addr += 4 - 8 * is_hessian_first;
-        atomic_local_add_f(gh_hist + addr, stat2);
+        if (bin != feature4_prev.s0) {
+            printf("%3d (%4d): writing s0 %d %d feature %d", ltid, i, bin, feature4_prev.s0, offset);
+            bin = feature4_prev.s0;
+            feature4_prev.s0 = feature4.s0;
+            addr = bin * 8 + is_hessian_first * 4 + offset;
+            addr2 = addr + 4 - 8 * is_hessian_first;
+            atomic_local_add_f(gh_hist + addr, s0_stat1);
+            // thread 0, 1, 2, 3 now process feature 3, 0, 1, 2's gradients for example 0, 1, 2, 3
+            // thread 4, 5, 6, 7 now process feature 3, 0, 1, 2's hessians  for example 4, 5, 6, 7
+            atomic_local_add_f(gh_hist + addr2, s0_stat2);
+            // thread 0, 1, 2, 3 now process feature 3, 0, 1, 2's hessians  for example 0, 1, 2, 3
+            // thread 4, 5, 6, 7 now process feature 3, 0, 1, 2's gradients for example 4, 5, 6, 7
+            s0_stat1 = stat1;
+            s0_stat2 = stat2;
+        }
+        else {
+            printf("%3d (%4d): acc s0 %d", ltid, i, bin);
+            s0_stat1 += stat1;
+            s0_stat2 += stat2;
+        }
+
         // STAGE 3: accumulate counter
         // there are 4 counters for 4 features
         // thread 0, 1, 2, 3 now process feature 0, 1, 2, 3's counts for example 0, 1, 2, 3
@@ -402,6 +457,34 @@ __kernel void histogram256(__global const uchar4* feature_data_base,
         stat2 = stat2_next;
         feature4 = feature4_next;
     }
+
+    bin = feature4_prev.s3;
+    offset = (ltid & 0x3);
+    addr = bin * 8 + is_hessian_first * 4 + offset;
+    addr2 = addr + 4 - 8 * is_hessian_first;
+    atomic_local_add_f(gh_hist + addr, s3_stat1);
+    atomic_local_add_f(gh_hist + addr2, s3_stat2);
+
+    bin = feature4_prev.s2;
+    offset = (offset + 1) & 0x3;
+    addr = bin * 8 + is_hessian_first * 4 + offset;
+    addr2 = addr + 4 - 8 * is_hessian_first;
+    atomic_local_add_f(gh_hist + addr, s2_stat1);
+    atomic_local_add_f(gh_hist + addr2, s2_stat2);
+
+    bin = feature4_prev.s1;
+    offset = (offset + 1) & 0x3;
+    addr = bin * 8 + is_hessian_first * 4 + offset;
+    addr2 = addr + 4 - 8 * is_hessian_first;
+    atomic_local_add_f(gh_hist + addr, s1_stat1);
+    atomic_local_add_f(gh_hist + addr2, s1_stat2);
+
+    bin = feature4_prev.s0;
+    offset = (offset + 1) & 0x3;
+    addr = bin * 8 + is_hessian_first * 4 + offset;
+    addr2 = addr + 4 - 8 * is_hessian_first;
+    atomic_local_add_f(gh_hist + addr, s0_stat1);
+    atomic_local_add_f(gh_hist + addr2, s0_stat2);
     barrier(CLK_LOCAL_MEM_FENCE);
     // write to output
     // write gradients and hessians histogram for all 4 features
