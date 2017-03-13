@@ -45,6 +45,10 @@ public:
     GetLevel() = level;
   }
 
+  static void ResetUseException(bool use_ex) {
+    UseException() = use_ex;
+  }
+
   static void Debug(const char *format, ...) {
     va_list val;
     va_start(val, format);
@@ -73,7 +77,12 @@ public:
     vsprintf(str_buf, format, val);
 #endif
     va_end(val);
-    throw std::runtime_error(std::string(str_buf));
+    if (UseException()) {
+      throw std::runtime_error(std::string(str_buf));
+    } else {
+      fprintf(stderr, str_buf);
+      exit(-1);
+    }
   }
 
 private:
@@ -95,6 +104,8 @@ private:
 #else
   static LogLevel& GetLevel() { static thread_local LogLevel level = LogLevel::Info; return level; }
 #endif
+
+  static bool& UseException() { static bool use_ex = false; return use_ex; }
 
 };
 

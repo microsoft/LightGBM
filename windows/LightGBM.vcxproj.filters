@@ -177,6 +177,9 @@
     <ClInclude Include="..\src\io\dense_nbits_bin.hpp">
       <Filter>src\io</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\openmp_wrapper.h">
+      <Filter>include\LightGBM\utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp">
