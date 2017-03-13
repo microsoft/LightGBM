@@ -721,11 +721,11 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
         io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt, bin_type);
     }
   } else {
-    // if have multi-machines, need find bin distributed
+    // if have multi-machines, need to find bin distributed
     // different machines will find bin for different features
 
     // start and len will store the process feature indices for different machines
-    // machine i will find bins for features in [ strat[i], start[i] + len[i] )
+    // machine i will find bins for features in [ start[i], start[i] + len[i] )
     std::vector<int> start(num_machines);
     std::vector<int> len(num_machines);
     int total_num_feature = static_cast<int>(sample_values.size());
@@ -738,8 +738,29 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
       start[i + 1] = start[i] + len[i];
     }
     len[num_machines - 1] = total_num_feature - start[num_machines - 1];
+  #pragma omp parallel for schedule(guided)
+    for (int i = 0; i < len[rank]; ++i) {
+      if (ignore_features_.count(start[rank] + i) > 0) {
+        continue;
+      }
+      BinType bin_type = BinType::NumericalBin;
+      if (categorical_features_.count(start[rank] + i)) {
+        bin_type = BinType::CategoricalBin;
+      }
+      bin_mappers[i].reset(new BinMapper());
+      bin_mappers[i]->FindBin(sample_values[start[rank] + i], sample_data.size(),
+                         io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt, bin_type);
+    }
+    // get max_bin
+    int max_bin = 0;
+    for (int i = 0; i < len[rank]; ++i) {
+      if (ignore_features_.count(start[rank] + i) > 0) {
+        continue;
+      }
+      max_bin = std::max(max_bin, bin_mappers[i]->num_bin());
+    }
     // get size of bin mapper with max_bin_ size
-    int type_size = BinMapper::SizeForSpecificBin(io_config_.max_bin);
+    int type_size = BinMapper::SizeForSpecificBin(max_bin);
     // since sizes of different feature may not be same, we expand all bin mapper to type_size
     int buffer_size = type_size * total_num_feature;
     auto input_buffer = std::vector<char>(buffer_size);
@@ -751,14 +772,9 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
       if (ignore_features_.count(start[rank] + i) > 0) {
         continue;
       }
-      BinType bin_type = BinType::NumericalBin;
-      if (categorical_features_.count(start[rank] + i)) {
-        bin_type = BinType::CategoricalBin;
-      }
-      BinMapper bin_mapper;
-      bin_mapper.FindBin(sample_values[start[rank] + i], sample_data.size(), 
-        io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt, bin_type);
-      bin_mapper.CopyTo(input_buffer.data() + i * type_size);
+      bin_mappers[i]->CopyTo(input_buffer.data() + i * type_size);
+      // free
+      bin_mappers[i].reset(nullptr);
     }
     // convert to binary size
     for (int i = 0; i < num_machines; ++i) {

@@ -540,7 +540,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForFile(BoosterHandle handle,
 *          C_API_PREDICT_RAW_SCORE: raw score
 *          C_API_PREDICT_LEAF_INDEX: leaf index
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
-* \param out_len lenght of prediction
+* \param out_len length of prediction
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT int LGBM_BoosterCalcNumPredict(BoosterHandle handle,

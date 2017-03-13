@@ -119,7 +119,7 @@ public:
   * \brief Get prediction result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
   * \param result used to store prediction result, should allocate memory before call this function
-  * \param out_len lenght of returned score
+  * \param out_len length of returned score
   */
   void GetPredictAt(int data_idx, double* out_result, int64_t* out_len) override;
 
