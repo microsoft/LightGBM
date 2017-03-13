@@ -310,6 +310,110 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromFile(const char* filename,
   API_END();
 }
 
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSampledCSR(const void* indptr,
+  int indptr_type,
+  const int32_t* indices,
+  const void* data,
+  int data_type,
+  int64_t nindptr,
+  int64_t n_sample_elem,
+  int64_t num_col,
+  int64_t num_total_row,
+  const char* parameters,
+  DatasetHandle* out) {
+  if (nindptr - 1 == num_total_row) {
+    return LGBM_DatasetCreateFromCSR(indptr, indptr_type, indices, data,
+      data_type, nindptr, n_sample_elem, num_col, parameters, nullptr, out);
+  } else {
+    API_BEGIN();
+    auto param = ConfigBase::Str2Map(parameters);
+    IOConfig io_config;
+    io_config.Set(param);
+    auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, n_sample_elem);
+    int32_t num_sample_row = static_cast<int32_t>(nindptr - 1);
+    std::vector<std::vector<double>> sample_values(num_col);
+    std::vector<std::vector<int>> sample_idx(num_col);
+    for (int i = 0; i < num_sample_row; ++i) {
+      auto row = get_row_fun(i);
+      for (std::pair<int, double>& inner_data : row) {
+        if (static_cast<size_t>(inner_data.first) >= sample_values.size()) {
+          sample_values.resize(inner_data.first + 1);
+          sample_idx.resize(inner_data.first + 1);
+        }
+        if (std::fabs(inner_data.second) > kEpsilon) {
+          sample_values[inner_data.first].emplace_back(inner_data.second);
+          sample_idx[inner_data.first].emplace_back(i);
+        }
+      }
+    }
+    CHECK(num_col >= static_cast<int>(sample_values.size()));
+    DatasetLoader loader(io_config, nullptr, 1, nullptr);
+    *out = loader.CostructFromSampleData(sample_values, sample_idx,
+      num_sample_row,
+      static_cast<data_size_t>(num_total_row));
+    API_END();
+  }
+}
+
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateByReference(const DatasetHandle reference,
+  int64_t num_total_row,
+  DatasetHandle* out) {
+  API_BEGIN();
+  std::unique_ptr<Dataset> ret;
+  ret.reset(new Dataset(static_cast<data_size_t>(num_total_row)));
+  ret->CreateValid(reinterpret_cast<const Dataset*>(reference));
+  *out = ret.release();
+  API_END();
+}
+
+LIGHTGBM_C_EXPORT int LGBM_DatasetPushRows(DatasetHandle dataset,
+  const void* data,
+  int data_type,
+  int32_t nrow,
+  int32_t ncol,
+  int32_t start_row) {
+  API_BEGIN();
+  auto p_dataset = reinterpret_cast<Dataset*>(dataset);
+  auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, 1);
+#pragma omp parallel for schedule(static)
+  for (int i = 0; i < nrow; ++i) {
+    const int tid = omp_get_thread_num();
+    auto one_row = get_row_fun(i);
+    p_dataset->PushOneRow(tid, start_row + i, one_row);
+  }
+  if (start_row + nrow == p_dataset->num_data()) {
+    p_dataset->FinishLoad();
+  }
+  API_END();
+}
+
+LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
+  const void* indptr,
+  int indptr_type,
+  const int32_t* indices,
+  const void* data,
+  int data_type,
+  int64_t nindptr,
+  int64_t nelem,
+  int64_t,
+  int64_t start_row) {
+  API_BEGIN();
+  auto p_dataset = reinterpret_cast<Dataset*>(dataset);
+  auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
+  int32_t nrow = static_cast<int32_t>(nindptr - 1);
+#pragma omp parallel for schedule(static)
+  for (int i = 0; i < nrow; ++i) {
+    const int tid = omp_get_thread_num();
+    auto one_row = get_row_fun(i);
+    p_dataset->PushOneRow(tid,
+      static_cast<data_size_t>(start_row + i), one_row);
+  }
+  if (start_row + nrow == static_cast<int64_t>(p_dataset->num_data())) {
+    p_dataset->FinishLoad();
+  }
+  API_END();
+}
+
 LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
   int data_type,
   int32_t nrow,
@@ -394,7 +498,6 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSR(const void* indptr,
           sample_idx.resize(inner_data.first + 1);
         }
         if (std::fabs(inner_data.second) > kEpsilon) {
-          // edit the feature value
           sample_values[inner_data.first].emplace_back(inner_data.second);
           sample_idx[inner_data.first].emplace_back(static_cast<int>(i));
         }

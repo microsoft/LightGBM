@@ -28,12 +28,14 @@ void FeatureParallelTreeLearner::BeforeTrain() {
   // get feature partition
   std::vector<std::vector<int>> feature_distribution(num_machines_, std::vector<int>());
   std::vector<int> num_bins_distributed(num_machines_, 0);
-  for (int i = 0; i < train_data_->num_features(); ++i) {
-    if (is_feature_used_[i]) {
+  for (int i = 0; i < train_data_->num_total_features(); ++i) {
+    int inner_feature_index = train_data_->InnerFeatureIndex(i);
+    if (inner_feature_index == -1) { continue; }
+    if (is_feature_used_[inner_feature_index]) {
       int cur_min_machine = static_cast<int>(ArrayArgs<int>::ArgMin(num_bins_distributed));
-      feature_distribution[cur_min_machine].push_back(i);
-      num_bins_distributed[cur_min_machine] += train_data_->FeatureNumBin(i);
-      is_feature_used_[i] = false;
+      feature_distribution[cur_min_machine].push_back(inner_feature_index);
+      num_bins_distributed[cur_min_machine] += train_data_->FeatureNumBin(inner_feature_index);
+      is_feature_used_[inner_feature_index] = false;
     }
   }
   // get local used features

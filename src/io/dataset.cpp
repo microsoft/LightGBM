@@ -20,12 +20,14 @@ const char* Dataset::binary_file_token = "______LightGBM_Binary_File_Token______
 Dataset::Dataset() {
   data_filename_ = "noname";
   num_data_ = 0;
+  is_finish_load_ = false;
 }
 
 Dataset::Dataset(data_size_t num_data) {
   data_filename_ = "noname";
   num_data_ = num_data;
   metadata_.Init(num_data_, NO_SPECIFIC, NO_SPECIFIC);
+  is_finish_load_ = false;
 }
 
 Dataset::~Dataset() {
@@ -52,7 +54,7 @@ void Dataset::Construct(
   for (int i = 0; i < static_cast<int>(bin_mappers.size()); ++i) {
     if (bin_mappers[i] != nullptr && !bin_mappers[i]->is_trival()) {
       used_features.emplace_back(i);
-    } 
+    }
   }
 
   auto features_in_group = NoGroup(used_features);
@@ -110,10 +112,12 @@ void Dataset::Construct(
 }
 
 void Dataset::FinishLoad() {
+  if (is_finish_load_) { return; }
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < num_groups_; ++i) {
     feature_groups_[i]->bin_data_->FinishLoad();
   }
+  is_finish_load_ = true;
 }
 
 void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
@@ -221,6 +225,7 @@ void Dataset::CopySubset(const Dataset* fullset, const data_size_t* used_indices
   if (need_meta_data) {
     metadata_.Init(fullset->metadata_, used_indices, num_used_indices);
   }
+  is_finish_load_ = true;
 }
 
 bool Dataset::SetFloatField(const char* field_name, const float* field_data, data_size_t num_element) {

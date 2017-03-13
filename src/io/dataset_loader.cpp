@@ -445,7 +445,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   }
   dataset->metadata_.PartitionLabel(*used_data_indices);
   // read feature data
-  for (int i = 0; i < dataset->num_features_; ++i) {
+  for (int i = 0; i < dataset->num_groups_; ++i) {
     // read feature size
     read_cnt = fread(buffer.data(), sizeof(size_t), 1, file);
     if (read_cnt != 1) {
@@ -471,6 +471,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   }
   dataset->feature_groups_.shrink_to_fit();
   fclose(file);
+  dataset->is_finish_load_ = true;
   return dataset.release();
 }
 

@@ -13,7 +13,6 @@ namespace LightGBM
 
 class FeatureMetainfo {
 public:
-  int feature_idx;
   int num_bin;
   int bias = 0;
   /*! \brief pointer of tree config */
@@ -126,7 +125,6 @@ public:
     }
     if (is_splittable_) {
       // update split information
-      output->feature = meta_->feature_idx;
       output->threshold = best_threshold;
       output->left_output = CalculateSplittedLeafOutput(best_sum_left_gradient, best_sum_left_hessian);
       output->left_count = best_left_count;
@@ -139,7 +137,6 @@ public:
       output->right_sum_hessian = sum_hessian - best_sum_left_hessian - kEpsilon;
       output->gain = best_gain - gain_shift;
     } else {
-      output->feature = meta_->feature_idx;
       output->gain = kMinScore;
     }
   }
@@ -223,7 +220,6 @@ public:
     }
     if (is_splittable_) {
       // update split information
-      output->feature = meta_->feature_idx;
       output->threshold = best_threshold;
       output->left_output = CalculateSplittedLeafOutput(best_sum_left_gradient, best_sum_left_hessian);
       output->left_count = best_left_count;
@@ -236,7 +232,6 @@ public:
       output->right_sum_hessian = sum_hessian - best_sum_left_hessian - kEpsilon;
       output->gain = best_gain - gain_shift;
     } else {
-      output->feature = meta_->feature_idx;
       output->gain = kMinScore;
     }
   }
@@ -353,7 +348,6 @@ public:
       feature_metas_.resize(train_data->num_features());
 #pragma omp parallel for schedule(static)
       for (int i = 0; i < train_data->num_features(); ++i) {
-        feature_metas_[i].feature_idx = i;
         feature_metas_[i].num_bin = train_data->FeatureNumBin(i);
         if (train_data->FeatureBinMapper(i)->GetDefaultBin() == 0) {
           feature_metas_[i].bias = 1;

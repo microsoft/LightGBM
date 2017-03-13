@@ -145,7 +145,7 @@ protected:
   /*! \brief config of tree learner*/
   const TreeConfig* tree_config_;
   int num_threads_;
-  std::vector<int> order_bin_indices_;
+  std::vector<int> ordered_bin_indices_;
 };
 
 inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leafIdx) const {

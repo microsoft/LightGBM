@@ -312,6 +312,7 @@ public:
   }
 
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<double>& feature_values) {
+    if (is_finish_load_) { return; }
     for (size_t i = 0; i < feature_values.size() && i < static_cast<size_t>(num_total_features_); ++i) {
       int feature_idx = used_feature_map_[i];
       if (feature_idx >= 0) {
@@ -323,6 +324,7 @@ public:
   }
 
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<std::pair<int, double>>& feature_values) {
+    if (is_finish_load_) { return; }
     for (auto& inner_data : feature_values) {
       if (inner_data.first >= num_total_features_) { continue; }
       int feature_idx = used_feature_map_[inner_data.first];
@@ -520,6 +522,7 @@ private:
   std::vector<uint64_t> group_bin_boundaries_;
   std::vector<int> group_feature_start_;
   std::vector<int> group_feature_cnt_;
+  bool is_finish_load_;
 };
 
 }  // namespace LightGBM

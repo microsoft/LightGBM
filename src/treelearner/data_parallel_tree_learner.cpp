@@ -47,17 +47,19 @@ void DataParallelTreeLearner::BeforeTrain() {
   // generate feature partition for current tree
   std::vector<std::vector<int>> feature_distribution(num_machines_, std::vector<int>());
   std::vector<int> num_bins_distributed(num_machines_, 0);
-  for (int i = 0; i < train_data_->num_features(); ++i) {
-    if (is_feature_used_[i]) {
+  for (int i = 0; i < train_data_->num_total_features(); ++i) {
+    int inner_feature_index = train_data_->InnerFeatureIndex(i);
+    if (inner_feature_index == -1) { continue; }
+    if (is_feature_used_[inner_feature_index]) {
       int cur_min_machine = static_cast<int>(ArrayArgs<int>::ArgMin(num_bins_distributed));
-      feature_distribution[cur_min_machine].push_back(i);
-      auto num_bin = train_data_->FeatureNumBin(i);
-      if (train_data_->FeatureBinMapper(i)->GetDefaultBin() == 0) {
+      feature_distribution[cur_min_machine].push_back(inner_feature_index);
+      auto num_bin = train_data_->FeatureNumBin(inner_feature_index);
+      if (train_data_->FeatureBinMapper(inner_feature_index)->GetDefaultBin() == 0) {
         num_bin -= 1;
       }
       num_bins_distributed[cur_min_machine] += num_bin;
     }
-    is_feature_aggregated_[i] = false;
+    is_feature_aggregated_[inner_feature_index] = false;
   }
   // get local used feature
   for (auto fid : feature_distribution[rank_]) {
@@ -167,7 +169,6 @@ void DataParallelTreeLearner::FindBestThresholds() {
     smaller_leaf_histogram_array_[feature_index].FromMemory(
       output_buffer_.data() + buffer_read_start_pos_[feature_index]);
 
-
     train_data_->FixHistogram(feature_index,
       smaller_leaf_splits_->sum_gradients(), smaller_leaf_splits_->sum_hessians(),
       GetGlobalDataCountInLeaf(smaller_leaf_splits_->LeafIndex()),
@@ -179,9 +180,9 @@ void DataParallelTreeLearner::FindBestThresholds() {
       smaller_leaf_splits_->sum_hessians(),
       GetGlobalDataCountInLeaf(smaller_leaf_splits_->LeafIndex()),
       &smaller_split);
-
     if (smaller_split.gain > smaller_best[tid].gain) {
       smaller_best[tid] = smaller_split;
+      smaller_best[tid].feature = train_data_->RealFeatureIndex(feature_index);
     }
 
     // only root leaf
@@ -199,6 +200,7 @@ void DataParallelTreeLearner::FindBestThresholds() {
       &larger_split);
     if (larger_split.gain > larger_best[tid].gain) {
       larger_best[tid] = larger_split;
+      larger_best[tid].feature = train_data_->RealFeatureIndex(feature_index);
     }
   }
   auto smaller_best_idx = ArrayArgs<SplitInfo>::ArgMax(smaller_best);

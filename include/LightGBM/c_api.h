@@ -52,6 +52,87 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromFile(const char* filename,
   const DatasetHandle reference,
   DatasetHandle* out);
 
+
+/*!
+* \brief create a empty dataset by sampling csc data, if num_sample_row == num_total_row, will construct this dataset.
+* \param indptr pointer to row headers
+* \param indptr_type type of indptr, can be C_API_DTYPE_INT32 or C_API_DTYPE_INT64
+* \param indices findex
+* \param data fvalue
+* \param data_type type of data pointer, can be C_API_DTYPE_FLOAT32 or C_API_DTYPE_FLOAT64
+* \param nindptr number of rows in the matrix + 1
+* \param n_sample_elem number of nonzero elements in the matrix
+* \param num_col number of columns
+* \param num_total_row number of total rows
+* \param parameters additional parameters
+* \param out created dataset
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSampledCSR(const void* indptr,
+  int indptr_type,
+  const int32_t* indices,
+  const void* data,
+  int data_type,
+  int64_t nindptr,
+  int64_t n_sample_elem,
+  int64_t num_col,
+  int64_t num_total_row,
+  const char* parameters,
+  DatasetHandle* out);
+
+/*!
+* \brief create a empty dataset by reference Dataset
+* \param reference used to align bin mapper
+* \param num_total_row number of total rows
+* \param out created dataset
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateByReference(const DatasetHandle reference,
+  int64_t num_total_row,
+  DatasetHandle* out);
+
+/*!
+* \brief push data to existing dataset, if nrow + start_row == num_total_row, will call dataset->FinishLoad
+* \param dataset handle of dataset
+* \param data pointer to the data space
+* \param data_type type of data pointer, can be C_API_DTYPE_FLOAT32 or C_API_DTYPE_FLOAT64
+* \param nrow number of rows
+* \param ncol number columns
+* \param start_row row start index
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_DatasetPushRows(DatasetHandle dataset,
+  const void* data,
+  int data_type,
+  int32_t nrow,
+  int32_t ncol,
+  int32_t start_row);
+
+/*!
+* \brief push data to existing dataset, if nrow + start_row == num_total_row, will call dataset->FinishLoad
+* \param dataset handle of dataset
+* \param indptr pointer to row headers
+* \param indptr_type type of indptr, can be C_API_DTYPE_INT32 or C_API_DTYPE_INT64
+* \param indices findex
+* \param data fvalue
+* \param data_type type of data pointer, can be C_API_DTYPE_FLOAT32 or C_API_DTYPE_FLOAT64
+* \param nindptr number of rows in the matrix + 1
+* \param nelem number of nonzero elements in the matrix
+* \param num_col number of columns
+* \param start_row row start index
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
+  const void* indptr,
+  int indptr_type,
+  const int32_t* indices,
+  const void* data,
+  int data_type,
+  int64_t nindptr,
+  int64_t nelem,
+  int64_t num_col,
+  int64_t start_row);
+
 /*!
 * \brief create a dataset from CSR format
 * \param indptr pointer to row headers

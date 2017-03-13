@@ -46,8 +46,8 @@ void VotingParallelTreeLearner::Init(const Dataset* train_data) {
   larger_buffer_read_start_pos_.resize(num_features_);
   global_data_count_in_leaf_.resize(tree_config_->num_leaves);
 
-  smaller_leaf_splits_global_.reset(new LeafSplits(train_data_->num_features(), train_data_->num_data()));
-  larger_leaf_splits_global_.reset(new LeafSplits(train_data_->num_features(), train_data_->num_data()));
+  smaller_leaf_splits_global_.reset(new LeafSplits(train_data_->num_data()));
+  larger_leaf_splits_global_.reset(new LeafSplits(train_data_->num_data()));
 
   local_tree_config_ = *tree_config_;
   local_tree_config_.min_data_in_leaf /= num_machines_;
@@ -58,16 +58,12 @@ void VotingParallelTreeLearner::Init(const Dataset* train_data) {
   // initialize histograms for global
   smaller_leaf_histogram_array_global_.reset(new FeatureHistogram[num_features_]);
   larger_leaf_histogram_array_global_.reset(new FeatureHistogram[num_features_]);
-  int num_total_bin = 0;
-  for (int i = 0; i < num_features_; ++i) {
-    num_total_bin += train_data_->FeatureNumBin(i);
-  }
+  auto num_total_bin = train_data_->NumTotalBin();
   smaller_leaf_histogram_data_.resize(num_total_bin);
   larger_leaf_histogram_data_.resize(num_total_bin);
   feature_metas_.resize(train_data->num_features());
 #pragma omp parallel for schedule(static)
   for (int i = 0; i < train_data->num_features(); ++i) {
-    feature_metas_[i].feature_idx = i;
     feature_metas_[i].num_bin = train_data->FeatureNumBin(i);
     if (train_data->FeatureBinMapper(i)->GetDefaultBin() == 0) {
       feature_metas_[i].bias = 1;
@@ -207,17 +203,17 @@ void VotingParallelTreeLearner::CopyLocalHistogram(const std::vector<int>& small
     while (cur_used_features < cur_total_feature) {
       // copy smaller leaf histograms first
       if (smaller_idx < smaller_top_features.size()) {
-        int fid = smaller_top_features[smaller_idx];
+        int inner_feature_index = train_data_->InnerFeatureIndex(smaller_top_features[smaller_idx]);
         ++cur_used_features;
         // mark local aggregated feature
         if (i == rank_) {
-          smaller_is_feature_aggregated_[fid] = true;
-          smaller_buffer_read_start_pos_[fid] = static_cast<int>(cur_size);
+          smaller_is_feature_aggregated_[inner_feature_index] = true;
+          smaller_buffer_read_start_pos_[inner_feature_index] = static_cast<int>(cur_size);
         }
         // copy
-        std::memcpy(input_buffer_.data() + reduce_scatter_size_, smaller_leaf_histogram_array_[fid].RawData(), smaller_leaf_histogram_array_[fid].SizeOfHistgram());
-        cur_size += smaller_leaf_histogram_array_[fid].SizeOfHistgram();
-        reduce_scatter_size_ += smaller_leaf_histogram_array_[fid].SizeOfHistgram();
+        std::memcpy(input_buffer_.data() + reduce_scatter_size_, smaller_leaf_histogram_array_[inner_feature_index].RawData(), smaller_leaf_histogram_array_[inner_feature_index].SizeOfHistgram());
+        cur_size += smaller_leaf_histogram_array_[inner_feature_index].SizeOfHistgram();
+        reduce_scatter_size_ += smaller_leaf_histogram_array_[inner_feature_index].SizeOfHistgram();
         ++smaller_idx;
       }
       if (cur_used_features >= cur_total_feature) {
@@ -225,17 +221,17 @@ void VotingParallelTreeLearner::CopyLocalHistogram(const std::vector<int>& small
       }
       // then copy larger leaf histograms
       if (larger_idx < larger_top_features.size()) {
-        int fid = larger_top_features[larger_idx];
+        int inner_feature_index = train_data_->InnerFeatureIndex(larger_top_features[larger_idx]);
         ++cur_used_features;
         // mark local aggregated feature
         if (i == rank_) {
-          larger_is_feature_aggregated_[fid] = true;
-          larger_buffer_read_start_pos_[fid] = static_cast<int>(cur_size);
+          larger_is_feature_aggregated_[inner_feature_index] = true;
+          larger_buffer_read_start_pos_[inner_feature_index] = static_cast<int>(cur_size);
         }
         // copy
-        std::memcpy(input_buffer_.data() + reduce_scatter_size_, larger_leaf_histogram_array_[fid].RawData(), larger_leaf_histogram_array_[fid].SizeOfHistgram());
-        cur_size += larger_leaf_histogram_array_[fid].SizeOfHistgram();
-        reduce_scatter_size_ += larger_leaf_histogram_array_[fid].SizeOfHistgram();
+        std::memcpy(input_buffer_.data() + reduce_scatter_size_, larger_leaf_histogram_array_[inner_feature_index].RawData(), larger_leaf_histogram_array_[inner_feature_index].SizeOfHistgram());
+        cur_size += larger_leaf_histogram_array_[inner_feature_index].SizeOfHistgram();
+        reduce_scatter_size_ += larger_leaf_histogram_array_[inner_feature_index].SizeOfHistgram();
         ++larger_idx;
       }
     }
@@ -291,6 +287,7 @@ void VotingParallelTreeLearner::FindBestThresholds() {
 #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!is_feature_used[feature_index]) { continue; }
+    const int real_feature_index = train_data_->RealFeatureIndex(feature_index);
     train_data_->FixHistogram(feature_index,
       smaller_leaf_splits_->sum_gradients(), smaller_leaf_splits_->sum_hessians(),
       smaller_leaf_splits_->num_data_in_leaf(),
@@ -301,6 +298,7 @@ void VotingParallelTreeLearner::FindBestThresholds() {
       smaller_leaf_splits_->sum_hessians(),
       smaller_leaf_splits_->num_data_in_leaf(),
       &smaller_bestsplit_per_features[feature_index]);
+    smaller_bestsplit_per_features[feature_index].feature = real_feature_index;
     // only has root leaf
     if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->LeafIndex() < 0) { continue; }
 
@@ -317,6 +315,7 @@ void VotingParallelTreeLearner::FindBestThresholds() {
       larger_leaf_splits_->sum_hessians(),
       larger_leaf_splits_->num_data_in_leaf(),
       &larger_bestsplit_per_features[feature_index]);
+    larger_bestsplit_per_features[feature_index].feature = real_feature_index;
   }
 
   std::vector<SplitInfo> smaller_top_k_splits, larger_top_k_splits;
@@ -382,6 +381,7 @@ void VotingParallelTreeLearner::FindBestThresholds() {
         &smaller_split);
       if (smaller_split.gain > smaller_best[tid].gain) {
         smaller_best[tid] = smaller_split;
+        smaller_best[tid].feature = train_data_->RealFeatureIndex(feature_index);
       }
     }
 
@@ -403,6 +403,7 @@ void VotingParallelTreeLearner::FindBestThresholds() {
         &larger_split);
       if (larger_split.gain > larger_best[tid].gain) {
         larger_best[tid] = larger_split;
+        larger_best[tid].feature = train_data_->RealFeatureIndex(feature_index);
       }
     }
   }

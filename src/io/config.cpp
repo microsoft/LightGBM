@@ -303,7 +303,6 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   GetDouble(params, "histogram_pool_size", &histogram_pool_size);
   GetInt(params, "max_depth", &max_depth);
   GetInt(params, "top_k", &top_k);
-  CHECK(max_depth > 1 || max_depth < 0);
 }
 
 

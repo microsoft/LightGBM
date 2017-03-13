@@ -2,7 +2,6 @@
 #define LIGHTGBM_TREELEARNER_LEAF_SPLITS_HPP_
 
 #include <LightGBM/meta.h>
-#include "split_info.hpp"
 #include "data_partition.hpp"
 
 #include <vector>
@@ -14,8 +13,8 @@ namespace LightGBM {
 */
 class LeafSplits {
 public:
-  LeafSplits(int num_feature, data_size_t num_data)
-    :num_data_in_leaf_(num_data), num_data_(num_data), num_features_(num_feature),
+  LeafSplits(data_size_t num_data)
+    :num_data_in_leaf_(num_data), num_data_(num_data),
     data_indices_(nullptr) {
   }
   void ResetNumData(data_size_t num_data) {
@@ -127,8 +126,6 @@ private:
   data_size_t num_data_in_leaf_;
   /*! \brief number of all training data */
   data_size_t num_data_;
-  /*! \brief number of features */
-  int num_features_;
   /*! \brief sum of gradients of current leaf */
   double sum_gradients_;
   /*! \brief sum of hessians of current leaf */
