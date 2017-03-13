@@ -77,11 +77,11 @@ public:
     vsprintf(str_buf, format, val);
 #endif
     va_end(val);
+    fprintf(stderr, str_buf);
     if (UseException()) {
       throw std::runtime_error(std::string(str_buf));
     } else {
-      fprintf(stderr, str_buf);
-      exit(-1);
+      std::exit(-1);
     }
   }
 
