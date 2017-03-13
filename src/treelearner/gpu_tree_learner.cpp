@@ -393,7 +393,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
     for (int j = 0; j < num_data_; ++j) {
       for (i = 0; i < k; ++i) {
         host4[j].s[i] = static_cast<const LightGBM::DenseBin<char>*>(train_data_->FeatureAt(dense_ind[i])->bin_data())->Get(j)
-                        * device_bin_mults_[copied_feature4 * 4 + i] + ((j+i) & (device_bin_mults_[copied_feature4 * 4 + i] - 0));
+                        * device_bin_mults_[copied_feature4 * 4 + i] + ((j+i) & (device_bin_mults_[copied_feature4 * 4 + i] - 1));
       }
       for (i = k; i < 4; ++i) {
         // fill this empty feature to some "random" value
