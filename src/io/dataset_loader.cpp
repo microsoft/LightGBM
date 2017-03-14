@@ -752,14 +752,35 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
                          io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt, bin_type);
     }
     // get max_bin
-    int max_bin = 0;
+    int local_max_bin = 0;
     for (int i = 0; i < len[rank]; ++i) {
       if (ignore_features_.count(start[rank] + i) > 0) {
         continue;
       }
-      max_bin = std::max(max_bin, bin_mappers[i]->num_bin());
+      local_max_bin = std::max(local_max_bin, bin_mappers[i]->num_bin());
     }
-    // get size of bin mapper with max_bin_ size
+    int max_bin = local_max_bin;
+    // sync global max_bin
+    Network::Allreduce(reinterpret_cast<char*>(&local_max_bin),
+                       sizeof(local_max_bin), sizeof(local_max_bin),
+                       reinterpret_cast<char*>(&max_bin),
+                       [] (const char* src, char* dst, int len) {
+      int used_size = 0;
+      const int type_size = sizeof(int);
+      const int *p1;
+      int *p2;
+      while (used_size < len) {
+        p1 = reinterpret_cast<const int *>(src);
+        p2 = reinterpret_cast<int *>(dst);
+        if (*p1 > *p2) {
+          std::memcpy(dst, src, type_size);
+        }
+        src += type_size;
+        dst += type_size;
+        used_size += type_size;
+      }
+    });
+    // get size of bin mapper with max_bin size
     int type_size = BinMapper::SizeForSpecificBin(max_bin);
     // since sizes of different feature may not be same, we expand all bin mapper to type_size
     int buffer_size = type_size * total_num_feature;
