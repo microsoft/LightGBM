@@ -1140,9 +1140,7 @@ LIGHTGBM_C_EXPORT int LGBM_AllocateArray(int64_t len, int type, ArrayHandle* out
 
 template<typename T>
 void Copy(T* dst, const T* src, int64_t len) {
-  for (int64_t i = 0; i < len; ++i) {
-    dst[i] = src[i];
-  }
+  std::memcpy(dst, src, sizeof(T) * len);
 }
 
 LIGHTGBM_C_EXPORT int LGBM_CopyToArray(ArrayHandle arr, int type, int64_t start_idx, const void* src, int64_t len) {
