@@ -198,7 +198,10 @@ Booster <- R6Class(
     to_predictor = function() { Predictor$new(private$handle) },
     raw = NA,
     save = function() {
-      self$raw <- self$dump_model()
+      temp <- tempfile()
+      lgb.save(self, temp)
+      self$raw <- readChar(temp, file.info(temp)$size)
+      file.remove(temp)
     }
   ),
   private = list(
