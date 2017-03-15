@@ -70,6 +70,11 @@ typedef uint acc_int_type;
 #define NVIDIA 1
 #endif
 
+// use binary patching for AMD GCN 1.2 or newer
+#ifndef AMD_USE_DS_ADD_F32
+#define AMD_USE_DS_ADD_F32 0
+#endif
+
 typedef uint data_size_t;
 typedef float score_t;
 
@@ -104,6 +109,10 @@ inline void atomic_local_add_f(__local acc_type *addr, const float val)
 #if (NVIDIA == 1 && USE_DP_FLOAT == 0)
     float res = 0;
     asm volatile ("atom.shared.add.f32 %0, [%1], %2;" : "=f"(res) : "l"(addr), "f"(val));
+#elif (AMD_USE_DS_ADD_F32 == 1 && USE_DP_FLAT == 0)
+    // this instruction (DS_AND_U32) will be patched into a DS_ADD_F32
+    // we need to hack here because DS_ADD_F32 is not exposed via OpenCL
+    atom_and((__local acc_int_type *)addr, as_acc_int_type(val));
 #else
     current.f_val = *addr;
     #if UNROLL_ATOMIC == 1
@@ -292,7 +301,7 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     ind = data_indices[subglobal_tid];
     #endif
     feature4 = feature_data[ind];
-    feature4 &= as_uchar4(0x3f3f3f3f);
+    feature4 = as_uchar4(as_uint(feature4) & 0x3f3f3f3f);
     feature4_prev = feature4;
     feature4_prev = as_uchar4(rotate(as_uint(feature4_prev), (uint)offset*8));
     acc_type s3_stat1 = 0.0f, s3_stat2 = 0.0f;
@@ -447,7 +456,7 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
         stat1 = stat1_next;
         stat2 = stat2_next;
         feature4 = feature4_next;
-        feature4 &= as_uchar4(0x3f3f3f3f);
+        feature4 = as_uchar4(as_uint(feature4) & 0x3f3f3f3f);
     }
 
     bin = feature4_prev.s3;

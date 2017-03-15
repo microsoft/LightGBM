@@ -51,6 +51,11 @@ typedef uint acc_int_type;
 #define NVIDIA 1
 #endif
 
+// use binary patching for AMD GCN 1.2 or newer
+#ifndef AMD_USE_DS_ADD_F32
+#define AMD_USE_DS_ADD_F32 0
+#endif
+
 typedef uint data_size_t;
 typedef float score_t;
 
@@ -86,13 +91,19 @@ inline void atomic_local_add_f(__local acc_type *addr, const float val)
 #if (NVIDIA == 1 && USE_DP_FLOAT == 0)
     float res = 0;
     asm volatile ("atom.shared.add.f32 %0, [%1], %2;" : "=f"(res) : "l"(addr), "f"(val));
+#elif (AMD_USE_DS_ADD_F32 == 1 && USE_DP_FLAT == 0)
+    // this instruction (DS_AND_U32) will be patched into a DS_ADD_F32
+    // we need to hack here because DS_ADD_F32 is not exposed via OpenCL
+    atom_and((__local acc_int_type *)addr, as_acc_int_type(val));
 #else
     current.f_val = *addr;
     #if UNROLL_ATOMIC == 1
     // provide a fast path
     // then do the complete loop
     // this should work on all devices
-    ATOMIC_FADD_SUB16
+    ATOMIC_FADD_SUB8
+    ATOMIC_FADD_SUB4
+    ATOMIC_FADD_SUB2
     #endif
     do {
         expected.f_val = current.f_val;

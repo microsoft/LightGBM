@@ -1037,9 +1037,11 @@ void GPUTreeLearner::FindBestThresholds() {
 
     // find best threshold for smaller child
     smaller_leaf_histogram_array_[feature_index].FindBestThreshold(
+      // stats of current leaf
       smaller_leaf_splits_->sum_gradients(),
       smaller_leaf_splits_->sum_hessians(),
       smaller_leaf_splits_->num_data_in_leaf(),
+      // found split information will be stored here:
       &smaller_leaf_splits_->BestSplitPerFeature()[feature_index]);
 
     // only has root leaf
