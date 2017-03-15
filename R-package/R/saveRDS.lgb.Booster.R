@@ -24,7 +24,7 @@
 #'   params <- list(objective="regression", metric="l2")
 #'   valids <- list(test=dtest)
 #'   model <- lgb.train(params, dtrain, 100, valids, min_data=1, learning_rate=1, early_stopping_rounds=10)
-#'   saveRDS(model, "model.rds")
+#'   saveRDS.lgb.Booster(model, "model.rds")
 #' }
 #' @export
 
