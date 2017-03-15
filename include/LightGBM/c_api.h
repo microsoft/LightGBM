@@ -16,6 +16,7 @@
 
 #include <LightGBM/export.h>
 
+typedef void* ArrayHandle;
 typedef void* DatasetHandle;
 typedef void* BoosterHandle;
 
@@ -35,7 +36,6 @@ typedef void* BoosterHandle;
 * \return const char* error inforomation
 */
 LIGHTGBM_C_EXPORT const char* LGBM_GetLastError();
-
 
 // --- start Dataset interface
 
@@ -768,5 +768,11 @@ catch(std::exception& ex) { return LGBM_APIHandleException(ex); } \
 catch(std::string& ex) { return LGBM_APIHandleException(ex); } \
 catch(...) { return LGBM_APIHandleException("unknown exception"); } \
 return 0;
+
+LIGHTGBM_C_EXPORT int LGBM_AllocateArray(int64_t len, int type, ArrayHandle* out);
+
+LIGHTGBM_C_EXPORT int LGBM_CopyToArray(ArrayHandle arr, int type, int64_t start_idx, const void* src, int64_t len);
+
+LIGHTGBM_C_EXPORT int LGBM_FreeArray(ArrayHandle arr, int type);
 
 #endif // LIGHTGBM_C_API_H_
