@@ -5,7 +5,7 @@
 \title{saveRDS for lgb.Booster models}
 \usage{
 saveRDS.lgb.Booster(object, file = "", ascii = FALSE, version = NULL,
-  compress = TRUE, refhook = NULL)
+  compress = TRUE, refhook = NULL, raw = TRUE)
 }
 \arguments{
 \item{object}{R object to serialize.}
@@ -14,17 +14,19 @@ saveRDS.lgb.Booster(object, file = "", ascii = FALSE, version = NULL,
 
 \item{ascii}{a logical. If TRUE or NA, an ASCII representation is written; otherwise (default), a binary one is used. See the comments in the help for save.}
 
-\item{version}{the workspace format version to use. NULL specifies the current default version (2). Versions prior to 2 are not supported, so this will only be relevant when there are later versions.}
+\item{version}{the workspace format version to use. \code{NULL} specifies the current default version (2). Versions prior to 2 are not supported, so this will only be relevant when there are later versions.}
 
-\item{compress}{a logical specifying whether saving to a named file is to use "gzip" compression, or one of "gzip", "bzip2" or "xz" to indicate the type of compression to be used. Ignored if file is a connection.}
+\item{compress}{a logical specifying whether saving to a named file is to use "gzip" compression, or one of \code{"gzip"}, \code{"bzip2"} or \code{"xz"} to indicate the type of compression to be used. Ignored if file is a connection.}
 
 \item{refhook}{a hook function for handling reference objects.}
+
+\item{raw}{whether to save the model in a raw variable or not, recommended to leave it to \code{TRUE}.}
 }
 \value{
 NULL invisibly.
 }
 \description{
-Attemps to save a model using RDS.
+Attemps to save a model using RDS. Has an additional parameter (\code{raw}) which decides whether to save the raw model or not.
 }
 \examples{
 \dontrun{
@@ -38,6 +40,7 @@ Attemps to save a model using RDS.
   params <- list(objective="regression", metric="l2")
   valids <- list(test=dtest)
   model <- lgb.train(params, dtrain, 100, valids, min_data=1, learning_rate=1, early_stopping_rounds=10)
+  saveRDS(model, "model.rds")
 }
 }
 
