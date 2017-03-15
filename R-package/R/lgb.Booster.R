@@ -196,8 +196,9 @@ Booster <- R6Class(
       predictor$predict(data, num_iteration, rawscore, predleaf, header, reshape)
     },
     to_predictor = function() { Predictor$new(private$handle) },
-    raw = function() {
-      raw <<- self$dump_model()
+    raw = NA,
+    save = function() {
+      raw <- self$dump_model()
     }
   ),
   private = list(

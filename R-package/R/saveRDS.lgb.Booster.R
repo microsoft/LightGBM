@@ -28,8 +28,8 @@
 
 saveRDS.lgb.Booster <- function(object, file = "", ascii = FALSE, version = NULL, compress = TRUE, refhook = NULL) {
   
-  if (class(object$raw) == "function") {
-    object$raw()
+  if (is.na(raw)) {
+    object$save()
   }
   saveRDS(object, file = "", ascii = FALSE, version = NULL, compress = TRUE, refhook = NULL)
   
