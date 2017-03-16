@@ -2,7 +2,7 @@
 % Please edit documentation in R/lgb.Dataset.R
 \name{lgb.Dataset}
 \alias{lgb.Dataset}
-\title{Contruct lgb.Dataset object}
+\title{Construct lgb.Dataset object}
 \usage{
 lgb.Dataset(data, params = list(), reference = NULL, colnames = NULL,
   categorical_feature = NULL, free_raw_data = TRUE, info = list(), ...)
@@ -28,7 +28,7 @@ lgb.Dataset(data, params = list(), reference = NULL, colnames = NULL,
 constructed dataset
 }
 \description{
-Contruct lgb.Dataset object from dense matrix, sparse matrix
+Construct lgb.Dataset object from dense matrix, sparse matrix
 or local file (that was created previously by saving an \code{lgb.Dataset}).
 }
 \examples{

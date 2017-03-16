@@ -377,9 +377,9 @@ Dataset <- R6Class(
   )
 )
 
-#' Contruct lgb.Dataset object
+#' Construct lgb.Dataset object
 #'
-#' Contruct lgb.Dataset object from dense matrix, sparse matrix
+#' Construct lgb.Dataset object from dense matrix, sparse matrix
 #' or local file (that was created previously by saving an \code{lgb.Dataset}).
 #'
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
@@ -424,9 +424,9 @@ lgb.Dataset <- function(data,
 }
 
 
-#' Contruct validation data
+#' Construct validation data
 #'
-#' Contruct validation data according to training data
+#' Construct validation data according to training data
 #'
 #' @param dataset \code{lgb.Dataset} object, training data
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
