@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
 
+if(APPLE)
+    SET(CMAKE_CXX_COMPILER "g++-6")
+    SET(CMAKE_C_COMPILER "gcc-6")
+endif()
+
 PROJECT(lightgbm)
 
 OPTION(USE_MPI "MPI based parallel learning" OFF)
