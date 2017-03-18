@@ -5,8 +5,8 @@
     - [Booster](Python-API.md#booster)
 
 * [Training API](Python-API.md#training-api)
-    - [train](Python-API.md#trainparams-train_set-num_boost_round100-valid_setsnone-valid_namesnone-fobjnone-fevalnone-init_modelnone-feature_namenone-categorical_featurenone-early_stopping_roundsnone-evals_resultnone-verbose_evaltrue-learning_ratesnone-callbacksnone)
-    - [cv](Python-API.md#cvparams-train_set-num_boost_round10-nfold5-stratifiedfalse-shuffletrue-metricsnone-fobjnone-fevalnone-init_modelnone-feature_namenone-categorical_featurenone-early_stopping_roundsnone-fpreprocnone-verbose_evalnone-show_stdvtrue-seed0-callbacksnone)
+    - [train](Python-API.md#trainparams-train_set-num_boost_round100-valid_setsnone-valid_namesnone-fobjnone-fevalnone-init_modelnone-feature_nameauto-categorical_featureauto-early_stopping_roundsnone-evals_resultnone-verbose_evaltrue-learning_ratesnone-callbacksnone)
+    - [cv](Python-API.md#cvparams-train_set-num_boost_round10-data_splitternone-nfold5-stratifiedfalse-shuffletrue-metricsnone-fobjnone-fevalnone-init_modelnone-feature_nameauto-categorical_featureauto-early_stopping_roundsnone-fpreprocnone-verbose_evalnone-show_stdvtrue-seed0-callbacksnone)
 
 * [Scikit-learn API](Python-API.md#scikit-learn-api)
     - [Common Methods](Python-API.md#common-methods)
@@ -22,7 +22,9 @@
         + [print_evaluation](Python-API.md#print_evaluationperiod1-show_stdvtrue)
         + [record_evaluation](Python-API.md#record_evaluationeval_result)
         + [early_stopping](Python-API.md#early_stoppingstopping_rounds-verbosetrue)
-    
+
+* [Plotting](Python-API.md#plotting)
+
 The methods of each Class is in alphabetical order.
 
 ----
@@ -31,7 +33,7 @@ The methods of each Class is in alphabetical order.
 
 ###Dataset
 
-####__init__(data, label=None, max_bin=255, reference=None, weight=None, group=None, silent=False, feature_name=None, categorical_feature=None, params=None, free_raw_data=True)
+####__init__(data, label=None, max_bin=255, reference=None, weight=None, group=None, silent=False, feature_name='auto', categorical_feature='auto', params=None, free_raw_data=True)
 
     Parameters
     ----------
@@ -50,17 +52,19 @@ The methods of each Class is in alphabetical order.
         Group/query size for dataset
     silent : boolean, optional
         Whether print messages during construction
-    feature_name : list of str
+    feature_name : list of str, or 'auto'
         Feature names
-    categorical_feature : list of str or list of int
+        If 'auto' and data is pandas DataFrame, use data columns name
+    categorical_feature : list of str or int, or 'auto'
         Categorical features,
         type int represents index,
         type str represents feature names (need to specify feature_name as well)
+        If 'auto' and data is pandas DataFrame, use pandas categorical columns
     params : dict, optional
         Other parameters
     free_raw_data : Bool
         True if need to free raw data after construct inner dataset
-    
+
 
 ####create_valid(data, label=None, weight=None, group=None, silent=False, params=None)
 
@@ -81,7 +85,7 @@ The methods of each Class is in alphabetical order.
         Whether print messages during construction
     params : dict, optional
         Other parameters
-    
+
 
 ####get_group()
 
@@ -90,7 +94,7 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     init_score : array
-    
+
 
 ####get_init_score()
 
@@ -99,7 +103,7 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     init_score : array
-    
+
 
 ####get_label()
 
@@ -108,7 +112,7 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     label : array
-    
+
 
 ####get_weight()
 
@@ -117,7 +121,7 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     weight : array
-    
+
 
 ####num_data()
 
@@ -126,7 +130,7 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     number of rows : int
-    
+
 
 ####num_feature()
 
@@ -135,7 +139,7 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     number of columns : int
-    
+
 
 ####save_binary(filename)
 
@@ -145,7 +149,7 @@ The methods of each Class is in alphabetical order.
     ----------
     filename : str
         Name of the output file.
-    
+
 
 ####set_categorical_feature(categorical_feature)
 
@@ -156,7 +160,7 @@ The methods of each Class is in alphabetical order.
     categorical_feature : list of str or list of int
         Name (str) or index (int) of categorical features
 
-    
+
 
 ####set_feature_name(feature_name)
 
@@ -166,7 +170,7 @@ The methods of each Class is in alphabetical order.
     ----------
     feature_name : list of str
         Feature names
-    
+
 
 ####set_group(group)
 
@@ -176,7 +180,7 @@ The methods of each Class is in alphabetical order.
     ----------
     group : numpy array or list or None
         Group size of each group
-    
+
 
 ####set_init_score(init_score)
 
@@ -186,7 +190,7 @@ The methods of each Class is in alphabetical order.
     ----------
     init_score : numpy array or list or None
         Init score for booster
-    
+
 
 ####set_label(label)
 
@@ -196,7 +200,7 @@ The methods of each Class is in alphabetical order.
     ----------
     label : numpy array or list or None
         The label information to be set into Dataset
-    
+
 
 ####set_reference(reference)
 
@@ -206,7 +210,7 @@ The methods of each Class is in alphabetical order.
     ----------
     reference : Dataset
         Will use reference as template to consturct current dataset
-    
+
 
 ####set_weight(weight)
 
@@ -216,7 +220,7 @@ The methods of each Class is in alphabetical order.
     ----------
     weight : numpy array or list or None
         Weight for each data point
-    
+
 
 ####subset(used_indices, params=None)
 
@@ -228,7 +232,7 @@ The methods of each Class is in alphabetical order.
         Used indices of this subset
     params : dict
         Other parameters
-    
+
 
 ###Booster
 
@@ -246,7 +250,7 @@ The methods of each Class is in alphabetical order.
         Path to the model file.
     silent : boolean, optional
         Whether print messages during construction
-    
+
 
 ####add_valid(data, name)
 
@@ -258,7 +262,7 @@ The methods of each Class is in alphabetical order.
         Validation data
     name : str
         Name of validation data
-    
+
 
 ####attr(key)
 
@@ -273,7 +277,7 @@ The methods of each Class is in alphabetical order.
     -------
     value : str
         The attribute value of the key, returns None if attribute do not exist.
-    
+
 
 ####current_iteration()
 
@@ -292,7 +296,7 @@ The methods of each Class is in alphabetical order.
     -------
     result : dict or list
         Json format of model
-    
+
 
 ####eval(data, name, feval=None)
 
@@ -309,7 +313,7 @@ The methods of each Class is in alphabetical order.
     -------
     result : list
         Evaluation result list.
-    
+
 
 ####eval_train(feval=None)
 
@@ -324,7 +328,7 @@ The methods of each Class is in alphabetical order.
     -------
     result: str
         Evaluation result list.
-    
+
 
 ####eval_valid(feval=None)
 
@@ -339,17 +343,34 @@ The methods of each Class is in alphabetical order.
     -------
     result : str
         Evaluation result list.
-    
 
-####feature_importance(importance_type="split")
 
-    Feature importances.
+####feature_name()
+
+    Get feature names.
 
     Returns
     -------
     result : array
-        Array of feature importances
-    
+        Array of feature names.
+
+
+####feature_importance(importance_type="split")
+
+    Get feature importances.
+
+    Parameters
+    ----------
+    importance_type : str, default "split"
+    How the importance is calculated: "split" or "gain"
+    "split" is the number of times a feature is used in a model
+    "gain" is the total gain of splits which use the feature
+
+    Returns
+    -------
+    result : array
+        Array of feature importances.
+
 
 ####predict(data, num_iteration=-1, raw_score=False, pred_leaf=False, data_has_header=False, is_reshape=True)
 
@@ -374,7 +395,7 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     Prediction result
-    
+
 
 ####reset_parameter(params)
 
@@ -386,12 +407,12 @@ The methods of each Class is in alphabetical order.
         New parameters for boosters
     silent : boolean, optional
         Whether print messages during construction
-    
+
 
 ####rollback_one_iter()
 
     Rollback one iteration.
-    
+
 
 ####save_model(filename, num_iteration=-1)
 
@@ -403,7 +424,7 @@ The methods of each Class is in alphabetical order.
         Filename to save
     num_iteration : int
         Number of iteration that want to save. < 0 means save all
-    
+
 
 ####set_attr(**kwargs)
 
@@ -413,7 +434,7 @@ The methods of each Class is in alphabetical order.
     ----------
     **kwargs
         The attributes to set. Setting a value to None deletes an attribute.
-    
+
 
 ####set_train_data_name(name)
 
@@ -441,11 +462,11 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     is_finished, bool
-    
+
 
 ##Training API
 
-####train(params, train_set, num_boost_round=100, valid_sets=None, valid_names=None, fobj=None, feval=None, init_model=None, feature_name=None, categorical_feature=None, early_stopping_rounds=None, evals_result=None, verbose_eval=True, learning_rates=None, callbacks=None)
+####train(params, train_set, num_boost_round=100, valid_sets=None, valid_names=None, fobj=None, feval=None, init_model=None, feature_name='auto', categorical_feature='auto', early_stopping_rounds=None, evals_result=None, verbose_eval=True, learning_rates=None, callbacks=None)
 
     Train with given parameters.
 
@@ -468,12 +489,14 @@ The methods of each Class is in alphabetical order.
         Note: should return (eval_name, eval_result, is_higher_better) of list of this
     init_model : file name of lightgbm model or 'Booster' instance
         model used for continued train
-    feature_name : list of str
+    feature_name : list of str, or 'auto'
         Feature names
-    categorical_feature : list of str or list of int
+        If 'auto' and data is pandas DataFrame, use data columns name
+    categorical_feature : list of str or int, or 'auto'
         Categorical features,
         type int represents index,
         type str represents feature names (need to specify feature_name as well)
+        If 'auto' and data is pandas DataFrame, use pandas categorical columns
     early_stopping_rounds: int
         Activates early stopping.
         Requires at least one validation data and one metric
@@ -511,9 +534,9 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     booster : a trained booster model
-    
 
-####cv(params, train_set, num_boost_round=10, nfold=5, stratified=False, shuffle=True, metrics=None, fobj=None, feval=None, init_model=None, feature_name=None, categorical_feature=None, early_stopping_rounds=None, fpreproc=None, verbose_eval=None, show_stdv=True, seed=0, callbacks=None)
+
+####cv(params, train_set, num_boost_round=10, data_splitter=None, nfold=5, stratified=False, shuffle=True, metrics=None, fobj=None, feval=None, init_model=None, feature_name='auto', categorical_feature='auto', early_stopping_rounds=None, fpreproc=None, verbose_eval=None, show_stdv=True, seed=0, callbacks=None)
 
     Cross-validation with given paramaters.
 
@@ -525,14 +548,14 @@ The methods of each Class is in alphabetical order.
         Data to be trained.
     num_boost_round : int
         Number of boosting iterations.
+    data_splitter : an instance with split(X) method
+        Instance with split(X) method.
     nfold : int
         Number of folds in CV.
     stratified : bool
         Perform stratified sampling.
     shuffle: bool
         Whether shuffle before split data.
-    folds : a KFold or StratifiedKFold instance
-        Sklearn KFolds or StratifiedKFolds.
     metrics : str or list of str
         Evaluation metrics to be watched in CV.
     fobj : function
@@ -541,11 +564,14 @@ The methods of each Class is in alphabetical order.
         Custom evaluation function.
     init_model : file name of lightgbm model or 'Booster' instance
         model used for continued train
-    feature_name : list of str
+    feature_name : list of str, or 'auto'
         Feature names
-    categorical_feature : list of str or int
-        Categorical features, type int represents index,
+        If 'auto' and data is pandas DataFrame, use data columns name
+    categorical_feature : list of str or int, or 'auto'
+        Categorical features,
+        type int represents index,
         type str represents feature names (need to specify feature_name as well)
+        If 'auto' and data is pandas DataFrame, use pandas categorical columns
     early_stopping_rounds: int
         Activates early stopping. CV error needs to decrease at least
         every <early_stopping_rounds> round(s) to continue.
@@ -570,13 +596,13 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     evaluation history : list of str
-    
+
 
 ##Scikit-learn API
 
 ###Common Methods
 
-####__init__(boosting_type="gbdt", num_leaves=31, max_depth=-1, learning_rate=0.1, n_estimators=10, max_bin=255, subsample_for_bin=50000, objective="regression", min_split_gain=0, min_child_weight=5, min_child_samples=10, subsample=1, subsample_freq=1, colsample_bytree=1, reg_alpha=0, reg_lambda=0, scale_pos_weight=1, is_unbalance=False, seed=0, nthread=-1, silent=True, sigmoid=1.0, huber_delta=1.0, max_position=20, label_gain=None, drop_rate=0.1, skip_drop=0.5, max_drop=50, uniform_drop=False, xgboost_dart_mode=False)
+####__init__(boosting_type="gbdt", num_leaves=31, max_depth=-1, learning_rate=0.1, n_estimators=10, max_bin=255, subsample_for_bin=50000, objective="regression", min_split_gain=0, min_child_weight=5, min_child_samples=10, subsample=1, subsample_freq=1, colsample_bytree=1, reg_alpha=0, reg_lambda=0, scale_pos_weight=1, is_unbalance=False, seed=0, nthread=-1, silent=True, sigmoid=1.0, huber_delta=1.0, gaussian_eta=1.0, fair_c=1.0, poisson_max_delta_step=0.7, max_position=20, label_gain=None, drop_rate=0.1, skip_drop=0.5, max_drop=50, uniform_drop=False, xgboost_dart_mode=False)
 
     Implementation of the Scikit-Learn API for LightGBM.
 
@@ -636,6 +662,8 @@ The methods of each Class is in alphabetical order.
         It is used to control the width of Gaussian function to approximate hessian.
     fair_c : float
         Only used in regression. Parameter for Fair loss function.
+    poisson_max_delta_step : float
+        parameter used to safeguard optimization in Poisson regression.
     max_position : int
         Only used in lambdarank, will optimize NDCG at this position.
     label_gain : list of float
@@ -657,7 +685,7 @@ The methods of each Class is in alphabetical order.
     ----
     A custom objective function can be provided for the ``objective``
     parameter. In this case, it should have the signature
-    ``objective(y_true, y_pred) -> grad, hess`` 
+    ``objective(y_true, y_pred) -> grad, hess``
         or ``objective(y_true, y_pred, group) -> grad, hess``:
 
         y_true: array_like of shape [n_samples]
@@ -674,7 +702,7 @@ The methods of each Class is in alphabetical order.
     for multi-class task, the y_pred is group by class_id first, then group by row_id
         if you want to get i-th row y_pred in j-th class, the access way is y_pred[j*num_data+i]
         and you should group grad and hess in this way as well
-    
+
 
 ####apply(X, num_iteration=0)
 
@@ -691,9 +719,9 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     X_leaves : array_like, shape=[n_samples, n_trees]
-    
 
-####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric=None, early_stopping_rounds=None, verbose=True, feature_name=None, categorical_feature=None, callbacks=None)
+
+####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric=None, early_stopping_rounds=None, verbose=True, feature_name='auto', categorical_feature='auto', callbacks=None)
 
     Fit the gradient boosting model.
 
@@ -720,16 +748,19 @@ The methods of each Class is in alphabetical order.
     eval_metric : str, list of str, callable, optional
         If a str, should be a built-in evaluation metric to use.
         If callable, a custom evaluation metric, see note for more details.
-        default: binary_error for LGBMClassifier, l2 for LGBMRegressor, ndcg for LGBMRanker
+        default: logloss for LGBMClassifier, l2 for LGBMRegressor, ndcg for LGBMRanker
+        Can directly use 'logloss' or 'error' for LGBMClassifier.
     early_stopping_rounds : int
     verbose : bool
         If `verbose` and an evaluation set is used, writes the evaluation
-    feature_name : list of str
+    feature_name : list of str, or 'auto'
         Feature names
-    categorical_feature : list of str or int
+        If 'auto' and data is pandas DataFrame, use data columns name
+    categorical_feature : list of str or int, or 'auto'
         Categorical features,
         type int represents index,
-        type str represents feature names (need to specify feature_name as well).
+        type str represents feature names (need to specify feature_name as well)
+        If 'auto' and data is pandas DataFrame, use pandas categorical columns
     callbacks : list of callback functions
         List of callback functions that are applied at each iteration.
         See Callbacks in Python-API.md for more information.
@@ -787,7 +818,7 @@ The methods of each Class is in alphabetical order.
 
     Get the evaluation results.
 
-####feature_importance_
+####feature_importances_
 
     Get normailized feature importances.
 
@@ -817,13 +848,13 @@ The methods of each Class is in alphabetical order.
 ####n_classes_
 
     Get number of classes.
-    
+
 
 ###LGBMRegressor
 
 ###LGBMRanker
 
-####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric='ndcg', eval_at=1, early_stopping_rounds=None, verbose=True, feature_name=None, categorical_feature=None, callbacks=None)
+####fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric='ndcg', eval_at=1, early_stopping_rounds=None, verbose=True, feature_name='auto', categorical_feature='auto', callbacks=None)
 
     Most arguments are same as Common Methods except:
 
@@ -907,3 +938,110 @@ The methods of each Class is in alphabetical order.
     -------
     callback : function
         The requested callback function.
+
+##Plotting
+
+####plot_importance(booster, ax=None, height=0.2, xlim=None, ylim=None, title='Feature importance', xlabel='Feature importance', ylabel='Features', importance_type='split', max_num_features=None, ignore_zero=True, figsize=None, grid=True, **kwargs):
+
+    Plot model feature importances.
+
+    Parameters
+    ----------
+    booster : Booster or LGBMModel
+        Booster or LGBMModel instance.
+    ax : matplotlib Axes
+        Target axes instance. If None, new figure and axes will be created.
+    height : float
+        Bar height, passed to ax.barh().
+    xlim : tuple of 2 elements
+        Tuple passed to axes.xlim().
+    ylim : tuple of 2 elements
+        Tuple passed to axes.ylim().
+    title : str
+        Axes title. Pass None to disable.
+    xlabel : str
+        X axis title label. Pass None to disable.
+    ylabel : str
+        Y axis title label. Pass None to disable.
+    importance_type : str
+        How the importance is calculated: "split" or "gain".
+        "split" is the number of times a feature is used in a model.
+        "gain" is the total gain of splits which use the feature.
+    max_num_features : int
+        Max number of top features displayed on plot.
+        If None or smaller than 1, all features will be displayed.
+    ignore_zero : bool
+        Ignore features with zero importance.
+    figsize : tuple of 2 elements
+        Figure size.
+    grid : bool
+        Whether add grid for axes.
+    **kwargs :
+        Other keywords passed to ax.barh().
+
+    Returns
+    -------
+    ax : matplotlib Axes
+
+####plot_metric(booster, metric=None, dataset_names=None, ax=None, xlim=None, ylim=None, title='Metric during training', xlabel='Iterations', ylabel='auto', figsize=None, grid=True):
+    
+    Plot one metric during training.
+
+    Parameters
+    ----------
+    booster : dict or LGBMModel
+        Evals_result recorded by lightgbm.train() or LGBMModel instance
+    metric : str or None
+        The metric name to plot.
+        Only one metric supported because different metrics have various scales.
+        Pass None to pick `first` one (according to dict hashcode).
+    dataset_names : None or list of str
+        List of the dataset names to plot.
+        Pass None to plot all datasets.
+    ax : matplotlib Axes
+        Target axes instance. If None, new figure and axes will be created.
+    xlim : tuple of 2 elements
+        Tuple passed to axes.xlim()
+    ylim : tuple of 2 elements
+        Tuple passed to axes.ylim()
+    title : str
+        Axes title. Pass None to disable.
+    xlabel : str
+        X axis title label. Pass None to disable.
+    ylabel : str
+        Y axis title label. Pass None to disable. Pass 'auto' to use `metric`.
+    figsize : tuple of 2 elements
+        Figure size
+    grid : bool
+        Whether add grid for axes
+
+    Returns
+    -------
+    ax : matplotlib Axes
+
+####plot_tree(booster, ax=None, tree_index=0, figsize=None, graph_attr=None, node_attr=None, edge_attr=None, show_info=None):
+    Plot specified tree.
+
+    Parameters
+    ----------
+    booster : Booster, LGBMModel
+        Booster or LGBMModel instance.
+    ax : matplotlib Axes
+        Target axes instance. If None, new figure and axes will be created.
+    tree_index : int, default 0
+        Specify tree index of target tree.
+    figsize : tuple of 2 elements
+        Figure size.
+    graph_attr: dict
+        Mapping of (attribute, value) pairs for the graph.
+    node_attr: dict
+        Mapping of (attribute, value) pairs set for all nodes.
+    edge_attr: dict
+        Mapping of (attribute, value) pairs set for all edges.
+    show_info : list
+        Information shows on nodes.
+        options: 'split_gain', 'internal_value', 'internal_count' or 'leaf_count'.
+
+    Returns
+    -------
+    ax : matplotlib Axes

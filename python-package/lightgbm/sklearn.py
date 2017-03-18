@@ -130,6 +130,7 @@ class LGBMModel(LGBMModelBase):
                  reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
                  is_unbalance=False, seed=0, nthread=-1, silent=True,
                  sigmoid=1.0, huber_delta=1.0, gaussian_eta=1.0, fair_c=1.0,
+                 poisson_max_delta_step=0.7,
                  max_position=20, label_gain=None,
                  drop_rate=0.1, skip_drop=0.5, max_drop=50,
                  uniform_drop=False, xgboost_dart_mode=False):
@@ -192,6 +193,8 @@ class LGBMModel(LGBMModelBase):
             It is used to control the width of Gaussian function to approximate hessian.
         fair_c : float
             Only used in regression. Parameter for Fair loss function.
+        poisson_max_delta_step : float
+            parameter used to safeguard optimization in Poisson regression.
         max_position : int
             Only used in lambdarank, will optimize NDCG at this position.
         label_gain : list of float
@@ -259,6 +262,7 @@ class LGBMModel(LGBMModelBase):
         self.huber_delta = huber_delta
         self.gaussian_eta = gaussian_eta
         self.fair_c = fair_c
+        self.poisson_max_delta_step = poisson_max_delta_step
         self.max_position = max_position
         self.label_gain = label_gain
         self.drop_rate = drop_rate
@@ -280,7 +284,7 @@ class LGBMModel(LGBMModelBase):
             eval_init_score=None, eval_group=None,
             eval_metric=None,
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None,
+            feature_name='auto', categorical_feature='auto',
             callbacks=None):
         """
         Fit the gradient boosting model
@@ -311,12 +315,14 @@ class LGBMModel(LGBMModelBase):
         early_stopping_rounds : int
         verbose : bool
             If `verbose` and an evaluation set is used, writes the evaluation
-        feature_name : list of str
+        feature_name : list of str, or 'auto'
             Feature names
-        categorical_feature : list of str or int
+            If 'auto' and data is pandas DataFrame, use data columns name
+        categorical_feature : list of str or int, or 'auto'
             Categorical features,
             type int represents index,
             type str represents feature names (need to specify feature_name as well)
+            If 'auto' and data is pandas DataFrame, use pandas categorical columns
         callbacks : list of callback functions
             List of callback functions that are applied at each iteration.
             See Callbacks in Python-API.md for more information.
@@ -461,7 +467,7 @@ class LGBMModel(LGBMModelBase):
         return self.evals_result
 
     @property
-    def feature_importance_(self):
+    def feature_importances_(self):
         """Get normailized feature importances."""
         importace_array = self.booster_.feature_importance().astype(np.float32)
         return importace_array / importace_array.sum()
@@ -470,9 +476,9 @@ class LGBMModel(LGBMModelBase):
     def booster(self):
         return self.booster_
 
-    @LGBMDeprecated('Use attribute feature_importance_ instead.')
+    @LGBMDeprecated('Use attribute feature_importances_ instead.')
     def feature_importance(self):
-        return self.feature_importance_
+        return self.feature_importances_
 
 
 class LGBMRegressor(LGBMModel, LGBMRegressorBase):
@@ -485,6 +491,7 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
                  reg_alpha=0, reg_lambda=0,
                  seed=0, nthread=-1, silent=True,
                  huber_delta=1.0, gaussian_eta=1.0, fair_c=1.0,
+                 poisson_max_delta_step=0.7,
                  drop_rate=0.1, skip_drop=0.5, max_drop=50,
                  uniform_drop=False, xgboost_dart_mode=False):
         super(LGBMRegressor, self).__init__(boosting_type=boosting_type, num_leaves=num_leaves,
@@ -497,6 +504,7 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
                                             reg_alpha=reg_alpha, reg_lambda=reg_lambda,
                                             seed=seed, nthread=nthread, silent=silent,
                                             huber_delta=huber_delta, gaussian_eta=gaussian_eta, fair_c=fair_c,
+                                            poisson_max_delta_step=poisson_max_delta_step,
                                             drop_rate=drop_rate, skip_drop=skip_drop, max_drop=max_drop,
                                             uniform_drop=uniform_drop, xgboost_dart_mode=xgboost_dart_mode)
 
@@ -506,7 +514,7 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
             eval_init_score=None,
             eval_metric="l2",
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None, callbacks=None):
+            feature_name='auto', categorical_feature='auto', callbacks=None):
 
         super(LGBMRegressor, self).fit(X, y, sample_weight=sample_weight,
                                        init_score=init_score, eval_set=eval_set,
@@ -550,9 +558,9 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
             sample_weight=None, init_score=None,
             eval_set=None, eval_sample_weight=None,
             eval_init_score=None,
-            eval_metric="binary_logloss",
+            eval_metric="logloss",
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None,
+            feature_name='auto', categorical_feature='auto',
             callbacks=None):
         self._le = LGBMLabelEncoder().fit(y)
         y = self._le.transform(y)
@@ -562,8 +570,15 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
         if self.n_classes > 2:
             # Switch to using a multiclass objective in the underlying LGBM instance
             self.objective = "multiclass"
-            if eval_set is not None and eval_metric == "binary_logloss":
+            if eval_metric == 'logloss' or eval_metric == 'binary_logloss':
                 eval_metric = "multi_logloss"
+            elif eval_metric == 'error' or eval_metric == 'binary_error':
+                eval_metric = "multi_error"
+        else:
+            if eval_metric == 'logloss' or eval_metric == 'multi_logloss':
+                eval_metric = 'binary_logloss'
+            elif eval_metric == 'error' or eval_metric == 'multi_error':
+                eval_metric = 'binary_error'
 
         if eval_set is not None:
             eval_set = [(x[0], self._le.transform(x[1])) for x in eval_set]
@@ -653,7 +668,7 @@ class LGBMRanker(LGBMModel):
             eval_init_score=None, eval_group=None,
             eval_metric='ndcg', eval_at=1,
             early_stopping_rounds=None, verbose=True,
-            feature_name=None, categorical_feature=None,
+            feature_name='auto', categorical_feature='auto',
             callbacks=None):
         """
         Most arguments like common methods except following:

@@ -17,7 +17,7 @@ from .compat import (SKLEARN_INSTALLED, LGBMStratifiedKFold, integer_types,
 def train(params, train_set, num_boost_round=100,
           valid_sets=None, valid_names=None,
           fobj=None, feval=None, init_model=None,
-          feature_name=None, categorical_feature=None,
+          feature_name='auto', categorical_feature='auto',
           early_stopping_rounds=None, evals_result=None,
           verbose_eval=True, learning_rates=None, callbacks=None):
     """
@@ -42,12 +42,14 @@ def train(params, train_set, num_boost_round=100,
         Note: should return (eval_name, eval_result, is_higher_better) of list of this
     init_model : file name of lightgbm model or 'Booster' instance
         model used for continued train
-    feature_name : list of str
+    feature_name : list of str, or 'auto'
         Feature names
-    categorical_feature : list of str or int
+        If 'auto' and data is pandas DataFrame, use data columns name
+    categorical_feature : list of str or int, or 'auto'
         Categorical features,
         type int represents index,
         type str represents feature names (need to specify feature_name as well)
+        If 'auto' and data is pandas DataFrame, use pandas categorical columns
     early_stopping_rounds: int
         Activates early stopping.
         Requires at least one validation data and one metric
@@ -96,7 +98,7 @@ def train(params, train_set, num_boost_round=100,
     init_iteration = predictor.num_total_iteration if predictor is not None else 0
     """check dataset"""
     if not isinstance(train_set, Dataset):
-        raise TypeError("Traninig only accepts Dataset object")
+        raise TypeError("Training only accepts Dataset object")
 
     train_set._update_params(params)
     train_set._set_predictor(predictor)
@@ -219,28 +221,35 @@ class CVBooster(object):
         return handlerFunction
 
 
-def _make_n_folds(full_data, nfold, params, seed, fpreproc=None, stratified=False, shuffle=True):
+def _make_n_folds(full_data, data_splitter, nfold, params, seed, fpreproc=None, stratified=False, shuffle=True):
     """
     Make an n-fold list of Booster from random indices.
     """
     np.random.seed(seed)
-    if stratified:
-        if SKLEARN_INSTALLED:
-            sfk = LGBMStratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
-            idset = [x[1] for x in sfk.split(X=full_data.get_label(), y=full_data.get_label())]
-        else:
+    num_data = full_data.construct().num_data()
+    if data_splitter is not None:
+        if not hasattr(data_splitter, 'split'):
+            raise AttributeError("data_splitter has no method 'split'")
+        folds = data_splitter.split(np.arange(num_data))
+    elif stratified:
+        if not SKLEARN_INSTALLED:
             raise LightGBMError('Scikit-learn is required for stratified cv')
+        sfk = LGBMStratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
+        folds = sfk.split(X=np.zeros(num_data), y=full_data.get_label())
     else:
-        full_data.construct()
         if shuffle:
-            randidx = np.random.permutation(full_data.num_data())
-        kstep = int(len(randidx) / nfold)
-        idset = [randidx[(i * kstep): min(len(randidx), (i + 1) * kstep)] for i in range_(nfold)]
+            randidx = np.random.permutation(num_data)
+        else:
+            randidx = np.arange(num_data)
+        kstep = int(num_data / nfold)
+        test_id = [randidx[i: i + kstep] for i in range_(0, num_data, kstep)]
+        train_id = [np.concatenate([test_id[i] for i in range_(nfold) if k != i]) for k in range_(nfold)]
+        folds = zip(train_id, test_id)
 
     ret = CVBooster()
-    for k in range_(nfold):
-        train_set = full_data.subset(np.concatenate([idset[i] for i in range_(nfold) if k != i]))
-        valid_set = full_data.subset(idset[k])
+    for train_idx, test_idx in folds:
+        train_set = full_data.subset(train_idx)
+        valid_set = full_data.subset(test_idx)
         # run preprocessing on the data set if needed
         if fpreproc is not None:
             train_set, valid_set, tparam = fpreproc(train_set, valid_set, params.copy())
@@ -265,9 +274,10 @@ def _agg_cv_result(raw_results):
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
 
 
-def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
-       shuffle=True, metrics=None, fobj=None, feval=None, init_model=None,
-       feature_name=None, categorical_feature=None,
+def cv(params, train_set, num_boost_round=10,
+       data_splitter=None, nfold=5, stratified=False, shuffle=True,
+       metrics=None, fobj=None, feval=None, init_model=None,
+       feature_name='auto', categorical_feature='auto',
        early_stopping_rounds=None, fpreproc=None,
        verbose_eval=None, show_stdv=True, seed=0,
        callbacks=None):
@@ -282,14 +292,14 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
         Data to be trained.
     num_boost_round : int
         Number of boosting iterations.
+    data_splitter : an instance with split(X) method
+        Instance with split(X) method.
     nfold : int
         Number of folds in CV.
     stratified : bool
         Perform stratified sampling.
     shuffle: bool
         Whether shuffle before split data
-    folds : a KFold or StratifiedKFold instance
-        Sklearn KFolds or StratifiedKFolds.
     metrics : string or list of strings
         Evaluation metrics to be watched in CV.
     fobj : function
@@ -298,11 +308,14 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
         Custom evaluation function.
     init_model : file name of lightgbm model or 'Booster' instance
         model used for continued train
-    feature_name : list of str
+    feature_name : list of str, or 'auto'
         Feature names
-    categorical_feature : list of str or int
-        Categorical features, type int represents index,
+        If 'auto' and data is pandas DataFrame, use data columns name
+    categorical_feature : list of str or int, or 'auto'
+        Categorical features,
+        type int represents index,
         type str represents feature names (need to specify feature_name as well)
+        If 'auto' and data is pandas DataFrame, use pandas categorical columns
     early_stopping_rounds: int
         Activates early stopping. CV error needs to decrease at least
         every <early_stopping_rounds> round(s) to continue.
@@ -351,7 +364,10 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
             params['metric'].extend(metrics)
 
     results = collections.defaultdict(list)
-    cvfolds = _make_n_folds(train_set, nfold, params, seed, fpreproc, stratified, shuffle)
+    cvfolds = _make_n_folds(train_set, data_splitter=data_splitter,
+                            nfold=nfold, params=params, seed=seed,
+                            fpreproc=fpreproc, stratified=stratified,
+                            shuffle=shuffle)
 
     # setup callbacks
     if callbacks is None:
@@ -380,7 +396,7 @@ def cv(params, train_set, num_boost_round=10, nfold=5, stratified=False,
                                     begin_iteration=0,
                                     end_iteration=num_boost_round,
                                     evaluation_result_list=None))
-        cvfolds.update(fobj)
+        cvfolds.update(fobj=fobj)
         res = _agg_cv_result(cvfolds.eval_valid(feval))
         for _, key, mean, _, std in res:
             results[key + '-mean'].append(mean)

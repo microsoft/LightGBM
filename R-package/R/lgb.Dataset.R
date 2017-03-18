@@ -4,7 +4,6 @@ Dataset <- R6Class(
   public = list(
     finalize = function() {
       if (!lgb.is.null.handle(private$handle)) {
-        cat("free dataset handle\n")
         lgb.call("LGBM_DatasetFree_R", ret = NULL, private$handle)
         private$handle <- NULL
       }
@@ -79,27 +78,17 @@ Dataset <- R6Class(
       }
       # Get categorical feature index
       if (!is.null(private$categorical_feature)) {
-        fname_dict <- list()
-        if (!is.null(private$colnames)) {
-          fname_dict <- `names<-`(
-              list((seq_along(private$colnames) - 1)),
-              private$colnames
-            )
-        }
-        cate_indices <- list()
-        for (key in private$categorical_feature) {
-          if (is.character(key)) {
-            idx <- fname_dict[[key]]
-            if (is.null(idx)) {
-              stop("lgb.self.get.handle: cannot find feature name ", sQuote(key))
+        if (typeof(private$categorical_feature) == "character") {
+            cate_indices <- as.list(match(private$categorical_feature, private$colnames) - 1)
+            if (sum(is.na(cate_indices)) > 0) {
+              stop("lgb.self.get.handle: supplied an unknown feature in categorical_feature: ", sQuote(private$categorical_feature[is.na(cate_indices)]))
             }
-            cate_indices <- c(cate_indices, idx)
           } else {
-            # one-based indices to zero-based
-            idx <- as.integer(key - 1)
-            cate_indices <- c(cate_indices, idx)
+            if (max(private$categorical_feature) > length(private$colnames)) {
+              stop("lgb.self.get.handle: supplied a too large value in categorical_feature: ", max(private$categorical_feature), " but only ", length(private$colnames), " features")
+            }
+            cate_indices <- as.list(private$categorical_feature - 1)
           }
-        }
         private$params$categorical_feature <- cate_indices
       }
       # Check has header or not
@@ -200,8 +189,8 @@ Dataset <- R6Class(
     },
     dim = function() {
       if (!lgb.is.null.handle(private$handle)) {
-        num_row <- as.integer(0)
-        num_col <- as.integer(0)
+        num_row <- 0L
+        num_col <- 0L
 
         c(
           lgb.call("LGBM_DatasetGetNumData_R",    ret = num_row, private$handle),
@@ -252,7 +241,7 @@ Dataset <- R6Class(
         )
       }
       if (is.null(private$info[[name]]) && !lgb.is.null.handle(private$handle)) {
-        info_len <- as.integer(0)
+        info_len <- 0L
         info_len <- lgb.call("LGBM_DatasetGetFieldSize_R",
                              ret = info_len,
                              private$handle,
@@ -388,9 +377,9 @@ Dataset <- R6Class(
   )
 )
 
-#' Contruct lgb.Dataset object
+#' Construct lgb.Dataset object
 #'
-#' Contruct lgb.Dataset object from dense matrix, sparse matrix
+#' Construct lgb.Dataset object from dense matrix, sparse matrix
 #' or local file (that was created previously by saving an \code{lgb.Dataset}).
 #'
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename
@@ -435,9 +424,9 @@ lgb.Dataset <- function(data,
 }
 
 
-#' Contruct validation data
+#' Construct validation data
 #'
-#' Contruct validation data according to training data
+#' Construct validation data according to training data
 #'
 #' @param dataset \code{lgb.Dataset} object, training data
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object or a character representing a filename

@@ -5,6 +5,7 @@
 #include <LightGBM/utils/log.h>
 
 #include <LightGBM/meta.h>
+#include <LightGBM/export.h>
 
 #include <vector>
 #include <string>
@@ -84,7 +85,7 @@ enum TaskType {
 /*! \brief Config for input and output files */
 struct IOConfig: public ConfigBase {
 public:
-  int max_bin = 256;
+  int max_bin = 255;
   int num_class = 1;
   int data_random_seed = 1;
   std::string data_filename = "";
@@ -99,10 +100,14 @@ public:
   bool use_two_round_loading = false;
   bool is_save_binary_file = false;
   bool enable_load_from_binary_file = true;
-  int bin_construct_sample_cnt = 50000;
+  int bin_construct_sample_cnt = 200000;
   bool is_predict_leaf_index = false;
   bool is_predict_raw_score = false;
-
+  int min_data_in_leaf = 100;
+  int min_data_in_bin = 5;
+  double max_conflict_rate = 0.0000f;
+  bool enable_bundle = true;
+  bool adjacent_bundle = false;
   bool has_header = false;
   /*! \brief Index or column name of label, default is the first column
    * And add an prefix "name:" while using column name */
@@ -123,7 +128,7 @@ public:
   * And add an prefix "name:" while using column name
   * Note: when using Index, it dosen't count the label index */
   std::string categorical_column = "";
-  void Set(const std::unordered_map<std::string, std::string>& params) override;
+  LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
 /*! \brief Config for objective function */
@@ -133,8 +138,9 @@ public:
   double sigmoid = 1.0f;
   double huber_delta = 1.0f;
   double fair_c = 1.0f;
-  // for ApproximateHessianWithGaussian
+  // for Approximate Hessian With Gaussian
   double gaussian_eta = 1.0f;
+  double poisson_max_delta_step = 0.7f;
   // for lambdarank
   std::vector<double> label_gain;
   // for lambdarank
@@ -145,7 +151,7 @@ public:
   int num_class = 1;
   // Balancing of positive and negative weights
   double scale_pos_weight = 1.0f;
-  void Set(const std::unordered_map<std::string, std::string>& params) override;
+  LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
 /*! \brief Config for metrics interface*/
@@ -158,7 +164,7 @@ public:
   double fair_c = 1.0f;
   std::vector<double> label_gain;
   std::vector<int> eval_at;
-  void Set(const std::unordered_map<std::string, std::string>& params) override;
+  LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
 
@@ -174,15 +180,15 @@ public:
   int num_leaves = 127;
   int feature_fraction_seed = 2;
   double feature_fraction = 1.0f;
-  // max cache size(unit:MB) for historical histogram. < 0 means not limit
+  // max cache size(unit:MB) for historical histogram. < 0 means no limit
   double histogram_pool_size = -1.0f;
   // max depth of tree model.
   // Still grow tree by leaf-wise, but limit the max depth to avoid over-fitting
-  // And the max leaves will be min(num_leaves, pow(2, max_depth - 1))
-  // max_depth < 0 means not limit
+  // And the max leaves will be min(num_leaves, pow(2, max_depth))
+  // max_depth < 0 means no limit
   int max_depth = -1;
   int top_k = 20;
-  void Set(const std::unordered_map<std::string, std::string>& params) override;
+  LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
 /*! \brief Config for Boosting */
@@ -205,9 +211,11 @@ public:
   bool xgboost_dart_mode = false;
   bool uniform_drop = false;
   int drop_seed = 4;
+  double top_rate = 0.2f;
+  double other_rate = 0.1f;
   std::string tree_learner_type = "serial";
   TreeConfig tree_config;
-  void Set(const std::unordered_map<std::string, std::string>& params) override;
+  LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 private:
   void GetTreeLearnerType(const std::unordered_map<std::string,
     std::string>& params);
@@ -220,7 +228,7 @@ public:
   int local_listen_port = 12400;
   int time_out = 120;  // in minutes
   std::string machine_list_filename = "";
-  void Set(const std::unordered_map<std::string, std::string>& params) override;
+  LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
 
@@ -241,7 +249,7 @@ public:
   std::vector<std::string> metric_types;
   MetricConfig metric_config;
 
-  void Set(const std::unordered_map<std::string, std::string>& params) override;
+  LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 
 private:
   void GetBoostingType(const std::unordered_map<std::string, std::string>& params);
@@ -271,7 +279,7 @@ inline bool ConfigBase::GetInt(
   const std::string& name, int* out) {
   if (params.count(name) > 0) {
     if (!Common::AtoiAndCheck(params.at(name).c_str(), out)) {
-      Log::Fatal("Parameter %s should be of type int, got [%s]",
+      Log::Fatal("Parameter %s should be of type int, got \"%s\"",
         name.c_str(), params.at(name).c_str());
     }
     return true;
@@ -284,7 +292,7 @@ inline bool ConfigBase::GetDouble(
   const std::string& name, double* out) {
   if (params.count(name) > 0) {
     if (!Common::AtofAndCheck(params.at(name).c_str(), out)) {
-      Log::Fatal("Parameter %s should be of type double, got [%s]",
+      Log::Fatal("Parameter %s should be of type double, got \"%s\"",
         name.c_str(), params.at(name).c_str());
     }
     return true;
@@ -303,7 +311,7 @@ inline bool ConfigBase::GetBool(
     } else if (value == std::string("true") || value == std::string("+")) {
       *out = true;
     } else {
-      Log::Fatal("Parameter %s should be \"true\"/\"+\" or \"false\"/\"-\", got [%s]",
+      Log::Fatal("Parameter %s should be \"true\"/\"+\" or \"false\"/\"-\", got \"%s\"",
         name.c_str(), params.at(name).c_str());
     }
     return true;
@@ -335,9 +343,12 @@ struct ParameterAlias {
       { "test_data", "valid_data" },
       { "test", "valid_data" },
       { "is_sparse", "is_enable_sparse" },
+      { "enable_sparse", "is_enable_sparse" },
+      { "pre_partition", "is_pre_partition" },
       { "tranining_metric", "is_training_metric" },
       { "train_metric", "is_training_metric" },
       { "ndcg_at", "ndcg_eval_at" },
+      { "eval_at", "ndcg_eval_at" },
       { "min_data_per_leaf", "min_data_in_leaf" },
       { "min_data", "min_data_in_leaf" },
       { "min_child_samples", "min_data_in_leaf" },

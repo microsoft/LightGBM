@@ -41,7 +41,7 @@ public:
 *        When number of machines is not power of 2, need group machines into power of 2 group.
 *        And we can let each group has at most 2 machines.
 *        if the group only has 1 machine. this machine is the normal node
-*        if the grou has 2 machines, this group will have two type of nodes, one is the leader.
+*        if the group has 2 machines, this group will have two type of nodes, one is the leader.
 *        leader will represent this group and communication with others.
 */
 enum RecursiveHalvingNodeType {

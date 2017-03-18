@@ -12,14 +12,15 @@ LightGBM is a gradient boosting framework that uses tree based learning algorith
 
 For more details, please refer to [Features](https://github.com/Microsoft/LightGBM/wiki/Features).
 
-[Experiments](https://github.com/Microsoft/LightGBM/wiki/Experiments#comparison-experiment) on public datasets show that LightGBM can outperform other existing boosting framework on both efficiency and accuracy, with significant lower memory consumption. What's more, the [experiments](https://github.com/Microsoft/LightGBM/wiki/Experiments#parallel-experiment) show that LightGBM can achieve a linear speed-up by using multiple machines for training in specific settings.
+[Experiments](https://github.com/Microsoft/LightGBM/wiki/Experiments#comparison-experiment) on public datasets show that LightGBM can outperform existing boosting frameworks on both efficiency and accuracy, with significantly lower memory consumption. What's more, the [experiments](https://github.com/Microsoft/LightGBM/wiki/Experiments#parallel-experiment) show that LightGBM can achieve a linear speed-up by using multiple machines for training in specific settings.
 
 News
 ----
+02/20/2017 : Update to LightGBM v2.
+
 01/08/2017 : Release [**R-package**](./R-package) beta version, welcome to have a try and provide feedback.
 
-12/05/2016 : **Categorical Features as input directly**(without one-hot coding). Experiment on [Expo data](http://stat-computing.org/dataexpo/2009/) shows about 8x speed-up with same accuracy compared with one-hot coding (refer to [categorical log]( https://github.com/guolinke/boosting_tree_benchmarks/blob/master/lightgbm/lightgbm_dataexpo_speed.log) and [one-hot log]( https://github.com/guolinke/boosting_tree_benchmarks/blob/master/lightgbm/lightgbm_dataexpo_onehot_speed.log)).
-For the setting details, please refer to [IO Parameters](./docs/Parameters.md#io-parameters).
+12/05/2016 : **Categorical Features as input directly**(without one-hot coding). Experiment on [Expo data](http://stat-computing.org/dataexpo/2009/) shows about 8x speed-up with same accuracy compared with one-hot coding.
 
 12/02/2016 : Release [**python-package**](./python-package) beta version, welcome to have a try and provide feedback.
 
@@ -43,7 +44,7 @@ LightGBM has been developed and used by many active community members. Your help
 
 - Check out [call for contributions](https://github.com/Microsoft/LightGBM/issues?q=is%3Aissue+is%3Aopen+label%3Acall-for-contribution) to see what can be improved, or open an issue if you want something.
 - Contribute to the [tests](https://github.com/Microsoft/LightGBM/tree/master/tests) to make it more reliable. 
-- Contribute to the [documents](https://github.com/Microsoft/LightGBM/tree/master/docs) to make it clearly for everyone.
+- Contribute to the [documents](https://github.com/Microsoft/LightGBM/tree/master/docs) to make it clearer for everyone.
 - Contribute to the [examples](https://github.com/Microsoft/LightGBM/tree/master/examples) to share your experience with other users.
 - Check out [Development Guide](./docs/development.md).
 - Open issue if you met problems during development.

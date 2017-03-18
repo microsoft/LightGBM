@@ -31,7 +31,7 @@ Predictor <- R6Class(
       predleaf = FALSE, header = FALSE, reshape = FALSE) {
 
       if (is.null(num_iteration)) { num_iteration <- -1 }
-      num_row <- 0
+      num_row <- 0L
       if (is.character(data)) {
         tmp_filename <- tempfile(pattern = "lightgbm_")
         on.exit(unlink(tmp_filename), add = TRUE)
@@ -46,7 +46,7 @@ Predictor <- R6Class(
         preds   <- as.vector(t(preds))
       } else {
         num_row <- nrow(data)
-        npred   <- as.integer(0)
+        npred   <- 0L
         npred   <- lgb.call("LGBM_BoosterCalcNumPredict_R", ret = npred,
           private$handle,
           as.integer(num_row),
@@ -85,7 +85,11 @@ Predictor <- R6Class(
         stop("predict: prediction length ", sQuote(length(preds))," is not a multiple of nrows(data): ", sQuote(num_row))
       }
       npred_per_case <- length(preds) / num_row
-      if (reshape && npred_per_case > 1) { preds <- matrix(preds, ncol = npred_per_case) }
+      if (predleaf) {
+        preds <- matrix(preds, ncol = npred_per_case, byrow = TRUE)
+      } else if (reshape && npred_per_case > 1) {
+        preds <- matrix(preds, ncol = npred_per_case, byrow = TRUE)
+      }
       preds
     }
   ),

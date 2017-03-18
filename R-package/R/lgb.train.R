@@ -4,11 +4,18 @@
 #' @param data a \code{lgb.Dataset} object, used for training
 #' @param nrounds number of training rounds
 #' @param valids a list of \code{lgb.Dataset} objects, used for validation
-#' @param obj objective function, can be character or custom objective function
+#' @param obj objective function, can be character or custom objective function. Examples include 
+#'        \code{regression}, \code{regression_l1}, \code{huber},
+#'        \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
+#' @param boosting boosting type. \code{gbdt}, \code{dart}
+#' @param num_leaves number of leaves in one tree. defaults to 127
+#' @param max_depth Limit the max depth for tree model. This is used to deal with overfit when #data is small. 
+#'        Tree still grow by leaf-wise.
+#' @param num_threads Number of threads for LightGBM. For the best speed, set this to the number of real CPU cores, not the number of threads (most CPU using hyper-threading to generate 2 threads per CPU core).
 #' @param eval evaluation function, can be (a list of) character or custom eval function
-#' @param verbose verbosity for output
-#'        if \code{verbose > 0}, also will record iteration message to \code{booster$record_evals}
-#' @param eval_freq evalutaion output frequency
+#' @param verbose verbosity for output, if <= 0, also will disable the print of evalutaion during training
+#' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals} 
+#' @param eval_freq evalutaion output frequency, only effect when verbose > 0
 #' @param init_model path of model file of \code{lgb.Booster} object, will continue training from this model
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
 #' @param categorical_feature list of str or int
@@ -44,6 +51,7 @@ lgb.train <- function(params = list(), data, nrounds = 10,
                       obj                   = NULL,
                       eval                  = NULL,
                       verbose               = 1,
+                      record                = TRUE,
                       eval_freq             = 1L,
                       init_model            = NULL,
                       colnames              = NULL,
@@ -92,7 +100,7 @@ lgb.train <- function(params = list(), data, nrounds = 10,
   data$update_params(params)
   data$.__enclos_env__$private$set_predictor(predictor)
   if (!is.null(colnames)) { data$set_colnames(colnames) }
-  data$set_categorical_feature(categorical_feature)
+  if (!is.null(categorical_feature)) { data$set_categorical_feature(categorical_feature) }
   data$construct()
   vaild_contain_train <- FALSE
   train_data_name     <- "train"
@@ -111,11 +119,11 @@ lgb.train <- function(params = list(), data, nrounds = 10,
     }
   }
   # process callbacks
-  if (eval_freq > 0) {
+  if (verbose > 0 & eval_freq > 0) {
     callbacks <- add.cb(callbacks, cb.print.evaluation(eval_freq))
   }
 
-  if (verbose > 0 && length(valids) > 0) {
+  if (record & length(valids) > 0) {
     callbacks <- add.cb(callbacks, cb.record.evaluation())
   }
 

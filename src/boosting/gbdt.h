@@ -119,7 +119,7 @@ public:
   * \brief Get prediction result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
   * \param result used to store prediction result, should allocate memory before call this function
-  * \param out_len lenght of returned score
+  * \param out_len length of returned score
   */
   void GetPredictAt(int data_idx, double* out_result, int64_t* out_len) override;
 
@@ -156,18 +156,31 @@ public:
   * \param is_finish Is training finished or not
   * \param filename Filename that want to save to
   */
-  virtual void SaveModelToFile(int num_iterations, const char* filename) const override ;
+  virtual bool SaveModelToFile(int num_iterations, const char* filename) const override ;
+
+  /*!
+  * \brief Save model to string
+  * \param num_used_model Number of model that want to save, -1 means save all
+  * \return Non-empty string if succeeded
+  */
+  virtual std::string SaveModelToString(int num_iterations) const override ;
 
   /*!
   * \brief Restore from a serialized string
   */
-  void LoadModelFromString(const std::string& model_str) override;
+  bool LoadModelFromString(const std::string& model_str) override;
 
   /*!
   * \brief Get max feature index of this model
   * \return Max feature index of this model
   */
   inline int MaxFeatureIdx() const override { return max_feature_idx_; }
+
+  /*!
+  * \brief Get feature names of this model
+  * \return Feature names of this model
+  */
+  inline std::vector<std::string> FeatureNames() const override { return feature_names_; }
 
   /*!
   * \brief Get index of label column
@@ -228,7 +241,7 @@ protected:
   * \param buffer output buffer
   * \return count of left size
   */
-  virtual data_size_t BaggingHelper(data_size_t start, data_size_t cnt, data_size_t* buffer);
+  data_size_t BaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer);
   /*!
   * \brief updating score for out-of-bag data.
   *        Data should be update since we may re-bagging data on training
@@ -301,8 +314,6 @@ protected:
   data_size_t num_data_;
   /*! \brief Number of classes */
   int num_class_;
-  /*! \brief Random generator, used for bagging */
-  std::vector<Random> random_;
   /*!
   *   \brief Sigmoid parameter, used for prediction.
   *          if > 0 means output score will transform by sigmoid function
@@ -318,6 +329,7 @@ protected:
   int num_init_iteration_;
   /*! \brief Feature names */
   std::vector<std::string> feature_names_;
+  std::vector<std::string> feature_infos_;
   /*! \brief number of threads */
   int num_threads_;
   /*! \brief Buffer for multi-threading bagging */
@@ -330,6 +342,9 @@ protected:
   std::vector<data_size_t> left_write_pos_buf_;
   /*! \brief Buffer for multi-threading bagging */
   std::vector<data_size_t> right_write_pos_buf_;
+  std::unique_ptr<Dataset> tmp_subset_;
+  bool is_use_subset_;
+  std::vector<bool> is_class_end_;
 };
 
 }  // namespace LightGBM

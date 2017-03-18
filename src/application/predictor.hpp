@@ -6,7 +6,7 @@
 #include <LightGBM/utils/text_reader.h>
 #include <LightGBM/dataset.h>
 
-#include <omp.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <cstring>
 #include <cstdio>
@@ -19,7 +19,7 @@
 namespace LightGBM {
 
 /*!
-* \brief Used to prediction data with input model
+* \brief Used to predict data with input model
 */
 class Predictor {
 public:
@@ -27,7 +27,7 @@ public:
   * \brief Constructor
   * \param boosting Input boosting model
   * \param is_raw_score True if need to predict result with raw score
-  * \param predict_leaf_index True if output leaf index instead of prediction score
+  * \param is_predict_leaf_index True if output leaf index instead of prediction score
   */
   Predictor(const Boosting* boosting, bool is_raw_score, bool is_predict_leaf_index) {
     boosting_ = boosting;
@@ -69,14 +69,13 @@ public:
   ~Predictor() {
   }
 
-  inline const PredictFunction& GetPredictFunction() {
+  inline const PredictFunction& GetPredictFunction() const {
     return predict_fun_;
   }
 
   /*!
   * \brief predicting on data, then saving result to disk
   * \param data_filename Filename of data
-  * \param has_label True if this data contains label
   * \param result_filename Filename of output result
   */
   void Predict(const char* data_filename, const char* result_filename, bool has_header) {

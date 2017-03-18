@@ -11,10 +11,10 @@ df_test = pd.read_csv('../binary_classification/binary.test', header=None, sep='
 W_train = pd.read_csv('../binary_classification/binary.train.weight', header=None)[0]
 W_test = pd.read_csv('../binary_classification/binary.test.weight', header=None)[0]
 
-y_train = df_train[0]
-y_test = df_test[0]
-X_train = df_train.drop(0, axis=1)
-X_test = df_test.drop(0, axis=1)
+y_train = df_train[0].values
+y_test = df_test[0].values
+X_train = df_train.drop(0, axis=1).values
+X_test = df_test.drop(0, axis=1).values
 
 num_train, num_feature = X_train.shape
 

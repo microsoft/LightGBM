@@ -16,18 +16,20 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
 * ```task```, default=```train```, type=enum, options=```train```,```prediction```
   * ```train``` for training
   * ```prediction``` for prediction.
-* ```application```, default=```regression```, type=enum, options=```regression```,```regression_l1```,```huber```,```binary```,```lambdarank```,```multiclass```, alias=```objective```,```app```
+* ```application```, default=```regression```, type=enum, options=```regression```,```regression_l1```,```huber```,```fair```,```poisson```,```binary```,```lambdarank```,```multiclass```, alias=```objective```,```app```
   * ```regression```, regression application
     * ```regression_l2```, L2 loss, alias=```mean_squared_error```,```mse```
     * ```regression_l1```, L1 loss, alias=```mean_absolute_error```,```mae```
     * ```huber```, [Huber loss](https://en.wikipedia.org/wiki/Huber_loss "Huber loss - Wikipedia")
     * ```fair```, [Fair loss](http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html)
+    * ```poisson```, [Poisson regression](https://en.wikipedia.org/wiki/Poisson_regression "Poisson regression")
   * ```binary```, binary classification application 
   * ```lambdarank```, lambdarank application
   * ```multiclass```, multi-class classification application, should set ```num_class``` as well
 * ```boosting```, default=```gbdt```, type=enum, options=```gbdt```,```dart```, alias=```boost```,```boosting_type```
   * ```gbdt```, traditional Gradient Boosting Decision Tree 
   * ```dart```, [Dropouts meet Multiple Additive Regression Trees](https://arxiv.org/abs/1505.01866)
+  * ```goss```, Gradient-based One-Side Sampling
 * ```data```, default=```""```, type=string, alias=```train```,```train_data```
   * training data, LightGBM will train from this data
 * ```valid```, default=```""```, type=multi-string, alias=```test```,```valid_data```,```test_data```
@@ -94,6 +96,10 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * only used in ```dart```, true if want to use xgboost dart mode
 * ```drop_seed```, default=```4```, type=int
   * only used in ```dart```, used to random seed to choose dropping models.
+* ```top_rate```, default=```0.2```, type=double
+  * only used in ```goss```,  the retain ratio of large gradient data
+* ```other_rate```, default=```0.1```, type=int
+  * only used in ```goss```,  the retain ratio of small gradient data
 
 
 ## IO parameters
@@ -173,13 +179,15 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * parameter for [Huber loss](https://en.wikipedia.org/wiki/Huber_loss "Huber loss - Wikipedia"). Will be used in regression task.
 * ```fair_c```, default=```1.0```, type=double
   * parameter for [Fair loss](http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html). Will be used in regression task.
+* ```poission_max_delta_step```, default=```0.7```, type=double
+  * parameter used to safeguard optimization
 * ```scale_pos_weight```, default=```1.0```, type=double
   * weight of positive class in binary classification task
 * ```is_unbalance```, default=```false```, type=bool
   * used in binary classification. Set this to ```true``` if training data are unbalance.
 * ```max_position```, default=```20```, type=int
   * used in lambdarank, will optimize NDCG at this position.
-* ```label_gain```, default=```{0,1,3,7,15,31,63,...}```, type=multi-double
+* ```label_gain```, default=```0,1,3,7,15,31,63,...```, type=multi-double
   * used in lambdarank, relevant gain for labels. For example, the gain of label ```2``` is ```3``` if using default label gains.
   * Separate by ```,```
 * ```num_class```, default=```1```, type=int, alias=```num_classes```
@@ -192,7 +200,9 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * ```l2```, square loss, alias=```mean_squared_error```, ```mse```
   * ```huber```, [Huber loss](https://en.wikipedia.org/wiki/Huber_loss "Huber loss - Wikipedia")
   * ```fair```, [Fair loss](http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html)
+  * ```poisson```, [Poisson regression](https://en.wikipedia.org/wiki/Poisson_regression "Poisson regression")
   * ```ndcg```, [NDCG](https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG)
+  * ```map```, [MAP](https://www.kaggle.com/wiki/MeanAveragePrecision)
   * ```auc```, [AUC](https://en.wikipedia.org/wiki/Area_under_the_curve_(pharmacokinetics))
   * ```binary_logloss```, [log loss](https://www.kaggle.com/wiki/LogarithmicLoss)
   * ```binary_error```. For one sample ```0``` for correct classification, ```1``` for error classification.
@@ -203,7 +213,7 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * frequency for metric output
 * ```is_training_metric```, default=```false```, type=bool
   * set this to true if need to output metric result of training
-* ```ndcg_at```, default=```{1,2,3,4,5}```, type=multi-int, alias=```ndcg_eval_at```
+* ```ndcg_at```, default=```1,2,3,4,5```, type=multi-int, alias=```ndcg_eval_at```,```eval_at```
   * NDCG evaluation position, separate by ```,```
 
 ## Network parameters

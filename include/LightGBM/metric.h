@@ -46,7 +46,7 @@ public:
   * \param type Specific type of metric
   * \param config Config for metric
   */
-  static Metric* CreateMetric(const std::string& type, const MetricConfig& config);
+  LIGHTGBM_EXPORT static Metric* CreateMetric(const std::string& type, const MetricConfig& config);
 
 };
 

@@ -16,6 +16,8 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new RegressionHuberLoss(config);
   } else if (type == std::string("fair")) {
     return new RegressionFairLoss(config);
+  } else if (type == std::string("poisson")) {
+    return new RegressionPoissonLoss(config);
   } else if (type == std::string("binary")) {
     return new BinaryLogloss(config);
   } else if (type == std::string("lambdarank")) {

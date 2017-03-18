@@ -1,7 +1,7 @@
 #ifndef LIGHTGBM_UTILS_THREADING_H_
 #define LIGHTGBM_UTILS_THREADING_H_
 
-#include <omp.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <vector>
 #include <functional>

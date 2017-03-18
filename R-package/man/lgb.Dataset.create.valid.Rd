@@ -2,7 +2,7 @@
 % Please edit documentation in R/lgb.Dataset.R
 \name{lgb.Dataset.create.valid}
 \alias{lgb.Dataset.create.valid}
-\title{Contruct validation data}
+\title{Construct validation data}
 \usage{
 lgb.Dataset.create.valid(dataset, data, info = list(), ...)
 }
@@ -19,7 +19,7 @@ lgb.Dataset.create.valid(dataset, data, info = list(), ...)
 constructed dataset
 }
 \description{
-Contruct validation data according to training data
+Construct validation data according to training data
 }
 \examples{
 \dontrun{

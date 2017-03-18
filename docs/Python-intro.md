@@ -10,6 +10,11 @@ This document gives a basic walkthrough of LightGBM python package.
 Install
 -------
 * Install the library first, follow the wiki [here](./Installation-Guide.md).
+* Install python-package dependencies, `setuptools`, `numpy` and `scipy` is required, `scikit-learn` is required for sklearn interface and recommended. Run:
+```
+pip install setuptools numpy scipy scikit-learn -U
+```
+
 * In the  `python-package` directory, run
 ```
 python setup.py install
@@ -73,13 +78,13 @@ LightGBM can use categorical features as input directly. It doesn't need to cove
 
 #### Weights can be set when needed:
 ```python
-w = np.random.rand(500, 1)
+w = np.random.rand(500, )
 train_data = lgb.Dataset(data, label=label, weight=w)
 ```
 or
 ```python
 train_data = lgb.Dataset(data, label=label)
-w = np.random.rand(500, 1)
+w = np.random.rand(500, )
 train_data.set_weight(w)
 ```
 

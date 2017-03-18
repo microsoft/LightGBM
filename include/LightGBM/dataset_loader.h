@@ -8,21 +8,21 @@ namespace LightGBM {
 class DatasetLoader {
 public:
 
-  DatasetLoader(const IOConfig& io_config, const PredictFunction& predict_fun, int num_class, const char* filename);
+  LIGHTGBM_EXPORT DatasetLoader(const IOConfig& io_config, const PredictFunction& predict_fun, int num_class, const char* filename);
 
-  ~DatasetLoader();
+  LIGHTGBM_EXPORT ~DatasetLoader();
 
-  Dataset* LoadFromFile(const char* filename, int rank, int num_machines);
+  LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename, int rank, int num_machines);
 
-  Dataset* LoadFromFile(const char* filename) {
+  LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename) {
     return LoadFromFile(filename, 0, 1);
   }
 
-  Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data);
+  LIGHTGBM_EXPORT Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data);
 
-  Dataset* LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines);
-
-  Dataset* CostructFromSampleData(std::vector<std::vector<double>>& sample_values, size_t total_sample_size, data_size_t num_data);
+  LIGHTGBM_EXPORT Dataset* CostructFromSampleData(std::vector<std::vector<double>>& sample_values,
+    std::vector<std::vector<int>>& sample_indices,
+    size_t total_sample_size, data_size_t num_data);
 
   /*! \brief Disable copy */
   DatasetLoader& operator=(const DatasetLoader&) = delete;
@@ -30,6 +30,8 @@ public:
   DatasetLoader(const DatasetLoader&) = delete;
 
 private:
+
+  Dataset* LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
 
   void SetHeader(const char* filename);
 
@@ -71,7 +73,6 @@ private:
   std::vector<std::string> feature_names_;
   /*! \brief Mapper from real feature index to used index*/
   std::unordered_set<int> categorical_features_;
-
 };
 
 }

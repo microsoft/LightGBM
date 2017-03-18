@@ -20,30 +20,41 @@ public:
     std::random_device rd;
     auto genrator = std::mt19937(rd());
     std::uniform_int_distribution<int> distribution(0, x);
-    x = static_cast<unsigned int>(distribution(genrator));
+    x = distribution(genrator);
   }
   /*!
   * \brief Constructor, with specific seed
   */
   Random(int seed) {
-    x = static_cast<unsigned int>(seed);
+    x = seed;
   }
   /*!
-  * \brief Generate random integer
+  * \brief Generate random integer, int16 range. [0, 65536]
+  * \param lower_bound lower bound
+  * \param upper_bound upper bound
+  * \return The random integer between [lower_bound, upper_bound)
+  */
+  inline int NextShort(int lower_bound, int upper_bound) {
+    return (RandInt16()) % (upper_bound - lower_bound) + lower_bound;
+  }
+
+  /*!
+  * \brief Generate random integer, int32 range
   * \param lower_bound lower bound
   * \param upper_bound upper bound
   * \return The random integer between [lower_bound, upper_bound)
   */
   inline int NextInt(int lower_bound, int upper_bound) {
-    return (next()) % (upper_bound - lower_bound + 1) + lower_bound;
+    return (RandInt32()) % (upper_bound - lower_bound) + lower_bound;
   }
+
   /*!
   * \brief Generate random float data
   * \return The random float between [0.0, 1.0)
   */
-  inline double NextDouble() {
+  inline float NextFloat() {
     // get random float in [0,1)
-    return static_cast<double>(next() % 2047) / 2047.0f;
+    return static_cast<float>(RandInt16()) / (32768.0f);
   }
   /*!
   * \brief Sample K data from {0,1,...,N-1}
@@ -58,26 +69,24 @@ public:
     }
     for (int i = 0; i < N; ++i) {
       double prob = (K - ret.size()) / static_cast<double>(N - i);
-      if (NextDouble() < prob) {
+      if (NextFloat() < prob) {
         ret.push_back(i);
       }
     }
     return ret;
   }
 private:
-  unsigned next() {
-    x ^= x << 16;
-    x ^= x >> 5;
-    x ^= x << 1;
-    auto t = x;
-    x = y;
-    y = z;
-    z = t ^ x ^ y;
-    return z;
+  inline int RandInt16() {
+    x = (214013 * x + 2531011);
+    return (x >> 16) & 0x7FFF;
   }
-  unsigned int x = 123456789;
-  unsigned int y = 362436069;
-  unsigned int z = 521288629;
+
+  inline int RandInt32() {
+    x = (214013 * x + 2531011);
+    return x & 0x7FFFFFF;
+  }
+
+  int x = 123456789;
 };
 
 

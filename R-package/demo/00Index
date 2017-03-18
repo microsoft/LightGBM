@@ -2,3 +2,4 @@ basic_walkthrough               Basic feature walkthrough
 boost_from_prediction           Boosting from existing prediction
 early_stopping                  Early Stop in training
 cross_validation                Cross Validation
+multiclass                      Multiclass training/prediction

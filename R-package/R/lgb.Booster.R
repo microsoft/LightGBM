@@ -6,7 +6,6 @@ Booster <- R6Class(
     record_evals = list(),
     finalize     = function() {
       if (!lgb.is.null.handle(private$handle)) {
-        cat("freeing booster handle\n")
         lgb.call("LGBM_BoosterFree_R", ret = NULL, private$handle)
         private$handle <- NULL
       }
@@ -50,7 +49,7 @@ Booster <- R6Class(
       }
       class(handle)     <- "lgb.Booster.handle"
       private$handle    <- handle
-      private$num_class <- as.integer(1)
+      private$num_class <- 1L
       private$num_class <-
         lgb.call("LGBM_BoosterGetNumClasses_R", ret = private$num_class, private$handle)
     },
@@ -107,6 +106,10 @@ Booster <- R6Class(
       } else {
         if (!is.function(fobj)) { stop("lgb.Booster.update: fobj should be a function") }
         gpair <- fobj(private$inner_predict(1), private$train_set)
+        if(is.null(gpair$grad) | is.null(gpair$hess)){
+          stop("lgb.Booster.update: custom objective should 
+            return a list with attributes (hess, grad)")
+        }
         ret   <- lgb.call(
             "LGBM_BoosterUpdateOneIterCustom_R", ret = NULL,
             private$handle,
@@ -128,7 +131,7 @@ Booster <- R6Class(
       self
     },
     current_iter = function() {
-      cur_iter <- as.integer(0)
+      cur_iter <- 0L
       lgb.call("LGBM_BoosterGetCurrentIteration_R", ret = cur_iter, private$handle)
     },
     eval = function(data, name, feval = NULL) {
@@ -192,7 +195,14 @@ Booster <- R6Class(
       predictor <- Predictor$new(private$handle)
       predictor$predict(data, num_iteration, rawscore, predleaf, header, reshape)
     },
-    to_predictor = function() { Predictor$new(private$handle) }
+    to_predictor = function() { Predictor$new(private$handle) },
+    raw = NA,
+    save = function() {
+      temp <- tempfile()
+      lgb.save(self, temp)
+      self$raw <- readChar(temp, file.info(temp)$size)
+      file.remove(temp)
+    }
   ),
   private = list(
     handle                   = NULL,
@@ -214,7 +224,7 @@ Booster <- R6Class(
         stop("data_idx should not be greater than num_dataset")
       }
       if (is.null(private$predict_buffer[[data_name]])) {
-        npred <- as.integer(0)
+        npred <- 0L
         npred <- lgb.call("LGBM_BoosterGetNumPredict_R",
                 ret = npred,
                 private$handle,
@@ -240,8 +250,7 @@ Booster <- R6Class(
           private$eval_names <- names
           private$higher_better_inner_eval <- rep(FALSE, length(names))
           for (i in seq_along(names)) {
-            if (names[i]) == "auc" |
-                grepl("^ndcg", names[i])) {
+            if ((names[i] == "auc") | grepl("^ndcg", names[i])) {
               private$higher_better_inner_eval[i] <- TRUE
             }
           }
@@ -275,7 +284,12 @@ Booster <- R6Class(
         }
         data <- private$train_set
         if (data_idx > 1) { data <- private$valid_sets[[data_idx - 1]] }
-        res           <- feval(private$inner_predict(data_idx), data)
+        res <- feval(private$inner_predict(data_idx), data)
+        if(is.null(res$name) | is.null(res$value) | 
+           is.null(res$higher_better)) {
+          stop("lgb.Booster.eval: custom eval function should return a 
+            list with attribute (name, value, higher_better)");
+        }
         res$data_name <- data_name
         ret           <- append(ret, list(res))
       }

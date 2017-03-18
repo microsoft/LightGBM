@@ -17,7 +17,7 @@ class Metric;
 /*!
 * \brief The interface for Boosting
 */
-class Boosting {
+class LIGHTGBM_EXPORT Boosting {
 public:
   /*! \brief virtual destructor */
   virtual ~Boosting() {}
@@ -99,14 +99,14 @@ public:
   /*!
   * \brief Get prediction result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
-  * \return out_len lenght of returned score
+  * \return out_len length of returned score
   */
   virtual int64_t GetNumPredictAt(int data_idx) const = 0;
   /*!
   * \brief Get prediction result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
   * \param result used to store prediction result, should allocate memory before call this function
-  * \param out_len lenght of returned score
+  * \param out_len length of returned score
   */
   virtual void GetPredictAt(int data_idx, double* result, int64_t* out_len) = 0;
 
@@ -125,7 +125,7 @@ public:
   virtual std::vector<double> Predict(const double* feature_values) const = 0;
   
   /*!
-  * \brief Predtion for one record with leaf index
+  * \brief Prediction for one record with leaf index
   * \param feature_values Feature value on this record
   * \return Predicted leaf index for this record
   */
@@ -143,20 +143,35 @@ public:
   * \param num_used_model Number of model that want to save, -1 means save all
   * \param is_finish Is training finished or not
   * \param filename Filename that want to save to
+  * \return true if succeeded
   */
-  virtual void SaveModelToFile(int num_iterations, const char* filename) const = 0;
+  virtual bool SaveModelToFile(int num_iterations, const char* filename) const = 0;
+
+  /*!
+  * \brief Save model to string
+  * \param num_used_model Number of model that want to save, -1 means save all
+  * \return Non-empty string if succeeded
+  */
+  virtual std::string SaveModelToString(int num_iterations) const = 0;
 
   /*!
   * \brief Restore from a serialized string
   * \param model_str The string of model
+  * \return true if succeeded
   */
-  virtual void LoadModelFromString(const std::string& model_str) = 0;
+  virtual bool LoadModelFromString(const std::string& model_str) = 0;
 
   /*!
   * \brief Get max feature index of this model
   * \return Max feature index of this model
   */
   virtual int MaxFeatureIdx() const = 0;
+
+  /*!
+  * \brief Get feature names of this model
+  * \return Feature names of this model
+  */
+  virtual std::vector<std::string> FeatureNames() const = 0;
 
   /*!
   * \brief Get index of label column
@@ -192,7 +207,7 @@ public:
   /*! \brief Disable copy */
   Boosting(const Boosting&) = delete;
 
-  static void LoadFileToBoosting(Boosting* boosting, const char* filename);
+  static bool LoadFileToBoosting(Boosting* boosting, const char* filename);
 
   /*!
   * \brief Create boosting object

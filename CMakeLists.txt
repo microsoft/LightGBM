@@ -8,6 +8,11 @@ endif()
 PROJECT(lightgbm)
 
 OPTION(USE_MPI "MPI based parallel learning" OFF)
+OPTION(USE_OPENMP "Enable OpenMP" ON)
+
+if(APPLE)
+    OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
+endif()
 
 if(USE_MPI)
     find_package(MPI REQUIRED)
@@ -18,10 +23,16 @@ else()
     ADD_DEFINITIONS(-DUSE_SOCKET)
 endif(USE_MPI)
 
-
-find_package(OpenMP REQUIRED)
-
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+if(USE_OPENMP)
+    find_package(OpenMP REQUIRED)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+else()
+    # Ignore unknown #pragma warning
+    if( (CMAKE_CXX_COMPILER_ID MATCHES "[cC][lL][aA][nN][gG]")
+      OR (CMAKE_CXX_COMPILER_ID MATCHES "[gG][nN][uU]"))
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+    endif()
+endif(USE_OPENMP)
 
 if(UNIX OR MINGW OR CYGWIN)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -O3 -Wall -std=c++11")
@@ -61,7 +72,11 @@ SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 include_directories (${LightGBM_HEADER_DIR})
 
 if(APPLE)
-  SET(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
+  if (APPLE_OUTPUT_DYLIB)
+    SET(CMAKE_SHARED_LIBRARY_SUFFIX ".dylib")
+  else()
+    SET(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
+  endif()
 endif(APPLE)
 
 if(USE_MPI)
@@ -99,5 +114,7 @@ endif()
 
 install(TARGETS lightgbm _lightgbm
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
-        LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+        LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+
 install(DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM DESTINATION ${CMAKE_INSTALL_PREFIX}/include)

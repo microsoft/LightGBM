@@ -26,9 +26,9 @@ LightGBM uses [leaf-wise](https://github.com/Microsoft/LightGBM/wiki/Features#op
 
 ## For better accuracy
 
-* Use large ```max_bin``` (may slower)
+* Use large ```max_bin``` (may be slower)
 * Use small ```learning_rate``` with large ```num_iterations```
-* Use large ```num_leave```(may over-fitting)
+* Use large ```num_leaves```(may cause over-fitting)
 * Use bigger training data
 * Try ```dart```
 

@@ -18,7 +18,7 @@ Label is the data of first column, and there is no header in the file.
 
 update 12/5/2016:
 
-LightGBM can use categorical feature directly (without one-hot coding). The experiment on [Expo data](http://stat-computing.org/dataexpo/2009/) shows about 8x speed-up compared with one-hot coding (refer to [categorical log]( https://github.com/guolinke/boosting_tree_benchmarks/blob/master/lightgbm/lightgbm_dataexpo_speed.log) and [one-hot log]( https://github.com/guolinke/boosting_tree_benchmarks/blob/master/lightgbm/lightgbm_dataexpo_onehot_speed.log)).
+LightGBM can use categorical feature directly (without one-hot coding). The experiment on [Expo data](http://stat-computing.org/dataexpo/2009/) shows about 8x speed-up compared with one-hot coding.
 
 For the setting details, please refer to [Parameters](./Parameters.md#io-parameters).
 
@@ -103,7 +103,7 @@ For example, following command line will keep 'num_trees=10' and ignore same par
 
 ## Examples
 
-* [Binary Classifiaction](../examples/binary_classification)
+* [Binary Classification](../examples/binary_classification)
 * [Regression](../examples/regression)
 * [Lambdarank](../examples/lambdarank)
 * [Parallel Learning](../examples/parallel_learning)

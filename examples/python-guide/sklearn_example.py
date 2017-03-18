@@ -10,10 +10,10 @@ print('Load data...')
 df_train = pd.read_csv('../regression/regression.train', header=None, sep='\t')
 df_test = pd.read_csv('../regression/regression.test', header=None, sep='\t')
 
-y_train = df_train[0]
-y_test = df_test[0]
-X_train = df_train.drop(0, axis=1)
-X_test = df_test.drop(0, axis=1)
+y_train = df_train[0].values
+y_test = df_test[0].values
+X_train = df_train.drop(0, axis=1).values
+X_test = df_test.drop(0, axis=1).values
 
 print('Start training...')
 # train
@@ -34,7 +34,7 @@ print('The rmse of prediction is:', mean_squared_error(y_test, y_pred) ** 0.5)
 
 print('Calculate feature importances...')
 # feature importances
-print('Feature importances:', list(gbm.feature_importance_))
+print('Feature importances:', list(gbm.feature_importances_))
 
 # other scikit-learn modules
 estimator = lgb.LGBMRegressor(num_leaves=31)

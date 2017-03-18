@@ -2,6 +2,7 @@
 #include "regression_metric.hpp"
 #include "binary_metric.hpp"
 #include "rank_metric.hpp"
+#include "map_metric.hpp"
 #include "multiclass_metric.hpp"
 
 namespace LightGBM {
@@ -15,6 +16,8 @@ Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config
     return new HuberLossMetric(config);
   } else if (type == std::string("fair")) {
     return new FairLossMetric(config);
+  } else if (type == std::string("poisson")) {
+    return new PoissonMetric(config);
   } else if (type == std::string("binary_logloss")) {
     return new BinaryLoglossMetric(config);
   } else if (type == std::string("binary_error")) {
@@ -23,6 +26,8 @@ Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config
     return new AUCMetric(config);
   } else if (type == std::string("ndcg")) {
     return new NDCGMetric(config);
+  } else if (type == std::string("map")) {
+    return new MapMetric(config);
   } else if (type == std::string("multi_logloss")) {
     return new MultiLoglossMetric(config);
   } else if (type == std::string("multi_error")) {

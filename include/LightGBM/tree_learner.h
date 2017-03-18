@@ -27,6 +27,8 @@ public:
   */
   virtual void Init(const Dataset* train_data) = 0;
 
+  virtual void ResetTrainingData(const Dataset* train_data) = 0;
+
   /*!
   * \brief Reset tree configs
   * \param tree_config config of tree

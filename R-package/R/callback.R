@@ -92,7 +92,8 @@ cb.print.evaluation <- function(period = 1){
       if ( (i - 1) %% period == 0
          | i == env$begin_iteration
          | i == env$end_iteration ) {
-        cat(merge.eval.string(env), "\n")
+        msg <- merge.eval.string(env)
+        if (nchar(msg) > 0) { cat(merge.eval.string(env), "\n") }
       }
     }
   }

@@ -4,3 +4,4 @@ LightGBM R examples
 * [Boosting from existing prediction](boost_from_prediction.R)
 * [Early Stopping](early_stopping.R)
 * [Cross Validation](cross_validation.R)
+* [Multiclass Training/Prediction](multiclass.R)

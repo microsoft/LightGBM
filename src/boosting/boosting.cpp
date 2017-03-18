@@ -1,6 +1,7 @@
 #include <LightGBM/boosting.h>
 #include "gbdt.h"
 #include "dart.hpp"
+#include "goss.hpp"
 
 namespace LightGBM {
 
@@ -10,7 +11,7 @@ std::string GetBoostingTypeFromModelFile(const char* filename) {
   return type;
 }
 
-void Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
+bool Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
   if (boosting != nullptr) {
     TextReader<size_t> model_reader(filename, true);
     model_reader.ReadAllLines();
@@ -18,8 +19,11 @@ void Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
     for (auto& line : model_reader.Lines()) {
       str_buf << line << '\n';
     }
-    boosting->LoadModelFromString(str_buf.str());
+    if (!boosting->LoadModelFromString(str_buf.str()))
+        return false;
   }
+
+  return true;
 }
 
 Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename) {
@@ -28,6 +32,8 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
       return new GBDT();
     } else if (type == std::string("dart")) {
       return new DART();
+    } else if (type == std::string("goss")) {
+      return new GOSS();
     } else {
       return nullptr;
     }
@@ -39,6 +45,10 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
         ret.reset(new GBDT());
       } else if (type == std::string("dart")) {
         ret.reset(new DART());
+      } else if (type == std::string("goss")) {
+        ret.reset(new GOSS());
+      } else {
+        Log::Fatal("unknow boosting type %s", type.c_str());
       }
       LoadFileToBoosting(ret.get(), filename);
     } else {

@@ -28,14 +28,15 @@ public:
     data_size_t cnt_positive = 0;
     data_size_t cnt_negative = 0;
     // count for positive and negative samples
+#pragma omp parallel for schedule(static) reduction(+:cnt_positive, cnt_negative)
     for (data_size_t i = 0; i < num_data_; ++i) {
-      if (label_[i] == 1) {
+      if (label_[i] > 0) {
         ++cnt_positive;
       } else {
         ++cnt_negative;
       }
     }
-    Log::Info("Number of postive: %d, number of negative: %d", cnt_positive, cnt_negative);
+    Log::Info("Number of positive: %d, number of negative: %d", cnt_positive, cnt_negative);
     // cannot continue if all sample are same class
     if (cnt_positive == 0 || cnt_negative == 0) {
       Log::Fatal("Training data only contains one class");
@@ -64,25 +65,27 @@ public:
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // get label and label weights
-        const int label = label_val_[static_cast<int>(label_[i])];
-        const double label_weight = label_weights_[static_cast<int>(label_[i])];
+        const int is_pos = label_[i] > 0;
+        const int label = label_val_[is_pos];
+        const double label_weight = label_weights_[is_pos];
         // calculate gradients and hessians
-        const double response = -2.0f * label * sigmoid_ / (1.0f + std::exp(2.0f * label * sigmoid_ * score[i]));
+        const double response = -label * sigmoid_ / (1.0f + std::exp(label * sigmoid_ * score[i]));
         const double abs_response = fabs(response);
         gradients[i] = static_cast<score_t>(response * label_weight);
-        hessians[i] = static_cast<score_t>(abs_response * (2.0f * sigmoid_ - abs_response) * label_weight);
+        hessians[i] = static_cast<score_t>(abs_response * (sigmoid_ - abs_response) * label_weight);
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // get label and label weights
-        const int label = label_val_[static_cast<int>(label_[i])];
-        const double label_weight = label_weights_[static_cast<int>(label_[i])];
+        const int is_pos = label_[i] > 0;
+        const int label = label_val_[is_pos];
+        const double label_weight = label_weights_[is_pos];
         // calculate gradients and hessians
-        const double response = -2.0f * label * sigmoid_ / (1.0f + std::exp(2.0f * label * sigmoid_ * score[i]));
+        const double response = -label * sigmoid_ / (1.0f + std::exp(label * sigmoid_ * score[i]));
         const double abs_response = fabs(response);
         gradients[i] = static_cast<score_t>(response * label_weight  * weights_[i]);
-        hessians[i] = static_cast<score_t>(abs_response * (2.0f * sigmoid_ - abs_response) * label_weight * weights_[i]);
+        hessians[i] = static_cast<score_t>(abs_response * (sigmoid_ - abs_response) * label_weight * weights_[i]);
       }
     }
   }

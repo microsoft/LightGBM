@@ -6,7 +6,7 @@
 
 #include <LightGBM/metric.h>
 
-#include <omp.h>
+#include <LightGBM/utils/openmp_wrapper.h>
 
 #include <sstream>
 #include <vector>
@@ -90,7 +90,7 @@ public:
     }
     std::vector<double> tmp_dcg(eval_at_.size(), 0.0f);
     if (query_weights_ == nullptr) {
-#pragma omp parallel for schedule(guided) firstprivate(tmp_dcg)
+#pragma omp parallel for schedule(static) firstprivate(tmp_dcg)
       for (data_size_t i = 0; i < num_queries_; ++i) {
         const int tid = omp_get_thread_num();
         // if all doc in this query are all negative, let its NDCG=1
@@ -110,7 +110,7 @@ public:
         }
       }
     } else {
-#pragma omp parallel for schedule(guided) firstprivate(tmp_dcg)
+#pragma omp parallel for schedule(static) firstprivate(tmp_dcg)
       for (data_size_t i = 0; i < num_queries_; ++i) {
         const int tid = omp_get_thread_num();
         // if all doc in this query are all negative, let its NDCG=1

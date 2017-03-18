@@ -63,7 +63,7 @@ public:
 #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // sigmoid transform
-        double prob = 1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * score[i]));
+        double prob = 1.0f / (1.0f + std::exp(-sigmoid_ * score[i]));
         // add loss
         sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob);
       }
@@ -71,7 +71,7 @@ public:
 #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // sigmoid transform
-        double prob = 1.0f / (1.0f + std::exp(-2.0f * sigmoid_ * score[i]));
+        double prob = 1.0f / (1.0f + std::exp(-sigmoid_ * score[i]));
         // add loss
         sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob) * weights_[i];
       }
@@ -103,7 +103,7 @@ public:
   explicit BinaryLoglossMetric(const MetricConfig& config) :BinaryMetric<BinaryLoglossMetric>(config) {}
 
   inline static double LossOnPoint(float label, double prob) {
-    if (label == 0) {
+    if (label <= 0) {
       if (1.0f - prob > kEpsilon) {
         return -std::log(1.0f - prob);
       }
@@ -128,9 +128,9 @@ public:
 
   inline static double LossOnPoint(float label, double prob) {
     if (prob <= 0.5f) {
-      return label;
+      return label > 0;
     } else {
-      return 1.0f - label;
+      return label <= 0;
     }
   }
 
@@ -207,8 +207,8 @@ public:
           // reset
           cur_neg = cur_pos = 0.0f;
         }
-        cur_neg += 1.0f - cur_label;
-        cur_pos += cur_label;
+        cur_neg += (cur_label <= 0);
+        cur_pos += (cur_label > 0);
       }
     } else {  // has weights
       for (data_size_t i = 0; i < num_data_; ++i) {
@@ -224,8 +224,8 @@ public:
           // reset
           cur_neg = cur_pos = 0.0f;
         }
-        cur_neg += (1.0f - cur_label)*cur_weight;
-        cur_pos += cur_label*cur_weight;
+        cur_neg += (cur_label <= 0)*cur_weight;
+        cur_pos += (cur_label > 0)*cur_weight;
       }
     }
     accum += cur_neg*(cur_pos * 0.5f + sum_pos);

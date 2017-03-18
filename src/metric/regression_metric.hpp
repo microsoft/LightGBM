@@ -162,5 +162,23 @@ public:
   }
 };
 
+/*! \brief Poisson regression loss for regression task */
+class PoissonMetric: public RegressionMetric<PoissonMetric> {
+public:
+  explicit PoissonMetric(const MetricConfig& config) :RegressionMetric<PoissonMetric>(config) {
+  }
+
+  inline static double LossOnPoint(float label, double score, double, double) {
+    const double eps = 1e-10f;
+    if (score < eps) {
+      score = eps;
+    }
+    return score - label * std::log(score);
+  }
+  inline static const char* Name() {
+    return "poisson";
+  }
+};
+
 }  // namespace LightGBM
 #endif   // LightGBM_METRIC_REGRESSION_METRIC_HPP_
