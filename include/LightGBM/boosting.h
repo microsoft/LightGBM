@@ -99,14 +99,14 @@ public:
   /*!
   * \brief Get prediction result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
-  * \return out_len lenght of returned score
+  * \return out_len length of returned score
   */
   virtual int64_t GetNumPredictAt(int data_idx) const = 0;
   /*!
   * \brief Get prediction result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
   * \param result used to store prediction result, should allocate memory before call this function
-  * \param out_len lenght of returned score
+  * \param out_len length of returned score
   */
   virtual void GetPredictAt(int data_idx, double* result, int64_t* out_len) = 0;
 
@@ -125,7 +125,7 @@ public:
   virtual std::vector<double> Predict(const double* feature_values) const = 0;
   
   /*!
-  * \brief Predtion for one record with leaf index
+  * \brief Prediction for one record with leaf index
   * \param feature_values Feature value on this record
   * \return Predicted leaf index for this record
   */

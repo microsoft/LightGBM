@@ -150,7 +150,7 @@ inline static const char* Atof(const char* p, double* out) {
     frac = 0;
     scale = 1.0;
     if ((*p == 'e') || (*p == 'E')) {
-      unsigned int expon;
+      uint32_t expon;
       // Get sign of exponent, if any.
       ++p;
       if (*p == '-') {
@@ -273,6 +273,9 @@ inline static std::string ArrayToString(const std::vector<T>& arr, size_t n, cha
 
 template<typename T>
 inline static std::vector<T> StringToArray(const std::string& str, char delimiter, size_t n) {
+  if (n == 0) {
+    return std::vector<T>();
+  }
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   if (strs.size() != n) {
     Log::Fatal("StringToArray error, size doesn't match.");

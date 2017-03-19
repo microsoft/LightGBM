@@ -20,30 +20,41 @@ public:
     std::random_device rd;
     auto genrator = std::mt19937(rd());
     std::uniform_int_distribution<int> distribution(0, x);
-    x = static_cast<unsigned int>(distribution(genrator));
+    x = distribution(genrator);
   }
   /*!
   * \brief Constructor, with specific seed
   */
   Random(int seed) {
-    x = static_cast<unsigned int>(seed);
+    x = seed;
   }
   /*!
-  * \brief Generate random integer
+  * \brief Generate random integer, int16 range. [0, 65536]
+  * \param lower_bound lower bound
+  * \param upper_bound upper bound
+  * \return The random integer between [lower_bound, upper_bound)
+  */
+  inline int NextShort(int lower_bound, int upper_bound) {
+    return (RandInt16()) % (upper_bound - lower_bound) + lower_bound;
+  }
+
+  /*!
+  * \brief Generate random integer, int32 range
   * \param lower_bound lower bound
   * \param upper_bound upper bound
   * \return The random integer between [lower_bound, upper_bound)
   */
   inline int NextInt(int lower_bound, int upper_bound) {
-    return (fastrand()) % (upper_bound - lower_bound) + lower_bound;
+    return (RandInt32()) % (upper_bound - lower_bound) + lower_bound;
   }
+
   /*!
   * \brief Generate random float data
   * \return The random float between [0.0, 1.0)
   */
   inline float NextFloat() {
     // get random float in [0,1)
-    return static_cast<float>(fastrand()) / (32768.0f);
+    return static_cast<float>(RandInt16()) / (32768.0f);
   }
   /*!
   * \brief Sample K data from {0,1,...,N-1}
@@ -65,10 +76,16 @@ public:
     return ret;
   }
 private:
-  inline int fastrand() {
+  inline int RandInt16() {
     x = (214013 * x + 2531011);
     return (x >> 16) & 0x7FFF;
   }
+
+  inline int RandInt32() {
+    x = (214013 * x + 2531011);
+    return x & 0x7FFFFFF;
+  }
+
   int x = 123456789;
 };
 

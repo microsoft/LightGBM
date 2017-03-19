@@ -28,12 +28,14 @@ void FeatureParallelTreeLearner::BeforeTrain() {
   // get feature partition
   std::vector<std::vector<int>> feature_distribution(num_machines_, std::vector<int>());
   std::vector<int> num_bins_distributed(num_machines_, 0);
-  for (int i = 0; i < train_data_->num_features(); ++i) {
-    if (is_feature_used_[i]) {
+  for (int i = 0; i < train_data_->num_total_features(); ++i) {
+    int inner_feature_index = train_data_->InnerFeatureIndex(i);
+    if (inner_feature_index == -1) { continue; }
+    if (is_feature_used_[inner_feature_index]) {
       int cur_min_machine = static_cast<int>(ArrayArgs<int>::ArgMin(num_bins_distributed));
-      feature_distribution[cur_min_machine].push_back(i);
-      num_bins_distributed[cur_min_machine] += train_data_->FeatureAt(i)->num_bin();
-      is_feature_used_[i] = false;
+      feature_distribution[cur_min_machine].push_back(inner_feature_index);
+      num_bins_distributed[cur_min_machine] += train_data_->FeatureNumBin(inner_feature_index);
+      is_feature_used_[inner_feature_index] = false;
     }
   }
   // get local used features
@@ -43,23 +45,12 @@ void FeatureParallelTreeLearner::BeforeTrain() {
 }
 
 void FeatureParallelTreeLearner::FindBestSplitsForLeaves() {
-  int smaller_best_feature = -1, larger_best_feature = -1;
   SplitInfo smaller_best, larger_best;
   // get best split at smaller leaf
-  std::vector<double> gains;
-  for (size_t i = 0; i < smaller_leaf_splits_->BestSplitPerFeature().size(); ++i) {
-    gains.push_back(smaller_leaf_splits_->BestSplitPerFeature()[i].gain);
-  }
-  smaller_best_feature = static_cast<int>(ArrayArgs<double>::ArgMax(gains));
-  smaller_best = smaller_leaf_splits_->BestSplitPerFeature()[smaller_best_feature];
-  // get best split at larger leaf
+  smaller_best = best_split_per_leaf_[smaller_leaf_splits_->LeafIndex()];
+  // find local best split for larger leaf
   if (larger_leaf_splits_->LeafIndex() >= 0) {
-    gains.clear();
-    for (size_t i = 0; i < larger_leaf_splits_->BestSplitPerFeature().size(); ++i) {
-      gains.push_back(larger_leaf_splits_->BestSplitPerFeature()[i].gain);
-    }
-    larger_best_feature = static_cast<int>(ArrayArgs<double>::ArgMax(gains));
-    larger_best = larger_leaf_splits_->BestSplitPerFeature()[larger_best_feature];
+    larger_best = best_split_per_leaf_[larger_leaf_splits_->LeafIndex()];
   }
   // sync global best info
   std::memcpy(input_buffer_.data(), &smaller_best, sizeof(SplitInfo));

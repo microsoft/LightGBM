@@ -119,7 +119,7 @@ public:
   * \brief Get prediction result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
   * \param result used to store prediction result, should allocate memory before call this function
-  * \param out_len lenght of returned score
+  * \param out_len length of returned score
   */
   void GetPredictAt(int data_idx, double* out_result, int64_t* out_len) override;
 
@@ -329,7 +329,6 @@ protected:
   int num_init_iteration_;
   /*! \brief Feature names */
   std::vector<std::string> feature_names_;
-  /*! \brief Feature informations */
   std::vector<std::string> feature_infos_;
   /*! \brief number of threads */
   int num_threads_;
@@ -345,6 +344,7 @@ protected:
   std::vector<data_size_t> right_write_pos_buf_;
   std::unique_ptr<Dataset> tmp_subset_;
   bool is_use_subset_;
+  std::vector<bool> is_class_end_;
 };
 
 }  // namespace LightGBM
