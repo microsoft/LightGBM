@@ -310,84 +310,26 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromFile(const char* filename,
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSampledMat(const void* data,
-                                                       int data_type,
-                                                       int32_t num_sample_row,
-                                                       int32_t ncol,
-                                                       int32_t num_total_row,
-                                                       const char* parameters,
-                                                       DatasetHandle* out) {
-  if (num_sample_row == num_total_row) {
-    return LGBM_DatasetCreateFromMat(data, data_type, num_total_row, ncol, 1, parameters, nullptr, out);
-  } else {
-    API_BEGIN();
-    auto param = ConfigBase::Str2Map(parameters);
-    IOConfig io_config;
-    io_config.Set(param);
-    auto get_row_fun = RowFunctionFromDenseMatric(data, num_sample_row, ncol, data_type, 1);
-    std::vector<std::vector<double>> sample_values(ncol);
-    std::vector<std::vector<int>> sample_idx(ncol);
-    for (int i = 0; i < num_sample_row; ++i) {
-      auto row = get_row_fun(i);
-      for (size_t idx = 0; idx < row.size(); ++idx) {
-        if (std::fabs(row[idx]) > kEpsilon) {
-          sample_values[idx].emplace_back(row[idx]);
-          sample_idx[idx].emplace_back(i);
-        }
-      }
-    }
-    DatasetLoader loader(io_config, nullptr, 1, nullptr);
-    *out = loader.CostructFromSampleData(sample_values, sample_idx,
-                                         num_sample_row,
-                                         static_cast<data_size_t>(num_total_row));
-    API_END();
-  }
+
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
+                                                          int** sample_indices,
+                                                          int32_t ncol,
+                                                          const int* num_per_col,
+                                                          int32_t num_sample_row,
+                                                          int32_t num_total_row,
+                                                          const char* parameters,
+                                                          DatasetHandle* out) {
+  API_BEGIN();
+  auto param = ConfigBase::Str2Map(parameters);
+  IOConfig io_config;
+  io_config.Set(param);
+  DatasetLoader loader(io_config, nullptr, 1, nullptr);
+  *out = loader.CostructFromSampleData(sample_data, sample_indices, ncol, num_per_col,
+                                       num_sample_row,
+                                       static_cast<data_size_t>(num_total_row));
+  API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSampledCSR(const void* indptr,
-                                                       int indptr_type,
-                                                       const int32_t* indices,
-                                                       const void* data,
-                                                       int data_type,
-                                                       int64_t nindptr,
-                                                       int64_t n_sample_elem,
-                                                       int64_t num_col,
-                                                       int64_t num_total_row,
-                                                       const char* parameters,
-                                                       DatasetHandle* out) {
-  if (nindptr - 1 == num_total_row) {
-    return LGBM_DatasetCreateFromCSR(indptr, indptr_type, indices, data,
-                                     data_type, nindptr, n_sample_elem, num_col, parameters, nullptr, out);
-  } else {
-    API_BEGIN();
-    auto param = ConfigBase::Str2Map(parameters);
-    IOConfig io_config;
-    io_config.Set(param);
-    auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, n_sample_elem);
-    int32_t num_sample_row = static_cast<int32_t>(nindptr - 1);
-    std::vector<std::vector<double>> sample_values(num_col);
-    std::vector<std::vector<int>> sample_idx(num_col);
-    for (int i = 0; i < num_sample_row; ++i) {
-      auto row = get_row_fun(i);
-      for (std::pair<int, double>& inner_data : row) {
-        if (static_cast<size_t>(inner_data.first) >= sample_values.size()) {
-          sample_values.resize(inner_data.first + 1);
-          sample_idx.resize(inner_data.first + 1);
-        }
-        if (std::fabs(inner_data.second) > kEpsilon) {
-          sample_values[inner_data.first].emplace_back(inner_data.second);
-          sample_idx[inner_data.first].emplace_back(i);
-        }
-      }
-    }
-    CHECK(num_col >= static_cast<int>(sample_values.size()));
-    DatasetLoader loader(io_config, nullptr, 1, nullptr);
-    *out = loader.CostructFromSampleData(sample_values, sample_idx,
-                                         num_sample_row,
-                                         static_cast<data_size_t>(num_total_row));
-    API_END();
-  }
-}
 
 LIGHTGBM_C_EXPORT int LGBM_DatasetCreateByReference(const DatasetHandle reference,
                                                     int64_t num_total_row,
@@ -480,7 +422,11 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
       }
     }
     DatasetLoader loader(io_config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(sample_values, sample_idx, sample_cnt, nrow));
+    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values), 
+                                            Common::Vector2Ptr<int>(sample_idx), 
+                                            static_cast<int>(sample_values.size()),
+                                            Common::VectorSize<double>(sample_values).data(),
+                                            sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -539,7 +485,11 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSR(const void* indptr,
     }
     CHECK(num_col >= static_cast<int>(sample_values.size()));
     DatasetLoader loader(io_config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(sample_values, sample_idx, sample_cnt, nrow));
+    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values),
+                                            Common::Vector2Ptr<int>(sample_idx),
+                                            static_cast<int>(sample_values.size()),
+                                            Common::VectorSize<double>(sample_values).data(),
+                                            sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -593,7 +543,11 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
       }
     }
     DatasetLoader loader(io_config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(sample_values, sample_idx, sample_cnt, nrow));
+    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values),
+                                            Common::Vector2Ptr<int>(sample_idx),
+                                            static_cast<int>(sample_values.size()),
+                                            Common::VectorSize<double>(sample_values).data(),
+                                            sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1120,54 +1074,6 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSetLeafValue(BoosterHandle handle,
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->SetLeafValue(tree_idx, leaf_idx, val);
-  API_END();
-}
-
-
-LIGHTGBM_C_EXPORT int LGBM_AllocateArray(int64_t len, int type, ArrayHandle* out) {
-  API_BEGIN();
-  if (type == C_API_DTYPE_FLOAT32) {
-    *out = new float[len];
-  } else if (type == C_API_DTYPE_FLOAT64) {
-    *out = new double[len];
-  } else if (type == C_API_DTYPE_INT32) {
-    *out = new int32_t[len];
-  } else if (type == C_API_DTYPE_INT64) {
-    *out = new int64_t[len];
-  }
-  API_END();
-}
-
-template<typename T>
-void Copy(T* dst, const T* src, int64_t len) {
-  std::memcpy(dst, src, sizeof(T) * len);
-}
-
-LIGHTGBM_C_EXPORT int LGBM_CopyToArray(ArrayHandle arr, int type, int64_t start_idx, const void* src, int64_t len) {
-  API_BEGIN();
-  if (type == C_API_DTYPE_FLOAT32) {
-    Copy<float>(static_cast<float*>(arr) + start_idx, static_cast<const float*>(src), len);
-  } else if (type == C_API_DTYPE_FLOAT64) {
-    Copy<double>(static_cast<double*>(arr) + start_idx, static_cast<const double*>(src), len);
-  } else if (type == C_API_DTYPE_INT32) {
-    Copy<int32_t>(static_cast<int32_t*>(arr) + start_idx, static_cast<const int32_t*>(src), len);
-  } else if (type == C_API_DTYPE_INT64) {
-    Copy<int64_t>(static_cast<int64_t*>(arr) + start_idx, static_cast<const int64_t*>(src), len);
-  }
-  API_END();
-}
-
-LIGHTGBM_C_EXPORT int LGBM_FreeArray(ArrayHandle arr, int type) {
-  API_BEGIN();
-  if (type == C_API_DTYPE_FLOAT32) {
-    delete[] static_cast<float*>(arr);
-  } else if (type == C_API_DTYPE_FLOAT64) {
-    delete[] static_cast<double*>(arr);
-  } else if (type == C_API_DTYPE_INT32) {
-    delete[] static_cast<int32_t*>(arr);
-  } else if (type == C_API_DTYPE_INT64) {
-    delete[] static_cast<int64_t*>(arr);
-  }
   API_END();
 }
 

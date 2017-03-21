@@ -114,19 +114,19 @@ public:
   std::string label_column = "";
   /*! \brief Index or column name of weight, < 0 means not used
   * And add an prefix "name:" while using column name 
-  * Note: when using Index, it dosen't count the label index */
+  * Note: when using Index, it doesn't count the label index */
   std::string weight_column = "";
   /*! \brief Index or column name of group/query id, < 0 means not used
   * And add an prefix "name:" while using column name
-  * Note: when using Index, it dosen't count the label index */
+  * Note: when using Index, it doesn't count the label index */
   std::string group_column = "";
   /*! \brief ignored features, separate by ','
   * And add an prefix "name:" while using column name
-  * Note: when using Index, it dosen't count the label index */
+  * Note: when using Index, it doesn't count the label index */
   std::string ignore_column = "";
   /*! \brief specific categorical columns, Note:only support for integer type categorical
   * And add an prefix "name:" while using column name
-  * Note: when using Index, it dosen't count the label index */
+  * Note: when using Index, it doesn't count the label index */
   std::string categorical_column = "";
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
@@ -398,7 +398,8 @@ struct ParameterAlias {
       { "topk", "top_k" },
       { "reg_alpha", "lambda_l1" },
       { "reg_lambda", "lambda_l2" },
-      { "num_classes", "num_class" }
+      { "num_classes", "num_class" },
+      { "unbalanced_sets", "is_unbalance" }
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {

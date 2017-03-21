@@ -68,36 +68,35 @@ bool NeedFilter(std::vector<int>& cnt_in_bin, int total_cnt, int filter_cnt, Bin
   return true;
 }
 
-void BinMapper::FindBin(std::vector<double>& values, size_t total_sample_cnt,
+void BinMapper::FindBin(double* values, int num_sample_values, size_t total_sample_cnt,
   int max_bin, int min_data_in_bin, int min_split_data, BinType bin_type) {
   bin_type_ = bin_type;
   default_bin_ = 0;
-  std::vector<double>& raw_values = values;
-  int zero_cnt = static_cast<int>(total_sample_cnt - raw_values.size());
+  int zero_cnt = static_cast<int>(total_sample_cnt - num_sample_values);
   // find distinct_values first
   std::vector<double> distinct_values;
   std::vector<int> counts;
 
-  std::sort(raw_values.begin(), raw_values.end());
+  std::sort(values, values + num_sample_values);
 
   // push zero in the front
-  if (raw_values.empty() || (raw_values[0] > 0.0f && zero_cnt > 0)) {
+  if (num_sample_values || (values[0] > 0.0f && zero_cnt > 0)) {
     distinct_values.push_back(0.0f);
     counts.push_back(zero_cnt);
   }
 
-  if (!raw_values.empty()) {
-    distinct_values.push_back(raw_values[0]);
+  if (num_sample_values > 0) {
+    distinct_values.push_back(values[0]);
     counts.push_back(1);
   }
 
-  for (size_t i = 1; i < raw_values.size(); ++i) {
-    if (raw_values[i] != raw_values[i - 1]) {
-      if (raw_values[i - 1] < 0.0f && raw_values[i] > 0.0f) {
+  for (int i = 1; i < num_sample_values; ++i) {
+    if (values[i] != values[i - 1]) {
+      if (values[i - 1] < 0.0f && values[i] > 0.0f) {
         distinct_values.push_back(0.0f);
         counts.push_back(zero_cnt);
       }
-      distinct_values.push_back(raw_values[i]);
+      distinct_values.push_back(values[i]);
       counts.push_back(1);
     } else {
       ++counts.back();
@@ -105,20 +104,20 @@ void BinMapper::FindBin(std::vector<double>& values, size_t total_sample_cnt,
   }
 
   // push zero in the back
-  if (!raw_values.empty() && raw_values.back() < 0.0f && zero_cnt > 0) {
+  if (num_sample_values > 0 && values[num_sample_values - 1] < 0.0f && zero_cnt > 0) {
     distinct_values.push_back(0.0f);
     counts.push_back(zero_cnt);
   }
   min_val_ = distinct_values.front();
   max_val_ = distinct_values.back();
   std::vector<int> cnt_in_bin;
-  int num_values = static_cast<int>(distinct_values.size());
+  int num_distinct_values = static_cast<int>(distinct_values.size());
   if (bin_type_ == BinType::NumericalBin) {
-    if (num_values <= max_bin) {
+    if (num_distinct_values <= max_bin) {
       // use distinct value is enough
       bin_upper_bound_.clear();
       int cur_cnt_inbin = 0;
-      for (int i = 0; i < num_values - 1; ++i) {
+      for (int i = 0; i < num_distinct_values - 1; ++i) {
         cur_cnt_inbin += counts[i];
         if (cur_cnt_inbin >= min_data_in_bin) {
           bin_upper_bound_.push_back((distinct_values[i] + distinct_values[i + 1]) / 2);
@@ -137,14 +136,14 @@ void BinMapper::FindBin(std::vector<double>& values, size_t total_sample_cnt,
       }
       double mean_bin_size = static_cast<double>(total_sample_cnt) / max_bin;
       if (zero_cnt > mean_bin_size) {
-        int non_zero_cnt = static_cast<int>(raw_values.size());
+        int non_zero_cnt = num_sample_values;
         max_bin = std::min(max_bin, 1 + static_cast<int>(non_zero_cnt / min_data_in_bin));
       }
       // mean size for one bin
       int rest_bin_cnt = max_bin;
       int rest_sample_cnt = static_cast<int>(total_sample_cnt);
-      std::vector<bool> is_big_count_value(num_values, false);
-      for (int i = 0; i < num_values; ++i) {
+      std::vector<bool> is_big_count_value(num_distinct_values, false);
+      for (int i = 0; i < num_distinct_values; ++i) {
         if (counts[i] >= mean_bin_size) {
           is_big_count_value[i] = true;
           --rest_bin_cnt;
@@ -158,7 +157,7 @@ void BinMapper::FindBin(std::vector<double>& values, size_t total_sample_cnt,
       int bin_cnt = 0;
       lower_bounds[bin_cnt] = distinct_values[0];
       int cur_cnt_inbin = 0;
-      for (int i = 0; i < num_values - 1; ++i) {
+      for (int i = 0; i < num_distinct_values - 1; ++i) {
         if (!is_big_count_value[i]) {
           rest_sample_cnt -= counts[i];
         }
@@ -207,7 +206,7 @@ void BinMapper::FindBin(std::vector<double>& values, size_t total_sample_cnt,
     }
     // sort by counts
     Common::SortForPair<int, int>(counts_int, distinct_values_int, 0, true);
-    // will ingore the categorical of small counts
+    // will ignore the categorical of small counts
     const int cut_cnt = static_cast<int>(total_sample_cnt * 0.98f);
     categorical_2_bin_.clear();
     bin_2_categorical_.clear();

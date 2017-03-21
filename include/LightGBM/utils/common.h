@@ -424,6 +424,24 @@ inline static double ApproximateHessianWithGaussian(const double y, const double
   return w * std::exp(-(x - b) * (x - b) / (2.0 * c * c)) * a / (c * std::sqrt(2 * pi));
 }
 
+template <typename T>
+inline static T** Vector2Ptr(std::vector<std::vector<T>>& data) {
+  T** ptr = new T*[data.size()];
+  for (size_t i = 0; i < data.size(); ++i) {
+    ptr[i] = data[i].data();
+  }
+  return ptr;
+}
+
+template <typename T>
+inline static std::vector<int> VectorSize(const std::vector<std::vector<T>>& data) {
+  std::vector<int> ret(data.size());
+  for (size_t i = 0; i < data.size(); ++i) {
+    ret[i] = static_cast<int>(data[i].size());
+  }
+  return ret;
+}
+
 }  // namespace Common
 
 }  // namespace LightGBM
