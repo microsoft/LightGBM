@@ -80,7 +80,7 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
   std::sort(values, values + num_sample_values);
 
   // push zero in the front
-  if (num_sample_values || (values[0] > 0.0f && zero_cnt > 0)) {
+  if (num_sample_values == 0 || (values[0] > 0.0f && zero_cnt > 0)) {
     distinct_values.push_back(0.0f);
     counts.push_back(zero_cnt);
   }

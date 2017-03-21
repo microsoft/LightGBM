@@ -748,7 +748,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
         bin_type = BinType::CategoricalBin;
       }
       bin_mappers[i].reset(new BinMapper());
-      bin_mappers[i]->FindBin(sample_values[start[rank] + i].data(), static_cast<int>(sample_values[i].size()),
+      bin_mappers[i]->FindBin(sample_values[start[rank] + i].data(), static_cast<int>(sample_values[start[rank] + i].size()),
                               sample_data.size(), io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt, bin_type);
     }
     // get max_bin
