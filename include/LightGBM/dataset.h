@@ -286,7 +286,8 @@ public:
 
   void Construct(
     std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
-    const std::vector<std::vector<int>>& sample_non_zero_indices,
+    int** sample_non_zero_indices,
+    const int* num_per_col,
     size_t total_sample_cnt,
     const IOConfig& io_config);
 

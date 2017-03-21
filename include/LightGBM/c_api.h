@@ -16,7 +16,6 @@
 
 #include <LightGBM/export.h>
 
-typedef void* ArrayHandle;
 typedef void* DatasetHandle;
 typedef void* BoosterHandle;
 
@@ -53,52 +52,25 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromFile(const char* filename,
                                                  DatasetHandle* out);
 
 /*!
-* \brief create a empty dataset by sampling matrix, if num_sample_row == num_total_row, will construct this dataset.
-*        Need call LGBM_DatasetPushRows/LGBM_DatasetPushRowsByCSR after calling this function.
-* \param data pointer to the data space
-* \param data_type type of data pointer, can be C_API_DTYPE_FLOAT32 or C_API_DTYPE_FLOAT64
-* \param num_sample_row number of rows
+* \brief create a empty dataset by sampling data.
+* \param sample_data sampled data, grouped by the column.
+* \param sample_indices indices of sampled data. 
 * \param ncol number columns
+* \param num_per_col Size of each sampling column
+* \param num_sample_row Number of sampled rows
 * \param num_total_row number of total rows
 * \param parameters additional parameters
 * \param out created dataset
 * \return 0 when succeed, -1 when failure happens
 */
-LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSampledMat(const void* data,
-                                                       int data_type,
-                                                       int32_t num_sample_row,
-                                                       int32_t ncol,
-                                                       int32_t num_total_row,
-                                                       const char* parameters,
-                                                       DatasetHandle* out);
-
-/*!
-* \brief create a empty dataset by sampling CSR data, if num_sample_row == num_total_row, will construct this dataset.
-*        Need call LGBM_DatasetPushRows/LGBM_DatasetPushRowsByCSR after calling this function.
-* \param indptr pointer to row headers
-* \param indptr_type type of indptr, can be C_API_DTYPE_INT32 or C_API_DTYPE_INT64
-* \param indices findex
-* \param data fvalue
-* \param data_type type of data pointer, can be C_API_DTYPE_FLOAT32 or C_API_DTYPE_FLOAT64
-* \param nindptr number of rows in the matrix + 1
-* \param n_sample_elem number of nonzero elements in the matrix
-* \param num_col number of columns
-* \param num_total_row number of total rows
-* \param parameters additional parameters
-* \param out created dataset
-* \return 0 when succeed, -1 when failure happens
-*/
-LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSampledCSR(const void* indptr,
-                                                       int indptr_type,
-                                                       const int32_t* indices,
-                                                       const void* data,
-                                                       int data_type,
-                                                       int64_t nindptr,
-                                                       int64_t n_sample_elem,
-                                                       int64_t num_col,
-                                                       int64_t num_total_row,
-                                                       const char* parameters,
-                                                       DatasetHandle* out);
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
+                                                          int** sample_indices,
+                                                          int32_t ncol,
+                                                          const int* num_per_col,
+                                                          int32_t num_sample_row,
+                                                          int32_t num_total_row,
+                                                          const char* parameters,
+                                                          DatasetHandle* out);
 
 /*!
 * \brief create a empty dataset by reference Dataset
@@ -768,11 +740,5 @@ catch(std::exception& ex) { return LGBM_APIHandleException(ex); } \
 catch(std::string& ex) { return LGBM_APIHandleException(ex); } \
 catch(...) { return LGBM_APIHandleException("unknown exception"); } \
 return 0;
-
-LIGHTGBM_C_EXPORT int LGBM_AllocateArray(int64_t len, int type, ArrayHandle* out);
-
-LIGHTGBM_C_EXPORT int LGBM_CopyToArray(ArrayHandle arr, int type, int64_t start_idx, const void* src, int64_t len);
-
-LIGHTGBM_C_EXPORT int LGBM_FreeArray(ArrayHandle arr, int type);
 
 #endif // LIGHTGBM_C_API_H_
