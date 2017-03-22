@@ -89,7 +89,7 @@ public:
   */
   void RollbackOneIter() override;
 
-  int GetCurrentIteration() const override { return iter_ + num_init_iteration_; }
+  int GetCurrentIteration() const override { return static_cast<int>(models_.size()) / num_class_; }
 
   bool EvalAndCheckEarlyStopping() override;
 

@@ -630,6 +630,7 @@ std::string GBDT::DumpModel(int num_iteration) const {
   str_buf << "\"tree_info\":[";
   int num_used_model = static_cast<int>(models_.size());
   if (num_iteration > 0) {
+    num_iteration += boost_from_average_ ? 1 : 0;
     num_used_model = std::min(num_iteration * num_class_, num_used_model);
   }
   for (int i = 0; i < num_used_model; ++i) {
@@ -648,7 +649,7 @@ std::string GBDT::DumpModel(int num_iteration) const {
   return str_buf.str();
 }
 
-std::string GBDT::SaveModelToString(int num_iterations) const {
+std::string GBDT::SaveModelToString(int num_iteration) const {
   std::stringstream ss;
 
   // output model type
@@ -676,8 +677,9 @@ std::string GBDT::SaveModelToString(int num_iterations) const {
 
   ss << std::endl;
   int num_used_model = static_cast<int>(models_.size());
-  if (num_iterations > 0) {
-    num_used_model = std::min(num_iterations * num_class_, num_used_model);
+  if (num_iteration > 0) {
+    num_iteration += boost_from_average_ ? 1 : 0;
+    num_used_model = std::min(num_iteration * num_class_, num_used_model);
   }
   // output tree models
   for (int i = 0; i < num_used_model; ++i) {
