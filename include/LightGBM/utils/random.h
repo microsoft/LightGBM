@@ -64,13 +64,30 @@ public:
   */
   inline std::vector<int> Sample(int N, int K) {
     std::vector<int> ret;
+    ret.reserve(K);
     if (K > N || K < 0) {
       return ret;
-    }
-    for (int i = 0; i < N; ++i) {
-      double prob = (K - ret.size()) / static_cast<double>(N - i);
-      if (NextFloat() < prob) {
+    } else if (K == N) {
+      for (int i = 0; i < N; ++i) {
         ret.push_back(i);
+      }
+    } else if (K > N / 2) {
+      for (int i = 0; i < N; ++i) {
+        double prob = (K - ret.size()) / static_cast<double>(N - i);
+        if (NextFloat() < prob) {
+          ret.push_back(i);
+        }
+      }
+    } else {
+      int min_step = 1;
+      int avg_step = N / K;
+      int max_step = 2 * avg_step - min_step;
+      int start = -1;
+      for (int i = 0; i < K; ++i) {
+        int step = NextShort(min_step, max_step + 1);
+        start += step;
+        if (start >= N) { break; }
+        ret.push_back(start);
       }
     }
     return ret;
