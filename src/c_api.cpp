@@ -407,8 +407,9 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
   if (reference == nullptr) {
     // sample data first
     Random rand(io_config.data_random_seed);
-    const int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
+    int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
+    sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values(ncol);
     std::vector<std::vector<int>> sample_idx(ncol);
     for (size_t i = 0; i < sample_indices.size(); ++i) {
@@ -465,8 +466,9 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSR(const void* indptr,
   if (reference == nullptr) {
     // sample data first
     Random rand(io_config.data_random_seed);
-    const int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
+    int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
+    sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values;
     std::vector<std::vector<int>> sample_idx;
     for (size_t i = 0; i < sample_indices.size(); ++i) {
@@ -527,8 +529,9 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   if (reference == nullptr) {
     // sample data first
     Random rand(io_config.data_random_seed);
-    const int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
+    int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
+    sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values(ncol_ptr - 1);
     std::vector<std::vector<int>> sample_idx(ncol_ptr - 1);
   #pragma omp parallel for schedule(static)
