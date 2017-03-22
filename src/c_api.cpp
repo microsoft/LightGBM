@@ -423,8 +423,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
       }
     }
     DatasetLoader loader(io_config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values), 
-                                            Common::Vector2Ptr<int>(sample_idx), 
+    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values).data(), 
+                                            Common::Vector2Ptr<int>(sample_idx).data(), 
                                             static_cast<int>(sample_values.size()),
                                             Common::VectorSize<double>(sample_values).data(),
                                             sample_cnt, nrow));
@@ -487,8 +487,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSR(const void* indptr,
     }
     CHECK(num_col >= static_cast<int>(sample_values.size()));
     DatasetLoader loader(io_config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values),
-                                            Common::Vector2Ptr<int>(sample_idx),
+    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values).data(),
+                                            Common::Vector2Ptr<int>(sample_idx).data(),
                                             static_cast<int>(sample_values.size()),
                                             Common::VectorSize<double>(sample_values).data(),
                                             sample_cnt, nrow));
@@ -546,8 +546,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
       }
     }
     DatasetLoader loader(io_config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values),
-                                            Common::Vector2Ptr<int>(sample_idx),
+    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values).data(),
+                                            Common::Vector2Ptr<int>(sample_idx).data(),
                                             static_cast<int>(sample_values.size()),
                                             Common::VectorSize<double>(sample_values).data(),
                                             sample_cnt, nrow));

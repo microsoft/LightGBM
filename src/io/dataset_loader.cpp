@@ -487,7 +487,9 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
       feature_names_.push_back(str_buf.str());
     }
   }
-  const data_size_t filter_cnt = static_cast<data_size_t>(static_cast<double>(0.95 * io_config_.min_data_in_leaf) / num_data * num_col);
+
+  const data_size_t filter_cnt = static_cast<data_size_t>(
+    static_cast<double>(io_config_.min_data_in_leaf * total_sample_size) / num_data);
 
   #pragma omp parallel for schedule(guided)
   for (int i = 0; i < num_col; ++i) {
@@ -701,7 +703,8 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
   }
   dataset->feature_names_ = feature_names_;
   std::vector<std::unique_ptr<BinMapper>> bin_mappers(sample_values.size());
-  const data_size_t filter_cnt = static_cast<data_size_t>(static_cast<double>(0.95 * io_config_.min_data_in_leaf) / dataset->num_data_ * sample_values.size());
+  const data_size_t filter_cnt = static_cast<data_size_t>(
+    static_cast<double>(io_config_.min_data_in_leaf* sample_values.size()) / dataset->num_data_);
 
   // start find bins
   if (num_machines == 1) {
@@ -815,7 +818,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     }
   }
   sample_values.clear();
-  dataset->Construct(bin_mappers, Common::Vector2Ptr<int>(sample_indices),
+  dataset->Construct(bin_mappers, Common::Vector2Ptr<int>(sample_indices).data(),
                      Common::VectorSize<int>(sample_indices).data(), sample_data.size(), io_config_);
 }
 

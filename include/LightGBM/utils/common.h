@@ -425,8 +425,8 @@ inline static double ApproximateHessianWithGaussian(const double y, const double
 }
 
 template <typename T>
-inline static T** Vector2Ptr(std::vector<std::vector<T>>& data) {
-  T** ptr = new T*[data.size()];
+inline static std::vector<T*> Vector2Ptr(std::vector<std::vector<T>>& data) {
+  std::vector<T*> ptr(data.size());
   for (size_t i = 0; i < data.size(); ++i) {
     ptr[i] = data[i].data();
   }
