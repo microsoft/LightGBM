@@ -25,18 +25,20 @@ public:
     int64_t total_size = static_cast<int64_t>(num_data_) * num_class;
     score_.resize(total_size);
     // default start score is zero
-#pragma omp parallel for schedule(static)
+  #pragma omp parallel for schedule(static)
     for (int64_t i = 0; i < total_size; ++i) {
       score_[i] = 0.0f;
     }
+    has_init_score_ = false;
     const double* init_score = data->metadata().init_score();
     // if exists initial score, will start from it
     if (init_score != nullptr) {
-      if ((data->metadata().num_init_score() % num_data_) != 0 
-        || (data->metadata().num_init_score() / num_data_) != num_class) {
+      if ((data->metadata().num_init_score() % num_data_) != 0
+          || (data->metadata().num_init_score() / num_data_) != num_class) {
         Log::Fatal("number of class for initial score error");
       }
-#pragma omp parallel for schedule(static)
+      has_init_score_ = true;
+    #pragma omp parallel for schedule(static)
       for (int64_t i = 0; i < total_size; ++i) {
         score_[i] = init_score[i];
       }
@@ -45,6 +47,16 @@ public:
   /*! \brief Destructor */
   ~ScoreUpdater() {
 
+  }
+
+  inline bool has_init_score() const { return has_init_score_; }
+
+  inline void AddScore(double val, int curr_class) {
+    int64_t offset = curr_class * num_data_;
+  #pragma omp parallel for schedule(static)
+    for (int64_t i = 0; i < num_data_; ++i) {
+      score_[offset + i] += val;
+    }
   }
   /*!
   * \brief Using tree model to get prediction number, then adding to scores for all data
@@ -74,7 +86,7 @@ public:
   * \param curr_class Current class for multiclass training
   */
   inline void AddScore(const Tree* tree, const data_size_t* data_indices,
-                                                  data_size_t data_cnt, int curr_class) {
+                       data_size_t data_cnt, int curr_class) {
     tree->AddPredictionToScore(data_, data_indices, data_cnt, score_.data() + curr_class * num_data_);
   }
   /*! \brief Pointer of score */
@@ -92,6 +104,7 @@ private:
   const Dataset* data_;
   /*! \brief Scores for data set */
   std::vector<double> score_;
+  bool has_init_score_;
 };
 
 }  // namespace LightGBM
