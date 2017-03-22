@@ -101,7 +101,7 @@ int GPUTreeLearner::GetNumWorkgroupsPerFeature(data_size_t leaf_num_data) {
   int exp_workgroups_per_feature = ceil(log2(x));
   double t = leaf_num_data / 1024.0;
   #if GPU_DEBUG >= 4
-  printf("Computing histogram for %d examples and (4 * %d) features\n", leaf_num_data, num_dense_feature4_);
+  printf("Computing histogram for %d examples and (%d * %d) features\n", leaf_num_data, dword_features_, num_dense_feature4_);
   printf("We can have at most %d workgroups per feature4 for efficiency reasons.\n"
   "Best workgroup size per feature for full utilization is %d\n", (int)ceil(t), (1 << exp_workgroups_per_feature));
   #endif
@@ -154,10 +154,10 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data) {
   }
   // copy the results asynchronously. Size depends on if double precision is used
   size_t hist_bin_entry_sz = tree_config_->gpu_use_dp ? sizeof(HistogramBinEntry) : sizeof(GPUHistogramBinEntry);
-  size_t size = num_dense_feature4_ * 4 * device_bin_size_ * hist_bin_entry_sz;
+  size_t output_size = num_dense_feature4_ * dword_features_ * device_bin_size_ * hist_bin_entry_sz;
   boost::compute::event histogram_wait_event;
   host_histogram_outputs_ = (void*)queue_.enqueue_map_buffer_async(device_histogram_outputs_, boost::compute::command_queue::map_read, 
-                                                                   0, size, histogram_wait_event, kernel_wait_obj_);
+                                                                   0, output_size, histogram_wait_event, kernel_wait_obj_);
   // we will wait for this object in WaitAndGetHistograms
   histograms_wait_obj_ = boost::compute::wait_list(histogram_wait_event);
 }
@@ -208,8 +208,8 @@ void GPUTreeLearner::AllocateGPUMemory() {
       num_dense_features_++;
     }
   }
-  // how many 4-feature tuples we have
-  num_dense_feature4_ = (num_dense_features_ + 3) / 4;
+  // how many feature tuples we have
+  num_dense_feature4_ = (num_dense_features_ + (dword_features_ - 1)) / dword_features_;
   // leave some safe margin for prefetching
   int allocated_num_data_ = num_data_ + 256 * (1 << kMaxLogWorkgroupsPerFeature);
   // allocate memory for all features (FIXME: 4 GB barrier on some devices, need to split to multiple buffers)
@@ -246,11 +246,11 @@ void GPUTreeLearner::AllocateGPUMemory() {
   size_t hist_bin_entry_sz = tree_config_->gpu_use_dp ? sizeof(HistogramBinEntry) : sizeof(GPUHistogramBinEntry);
   Log::Info("Size of histogram bin entry: %d", hist_bin_entry_sz);
   // create output buffer, each feature has a histogram with device_bin_size_ bins,
-  // each work group generates a sub-histogram of 4 features.
+  // each work group generates a sub-histogram of dword_features_ features.
   if (!device_subhistograms_) {
     // only initialize once
     device_subhistograms_ = std::unique_ptr<boost::compute::vector<char>>(new boost::compute::vector<char>(
-                              kMaxNumWorkgroups * 4 * device_bin_size_ * hist_bin_entry_sz, ctx_));
+                              kMaxNumWorkgroups * dword_features_ * device_bin_size_ * hist_bin_entry_sz, ctx_));
   }
   // create atomic counters for inter-group coordination
   sync_counters_.reset();
@@ -259,15 +259,15 @@ void GPUTreeLearner::AllocateGPUMemory() {
   boost::compute::fill(sync_counters_->begin(), sync_counters_->end(), 0, queue_);
   // The output buffer is allocated to host directly, to overlap compute and data transfer
   device_histogram_outputs_ = boost::compute::buffer(); // deallocate
-  device_histogram_outputs_ = boost::compute::buffer(ctx_, num_dense_feature4_ * 4 * device_bin_size_ * hist_bin_entry_sz, 
+  device_histogram_outputs_ = boost::compute::buffer(ctx_, num_dense_feature4_ * dword_features_ * device_bin_size_ * hist_bin_entry_sz, 
                            boost::compute::memory_object::write_only | boost::compute::memory_object::alloc_host_ptr, nullptr);
   // find the dense features and group then into feature4
-  int i, k, copied_feature4 = 0, dense_ind[4];
+  int i, k, copied_feature4 = 0, dense_ind[dword_features_];
   dense_feature_map_.clear();
   device_bin_mults_.clear();
   sparse_feature_map_.clear();
   for (i = 0, k = 0; i < num_features_; ++i) {
-    // looking for 4 non-sparse features
+    // looking for dword_features_ non-sparse features
     if (ordered_bins_[i] == nullptr) {
       dense_ind[k] = i;
       // decide if we need to redistribute the bin
@@ -284,19 +284,18 @@ void GPUTreeLearner::AllocateGPUMemory() {
       sparse_feature_map_.push_back(i);
     }
     // found 
-    if (k == 4) {
+    if (k == dword_features_) {
       k = 0;
-      dense_feature_map_.push_back(dense_ind[0]);
-      dense_feature_map_.push_back(dense_ind[1]);
-      dense_feature_map_.push_back(dense_ind[2]);
-      dense_feature_map_.push_back(dense_ind[3]);
+      for (int j = 0; j < dword_features_; ++j) {
+        dense_feature_map_.push_back(dense_ind[j]);
+      }
       copied_feature4++;
     }
   }
   // for data transfer time
   auto start_time = std::chrono::steady_clock::now();
   // Now generate new data structure feature4, and copy data to the device
-  int nthreads = std::min(omp_get_max_threads(), (int)dense_feature_map_.size() / 4);
+  int nthreads = std::min(omp_get_max_threads(), (int)dense_feature_map_.size() / dword_features_);
   std::vector<Feature4*> host4_vecs(nthreads);
   std::vector<boost::compute::buffer> host4_bufs(nthreads);
   std::vector<Feature4*> host4_ptrs(nthreads);
@@ -311,72 +310,148 @@ void GPUTreeLearner::AllocateGPUMemory() {
                     0, num_data_ * sizeof(Feature4));
   }
   #pragma omp parallel for schedule(static)
-  for (unsigned int i = 0; i < dense_feature_map_.size() / 4; ++i) {
+  for (unsigned int i = 0; i < dense_feature_map_.size() / dword_features_; ++i) {
     int tid = omp_get_thread_num();
     Feature4* host4 = host4_ptrs[tid];
-    auto dense_ind = dense_feature_map_.begin() + i * 4;
-    auto dev_bin_mult = device_bin_mults_.begin() + i * 4;
+    auto dense_ind = dense_feature_map_.begin() + i * dword_features_;
+    auto dev_bin_mult = device_bin_mults_.begin() + i * dword_features_;
     #if GPU_DEBUG >= 1
-    printf("Copying feature %d, %d, %d, %d to device\n", dense_ind[0], dense_ind[1], dense_ind[2], dense_ind[3]);
+    printf("Copying feature ");
+    for (int l = 0; l < dword_features_; ++l) {
+      printf("%d ", dense_ind[l]);
+    }
+    printf("to devices\n");
     #endif
-    // this guarantees that the RawGet() function is inlined, rather than using virtual function dispatching
-    for (int s_idx = 0; s_idx < 4; ++s_idx) {
-      BinIterator* bin_iter = train_data_->FeatureIterator(dense_ind[s_idx]);
-      if (dynamic_cast<DenseBinIterator<uint8_t>*>(bin_iter) != 0) {
-        // Dense bin
-        DenseBinIterator<uint8_t> iter = *static_cast<DenseBinIterator<uint8_t>*>(bin_iter);
-        for (int j = 0; j < num_data_; ++j) {
-          host4[j].s[s_idx] = iter.RawGet(j) * dev_bin_mult[s_idx] + ((j+s_idx) & (dev_bin_mult[s_idx] - 1));
+    if (dword_features_ == 8) {
+      // one feature datapoint is 4 bits
+      BinIterator* bin_iters[8];
+      for (int s_idx = 0; s_idx < 8; ++s_idx) {
+        bin_iters[s_idx] = train_data_->FeatureIterator(dense_ind[s_idx]);
+        if (dynamic_cast<Dense4bitsBinIterator*>(bin_iters[s_idx]) == 0) {
+          Log::Fatal("GPU tree learner assumes that all bins are Dense4bitsBin when num_bin <= 16, but feature %d is not.", dense_ind[s_idx]);
         }
       }
-      else if (dynamic_cast<Dense4bitsBinIterator*>(bin_iter) != 0) {
-        // Dense 4-bit bin
-        Dense4bitsBinIterator iter = *static_cast<Dense4bitsBinIterator*>(bin_iter);
-        for (int j = 0; j < num_data_; ++j) {
-          host4[j].s[s_idx] = iter.RawGet(j) * dev_bin_mult[s_idx] + ((j+s_idx) & (dev_bin_mult[s_idx] - 1));
+      // this guarantees that the RawGet() function is inlined, rather than using virtual function dispatching
+      Dense4bitsBinIterator iters[8] = {
+        *static_cast<Dense4bitsBinIterator*>(bin_iters[0]),
+        *static_cast<Dense4bitsBinIterator*>(bin_iters[1]),
+        *static_cast<Dense4bitsBinIterator*>(bin_iters[2]),
+        *static_cast<Dense4bitsBinIterator*>(bin_iters[3]),
+        *static_cast<Dense4bitsBinIterator*>(bin_iters[4]),
+        *static_cast<Dense4bitsBinIterator*>(bin_iters[5]),
+        *static_cast<Dense4bitsBinIterator*>(bin_iters[6]),
+        *static_cast<Dense4bitsBinIterator*>(bin_iters[7])};
+      for (int j = 0; j < num_data_; ++j) {
+        host4[j].s0 = (iters[0].RawGet(j) * dev_bin_mult[0] + ((j+0) & (dev_bin_mult[0] - 1))) 
+                    |((iters[1].RawGet(j) * dev_bin_mult[1] + ((j+1) & (dev_bin_mult[1] - 1))) << 4);
+        host4[j].s1 = (iters[2].RawGet(j) * dev_bin_mult[2] + ((j+2) & (dev_bin_mult[2] - 1))) 
+                    |((iters[3].RawGet(j) * dev_bin_mult[3] + ((j+3) & (dev_bin_mult[3] - 1))) << 4);
+        host4[j].s2 = (iters[4].RawGet(j) * dev_bin_mult[4] + ((j+4) & (dev_bin_mult[4] - 1))) 
+                    |((iters[5].RawGet(j) * dev_bin_mult[5] + ((j+5) & (dev_bin_mult[5] - 1))) << 4);
+        host4[j].s3 = (iters[6].RawGet(j) * dev_bin_mult[6] + ((j+6) & (dev_bin_mult[6] - 1))) 
+                    |((iters[7].RawGet(j) * dev_bin_mult[7] + ((j+7) & (dev_bin_mult[7] - 1))) << 4);
+      }
+    }
+    else if (dword_features_ == 4) {
+      // one feature datapoint is one byte
+      for (int s_idx = 0; s_idx < 4; ++s_idx) {
+        BinIterator* bin_iter = train_data_->FeatureIterator(dense_ind[s_idx]);
+        // this guarantees that the RawGet() function is inlined, rather than using virtual function dispatching
+        if (dynamic_cast<DenseBinIterator<uint8_t>*>(bin_iter) != 0) {
+          // Dense bin
+          DenseBinIterator<uint8_t> iter = *static_cast<DenseBinIterator<uint8_t>*>(bin_iter);
+          for (int j = 0; j < num_data_; ++j) {
+            host4[j].s[s_idx] = iter.RawGet(j) * dev_bin_mult[s_idx] + ((j+s_idx) & (dev_bin_mult[s_idx] - 1));
+          }
+        }
+        else if (dynamic_cast<Dense4bitsBinIterator*>(bin_iter) != 0) {
+          // Dense 4-bit bin
+          Dense4bitsBinIterator iter = *static_cast<Dense4bitsBinIterator*>(bin_iter);
+          for (int j = 0; j < num_data_; ++j) {
+            host4[j].s[s_idx] = iter.RawGet(j) * dev_bin_mult[s_idx] + ((j+s_idx) & (dev_bin_mult[s_idx] - 1));
+          }
+        }
+        else {
+          Log::Fatal("Bug in GPU tree builder: only DenseBin and Dense4bitsBin are supported!"); 
         }
       }
-      else {
-        Log::Fatal("BUG in GPU tree builder: only DenseBin and Dense4bitsBin are supported!"); 
-      }
+    }
+    else {
+      Log::Fatal("Bug in GPU tree builder: dword_features_ can only be 4 or 8!");
     }
     queue_.enqueue_write_buffer(device_features_->get_buffer(),
                         i * num_data_ * sizeof(Feature4), num_data_ * sizeof(Feature4), host4);
     #if GPU_DEBUG >= 1
-    printf("first example of features are: %d %d %d %d\n", host4[0].s0, host4[0].s1, host4[0].s2, host4[0].s3);
-    printf("Feature %d, %d, %d, %d copied to device with multiplier %d %d %d %d\n", 
-           dense_ind[0], dense_ind[1], dense_ind[2], dense_ind[3], dev_bin_mult[0], dev_bin_mult[1], dev_bin_mult[2], dev_bin_mult[3]);
+    printf("first example of feature tuple is: %d %d %d %d\n", host4[0].s0, host4[0].s1, host4[0].s2, host4[0].s3);
+    printf("Features copied to device with multiplier ");
+    for (int l = 0; l < dword_features_; ++l) {
+      printf("%d ", dev_bin_mult[l]);
+    }
+    printf("\n");
     #endif
   }
   if (k != 0) {
     Feature4* host4 = host4_ptrs[0];
+    if (dword_features_ == 8) {
+      memset(host4, 0, num_data_ * sizeof(Feature4));
+    }
     #if GPU_DEBUG >= 1
     printf("%d features left\n", k);
     #endif
     for (i = 0; i < k; ++i) {
-      BinIterator* bin_iter = train_data_->FeatureIterator(dense_ind[i]);
-      if (dynamic_cast<DenseBinIterator<uint8_t>*>(bin_iter) != 0) {
-        for (int j = 0; j < num_data_; ++j) {
-          DenseBinIterator<uint8_t> iter = *static_cast<DenseBinIterator<uint8_t>*>(bin_iter);
-          host4[j].s[i] = iter.RawGet(j)
-                          * device_bin_mults_[copied_feature4 * 4 + i] + ((j+i) & (device_bin_mults_[copied_feature4 * 4 + i] - 1));
+      if (dword_features_ == 8) {
+        BinIterator* bin_iter = train_data_->FeatureIterator(dense_ind[i]);
+        if (dynamic_cast<Dense4bitsBinIterator*>(bin_iter) != 0) {
+          Dense4bitsBinIterator iter = *static_cast<Dense4bitsBinIterator*>(bin_iter);
+          for (int j = 0; j < num_data_; ++j) {
+            host4[j].s[i >> 1] |= ((iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i]
+                                + ((j+i) & (device_bin_mults_[copied_feature4 * dword_features_ + i] - 1)))
+                               << ((i & 1) << 2));
+          }
+        }
+        else {
+          Log::Fatal("GPU tree learner assumes that all bins are Dense4bitsBin when num_bin <= 16, but feature %d is not.", dense_ind[i]);
         }
       }
-      else if (dynamic_cast<Dense4bitsBinIterator*>(bin_iter) != 0) {
-        for (int j = 0; j < num_data_; ++j) {
+      else if (dword_features_ == 4) {
+        BinIterator* bin_iter = train_data_->FeatureIterator(dense_ind[i]);
+        if (dynamic_cast<DenseBinIterator<uint8_t>*>(bin_iter) != 0) {
+          DenseBinIterator<uint8_t> iter = *static_cast<DenseBinIterator<uint8_t>*>(bin_iter);
+          for (int j = 0; j < num_data_; ++j) {
+            host4[j].s[i] = iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i] 
+                          + ((j+i) & (device_bin_mults_[copied_feature4 * dword_features_ + i] - 1));
+          }
+        }
+        else if (dynamic_cast<Dense4bitsBinIterator*>(bin_iter) != 0) {
           Dense4bitsBinIterator iter = *static_cast<Dense4bitsBinIterator*>(bin_iter);
-          host4[j].s[i] = iter.RawGet(j)
-                          * device_bin_mults_[copied_feature4 * 4 + i] + ((j+i) & (device_bin_mults_[copied_feature4 * 4 + i] - 1));
+          for (int j = 0; j < num_data_; ++j) {
+            host4[j].s[i] = iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i] 
+                          + ((j+i) & (device_bin_mults_[copied_feature4 * dword_features_ + i] - 1));
+          }
+        }
+        else {
+          Log::Fatal("BUG in GPU tree builder: only DenseBin and Dense4bitsBin are supported!"); 
         }
       }
       else {
-        Log::Fatal("BUG in GPU tree builder: only DenseBin and Dense4bitsBin are supported!"); 
+        Log::Fatal("Bug in GPU tree builder: dword_features_ can only be 4 or 8!");
       }
     }
-    for (int j = 0; j < num_data_; ++j) {
-      for (i = k; i < 4; ++i) {
-        // fill this empty feature to some "random" value
-        host4[j].s[i] = j;
+    // fill the leftover features
+    if (dword_features_ == 8) {
+      for (int j = 0; j < num_data_; ++j) {
+        for (i = k; i < dword_features_; ++i) {
+          // fill this empty feature to some "random" value
+          host4[j].s[i >> 1] |= ((j & 0xf) << ((i & 1) << 2));
+        }
+      }
+    }
+    else if (dword_features_ == 4) {
+      for (int j = 0; j < num_data_; ++j) {
+        for (i = k; i < dword_features_; ++i) {
+          // fill this empty feature to some "random" value
+          host4[j].s[i] = j;
+        }
       }
     }
     // copying the last 1-3 features
@@ -408,7 +483,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
                                         *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
   }
   Log::Info("%d dense features (%.2f MB) transfered to GPU in %f secs. %d sparse features.", 
-            dense_feature_map_.size(), ((dense_feature_map_.size() + 3) / 4) * num_data_ * sizeof(Feature4) / (1024.0 * 1024.0), 
+            dense_feature_map_.size(), ((dense_feature_map_.size() + (dword_features_ - 1)) / dword_features_) * num_data_ * sizeof(Feature4) / (1024.0 * 1024.0), 
             end_time * 1e-3, sparse_feature_map_.size());
   #if GPU_DEBUG >= 1
   printf("Dense feature list (size %lu): ", dense_feature_map_.size());
@@ -457,21 +532,32 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   std::string kernel_source;
   std::string kernel_name;
   // determine which kernel to use based on the max number of bins
-  if (max_num_bin_ <= 64) {
+  if (max_num_bin_ <= 16) {
+    kernel_source = kernel16_src_;
+    kernel_name = "histogram16";
+    device_bin_size_ = 16;
+    dword_features_ = 8;
+  }
+  else if (max_num_bin_ <= 64) {
     kernel_source = kernel64_src_;
     kernel_name = "histogram64";
     device_bin_size_ = 64;
+    dword_features_ = 4;
   }
   else if ( max_num_bin_ <= 256) {
     kernel_source = kernel256_src_;
     kernel_name = "histogram256";
     device_bin_size_ = 256;
+    dword_features_ = 4;
   }
   else {
     Log::Fatal("bin size %d cannot run on GPU", max_num_bin_);
   }
   if(max_num_bin_ == 65) {
-    Log::Warning("Set max_bin to 63 is sugguested");
+    Log::Warning("Setting max_bin to 63 is sugguested for best performance");
+  }
+  if(max_num_bin_ == 17) {
+    Log::Warning("Setting max_bin to 15 is sugguested for best performance");
   }
   ctx_ = boost::compute::context(dev_);
   queue_ = boost::compute::command_queue(ctx_, dev_);

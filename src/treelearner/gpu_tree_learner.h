@@ -154,6 +154,10 @@ private:
   const char *kernel64_src_ = 
   #include "ocl/histogram64.cl"
   ;
+  /*! \brief GPU kernel for 64 bins */
+  const char *kernel16_src_ = 
+  #include "ocl/histogram16.cl"
+  ;
 
   /*! \brief a array of histogram kernels with different number
      of workgroups per feature */
@@ -163,6 +167,11 @@ private:
   std::vector<boost::compute::kernel> histogram_fulldata_kernels_;
   /*! \brief total number of dense features, which will be processed on GPU */
   int num_dense_features_;
+  /*! \brief On GPU we read one DWORD (4-bypte) of features of one example once.
+   *  With bin size > 16, there are 4 features per DWORD.
+   *  With bin size <=16, there are 8 features per DWORD.
+   * */
+  int dword_features_;
   /*! \brief total number of dense feature tuples on GPU.
    * Each feature tuple is 4-byte (4 features if each feature takes a byte) */
   int num_dense_feature4_;
