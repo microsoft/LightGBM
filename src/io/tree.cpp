@@ -375,18 +375,24 @@ Tree::Tree(const std::string& str) {
       }
     }
   }
-  if (key_vals.count("num_leaves") <= 0 || key_vals.count("split_feature") <= 0
-    || key_vals.count("split_gain") <= 0 || key_vals.count("threshold") <= 0
-    || key_vals.count("left_child") <= 0 || key_vals.count("right_child") <= 0
-    || key_vals.count("leaf_parent") <= 0 || key_vals.count("leaf_value") <= 0
-    || key_vals.count("internal_value") <= 0 || key_vals.count("internal_count") <= 0
-    || key_vals.count("leaf_count") <= 0 || key_vals.count("shrinkage") <= 0
-    || key_vals.count("decision_type") <= 0
-    ) {
+  if (key_vals.count("num_leaves") <= 0) {
     Log::Fatal("Tree model string format error");
   }
 
   Common::Atoi(key_vals["num_leaves"].c_str(), &num_leaves_);
+
+  if (num_leaves_ <= 1) { return; }
+
+  if (key_vals.count("split_feature") <= 0
+      || key_vals.count("split_gain") <= 0 || key_vals.count("threshold") <= 0
+      || key_vals.count("left_child") <= 0 || key_vals.count("right_child") <= 0
+      || key_vals.count("leaf_parent") <= 0 || key_vals.count("leaf_value") <= 0
+      || key_vals.count("internal_value") <= 0 || key_vals.count("internal_count") <= 0
+      || key_vals.count("leaf_count") <= 0 || key_vals.count("shrinkage") <= 0
+      || key_vals.count("decision_type") <= 0
+      ) {
+    Log::Fatal("Tree model string format error");
+  }
 
   left_child_ = Common::StringToArray<int>(key_vals["left_child"], ' ', num_leaves_ - 1);
   right_child_ = Common::StringToArray<int>(key_vals["right_child"], ' ', num_leaves_ - 1);

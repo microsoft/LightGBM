@@ -217,6 +217,7 @@ public:
   int drop_seed = 4;
   double top_rate = 0.2f;
   double other_rate = 0.1f;
+  bool boost_from_average = true;
   std::string tree_learner_type = "serial";
   TreeConfig tree_config;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;

@@ -339,6 +339,7 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   GetBool(params, "uniform_drop", &uniform_drop);
   GetDouble(params, "top_rate", &top_rate);
   GetDouble(params, "other_rate", &other_rate);
+  GetBool(params, "boost_from_average", &boost_from_average);
   CHECK(drop_rate <= 1.0 && drop_rate >= 0.0);
   CHECK(skip_drop <= 1.0 && skip_drop >= 0.0);
   GetTreeLearnerType(params);

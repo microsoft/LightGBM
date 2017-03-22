@@ -206,7 +206,7 @@ public:
   inline void SetNumIterationForPred(int num_iteration) override {
     num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_class_;
     if (num_iteration > 0) {
-      num_iteration_for_pred_ = std::min(num_iteration, num_iteration_for_pred_);
+      num_iteration_for_pred_ = std::min(num_iteration + (boost_from_average_ ? 1 : 0), num_iteration_for_pred_);
     }
   }
 
@@ -345,6 +345,7 @@ protected:
   std::unique_ptr<Dataset> tmp_subset_;
   bool is_use_subset_;
   std::vector<bool> is_class_end_;
+  bool boost_from_average_;
 };
 
 }  // namespace LightGBM
