@@ -49,18 +49,14 @@ bool NeedFilter(std::vector<int>& cnt_in_bin, int total_cnt, int filter_cnt, Bin
     int sum_left = 0;
     for (size_t i = 0; i < cnt_in_bin.size() - 1; ++i) {
       sum_left += cnt_in_bin[i];
-      if (sum_left >= filter_cnt) {
-        return false;
-      } else if (total_cnt - sum_left >= filter_cnt) {
+      if (sum_left >= filter_cnt && total_cnt - sum_left >= filter_cnt) {
         return false;
       }
     }
   } else {
     for (size_t i = 0; i < cnt_in_bin.size() - 1; ++i) {
       int sum_left = cnt_in_bin[i];
-      if (sum_left >= filter_cnt) {
-        return false;
-      } else if (total_cnt - sum_left >= filter_cnt) {
+      if (sum_left >= filter_cnt && total_cnt - sum_left >= filter_cnt) {
         return false;
       }
     }

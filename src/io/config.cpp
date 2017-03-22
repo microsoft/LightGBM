@@ -141,8 +141,8 @@ void OverallConfig::CheckParamConflict() {
   bool objective_type_multiclass = (objective_type == std::string("multiclass"));
   int num_class_check = boosting_config.num_class;
   if (objective_type_multiclass) {
-    if (num_class_check <= 2) {
-      Log::Fatal("Number of classes should be specified and greater than 2 for multiclass training");
+    if (num_class_check <= 1) {
+      Log::Fatal("Number of classes should be specified and greater than 1 for multiclass training");
     }
   } else {
     if (task_type == TaskType::kTrain && num_class_check != 1) {
