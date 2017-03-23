@@ -121,9 +121,17 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data) {
   // each 2^exp_workgroups_per_feature workgroups work on a feature4 tuple
   int exp_workgroups_per_feature = GetNumWorkgroupsPerFeature(leaf_num_data);
   int num_workgroups = (1 << exp_workgroups_per_feature) * num_dense_feature4_;
-  if (num_workgroups > kMaxNumWorkgroups) {
-    num_workgroups = kMaxNumWorkgroups;
-    Log::Warning("BUG detected, num_workgroups %d too large!", num_workgroups);
+  if (num_workgroups > preallocd_max_num_wg_) {
+    preallocd_max_num_wg_ = num_workgroups;
+    Log::Info("Increasing preallocd_max_num_wg_ to %d for launching more workgroups.", preallocd_max_num_wg_);
+    device_subhistograms_.reset(new boost::compute::vector<char>(
+                              preallocd_max_num_wg_ * dword_features_ * device_bin_size_ * hist_bin_entry_sz_, ctx_));
+    // we need to refresh the kernel arguments after reallocating
+    for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
+      // The only argument that needs to be changed later is num_data_
+      histogram_kernels_[i].set_arg(6, *device_subhistograms_);
+      histogram_fulldata_kernels_[i].set_arg(6, *device_subhistograms_);
+    }
   }
   #if GPU_DEBUG >= 4
   printf("setting exp_workgroups_per_feature to %d, using %u work groups\n", exp_workgroups_per_feature, num_workgroups);
@@ -153,8 +161,7 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data) {
                        queue_.enqueue_1d_range_kernel(histogram_kernels_[exp_workgroups_per_feature], 0, num_workgroups * 256, 256));
   }
   // copy the results asynchronously. Size depends on if double precision is used
-  size_t hist_bin_entry_sz = tree_config_->gpu_use_dp ? sizeof(HistogramBinEntry) : sizeof(GPUHistogramBinEntry);
-  size_t output_size = num_dense_feature4_ * dword_features_ * device_bin_size_ * hist_bin_entry_sz;
+  size_t output_size = num_dense_feature4_ * dword_features_ * device_bin_size_ * hist_bin_entry_sz_;
   boost::compute::event histogram_wait_event;
   host_histogram_outputs_ = (void*)queue_.enqueue_map_buffer_async(device_histogram_outputs_, boost::compute::command_queue::map_read, 
                                                                    0, output_size, histogram_wait_event, kernel_wait_obj_);
@@ -243,14 +250,14 @@ void GPUTreeLearner::AllocateGPUMemory() {
   device_data_indices_ = std::unique_ptr<boost::compute::vector<data_size_t>>(new boost::compute::vector<data_size_t>(allocated_num_data_, ctx_));
   boost::compute::fill(device_data_indices_->begin(), device_data_indices_->end(), 0, queue_);
   // histogram bin entry size depends on the precision (single/double)
-  size_t hist_bin_entry_sz = tree_config_->gpu_use_dp ? sizeof(HistogramBinEntry) : sizeof(GPUHistogramBinEntry);
-  Log::Info("Size of histogram bin entry: %d", hist_bin_entry_sz);
+  hist_bin_entry_sz_ = tree_config_->gpu_use_dp ? sizeof(HistogramBinEntry) : sizeof(GPUHistogramBinEntry);
+  Log::Info("Size of histogram bin entry: %d", hist_bin_entry_sz_);
   // create output buffer, each feature has a histogram with device_bin_size_ bins,
   // each work group generates a sub-histogram of dword_features_ features.
   if (!device_subhistograms_) {
     // only initialize once
     device_subhistograms_ = std::unique_ptr<boost::compute::vector<char>>(new boost::compute::vector<char>(
-                              kMaxNumWorkgroups * dword_features_ * device_bin_size_ * hist_bin_entry_sz, ctx_));
+                              preallocd_max_num_wg_ * dword_features_ * device_bin_size_ * hist_bin_entry_sz_, ctx_));
   }
   // create atomic counters for inter-group coordination
   sync_counters_.reset();
@@ -259,7 +266,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
   boost::compute::fill(sync_counters_->begin(), sync_counters_->end(), 0, queue_);
   // The output buffer is allocated to host directly, to overlap compute and data transfer
   device_histogram_outputs_ = boost::compute::buffer(); // deallocate
-  device_histogram_outputs_ = boost::compute::buffer(ctx_, num_dense_feature4_ * dword_features_ * device_bin_size_ * hist_bin_entry_sz, 
+  device_histogram_outputs_ = boost::compute::buffer(ctx_, num_dense_feature4_ * dword_features_ * device_bin_size_ * hist_bin_entry_sz_, 
                            boost::compute::memory_object::write_only | boost::compute::memory_object::alloc_host_ptr, nullptr);
   // find the dense features and group then into feature4
   int i, k, copied_feature4 = 0, dense_ind[dword_features_];

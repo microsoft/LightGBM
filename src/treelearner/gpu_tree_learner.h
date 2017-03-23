@@ -132,10 +132,11 @@ private:
     const score_t* gradients, const score_t* hessians,
     score_t* ordered_gradients, score_t* ordered_hessians);
 
-  /*! brief Max total number of workgroups */
-  const int kMaxNumWorkgroups = 1024;
   /*! brief Log2 of max number of workgroups per feature*/
   const int kMaxLogWorkgroupsPerFeature = 10; // 2^10
+  /*! brief Max total number of workgroups with preallocated workspace.
+   *        If we use more than this number of workgroups, we have to reallocate subhistograms */
+  int preallocd_max_num_wg_ = 1024;
 
   /*! \brief True if bagging is used */
   bool use_bagging_;
@@ -180,6 +181,8 @@ private:
   int max_num_bin_;
   /*! \brief Used GPU kernel bin size (64, 256) */
   int device_bin_size_;
+  /*! \brief Size of histogram bin entry, depeding if single or double precision is used */
+  size_t hist_bin_entry_sz_;
   /*! \brief Indices of all dense features */
   std::vector<int> dense_feature_map_;
   /*! \brief Indices of all sparse features */
