@@ -84,7 +84,7 @@ private:
   void DroppingTrees() {
     drop_index_.clear();
     bool is_skip = random_for_drop_.NextFloat() < gbdt_config_->skip_drop;
-    // select dropping tree indexes based on drop_rate and tree weights
+    // select dropping tree indices based on drop_rate and tree weights
     if (!is_skip) {
       double drop_rate = gbdt_config_->drop_rate;
       if (!gbdt_config_->uniform_drop) {
@@ -180,7 +180,7 @@ private:
   std::vector<double> tree_weight_;
   /*! \brief sum weights of all trees */
   double sum_weight_;
-  /*! \brief The indexes of dropping trees */
+  /*! \brief The indices of dropping trees */
   std::vector<int> drop_index_;
   /*! \brief Random generator, used to select dropping trees */
   Random random_for_drop_;
