@@ -84,7 +84,7 @@ void Dataset::Construct(
       ++cur_fidx;
     }
     feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(
-      new FeatureGroup(cur_cnt_features, cur_bin_mappers, num_data_, io_config.is_enable_sparse)));
+      new FeatureGroup(cur_cnt_features, cur_bin_mappers, num_data_, io_config.sparse_threshold, io_config.is_enable_sparse)));
   }
   feature_groups_.shrink_to_fit();
   group_bin_boundaries_.clear();
@@ -141,6 +141,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
       dataset->feature_groups_[i]->num_feature_,
       bin_mappers,
       num_data_,
+      dataset->feature_groups_[i]->sparse_threshold_,
       is_enable_sparse));
   }
   feature_groups_.shrink_to_fit();
@@ -171,6 +172,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
       1,
       bin_mappers,
       num_data_,
+      dataset->feature_groups_[i]->sparse_threshold_,
       is_enable_sparse));
     feature2group_.push_back(i);
     feature2subfeature_.push_back(0);
