@@ -602,7 +602,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   histogram_fulldata_kernels_.resize(kMaxLogWorkgroupsPerFeature+1);
   #pragma omp parallel for schedule(guided)
   for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
-    auto program = boost::compute::program::create_with_source(kernel_source, ctx_);
+    boost::compute::program program;
     std::ostringstream opts;
     opts << " -D POWER_FEATURE_WORKGROUPS=" << i
          << " -D USE_CONSTANT_BUF=" << use_constants << " -D USE_DP_FLOAT=" << int(tree_config_->gpu_use_dp)
@@ -612,7 +612,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
     #endif
     // kernel with indices in an array
     try {
-      program.build(opts.str());
+      program = boost::compute::program::build_with_source(kernel_source, ctx_, opts.str());
     }
     catch (boost::compute::opencl_error &e) {
       if (program.build_log().size() > 0) {
@@ -625,9 +625,8 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
     histogram_kernels_[i] = program.create_kernel(kernel_name);
     opts << " -D IGNORE_INDICES=1";
     // kernel with all data indices (for root node)
-    program = boost::compute::program::create_with_source(kernel_source, ctx_);
     try {
-      program.build(opts.str());
+      program = boost::compute::program::build_with_source(kernel_source, ctx_, opts.str());
     }
     catch (boost::compute::opencl_error &e) {
       if (program.build_log().size() > 0) {

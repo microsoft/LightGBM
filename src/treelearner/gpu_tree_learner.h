@@ -18,6 +18,11 @@
 #include <random>
 #include <cmath>
 #include <memory>
+
+#define BOOST_COMPUTE_THREAD_SAFE
+#define BOOST_COMPUTE_HAVE_THREAD_LOCAL
+// Use Boost.Compute on-disk kernel cache
+#define BOOST_COMPUTE_USE_OFFLINE_CACHE
 #include <boost/compute/core.hpp>
 #include <boost/compute/memory/local_buffer.hpp>
 #include <boost/compute/algorithm/transform.hpp>

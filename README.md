@@ -26,9 +26,10 @@ The following dependencies should be installed before compilation:
   the interface to GPU, which is part of the Boost library since version 1.61.
   However, since we include the source code of Boost.Compute as a submodule, we
   only require the host has Boost 1.56 or later installed. We also use
-  Boost.Align for memory allocation. Both Boost.Compute and Boost.Align are
-  header-only so there is not need to provide any additional runtime Boost
-  libraries.
+  Boost.Align for memory allocation. Boost.Compute also replies on Boost.System
+  and Boost.Filesystem to store offline kernel cache. The following Debian 
+  packages should provide necessary libraries: 
+  `libboost-dev, libboost-system-dev, libboost-filesystem-dev`.
 
 - CMake 3.2 or later
 
