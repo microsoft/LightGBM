@@ -293,36 +293,29 @@ void GBDT::UpdateScoreOutOfBag(const Tree* tree, const int curr_class) {
 }
 
 bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) {
-  // boosting from average prediction.
-  if (models_.empty() && gbdt_config_->boost_from_average && !train_score_updater_->has_init_score()) {
+  // boosting from average prediction. It doesn't work well for binary classification, remove it for now.
+  if (models_.empty() 
+      && gbdt_config_->boost_from_average 
+      && !train_score_updater_->has_init_score()
+      && sigmoid_ < 0.0f) {
     std::vector<double> sum_per_class(num_class_, 0.0f);
     auto label = train_data_->metadata().label();
     if (num_class_ > 1) {
       for (data_size_t i = 0; i < num_data_; ++i) {
         sum_per_class[static_cast<int>(label[i])] += 1.0f;
       }
-    } else if(sigmoid_ < 0.0f){
+    } else {
       for (data_size_t i = 0; i < num_data_; ++i) {
         sum_per_class[0] += label[i];
       }
-    } else {
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        sum_per_class[0] += label[i] > 0;
-      }
-    }
-    std::vector<double > init_scores(num_class_);
-    for (int i = 0; i < num_class_; ++i) {
-      init_scores[i] = sum_per_class[i] / num_data_;
-    }
-    if (object_function_ != nullptr) {
-      init_scores = object_function_->ConvertToRawScore(init_scores);
-    }
+    } 
     for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
+      double init_score = sum_per_class[curr_class] / num_data_;
       std::unique_ptr<Tree> new_tree(new Tree(2));
-      new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0, init_scores[curr_class], init_scores[curr_class], 0, num_data_, 1);
-      train_score_updater_->AddScore(init_scores[curr_class], curr_class);
+      new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0, init_score, init_score, 0, num_data_, 1);
+      train_score_updater_->AddScore(init_score, curr_class);
       for (auto& score_updater : valid_score_updater_) {
-        score_updater->AddScore(init_scores[curr_class], curr_class);
+        score_updater->AddScore(init_score, curr_class);
       }
       models_.push_back(std::move(new_tree));
     }
