@@ -37,10 +37,6 @@ public:
       }
     }
     Log::Info("Number of positive: %d, number of negative: %d", cnt_positive, cnt_negative);
-    // cannot continue if all sample are same class
-    if (cnt_positive == 0 || cnt_negative == 0) {
-      Log::Fatal("Training data only contains one class");
-    }
     // use -1 for negative class, and 1 for positive class
     label_val_[0] = -1;
     label_val_[1] = 1;
@@ -48,7 +44,7 @@ public:
     label_weights_[0] = 1.0f;
     label_weights_[1] = 1.0f;
     // if using unbalance, change the labels weight
-    if (is_unbalance_) {
+    if (is_unbalance_ && cnt_positive > 0 && cnt_negative > 0) {
       if (cnt_positive > cnt_negative) {
         label_weights_[1] = 1.0f;
         label_weights_[0] = static_cast<double>(cnt_positive) / cnt_negative;

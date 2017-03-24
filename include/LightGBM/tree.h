@@ -10,6 +10,7 @@
 
 namespace LightGBM {
 
+#define kMaxTreeOutput (100)
 
 /*!
 * \brief Tree model
@@ -46,8 +47,8 @@ public:
   * \return The index of new leaf.
   */
   int Split(int leaf, int feature, BinType bin_type, uint32_t threshold, int real_feature,
-    double threshold_double, double left_value,
-    double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain);
+            double threshold_double, double left_value,
+            double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain);
 
   /*! \brief Get the output of one leaf */
   inline double LeafOutput(int leaf) const { return leaf_value_[leaf]; }
@@ -63,9 +64,9 @@ public:
   * \param num_data Number of total data
   * \param score Will add prediction to score
   */
-  void AddPredictionToScore(const Dataset* data, 
-    data_size_t num_data,
-    double* score) const;
+  void AddPredictionToScore(const Dataset* data,
+                            data_size_t num_data,
+                            double* score) const;
 
   /*!
   * \brief Adding prediction value of this tree model to scorese
@@ -79,7 +80,7 @@ public:
                             data_size_t num_data, double* score) const;
 
   /*!
-  * \brief Prediction on one record 
+  * \brief Prediction on one record
   * \param feature_values Feature value of this record
   * \return Prediction result
   */
@@ -101,9 +102,11 @@ public:
   * \param rate The factor of shrinkage
   */
   inline void Shrinkage(double rate) {
-#pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < num_leaves_; ++i) {
       leaf_value_[i] *= rate;
+      if (leaf_value_[i] > kMaxTreeOutput) { leaf_value_[i] = kMaxTreeOutput; } 
+      else if (leaf_value_[i] < -kMaxTreeOutput) { leaf_value_[i] = -kMaxTreeOutput; }
     }
     shrinkage_ *= rate;
   }
@@ -216,8 +219,8 @@ inline int Tree::GetLeaf(const double* feature_values) const {
   int node = 0;
   while (node >= 0) {
     if (decision_funs[decision_type_[node]](
-        feature_values[split_feature_[node]],
-        threshold_[node])) {
+      feature_values[split_feature_[node]],
+      threshold_[node])) {
       node = left_child_[node];
     } else {
       node = right_child_[node];
