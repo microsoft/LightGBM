@@ -301,9 +301,13 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
       for (data_size_t i = 0; i < num_data_; ++i) {
         sum_per_class[static_cast<int>(label[i])] += 1.0f;
       }
-    } else {
+    } else if(sigmoid_ < 0.0f){
       for (data_size_t i = 0; i < num_data_; ++i) {
         sum_per_class[0] += label[i];
+      }
+    } else {
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        sum_per_class[0] += label[i] > 0;
       }
     }
     std::vector<double > init_scores(num_class_);
