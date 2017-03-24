@@ -86,18 +86,6 @@ public:
     }
   }
 
-  std::vector<double> ConvertToRawScore(const std::vector<double>& preds) const override {
-    std::vector<double> ret;
-    for (auto pred : preds) {
-      if (pred > kEpsilon && pred < 1.0f) {
-        ret.push_back(-std::log(1.0f / pred - 1.0f) / sigmoid_);
-      } else {
-        ret.push_back(0.0f);
-      }
-    }
-    return ret;
-  }
-
   const char* GetName() const override {
     return "binary";
   }

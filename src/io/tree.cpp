@@ -74,7 +74,7 @@ int Tree::Split(int leaf, int feature, BinType bin_type, uint32_t threshold_bin,
   }
   threshold_in_bin_[new_node_idx] = threshold_bin;
   threshold_[new_node_idx] = threshold_double;
-  split_gain_[new_node_idx] = gain;
+  split_gain_[new_node_idx] = gain == std::numeric_limits<double>::infinity() ? std::numeric_limits<double>::max() : gain;
   // add two new leaves
   left_child_[new_node_idx] = ~leaf;
   right_child_[new_node_idx] = ~num_leaves_;
