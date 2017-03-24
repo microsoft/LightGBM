@@ -93,6 +93,18 @@ public:
     }
   }
 
+  std::vector<double> ConvertToRawScore(const std::vector<double>& preds) const override {
+    std::vector<double> ret;
+    for (auto pred : preds) {
+      if (pred > kEpsilon) {
+        ret.push_back(std::log(pred));
+      } else {
+        ret.push_back(0);
+      }
+    }
+    return ret;
+  }
+
   const char* GetName() const override {
     return "multiclass";
   }

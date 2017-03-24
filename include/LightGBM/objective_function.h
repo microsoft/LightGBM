@@ -33,6 +33,10 @@ public:
 
   virtual const char* GetName() const = 0;
 
+  virtual std::vector<double> ConvertToRawScore(const std::vector<double>& preds) const {
+    return preds;
+  }
+
   ObjectiveFunction() = default;
   /*! \brief Disable copy */
   ObjectiveFunction& operator=(const ObjectiveFunction&) = delete;
