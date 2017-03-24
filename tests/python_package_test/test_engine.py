@@ -33,7 +33,7 @@ class template(object):
     def test_template(params={'objective': 'regression', 'metric': 'l2'},
                       X_y=load_boston(True), feval=mean_squared_error,
                       num_round=200, init_model=None, custom_eval=None,
-                      early_stopping_rounds=10,
+                      early_stopping_rounds=5,
                       return_data=False, return_model=False):
         params['verbose'], params['seed'] = -1, 42
         X_train, X_test, y_train, y_test = train_test_split(*X_y, test_size=0.1, random_state=42)
@@ -97,7 +97,7 @@ class TestEngine(unittest.TestCase):
         evals_result, ret = template.test_template(params, feval=mean_absolute_error,
                                                    num_round=80, init_model=model_name,
                                                    custom_eval=(lambda p, d: ('mae', mean_absolute_error(p, d.get_label()), False)))
-        self.assertLess(ret, 3)
+        self.assertLess(ret, 3.5)
         self.assertAlmostEqual(min(evals_result['eval']['l1']), ret, places=5)
         for l1, mae in zip(evals_result['eval']['l1'], evals_result['eval']['mae']):
             self.assertAlmostEqual(l1, mae, places=5)
