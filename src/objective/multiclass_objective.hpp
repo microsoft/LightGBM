@@ -61,10 +61,10 @@ public:
           size_t idx = static_cast<size_t>(num_data_) * k + i;
           if (label_int_[i] == k) {
             gradients[idx] = static_cast<score_t>(p - 1.0f) * label_pos_weights_[k];
-            hessians[idx] = static_cast<score_t>(2.0f * p * (1.0f - p))* label_pos_weights_[k];
+            hessians[idx] = static_cast<score_t>(p * (1.0f - p))* label_pos_weights_[k];
           } else {
             gradients[idx] = static_cast<score_t>(p);
-            hessians[idx] = static_cast<score_t>(2.0f * p * (1.0f - p));
+            hessians[idx] = static_cast<score_t>(p * (1.0f - p));
           }
         }
       }
@@ -82,10 +82,10 @@ public:
           size_t idx = static_cast<size_t>(num_data_) * k + i;
           if (label_int_[i] == k) {
             gradients[idx] = static_cast<score_t>((p - 1.0f) * weights_[i]) * label_pos_weights_[k];
-            hessians[idx] = static_cast<score_t>(2.0f * p * (1.0f - p) * weights_[i]) * label_pos_weights_[k];
+            hessians[idx] = static_cast<score_t>(p * (1.0f - p) * weights_[i]) * label_pos_weights_[k];
           } else {
             gradients[idx] = static_cast<score_t>(p * weights_[i]);
-            hessians[idx] = static_cast<score_t>(2.0f * p * (1.0f - p) * weights_[i]);
+            hessians[idx] = static_cast<score_t>(p * (1.0f - p) * weights_[i]);
           }
           
         }
