@@ -314,7 +314,9 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
     for (int i = 0; i < num_class_; ++i) {
       init_scores[i] = sum_per_class[i] / num_data_;
     }
-    init_scores = object_function_->ConvertToRawScore(init_scores);
+    if (object_function_ != nullptr) {
+      init_scores = object_function_->ConvertToRawScore(init_scores);
+    }
     for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
       std::unique_ptr<Tree> new_tree(new Tree(2));
       new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0, init_scores[curr_class], init_scores[curr_class], 0, num_data_, 1);
