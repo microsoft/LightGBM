@@ -1,4 +1,4 @@
-##Catalog
+## Catalog
 
 * [Data Structure API](Python-API.md#basic-data-structure-api)
     - [Dataset](Python-API.md#dataset)
@@ -29,11 +29,11 @@ The methods of each Class is in alphabetical order.
 
 ----
 
-##Basic Data Structure API
+## Basic Data Structure API
 
-###Dataset
+### Dataset
 
-####__init__(data, label=None, max_bin=255, reference=None, weight=None, group=None, silent=False, feature_name='auto', categorical_feature='auto', params=None, free_raw_data=True)
+#### __init__(data, label=None, max_bin=255, reference=None, weight=None, group=None, silent=False, feature_name='auto', categorical_feature='auto', params=None, free_raw_data=True)
 
     Parameters
     ----------
@@ -66,7 +66,7 @@ The methods of each Class is in alphabetical order.
         True if need to free raw data after construct inner dataset
 
 
-####create_valid(data, label=None, weight=None, group=None, silent=False, params=None)
+#### create_valid(data, label=None, weight=None, group=None, silent=False, params=None)
 
     Create validation data align with current dataset.
 
@@ -234,7 +234,7 @@ The methods of each Class is in alphabetical order.
         Other parameters
 
 
-###Booster
+### Booster
 
 ####__init__(params=None, train_set=None, model_file=None, silent=False)
 
