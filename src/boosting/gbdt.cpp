@@ -306,13 +306,17 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
         sum_per_class[0] += label[i];
       }
     }
+    std::vector<double > init_scores(num_class_);
+    for (int i = 0; i < num_class_; ++i) {
+      init_scores[i] = sum_per_class[i] / num_data_;
+    }
+    init_scores = object_function_->ConvertToRawScore(init_scores);
     for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-      double init_score = sum_per_class[curr_class] / num_data_;
       std::unique_ptr<Tree> new_tree(new Tree(2));
-      new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0, init_score, init_score, 0, num_data_, 1);
-      train_score_updater_->AddScore(init_score, curr_class);
+      new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0, init_scores[curr_class], init_scores[curr_class], 0, num_data_, 1);
+      train_score_updater_->AddScore(init_scores[curr_class], curr_class);
       for (auto& score_updater : valid_score_updater_) {
-        score_updater->AddScore(init_score, curr_class);
+        score_updater->AddScore(init_scores[curr_class], curr_class);
       }
       models_.push_back(std::move(new_tree));
     }
