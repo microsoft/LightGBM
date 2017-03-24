@@ -106,8 +106,9 @@ private:
    * \brief Compute GPU feature histogram for the current leaf.
    *        Indices, gradients and hessians have been copied to the device.
    * \param leaf_num_data Number of data on current leaf
+   * \param use_all_features Set to true to not use feature masks, with a faster kernel
   */
-  void GPUHistogram(data_size_t leaf_num_data);
+  void GPUHistogram(data_size_t leaf_num_data, bool use_all_features);
   
   /*!
    * \brief Wait for GPU kernel execution and read histogram
@@ -169,6 +170,9 @@ private:
   /*! \brief a array of histogram kernels with different number
      of workgroups per feature */
   std::vector<boost::compute::kernel> histogram_kernels_;
+  /*! \brief a array of histogram kernels with different number
+     of workgroups per feature, with all features enabled to avoid branches */
+  std::vector<boost::compute::kernel> histogram_allfeats_kernels_;
   /*! \brief a array of histogram kernels with different number
      of workgroups per feature, and processing the whole dataset */
   std::vector<boost::compute::kernel> histogram_fulldata_kernels_;

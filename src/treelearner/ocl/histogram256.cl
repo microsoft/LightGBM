@@ -51,6 +51,11 @@ typedef uint acc_int_type;
 #define NVIDIA 1
 #endif
 
+// use all features and do not use feature mask
+#ifndef ENABLE_ALL_FEATURES
+#define ENABLE_ALL_FEATURES 1
+#endif
+
 // use binary patching for AMD GCN 1.2 or newer
 #ifndef AMD_USE_DS_ADD_F32
 #define AMD_USE_DS_ADD_F32 0
@@ -388,7 +393,12 @@ __kernel void histogram256(__global const uchar4* feature_data_base,
     // equavalent thread ID in this subgroup for this feature4
     const uint subglobal_tid  = gtid - group_feature * subglobal_size;
     // extract feature mask, when a byte is set to 0, that feature is disabled
+    #if ENABLE_ALL_FEATURES == 1
+    // hopefully the compiler will propogate the constants and eliminate all branches
+    uchar4 feature_mask = (uchar4)(0xff, 0xff, 0xff, 0xff);
+    #else
     uchar4 feature_mask = feature_masks[group_feature];
+    #endif
     // exit if all features are masked
     if (!as_uint(feature_mask)) {
         return;
@@ -419,8 +429,10 @@ __kernel void histogram256(__global const uchar4* feature_data_base,
     feature4 = feature_data[ind];
     feature4_prev = feature4;
     feature4_prev = as_uchar4(rotate(as_uint(feature4_prev), (uint)offset*8));
+    #if ENABLE_ALL_FEATURES == 0
     // rotate feature_mask to match the feature order of each thread
     feature_mask = as_uchar4(rotate(as_uint(feature_mask), (uint)offset*8));
+    #endif
     acc_type s3_stat1 = 0.0f, s3_stat2 = 0.0f;
     acc_type s2_stat1 = 0.0f, s2_stat2 = 0.0f;
     acc_type s1_stat1 = 0.0f, s1_stat2 = 0.0f;
@@ -612,8 +624,10 @@ __kernel void histogram256(__global const uchar4* feature_data_base,
     atomic_local_add_f(gh_hist + addr2, s0_stat2);
     barrier(CLK_LOCAL_MEM_FENCE);
 
+    #if ENABLE_ALL_FEATURES == 0
     // restore feature_mask
     feature_mask = feature_masks[group_feature];
+    #endif
 
     // write to output
     // write gradients and hessians histogram for all 4 features

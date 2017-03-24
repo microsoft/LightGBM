@@ -117,7 +117,7 @@ int GPUTreeLearner::GetNumWorkgroupsPerFeature(data_size_t leaf_num_data) {
   return exp_workgroups_per_feature;
 }
 
-void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data) {
+void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_features) {
   // we have already copied ordered gradients, ordered hessians and indices to GPU
   // decide the best number of workgroups working on one feature4 tuple
   // set work group size based on feature size
@@ -133,6 +133,7 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data) {
     for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
       // The only argument that needs to be changed later is num_data_
       histogram_kernels_[i].set_arg(7, *device_subhistograms_);
+      histogram_allfeats_kernels_[i].set_arg(7, *device_subhistograms_);
       histogram_fulldata_kernels_[i].set_arg(7, *device_subhistograms_);
     }
   }
@@ -145,7 +146,12 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data) {
   // 2^exp_workgroups_per_feature (compile time constant) workgroup will
   // process one feature4 tuple
 
-  histogram_kernels_[exp_workgroups_per_feature].set_arg(4, leaf_num_data);
+  if (use_all_features) {
+    histogram_allfeats_kernels_[exp_workgroups_per_feature].set_arg(4, leaf_num_data);
+  }
+  else {
+    histogram_kernels_[exp_workgroups_per_feature].set_arg(4, leaf_num_data);
+  }
   // for the root node, indices are not copied
   if (leaf_num_data != num_data_) {
     indices_future_.wait();
@@ -160,8 +166,14 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data) {
     kernel_wait_obj_ = boost::compute::wait_list(queue_.enqueue_1d_range_kernel(histogram_fulldata_kernels_[exp_workgroups_per_feature], 0, num_workgroups * 256, 256));
   }
   else {
-    kernel_wait_obj_ = boost::compute::wait_list(
-                       queue_.enqueue_1d_range_kernel(histogram_kernels_[exp_workgroups_per_feature], 0, num_workgroups * 256, 256));
+    if (use_all_features) {
+      kernel_wait_obj_ = boost::compute::wait_list(
+                         queue_.enqueue_1d_range_kernel(histogram_allfeats_kernels_[exp_workgroups_per_feature], 0, num_workgroups * 256, 256));
+    }
+    else {
+      kernel_wait_obj_ = boost::compute::wait_list(
+                         queue_.enqueue_1d_range_kernel(histogram_kernels_[exp_workgroups_per_feature], 0, num_workgroups * 256, 256));
+    }
   }
   // copy the results asynchronously. Size depends on if double precision is used
   size_t output_size = num_dense_feature4_ * dword_features_ * device_bin_size_ * hist_bin_entry_sz_;
@@ -512,6 +524,9 @@ void GPUTreeLearner::AllocateGPUMemory() {
     histogram_kernels_[i].set_args(*device_features_, device_feature_masks_, num_data_,
                                        *device_data_indices_, num_data_, device_gradients_, device_hessians_,
                                        *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
+    histogram_allfeats_kernels_[i].set_args(*device_features_, device_feature_masks_, num_data_,
+                                       *device_data_indices_, num_data_, device_gradients_, device_hessians_,
+                                       *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
     histogram_fulldata_kernels_[i].set_args(*device_features_, device_feature_masks_, num_data_,
                                         *device_data_indices_, num_data_, device_gradients_, device_hessians_,
                                         *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
@@ -599,6 +614,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   Log::Info("Compiling OpenCL Kernel with %d bins...", device_bin_size_);
   // create OpenCL kernels for different number of workgroups per feature
   histogram_kernels_.resize(kMaxLogWorkgroupsPerFeature+1);
+  histogram_allfeats_kernels_.resize(kMaxLogWorkgroupsPerFeature+1);
   histogram_fulldata_kernels_.resize(kMaxLogWorkgroupsPerFeature+1);
   #pragma omp parallel for schedule(guided)
   for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
@@ -623,8 +639,24 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
       }
     }
     histogram_kernels_[i] = program.create_kernel(kernel_name);
+    
+    // kernel with all features enabled, with elimited branches
+    opts << " -D ENABLE_ALL_FEATURES=1";
+    try {
+      program = boost::compute::program::build_with_source(kernel_source, ctx_, opts.str());
+    }
+    catch (boost::compute::opencl_error &e) {
+      if (program.build_log().size() > 0) {
+        Log::Fatal("GPU program built failure:\n %s", program.build_log().c_str());
+      }
+      else {
+        Log::Fatal("GPU program built failure, log unavailable");
+      }
+    }
+    histogram_allfeats_kernels_[i] = program.create_kernel(kernel_name);
+
+    // kernel with all data indices (for root node, and assumes that root node always uses all features)
     opts << " -D IGNORE_INDICES=1";
-    // kernel with all data indices (for root node)
     try {
       program = boost::compute::program::build_with_source(kernel_source, ctx_, opts.str());
     }
@@ -916,24 +948,30 @@ bool GPUTreeLearner::ConstructGPUHistogramsAsync(
     }
   }
   // construct the feature masks
+  int used_dense_features = 0;
   for (int i = 0; i < num_dense_features_; ++i) {
     if (is_feature_used[dense_feature_map_[i]]) {
       feature_masks_[i] = 1;
+      ++used_dense_features;
     }
     else {
       feature_masks_[i] = 0;
     }
   }
+  bool use_all_features = used_dense_features == num_dense_features_;
 #if GPU_DEBUG >= 1
   printf("feature masks:\n");
   for (unsigned int i = 0; i < feature_masks_.size(); ++i) {
     printf("%d ", feature_masks_[i]);
   }
   printf("\n");
+  printf("%d features, %d used, %d\n", num_dense_features_, used_dense_features, use_all_features);
 #endif
-  queue_.enqueue_write_buffer(device_feature_masks_, 0, num_dense_feature4_ * dword_features_, ptr_pinned_feature_masks_);
+  if (!use_all_features) {
+    queue_.enqueue_write_buffer(device_feature_masks_, 0, num_dense_feature4_ * dword_features_, ptr_pinned_feature_masks_);
+  }
   // All data have been prepared, now run the GPU kernel
-  GPUHistogram(num_data);
+  GPUHistogram(num_data, use_all_features);
   return true;
 }
 

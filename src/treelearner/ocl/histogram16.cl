@@ -73,6 +73,11 @@ typedef uint acc_int_type;
 // #define IGNORE_INDICES
 // #define POWER_FEATURE_WORKGROUPS 10
 
+// use all features and do not use feature mask
+#ifndef ENABLE_ALL_FEATURES
+#define ENABLE_ALL_FEATURES 1
+#endif
+
 // detect Nvidia platforms
 #ifdef cl_nv_pragma_unroll
 #define NVIDIA 1
@@ -322,7 +327,12 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
     // equavalent thread ID in this subgroup for this feature4
     const uint subglobal_tid  = gtid - group_feature * subglobal_size;
     // extract feature mask, when a byte is set to 0, that feature is disabled
+    #if ENABLE_ALL_FEATURES == 1
+    // hopefully the compiler will propogate the constants and eliminate all branches
+    uchar8 feature_mask = (uchar8)(0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff);
+    #else
     uchar8 feature_mask = feature_masks[group_feature];
+    #endif
     // exit if all features are masked
     if (!as_ulong(feature_mask)) {
         return;
@@ -336,8 +346,10 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
     uchar4 feature4_next;
     // offset used to rotate feature4 vector, & 0x7
     ushort offset = (ltid & DWORD_FEATURES_MASK);
+    #if ENABLE_ALL_FEATURES == 0
     // rotate feature_mask to match the feature order of each thread
     feature_mask = as_uchar8(rotate(as_ulong(feature_mask), (ulong)offset*8));
+    #endif
     // store gradient and hessian
     float stat1, stat2;
     float stat1_next, stat2_next;
@@ -556,8 +568,10 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
     }
     barrier(CLK_LOCAL_MEM_FENCE);
     
+    #if ENABLE_ALL_FEATURES == 0
     // restore feature_mask
     feature_mask = feature_masks[group_feature];
+    #endif
     
     // now reduce the 4 banks of subhistograms into 1
     acc_type stat_val = 0.0f;

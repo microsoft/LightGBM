@@ -65,6 +65,11 @@ typedef uint acc_int_type;
 // #define IGNORE_INDICES
 // #define POWER_FEATURE_WORKGROUPS 10
 
+// use all features and do not use feature mask
+#ifndef ENABLE_ALL_FEATURES
+#define ENABLE_ALL_FEATURES 1
+#endif
+
 // detect Nvidia platforms
 #ifdef cl_nv_pragma_unroll
 #define NVIDIA 1
@@ -295,7 +300,12 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     // equavalent thread ID in this subgroup for this feature4
     const uint subglobal_tid  = gtid - group_feature * subglobal_size;
     // extract feature mask, when a byte is set to 0, that feature is disabled
+    #if ENABLE_ALL_FEATURES == 1
+    // hopefully the compiler will propogate the constants and eliminate all branches
+    uchar4 feature_mask = (uchar4)(0xff, 0xff, 0xff, 0xff);
+    #else
     uchar4 feature_mask = feature_masks[group_feature];
+    #endif
     // exit if all features are masked
     if (!as_uint(feature_mask)) {
         return;
@@ -327,8 +337,10 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     feature4 = as_uchar4(as_uint(feature4) & 0x3f3f3f3f);
     feature4_prev = feature4;
     feature4_prev = as_uchar4(rotate(as_uint(feature4_prev), (uint)offset*8));
+    #if ENABLE_ALL_FEATURES == 0
     // rotate feature_mask to match the feature order of each thread
     feature_mask = as_uchar4(rotate(as_uint(feature_mask), (uint)offset*8));
+    #endif
     acc_type s3_stat1 = 0.0f, s3_stat2 = 0.0f;
     acc_type s2_stat1 = 0.0f, s2_stat2 = 0.0f;
     acc_type s1_stat1 = 0.0f, s1_stat2 = 0.0f;
@@ -521,8 +533,10 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     atomic_local_add_f(gh_hist + addr2, s0_stat2);
     barrier(CLK_LOCAL_MEM_FENCE);
     
+    #if ENABLE_ALL_FEATURES == 0
     // restore feature_mask
     feature_mask = feature_masks[group_feature];
+    #endif
     
     // now reduce the 4 banks of subhistograms into 1
     /* memory layout of gh_hist:
