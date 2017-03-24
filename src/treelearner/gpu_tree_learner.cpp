@@ -27,6 +27,9 @@ GPUTreeLearner::~GPUTreeLearner() {
   if (ptr_pinned_hessians_) {
     queue_.enqueue_unmap_buffer(pinned_hessians_, ptr_pinned_hessians_);
   }
+  if (ptr_pinned_feature_masks_) {
+    queue_.enqueue_unmap_buffer(pinned_feature_masks_, ptr_pinned_feature_masks_);
+  }
 }
 
 void GPUTreeLearner::Init(const Dataset* train_data) {
@@ -129,8 +132,8 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data) {
     // we need to refresh the kernel arguments after reallocating
     for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
       // The only argument that needs to be changed later is num_data_
-      histogram_kernels_[i].set_arg(6, *device_subhistograms_);
-      histogram_fulldata_kernels_[i].set_arg(6, *device_subhistograms_);
+      histogram_kernels_[i].set_arg(7, *device_subhistograms_);
+      histogram_fulldata_kernels_[i].set_arg(7, *device_subhistograms_);
     }
   }
   #if GPU_DEBUG >= 4
@@ -142,7 +145,7 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data) {
   // 2^exp_workgroups_per_feature (compile time constant) workgroup will
   // process one feature4 tuple
 
-  histogram_kernels_[exp_workgroups_per_feature].set_arg(3, leaf_num_data);
+  histogram_kernels_[exp_workgroups_per_feature].set_arg(4, leaf_num_data);
   // for the root node, indices are not copied
   if (leaf_num_data != num_data_) {
     indices_future_.wait();
@@ -170,13 +173,16 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data) {
 }
 
 template <typename HistType>
-void GPUTreeLearner::WaitAndGetHistograms(FeatureHistogram* histograms) {
+void GPUTreeLearner::WaitAndGetHistograms(FeatureHistogram* histograms, const std::vector<int8_t>& is_feature_used) {
   HistType* hist_outputs = (HistType*) host_histogram_outputs_;
   // when the output is ready, the compuataion is done
   histograms_wait_obj_.wait();
   #pragma omp parallel for schedule(static)
   for(int i = 0; i < num_dense_features_; ++i) {
     int dense_index = dense_feature_map_[i];
+    if (!is_feature_used[dense_index]) {
+      continue;
+    }
     auto old_histogram_array = histograms[dense_index].RawData() - 1;
     int bin_size = train_data_->FeatureNumTotalBin(dense_index); 
     // printf("Feature %d, Bin = %d, Total Bin = %d\n", dense_index, train_data_->FeatureNumBin(dense_index), train_data_->FeatureNumTotalBin(dense_index));
@@ -222,6 +228,16 @@ void GPUTreeLearner::AllocateGPUMemory() {
   // allocate memory for all features (FIXME: 4 GB barrier on some devices, need to split to multiple buffers)
   device_features_.reset();
   device_features_ = std::unique_ptr<boost::compute::vector<Feature4>>(new boost::compute::vector<Feature4>(num_dense_feature4_ * num_data_, ctx_));
+  // unpin old buffer if necessary before destructing them
+  if (ptr_pinned_gradients_) {
+    queue_.enqueue_unmap_buffer(pinned_gradients_, ptr_pinned_gradients_);
+  }
+  if (ptr_pinned_hessians_) {
+    queue_.enqueue_unmap_buffer(pinned_hessians_, ptr_pinned_hessians_);
+  }
+  if (ptr_pinned_feature_masks_) {
+    queue_.enqueue_unmap_buffer(pinned_feature_masks_, ptr_pinned_feature_masks_);
+  }
   // make ordered_gradients and hessians larger (including extra room for prefetching), and pin them 
   ordered_gradients_.reserve(allocated_num_data_);
   ordered_hessians_.reserve(allocated_num_data_);
@@ -245,6 +261,17 @@ void GPUTreeLearner::AllocateGPUMemory() {
   device_hessians_ = boost::compute::buffer(); // deallocate
   device_hessians_  = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(score_t), 
                       boost::compute::memory_object::read_only, nullptr);
+  // allocate feature mask
+  feature_masks_.resize(num_dense_feature4_ * dword_features_);
+  device_feature_masks_ = boost::compute::buffer(); // deallocate
+  device_feature_masks_ = boost::compute::buffer(ctx_, num_dense_feature4_ * dword_features_, 
+                          boost::compute::memory_object::read_only, nullptr);
+  pinned_feature_masks_ = boost::compute::buffer(ctx_, num_dense_feature4_ * dword_features_, 
+                                             boost::compute::memory_object::read_write | boost::compute::memory_object::use_host_ptr, 
+                                             feature_masks_.data());
+  ptr_pinned_feature_masks_ = queue_.enqueue_map_buffer(pinned_feature_masks_, boost::compute::command_queue::map_write_invalidate_region,
+                                                        0, num_dense_feature4_ * dword_features_);
+  memset(ptr_pinned_feature_masks_, 0, num_dense_feature4_ * dword_features_);
   // copy indices to the device
   device_data_indices_.reset();
   device_data_indices_ = std::unique_ptr<boost::compute::vector<data_size_t>>(new boost::compute::vector<data_size_t>(allocated_num_data_, ctx_));
@@ -482,10 +509,10 @@ void GPUTreeLearner::AllocateGPUMemory() {
   // setup kernel arguments
   for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
     // The only argument that needs to be changed later is num_data_
-    histogram_kernels_[i].set_args(*device_features_, num_data_,
+    histogram_kernels_[i].set_args(*device_features_, device_feature_masks_, num_data_,
                                        *device_data_indices_, num_data_, device_gradients_, device_hessians_,
                                        *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
-    histogram_fulldata_kernels_[i].set_args(*device_features_, num_data_,
+    histogram_fulldata_kernels_[i].set_args(*device_features_, device_feature_masks_, num_data_,
                                         *device_data_indices_, num_data_, device_gradients_, device_hessians_,
                                         *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
   }
@@ -850,7 +877,6 @@ bool GPUTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
 }
 
 bool GPUTreeLearner::ConstructGPUHistogramsAsync(
-  // TODO: process is_feature_used (currently ignored)
   const std::vector<int8_t>& is_feature_used,
   const data_size_t* data_indices, data_size_t num_data,
   const score_t* gradients, const score_t* hessians,
@@ -890,6 +916,23 @@ bool GPUTreeLearner::ConstructGPUHistogramsAsync(
       hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, num_data * sizeof(score_t), hessians);
     }
   }
+  // construct the feature masks
+  for (int i = 0; i < num_dense_features_; ++i) {
+    if (is_feature_used[dense_feature_map_[i]]) {
+      feature_masks_[i] = 1;
+    }
+    else {
+      feature_masks_[i] = 0;
+    }
+  }
+#if GPU_DEBUG >= 1
+  printf("feature masks:\n");
+  for (unsigned int i = 0; i < feature_masks_.size(); ++i) {
+    printf("%d ", feature_masks_[i]);
+  }
+  printf("\n");
+#endif
+  queue_.enqueue_write_buffer(device_feature_masks_, 0, num_dense_feature4_ * dword_features_, ptr_pinned_feature_masks_);
   // All data have been prepared, now run the GPU kernel
   GPUHistogram(num_data);
   return true;
@@ -951,11 +994,11 @@ void GPUTreeLearner::FindBestThresholds() {
   if (use_gpu) {
     if (tree_config_->gpu_use_dp) {
       // use double precision
-      WaitAndGetHistograms<HistogramBinEntry>(smaller_leaf_histogram_array_);
+      WaitAndGetHistograms<HistogramBinEntry>(smaller_leaf_histogram_array_, is_feature_used);
     }
     else {
       // use single precision
-      WaitAndGetHistograms<GPUHistogramBinEntry>(smaller_leaf_histogram_array_);
+      WaitAndGetHistograms<GPUHistogramBinEntry>(smaller_leaf_histogram_array_, is_feature_used);
     }
   }
 
@@ -1008,11 +1051,11 @@ void GPUTreeLearner::FindBestThresholds() {
     if (use_gpu) {
       if (tree_config_->gpu_use_dp) {
         // use double precision
-        WaitAndGetHistograms<HistogramBinEntry>(larger_leaf_histogram_array_);
+        WaitAndGetHistograms<HistogramBinEntry>(larger_leaf_histogram_array_, is_feature_used);
       }
       else {
         // use single precision
-        WaitAndGetHistograms<GPUHistogramBinEntry>(larger_leaf_histogram_array_);
+        WaitAndGetHistograms<GPUHistogramBinEntry>(larger_leaf_histogram_array_, is_feature_used);
       }
     }
   }

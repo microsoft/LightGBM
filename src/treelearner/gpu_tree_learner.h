@@ -107,14 +107,15 @@ private:
   /*!
    * \brief Wait for GPU kernel execution and read histogram
    * \param histograms Destination of histogram results from GPU.
+   * \param is_feature_used A predicate vector for enabling each feature
   */
   template <typename HistType>
-  void WaitAndGetHistograms(FeatureHistogram* histograms); 
+  void WaitAndGetHistograms(FeatureHistogram* histograms, const std::vector<int8_t>& is_feature_used);
 
   /*!
    * \brief Construct GPU histogram asynchronously. 
    *        Interface is similar to Dataset::ConstructHistograms().
-   * \param is_feature_used An predicate vector for enabling each feature
+   * \param is_feature_used A predicate vector for enabling each feature
    * \param data_indices Array of data example IDs to be included in histogram, will be copied to GPU.
    *                     Set to nullptr to skip copy to GPU.
    * \param num_data Number of data examples to be included in histogram
@@ -203,6 +204,14 @@ private:
   boost::compute::buffer pinned_hessians_;
   /*! \brief Pointer to pinned memory of ordered hessian */
   void * ptr_pinned_hessians_ = nullptr;
+  /*! \brief A vector of feature mask. 1 = feature used, 0 = feature not used */
+  std::vector<char, boost::alignment::aligned_allocator<char, 4096>> feature_masks_;
+  /*! \brief GPU memory object holding the feature masks */
+  boost::compute::buffer device_feature_masks_;
+  /*! \brief Pinned memory object for feature masks */
+  boost::compute::buffer pinned_feature_masks_;
+  /*! \brief Pointer to pinned memory of feature masks */
+  void * ptr_pinned_feature_masks_ = nullptr;
   /*! \brief GPU memory object holding indices of the leaf being processed */
   std::unique_ptr<boost::compute::vector<data_size_t>> device_data_indices_;
   /*! \brief GPU memory object holding counters for workgroup coordination */
