@@ -87,7 +87,7 @@ The methods of each Class is in alphabetical order.
         Other parameters
 
 
-### get_group()
+#### get_group()
 
     Get the initial score of the Dataset.
 
