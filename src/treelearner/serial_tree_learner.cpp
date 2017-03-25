@@ -179,8 +179,6 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
 #endif
 
   auto tree = std::unique_ptr<Tree>(new Tree(tree_config_->num_leaves));
-  // save pointer to last trained tree
-  last_trained_tree_ = tree.get();
   // root leaf
   int left_leaf = 0;
   int cur_depth = 1;
@@ -191,7 +189,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
     start_time = std::chrono::steady_clock::now();
   #endif
     // some initial works before finding best split
-    if (BeforeFindBestSplit(left_leaf, right_leaf)) {
+    if (BeforeFindBestSplit(tree.get(), left_leaf, right_leaf)) {
     #ifdef TIMETAG
       init_split_time += std::chrono::steady_clock::now() - start_time;
     #endif
@@ -220,6 +218,29 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
     cur_depth = std::max(cur_depth, tree->leaf_depth(left_leaf));
   }
   Log::Info("Trained a tree with leaves=%d and max_depth=%d", tree->num_leaves(), cur_depth);
+  return tree.release();
+}
+
+Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t *hessians) const {
+  auto tree = std::unique_ptr<Tree>(new Tree(*old_tree));
+  CHECK(data_partition_->num_leaves() >= tree->num_leaves());
+  #pragma omp parallel for schedule(static)
+  for (int i = 0; i < data_partition_->num_leaves(); ++i) {
+    data_size_t cnt_leaf_data = 0;
+    auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
+    double sum_grad = 0.0f;
+    double sum_hess = 0.0f;
+    for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
+      auto idx = tmp_idx[j];
+      sum_grad += gradients[idx];
+      sum_hess += hessians[idx];
+    }
+    // avoid zero hessians.
+    if (sum_hess <= 0) sum_hess = kEpsilon;
+    double output = FeatureHistogram::CalculateSplittedLeafOutput(sum_grad, sum_hess,
+                                                                  tree_config_->lambda_l1, tree_config_->lambda_l2);
+    tree->SetLeafOutput(i, output);
+  }
   return tree.release();
 }
 
@@ -305,11 +326,11 @@ void SerialTreeLearner::BeforeTrain() {
   }
 }
 
-bool SerialTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
+bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) {
   // check depth of current leaf
   if (tree_config_->max_depth > 0) {
     // only need to check left leaf, since right leaf is in same level of left leaf
-    if (last_trained_tree_->leaf_depth(left_leaf) >= tree_config_->max_depth) {
+    if (tree->leaf_depth(left_leaf) >= tree_config_->max_depth) {
       best_split_per_leaf_[left_leaf].gain = kMinScore;
       if (right_leaf >= 0) {
         best_split_per_leaf_[right_leaf].gain = kMinScore;

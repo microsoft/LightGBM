@@ -38,15 +38,18 @@ public:
 
   Tree* Train(const score_t* gradients, const score_t *hessians) override;
 
+  Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
+
   void SetBaggingData(const data_size_t* used_indices, data_size_t num_data) override {
     data_partition_->SetUsedDataIndices(used_indices, num_data);
   }
 
-  void AddPredictionToScore(double* out_score) const override {
-    if (last_trained_tree_->num_leaves() <= 1) { return; }
+  void AddPredictionToScore(const Tree* tree, double* out_score) const override {
+    if (tree->num_leaves() <= 1) { return; }
+    CHECK(tree->num_leaves() <= data_partition_->num_leaves());
     #pragma omp parallel for schedule(static)
     for (int i = 0; i < data_partition_->num_leaves(); ++i) {
-      double output = static_cast<double>(last_trained_tree_->LeafOutput(i));
+      double output = static_cast<double>(tree->LeafOutput(i));
       data_size_t cnt_leaf_data = 0;
       auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
       for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
@@ -64,7 +67,7 @@ protected:
   /*!
   * \brief Some initial works before FindBestSplit
   */
-  virtual bool BeforeFindBestSplit(int left_leaf, int right_leaf);
+  virtual bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf);
 
 
   /*!
@@ -95,9 +98,6 @@ protected:
   * \return The number of data in the leaf_idx leaf
   */
   inline virtual data_size_t GetGlobalDataCountInLeaf(int leaf_idx) const;
-
-  /*! \brief Last trained decision tree */
-  const Tree* last_trained_tree_;
   /*! \brief number of data */
   data_size_t num_data_;
   /*! \brief number of features */
