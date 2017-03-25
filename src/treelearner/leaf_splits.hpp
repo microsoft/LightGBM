@@ -3,7 +3,6 @@
 
 #include <LightGBM/meta.h>
 #include "data_partition.hpp"
-#include "split_info.hpp"
 
 #include <vector>
 
@@ -14,13 +13,9 @@ namespace LightGBM {
 */
 class LeafSplits {
 public:
-  LeafSplits(int num_feature, data_size_t num_data)
-    :num_data_in_leaf_(num_data), num_data_(num_data), num_features_(num_feature),
+  LeafSplits(data_size_t num_data)
+    :num_data_in_leaf_(num_data), num_data_(num_data),
     data_indices_(nullptr) {
-    best_split_per_feature_.resize(num_features_);
-    for (int i = 0; i < num_features_; ++i) {
-      best_split_per_feature_[i].feature = i;
-    }
   }
   void ResetNumData(data_size_t num_data) {
     num_data_ = num_data;
@@ -42,9 +37,6 @@ public:
     data_indices_ = data_partition->GetIndexOnLeaf(leaf, &num_data_in_leaf_);
     sum_gradients_ = sum_gradients;
     sum_hessians_ = sum_hessians;
-    for (SplitInfo& split_info : best_split_per_feature_) {
-      split_info.Reset();
-    }
   }
 
   /*!
@@ -65,9 +57,6 @@ public:
     }
     sum_gradients_ = tmp_sum_gradients;
     sum_hessians_ = tmp_sum_hessians;
-    for (SplitInfo& split_info : best_split_per_feature_) {
-      split_info.Reset();
-    }
   }
 
   /*!
@@ -90,9 +79,6 @@ public:
     }
     sum_gradients_ = tmp_sum_gradients;
     sum_hessians_ = tmp_sum_hessians;
-    for (SplitInfo& split_info : best_split_per_feature_) {
-      split_info.Reset();
-    }
   }
 
 
@@ -105,9 +91,6 @@ public:
     leaf_index_ = 0;
     sum_gradients_ = sum_gradients;
     sum_hessians_ = sum_hessians;
-    for (SplitInfo& split_info : best_split_per_feature_) {
-      split_info.Reset();
-    }
   }
 
   /*!
@@ -115,13 +98,10 @@ public:
   */
   void Init() {
     leaf_index_ = -1;
-    for (SplitInfo& split_info : best_split_per_feature_) {
-      split_info.Reset();
-    }
+    data_indices_ = nullptr;
+    num_data_in_leaf_ = 0;
   }
 
-  /*! \brief Get best splits on all features */
-  std::vector<SplitInfo>& BestSplitPerFeature() { return best_split_per_feature_;}
 
   /*! \brief Get current leaf index */
   int LeafIndex() const { return leaf_index_; }
@@ -140,16 +120,12 @@ public:
 
 
 private:
-  /*! \brief store best splits of all feature on current leaf */
-  std::vector<SplitInfo> best_split_per_feature_;
   /*! \brief current leaf index */
   int leaf_index_;
   /*! \brief number of data on current leaf */
   data_size_t num_data_in_leaf_;
   /*! \brief number of all training data */
   data_size_t num_data_;
-  /*! \brief number of features */
-  int num_features_;
   /*! \brief sum of gradients of current leaf */
   double sum_gradients_;
   /*! \brief sum of hessians of current leaf */

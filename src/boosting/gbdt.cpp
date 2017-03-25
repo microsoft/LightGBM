@@ -4,7 +4,6 @@
 
 #include <LightGBM/utils/common.h>
 
-#include <LightGBM/feature.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/metric.h>
 
@@ -17,6 +16,17 @@
 #include <utility>
 
 namespace LightGBM {
+
+#ifdef TIMETAG
+std::chrono::duration<double, std::milli> boosting_time;
+std::chrono::duration<double, std::milli> train_score_time;
+std::chrono::duration<double, std::milli> out_of_bag_score_time;
+std::chrono::duration<double, std::milli> valid_score_time;
+std::chrono::duration<double, std::milli> metric_time;
+std::chrono::duration<double, std::milli> bagging_time;
+std::chrono::duration<double, std::milli> sub_gradient_time;
+std::chrono::duration<double, std::milli> tree_time;
+#endif // TIMETAG
 
 GBDT::GBDT()
   :iter_(0),
@@ -37,7 +47,16 @@ GBDT::GBDT()
 }
 
 GBDT::~GBDT() {
-
+#ifdef TIMETAG
+  Log::Info("GBDT::boosting costs %f", boosting_time * 1e-3);
+  Log::Info("GBDT::train_score costs %f", train_score_time * 1e-3);
+  Log::Info("GBDT::out_of_bag_score costs %f", out_of_bag_score_time * 1e-3);
+  Log::Info("GBDT::valid_score costs %f", valid_score_time * 1e-3);
+  Log::Info("GBDT::metric costs %f", metric_time * 1e-3);
+  Log::Info("GBDT::bagging costs %f", bagging_time * 1e-3);
+  Log::Info("GBDT::sub_gradient costs %f", sub_gradient_time * 1e-3);
+  Log::Info("GBDT::tree costs %f", tree_time * 1e-3);
+#endif
 }
 
 void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
@@ -106,16 +125,8 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
     label_idx_ = train_data->label_idx();
     // get feature names
     feature_names_ = train_data->feature_names();
-    // get feature infos
-    feature_infos_.clear();
-    for (int i = 0; i < max_feature_idx_ + 1; ++i) {
-      int feature_idx = train_data->GetInnerFeatureIndex(i);
-      if (feature_idx < 0) { 
-        feature_infos_.push_back("trival feature"); 
-      } else {
-        feature_infos_.push_back(train_data->FeatureAt(feature_idx)->bin_mapper()->bin_info());
-      }
-    }
+
+    feature_infos_ = train_data->feature_infos();
   }
 
   if ((train_data_ != train_data && train_data != nullptr)
@@ -150,6 +161,7 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
   if (train_data_ != nullptr) {
     // reset config for tree learner
     tree_learner_->ResetConfig(&new_config->tree_config);
+    is_class_end_ = std::vector<bool>(num_class_, false);
   }
   gbdt_config_.reset(new_config.release());
 }
@@ -268,22 +280,43 @@ void GBDT::Bagging(int iter) {
 }
 
 void GBDT::UpdateScoreOutOfBag(const Tree* tree, const int curr_class) {
+#ifdef TIMETAG
+  auto start_time = std::chrono::steady_clock::now();
+#endif
   // we need to predict out-of-bag socres of data for boosting
   if (num_data_ - bag_data_cnt_ > 0 && !is_use_subset_) {
     train_score_updater_->AddScore(tree, bag_data_indices_.data() + bag_data_cnt_, num_data_ - bag_data_cnt_, curr_class);
   }
+#ifdef TIMETAG
+  out_of_bag_score_time += std::chrono::steady_clock::now() - start_time;
+#endif
 }
 
 bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) {
   // boosting first
   if (gradient == nullptr || hessian == nullptr) {
+#ifdef TIMETAG
+    auto start_time = std::chrono::steady_clock::now();
+#endif
     Boosting();
     gradient = gradients_.data();
     hessian = hessians_.data();
+#ifdef TIMETAG
+    boosting_time += std::chrono::steady_clock::now() - start_time;
+#endif
   }
+#ifdef TIMETAG
+  auto start_time = std::chrono::steady_clock::now();
+#endif
   // bagging logic
   Bagging(iter_);
+#ifdef TIMETAG
+  bagging_time += std::chrono::steady_clock::now() - start_time;
+#endif
   if (is_use_subset_ && bag_data_cnt_ < num_data_) {
+#ifdef TIMETAG
+    start_time = std::chrono::steady_clock::now();
+#endif
     if (gradients_.empty()) {
       size_t total_size = static_cast<size_t>(num_data_) * num_class_;
       gradients_.resize(total_size);
@@ -292,6 +325,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
     // get sub gradients
     for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
       auto bias = curr_class * num_data_;
+      // cannot multi-threding
       for (int i = 0; i < bag_data_cnt_; ++i) {
         gradients_[bias + i] = gradient[bias + bag_data_indices_[i]];
         hessians_[bias + i] = hessian[bias + bag_data_indices_[i]];
@@ -299,24 +333,44 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
     }
     gradient = gradients_.data();
     hessian = hessians_.data();
+#ifdef TIMETAG
+    sub_gradient_time += std::chrono::steady_clock::now() - start_time;
+#endif
   }
+  bool should_continue = false;
   for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-    // train a new tree
-    std::unique_ptr<Tree> new_tree(tree_learner_->Train(gradient + curr_class * num_data_, hessian + curr_class * num_data_));
-    // if cannot learn a new tree, then stop
-    if (new_tree->num_leaves() <= 1) {
-      Log::Info("Stopped training because there are no more leafs that meet the split requirements.");
-      return true;
+#ifdef TIMETAG
+    start_time = std::chrono::steady_clock::now();
+#endif
+    std::unique_ptr<Tree> new_tree(new Tree(2));
+    if (!is_class_end_[curr_class]) {
+      // train a new tree
+      new_tree.reset(tree_learner_->Train(gradient + curr_class * num_data_, hessian + curr_class * num_data_));
     }
+#ifdef TIMETAG
+    tree_time += std::chrono::steady_clock::now() - start_time;
+#endif
 
-    // shrinkage by learning rate
-    new_tree->Shrinkage(shrinkage_rate_);
-    // update score
-    UpdateScore(new_tree.get(), curr_class);
-    UpdateScoreOutOfBag(new_tree.get(), curr_class);
+    if (new_tree->num_leaves() > 1) {
+      should_continue = true;
+      // shrinkage by learning rate
+      new_tree->Shrinkage(shrinkage_rate_);
+      // update score
+      UpdateScore(new_tree.get(), curr_class);
+      UpdateScoreOutOfBag(new_tree.get(), curr_class);
+    } else {
+      is_class_end_[curr_class] = true;
+    }
 
     // add model
     models_.push_back(std::move(new_tree));
+  }
+  if (!should_continue) {
+    Log::Warning("Stopped training because there are no more leaves that meet the split requirements.");
+    for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
+      models_.pop_back();
+    }
+    return true;
   }
   ++iter_;
   if (is_eval) {
@@ -343,13 +397,20 @@ void GBDT::RollbackOneIter() {
   for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
     models_.pop_back();
   }
+  is_class_end_ = std::vector<bool>(num_class_, false);
   --iter_;
 }
 
 bool GBDT::EvalAndCheckEarlyStopping() {
   bool is_met_early_stopping = false;
+#ifdef TIMETAG
+  auto start_time = std::chrono::steady_clock::now();
+#endif
   // print message for metric
   auto best_msg = OutputMetric(iter_);
+#ifdef TIMETAG
+  metric_time += std::chrono::steady_clock::now() - start_time;
+#endif
   is_met_early_stopping = !best_msg.empty();
   if (is_met_early_stopping) {
     Log::Info("Early stopping at iteration %d, the best iteration round is %d",
@@ -364,16 +425,28 @@ bool GBDT::EvalAndCheckEarlyStopping() {
 }
 
 void GBDT::UpdateScore(const Tree* tree, const int curr_class) {
+#ifdef TIMETAG
+  auto start_time = std::chrono::steady_clock::now();
+#endif
   // update training score
   if (!is_use_subset_) {
     train_score_updater_->AddScore(tree_learner_.get(), curr_class);
   } else {
     train_score_updater_->AddScore(tree, curr_class);
   }
+#ifdef TIMETAG
+  train_score_time += std::chrono::steady_clock::now() - start_time;
+#endif
+#ifdef TIMETAG
+  start_time = std::chrono::steady_clock::now();
+#endif
   // update validation score
   for (auto& score_updater : valid_score_updater_) {
     score_updater->AddScore(tree, curr_class);
   }
+#ifdef TIMETAG
+  valid_score_time += std::chrono::steady_clock::now() - start_time;
+#endif
 }
 
 std::string GBDT::OutputMetric(int iter) {
@@ -570,6 +643,8 @@ std::string GBDT::SaveModelToString(int num_iterations) const {
 
     ss << "feature_names=" << Common::Join(feature_names_, " ") << std::endl;
 
+    ss << "feature_infos=" << Common::Join(feature_infos_, " ") << std::endl;
+
     ss << std::endl;
     int num_used_model = static_cast<int>(models_.size());
     if (num_iterations > 0) {
@@ -585,11 +660,6 @@ std::string GBDT::SaveModelToString(int num_iterations) const {
     ss << std::endl << "feature importances:" << std::endl;
     for (size_t i = 0; i < pairs.size(); ++i) {
       ss << pairs[i].second << "=" << std::to_string(pairs[i].first) << std::endl;
-    }
-
-    ss << std::endl << "feature information:" << std::endl;
-    for (int i = 0; i < max_feature_idx_ + 1; ++i) {
-      ss << feature_names_[i] << "=" << feature_infos_[i] << std::endl;
     }
 
     return ss.str();
@@ -651,49 +721,22 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
       Log::Fatal("Wrong size of feature_names");
       return false;
     }
-  } else {
+  }
+  else {
     Log::Fatal("Model file doesn't contain feature names");
     return false;
   }
 
-  // returns offset, or lines.size() if not found.
-  auto find_string_lineno = [&lines](const std::string &str, size_t start_line)
-  {
-    size_t i = start_line;
-    size_t featinfo_find_pos = std::string::npos;
-    while (i < lines.size()) {
-      featinfo_find_pos = lines[i].find(str);
-      if (featinfo_find_pos != std::string::npos)
-        break;
-      ++i;
-    }
-
-    return i;
-  };
-
-  // load feature information
-  {
-    size_t finfo_line_idx = find_string_lineno("feature information:", 0);
-
-    if (finfo_line_idx >= lines.size()) {
-      Log::Fatal("Model file doesn't contain feature information");
+  line = Common::FindFromLines(lines, "feature_infos=");
+  if (line.size() > 0) {
+    feature_infos_ = Common::Split(line.substr(std::strlen("feature_infos=")).c_str(), " ");
+    if (feature_infos_.size() != static_cast<size_t>(max_feature_idx_ + 1)) {
+      Log::Fatal("Wrong size of feature_infos");
       return false;
     }
-
-    feature_infos_.resize(max_feature_idx_ + 1);
-
-    // search for each feature name
-    for (int i=0; i < max_feature_idx_ + 1; i++) {
-      const auto feat_name = feature_names_[i];
-      size_t line_idx = find_string_lineno(feat_name + "=", finfo_line_idx + 1);
-      if (line_idx >= lines.size()) {
-        Log::Fatal(("Model file doesn't contain feature information for feature " + feat_name).c_str());
-        return false;
-      }
-
-      const auto this_line = lines[line_idx];
-      feature_infos_[i] = this_line.substr((feat_name + "=").size());
-    }
+  } else {
+    Log::Fatal("Model file doesn't contain feature infos");
+    return false;
   }
 
   // get tree models
@@ -725,7 +768,7 @@ std::vector<std::pair<size_t, std::string>> GBDT::FeatureImportance() const {
   std::vector<size_t> feature_importances(max_feature_idx_ + 1, 0);
     for (size_t iter = 0; iter < models_.size(); ++iter) {
         for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
-            ++feature_importances[models_[iter]->split_feature_real(split_idx)];
+            ++feature_importances[models_[iter]->split_feature(split_idx)];
         }
     }
     // store the importance first

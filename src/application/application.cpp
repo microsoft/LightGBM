@@ -33,7 +33,7 @@ Application::Application(int argc, char** argv) {
     omp_set_num_threads(config_.num_threads);
   }
   if (config_.io_config.data_filename.size() == 0) {
-	  Log::Fatal("No training/prediction data, application quit");
+    Log::Fatal("No training/prediction data, application quit");
   }
 }
 
@@ -226,10 +226,10 @@ void Application::Train() {
   int total_iter = config_.boosting_config.num_iterations;
   bool is_finished = false;
   bool need_eval = true;
-  auto start_time = std::chrono::high_resolution_clock::now();
+  auto start_time = std::chrono::steady_clock::now();
   for (int iter = 0; iter < total_iter && !is_finished; ++iter) {
     is_finished = boosting_->TrainOneIter(nullptr, nullptr, need_eval);
-    auto end_time = std::chrono::high_resolution_clock::now();
+    auto end_time = std::chrono::steady_clock::now();
     // output used time per iteration
     Log::Info("%f seconds elapsed, finished iteration %d", std::chrono::duration<double,
       std::milli>(end_time - start_time) * 1e-3, iter + 1);

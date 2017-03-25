@@ -25,7 +25,7 @@ Linkers::Linkers(NetworkConfig config) {
   local_listen_port_ = config.local_listen_port;
   socket_timeout_ = config.time_out;
   rank_ = -1;
-  // parser clients from file
+  // parse clients from file
   ParseMachineList(config.machine_list_filename.c_str());
 
   if (rank_ == -1) {

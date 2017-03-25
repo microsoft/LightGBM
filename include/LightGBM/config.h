@@ -101,10 +101,14 @@ public:
   bool use_two_round_loading = false;
   bool is_save_binary_file = false;
   bool enable_load_from_binary_file = true;
-  int bin_construct_sample_cnt = 50000;
+  int bin_construct_sample_cnt = 200000;
   bool is_predict_leaf_index = false;
   bool is_predict_raw_score = false;
-
+  int min_data_in_leaf = 100;
+  int min_data_in_bin = 5;
+  double max_conflict_rate = 0.0000f;
+  bool enable_bundle = true;
+  bool adjacent_bundle = false;
   bool has_header = false;
   /*! \brief Index or column name of label, default is the first column
    * And add an prefix "name:" while using column name */
@@ -135,7 +139,7 @@ public:
   double sigmoid = 1.0f;
   double huber_delta = 1.0f;
   double fair_c = 1.0f;
-  // for ApproximateHessianWithGaussian
+  // for Approximate Hessian With Gaussian
   double gaussian_eta = 1.0f;
   double poisson_max_delta_step = 0.7f;
   // for lambdarank
@@ -177,12 +181,12 @@ public:
   int num_leaves = 127;
   int feature_fraction_seed = 2;
   double feature_fraction = 1.0f;
-  // max cache size(unit:MB) for historical histogram. < 0 means not limit
+  // max cache size(unit:MB) for historical histogram. < 0 means no limit
   double histogram_pool_size = -1.0f;
   // max depth of tree model.
   // Still grow tree by leaf-wise, but limit the max depth to avoid over-fitting
-  // And the max leaves will be min(num_leaves, pow(2, max_depth - 1))
-  // max_depth < 0 means not limit
+  // And the max leaves will be min(num_leaves, pow(2, max_depth))
+  // max_depth < 0 means no limit
   int max_depth = -1;
   int top_k = 20;
   int gpu_platform_id = -1;
@@ -211,6 +215,8 @@ public:
   bool xgboost_dart_mode = false;
   bool uniform_drop = false;
   int drop_seed = 4;
+  double top_rate = 0.2f;
+  double other_rate = 0.1f;
   std::string tree_learner_type = "serial";
   TreeConfig tree_config;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
@@ -341,6 +347,8 @@ struct ParameterAlias {
       { "test_data", "valid_data" },
       { "test", "valid_data" },
       { "is_sparse", "is_enable_sparse" },
+      { "enable_sparse", "is_enable_sparse" },
+      { "pre_partition", "is_pre_partition" },
       { "tranining_metric", "is_training_metric" },
       { "train_metric", "is_training_metric" },
       { "ndcg_at", "ndcg_eval_at" },

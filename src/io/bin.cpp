@@ -2,6 +2,7 @@
 #include <LightGBM/bin.h>
 
 #include "dense_bin.hpp"
+#include "dense_nbits_bin.hpp"
 #include "sparse_bin.hpp"
 #include "ordered_sparse_bin.hpp"
 
@@ -32,7 +33,7 @@ BinMapper::BinMapper(const BinMapper& other) {
   }
   min_val_ = other.min_val_;
   max_val_ = other.max_val_;
-
+  default_bin_ = other.default_bin_;
 }
 
 BinMapper::BinMapper(const void* memory) {
@@ -43,37 +44,60 @@ BinMapper::~BinMapper() {
 
 }
 
-void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, int max_bin, BinType bin_type) {
+bool NeedFilter(std::vector<int>& cnt_in_bin, int total_cnt, int filter_cnt, BinType bin_type) {
+  if (bin_type == BinType::NumericalBin) {
+    int sum_left = 0;
+    for (size_t i = 0; i < cnt_in_bin.size() - 1; ++i) {
+      sum_left += cnt_in_bin[i];
+      if (sum_left >= filter_cnt) {
+        return false;
+      } else if (total_cnt - sum_left >= filter_cnt) {
+        return false;
+      }
+    }
+  } else {
+    for (size_t i = 0; i < cnt_in_bin.size() - 1; ++i) {
+      int sum_left = cnt_in_bin[i];
+      if (sum_left >= filter_cnt) {
+        return false;
+      } else if (total_cnt - sum_left >= filter_cnt) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+void BinMapper::FindBin(std::vector<double>& values, size_t total_sample_cnt,
+  int max_bin, int min_data_in_bin, int min_split_data, BinType bin_type) {
   bin_type_ = bin_type;
-  std::vector<double>& ref_values = (*values);
-  size_t sample_size = total_sample_cnt;
-  int zero_cnt = static_cast<int>(total_sample_cnt - ref_values.size());
+  default_bin_ = 0;
+  std::vector<double>& raw_values = values;
+  int zero_cnt = static_cast<int>(total_sample_cnt - raw_values.size());
   // find distinct_values first
   std::vector<double> distinct_values;
   std::vector<int> counts;
 
-  std::sort(ref_values.begin(), ref_values.end());
+  std::sort(raw_values.begin(), raw_values.end());
 
   // push zero in the front
-  if (ref_values.empty() || (ref_values[0] > 0.0f && zero_cnt > 0)) {
-    distinct_values.push_back(0);
+  if (raw_values.empty() || (raw_values[0] > 0.0f && zero_cnt > 0)) {
+    distinct_values.push_back(0.0f);
     counts.push_back(zero_cnt);
   }
 
-  if (!ref_values.empty()) {
-    distinct_values.push_back(ref_values[0]);
+  if (!raw_values.empty()) {
+    distinct_values.push_back(raw_values[0]);
     counts.push_back(1);
   }
 
-  for (size_t i = 1; i < ref_values.size(); ++i) {
-    if (ref_values[i] != ref_values[i - 1]) {
-      if (ref_values[i - 1] == 0.0f) {
-        counts.back() += zero_cnt;
-      } else if (ref_values[i - 1] < 0.0f && ref_values[i] > 0.0f) {
-        distinct_values.push_back(0);
+  for (size_t i = 1; i < raw_values.size(); ++i) {
+    if (raw_values[i] != raw_values[i - 1]) {
+      if (raw_values[i - 1] < 0.0f && raw_values[i] > 0.0f) {
+        distinct_values.push_back(0.0f);
         counts.push_back(zero_cnt);
       }
-      distinct_values.push_back(ref_values[i]);
+      distinct_values.push_back(raw_values[i]);
       counts.push_back(1);
     } else {
       ++counts.back();
@@ -81,8 +105,8 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
   }
 
   // push zero in the back
-  if (!ref_values.empty() && ref_values.back() < 0.0f && zero_cnt > 0) {
-    distinct_values.push_back(0);
+  if (!raw_values.empty() && raw_values.back() < 0.0f && zero_cnt > 0) {
+    distinct_values.push_back(0.0f);
     counts.push_back(zero_cnt);
   }
   min_val_ = distinct_values.front();
@@ -91,20 +115,34 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
   int num_values = static_cast<int>(distinct_values.size());
   if (bin_type_ == BinType::NumericalBin) {
     if (num_values <= max_bin) {
-      std::sort(distinct_values.begin(), distinct_values.end());
       // use distinct value is enough
-      num_bin_ = num_values;
-      bin_upper_bound_ = std::vector<double>(num_values);
+      bin_upper_bound_.clear();
+      int cur_cnt_inbin = 0;
       for (int i = 0; i < num_values - 1; ++i) {
-        bin_upper_bound_[i] = (distinct_values[i] + distinct_values[i + 1]) / 2;
+        cur_cnt_inbin += counts[i];
+        if (cur_cnt_inbin >= min_data_in_bin) {
+          bin_upper_bound_.push_back((distinct_values[i] + distinct_values[i + 1]) / 2);
+          cnt_in_bin.push_back(cur_cnt_inbin);
+          cur_cnt_inbin = 0;
+        }
       }
-      cnt_in_bin = counts;
-      bin_upper_bound_[num_values - 1] = std::numeric_limits<double>::infinity();
+      cur_cnt_inbin += counts.back();
+      cnt_in_bin.push_back(cur_cnt_inbin);
+      bin_upper_bound_.push_back(std::numeric_limits<double>::infinity());
+      num_bin_ = static_cast<int>(bin_upper_bound_.size());
     } else {
+      if (min_data_in_bin > 0) {
+        max_bin = std::min(max_bin, static_cast<int>(total_sample_cnt / min_data_in_bin));
+        max_bin = std::max(max_bin, 1);
+      }
+      double mean_bin_size = static_cast<double>(total_sample_cnt) / max_bin;
+      if (zero_cnt > mean_bin_size) {
+        int non_zero_cnt = static_cast<int>(raw_values.size());
+        max_bin = std::min(max_bin, 1 + static_cast<int>(non_zero_cnt / min_data_in_bin));
+      }
       // mean size for one bin
-      double mean_bin_size = sample_size / static_cast<double>(max_bin);
       int rest_bin_cnt = max_bin;
-      int rest_sample_cnt = static_cast<int>(sample_size);
+      int rest_sample_cnt = static_cast<int>(total_sample_cnt);
       std::vector<bool> is_big_count_value(num_values, false);
       for (int i = 0; i < num_values; ++i) {
         if (counts[i] >= mean_bin_size) {
@@ -113,8 +151,7 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
           rest_sample_cnt -= counts[i];
         }
       }
-      mean_bin_size = rest_sample_cnt / static_cast<double>(rest_bin_cnt);
-
+      mean_bin_size = static_cast<double>(rest_sample_cnt) / rest_bin_cnt;
       std::vector<double> upper_bounds(max_bin, std::numeric_limits<double>::infinity());
       std::vector<double> lower_bounds(max_bin, std::numeric_limits<double>::infinity());
 
@@ -141,6 +178,8 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
           }
         }
       }
+      cur_cnt_inbin += counts.back();
+      cnt_in_bin.push_back(cur_cnt_inbin);
       ++bin_cnt;
       // update bin upper bound
       bin_upper_bound_ = std::vector<double>(bin_cnt);
@@ -151,7 +190,7 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
       // last bin upper bound
       bin_upper_bound_[bin_cnt - 1] = std::numeric_limits<double>::infinity();
     }
-
+    CHECK(num_bin_ <= max_bin);
   } else {
     // convert to int type first
     std::vector<int> distinct_values_int;
@@ -169,20 +208,21 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
     // sort by counts
     Common::SortForPair<int, int>(counts_int, distinct_values_int, 0, true);
     // will ingore the categorical of small counts
-    const int cut_cnt = static_cast<int>(sample_size * 0.95f);
+    const int cut_cnt = static_cast<int>(total_sample_cnt * 0.98f);
     categorical_2_bin_.clear();
     bin_2_categorical_.clear();
     num_bin_ = 0;
     int used_cnt = 0;
     max_bin = std::min(static_cast<int>(distinct_values_int.size()), max_bin);
-    while (used_cnt < cut_cnt || num_bin_ < max_bin ) {
+    while (used_cnt < cut_cnt || num_bin_ < max_bin) {
       bin_2_categorical_.push_back(distinct_values_int[num_bin_]);
       categorical_2_bin_[distinct_values_int[num_bin_]] = static_cast<unsigned int>(num_bin_);
       used_cnt += counts_int[num_bin_];
       ++num_bin_;
     }
     cnt_in_bin = counts_int;
-    cnt_in_bin[0] += static_cast<int>(sample_size) - used_cnt;
+    counts_int.resize(num_bin_);
+    counts_int.back() += static_cast<int>(total_sample_cnt - used_cnt);
   }
 
   // check trival(num_bin_ == 1) feature
@@ -191,9 +231,16 @@ void BinMapper::FindBin(std::vector<double>* values, size_t total_sample_cnt, in
   } else {
     is_trival_ = false;
   }
+  // check useless bin
+  if (!is_trival_ && NeedFilter(cnt_in_bin, static_cast<int>(total_sample_cnt), min_split_data, bin_type_)) {
+    is_trival_ = true;
+  }
+
+  if (!is_trival_) {
+    default_bin_ = ValueToBin(0);
+  }
   // calculate sparse rate
-  CHECK(num_bin_ <= max_bin);
-  sparse_rate_ = static_cast<double>(cnt_in_bin[GetDefaultBin()]) / static_cast<double>(sample_size);
+  sparse_rate_ = static_cast<double>(cnt_in_bin[default_bin_]) / static_cast<double>(total_sample_cnt);
 }
 
 
@@ -203,7 +250,9 @@ int BinMapper::SizeForSpecificBin(int bin) {
   size += sizeof(bool);
   size += sizeof(double);
   size += sizeof(BinType);
+  size += 2 * sizeof(double);
   size += bin * sizeof(double);
+  size += sizeof(uint32_t);
   return size;
 }
 
@@ -220,7 +269,8 @@ void BinMapper::CopyTo(char * buffer) {
   buffer += sizeof(min_val_);
   std::memcpy(&max_val_, buffer, sizeof(max_val_));
   buffer += sizeof(max_val_);
-
+  std::memcpy(&default_bin_, buffer, sizeof(default_bin_));
+  buffer += sizeof(default_bin_);
   if (bin_type_ == BinType::NumericalBin) {
     std::memcpy(buffer, bin_upper_bound_.data(), num_bin_ * sizeof(double));
   } else {
@@ -241,7 +291,8 @@ void BinMapper::CopyFrom(const char * buffer) {
   buffer += sizeof(min_val_);
   std::memcpy(&max_val_, buffer, sizeof(max_val_));
   buffer += sizeof(max_val_);
-
+  std::memcpy(&default_bin_, buffer, sizeof(default_bin_));
+  buffer += sizeof(default_bin_);
   if (bin_type_ == BinType::NumericalBin) {
     bin_upper_bound_ = std::vector<double>(num_bin_);
     std::memcpy(bin_upper_bound_.data(), buffer, num_bin_ * sizeof(double));
@@ -262,6 +313,7 @@ void BinMapper::SaveBinaryToFile(FILE* file) const {
   fwrite(&bin_type_, sizeof(bin_type_), 1, file);
   fwrite(&min_val_, sizeof(min_val_), 1, file);
   fwrite(&max_val_, sizeof(max_val_), 1, file);
+  fwrite(&default_bin_, sizeof(default_bin_), 1, file);
   if (bin_type_ == BinType::NumericalBin) {
     fwrite(bin_upper_bound_.data(), sizeof(double), num_bin_, file);
   } else {
@@ -271,7 +323,7 @@ void BinMapper::SaveBinaryToFile(FILE* file) const {
 
 size_t BinMapper::SizesInByte() const {
   size_t ret = sizeof(num_bin_) + sizeof(is_trival_) + sizeof(sparse_rate_)
-    + sizeof(bin_type_) + sizeof(min_val_) + sizeof(max_val_);
+    + sizeof(bin_type_) + sizeof(min_val_) + sizeof(max_val_) + sizeof(default_bin_);
   if (bin_type_ == BinType::NumericalBin) {
     ret += sizeof(double) *  num_bin_;
   } else {
@@ -284,73 +336,45 @@ template class DenseBin<uint8_t>;
 template class DenseBin<uint16_t>;
 template class DenseBin<uint32_t>;
 
-template class DenseCategoricalBin<uint8_t>;
-template class DenseCategoricalBin<uint16_t>;
-template class DenseCategoricalBin<uint32_t>;
-
 template class SparseBin<uint8_t>;
 template class SparseBin<uint16_t>;
 template class SparseBin<uint32_t>;
-
-template class SparseCategoricalBin<uint8_t>;
-template class SparseCategoricalBin<uint16_t>;
-template class SparseCategoricalBin<uint32_t>;
 
 template class OrderedSparseBin<uint8_t>;
 template class OrderedSparseBin<uint16_t>;
 template class OrderedSparseBin<uint32_t>;
 
-
 Bin* Bin::CreateBin(data_size_t num_data, int num_bin, double sparse_rate, 
-  bool is_enable_sparse, double sparse_threshold, bool* is_sparse, uint32_t default_bin, BinType bin_type) {
+  bool is_enable_sparse, double sparse_threshold, bool* is_sparse) {
   // sparse threshold
-  // const double kSparseThreshold = 0.8f;
   if (sparse_rate >= sparse_threshold && is_enable_sparse) {
     *is_sparse = true;
-    return CreateSparseBin(num_data, num_bin, default_bin, bin_type);
+    return CreateSparseBin(num_data, num_bin);
   } else {
     *is_sparse = false;
-    return CreateDenseBin(num_data, num_bin, default_bin, bin_type);
+    return CreateDenseBin(num_data, num_bin);
   }
 }
 
-Bin* Bin::CreateDenseBin(data_size_t num_data, int num_bin, uint32_t default_bin, BinType bin_type) {
-  if (bin_type == BinType::NumericalBin) {
-    if (num_bin <= 255) {
-      return new DenseBin<uint8_t>(num_data, default_bin);
-    } else if (num_bin <= 65535) {
-      return new DenseBin<uint16_t>(num_data, default_bin);
-    } else {
-      return new DenseBin<uint32_t>(num_data, default_bin);
-    }
+Bin* Bin::CreateDenseBin(data_size_t num_data, int num_bin) {
+  if (num_bin <= 16) {
+    return new Dense4bitsBin(num_data);
+  } else if (num_bin <= 256) {
+    return new DenseBin<uint8_t>(num_data);
+  } else if (num_bin <= 65536) {
+    return new DenseBin<uint16_t>(num_data);
   } else {
-    if (num_bin <= 255) {
-      return new DenseCategoricalBin<uint8_t>(num_data, default_bin);
-    } else if (num_bin <= 65535) {
-      return new DenseCategoricalBin<uint16_t>(num_data, default_bin);
-    } else {
-      return new DenseCategoricalBin<uint32_t>(num_data, default_bin);
-    }
+    return new DenseBin<uint32_t>(num_data);
   }
 }
 
-Bin* Bin::CreateSparseBin(data_size_t num_data, int num_bin, uint32_t default_bin, BinType bin_type) {
-  if (bin_type == BinType::NumericalBin) {
-    if (num_bin <= 255) {
-      return new SparseBin<uint8_t>(num_data, default_bin);
-    } else if (num_bin <= 65535) {
-      return new SparseBin<uint16_t>(num_data, default_bin);
-    } else {
-      return new SparseBin<uint32_t>(num_data, default_bin);
-    }
+Bin* Bin::CreateSparseBin(data_size_t num_data, int num_bin) {
+  if (num_bin <= 256) {
+    return new SparseBin<uint8_t>(num_data);
+  } else if (num_bin <= 65536) {
+    return new SparseBin<uint16_t>(num_data);
   } else {
-    if (num_bin <= 255) {
-      return new SparseCategoricalBin<uint8_t>(num_data, default_bin);
-    } else if (num_bin <= 65535) {
-      return new SparseCategoricalBin<uint16_t>(num_data, default_bin);
-    } else {
-      return new SparseCategoricalBin<uint32_t>(num_data, default_bin);
-    }
+    return new SparseBin<uint32_t>(num_data);
   }
 }
 

@@ -26,8 +26,8 @@ void VotingParallelTreeLearner::Init(const Dataset* train_data) {
   // get max bin
   int max_bin = 0;
   for (int i = 0; i < num_features_; ++i) {
-    if (max_bin < train_data_->FeatureAt(i)->num_bin()) {
-      max_bin = train_data_->FeatureAt(i)->num_bin();
+    if (max_bin < train_data_->FeatureNumBin(i)) {
+      max_bin = train_data_->FeatureNumBin(i);
     }
   }
   // calculate buffer size
@@ -46,21 +46,42 @@ void VotingParallelTreeLearner::Init(const Dataset* train_data) {
   larger_buffer_read_start_pos_.resize(num_features_);
   global_data_count_in_leaf_.resize(tree_config_->num_leaves);
 
-  smaller_leaf_splits_global_.reset(new LeafSplits(train_data_->num_features(), train_data_->num_data()));
-  larger_leaf_splits_global_.reset(new LeafSplits(train_data_->num_features(), train_data_->num_data()));
+  smaller_leaf_splits_global_.reset(new LeafSplits(train_data_->num_data()));
+  larger_leaf_splits_global_.reset(new LeafSplits(train_data_->num_data()));
 
   local_tree_config_ = *tree_config_;
   local_tree_config_.min_data_in_leaf /= num_machines_;
   local_tree_config_.min_sum_hessian_in_leaf /= num_machines_;
 
-  histogram_pool_.ResetConfig(&local_tree_config_, train_data_->num_features());
+  histogram_pool_.ResetConfig(&local_tree_config_);
 
   // initialize histograms for global
   smaller_leaf_histogram_array_global_.reset(new FeatureHistogram[num_features_]);
   larger_leaf_histogram_array_global_.reset(new FeatureHistogram[num_features_]);
-  for (int j = 0; j < num_features_; ++j) {
-    smaller_leaf_histogram_array_global_[j].Init(train_data_->FeatureAt(j), j, tree_config_);
-    larger_leaf_histogram_array_global_[j].Init(train_data_->FeatureAt(j), j, tree_config_);
+  auto num_total_bin = train_data_->NumTotalBin();
+  smaller_leaf_histogram_data_.resize(num_total_bin);
+  larger_leaf_histogram_data_.resize(num_total_bin);
+  feature_metas_.resize(train_data->num_features());
+#pragma omp parallel for schedule(static)
+  for (int i = 0; i < train_data->num_features(); ++i) {
+    feature_metas_[i].num_bin = train_data->FeatureNumBin(i);
+    if (train_data->FeatureBinMapper(i)->GetDefaultBin() == 0) {
+      feature_metas_[i].bias = 1;
+    } else {
+      feature_metas_[i].bias = 0;
+    }
+    feature_metas_[i].tree_config = tree_config_;
+  }
+  uint64_t offset = 0;
+  for (int j = 0; j < train_data->num_features(); ++j) {
+    offset += static_cast<uint64_t>(train_data->SubFeatureBinOffset(j));
+    smaller_leaf_histogram_array_global_[j].Init(smaller_leaf_histogram_data_.data() + offset, &feature_metas_[j], train_data->FeatureBinMapper(j)->bin_type());
+    larger_leaf_histogram_array_global_[j].Init(larger_leaf_histogram_data_.data() + offset, &feature_metas_[j], train_data->FeatureBinMapper(j)->bin_type());
+    auto num_bin = train_data->FeatureNumBin(j);
+    if (train_data->FeatureBinMapper(j)->GetDefaultBin() == 0) {
+      num_bin -= 1;
+    }
+    offset += static_cast<uint64_t>(num_bin);
   }
 }
 
@@ -71,12 +92,11 @@ void VotingParallelTreeLearner::ResetConfig(const TreeConfig* tree_config) {
   local_tree_config_.min_data_in_leaf /= num_machines_;
   local_tree_config_.min_sum_hessian_in_leaf /= num_machines_;
 
-  histogram_pool_.ResetConfig(&local_tree_config_, train_data_->num_features());
+  histogram_pool_.ResetConfig(&local_tree_config_);
   global_data_count_in_leaf_.resize(tree_config_->num_leaves);
 
-  for (int j = 0; j < num_features_; ++j) {
-    smaller_leaf_histogram_array_global_[j].ResetConfig(tree_config_);
-    larger_leaf_histogram_array_global_[j].ResetConfig(tree_config_);
+  for (size_t i = 0; i < feature_metas_.size(); ++i) {
+    feature_metas_[i].tree_config = tree_config_;
   }
 }
 
@@ -183,17 +203,17 @@ void VotingParallelTreeLearner::CopyLocalHistogram(const std::vector<int>& small
     while (cur_used_features < cur_total_feature) {
       // copy smaller leaf histograms first
       if (smaller_idx < smaller_top_features.size()) {
-        int fid = smaller_top_features[smaller_idx];
+        int inner_feature_index = train_data_->InnerFeatureIndex(smaller_top_features[smaller_idx]);
         ++cur_used_features;
         // mark local aggregated feature
         if (i == rank_) {
-          smaller_is_feature_aggregated_[fid] = true;
-          smaller_buffer_read_start_pos_[fid] = static_cast<int>(cur_size);
+          smaller_is_feature_aggregated_[inner_feature_index] = true;
+          smaller_buffer_read_start_pos_[inner_feature_index] = static_cast<int>(cur_size);
         }
         // copy
-        std::memcpy(input_buffer_.data() + reduce_scatter_size_, smaller_leaf_histogram_array_[fid].HistogramData(), smaller_leaf_histogram_array_[fid].SizeOfHistgram());
-        cur_size += smaller_leaf_histogram_array_[fid].SizeOfHistgram();
-        reduce_scatter_size_ += smaller_leaf_histogram_array_[fid].SizeOfHistgram();
+        std::memcpy(input_buffer_.data() + reduce_scatter_size_, smaller_leaf_histogram_array_[inner_feature_index].RawData(), smaller_leaf_histogram_array_[inner_feature_index].SizeOfHistgram());
+        cur_size += smaller_leaf_histogram_array_[inner_feature_index].SizeOfHistgram();
+        reduce_scatter_size_ += smaller_leaf_histogram_array_[inner_feature_index].SizeOfHistgram();
         ++smaller_idx;
       }
       if (cur_used_features >= cur_total_feature) {
@@ -201,17 +221,17 @@ void VotingParallelTreeLearner::CopyLocalHistogram(const std::vector<int>& small
       }
       // then copy larger leaf histograms
       if (larger_idx < larger_top_features.size()) {
-        int fid = larger_top_features[larger_idx];
+        int inner_feature_index = train_data_->InnerFeatureIndex(larger_top_features[larger_idx]);
         ++cur_used_features;
         // mark local aggregated feature
         if (i == rank_) {
-          larger_is_feature_aggregated_[fid] = true;
-          larger_buffer_read_start_pos_[fid] = static_cast<int>(cur_size);
+          larger_is_feature_aggregated_[inner_feature_index] = true;
+          larger_buffer_read_start_pos_[inner_feature_index] = static_cast<int>(cur_size);
         }
         // copy
-        std::memcpy(input_buffer_.data() + reduce_scatter_size_, larger_leaf_histogram_array_[fid].HistogramData(), larger_leaf_histogram_array_[fid].SizeOfHistgram());
-        cur_size += larger_leaf_histogram_array_[fid].SizeOfHistgram();
-        reduce_scatter_size_ += larger_leaf_histogram_array_[fid].SizeOfHistgram();
+        std::memcpy(input_buffer_.data() + reduce_scatter_size_, larger_leaf_histogram_array_[inner_feature_index].RawData(), larger_leaf_histogram_array_[inner_feature_index].SizeOfHistgram());
+        cur_size += larger_leaf_histogram_array_[inner_feature_index].SizeOfHistgram();
+        reduce_scatter_size_ += larger_leaf_histogram_array_[inner_feature_index].SizeOfHistgram();
         ++larger_idx;
       }
     }
@@ -225,11 +245,83 @@ void VotingParallelTreeLearner::CopyLocalHistogram(const std::vector<int>& small
 
 void VotingParallelTreeLearner::FindBestThresholds() {
   // use local data to find local best splits
-  SerialTreeLearner::FindBestThresholds();
+  std::vector<int8_t> is_feature_used(num_features_, 0);
+#pragma omp parallel for schedule(static)
+  for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
+    if (!is_feature_used_[feature_index]) continue;
+    if (parent_leaf_histogram_array_ != nullptr
+      && !parent_leaf_histogram_array_[feature_index].is_splittable()) {
+      smaller_leaf_histogram_array_[feature_index].set_is_splittable(false);
+      continue;
+    }
+    is_feature_used[feature_index] = 1;
+  }
+  bool use_subtract = true;
+  if (parent_leaf_histogram_array_ == nullptr) {
+    use_subtract = false;
+  }
+  // construct smaller leaf
+  HistogramBinEntry* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - 1;
+  train_data_->ConstructHistograms(is_feature_used,
+    smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
+    smaller_leaf_splits_->LeafIndex(),
+    ordered_bins_, gradients_, hessians_,
+    ordered_gradients_.data(), ordered_hessians_.data(),
+    ptr_smaller_leaf_hist_data);
+
+  if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
+    // construct larger leaf
+    HistogramBinEntry* ptr_larger_leaf_hist_data = larger_leaf_histogram_array_[0].RawData() - 1;
+    train_data_->ConstructHistograms(is_feature_used,
+      larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
+      larger_leaf_splits_->LeafIndex(),
+      ordered_bins_, gradients_, hessians_,
+      ordered_gradients_.data(), ordered_hessians_.data(),
+      ptr_larger_leaf_hist_data);
+  }
+
+  std::vector<SplitInfo> smaller_bestsplit_per_features(num_features_);
+  std::vector<SplitInfo> larger_bestsplit_per_features(num_features_);
+
+  // find splits
+#pragma omp parallel for schedule(static)
+  for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
+    if (!is_feature_used[feature_index]) { continue; }
+    const int real_feature_index = train_data_->RealFeatureIndex(feature_index);
+    train_data_->FixHistogram(feature_index,
+      smaller_leaf_splits_->sum_gradients(), smaller_leaf_splits_->sum_hessians(),
+      smaller_leaf_splits_->num_data_in_leaf(),
+      smaller_leaf_histogram_array_[feature_index].RawData());
+
+    smaller_leaf_histogram_array_[feature_index].FindBestThreshold(
+      smaller_leaf_splits_->sum_gradients(),
+      smaller_leaf_splits_->sum_hessians(),
+      smaller_leaf_splits_->num_data_in_leaf(),
+      &smaller_bestsplit_per_features[feature_index]);
+    smaller_bestsplit_per_features[feature_index].feature = real_feature_index;
+    // only has root leaf
+    if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->LeafIndex() < 0) { continue; }
+
+    if (use_subtract) {
+      larger_leaf_histogram_array_[feature_index].Subtract(smaller_leaf_histogram_array_[feature_index]);
+    } else {
+      train_data_->FixHistogram(feature_index, larger_leaf_splits_->sum_gradients(), larger_leaf_splits_->sum_hessians(),
+        larger_leaf_splits_->num_data_in_leaf(),
+        larger_leaf_histogram_array_[feature_index].RawData());
+    }
+    // find best threshold for larger child
+    larger_leaf_histogram_array_[feature_index].FindBestThreshold(
+      larger_leaf_splits_->sum_gradients(),
+      larger_leaf_splits_->sum_hessians(),
+      larger_leaf_splits_->num_data_in_leaf(),
+      &larger_bestsplit_per_features[feature_index]);
+    larger_bestsplit_per_features[feature_index].feature = real_feature_index;
+  }
+
   std::vector<SplitInfo> smaller_top_k_splits, larger_top_k_splits;
   // local voting
-  ArrayArgs<SplitInfo>::MaxK(smaller_leaf_splits_->BestSplitPerFeature(), top_k_, &smaller_top_k_splits);
-  ArrayArgs<SplitInfo>::MaxK(larger_leaf_splits_->BestSplitPerFeature(), top_k_, &larger_top_k_splits);
+  ArrayArgs<SplitInfo>::MaxK(smaller_bestsplit_per_features, top_k_, &smaller_top_k_splits);
+  ArrayArgs<SplitInfo>::MaxK(larger_bestsplit_per_features, top_k_, &larger_top_k_splits);
   // gather
   int offset = 0;
   for (int i = 0; i < top_k_; ++i) {
@@ -263,54 +355,77 @@ void VotingParallelTreeLearner::FindBestThresholds() {
   // Reduce scatter for histogram
   Network::ReduceScatter(input_buffer_.data(), reduce_scatter_size_, block_start_.data(), block_len_.data(),
     output_buffer_.data(), &HistogramBinEntry::SumReducer);
-  // find best split from local aggregated histograms
-#pragma omp parallel for schedule(guided)
-  for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
 
+  std::vector<SplitInfo> smaller_best(num_threads_);
+  std::vector<SplitInfo> larger_best(num_threads_);
+  // find best split from local aggregated histograms
+#pragma omp parallel for schedule(static)
+  for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
+    const int tid = omp_get_thread_num();
     if (smaller_is_feature_aggregated_[feature_index]) {
+      SplitInfo smaller_split;
       // restore from buffer
       smaller_leaf_histogram_array_global_[feature_index].FromMemory(
         output_buffer_.data() + smaller_buffer_read_start_pos_[feature_index]);
+
+      train_data_->FixHistogram(feature_index,
+        smaller_leaf_splits_global_->sum_gradients(), smaller_leaf_splits_global_->sum_hessians(),
+        GetGlobalDataCountInLeaf(smaller_leaf_splits_global_->LeafIndex()),
+        smaller_leaf_histogram_array_global_[feature_index].RawData());
+
       // find best threshold
       smaller_leaf_histogram_array_global_[feature_index].FindBestThreshold(
         smaller_leaf_splits_global_->sum_gradients(),
         smaller_leaf_splits_global_->sum_hessians(),
         GetGlobalDataCountInLeaf(smaller_leaf_splits_global_->LeafIndex()),
-        &smaller_leaf_splits_global_->BestSplitPerFeature()[feature_index]);
+        &smaller_split);
+      if (smaller_split.gain > smaller_best[tid].gain) {
+        smaller_best[tid] = smaller_split;
+        smaller_best[tid].feature = train_data_->RealFeatureIndex(feature_index);
+      }
     }
 
     if (larger_is_feature_aggregated_[feature_index]) {
+      SplitInfo larger_split;
       // restore from buffer
       larger_leaf_histogram_array_global_[feature_index].FromMemory(output_buffer_.data() + larger_buffer_read_start_pos_[feature_index]);
+
+      train_data_->FixHistogram(feature_index,
+        larger_leaf_splits_global_->sum_gradients(), larger_leaf_splits_global_->sum_hessians(),
+        GetGlobalDataCountInLeaf(larger_leaf_splits_global_->LeafIndex()),
+        larger_leaf_histogram_array_global_[feature_index].RawData());
+
       // find best threshold
       larger_leaf_histogram_array_global_[feature_index].FindBestThreshold(
         larger_leaf_splits_global_->sum_gradients(),
         larger_leaf_splits_global_->sum_hessians(),
         GetGlobalDataCountInLeaf(larger_leaf_splits_global_->LeafIndex()),
-        &larger_leaf_splits_global_->BestSplitPerFeature()[feature_index]);
+        &larger_split);
+      if (larger_split.gain > larger_best[tid].gain) {
+        larger_best[tid] = larger_split;
+        larger_best[tid].feature = train_data_->RealFeatureIndex(feature_index);
+      }
     }
+  }
+  auto smaller_best_idx = ArrayArgs<SplitInfo>::ArgMax(smaller_best);
+  int leaf = smaller_leaf_splits_->LeafIndex();
+  best_split_per_leaf_[leaf] = smaller_best[smaller_best_idx];
+
+  if (larger_leaf_splits_ != nullptr && larger_leaf_splits_->LeafIndex() >= 0) {
+    leaf = larger_leaf_splits_->LeafIndex();
+    auto larger_best_idx = ArrayArgs<SplitInfo>::ArgMax(larger_best);
+    best_split_per_leaf_[leaf] = larger_best[larger_best_idx];
   }
 
 }
 
 void VotingParallelTreeLearner::FindBestSplitsForLeaves() {
-  int smaller_best_feature = -1, larger_best_feature = -1;
   // find local best
   SplitInfo smaller_best, larger_best;
-  std::vector<double> gains;
-  for (size_t i = 0; i < smaller_leaf_splits_global_->BestSplitPerFeature().size(); ++i) {
-    gains.push_back(smaller_leaf_splits_global_->BestSplitPerFeature()[i].gain);
-  }
-  smaller_best_feature = static_cast<int>(ArrayArgs<double>::ArgMax(gains));
-  smaller_best = smaller_leaf_splits_global_->BestSplitPerFeature()[smaller_best_feature];
-
-  if (larger_leaf_splits_global_->LeafIndex() >= 0) {
-    gains.clear();
-    for (size_t i = 0; i < larger_leaf_splits_global_->BestSplitPerFeature().size(); ++i) {
-      gains.push_back(larger_leaf_splits_global_->BestSplitPerFeature()[i].gain);
-    }
-    larger_best_feature = static_cast<int>(ArrayArgs<double>::ArgMax(gains));
-    larger_best = larger_leaf_splits_global_->BestSplitPerFeature()[larger_best_feature];
+  smaller_best = best_split_per_leaf_[smaller_leaf_splits_->LeafIndex()];
+  // find local best split for larger leaf
+  if (larger_leaf_splits_->LeafIndex() >= 0) {
+    larger_best = best_split_per_leaf_[larger_leaf_splits_->LeafIndex()];
   }
   // sync global best info
   std::memcpy(input_buffer_.data(), &smaller_best, sizeof(SplitInfo));

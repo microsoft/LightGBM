@@ -20,7 +20,9 @@ public:
 
   LIGHTGBM_EXPORT Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data);
 
-  LIGHTGBM_EXPORT Dataset* CostructFromSampleData(std::vector<std::vector<double>>& sample_values, size_t total_sample_size, data_size_t num_data);
+  LIGHTGBM_EXPORT Dataset* CostructFromSampleData(std::vector<std::vector<double>>& sample_values,
+    std::vector<std::vector<int>>& sample_indices,
+    size_t total_sample_size, data_size_t num_data);
 
   /*! \brief Disable copy */
   DatasetLoader& operator=(const DatasetLoader&) = delete;
@@ -71,7 +73,6 @@ private:
   std::vector<std::string> feature_names_;
   /*! \brief Mapper from real feature index to used index*/
   std::unordered_set<int> categorical_features_;
-
 };
 
 }

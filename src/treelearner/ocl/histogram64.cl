@@ -65,6 +65,11 @@ typedef uint acc_int_type;
 // #define IGNORE_INDICES
 // #define POWER_FEATURE_WORKGROUPS 10
 
+// use all features and do not use feature mask
+#ifndef ENABLE_ALL_FEATURES
+#define ENABLE_ALL_FEATURES 1
+#endif
+
 // detect Nvidia platforms
 #ifdef cl_nv_pragma_unroll
 #define NVIDIA 1
@@ -135,7 +140,8 @@ inline void atomic_local_add_f(__local acc_type *addr, const float val)
 
 // this function will be called by histogram64
 // we have one sub-histogram of one feature in registers, and need to read others
-void within_kernel_reduction64x4(__global const acc_type* restrict feature4_sub_hist, 
+void within_kernel_reduction64x4(uchar4 feature_mask,
+                           __global const acc_type* restrict feature4_sub_hist, 
                            const uint skip_id,
                            acc_type g_val, acc_type h_val, uint cnt_val,
                            const ushort num_sub_hist,
@@ -145,11 +151,11 @@ void within_kernel_reduction64x4(__global const acc_type* restrict feature4_sub_
     const ushort lsize = LOCAL_SIZE_0;
     ushort feature_id = ltid & 3; // range 0 - 4
     const ushort bin_id = ltid >> 2; // range 0 - 63W
+    ushort i;
     #if POWER_FEATURE_WORKGROUPS != 0 
     // if there is only 1 work group, no need to do the reduction
     // add all sub-histograms for 4 features
     __global const acc_type* restrict p = feature4_sub_hist + ltid;
-    ushort i;
     for (i = 0; i < skip_id; ++i) {
             g_val += *p;            p += NUM_BINS * 4; // 256 threads working on 4 features' 64 bins
             h_val += *p;            p += NUM_BINS * 4;
@@ -171,7 +177,20 @@ void within_kernel_reduction64x4(__global const acc_type* restrict feature4_sub_
     local_hist[feature_id * 3 * NUM_BINS + bin_id * 3 + 1] = h_val;
     local_hist[feature_id * 3 * NUM_BINS + bin_id * 3 + 2] = as_acc_type((acc_int_type)cnt_val);
     barrier(CLK_LOCAL_MEM_FENCE);
-    for (ushort i = ltid; i < 4 * 3 * NUM_BINS; i += lsize) {
+    i = ltid;
+    if (feature_mask.s0 && i < 1 * 3 * NUM_BINS) {
+        output_buf[i] = local_hist[i];
+    }
+    i += 1 * 3 * NUM_BINS;
+    if (feature_mask.s1 && i < 2 * 3 * NUM_BINS) {
+        output_buf[i] = local_hist[i];
+    }
+    i += 1 * 3 * NUM_BINS;
+    if (feature_mask.s2 && i < 3 * 3 * NUM_BINS) {
+        output_buf[i] = local_hist[i];
+    }
+    i += 1 * 3 * NUM_BINS;
+    if (feature_mask.s3 && i < 4 * 3 * NUM_BINS) {
         output_buf[i] = local_hist[i];
     }
 }
@@ -181,6 +200,7 @@ void within_kernel_reduction64x4(__global const acc_type* restrict feature4_sub_
 __attribute__((reqd_work_group_size(LOCAL_SIZE_0, 1, 1)))
 #if USE_CONSTANT_BUF == 1
 __kernel void histogram64(__global const uchar4* restrict feature_data_base, 
+                      __constant const uchar4* restrict feature_masks __attribute__((max_constant_size(65536))),
                       const data_size_t feature_size,
                       __constant const data_size_t* restrict data_indices __attribute__((max_constant_size(65536))), 
                       const data_size_t num_data, 
@@ -191,6 +211,7 @@ __kernel void histogram64(__global const uchar4* restrict feature_data_base,
                       __global acc_type* restrict hist_buf_base) {
 #else
 __kernel void histogram64(__global const uchar4* feature_data_base, 
+                      __constant const uchar4* restrict feature_masks __attribute__((max_constant_size(65536))),
                       const data_size_t feature_size,
                       __global const data_size_t* data_indices, 
                       const data_size_t num_data, 
@@ -270,13 +291,25 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     // thread 0-7 write result to bank0, 8-15 to bank1, 16-23 to bank2, 24-31 to bank3
     ushort bank = (ltid >> 3) & BANK_MASK;
     
+    ushort group_feature = group_id >> POWER_FEATURE_WORKGROUPS;
     // each 2^POWER_FEATURE_WORKGROUPS workgroups process on one feature (compile-time constant)
     // feature_size is the number of examples per feature
-    __global const uchar4* feature_data = feature_data_base + (group_id >> POWER_FEATURE_WORKGROUPS) * feature_size;
+    __global const uchar4* feature_data = feature_data_base + group_feature * feature_size;
     // size of threads that process this feature4
     const uint subglobal_size = lsize * (1 << POWER_FEATURE_WORKGROUPS);
     // equavalent thread ID in this subgroup for this feature4
-    const uint subglobal_tid  = gtid - (group_id >> POWER_FEATURE_WORKGROUPS) * subglobal_size;
+    const uint subglobal_tid  = gtid - group_feature * subglobal_size;
+    // extract feature mask, when a byte is set to 0, that feature is disabled
+    #if ENABLE_ALL_FEATURES == 1
+    // hopefully the compiler will propogate the constants and eliminate all branches
+    uchar4 feature_mask = (uchar4)(0xff, 0xff, 0xff, 0xff);
+    #else
+    uchar4 feature_mask = feature_masks[group_feature];
+    #endif
+    // exit if all features are masked
+    if (!as_uint(feature_mask)) {
+        return;
+    }
 
     // STAGE 1: read feature data, and gradient and hessian
     // first half of the threads read feature data from global memory
@@ -304,6 +337,10 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     feature4 = as_uchar4(as_uint(feature4) & 0x3f3f3f3f);
     feature4_prev = feature4;
     feature4_prev = as_uchar4(rotate(as_uint(feature4_prev), (uint)offset*8));
+    #if ENABLE_ALL_FEATURES == 0
+    // rotate feature_mask to match the feature order of each thread
+    feature_mask = as_uchar4(rotate(as_uint(feature_mask), (uint)offset*8));
+    #endif
     acc_type s3_stat1 = 0.0f, s3_stat2 = 0.0f;
     acc_type s2_stat1 = 0.0f, s2_stat2 = 0.0f;
     acc_type s1_stat1 = 0.0f, s1_stat2 = 0.0f;
@@ -334,8 +371,8 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
         offset = (ltid & 0x3);
         feature4 = as_uchar4(rotate(as_uint(feature4), (uint)offset*8));
         bin = feature4.s3;
-        if (bin != feature4_prev.s3) {
-            printf("%3d (%4d): writing s3 %d %d offset %d", ltid, i, bin, feature4_prev.s3, offset);
+        if ((bin != feature4_prev.s3) && feature_mask.s3) {
+            // printf("%3d (%4d): writing s3 %d %d offset %d", ltid, i, bin, feature4_prev.s3, offset);
             bin = feature4_prev.s3;
             feature4_prev.s3 = feature4.s3;
             addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
@@ -350,15 +387,15 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
             s3_stat2 = stat2;
         }
         else {
-            printf("%3d (%4d): acc s3 %d", ltid, i, bin);
+            // printf("%3d (%4d): acc s3 %d", ltid, i, bin);
             s3_stat1 += stat1;
             s3_stat2 += stat2;
         }
 
         bin = feature4.s2;
         offset = (offset + 1) & 0x3;
-        if (bin != feature4_prev.s2) {
-            printf("%3d (%4d): writing s2 %d %d feature %d", ltid, i, bin, feature4_prev.s2, offset);
+        if ((bin != feature4_prev.s2) && feature_mask.s2) {
+            // printf("%3d (%4d): writing s2 %d %d feature %d", ltid, i, bin, feature4_prev.s2, offset);
             bin = feature4_prev.s2;
             feature4_prev.s2 = feature4.s2;
             addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
@@ -373,7 +410,7 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
             s2_stat2 = stat2;
         }
         else {
-            printf("%3d (%4d): acc s2 %d", ltid, i, bin);
+            // printf("%3d (%4d): acc s2 %d", ltid, i, bin);
             s2_stat1 += stat1;
             s2_stat2 += stat2;
         }
@@ -387,8 +424,8 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
 
         bin = feature4.s1 & 0x3f;
         offset = (offset + 1) & 0x3;
-        if (bin != feature4_prev.s1) {
-            printf("%3d (%4d): writing s1 %d %d feature %d", ltid, i, bin, feature4_prev.s1, offset);
+        if ((bin != feature4_prev.s1) && feature_mask.s1) {
+            // printf("%3d (%4d): writing s1 %d %d feature %d", ltid, i, bin, feature4_prev.s1, offset);
             bin = feature4_prev.s1;
             feature4_prev.s1 = feature4.s1;
             addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
@@ -403,15 +440,15 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
             s1_stat2 = stat2;
         }
         else {
-            printf("%3d (%4d): acc s1 %d", ltid, i, bin);
+            // printf("%3d (%4d): acc s1 %d", ltid, i, bin);
             s1_stat1 += stat1;
             s1_stat2 += stat2;
         }
 
         bin = feature4.s0;
         offset = (offset + 1) & 0x3;
-        if (bin != feature4_prev.s0) {
-            printf("%3d (%4d): writing s0 %d %d feature %d", ltid, i, bin, feature4_prev.s0, offset);
+        if ((bin != feature4_prev.s0) && feature_mask.s0) {
+            // printf("%3d (%4d): writing s0 %d %d feature %d", ltid, i, bin, feature4_prev.s0, offset);
             bin = feature4_prev.s0;
             feature4_prev.s0 = feature4.s0;
             addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
@@ -426,7 +463,7 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
             s0_stat2 = stat2;
         }
         else {
-            printf("%3d (%4d): acc s0 %d", ltid, i, bin);
+            // printf("%3d (%4d): acc s0 %d", ltid, i, bin);
             s0_stat1 += stat1;
             s0_stat2 += stat2;
         }
@@ -434,25 +471,33 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
         // STAGE 3: accumulate counter
         // there are 4 counters for 4 features
         // thread 0, 1, 2, 3 now process feature 0, 1, 2, 3's counts for example 0, 1, 2, 3
-        bin = feature4.s3;
         offset = (ltid & 0x3);
-        addr = bin * CNT_BIN_MULT + bank * 4 + offset;
-        atom_inc(cnt_hist + addr);
+        if (feature_mask.s3) {
+            bin = feature4.s3;
+            addr = bin * CNT_BIN_MULT + bank * 4 + offset;
+            atom_inc(cnt_hist + addr);
+        }
         // thread 0, 1, 2, 3 now process feature 1, 2, 3, 0's counts for example 0, 1, 2, 3
-        bin = feature4.s2;
         offset = (offset + 1) & 0x3;
-        addr = bin * CNT_BIN_MULT + bank * 4 + offset;
-        atom_inc(cnt_hist + addr);
+        if (feature_mask.s2) {
+            bin = feature4.s2;
+            addr = bin * CNT_BIN_MULT + bank * 4 + offset;
+            atom_inc(cnt_hist + addr);
+        }
         // thread 0, 1, 2, 3 now process feature 2, 3, 0, 1's counts for example 0, 1, 2, 3
-        bin = feature4.s1;
         offset = (offset + 1) & 0x3;
-        addr = bin * CNT_BIN_MULT + bank * 4 + offset;
-        atom_inc(cnt_hist + addr);
+        if (feature_mask.s1) {
+            bin = feature4.s1;
+            addr = bin * CNT_BIN_MULT + bank * 4 + offset;
+            atom_inc(cnt_hist + addr);
+        }
         // thread 0, 1, 2, 3 now process feature 3, 0, 1, 2's counts for example 0, 1, 2, 3
-        bin = feature4.s0;
         offset = (offset + 1) & 0x3;
-        addr = bin * CNT_BIN_MULT + bank * 4 + offset;
-        atom_inc(cnt_hist + addr);
+        if (feature_mask.s0) {
+            bin = feature4.s0;
+            addr = bin * CNT_BIN_MULT + bank * 4 + offset;
+            atom_inc(cnt_hist + addr);
+        }
         stat1 = stat1_next;
         stat2 = stat2_next;
         feature4 = feature4_next;
@@ -487,6 +532,12 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     atomic_local_add_f(gh_hist + addr, s0_stat1);
     atomic_local_add_f(gh_hist + addr2, s0_stat2);
     barrier(CLK_LOCAL_MEM_FENCE);
+    
+    #if ENABLE_ALL_FEATURES == 0
+    // restore feature_mask
+    feature_mask = feature_masks[group_feature];
+    #endif
+    
     // now reduce the 4 banks of subhistograms into 1
     /* memory layout of gh_hist:
        -----------------------------------------------------------------------------------------------
@@ -623,7 +674,8 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
         uint skip_id = group_id ^ output_offset;
         // locate output histogram location for this feature4
         __global acc_type* restrict hist_buf = hist_buf_base + feature4_id * 4 * 3 * NUM_BINS;
-        within_kernel_reduction64x4(feature4_subhists, skip_id, g_val, h_val, cnt_val, 1 << POWER_FEATURE_WORKGROUPS, hist_buf, shared_array);
+        within_kernel_reduction64x4(feature_mask, feature4_subhists, skip_id, g_val, h_val, cnt_val, 
+                                    1 << POWER_FEATURE_WORKGROUPS, hist_buf, (__local acc_type *)shared_array);
     }
 }
 

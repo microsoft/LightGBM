@@ -29,6 +29,7 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
 * ```boosting```, default=```gbdt```, type=enum, options=```gbdt```,```dart```, alias=```boost```,```boosting_type```
   * ```gbdt```, traditional Gradient Boosting Decision Tree 
   * ```dart```, [Dropouts meet Multiple Additive Regression Trees](https://arxiv.org/abs/1505.01866)
+  * ```goss```, Gradient-based One-Side Sampling
 * ```data```, default=```""```, type=string, alias=```train```,```train_data```
   * training data, LightGBM will train from this data
 * ```valid```, default=```""```, type=multi-string, alias=```test```,```valid_data```,```test_data```
@@ -95,6 +96,10 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * only used in ```dart```, true if want to use xgboost dart mode
 * ```drop_seed```, default=```4```, type=int
   * only used in ```dart```, used to random seed to choose dropping models.
+* ```top_rate```, default=```0.2```, type=double
+  * only used in ```goss```,  the retain ratio of large gradient data
+* ```other_rate```, default=```0.1```, type=int
+  * only used in ```goss```,  the retain ratio of small gradient data
 
 
 ## IO parameters

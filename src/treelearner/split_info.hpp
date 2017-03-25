@@ -53,6 +53,8 @@ public:
 
   inline bool operator > (const SplitInfo &si) const;
 
+  inline bool operator == (const SplitInfo &si) const;
+
   inline static void MaxReducer(const char* src, char* dst, int len) {
     const int type_size = sizeof(SplitInfo);
     int used_size = 0;
@@ -100,6 +102,35 @@ inline bool SplitInfo::operator > (const SplitInfo& si) const {
   } else {
     // if same gain, use smaller feature
     return local_feature < other_feature;
+  }
+}
+
+inline bool SplitInfo::operator == (const SplitInfo& si) const {
+  double local_gain = this->gain;
+  double other_gain = si.gain;
+  // replace nan with -inf
+  if (local_gain == NAN) {
+    local_gain = kMinScore;
+  }
+  // replace nan with -inf
+  if (other_gain == NAN) {
+    other_gain = kMinScore;
+  }
+  int local_feature = this->feature;
+  int other_feature = si.feature;
+  // replace -1 with max int
+  if (local_feature == -1) {
+    local_feature = INT32_MAX;
+  }
+  // replace -1 with max int
+  if (other_feature == -1) {
+    other_feature = INT32_MAX;
+  }
+  if (local_gain != other_gain) {
+    return local_gain == other_gain;
+  } else {
+    // if same gain, use smaller feature
+    return local_feature == other_feature;
   }
 }
 
