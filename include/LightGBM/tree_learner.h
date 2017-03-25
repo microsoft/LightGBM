@@ -44,6 +44,11 @@ public:
   virtual Tree* Train(const score_t* gradients, const score_t* hessians) = 0;
 
   /*!
+  * \brief use a existing tree to fit the new gradients and hessians.
+  */
+  virtual Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const = 0;
+
+  /*!
   * \brief Set bagging data
   * \param used_indices Used data indices
   * \param num_data Number of used data
@@ -55,7 +60,7 @@ public:
   * \brief Using last trained tree to predict score then adding to out_score;
   * \param out_score output score
   */
-  virtual void AddPredictionToScore(double* out_score) const = 0;
+  virtual void AddPredictionToScore(const Tree* tree, double* out_score) const = 0;
 
   TreeLearner() = default;
   /*! \brief Disable copy */

@@ -452,7 +452,7 @@ void GBDT::UpdateScore(const Tree* tree, const int curr_class) {
 #endif
   // update training score
   if (!is_use_subset_) {
-    train_score_updater_->AddScore(tree_learner_.get(), curr_class);
+    train_score_updater_->AddScore(tree_learner_.get(), tree, curr_class);
   } else {
     train_score_updater_->AddScore(tree, curr_class);
   }

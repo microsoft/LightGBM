@@ -70,19 +70,19 @@ public:
   /*!
   * \brief Adding prediction score, only used for training data.
   *        The training data is partitioned into tree leaves after training
-  *        Based on which We can get prediction quckily.
+  *        Based on which We can get prediction quickly.
   * \param tree_learner
   * \param curr_class Current class for multiclass training
   */
-  inline void AddScore(const TreeLearner* tree_learner, int curr_class) {
-    tree_learner->AddPredictionToScore(score_.data() + curr_class * num_data_);
+  inline void AddScore(const TreeLearner* tree_learner, const Tree* tree, int curr_class) {
+    tree_learner->AddPredictionToScore(tree, score_.data() + curr_class * num_data_);
   }
   /*!
   * \brief Using tree model to get prediction number, then adding to scores for parts of data
   *        Used for prediction of training out-of-bag data
   * \param tree Trained tree model
-  * \param data_indices Indices of data that will be proccessed
-  * \param data_cnt Number of data that will be proccessed
+  * \param data_indices Indices of data that will be processed
+  * \param data_cnt Number of data that will be processed
   * \param curr_class Current class for multiclass training
   */
   inline void AddScore(const Tree* tree, const data_size_t* data_indices,
