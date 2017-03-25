@@ -18,8 +18,8 @@ Build LightGBM with GPU support
 
 The following dependencies should be installed before compilation:
 
-- OpenCL 1.2 headers and libraries, usually provided by GPU manufacture.  The
-  generic OpenCL ICD packages (for example, ocl-icd-libopencl1,
+- OpenCL 1.2 headers and libraries, which is usually provided by GPU manufacture.  
+  The generic OpenCL ICD packages (for example, ocl-icd-libopencl1,
   ocl-icd-opencl-dev) can also be used.
 
 - libboost 1.56 or later (1.61 or later recommended). We use Boost.Compute as
@@ -34,7 +34,7 @@ The following dependencies should be installed before compilation:
 - CMake 3.2 or later
 
 Currently only building on Linux has been tested, but it should also work with
-MinGW on Windows as long as dependencies are available. To build LightGBM,
+MinGW on Windows as long as dependencies are available. To build LightGBM-GPU,
 use the following procedure:
 
 First clone this repository:
@@ -76,9 +76,10 @@ trainer should generate (almost) identical results as the CPU trainer.
 To get good speedup with GPU, it is suggested to use a smaller number of bins.
 Setting `max_bin=64` is recommended, as it usually does not noticeably affect
 training accuracy on large datasets, but GPU training can be significantly
-faster than using the default bin size of 255. Also, try to use single
-precision training (`gpu_use_dp=false`) when possible, because most GPUs
-(especially NVIDIA consumer GPUs) have poor double-precision performance.
+faster than the original version using the default bin size of 255. 
+Also, try to use single precision training (`gpu_use_dp=false`) when possible, 
+because most GPUs (especially NVIDIA consumer GPUs) have poor double-precision 
+performance.
 
 Supported Hardware
 --------------------------
