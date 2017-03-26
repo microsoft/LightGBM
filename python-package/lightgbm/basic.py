@@ -343,6 +343,11 @@ class _InnerPredictor(object):
         if self.__is_manage_handle:
             _safe_call(_LIB.LGBM_BoosterFree(self.handle))
 
+    def __getstate__(self):
+        this = self.__dict__.copy()
+        this.pop('handle', None)
+        return this
+
     def predict(self, data, num_iteration=-1,
                 raw_score=False, pred_leaf=False, data_has_header=False,
                 is_reshape=True):
