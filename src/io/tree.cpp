@@ -84,9 +84,9 @@ int Tree::Split(int leaf, int feature, BinType bin_type, uint32_t threshold_bin,
   // save current leaf value to internal node before change
   internal_value_[new_node_idx] = leaf_value_[leaf];
   internal_count_[new_node_idx] = left_cnt + right_cnt;
-  leaf_value_[leaf] = left_value;
+  leaf_value_[leaf] = std::isnan(left_value) ? 0.0f : left_value;
   leaf_count_[leaf] = left_cnt;
-  leaf_value_[num_leaves_] = right_value;
+  leaf_value_[num_leaves_] = std::isnan(right_value) ? 0.0f : right_value;
   leaf_count_[num_leaves_] = right_cnt;
   // update leaf depth
   leaf_depth_[num_leaves_] = leaf_depth_[leaf] + 1;
