@@ -370,7 +370,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
   #ifdef TIMETAG
     start_time = std::chrono::steady_clock::now();
   #endif
-    std::unique_ptr<Tree> new_tree(new Tree(2));
+    std::unique_ptr<Tree> new_tree;
     // train a new tree
     new_tree.reset(tree_learner_->Train(gradient + curr_class * num_data_, hessian + curr_class * num_data_));
   #ifdef TIMETAG
