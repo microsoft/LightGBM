@@ -793,11 +793,11 @@ void GPUTreeLearner::BeforeTrain() {
   }
 }
 
-bool GPUTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
+bool GPUTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) {
   // check depth of current leaf
   if (tree_config_->max_depth > 0) {
     // only need to check left leaf, since right leaf is in same level of left leaf
-    if (last_trained_tree_->leaf_depth(left_leaf) >= tree_config_->max_depth) {
+    if (tree->leaf_depth(left_leaf) >= tree_config_->max_depth) {
       best_split_per_leaf_[left_leaf].gain = kMinScore;
       if (right_leaf >= 0) {
         best_split_per_leaf_[right_leaf].gain = kMinScore;
