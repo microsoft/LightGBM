@@ -21,10 +21,10 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
     * ```regression_l2```, L2 loss, alias=```mean_squared_error```,```mse```
     * ```regression_l1```, L1 loss, alias=```mean_absolute_error```,```mae```
     * ```huber```, [Huber loss](https://en.wikipedia.org/wiki/Huber_loss "Huber loss - Wikipedia")
-    * ```fair```, [Fair loss](http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html)
+    * ```fair```, [Fair loss](https://www.kaggle.com/c/allstate-claims-severity/discussion/24520)
     * ```poisson```, [Poisson regression](https://en.wikipedia.org/wiki/Poisson_regression "Poisson regression")
   * ```binary```, binary classification application 
-  * ```lambdarank```, lambdarank application
+  * ```lambdarank```, [lambdarank](https://pdfs.semanticscholar.org/fc9a/e09f9ced555558fdf1e997c0a5411fb51f15.pdf) application
   * ```multiclass```, multi-class classification application, should set ```num_class``` as well
 * ```boosting```, default=```gbdt```, type=enum, options=```gbdt```,```dart```, alias=```boost```,```boosting_type```
   * ```gbdt```, traditional Gradient Boosting Decision Tree 
@@ -178,7 +178,7 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
 * ```huber_delta```, default=```1.0```, type=double
   * parameter for [Huber loss](https://en.wikipedia.org/wiki/Huber_loss "Huber loss - Wikipedia"). Will be used in regression task.
 * ```fair_c```, default=```1.0```, type=double
-  * parameter for [Fair loss](http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html). Will be used in regression task.
+  * parameter for [Fair loss](https://www.kaggle.com/c/allstate-claims-severity/discussion/24520). Will be used in regression task.
 * ```poission_max_delta_step```, default=```0.7```, type=double
   * parameter used to safeguard optimization
 * ```scale_pos_weight```, default=```1.0```, type=double
@@ -201,12 +201,12 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * ```l1```, absolute loss, alias=```mean_absolute_error```, ```mae```
   * ```l2```, square loss, alias=```mean_squared_error```, ```mse```
   * ```huber```, [Huber loss](https://en.wikipedia.org/wiki/Huber_loss "Huber loss - Wikipedia")
-  * ```fair```, [Fair loss](http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html)
+  * ```fair```, [Fair loss](https://www.kaggle.com/c/allstate-claims-severity/discussion/24520)
   * ```poisson```, [Poisson regression](https://en.wikipedia.org/wiki/Poisson_regression "Poisson regression")
   * ```ndcg```, [NDCG](https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG)
   * ```map```, [MAP](https://www.kaggle.com/wiki/MeanAveragePrecision)
-  * ```auc```, [AUC](https://en.wikipedia.org/wiki/Area_under_the_curve_(pharmacokinetics))
-  * ```binary_logloss```, [log loss](https://www.kaggle.com/wiki/LogarithmicLoss)
+  * ```auc```, [AUC](https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve)
+  * ```binary_logloss```, [log loss](https://www.kaggle.com/wiki/LogLoss)
   * ```binary_error```. For one sample ```0``` for correct classification, ```1``` for error classification.
   * ```multi_logloss```, log loss for mulit-class classification
   * ```multi_error```. error rate for mulit-class classification
