@@ -1174,6 +1174,7 @@ class Booster(object):
         self.__train_data_name = "training"
         self.__attr = {}
         self.best_iteration = -1
+        self.best_score = None
         params = {} if params is None else params
         if silent:
             params["verbose"] = 0

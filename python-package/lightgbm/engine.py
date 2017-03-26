@@ -13,6 +13,8 @@ from .basic import Booster, Dataset, LightGBMError, _InnerPredictor
 from .compat import (SKLEARN_INSTALLED, LGBMStratifiedKFold, integer_types,
                      range_, string_type)
 
+import ast
+
 
 def train(params, train_set, num_boost_round=100,
           valid_sets=None, valid_names=None,
@@ -55,7 +57,7 @@ def train(params, train_set, num_boost_round=100,
         Requires at least one validation data and one metric
         If there's more than one, will check all of them
         Returns the model with (best_iter + early_stopping_rounds)
-        If early stopping occurs, the model will add 'best_iteration' field
+        If early stopping occurs, the model will add the 'best_iteration' and 'best_score' fields
     evals_result: dict or None
         This dictionary used to store all evaluation results of all the items in valid_sets.
         Example: with a valid_sets containing [valid_set, train_set]
@@ -196,8 +198,10 @@ def train(params, train_set, num_boost_round=100,
             break
     if booster.attr('best_iteration') is not None:
         booster.best_iteration = int(booster.attr('best_iteration')) + 1
+        booster.best_score = ast.literal_eval(booster.attr('best_score'))
     else:
         booster.best_iteration = -1
+        booster.best_score = None
     return booster
 
 
