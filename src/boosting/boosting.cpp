@@ -48,11 +48,11 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
       } else if (type == std::string("goss")) {
         ret.reset(new GOSS());
       } else {
-        Log::Fatal("unknow boosting type %s", type.c_str());
+        Log::Fatal("unknown boosting type %s", type.c_str());
       }
       LoadFileToBoosting(ret.get(), filename);
     } else {
-      Log::Fatal("unknow submodel type in model file %s", filename);
+      Log::Fatal("unknown submodel type in model file %s", filename);
     }
     return ret.release();
   }
@@ -64,7 +64,7 @@ Boosting* Boosting::CreateBoosting(const char* filename) {
   if (type == std::string("tree")) {
     ret.reset(new GBDT());
   } else {
-    Log::Fatal("unknow submodel type in model file %s", filename);
+    Log::Fatal("unknown submodel type in model file %s", filename);
   }
   LoadFileToBoosting(ret.get(), filename);
   return ret.release();

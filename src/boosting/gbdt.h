@@ -26,11 +26,10 @@ public:
   ~GBDT();
   /*!
   * \brief Initialization logic
-  * \param config Config for boosting
+  * \param gbdt_config Config for boosting
   * \param train_data Training data
   * \param object_function Training objective function
   * \param training_metrics Training metrics
-  * \param output_model_filename Filename of output model
   */
   void Init(const BoostingConfig* gbdt_config, const Dataset* train_data, const ObjectiveFunction* object_function,
                              const std::vector<const Metric*>& training_metrics)
@@ -267,7 +266,6 @@ protected:
   std::string OutputMetric(int iter);
   /*!
   * \brief Calculate feature importances
-  * \param last_iter Last tree use to calculate
   */
   std::vector<std::pair<size_t, std::string>> FeatureImportance() const;
   /*! \brief current iteration */
