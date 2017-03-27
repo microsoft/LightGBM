@@ -96,7 +96,7 @@ The use of the following hardware is discouraged:
 - AMD VLIW4-based GPUs, including Radeon HD 6xxx series and earlier GPUs. These
   GPUs have been discontinued for years and are rarely seen nowadays.
 
-Datasets
+Tested Datasets
 --------------------------
 
 Datasets HIGGS, Yahoo LTR, Microsoft LTR and Expo that are used for 
@@ -256,6 +256,83 @@ Try to change the number of bins and see how that affacts training speed:
 # Speed test on GPU with max_bin size of 255:
 ./lightgbm config=lightgbm_gpu.conf data=epsilon.train objective=binary metric=auc max_bin=255
 ```
+
+Performance Comparison
+--------------------------
+
+We used the following hardware to evaluate the performance of our GPU
+algorithm.  Our CPU reference is a high-end dual socket Haswell-EP Xeon server;
+GPUs include a budget GPU (RX 480) and a mainstream (GTX 1080) GPU installed on
+the same server.  It is worth mentioning that our GPUs are not the best GPUs in
+the market; if you are using a better GPU (like NVIDIA GTX 1080 Ti, Titan X
+Pascal, P100, etc), you are likely to get a better speedup.
+
+| Hardware                     | Peak FLOPS   | Peak Memory BW | Cost (MSRP) |
+|------------------------------|--------------|----------------|-------------|
+| AMD Radeon RX 480            | 5,161 GFLOPS | 256 GB/s       | $200        |
+| NVIDIA GTX 1080              | 8,228 GFLOPS | 320 GB/s       | $499        |
+| 2x Xeon E5-2683v3 (28 cores) | 1,792 GFLOPS | 133 GB/s       | $3,692      |
+
+During benchmarking on CPU we used only 28 physical cores of the CPU, and did
+not use hyper-threading cores, because we found that using too many threads
+actually makes performance worse.
+
+We use the configuration described in the Datasets section above. For all GPU training we
+set `sparse_threshold=1`, and varying the max number of bins (255, 63 and 15).
+The GPU implementation is from commit `9602cd7e` of this repository, 
+and the CPU implementation is from commit `3beee91d` of LightGBM.
+The following tables shows dataset statistics.
+
+| Data     |      Task     |  Link | #Train_Set | #Feature| Comments|
+|----------|---------------|-------|-------|---------|---------|
+| Higgs    |  Binary classification | [link](https://archive.ics.uci.edu/ml/datasets/HIGGS) |10,500,000|28| use last 500,000 samples as test set  | 
+| Epsilon  |  Binary classification | [link](http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html) | 400,000 | 2,000 | use the provided test set |
+| Yahoo LTR|  Learning to rank      | [link](https://webscope.sandbox.yahoo.com/catalog.php?datatype=c)     |473,134|700|   set1.train as train, set1.test as test |
+| MS LTR   |  Learning to rank      | [link](http://research.microsoft.com/en-us/projects/mslr/) |2,270,296|137| {S1,S2,S3} as train set, {S5} as test set |
+| Expo     |  Binary classification (Categorical) | [link](http://stat-computing.org/dataexpo/2009/) |11,000,000|700| use last 1,000,000 as test set |
+
+The following table lists the accuracy on test set that CPU and GPU algorithms
+can achieve after 500 iterations.  GPU with the same number of bins can achieve
+a similar level of accuracy as on the CPU, despite using single precision
+arithmetic.  For most datasets, using 63 bins is sufficient.
+
+|                   | CPU 255 bins | CPU 63 bins | CPU 15 bins | GPU 255 bins | GPU 63 bins | GPU 15 bins |
+|-------------------|--------------|-------------|-------------|--------------|-------------|-------------|
+| Higgs AUC         | 0.846132     | 0.845311    | 0.84087     | 0.84523      | 0.845428    | 0.840548    |
+| Epsilon AUC       | 0.950452     | 0.950097    | 0.94823     | 0.950199     | 0.950109    | 0.947978    |
+| Expo AUC          | 0.776091     | 0.770014    | 0.743602    | 0.775943     | 0.772696    | 0.743317    |
+| MS-LTR NDCG@1     | 0.521135     | 0.523852    | 0.517996    | 0.521614     | 0.521099    | 0.52055     |
+| MS-LTR NDCG@3     | 0.504635     | 0.505756    | 0.502495    | 0.505045     | 0.50397     | 0.503641    |
+| MS-LTR NDCG@5     | 0.508776     | 0.510531    | 0.507656    | 0.509656     | 0.50904     | 0.50889     |
+| MS-LTR NDCG@10    | 0.526651     | 0.52749     | 0.524527    | 0.527411     | 0.526226    | 0.525855    |
+| Yahoo-LTR NGCG@1  | 0.732531     | 0.729834    | 0.732634    | 0.73133      | 0.732279    | 0.731965    |
+| Yahoo-LTR NGCG@3  | 0.739642     | 0.737349    | 0.737533    | 0.737912     | 0.738382    | 0.736739    |
+| Yahoo-LTR NGCG@5  | 0.756766     | 0.755554    | 0.755182    | 0.755944     | 0.756303    | 0.754295    |
+| Yahoo-LTR NGCG@10 | 0.796924     | 0.795605    | 0.795454    | 0.796339     | 0.796369    | 0.795321    |
+
+
+We record the wall clock time after 500 iterations, as shown in the figure below:
+
+![Performance Comparison](https://lh6.googleusercontent.com/3liri0LO0tCe119RbKdPRQFzG9_0WfylLHDjSafhD84SHNVAxz0imTn4hI_fei-Pbv5vrBEo=w1921-h972-rw)
+
+When using a GPU, it is advisable to use a bin size of 63 rather than 255,
+because it can speed up training significantly without noticeably affecting
+accuracy. On CPU, using a smaller bin size only marginally improves
+performance, sometimes even slows down training, like in Higgs (we can
+reproduce the same slowdown on two different machines, with different GCC
+versions).  We found that GPU can achieve impressive acceleration on large and
+dense datasets like Higgs and Epsilon.  Even on smaller and sparse datasets,
+a *budget* GPU can still compete and be faster than a 28-core Haswell server.
+
+The next table shows GPU memory usage reported by `nvidia-smi` during training
+with 63 bins.  We can see that no datasets use more than 1 GB of GPU
+memory, indicating that our GPU implementation can scale very well on
+huge datasets over 10x larger than Higgs or Epsilon.
+
+| Datasets              | Higgs | Epsilon | MS-LTR | Yahoo-LTR | Expo |
+|-----------------------|-------|---------|--------|-----------|------|
+| GPU Memory Usage (MB) | 611   | 901     | 413    | 291       | 405  |
+
 
 Further Reading
 --------------------------
