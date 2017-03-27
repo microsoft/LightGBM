@@ -238,7 +238,7 @@ public:
       }
       if (rest) {
         data_size_t idx = local_used_indices[num_data_ - 1];
-        data_[num_data_ / 2 + 1] = (mem_data[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+        data_[num_data_ >> 1] = (mem_data[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
       }
     } else {
       for (size_t i = 0; i < data_.size(); ++i) {
@@ -260,7 +260,7 @@ public:
     }
     if (rest) {
       data_size_t idx = used_indices[num_used_indices - 1];
-      data_[num_used_indices / 2 + 1] = (other_bin->data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      data_[num_used_indices >> 1] = (other_bin->data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
     }
   }
 
