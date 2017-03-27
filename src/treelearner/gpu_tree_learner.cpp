@@ -757,9 +757,6 @@ void GPUTreeLearner::BeforeTrain() {
 
   // if has ordered bin, need to initialize the ordered bin
   if (has_ordered_bin_) {
-  #ifdef TIMETAG
-    auto start_time = std::chrono::steady_clock::now();
-  #endif
     if (data_partition_->leaf_count(0) == num_data_) {
       // use all data, pass nullptr
     #pragma omp parallel for schedule(static)
@@ -787,9 +784,6 @@ void GPUTreeLearner::BeforeTrain() {
         is_data_in_leaf_[indices[i]] = 0;
       }
     }
-  #ifdef TIMETAG
-    ordered_bin_time += std::chrono::steady_clock::now() - start_time;
-  #endif
   }
 }
 
@@ -871,9 +865,6 @@ bool GPUTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int ri
 
   // split for the ordered bin
   if (has_ordered_bin_ && right_leaf >= 0) {
-  #ifdef TIMETAG
-    auto start_time = std::chrono::steady_clock::now();
-  #endif
     // mark data that at left-leaf
     const data_size_t* indices = data_partition_->indices();
     const auto left_cnt = data_partition_->leaf_count(left_leaf);
@@ -899,9 +890,6 @@ bool GPUTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int ri
     for (data_size_t i = begin; i < end; ++i) {
       is_data_in_leaf_[indices[i]] = 0;
     }
-  #ifdef TIMETAG
-    ordered_bin_time += std::chrono::steady_clock::now() - start_time;
-  #endif
   }
   return true;
 
@@ -976,9 +964,6 @@ bool GPUTreeLearner::ConstructGPUHistogramsAsync(
 }
 
 void GPUTreeLearner::FindBestThresholds() {
-#ifdef TIMETAG
-  auto start_time = std::chrono::steady_clock::now();
-#endif
   std::vector<int8_t> is_feature_used(num_features_, 0);
   std::vector<int8_t> is_sparse_feature_used(num_features_, 0);
   std::vector<int8_t> is_dense_feature_used(num_features_, 0);
@@ -1007,20 +992,23 @@ void GPUTreeLearner::FindBestThresholds() {
   HistogramBinEntry* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - 1;
   // first construct dense features on GPU asynchronously
   bool use_gpu = false;
-#if 1
-  use_gpu = ConstructGPUHistogramsAsync(is_feature_used,
-    nullptr, smaller_leaf_splits_->num_data_in_leaf(),
-    nullptr, nullptr,
-    nullptr, nullptr);
-  // then construct sparse features on CPU
-  train_data_->ConstructHistograms(is_sparse_feature_used,
+
+// use CPU instead of GPU for debugging
+// #define NOT_USING_GPU
+#ifdef NOT_USING_GPU
+  train_data_->ConstructHistograms(is_feature_used,
     smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
     smaller_leaf_splits_->LeafIndex(),
     ordered_bins_, gradients_, hessians_,
     ordered_gradients_.data(), ordered_hessians_.data(),
     ptr_smaller_leaf_hist_data);
 #else
-  train_data_->ConstructHistograms(is_feature_used,
+  use_gpu = ConstructGPUHistogramsAsync(is_feature_used,
+    nullptr, smaller_leaf_splits_->num_data_in_leaf(),
+    nullptr, nullptr,
+    nullptr, nullptr);
+  // then construct sparse features on CPU
+  train_data_->ConstructHistograms(is_sparse_feature_used,
     smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
     smaller_leaf_splits_->LeafIndex(),
     ordered_bins_, gradients_, hessians_,
@@ -1039,9 +1027,9 @@ void GPUTreeLearner::FindBestThresholds() {
     }
   }
 
-  // check GPU results
-  // #define DEBUG_COMPARE
-  #ifdef DEBUG_COMPARE
+  // Compare GPU histogram with CPU histogram, useful for debuggin GPU code problem
+  // #define GPU_DEBUG_COMPARE
+  #ifdef GPU_DEBUG_COMPARE
   for (int i = 0; i < num_dense_features_; ++i) {
     int feature_index = dense_feature_map_[i];
     if (!is_feature_used[i])
@@ -1096,12 +1084,6 @@ void GPUTreeLearner::FindBestThresholds() {
       }
     }
   }
-#ifdef TIMETAG
-  hist_time += std::chrono::steady_clock::now() - start_time;
-#endif
-#ifdef TIMETAG
-  start_time = std::chrono::steady_clock::now();
-#endif
   std::vector<SplitInfo> smaller_best(num_threads_);
   std::vector<SplitInfo> larger_best(num_threads_);
   // find splits
@@ -1170,9 +1152,6 @@ void GPUTreeLearner::FindBestThresholds() {
     auto larger_best_idx = ArrayArgs<SplitInfo>::ArgMax(larger_best);
     best_split_per_leaf_[leaf] = larger_best[larger_best_idx];
   }
-#ifdef TIMETAG
-  find_split_time += std::chrono::steady_clock::now() - start_time;
-#endif
 }
 
 void GPUTreeLearner::Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) {
