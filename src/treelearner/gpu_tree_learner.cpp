@@ -342,6 +342,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
   auto start_time = std::chrono::steady_clock::now();
   // Now generate new data structure feature4, and copy data to the device
   int nthreads = std::min(omp_get_max_threads(), (int)dense_feature_map_.size() / dword_features_);
+  nthreads = std::max(nthreads, 1);
   std::vector<Feature4*> host4_vecs(nthreads);
   std::vector<boost::compute::buffer> host4_bufs(nthreads);
   std::vector<Feature4*> host4_ptrs(nthreads);
@@ -355,6 +356,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
     host4_ptrs[i] = (Feature4*)queue_.enqueue_map_buffer(host4_bufs[i], boost::compute::command_queue::map_write_invalidate_region,
                     0, num_data_ * sizeof(Feature4));
   }
+  // building Feature4 bundles; each thread handles dword_features_ features
   #pragma omp parallel for schedule(static)
   for (unsigned int i = 0; i < dense_feature_map_.size() / dword_features_; ++i) {
     int tid = omp_get_thread_num();
@@ -436,6 +438,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
     printf("\n");
     #endif
   }
+  // working on the remaining (less than dword_features_) features
   if (k != 0) {
     Feature4* host4 = host4_ptrs[0];
     if (dword_features_ == 8) {
@@ -500,7 +503,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
         }
       }
     }
-    // copying the last 1-3 features
+    // copying the last 1 to (dword_features - 1) features
     queue_.enqueue_write_buffer(device_features_->get_buffer(),
                         (num_dense_feature4_ - 1) * num_data_ * sizeof(Feature4), num_data_ * sizeof(Feature4), host4);
     #if GPU_DEBUG >= 1
