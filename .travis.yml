@@ -24,7 +24,7 @@ script:
 - cd $TRAVIS_BUILD_DIR/tests/c_api_test && python test.py
 - cd $TRAVIS_BUILD_DIR/python-package && python setup.py install
 - cd $TRAVIS_BUILD_DIR/tests/python_package_test && python test_basic.py && python test_engine.py && python test_sklearn.py && python test_plotting.py
-- cd $TRAVIS_BUILD_DIR && pep8 --ignore=E501 .
+- cd $TRAVIS_BUILD_DIR && pep8 --ignore=E501 --exclude=./compute .
 - rm -rf build && mkdir build && cd build && cmake -DUSE_MPI=ON ..&& make -j
 - cd $TRAVIS_BUILD_DIR/tests/c_api_test && python test.py
 - cd $TRAVIS_BUILD_DIR/python-package && python setup.py install
