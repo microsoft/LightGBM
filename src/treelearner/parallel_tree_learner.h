@@ -103,7 +103,7 @@ public:
   void ResetConfig(const TreeConfig* tree_config) override;
 protected:
   void BeforeTrain() override;
-  bool BeforeFindBestSplit(int left_leaf, int right_leaf) override;
+  bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) override;
   void FindBestThresholds() override;
   void FindBestSplitsForLeaves() override;
   void Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) override;

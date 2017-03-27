@@ -370,7 +370,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
   #ifdef TIMETAG
     start_time = std::chrono::steady_clock::now();
   #endif
-    std::unique_ptr<Tree> new_tree(new Tree(2));
+    std::unique_ptr<Tree> new_tree;
     // train a new tree
     new_tree.reset(tree_learner_->Train(gradient + curr_class * num_data_, hessian + curr_class * num_data_));
   #ifdef TIMETAG
@@ -452,7 +452,7 @@ void GBDT::UpdateScore(const Tree* tree, const int curr_class) {
 #endif
   // update training score
   if (!is_use_subset_) {
-    train_score_updater_->AddScore(tree_learner_.get(), curr_class);
+    train_score_updater_->AddScore(tree_learner_.get(), tree, curr_class);
   } else {
     train_score_updater_->AddScore(tree, curr_class);
   }

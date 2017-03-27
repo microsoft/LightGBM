@@ -133,8 +133,8 @@ void VotingParallelTreeLearner::BeforeTrain() {
   global_data_count_in_leaf_[0] = std::get<0>(data);
 }
 
-bool VotingParallelTreeLearner::BeforeFindBestSplit(int left_leaf, int right_leaf) {
-  if (SerialTreeLearner::BeforeFindBestSplit(left_leaf, right_leaf)) {
+bool VotingParallelTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) {
+  if (SerialTreeLearner::BeforeFindBestSplit(tree, left_leaf, right_leaf)) {
     data_size_t num_data_in_left_child = GetGlobalDataCountInLeaf(left_leaf);
     data_size_t num_data_in_right_child = GetGlobalDataCountInLeaf(right_leaf);
     if (right_leaf < 0) {

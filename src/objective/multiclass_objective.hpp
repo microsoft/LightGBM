@@ -48,9 +48,10 @@ public:
 
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
     if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static)
+      std::vector<double> rec;
+      #pragma omp parallel for schedule(static) private(rec)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        std::vector<double> rec(num_class_);
+        rec.resize(num_class_);
         for (int k = 0; k < num_class_; ++k){
           size_t idx = static_cast<size_t>(num_data_) * k + i;
           rec[k] = static_cast<double>(score[idx]);
@@ -69,9 +70,10 @@ public:
         }
       }
     } else {
-      #pragma omp parallel for schedule(static)
+      std::vector<double> rec;
+      #pragma omp parallel for schedule(static) private(rec)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        std::vector<double> rec(num_class_);
+        rec.resize(num_class_);
         for (int k = 0; k < num_class_; ++k){
           size_t idx = static_cast<size_t>(num_data_) * k + i;
           rec[k] = static_cast<double>(score[idx]);
