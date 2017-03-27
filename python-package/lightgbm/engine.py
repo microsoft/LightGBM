@@ -225,7 +225,6 @@ def _make_n_folds(full_data, data_splitter, nfold, params, seed, fpreproc=None, 
     """
     Make an n-fold list of Booster from random indices.
     """
-    np.random.seed(seed)
     num_data = full_data.construct().num_data()
     if data_splitter is not None:
         if not hasattr(data_splitter, 'split'):
@@ -238,7 +237,7 @@ def _make_n_folds(full_data, data_splitter, nfold, params, seed, fpreproc=None, 
         folds = sfk.split(X=np.zeros(num_data), y=full_data.get_label())
     else:
         if shuffle:
-            randidx = np.random.permutation(num_data)
+            randidx = np.RandomState(seed).random.permutation(num_data)
         else:
             randidx = np.arange(num_data)
         kstep = int(num_data / nfold)
