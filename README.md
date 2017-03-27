@@ -313,7 +313,7 @@ arithmetic.  For most datasets, using 63 bins is sufficient.
 
 We record the wall clock time after 500 iterations, as shown in the figure below:
 
-![Performance Comparison](https://lh6.googleusercontent.com/3liri0LO0tCe119RbKdPRQFzG9_0WfylLHDjSafhD84SHNVAxz0imTn4hI_fei-Pbv5vrBEo=w1921-h972-rw)
+![Performance Comparison](http://www.huan-zhang.com/images/upload/lightgbm-gpu/compare_9602cd7e.png)
 
 When using a GPU, it is advisable to use a bin size of 63 rather than 255,
 because it can speed up training significantly without noticeably affecting
