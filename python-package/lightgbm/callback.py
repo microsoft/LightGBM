@@ -201,7 +201,6 @@ def early_stopping(stopping_rounds, verbose=True):
                             env.iteration + 1, '\t'.join([_format_eval_result(x) for x in env.evaluation_result_list]))
                     best_msg[i] = best_msg_buffer
             elif env.iteration - best_iter[i] >= stopping_rounds:
-                env.model.set_attr(best_iteration=str(best_iter[i]))
                 if verbose:
                     print('Early stopping, best iteration is:\n' + best_msg[i])
                 raise EarlyStopException(best_iter[i])
