@@ -100,7 +100,7 @@ class MultiErrorMetric: public MulticlassMetric<MultiErrorMetric> {
 public:
   explicit MultiErrorMetric(const MetricConfig& config) :MulticlassMetric<MultiErrorMetric>(config) {}
 
-  inline static double LossOnPoint(float label, std::vector<double> score) {
+  inline static double LossOnPoint(float label, std::vector<double>& score) {
     size_t k = static_cast<size_t>(label);
     for (size_t i = 0; i < score.size(); ++i){
         if (i != k && score[i] >= score[k]) {
@@ -120,7 +120,7 @@ class MultiLoglossMetric: public MulticlassMetric<MultiLoglossMetric> {
 public:
   explicit MultiLoglossMetric(const MetricConfig& config) :MulticlassMetric<MultiLoglossMetric>(config) {}
 
-  inline static double LossOnPoint(float label, std::vector<double> score) {
+  inline static double LossOnPoint(float label, std::vector<double>& score) {
     size_t k = static_cast<size_t>(label);
     Common::Softmax(&score);
     if (score[k] > kEpsilon) {
