@@ -422,10 +422,20 @@ public:
 	  return feature_groups_[group]->bin_mappers_[sub_feature]->num_bin();
   }
   
+  inline int FeatureNumTotalBin(int i) const {
+    const int group = feature2group_[i];
+	return feature_groups_[group]->num_total_bin_;
+  }
+  
   inline const BinMapper* FeatureBinMapper(int i) const {
     const int group = feature2group_[i];
     const int sub_feature = feature2subfeature_[i];
     return feature_groups_[group]->bin_mappers_[sub_feature].get();
+  }
+
+  inline const Bin* FeatureBin(int i) const {
+    const int group = feature2group_[i];
+    return feature_groups_[group]->bin_data_.get();
   }
 
   inline BinIterator* FeatureIterator(int i) const {

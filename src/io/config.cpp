@@ -163,16 +163,20 @@ void OverallConfig::CheckParamConflict() {
     is_parallel = true;
   } else {
     is_parallel = false;
-    boosting_config.tree_learner_type = "serial";
+    if (boosting_config.tree_learner_type != std::string("gpu")) {
+      boosting_config.tree_learner_type = "serial";
+    }
   }
 
-  if (boosting_config.tree_learner_type == std::string("serial")) {
+  if (boosting_config.tree_learner_type == std::string("serial") || 
+      boosting_config.tree_learner_type == std::string("gpu")) {
     is_parallel = false;
     network_config.num_machines = 1;
   }
 
   if (boosting_config.tree_learner_type == std::string("serial") 
-      || boosting_config.tree_learner_type == std::string("feature")) {
+      || boosting_config.tree_learner_type == std::string("feature")
+      || boosting_config.tree_learner_type == std::string("gpu")) {
     is_parallel_find_bin = false;
   } else if (boosting_config.tree_learner_type == std::string("data")
              || boosting_config.tree_learner_type == std::string("voting")) {
@@ -199,6 +203,7 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "bin_construct_sample_cnt", &bin_construct_sample_cnt);
   GetBool(params, "is_pre_partition", &is_pre_partition);
   GetBool(params, "is_enable_sparse", &is_enable_sparse);
+  GetDouble(params, "sparse_threshold", &sparse_threshold);
   GetBool(params, "use_two_round_loading", &use_two_round_loading);
   GetBool(params, "is_save_binary_file", &is_save_binary_file);
   GetBool(params, "enable_load_from_binary_file", &enable_load_from_binary_file);
@@ -303,6 +308,9 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   GetDouble(params, "histogram_pool_size", &histogram_pool_size);
   GetInt(params, "max_depth", &max_depth);
   GetInt(params, "top_k", &top_k);
+  GetInt(params, "gpu_platform_id", &gpu_platform_id);
+  GetInt(params, "gpu_device_id", &gpu_device_id);
+  GetBool(params, "gpu_use_dp", &gpu_use_dp);
 }
 
 
@@ -344,6 +352,8 @@ void BoostingConfig::GetTreeLearnerType(const std::unordered_map<std::string, st
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("serial")) {
       tree_learner_type = "serial";
+    } else if (value == std::string("gpu")) {
+      tree_learner_type = "gpu";
     } else if (value == std::string("feature") || value == std::string("feature_parallel")) {
       tree_learner_type = "feature";
     } else if (value == std::string("data") || value == std::string("data_parallel")) {

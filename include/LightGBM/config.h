@@ -97,6 +97,7 @@ public:
   int num_iteration_predict = -1;
   bool is_pre_partition = false;
   bool is_enable_sparse = true;
+  double sparse_threshold = 0.8;
   bool use_two_round_loading = false;
   bool is_save_binary_file = false;
   bool enable_load_from_binary_file = true;
@@ -188,6 +189,9 @@ public:
   // max_depth < 0 means no limit
   int max_depth = -1;
   int top_k = 20;
+  int gpu_platform_id = -1;
+  int gpu_device_id = -1;
+  bool gpu_use_dp = false;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 

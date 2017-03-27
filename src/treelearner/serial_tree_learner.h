@@ -18,6 +18,11 @@
 #include <random>
 #include <cmath>
 #include <memory>
+#ifdef USE_GPU
+// Use 4KBytes aligned allocator for ordered gradients and ordered hessians when GPU is enabled.
+// This is necessary to pin the two arrays in memory and make transferring faster.
+#include <boost/align/aligned_allocator.hpp>
+#endif
 
 namespace LightGBM {
 
@@ -129,10 +134,17 @@ protected:
   /*! \brief stores best thresholds for all feature for larger leaf */
   std::unique_ptr<LeafSplits> larger_leaf_splits_;
 
+#ifdef USE_GPU
+  /*! \brief gradients of current iteration, ordered for cache optimized, aligned to 4K page */
+  std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_gradients_;
+  /*! \brief hessians of current iteration, ordered for cache optimized, aligned to 4K page */
+  std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_hessians_;
+#else
   /*! \brief gradients of current iteration, ordered for cache optimized */
   std::vector<score_t> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized */
   std::vector<score_t> ordered_hessians_;
+#endif
 
   /*! \brief Store ordered bin */
   std::vector<std::unique_ptr<OrderedBin>> ordered_bins_;

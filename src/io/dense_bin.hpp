@@ -25,6 +25,7 @@ public:
       bias_ = 0;
     }
   }
+  inline uint32_t RawGet(data_size_t idx) override;
   inline uint32_t Get(data_size_t idx) override;
   inline void Reset(data_size_t) override { }
 private:
@@ -227,6 +228,11 @@ uint32_t DenseBinIterator<VAL_T>::Get(data_size_t idx) {
   } else {
     return default_bin_;
   }
+}
+
+template <typename VAL_T>
+inline uint32_t DenseBinIterator<VAL_T>::RawGet(data_size_t idx) {
+  return bin_data_->data_[idx];
 }
 
 template <typename VAL_T>

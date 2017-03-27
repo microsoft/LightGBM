@@ -25,10 +25,11 @@ public:
   * \param bin_mappers Bin mapper for features
   * \param num_data Total number of data
   * \param is_enable_sparse True if enable sparse feature
+  * \param sparse_threshold Threshold for treating a feature as a sparse feature
   */
   FeatureGroup(int num_feature,
     std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
-    data_size_t num_data, bool is_enable_sparse) : num_feature_(num_feature) {
+    data_size_t num_data, double sparse_threshold, bool is_enable_sparse) : num_feature_(num_feature), sparse_threshold_(sparse_threshold) {
     CHECK(static_cast<int>(bin_mappers.size()) == num_feature);
     // use bin at zero to store default_bin
     num_total_bin_ = 1;
@@ -46,7 +47,7 @@ public:
     }
     double sparse_rate = 1.0f - static_cast<double>(cnt_non_zero) / (num_data);
     bin_data_.reset(Bin::CreateBin(num_data, num_total_bin_,
-      sparse_rate, is_enable_sparse, &is_sparse_));
+      sparse_rate, is_enable_sparse, sparse_threshold_, &is_sparse_));
   }
   /*!
   * \brief Constructor from memory
@@ -62,6 +63,8 @@ public:
     memory_ptr += sizeof(is_sparse_);
     num_feature_ = *(reinterpret_cast<const int*>(memory_ptr));
     memory_ptr += sizeof(num_feature_);
+    sparse_threshold_ = *(reinterpret_cast<const double*>(memory_ptr));
+    memory_ptr += sizeof(sparse_threshold_);
     // get bin mapper
     bin_mappers_.clear();
     bin_offsets_.clear();
@@ -149,6 +152,7 @@ public:
   void SaveBinaryToFile(FILE* file) const {
     fwrite(&is_sparse_, sizeof(is_sparse_), 1, file);
     fwrite(&num_feature_, sizeof(num_feature_), 1, file);
+    fwrite(&sparse_threshold_, sizeof(sparse_threshold_), 1, file);
     for (int i = 0; i < num_feature_; ++i) {
       bin_mappers_[i]->SaveBinaryToFile(file);
     }
@@ -158,7 +162,7 @@ public:
   * \brief Get sizes in byte of this object
   */
   size_t SizesInByte() const {
-    size_t ret = sizeof(is_sparse_) + sizeof(num_feature_);
+    size_t ret = sizeof(is_sparse_) + sizeof(num_feature_) + sizeof(sparse_threshold_);
     for (int i = 0; i < num_feature_; ++i) {
       ret += bin_mappers_[i]->SizesInByte();
     }
@@ -181,6 +185,8 @@ private:
   std::unique_ptr<Bin> bin_data_;
   /*! \brief True if this feature is sparse */
   bool is_sparse_;
+  /*! \brief Threshold for treating a feature as a sparse feature */
+  double sparse_threshold_;
   int num_total_bin_;
 };
 

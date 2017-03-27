@@ -23,6 +23,7 @@ public:
       bias_ = 0;
     }
   }
+  inline uint32_t RawGet(data_size_t idx) override;
   inline uint32_t Get(data_size_t idx) override;
   inline void Reset(data_size_t) override { }
 private:
@@ -74,7 +75,7 @@ public:
     }
   }
 
-  BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const override;
+  inline BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const override;
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
@@ -287,7 +288,11 @@ uint32_t Dense4bitsBinIterator::Get(data_size_t idx) {
   }
 }
 
-BinIterator* Dense4bitsBin::GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const {
+uint32_t Dense4bitsBinIterator::RawGet(data_size_t idx) {
+  return (bin_data_->data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+}
+
+inline BinIterator* Dense4bitsBin::GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const {
   return new Dense4bitsBinIterator(this, min_bin, max_bin, default_bin);
 }
 

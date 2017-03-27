@@ -38,7 +38,7 @@ public:
     Reset(start_idx);
   }
 
-  inline VAL_T RawGet(data_size_t idx);
+  inline uint32_t RawGet(data_size_t idx) override;
 
   inline uint32_t Get( data_size_t idx) override {
     VAL_T ret = RawGet(idx);
@@ -357,7 +357,7 @@ protected:
 };
 
 template <typename VAL_T>
-inline VAL_T SparseBinIterator<VAL_T>::RawGet(data_size_t idx) {
+inline uint32_t SparseBinIterator<VAL_T>::RawGet(data_size_t idx) {
   while (cur_pos_ < idx) {
     bin_data_->NextNonzero(&i_delta_, &cur_pos_);
   }

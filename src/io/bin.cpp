@@ -339,12 +339,10 @@ template class OrderedSparseBin<uint8_t>;
 template class OrderedSparseBin<uint16_t>;
 template class OrderedSparseBin<uint32_t>;
 
-double BinMapper::kSparseThreshold = 0.8f;
-
 Bin* Bin::CreateBin(data_size_t num_data, int num_bin, double sparse_rate, 
-  bool is_enable_sparse, bool* is_sparse) {
+  bool is_enable_sparse, double sparse_threshold, bool* is_sparse) {
   // sparse threshold
-  if (sparse_rate >= BinMapper::kSparseThreshold && is_enable_sparse) {
+  if (sparse_rate >= sparse_threshold && is_enable_sparse) {
     *is_sparse = true;
     return CreateSparseBin(num_data, num_bin);
   } else {
