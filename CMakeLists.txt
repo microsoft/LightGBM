@@ -9,7 +9,7 @@ PROJECT(lightgbm)
 
 OPTION(USE_MPI "MPI based parallel learning" OFF)
 OPTION(USE_OPENMP "Enable OpenMP" ON)
-OPTION(USE_GPU "Enable GPU-acclerated training (EXPERIMENTAL)" ON)
+OPTION(USE_GPU "Enable GPU-acclerated training (EXPERIMENTAL)" OFF)
 
 if(APPLE)
     OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
