@@ -968,7 +968,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSC(BoosterHandle handle,
   int64_t num_preb_in_one_row = GetNumPredOneRow(ref_booster, predict_type, num_iteration);
   int ncol = static_cast<int>(ncol_ptr - 1);
 
-  Threading::For<int64_t>(0, num_row,
+  Threading::For<data_size_t>(0, static_cast<data_size_t>(num_row),
                           [&predictor, &out_result, num_preb_in_one_row, ncol, col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem]
   (int, data_size_t start, data_size_t end) {
     std::vector<CSC_RowIterator> iterators;

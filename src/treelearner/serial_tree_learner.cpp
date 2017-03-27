@@ -83,7 +83,7 @@ void SerialTreeLearner::Init(const Dataset* train_data) {
   // if has ordered bin, need to allocate a buffer to fast split
   if (has_ordered_bin_) {
     is_data_in_leaf_.resize(num_data_);
-    std::fill(is_data_in_leaf_.begin(), is_data_in_leaf_.end(), 0);
+    std::fill(is_data_in_leaf_.begin(), is_data_in_leaf_.end(), static_cast<char>(0));
     ordered_bin_indices_.clear();
     for (int i = 0; i < static_cast<int>(ordered_bins_.size()); i++) {
       if (ordered_bins_[i] != nullptr) {
@@ -125,7 +125,7 @@ void SerialTreeLearner::ResetTrainingData(const Dataset* train_data) {
   // if has ordered bin, need to allocate a buffer to fast split
   if (has_ordered_bin_) {
     is_data_in_leaf_.resize(num_data_);
-    std::fill(is_data_in_leaf_.begin(), is_data_in_leaf_.end(), 0);
+    std::fill(is_data_in_leaf_.begin(), is_data_in_leaf_.end(), static_cast<char>(0));
     ordered_bin_indices_.clear();
     for (int i = 0; i < static_cast<int>(ordered_bins_.size()); i++) {
       if (ordered_bins_[i] != nullptr) {

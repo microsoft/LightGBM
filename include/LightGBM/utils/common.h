@@ -271,6 +271,20 @@ inline static std::string ArrayToString(const std::vector<T>& arr, size_t n, cha
   return str_buf.str();
 }
 
+template<typename T, bool is_float>
+struct __StringToTHelper {
+  T operator()(const std::string& str) const {
+    return static_cast<T>(std::stol(str));
+  }
+};
+
+template<typename T>
+struct __StringToTHelper<T, true> {
+  T operator()(const std::string& str) const {
+    return static_cast<T>(std::stod(str));
+  }
+};
+
 template<typename T>
 inline static std::vector<T> StringToArray(const std::string& str, char delimiter, size_t n) {
   if (n == 0) {
@@ -281,14 +295,9 @@ inline static std::vector<T> StringToArray(const std::string& str, char delimite
     Log::Fatal("StringToArray error, size doesn't match.");
   }
   std::vector<T> ret(n);
-  if (std::is_same<T, float>::value || std::is_same<T, double>::value) {
-    for (size_t i = 0; i < n; ++i) {
-      ret[i] = static_cast<T>(std::stod(strs[i]));
-    }
-  } else {
-    for (size_t i = 0; i < n; ++i) {
-      ret[i] = static_cast<T>(std::stol(strs[i]));
-    }
+  __StringToTHelper<T, std::is_floating_point<T>::value> helper;
+  for (size_t i = 0; i < n; ++i) {
+    ret[i] = helper(strs[i]);
   }
   return ret;
 }
@@ -297,14 +306,10 @@ template<typename T>
 inline static std::vector<T> StringToArray(const std::string& str, char delimiter) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   std::vector<T> ret;
-  if (std::is_same<T, float>::value || std::is_same<T, double>::value) {
-    for (const auto& s : strs) {
-      ret.push_back(static_cast<T>(std::stod(s)));
-    }
-  } else {
-    for (const auto& s : strs) {
-      ret.push_back(static_cast<T>(std::stol(s)));
-    }
+  ret.reserve(strs.size());
+  __StringToTHelper<T, std::is_floating_point<T>::value> helper;
+  for (const auto& s : strs) {
+    ret.push_back(helper(s));
   }
   return ret;
 }
