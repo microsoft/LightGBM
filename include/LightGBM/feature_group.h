@@ -63,8 +63,6 @@ public:
     memory_ptr += sizeof(is_sparse_);
     num_feature_ = *(reinterpret_cast<const int*>(memory_ptr));
     memory_ptr += sizeof(num_feature_);
-    sparse_threshold_ = *(reinterpret_cast<const double*>(memory_ptr));
-    memory_ptr += sizeof(sparse_threshold_);
     // get bin mapper
     bin_mappers_.clear();
     bin_offsets_.clear();
@@ -152,7 +150,6 @@ public:
   void SaveBinaryToFile(FILE* file) const {
     fwrite(&is_sparse_, sizeof(is_sparse_), 1, file);
     fwrite(&num_feature_, sizeof(num_feature_), 1, file);
-    fwrite(&sparse_threshold_, sizeof(sparse_threshold_), 1, file);
     for (int i = 0; i < num_feature_; ++i) {
       bin_mappers_[i]->SaveBinaryToFile(file);
     }
@@ -162,7 +159,7 @@ public:
   * \brief Get sizes in byte of this object
   */
   size_t SizesInByte() const {
-    size_t ret = sizeof(is_sparse_) + sizeof(num_feature_) + sizeof(sparse_threshold_);
+    size_t ret = sizeof(is_sparse_) + sizeof(num_feature_);
     for (int i = 0; i < num_feature_; ++i) {
       ret += bin_mappers_[i]->SizesInByte();
     }
