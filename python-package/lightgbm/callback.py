@@ -14,10 +14,13 @@ class EarlyStopException(Exception):
     ----------
     best_iteration : int
         The best iteration stopped.
+    best_score : list of floats
+        The best score for each evaluation metrics.
     """
-    def __init__(self, best_iteration):
+    def __init__(self, best_iteration, best_score):
         super(EarlyStopException, self).__init__()
         self.best_iteration = best_iteration
+        self.best_score = best_score
 
 
 # Callback environment used by callbacks
@@ -164,6 +167,7 @@ def early_stopping(stopping_rounds, verbose=True):
     best_iter = []
     best_msg = []
     cmp_op = []
+    score_list = []
 
     def init(env):
         """internal function"""
@@ -176,6 +180,7 @@ def early_stopping(stopping_rounds, verbose=True):
 
         for eval_ret in env.evaluation_result_list:
             best_iter.append(0)
+            score_list.append([])
             if verbose:
                 best_msg.append(None)
             if eval_ret[3]:
@@ -195,15 +200,16 @@ def early_stopping(stopping_rounds, verbose=True):
             if cmp_op[i](score, best_score[i]):
                 best_score[i] = score
                 best_iter[i] = env.iteration
+                score_list[i] = [x[2] for x in env.evaluation_result_list]
                 if verbose:
                     if not best_msg_buffer:
                         best_msg_buffer = '[%d]\t%s' % (
                             env.iteration + 1, '\t'.join([_format_eval_result(x) for x in env.evaluation_result_list]))
                     best_msg[i] = best_msg_buffer
             elif env.iteration - best_iter[i] >= stopping_rounds:
-                env.model.set_attr(best_iteration=str(best_iter[i]))
+                env.model.set_attr(best_iteration=str(best_iter[i]), best_score=str(score_list[i]))
                 if verbose:
                     print('Early stopping, best iteration is:\n' + best_msg[i])
-                raise EarlyStopException(best_iter[i])
+                raise EarlyStopException(best_iter[i], score_list[i])
     callback.order = 30
     return callback
