@@ -29,7 +29,7 @@ public:
   */
   FeatureGroup(int num_feature,
     std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
-    data_size_t num_data, double sparse_threshold, bool is_enable_sparse) : num_feature_(num_feature), sparse_threshold_(sparse_threshold) {
+    data_size_t num_data, double sparse_threshold, bool is_enable_sparse) : num_feature_(num_feature) {
     CHECK(static_cast<int>(bin_mappers.size()) == num_feature);
     // use bin at zero to store default_bin
     num_total_bin_ = 1;
@@ -47,7 +47,7 @@ public:
     }
     double sparse_rate = 1.0f - static_cast<double>(cnt_non_zero) / (num_data);
     bin_data_.reset(Bin::CreateBin(num_data, num_total_bin_,
-      sparse_rate, is_enable_sparse, sparse_threshold_, &is_sparse_));
+      sparse_rate, is_enable_sparse, sparse_threshold, &is_sparse_));
   }
   /*!
   * \brief Constructor from memory
@@ -182,8 +182,6 @@ private:
   std::unique_ptr<Bin> bin_data_;
   /*! \brief True if this feature is sparse */
   bool is_sparse_;
-  /*! \brief Threshold for treating a feature as a sparse feature */
-  double sparse_threshold_;
   int num_total_bin_;
 };
 

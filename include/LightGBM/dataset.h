@@ -522,6 +522,8 @@ private:
   Metadata metadata_;
   /*! \brief index of label column */
   int label_idx_ = 0;
+  /*! \brief Threshold for treating a feature as a sparse feature */
+  double sparse_threshold_;
   /*! \brief store feature names */
   std::vector<std::string> feature_names_;
   /*! \brief store feature names */

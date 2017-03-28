@@ -50,6 +50,7 @@ void Dataset::Construct(
   size_t,
   const IOConfig& io_config) {
   num_total_features_ = static_cast<int>(bin_mappers.size());
+  sparse_threshold_ = io_config.sparse_threshold;
   // get num_features
   std::vector<int> used_features;
   for (int i = 0; i < static_cast<int>(bin_mappers.size()); ++i) {
@@ -85,7 +86,7 @@ void Dataset::Construct(
       ++cur_fidx;
     }
     feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(
-      new FeatureGroup(cur_cnt_features, cur_bin_mappers, num_data_, io_config.sparse_threshold, io_config.is_enable_sparse)));
+      new FeatureGroup(cur_cnt_features, cur_bin_mappers, num_data_, sparse_threshold_, io_config.is_enable_sparse)));
   }
   feature_groups_.shrink_to_fit();
   group_bin_boundaries_.clear();
@@ -125,6 +126,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   feature_groups_.clear();
   num_features_ = dataset->num_features_;
   num_groups_ = dataset->num_groups_;
+  sparse_threshold_ = dataset->sparse_threshold_;
   bool is_enable_sparse = false;
   for (int i = 0; i < num_groups_; ++i) {
     if (dataset->feature_groups_[i]->is_sparse_) {
@@ -142,7 +144,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
       dataset->feature_groups_[i]->num_feature_,
       bin_mappers,
       num_data_,
-      dataset->feature_groups_[i]->sparse_threshold_,
+      dataset->sparse_threshold_,
       is_enable_sparse));
   }
   feature_groups_.shrink_to_fit();
@@ -162,6 +164,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
   feature_groups_.clear();
   num_features_ = dataset->num_features_;
   num_groups_ = num_features_;
+  sparse_threshold_ = dataset->sparse_threshold_;
   bool is_enable_sparse = true;
   feature2group_.clear();
   feature2subfeature_.clear();
@@ -173,7 +176,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
       1,
       bin_mappers,
       num_data_,
-      dataset->feature_groups_[i]->sparse_threshold_,
+      dataset->sparse_threshold_,
       is_enable_sparse));
     feature2group_.push_back(i);
     feature2subfeature_.push_back(0);
