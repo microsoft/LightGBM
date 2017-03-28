@@ -165,6 +165,7 @@ def train(params, train_set, num_boost_round=100,
         booster.set_train_data_name(train_data_name)
     for valid_set, name_valid_set in zip(reduced_valid_sets, name_valid_sets):
         booster.add_valid(valid_set, name_valid_set)
+    booster.best_iteration = -1
 
     """start training"""
     for i in range_(init_iteration, init_iteration + num_boost_round):
@@ -192,12 +193,9 @@ def train(params, train_set, num_boost_round=100,
                                         begin_iteration=init_iteration,
                                         end_iteration=init_iteration + num_boost_round,
                                         evaluation_result_list=evaluation_result_list))
-        except callback.EarlyStopException:
+        except callback.EarlyStopException as earlyStopException:
+            booster.best_iteration = earlyStopException.best_iteration + 1
             break
-    if booster.attr('best_iteration') is not None:
-        booster.best_iteration = int(booster.attr('best_iteration')) + 1
-    else:
-        booster.best_iteration = -1
     return booster
 
 
@@ -205,6 +203,7 @@ class CVBooster(object):
     """"Auxiliary data struct to hold all boosters of CV."""
     def __init__(self):
         self.boosters = []
+        self.best_iteration = -1
 
     def append(self, booster):
         """add a booster to CVBooster"""
@@ -408,8 +407,9 @@ def cv(params, train_set, num_boost_round=10,
                                         begin_iteration=0,
                                         end_iteration=num_boost_round,
                                         evaluation_result_list=res))
-        except callback.EarlyStopException as e:
+        except callback.EarlyStopException as earlyStopException:
+            cvfolds.best_iteration = earlyStopException.best_iteration + 1
             for k in results:
-                results[k] = results[k][:e.best_iteration + 1]
+                results[k] = results[k][:cvfolds.best_iteration]
             break
     return dict(results)

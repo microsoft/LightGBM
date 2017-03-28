@@ -114,10 +114,14 @@ void Dataset::Construct(
 
 void Dataset::FinishLoad() {
   if (is_finish_load_) { return; }
+  OMP_INIT_EX();
 #pragma omp parallel for schedule(guided)
   for (int i = 0; i < num_groups_; ++i) {
+    OMP_LOOP_EX_BEGIN();
     feature_groups_[i]->bin_data_->FinishLoad();
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
   is_finish_load_ = true;
 }
 
@@ -210,19 +214,27 @@ void Dataset::CreateValid(const Dataset* dataset) {
 void Dataset::ReSize(data_size_t num_data) {
   if (num_data_ != num_data) {
     num_data_ = num_data;
+    OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
     for (int group = 0; group < num_groups_; ++group) {
+      OMP_LOOP_EX_BEGIN();
       feature_groups_[group]->bin_data_->ReSize(num_data_);
+      OMP_LOOP_EX_END();
     }
+    OMP_THROW_EX();
   }
 }
 
 void Dataset::CopySubset(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data) {
   CHECK(num_used_indices == num_data_);
+  OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int group = 0; group < num_groups_; ++group) {
+    OMP_LOOP_EX_BEGIN();
     feature_groups_[group]->CopySubset(fullset->feature_groups_[group].get(), used_indices, num_used_indices);
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
   if (need_meta_data) {
     metadata_.Init(fullset->metadata_, used_indices, num_used_indices);
   }
@@ -412,9 +424,10 @@ void Dataset::ConstructHistograms(
     ptr_ordered_grad = ordered_gradients;
     ptr_ordered_hess = ordered_hessians;
   }
-
+  OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int group = 0; group < num_groups_; ++group) {
+    OMP_LOOP_EX_BEGIN();
     bool is_groud_used = false;
     const int f_cnt = group_feature_cnt_[group];
     for (int j = 0; j < f_cnt; ++j) {
@@ -445,7 +458,9 @@ void Dataset::ConstructHistograms(
         hessians,
         data_ptr);
     }
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
 }
 
 void Dataset::FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, data_size_t num_data,

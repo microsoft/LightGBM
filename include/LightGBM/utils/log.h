@@ -45,10 +45,6 @@ public:
     GetLevel() = level;
   }
 
-  static void ResetUseException(bool use_ex) {
-    UseException() = use_ex;
-  }
-
   static void Debug(const char *format, ...) {
     va_list val;
     va_start(val, format);
@@ -79,11 +75,7 @@ public:
     va_end(val);
     fprintf(stderr, "[LightGBM] [Fatal] %s\n", str_buf);
     fflush(stderr);
-    if (UseException()) {
-      throw std::runtime_error(std::string(str_buf));
-    } else {
-      std::exit(-1);
-    }
+    throw std::runtime_error(std::string(str_buf));
   }
 
 private:
@@ -105,8 +97,6 @@ private:
 #else
   static LogLevel& GetLevel() { static thread_local LogLevel level = LogLevel::Info; return level; }
 #endif
-
-  static bool& UseException() { static bool use_ex = false; return use_ex; }
 
 };
 
