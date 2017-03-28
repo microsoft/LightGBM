@@ -733,7 +733,7 @@ inline int LGBM_APIHandleException(const std::string& ex) {
   return -1;
 }
 
-#define API_BEGIN() Log::ResetUseException(true); try {
+#define API_BEGIN() try {
 
 #define API_END() } \
 catch(std::exception& ex) { return LGBM_APIHandleException(ex); } \

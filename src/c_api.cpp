@@ -351,12 +351,16 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRows(DatasetHandle dataset,
   API_BEGIN();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, 1);
+  OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {
+    OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     auto one_row = get_row_fun(i);
     p_dataset->PushOneRow(tid, start_row + i, one_row);
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
   if (start_row + nrow == p_dataset->num_data()) {
     p_dataset->FinishLoad();
   }
@@ -377,13 +381,17 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
+  OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {
+    OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     auto one_row = get_row_fun(i);
     p_dataset->PushOneRow(tid,
                           static_cast<data_size_t>(start_row + i), one_row);
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
   if (start_row + nrow == static_cast<int64_t>(p_dataset->num_data())) {
     p_dataset->FinishLoad();
   }
@@ -433,13 +441,16 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
     ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
   }
-
+  OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {
+    OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     auto one_row = get_row_fun(i);
     ret->PushOneRow(tid, i, one_row);
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
   ret->FinishLoad();
   *out = ret.release();
   API_END();
@@ -497,13 +508,16 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSR(const void* indptr,
     ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
   }
-
+  OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int i = 0; i < nindptr - 1; ++i) {
+    OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     auto one_row = get_row_fun(i);
     ret->PushOneRow(tid, i, one_row);
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
   ret->FinishLoad();
   *out = ret.release();
   API_END();
@@ -534,8 +548,10 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values(ncol_ptr - 1);
     std::vector<std::vector<int>> sample_idx(ncol_ptr - 1);
+    OMP_INIT_EX();
   #pragma omp parallel for schedule(static)
     for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
+      OMP_LOOP_EX_BEGIN();
       CSC_RowIterator col_it(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i);
       for (int j = 0; j < sample_cnt; j++) {
         auto val = col_it.Get(sample_indices[j]);
@@ -544,7 +560,9 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
           sample_idx[i].emplace_back(j);
         }
       }
+      OMP_LOOP_EX_END();
     }
+    OMP_THROW_EX();
     DatasetLoader loader(io_config, nullptr, 1, nullptr);
     ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values).data(),
                                             Common::Vector2Ptr<int>(sample_idx).data(),
@@ -556,9 +574,10 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
     ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
   }
-
+  OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int i = 0; i < ncol_ptr - 1; ++i) {
+    OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     int feature_idx = ret->InnerFeatureIndex(i);
     if (feature_idx < 0) { continue; }
@@ -573,7 +592,9 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
       if (row_idx < 0) { break; }
       ret->PushOneData(tid, row_idx, group, sub_feature, pair.second);
     }
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
   ret->FinishLoad();
   *out = ret.release();
   API_END();
@@ -937,14 +958,18 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int64_t num_preb_in_one_row = GetNumPredOneRow(ref_booster, predict_type, num_iteration);
   int nrow = static_cast<int>(nindptr - 1);
+  OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {
+    OMP_LOOP_EX_BEGIN();
     auto one_row = get_row_fun(i);
     auto predicton_result = predictor.GetPredictFunction()(one_row);
     for (int j = 0; j < static_cast<int>(predicton_result.size()); ++j) {
       out_result[i * num_preb_in_one_row + j] = static_cast<double>(predicton_result[j]);
     }
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
   *out_len = nrow * num_preb_in_one_row;
   API_END();
 }
@@ -1009,14 +1034,18 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
   auto predictor = ref_booster->NewPredictor(static_cast<int>(num_iteration), predict_type);
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
   int64_t num_preb_in_one_row = GetNumPredOneRow(ref_booster, predict_type, num_iteration);
+  OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {
+    OMP_LOOP_EX_BEGIN();
     auto one_row = get_row_fun(i);
     auto predicton_result = predictor.GetPredictFunction()(one_row);
     for (int j = 0; j < static_cast<int>(predicton_result.size()); ++j) {
       out_result[i * num_preb_in_one_row + j] = static_cast<double>(predicton_result[j]);
     }
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
   *out_len = nrow * num_preb_in_one_row;
   API_END();
 }

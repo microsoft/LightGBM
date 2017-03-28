@@ -282,10 +282,11 @@ void VotingParallelTreeLearner::FindBestThresholds() {
 
   std::vector<SplitInfo> smaller_bestsplit_per_features(num_features_);
   std::vector<SplitInfo> larger_bestsplit_per_features(num_features_);
-
+  OMP_INIT_EX();
   // find splits
 #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
+    OMP_LOOP_EX_BEGIN();
     if (!is_feature_used[feature_index]) { continue; }
     const int real_feature_index = train_data_->RealFeatureIndex(feature_index);
     train_data_->FixHistogram(feature_index,
@@ -316,7 +317,9 @@ void VotingParallelTreeLearner::FindBestThresholds() {
       larger_leaf_splits_->num_data_in_leaf(),
       &larger_bestsplit_per_features[feature_index]);
     larger_bestsplit_per_features[feature_index].feature = real_feature_index;
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
 
   std::vector<SplitInfo> smaller_top_k_splits, larger_top_k_splits;
   // local voting
@@ -361,6 +364,7 @@ void VotingParallelTreeLearner::FindBestThresholds() {
   // find best split from local aggregated histograms
 #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
+    OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     if (smaller_is_feature_aggregated_[feature_index]) {
       SplitInfo smaller_split;
@@ -406,7 +410,9 @@ void VotingParallelTreeLearner::FindBestThresholds() {
         larger_best[tid].feature = train_data_->RealFeatureIndex(feature_index);
       }
     }
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
   auto smaller_best_idx = ArrayArgs<SplitInfo>::ArgMax(smaller_best);
   int leaf = smaller_leaf_splits_->LeafIndex();
   best_split_per_leaf_[leaf] = smaller_best[smaller_best_idx];

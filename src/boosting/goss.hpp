@@ -131,9 +131,10 @@ public:
     const data_size_t min_inner_size = 100;
     data_size_t inner_size = (num_data_ + num_threads_ - 1) / num_threads_;
     if (inner_size < min_inner_size) { inner_size = min_inner_size; }
-
+    OMP_INIT_EX();
 #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < num_threads_; ++i) {
+      OMP_LOOP_EX_BEGIN();
       left_cnts_buf_[i] = 0;
       right_cnts_buf_[i] = 0;
       data_size_t cur_start = i * inner_size;
@@ -146,7 +147,9 @@ public:
       offsets_buf_[i] = cur_start;
       left_cnts_buf_[i] = cur_left_count;
       right_cnts_buf_[i] = cur_cnt - cur_left_count;
+      OMP_LOOP_EX_END();
     }
+    OMP_THROW_EX();
     data_size_t left_cnt = 0;
     left_write_pos_buf_[0] = 0;
     right_write_pos_buf_[0] = 0;
@@ -158,6 +161,7 @@ public:
 
 #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < num_threads_; ++i) {
+      OMP_LOOP_EX_BEGIN();
       if (left_cnts_buf_[i] > 0) {
         std::memcpy(bag_data_indices_.data() + left_write_pos_buf_[i],
           tmp_indices_.data() + offsets_buf_[i], left_cnts_buf_[i] * sizeof(data_size_t));
@@ -166,7 +170,9 @@ public:
         std::memcpy(bag_data_indices_.data() + left_cnt + right_write_pos_buf_[i],
           tmp_indice_right_.data() + offsets_buf_[i], right_cnts_buf_[i] * sizeof(data_size_t));
       }
+      OMP_LOOP_EX_END();
     }
+    OMP_THROW_EX();
     bag_data_cnt_ = left_cnt;
     // set bagging data to tree learner
     if (!is_use_subset_) {

@@ -102,8 +102,10 @@ public:
     data_size_t inner_size = (cnt + num_threads_ - 1) / num_threads_;
     if (inner_size < min_inner_size) { inner_size = min_inner_size; }
     // split data multi-threading
+    OMP_INIT_EX();
 #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < num_threads_; ++i) {
+      OMP_LOOP_EX_BEGIN();
       left_cnts_buf_[i] = 0;
       right_cnts_buf_[i] = 0;
       data_size_t cur_start = i * inner_size;
@@ -116,7 +118,9 @@ public:
       offsets_buf_[i] = cur_start;
       left_cnts_buf_[i] = cur_left_count;
       right_cnts_buf_[i] = cur_cnt - cur_left_count;
+      OMP_LOOP_EX_END();
     }
+    OMP_THROW_EX();
     data_size_t left_cnt = 0;
     left_write_pos_buf_[0] = 0;
     right_write_pos_buf_[0] = 0;

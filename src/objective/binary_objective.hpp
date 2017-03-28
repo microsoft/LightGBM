@@ -28,7 +28,7 @@ public:
     data_size_t cnt_positive = 0;
     data_size_t cnt_negative = 0;
     // count for positive and negative samples
-#pragma omp parallel for schedule(static) reduction(+:cnt_positive, cnt_negative)
+    #pragma omp parallel for schedule(static) reduction(+:cnt_positive, cnt_negative)
     for (data_size_t i = 0; i < num_data_; ++i) {
       if (label_[i] > 0) {
         ++cnt_positive;
