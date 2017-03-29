@@ -56,7 +56,7 @@ public:
           } else {
             gradients[idx] = static_cast<score_t>(p);
           }
-          hessians[idx] = static_cast<score_t>(p * (1.0f - p));
+          hessians[idx] = static_cast<score_t>(2.0f * p * (1.0f - p));
         }
       }
     } else {
@@ -77,7 +77,7 @@ public:
           } else {
             gradients[idx] = static_cast<score_t>(p * weights_[i]);
           }
-          hessians[idx] = static_cast<score_t>(p * (1.0f - p) * weights_[i]);
+          hessians[idx] = static_cast<score_t>(2.0f * p * (1.0f - p) * weights_[i]);
         }
       }
     }

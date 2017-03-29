@@ -175,7 +175,6 @@ public:
     if (weights_ == nullptr) {
       #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        std::vector<double> rec(num_class_);
         size_t idx = static_cast<size_t>(num_data_) * static_cast<int>(label_[i]) + i;
         double prob = 1.0f / (1.0f + std::exp(-sigmoid_ * score[idx]));
         if (prob < kEpsilon) { prob = kEpsilon; }
