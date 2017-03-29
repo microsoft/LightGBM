@@ -5,19 +5,22 @@
 
 #include <cstring>
 #include <cmath>
+#include <vector>
+
+#include "binary_objective.hpp"
 
 namespace LightGBM {
 /*!
-* \brief Objective function for multiclass classification
+* \brief Objective function for multiclass classification, use softmax as objective functions
 */
-class MulticlassLogloss: public ObjectiveFunction {
+class MulticlassSoftmax: public ObjectiveFunction {
 public:
-  explicit MulticlassLogloss(const ObjectiveConfig& config) {
+  explicit MulticlassSoftmax(const ObjectiveConfig& config) {
     num_class_ = config.num_class;
-    is_unbalance_ = config.is_unbalance;
   }
 
-  ~MulticlassLogloss() {
+  ~MulticlassSoftmax() {
+
   }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
@@ -32,18 +35,6 @@ public:
         Log::Fatal("Label must be in [0, %d), but found %d in label", num_class_, label_int_[i]);
       }
     }
-    label_pos_weights_ = std::vector<float>(num_class_, 1);
-    if (is_unbalance_) {
-      std::vector<int> cnts(num_class_, 0);
-      for (int i = 0; i < num_data_; ++i) {
-        ++cnts[label_int_[i]];
-      }
-      for (int i = 0; i < num_class_; ++i) {
-        int cnt_cur = cnts[i];
-        int cnt_other = (num_data_ - cnts[i]);
-        label_pos_weights_[i] = static_cast<float>(cnt_other) / cnt_cur;
-      }
-    } 
   }
 
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
@@ -52,7 +43,7 @@ public:
       #pragma omp parallel for schedule(static) private(rec)
       for (data_size_t i = 0; i < num_data_; ++i) {
         rec.resize(num_class_);
-        for (int k = 0; k < num_class_; ++k){
+        for (int k = 0; k < num_class_; ++k) {
           size_t idx = static_cast<size_t>(num_data_) * k + i;
           rec[k] = static_cast<double>(score[idx]);
         }
@@ -61,12 +52,11 @@ public:
           auto p = rec[k];
           size_t idx = static_cast<size_t>(num_data_) * k + i;
           if (label_int_[i] == k) {
-            gradients[idx] = static_cast<score_t>(p - 1.0f) * label_pos_weights_[k];
-            hessians[idx] = static_cast<score_t>(p * (1.0f - p))* label_pos_weights_[k];
+            gradients[idx] = static_cast<score_t>(p - 1.0f);
           } else {
             gradients[idx] = static_cast<score_t>(p);
-            hessians[idx] = static_cast<score_t>(p * (1.0f - p));
           }
+          hessians[idx] = static_cast<score_t>(p * (1.0f - p));
         }
       }
     } else {
@@ -74,7 +64,7 @@ public:
       #pragma omp parallel for schedule(static) private(rec)
       for (data_size_t i = 0; i < num_data_; ++i) {
         rec.resize(num_class_);
-        for (int k = 0; k < num_class_; ++k){
+        for (int k = 0; k < num_class_; ++k) {
           size_t idx = static_cast<size_t>(num_data_) * k + i;
           rec[k] = static_cast<double>(score[idx]);
         }
@@ -83,13 +73,11 @@ public:
           auto p = rec[k];
           size_t idx = static_cast<size_t>(num_data_) * k + i;
           if (label_int_[i] == k) {
-            gradients[idx] = static_cast<score_t>((p - 1.0f) * weights_[i]) * label_pos_weights_[k];
-            hessians[idx] = static_cast<score_t>(p * (1.0f - p) * weights_[i]) * label_pos_weights_[k];
+            gradients[idx] = static_cast<score_t>((p - 1.0f) * weights_[i]);
           } else {
             gradients[idx] = static_cast<score_t>(p * weights_[i]);
-            hessians[idx] = static_cast<score_t>(p * (1.0f - p) * weights_[i]);
           }
-          
+          hessians[idx] = static_cast<score_t>(p * (1.0f - p) * weights_[i]);
         }
       }
     }
@@ -110,9 +98,49 @@ private:
   std::vector<int> label_int_;
   /*! \brief Weights for data */
   const float* weights_;
-  /*! \brief Weights for label */
-  std::vector<float> label_pos_weights_;
-  bool is_unbalance_;
+};
+
+/*!
+* \brief Objective function for multiclass classification, use one-vs-all binary objective function
+*/
+class MulticlassOVA: public ObjectiveFunction {
+public:
+  explicit MulticlassOVA(const ObjectiveConfig& config) {
+    num_class_ = config.num_class;
+    for (int i = 0; i < num_class_; ++i) {
+      binary_loss_.emplace_back(
+        new BinaryLogloss(config, [i](float label) { return static_cast<int>(label) == i; }));
+    }
+  }
+
+  ~MulticlassOVA() {
+
+  }
+
+  void Init(const Metadata& metadata, data_size_t num_data) override {
+    num_data_ = num_data;
+    for (int i = 0; i < num_class_; ++i) {
+      binary_loss_[i]->Init(metadata, num_data);
+    }
+  }
+
+  void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
+    for (int i = 0; i < num_class_; ++i) {
+      int64_t bias = static_cast<int64_t>(num_data_) * i;
+      binary_loss_[i]->GetGradients(score + bias, gradients + bias, hessians + bias);
+    }
+  }
+
+  const char* GetName() const override {
+    return "multiclassova";
+  }
+
+private:
+  /*! \brief Number of data */
+  data_size_t num_data_;
+  /*! \brief Number of classes */
+  int num_class_;
+  std::vector<std::unique_ptr<BinaryLogloss>> binary_loss_;
 };
 
 }  // namespace LightGBM

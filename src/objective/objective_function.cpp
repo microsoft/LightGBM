@@ -23,7 +23,9 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
   } else if (type == std::string("lambdarank")) {
     return new LambdarankNDCG(config);
   } else if (type == std::string("multiclass")) {
-    return new MulticlassLogloss(config);
+    return new MulticlassSoftmax(config);
+  } else if (type == std::string("multiclassova")) {
+    return new MulticlassOVA(config);
   }
   return nullptr;
 }
