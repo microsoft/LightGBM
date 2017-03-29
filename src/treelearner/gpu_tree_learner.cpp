@@ -694,44 +694,10 @@ void GPUTreeLearner::BeforeTrain() {
     gradients_future_ = queue_.enqueue_write_buffer_async(device_gradients_, 0, num_data_ * sizeof(score_t), gradients_);
   }
 
-  // reset histogram pool
-  histogram_pool_.ResetMap();
+  SerialTreeLearner::BeforeTrain();
 
-  if (tree_config_->feature_fraction < 1) {
-    int used_feature_cnt = static_cast<int>(train_data_->num_total_features()*tree_config_->feature_fraction);
-    // initialize used features
-    std::memset(is_feature_used_.data(), 0, sizeof(int8_t) * num_features_);
-    // Get used feature at current tree
-    auto used_feature_indices = random_.Sample(train_data_->num_total_features(), used_feature_cnt);
-  #pragma omp parallel for schedule(static)
-    for (int i = 0; i < static_cast<int>(used_feature_indices.size()); ++i) {
-      int inner_feature_index = train_data_->InnerFeatureIndex(used_feature_indices[i]);
-      if (inner_feature_index < 0) {  continue; }
-      is_feature_used_[inner_feature_index] = 1;
-    }
-  } else {
-  #pragma omp parallel for schedule(static)
-    for (int i = 0; i < num_features_; ++i) {
-      is_feature_used_[i] = 1;
-    }
-  }
-
-  // initialize data partition
-  data_partition_->Init();
-
-  // reset the splits for leaves
-  for (int i = 0; i < tree_config_->num_leaves; ++i) {
-    best_split_per_leaf_[i].Reset();
-  }
-
-  // Sumup for root
-  if (data_partition_->leaf_count(0) == num_data_) {
-    // use all data
-    smaller_leaf_splits_->Init(gradients_, hessians_);
-
-  } else {
-    // use bagging, only use part of data
-    smaller_leaf_splits_->Init(0, data_partition_.get(), gradients_, hessians_);
+  // use bagging
+  if (data_partition_->leaf_count(0) != num_data_) {
     // On GPU, we start copying indices, gradients and hessians now, instead at ConstructHistogram()
     // copy used gradients and hessians to ordered buffer
     const data_size_t* indices = data_partition_->indices();
@@ -754,81 +720,19 @@ void GPUTreeLearner::BeforeTrain() {
     // transfer gradients to GPU
     gradients_future_ = queue_.enqueue_write_buffer_async(device_gradients_, 0, cnt * sizeof(score_t), ordered_gradients_.data());
   }
-
-  larger_leaf_splits_->Init();
-
-  // if has ordered bin, need to initialize the ordered bin
-  if (has_ordered_bin_) {
-    if (data_partition_->leaf_count(0) == num_data_) {
-      // use all data, pass nullptr
-    #pragma omp parallel for schedule(static)
-      for (int i = 0; i < static_cast<int>(ordered_bin_indices_.size()); ++i) {
-        ordered_bins_[ordered_bin_indices_[i]]->Init(nullptr, tree_config_->num_leaves);
-      }
-    } else {
-      // bagging, only use part of data
-
-      // mark used data
-      const data_size_t* indices = data_partition_->indices();
-      data_size_t begin = data_partition_->leaf_begin(0);
-      data_size_t end = begin + data_partition_->leaf_count(0);
-    #pragma omp parallel for schedule(static)
-      for (data_size_t i = begin; i < end; ++i) {
-        is_data_in_leaf_[indices[i]] = 1;
-      }
-      // initialize ordered bin
-    #pragma omp parallel for schedule(static)
-      for (int i = 0; i < static_cast<int>(ordered_bin_indices_.size()); ++i) {
-        ordered_bins_[ordered_bin_indices_[i]]->Init(is_data_in_leaf_.data(), tree_config_->num_leaves);
-      }
-    #pragma omp parallel for schedule(static)
-      for (data_size_t i = begin; i < end; ++i) {
-        is_data_in_leaf_[indices[i]] = 0;
-      }
-    }
-  }
 }
 
 bool GPUTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) {
-  // check depth of current leaf
-  if (tree_config_->max_depth > 0) {
-    // only need to check left leaf, since right leaf is in same level of left leaf
-    if (tree->leaf_depth(left_leaf) >= tree_config_->max_depth) {
-      best_split_per_leaf_[left_leaf].gain = kMinScore;
-      if (right_leaf >= 0) {
-        best_split_per_leaf_[right_leaf].gain = kMinScore;
-      }
-      return false;
-    }
-  }
+  int smaller_leaf;
   data_size_t num_data_in_left_child = GetGlobalDataCountInLeaf(left_leaf);
   data_size_t num_data_in_right_child = GetGlobalDataCountInLeaf(right_leaf);
-  // no enough data to continue
-  if (num_data_in_right_child < static_cast<data_size_t>(tree_config_->min_data_in_leaf * 2)
-      && num_data_in_left_child < static_cast<data_size_t>(tree_config_->min_data_in_leaf * 2)) {
-    best_split_per_leaf_[left_leaf].gain = kMinScore;
-    if (right_leaf >= 0) {
-      best_split_per_leaf_[right_leaf].gain = kMinScore;
-    }
-    return false;
-  }
-  parent_leaf_histogram_array_ = nullptr;
-  int smaller_leaf = -1;
   // only have root
   if (right_leaf < 0) {
-    histogram_pool_.Get(left_leaf, &smaller_leaf_histogram_array_);
-    larger_leaf_histogram_array_ = nullptr;
+    smaller_leaf = -1;
   } else if (num_data_in_left_child < num_data_in_right_child) {
     smaller_leaf = left_leaf;
-    // put parent(left) leaf's histograms into larger leaf's histograms
-    if (histogram_pool_.Get(left_leaf, &larger_leaf_histogram_array_)) { parent_leaf_histogram_array_ = larger_leaf_histogram_array_; }
-    histogram_pool_.Move(left_leaf, right_leaf);
-    histogram_pool_.Get(left_leaf, &smaller_leaf_histogram_array_);
   } else {
     smaller_leaf = right_leaf;
-    // put parent(left) leaf's histograms to larger leaf's histograms
-    if (histogram_pool_.Get(left_leaf, &larger_leaf_histogram_array_)) { parent_leaf_histogram_array_ = larger_leaf_histogram_array_; }
-    histogram_pool_.Get(right_leaf, &smaller_leaf_histogram_array_);
   }
 
   // Copy indices, gradients and hessians as early as possible
@@ -864,37 +768,7 @@ bool GPUTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int ri
     Log::Info("gradients/hessians/indiex copied to device with size %d", end - begin);
     #endif
   }
-
-  // split for the ordered bin
-  if (has_ordered_bin_ && right_leaf >= 0) {
-    // mark data that at left-leaf
-    const data_size_t* indices = data_partition_->indices();
-    const auto left_cnt = data_partition_->leaf_count(left_leaf);
-    const auto right_cnt = data_partition_->leaf_count(right_leaf);
-    char mark = 1;
-    data_size_t begin = data_partition_->leaf_begin(left_leaf);
-    data_size_t end = begin + left_cnt;
-    if (left_cnt > right_cnt) {
-      begin = data_partition_->leaf_begin(right_leaf);
-      end = begin + right_cnt;
-      mark = 0;
-    }
-  #pragma omp parallel for schedule(static)
-    for (data_size_t i = begin; i < end; ++i) {
-      is_data_in_leaf_[indices[i]] = 1;
-    }
-    // split the ordered bin
-  #pragma omp parallel for schedule(static)
-    for (int i = 0; i < static_cast<int>(ordered_bin_indices_.size()); ++i) {
-      ordered_bins_[ordered_bin_indices_[i]]->Split(left_leaf, right_leaf, is_data_in_leaf_.data(), mark);
-    }
-  #pragma omp parallel for schedule(static)
-    for (data_size_t i = begin; i < end; ++i) {
-      is_data_in_leaf_[indices[i]] = 0;
-    }
-  }
-  return true;
-
+  return SerialTreeLearner::BeforeFindBestSplit(tree, left_leaf, right_leaf);
 }
 
 bool GPUTreeLearner::ConstructGPUHistogramsAsync(
