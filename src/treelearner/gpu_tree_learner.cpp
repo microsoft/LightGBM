@@ -884,8 +884,9 @@ void GPUTreeLearner::FindBestThresholds() {
     nullptr, nullptr,
     nullptr, nullptr);
   // then construct sparse features on CPU
+  // We set data_indices to null to avoid rebuilding ordered gradients/hessians
   train_data_->ConstructHistograms(is_sparse_feature_used,
-    smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
+    nullptr, smaller_leaf_splits_->num_data_in_leaf(),
     smaller_leaf_splits_->LeafIndex(),
     ordered_bins_, gradients_, hessians_,
     ordered_gradients_.data(), ordered_hessians_.data(),
@@ -942,8 +943,9 @@ void GPUTreeLearner::FindBestThresholds() {
       gradients_, hessians_,
       ordered_gradients_.data(), ordered_hessians_.data());
     // then construct sparse features on CPU
+    // We set data_indices to null to avoid rebuilding ordered gradients/hessians
     train_data_->ConstructHistograms(is_sparse_feature_used,
-      larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
+      nullptr, larger_leaf_splits_->num_data_in_leaf(),
       larger_leaf_splits_->LeafIndex(),
       ordered_bins_, gradients_, hessians_,
       ordered_gradients_.data(), ordered_hessians_.data(),
