@@ -23,8 +23,6 @@ Examples including:
     - Early stopping
     - Save model to file
     - Dump model to json format
-    - Load model to predict
-    - Dump and load model with pickle
     - Feature importances
 - [sklearn_example.py](https://github.com/Microsoft/LightGBM/blob/master/examples/python-guide/sklearn_example.py)
     - Basic train and predict with sklearn interface
@@ -32,6 +30,8 @@ Examples including:
 - [advanced_example.py](https://github.com/Microsoft/LightGBM/blob/master/examples/python-guide/advanced_example.py)
     - Set feature names
     - Directly use categorical features without one-hot encoding
+    - Load model to predict
+    - Dump and load model with pickle
     - Load model file to continue training
     - Change learning rates during training
     - Self-defined objective function
