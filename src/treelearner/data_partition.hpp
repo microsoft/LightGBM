@@ -55,10 +55,8 @@ public:
   * \brief Init, will put all data on the root(leaf_idx = 0)
   */
   void Init() {
-    for (int i = 0; i < num_leaves_; ++i) {
-      leaf_count_[i] = 0;
-    }
-    leaf_begin_[0] = 0;
+    std::fill(leaf_begin_.begin(), leaf_begin_.end(), 0);
+    std::fill(leaf_count_.begin(), leaf_count_.end(), 0);
     if (used_data_indices_ == nullptr) {
       // if using all data
       leaf_count_[0] = num_data_;

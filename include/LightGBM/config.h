@@ -213,6 +213,7 @@ public:
   int drop_seed = 4;
   double top_rate = 0.2f;
   double other_rate = 0.1f;
+  // only used for the regression. Will boost from the average labels.
   bool boost_from_average = true;
   std::string tree_learner_type = "serial";
   TreeConfig tree_config;

@@ -299,32 +299,26 @@ void GBDT::UpdateScoreOutOfBag(const Tree* tree, const int curr_class) {
 }
 
 bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) {
-  // boosting from average prediction. It doesn't work well for binary classification, remove it for now.
+  // boosting from average prediction. It doesn't work well for classification, remove it for now.
   if (models_.empty() 
       && gbdt_config_->boost_from_average 
       && !train_score_updater_->has_init_score()
-      && sigmoid_ < 0.0f) {
-    std::vector<double> sum_per_class(num_class_, 0.0f);
+      && sigmoid_ < 0.0f
+      && num_class_ <= 1) {
+    double init_score = 0.0f;
     auto label = train_data_->metadata().label();
-    if (num_class_ > 1) {
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        sum_per_class[static_cast<int>(label[i])] += 1.0f;
-      }
-    } else {
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        sum_per_class[0] += label[i];
-      }
-    } 
-    for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-      double init_score = sum_per_class[curr_class] / num_data_;
-      std::unique_ptr<Tree> new_tree(new Tree(2));
-      new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0, init_score, init_score, 0, num_data_, 1);
-      train_score_updater_->AddScore(init_score, curr_class);
-      for (auto& score_updater : valid_score_updater_) {
-        score_updater->AddScore(init_score, curr_class);
-      }
-      models_.push_back(std::move(new_tree));
+    #pragma omp parallel for schedule(static) reduction(+:init_score)
+    for (data_size_t i = 0; i < num_data_; ++i) {
+      init_score += label[i];
     }
+    init_score /= num_data_;
+    std::unique_ptr<Tree> new_tree(new Tree(2));
+    new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0, init_score, init_score, 0, num_data_, 1);
+    train_score_updater_->AddScore(init_score, 0);
+    for (auto& score_updater : valid_score_updater_) {
+      score_updater->AddScore(init_score, 0);
+    }
+    models_.push_back(std::move(new_tree));
     boost_from_average_ = true;
   }
   // boosting first
@@ -359,7 +353,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
     // get sub gradients
     for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
       auto bias = curr_class * num_data_;
-      // cannot multi-threading
+      // cannot multi-threading here.
       for (int i = 0; i < bag_data_cnt_; ++i) {
         gradients_[bias + i] = gradient[bias + bag_data_indices_[i]];
         hessians_[bias + i] = hessian[bias + bag_data_indices_[i]];
@@ -376,9 +370,8 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
   #ifdef TIMETAG
     start_time = std::chrono::steady_clock::now();
   #endif
-    std::unique_ptr<Tree> new_tree;
-    // train a new tree
-    new_tree.reset(tree_learner_->Train(gradient + curr_class * num_data_, hessian + curr_class * num_data_));
+    std::unique_ptr<Tree> new_tree(
+      tree_learner_->Train(gradient + curr_class * num_data_, hessian + curr_class * num_data_));
   #ifdef TIMETAG
     tree_time += std::chrono::steady_clock::now() - start_time;
   #endif
@@ -390,7 +383,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
       // update score
       UpdateScore(new_tree.get(), curr_class);
       UpdateScoreOutOfBag(new_tree.get(), curr_class);
-    }
+    } 
     // add model
     models_.push_back(std::move(new_tree));
   }

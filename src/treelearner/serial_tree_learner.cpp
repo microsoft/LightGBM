@@ -226,7 +226,7 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* 
   CHECK(data_partition_->num_leaves() >= tree->num_leaves());
   OMP_INIT_EX();
   #pragma omp parallel for schedule(static)
-  for (int i = 0; i < data_partition_->num_leaves(); ++i) {
+  for (int i = 0; i < tree->num_leaves(); ++i) {
     OMP_LOOP_EX_BEGIN();
     data_size_t cnt_leaf_data = 0;
     auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
