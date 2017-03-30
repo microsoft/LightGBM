@@ -343,6 +343,8 @@ protected:
   std::unique_ptr<Dataset> tmp_subset_;
   bool is_use_subset_;
   bool boost_from_average_;
+  std::vector<bool> class_need_train_;
+  std::vector<double> class_default_output_;
 };
 
 }  // namespace LightGBM

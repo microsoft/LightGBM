@@ -42,6 +42,11 @@ public:
         ++cnt_negative;
       }
     }
+    if (cnt_negative == 0 || cnt_positive == 0) {
+      Log::Warning("Only contain one class.");
+      // not need to boost.
+      num_data_ = 0;
+    }
     Log::Info("Number of positive: %d, number of negative: %d", cnt_positive, cnt_negative);
     // use -1 for negative class, and 1 for positive class
     label_val_[0] = -1;
