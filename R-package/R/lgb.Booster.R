@@ -49,7 +49,11 @@ Booster <- R6Class(
       }
       class(handle)     <- "lgb.Booster.handle"
       private$handle    <- handle
-      private$num_class <- 1L
+      if ("num_class" %in% names(params)){
+	private$num_class <- params$num_class
+      } else{
+	private$num_class <- 1L
+      }
       private$num_class <-
         lgb.call("LGBM_BoosterGetNumClasses_R", ret = private$num_class, private$handle)
     },
