@@ -419,7 +419,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
       UpdateScoreOutOfBag(new_tree.get(), curr_class);
     } else {
       // only add default score one-time
-      if (!class_need_train_[curr_class] && models_.size() < num_class_) {
+      if (!class_need_train_[curr_class] && models_.size() < static_cast<size_t>(num_class_)) {
         auto output = class_default_output_[curr_class];
         new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0, 
                         output, output, 0, num_data_, 1);
