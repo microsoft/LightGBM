@@ -179,7 +179,11 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
             class_default_output_[i] = -std::log(kEpsilon);
           } else if (cnt_per_class[i] == 0) {
             class_need_train_[i] = false;
-            class_default_output_[i] = -std::log(1.0f / kEpsilon - 1.0f);
+            if (sigmoid_ > 0.0f) {
+              class_default_output_[i] = -std::log(1.0f / kEpsilon - 1.0f);
+            } else {
+              class_default_output_[i] = std::log(kEpsilon);
+            }
           }
         }
       } else {
