@@ -149,6 +149,9 @@ class TestEngine(unittest.TestCase):
         lgb.cv({'verbose': -1}, lgb_train, num_boost_round=20, nfold=5, shuffle=False,
                metrics='l1', verbose_eval=False,
                callbacks=[lgb.reset_parameter(learning_rate=lambda i: 0.1 - 0.001 * i)])
+        lgb.cv({'verbose': -1}, lgb_train, num_boost_round=20, nfold=5, shuffle=True,
+               metrics='l1', verbose_eval=False,
+               callbacks=[lgb.reset_parameter(learning_rate=lambda i: 0.1 - 0.001 * i)])
         tss = TimeSeriesSplit(3)
         lgb.cv({'verbose': -1}, lgb_train, num_boost_round=20, data_splitter=tss, nfold=5,  # test if wrong nfold is ignored
                metrics='l2', verbose_eval=False)
