@@ -566,8 +566,8 @@ dimnames.lgb.Dataset <- function(x) {
 #'   train <- agaricus.train
 #'   dtrain <- lgb.Dataset(train$data, label=train$label)
 #'
-#'   dsub <- slice(dtrain, 1:42)
-#'   labels1 <- getinfo(dsub, 'label')
+#'   dsub <- lightgbm::slice(dtrain, 1:42)
+#'   labels1 <- lightgbm::getinfo(dsub, 'label')
 #' }
 #' @export
 slice <- function(dataset, ...) { UseMethod("slice") }
@@ -605,10 +605,10 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
 #'   train <- agaricus.train
 #'   dtrain <- lgb.Dataset(train$data, label=train$label)
 #'   lgb.Dataset.construct(dtrain)
-#'   labels <- getinfo(dtrain, 'label')
-#'   setinfo(dtrain, 'label', 1-labels)
+#'   labels <- lightgbm::getinfo(dtrain, 'label')
+#'   lightgbm::setinfo(dtrain, 'label', 1-labels)
 #'
-#'   labels2 <- getinfo(dtrain, 'label')
+#'   labels2 <- lightgbm::getinfo(dtrain, 'label')
 #'   stopifnot(all(labels2 == 1-labels))
 #' }
 #' @export
@@ -647,9 +647,9 @@ getinfo.lgb.Dataset <- function(dataset, name, ...) {
 #'   train <- agaricus.train
 #'   dtrain <- lgb.Dataset(train$data, label=train$label)
 #'   lgb.Dataset.construct(dtrain)
-#'   labels <- getinfo(dtrain, 'label')
-#'   setinfo(dtrain, 'label', 1-labels)
-#'   labels2 <- getinfo(dtrain, 'label')
+#'   labels <- lightgbm::getinfo(dtrain, 'label')
+#'   lightgbm::setinfo(dtrain, 'label', 1-labels)
+#'   labels2 <- lightgbm::getinfo(dtrain, 'label')
 #'   stopifnot(all.equal(labels2, 1-labels))
 #' }
 #' @export
