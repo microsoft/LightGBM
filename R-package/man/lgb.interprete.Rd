@@ -27,14 +27,15 @@ For multiclass classification, a \code{list} of \code{data.table} with the Featu
 Computes feature contribution components of rawscore prediction.
 }
 \examples{
-
+\dontrun{
+library(lightgbm)
 Sigmoid <- function(x) 1 / (1 + exp(-x))
 Logit <- function(x) log(x / (1 - x))
-data(agaricus.train, package = 'lightgbm')
+data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
 setinfo(dtrain, "init_score", rep(Logit(mean(train$label)), length(train$label)))
-data(agaricus.test, package = 'lightgbm')
+data(agaricus.test, package = "lightgbm")
 test <- agaricus.test
 
 params = list(objective = "binary",
@@ -44,6 +45,7 @@ params = list(objective = "binary",
 model <- lgb.train(params, dtrain, 20)
 
 tree_interpretation <- lgb.interprete(model, test$data, 1:5)
+}
 
 }
 

@@ -25,12 +25,14 @@ orginal lgb.Dataset object
 }
 \examples{
 \dontrun{
-  data(agaricus.train, package='lightgbm')
-  train <- agaricus.train
-  dtrain <- lgb.Dataset(train$data, label=train$label)
+library(lightgbm)
+data(agaricus.train, package = "lightgbm")
+train <- agaricus.train
+dtrain <- lgb.Dataset(train$data, label = train$label)
 
-  dsub <- slice(dtrain, 1:42)
-  labels1 <- getinfo(dsub, 'label')
+dsub <- lightgbm::slice(dtrain, 1:42)
+labels <- lightgbm::getinfo(dsub, "label")
 }
+
 }
 

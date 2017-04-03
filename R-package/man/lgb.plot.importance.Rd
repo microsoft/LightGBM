@@ -30,8 +30,8 @@ The graph represents each feature as a horizontal bar of length proportional to 
 Features are shown ranked in a decreasing importance order.
 }
 \examples{
-
-data(agaricus.train, package = 'lightgbm')
+\dontrun{
+data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
 
@@ -43,6 +43,7 @@ model <- lgb.train(params, dtrain, 20)
 
 tree_imp <- lgb.importance(model, percentage = TRUE)
 lgb.plot.importance(tree_imp, top_n = 10, measure = "Gain")
+}
 
 }
 

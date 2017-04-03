@@ -15,27 +15,60 @@
 #' @examples
 #' \dontrun{
 #'   library(lightgbm)
-#'   data(agaricus.train, package='lightgbm')
+#'   data(agaricus.train, package = "lightgbm")
 #'   train <- agaricus.train
-#'   dtrain <- lgb.Dataset(train$data, label=train$label)
-#'   data(agaricus.test, package='lightgbm')
+#'   dtrain <- lgb.Dataset(train$data, label = train$label)
+#'   data(agaricus.test, package = "lightgbm")
 #'   test <- agaricus.test
-#'   dtest <- lgb.Dataset.create.valid(dtrain, test$data, label=test$label)
-#'   params <- list(objective="regression", metric="l2")
-#'   valids <- list(test=dtest)
-#'   model <- lgb.train(params, dtrain, 100, valids, min_data=1, learning_rate=1, early_stopping_rounds=10)
+#'   dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
+#'   params <- list(objective = "regression", metric = "l2")
+#'   valids <- list(test = dtest)
+#'   model <- lgb.train(params,
+#'                      dtrain,
+#'                      100,
+#'                      valids,
+#'                      min_data = 1,
+#'                      learning_rate = 1,
+#'                      early_stopping_rounds = 10)
 #'   saveRDS.lgb.Booster(model, "model.rds")
 #' }
+#' 
 #' @export
-
-saveRDS.lgb.Booster <- function(object, file = "", ascii = FALSE, version = NULL, compress = TRUE, refhook = NULL, raw = TRUE) {
+saveRDS.lgb.Booster <- function(object,
+                                file = "",
+                                ascii = FALSE,
+                                version = NULL,
+                                compress = TRUE,
+                                refhook = NULL,
+                                raw = TRUE) {
   
+  # Check if object has a raw value (and if the user wants to store the raw)
   if (is.na(object$raw) & (raw)) {
+    
+    # Save model
     object$save()
-    saveRDS(object, file = file, ascii = ascii, version = version, compress = compress, refhook = refhook)
+    
+    # Save RDS
+    saveRDS(object,
+            file = file,
+            ascii = ascii,
+            version = version,
+            compress = compress,
+            refhook = refhook)
+    
+    # Free model from memory
     object$raw <- NA
+    
   } else {
-    saveRDS(object, file = file, ascii = ascii, version = version, compress = compress, refhook = refhook)
+    
+    # Save as usual
+    saveRDS(object,
+            file = file,
+            ascii = ascii,
+            version = version,
+            compress = compress,
+            refhook = refhook)
+    
   }
   
 }
