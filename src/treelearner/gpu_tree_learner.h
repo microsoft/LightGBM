@@ -1,6 +1,7 @@
 #ifndef LIGHTGBM_TREELEARNER_GPU_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNER_GPU_TREE_LEARNER_H_
 
+#ifdef USE_GPU
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/array_args.h>
 
@@ -116,7 +117,7 @@ private:
    * \param is_feature_used A predicate vector for enabling each feature
   */
   template <typename HistType>
-  void WaitAndGetHistograms(FeatureHistogram* histograms, const std::vector<int8_t>& is_feature_used);
+  void WaitAndGetHistograms(HistogramBinEntry* histograms, const std::vector<int8_t>& is_feature_used);
 
   /*!
    * \brief Construct GPU histogram asynchronously. 
@@ -176,14 +177,16 @@ private:
   /*! \brief a array of histogram kernels with different number
      of workgroups per feature, and processing the whole dataset */
   std::vector<boost::compute::kernel> histogram_fulldata_kernels_;
-  /*! \brief total number of dense features, which will be processed on GPU */
-  int num_dense_features_;
-  /*! \brief On GPU we read one DWORD (4-bypte) of features of one example once.
+  /*! \brief total number of feature-groups */
+  int num_feature_groups_;
+  /*! \brief total number of dense feature-groups, which will be processed on GPU */
+  int num_dense_feature_groups_;
+  /*! \brief On GPU we read one DWORD (4-byte) of features of one example once.
    *  With bin size > 16, there are 4 features per DWORD.
    *  With bin size <=16, there are 8 features per DWORD.
    * */
   int dword_features_;
-  /*! \brief total number of dense feature tuples on GPU.
+  /*! \brief total number of dense feature-group tuples on GPU.
    * Each feature tuple is 4-byte (4 features if each feature takes a byte) */
   int num_dense_feature4_;
   /*! \brief Max number of bins of training data, used to determine 
@@ -191,13 +194,13 @@ private:
   int max_num_bin_;
   /*! \brief Used GPU kernel bin size (64, 256) */
   int device_bin_size_;
-  /*! \brief Size of histogram bin entry, depeding if single or double precision is used */
+  /*! \brief Size of histogram bin entry, depending if single or double precision is used */
   size_t hist_bin_entry_sz_;
-  /*! \brief Indices of all dense features */
-  std::vector<int> dense_feature_map_;
-  /*! \brief Indices of all sparse features */
-  std::vector<int> sparse_feature_map_;
-  /*! \brief Multipliers of all dense features, used for redistribute bins */
+  /*! \brief Indices of all dense feature-groups */
+  std::vector<int> dense_feature_group_map_;
+  /*! \brief Indices of all sparse feature-groups */
+  std::vector<int> sparse_feature_group_map_;
+  /*! \brief Multipliers of all dense feature-groups, used for redistributing bins */
   std::vector<int> device_bin_mults_;
   /*! \brief GPU memory object holding the training data */
   std::unique_ptr<boost::compute::vector<Feature4>> device_features_;
@@ -244,5 +247,7 @@ private:
 };
 
 }  // namespace LightGBM
+#endif   // USE_GPU
+
 #endif   // LightGBM_TREELEARNER_GPU_TREE_LEARNER_H_
 

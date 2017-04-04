@@ -121,6 +121,18 @@ public:
     uint32_t default_bin = bin_mappers_[sub_feature]->GetDefaultBin();
     return bin_data_->GetIterator(min_bin, max_bin, default_bin);
   }
+  
+  /*!
+   * \brief Returns a BinIterator that can access the entire feature group's raw data.
+   *        The RawGet() function of the iterator should be called for best efficiency.
+   * \return A pointer to the BinIterator object
+   */
+  inline BinIterator* FeatureGroupIterator() {
+    uint32_t min_bin = bin_offsets_[0];
+    uint32_t max_bin = bin_offsets_.back() - 1;
+    uint32_t default_bin = 0;
+    return bin_data_->GetIterator(min_bin, max_bin, default_bin);
+  }
 
   inline data_size_t Split(
     int sub_feature,

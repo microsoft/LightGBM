@@ -354,6 +354,9 @@ public:
   inline int Feture2SubFeature(int feature_idx) const {
     return feature2subfeature_[feature_idx];
   }
+  inline uint64_t GroupBinBoundary(int group_idx) const {
+    return group_bin_boundaries_[group_idx];
+  }
   inline uint64_t NumTotalBin() const {
     return group_bin_boundaries_.back();
   }
@@ -422,8 +425,7 @@ public:
 	  return feature_groups_[group]->bin_mappers_[sub_feature]->num_bin();
   }
   
-  inline int FeatureNumTotalBin(int i) const {
-    const int group = feature2group_[i];
+  inline int FeatureGroupNumBin(int group) const {
 	return feature_groups_[group]->num_total_bin_;
   }
   
@@ -437,6 +439,10 @@ public:
     const int group = feature2group_[i];
     return feature_groups_[group]->bin_data_.get();
   }
+  
+  inline const Bin* FeatureGroupBin(int group) const {
+    return feature_groups_[group]->bin_data_.get();
+  }
 
   inline BinIterator* FeatureIterator(int i) const {
     const int group = feature2group_[i];
@@ -444,6 +450,10 @@ public:
     return feature_groups_[group]->SubFeatureIterator(sub_feature);
   }
 
+  inline BinIterator* FeatureGroupIterator(int group) const {
+    return feature_groups_[group]->FeatureGroupIterator();
+  }
+  
   inline double RealThreshold(int i, uint32_t threshold) const {
     const int group = feature2group_[i];
     const int sub_feature = feature2subfeature_[i];
@@ -466,6 +476,9 @@ public:
 
   /*! \brief Get Number of used features */
   inline int num_features() const { return num_features_; }
+
+  /*! \brief Get Number of feature groups */
+  inline int num_feature_groups() const { return num_groups_;}
 
   /*! \brief Get Number of total features */
   inline int num_total_features() const { return num_total_features_; }
