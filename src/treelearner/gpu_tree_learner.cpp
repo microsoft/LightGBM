@@ -4,6 +4,7 @@
 #include "../io/dense_nbits_bin.hpp"
 
 #include <LightGBM/utils/array_args.h>
+#include <LightGBM/network.h>
 #include <LightGBM/bin.h>
 
 #include <algorithm>
@@ -1040,18 +1041,20 @@ void GPUTreeLearner::Split(Tree* tree, int best_Leaf, int* left_leaf, int* right
   printf("spliting leaf %d with feature %d thresh %d gain %f stat %f %f %f %f\n", best_Leaf, best_split_info.feature, best_split_info.threshold, best_split_info.gain, best_split_info.left_sum_gradient, best_split_info.right_sum_gradient, best_split_info.left_sum_hessian, best_split_info.right_sum_hessian);
 #endif
   SerialTreeLearner::Split(tree, best_Leaf, left_leaf, right_leaf);
-  // do some sanity check for the GPU algorithm
-  if (best_split_info.left_count < best_split_info.right_count) {
-    if ((best_split_info.left_count != smaller_leaf_splits_->num_data_in_leaf()) ||
-        (best_split_info.right_count!= larger_leaf_splits_->num_data_in_leaf())) {
-      Log::Fatal("Bug in GPU histogram! split %d: %d, smaller_leaf: %d, larger_leaf: %d\n", best_split_info.left_count, best_split_info.right_count, smaller_leaf_splits_->num_data_in_leaf(), larger_leaf_splits_->num_data_in_leaf());
-    }
-  } else {
-    smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(), best_split_info.right_sum_gradient, best_split_info.right_sum_hessian);
-    larger_leaf_splits_->Init(*left_leaf, data_partition_.get(), best_split_info.left_sum_gradient, best_split_info.left_sum_hessian);
-    if ((best_split_info.left_count != larger_leaf_splits_->num_data_in_leaf()) ||
-        (best_split_info.right_count!= smaller_leaf_splits_->num_data_in_leaf())) {
-      Log::Fatal("Bug in GPU histogram! split %d: %d, smaller_leaf: %d, larger_leaf: %d\n", best_split_info.left_count, best_split_info.right_count, smaller_leaf_splits_->num_data_in_leaf(), larger_leaf_splits_->num_data_in_leaf());
+  if (Network::num_machines() == 1) {
+    // do some sanity check for the GPU algorithm
+    if (best_split_info.left_count < best_split_info.right_count) {
+      if ((best_split_info.left_count != smaller_leaf_splits_->num_data_in_leaf()) ||
+          (best_split_info.right_count!= larger_leaf_splits_->num_data_in_leaf())) {
+        Log::Fatal("Bug in GPU histogram! split %d: %d, smaller_leaf: %d, larger_leaf: %d\n", best_split_info.left_count, best_split_info.right_count, smaller_leaf_splits_->num_data_in_leaf(), larger_leaf_splits_->num_data_in_leaf());
+      }
+    } else {
+      smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(), best_split_info.right_sum_gradient, best_split_info.right_sum_hessian);
+      larger_leaf_splits_->Init(*left_leaf, data_partition_.get(), best_split_info.left_sum_gradient, best_split_info.left_sum_hessian);
+      if ((best_split_info.left_count != larger_leaf_splits_->num_data_in_leaf()) ||
+          (best_split_info.right_count!= smaller_leaf_splits_->num_data_in_leaf())) {
+        Log::Fatal("Bug in GPU histogram! split %d: %d, smaller_leaf: %d, larger_leaf: %d\n", best_split_info.left_count, best_split_info.right_count, smaller_leaf_splits_->num_data_in_leaf(), larger_leaf_splits_->num_data_in_leaf());
+      }
     }
   }
 }

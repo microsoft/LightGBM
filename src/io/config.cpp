@@ -172,20 +172,16 @@ void OverallConfig::CheckParamConflict() {
     is_parallel = true;
   } else {
     is_parallel = false;
-    if (boosting_config.tree_learner_type != std::string("gpu")) {
-      boosting_config.tree_learner_type = "serial";
-    }
+    boosting_config.tree_learner_type = "serial";
   }
 
-  if (boosting_config.tree_learner_type == std::string("serial") || 
-      boosting_config.tree_learner_type == std::string("gpu")) {
+  if (boosting_config.tree_learner_type == std::string("serial")) {
     is_parallel = false;
     network_config.num_machines = 1;
   }
 
   if (boosting_config.tree_learner_type == std::string("serial") 
-      || boosting_config.tree_learner_type == std::string("feature")
-      || boosting_config.tree_learner_type == std::string("gpu")) {
+      || boosting_config.tree_learner_type == std::string("feature")) {
     is_parallel_find_bin = false;
   } else if (boosting_config.tree_learner_type == std::string("data")
              || boosting_config.tree_learner_type == std::string("voting")) {
@@ -351,6 +347,7 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   GetBool(params, "boost_from_average", &boost_from_average);
   CHECK(drop_rate <= 1.0 && drop_rate >= 0.0);
   CHECK(skip_drop <= 1.0 && skip_drop >= 0.0);
+  GetDeviceType(params);
   GetTreeLearnerType(params);
   tree_config.Set(params);
 }
@@ -362,7 +359,8 @@ void BoostingConfig::GetTreeLearnerType(const std::unordered_map<std::string, st
     if (value == std::string("serial")) {
       tree_learner_type = "serial";
     } else if (value == std::string("gpu")) {
-      tree_learner_type = "gpu";
+      tree_learner_type = "serial";
+      device_type = "gpu";
     } else if (value == std::string("feature") || value == std::string("feature_parallel")) {
       tree_learner_type = "feature";
     } else if (value == std::string("data") || value == std::string("data_parallel")) {
@@ -371,6 +369,20 @@ void BoostingConfig::GetTreeLearnerType(const std::unordered_map<std::string, st
       tree_learner_type = "voting";
     } else {
       Log::Fatal("Unknown tree learner type %s", value.c_str());
+    }
+  }
+}
+
+void BoostingConfig::GetDeviceType(const std::unordered_map<std::string, std::string>& params) {
+  std::string value;
+  if (GetString(params, "device", &value)) {
+    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
+    if (value == std::string("cpu")) {
+      device_type = "cpu";
+    } else if (value == std::string("gpu")) {
+      device_type = "gpu";
+    } else {
+      Log::Fatal("Unknown device type %s", value.c_str());
     }
   }
 }

@@ -5,9 +5,7 @@
 
 #include <LightGBM/network.h>
 #include "serial_tree_learner.h"
-#ifdef USE_GPU
 #include "gpu_tree_learner.h"
-#endif
 
 #include <cstring>
 

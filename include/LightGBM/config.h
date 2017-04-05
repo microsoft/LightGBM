@@ -231,10 +231,13 @@ public:
   // only used for the regression. Will boost from the average labels.
   bool boost_from_average = true;
   std::string tree_learner_type = "serial";
+  std::string device_type = "cpu";
   TreeConfig tree_config;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 private:
   void GetTreeLearnerType(const std::unordered_map<std::string,
+    std::string>& params);
+  void GetDeviceType(const std::unordered_map<std::string,
     std::string>& params);
 };
 

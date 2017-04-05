@@ -256,6 +256,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::Split(Tree* tree, int best_Leaf, in
   global_data_count_in_leaf_[*right_leaf] = best_split_info.right_count;
 }
 
+// instantiate template classes, otherwise linker cannot find the code
 template class DataParallelTreeLearner<GPUTreeLearner>;
 template class DataParallelTreeLearner<SerialTreeLearner>;
 

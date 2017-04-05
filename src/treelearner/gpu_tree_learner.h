@@ -1,10 +1,8 @@
 #ifndef LIGHTGBM_TREELEARNER_GPU_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNER_GPU_TREE_LEARNER_H_
 
-#ifdef USE_GPU
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/array_args.h>
-
 #include <LightGBM/dataset.h>
 #include <LightGBM/tree.h>
 #include <LightGBM/feature_group.h>
@@ -19,6 +17,8 @@
 #include <random>
 #include <cmath>
 #include <memory>
+
+#ifdef USE_GPU
 
 #define BOOST_COMPUTE_THREAD_SAFE
 #define BOOST_COMPUTE_HAVE_THREAD_LOCAL
@@ -249,6 +249,21 @@ private:
 };
 
 }  // namespace LightGBM
+#else
+
+// When GPU support is not compiled in, quit with an error message
+
+namespace LightGBM {
+    
+class GPUTreeLearner: public SerialTreeLearner {
+public:
+  explicit GPUTreeLearner(const TreeConfig* tree_config) : SerialTreeLearner(tree_config) {
+    Log::Fatal("GPU Tree Learner was not enabled in this build. Recompile with CMake option -DUSE_GPU=1");
+  }
+};
+
+}
+
 #endif   // USE_GPU
 
 #endif   // LightGBM_TREELEARNER_GPU_TREE_LEARNER_H_
