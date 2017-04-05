@@ -173,6 +173,8 @@ public:
     return "huber";
   }
 
+  bool IsConstantHessian() const override { return true; }
+
 private:
   /*! \brief Number of data */
   data_size_t num_data_;

@@ -36,7 +36,7 @@ public:
 
   void ResetConfig(const TreeConfig* tree_config) override;
 
-  Tree* Train(const score_t* gradients, const score_t *hessians) override;
+  Tree* Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian) override;
 
   Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
 
@@ -147,6 +147,7 @@ protected:
   const TreeConfig* tree_config_;
   int num_threads_;
   std::vector<int> ordered_bin_indices_;
+  bool is_constant_hessian_;
 };
 
 inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leafIdx) const {

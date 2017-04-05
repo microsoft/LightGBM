@@ -345,6 +345,7 @@ protected:
   bool boost_from_average_;
   std::vector<bool> class_need_train_;
   std::vector<double> class_default_output_;
+  bool is_constant_hessian_;
 };
 
 }  // namespace LightGBM

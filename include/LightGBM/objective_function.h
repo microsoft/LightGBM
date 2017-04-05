@@ -33,6 +33,8 @@ public:
 
   virtual const char* GetName() const = 0;
 
+  virtual bool IsConstantHessian() const { return false; }
+
   ObjectiveFunction() = default;
   /*! \brief Disable copy */
   ObjectiveFunction& operator=(const ObjectiveFunction&) = delete;

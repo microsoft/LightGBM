@@ -78,56 +78,88 @@ public:
     }
   }
 
-  void ConstructHistogram(int leaf, const score_t* gradient, const score_t* hessian,
-    HistogramBinEntry* out) const override {
+  void ConstructHistogram(int leaf, const score_t* gradient, const score_t* hessian, bool is_constant_hessian,
+                          HistogramBinEntry* out) const override {
     // get current leaf boundary
     const data_size_t start = leaf_start_[leaf];
     const data_size_t end = start + leaf_cnt_[leaf];
     const int rest = (end - start) % 4;
     data_size_t i = start;
-    // use data on current leaf to construct histogram
-    for (; i < end - rest; i += 4) {
+    if (!is_constant_hessian) {
+      // use data on current leaf to construct histogram
+      for (; i < end - rest; i += 4) {
 
-      const VAL_T bin0 = ordered_pair_[i].bin;
-      const VAL_T bin1 = ordered_pair_[i + 1].bin;
-      const VAL_T bin2 = ordered_pair_[i + 2].bin;
-      const VAL_T bin3 = ordered_pair_[i + 3].bin;
+        const VAL_T bin0 = ordered_pair_[i].bin;
+        const VAL_T bin1 = ordered_pair_[i + 1].bin;
+        const VAL_T bin2 = ordered_pair_[i + 2].bin;
+        const VAL_T bin3 = ordered_pair_[i + 3].bin;
 
-      const auto g0 = gradient[ordered_pair_[i].ridx];
-      const auto h0 = hessian[ordered_pair_[i].ridx];
-      const auto g1 = gradient[ordered_pair_[i + 1].ridx];
-      const auto h1 = hessian[ordered_pair_[i + 1].ridx];
-      const auto g2 = gradient[ordered_pair_[i + 2].ridx];
-      const auto h2 = hessian[ordered_pair_[i + 2].ridx];
-      const auto g3 = gradient[ordered_pair_[i + 3].ridx];
-      const auto h3 = hessian[ordered_pair_[i + 3].ridx];
+        const auto g0 = gradient[ordered_pair_[i].ridx];
+        const auto h0 = hessian[ordered_pair_[i].ridx];
+        const auto g1 = gradient[ordered_pair_[i + 1].ridx];
+        const auto h1 = hessian[ordered_pair_[i + 1].ridx];
+        const auto g2 = gradient[ordered_pair_[i + 2].ridx];
+        const auto h2 = hessian[ordered_pair_[i + 2].ridx];
+        const auto g3 = gradient[ordered_pair_[i + 3].ridx];
+        const auto h3 = hessian[ordered_pair_[i + 3].ridx];
 
-      out[bin0].sum_gradients += g0;
-      out[bin1].sum_gradients += g1;
-      out[bin2].sum_gradients += g2;
-      out[bin3].sum_gradients += g3;
+        out[bin0].sum_gradients += g0;
+        out[bin1].sum_gradients += g1;
+        out[bin2].sum_gradients += g2;
+        out[bin3].sum_gradients += g3;
 
-      out[bin0].sum_hessians += h0;
-      out[bin1].sum_hessians += h1;
-      out[bin2].sum_hessians += h2;
-      out[bin3].sum_hessians += h3;
+        out[bin0].sum_hessians += h0;
+        out[bin1].sum_hessians += h1;
+        out[bin2].sum_hessians += h2;
+        out[bin3].sum_hessians += h3;
 
-      ++out[bin0].cnt;
-      ++out[bin1].cnt;
-      ++out[bin2].cnt;
-      ++out[bin3].cnt;
-    }
+        ++out[bin0].cnt;
+        ++out[bin1].cnt;
+        ++out[bin2].cnt;
+        ++out[bin3].cnt;
+      }
 
-    for (; i < end; ++i) {
+      for (; i < end; ++i) {
 
-      const VAL_T bin0 = ordered_pair_[i].bin;
+        const VAL_T bin0 = ordered_pair_[i].bin;
 
-      const auto g0 = gradient[ordered_pair_[i].ridx];
-      const auto h0 = hessian[ordered_pair_[i].ridx];
+        const auto g0 = gradient[ordered_pair_[i].ridx];
+        const auto h0 = hessian[ordered_pair_[i].ridx];
 
-      out[bin0].sum_gradients += g0;
-      out[bin0].sum_hessians += h0;
-      ++out[bin0].cnt;
+        out[bin0].sum_gradients += g0;
+        out[bin0].sum_hessians += h0;
+        ++out[bin0].cnt;
+      }
+    } else {
+      // use data on current leaf to construct histogram
+      for (; i < end - rest; i += 4) {
+
+        const VAL_T bin0 = ordered_pair_[i].bin;
+        const VAL_T bin1 = ordered_pair_[i + 1].bin;
+        const VAL_T bin2 = ordered_pair_[i + 2].bin;
+        const VAL_T bin3 = ordered_pair_[i + 3].bin;
+
+        const auto g0 = gradient[ordered_pair_[i].ridx];
+        const auto g1 = gradient[ordered_pair_[i + 1].ridx];
+        const auto g2 = gradient[ordered_pair_[i + 2].ridx];
+        const auto g3 = gradient[ordered_pair_[i + 3].ridx];
+
+        out[bin0].sum_gradients += g0;
+        out[bin1].sum_gradients += g1;
+        out[bin2].sum_gradients += g2;
+        out[bin3].sum_gradients += g3;
+
+        ++out[bin0].cnt;
+        ++out[bin1].cnt;
+        ++out[bin2].cnt;
+        ++out[bin3].cnt;
+      }
+      for (; i < end; ++i) {
+        const VAL_T bin0 = ordered_pair_[i].bin;
+        const auto g0 = gradient[ordered_pair_[i].ridx];
+        out[bin0].sum_gradients += g0;
+        ++out[bin0].cnt;
+      }
     }
   }
 
