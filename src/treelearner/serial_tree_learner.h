@@ -74,7 +74,7 @@ protected:
   */
   virtual bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf);
 
-  void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract);
+  virtual void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract);
 
   /*!
   * \brief Find best thresholds for all features, using multi-threading.

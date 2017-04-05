@@ -850,19 +850,12 @@ bool GPUTreeLearner::ConstructGPUHistogramsAsync(
   return true;
 }
 
-void GPUTreeLearner::FindBestThresholds() {
-  std::vector<int8_t> is_feature_used(num_features_, 0);
+void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) {
   std::vector<int8_t> is_sparse_feature_used(num_features_, 0);
   std::vector<int8_t> is_dense_feature_used(num_features_, 0);
-#pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!is_feature_used_[feature_index]) continue;
-    if (parent_leaf_histogram_array_ != nullptr 
-        && !parent_leaf_histogram_array_[feature_index].is_splittable()) {
-      smaller_leaf_histogram_array_[feature_index].set_is_splittable(false);
-      continue;
-    }
-    is_feature_used[feature_index] = 1;
+    if (!is_feature_used[feature_index]) continue;
     if (ordered_bins_[train_data_->Feature2Group(feature_index)]) {
       is_sparse_feature_used[feature_index] = 1;
     }
@@ -870,27 +863,9 @@ void GPUTreeLearner::FindBestThresholds() {
       is_dense_feature_used[feature_index] = 1;
     }
   }
-  bool use_subtract = true;
-  if (parent_leaf_histogram_array_ == nullptr) {
-    use_subtract = false;
-  }
-
   // construct smaller leaf
   HistogramBinEntry* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - 1;
-  // first construct dense feature groups on GPU asynchronously
-  bool use_gpu = false;
-
-// use CPU instead of GPU for debugging
-// #define NOT_USING_GPU
-#ifdef NOT_USING_GPU
-  train_data_->ConstructHistograms(is_feature_used,
-    smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
-    smaller_leaf_splits_->LeafIndex(),
-    ordered_bins_, gradients_, hessians_,
-    ordered_gradients_.data(), ordered_hessians_.data(),
-    ptr_smaller_leaf_hist_data);
-#else
-  use_gpu = ConstructGPUHistogramsAsync(is_feature_used,
+  bool use_gpu = ConstructGPUHistogramsAsync(is_feature_used,
     nullptr, smaller_leaf_splits_->num_data_in_leaf(),
     nullptr, nullptr,
     nullptr, nullptr);
@@ -902,7 +877,6 @@ void GPUTreeLearner::FindBestThresholds() {
     ordered_bins_, gradients_, hessians_,
     ordered_gradients_.data(), ordered_hessians_.data(),
     ptr_smaller_leaf_hist_data);
-#endif
   // wait for GPU to finish
   if (use_gpu) {
     if (tree_config_->gpu_use_dp) {
@@ -915,40 +889,9 @@ void GPUTreeLearner::FindBestThresholds() {
     }
   }
 
-  // Compare GPU histogram with CPU histogram, useful for debuggin GPU code problem
-  // #define GPU_DEBUG_COMPARE
-  #ifdef GPU_DEBUG_COMPARE
-  for (int i = 0; i < num_dense_feature_groups_; ++i) {
-    if (!feature_masks_[i])
-      continue;
-    int dense_feature_group_index = dense_feature_group_map_[i];
-    size_t size = train_data_->FeatureGroupNumBin(dense_feature_group_index);
-    HistogramBinEntry* current_histogram = ptr_smaller_leaf_hist_data + train_data_->GroupBinBoundary(dense_feature_group_index);
-    HistogramBinEntry* gpu_histogram = new HistogramBinEntry[size];
-    data_size_t num_data = smaller_leaf_splits_->num_data_in_leaf();
-    printf("Comparing histogram for feature %d size %d, %lu bins\n", dense_feature_group_index, num_data, size);
-    std::copy(current_histogram, current_histogram + size, gpu_histogram);
-    std::memset(current_histogram, 0, train_data_->FeatureGroupNumBin(dense_feature_group_index) * sizeof(HistogramBinEntry));
-    train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
-      num_data != num_data_ ? smaller_leaf_splits_->data_indices() : nullptr,
-      num_data,
-      num_data != num_data_ ? ordered_gradients_.data() : gradients_,
-      num_data != num_data_ ? ordered_hessians_.data() : hessians_,
-      current_histogram); 
-    CompareHistograms(gpu_histogram, current_histogram, size, dense_feature_group_index);
-    std::copy(gpu_histogram, gpu_histogram + size, current_histogram);
-    delete [] gpu_histogram;
-  }
-  #endif
-
   if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
-    #if GPU_DEBUG >= 1
-    printf("Constructing larger leaf!\n");
-    #endif
     // construct larger leaf
     HistogramBinEntry* ptr_larger_leaf_hist_data = larger_leaf_histogram_array_[0].RawData() - 1;
-    // first construct dense feature groups on GPU asynchronously
-    // indices, gradients and hessians are not on GPU yet, need to transfer
     use_gpu = ConstructGPUHistogramsAsync(is_feature_used,
       larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
       gradients_, hessians_,
@@ -973,6 +916,54 @@ void GPUTreeLearner::FindBestThresholds() {
       }
     }
   }
+}
+
+void GPUTreeLearner::FindBestThresholds() {
+  std::vector<int8_t> is_feature_used(num_features_, 0);
+#pragma omp parallel for schedule(static)
+  for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
+    if (!is_feature_used_[feature_index]) continue;
+    if (parent_leaf_histogram_array_ != nullptr 
+        && !parent_leaf_histogram_array_[feature_index].is_splittable()) {
+      smaller_leaf_histogram_array_[feature_index].set_is_splittable(false);
+      continue;
+    }
+    is_feature_used[feature_index] = 1;
+  }
+  bool use_subtract = true;
+  if (parent_leaf_histogram_array_ == nullptr) {
+    use_subtract = false;
+  }
+
+  ConstructHistograms(is_feature_used, use_subtract);
+
+  // Compare GPU histogram with CPU histogram, useful for debuggin GPU code problem
+  // #define GPU_DEBUG_COMPARE
+  #ifdef GPU_DEBUG_COMPARE
+  for (int i = 0; i < num_dense_feature_groups_; ++i) {
+    if (!feature_masks_[i])
+      continue;
+    int dense_feature_group_index = dense_feature_group_map_[i];
+    size_t size = train_data_->FeatureGroupNumBin(dense_feature_group_index);
+    HistogramBinEntry* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - 1;
+    HistogramBinEntry* current_histogram = ptr_smaller_leaf_hist_data + train_data_->GroupBinBoundary(dense_feature_group_index);
+    HistogramBinEntry* gpu_histogram = new HistogramBinEntry[size];
+    data_size_t num_data = smaller_leaf_splits_->num_data_in_leaf();
+    printf("Comparing histogram for feature %d size %d, %lu bins\n", dense_feature_group_index, num_data, size);
+    std::copy(current_histogram, current_histogram + size, gpu_histogram);
+    std::memset(current_histogram, 0, train_data_->FeatureGroupNumBin(dense_feature_group_index) * sizeof(HistogramBinEntry));
+    train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
+      num_data != num_data_ ? smaller_leaf_splits_->data_indices() : nullptr,
+      num_data,
+      num_data != num_data_ ? ordered_gradients_.data() : gradients_,
+      num_data != num_data_ ? ordered_hessians_.data() : hessians_,
+      current_histogram); 
+    CompareHistograms(gpu_histogram, current_histogram, size, dense_feature_group_index);
+    std::copy(gpu_histogram, gpu_histogram + size, current_histogram);
+    delete [] gpu_histogram;
+  }
+  #endif
+
   std::vector<SplitInfo> smaller_best(num_threads_);
   std::vector<SplitInfo> larger_best(num_threads_);
   // find splits

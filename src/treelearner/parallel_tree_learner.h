@@ -5,6 +5,9 @@
 
 #include <LightGBM/network.h>
 #include "serial_tree_learner.h"
+#ifdef USE_GPU
+#include "gpu_tree_learner.h"
+#endif
 
 #include <cstring>
 
@@ -18,7 +21,8 @@ namespace LightGBM {
 *        Different machine will find best split on different features, then sync global best split
 *        It is recommonded used when #data is small or #feature is large
 */
-class FeatureParallelTreeLearner: public SerialTreeLearner {
+template <typename TREELEARNER_T>
+class FeatureParallelTreeLearner: public TREELEARNER_T {
 public:
   explicit FeatureParallelTreeLearner(const TreeConfig* tree_config);
   ~FeatureParallelTreeLearner();
@@ -43,7 +47,8 @@ private:
 *        Workers use local data to construct histograms locally, then sync up global histograms.
 *        It is recommonded used when #data is large or #feature is small
 */
-class DataParallelTreeLearner: public SerialTreeLearner {
+template <typename TREELEARNER_T>
+class DataParallelTreeLearner: public TREELEARNER_T {
 public:
   explicit DataParallelTreeLearner(const TreeConfig* tree_config);
   ~DataParallelTreeLearner();
@@ -95,7 +100,8 @@ private:
 * Here using voting to reduce features, and only aggregate histograms for selected features.
 * When #data is large and #feature is large, you can use this to have better speed-up
 */
-class VotingParallelTreeLearner: public SerialTreeLearner {
+template <typename TREELEARNER_T>
+class VotingParallelTreeLearner: public TREELEARNER_T {
 public:
   explicit VotingParallelTreeLearner(const TreeConfig* tree_config);
   ~VotingParallelTreeLearner() { }

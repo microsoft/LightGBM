@@ -62,6 +62,7 @@ protected:
   bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) override;
   void FindBestThresholds() override;
   void Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) override;
+  void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
 private:
   /*! \brief 4-byte feature tuple used by GPU kernels */
   struct Feature4 {
@@ -139,6 +140,7 @@ private:
     const data_size_t* data_indices, data_size_t num_data,
     const score_t* gradients, const score_t* hessians,
     score_t* ordered_gradients, score_t* ordered_hessians);
+
 
   /*! brief Log2 of max number of workgroups per feature*/
   const int kMaxLogWorkgroupsPerFeature = 10; // 2^10

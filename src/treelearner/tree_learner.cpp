@@ -17,12 +17,18 @@ TreeLearner* TreeLearner::CreateTreeLearner(const std::string& type, const TreeC
   #else
     Log::Fatal("GPU Tree Learner was not enabled in this build. Recompile with -DUSE_GPU=1");
   #endif
+  } else if (type == std::string("feature-gpu")) {
+    return new FeatureParallelTreeLearner<GPUTreeLearner>(tree_config);
   } else if (type == std::string("feature")) {
-    return new FeatureParallelTreeLearner(tree_config);
+    return new FeatureParallelTreeLearner<SerialTreeLearner>(tree_config);
+  } else if (type == std::string("data-gpu")) {
+    return new DataParallelTreeLearner<GPUTreeLearner>(tree_config);
   } else if (type == std::string("data")) {
-    return new DataParallelTreeLearner(tree_config);
+    return new DataParallelTreeLearner<SerialTreeLearner>(tree_config);
+  } else if (type == std::string("voting-gpu")) {
+    return new VotingParallelTreeLearner<GPUTreeLearner>(tree_config);
   } else if (type == std::string("voting")) {
-    return new VotingParallelTreeLearner(tree_config);
+    return new VotingParallelTreeLearner<SerialTreeLearner>(tree_config);
   }
   return nullptr;
 }
