@@ -164,10 +164,10 @@ void SerialTreeLearner::ResetConfig(const TreeConfig* tree_config) {
   histogram_pool_.ResetConfig(tree_config_);
 }
 
-Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians) {
+Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian) {
   gradients_ = gradients;
   hessians_ = hessians;
-
+  is_constant_hessian_ = is_constant_hessian;
   #ifdef TIMETAG
   auto start_time = std::chrono::steady_clock::now();
   #endif
@@ -427,7 +427,7 @@ void SerialTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_featur
                                    smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
                                    smaller_leaf_splits_->LeafIndex(),
                                    ordered_bins_, gradients_, hessians_,
-                                   ordered_gradients_.data(), ordered_hessians_.data(),
+                                   ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
                                    ptr_smaller_leaf_hist_data);
 
   if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
@@ -437,7 +437,7 @@ void SerialTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_featur
                                      larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
                                      larger_leaf_splits_->LeafIndex(),
                                      ordered_bins_, gradients_, hessians_,
-                                     ordered_gradients_.data(), ordered_hessians_.data(),
+                                     ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
                                      ptr_larger_leaf_hist_data);
   }
 #ifdef TIMETAG

@@ -386,23 +386,22 @@ public:
 
   LIGHTGBM_EXPORT void CreateValid(const Dataset* dataset);
 
-  void ConstructHistograms(
-    const std::vector<int8_t>& is_feature_used,
-    const data_size_t* data_indices, data_size_t num_data,
-    int leaf_idx,
-    std::vector<std::unique_ptr<OrderedBin>>& ordered_bins,
-    const score_t* gradients, const score_t* hessians,
-    score_t* ordered_gradients, score_t* ordered_hessians,
-    HistogramBinEntry* histogram_data) const;
+  void ConstructHistograms(const std::vector<int8_t>& is_feature_used,
+                           const data_size_t* data_indices, data_size_t num_data,
+                           int leaf_idx,
+                           std::vector<std::unique_ptr<OrderedBin>>& ordered_bins,
+                           const score_t* gradients, const score_t* hessians,
+                           score_t* ordered_gradients, score_t* ordered_hessians,
+                           bool is_constant_hessian,
+                           HistogramBinEntry* histogram_data) const;
 
   void FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, data_size_t num_data,
                     HistogramBinEntry* data) const;
 
-  inline data_size_t Split(
-    int feature,
-    uint32_t threshold,
-    data_size_t* data_indices, data_size_t num_data,
-    data_size_t* lte_indices, data_size_t* gt_indices) const {
+  inline data_size_t Split(int feature,
+                           uint32_t threshold,
+                           data_size_t* data_indices, data_size_t num_data,
+                           data_size_t* lte_indices, data_size_t* gt_indices) const {
     const int group = feature2group_[feature];
     const int sub_feature = feature2subfeature_[feature];
     return feature_groups_[group]->Split(sub_feature, threshold, data_indices, num_data, lte_indices, gt_indices);

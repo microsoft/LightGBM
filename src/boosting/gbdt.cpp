@@ -82,7 +82,11 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
   shrinkage_rate_ = new_config->learning_rate;
 
   object_function_ = object_function;
-
+  if (object_function_ != nullptr) {
+    is_constant_hessian_ = object_function_->IsConstantHessian();
+  } else {
+    is_constant_hessian_ = false;
+  }
   sigmoid_ = -1.0f;
   if (object_function_ != nullptr
       && (std::string(object_function_->GetName()) == std::string("binary")
@@ -408,7 +412,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
     std::unique_ptr<Tree> new_tree(new Tree(2));
     if (class_need_train_[curr_class]) {
       new_tree.reset(
-        tree_learner_->Train(gradient + curr_class * num_data_, hessian + curr_class * num_data_));
+        tree_learner_->Train(gradient + curr_class * num_data_, hessian + curr_class * num_data_, is_constant_hessian_));
     }
     #ifdef TIMETAG
     tree_time += std::chrono::steady_clock::now() - start_time;

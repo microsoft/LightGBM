@@ -77,13 +77,12 @@ public:
   BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const override;
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
-    const score_t* ordered_gradients, const score_t* ordered_hessians,
-    HistogramBinEntry* out) const override {
+                          const score_t* ordered_gradients, const score_t* ordered_hessians,
+                          HistogramBinEntry* out) const override {
     if (data_indices != nullptr) {  // if use part of data
 
       const data_size_t rest = num_data & 0x3;
       data_size_t i = 0;
-
       for (; i < num_data - rest; i += 4) {
 
         data_size_t idx = data_indices[i];
@@ -123,6 +122,7 @@ public:
         out[bin].sum_hessians += ordered_hessians[i];
         ++out[bin].cnt;
       }
+
     } else {  // use full data
       const data_size_t rest = num_data & 0x3;
       data_size_t i = 0;
@@ -153,6 +153,76 @@ public:
         const auto bin = (data_[i >> 1] >> ((i & 1) << 2)) & 0xf;
         out[bin].sum_gradients += ordered_gradients[i];
         out[bin].sum_hessians += ordered_hessians[i];
+        ++out[bin].cnt;
+      }
+    }
+  }
+
+  void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
+                          const score_t* ordered_gradients,
+                          HistogramBinEntry* out) const override {
+    if (data_indices != nullptr) {  // if use part of data
+
+      const data_size_t rest = num_data & 0x3;
+      data_size_t i = 0;
+      for (; i < num_data - rest; i += 4) {
+
+        data_size_t idx = data_indices[i];
+        const auto bin0 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 1];
+        const auto bin1 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 2];
+        const auto bin2 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 3];
+        const auto bin3 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+
+        out[bin0].sum_gradients += ordered_gradients[i];
+        out[bin1].sum_gradients += ordered_gradients[i + 1];
+        out[bin2].sum_gradients += ordered_gradients[i + 2];
+        out[bin3].sum_gradients += ordered_gradients[i + 3];
+
+        ++out[bin0].cnt;
+        ++out[bin1].cnt;
+        ++out[bin2].cnt;
+        ++out[bin3].cnt;
+
+      }
+
+      for (; i < num_data; ++i) {
+        const data_size_t idx = data_indices[i];
+        const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+        out[bin].sum_gradients += ordered_gradients[i];
+        ++out[bin].cnt;
+      }
+
+    } else {  // use full data
+      const data_size_t rest = num_data & 0x3;
+      data_size_t i = 0;
+      for (; i < num_data - rest; i += 4) {
+        int j = i >> 1;
+        const auto bin0 = (data_[j]) & 0xf;
+        const auto bin1 = (data_[j] >> 4) & 0xf;
+        ++j;
+        const auto bin2 = (data_[j]) & 0xf;
+        const auto bin3 = (data_[j] >> 4) & 0xf;
+
+        out[bin0].sum_gradients += ordered_gradients[i];
+        out[bin1].sum_gradients += ordered_gradients[i + 1];
+        out[bin2].sum_gradients += ordered_gradients[i + 2];
+        out[bin3].sum_gradients += ordered_gradients[i + 3];
+
+        ++out[bin0].cnt;
+        ++out[bin1].cnt;
+        ++out[bin2].cnt;
+        ++out[bin3].cnt;
+      }
+      for (; i < num_data; ++i) {
+        const auto bin = (data_[i >> 1] >> ((i & 1) << 2)) & 0xf;
+        out[bin].sum_gradients += ordered_gradients[i];
         ++out[bin].cnt;
       }
     }

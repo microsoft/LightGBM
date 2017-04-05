@@ -43,6 +43,14 @@ public:
     return "regression";
   }
 
+  bool IsConstantHessian() const override {
+    if (weights_ == nullptr) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
 private:
   /*! \brief Number of data */
   data_size_t num_data_;
