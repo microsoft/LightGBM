@@ -82,7 +82,11 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
   shrinkage_rate_ = new_config->learning_rate;
 
   object_function_ = object_function;
-  is_constant_hessian_ = object_function_->IsConstantHessian();
+  if (object_function_ != nullptr) {
+    is_constant_hessian_ = object_function_->IsConstantHessian();
+  } else {
+    is_constant_hessian_ = false;
+  }
   sigmoid_ = -1.0f;
   if (object_function_ != nullptr
       && (std::string(object_function_->GetName()) == std::string("binary")
