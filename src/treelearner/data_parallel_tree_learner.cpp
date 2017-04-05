@@ -140,12 +140,7 @@ void DataParallelTreeLearner::BeforeTrain() {
 }
 
 void DataParallelTreeLearner::FindBestThresholds() {
-  train_data_->ConstructHistograms(is_feature_used_,
-                                   smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
-                                   smaller_leaf_splits_->LeafIndex(),
-                                   ordered_bins_, gradients_, hessians_,
-                                   ordered_gradients_.data(), ordered_hessians_.data(),
-                                   smaller_leaf_histogram_array_[0].RawData() - 1);
+  ConstructHistograms(is_feature_used_, true);
   // construct local histograms
   #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {

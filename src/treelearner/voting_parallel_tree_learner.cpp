@@ -260,25 +260,7 @@ void VotingParallelTreeLearner::FindBestThresholds() {
   if (parent_leaf_histogram_array_ == nullptr) {
     use_subtract = false;
   }
-  // construct smaller leaf
-  HistogramBinEntry* ptr_smaller_leaf_hist_data = smaller_leaf_histogram_array_[0].RawData() - 1;
-  train_data_->ConstructHistograms(is_feature_used,
-    smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
-    smaller_leaf_splits_->LeafIndex(),
-    ordered_bins_, gradients_, hessians_,
-    ordered_gradients_.data(), ordered_hessians_.data(),
-    ptr_smaller_leaf_hist_data);
-
-  if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
-    // construct larger leaf
-    HistogramBinEntry* ptr_larger_leaf_hist_data = larger_leaf_histogram_array_[0].RawData() - 1;
-    train_data_->ConstructHistograms(is_feature_used,
-      larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
-      larger_leaf_splits_->LeafIndex(),
-      ordered_bins_, gradients_, hessians_,
-      ordered_gradients_.data(), ordered_hessians_.data(),
-      ptr_larger_leaf_hist_data);
-  }
+  ConstructHistograms(is_feature_used, use_subtract);
 
   std::vector<SplitInfo> smaller_bestsplit_per_features(num_features_);
   std::vector<SplitInfo> larger_bestsplit_per_features(num_features_);
