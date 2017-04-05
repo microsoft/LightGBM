@@ -222,11 +222,20 @@ public:
   * \param leaf Using which leaf's data to construct
   * \param gradients Gradients, Note:non-oredered by leaf
   * \param hessians Hessians, Note:non-oredered by leaf
-  * \param is_constant_hessian True if all hessians share the same value
   * \param out Output Result
   */
   virtual void ConstructHistogram(int leaf, const score_t* gradients,
-    const score_t* hessians, bool is_constant_hessian, HistogramBinEntry* out) const = 0;
+    const score_t* hessians, HistogramBinEntry* out) const = 0;
+
+  /*!
+  * \brief Construct histogram by using this bin
+  *        Note: Unlike Bin, OrderedBin doesn't use ordered gradients and ordered hessians.
+  *        Because it is hard to know the relative index in one leaf for sparse bin, since we skipped zero bins.
+  * \param leaf Using which leaf's data to construct
+  * \param gradients Gradients, Note:non-oredered by leaf
+  * \param out Output Result
+  */
+  virtual void ConstructHistogram(int leaf, const score_t* gradients, HistogramBinEntry* out) const = 0;
 
   /*!
   * \brief Split current bin, and perform re-order by leaf
@@ -317,13 +326,27 @@ public:
   * \param num_data Number of used data
   * \param ordered_gradients Pointer to gradients, the data_indices[i]-th data's gradient is ordered_gradients[i]
   * \param ordered_hessians Pointer to hessians, the data_indices[i]-th data's hessian is ordered_hessians[i]
-  * \param is_constant_hessian True if all hessians share the same value
   * \param out Output Result
   */
   virtual void ConstructHistogram(
     const data_size_t* data_indices, data_size_t num_data,
     const score_t* ordered_gradients, const score_t* ordered_hessians,
-    bool is_constant_hessian, HistogramBinEntry* out) const = 0;
+    HistogramBinEntry* out) const = 0;
+
+  /*!
+  * \brief Construct histogram of this feature,
+  *        Note: We use ordered_gradients and ordered_hessians to improve cache hit chance
+  *        The naive solution is using gradients[data_indices[i]] for data_indices[i] to get gradients,
+  which is not cache friendly, since the access of memory is not continuous.
+  *        ordered_gradients and ordered_hessians are preprocessed, and they are re-ordered by data_indices.
+  *        Ordered_gradients[i] is aligned with data_indices[i]'s gradients (same for ordered_hessians).
+  * \param data_indices Used data indices in current leaf
+  * \param num_data Number of used data
+  * \param ordered_gradients Pointer to gradients, the data_indices[i]-th data's gradient is ordered_gradients[i]
+  * \param out Output Result
+  */
+  virtual void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
+                                  const score_t* ordered_gradients, HistogramBinEntry* out) const = 0;
 
   /*!
   * \brief Split data according to threshold, if bin <= threshold, will put into left(lte_indices), else put into right(gt_indices)
