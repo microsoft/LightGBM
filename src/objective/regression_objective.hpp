@@ -43,6 +43,14 @@ public:
     return "regression";
   }
 
+  bool IsConstantHessian() const override {
+    if (weights_ == nullptr) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
 private:
   /*! \brief Number of data */
   data_size_t num_data_;
@@ -172,8 +180,6 @@ public:
   const char* GetName() const override {
     return "huber";
   }
-
-  bool IsConstantHessian() const override { return true; }
 
 private:
   /*! \brief Number of data */
