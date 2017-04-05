@@ -60,7 +60,7 @@ public:
   std::vector<double> Eval(const double* score) const override {
     double sum_loss = 0.0f;
     if (weights_ == nullptr) {
-#pragma omp parallel for schedule(static) reduction(+:sum_loss)
+      #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // sigmoid transform
         double prob = 1.0f / (1.0f + std::exp(-sigmoid_ * score[i]));
@@ -68,7 +68,7 @@ public:
         sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob);
       }
     } else {
-#pragma omp parallel for schedule(static) reduction(+:sum_loss)
+      #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // sigmoid transform
         double prob = 1.0f / (1.0f + std::exp(-sigmoid_ * score[i]));

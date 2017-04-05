@@ -109,15 +109,18 @@ public:
     (data_size_t, const std::vector<std::string>& lines) {
       std::vector<std::pair<int, double>> oneline_features;
       std::vector<std::string> pred_result(lines.size(), "");
+      OMP_INIT_EX();
 #pragma omp parallel for schedule(static) private(oneline_features)
       for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); ++i) {
+        OMP_LOOP_EX_BEGIN();
         oneline_features.clear();
         // parser
         parser_fun(lines[i].c_str(), &oneline_features);
         // predict
         pred_result[i] = Common::Join<double>(predict_fun_(oneline_features), "\t");
+        OMP_LOOP_EX_END();
       }
-
+      OMP_THROW_EX();
       for (size_t i = 0; i < pred_result.size(); ++i) {
         fprintf(result_file, "%s\n", pred_result[i].c_str());
       }

@@ -86,6 +86,32 @@ class TestEngine(unittest.TestCase):
         self.assertLess(ret, 0.2)
         self.assertAlmostEqual(min(evals_result['eval']['multi_logloss']), ret, places=5)
 
+    def test_early_stopping(self):
+        X_y = load_breast_cancer(True)
+        params = {
+            'objective': 'binary',
+            'metric': 'binary_logloss',
+            'verbose': -1,
+            'seed': 42
+        }
+        X_train, X_test, y_train, y_test = train_test_split(*X_y, test_size=0.1, random_state=42)
+        lgb_train = lgb.Dataset(X_train, y_train)
+        lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+        # no early stopping
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=10,
+                        valid_sets=lgb_eval,
+                        verbose_eval=False,
+                        early_stopping_rounds=5)
+        self.assertEqual(gbm.best_iteration, -1)
+        # early stopping occurs
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=100,
+                        valid_sets=lgb_eval,
+                        verbose_eval=False,
+                        early_stopping_rounds=5)
+        self.assertLessEqual(gbm.best_iteration, 100)
+
     def test_continue_train_and_other(self):
         params = {
             'objective': 'regression',
@@ -121,6 +147,9 @@ class TestEngine(unittest.TestCase):
     def test_cv(self):
         lgb_train, _ = template.test_template(return_data=True)
         lgb.cv({'verbose': -1}, lgb_train, num_boost_round=20, nfold=5, shuffle=False,
+               metrics='l1', verbose_eval=False,
+               callbacks=[lgb.reset_parameter(learning_rate=lambda i: 0.1 - 0.001 * i)])
+        lgb.cv({'verbose': -1}, lgb_train, num_boost_round=20, nfold=5, shuffle=True,
                metrics='l1', verbose_eval=False,
                callbacks=[lgb.reset_parameter(learning_rate=lambda i: 0.1 - 0.001 * i)])
         tss = TimeSeriesSplit(3)

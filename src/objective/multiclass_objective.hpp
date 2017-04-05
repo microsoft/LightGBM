@@ -5,19 +5,23 @@
 
 #include <cstring>
 #include <cmath>
+#include <vector>
+
+#include "binary_objective.hpp"
 
 namespace LightGBM {
 /*!
-* \brief Objective function for multiclass classification
+* \brief Objective function for multiclass classification, use softmax as objective functions
 */
-class MulticlassLogloss: public ObjectiveFunction {
+class MulticlassSoftmax: public ObjectiveFunction {
 public:
-  explicit MulticlassLogloss(const ObjectiveConfig& config) {
+  explicit MulticlassSoftmax(const ObjectiveConfig& config) {
     num_class_ = config.num_class;
-    is_unbalance_ = config.is_unbalance;
+    softmax_weight_decay_ = 1e-3;
   }
 
-  ~MulticlassLogloss() {
+  ~MulticlassSoftmax() {
+
   }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
@@ -25,69 +29,70 @@ public:
     label_ = metadata.label();
     weights_ = metadata.weights();
     label_int_.resize(num_data_);
-    #pragma omp parallel for schedule(static)
+    std::vector<data_size_t> cnt_per_class(num_class_, 0);
     for (int i = 0; i < num_data_; ++i) {
       label_int_[i] = static_cast<int>(label_[i]);
       if (label_int_[i] < 0 || label_int_[i] >= num_class_) {
         Log::Fatal("Label must be in [0, %d), but found %d in label", num_class_, label_int_[i]);
       }
+      ++cnt_per_class[label_int_[i]];
     }
-    label_pos_weights_ = std::vector<float>(num_class_, 1);
-    if (is_unbalance_) {
-      std::vector<int> cnts(num_class_, 0);
-      for (int i = 0; i < num_data_; ++i) {
-        ++cnts[label_int_[i]];
+    int non_empty_class = 0;
+    is_empty_class_ = std::vector<bool>(num_class_, false);
+    for (int i = 0; i < num_class_; ++i) {
+      if (cnt_per_class[i] > 0) {
+        ++non_empty_class;
+      } else {
+        is_empty_class_[i] = true;
       }
-      for (int i = 0; i < num_class_; ++i) {
-        int cnt_cur = cnts[i];
-        int cnt_other = (num_data_ - cnts[i]);
-        label_pos_weights_[i] = static_cast<float>(cnt_other) / cnt_cur;
-      }
-    } 
+    }
+    if (non_empty_class < 2) { non_empty_class = 2; }
+    hessian_nor_ = static_cast<score_t>(non_empty_class) / (non_empty_class - 1);
   }
 
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
     if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static)
+      std::vector<double> rec;
+      #pragma omp parallel for schedule(static) private(rec)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        std::vector<double> rec(num_class_);
-        for (int k = 0; k < num_class_; ++k){
+        rec.resize(num_class_);
+        for (int k = 0; k < num_class_; ++k) {
           size_t idx = static_cast<size_t>(num_data_) * k + i;
           rec[k] = static_cast<double>(score[idx]);
         }
         Common::Softmax(&rec);
         for (int k = 0; k < num_class_; ++k) {
+          if (is_empty_class_[k]) { continue; }
           auto p = rec[k];
           size_t idx = static_cast<size_t>(num_data_) * k + i;
           if (label_int_[i] == k) {
-            gradients[idx] = static_cast<score_t>(p - 1.0f) * label_pos_weights_[k];
-            hessians[idx] = static_cast<score_t>(p * (1.0f - p))* label_pos_weights_[k];
+            gradients[idx] = static_cast<score_t>(p - 1.0f + softmax_weight_decay_ * score[idx]);
           } else {
-            gradients[idx] = static_cast<score_t>(p);
-            hessians[idx] = static_cast<score_t>(p * (1.0f - p));
+            gradients[idx] = static_cast<score_t>(p + softmax_weight_decay_ * score[idx]);
           }
+          hessians[idx] = static_cast<score_t>(hessian_nor_ * p * (1.0f - p) + softmax_weight_decay_);
         }
       }
     } else {
-      #pragma omp parallel for schedule(static)
+      std::vector<double> rec;
+      #pragma omp parallel for schedule(static) private(rec)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        std::vector<double> rec(num_class_);
-        for (int k = 0; k < num_class_; ++k){
+        rec.resize(num_class_);
+        for (int k = 0; k < num_class_; ++k) {
           size_t idx = static_cast<size_t>(num_data_) * k + i;
           rec[k] = static_cast<double>(score[idx]);
         }
         Common::Softmax(&rec);
         for (int k = 0; k < num_class_; ++k) {
+          if (is_empty_class_[k]) { continue; }
           auto p = rec[k];
           size_t idx = static_cast<size_t>(num_data_) * k + i;
           if (label_int_[i] == k) {
-            gradients[idx] = static_cast<score_t>((p - 1.0f) * weights_[i]) * label_pos_weights_[k];
-            hessians[idx] = static_cast<score_t>(p * (1.0f - p) * weights_[i]) * label_pos_weights_[k];
+            gradients[idx] = static_cast<score_t>((p - 1.0f + softmax_weight_decay_ * score[idx]) * weights_[i]);
           } else {
-            gradients[idx] = static_cast<score_t>(p * weights_[i]);
-            hessians[idx] = static_cast<score_t>(p * (1.0f - p) * weights_[i]);
+            gradients[idx] = static_cast<score_t>((p + softmax_weight_decay_ * score[idx]) * weights_[i]);
           }
-          
+          hessians[idx] = static_cast<score_t>((hessian_nor_ * p * (1.0f - p) + softmax_weight_decay_)* weights_[i]);
         }
       }
     }
@@ -108,9 +113,52 @@ private:
   std::vector<int> label_int_;
   /*! \brief Weights for data */
   const float* weights_;
-  /*! \brief Weights for label */
-  std::vector<float> label_pos_weights_;
-  bool is_unbalance_;
+  std::vector<bool> is_empty_class_;
+  double softmax_weight_decay_;
+  score_t hessian_nor_;
+};
+
+/*!
+* \brief Objective function for multiclass classification, use one-vs-all binary objective function
+*/
+class MulticlassOVA: public ObjectiveFunction {
+public:
+  explicit MulticlassOVA(const ObjectiveConfig& config) {
+    num_class_ = config.num_class;
+    for (int i = 0; i < num_class_; ++i) {
+      binary_loss_.emplace_back(
+        new BinaryLogloss(config, [i](float label) { return static_cast<int>(label) == i; }));
+    }
+  }
+
+  ~MulticlassOVA() {
+
+  }
+
+  void Init(const Metadata& metadata, data_size_t num_data) override {
+    num_data_ = num_data;
+    for (int i = 0; i < num_class_; ++i) {
+      binary_loss_[i]->Init(metadata, num_data);
+    }
+  }
+
+  void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
+    for (int i = 0; i < num_class_; ++i) {
+      int64_t bias = static_cast<int64_t>(num_data_) * i;
+      binary_loss_[i]->GetGradients(score + bias, gradients + bias, hessians + bias);
+    }
+  }
+
+  const char* GetName() const override {
+    return "multiclassova";
+  }
+
+private:
+  /*! \brief Number of data */
+  data_size_t num_data_;
+  /*! \brief Number of classes */
+  int num_class_;
+  std::vector<std::unique_ptr<BinaryLogloss>> binary_loss_;
 };
 
 }  // namespace LightGBM

@@ -165,6 +165,7 @@ def train(params, train_set, num_boost_round=100,
         booster.set_train_data_name(train_data_name)
     for valid_set, name_valid_set in zip(reduced_valid_sets, name_valid_sets):
         booster.add_valid(valid_set, name_valid_set)
+    booster.best_iteration = -1
 
     """start training"""
     for i in range_(init_iteration, init_iteration + num_boost_round):
@@ -192,12 +193,9 @@ def train(params, train_set, num_boost_round=100,
                                         begin_iteration=init_iteration,
                                         end_iteration=init_iteration + num_boost_round,
                                         evaluation_result_list=evaluation_result_list))
-        except callback.EarlyStopException:
+        except callback.EarlyStopException as earlyStopException:
+            booster.best_iteration = earlyStopException.best_iteration + 1
             break
-    if booster.attr('best_iteration') is not None:
-        booster.best_iteration = int(booster.attr('best_iteration')) + 1
-    else:
-        booster.best_iteration = -1
     return booster
 
 
@@ -205,6 +203,7 @@ class CVBooster(object):
     """"Auxiliary data struct to hold all boosters of CV."""
     def __init__(self):
         self.boosters = []
+        self.best_iteration = -1
 
     def append(self, booster):
         """add a booster to CVBooster"""
@@ -225,7 +224,6 @@ def _make_n_folds(full_data, data_splitter, nfold, params, seed, fpreproc=None, 
     """
     Make an n-fold list of Booster from random indices.
     """
-    np.random.seed(seed)
     num_data = full_data.construct().num_data()
     if data_splitter is not None:
         if not hasattr(data_splitter, 'split'):
@@ -238,7 +236,7 @@ def _make_n_folds(full_data, data_splitter, nfold, params, seed, fpreproc=None, 
         folds = sfk.split(X=np.zeros(num_data), y=full_data.get_label())
     else:
         if shuffle:
-            randidx = np.random.permutation(num_data)
+            randidx = np.random.RandomState(seed).permutation(num_data)
         else:
             randidx = np.arange(num_data)
         kstep = int(num_data / nfold)
@@ -409,8 +407,9 @@ def cv(params, train_set, num_boost_round=10,
                                         begin_iteration=0,
                                         end_iteration=num_boost_round,
                                         evaluation_result_list=res))
-        except callback.EarlyStopException as e:
+        except callback.EarlyStopException as earlyStopException:
+            cvfolds.best_iteration = earlyStopException.best_iteration + 1
             for k in results:
-                results[k] = results[k][:e.best_iteration + 1]
+                results[k] = results[k][:cvfolds.best_iteration]
             break
     return dict(results)

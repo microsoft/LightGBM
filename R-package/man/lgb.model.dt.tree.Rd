@@ -18,7 +18,7 @@ The columns of the \code{data.table} are:
  \item \code{tree_index}: ID of a tree in a model (integer)
  \item \code{split_index}: ID of a node in a tree (integer)
  \item \code{split_feature}: for a node, it's a feature name (character);
-                             for a leaf, it simply labels it as \code{'NA'}
+                             for a leaf, it simply labels it as \code{"NA"}
  \item \code{node_parent}: ID of the parent node for current node (integer)
  \item \code{leaf_index}: ID of a leaf in a tree (integer)
  \item \code{leaf_parent}: ID of the parent node for current leaf (integer)
@@ -35,8 +35,10 @@ The columns of the \code{data.table} are:
 Parse a LightGBM model json dump into a \code{data.table} structure.
 }
 \examples{
+\dontrun{
+library(lightgbm)
 
-data(agaricus.train, package = 'lightgbm')
+data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
 
@@ -47,6 +49,7 @@ params = list(objective = "binary",
 model <- lgb.train(params, dtrain, 20)
 
 tree_dt <- lgb.model.dt.tree(model)
+}
 
 }
 

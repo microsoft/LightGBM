@@ -12,15 +12,21 @@ namespace LightGBM {
 */
 class BinaryLogloss: public ObjectiveFunction {
 public:
-  explicit BinaryLogloss(const ObjectiveConfig& config) {
+  explicit BinaryLogloss(const ObjectiveConfig& config, std::function<bool(float)> is_pos = nullptr) {
     is_unbalance_ = config.is_unbalance;
     sigmoid_ = static_cast<double>(config.sigmoid);
     if (sigmoid_ <= 0.0) {
       Log::Fatal("Sigmoid parameter %f should be greater than zero", sigmoid_);
     }
     scale_pos_weight_ = static_cast<double>(config.scale_pos_weight);
+    is_pos_ = is_pos;
+    if (is_pos_ == nullptr) {
+      is_pos_ = [](float label) {return label > 0; };
+    }
   }
+
   ~BinaryLogloss() {}
+
   void Init(const Metadata& metadata, data_size_t num_data) override {
     num_data_ = num_data;
     label_ = metadata.label();
@@ -28,13 +34,18 @@ public:
     data_size_t cnt_positive = 0;
     data_size_t cnt_negative = 0;
     // count for positive and negative samples
-#pragma omp parallel for schedule(static) reduction(+:cnt_positive, cnt_negative)
+    #pragma omp parallel for schedule(static) reduction(+:cnt_positive, cnt_negative)
     for (data_size_t i = 0; i < num_data_; ++i) {
-      if (label_[i] > 0) {
+      if (is_pos_(label_[i])) {
         ++cnt_positive;
       } else {
         ++cnt_negative;
       }
+    }
+    if (cnt_negative == 0 || cnt_positive == 0) {
+      Log::Warning("Only contain one class.");
+      // not need to boost.
+      num_data_ = 0;
     }
     Log::Info("Number of positive: %d, number of negative: %d", cnt_positive, cnt_negative);
     // use -1 for negative class, and 1 for positive class
@@ -61,7 +72,7 @@ public:
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // get label and label weights
-        const int is_pos = label_[i] > 0;
+        const int is_pos = is_pos_(label_[i]);
         const int label = label_val_[is_pos];
         const double label_weight = label_weights_[is_pos];
         // calculate gradients and hessians
@@ -74,7 +85,7 @@ public:
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // get label and label weights
-        const int is_pos = label_[i] > 0;
+        const int is_pos = is_pos_(label_[i]);
         const int label = label_val_[is_pos];
         const double label_weight = label_weights_[is_pos];
         // calculate gradients and hessians
@@ -106,6 +117,7 @@ private:
   /*! \brief Weights for data */
   const float* weights_;
   double scale_pos_weight_;
+  std::function<bool(float)> is_pos_;
 };
 
 }  // namespace LightGBM

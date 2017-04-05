@@ -48,7 +48,7 @@ public:
     read_cnt = fread(buffer_process.data(), 1, buffer_size, file);
     size_t last_read_cnt = 0;
     while (read_cnt > 0) {
-      // strat read thread
+      // start read thread
       std::thread read_worker = std::thread(
         [file, &buffer_read, buffer_size, &last_read_cnt] {
         last_read_cnt = fread(buffer_read.data(), 1, buffer_size, file);

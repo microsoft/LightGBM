@@ -184,7 +184,7 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
 * ```scale_pos_weight```, default=```1.0```, type=double
   * weight of positive class in binary classification task
 * ```boost_from_average```, default=```true```, type=bool
-  * adjust initial score of each observation to the mean of each class for faster convergence
+  * adjust initial score to the mean of labels for faster convergence, only used in Regression task.
 * ```is_unbalance```, default=```false```, type=bool
   * used in binary classification. Set this to ```true``` if training data are unbalance.
 * ```max_position```, default=```20```, type=int

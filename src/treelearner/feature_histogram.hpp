@@ -377,8 +377,10 @@ public:
     Reset(cache_size, total_size);
     pool_.resize(cache_size);
     data_.resize(cache_size);
+    OMP_INIT_EX();
     #pragma omp parallel for schedule(static)
     for (int i = old_cache_size; i < cache_size_; ++i) {
+      OMP_LOOP_EX_BEGIN();
       pool_[i].reset(new FeatureHistogram[train_data->num_features()]);
       data_[i].resize(num_total_bin);
       uint64_t offset = 0;
@@ -392,7 +394,9 @@ public:
         offset += static_cast<uint64_t>(num_bin);
       }
       CHECK(offset == num_total_bin);
+      OMP_LOOP_EX_END();
     }
+    OMP_THROW_EX();
   }
 
   void ResetConfig(const TreeConfig* tree_config) {

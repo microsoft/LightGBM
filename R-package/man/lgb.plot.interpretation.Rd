@@ -19,7 +19,7 @@ lgb.plot.interpretation(tree_interpretation_dt, top_n = 10, cols = 1,
 \item{cex}{(base R barplot) passed as \code{cex.names} parameter to \code{barplot}.}
 }
 \value{
-The \code{lgb.plot.interpretation} function creates a \code{barplot}
+The \code{lgb.plot.interpretation} function creates a \code{barplot}.
 }
 \description{
 Plot previously calculated feature contribution as a bar graph.
@@ -29,14 +29,15 @@ The graph represents each feature as a horizontal bar of length proportional to 
 Features are shown ranked in a decreasing contribution order.
 }
 \examples{
-
-Sigmoid <- function(x) 1 / (1 + exp(-x))
-Logit <- function(x) log(x / (1 - x))
-data(agaricus.train, package = 'lightgbm')
+\dontrun{
+library(lightgbm)
+Sigmoid <- function(x) {1 / (1 + exp(-x))}
+Logit <- function(x) {log(x / (1 - x))}
+data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
 setinfo(dtrain, "init_score", rep(Logit(mean(train$label)), length(train$label)))
-data(agaricus.test, package = 'lightgbm')
+data(agaricus.test, package = "lightgbm")
 test <- agaricus.test
 
 params = list(objective = "binary",
@@ -47,6 +48,7 @@ model <- lgb.train(params, dtrain, 20)
 
 tree_interpretation <- lgb.interprete(model, test$data, 1:5)
 lgb.plot.interpretation(tree_interpretation[[1]], top_n = 10)
+}
 
 }
 

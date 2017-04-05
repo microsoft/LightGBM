@@ -23,15 +23,15 @@ public:
   }
 
   void GetGradients(const double* score, score_t* gradients,
-    score_t* hessians) const override {
+                    score_t* hessians) const override {
     if (weights_ == nullptr) {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         gradients[i] = static_cast<score_t>(score[i] - label_[i]);
         hessians[i] = 1.0f;
       }
     } else {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         gradients[i] = static_cast<score_t>(score[i] - label_[i]) * weights_[i];
         hessians[i] = weights_[i];
@@ -70,9 +70,9 @@ public:
   }
 
   void GetGradients(const double* score, score_t* gradients,
-    score_t* hessians) const override {
+                    score_t* hessians) const override {
     if (weights_ == nullptr) {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
         if (diff >= 0.0f) {
@@ -83,7 +83,7 @@ public:
         hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], eta_));
       }
     } else {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
         if (diff >= 0.0f) {
@@ -131,9 +131,9 @@ public:
   }
 
   void GetGradients(const double* score, score_t* gradients,
-    score_t* hessians) const override {
+                    score_t* hessians) const override {
     if (weights_ == nullptr) {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
 
@@ -150,7 +150,7 @@ public:
         }
       }
     } else {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
 
@@ -203,16 +203,16 @@ public:
   }
 
   void GetGradients(const double* score, score_t* gradients,
-    score_t* hessians) const override {
+                    score_t* hessians) const override {
     if (weights_ == nullptr) {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double x = score[i] - label_[i];
         gradients[i] = static_cast<score_t>(c_ * x / (std::fabs(x) + c_));
         hessians[i] = static_cast<score_t>(c_ * c_ / ((std::fabs(x) + c_) * (std::fabs(x) + c_)));
       }
     } else {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double x = score[i] - label_[i];
         gradients[i] = static_cast<score_t>(c_ * x / (std::fabs(x) + c_) * weights_[i]);
@@ -243,7 +243,7 @@ private:
 class RegressionPoissonLoss: public ObjectiveFunction {
 public:
   explicit RegressionPoissonLoss(const ObjectiveConfig& config) {
-    max_delta_step_ =  static_cast<double>(config.poisson_max_delta_step);
+    max_delta_step_ = static_cast<double>(config.poisson_max_delta_step);
   }
 
   ~RegressionPoissonLoss() {}
@@ -255,15 +255,15 @@ public:
   }
 
   void GetGradients(const double* score, score_t* gradients,
-    score_t* hessians) const override {
+                    score_t* hessians) const override {
     if (weights_ == nullptr) {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         gradients[i] = static_cast<score_t>(score[i] - label_[i]);
         hessians[i] = static_cast<score_t>(score[i] + max_delta_step_);
       }
     } else {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         gradients[i] = static_cast<score_t>((score[i] - label_[i]) * weights_[i]);
         hessians[i] = static_cast<score_t>((score[i] + max_delta_step_) * weights_[i]);

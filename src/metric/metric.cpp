@@ -29,7 +29,9 @@ Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config
   } else if (type == std::string("map")) {
     return new MapMetric(config);
   } else if (type == std::string("multi_logloss")) {
-    return new MultiLoglossMetric(config);
+    return new MultiSoftmaxLoglossMetric(config);
+  } else if (type == std::string("multi_loglossova")) {
+    return new MultiOVALoglossMetric(config);
   } else if (type == std::string("multi_error")) {
     return new MultiErrorMetric(config);
   }

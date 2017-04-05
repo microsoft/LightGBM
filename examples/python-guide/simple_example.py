@@ -5,6 +5,7 @@ import lightgbm as lgb
 import pandas as pd
 from sklearn.metrics import mean_squared_error
 
+
 # load or create your dataset
 print('Load data...')
 df_train = pd.read_csv('../regression/regression.train', header=None, sep='\t')
@@ -57,6 +58,7 @@ model_json = gbm.dump_model()
 
 with open('model.json', 'w+') as f:
     json.dump(model_json, f, indent=4)
+
 
 print('Feature names:', gbm.feature_name())
 

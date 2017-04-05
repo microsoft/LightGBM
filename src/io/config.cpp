@@ -138,7 +138,8 @@ void OverallConfig::GetTaskType(const std::unordered_map<std::string, std::strin
 void OverallConfig::CheckParamConflict() {
 
   // check if objective_type, metric_type, and num_class match
-  bool objective_type_multiclass = (objective_type == std::string("multiclass"));
+  bool objective_type_multiclass = (objective_type == std::string("multiclass") 
+                                    || objective_type == std::string("multiclassova"));
   int num_class_check = boosting_config.num_class;
   if (objective_type_multiclass) {
     if (num_class_check <= 1) {
@@ -151,10 +152,18 @@ void OverallConfig::CheckParamConflict() {
   }
   if (boosting_config.is_provide_training_metric || !io_config.valid_data_filenames.empty()) {
     for (std::string metric_type : metric_types) {
-      bool metric_type_multiclass = (metric_type == std::string("multi_logloss") || metric_type == std::string("multi_error"));
+      bool metric_type_multiclass = (metric_type == std::string("multi_logloss") 
+                                     || metric_type == std::string("multi_error")
+                                     || metric_type == std::string("multi_loglossova"));
       if ((objective_type_multiclass && !metric_type_multiclass)
         || (!objective_type_multiclass && metric_type_multiclass)) {
         Log::Fatal("Objective and metrics don't match");
+      }
+      if (objective_type == std::string("multiclassova") && metric_type == std::string("multi_logloss")) {
+        Log::Fatal("Wrong metric. For Multi-class with OVA, you should use multi_loglossova metric.");
+      }
+      if (objective_type == std::string("multiclass") && metric_type == std::string("multi_loglossova")) {
+        Log::Fatal("Wrong metric. For Multi-class with softmax, you should use multi_logloss metric.");
       }
     }
   }
