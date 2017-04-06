@@ -4,6 +4,7 @@
 #include <LightGBM/meta.h>
 #include <LightGBM/config.h>
 #include <LightGBM/dataset.h>
+#include <LightGBM/objective_function.h>
 
 #include <vector>
 
@@ -33,8 +34,7 @@ public:
   * \brief Calcaluting and printing metric result
   * \param score Current prediction score
   */
-  virtual std::vector<double> Eval(const double* score, std::function<std::vector<double>(std::vector<double>&)> converter, 
-                                   std::function<double(double)> single_converter,
+  virtual std::vector<double> Eval(const double* score, const ObjectiveFunction* objective,
                                    int num_tree_per_iteration) const = 0;
 
   Metric() = default;

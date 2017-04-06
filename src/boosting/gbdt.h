@@ -344,8 +344,6 @@ protected:
   std::vector<double> class_default_output_;
   bool is_constant_hessian_;
   std::unique_ptr<ObjectiveFunction> loaded_objective_;
-  std::function<std::vector<double>(std::vector<double>&)> pred_convert_fun_;
-  std::function<double(double)> pred_convert_fun_single_;
 };
 
 }  // namespace LightGBM

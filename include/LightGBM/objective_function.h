@@ -7,7 +7,6 @@
 #include <functional>
 
 namespace LightGBM {
-
 /*!
 * \brief The interface of Objective Function.
 */
@@ -42,13 +41,12 @@ public:
 
   virtual int numTreePerIteration() const { return 1; }
 
-  virtual std::function<std::vector<double>(std::vector<double>&)>  ConvertOutput() const {
-    return [](std::vector<double>& input) { return input; };
+  virtual std::vector<double> ConvertOutput(std::vector<double>& input) const {
+    return input;
   }
 
-  // used for single output objective function(non-multi-class)
-  virtual std::function<double(double)> ConvertSingleOutput() const {
-    return [](double input) { return input; };
+  virtual double ConvertOutput(double input) const {
+    return input;
   }
 
   virtual std::string ToString() const = 0;

@@ -54,24 +54,39 @@ public:
     return -1.0f;
   }
 
-  std::vector<double> Eval(const double* score, std::function<std::vector<double>(std::vector<double>&)>,
-                           std::function<double(double)> single_converter,
+  std::vector<double> Eval(const double* score, const ObjectiveFunction* objective,
                            int) const override {
     double sum_loss = 0.0f;
-    if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static) reduction(+:sum_loss)
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        double prob = single_converter(score[i]);
-        // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob);
+    if (objective == nullptr) {
+      if (weights_ == nullptr) {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i]);
+        }
+      } else {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i]) * weights_[i];
+        }
       }
     } else {
-      #pragma omp parallel for schedule(static) reduction(+:sum_loss)
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        // sigmoid transform
-        double prob = single_converter(score[i]);
-        // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob) * weights_[i];
+      if (weights_ == nullptr) {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          double prob = objective->ConvertOutput(score[i]);
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob);
+        }
+      } else {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          // sigmoid transform
+          double prob = objective->ConvertOutput(score[i]);
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob) * weights_[i];
+        }
       }
     }
     double loss = sum_loss / sum_weights_;
@@ -174,9 +189,7 @@ public:
     }
   }
 
-  std::vector<double> Eval(const double* score, 
-                           std::function<std::vector<double>(std::vector<double>&)>,
-                           std::function<double(double)>,
+  std::vector<double> Eval(const double* score, const ObjectiveFunction*,
                            int) const override {
     // get indices sorted by score, descent order
     std::vector<data_size_t> sorted_idx;

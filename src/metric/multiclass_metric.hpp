@@ -49,33 +49,58 @@ public:
     return -1.0f;
   }
   
-  std::vector<double> Eval(const double* score, std::function<std::vector<double>(std::vector<double>&)> converter,
-                           std::function<double(double)>,
+  std::vector<double> Eval(const double* score, const ObjectiveFunction* objective,
                            int num_tree_per_iteration) const override {
     double sum_loss = 0.0;
-    if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static) reduction(+:sum_loss)
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        std::vector<double> rec(num_tree_per_iteration);
-        for (int k = 0; k < num_tree_per_iteration; ++k) {
-          size_t idx = static_cast<size_t>(num_data_) * k + i;
-          rec[k] = static_cast<double>(score[idx]);
+    if (objective != nullptr) {
+      if (weights_ == nullptr) {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          std::vector<double> rec(num_tree_per_iteration);
+          for (int k = 0; k < num_tree_per_iteration; ++k) {
+            size_t idx = static_cast<size_t>(num_data_) * k + i;
+            rec[k] = static_cast<double>(score[idx]);
+          }
+          rec = objective->ConvertOutput(rec);
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec);
         }
-        rec = converter(rec);
-        // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec);
+      } else {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          std::vector<double> rec(num_tree_per_iteration);
+          for (int k = 0; k < num_tree_per_iteration; ++k) {
+            size_t idx = static_cast<size_t>(num_data_) * k + i;
+            rec[k] = static_cast<double>(score[idx]);
+          }
+          rec = objective->ConvertOutput(rec);
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec) * weights_[i];
+        }
       }
     } else {
-      #pragma omp parallel for schedule(static) reduction(+:sum_loss)
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        std::vector<double> rec(num_tree_per_iteration);
-        for (int k = 0; k < num_tree_per_iteration; ++k) {
-          size_t idx = static_cast<size_t>(num_data_) * k + i;
-          rec[k] = static_cast<double>(score[idx]);
+      if (weights_ == nullptr) {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          std::vector<double> rec(num_tree_per_iteration);
+          for (int k = 0; k < num_tree_per_iteration; ++k) {
+            size_t idx = static_cast<size_t>(num_data_) * k + i;
+            rec[k] = static_cast<double>(score[idx]);
+          }
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec);
         }
-        rec = converter(rec);
-        // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec) * weights_[i];
+      } else {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          std::vector<double> rec(num_tree_per_iteration);
+          for (int k = 0; k < num_tree_per_iteration; ++k) {
+            size_t idx = static_cast<size_t>(num_data_) * k + i;
+            rec[k] = static_cast<double>(score[idx]);
+          }
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec) * weights_[i];
+        }
       }
     }
     double loss = sum_loss / sum_weights_;

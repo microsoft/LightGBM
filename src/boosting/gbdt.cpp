@@ -86,12 +86,8 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
   if (objective_function_ != nullptr) {
     is_constant_hessian_ = objective_function_->IsConstantHessian();
     num_tree_per_iteration_ = objective_function_->numTreePerIteration();
-    pred_convert_fun_ = objective_function_->ConvertOutput();
-    pred_convert_fun_single_ = objective_function_->ConvertSingleOutput();
   } else {
     is_constant_hessian_ = false;
-    pred_convert_fun_ = [](std::vector<double>& input) { return input; };
-    pred_convert_fun_single_ = [](double input) { return input; };
   }
 
   if (train_data_ != train_data && train_data != nullptr) {
@@ -529,8 +525,7 @@ std::string GBDT::OutputMetric(int iter) {
   if (need_output) {
     for (auto& sub_metric : training_metrics_) {
       auto name = sub_metric->GetName();
-      auto scores = sub_metric->Eval(train_score_updater_->score(), 
-                                     pred_convert_fun_, pred_convert_fun_single_, num_tree_per_iteration_);
+      auto scores = sub_metric->Eval(train_score_updater_->score(), objective_function_, num_tree_per_iteration_);
       for (size_t k = 0; k < name.size(); ++k) {
         std::stringstream tmp_buf;
         tmp_buf << "Iteration:" << iter
@@ -548,7 +543,7 @@ std::string GBDT::OutputMetric(int iter) {
     for (size_t i = 0; i < valid_metrics_.size(); ++i) {
       for (size_t j = 0; j < valid_metrics_[i].size(); ++j) {
         auto test_scores = valid_metrics_[i][j]->Eval(valid_score_updater_[i]->score(), 
-                                                      pred_convert_fun_, pred_convert_fun_single_, 
+                                                      objective_function_,
                                                       num_tree_per_iteration_);
         auto name = valid_metrics_[i][j]->GetName();
         for (size_t k = 0; k < name.size(); ++k) {
@@ -588,8 +583,7 @@ std::vector<double> GBDT::GetEvalAt(int data_idx) const {
   std::vector<double> ret;
   if (data_idx == 0) {
     for (auto& sub_metric : training_metrics_) {
-      auto scores = sub_metric->Eval(train_score_updater_->score(), pred_convert_fun_, 
-                                     pred_convert_fun_single_,
+      auto scores = sub_metric->Eval(train_score_updater_->score(), objective_function_,
                                      num_tree_per_iteration_);
       for (auto score : scores) {
         ret.push_back(score);
@@ -599,7 +593,7 @@ std::vector<double> GBDT::GetEvalAt(int data_idx) const {
     auto used_idx = data_idx - 1;
     for (size_t j = 0; j < valid_metrics_[used_idx].size(); ++j) {
       auto test_scores = valid_metrics_[used_idx][j]->Eval(valid_score_updater_[used_idx]->score(), 
-                                                           pred_convert_fun_, pred_convert_fun_single_,
+                                                           objective_function_,
                                                            num_tree_per_iteration_);
       for (auto score : test_scores) {
         ret.push_back(score);
@@ -635,7 +629,9 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
     for (int j = 0; j < num_tree_per_iteration_; ++j) {
       tmp_result[j] = raw_scores[j * num_data + i];
     }
-    tmp_result = pred_convert_fun_(tmp_result);
+    if (objective_function_ != nullptr) {
+      tmp_result = objective_function_->ConvertOutput(tmp_result);
+    }
     for (int j = 0; j < num_class_; ++j) {
       out_result[j * num_data + i] = static_cast<double>(tmp_result[j]);
     }
@@ -819,12 +815,7 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
     auto str = Common::Split(line.c_str(), '=')[1];
     loaded_objective_.reset(ObjectiveFunction::CreateObjectiveFunction(str));
     objective_function_ = loaded_objective_.get();
-    pred_convert_fun_ = objective_function_->ConvertOutput();
-    pred_convert_fun_single_ = objective_function_->ConvertSingleOutput();
-  } else {
-    pred_convert_fun_ = [](std::vector<double>& input) { return input; };
-    pred_convert_fun_single_ = [](double input) { return input; };
-  }
+  } 
 
   // get tree models
   size_t i = 0;
@@ -890,7 +881,11 @@ std::vector<double> GBDT::Predict(const double* value) const {
       ret[j] += models_[i * num_tree_per_iteration_ + j]->Predict(value);
     }
   }
-  return pred_convert_fun_(ret);
+  if (objective_function_ != nullptr) {
+    return objective_function_->ConvertOutput(ret);
+  } else {
+    return ret;
+  }
 }
 
 std::vector<int> GBDT::PredictLeafIndex(const double* value) const {

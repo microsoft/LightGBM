@@ -113,11 +113,9 @@ public:
     }
   }
 
-  std::function<std::vector<double>(std::vector<double>&)> ConvertOutput() const override {
-    return [this](std::vector<double>& input) {
-      Common::Softmax(input.data(), num_class_);
-      return input;
-    };
+  std::vector<double> ConvertOutput(std::vector<double>& input) const override {
+    Common::Softmax(input.data(), num_class_);
+    return input;
   }
 
   const char* GetName() const override {
@@ -208,13 +206,11 @@ public:
     return "multiclassova";
   }
 
-  std::function<std::vector<double>(std::vector<double>&)> ConvertOutput() const override {
-    return [this](std::vector<double>& input) {
-      for (int i = 0; i < num_class_; ++i) {
-        input[i] = 1.0f / (1.0f + std::exp(-sigmoid_ * input[i]));
-      }
-      return input;
-    };
+  std::vector<double> ConvertOutput(std::vector<double>& input) const override {
+    for (int i = 0; i < num_class_; ++i) {
+      input[i] = 1.0f / (1.0f + std::exp(-sigmoid_ * input[i]));
+    }
+    return input;
   }
 
   std::string ToString() const override {
