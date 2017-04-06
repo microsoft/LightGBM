@@ -25,10 +25,7 @@
 // Use Boost.Compute on-disk kernel cache
 #define BOOST_COMPUTE_USE_OFFLINE_CACHE
 #include <boost/compute/core.hpp>
-#include <boost/compute/memory/local_buffer.hpp>
-#include <boost/compute/algorithm/transform.hpp>
 #include <boost/compute/container/vector.hpp>
-#include <boost/compute/functional/math.hpp>
 #include <boost/align/aligned_allocator.hpp>
 
 
