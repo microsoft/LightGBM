@@ -21,6 +21,7 @@ public:
   }
 
   explicit MulticlassSoftmax(const std::vector<std::string>& strs) {
+    num_class_ = -1;
     for (auto str : strs) {
       auto tokens = Common::Split(str.c_str(), ":");
       if (tokens.size() == 2) {
@@ -28,6 +29,9 @@ public:
           Common::Atoi(tokens[1].c_str(), &num_class_);
         }
       }
+    }
+    if (num_class_ < 0) {
+      Log::Fatal("Objective should contains num_class field");
     }
   }
 
@@ -162,6 +166,8 @@ public:
   }
 
   explicit MulticlassOVA(const std::vector<std::string>& strs) {
+    num_class_ = -1;
+    sigmoid_ = -1;
     for (auto str : strs) {
       auto tokens = Common::Split(str.c_str(), ":");
       if (tokens.size() == 2) {
@@ -171,6 +177,12 @@ public:
           Common::Atof(tokens[1].c_str(), &sigmoid_);
         }
       }
+    }
+    if (num_class_ < 0) {
+      Log::Fatal("Objective should contains num_class field");
+    }
+    if (sigmoid_ <= 0.0) {
+      Log::Fatal("Sigmoid parameter %f should be greater than zero", sigmoid_);
     }
   }
 
