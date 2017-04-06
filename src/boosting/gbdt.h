@@ -32,12 +32,12 @@ public:
   * \param training_metrics Training metrics
   */
   void Init(const BoostingConfig* gbdt_config, const Dataset* train_data, const ObjectiveFunction* objective_function,
-                             const std::vector<const Metric*>& training_metrics)
-                                                                       override;
+            const std::vector<const Metric*>& training_metrics)
+    override;
 
   /*!
   * \brief Merge model from other boosting object
-           Will insert to the front of current boosting object
+  Will insert to the front of current boosting object
   * \param other
   */
   void MergeFrom(const Boosting* other) override {
@@ -73,7 +73,7 @@ public:
   * \param valid_metrics Metrics for validation dataset
   */
   void AddValidDataset(const Dataset* valid_data,
-       const std::vector<const Metric*>& valid_metrics) override;
+                       const std::vector<const Metric*>& valid_metrics) override;
   /*!
   * \brief Training logic
   * \param gradient nullptr for using default objective, otherwise use self-defined boosting
@@ -155,14 +155,14 @@ public:
   * \param is_finish Is training finished or not
   * \param filename Filename that want to save to
   */
-  virtual bool SaveModelToFile(int num_iterations, const char* filename) const override ;
+  virtual bool SaveModelToFile(int num_iterations, const char* filename) const override;
 
   /*!
   * \brief Save model to string
   * \param num_used_model Number of model that want to save, -1 means save all
   * \return Non-empty string if succeeded
   */
-  virtual std::string SaveModelToString(int num_iterations) const override ;
+  virtual std::string SaveModelToString(int num_iterations) const override;
 
   /*!
   * \brief Restore from a serialized string

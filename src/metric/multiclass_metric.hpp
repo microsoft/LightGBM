@@ -40,7 +40,7 @@ public:
       }
     }
   }
-  
+
   const std::vector<std::string>& GetName() const override {
     return name_;
   }
@@ -48,7 +48,7 @@ public:
   double factor_to_bigger_better() const override {
     return -1.0f;
   }
-  
+
   std::vector<double> Eval(const double* score, const ObjectiveFunction* objective,
                            int num_tree_per_iteration) const override {
     double sum_loss = 0.0;
@@ -127,10 +127,10 @@ public:
 
   inline static double LossOnPoint(float label, std::vector<double>& score) {
     size_t k = static_cast<size_t>(label);
-    for (size_t i = 0; i < score.size(); ++i){
-        if (i != k && score[i] >= score[k]) {
-            return 1.0f;
-        }
+    for (size_t i = 0; i < score.size(); ++i) {
+      if (i != k && score[i] >= score[k]) {
+        return 1.0f;
+      }
     }
     return 0.0f;
   }
@@ -153,7 +153,7 @@ public:
       return -std::log(kEpsilon);
     }
   }
-  
+
   inline static const char* Name() {
     return "multi_logloss";
   }

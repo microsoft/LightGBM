@@ -542,7 +542,7 @@ std::string GBDT::OutputMetric(int iter) {
   if (need_output || early_stopping_round_ > 0) {
     for (size_t i = 0; i < valid_metrics_.size(); ++i) {
       for (size_t j = 0; j < valid_metrics_[i].size(); ++j) {
-        auto test_scores = valid_metrics_[i][j]->Eval(valid_score_updater_[i]->score(), 
+        auto test_scores = valid_metrics_[i][j]->Eval(valid_score_updater_[i]->score(),
                                                       objective_function_,
                                                       num_tree_per_iteration_);
         auto name = valid_metrics_[i][j]->GetName();
@@ -592,7 +592,7 @@ std::vector<double> GBDT::GetEvalAt(int data_idx) const {
   } else {
     auto used_idx = data_idx - 1;
     for (size_t j = 0; j < valid_metrics_[used_idx].size(); ++j) {
-      auto test_scores = valid_metrics_[used_idx][j]->Eval(valid_score_updater_[used_idx]->score(), 
+      auto test_scores = valid_metrics_[used_idx][j]->Eval(valid_score_updater_[used_idx]->score(),
                                                            objective_function_,
                                                            num_tree_per_iteration_);
       for (auto score : test_scores) {
@@ -815,7 +815,7 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
     auto str = Common::Split(line.c_str(), '=')[1];
     loaded_objective_.reset(ObjectiveFunction::CreateObjectiveFunction(str));
     objective_function_ = loaded_objective_.get();
-  } 
+  }
 
   // get tree models
   size_t i = 0;

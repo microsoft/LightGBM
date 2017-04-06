@@ -21,8 +21,8 @@ public:
       eval_at_.push_back(static_cast<data_size_t>(k));
     }
     // get number of threads
-#pragma omp parallel
-#pragma omp master
+    #pragma omp parallel
+    #pragma omp master
     {
       num_threads_ = omp_get_num_threads();
     }
@@ -67,14 +67,14 @@ public:
   }
 
   void CalMapAtK(std::vector<int> ks, const float* label,
-    const double* score, data_size_t num_data, std::vector<double>* out) const {
+                 const double* score, data_size_t num_data, std::vector<double>* out) const {
     // get sorted indices by score
     std::vector<data_size_t> sorted_idx;
     for (data_size_t i = 0; i < num_data; ++i) {
       sorted_idx.emplace_back(i);
     }
     std::sort(sorted_idx.begin(), sorted_idx.end(),
-      [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
+              [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
 
     int num_hit = 0;
     double sum_ap = 0.0f;
@@ -102,21 +102,21 @@ public:
     }
     std::vector<double> tmp_map(eval_at_.size(), 0.0f);
     if (query_weights_ == nullptr) {
-#pragma omp parallel for schedule(guided) firstprivate(tmp_map)
+      #pragma omp parallel for schedule(guided) firstprivate(tmp_map)
       for (data_size_t i = 0; i < num_queries_; ++i) {
         const int tid = omp_get_thread_num();
         CalMapAtK(eval_at_, label_ + query_boundaries_[i],
-          score + query_boundaries_[i], query_boundaries_[i + 1] - query_boundaries_[i], &tmp_map);
+                  score + query_boundaries_[i], query_boundaries_[i + 1] - query_boundaries_[i], &tmp_map);
         for (size_t j = 0; j < eval_at_.size(); ++j) {
           result_buffer_[tid][j] += tmp_map[j];
         }
       }
     } else {
-#pragma omp parallel for schedule(guided) firstprivate(tmp_map)
+      #pragma omp parallel for schedule(guided) firstprivate(tmp_map)
       for (data_size_t i = 0; i < num_queries_; ++i) {
         const int tid = omp_get_thread_num();
         CalMapAtK(eval_at_, label_ + query_boundaries_[i],
-          score + query_boundaries_[i], query_boundaries_[i + 1] - query_boundaries_[i], &tmp_map);
+                  score + query_boundaries_[i], query_boundaries_[i + 1] - query_boundaries_[i], &tmp_map);
         for (size_t j = 0; j < eval_at_.size(); ++j) {
           result_buffer_[tid][j] += tmp_map[j] * query_weights_[i];
         }

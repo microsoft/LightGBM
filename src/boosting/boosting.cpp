@@ -20,7 +20,7 @@ bool Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
       str_buf << line << '\n';
     }
     if (!boosting->LoadModelFromString(str_buf.str()))
-        return false;
+      return false;
   }
 
   return true;

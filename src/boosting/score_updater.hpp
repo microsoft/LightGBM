@@ -25,7 +25,7 @@ public:
     int64_t total_size = static_cast<int64_t>(num_data_) * num_tree_per_iteration;
     score_.resize(total_size);
     // default start score is zero
-  #pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(static)
     for (int64_t i = 0; i < total_size; ++i) {
       score_[i] = 0.0f;
     }
@@ -38,7 +38,7 @@ public:
         Log::Fatal("number of class for initial score error");
       }
       has_init_score_ = true;
-    #pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (int64_t i = 0; i < total_size; ++i) {
         score_[i] = init_score[i];
       }
@@ -53,7 +53,7 @@ public:
 
   inline void AddScore(double val, int cur_tree_id) {
     int64_t offset = cur_tree_id * num_data_;
-  #pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(static)
     for (int64_t i = 0; i < num_data_; ++i) {
       score_[offset + i] += val;
     }
