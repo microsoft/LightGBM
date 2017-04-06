@@ -180,6 +180,9 @@
     <ClInclude Include="..\include\LightGBM\utils\openmp_wrapper.h">
       <Filter>include\LightGBM\utils</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\metric\map_metric.hpp">
+      <Filter>src\metric</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp">

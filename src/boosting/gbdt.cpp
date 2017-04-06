@@ -623,17 +623,28 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
     num_data = valid_score_updater_[used_idx]->num_data();
     *out_len = static_cast<int64_t>(num_data) * num_class_;
   }
-  #pragma omp parallel for schedule(static)
-  for (data_size_t i = 0; i < num_data; ++i) {
-    std::vector<double> tmp_result(num_class_);
-    for (int j = 0; j < num_tree_per_iteration_; ++j) {
-      tmp_result[j] = raw_scores[j * num_data + i];
-    }
-    if (objective_function_ != nullptr) {
+  if (objective_function_ != nullptr) {
+    #pragma omp parallel for schedule(static)
+    for (data_size_t i = 0; i < num_data; ++i) {
+      std::vector<double> tmp_result(num_class_);
+      for (int j = 0; j < num_tree_per_iteration_; ++j) {
+        tmp_result[j] = raw_scores[j * num_data + i];
+      }
       tmp_result = objective_function_->ConvertOutput(tmp_result);
+      for (int j = 0; j < num_class_; ++j) {
+        out_result[j * num_data + i] = static_cast<double>(tmp_result[j]);
+      }
     }
-    for (int j = 0; j < num_class_; ++j) {
-      out_result[j * num_data + i] = static_cast<double>(tmp_result[j]);
+  } else {
+    #pragma omp parallel for schedule(static)
+    for (data_size_t i = 0; i < num_data; ++i) {
+      std::vector<double> tmp_result(num_class_);
+      for (int j = 0; j < num_tree_per_iteration_; ++j) {
+        tmp_result[j] = raw_scores[j * num_data + i];
+      }
+      for (int j = 0; j < num_class_; ++j) {
+        out_result[j * num_data + i] = static_cast<double>(tmp_result[j]);
+      }
     }
   }
 }
