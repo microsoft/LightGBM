@@ -222,6 +222,7 @@
     <ClInclude Include="..\src\io\parser.hpp" />
     <ClInclude Include="..\src\io\sparse_bin.hpp" />
     <ClInclude Include="..\src\metric\binary_metric.hpp" />
+    <ClInclude Include="..\src\metric\map_metric.hpp" />
     <ClInclude Include="..\src\metric\rank_metric.hpp" />
     <ClInclude Include="..\src\metric\regression_metric.hpp" />
     <ClInclude Include="..\src\metric\multiclass_metric.hpp" />

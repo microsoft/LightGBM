@@ -20,6 +20,21 @@ public:
     softmax_weight_decay_ = 1e-3;
   }
 
+  explicit MulticlassSoftmax(const std::vector<std::string>& strs) {
+    num_class_ = -1;
+    for (auto str : strs) {
+      auto tokens = Common::Split(str.c_str(), ":");
+      if (tokens.size() == 2) {
+        if (tokens[0] == std::string("num_class")) {
+          Common::Atoi(tokens[1].c_str(), &num_class_);
+        }
+      }
+    }
+    if (num_class_ < 0) {
+      Log::Fatal("Objective should contains num_class field");
+    }
+  }
+
   ~MulticlassSoftmax() {
 
   }
@@ -98,9 +113,25 @@ public:
     }
   }
 
+  std::vector<double> ConvertOutput(std::vector<double>& input) const override {
+    Common::Softmax(input.data(), num_class_);
+    return input;
+  }
+
   const char* GetName() const override {
     return "multiclass";
   }
+
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName() << " ";
+    str_buf << "num_class:" << num_class_;
+    return str_buf.str();
+  }
+
+  bool SkipEmptyClass() const override { return true; }
+
+  int numTreePerIteration() const override { return num_class_; }
 
 private:
   /*! \brief Number of data */
@@ -129,6 +160,28 @@ public:
       binary_loss_.emplace_back(
         new BinaryLogloss(config, [i](float label) { return static_cast<int>(label) == i; }));
     }
+    sigmoid_ = config.sigmoid;
+  }
+
+  explicit MulticlassOVA(const std::vector<std::string>& strs) {
+    num_class_ = -1;
+    sigmoid_ = -1;
+    for (auto str : strs) {
+      auto tokens = Common::Split(str.c_str(), ":");
+      if (tokens.size() == 2) {
+        if (tokens[0] == std::string("num_class")) {
+          Common::Atoi(tokens[1].c_str(), &num_class_);
+        } else if (tokens[0] == std::string("sigmoid")) {
+          Common::Atof(tokens[1].c_str(), &sigmoid_);
+        }
+      }
+    }
+    if (num_class_ < 0) {
+      Log::Fatal("Objective should contains num_class field");
+    }
+    if (sigmoid_ <= 0.0) {
+      Log::Fatal("Sigmoid parameter %f should be greater than zero", sigmoid_);
+    }
   }
 
   ~MulticlassOVA() {
@@ -153,12 +206,32 @@ public:
     return "multiclassova";
   }
 
+  std::vector<double> ConvertOutput(std::vector<double>& input) const override {
+    for (int i = 0; i < num_class_; ++i) {
+      input[i] = 1.0f / (1.0f + std::exp(-sigmoid_ * input[i]));
+    }
+    return input;
+  }
+
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName() << " ";
+    str_buf << "num_class:" << num_class_ << " ";
+    str_buf << "sigmoid:" << sigmoid_;
+    return str_buf.str();
+  }
+
+  bool SkipEmptyClass() const override { return true; }
+
+  int numTreePerIteration() const override { return num_class_; }
+
 private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Number of classes */
   int num_class_;
   std::vector<std::unique_ptr<BinaryLogloss>> binary_loss_;
+  double sigmoid_;
 };
 
 }  // namespace LightGBM

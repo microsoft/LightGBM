@@ -15,8 +15,8 @@ namespace LightGBM {
 template<typename PointWiseLossCalculator>
 class MulticlassMetric: public Metric {
 public:
-  explicit MulticlassMetric(const MetricConfig& config) {
-      num_class_ = config.num_class;
+  explicit MulticlassMetric(const MetricConfig&) {
+
   }
 
   virtual ~MulticlassMetric() {
@@ -40,7 +40,7 @@ public:
       }
     }
   }
-  
+
   const std::vector<std::string>& GetName() const override {
     return name_;
   }
@@ -48,30 +48,59 @@ public:
   double factor_to_bigger_better() const override {
     return -1.0f;
   }
-  
-  std::vector<double> Eval(const double* score) const override {
+
+  std::vector<double> Eval(const double* score, const ObjectiveFunction* objective,
+                           int num_tree_per_iteration) const override {
     double sum_loss = 0.0;
-    if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static) reduction(+:sum_loss)
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        std::vector<double> rec(num_class_);
-        for (int k = 0; k < num_class_; ++k) {
-          size_t idx = static_cast<size_t>(num_data_) * k + i;
-          rec[k] = static_cast<double>(score[idx]);
+    if (objective != nullptr) {
+      if (weights_ == nullptr) {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          std::vector<double> rec(num_tree_per_iteration);
+          for (int k = 0; k < num_tree_per_iteration; ++k) {
+            size_t idx = static_cast<size_t>(num_data_) * k + i;
+            rec[k] = static_cast<double>(score[idx]);
+          }
+          rec = objective->ConvertOutput(rec);
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec);
         }
-        // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec);
+      } else {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          std::vector<double> rec(num_tree_per_iteration);
+          for (int k = 0; k < num_tree_per_iteration; ++k) {
+            size_t idx = static_cast<size_t>(num_data_) * k + i;
+            rec[k] = static_cast<double>(score[idx]);
+          }
+          rec = objective->ConvertOutput(rec);
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec) * weights_[i];
+        }
       }
     } else {
-      #pragma omp parallel for schedule(static) reduction(+:sum_loss)
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        std::vector<double> rec(num_class_);
-        for (int k = 0; k < num_class_; ++k) {
-          size_t idx = static_cast<size_t>(num_data_) * k + i;
-          rec[k] = static_cast<double>(score[idx]);
+      if (weights_ == nullptr) {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          std::vector<double> rec(num_tree_per_iteration);
+          for (int k = 0; k < num_tree_per_iteration; ++k) {
+            size_t idx = static_cast<size_t>(num_data_) * k + i;
+            rec[k] = static_cast<double>(score[idx]);
+          }
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec);
         }
-        // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec) * weights_[i];
+      } else {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          std::vector<double> rec(num_tree_per_iteration);
+          for (int k = 0; k < num_tree_per_iteration; ++k) {
+            size_t idx = static_cast<size_t>(num_data_) * k + i;
+            rec[k] = static_cast<double>(score[idx]);
+          }
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec) * weights_[i];
+        }
       }
     }
     double loss = sum_loss / sum_weights_;
@@ -81,8 +110,6 @@ public:
 private:
   /*! \brief Number of data */
   data_size_t num_data_;
-  /*! \brief Number of classes */
-  int num_class_;
   /*! \brief Pointer of label */
   const float* label_;
   /*! \brief Pointer of weighs */
@@ -100,10 +127,10 @@ public:
 
   inline static double LossOnPoint(float label, std::vector<double>& score) {
     size_t k = static_cast<size_t>(label);
-    for (size_t i = 0; i < score.size(); ++i){
-        if (i != k && score[i] >= score[k]) {
-            return 1.0f;
-        }
+    for (size_t i = 0; i < score.size(); ++i) {
+      if (i != k && score[i] >= score[k]) {
+        return 1.0f;
+      }
     }
     return 0.0f;
   }
@@ -120,95 +147,16 @@ public:
 
   inline static double LossOnPoint(float label, std::vector<double>& score) {
     size_t k = static_cast<size_t>(label);
-    Common::Softmax(&score);
     if (score[k] > kEpsilon) {
       return static_cast<double>(-std::log(score[k]));
     } else {
       return -std::log(kEpsilon);
     }
   }
-  
+
   inline static const char* Name() {
     return "multi_logloss";
   }
-};
-
-class MultiOVALoglossMetric: public Metric {
-public:
-  explicit MultiOVALoglossMetric(const MetricConfig& config) {
-    num_class_ = config.num_class;
-    sigmoid_ = config.sigmoid;
-  }
-
-  virtual ~MultiOVALoglossMetric() {
-
-  }
-
-  void Init(const Metadata& metadata, data_size_t num_data) override {
-
-    name_.emplace_back("multi_loglossova");
-    num_data_ = num_data;
-    // get label
-    label_ = metadata.label();
-    // get weights
-    weights_ = metadata.weights();
-    if (weights_ == nullptr) {
-      sum_weights_ = static_cast<double>(num_data_);
-    } else {
-      sum_weights_ = 0.0f;
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        sum_weights_ += weights_[i];
-      }
-    }
-  }
-
-  const std::vector<std::string>& GetName() const override {
-    return name_;
-  }
-
-  double factor_to_bigger_better() const override {
-    return -1.0f;
-  }
-
-  std::vector<double> Eval(const double* score) const override {
-    double sum_loss = 0.0;
-    if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static) reduction(+:sum_loss)
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        size_t idx = static_cast<size_t>(num_data_) * static_cast<int>(label_[i]) + i;
-        double prob = 1.0f / (1.0f + std::exp(-sigmoid_ * score[idx]));
-        if (prob < kEpsilon) { prob = kEpsilon; }
-        // add loss
-        sum_loss += -std::log(prob);
-      }
-    } else {
-      #pragma omp parallel for schedule(static) reduction(+:sum_loss)
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        size_t idx = static_cast<size_t>(num_data_) * static_cast<int>(label_[i]) + i;
-        double prob = 1.0f / (1.0f + std::exp(-sigmoid_ * score[idx]));
-        if (prob < kEpsilon) { prob = kEpsilon; }
-        // add loss
-        sum_loss += -std::log(prob) * weights_[i];
-      }
-    }
-    double loss = sum_loss / sum_weights_;
-    return std::vector<double>(1, loss);
-  }
-
-private:
-  /*! \brief Number of data */
-  data_size_t num_data_;
-  /*! \brief Number of classes */
-  int num_class_;
-  /*! \brief Pointer of label */
-  const float* label_;
-  /*! \brief Pointer of weighs */
-  const float* weights_;
-  /*! \brief Sum weights */
-  double sum_weights_;
-  /*! \brief Name of this test set */
-  std::vector<std::string> name_;
-  double sigmoid_;
 };
 
 }  // namespace LightGBM

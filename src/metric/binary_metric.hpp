@@ -18,11 +18,8 @@ namespace LightGBM {
 template<typename PointWiseLossCalculator>
 class BinaryMetric: public Metric {
 public:
-  explicit BinaryMetric(const MetricConfig& config) {
-    sigmoid_ = static_cast<double>(config.sigmoid);
-    if (sigmoid_ <= 0.0f) {
-      Log::Fatal("Sigmoid parameter %f should greater than zero", sigmoid_);
-    }
+  explicit BinaryMetric(const MetricConfig&) {
+
   }
 
   virtual ~BinaryMetric() {
@@ -57,23 +54,39 @@ public:
     return -1.0f;
   }
 
-  std::vector<double> Eval(const double* score) const override {
+  std::vector<double> Eval(const double* score, const ObjectiveFunction* objective,
+                           int) const override {
     double sum_loss = 0.0f;
-    if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static) reduction(+:sum_loss)
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        // sigmoid transform
-        double prob = 1.0f / (1.0f + std::exp(-sigmoid_ * score[i]));
-        // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob);
+    if (objective == nullptr) {
+      if (weights_ == nullptr) {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i]);
+        }
+      } else {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i]) * weights_[i];
+        }
       }
     } else {
-      #pragma omp parallel for schedule(static) reduction(+:sum_loss)
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        // sigmoid transform
-        double prob = 1.0f / (1.0f + std::exp(-sigmoid_ * score[i]));
-        // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob) * weights_[i];
+      if (weights_ == nullptr) {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          double prob = objective->ConvertOutput(score[i]);
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob);
+        }
+      } else {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          // sigmoid transform
+          double prob = objective->ConvertOutput(score[i]);
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob) * weights_[i];
+        }
       }
     }
     double loss = sum_loss / sum_weights_;
@@ -91,8 +104,6 @@ private:
   double sum_weights_;
   /*! \brief Name of test set */
   std::vector<std::string> name_;
-  /*! \brief Sigmoid parameter */
-  double sigmoid_;
 };
 
 /*!
@@ -178,7 +189,8 @@ public:
     }
   }
 
-  std::vector<double> Eval(const double* score) const override {
+  std::vector<double> Eval(const double* score, const ObjectiveFunction*,
+                           int) const override {
     // get indices sorted by score, descent order
     std::vector<data_size_t> sorted_idx;
     for (data_size_t i = 0; i < num_data_; ++i) {
