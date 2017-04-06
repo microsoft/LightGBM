@@ -26,13 +26,13 @@ public:
   * \brief Initialization logic
   * \param config Configs for boosting
   * \param train_data Training data
-  * \param object_function Training objective function
+  * \param objective_function Training objective function
   * \param training_metrics Training metric
   */
   virtual void Init(
     const BoostingConfig* config,
     const Dataset* train_data,
-    const ObjectiveFunction* object_function,
+    const ObjectiveFunction* objective_function,
     const std::vector<const Metric*>& training_metrics) = 0;
 
   /*!
@@ -46,10 +46,10 @@ public:
   * \brief Reset training data for current boosting
   * \param config Configs for boosting
   * \param train_data Training data
-  * \param object_function Training objective function
+  * \param objective_function Training objective function
   * \param training_metrics Training metric
   */
-  virtual void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function, const std::vector<const Metric*>& training_metrics) = 0;
+  virtual void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function, const std::vector<const Metric*>& training_metrics) = 0;
 
   /*!
   * \brief Add a validation data

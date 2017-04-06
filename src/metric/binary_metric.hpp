@@ -18,11 +18,8 @@ namespace LightGBM {
 template<typename PointWiseLossCalculator>
 class BinaryMetric: public Metric {
 public:
-  explicit BinaryMetric(const MetricConfig& config) {
-    sigmoid_ = static_cast<double>(config.sigmoid);
-    if (sigmoid_ <= 0.0f) {
-      Log::Fatal("Sigmoid parameter %f should greater than zero", sigmoid_);
-    }
+  explicit BinaryMetric(const MetricConfig&) {
+
   }
 
   virtual ~BinaryMetric() {
@@ -57,13 +54,14 @@ public:
     return -1.0f;
   }
 
-  std::vector<double> Eval(const double* score) const override {
+  std::vector<double> Eval(const double* score, std::function<std::vector<double>(std::vector<double>&)>,
+                           std::function<double(double)> single_converter,
+                           int) const override {
     double sum_loss = 0.0f;
     if (weights_ == nullptr) {
       #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        // sigmoid transform
-        double prob = 1.0f / (1.0f + std::exp(-sigmoid_ * score[i]));
+        double prob = single_converter(score[i]);
         // add loss
         sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob);
       }
@@ -71,7 +69,7 @@ public:
       #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // sigmoid transform
-        double prob = 1.0f / (1.0f + std::exp(-sigmoid_ * score[i]));
+        double prob = single_converter(score[i]);
         // add loss
         sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob) * weights_[i];
       }
@@ -91,8 +89,6 @@ private:
   double sum_weights_;
   /*! \brief Name of test set */
   std::vector<std::string> name_;
-  /*! \brief Sigmoid parameter */
-  double sigmoid_;
 };
 
 /*!
@@ -178,7 +174,10 @@ public:
     }
   }
 
-  std::vector<double> Eval(const double* score) const override {
+  std::vector<double> Eval(const double* score, 
+                           std::function<std::vector<double>(std::vector<double>&)>,
+                           std::function<double(double)>,
+                           int) const override {
     // get indices sorted by score, descent order
     std::vector<data_size_t> sorted_idx;
     for (data_size_t i = 0; i < num_data_; ++i) {

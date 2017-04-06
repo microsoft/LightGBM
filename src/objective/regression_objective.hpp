@@ -13,6 +13,10 @@ public:
   explicit RegressionL2loss(const ObjectiveConfig&) {
   }
 
+  explicit RegressionL2loss(const std::vector<std::string>&) {
+
+  }
+
   ~RegressionL2loss() {
   }
 
@@ -43,6 +47,12 @@ public:
     return "regression";
   }
 
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName();
+    return str_buf.str();
+  }
+
   bool IsConstantHessian() const override {
     if (weights_ == nullptr) {
       return true;
@@ -50,6 +60,8 @@ public:
       return false;
     }
   }
+
+  bool BoostFromAverage() const override { return true; }
 
 private:
   /*! \brief Number of data */
@@ -67,6 +79,10 @@ class RegressionL1loss: public ObjectiveFunction {
 public:
   explicit RegressionL1loss(const ObjectiveConfig& config) {
     eta_ = static_cast<double>(config.gaussian_eta);
+  }
+
+  explicit RegressionL1loss(const std::vector<std::string>&) {
+
   }
 
   ~RegressionL1loss() {}
@@ -108,6 +124,14 @@ public:
     return "regression_l1";
   }
 
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName();
+    return str_buf.str();
+  }
+
+  bool BoostFromAverage() const override { return true; }
+
 private:
   /*! \brief Number of data */
   data_size_t num_data_;
@@ -127,6 +151,10 @@ public:
   explicit RegressionHuberLoss(const ObjectiveConfig& config) {
     delta_ = static_cast<double>(config.huber_delta);
     eta_ = static_cast<double>(config.gaussian_eta);
+  }
+
+  explicit RegressionHuberLoss(const std::vector<std::string>&) {
+
   }
 
   ~RegressionHuberLoss() {
@@ -181,6 +209,14 @@ public:
     return "huber";
   }
 
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName();
+    return str_buf.str();
+  }
+
+  bool BoostFromAverage() const override { return true; }
+
 private:
   /*! \brief Number of data */
   data_size_t num_data_;
@@ -200,6 +236,10 @@ class RegressionFairLoss: public ObjectiveFunction {
 public:
   explicit RegressionFairLoss(const ObjectiveConfig& config) {
     c_ = static_cast<double>(config.fair_c);
+  }
+
+  explicit RegressionFairLoss(const std::vector<std::string>&) {
+
   }
 
   ~RegressionFairLoss() {}
@@ -233,6 +273,14 @@ public:
     return "fair";
   }
 
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName();
+    return str_buf.str();
+  }
+
+  bool BoostFromAverage() const override { return true; }
+
 private:
   /*! \brief Number of data */
   data_size_t num_data_;
@@ -252,6 +300,10 @@ class RegressionPoissonLoss: public ObjectiveFunction {
 public:
   explicit RegressionPoissonLoss(const ObjectiveConfig& config) {
     max_delta_step_ = static_cast<double>(config.poisson_max_delta_step);
+  }
+
+  explicit RegressionPoissonLoss(const std::vector<std::string>&) {
+
   }
 
   ~RegressionPoissonLoss() {}
@@ -282,6 +334,14 @@ public:
   const char* GetName() const override {
     return "poisson";
   }
+
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName();
+    return str_buf.str();
+  }
+
+  bool BoostFromAverage() const override { return true; }
 
 private:
   /*! \brief Number of data */

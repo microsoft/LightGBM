@@ -28,10 +28,10 @@ public:
   * \brief Initialization logic
   * \param gbdt_config Config for boosting
   * \param train_data Training data
-  * \param object_function Training objective function
+  * \param objective_function Training objective function
   * \param training_metrics Training metrics
   */
-  void Init(const BoostingConfig* gbdt_config, const Dataset* train_data, const ObjectiveFunction* object_function,
+  void Init(const BoostingConfig* gbdt_config, const Dataset* train_data, const ObjectiveFunction* objective_function,
                              const std::vector<const Metric*>& training_metrics)
                                                                        override;
 
@@ -62,10 +62,10 @@ public:
   /*!
   * \brief Reset training data for current boosting
   * \param train_data Training data
-  * \param object_function Training objective function
+  * \param objective_function Training objective function
   * \param training_metrics Training metric
   */
-  void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function, const std::vector<const Metric*>& training_metrics) override;
+  void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function, const std::vector<const Metric*>& training_metrics) override;
 
   /*!
   * \brief Adding a validation dataset
@@ -245,9 +245,9 @@ protected:
   * \brief updating score for out-of-bag data.
   *        Data should be update since we may re-bagging data on training
   * \param tree Trained tree of this iteration
-  * \param curr_class Current class for multiclass training
+  * \param cur_tree_id Current tree for multiclass training
   */
-  void UpdateScoreOutOfBag(const Tree* tree, const int curr_class);
+  void UpdateScoreOutOfBag(const Tree* tree, const int cur_tree_id);
   /*!
   * \brief calculate the object function
   */
@@ -255,9 +255,9 @@ protected:
   /*!
   * \brief updating score after tree was trained
   * \param tree Trained tree of this iteration
-  * \param curr_class Current class for multiclass training
+  * \param cur_tree_id Current tree for multiclass training
   */
-  virtual void UpdateScore(const Tree* tree, const int curr_class);
+  virtual void UpdateScore(const Tree* tree, const int cur_tree_id);
   /*!
   * \brief Print metric result of current iteration
   * \param iter Current interation
@@ -277,7 +277,7 @@ protected:
   /*! \brief Tree learner, will use this class to learn trees */
   std::unique_ptr<TreeLearner> tree_learner_;
   /*! \brief Objective function */
-  const ObjectiveFunction* object_function_;
+  const ObjectiveFunction* objective_function_;
   /*! \brief Store and update training data's score */
   std::unique_ptr<ScoreUpdater> train_score_updater_;
   /*! \brief Metrics for training data */
@@ -310,13 +310,10 @@ protected:
   std::vector<data_size_t> tmp_indices_;
   /*! \brief Number of training data */
   data_size_t num_data_;
-  /*! \brief Number of classes */
+  /*! \brief Number of trees per iterations */
+  int num_tree_per_iteration_;
+  /*! \brief Number of class */
   int num_class_;
-  /*!
-  *   \brief Sigmoid parameter, used for prediction.
-  *          if > 0 means output score will transform by sigmoid function
-  */
-  double sigmoid_;
   /*! \brief Index of label column */
   data_size_t label_idx_;
   /*! \brief number of used model */
@@ -346,6 +343,9 @@ protected:
   std::vector<bool> class_need_train_;
   std::vector<double> class_default_output_;
   bool is_constant_hessian_;
+  std::unique_ptr<ObjectiveFunction> loaded_objective_;
+  std::function<std::vector<double>(std::vector<double>&)> pred_convert_fun_;
+  std::function<double(double)> pred_convert_fun_single_;
 };
 
 }  // namespace LightGBM

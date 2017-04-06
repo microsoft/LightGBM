@@ -38,9 +38,9 @@ public:
 #endif
   }
 
-  void Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
+  void Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
     const std::vector<const Metric*>& training_metrics) override {
-    GBDT::Init(config, train_data, object_function, training_metrics);
+    GBDT::Init(config, train_data, objective_function, training_metrics);
     CHECK(gbdt_config_->top_rate + gbdt_config_->other_rate <= 1.0f);
     CHECK(gbdt_config_->top_rate > 0.0f && gbdt_config_->other_rate > 0.0f);
     if (gbdt_config_->bagging_freq > 0 && gbdt_config_->bagging_fraction != 1.0f) {
@@ -49,12 +49,12 @@ public:
     Log::Info("using GOSS");
   }
 
-  void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
+  void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
     const std::vector<const Metric*>& training_metrics) override {
     if (config->bagging_freq > 0 && config->bagging_fraction != 1.0f) {
       Log::Fatal("cannot use bagging in GOSS");
     }
-    GBDT::ResetTrainingData(config, train_data, object_function, training_metrics);
+    GBDT::ResetTrainingData(config, train_data, objective_function, training_metrics);
     if (train_data_ == nullptr) { return; }
     bag_data_indices_.resize(num_data_);
     tmp_indices_.resize(num_data_);
@@ -79,8 +79,8 @@ public:
   data_size_t BaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer, data_size_t* buffer_right) {
     std::vector<score_t> tmp_gradients(cnt, 0.0f);
     for (data_size_t i = 0; i < cnt; ++i) {
-      for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-        int idx = curr_class * num_data_ + start + i;
+      for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+        int idx = cur_tree_id * num_data_ + start + i;
         tmp_gradients[i] += std::fabs(gradients_[idx] * hessians_[idx]);
       }
     }
@@ -96,8 +96,8 @@ public:
     data_size_t big_weight_cnt = 0;
     for (data_size_t i = 0; i < cnt; ++i) {
       score_t grad = 0.0f;
-      for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-        int idx = curr_class * num_data_ + start + i;
+      for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+        int idx = cur_tree_id * num_data_ + start + i;
         grad += std::fabs(gradients_[idx] * hessians_[idx]);
       }
       if (grad >= threshold) {
@@ -110,8 +110,8 @@ public:
         double prob = (rest_need) / static_cast<double>(rest_all);
         if (cur_rand.NextFloat() < prob) {
           buffer[cur_left_cnt++] = start + i;
-          for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-            int idx = curr_class * num_data_ + start + i;
+          for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+            int idx = cur_tree_id * num_data_ + start + i;
             gradients_[idx] *= multiply;
             hessians_[idx] *= multiply;
           }

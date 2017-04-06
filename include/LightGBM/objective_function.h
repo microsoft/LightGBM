@@ -4,6 +4,7 @@
 #include <LightGBM/meta.h>
 #include <LightGBM/config.h>
 #include <LightGBM/dataset.h>
+#include <functional>
 
 namespace LightGBM {
 
@@ -35,6 +36,23 @@ public:
 
   virtual bool IsConstantHessian() const { return false; }
 
+  virtual bool BoostFromAverage() const { return false; }
+
+  virtual bool SkipEmptyClass() const { return false; }
+
+  virtual int numTreePerIteration() const { return 1; }
+
+  virtual std::function<std::vector<double>(std::vector<double>&)>  ConvertOutput() const {
+    return [](std::vector<double>& input) { return input; };
+  }
+
+  // used for single output objective function(non-multi-class)
+  virtual std::function<double(double)> ConvertSingleOutput() const {
+    return [](double input) { return input; };
+  }
+
+  virtual std::string ToString() const = 0;
+
   ObjectiveFunction() = default;
   /*! \brief Disable copy */
   ObjectiveFunction& operator=(const ObjectiveFunction&) = delete;
@@ -48,6 +66,11 @@ public:
   */
   LIGHTGBM_EXPORT static ObjectiveFunction* CreateObjectiveFunction(const std::string& type,
     const ObjectiveConfig& config);
+
+  /*!
+  * \brief Load objective function from string object
+  */
+  LIGHTGBM_EXPORT static ObjectiveFunction* CreateObjectiveFunction(const std::string& str);
 };
 
 }  // namespace LightGBM

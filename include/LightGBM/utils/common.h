@@ -377,6 +377,21 @@ inline void Softmax(std::vector<double>* p_rec) {
   }
 }
 
+inline void Softmax(double* rec, int len) {
+  double wmax = rec[0];
+  for (int i = 1; i < len; ++i) {
+    wmax = std::max(rec[i], wmax);
+  }
+  double wsum = 0.0f;
+  for (int i = 0; i < len; ++i) {
+    rec[i] = std::exp(rec[i] - wmax);
+    wsum += rec[i];
+  }
+  for (int i = 0; i < len; ++i) {
+    rec[i] /= static_cast<double>(wsum);
+  }
+}
+
 template<typename T>
 std::vector<const T*> ConstPtrInVectorWrapper(const std::vector<std::unique_ptr<T>>& input) {
   std::vector<const T*> ret;

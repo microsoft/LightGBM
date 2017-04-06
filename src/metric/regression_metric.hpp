@@ -48,19 +48,21 @@ public:
     }
   }
 
-  std::vector<double> Eval(const double* score) const override {
+  std::vector<double> Eval(const double* score, std::function<std::vector<double>(std::vector<double>&)>,
+                           std::function<double(double)> single_converter,
+                           int) const override {
     double sum_loss = 0.0f;
     if (weights_ == nullptr) {
 #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], huber_delta_, fair_c_);
+        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], single_converter(score[i]), huber_delta_, fair_c_);
       }
     } else {
 #pragma omp parallel for schedule(static) reduction(+:sum_loss)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], huber_delta_, fair_c_) * weights_[i];
+        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], single_converter(score[i]), huber_delta_, fair_c_) * weights_[i];
       }
     }
     double loss = PointWiseLossCalculator::AverageLoss(sum_loss, sum_weights_);
