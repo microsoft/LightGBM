@@ -47,7 +47,7 @@ public:
     if (array.empty()) {
       return 0;
     }
-    if (array.size() > 100) {
+    if (array.size() > 1024) {
       return ArgMaxMT(array);
     } else {
       size_t arg_max = 0;
