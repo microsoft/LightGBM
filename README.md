@@ -24,6 +24,14 @@ News
 
 12/02/2016 : Release [**python-package**](./python-package) beta version, welcome to have a try and provide feedback.
 
+External(unofficial) Repo
+-------------------------
+
+Julia Package: https://github.com/Allardvm/LightGBM.jl
+
+JPMML: https://github.com/jpmml/jpmml-lightgbm
+
+
 Get Started And Documents
 -------------------------
 To get started, please follow the [Installation Guide](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide) and [Quick Start](https://github.com/Microsoft/LightGBM/wiki/Quick-Start).

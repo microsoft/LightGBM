@@ -993,9 +993,9 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSC(BoosterHandle handle,
   int64_t num_preb_in_one_row = GetNumPredOneRow(ref_booster, predict_type, num_iteration);
   int ncol = static_cast<int>(ncol_ptr - 1);
 
-  Threading::For<data_size_t>(0, static_cast<data_size_t>(num_row),
+  Threading::For<int64_t>(0, static_cast<int64_t>(num_row),
                           [&predictor, &out_result, num_preb_in_one_row, ncol, col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem]
-  (int, data_size_t start, data_size_t end) {
+  (int, int64_t start, int64_t end) {
     std::vector<CSC_RowIterator> iterators;
     for (int j = 0; j < ncol; ++j) {
       iterators.emplace_back(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, j);
@@ -1118,7 +1118,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
     if (is_row_major) {
       return [data_ptr, num_col, num_row] (int row_idx) {
         std::vector<double> ret(num_col);
-        auto tmp_ptr = data_ptr + num_col * row_idx;
+        auto tmp_ptr = data_ptr + static_cast<size_t>(num_col) * row_idx;
         for (int i = 0; i < num_col; ++i) {
           ret[i] = static_cast<double>(*(tmp_ptr + i));
         }
@@ -1128,7 +1128,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
       return [data_ptr, num_col, num_row] (int row_idx) {
         std::vector<double> ret(num_col);
         for (int i = 0; i < num_col; ++i) {
-          ret[i] = static_cast<double>(*(data_ptr + num_row * i + row_idx));
+          ret[i] = static_cast<double>(*(data_ptr + static_cast<size_t>(num_row) * i + row_idx));
         }
         return ret;
       };
@@ -1138,7 +1138,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
     if (is_row_major) {
       return [data_ptr, num_col, num_row] (int row_idx) {
         std::vector<double> ret(num_col);
-        auto tmp_ptr = data_ptr + num_col * row_idx;
+        auto tmp_ptr = data_ptr + static_cast<size_t>(num_col) * row_idx;
         for (int i = 0; i < num_col; ++i) {
           ret[i] = static_cast<double>(*(tmp_ptr + i));
         }
@@ -1148,7 +1148,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
       return [data_ptr, num_col, num_row] (int row_idx) {
         std::vector<double> ret(num_col);
         for (int i = 0; i < num_col; ++i) {
-          ret[i] = static_cast<double>(*(data_ptr + num_row * i + row_idx));
+          ret[i] = static_cast<double>(*(data_ptr + static_cast<size_t>(num_row) * i + row_idx));
         }
         return ret;
       };

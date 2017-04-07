@@ -359,9 +359,10 @@ public:
 
   void DynamicChangeSize(const Dataset* train_data, const TreeConfig* tree_config, int cache_size, int total_size) {
     if (feature_metas_.empty()) {
-      feature_metas_.resize(train_data->num_features());
-      #pragma omp parallel for schedule(static)
-      for (int i = 0; i < train_data->num_features(); ++i) {
+      int num_feature = train_data->num_features();
+      feature_metas_.resize(num_feature);
+      #pragma omp parallel for schedule(static, 512) if(num_feature >= 1024)
+      for (int i = 0; i < num_feature; ++i) {
         feature_metas_[i].num_bin = train_data->FeatureNumBin(i);
         if (train_data->FeatureBinMapper(i)->GetDefaultBin() == 0) {
           feature_metas_[i].bias = 1;
@@ -400,8 +401,9 @@ public:
   }
 
   void ResetConfig(const TreeConfig* tree_config) {
-    #pragma omp parallel for schedule(static)
-    for (int i = 0; i < static_cast<int>(feature_metas_.size()); ++i) {
+    int size = static_cast<int>(feature_metas_.size());
+    #pragma omp parallel for schedule(static, 512) if(size >= 1024)
+    for (int i = 0; i < size; ++i) {
       feature_metas_[i].tree_config = tree_config;
     }
   }

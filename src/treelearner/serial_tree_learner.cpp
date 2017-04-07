@@ -259,14 +259,15 @@ void SerialTreeLearner::BeforeTrain() {
     std::memset(is_feature_used_.data(), 0, sizeof(int8_t) * num_features_);
     // Get used feature at current tree
     auto used_feature_indices = random_.Sample(train_data_->num_total_features(), used_feature_cnt);
-    #pragma omp parallel for schedule(static)
-    for (int i = 0; i < static_cast<int>(used_feature_indices.size()); ++i) {
+    int omp_loop_size = static_cast<int>(used_feature_indices.size());
+    #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
+    for (int i = 0; i < omp_loop_size; ++i) {
       int inner_feature_index = train_data_->InnerFeatureIndex(used_feature_indices[i]);
       if (inner_feature_index < 0) { continue; }
       is_feature_used_[inner_feature_index] = 1;
     }
   } else {
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(static, 512) if (num_features_ >= 1024)
     for (int i = 0; i < num_features_; ++i) {
       is_feature_used_[i] = 1;
     }
@@ -314,7 +315,8 @@ void SerialTreeLearner::BeforeTrain() {
       const data_size_t* indices = data_partition_->indices();
       data_size_t begin = data_partition_->leaf_begin(0);
       data_size_t end = begin + data_partition_->leaf_count(0);
-      #pragma omp parallel for schedule(static)
+      data_size_t loop_size = end - begin;
+      #pragma omp parallel for schedule(static, 512) if(loop_size >= 1024)
       for (data_size_t i = begin; i < end; ++i) {
         is_data_in_leaf_[indices[i]] = 1;
       }
@@ -327,7 +329,7 @@ void SerialTreeLearner::BeforeTrain() {
         OMP_LOOP_EX_END();
       }
       OMP_THROW_EX();
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static, 512) if(loop_size >= 1024)
       for (data_size_t i = begin; i < end; ++i) {
         is_data_in_leaf_[indices[i]] = 0;
       }
@@ -388,12 +390,13 @@ bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int
     char mark = 1;
     data_size_t begin = data_partition_->leaf_begin(left_leaf);
     data_size_t end = begin + left_cnt;
+    data_size_t loop_size = end - begin;
     if (left_cnt > right_cnt) {
       begin = data_partition_->leaf_begin(right_leaf);
       end = begin + right_cnt;
       mark = 0;
     }
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(static, 512) if(loop_size >= 1024)
     for (data_size_t i = begin; i < end; ++i) {
       is_data_in_leaf_[indices[i]] = 1;
     }
@@ -406,7 +409,7 @@ bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(static, 512) if(loop_size >= 1024)
     for (data_size_t i = begin; i < end; ++i) {
       is_data_in_leaf_[indices[i]] = 0;
     }
@@ -447,7 +450,7 @@ void SerialTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_featur
 
 void SerialTreeLearner::FindBestThresholds() {
   std::vector<int8_t> is_feature_used(num_features_, 0);
-  #pragma omp parallel for schedule(static)
+  #pragma omp parallel for schedule(static,1024) if (num_features_ >= 2048)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     if (!is_feature_used_[feature_index]) continue;
     if (parent_leaf_histogram_array_ != nullptr

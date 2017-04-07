@@ -102,7 +102,7 @@ public:
   * \param rate The factor of shrinkage
   */
   inline void Shrinkage(double rate) {
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(static, 512) if (num_leaves_ >= 1024)
     for (int i = 0; i < num_leaves_; ++i) {
       leaf_value_[i] *= rate;
       if (leaf_value_[i] > kMaxTreeOutput) { leaf_value_[i] = kMaxTreeOutput; } 
