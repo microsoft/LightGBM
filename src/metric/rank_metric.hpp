@@ -24,8 +24,8 @@ public:
     // initialize DCG calculator
     DCGCalculator::Init(config.label_gain);
     // get number of threads
-#pragma omp parallel
-#pragma omp master
+    #pragma omp parallel
+    #pragma omp master
     {
       num_threads_ = omp_get_num_threads();
     }
@@ -60,8 +60,8 @@ public:
     for (data_size_t i = 0; i < num_queries_; ++i) {
       inverse_max_dcgs_.emplace_back(eval_at_.size(), 0.0f);
       DCGCalculator::CalMaxDCG(eval_at_, label_ + query_boundaries_[i],
-        query_boundaries_[i + 1] - query_boundaries_[i],
-        &inverse_max_dcgs_[i]);
+                               query_boundaries_[i + 1] - query_boundaries_[i],
+                               &inverse_max_dcgs_[i]);
       for (size_t j = 0; j < inverse_max_dcgs_[i].size(); ++j) {
         if (inverse_max_dcgs_[i][j] > 0.0f) {
           inverse_max_dcgs_[i][j] = 1.0f / inverse_max_dcgs_[i][j];
@@ -82,7 +82,7 @@ public:
     return 1.0f;
   }
 
-  std::vector<double> Eval(const double* score) const override {
+  std::vector<double> Eval(const double* score, const ObjectiveFunction*, int) const override {
     // some buffers for multi-threading sum up
     std::vector<std::vector<double>> result_buffer_;
     for (int i = 0; i < num_threads_; ++i) {
@@ -90,7 +90,7 @@ public:
     }
     std::vector<double> tmp_dcg(eval_at_.size(), 0.0f);
     if (query_weights_ == nullptr) {
-#pragma omp parallel for schedule(static) firstprivate(tmp_dcg)
+      #pragma omp parallel for schedule(static) firstprivate(tmp_dcg)
       for (data_size_t i = 0; i < num_queries_; ++i) {
         const int tid = omp_get_thread_num();
         // if all doc in this query are all negative, let its NDCG=1
@@ -101,8 +101,8 @@ public:
         } else {
           // calculate DCG
           DCGCalculator::CalDCG(eval_at_, label_ + query_boundaries_[i],
-            score + query_boundaries_[i],
-            query_boundaries_[i + 1] - query_boundaries_[i], &tmp_dcg);
+                                score + query_boundaries_[i],
+                                query_boundaries_[i + 1] - query_boundaries_[i], &tmp_dcg);
           // calculate NDCG
           for (size_t j = 0; j < eval_at_.size(); ++j) {
             result_buffer_[tid][j] += tmp_dcg[j] * inverse_max_dcgs_[i][j];
@@ -110,7 +110,7 @@ public:
         }
       }
     } else {
-#pragma omp parallel for schedule(static) firstprivate(tmp_dcg)
+      #pragma omp parallel for schedule(static) firstprivate(tmp_dcg)
       for (data_size_t i = 0; i < num_queries_; ++i) {
         const int tid = omp_get_thread_num();
         // if all doc in this query are all negative, let its NDCG=1
@@ -121,8 +121,8 @@ public:
         } else {
           // calculate DCG
           DCGCalculator::CalDCG(eval_at_, label_ + query_boundaries_[i],
-            score + query_boundaries_[i],
-            query_boundaries_[i + 1] - query_boundaries_[i], &tmp_dcg);
+                                score + query_boundaries_[i],
+                                query_boundaries_[i + 1] - query_boundaries_[i], &tmp_dcg);
           // calculate NDCG
           for (size_t j = 0; j < eval_at_.size(); ++j) {
             result_buffer_[tid][j] += tmp_dcg[j] * inverse_max_dcgs_[i][j] * query_weights_[i];

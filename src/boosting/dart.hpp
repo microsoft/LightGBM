@@ -28,20 +28,20 @@ public:
   * \brief Initialization logic
   * \param config Config for boosting
   * \param train_data Training data
-  * \param object_function Training objective function
+  * \param objective_function Training objective function
   * \param training_metrics Training metrics
   * \param output_model_filename Filename of output model
   */
-  void Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
-    const std::vector<const Metric*>& training_metrics) override {
-    GBDT::Init(config, train_data, object_function, training_metrics);
+  void Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
+            const std::vector<const Metric*>& training_metrics) override {
+    GBDT::Init(config, train_data, objective_function, training_metrics);
     random_for_drop_ = Random(gbdt_config_->drop_seed);
     sum_weight_ = 0.0f;
   }
 
-  void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
-    const std::vector<const Metric*>& training_metrics) override {
-    GBDT::ResetTrainingData(config, train_data, object_function, training_metrics);
+  void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
+                         const std::vector<const Metric*>& training_metrics) override {
+    GBDT::ResetTrainingData(config, train_data, objective_function, training_metrics);
   }
   /*!
   * \brief one training iteration
@@ -110,10 +110,10 @@ private:
     }
     // drop trees
     for (auto i : drop_index_) {
-      for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-        auto curr_tree = i * num_class_ + curr_class;
+      for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+        auto curr_tree = i * num_tree_per_iteration_ + cur_tree_id;
         models_[curr_tree]->Shrinkage(-1.0);
-        train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
+        train_score_updater_->AddScore(models_[curr_tree].get(), cur_tree_id);
       }
     }
     if (!gbdt_config_->xgboost_dart_mode) {
@@ -140,16 +140,16 @@ private:
     double k = static_cast<double>(drop_index_.size());
     if (!gbdt_config_->xgboost_dart_mode) {
       for (auto i : drop_index_) {
-        for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-          auto curr_tree = i * num_class_ + curr_class;
+        for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+          auto curr_tree = i * num_tree_per_iteration_ + cur_tree_id;
           // update validation score
           models_[curr_tree]->Shrinkage(1.0f / (k + 1.0f));
           for (auto& score_updater : valid_score_updater_) {
-            score_updater->AddScore(models_[curr_tree].get(), curr_class);
+            score_updater->AddScore(models_[curr_tree].get(), cur_tree_id);
           }
           // update training score
           models_[curr_tree]->Shrinkage(-k);
-          train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
+          train_score_updater_->AddScore(models_[curr_tree].get(), cur_tree_id);
         }
         if (!gbdt_config_->uniform_drop) {
           sum_weight_ -= tree_weight_[i] * (1.0f / (k + 1.0f));
@@ -158,16 +158,16 @@ private:
       }
     } else {
       for (auto i : drop_index_) {
-        for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-          auto curr_tree = i * num_class_ + curr_class;
+        for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+          auto curr_tree = i * num_tree_per_iteration_ + cur_tree_id;
           // update validation score
           models_[curr_tree]->Shrinkage(shrinkage_rate_);
           for (auto& score_updater : valid_score_updater_) {
-            score_updater->AddScore(models_[curr_tree].get(), curr_class);
+            score_updater->AddScore(models_[curr_tree].get(), cur_tree_id);
           }
           // update training score
           models_[curr_tree]->Shrinkage(-k / gbdt_config_->learning_rate);
-          train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
+          train_score_updater_->AddScore(models_[curr_tree].get(), cur_tree_id);
         }
         if (!gbdt_config_->uniform_drop) {
           sum_weight_ -= tree_weight_[i] * (1.0f / (k + gbdt_config_->learning_rate));;

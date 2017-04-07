@@ -35,6 +35,11 @@ public:
       Log::Fatal("Sigmoid param %f should be greater than zero", sigmoid_);
     }
   }
+
+  explicit LambdarankNDCG(const std::vector<std::string>&) {
+
+  }
+
   ~LambdarankNDCG() {
 
   }
@@ -194,6 +199,12 @@ public:
 
   const char* GetName() const override {
     return "lambdarank";
+  }
+
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName();
+    return str_buf.str();
   }
 
 private:

@@ -25,6 +25,21 @@ public:
     }
   }
 
+  explicit BinaryLogloss(const std::vector<std::string>& strs) {
+    sigmoid_ = -1;
+    for (auto str : strs) {
+      auto tokens = Common::Split(str.c_str(), ":");
+      if (tokens.size() == 2) {
+        if (tokens[0] == std::string("sigmoid")) {
+          Common::Atof(tokens[1].c_str(), &sigmoid_);
+        }
+      }
+    }
+    if (sigmoid_ <= 0.0) {
+      Log::Fatal("Sigmoid parameter %f should be greater than zero", sigmoid_);
+    }
+  }
+
   ~BinaryLogloss() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
@@ -100,6 +115,24 @@ public:
   const char* GetName() const override {
     return "binary";
   }
+
+  std::vector<double> ConvertOutput(std::vector<double>& input) const override {
+    input[0] = 1.0f / (1.0f + std::exp(-sigmoid_ * input[0]));
+    return input;
+  }
+
+  double ConvertOutput(double input) const override {
+    return 1.0f / (1.0f + std::exp(-sigmoid_ * input));
+  }
+
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName() << " ";
+    str_buf << "sigmoid:" << sigmoid_;
+    return str_buf.str();
+  }
+
+  bool SkipEmptyClass() const override { return true; }
 
 private:
   /*! \brief Number of data */

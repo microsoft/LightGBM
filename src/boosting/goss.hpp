@@ -27,20 +27,20 @@ public:
   /*!
   * \brief Constructor
   */
-  GOSS() : GBDT() { 
+  GOSS() : GBDT() {
 
   }
 
   ~GOSS() {
-#ifdef TIMETAG
+    #ifdef TIMETAG
     Log::Info("GOSS::subset costs %f", subset_time * 1e-3);
     Log::Info("GOSS::re_init_tree costs %f", re_init_tree_time * 1e-3);
-#endif
+    #endif
   }
 
-  void Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
-    const std::vector<const Metric*>& training_metrics) override {
-    GBDT::Init(config, train_data, object_function, training_metrics);
+  void Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
+            const std::vector<const Metric*>& training_metrics) override {
+    GBDT::Init(config, train_data, objective_function, training_metrics);
     CHECK(gbdt_config_->top_rate + gbdt_config_->other_rate <= 1.0f);
     CHECK(gbdt_config_->top_rate > 0.0f && gbdt_config_->other_rate > 0.0f);
     if (gbdt_config_->bagging_freq > 0 && gbdt_config_->bagging_fraction != 1.0f) {
@@ -49,12 +49,12 @@ public:
     Log::Info("using GOSS");
   }
 
-  void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
-    const std::vector<const Metric*>& training_metrics) override {
+  void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
+                         const std::vector<const Metric*>& training_metrics) override {
     if (config->bagging_freq > 0 && config->bagging_fraction != 1.0f) {
       Log::Fatal("cannot use bagging in GOSS");
     }
-    GBDT::ResetTrainingData(config, train_data, object_function, training_metrics);
+    GBDT::ResetTrainingData(config, train_data, objective_function, training_metrics);
     if (train_data_ == nullptr) { return; }
     bag_data_indices_.resize(num_data_);
     tmp_indices_.resize(num_data_);
@@ -79,8 +79,8 @@ public:
   data_size_t BaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer, data_size_t* buffer_right) {
     std::vector<score_t> tmp_gradients(cnt, 0.0f);
     for (data_size_t i = 0; i < cnt; ++i) {
-      for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-        int idx = curr_class * num_data_ + start + i;
+      for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+        int idx = cur_tree_id * num_data_ + start + i;
         tmp_gradients[i] += std::fabs(gradients_[idx] * hessians_[idx]);
       }
     }
@@ -96,8 +96,8 @@ public:
     data_size_t big_weight_cnt = 0;
     for (data_size_t i = 0; i < cnt; ++i) {
       score_t grad = 0.0f;
-      for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-        int idx = curr_class * num_data_ + start + i;
+      for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+        int idx = cur_tree_id * num_data_ + start + i;
         grad += std::fabs(gradients_[idx] * hessians_[idx]);
       }
       if (grad >= threshold) {
@@ -110,8 +110,8 @@ public:
         double prob = (rest_need) / static_cast<double>(rest_all);
         if (cur_rand.NextFloat() < prob) {
           buffer[cur_left_cnt++] = start + i;
-          for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-            int idx = curr_class * num_data_ + start + i;
+          for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+            int idx = cur_tree_id * num_data_ + start + i;
             gradients_[idx] *= multiply;
             hessians_[idx] *= multiply;
           }
@@ -132,7 +132,7 @@ public:
     data_size_t inner_size = (num_data_ + num_threads_ - 1) / num_threads_;
     if (inner_size < min_inner_size) { inner_size = min_inner_size; }
     OMP_INIT_EX();
-#pragma omp parallel for schedule(static, 1)
+    #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < num_threads_; ++i) {
       OMP_LOOP_EX_BEGIN();
       left_cnts_buf_[i] = 0;
@@ -143,7 +143,7 @@ public:
       if (cur_start + cur_cnt > num_data_) { cur_cnt = num_data_ - cur_start; }
       Random cur_rand(gbdt_config_->bagging_seed + iter * num_threads_ + i);
       data_size_t cur_left_count = BaggingHelper(cur_rand, cur_start, cur_cnt,
-        tmp_indices_.data() + cur_start, tmp_indice_right_.data() + cur_start);
+                                                 tmp_indices_.data() + cur_start, tmp_indice_right_.data() + cur_start);
       offsets_buf_[i] = cur_start;
       left_cnts_buf_[i] = cur_left_count;
       right_cnts_buf_[i] = cur_cnt - cur_left_count;
@@ -159,16 +159,16 @@ public:
     }
     left_cnt = left_write_pos_buf_[num_threads_ - 1] + left_cnts_buf_[num_threads_ - 1];
 
-#pragma omp parallel for schedule(static, 1)
+    #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < num_threads_; ++i) {
       OMP_LOOP_EX_BEGIN();
       if (left_cnts_buf_[i] > 0) {
         std::memcpy(bag_data_indices_.data() + left_write_pos_buf_[i],
-          tmp_indices_.data() + offsets_buf_[i], left_cnts_buf_[i] * sizeof(data_size_t));
+                    tmp_indices_.data() + offsets_buf_[i], left_cnts_buf_[i] * sizeof(data_size_t));
       }
       if (right_cnts_buf_[i] > 0) {
         std::memcpy(bag_data_indices_.data() + left_cnt + right_write_pos_buf_[i],
-          tmp_indice_right_.data() + offsets_buf_[i], right_cnts_buf_[i] * sizeof(data_size_t));
+                    tmp_indice_right_.data() + offsets_buf_[i], right_cnts_buf_[i] * sizeof(data_size_t));
       }
       OMP_LOOP_EX_END();
     }
@@ -179,21 +179,21 @@ public:
       tree_learner_->SetBaggingData(bag_data_indices_.data(), bag_data_cnt_);
     } else {
       // get subset
-#ifdef TIMETAG
+      #ifdef TIMETAG
       auto start_time = std::chrono::steady_clock::now();
-#endif
+      #endif
       tmp_subset_->ReSize(bag_data_cnt_);
       tmp_subset_->CopySubset(train_data_, bag_data_indices_.data(), bag_data_cnt_, false);
-#ifdef TIMETAG
+      #ifdef TIMETAG
       subset_time += std::chrono::steady_clock::now() - start_time;
-#endif
-#ifdef TIMETAG
+      #endif
+      #ifdef TIMETAG
       start_time = std::chrono::steady_clock::now();
-#endif
+      #endif
       tree_learner_->ResetTrainingData(tmp_subset_.get());
-#ifdef TIMETAG
+      #ifdef TIMETAG
       re_init_tree_time += std::chrono::steady_clock::now() - start_time;
-#endif
+      #endif
     }
   }
 

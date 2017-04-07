@@ -10,7 +10,7 @@ namespace LightGBM {
 Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config) {
   if (type == std::string("l2") || type == std::string("mean_squared_error") || type == std::string("mse")) {
     return new L2Metric(config);
-  } else if (type == std::string("l1") || type == std::string("mean_absolute_error")  || type == std::string("mae")) {
+  } else if (type == std::string("l1") || type == std::string("mean_absolute_error") || type == std::string("mae")) {
     return new L1Metric(config);
   } else if (type == std::string("huber")) {
     return new HuberLossMetric(config);
@@ -30,8 +30,6 @@ Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config
     return new MapMetric(config);
   } else if (type == std::string("multi_logloss")) {
     return new MultiSoftmaxLoglossMetric(config);
-  } else if (type == std::string("multi_loglossova")) {
-    return new MultiOVALoglossMetric(config);
   } else if (type == std::string("multi_error")) {
     return new MultiErrorMetric(config);
   }

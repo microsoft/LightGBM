@@ -104,6 +104,12 @@ public:
     Log::Fatal("Using OrderedSparseBin->ConstructHistogram() instead");
   }
 
+  void ConstructHistogram(const data_size_t*, data_size_t, const score_t*,
+                          HistogramBinEntry*) const override {
+    // Will use OrderedSparseBin->ConstructHistogram() instead
+    Log::Fatal("Using OrderedSparseBin->ConstructHistogram() instead");
+  }
+
   inline bool NextNonzero(data_size_t* i_delta,
     data_size_t* cur_pos) const {
     ++(*i_delta);
