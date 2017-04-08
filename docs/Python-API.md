@@ -1059,7 +1059,7 @@ The methods of each Class is in alphabetical order.
         Mapping of (attribute, value) pairs for the graph.
     node_attr : dict
         Mapping of (attribute, value) pairs set for all nodes.
-    edgeattr : dict
+    edge_attr : dict
         Mapping of (attribute, value) pairs set for all edges.
     show_info : list
         Information shows on nodes.
