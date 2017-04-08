@@ -38,8 +38,9 @@ class GPUTreeLearner: public SerialTreeLearner {
 public:
   explicit GPUTreeLearner(const TreeConfig* tree_config);
   ~GPUTreeLearner();
-  void Init(const Dataset* train_data) override;
+  void Init(const Dataset* train_data, bool is_constant_hessian) override;
   void ResetTrainingData(const Dataset* train_data) override;
+  Tree* Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian) override;
 
   void SetBaggingData(const data_size_t* used_indices, data_size_t num_data) override {
     SerialTreeLearner::SetBaggingData(used_indices, num_data);
@@ -100,6 +101,16 @@ private:
   * \brief Allocate memory for GPU computation
   */
   void AllocateGPUMemory();
+
+  /*!
+  * \brief Compile OpenCL GPU source code to kernel binaries
+  */
+  void BuildGPUKernels();
+
+  /*!
+  * \brief Setup GPU kernel arguments, preparing for launching
+  */
+  void SetupKernelArguments();
 
   /*! 
    * \brief Compute GPU feature histogram for the current leaf.
@@ -166,6 +177,10 @@ private:
   const char *kernel16_src_ = 
   #include "ocl/histogram16.cl"
   ;
+  /*! \brief Currently used kernel source */
+  std::string kernel_source_;
+  /*! \brief Currently used kernel name */
+  std::string kernel_name_;
 
   /*! \brief a array of histogram kernels with different number
      of workgroups per feature */

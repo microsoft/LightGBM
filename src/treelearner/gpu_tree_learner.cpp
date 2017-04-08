@@ -33,9 +33,9 @@ GPUTreeLearner::~GPUTreeLearner() {
   }
 }
 
-void GPUTreeLearner::Init(const Dataset* train_data) {
+void GPUTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {
   // initialize SerialTreeLearner
-  SerialTreeLearner::Init(train_data);
+  SerialTreeLearner::Init(train_data, is_constant_hessian);
   // some additional variables needed for GPU trainer
   num_feature_groups_ = train_data_->num_feature_groups();
   // Initialize GPU buffers and kernels
@@ -159,7 +159,10 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featur
   if (leaf_num_data != num_data_) {
     indices_future_.wait();
   }
-  hessians_future_.wait();
+  // for constant hessian, hessians are not copied except for the root node
+  if (!is_constant_hessian_) {
+    hessians_future_.wait();
+  }
   gradients_future_.wait();
   // there will be 2^exp_workgroups_per_feature = num_workgroups / num_dense_feature4 sub-histogram per feature4
   // and we will launch num_feature workgroups for this kernel
@@ -528,19 +531,8 @@ void GPUTreeLearner::AllocateGPUMemory() {
   }
   // data transfer time
   std::chrono::duration<double, std::milli> end_time = std::chrono::steady_clock::now() - start_time;
-  // setup kernel arguments
-  for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
-    // The only argument that needs to be changed later is num_data_
-    histogram_kernels_[i].set_args(*device_features_, device_feature_masks_, num_data_,
-                                       *device_data_indices_, num_data_, device_gradients_, device_hessians_,
-                                       *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
-    histogram_allfeats_kernels_[i].set_args(*device_features_, device_feature_masks_, num_data_,
-                                       *device_data_indices_, num_data_, device_gradients_, device_hessians_,
-                                       *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
-    histogram_fulldata_kernels_[i].set_args(*device_features_, device_feature_masks_, num_data_,
-                                        *device_data_indices_, num_data_, device_gradients_, device_hessians_,
-                                        *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
-  }
+  // setup GPU kernel arguments after we allocating all the buffers
+  SetupKernelArguments();
   Log::Info("%d dense feature groups (%.2f MB) transfered to GPU in %f secs. %d sparse feature groups.", 
             dense_feature_group_map_.size(), ((dense_feature_group_map_.size() + (dword_features_ - 1)) / dword_features_) * num_data_ * sizeof(Feature4) / (1024.0 * 1024.0), 
             end_time * 1e-3, sparse_feature_group_map_.size());
@@ -558,10 +550,108 @@ void GPUTreeLearner::AllocateGPUMemory() {
   #endif
 }
 
-void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
+void GPUTreeLearner::BuildGPUKernels() {
+  Log::Info("Compiling OpenCL Kernel with %d bins...", device_bin_size_);
+  // destroy any old kernels
+  histogram_kernels_.clear();
+  histogram_allfeats_kernels_.clear();
+  histogram_fulldata_kernels_.clear();
+  // create OpenCL kernels for different number of workgroups per feature
+  histogram_kernels_.resize(kMaxLogWorkgroupsPerFeature+1);
+  histogram_allfeats_kernels_.resize(kMaxLogWorkgroupsPerFeature+1);
+  histogram_fulldata_kernels_.resize(kMaxLogWorkgroupsPerFeature+1);
   // currently we don't use constant memory
   int use_constants = 0;
+  #pragma omp parallel for schedule(guided)
+  for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
+    boost::compute::program program;
+    std::ostringstream opts;
+    // compile the GPU kernel depending if double precision is used, constant hessian is used, etc 
+    opts << " -D POWER_FEATURE_WORKGROUPS=" << i
+         << " -D USE_CONSTANT_BUF=" << use_constants << " -D USE_DP_FLOAT=" << int(tree_config_->gpu_use_dp)
+         << " -D CONST_HESSIAN=" << int(is_constant_hessian_)
+         << " -cl-strict-aliasing -cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math";
+    #if GPU_DEBUG >= 1
+    std::cout << "Building GPU kernels with options: " << opts.str() << std::endl;
+    #endif
+    // kernel with indices in an array
+    try {
+      program = boost::compute::program::build_with_source(kernel_source_, ctx_, opts.str());
+    }
+    catch (boost::compute::opencl_error &e) {
+      if (program.build_log().size() > 0) {
+        Log::Fatal("GPU program built failure:\n %s", program.build_log().c_str());
+      }
+      else {
+        Log::Fatal("GPU program built failure, log unavailable");
+      }
+    }
+    histogram_kernels_[i] = program.create_kernel(kernel_name_);
+    
+    // kernel with all features enabled, with elimited branches
+    opts << " -D ENABLE_ALL_FEATURES=1";
+    try {
+      program = boost::compute::program::build_with_source(kernel_source_, ctx_, opts.str());
+    }
+    catch (boost::compute::opencl_error &e) {
+      if (program.build_log().size() > 0) {
+        Log::Fatal("GPU program built failure:\n %s", program.build_log().c_str());
+      }
+      else {
+        Log::Fatal("GPU program built failure, log unavailable");
+      }
+    }
+    histogram_allfeats_kernels_[i] = program.create_kernel(kernel_name_);
 
+    // kernel with all data indices (for root node, and assumes that root node always uses all features)
+    opts << " -D IGNORE_INDICES=1";
+    try {
+      program = boost::compute::program::build_with_source(kernel_source_, ctx_, opts.str());
+    }
+    catch (boost::compute::opencl_error &e) {
+      if (program.build_log().size() > 0) {
+        Log::Fatal("GPU program built failure:\n %s", program.build_log().c_str());
+      }
+      else {
+        Log::Fatal("GPU program built failure, log unavailable");
+      }
+    }
+    histogram_fulldata_kernels_[i] = program.create_kernel(kernel_name_);
+  }
+  Log::Info("GPU programs have been built");
+}
+
+void GPUTreeLearner::SetupKernelArguments() {
+  for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
+    // The only argument that needs to be changed later is num_data_
+    if (is_constant_hessian_) {
+      // hessian is passed as a parameter, but it is not available now. 
+      // hessian will be set in BeforeTrain()
+      histogram_kernels_[i].set_args(*device_features_, device_feature_masks_, num_data_,
+                                         *device_data_indices_, num_data_, device_gradients_, 0.0f,
+                                         *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
+      histogram_allfeats_kernels_[i].set_args(*device_features_, device_feature_masks_, num_data_,
+                                         *device_data_indices_, num_data_, device_gradients_, 0.0f,
+                                         *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
+      histogram_fulldata_kernels_[i].set_args(*device_features_, device_feature_masks_, num_data_,
+                                          *device_data_indices_, num_data_, device_gradients_, 0.0f,
+                                          *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
+    }
+    else {
+      histogram_kernels_[i].set_args(*device_features_, device_feature_masks_, num_data_,
+                                         *device_data_indices_, num_data_, device_gradients_, device_hessians_,
+                                         *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
+      histogram_allfeats_kernels_[i].set_args(*device_features_, device_feature_masks_, num_data_,
+                                         *device_data_indices_, num_data_, device_gradients_, device_hessians_,
+                                         *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
+      histogram_fulldata_kernels_[i].set_args(*device_features_, device_feature_masks_, num_data_,
+                                          *device_data_indices_, num_data_, device_gradients_, device_hessians_,
+                                          *device_subhistograms_, *sync_counters_, device_histogram_outputs_);
+    }
+  }
+}
+
+void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   // Get the max bin size, used for selecting best GPU kernel
   max_num_bin_ = 0;
   #if GPU_DEBUG >= 1
@@ -588,24 +678,22 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
       }   
     }   
   }   
-  std::string kernel_source;
-  std::string kernel_name;
   // determine which kernel to use based on the max number of bins
   if (max_num_bin_ <= 16) {
-    kernel_source = kernel16_src_;
-    kernel_name = "histogram16";
+    kernel_source_ = kernel16_src_;
+    kernel_name_ = "histogram16";
     device_bin_size_ = 16;
     dword_features_ = 8;
   }
   else if (max_num_bin_ <= 64) {
-    kernel_source = kernel64_src_;
-    kernel_name = "histogram64";
+    kernel_source_ = kernel64_src_;
+    kernel_name_ = "histogram64";
     device_bin_size_ = 64;
     dword_features_ = 4;
   }
   else if ( max_num_bin_ <= 256) {
-    kernel_source = kernel256_src_;
-    kernel_name = "histogram256";
+    kernel_source_ = kernel256_src_;
+    kernel_name_ = "histogram256";
     device_bin_size_ = 256;
     dword_features_ = 4;
   }
@@ -621,67 +709,20 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   ctx_ = boost::compute::context(dev_);
   queue_ = boost::compute::command_queue(ctx_, dev_);
   Log::Info("Using GPU Device: %s, Vendor: %s", dev_.name().c_str(), dev_.vendor().c_str());
-  Log::Info("Compiling OpenCL Kernel with %d bins...", device_bin_size_);
-  // create OpenCL kernels for different number of workgroups per feature
-  histogram_kernels_.resize(kMaxLogWorkgroupsPerFeature+1);
-  histogram_allfeats_kernels_.resize(kMaxLogWorkgroupsPerFeature+1);
-  histogram_fulldata_kernels_.resize(kMaxLogWorkgroupsPerFeature+1);
-  #pragma omp parallel for schedule(guided)
-  for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
-    boost::compute::program program;
-    std::ostringstream opts;
-    opts << " -D POWER_FEATURE_WORKGROUPS=" << i
-         << " -D USE_CONSTANT_BUF=" << use_constants << " -D USE_DP_FLOAT=" << int(tree_config_->gpu_use_dp)
-         << " -cl-strict-aliasing -cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math";
-    #if GPU_DEBUG >= 1
-    std::cout << "Building options: " << opts.str() << std::endl;
-    #endif
-    // kernel with indices in an array
-    try {
-      program = boost::compute::program::build_with_source(kernel_source, ctx_, opts.str());
-    }
-    catch (boost::compute::opencl_error &e) {
-      if (program.build_log().size() > 0) {
-        Log::Fatal("GPU program built failure:\n %s", program.build_log().c_str());
-      }
-      else {
-        Log::Fatal("GPU program built failure, log unavailable");
-      }
-    }
-    histogram_kernels_[i] = program.create_kernel(kernel_name);
-    
-    // kernel with all features enabled, with elimited branches
-    opts << " -D ENABLE_ALL_FEATURES=1";
-    try {
-      program = boost::compute::program::build_with_source(kernel_source, ctx_, opts.str());
-    }
-    catch (boost::compute::opencl_error &e) {
-      if (program.build_log().size() > 0) {
-        Log::Fatal("GPU program built failure:\n %s", program.build_log().c_str());
-      }
-      else {
-        Log::Fatal("GPU program built failure, log unavailable");
-      }
-    }
-    histogram_allfeats_kernels_[i] = program.create_kernel(kernel_name);
-
-    // kernel with all data indices (for root node, and assumes that root node always uses all features)
-    opts << " -D IGNORE_INDICES=1";
-    try {
-      program = boost::compute::program::build_with_source(kernel_source, ctx_, opts.str());
-    }
-    catch (boost::compute::opencl_error &e) {
-      if (program.build_log().size() > 0) {
-        Log::Fatal("GPU program built failure:\n %s", program.build_log().c_str());
-      }
-      else {
-        Log::Fatal("GPU program built failure, log unavailable");
-      }
-    }
-    histogram_fulldata_kernels_[i] = program.create_kernel(kernel_name);
-  }
-  Log::Info("GPU programs have been built");
+  BuildGPUKernels();
   AllocateGPUMemory();
+}
+
+Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian) {
+  // check if we need to recompile the GPU kernel (is_constant_hessian changed)
+  // this should rarely occur
+  if (is_constant_hessian != is_constant_hessian_) {
+    Log::Info("Recompiling GPU kernel because hessian is %sa constant now", is_constant_hessian ? "" : "not ");
+    is_constant_hessian_ = is_constant_hessian;
+    BuildGPUKernels();
+    SetupKernelArguments();
+  }
+  return SerialTreeLearner::Train(gradients, hessians, is_constant_hessian);
 }
 
 void GPUTreeLearner::ResetTrainingData(const Dataset* train_data) {
@@ -699,7 +740,19 @@ void GPUTreeLearner::BeforeTrain() {
   // Copy initial full hessians and gradients to GPU.
   // We start copying as early as possible, instead of at ConstructHistogram().
   if (!use_bagging_) {
-    hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, num_data_ * sizeof(score_t), hessians_);
+    if (!is_constant_hessian_) {
+      hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, num_data_ * sizeof(score_t), hessians_);
+    }
+    else {
+      // setup hessian parameters only
+      score_t const_hessian = hessians_[0];
+      for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
+        // hessian is passed as a parameter
+        histogram_kernels_[i].set_arg(6, const_hessian);
+        histogram_allfeats_kernels_[i].set_arg(6, const_hessian);
+        histogram_fulldata_kernels_[i].set_arg(6, const_hessian);
+      }
+    }
     gradients_future_ = queue_.enqueue_write_buffer_async(device_gradients_, 0, num_data_ * sizeof(score_t), gradients_);
   }
 
@@ -716,12 +769,24 @@ void GPUTreeLearner::BeforeTrain() {
     #endif
     // transfer the indices to GPU
     indices_future_ = boost::compute::copy_async(indices, indices + cnt, device_data_indices_->begin(), queue_);
-    #pragma omp parallel for schedule(static)
-    for (data_size_t i = 0; i < cnt; ++i) {
-      ordered_hessians_[i] = hessians_[indices[i]];
+    if (!is_constant_hessian_) {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < cnt; ++i) {
+        ordered_hessians_[i] = hessians_[indices[i]];
+      }
+      // transfer hessian to GPU
+      hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, cnt * sizeof(score_t), ordered_hessians_.data());
     }
-    // transfer hessian to GPU
-    hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, cnt * sizeof(score_t), ordered_hessians_.data());
+    else {
+      // setup hessian parameters only
+      score_t const_hessian = hessians_[indices[0]];
+      for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
+        // hessian is passed as a parameter
+        histogram_kernels_[i].set_arg(6, const_hessian);
+        histogram_allfeats_kernels_[i].set_arg(6, const_hessian);
+        histogram_fulldata_kernels_[i].set_arg(6, const_hessian);
+      }
+    }
     #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < cnt; ++i) {
       ordered_gradients_[i] = gradients_[indices[i]];
@@ -759,12 +824,14 @@ bool GPUTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int ri
     #endif
     indices_future_ = boost::compute::copy_async(indices + begin, indices + end, device_data_indices_->begin(), queue_);
 
-    #pragma omp parallel for schedule(static)
-    for (data_size_t i = begin; i < end; ++i) {
-      ordered_hessians_[i - begin] = hessians_[indices[i]];
+    if (!is_constant_hessian_) {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = begin; i < end; ++i) {
+        ordered_hessians_[i - begin] = hessians_[indices[i]];
+      }
+      // copy ordered hessians to the GPU:
+      hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, (end - begin) * sizeof(score_t), ptr_pinned_hessians_);
     }
-    // copy ordered hessians to the GPU:
-    hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, (end - begin) * sizeof(score_t), ptr_pinned_hessians_);
 
     #pragma omp parallel for schedule(static)
     for (data_size_t i = begin; i < end; ++i) {
@@ -808,7 +875,7 @@ bool GPUTreeLearner::ConstructGPUHistogramsAsync(
     }
   }
   // generate and copy ordered_hessians if hessians is not null
-  if (hessians != nullptr) {
+  if (hessians != nullptr && !is_constant_hessian_) {
     if (num_data != num_data_) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data; ++i) {
@@ -890,7 +957,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
     nullptr, smaller_leaf_splits_->num_data_in_leaf(),
     smaller_leaf_splits_->LeafIndex(),
     ordered_bins_, gradients_, hessians_,
-    ordered_gradients_.data(), ordered_hessians_.data(),
+    ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
     ptr_smaller_leaf_hist_data);
   // wait for GPU to finish, only if GPU is actually used
   if (is_gpu_used) {
@@ -944,7 +1011,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
       nullptr, larger_leaf_splits_->num_data_in_leaf(),
       larger_leaf_splits_->LeafIndex(),
       ordered_bins_, gradients_, hessians_,
-      ordered_gradients_.data(), ordered_hessians_.data(),
+      ordered_gradients_.data(), ordered_hessians_.data(), is_constant_hessian_,
       ptr_larger_leaf_hist_data);
     // wait for GPU to finish, only if GPU is actually used
     if (is_gpu_used) {

@@ -24,8 +24,9 @@ public:
   /*!
   * \brief Initialize tree learner with training dataset
   * \param train_data The used training data
+  * \param is_constant_hessian True if all hessians share the same value
   */
-  virtual void Init(const Dataset* train_data) = 0;
+  virtual void Init(const Dataset* train_data, bool is_constant_hessian) = 0;
 
   virtual void ResetTrainingData(const Dataset* train_data) = 0;
 

@@ -29,6 +29,10 @@ R""()
 #ifndef USE_DP_FLOAT
 #define USE_DP_FLOAT 0
 #endif
+// ignore hessian, and use the local memory for hessian as an additional bank for gradient
+#ifndef CONST_HESSIAN
+#define CONST_HESSIAN 0
+#endif
 
 
 #define LOCAL_SIZE_0 256
@@ -208,7 +212,11 @@ __kernel void histogram16(__global const uchar4* restrict feature_data_base,
                       __constant const data_size_t* restrict data_indices __attribute__((max_constant_size(65536))), 
                       const data_size_t num_data, 
                       __constant const score_t* restrict ordered_gradients __attribute__((max_constant_size(65536))), 
+#if CONST_HESSIAN == 0
                       __constant const score_t* restrict ordered_hessians __attribute__((max_constant_size(65536))),
+#else
+                      const score_t const_hessian,
+#endif
                       __global char* restrict output_buf,
                       __global volatile int * sync_counters,
                       __global acc_type* restrict hist_buf_base) {
@@ -219,7 +227,11 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
                       __global const data_size_t* data_indices, 
                       const data_size_t num_data, 
                       __global const score_t*  ordered_gradients, 
+#if CONST_HESSIAN == 0
                       __global const score_t*  ordered_hessians,
+#else
+                      const score_t const_hessian,
+#endif
                       __global char* restrict output_buf, 
                       __global volatile int * sync_counters,
                       __global acc_type* restrict hist_buf_base) {
@@ -357,7 +369,9 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
     data_size_t ind;
     data_size_t ind_next;
     stat1 = ordered_gradients[subglobal_tid];
+    #if CONST_HESSIAN == 0
     stat2 = ordered_hessians[subglobal_tid];
+    #endif
     #ifdef IGNORE_INDICES
     ind = subglobal_tid;
     #else
@@ -370,7 +384,9 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
         // prefetch the next iteration variables
         // we don't need bondary check because we have made the buffer larger
         stat1_next = ordered_gradients[i + subglobal_size];
+        #if CONST_HESSIAN == 0
         stat2_next = ordered_hessians[i + subglobal_size];
+        #endif
         #ifdef IGNORE_INDICES
         // we need to check to bounds here
         ind_next = i + subglobal_size < num_data ? i + subglobal_size : i;
@@ -379,12 +395,14 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
         #else
         ind_next = data_indices[i + subglobal_size];
         #endif
+        #if CONST_HESSIAN == 0
         // swap gradient and hessian for threads 8, 9, 10, 11, 12, 13, 14, 15
         float tmp = stat1;
         stat1 = is_hessian_first ? stat2 : stat1;
         stat2 = is_hessian_first ? tmp   : stat2;
         // stat1 = select(stat1, stat2, is_hessian_first);
         // stat2 = select(stat2, tmp, is_hessian_first);
+        #endif
 
         // STAGE 2: accumulate gradient and hessian
         offset = (ltid & DWORD_FEATURES_MASK);
@@ -399,7 +417,9 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
             atomic_local_add_f(gh_hist + addr, stat1);
             // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 0, 1, 2, 3, 4, 5, 6, 7's hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 0, 1, 2, 3, 4, 5, 6, 7's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
+            #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
+            #endif
         }
         offset = (offset + 1) & DWORD_FEATURES_MASK;
         if (feature_mask.s6) {
@@ -411,7 +431,9 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
             atomic_local_add_f(gh_hist + addr, stat1);
             // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 1, 2, 3, 4, 5, 6, 7, 0's hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 1, 2, 3, 4, 5, 6, 7, 0's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
+            #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
+            #endif
         }
 
         offset = (offset + 1) & DWORD_FEATURES_MASK;
@@ -424,7 +446,9 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
             atomic_local_add_f(gh_hist + addr, stat1);
             // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 2, 3, 4, 5, 6, 7, 0, 1's hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 2, 3, 4, 5, 6, 7, 0, 1's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
+            #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
+            #endif
         }
         offset = (offset + 1) & DWORD_FEATURES_MASK;
         if (feature_mask.s4) {
@@ -436,7 +460,9 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
             atomic_local_add_f(gh_hist + addr, stat1);
             // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 3, 4, 5, 6, 7, 0, 1, 2's hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 3, 4, 5, 6, 7, 0, 1, 2's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
+            #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
+            #endif
         }
 
 
@@ -456,7 +482,9 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
             atomic_local_add_f(gh_hist + addr, stat1);
             // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 4, 5, 6, 7, 0, 1, 2, 3's hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 4, 5, 6, 7, 0, 1, 2, 3's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
+            #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
+            #endif
         }
         offset = (offset + 1) & DWORD_FEATURES_MASK;
         if (feature_mask.s2) {
@@ -468,7 +496,9 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
             atomic_local_add_f(gh_hist + addr, stat1);
             // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 5, 6, 7, 0, 1, 2, 3, 4's hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 5, 6, 7, 0, 1, 2, 3, 4's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
+            #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
+            #endif
         }
 
         offset = (offset + 1) & DWORD_FEATURES_MASK;
@@ -481,7 +511,9 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
             atomic_local_add_f(gh_hist + addr, stat1);
             // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 6, 7, 0, 1, 2, 3, 4, 5's hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 6, 7, 0, 1, 2, 3, 4, 5's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
+            #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
+            #endif
         }
         offset = (offset + 1) & DWORD_FEATURES_MASK;
         if (feature_mask.s0) {
@@ -493,7 +525,9 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
             atomic_local_add_f(gh_hist + addr, stat1);
             // thread 0, 1, 2, 3, 4, 5, 6, 7 now process feature 7, 0, 1, 2, 3, 4, 5, 6's hessians  for example 0, 1, 2, 3, 4, 5, 6, 7
             // thread 8, 9, 10, 11, 12, 13, 14, 15 now process feature 7, 0, 1, 2, 3, 4, 5, 6's gradients for example 8, 9, 10, 11, 12, 13, 14, 15
+            #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, stat2);
+            #endif
         }
 
         // STAGE 3: accumulate counter
@@ -598,8 +632,34 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
     // now thread 0 - 7  holds feature 0 - 7's gradient for bin 0 and counter bin 0
     // now thread 8 - 15 holds feature 0 - 7's hessian  for bin 0 and counter bin 1
     // now thread 16- 23 holds feature 0 - 7's gradient for bin 1 and counter bin 2
-    // now thread 24- 31 holds feature 0 - 7's hessian  for bin 2 and counter bin 3
+    // now thread 24- 31 holds feature 0 - 7's hessian  for bin 1 and counter bin 3
     // etc,
+
+#if CONST_HESSIAN == 1
+    // Combine the two banks into one, and fill the hessians with counter value * hessian constant
+    barrier(CLK_LOCAL_MEM_FENCE);
+    gh_hist[ltid] = stat_val;
+    if (ltid < LOCAL_SIZE_0 / 2) {
+        cnt_hist[ltid] = cnt_val;
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+    if (is_hessian_first) {
+        // this is the hessians
+        // thread 8 - 15 read counters stored by thread 0 - 7
+        // thread 24- 31 read counters stored by thread 8 - 15
+        // thread 40- 47 read counters stored by thread 16- 23, etc
+        stat_val = const_hessian * 
+                   cnt_hist[((ltid - DWORD_FEATURES) >> (LOG2_DWORD_FEATURES + 1)) * DWORD_FEATURES + (ltid & DWORD_FEATURES_MASK)];
+    }
+    else {
+        // this is the gradients
+        // thread 0 - 7  read gradients stored by thread 8 - 15
+        // thread 16- 23 read gradients stored by thread 24- 31
+        // thread 32- 39 read gradients stored by thread 40- 47, etc
+        stat_val += gh_hist[ltid + DWORD_FEATURES];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+#endif
 
     // write to output
     // write gradients and hessians histogram for all 4 features

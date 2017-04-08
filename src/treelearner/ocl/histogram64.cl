@@ -29,6 +29,10 @@ R""()
 #ifndef USE_DP_FLOAT
 #define USE_DP_FLOAT 0
 #endif
+// ignore hessian, and use the local memory for hessian as an additional bank for gradient
+#ifndef CONST_HESSIAN
+#define CONST_HESSIAN 0
+#endif
 
 
 #define LOCAL_SIZE_0 256
@@ -205,7 +209,11 @@ __kernel void histogram64(__global const uchar4* restrict feature_data_base,
                       __constant const data_size_t* restrict data_indices __attribute__((max_constant_size(65536))), 
                       const data_size_t num_data, 
                       __constant const score_t* restrict ordered_gradients __attribute__((max_constant_size(65536))), 
+#if CONST_HESSIAN == 0
                       __constant const score_t* restrict ordered_hessians __attribute__((max_constant_size(65536))),
+#else
+                      const score_t const_hessian,
+#endif
                       __global char* restrict output_buf,
                       __global volatile int * sync_counters,
                       __global acc_type* restrict hist_buf_base) {
@@ -216,7 +224,11 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
                       __global const data_size_t* data_indices, 
                       const data_size_t num_data, 
                       __global const score_t*  ordered_gradients, 
+#if CONST_HESSIAN == 0
                       __global const score_t*  ordered_hessians,
+#else
+                      const score_t const_hessian,
+#endif
                       __global char* restrict output_buf, 
                       __global volatile int * sync_counters,
                       __global acc_type* restrict hist_buf_base) {
@@ -327,7 +339,9 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     data_size_t ind;
     data_size_t ind_next;
     stat1 = ordered_gradients[subglobal_tid];
+    #if CONST_HESSIAN == 0
     stat2 = ordered_hessians[subglobal_tid];
+    #endif
     #ifdef IGNORE_INDICES
     ind = subglobal_tid;
     #else
@@ -351,7 +365,9 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
         // prefetch the next iteration variables
         // we don't need bondary check because we have made the buffer larger
         stat1_next = ordered_gradients[i + subglobal_size];
+        #if CONST_HESSIAN == 0
         stat2_next = ordered_hessians[i + subglobal_size];
+        #endif
         #ifdef IGNORE_INDICES
         // we need to check to bounds here
         ind_next = i + subglobal_size < num_data ? i + subglobal_size : i;
@@ -360,12 +376,14 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
         #else
         ind_next = data_indices[i + subglobal_size];
         #endif
+        #if CONST_HESSIAN == 0
         // swap gradient and hessian for threads 4, 5, 6, 7
         float tmp = stat1;
         stat1 = is_hessian_first ? stat2 : stat1;
         stat2 = is_hessian_first ? tmp   : stat2;
         // stat1 = select(stat1, stat2, is_hessian_first);
         // stat2 = select(stat2, tmp, is_hessian_first);
+        #endif
 
         // STAGE 2: accumulate gradient and hessian
         offset = (ltid & 0x3);
@@ -382,7 +400,9 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
             atomic_local_add_f(gh_hist + addr, s3_stat1);
             // thread 0, 1, 2, 3 now process feature 0, 1, 2, 3's hessians  for example 0, 1, 2, 3
             // thread 4, 5, 6, 7 now process feature 0, 1, 2, 3's gradients for example 4, 5, 6, 7
+            #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, s3_stat2);
+            #endif
             s3_stat1 = stat1;
             s3_stat2 = stat2;
         }
@@ -405,7 +425,9 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
             atomic_local_add_f(gh_hist + addr, s2_stat1);
             // thread 0, 1, 2, 3 now process feature 1, 2, 3, 0's hessians  for example 0, 1, 2, 3
             // thread 4, 5, 6, 7 now process feature 1, 2, 3, 0's gradients for example 4, 5, 6, 7
+            #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, s2_stat2);
+            #endif
             s2_stat1 = stat1;
             s2_stat2 = stat2;
         }
@@ -435,7 +457,9 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
             atomic_local_add_f(gh_hist + addr, s1_stat1);
             // thread 0, 1, 2, 3 now process feature 2, 3, 0, 1's hessians  for example 0, 1, 2, 3
             // thread 4, 5, 6, 7 now process feature 2, 3, 0, 1's gradients for example 4, 5, 6, 7
+            #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, s1_stat2);
+            #endif
             s1_stat1 = stat1;
             s1_stat2 = stat2;
         }
@@ -458,7 +482,9 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
             atomic_local_add_f(gh_hist + addr, s0_stat1);
             // thread 0, 1, 2, 3 now process feature 3, 0, 1, 2's hessians  for example 0, 1, 2, 3
             // thread 4, 5, 6, 7 now process feature 3, 0, 1, 2's gradients for example 4, 5, 6, 7
+            #if CONST_HESSIAN == 0
             atomic_local_add_f(gh_hist + addr2, s0_stat2);
+            #endif
             s0_stat1 = stat1;
             s0_stat2 = stat2;
         }
@@ -509,28 +535,36 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
     addr2 = addr + 4 - 8 * is_hessian_first;
     atomic_local_add_f(gh_hist + addr, s3_stat1);
+    #if CONST_HESSIAN == 0
     atomic_local_add_f(gh_hist + addr2, s3_stat2);
+    #endif
 
     bin = feature4_prev.s2;
     offset = (offset + 1) & 0x3;
     addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
     addr2 = addr + 4 - 8 * is_hessian_first;
     atomic_local_add_f(gh_hist + addr, s2_stat1);
+    #if CONST_HESSIAN == 0
     atomic_local_add_f(gh_hist + addr2, s2_stat2);
+    #endif
 
     bin = feature4_prev.s1;
     offset = (offset + 1) & 0x3;
     addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
     addr2 = addr + 4 - 8 * is_hessian_first;
     atomic_local_add_f(gh_hist + addr, s1_stat1);
+    #if CONST_HESSIAN == 0
     atomic_local_add_f(gh_hist + addr2, s1_stat2);
+    #endif
 
     bin = feature4_prev.s0;
     offset = (offset + 1) & 0x3;
     addr = bin * HG_BIN_MULT + bank * 8 + is_hessian_first * 4 + offset;
     addr2 = addr + 4 - 8 * is_hessian_first;
     atomic_local_add_f(gh_hist + addr, s0_stat1);
+    #if CONST_HESSIAN == 0
     atomic_local_add_f(gh_hist + addr2, s0_stat2);
+    #endif
     barrier(CLK_LOCAL_MEM_FENCE);
     
     #if ENABLE_ALL_FEATURES == 0
@@ -591,6 +625,10 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     // now thread 4 - 7 holds feature 0, 1, 2, 3's gradient, hessian and count bin 1
     // etc,
 
+    #if CONST_HESSIAN == 1
+    g_val += h_val;
+    h_val = cnt_val * const_hessian;
+    #endif
     // write to output
     // write gradients and hessians histogram for all 4 features
     // output data in linear order for further reduction

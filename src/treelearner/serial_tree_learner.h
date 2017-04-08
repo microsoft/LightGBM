@@ -35,7 +35,7 @@ public:
 
   ~SerialTreeLearner();
 
-  void Init(const Dataset* train_data) override;
+  void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
   void ResetTrainingData(const Dataset* train_data) override;
 

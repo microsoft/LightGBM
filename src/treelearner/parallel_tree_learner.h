@@ -24,7 +24,7 @@ class FeatureParallelTreeLearner: public TREELEARNER_T {
 public:
   explicit FeatureParallelTreeLearner(const TreeConfig* tree_config);
   ~FeatureParallelTreeLearner();
-  void Init(const Dataset* train_data) override;
+  void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
 protected:
   void BeforeTrain() override;
@@ -50,7 +50,7 @@ class DataParallelTreeLearner: public TREELEARNER_T {
 public:
   explicit DataParallelTreeLearner(const TreeConfig* tree_config);
   ~DataParallelTreeLearner();
-  void Init(const Dataset* train_data) override;
+  void Init(const Dataset* train_data, bool is_constant_hessian) override;
   void ResetConfig(const TreeConfig* tree_config) override;
 protected:
   void BeforeTrain() override;
@@ -103,7 +103,7 @@ class VotingParallelTreeLearner: public TREELEARNER_T {
 public:
   explicit VotingParallelTreeLearner(const TreeConfig* tree_config);
   ~VotingParallelTreeLearner() { }
-  void Init(const Dataset* train_data) override;
+  void Init(const Dataset* train_data, bool is_constant_hessian) override;
   void ResetConfig(const TreeConfig* tree_config) override;
 protected:
   void BeforeTrain() override;

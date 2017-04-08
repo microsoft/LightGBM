@@ -18,9 +18,9 @@ DataParallelTreeLearner<TREELEARNER_T>::~DataParallelTreeLearner() {
 }
 
 template <typename TREELEARNER_T>
-void DataParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data) {
+void DataParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, bool is_constant_hessian) {
   // initialize SerialTreeLearner
-  TREELEARNER_T::Init(train_data);
+  TREELEARNER_T::Init(train_data, is_constant_hessian);
   // Get local rank and global machine size
   rank_ = Network::rank();
   num_machines_ = Network::num_machines();
