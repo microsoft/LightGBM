@@ -11,12 +11,28 @@ before_install:
 - export PATH="$HOME/miniconda/bin:$PATH"
 - conda config --set always_yes yes --set changeps1 no
 - conda update -q conda
+- sudo add-apt-repository ppa:george-edison55/cmake-3.x -y
+- sudo apt-get update -q
+- bash .travis/amd_sdk.sh;
+- tar -xjf AMD-SDK.tar.bz2;
+- AMDAPPSDK=${HOME}/AMDAPPSDK;
+- export OPENCL_VENDOR_PATH=${AMDAPPSDK}/etc/OpenCL/vendors;
+- mkdir -p ${OPENCL_VENDOR_PATH};
+- sh AMD-APP-SDK*.sh --tar -xf -C ${AMDAPPSDK};
+- echo libamdocl64.so > ${OPENCL_VENDOR_PATH}/amdocl64.icd;
+- export LD_LIBRARY_PATH=${AMDAPPSDK}/lib/x86_64:${LD_LIBRARY_PATH};
+- chmod +x ${AMDAPPSDK}/bin/x86_64/clinfo;
+- ${AMDAPPSDK}/bin/x86_64/clinfo;
+- export LIBRARY_PATH="$HOME/miniconda/lib:$LIBRARY_PATH"
+- export LD_RUN_PATH="$HOME/miniconda/lib:$LD_RUN_PATH"
+- export CPLUS_INCLUDE_PATH="$HOME/miniconda/include:$AMDAPPSDK/include/:$CPLUS_INCLUDE_PATH"
 
 install:
 - sudo apt-get install -y libopenmpi-dev openmpi-bin build-essential
+- sudo apt-get install -y cmake
 - conda install --yes atlas numpy scipy scikit-learn pandas matplotlib
+- conda install --yes -c conda-forge boost=1.63.0
 - pip install pep8
-
 
 script:
 - cd $TRAVIS_BUILD_DIR
@@ -26,6 +42,14 @@ script:
 - cd $TRAVIS_BUILD_DIR/tests/python_package_test && python test_basic.py && python test_engine.py && python test_sklearn.py && python test_plotting.py
 - cd $TRAVIS_BUILD_DIR && pep8 --ignore=E501 --exclude=./compute .
 - rm -rf build && mkdir build && cd build && cmake -DUSE_MPI=ON ..&& make -j
+- cd $TRAVIS_BUILD_DIR/tests/c_api_test && python test.py
+- cd $TRAVIS_BUILD_DIR/python-package && python setup.py install
+- cd $TRAVIS_BUILD_DIR/tests/python_package_test && python test_basic.py && python test_engine.py && python test_sklearn.py && python test_plotting.py
+- cd $TRAVIS_BUILD_DIR
+- rm -rf build && mkdir build && cd build && cmake -DUSE_GPU=ON -DBOOST_ROOT="$HOME/miniconda/" -DOpenCL_INCLUDE_DIR=$AMDAPPSDK/include/ ..
+- sed -i 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' ../include/LightGBM/config.h
+- make -j$(nproc)
+- sed -i 's/std::string device_type = "gpu";/std::string device_type = "cpu";/' ../include/LightGBM/config.h
 - cd $TRAVIS_BUILD_DIR/tests/c_api_test && python test.py
 - cd $TRAVIS_BUILD_DIR/python-package && python setup.py install
 - cd $TRAVIS_BUILD_DIR/tests/python_package_test && python test_basic.py && python test_engine.py && python test_sklearn.py && python test_plotting.py
