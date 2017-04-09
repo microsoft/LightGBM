@@ -26,10 +26,9 @@ Warning message:
 GitHub repo contains submodules, may not function as expected! 
 ```
 
-If want to build the self-contained R package, you can run ```unix_build_package.sh```(for UNIX) or ```win_build_package.cmd ```(for Windows). Then use ```R CMD INSTALL lightgbm_0.1.tar.gz``` to install.
+If you want to build the self-contained R package, you can run ```unix_build_package.sh```(for UNIX) or ```win_build_package.cmd ```(for Windows). Then use ```R CMD INSTALL lightgbm_0.1.tar.gz``` to install.
 
-
-You can check quickly if your LightGBM R package is working by running the following:
+When your package installation is done, you can check quickly if your LightGBM R package is working by running the following:
 
 ```r
 library(lightgbm)
@@ -41,9 +40,11 @@ model <- lgb.cv(params, dtrain, 10, nfold=5, min_data=1, learning_rate=1, early_
 ```
 ### OSX installation 
 
-The default installation cannot successfully in OSX due to clang in OSX doesn't support openmp.
-You can use following scirpts to change default compiler to gcc, then complie LightGBM R-package:
-```
+The default installation cannot successfully in OSX because clang in OSX doesn't support OpenMP.
+
+You can use following script to change default compiler to gcc, then compile LightGBM R package:
+
+```bash
 brew install gcc --without-multilib
 mkdir -p ~/.R
 touch ~/.R/Makevars
@@ -59,8 +60,10 @@ SHLIB_OPENMP_FCFLAGS = -fopenmp
 SHLIB_OPENMP_FFLAGS = -fopenmp
 EOF
 ```
-Note: for ``LDFLAGS=-L/usr/local/Cellar/gcc/6.3.0/lib`` and ``CPPFLAGS=-I/usr/local/Cellar/gcc/6.3.0/include``, you may need to change ``6.3.0`` to your gcc version. 
 
+Note: for `LDFLAGS=-L/usr/local/Cellar/gcc/6.3.0/lib` and `CPPFLAGS=-I/usr/local/Cellar/gcc/6.3.0/include`, you may need to change `6.3.0` to your gcc version.
+
+To check your LightGBM installation, the test is identical to Linux/Windows versions (check the test provided just before OSX Installation part)
 
 Examples
 ------------
