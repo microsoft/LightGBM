@@ -4,7 +4,7 @@ LightGBM R Package
 Installation
 ------------
 
-Windows users may need to run with administrator rights (either R or the command prompt, depending on the way you are installing this package). Rtools must be installed.
+Windows users may need to run with administrator rights (either R or the command prompt, depending on the way you are installing this package). Rtools must be installed for Windows. Linux users might require the appropriate user write permissions for packages.
 
 You can use a command prompt to install via command line:
 
@@ -40,9 +40,9 @@ model <- lgb.cv(params, dtrain, 10, nfold=5, min_data=1, learning_rate=1, early_
 ```
 ### OSX installation 
 
-The default installation cannot successfully in OSX because clang in OSX doesn't support OpenMP.
+The default installation cannot successfully complete in OSX because clang doesn't support OpenMP.
 
-You can use following script to change default compiler to gcc, then compile LightGBM R package:
+You can use the following script to change default compiler to gcc, then compile LightGBM R package:
 
 ```bash
 brew install gcc --without-multilib
