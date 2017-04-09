@@ -220,10 +220,10 @@ class TestEngine(unittest.TestCase):
         gbm3.save_model('categorical.model')
         gbm4 = lgb.Booster(model_file='categorical.model')
         pred4 = list(gbm4.predict(X_test))
-        self.assertListEqual(pred0, pred1)
-        self.assertListEqual(pred0, pred2)
-        self.assertListEqual(pred0, pred3)
-        self.assertListEqual(pred0, pred4)
+        np.testing.assert_almost_equal(pred0, pred1)
+        np.testing.assert_almost_equal(pred0, pred2)
+        np.testing.assert_almost_equal(pred0, pred3)
+        np.testing.assert_almost_equal(pred0, pred4)
 
 
 print("----------------------------------------------------------------------")
