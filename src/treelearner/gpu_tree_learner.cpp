@@ -243,6 +243,15 @@ void GPUTreeLearner::AllocateGPUMemory() {
   // leave some safe margin for prefetching
   // 256 work-items per workgroup. Each work-item prefetches one tuple for that feature
   int allocated_num_data_ = num_data_ + 256 * (1 << kMaxLogWorkgroupsPerFeature);
+  // clear sparse/dense maps
+  dense_feature_group_map_.clear();
+  device_bin_mults_.clear();
+  sparse_feature_group_map_.clear();
+  // do nothing if no features can be processed on GPU
+  if (!num_dense_feature_groups_) {
+    Log::Warning("GPU acceleration is disabled because no non-trival dense features can be found");
+    return;
+  }
   // allocate memory for all features (FIXME: 4 GB barrier on some devices, need to split to multiple buffers)
   device_features_.reset();
   device_features_ = std::unique_ptr<boost::compute::vector<Feature4>>(new boost::compute::vector<Feature4>(num_dense_feature4_ * num_data_, ctx_));
@@ -315,9 +324,6 @@ void GPUTreeLearner::AllocateGPUMemory() {
                            boost::compute::memory_object::write_only | boost::compute::memory_object::alloc_host_ptr, nullptr);
   // find the dense feature-groups and group then into Feature4 data structure (several feature-groups packed into 4 bytes)
   int i, k, copied_feature4 = 0, dense_ind[dword_features_];
-  dense_feature_group_map_.clear();
-  device_bin_mults_.clear();
-  sparse_feature_group_map_.clear();
   for (i = 0, k = 0; i < num_feature_groups_; ++i) {
     // looking for dword_features_ non-sparse feature-groups
     if (ordered_bins_[i] == nullptr) {
@@ -531,8 +537,6 @@ void GPUTreeLearner::AllocateGPUMemory() {
   }
   // data transfer time
   std::chrono::duration<double, std::milli> end_time = std::chrono::steady_clock::now() - start_time;
-  // setup GPU kernel arguments after we allocating all the buffers
-  SetupKernelArguments();
   Log::Info("%d dense feature groups (%.2f MB) transfered to GPU in %f secs. %d sparse feature groups.", 
             dense_feature_group_map_.size(), ((dense_feature_group_map_.size() + (dword_features_ - 1)) / dword_features_) * num_data_ * sizeof(Feature4) / (1024.0 * 1024.0), 
             end_time * 1e-3, sparse_feature_group_map_.size());
@@ -622,6 +626,10 @@ void GPUTreeLearner::BuildGPUKernels() {
 }
 
 void GPUTreeLearner::SetupKernelArguments() {
+  // do nothing if no features can be processed on GPU
+  if (!num_dense_feature_groups_) {
+    return;
+  }
   for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
     // The only argument that needs to be changed later is num_data_
     if (is_constant_hessian_) {
@@ -711,6 +719,8 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   Log::Info("Using GPU Device: %s, Vendor: %s", dev_.name().c_str(), dev_.vendor().c_str());
   BuildGPUKernels();
   AllocateGPUMemory();
+  // setup GPU kernel arguments after we allocating all the buffers
+  SetupKernelArguments();
 }
 
 Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian) {
@@ -730,6 +740,8 @@ void GPUTreeLearner::ResetTrainingData(const Dataset* train_data) {
   num_feature_groups_ = train_data_->num_feature_groups();
   // GPU memory has to been reallocated because data may have been changed
   AllocateGPUMemory();
+  // setup GPU kernel arguments after we allocating all the buffers
+  SetupKernelArguments();
 }
 
 void GPUTreeLearner::BeforeTrain() {
@@ -739,7 +751,7 @@ void GPUTreeLearner::BeforeTrain() {
   #endif
   // Copy initial full hessians and gradients to GPU.
   // We start copying as early as possible, instead of at ConstructHistogram().
-  if (!use_bagging_) {
+  if (!use_bagging_ && num_dense_feature_groups_) {
     if (!is_constant_hessian_) {
       hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, num_data_ * sizeof(score_t), hessians_);
     }
@@ -759,7 +771,7 @@ void GPUTreeLearner::BeforeTrain() {
   SerialTreeLearner::BeforeTrain();
 
   // use bagging
-  if (data_partition_->leaf_count(0) != num_data_) {
+  if (data_partition_->leaf_count(0) != num_data_ && num_dense_feature_groups_) {
     // On GPU, we start copying indices, gradients and hessians now, instead at ConstructHistogram()
     // copy used gradients and hessians to ordered buffer
     const data_size_t* indices = data_partition_->indices();
@@ -810,7 +822,7 @@ bool GPUTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int ri
   }
 
   // Copy indices, gradients and hessians as early as possible
-  if (smaller_leaf >= 0) {
+  if (smaller_leaf >= 0 && num_dense_feature_groups_) {
     // only need to initialize for smaller leaf
     // Get leaf boundary
     const data_size_t* indices = data_partition_->indices();
@@ -854,6 +866,10 @@ bool GPUTreeLearner::ConstructGPUHistogramsAsync(
   score_t* ordered_gradients, score_t* ordered_hessians) {
 
   if (num_data <= 0) {
+    return false;
+  }
+  // do nothing if no features can be processed on GPU
+  if (!num_dense_feature_groups_) {
     return false;
   }
   
