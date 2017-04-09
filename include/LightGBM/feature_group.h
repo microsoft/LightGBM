@@ -25,10 +25,11 @@ public:
   * \param bin_mappers Bin mapper for features
   * \param num_data Total number of data
   * \param is_enable_sparse True if enable sparse feature
+  * \param sparse_threshold Threshold for treating a feature as a sparse feature
   */
   FeatureGroup(int num_feature,
     std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
-    data_size_t num_data, bool is_enable_sparse) : num_feature_(num_feature) {
+    data_size_t num_data, double sparse_threshold, bool is_enable_sparse) : num_feature_(num_feature) {
     CHECK(static_cast<int>(bin_mappers.size()) == num_feature);
     // use bin at zero to store default_bin
     num_total_bin_ = 1;
@@ -46,7 +47,7 @@ public:
     }
     double sparse_rate = 1.0f - static_cast<double>(cnt_non_zero) / (num_data);
     bin_data_.reset(Bin::CreateBin(num_data, num_total_bin_,
-      sparse_rate, is_enable_sparse, &is_sparse_));
+      sparse_rate, is_enable_sparse, sparse_threshold, &is_sparse_));
   }
   /*!
   * \brief Constructor from memory
@@ -118,6 +119,18 @@ public:
     uint32_t min_bin = bin_offsets_[sub_feature];
     uint32_t max_bin = bin_offsets_[sub_feature + 1] - 1;
     uint32_t default_bin = bin_mappers_[sub_feature]->GetDefaultBin();
+    return bin_data_->GetIterator(min_bin, max_bin, default_bin);
+  }
+  
+  /*!
+   * \brief Returns a BinIterator that can access the entire feature group's raw data.
+   *        The RawGet() function of the iterator should be called for best efficiency.
+   * \return A pointer to the BinIterator object
+   */
+  inline BinIterator* FeatureGroupIterator() {
+    uint32_t min_bin = bin_offsets_[0];
+    uint32_t max_bin = bin_offsets_.back() - 1;
+    uint32_t default_bin = 0;
     return bin_data_->GetIterator(min_bin, max_bin, default_bin);
   }
 

@@ -9,6 +9,7 @@ PROJECT(lightgbm)
 
 OPTION(USE_MPI "MPI based parallel learning" OFF)
 OPTION(USE_OPENMP "Enable OpenMP" ON)
+OPTION(USE_GPU "Enable GPU-acclerated training (EXPERIMENTAL)" OFF)
 
 if(APPLE)
     OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
@@ -34,8 +35,17 @@ else()
     endif()
 endif(USE_OPENMP)
 
+if(USE_GPU)
+    find_package(OpenCL REQUIRED)
+    include_directories(${OpenCL_INCLUDE_DIRS})
+    MESSAGE(STATUS "OpenCL include directory:" ${OpenCL_INCLUDE_DIRS})
+    find_package(Boost 1.56.0 COMPONENTS filesystem system REQUIRED)
+    include_directories(${Boost_INCLUDE_DIRS})
+    ADD_DEFINITIONS(-DUSE_GPU)
+endif(USE_GPU)
+
 if(UNIX OR MINGW OR CYGWIN)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -O3 -Wall -std=c++11")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -O3 -Wall -std=c++11 -Wno-ignored-attributes")
 endif()
 
 if(MSVC)
@@ -65,11 +75,13 @@ endif()
 
 
 SET(LightGBM_HEADER_DIR ${PROJECT_SOURCE_DIR}/include)
+SET(BOOST_COMPUTE_HEADER_DIR ${PROJECT_SOURCE_DIR}/compute/include)
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 
 include_directories (${LightGBM_HEADER_DIR})
+include_directories (${BOOST_COMPUTE_HEADER_DIR})
 
 if(APPLE)
   if (APPLE_OUTPUT_DYLIB)
@@ -104,6 +116,11 @@ if(USE_MPI)
   TARGET_LINK_LIBRARIES(lightgbm ${MPI_CXX_LIBRARIES})
   TARGET_LINK_LIBRARIES(_lightgbm ${MPI_CXX_LIBRARIES})
 endif(USE_MPI)
+
+if(USE_GPU)
+  TARGET_LINK_LIBRARIES(lightgbm ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
+  TARGET_LINK_LIBRARIES(_lightgbm ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
+endif(USE_GPU)
 
 if(WIN32 AND (MINGW OR CYGWIN))
     TARGET_LINK_LIBRARIES(lightgbm Ws2_32)

@@ -92,10 +92,10 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
 
   if (train_data_ != train_data && train_data != nullptr) {
     if (tree_learner_ == nullptr) {
-      tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(new_config->tree_learner_type, &new_config->tree_config));
+      tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(new_config->tree_learner_type, new_config->device_type, &new_config->tree_config));
     }
     // init tree learner
-    tree_learner_->Init(train_data);
+    tree_learner_->Init(train_data, is_constant_hessian_);
 
     // push training metrics
     training_metrics_.clear();

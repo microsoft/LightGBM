@@ -24,8 +24,9 @@ public:
   /*!
   * \brief Initialize tree learner with training dataset
   * \param train_data The used training data
+  * \param is_constant_hessian True if all hessians share the same value
   */
-  virtual void Init(const Dataset* train_data) = 0;
+  virtual void Init(const Dataset* train_data, bool is_constant_hessian) = 0;
 
   virtual void ResetTrainingData(const Dataset* train_data) = 0;
 
@@ -71,10 +72,12 @@ public:
 
   /*!
   * \brief Create object of tree learner
-  * \param type Type of tree learner
+  * \param learner_type Type of tree learner
+  * \param device_type Type of tree learner
   * \param tree_config config of tree
   */
-  static TreeLearner* CreateTreeLearner(const std::string& type,
+  static TreeLearner* CreateTreeLearner(const std::string& learner_type,
+    const std::string& device_type,
     const TreeConfig* tree_config);
 };
 

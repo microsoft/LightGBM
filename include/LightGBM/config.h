@@ -97,6 +97,11 @@ public:
   int num_iteration_predict = -1;
   bool is_pre_partition = false;
   bool is_enable_sparse = true;
+  /*! \brief The threshold of zero elements precentage for treating a feature as a sparse feature.
+   *  Default is 0.8, where a feature is treated as a sparse feature when there are over 80% zeros.
+   *  When setting to 1.0, all features are processed as dense features.
+   */
+  double sparse_threshold = 0.8;
   bool use_two_round_loading = false;
   bool is_save_binary_file = false;
   bool enable_load_from_binary_file = true;
@@ -188,6 +193,16 @@ public:
   // max_depth < 0 means no limit
   int max_depth = -1;
   int top_k = 20;
+  /*! \brief OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform.
+   *  Default value is -1, using the system-wide default platform
+   */
+  int gpu_platform_id = -1;
+  /*! \brief OpenCL device ID in the specified platform. Each GPU in the selected platform has a
+   *  unique device ID. Default value is -1, using the default device in the selected platform
+   */
+  int gpu_device_id = -1;
+  /*! \brief Set to true to use double precision math on GPU (default using single precision) */
+  bool gpu_use_dp = false;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -216,10 +231,13 @@ public:
   // only used for the regression. Will boost from the average labels.
   bool boost_from_average = true;
   std::string tree_learner_type = "serial";
+  std::string device_type = "cpu";
   TreeConfig tree_config;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 private:
   void GetTreeLearnerType(const std::unordered_map<std::string,
+    std::string>& params);
+  void GetDeviceType(const std::unordered_map<std::string,
     std::string>& params);
 };
 
