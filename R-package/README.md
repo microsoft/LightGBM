@@ -19,6 +19,13 @@ You can also install directly from R using the repository with `devtools`:
 devtools::install_github("Microsoft/LightGBM", subdir = "R-package")
 ```
 
+For the `devtools` install scenario, you can safely ignore this message:
+
+```r
+Warning message:
+GitHub repo contains submodules, may not function as expected! 
+```
+
 If want to build the self-contained R package, you can run ```unix_build_package.sh```(for UNIX) or ```win_build_package.cmd ```(for Windows). Then use ```R CMD INSTALL lightgbm_0.1.tar.gz``` to install.
 
 
