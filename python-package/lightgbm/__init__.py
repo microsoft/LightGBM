@@ -10,6 +10,7 @@ from .basic import Booster, Dataset
 from .callback import (early_stopping, print_evaluation, record_evaluation,
                        reset_parameter)
 from .engine import cv, train
+from .gcForest import CascadeForest, MultiGrainedScanning
 
 try:
     from .sklearn import LGBMModel, LGBMRegressor, LGBMClassifier, LGBMRanker
@@ -27,4 +28,5 @@ __all__ = ['Dataset', 'Booster',
            'train', 'cv',
            'LGBMModel', 'LGBMRegressor', 'LGBMClassifier', 'LGBMRanker',
            'print_evaluation', 'record_evaluation', 'reset_parameter', 'early_stopping',
-           'plot_importance', 'plot_metric', 'plot_tree']
+           'plot_importance', 'plot_metric', 'plot_tree',
+           'CascadeForest', 'MultiGrainedScanning']
