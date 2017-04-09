@@ -707,7 +707,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
   dataset->feature_names_ = feature_names_;
   std::vector<std::unique_ptr<BinMapper>> bin_mappers(sample_values.size());
   const data_size_t filter_cnt = static_cast<data_size_t>(
-    static_cast<double>(io_config_.min_data_in_leaf* sample_values.size()) / dataset->num_data_);
+    static_cast<double>(io_config_.min_data_in_leaf* sample_data.size()) / dataset->num_data_);
 
   // start find bins
   if (num_machines == 1) {
