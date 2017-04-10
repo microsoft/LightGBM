@@ -318,6 +318,7 @@ std::string Tree::ToString() {
   str_buf << "internal_count="
     << Common::ArrayToString<data_size_t>(internal_count_, num_leaves_ - 1, ' ') << std::endl;
   str_buf << "shrinkage=" << shrinkage_ << std::endl;
+  str_buf << "has_categorical=" << (has_categorical_ ? 1 : 0) << std::endl;
   str_buf << std::endl;
   return str_buf.str();
 }
@@ -327,6 +328,7 @@ std::string Tree::ToJSON() {
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   str_buf << "\"num_leaves\":" << num_leaves_ << "," << std::endl;
   str_buf << "\"shrinkage\":" << shrinkage_ << "," << std::endl;
+  str_buf << "\"has_categorical\":" << (has_categorical_ ? 1 : 0) << "," << std::endl;
   str_buf << "\"tree_structure\":" << NodeToJSON(0) << std::endl;
 
   return str_buf.str();
@@ -454,6 +456,15 @@ Tree::Tree(const std::string& str) {
   } else {
     shrinkage_ = 1.0f;
   }
+
+  if (key_vals.count("has_categorical")) {
+    int t = 0;
+    Common::Atoi(key_vals["has_categorical"].c_str(), &t);
+    has_categorical_ = t > 0;
+  } else {
+    has_categorical_ = false;
+  }
+
 }
 
 }  // namespace LightGBM

@@ -113,9 +113,8 @@ public:
     }
   }
 
-  std::vector<double> ConvertOutput(std::vector<double>& input) const override {
-    Common::Softmax(input.data(), num_class_);
-    return input;
+  void ConvertOutput(const double* input, double* output) const override {
+    Common::Softmax(input, output, num_class_);
   }
 
   const char* GetName() const override {
@@ -131,7 +130,9 @@ public:
 
   bool SkipEmptyClass() const override { return true; }
 
-  int numTreePerIteration() const override { return num_class_; }
+  int NumTreePerIteration() const override { return num_class_; }
+
+  int NumPredictOneRow() const override { return num_class_; }
 
 private:
   /*! \brief Number of data */
@@ -206,11 +207,10 @@ public:
     return "multiclassova";
   }
 
-  std::vector<double> ConvertOutput(std::vector<double>& input) const override {
+  void ConvertOutput(const double* input, double* output) const override {
     for (int i = 0; i < num_class_; ++i) {
-      input[i] = 1.0f / (1.0f + std::exp(-sigmoid_ * input[i]));
+      output[i] = 1.0f / (1.0f + std::exp(-sigmoid_ * input[i]));
     }
-    return input;
   }
 
   std::string ToString() const override {
@@ -223,7 +223,9 @@ public:
 
   bool SkipEmptyClass() const override { return true; }
 
-  int numTreePerIteration() const override { return num_class_; }
+  int NumTreePerIteration() const override { return num_class_; }
+
+  int NumPredictOneRow() const override { return num_class_; }
 
 private:
   /*! \brief Number of data */

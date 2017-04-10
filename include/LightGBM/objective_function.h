@@ -39,14 +39,12 @@ public:
 
   virtual bool SkipEmptyClass() const { return false; }
 
-  virtual int numTreePerIteration() const { return 1; }
+  virtual int NumTreePerIteration() const { return 1; }
 
-  virtual std::vector<double> ConvertOutput(std::vector<double>& input) const {
-    return input;
-  }
+  virtual int NumPredictOneRow() const { return 1; }
 
-  virtual double ConvertOutput(double input) const {
-    return input;
+  virtual void ConvertOutput(const double* input, double* output) const {
+    output[0] = input[0];
   }
 
   virtual std::string ToString() const = 0;

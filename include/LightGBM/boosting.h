@@ -110,27 +110,29 @@ public:
   */
   virtual void GetPredictAt(int data_idx, double* result, int64_t* out_len) = 0;
 
+  virtual int NumPredictOneRow(int num_iteration, int is_pred_leaf) const = 0;
+
   /*!
   * \brief Prediction for one record, not sigmoid transform
   * \param feature_values Feature value on this record
-  * \return Prediction result for this record
+  * \param output Prediction result for this record
   */
-  virtual std::vector<double> PredictRaw(const double* feature_values) const = 0;
+  virtual void PredictRaw(const double* feature_values, double* output) const = 0;
 
   /*!
   * \brief Prediction for one record, sigmoid transformation will be used if needed
   * \param feature_values Feature value on this record
-  * \return Prediction result for this record
+  * \param output Prediction result for this record
   */
-  virtual std::vector<double> Predict(const double* feature_values) const = 0;
+  virtual void Predict(const double* feature_values, double* output) const = 0;
   
   /*!
   * \brief Prediction for one record with leaf index
   * \param feature_values Feature value on this record
-  * \return Predicted leaf index for this record
+  * \param output Prediction result for this record
   */
-  virtual std::vector<int> PredictLeafIndex(
-    const double* feature_values) const = 0;
+  virtual void PredictLeafIndex(
+    const double* feature_values, double* output) const = 0;
 
   /*!
   * \brief Dump model to json format string
@@ -186,15 +188,23 @@ public:
   virtual int NumberOfTotalModel() const = 0;
   
   /*!
+  * \brief Get number of trees per iteration
+  * \return Number of trees per iteration
+  */
+  virtual int NumTreePerIteration() const = 0;
+
+  /*!
   * \brief Get number of classes
   * \return Number of classes
   */
   virtual int NumberOfClasses() const = 0;
 
   /*!
-  * \brief Set number of used model for prediction
+  * \brief Initial work for the prediction
+  * \param num_iteration number of used iteration
+  * \return the feature indices mapper
   */
-  virtual void SetNumIterationForPred(int num_iteration) = 0;
+  virtual std::vector<int> InitPredict(int num_iteration) = 0;
   
   /*!
   * \brief Name of submodel

@@ -50,13 +50,13 @@ public:
       auto new_tree = std::unique_ptr<Tree>(new Tree(*(tree.get())));
       models_.push_back(std::move(new_tree));
     }
-    num_init_iteration_ = static_cast<int>(models_.size()) / num_class_;
+    num_init_iteration_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
     // push model in current object
     for (const auto& tree : original_models) {
       auto new_tree = std::unique_ptr<Tree>(new Tree(*(tree.get())));
       models_.push_back(std::move(new_tree));
     }
-    num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_class_;
+    num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
   }
 
   /*!
@@ -88,7 +88,7 @@ public:
   */
   void RollbackOneIter() override;
 
-  int GetCurrentIteration() const override { return static_cast<int>(models_.size()) / num_class_; }
+  int GetCurrentIteration() const override { return static_cast<int>(models_.size()) / num_tree_per_iteration_; }
 
   bool EvalAndCheckEarlyStopping() override;
 
@@ -122,26 +122,24 @@ public:
   */
   void GetPredictAt(int data_idx, double* out_result, int64_t* out_len) override;
 
-  /*!
-  * \brief Prediction for one record without sigmoid transformation
-  * \param feature_values Feature value on this record
-  * \return Prediction result for this record
-  */
-  std::vector<double> PredictRaw(const double* feature_values) const override;
+  inline int NumPredictOneRow(int num_iteration, int is_pred_leaf) const override {
+    int num_preb_in_one_row = num_class_;
+    if (is_pred_leaf) {
+      int max_iteration = GetCurrentIteration();
+      if (num_iteration > 0) {
+        num_preb_in_one_row *= static_cast<int>(std::min(max_iteration, num_iteration));
+      } else {
+        num_preb_in_one_row *= max_iteration;
+      }
+    }
+    return num_preb_in_one_row;
+  }
 
-  /*!
-  * \brief Prediction for one record with sigmoid transformation if enabled
-  * \param feature_values Feature value on this record
-  * \return Prediction result for this record
-  */
-  std::vector<double> Predict(const double* feature_values) const override;
+  void PredictRaw(const double* feature_values, double* output) const override;
 
-  /*!
-  * \brief Prediction for one record with leaf index
-  * \param feature_values Feature value on this record
-  * \return Predicted leaf index for this record
-  */
-  std::vector<int> PredictLeafIndex(const double* value) const override;
+  void Predict(const double* feature_values, double* output) const override;
+
+  void PredictLeafIndex(const double* value, double* output) const override;
 
   /*!
   * \brief Dump model to json format string
@@ -194,19 +192,50 @@ public:
   inline int NumberOfTotalModel() const override { return static_cast<int>(models_.size()); }
 
   /*!
+  * \brief Get number of tree per iteration
+  * \return number of tree per iteration
+  */
+  inline int NumTreePerIteration() const override { return num_tree_per_iteration_; }
+
+  /*!
   * \brief Get number of classes
   * \return Number of classes
   */
   inline int NumberOfClasses() const override { return num_class_; }
 
-  /*!
-  * \brief Set number of iterations for prediction
-  */
-  inline void SetNumIterationForPred(int num_iteration) override {
-    num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_class_;
+  inline std::vector<int> InitPredict(int num_iteration) override {
+    num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
     if (num_iteration > 0) {
       num_iteration_for_pred_ = std::min(num_iteration + (boost_from_average_ ? 1 : 0), num_iteration_for_pred_);
     }
+    int used_fidx = 0;
+    // Construct used feature mapper
+    std::vector<int> feature_mapper(max_feature_idx_ + 1, -1);
+    int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;
+
+    #pragma omp parallel for schedule(static, 64) if (total_tree >= 128)
+    for (int i = 0; i < total_tree; ++i) {
+      int num_leaves = models_[i]->num_leaves();
+      for (int j = 0; j < num_leaves - 1; ++j) {
+        int fidx = models_[i]->split_feature(j);
+        if (feature_mapper[fidx] == -1) {
+          #pragma omp critical
+          {
+            if (feature_mapper[fidx] == -1) {
+              feature_mapper[fidx] = used_fidx;
+              ++used_fidx;
+            }
+          }
+        }
+      }
+    }
+
+    #pragma omp parallel for schedule(static, 64) if (total_tree >= 128)
+    for (int i = 0; i < total_tree; ++i) {
+      models_[i]->ReMapFeature(feature_mapper);
+    }
+
+    return feature_mapper;
   }
 
   inline double GetLeafValue(int tree_idx, int leaf_idx) const {

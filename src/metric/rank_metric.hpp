@@ -82,7 +82,7 @@ public:
     return 1.0f;
   }
 
-  std::vector<double> Eval(const double* score, const ObjectiveFunction*, int) const override {
+  std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
     // some buffers for multi-threading sum up
     std::vector<std::vector<double>> result_buffer_;
     for (int i = 0; i < num_threads_; ++i) {
