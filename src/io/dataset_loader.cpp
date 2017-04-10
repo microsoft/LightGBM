@@ -888,7 +888,8 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
       // parser
       parser->ParseOneLine(text_data[i].c_str(), &oneline_features, &tmp_label);
       // set initial score
-      std::vector<double> oneline_init_score = predict_fun_(oneline_features);
+      std::vector<double> oneline_init_score(num_class_);
+      predict_fun_(oneline_features, oneline_init_score.data());
       for (int k = 0; k < num_class_; ++k) {
         init_score[k * dataset->num_data_ + i] = static_cast<double>(oneline_init_score[k]);
       }
@@ -947,7 +948,8 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
       parser->ParseOneLine(lines[i].c_str(), &oneline_features, &tmp_label);
       // set initial score
       if (!init_score.empty()) {
-        std::vector<double> oneline_init_score = predict_fun_(oneline_features);
+        std::vector<double> oneline_init_score(num_class_);
+        predict_fun_(oneline_features, oneline_init_score.data());
         for (int k = 0; k < num_class_; ++k) {
           init_score[k * dataset->num_data_ + start_idx + i] = static_cast<double>(oneline_init_score[k]);
         }

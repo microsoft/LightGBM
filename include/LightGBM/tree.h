@@ -217,8 +217,18 @@ inline int Tree::PredictLeafIndex(const double* feature_values) const {
 
 inline int Tree::GetLeaf(const double* feature_values) const {
   int node = 0;
-  while (node >= 0) {
-    if (decision_funs[decision_type_[node]](
+  if (has_categorical_) {
+    while (node >= 0) {
+      if (decision_funs[decision_type_[node]](
+        feature_values[split_feature_[node]],
+        threshold_[node])) {
+        node = left_child_[node];
+      } else {
+        node = right_child_[node];
+      }
+    }
+  } else {
+    if (NumericalDecision<double>(
       feature_values[split_feature_[node]],
       threshold_[node])) {
       node = left_child_[node];

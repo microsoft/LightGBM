@@ -54,8 +54,7 @@ public:
     return -1.0f;
   }
 
-  std::vector<double> Eval(const double* score, const ObjectiveFunction* objective,
-                           int) const override {
+  std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
     double sum_loss = 0.0f;
     if (objective == nullptr) {
       if (weights_ == nullptr) {
@@ -75,15 +74,16 @@ public:
       if (weights_ == nullptr) {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
-          double prob = objective->ConvertOutput(score[i]);
+          double prob = 0;
+          objective->ConvertOutput(&score[i], &prob);
           // add loss
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob);
         }
       } else {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
-          // sigmoid transform
-          double prob = objective->ConvertOutput(score[i]);
+          double prob = 0;
+          objective->ConvertOutput(&score[i], &prob);
           // add loss
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob) * weights_[i];
         }
@@ -189,8 +189,7 @@ public:
     }
   }
 
-  std::vector<double> Eval(const double* score, const ObjectiveFunction*,
-                           int) const override {
+  std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
     // get indices sorted by score, descent order
     std::vector<data_size_t> sorted_idx;
     for (data_size_t i = 0; i < num_data_; ++i) {

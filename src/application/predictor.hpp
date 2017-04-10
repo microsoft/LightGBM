@@ -29,36 +29,29 @@ public:
   * \param is_raw_score True if need to predict result with raw score
   * \param is_predict_leaf_index True if output leaf index instead of prediction score
   */
-  Predictor(const Boosting* boosting, bool is_raw_score, bool is_predict_leaf_index) {
+  Predictor(const Boosting* boosting, int num_iteration, bool is_raw_score, bool is_predict_leaf_index) {
     boosting_ = boosting;
+    num_pred_one_row_ = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf_index);
     num_features_ = boosting_->MaxFeatureIdx() + 1;
-#pragma omp parallel
-#pragma omp master
-    {
-      num_threads_ = omp_get_num_threads();
-    }
-    for (int i = 0; i < num_threads_; ++i) {
-      features_.push_back(std::vector<double>(num_features_));
-    }
-    features_.shrink_to_fit();
+    features_ = std::vector<double>(num_features_);
     if (is_predict_leaf_index) {
-      predict_fun_ = [this](const std::vector<std::pair<int, double>>& features) {
-        const int tid = PutFeatureValuesToBuffer(features);
+      predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
+        PutFeatureValuesToBuffer(features);
         // get result for leaf index
-        auto result = boosting_->PredictLeafIndex(features_[tid].data());
-        return std::vector<double>(result.begin(), result.end());
+        boosting_->PredictLeafIndex(features_.data(), output);
       };
+
     } else {
       if (is_raw_score) {
-        predict_fun_ = [this](const std::vector<std::pair<int, double>>& features) {
-          const int tid = PutFeatureValuesToBuffer(features);
+        predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
+          PutFeatureValuesToBuffer(features);
           // get result without sigmoid transformation
-          return boosting_->PredictRaw(features_[tid].data());
+          boosting_->PredictRaw(features_.data(), output);
         };
       } else {
-        predict_fun_ = [this](const std::vector<std::pair<int, double>>& features) {
-          const int tid = PutFeatureValuesToBuffer(features);
-          return boosting_->Predict(features_[tid].data());
+        predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
+          PutFeatureValuesToBuffer(features);
+          boosting_->Predict(features_.data(), output);
         };
       }
     }
@@ -81,11 +74,11 @@ public:
   void Predict(const char* data_filename, const char* result_filename, bool has_header) {
     FILE* result_file;
 
-#ifdef _MSC_VER
+    #ifdef _MSC_VER
     fopen_s(&result_file, result_filename, "w");
-#else
+    #else
     result_file = fopen(result_filename, "w");
-#endif
+    #endif
 
     if (result_file == NULL) {
       Log::Fatal("Prediction results file %s doesn't exist", data_filename);
@@ -108,52 +101,43 @@ public:
       [this, &parser_fun, &result_file]
     (data_size_t, const std::vector<std::string>& lines) {
       std::vector<std::pair<int, double>> oneline_features;
-      std::vector<std::string> pred_result(lines.size(), "");
-      OMP_INIT_EX();
-#pragma omp parallel for schedule(static) private(oneline_features)
       for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); ++i) {
-        OMP_LOOP_EX_BEGIN();
         oneline_features.clear();
         // parser
         parser_fun(lines[i].c_str(), &oneline_features);
         // predict
-        pred_result[i] = Common::Join<double>(predict_fun_(oneline_features), "\t");
-        OMP_LOOP_EX_END();
-      }
-      OMP_THROW_EX();
-      for (size_t i = 0; i < pred_result.size(); ++i) {
-        fprintf(result_file, "%s\n", pred_result[i].c_str());
+        std::vector<double> result(num_pred_one_row_);
+        predict_fun_(oneline_features, result.data());
+        auto str_result = Common::Join<double>(result, "\t");
+        fprintf(result_file, "%s\n", str_result.c_str());
       }
     };
     TextReader<data_size_t> predict_data_reader(data_filename, has_header);
     predict_data_reader.ReadAllAndProcessParallel(process_fun);
-
     fclose(result_file);
   }
 
 private:
-  int PutFeatureValuesToBuffer(const std::vector<std::pair<int, double>>& features) {
-    int tid = omp_get_thread_num();
-    // init feature value
-    std::memset(features_[tid].data(), 0, sizeof(double)*num_features_);
+  void PutFeatureValuesToBuffer(const std::vector<std::pair<int, double>>& features) {
+    std::memset(features_.data(), 0, sizeof(double)*num_features_);
     // put feature value
-    for (const auto& p : features) {
-      if (p.first < num_features_) {
-        features_[tid][p.first] = p.second;
+    int loop_size = static_cast<int>(features.size());
+    #pragma omp parallel for schedule(static, 512) if(loop_size >= 1024) 
+    for (int i = 0; i < loop_size; ++i) {
+      if (features[i].first < num_features_) {
+        features_[features[i].first] = features[i].second;
       }
     }
-    return tid;
   }
   /*! \brief Boosting model */
   const Boosting* boosting_;
   /*! \brief Buffer for feature values */
-  std::vector<std::vector<double>> features_;
+  std::vector<double> features_;
   /*! \brief Number of features */
   int num_features_;
-  /*! \brief Number of threads */
-  int num_threads_;
   /*! \brief function for prediction */
   PredictFunction predict_fun_;
+  int num_pred_one_row_;
 };
 
 }  // namespace LightGBM

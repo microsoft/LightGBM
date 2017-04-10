@@ -48,7 +48,7 @@ public:
     }
   }
 
-  std::vector<double> Eval(const double* score, const ObjectiveFunction* objective, int) const override {
+  std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
     double sum_loss = 0.0f;
     if (objective == nullptr) {
       if (weights_ == nullptr) {
@@ -69,13 +69,17 @@ public:
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], objective->ConvertOutput(score[i]), huber_delta_, fair_c_);
+          double t = 0;
+          objective->ConvertOutput(&score[i], &t);
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], t, huber_delta_, fair_c_);
         }
       } else {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], objective->ConvertOutput(score[i]), huber_delta_, fair_c_) * weights_[i];
+          double t = 0;
+          objective->ConvertOutput(&score[i], &t);
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], t, huber_delta_, fair_c_) * weights_[i];
         }
       }
     }

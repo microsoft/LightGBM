@@ -34,8 +34,7 @@ public:
   * \brief Calcaluting and printing metric result
   * \param score Current prediction score
   */
-  virtual std::vector<double> Eval(const double* score, const ObjectiveFunction* objective,
-                                   int num_tree_per_iteration) const = 0;
+  virtual std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const = 0;
 
   Metric() = default;
   /*! \brief Disable copy */
