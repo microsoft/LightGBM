@@ -111,6 +111,13 @@ public:
     shrinkage_ *= rate;
   }
 
+  inline void ReMapFeature(const std::vector<int>& feature_mapper) {
+    mapped_feature_ = split_feature_;
+    for (int i = 0; i < num_leaves_ - 1; ++i) {
+      mapped_feature_[i] = feature_mapper[split_feature_[i]];
+    }
+  }
+
   /*! \brief Serialize this object to string*/
   std::string ToString();
 
@@ -194,8 +201,9 @@ private:
   std::vector<int> leaf_depth_;
   double shrinkage_;
   bool has_categorical_;
+  /*! \brief buffer of mapped split_feature_  */
+  std::vector<int> mapped_feature_;
 };
-
 
 inline double Tree::Predict(const double* feature_values) const {
   if (num_leaves_ > 1) {
@@ -220,7 +228,7 @@ inline int Tree::GetLeaf(const double* feature_values) const {
   if (has_categorical_) {
     while (node >= 0) {
       if (decision_funs[decision_type_[node]](
-        feature_values[split_feature_[node]],
+        feature_values[mapped_feature_[node]],
         threshold_[node])) {
         node = left_child_[node];
       } else {
@@ -230,7 +238,7 @@ inline int Tree::GetLeaf(const double* feature_values) const {
   } else {
     while (node >= 0) {
       if (NumericalDecision<double>(
-        feature_values[split_feature_[node]],
+        feature_values[mapped_feature_[node]],
         threshold_[node])) {
         node = left_child_[node];
       } else {

@@ -164,7 +164,6 @@ public:
                std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
                double* out_result, int64_t* out_len) {
     std::lock_guard<std::mutex> lock(mutex_);
-    boosting_->SetNumIterationForPred(num_iteration);
     bool is_predict_leaf = false;
     bool is_raw_score = false;
     if (predict_type == C_API_PREDICT_LEAF_INDEX) {
@@ -189,7 +188,6 @@ public:
   void Predict(int num_iteration, int predict_type, const char* data_filename,
                int data_has_header, const char* result_filename) {
     std::lock_guard<std::mutex> lock(mutex_);
-    boosting_->SetNumIterationForPred(num_iteration);
     bool is_predict_leaf = false;
     bool is_raw_score = false;
     if (predict_type == C_API_PREDICT_LEAF_INDEX) {

@@ -239,7 +239,6 @@ void Application::Train() {
 
 
 void Application::Predict() {
-  boosting_->SetNumIterationForPred(config_.io_config.num_iteration_predict);
   // create predictor
   Predictor predictor(boosting_.get(), config_.io_config.num_iteration_predict, config_.io_config.is_predict_raw_score,
                       config_.io_config.is_predict_leaf_index);

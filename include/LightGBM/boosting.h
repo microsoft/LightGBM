@@ -200,9 +200,11 @@ public:
   virtual int NumberOfClasses() const = 0;
 
   /*!
-  * \brief Set number of used model for prediction
+  * \brief Initial work for the prediction
+  * \param num_iteration number of used iteration
+  * \return the feature indices mapper
   */
-  virtual void SetNumIterationForPred(int num_iteration) = 0;
+  virtual std::vector<int> InitPredict(int num_iteration) = 0;
   
   /*!
   * \brief Name of submodel
