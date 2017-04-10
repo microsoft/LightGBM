@@ -73,7 +73,7 @@ public:
       DroppingTrees();
       is_update_score_cur_iter_ = true;
     }
-    *out_len = static_cast<int64_t>(train_score_updater_->num_data()) * num_tree_per_iteration_;
+    *out_len = static_cast<int64_t>(train_score_updater_->num_data()) * num_class_;
     return train_score_updater_->score();
   }
 
