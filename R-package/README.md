@@ -4,7 +4,7 @@ LightGBM R Package
 Installation
 ------------
 
-Windows users may need to run with administrator rights (either R or the command prompt, depending on the way you are installing this package). Rtools must be installed.
+Windows users may need to run with administrator rights (either R or the command prompt, depending on the way you are installing this package). Rtools must be installed for Windows. Linux users might require the appropriate user write permissions for packages.
 
 You can use a command prompt to install via command line:
 
@@ -19,10 +19,16 @@ You can also install directly from R using the repository with `devtools`:
 devtools::install_github("Microsoft/LightGBM", subdir = "R-package")
 ```
 
-If want to build the self-contained R package, you can run ```unix_build_package.sh```(for UNIX) or ```win_build_package.cmd ```(for Windows). Then use ```R CMD INSTALL lightgbm_0.1.tar.gz``` to install.
+For the `devtools` install scenario, you can safely ignore this message:
 
+```r
+Warning message:
+GitHub repo contains submodules, may not function as expected! 
+```
 
-You can check quickly if your LightGBM R package is working by running the following:
+If you want to build the self-contained R package, you can run ```unix_build_package.sh```(for UNIX) or ```win_build_package.cmd ```(for Windows). Then use ```R CMD INSTALL lightgbm_0.1.tar.gz``` to install.
+
+When your package installation is done, you can check quickly if your LightGBM R package is working by running the following:
 
 ```r
 library(lightgbm)
@@ -34,9 +40,11 @@ model <- lgb.cv(params, dtrain, 10, nfold=5, min_data=1, learning_rate=1, early_
 ```
 ### OSX installation 
 
-The default installation cannot successfully in OSX due to clang in OSX doesn't support openmp.
-You can use following scirpts to change default compiler to gcc, then complie LightGBM R-package:
-```
+The default installation cannot successfully complete in OSX because clang doesn't support OpenMP.
+
+You can use the following script to change default compiler to gcc, then compile LightGBM R package:
+
+```bash
 brew install gcc --without-multilib
 mkdir -p ~/.R
 touch ~/.R/Makevars
@@ -52,8 +60,10 @@ SHLIB_OPENMP_FCFLAGS = -fopenmp
 SHLIB_OPENMP_FFLAGS = -fopenmp
 EOF
 ```
-Note: for ``LDFLAGS=-L/usr/local/Cellar/gcc/6.3.0/lib`` and ``CPPFLAGS=-I/usr/local/Cellar/gcc/6.3.0/include``, you may need to change ``6.3.0`` to your gcc version. 
 
+Note: for `LDFLAGS=-L/usr/local/Cellar/gcc/6.3.0/lib` and `CPPFLAGS=-I/usr/local/Cellar/gcc/6.3.0/include`, you may need to change `6.3.0` to your gcc version.
+
+To check your LightGBM installation, the test is identical to Linux/Windows versions (check the test provided just before OSX Installation part)
 
 Examples
 ------------
