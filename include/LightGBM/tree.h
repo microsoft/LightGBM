@@ -228,12 +228,14 @@ inline int Tree::GetLeaf(const double* feature_values) const {
       }
     }
   } else {
-    if (NumericalDecision<double>(
-      feature_values[split_feature_[node]],
-      threshold_[node])) {
-      node = left_child_[node];
-    } else {
-      node = right_child_[node];
+    while (node >= 0) {
+      if (NumericalDecision<double>(
+        feature_values[split_feature_[node]],
+        threshold_[node])) {
+        node = left_child_[node];
+      } else {
+        node = right_child_[node];
+      }
     }
   }
   return ~node;
