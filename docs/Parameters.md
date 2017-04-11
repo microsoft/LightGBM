@@ -53,6 +53,10 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
   * Number of threads for LightGBM. 
   * For the best speed, set this to the number of **real CPU cores**, not the number of threads (most CPU using [hyper-threading](https://en.wikipedia.org/wiki/Hyper-threading) to generate 2 threads per CPU core).
   * For parallel learning, should not use full CPU cores since this will cause poor performance for the network.
+* ```device```, default=```cpu```, options=```cpu```,```gpu```
+  * Choose device for the tree learning, can use gpu to achieve the faster learning.
+  * Note: 1. Recommend use the smaller ```max_bin```(e.g ```63```) to get the better speed up. 2. For the faster speed, GPU use 32-bit float point to sum up by default, may affect the accuracy for some tasks. You can set ```gpu_use_dp=true``` to enable 64-bit float point, but it will slow down the training. 3. Refer to [Installation Guide](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support) to build with GPU .
+
 
 ## Learning control parameters
 * ```max_depth```, default=```-1```, type=int
@@ -234,6 +238,17 @@ Following parameters are used for parallel learning, and only used for base(sock
 * ```machine_list_file```, default=```""```, type=string
   * File that list machines for this parallel learning application
   * Each line contains one IP and one port for one machine. The format is ```ip port```, separate by space.
+
+## GPU parameters
+
+* ```gpu_platform_id```, default=```-1```, type=int
+  * OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform.
+  * Default value is -1, using the system-wide default platform.
+* ```gpu_device_id```, default=```-1```, type=int
+  * OpenCL device ID in the specified platform. Each GPU in the selected platform has a unique device ID. 
+  * Default value is -1, using the default device in the selected platform. 
+* ```gpu_use_dp```, default=```false```, type=bool
+  * Set to true to use double precision math on GPU (default using single precision).
 
 ## Others
 

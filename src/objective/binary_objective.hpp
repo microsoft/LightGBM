@@ -116,13 +116,8 @@ public:
     return "binary";
   }
 
-  std::vector<double> ConvertOutput(std::vector<double>& input) const override {
-    input[0] = 1.0f / (1.0f + std::exp(-sigmoid_ * input[0]));
-    return input;
-  }
-
-  double ConvertOutput(double input) const override {
-    return 1.0f / (1.0f + std::exp(-sigmoid_ * input));
+  void ConvertOutput(const double* input, double* output) const override {
+    output[0] = 1.0f / (1.0f + std::exp(-sigmoid_ * input[0]));
   }
 
   std::string ToString() const override {

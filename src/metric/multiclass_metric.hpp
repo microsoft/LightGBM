@@ -15,8 +15,8 @@ namespace LightGBM {
 template<typename PointWiseLossCalculator>
 class MulticlassMetric: public Metric {
 public:
-  explicit MulticlassMetric(const MetricConfig&) {
-
+  explicit MulticlassMetric(const MetricConfig& config) {
+    num_class_ = config.num_class;
   }
 
   virtual ~MulticlassMetric() {
@@ -49,31 +49,38 @@ public:
     return -1.0f;
   }
 
-  std::vector<double> Eval(const double* score, const ObjectiveFunction* objective,
-                           int num_tree_per_iteration) const override {
+  std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
     double sum_loss = 0.0;
+    int num_tree_per_iteration = num_class_;
+    int num_pred_per_row = num_class_;
+    if (objective != nullptr) {
+      num_tree_per_iteration = objective->NumTreePerIteration();
+      num_pred_per_row = objective->NumPredictOneRow();
+    }
     if (objective != nullptr) {
       if (weights_ == nullptr) {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
-          std::vector<double> rec(num_tree_per_iteration);
+          std::vector<double> raw_score(num_tree_per_iteration);
           for (int k = 0; k < num_tree_per_iteration; ++k) {
             size_t idx = static_cast<size_t>(num_data_) * k + i;
-            rec[k] = static_cast<double>(score[idx]);
+            raw_score[k] = static_cast<double>(score[idx]);
           }
-          rec = objective->ConvertOutput(rec);
+          std::vector<double> rec(num_pred_per_row);
+          objective->ConvertOutput(raw_score.data(), rec.data());
           // add loss
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec);
         }
       } else {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
-          std::vector<double> rec(num_tree_per_iteration);
+          std::vector<double> raw_score(num_tree_per_iteration);
           for (int k = 0; k < num_tree_per_iteration; ++k) {
             size_t idx = static_cast<size_t>(num_data_) * k + i;
-            rec[k] = static_cast<double>(score[idx]);
+            raw_score[k] = static_cast<double>(score[idx]);
           }
-          rec = objective->ConvertOutput(rec);
+          std::vector<double> rec(num_pred_per_row);
+          objective->ConvertOutput(raw_score.data(), rec.data());
           // add loss
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], rec) * weights_[i];
         }
@@ -118,6 +125,7 @@ private:
   double sum_weights_;
   /*! \brief Name of this test set */
   std::vector<std::string> name_;
+  int num_class_;
 };
 
 /*! \brief L2 loss for multiclass task */

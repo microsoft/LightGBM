@@ -42,7 +42,7 @@ public:
   inline VAL_T InnerRawGet(data_size_t idx);
 
   inline uint32_t Get( data_size_t idx) override {
-    VAL_T ret = RawGet(idx);
+    VAL_T ret = InnerRawGet(idx);
     if (ret >= min_bin_ && ret <= max_bin_) {
       return ret - min_bin_ + bias_;
     } else {

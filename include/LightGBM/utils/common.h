@@ -377,18 +377,18 @@ inline void Softmax(std::vector<double>* p_rec) {
   }
 }
 
-inline void Softmax(double* rec, int len) {
-  double wmax = rec[0];
+inline void Softmax(const double* input, double* output, int len) {
+  double wmax = input[0];
   for (int i = 1; i < len; ++i) {
-    wmax = std::max(rec[i], wmax);
+    wmax = std::max(input[i], wmax);
   }
   double wsum = 0.0f;
   for (int i = 0; i < len; ++i) {
-    rec[i] = std::exp(rec[i] - wmax);
-    wsum += rec[i];
+    output[i] = std::exp(input[i] - wmax);
+    wsum += output[i];
   }
   for (int i = 0; i < len; ++i) {
-    rec[i] /= static_cast<double>(wsum);
+    output[i] /= static_cast<double>(wsum);
   }
 }
 
