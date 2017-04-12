@@ -1045,3 +1045,27 @@ The methods of each Class is in alphabetical order.
     Returns
     -------
     ax : matplotlib Axes
+
+#### create_tree_digraph(booster, tree_index=0, graph_attr=None, node_attr=None, edge_attr=None, show_info=None):
+    Create a digraph of specified tree.
+
+    Parameters
+    ----------
+    booster : Booster, LGBMModel
+        Booster or LGBMModel instance.
+    tree_index : int, default 0
+        Specify tree index of target tree.
+    graph_attr : dict
+        Mapping of (attribute, value) pairs for the graph.
+    node_attr : dict
+        Mapping of (attribute, value) pairs set for all nodes.
+    edge_attr : dict
+        Mapping of (attribute, value) pairs set for all edges.
+    show_info : list
+        Information shows on nodes.
+        options: 'split_gain', 'internal_value', 'internal_count' or 'leaf_count'.
+
+    Returns
+    -------
+    graph : graphviz Digraph
+
