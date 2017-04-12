@@ -113,8 +113,6 @@ public:
   inline static double GetDiscount(data_size_t k) { return discount_[k]; }
 
 private:
-  /*! \brief True if inited, avoid init multi times */
-  static bool is_inited_;
   /*! \brief store gains for different label */
   static std::vector<double> label_gain_;
   /*! \brief store discount score for different position */

@@ -10,25 +10,19 @@
 namespace LightGBM {
 
 /*! \brief Declaration for some static members */
-bool DCGCalculator::is_inited_ = false;
 std::vector<double> DCGCalculator::label_gain_;
 std::vector<double> DCGCalculator::discount_;
 const data_size_t DCGCalculator::kMaxPosition = 10000;
 
 void DCGCalculator::Init(std::vector<double> input_label_gain) {
-  //  only inited one time
-  if (is_inited_) { return; }
-  label_gain_.clear();
+  label_gain_.resize(input_label_gain.size());
   for(size_t i = 0;i < input_label_gain.size();++i){
-    label_gain_.push_back(static_cast<double>(input_label_gain[i]));
+    label_gain_[i] = static_cast<double>(input_label_gain[i]);
   }
-  label_gain_.shrink_to_fit();
-  discount_.clear();
+  discount_.resize(kMaxPosition);
   for (data_size_t i = 0; i < kMaxPosition; ++i) {
-    discount_.emplace_back(1.0f / std::log2(2.0f + i));
+    discount_[i] = 1.0f / std::log2(2.0f + i);
   }
-  discount_.shrink_to_fit();
-  is_inited_ = true;
 }
 
 double DCGCalculator::CalMaxDCGAtK(data_size_t k, const float* label, data_size_t num_data) {
