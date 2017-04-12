@@ -880,7 +880,7 @@ void GBDT::CopyToPredictBuffer(const std::vector<std::pair<int, double>>& featur
 
 void GBDT::ClearPredictBuffer(const std::vector<std::pair<int, double>>& features) const {
   if (features.size() < static_cast<size_t>(max_feature_idx_ / 2)) {
-    std::memset(predict_buf_.data(), 0, sizeof(double)*(features.size()));
+    std::memset(predict_buf_.data(), 0, sizeof(double)*(predict_buf_.size()));
   } else {
     int loop_size = static_cast<int>(features.size());
     #pragma omp parallel for schedule(static,128) if (loop_size >= 256)
