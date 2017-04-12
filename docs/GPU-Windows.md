@@ -161,7 +161,7 @@ Keep Git Bash open.
 
 Installing cmake requires one download first and then a lot of configuration for LightGBM:
 
-[Downloading cmake](https://cloud.githubusercontent.com/assets/9083669/24919759/fe5f4d90-1ee4-11e7-992e-00f8d9bfe6dd.png)
+![Downloading cmake](https://cloud.githubusercontent.com/assets/9083669/24919759/fe5f4d90-1ee4-11e7-992e-00f8d9bfe6dd.png)
 
 * Download cmake 3.8.0 here: https://cmake.org/download/.
 * Install cmake.
@@ -172,7 +172,7 @@ Installing cmake requires one download first and then a lot of configuration for
 
 ![Create directory](https://cloud.githubusercontent.com/assets/9083669/24921175/33feee92-1eea-11e7-8330-6d8e519a6177.png)
 
-[MinGW makefiles to use](https://cloud.githubusercontent.com/assets/9083669/24921193/404dd384-1eea-11e7-872e-6220e0f8b321.png)
+![MinGW makefiles to use](https://cloud.githubusercontent.com/assets/9083669/24921193/404dd384-1eea-11e7-872e-6220e0f8b321.png)
 
 * Lookup for `USE_GPU` and check the checkbox
 
