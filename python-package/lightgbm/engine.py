@@ -195,7 +195,11 @@ def train(params, train_set, num_boost_round=100,
                                         evaluation_result_list=evaluation_result_list))
         except callback.EarlyStopException as earlyStopException:
             booster.best_iteration = earlyStopException.best_iteration + 1
+            evaluation_result_list = earlyStopException.best_score
             break
+    booster.best_score = collections.defaultdict(dict)
+    for dataset_name, eval_name, score, _ in evaluation_result_list:
+        booster.best_score[dataset_name][eval_name] = score
     return booster
 
 

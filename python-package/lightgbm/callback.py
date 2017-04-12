@@ -15,9 +15,10 @@ class EarlyStopException(Exception):
     best_iteration : int
         The best iteration stopped.
     """
-    def __init__(self, best_iteration):
+    def __init__(self, best_iteration, best_score):
         super(EarlyStopException, self).__init__()
         self.best_iteration = best_iteration
+        self.best_score = best_score
 
 
 # Callback environment used by callbacks
@@ -162,7 +163,7 @@ def early_stopping(stopping_rounds, verbose=True):
     """
     best_score = []
     best_iter = []
-    best_msg = []
+    best_score_list = []
     cmp_op = []
 
     def init(env):
@@ -176,8 +177,7 @@ def early_stopping(stopping_rounds, verbose=True):
 
         for eval_ret in env.evaluation_result_list:
             best_iter.append(0)
-            if verbose:
-                best_msg.append(None)
+            best_score_list.append(None)
             if eval_ret[3]:
                 best_score.append(float('-inf'))
                 cmp_op.append(gt)
@@ -189,20 +189,16 @@ def early_stopping(stopping_rounds, verbose=True):
         """internal function"""
         if not cmp_op:
             init(env)
-        best_msg_buffer = None
         for i in range_(len(env.evaluation_result_list)):
             score = env.evaluation_result_list[i][2]
             if cmp_op[i](score, best_score[i]):
                 best_score[i] = score
                 best_iter[i] = env.iteration
-                if verbose:
-                    if not best_msg_buffer:
-                        best_msg_buffer = '[%d]\t%s' % (
-                            env.iteration + 1, '\t'.join([_format_eval_result(x) for x in env.evaluation_result_list]))
-                    best_msg[i] = best_msg_buffer
+                best_score_list[i] = env.evaluation_result_list
             elif env.iteration - best_iter[i] >= stopping_rounds:
                 if verbose:
-                    print('Early stopping, best iteration is:\n' + best_msg[i])
-                raise EarlyStopException(best_iter[i])
+                    print('Early stopping, best iteration is:\n[%d]\t%s' % (
+                        best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
+                raise EarlyStopException(best_iter[i], best_score_list[i])
     callback.order = 30
     return callback

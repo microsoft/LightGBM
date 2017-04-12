@@ -273,6 +273,7 @@ class LGBMModel(LGBMModelBase):
         self._Booster = None
         self.evals_result = None
         self.best_iteration = -1
+        self.best_score = {}
         if callable(self.objective):
             self.fobj = _objective_function_wrapper(self.objective)
         else:
@@ -414,6 +415,7 @@ class LGBMModel(LGBMModelBase):
 
         if early_stopping_rounds is not None:
             self.best_iteration = self._Booster.best_iteration
+        self.best_score = self._Booster.best_score
         return self
 
     def predict(self, X, raw_score=False, num_iteration=0):
