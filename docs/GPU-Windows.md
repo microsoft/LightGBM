@@ -340,7 +340,7 @@ OpenCL_INCLUDE_DIR = "C:/Program Files (x86)/AMD APP SDK/3.0/include"
 OpenCL_LIBRARY = "C:/Program Files (x86)/AMD APP SDK/3.0/lib/x86_64"
 ```
 
-![Getting R Makeconf](https://cloud.githubusercontent.com/assets/9083669/24959908/70b6fba4-1f94-11e7-8781-8ad39663ddb5.png)
+![Getting R Makeconf](https://cloud.githubusercontent.com/assets/9083669/24978322/8f374ac0-1fd0-11e7-9164-ace708d600cc.png)
 
 From there, you have two solutions:
 
@@ -357,6 +357,28 @@ LGBM_RFLAGS = -DUSE_SOCKET -DUSE_GPU=1
 PKG_CPPFLAGS= -I$(PKGROOT)/include -I$(BOOST_INCLUDE_DIR) -I$(OpenCL_INCLUDE_DIR) -I../compute/include $(LGBM_RFLAGS)
 
 PKG_LIBS = $(SHLIB_OPENMP_CFLAGS) $(SHLIB_PTHREAD_FLAGS) -lws2_32 -liphlpapi -L$(BOOST_LIBRARY) -lboost_filesystem -lboost_system -L$(OpenCL_LIBRARY) -lOpenCL
+```
+
+Your `Makevars.win` will look like this:
+
+![Makevars look](https://cloud.githubusercontent.com/assets/9083669/24978371/b9124674-1fd0-11e7-8e3d-4ebb3d6340dd.png)
+
+Or, copy & paste this:
+
+```r
+# package root
+PKGROOT=../../
+
+ENABLE_STD_THREAD=1
+CXX_STD = CXX11
+
+LGBM_RFLAGS = -DUSE_SOCKET -DUSE_GPU=1
+
+PKG_CPPFLAGS= -I$(PKGROOT)/include -I$(BOOST_INCLUDE_DIR) -I$(OpenCL_INCLUDE_DIR) -I../compute/include $(LGBM_RFLAGS)
+PKG_CXXFLAGS= $(SHLIB_OPENMP_CFLAGS) $(SHLIB_PTHREAD_FLAGS) -std=c++11
+PKG_LIBS = $(SHLIB_OPENMP_CFLAGS) $(SHLIB_PTHREAD_FLAGS) -lws2_32 -liphlpapi -L$(BOOST_LIBRARY) -lboost_filesystem -lboost_system -L$(OpenCL_LIBRARY) -lOpenCL
+OBJECTS = ./lightgbm-all.o ./lightgbm_R.o
+
 ```
 
 Now, we need to install LightGBM as usual:
