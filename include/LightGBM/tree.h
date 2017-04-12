@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include <unordered_map>
 
 namespace LightGBM {
 
@@ -88,9 +87,6 @@ public:
   inline double Predict(const double* feature_values) const;
   inline int PredictLeafIndex(const double* feature_values) const;
 
-  inline double Predict(const std::unordered_map<int, double>& feature_values) const;
-  inline int PredictLeafIndex(const std::unordered_map<int,double>& feature_values) const;
-
   /*! \brief Get Number of leaves*/
   inline int num_leaves() const { return num_leaves_; }
 
@@ -158,7 +154,6 @@ private:
   * \return Leaf index
   */
   inline int GetLeaf(const double* feature_values) const;
-  inline int GetLeaf(const std::unordered_map<int,double>& feature_values) const;
 
   /*! \brief Serialize one node to json*/
   inline std::string NodeToJSON(int index);
@@ -219,24 +214,6 @@ inline int Tree::PredictLeafIndex(const double* feature_values) const {
   }
 }
 
-inline double Tree::Predict(const std::unordered_map<int,double>& feature_values) const {
-  if (num_leaves_ > 1) {
-    int leaf = GetLeaf(feature_values);
-    return LeafOutput(leaf);
-  } else {
-    return 0.0f;
-  }
-}
-
-inline int Tree::PredictLeafIndex(const std::unordered_map<int,double>& feature_values) const {
-  if (num_leaves_ > 1) {
-    int leaf = GetLeaf(feature_values);
-    return leaf;
-  } else {
-    return 0;
-  }
-}
-
 inline int Tree::GetLeaf(const double* feature_values) const {
   int node = 0;
   if (has_categorical_) {
@@ -253,39 +230,6 @@ inline int Tree::GetLeaf(const double* feature_values) const {
     while (node >= 0) {
       if (NumericalDecision<double>(
         feature_values[split_feature_[node]],
-        threshold_[node])) {
-        node = left_child_[node];
-      } else {
-        node = right_child_[node];
-      }
-    }
-  }
-  return ~node;
-}
-
-inline int Tree::GetLeaf(const std::unordered_map<int,double>& feature_values) const {
-  int node = 0;
-  if (has_categorical_) {
-    while (node >= 0) {
-      double fv = 0.0f;
-      auto iter = feature_values.find(split_feature_[node]);
-      if (iter != feature_values.end()) {
-        fv = iter->second;
-      }
-      if (decision_funs[decision_type_[node]](fv, threshold_[node])) {
-        node = left_child_[node];
-      } else {
-        node = right_child_[node];
-      }
-    }
-  } else {
-    while (node >= 0) {
-      double fv = 0.0f;
-      auto iter = feature_values.find(split_feature_[node]);
-      if (iter != feature_values.end()) {
-        fv = iter->second;
-      }
-      if (NumericalDecision<double>(fv,
         threshold_[node])) {
         node = left_child_[node];
       } else {
