@@ -1040,6 +1040,11 @@ class Dataset(object):
         self.weight = weight
         if self.handle is not None and weight is not None:
             weight = list_to_1d_numpy(weight, name='weight')
+            weight_mean = np.abs(weight).mean()
+            if weight_mean > 0:
+                weight /= weight_mean
+            else:
+                raise ValueError('sample weights too small, can not rescale')
             self.set_field('weight', weight)
 
     def set_init_score(self, init_score):
