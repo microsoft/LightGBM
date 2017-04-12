@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <unordered_map>
 
 namespace LightGBM {
 
@@ -871,43 +872,100 @@ std::vector<std::pair<size_t, std::string>> GBDT::FeatureImportance() const {
 }
 
 
+const int kSparsePredictThreshold = 500000;
 
-void GBDT::PredictRaw(const double* value, double* output) const {
-  if (num_threads_ <= num_tree_per_iteration_) {
-    #pragma omp parallel for schedule(static)
-    for (int k = 0; k < num_tree_per_iteration_; ++k) {
-      for (int i = 0; i < num_iteration_for_pred_; ++i) {
-        output[k] += models_[i * num_tree_per_iteration_ + k]->Predict(value);
+void GBDT::PredictRaw(const std::vector<std::pair<int, double>>& features, double* output) const {
+  if (max_feature_idx_ <= kSparsePredictThreshold) {
+    std::vector<double> cache(max_feature_idx_ + 1, 0.0f);
+    for (const auto&pair : features) {
+      cache[pair.first] = pair.second;
+    }
+    if (num_threads_ <= num_tree_per_iteration_) {
+      #pragma omp parallel for schedule(static)
+      for (int k = 0; k < num_tree_per_iteration_; ++k) {
+        for (int i = 0; i < num_iteration_for_pred_; ++i) {
+          output[k] += models_[i * num_tree_per_iteration_ + k]->Predict(cache.data());
+        }
+      }
+    } else {
+      for (int k = 0; k < num_tree_per_iteration_; ++k) {
+        double t = 0.0f;
+        #pragma omp parallel for schedule(static) reduction(+:t)
+        for (int i = 0; i < num_iteration_for_pred_; ++i) {
+          t += models_[i * num_tree_per_iteration_ + k]->Predict(cache.data());
+        }
+        output[k] = t;
       }
     }
   } else {
-    for (int k = 0; k < num_tree_per_iteration_; ++k) {
-      double t = 0.0f;
-      #pragma omp parallel for schedule(static) reduction(+:t)
-      for (int i = 0; i < num_iteration_for_pred_; ++i) {
-        t += models_[i * num_tree_per_iteration_ + k]->Predict(value);
+    std::unordered_map<int,double> cache;
+    for (const auto&pair : features) {
+      cache.emplace(pair.first, pair.second);
+    }
+    if (num_threads_ <= num_tree_per_iteration_) {
+      #pragma omp parallel for schedule(static)
+      for (int k = 0; k < num_tree_per_iteration_; ++k) {
+        for (int i = 0; i < num_iteration_for_pred_; ++i) {
+          output[k] += models_[i * num_tree_per_iteration_ + k]->Predict(cache);
+        }
       }
-      output[k] = t;
+    } else {
+      for (int k = 0; k < num_tree_per_iteration_; ++k) {
+        double t = 0.0f;
+        #pragma omp parallel for schedule(static) reduction(+:t)
+        for (int i = 0; i < num_iteration_for_pred_; ++i) {
+          t += models_[i * num_tree_per_iteration_ + k]->Predict(cache);
+        }
+        output[k] = t;
+      }
     }
   }
 }
 
-void GBDT::Predict(const double* value, double* output) const {
-  if (num_threads_ <= num_tree_per_iteration_) {
-    #pragma omp parallel for schedule(static)
-    for (int k = 0; k < num_tree_per_iteration_; ++k) {
-      for (int i = 0; i < num_iteration_for_pred_; ++i) {
-        output[k] += models_[i * num_tree_per_iteration_ + k]->Predict(value);
+void GBDT::Predict(const std::vector<std::pair<int, double>>& features, double* output) const {
+  if (max_feature_idx_ <= kSparsePredictThreshold) {
+    std::vector<double> cache(max_feature_idx_ + 1, 0.0f);
+    for (const auto&pair : features) {
+      cache[pair.first] = pair.second;
+    }
+    if (num_threads_ <= num_tree_per_iteration_) {
+      #pragma omp parallel for schedule(static)
+      for (int k = 0; k < num_tree_per_iteration_; ++k) {
+        for (int i = 0; i < num_iteration_for_pred_; ++i) {
+          output[k] += models_[i * num_tree_per_iteration_ + k]->Predict(cache.data());
+        }
+      }
+    } else {
+      for (int k = 0; k < num_tree_per_iteration_; ++k) {
+        double t = 0.0f;
+        #pragma omp parallel for schedule(static) reduction(+:t)
+        for (int i = 0; i < num_iteration_for_pred_; ++i) {
+          t += models_[i * num_tree_per_iteration_ + k]->Predict(cache.data());
+        }
+        output[k] = t;
       }
     }
   } else {
-    for (int k = 0; k < num_tree_per_iteration_; ++k) {
-      double t = 0.0f;
-      #pragma omp parallel for schedule(static) reduction(+:t)
-      for (int i = 0; i < num_iteration_for_pred_; ++i) {
-        t += models_[i * num_tree_per_iteration_ + k]->Predict(value);
+    std::unordered_map<int, double> cache;
+    for (const auto&pair : features) {
+      cache.emplace(pair.first, pair.second);
+    }
+    if (num_threads_ <= num_tree_per_iteration_) {
+      #pragma omp parallel for schedule(static)
+      for (int k = 0; k < num_tree_per_iteration_; ++k) {
+        for (int i = 0; i < num_iteration_for_pred_; ++i) {
+          output[k] += models_[i * num_tree_per_iteration_ + k]->Predict(cache);
+        }
       }
-      output[k] = t;
+    } else {
+      for (int k = 0; k < num_tree_per_iteration_; ++k) {
+        double t = 0.0f;
+        #pragma omp parallel for schedule(static) reduction(+:t)
+        for (int i = 0; i < num_iteration_for_pred_; ++i) {
+          t += models_[i * num_tree_per_iteration_ + k]->Predict(cache);
+        }
+        output[k] = t;
+      }
     }
   }
   if (objective_function_ != nullptr) {
@@ -915,11 +973,27 @@ void GBDT::Predict(const double* value, double* output) const {
   }
 }
 
-void GBDT::PredictLeafIndex(const double* value, double* output) const {
-  int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;
-  #pragma omp parallel for schedule(static)
-  for (int i = 0; i < total_tree; ++i) {
-    output[i] = models_[i]->PredictLeafIndex(value);
+void GBDT::PredictLeafIndex(const std::vector<std::pair<int, double>>& features, double* output) const {
+  if (max_feature_idx_ <= kSparsePredictThreshold) {
+    std::vector<double> cache(max_feature_idx_ + 1, 0.0f);
+    for (const auto&pair : features) {
+      cache[pair.first] = pair.second;
+    }
+    int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < total_tree; ++i) {
+      output[i] = models_[i]->PredictLeafIndex(cache.data());
+    }
+  } else {
+    std::unordered_map<int, double> cache;
+    for (const auto&pair : features) {
+      cache.emplace(pair.first, pair.second);
+    }
+    int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < total_tree; ++i) {
+      output[i] = models_[i]->PredictLeafIndex(cache);
+    }
   }
 }
 
