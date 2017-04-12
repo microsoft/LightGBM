@@ -122,7 +122,7 @@ public:
 
   inline static double AverageLoss(double sum_loss, double sum_weights) {
     // need sqrt the result for L2 loss
-    return std::sqrt(sum_loss / sum_weights);
+    return sum_loss / sum_weights;
   }
 
   inline static const char* Name() {
