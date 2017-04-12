@@ -123,7 +123,7 @@ public:
         }
       }
       if (last_i != read_cnt) {
-        last_line_ = std::string(buffer_process + last_i, read_cnt - last_i);
+        last_line_.append(buffer_process + last_i, read_cnt - last_i);
       }
       return cnt;
     });
@@ -260,7 +260,7 @@ public:
       process_fun(start_idx, lines_);
       lines_.clear();
       if (last_i != read_cnt) {
-        last_line_ = std::string(buffer_process + last_i, read_cnt - last_i);
+        last_line_.append(buffer_process + last_i, read_cnt - last_i);
       }
       return cnt;
     });

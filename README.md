@@ -7,7 +7,7 @@ LightGBM is a gradient boosting framework that uses tree based learning algorith
 - Faster training speed and higher efficiency
 - Lower memory usage
 - Better accuracy
-- Parallel learning supported
+- Parallel and GPU learning supported
 - Capable of handling large-scale data
 
 For more details, please refer to [Features](https://github.com/Microsoft/LightGBM/wiki/Features).
@@ -17,7 +17,7 @@ For more details, please refer to [Features](https://github.com/Microsoft/LightG
 News
 ----
 
-04/10/2017 : Support use GPU to accelerate the tree learning.
+04/10/2017 : LightGBM now supports GPU-accelerated tree learning. Please read our [GPU Tutorial](./docs/GPU-Tutorial.md) and [Performance Comparison](./docs/GPU-Performance.md).
 
 02/20/2017 : Update to LightGBM v2.
 
@@ -45,6 +45,7 @@ To get started, please follow the [Installation Guide](https://github.com/Micros
 * [**Examples**](https://github.com/Microsoft/LightGBM/tree/master/examples)
 * [**Features**](https://github.com/Microsoft/LightGBM/wiki/Features)
 * [**Parallel Learning Guide**](https://github.com/Microsoft/LightGBM/wiki/Parallel-Learning-Guide)
+* [**GPU Learning Tutorial**](./docs/GPU-Tutorial.md)
 * [**Configuration**](https://github.com/Microsoft/LightGBM/wiki/Configuration)
 * [**Document Indexer**](https://github.com/Microsoft/LightGBM/blob/master/docs/Readme.md)
 
