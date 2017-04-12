@@ -121,7 +121,7 @@ public:
   }
 
   inline static double AverageLoss(double sum_loss, double sum_weights) {
-    // need sqrt the result for L2 loss
+    // need mean of the result for L2 loss
     return sum_loss / sum_weights;
   }
 
