@@ -53,3 +53,7 @@ plt.show()
 print('Plot 84th tree...')  # one tree use categorical feature to split
 ax = lgb.plot_tree(gbm, tree_index=83, figsize=(20, 8), show_info=['split_gain'])
 plt.show()
+
+print('Plot 84th tree with graphviz...')
+graph = lgb.create_tree_digraph(gbm, tree_index=83, name='Tree84')
+graph.render(view=True)
