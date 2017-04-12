@@ -167,7 +167,7 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
       CHECK(num_tree_per_iteration_ == num_class_);
       // + 1 here for the binary classification
       class_default_output_ = std::vector<double>(num_tree_per_iteration_ + 1, 0.0f);
-      std::vector<data_size_t> cnt_per_class(num_tree_per_iteration_, 0);
+      std::vector<data_size_t> cnt_per_class(num_tree_per_iteration_ + 1, 0);
       auto label = train_data_->metadata().label();
       for (int i = 0; i < num_data_; ++i) {
         ++cnt_per_class[static_cast<int>(label[i])];
