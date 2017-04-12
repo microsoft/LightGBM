@@ -942,14 +942,10 @@ void GBDT::Predict(const std::vector<std::pair<int, double>>& features, double* 
 void GBDT::PredictLeafIndex(const std::vector<std::pair<int, double>>& features, double* output) const {
   std::lock_guard<std::mutex> lock(predict_lock_);
   CopyToPredictBuffer(features);
-  std::vector<double> cache(max_feature_idx_ + 1, 0.0f);
-  for (const auto&pair : features) {
-    cache[pair.first] = pair.second;
-  }
   int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;
   #pragma omp parallel for schedule(static)
   for (int i = 0; i < total_tree; ++i) {
-    output[i] = models_[i]->PredictLeafIndex(cache.data());
+    output[i] = models_[i]->PredictLeafIndex(predict_buf_.data());
   }
   ClearPredictBuffer(features);
 }
