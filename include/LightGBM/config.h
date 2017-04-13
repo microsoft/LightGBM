@@ -108,9 +108,9 @@ public:
   int bin_construct_sample_cnt = 200000;
   bool is_predict_leaf_index = false;
   bool is_predict_raw_score = false;
-  int min_data_in_leaf = 100;
+  int min_data_in_leaf = 20;
   int min_data_in_bin = 5;
-  double max_conflict_rate = 0.0000f;
+  double max_conflict_rate = 0.0f;
   bool enable_bundle = true;
   bool adjacent_bundle = false;
   bool has_header = false;
@@ -176,13 +176,13 @@ public:
 /*! \brief Config for tree model */
 struct TreeConfig: public ConfigBase {
 public:
-  int min_data_in_leaf = 100;
-  double min_sum_hessian_in_leaf = 10.0f;
+  int min_data_in_leaf = 20;
+  double min_sum_hessian_in_leaf = 1e-3f;
   double lambda_l1 = 0.0f;
   double lambda_l2 = 0.0f;
   double min_gain_to_split = 0.0f;
-  // should > 1, only one leaf means not need to learning
-  int num_leaves = 127;
+  // should > 1
+  int num_leaves = 31;
   int feature_fraction_seed = 2;
   double feature_fraction = 1.0f;
   // max cache size(unit:MB) for historical histogram. < 0 means no limit
@@ -213,7 +213,7 @@ public:
   double sigmoid = 1.0f;
   int output_freq = 1;
   bool is_provide_training_metric = false;
-  int num_iterations = 10;
+  int num_iterations = 100;
   double learning_rate = 0.1f;
   double bagging_fraction = 1.0f;
   int bagging_seed = 3;
