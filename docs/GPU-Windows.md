@@ -93,8 +93,8 @@ We will assume an installation in `C:\boost` and a general installation (like in
 
 There is one mandatory step to check: the compiler.
 
-**Warning: if you want the R installation**: If you have already MinGW in your PATH variable, get rid of it (you will link to the wrong compiler otherwise).
-**Warning: if you want the CLI installation**: if you have already Rtools in your PATH variable, get rid of it (you will link to the wrong compiler otherwise).
+* **Warning: if you want the R installation**: If you have already MinGW in your PATH variable, get rid of it (you will link to the wrong compiler otherwise).
+* **Warning: if you want the CLI installation**: if you have already Rtools in your PATH variable, get rid of it (you will link to the wrong compiler otherwise).
 
 * R installation must have Rtools in PATH
 * CLI / Python installation must have MinGW (not Rtools) in PATH
@@ -345,7 +345,7 @@ OpenCL_LIBRARY = "C:/Program Files (x86)/AMD APP SDK/3.0/lib/x86_64"
 From there, you have two solutions:
 
 * Method 1 (hard): Use your local LightGBM repository with the latest and recent development features
-* Method 2 (easy): Use ez_lgb, @Laurae2's repository for installing LightGBM easily, but it might not be up to date.
+* Method 2 (easy): Use ez_lgb, @Laurae2 's repository for installing LightGBM easily, but it might not be up to date. It uses compute to patch boostorg/compute#704 (boostorg/compute@6de7f64)
 
 ### Method 1
 
