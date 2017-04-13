@@ -9,6 +9,7 @@
 #include <string>
 #include <fstream>
 #include <memory>
+#include <mutex>
 
 namespace LightGBM {
 /*!
@@ -135,11 +136,11 @@ public:
     return num_preb_in_one_row;
   }
 
-  void PredictRaw(const double* feature_values, double* output) const override;
+  void PredictRaw(const double* features, double* output) const override;
 
-  void Predict(const double* feature_values, double* output) const override;
+  void Predict(const double* features, double* output) const override;
 
-  void PredictLeafIndex(const double* value, double* output) const override;
+  void PredictLeafIndex(const double* features, double* output) const override;
 
   /*!
   * \brief Dump model to json format string
@@ -203,39 +204,11 @@ public:
   */
   inline int NumberOfClasses() const override { return num_class_; }
 
-  inline std::vector<int> InitPredict(int num_iteration) override {
+  inline void InitPredict(int num_iteration) override {
     num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
     if (num_iteration > 0) {
       num_iteration_for_pred_ = std::min(num_iteration + (boost_from_average_ ? 1 : 0), num_iteration_for_pred_);
     }
-    int used_fidx = 0;
-    // Construct used feature mapper
-    std::vector<int> feature_mapper(max_feature_idx_ + 1, -1);
-    int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;
-
-    #pragma omp parallel for schedule(static, 64) if (total_tree >= 128)
-    for (int i = 0; i < total_tree; ++i) {
-      int num_leaves = models_[i]->num_leaves();
-      for (int j = 0; j < num_leaves - 1; ++j) {
-        int fidx = models_[i]->split_feature(j);
-        if (feature_mapper[fidx] == -1) {
-          #pragma omp critical
-          {
-            if (feature_mapper[fidx] == -1) {
-              feature_mapper[fidx] = used_fidx;
-              ++used_fidx;
-            }
-          }
-        }
-      }
-    }
-
-    #pragma omp parallel for schedule(static, 64) if (total_tree >= 128)
-    for (int i = 0; i < total_tree; ++i) {
-      models_[i]->ReMapFeature(feature_mapper);
-    }
-
-    return feature_mapper;
   }
 
   inline double GetLeafValue(int tree_idx, int leaf_idx) const {
@@ -297,6 +270,7 @@ protected:
   * \brief Calculate feature importances
   */
   std::vector<std::pair<size_t, std::string>> FeatureImportance() const;
+
   /*! \brief current iteration */
   int iter_;
   /*! \brief Pointer to training data */
@@ -373,6 +347,7 @@ protected:
   std::vector<double> class_default_output_;
   bool is_constant_hessian_;
   std::unique_ptr<ObjectiveFunction> loaded_objective_;
+
 };
 
 }  // namespace LightGBM

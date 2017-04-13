@@ -117,14 +117,14 @@ public:
   * \param feature_values Feature value on this record
   * \param output Prediction result for this record
   */
-  virtual void PredictRaw(const double* feature_values, double* output) const = 0;
+  virtual void PredictRaw(const double* features, double* output) const = 0;
 
   /*!
   * \brief Prediction for one record, sigmoid transformation will be used if needed
   * \param feature_values Feature value on this record
   * \param output Prediction result for this record
   */
-  virtual void Predict(const double* feature_values, double* output) const = 0;
+  virtual void Predict(const double* features, double* output) const = 0;
   
   /*!
   * \brief Prediction for one record with leaf index
@@ -132,7 +132,7 @@ public:
   * \param output Prediction result for this record
   */
   virtual void PredictLeafIndex(
-    const double* feature_values, double* output) const = 0;
+    const double* features, double* output) const = 0;
 
   /*!
   * \brief Dump model to json format string
@@ -202,9 +202,8 @@ public:
   /*!
   * \brief Initial work for the prediction
   * \param num_iteration number of used iteration
-  * \return the feature indices mapper
   */
-  virtual std::vector<int> InitPredict(int num_iteration) = 0;
+  virtual void InitPredict(int num_iteration) = 0;
   
   /*!
   * \brief Name of submodel

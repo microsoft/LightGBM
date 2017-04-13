@@ -33,39 +33,36 @@ public:
   Predictor(Boosting* boosting, int num_iteration,
             bool is_raw_score, bool is_predict_leaf_index) {
 
-    feature_mapper_ = boosting->InitPredict(num_iteration);
+    boosting->InitPredict(num_iteration);
     boosting_ = boosting;
     num_pred_one_row_ = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf_index);
+    predict_buf_ = std::vector<double>(boosting_->MaxFeatureIdx() + 1, 0.0f);
 
-    num_total_features_ = static_cast<int>(feature_mapper_.size());
-    num_used_features_ = 1;
-    for (auto fidx : feature_mapper_) {
-      num_used_features_ = std::max(num_used_features_, fidx + 1);
-    }
-
-    features_ = std::vector<double>(num_used_features_);
     if (is_predict_leaf_index) {
       predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
-        PutFeatureValuesToBuffer(features);
+        CopyToPredictBuffer(features);
         // get result for leaf index
-        boosting_->PredictLeafIndex(features_.data(), output);
+        boosting_->PredictLeafIndex(predict_buf_.data(), output);
+        ClearPredictBuffer(features);
       };
 
     } else {
       if (is_raw_score) {
         predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
-          PutFeatureValuesToBuffer(features);
-          // get result without sigmoid transformation
-          boosting_->PredictRaw(features_.data(), output);
+          CopyToPredictBuffer(features);
+          boosting_->PredictRaw(predict_buf_.data(), output);
+          ClearPredictBuffer(features);
         };
       } else {
         predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
-          PutFeatureValuesToBuffer(features);
-          boosting_->Predict(features_.data(), output);
+          CopyToPredictBuffer(features);
+          boosting_->Predict(predict_buf_.data(), output);
+          ClearPredictBuffer(features);
         };
       }
     }
   }
+
   /*!
   * \brief Destructor
   */
@@ -93,7 +90,7 @@ public:
     if (result_file == NULL) {
       Log::Fatal("Prediction results file %s doesn't exist", data_filename);
     }
-    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, has_header, num_used_features_, boosting_->LabelIdx()));
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, has_header, boosting_->MaxFeatureIdx() + 1, boosting_->LabelIdx()));
 
     if (parser == nullptr) {
       Log::Fatal("Could not recognize the data format of data file %s", data_filename);
@@ -128,30 +125,33 @@ public:
   }
 
 private:
-  void PutFeatureValuesToBuffer(const std::vector<std::pair<int, double>>& features) {
-    std::memset(features_.data(), 0, sizeof(double)*num_used_features_);
-    // put feature value
+
+  void CopyToPredictBuffer(const std::vector<std::pair<int, double>>& features) {
     int loop_size = static_cast<int>(features.size());
-    #pragma omp parallel for schedule(static, 512) if(loop_size >= 1024) 
+    #pragma omp parallel for schedule(static,128) if (loop_size >= 256)
     for (int i = 0; i < loop_size; ++i) {
-      if (features[i].first >= num_total_features_) continue;
-      auto fidx = feature_mapper_[features[i].first];
-      if (fidx >= 0) {
-        features_[fidx] = features[i].second;
+      predict_buf_[features[i].first] = features[i].second;
+    }
+  }
+
+  void ClearPredictBuffer(const std::vector<std::pair<int, double>>& features) {
+    if (features.size() < static_cast<size_t>(predict_buf_.size() / 2)) {
+      std::memset(predict_buf_.data(), 0, sizeof(double)*(predict_buf_.size()));
+    } else {
+      int loop_size = static_cast<int>(features.size());
+      #pragma omp parallel for schedule(static,128) if (loop_size >= 256)
+      for (int i = 0; i < loop_size; ++i) {
+        predict_buf_[features[i].first] = 0.0f;
       }
     }
   }
+
   /*! \brief Boosting model */
   const Boosting* boosting_;
-  /*! \brief Buffer for feature values */
-  std::vector<double> features_;
-  /*! \brief Number of features */
-  int num_used_features_;
   /*! \brief function for prediction */
   PredictFunction predict_fun_;
   int num_pred_one_row_;
-  std::vector<int> feature_mapper_;
-  int num_total_features_;
+  std::vector<double> predict_buf_;
 };
 
 }  // namespace LightGBM
