@@ -37,6 +37,14 @@ Under `System variables`, the variable `Path`:
 
 ---
 
+### Antivirus Performance Impact
+
+Does not apply to you if you do not use a third-party antivirus nor the default preinstalled antivirus on Windows.
+
+**Windows Defender or any other antivirus will have a significant impact on the speed you will be able to perform the steps.** It is recommended to **turn them off temporarily** until you finished with building and setting up everything, then turn them back on, if you are using them.
+
+---
+
 ## OpenCL SDK Installation
 
 Installing the appropriate OpenCL SDK requires you to download the correct vendor source SDK. You need to know on what you are going to use LightGBM!:
@@ -109,21 +117,27 @@ We can now start downloading and compiling the required Boost libraries:
 * In command prompt, run `bootstrap.bat gcc`.
 * In command prompt, run `b2 install --prefix="C:\boost\boost-build" toolset=gcc`.
 * In command prompt, run `cd C:\boost\boost_1_63_0`.
-* In command prompt, run `b2 install --build_dir="C:\boost\boost-build" --prefix="C:\boost\boost-build" toolset=gcc --with=filesystem,system threading=multi --layout=system release` (ignore all the errors popping up, like Python, etc.).
+
+To build the Boost libraries, you have two choices for command prompt:
+
+* If you have only one single core, you can use the default `b2 install --build_dir="C:\boost\boost-build" --prefix="C:\boost\boost-build" toolset=gcc --with=filesystem,system threading=multi --layout=system release`.
+* If you want to do a multithreaded library building (faster), add -j N by replacing N by the number of cores/threads you have. For instance, for 2 cores, you would do `b2 install --build_dir="C:\boost\boost-build" --prefix="C:\boost\boost-build" toolset=gcc --with=filesystem,system threading=multi --layout=system release -j 2`
+
+Ignore all the errors popping up, like Python, etc., they do not matter for us.
 
 Your folder should look like this at the end (not fully detailed):
 
 ```
 - C
-  |-- boost
-  |----- boost_1_63_0
-  |-------- some folders and files
-  |----- boost-build
-  |-------- bin
-  |-------- include
-  |----------- boost
-  |----- lib
-  |----- share
+  |--- boost
+  |------ boost_1_63_0
+  |--------- some folders and files
+  |------ boost-build
+  |--------- bin
+  |--------- include
+  |------------ boost
+  |------ lib
+  |------ share
 ```
 
 This is what you should (approximately) get at the end of Boost compilation:
