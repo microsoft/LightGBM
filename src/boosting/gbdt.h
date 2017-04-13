@@ -136,11 +136,11 @@ public:
     return num_preb_in_one_row;
   }
 
-  void PredictRaw(const std::vector<std::pair<int, double>>& features, double* output) const override;
+  void PredictRaw(const double* features, double* output) const override;
 
-  void Predict(const std::vector<std::pair<int, double>>& features, double* output) const override;
+  void Predict(const double* features, double* output) const override;
 
-  void PredictLeafIndex(const std::vector<std::pair<int, double>>& features, double* output) const override;
+  void PredictLeafIndex(const double* features, double* output) const override;
 
   /*!
   * \brief Dump model to json format string
@@ -209,7 +209,6 @@ public:
     if (num_iteration > 0) {
       num_iteration_for_pred_ = std::min(num_iteration + (boost_from_average_ ? 1 : 0), num_iteration_for_pred_);
     }
-    predict_buf_ = std::vector<double>(max_feature_idx_ + 1, 0.0f);
   }
 
   inline double GetLeafValue(int tree_idx, int leaf_idx) const {
@@ -271,10 +270,6 @@ protected:
   * \brief Calculate feature importances
   */
   std::vector<std::pair<size_t, std::string>> FeatureImportance() const;
-
-  void CopyToPredictBuffer(const std::vector<std::pair<int, double>>& features) const;
-
-  void ClearPredictBuffer(const std::vector<std::pair<int, double>>& features) const;
 
   /*! \brief current iteration */
   int iter_;
@@ -353,8 +348,6 @@ protected:
   bool is_constant_hessian_;
   std::unique_ptr<ObjectiveFunction> loaded_objective_;
 
-  mutable std::vector<double> predict_buf_;
-  mutable std::mutex predict_lock_;
 };
 
 }  // namespace LightGBM

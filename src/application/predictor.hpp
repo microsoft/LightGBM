@@ -36,22 +36,28 @@ public:
     boosting->InitPredict(num_iteration);
     boosting_ = boosting;
     num_pred_one_row_ = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf_index);
-
+    predict_buf_ = std::vector<double>(boosting_->MaxFeatureIdx() + 1, 0.0f);
 
     if (is_predict_leaf_index) {
       predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
+        CopyToPredictBuffer(features);
         // get result for leaf index
-        boosting_->PredictLeafIndex(features, output);
+        boosting_->PredictLeafIndex(predict_buf_.data(), output);
+        ClearPredictBuffer(features);
       };
 
     } else {
       if (is_raw_score) {
         predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
-          boosting_->PredictRaw(features, output);
+          CopyToPredictBuffer(features);
+          boosting_->PredictRaw(predict_buf_.data(), output);
+          ClearPredictBuffer(features);
         };
       } else {
         predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
-          boosting_->Predict(features, output);
+          CopyToPredictBuffer(features);
+          boosting_->Predict(predict_buf_.data(), output);
+          ClearPredictBuffer(features);
         };
       }
     }
@@ -120,11 +126,32 @@ public:
 
 private:
 
+  void CopyToPredictBuffer(const std::vector<std::pair<int, double>>& features) {
+    int loop_size = static_cast<int>(features.size());
+    #pragma omp parallel for schedule(static,128) if (loop_size >= 256)
+    for (int i = 0; i < loop_size; ++i) {
+      predict_buf_[features[i].first] = features[i].second;
+    }
+  }
+
+  void ClearPredictBuffer(const std::vector<std::pair<int, double>>& features) {
+    if (features.size() < static_cast<size_t>(predict_buf_.size() / 2)) {
+      std::memset(predict_buf_.data(), 0, sizeof(double)*(predict_buf_.size()));
+    } else {
+      int loop_size = static_cast<int>(features.size());
+      #pragma omp parallel for schedule(static,128) if (loop_size >= 256)
+      for (int i = 0; i < loop_size; ++i) {
+        predict_buf_[features[i].first] = 0.0f;
+      }
+    }
+  }
+
   /*! \brief Boosting model */
   const Boosting* boosting_;
   /*! \brief function for prediction */
   PredictFunction predict_fun_;
   int num_pred_one_row_;
+  std::vector<double> predict_buf_;
 };
 
 }  // namespace LightGBM
