@@ -36,6 +36,8 @@ else()
 endif(USE_OPENMP)
 
 if(USE_GPU)
+    SET(BOOST_COMPUTE_HEADER_DIR ${PROJECT_SOURCE_DIR}/compute/include)
+    include_directories (${BOOST_COMPUTE_HEADER_DIR})
     find_package(OpenCL REQUIRED)
     include_directories(${OpenCL_INCLUDE_DIRS})
     MESSAGE(STATUS "OpenCL include directory:" ${OpenCL_INCLUDE_DIRS})
@@ -75,13 +77,11 @@ endif()
 
 
 SET(LightGBM_HEADER_DIR ${PROJECT_SOURCE_DIR}/include)
-SET(BOOST_COMPUTE_HEADER_DIR ${PROJECT_SOURCE_DIR}/compute/include)
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 
 include_directories (${LightGBM_HEADER_DIR})
-include_directories (${BOOST_COMPUTE_HEADER_DIR})
 
 if(APPLE)
   if (APPLE_OUTPUT_DYLIB)
