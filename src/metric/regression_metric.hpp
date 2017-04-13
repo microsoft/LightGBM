@@ -111,6 +111,25 @@ private:
   std::vector<std::string> name_;
 };
 
+/*! \brief RMSE loss for regression task */
+class RMSEMetric: public RegressionMetric<RMSEMetric> {
+public:
+  explicit RMSEMetric(const MetricConfig& config) :RegressionMetric<RMSEMetric>(config) {}
+
+  inline static double LossOnPoint(float label, double score, double, double) {
+    return (score - label)*(score - label);
+  }
+
+  inline static double AverageLoss(double sum_loss, double sum_weights) {
+    // need sqrt the result for RMSE loss
+    return std::sqrt(sum_loss / sum_weights);
+  }
+
+  inline static const char* Name() {
+    return "rmse";
+  }
+};
+
 /*! \brief L2 loss for regression task */
 class L2Metric: public RegressionMetric<L2Metric> {
 public:
