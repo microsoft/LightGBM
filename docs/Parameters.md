@@ -197,9 +197,10 @@ The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can 
 
 ## Metric parameters
 
-* ```metric```, default={```l2``` for regression}, {```binary_logloss``` for binary classification},{```ndcg``` for lambdarank}, type=multi-enum, options=```l1```,```l2```,```ndcg```,```auc```,```binary_logloss```,```binary_error```
+* ```metric```, default={```l2``` for regression}, {```binary_logloss``` for binary classification},{```ndcg``` for lambdarank}, type=multi-enum, options=```l1```,```l2```,```ndcg```,```auc```,```binary_logloss```,```binary_error```...
   * ```l1```, absolute loss, alias=```mean_absolute_error```, ```mae```
   * ```l2```, square loss, alias=```mean_squared_error```, ```mse```
+  * ```l2_root```, root square loss, alias=```root_mean_squared_error```, ```rmse```
   * ```huber```, [Huber loss](https://en.wikipedia.org/wiki/Huber_loss "Huber loss - Wikipedia")
   * ```fair```, [Fair loss](https://www.kaggle.com/c/allstate-claims-severity/discussion/24520)
   * ```poisson```, [Poisson regression](https://en.wikipedia.org/wiki/Poisson_regression "Poisson regression")

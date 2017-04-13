@@ -71,8 +71,7 @@ class TestEngine(unittest.TestCase):
 
     def test_regreesion(self):
         evals_result, ret = template.test_template()
-        ret **= 0.5
-        self.assertLess(ret, 4)
+        self.assertLess(ret, 16)
         self.assertAlmostEqual(min(evals_result['eval']['l2']), ret, places=5)
 
     def test_multiclass(self):
