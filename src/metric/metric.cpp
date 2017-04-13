@@ -10,6 +10,8 @@ namespace LightGBM {
 Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config) {
   if (type == std::string("l2") || type == std::string("mean_squared_error") || type == std::string("mse")) {
     return new L2Metric(config);
+  } else if (type == std::string("l2_root") || type == std::string("root_mean_squared_error") || type == std::string("rmse")) {
+    return new RMSEMetric(config);
   } else if (type == std::string("l1") || type == std::string("mean_absolute_error") || type == std::string("mae")) {
     return new L1Metric(config);
   } else if (type == std::string("huber")) {
