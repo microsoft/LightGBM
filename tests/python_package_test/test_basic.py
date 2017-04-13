@@ -22,7 +22,8 @@ class TestBasic(unittest.TestCase):
             "metric": "auc",
             "min_data": 10,
             "num_leaves": 15,
-            "verbose": -1
+            "verbose": -1,
+            "num_threads": 1
         }
         bst = lgb.Booster(params, train_data)
         bst.add_valid(valid_data, "valid_1")
@@ -47,6 +48,7 @@ class TestBasic(unittest.TestCase):
         pred_from_model_file = bst.predict(X_test)
         self.assertEqual(len(pred_from_matr), len(pred_from_model_file))
         for preds in zip(pred_from_matr, pred_from_model_file):
+            # we need to check the consistency of model file here, so test for exact equal
             self.assertEqual(*preds)
         # check pmml
         os.system('python ../../pmml/pmml.py model.txt')
