@@ -240,7 +240,7 @@ to the following:
 
 Then, you can do everything in the Git Bash console you left open:
 
-* If you closed Git Bash console previously, run this to get back to the build folder: `cd C:/LightGBM/build`
+* If you closed Git Bash console previously, run this to get back to the build folder: `cd C:/github_repos/LightGBM/build`
 * If you did not close the Git Bash console previously, run this to get to the build folder: `cd LightGBM/build`
 * Setup MinGW as make using `alias make='mingw32-make'` (otherwise, beware error and name clash!).
 * In Git Bash, run `make` and see LightGBM being installing!
@@ -252,7 +252,7 @@ If everything was done correctly, you now compiled CLI LightGBM with GPU support
 You can now test LightGBM directly in CLI in a **command prompt** (not Git Bash):
 
 ```
-cd C:/LightGBM/examples/binary_classification
+cd C:/github_repos/LightGBM/examples/binary_classification
 "../../lightgbm.exe" config=train.conf data=binary.train valid=binary.test objective=binary device=gpu
 ```
 
@@ -269,7 +269,7 @@ Congratulations for reaching this stage!
 Installing in Python is as straightforward as CLI. Assuming you already have `numpy`, `scipy`, `scikit-learn`, and `setuptools`, run the following in the Git Console:
 
 ```
-cd C:/LightGBM/python-package/
+cd C:/github_repos/LightGBM/python-package/
 python setup.py install
 ```
 
@@ -284,7 +284,7 @@ import os
 
 # load or create your dataset
 print('Load data...')
-os.chdir('C:/LightGBM/examples/regression')
+os.chdir('C:/github_repos/LightGBM/examples/regression')
 df_train = pd.read_csv('regression.train', header=None, sep='\t')
 df_test = pd.read_csv('regression.test', header=None, sep='\t')
 
@@ -398,7 +398,7 @@ OBJECTS = ./lightgbm-all.o ./lightgbm_R.o
 Now, we need to install LightGBM as usual:
 
 * Open an interactive R console.
-* Assuming you have the LightGBM folder in `C:/LightGBM`, run `devtools::install("C:/LightGBM/R-package")`.
+* Assuming you have the LightGBM folder in `C:/LightGBM`, run `devtools::install("C:/github_repos/LightGBM/R-package")`.
 
 ![LightGBM installed with GPU support](https://cloud.githubusercontent.com/assets/9083669/24955074/40179df8-1f82-11e7-909b-d64e62e92641.png)
 
