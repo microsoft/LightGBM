@@ -87,6 +87,8 @@ with open(argv[1], 'r') as model_in:
     model_content = iter([line for line in model_in.read().splitlines() if line][6:])
 
 feature_names = get_array_strings(next(model_content))
+feature_infos = get_array_strings(next(model_content))
+
 segment_id = count(1)
 
 with open('LightGBM_pmml.xml', 'w') as pmml_out:
@@ -136,6 +138,8 @@ with open('LightGBM_pmml.xml', 'w') as pmml_out:
         leaf_count = get_array_strings(next(model_content))
         internal_value = get_array_strings(next(model_content))
         internal_count = get_array_strings(next(model_content))
+        shrinkage = get_value_string(next(model_content))
+        has_categorical = get_value_string(next(model_content))
         unique_id = count(1)
         print_pmml()
         out_("\t\t\t</Segment>")
