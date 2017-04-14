@@ -41,9 +41,9 @@ public:
 
   void ResetConfig(const TreeConfig* tree_config) override;
 
-  Tree* Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian) override;
+  Tree* Train(const float* gradients, const float *hessians, bool is_constant_hessian) override;
 
-  Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
+  Tree* FitByExistingTree(const Tree* old_tree, const float* gradients, const float* hessians) const override;
 
   void SetBaggingData(const data_size_t* used_indices, data_size_t num_data) override {
     data_partition_->SetUsedDataIndices(used_indices, num_data);
@@ -111,9 +111,9 @@ protected:
   /*! \brief training data */
   const Dataset* train_data_;
   /*! \brief gradients of current iteration */
-  const score_t* gradients_;
+  const float* gradients_;
   /*! \brief hessians of current iteration */
-  const score_t* hessians_;
+  const float* hessians_;
   /*! \brief training data partition on leaves */
   std::unique_ptr<DataPartition> data_partition_;
   /*! \brief used for generate used features */
@@ -137,14 +137,14 @@ protected:
 
 #ifdef USE_GPU
   /*! \brief gradients of current iteration, ordered for cache optimized, aligned to 4K page */
-  std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_gradients_;
+  std::vector<float, boost::alignment::aligned_allocator<float, 4096>> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized, aligned to 4K page */
-  std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_hessians_;
+  std::vector<float, boost::alignment::aligned_allocator<float, 4096>> ordered_hessians_;
 #else
   /*! \brief gradients of current iteration, ordered for cache optimized */
-  std::vector<score_t> ordered_gradients_;
+  std::vector<float, AlignmentAllocator<float, 32>> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized */
-  std::vector<score_t> ordered_hessians_;
+  std::vector<float, AlignmentAllocator<float, 32>> ordered_hessians_;
 #endif
 
   /*! \brief Store ordered bin */

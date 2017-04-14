@@ -98,25 +98,25 @@ public:
 
   BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const override;
 
-  void ConstructHistogram(const data_size_t*, data_size_t, const score_t*,
-    const score_t*,int, HistogramBinEntry*) const override {
+  void ConstructHistogram(const data_size_t*, data_size_t, const float*,
+    const float*,int, HistogramBinEntry*) const override {
     // Will use OrderedSparseBin->ConstructHistogram() instead
     Log::Fatal("Using OrderedSparseBin->ConstructHistogram() instead");
   }
 
-  void ConstructHistogram(data_size_t, const score_t*,
-                          const score_t*, int, HistogramBinEntry*) const override {
+  void ConstructHistogram(data_size_t, const float*,
+                          const float*, int, HistogramBinEntry*) const override {
     // Will use OrderedSparseBin->ConstructHistogram() instead
     Log::Fatal("Using OrderedSparseBin->ConstructHistogram() instead");
   }
 
-  void ConstructHistogram(const data_size_t*, data_size_t, const score_t*,int,
+  void ConstructHistogram(const data_size_t*, data_size_t, const float*,int,
                           HistogramBinEntry*) const override {
     // Will use OrderedSparseBin->ConstructHistogram() instead
     Log::Fatal("Using OrderedSparseBin->ConstructHistogram() instead");
   }
 
-  void ConstructHistogram(data_size_t, const score_t*, int,
+  void ConstructHistogram(data_size_t, const float*, int,
                           HistogramBinEntry*) const override {
     // Will use OrderedSparseBin->ConstructHistogram() instead
     Log::Fatal("Using OrderedSparseBin->ConstructHistogram() instead");
@@ -367,8 +367,8 @@ public:
 
 protected:
   data_size_t num_data_;
-  std::vector<uint8_t> deltas_;
-  std::vector<VAL_T> vals_;
+  std::vector<uint8_t, AlignmentAllocator<uint8_t, 32>> deltas_;
+  std::vector<VAL_T, AlignmentAllocator<VAL_T, 32>> vals_;
   data_size_t num_vals_;
   std::vector<std::vector<std::pair<data_size_t, VAL_T>>> push_buffers_;
   std::vector<std::pair<data_size_t, data_size_t>> fast_index_;

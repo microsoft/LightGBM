@@ -43,12 +43,12 @@ public:
   * \param is_constant_hessian True if all hessians share the same value
   * \return A trained tree
   */
-  virtual Tree* Train(const score_t* gradients, const score_t* hessians, bool is_constant_hessian) = 0;
+  virtual Tree* Train(const float* gradients, const float* hessians, bool is_constant_hessian) = 0;
 
   /*!
   * \brief use a existing tree to fit the new gradients and hessians.
   */
-  virtual Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const = 0;
+  virtual Tree* FitByExistingTree(const Tree* old_tree, const float* gradients, const float* hessians) const = 0;
 
   /*!
   * \brief Set bagging data

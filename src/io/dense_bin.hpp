@@ -64,7 +64,7 @@ public:
   BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const override;
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
-                          const score_t* ordered_gradients, const score_t* ordered_hessians, int num_bin,
+                          const float* ordered_gradients, const float* ordered_hessians, int num_bin,
                           HistogramBinEntry* out) const override {
     const data_size_t group_rest = num_data & 65535;
     const data_size_t rest = num_data & 0x7;
@@ -119,7 +119,7 @@ public:
   }
 
   void ConstructHistogram(data_size_t num_data,
-                          const score_t* ordered_gradients, const score_t* ordered_hessians, int num_bin,
+                          const float* ordered_gradients, const float* ordered_hessians, int num_bin,
                           HistogramBinEntry* out) const override {
     const data_size_t group_rest = num_data & 65535;
     const data_size_t rest = num_data & 0x7;
@@ -174,7 +174,7 @@ public:
   }
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
-                          const score_t* ordered_gradients, int num_bin,
+                          const float* ordered_gradients, int num_bin,
                           HistogramBinEntry* out) const override {
     const data_size_t group_rest = num_data & 65535;
     const data_size_t rest = num_data & 0x7;
@@ -224,7 +224,7 @@ public:
   }
 
   void ConstructHistogram(data_size_t num_data,
-                          const score_t* ordered_gradients, int num_bin,
+                          const float* ordered_gradients, int num_bin,
                           HistogramBinEntry* out) const override {
     const data_size_t group_rest = num_data & 65535;
     const data_size_t rest = num_data & 0x7;
@@ -360,7 +360,7 @@ public:
 
 protected:
   data_size_t num_data_;
-  std::vector<VAL_T> data_;
+  std::vector<VAL_T, AlignmentAllocator<VAL_T, 32>> data_;
 };
 
 template <typename VAL_T>

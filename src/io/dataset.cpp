@@ -410,8 +410,8 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
                                   const data_size_t* data_indices, data_size_t num_data,
                                   int leaf_idx,
                                   std::vector<std::unique_ptr<OrderedBin>>& ordered_bins,
-                                  const score_t* gradients, const score_t* hessians,
-                                  score_t* ordered_gradients, score_t* ordered_hessians,
+                                  const float* gradients, const float* hessians,
+                                  float* ordered_gradients, float* ordered_hessians,
                                   bool is_constant_hessian,
                                   HistogramBinEntry* hist_data) const {
 
@@ -623,8 +623,8 @@ void Dataset::FixHistogram(int feature_idx, double sum_gradient, double sum_hess
         cnt -= data[i].cnt;
       }
     }
-    data[default_bin].sum_gradients = static_cast<score_t>(sg);
-    data[default_bin].sum_hessians = static_cast<score_t>(sh);
+    data[default_bin].sum_gradients = static_cast<float>(sg);
+    data[default_bin].sum_hessians = static_cast<float>(sh);
     data[default_bin].cnt = cnt;
   }
 }

@@ -40,7 +40,7 @@ public:
   Dense4bitsBin(data_size_t num_data)
     : num_data_(num_data) {
     int len = (num_data_ + 1) / 2;
-    data_ = std::vector<uint8_t>(len, static_cast<uint8_t>(0));
+    data_.resize(len, 0);
   }
 
   ~Dense4bitsBin() {
@@ -78,7 +78,7 @@ public:
   inline BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin) const override;
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
-                          const score_t* ordered_gradients, const score_t* ordered_hessians, int num_bin,
+                          const float* ordered_gradients, const float* ordered_hessians, int num_bin,
                           HistogramBinEntry* out) const override {
     const data_size_t group_rest = num_data & 65535;
     const data_size_t rest = num_data & 0x7;
@@ -168,7 +168,7 @@ public:
   }
 
   void ConstructHistogram(data_size_t num_data,
-                          const score_t* ordered_gradients, const score_t* ordered_hessians, int num_bin,
+                          const float* ordered_gradients, const float* ordered_hessians, int num_bin,
                           HistogramBinEntry* out) const override {
     const data_size_t group_rest = num_data & 65535;
     const data_size_t rest = num_data & 0x7;
@@ -231,7 +231,7 @@ public:
   }
 
   void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
-                          const score_t* ordered_gradients, int num_bin,
+                          const float* ordered_gradients, int num_bin,
                           HistogramBinEntry* out) const override {
     const data_size_t group_rest = num_data & 65535;
     const data_size_t rest = num_data & 0x7;
@@ -316,7 +316,7 @@ public:
   }
 
   void ConstructHistogram(data_size_t num_data,
-                          const score_t* ordered_gradients, int num_bin,
+                          const float* ordered_gradients, int num_bin,
                           HistogramBinEntry* out) const override {
     const data_size_t group_rest = num_data & 65535;
     const data_size_t rest = num_data & 0x7;
@@ -489,7 +489,7 @@ public:
 
 protected:
   data_size_t num_data_;
-  std::vector<uint8_t> data_;
+  std::vector<uint8_t, AlignmentAllocator<uint8_t, 32>> data_;
   std::vector<uint8_t> buf_;
 };
 

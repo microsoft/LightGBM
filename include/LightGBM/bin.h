@@ -22,9 +22,9 @@ enum BinType {
 struct HistogramBinEntry {
 public:
   /*! \brief Sum of gradients on this bin */
-  score_t sum_gradients = 0.0f;
+  float sum_gradients = 0.0f;
   /*! \brief Sum of hessians on this bin */
-  score_t sum_hessians = 0.0f;
+  float sum_hessians = 0.0f;
   /*! \brief Number of data on this bin */
   data_size_t cnt = 0;
   /*!
@@ -224,8 +224,8 @@ public:
   * \param num_bin The number of bins
   * \param out Output Result
   */
-  virtual void ConstructHistogram(int leaf, const score_t* gradients,
-    const score_t* hessians, int num_bin, HistogramBinEntry* out) const = 0;
+  virtual void ConstructHistogram(int leaf, const float* gradients,
+    const float* hessians, int num_bin, HistogramBinEntry* out) const = 0;
 
   /*!
   * \brief Construct histogram by using this bin
@@ -236,7 +236,7 @@ public:
   * \param num_bin The number of bins
   * \param out Output Result
   */
-  virtual void ConstructHistogram(int leaf, const score_t* gradients, int num_bin, HistogramBinEntry* out) const = 0;
+  virtual void ConstructHistogram(int leaf, const float* gradients, int num_bin, HistogramBinEntry* out) const = 0;
 
   /*!
   * \brief Split current bin, and perform re-order by leaf
@@ -333,11 +333,11 @@ public:
   */
   virtual void ConstructHistogram(
     const data_size_t* data_indices, data_size_t num_data,
-    const score_t* ordered_gradients, const score_t* ordered_hessians, int num_bin,
+    const float* ordered_gradients, const float* ordered_hessians, int num_bin,
     HistogramBinEntry* out) const = 0;
 
   virtual void ConstructHistogram(data_size_t num_data,
-    const score_t* ordered_gradients, const score_t* ordered_hessians, int num_bin,
+    const float* ordered_gradients, const float* ordered_hessians, int num_bin,
     HistogramBinEntry* out) const = 0;
 
   /*!
@@ -354,10 +354,10 @@ public:
   * \param out Output Result
   */
   virtual void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
-                                  const score_t* ordered_gradients, int num_bin, HistogramBinEntry* out) const = 0;
+                                  const float* ordered_gradients, int num_bin, HistogramBinEntry* out) const = 0;
 
   virtual void ConstructHistogram(data_size_t num_data,
-                                  const score_t* ordered_gradients, int num_bin, HistogramBinEntry* out) const = 0;
+                                  const float* ordered_gradients, int num_bin, HistogramBinEntry* out) const = 0;
 
   /*!
   * \brief Split data according to threshold, if bin <= threshold, will put into left(lte_indices), else put into right(gt_indices)

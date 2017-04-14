@@ -269,24 +269,24 @@ void GPUTreeLearner::AllocateGPUMemory() {
   ordered_gradients_.reserve(allocated_num_data_);
   ordered_hessians_.reserve(allocated_num_data_);
   pinned_gradients_ = boost::compute::buffer(); // deallocate
-  pinned_gradients_ = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(score_t), 
+  pinned_gradients_ = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(float), 
                                              boost::compute::memory_object::read_write | boost::compute::memory_object::use_host_ptr, 
                                              ordered_gradients_.data());
   ptr_pinned_gradients_ = queue_.enqueue_map_buffer(pinned_gradients_, boost::compute::command_queue::map_write_invalidate_region, 
-                                                    0, allocated_num_data_ * sizeof(score_t));
+                                                    0, allocated_num_data_ * sizeof(float));
   pinned_hessians_ = boost::compute::buffer(); // deallocate
-  pinned_hessians_  = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(score_t), 
+  pinned_hessians_  = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(float), 
                                              boost::compute::memory_object::read_write | boost::compute::memory_object::use_host_ptr, 
                                              ordered_hessians_.data());
   ptr_pinned_hessians_ = queue_.enqueue_map_buffer(pinned_hessians_, boost::compute::command_queue::map_write_invalidate_region, 
-                                                   0, allocated_num_data_ * sizeof(score_t));
+                                                   0, allocated_num_data_ * sizeof(float));
   // allocate space for gradients and hessians on device
   // we will copy gradients and hessians in after ordered_gradients_ and ordered_hessians_ are constructed
   device_gradients_ = boost::compute::buffer(); // deallocate
-  device_gradients_ = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(score_t), 
+  device_gradients_ = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(float), 
                       boost::compute::memory_object::read_only, nullptr);
   device_hessians_ = boost::compute::buffer(); // deallocate
-  device_hessians_  = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(score_t), 
+  device_hessians_  = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(float), 
                       boost::compute::memory_object::read_only, nullptr);
   // allocate feature mask, for disabling some feature-groups' histogram calculation
   feature_masks_.resize(num_dense_feature4_ * dword_features_);
@@ -723,7 +723,7 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   SetupKernelArguments();
 }
 
-Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian) {
+Tree* GPUTreeLearner::Train(const float* gradients, const float *hessians, bool is_constant_hessian) {
   // check if we need to recompile the GPU kernel (is_constant_hessian changed)
   // this should rarely occur
   if (is_constant_hessian != is_constant_hessian_) {
@@ -753,11 +753,11 @@ void GPUTreeLearner::BeforeTrain() {
   // We start copying as early as possible, instead of at ConstructHistogram().
   if (!use_bagging_ && num_dense_feature_groups_) {
     if (!is_constant_hessian_) {
-      hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, num_data_ * sizeof(score_t), hessians_);
+      hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, num_data_ * sizeof(float), hessians_);
     }
     else {
       // setup hessian parameters only
-      score_t const_hessian = hessians_[0];
+      float const_hessian = hessians_[0];
       for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
         // hessian is passed as a parameter
         histogram_kernels_[i].set_arg(6, const_hessian);
@@ -765,7 +765,7 @@ void GPUTreeLearner::BeforeTrain() {
         histogram_fulldata_kernels_[i].set_arg(6, const_hessian);
       }
     }
-    gradients_future_ = queue_.enqueue_write_buffer_async(device_gradients_, 0, num_data_ * sizeof(score_t), gradients_);
+    gradients_future_ = queue_.enqueue_write_buffer_async(device_gradients_, 0, num_data_ * sizeof(float), gradients_);
   }
 
   SerialTreeLearner::BeforeTrain();
@@ -787,11 +787,11 @@ void GPUTreeLearner::BeforeTrain() {
         ordered_hessians_[i] = hessians_[indices[i]];
       }
       // transfer hessian to GPU
-      hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, cnt * sizeof(score_t), ordered_hessians_.data());
+      hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, cnt * sizeof(float), ordered_hessians_.data());
     }
     else {
       // setup hessian parameters only
-      score_t const_hessian = hessians_[indices[0]];
+      float const_hessian = hessians_[indices[0]];
       for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
         // hessian is passed as a parameter
         histogram_kernels_[i].set_arg(6, const_hessian);
@@ -804,7 +804,7 @@ void GPUTreeLearner::BeforeTrain() {
       ordered_gradients_[i] = gradients_[indices[i]];
     }
     // transfer gradients to GPU
-    gradients_future_ = queue_.enqueue_write_buffer_async(device_gradients_, 0, cnt * sizeof(score_t), ordered_gradients_.data());
+    gradients_future_ = queue_.enqueue_write_buffer_async(device_gradients_, 0, cnt * sizeof(float), ordered_gradients_.data());
   }
 }
 
@@ -842,7 +842,7 @@ bool GPUTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int ri
         ordered_hessians_[i - begin] = hessians_[indices[i]];
       }
       // copy ordered hessians to the GPU:
-      hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, (end - begin) * sizeof(score_t), ptr_pinned_hessians_);
+      hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, (end - begin) * sizeof(float), ptr_pinned_hessians_);
     }
 
     #pragma omp parallel for schedule(static)
@@ -850,7 +850,7 @@ bool GPUTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int ri
       ordered_gradients_[i - begin] = gradients_[indices[i]];
     }
     // copy ordered gradients to the GPU:
-    gradients_future_ = queue_.enqueue_write_buffer_async(device_gradients_, 0, (end - begin) * sizeof(score_t), ptr_pinned_gradients_);
+    gradients_future_ = queue_.enqueue_write_buffer_async(device_gradients_, 0, (end - begin) * sizeof(float), ptr_pinned_gradients_);
 
     #if GPU_DEBUG >= 2
     Log::Info("gradients/hessians/indiex copied to device with size %d", end - begin);
@@ -862,8 +862,8 @@ bool GPUTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int ri
 bool GPUTreeLearner::ConstructGPUHistogramsAsync(
   const std::vector<int8_t>& is_feature_used,
   const data_size_t* data_indices, data_size_t num_data,
-  const score_t* gradients, const score_t* hessians,
-  score_t* ordered_gradients, score_t* ordered_hessians) {
+  const float* gradients, const float* hessians,
+  float* ordered_gradients, float* ordered_hessians) {
 
   if (num_data <= 0) {
     return false;
@@ -884,10 +884,10 @@ bool GPUTreeLearner::ConstructGPUHistogramsAsync(
       for (data_size_t i = 0; i < num_data; ++i) {
         ordered_gradients[i] = gradients[data_indices[i]];
       }
-      gradients_future_ = queue_.enqueue_write_buffer_async(device_gradients_, 0, num_data * sizeof(score_t), ptr_pinned_gradients_);
+      gradients_future_ = queue_.enqueue_write_buffer_async(device_gradients_, 0, num_data * sizeof(float), ptr_pinned_gradients_);
     }
     else {
-      gradients_future_ = queue_.enqueue_write_buffer_async(device_gradients_, 0, num_data * sizeof(score_t), gradients);
+      gradients_future_ = queue_.enqueue_write_buffer_async(device_gradients_, 0, num_data * sizeof(float), gradients);
     }
   }
   // generate and copy ordered_hessians if hessians is not null
@@ -897,10 +897,10 @@ bool GPUTreeLearner::ConstructGPUHistogramsAsync(
       for (data_size_t i = 0; i < num_data; ++i) {
         ordered_hessians[i] = hessians[data_indices[i]];
       }
-      hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, num_data * sizeof(score_t), ptr_pinned_hessians_);
+      hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, num_data * sizeof(float), ptr_pinned_hessians_);
     }
     else {
-      hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, num_data * sizeof(score_t), hessians);
+      hessians_future_ = queue_.enqueue_write_buffer_async(device_hessians_, 0, num_data * sizeof(float), hessians);
     }
   }
   // converted indices in is_feature_used to feature-group indices

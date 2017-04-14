@@ -78,7 +78,7 @@ public:
     }
   }
 
-  void ConstructHistogram(int leaf, const score_t* gradient, const score_t* hessian, int num_bin,
+  void ConstructHistogram(int leaf, const float* gradient, const float* hessian, int num_bin,
                           HistogramBinEntry* out) const override {
     // get current leaf boundary
     const data_size_t start = leaf_start_[leaf];
@@ -176,7 +176,7 @@ public:
     }
   }
 
-  void ConstructHistogram(int leaf, const score_t* gradient, int num_bin,
+  void ConstructHistogram(int leaf, const float* gradient, int num_bin,
                           HistogramBinEntry* out) const override {
     // get current leaf boundary
     const data_size_t start = leaf_start_[leaf];
