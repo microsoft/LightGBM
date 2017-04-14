@@ -4,3 +4,4 @@ early_stopping                  Early Stop in training
 cross_validation                Cross Validation
 multiclass                      Multiclass training/prediction
 leaf_stability                  Leaf (in)Stability example
+weight_param                    Weight-Parameter adjustment relationship
