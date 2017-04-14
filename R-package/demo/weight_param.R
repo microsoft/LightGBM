@@ -98,3 +98,4 @@ plot(large_weight_loss) # It learns!
 
 # Do you want to compare the learning? They both converge.
 plot(small_weight_loss, large_weight_loss)
+curve(1*x, from = 0, to = 0.02, add = TRUE)
