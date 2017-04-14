@@ -49,7 +49,7 @@ public:
 
   void Push(int, data_size_t idx, uint32_t value) override {
     if (buf_.empty()) {
-#pragma omp critical
+      #pragma omp critical
       {
         if (buf_.empty()) {
           int len = (num_data_ + 1) / 2;
@@ -111,16 +111,10 @@ public:
         const auto bin7 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
 
 
-        AddGradientToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
-                               ordered_gradients[i], ordered_gradients[i + 1],
-                               ordered_gradients[i + 2], ordered_gradients[i + 3],
-                               ordered_gradients[i + 4], ordered_gradients[i + 5],
-                               ordered_gradients[i + 6], ordered_gradients[i + 7]);
-        AddHessianToHessian(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
-                            ordered_hessians[i], ordered_hessians[i + 1],
-                            ordered_hessians[i + 2], ordered_hessians[i + 3],
-                            ordered_hessians[i + 4], ordered_hessians[i + 5],
-                            ordered_hessians[i + 6], ordered_hessians[i + 7]);
+        AddGradientPtrToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                                  ordered_gradients + i);
+        AddHessianPtrToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                                 ordered_hessians + i);
         AddCountToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7);
       }
       for (int j = 0; j < num_bin; ++j) {
@@ -156,16 +150,10 @@ public:
       const auto bin7 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
 
 
-      AddGradientToHistogram(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
-                             ordered_gradients[i], ordered_gradients[i + 1],
-                             ordered_gradients[i + 2], ordered_gradients[i + 3],
-                             ordered_gradients[i + 4], ordered_gradients[i + 5],
-                             ordered_gradients[i + 6], ordered_gradients[i + 7]);
-      AddHessianToHessian(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
-                          ordered_hessians[i], ordered_hessians[i + 1],
-                          ordered_hessians[i + 2], ordered_hessians[i + 3],
-                          ordered_hessians[i + 4], ordered_hessians[i + 5],
-                          ordered_hessians[i + 6], ordered_hessians[i + 7]);
+      AddGradientPtrToHistogram(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                                ordered_gradients + i);
+      AddHessianPtrToHistogram(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                               ordered_hessians + i);
       AddCountToHistogram(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7);
 
     }
@@ -202,16 +190,10 @@ public:
         const auto bin7 = (data_[j] >> 4) & 0xf;
 
 
-        AddGradientToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
-                               ordered_gradients[i], ordered_gradients[i + 1],
-                               ordered_gradients[i + 2], ordered_gradients[i + 3],
-                               ordered_gradients[i + 4], ordered_gradients[i + 5],
-                               ordered_gradients[i + 6], ordered_gradients[i + 7]);
-        AddHessianToHessian(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
-                            ordered_hessians[i], ordered_hessians[i + 1],
-                            ordered_hessians[i + 2], ordered_hessians[i + 3],
-                            ordered_hessians[i + 4], ordered_hessians[i + 5],
-                            ordered_hessians[i + 6], ordered_hessians[i + 7]);
+        AddGradientPtrToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                                  ordered_gradients + i);
+        AddHessianPtrToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                                 ordered_hessians + i);
         AddCountToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7);
       }
       for (int j = 0; j < num_bin; ++j) {
@@ -234,16 +216,10 @@ public:
       const auto bin6 = (data_[j]) & 0xf;
       const auto bin7 = (data_[j] >> 4) & 0xf;
 
-      AddGradientToHistogram(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
-                             ordered_gradients[i], ordered_gradients[i + 1],
-                             ordered_gradients[i + 2], ordered_gradients[i + 3],
-                             ordered_gradients[i + 4], ordered_gradients[i + 5],
-                             ordered_gradients[i + 6], ordered_gradients[i + 7]);
-      AddHessianToHessian(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
-                          ordered_hessians[i], ordered_hessians[i + 1],
-                          ordered_hessians[i + 2], ordered_hessians[i + 3],
-                          ordered_hessians[i + 4], ordered_hessians[i + 5],
-                          ordered_hessians[i + 6], ordered_hessians[i + 7]);
+      AddGradientPtrToHistogram(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                                ordered_gradients + i);
+      AddHessianPtrToHistogram(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                               ordered_hessians + i);
       AddCountToHistogram(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7);
     }
     for (; i < num_data; ++i) {
@@ -288,11 +264,8 @@ public:
         const auto bin7 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
 
 
-        AddGradientToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
-                               ordered_gradients[i], ordered_gradients[i + 1],
-                               ordered_gradients[i + 2], ordered_gradients[i + 3],
-                               ordered_gradients[i + 4], ordered_gradients[i + 5],
-                               ordered_gradients[i + 6], ordered_gradients[i + 7]);
+        AddGradientPtrToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                                  ordered_gradients + i);
         AddCountToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7);
       }
       for (int j = 0; j < num_bin; ++j) {
@@ -328,11 +301,8 @@ public:
       const auto bin7 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
 
 
-      AddGradientToHistogram(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
-                             ordered_gradients[i], ordered_gradients[i + 1],
-                             ordered_gradients[i + 2], ordered_gradients[i + 3],
-                             ordered_gradients[i + 4], ordered_gradients[i + 5],
-                             ordered_gradients[i + 6], ordered_gradients[i + 7]);
+      AddGradientPtrToHistogram(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                                ordered_gradients + i);
       AddCountToHistogram(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7);
 
     }
@@ -368,11 +338,8 @@ public:
         const auto bin7 = (data_[j] >> 4) & 0xf;
 
 
-        AddGradientToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
-                               ordered_gradients[i], ordered_gradients[i + 1],
-                               ordered_gradients[i + 2], ordered_gradients[i + 3],
-                               ordered_gradients[i + 4], ordered_gradients[i + 5],
-                               ordered_gradients[i + 6], ordered_gradients[i + 7]);
+        AddGradientPtrToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                                  ordered_gradients + i);
         AddCountToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7);
       }
       for (int j = 0; j < num_bin; ++j) {
@@ -395,11 +362,8 @@ public:
       const auto bin6 = (data_[j]) & 0xf;
       const auto bin7 = (data_[j] >> 4) & 0xf;
 
-      AddGradientToHistogram(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
-                             ordered_gradients[i], ordered_gradients[i + 1],
-                             ordered_gradients[i + 2], ordered_gradients[i + 3],
-                             ordered_gradients[i + 4], ordered_gradients[i + 5],
-                             ordered_gradients[i + 6], ordered_gradients[i + 7]);
+      AddGradientPtrToHistogram(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                                ordered_gradients + i);
       AddCountToHistogram(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7);
     }
     for (; i < num_data; ++i) {

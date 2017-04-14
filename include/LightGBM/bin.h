@@ -443,6 +443,18 @@ inline uint32_t BinMapper::ValueToBin(double value) const {
   }
 }
 
+#define AddGradientPtrToHistogram(data, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7, \
+gptr) { \
+data[bin0].sum_gradients += *(gptr + 0);\
+data[bin1].sum_gradients += *(gptr + 1);\
+data[bin2].sum_gradients += *(gptr + 2);\
+data[bin3].sum_gradients += *(gptr + 3);\
+data[bin4].sum_gradients += *(gptr + 4);\
+data[bin5].sum_gradients += *(gptr + 5);\
+data[bin6].sum_gradients += *(gptr + 6);\
+data[bin7].sum_gradients += *(gptr + 7);\
+}
+
 #define AddGradientToHistogram(data, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7, \
 g0, g1, g2, g3, g4, g5, g6, g7) { \
 data[bin0].sum_gradients += (g0);\
@@ -455,7 +467,19 @@ data[bin6].sum_gradients += (g6);\
 data[bin7].sum_gradients += (g7);\
 }
 
-#define AddHessianToHessian(data, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7, \
+#define AddHessianPtrToHistogram(data, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7, \
+hptr) { \
+data[bin0].sum_hessians += *(hptr + 0);\
+data[bin1].sum_hessians += *(hptr + 1);\
+data[bin2].sum_hessians += *(hptr + 2);\
+data[bin3].sum_hessians += *(hptr + 3);\
+data[bin4].sum_hessians += *(hptr + 4);\
+data[bin5].sum_hessians += *(hptr + 5);\
+data[bin6].sum_hessians += *(hptr + 6);\
+data[bin7].sum_hessians += *(hptr + 7);\
+}
+
+#define AddHessianToHistogram(data, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7, \
 h0, h1, h2, h3, h4, h5, h6, h7) { \
 data[bin0].sum_hessians += (h0);\
 data[bin1].sum_hessians += (h1);\

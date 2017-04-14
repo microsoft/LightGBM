@@ -117,8 +117,8 @@ public:
 
         AddGradientToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
                                g0, g1, g2, g3, g4, g5, g6, g7);
-        AddHessianToHessian(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
-                            h0, h1, h2, h3, h4, h5, h6, h7);
+        AddHessianToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                              h0, h1, h2, h3, h4, h5, h6, h7);
         AddCountToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7);
       }
       for (int j = 0; j < num_bin; ++j) {
@@ -158,8 +158,8 @@ public:
 
       AddGradientToHistogram(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
                              g0, g1, g2, g3, g4, g5, g6, g7);
-      AddHessianToHessian(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
-                          h0, h1, h2, h3, h4, h5, h6, h7);
+      AddHessianToHistogram(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                            h0, h1, h2, h3, h4, h5, h6, h7);
       AddCountToHistogram(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7);
     }
 
