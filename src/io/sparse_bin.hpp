@@ -367,8 +367,8 @@ public:
 
 protected:
   data_size_t num_data_;
-  std::vector<uint8_t, AlignmentAllocator<uint8_t, 32>> deltas_;
-  std::vector<VAL_T, AlignmentAllocator<VAL_T, 32>> vals_;
+  std::vector<uint8_t, aligned_allocator<uint8_t, 32>> deltas_;
+  std::vector<VAL_T, aligned_allocator<VAL_T, 32>> vals_;
   data_size_t num_vals_;
   std::vector<std::vector<std::pair<data_size_t, VAL_T>>> push_buffers_;
   std::vector<std::pair<data_size_t, data_size_t>> fast_index_;

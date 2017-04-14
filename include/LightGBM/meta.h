@@ -38,7 +38,7 @@ std::function<void(const std::vector<std::pair<int, double>>&, double* output)>;
 #define NO_SPECIFIC (-1)
 
 template <typename T, std::size_t Alignment>
-class AlignmentAllocator
+class aligned_allocator
 {
 public:
   typedef T * pointer;
@@ -63,10 +63,10 @@ public:
 
   template <typename U>
   struct rebind {
-    typedef AlignmentAllocator<U, Alignment> other;
+    typedef aligned_allocator<U, Alignment> other;
   };
 
-  bool operator!=(const AlignmentAllocator& other) const {
+  bool operator!=(const aligned_allocator& other) const {
     return !(*this == other);
   }
 
@@ -80,17 +80,17 @@ public:
     p->~T();
   }
 
-  bool operator==(const AlignmentAllocator& other) const {
+  bool operator==(const aligned_allocator& other) const {
     return true;
   }
 
-  AlignmentAllocator() { }
+  aligned_allocator() { }
 
-  AlignmentAllocator(const AlignmentAllocator&) { }
+  aligned_allocator(const aligned_allocator&) { }
 
-  template <typename U> AlignmentAllocator(const AlignmentAllocator<U, Alignment>&) { }
+  template <typename U> aligned_allocator(const aligned_allocator<U, Alignment>&) { }
 
-  ~AlignmentAllocator() { }
+  ~aligned_allocator() { }
 
   T * allocate(const std::size_t n) const {
     if (n == 0) {
@@ -118,7 +118,7 @@ public:
   }
 
 private:
-  AlignmentAllocator& operator=(const AlignmentAllocator&) = delete;
+  aligned_allocator& operator=(const aligned_allocator&) = delete;
 };
 
 }  // namespace LightGBM

@@ -360,7 +360,7 @@ public:
 
 protected:
   data_size_t num_data_;
-  std::vector<VAL_T, AlignmentAllocator<VAL_T, 32>> data_;
+  std::vector<VAL_T, aligned_allocator<VAL_T, 32>> data_;
 };
 
 template <typename VAL_T>
