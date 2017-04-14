@@ -83,12 +83,12 @@ public:
     // get current leaf boundary
     const data_size_t start = leaf_start_[leaf];
     const data_size_t end = start + leaf_cnt_[leaf];
-    const data_size_t group_rest = (end - start) & 65535;
+    const data_size_t group_rest = (end - start) & KNumSumupGroupMask;
     const data_size_t rest = (end - start) & 0x7;
     data_size_t i = start;
     for (; i < end - group_rest;) {
       std::vector<HistogramBinEntry> tmp_sumup_buf(num_bin);
-      for (data_size_t j = 0; j < 65536; j += 8, i += 8) {
+      for (data_size_t j = 0; j < KNumSumupGroup; j += 8, i += 8) {
         const VAL_T bin0 = ordered_pair_[i].bin;
         const VAL_T bin1 = ordered_pair_[i + 1].bin;
         const VAL_T bin2 = ordered_pair_[i + 2].bin;
@@ -181,12 +181,12 @@ public:
     // get current leaf boundary
     const data_size_t start = leaf_start_[leaf];
     const data_size_t end = start + leaf_cnt_[leaf];
-    const data_size_t group_rest = (end - start) & 65535;
+    const data_size_t group_rest = (end - start) & KNumSumupGroupMask;
     const data_size_t rest = (end - start) & 0x7;
     data_size_t i = start;
     for (; i < end - group_rest;) {
-      std::vector<HistogramBinEntry> tmp_sumup_buf(num_bin);
-      for (data_size_t j = 0; j < 65536; j += 8, i += 8) {
+      std::vector<TmpGradCntPair> tmp_sumup_buf(num_bin);
+      for (data_size_t j = 0; j < KNumSumupGroup; j += 8, i += 8) {
         const VAL_T bin0 = ordered_pair_[i].bin;
         const VAL_T bin1 = ordered_pair_[i + 1].bin;
         const VAL_T bin2 = ordered_pair_[i + 2].bin;
@@ -211,7 +211,6 @@ public:
       }
       for (int j = 0; j < num_bin; ++j) {
         out[j].sum_gradients += tmp_sumup_buf[j].sum_gradients;
-        out[j].sum_hessians += tmp_sumup_buf[j].sum_hessians;
         out[j].cnt += tmp_sumup_buf[j].cnt;
       }
     }

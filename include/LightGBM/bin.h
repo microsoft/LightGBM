@@ -502,6 +502,16 @@ data[bin7].sum_hessians += (h7);\
 ++data[bin7].cnt;\
 }
 
+struct TmpGradCntPair {
+public:
+  float sum_gradients = 0.0f;
+  data_size_t cnt = 0;
+};
+
+#define KNumSumupGroup (65536)
+#define KNumSumupGroupMask (65535)
+
+
 }  // namespace LightGBM
 
 #endif   // LightGBM_BIN_H_

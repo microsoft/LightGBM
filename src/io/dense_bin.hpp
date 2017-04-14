@@ -66,12 +66,12 @@ public:
   void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
                           const float* ordered_gradients, const float* ordered_hessians, int num_bin,
                           HistogramBinEntry* out) const override {
-    const data_size_t group_rest = num_data & 65535;
+    const data_size_t group_rest = num_data & KNumSumupGroupMask;
     const data_size_t rest = num_data & 0x7;
     data_size_t i = 0;
     for (; i < num_data - group_rest;) {
       std::vector<HistogramBinEntry> tmp_sumup_buf(num_bin);
-      for (data_size_t j = 0; j < 65536; j += 8, i += 8) {
+      for (data_size_t j = 0; j < KNumSumupGroup; j += 8, i += 8) {
         const VAL_T bin0 = data_[data_indices[i]];
         const VAL_T bin1 = data_[data_indices[i + 1]];
         const VAL_T bin2 = data_[data_indices[i + 2]];
@@ -121,12 +121,12 @@ public:
   void ConstructHistogram(data_size_t num_data,
                           const float* ordered_gradients, const float* ordered_hessians, int num_bin,
                           HistogramBinEntry* out) const override {
-    const data_size_t group_rest = num_data & 65535;
+    const data_size_t group_rest = num_data & KNumSumupGroupMask;
     const data_size_t rest = num_data & 0x7;
     data_size_t i = 0;
     for (; i < num_data - group_rest;) {
       std::vector<HistogramBinEntry> tmp_sumup_buf(num_bin);
-      for (data_size_t j = 0; j < 65536; j += 8, i += 8) {
+      for (data_size_t j = 0; j < KNumSumupGroup; j += 8, i += 8) {
         const VAL_T bin0 = data_[i];
         const VAL_T bin1 = data_[i + 1];
         const VAL_T bin2 = data_[i + 2];
@@ -176,12 +176,12 @@ public:
   void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
                           const float* ordered_gradients, int num_bin,
                           HistogramBinEntry* out) const override {
-    const data_size_t group_rest = num_data & 65535;
+    const data_size_t group_rest = num_data & KNumSumupGroupMask;
     const data_size_t rest = num_data & 0x7;
     data_size_t i = 0;
     for (; i < num_data - group_rest;) {
-      std::vector<HistogramBinEntry> tmp_sumup_buf(num_bin);
-      for (data_size_t j = 0; j < 65536; j += 8, i += 8) {
+      std::vector<TmpGradCntPair> tmp_sumup_buf(num_bin);
+      for (data_size_t j = 0; j < KNumSumupGroup; j += 8, i += 8) {
         const VAL_T bin0 = data_[data_indices[i]];
         const VAL_T bin1 = data_[data_indices[i + 1]];
         const VAL_T bin2 = data_[data_indices[i + 2]];
@@ -197,7 +197,6 @@ public:
       }
       for (int j = 0; j < num_bin; ++j) {
         out[j].sum_gradients += tmp_sumup_buf[j].sum_gradients;
-        out[j].sum_hessians += tmp_sumup_buf[j].sum_hessians;
         out[j].cnt += tmp_sumup_buf[j].cnt;
       }
     }
@@ -226,12 +225,12 @@ public:
   void ConstructHistogram(data_size_t num_data,
                           const float* ordered_gradients, int num_bin,
                           HistogramBinEntry* out) const override {
-    const data_size_t group_rest = num_data & 65535;
+    const data_size_t group_rest = num_data & KNumSumupGroupMask;
     const data_size_t rest = num_data & 0x7;
     data_size_t i = 0;
     for (; i < num_data - group_rest;) {
-      std::vector<HistogramBinEntry> tmp_sumup_buf(num_bin);
-      for (data_size_t j = 0; j < 65536; j += 8, i += 8) {
+      std::vector<TmpGradCntPair> tmp_sumup_buf(num_bin);
+      for (data_size_t j = 0; j < KNumSumupGroup; j += 8, i += 8) {
         const VAL_T bin0 = data_[i];
         const VAL_T bin1 = data_[i + 1];
         const VAL_T bin2 = data_[i + 2];
@@ -247,7 +246,6 @@ public:
       }
       for (int j = 0; j < num_bin; ++j) {
         out[j].sum_gradients += tmp_sumup_buf[j].sum_gradients;
-        out[j].sum_hessians += tmp_sumup_buf[j].sum_hessians;
         out[j].cnt += tmp_sumup_buf[j].cnt;
       }
     }
