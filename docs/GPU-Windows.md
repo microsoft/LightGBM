@@ -10,6 +10,7 @@ Installation steps (depends on what you are going to do):
 * Install Git
 * Install cmake
 * Create LightGBM binaries
+* Debugging LightGBM in CLI (if GPU is crashing or any other crash reason)
 
 If you wish to use another compiler like Visual Studio C++ compiler, you need to adapt the steps to your needs.
 
@@ -224,21 +225,9 @@ This is straightforward, as cmake is providing a large help into locating the co
 
 **CLI / Python users**
 
-Creating LightGBM libraries is not simple as it requires a small hack. Otherwise, you will ALWAYS crash the CLI/Python LightGBM when trying to use GPU. The hack is very simple to do. Open `src/treelearner/gpu_tree_learner.h` with a notepad, and edit the following line 569:
+Creating LightGBM libraries is very simple as all the important and hard steps were done before.
 
-```
-  #pragma omp parallel for schedule(guided)
-```
-
-to the following:
-
-```
-  //#pragma omp parallel for schedule(guided)
-```
-
-![Segmentation Fault fix CLI/Python](https://cloud.githubusercontent.com/assets/9083669/24977476/7e81b42a-1fcd-11e7-80d9-b69d6127dfcf.png)
-
-Then, you can do everything in the Git Bash console you left open:
+You can do everything in the Git Bash console you left open:
 
 * If you closed Git Bash console previously, run this to get back to the build folder: `cd C:/github_repos/LightGBM/build`
 * If you did not close the Git Bash console previously, run this to get to the build folder: `cd LightGBM/build`
@@ -438,3 +427,149 @@ model <- lgb.train(params,
 ![LightGBM with GPU support running](https://cloud.githubusercontent.com/assets/9083669/24955029/0c7dc17a-1f82-11e7-8b75-89a5173f7276.png)
 
 Congratulations for reaching this stage!
+
+## Debugging LightGBM crashes in CLI
+
+Now that you compiled LightGBM, you try it... and you always see a segmentation fault or an undocumented crash with GPU support:
+
+![Segmentation Fault](https://cloud.githubusercontent.com/assets/9083669/25015529/7326860a-207c-11e7-8fc3-320b2be619a6.png)
+
+Assuming your LightGBM is in `C:\github_repos\LightGBM`, open a command prompt and run the following:
+
+`gdb --args "../../lightgbm.exe" config=train.conf data=binary.train valid=binary.test objective=binary device=gpu`
+
+![debug: run](https://cloud.githubusercontent.com/assets/9083669/25041067/8fdbee66-210d-11e7-8adb-79b688c051d5.png)
+
+Type `run` and Enter key.
+
+You will probably get something similar to this:
+
+```
+[LightGBM] [Info] This is the GPU trainer!!
+[LightGBM] [Info] Total Bins 6143
+[LightGBM] [Info] Number of data: 7000, number of used features: 28
+[New Thread 105220.0x1a62c]
+[LightGBM] [Info] Using GPU Device: Oland, Vendor: Advanced Micro Devices, Inc.
+[LightGBM] [Info] Compiling OpenCL Kernel with 256 bins...
+
+Program received signal SIGSEGV, Segmentation fault.
+0x00007ffbb37c11f1 in strlen () from C:\Windows\system32\msvcrt.dll
+(gdb) 
+```
+
+There, write `backtrace` and Enter key as many times as gdb requests two choices:
+
+```
+Program received signal SIGSEGV, Segmentation fault.
+0x00007ffbb37c11f1 in strlen () from C:\Windows\system32\msvcrt.dll
+(gdb) backtrace
+#0  0x00007ffbb37c11f1 in strlen () from C:\Windows\system32\msvcrt.dll
+#1  0x000000000048bbe5 in std::char_traits<char>::length (__s=0x0)
+    at C:/PROGRA~1/MINGW-~1/X86_64~1.0-P/mingw64/x86_64-w64-mingw32/include/c++/bits/char_traits.h:267
+#2  std::operator+<char, std::char_traits<char>, std::allocator<char> > (__rhs="\\", __lhs=0x0)
+    at C:/PROGRA~1/MINGW-~1/X86_64~1.0-P/mingw64/x86_64-w64-mingw32/include/c++/bits/basic_string.tcc:1157
+#3  boost::compute::detail::appdata_path[abi:cxx11]() () at C:/boost/boost-build/include/boost/compute/detail/path.hpp:38
+#4  0x000000000048eec3 in boost::compute::detail::program_binary_path (hash="d27987d5bd61e2d28cd32b8d7a7916126354dc81", create=create@entry=false)
+    at C:/boost/boost-build/include/boost/compute/detail/path.hpp:46
+#5  0x00000000004913de in boost::compute::program::load_program_binary (hash="d27987d5bd61e2d28cd32b8d7a7916126354dc81", ctx=...)
+    at C:/boost/boost-build/include/boost/compute/program.hpp:605
+#6  0x0000000000490ece in boost::compute::program::build_with_source (
+    source="\n#ifndef _HISTOGRAM_256_KERNEL_\n#define _HISTOGRAM_256_KERNEL_\n\n#pragma OPENCL EXTENSION cl_khr_local_int32_base_atomics : enable\n#pragma OPENC
+L EXTENSION cl_khr_global_int32_base_atomics : enable\n\n//"..., context=...,
+    options=" -D POWER_FEATURE_WORKGROUPS=5 -D USE_CONSTANT_BUF=0 -D USE_DP_FLOAT=0 -D CONST_HESSIAN=0 -cl-strict-aliasing -cl-mad-enable -cl-no-signed-zeros -c
+l-fast-relaxed-math") at C:/boost/boost-build/include/boost/compute/program.hpp:549
+#7  0x0000000000454339 in LightGBM::GPUTreeLearner::BuildGPUKernels () at C:\xgboost\LightGBM\src\treelearner\gpu_tree_learner.cpp:583
+#8  0x00000000636044f2 in libgomp-1!GOMP_parallel () from C:\Program Files\mingw-w64\x86_64-5.3.0-posix-seh-rt_v4-rev0\mingw64\bin\libgomp-1.dll
+#9  0x0000000000455e7e in LightGBM::GPUTreeLearner::BuildGPUKernels (this=this@entry=0x3b9cac0)
+    at C:\xgboost\LightGBM\src\treelearner\gpu_tree_learner.cpp:569
+#10 0x0000000000457b49 in LightGBM::GPUTreeLearner::InitGPU (this=0x3b9cac0, platform_id=<optimized out>, device_id=<optimized out>)
+    at C:\xgboost\LightGBM\src\treelearner\gpu_tree_learner.cpp:720
+#11 0x0000000000410395 in LightGBM::GBDT::ResetTrainingData (this=0x1f26c90, config=<optimized out>, train_data=0x1f28180, objective_function=0x1f280e0,
+    training_metrics=std::vector of length 2, capacity 2 = {...}) at C:\xgboost\LightGBM\src\boosting\gbdt.cpp:98
+#12 0x0000000000402e93 in LightGBM::Application::InitTrain (this=this@entry=0x23f9d0) at C:\xgboost\LightGBM\src\application\application.cpp:213
+---Type <return> to continue, or q <return> to quit---
+#13 0x00000000004f0b55 in LightGBM::Application::Run (this=0x23f9d0) at C:/xgboost/LightGBM/include/LightGBM/application.h:84
+#14 main (argc=6, argv=0x1f21e90) at C:\xgboost\LightGBM\src\main.cpp:7
+```
+
+Right-click the command prompt, click "Mark", and select all the text from the first line (with the command prompt containing gdb) to the last line printed, containing all the log, such as:
+
+```
+C:\xgboost\LightGBM\examples\binary_classification>gdb --args "../../lightgbm.exe" config=train.conf data=binary.train valid=binary.test objective=binary device
+=gpu
+GNU gdb (GDB) 7.10.1
+Copyright (C) 2015 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "x86_64-w64-mingw32".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+<http://www.gnu.org/software/gdb/documentation/>.
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+Reading symbols from ../../lightgbm.exe...done.
+(gdb) run
+Starting program: C:\xgboost\LightGBM\lightgbm.exe "config=train.conf" "data=binary.train" "valid=binary.test" "objective=binary" "device=gpu"
+[New Thread 105220.0x199b8]
+[New Thread 105220.0x783c]
+[Thread 105220.0x783c exited with code 0]
+[LightGBM] [Info] Finished loading parameters
+[New Thread 105220.0x19490]
+[New Thread 105220.0x1a71c]
+[New Thread 105220.0x19a24]
+[New Thread 105220.0x4fb0]
+[Thread 105220.0x4fb0 exited with code 0]
+[LightGBM] [Info] Loading weights...
+[New Thread 105220.0x19988]
+[Thread 105220.0x19988 exited with code 0]
+[New Thread 105220.0x1a8fc]
+[Thread 105220.0x1a8fc exited with code 0]
+[LightGBM] [Info] Loading weights...
+[New Thread 105220.0x1a90c]
+[Thread 105220.0x1a90c exited with code 0]
+[LightGBM] [Info] Finished loading data in 1.011408 seconds
+[LightGBM] [Info] Number of positive: 3716, number of negative: 3284
+[LightGBM] [Info] This is the GPU trainer!!
+[LightGBM] [Info] Total Bins 6143
+[LightGBM] [Info] Number of data: 7000, number of used features: 28
+[New Thread 105220.0x1a62c]
+[LightGBM] [Info] Using GPU Device: Oland, Vendor: Advanced Micro Devices, Inc.
+[LightGBM] [Info] Compiling OpenCL Kernel with 256 bins...
+
+Program received signal SIGSEGV, Segmentation fault.
+0x00007ffbb37c11f1 in strlen () from C:\Windows\system32\msvcrt.dll
+(gdb) backtrace
+#0  0x00007ffbb37c11f1 in strlen () from C:\Windows\system32\msvcrt.dll
+#1  0x000000000048bbe5 in std::char_traits<char>::length (__s=0x0)
+    at C:/PROGRA~1/MINGW-~1/X86_64~1.0-P/mingw64/x86_64-w64-mingw32/include/c++/bits/char_traits.h:267
+#2  std::operator+<char, std::char_traits<char>, std::allocator<char> > (__rhs="\\", __lhs=0x0)
+    at C:/PROGRA~1/MINGW-~1/X86_64~1.0-P/mingw64/x86_64-w64-mingw32/include/c++/bits/basic_string.tcc:1157
+#3  boost::compute::detail::appdata_path[abi:cxx11]() () at C:/boost/boost-build/include/boost/compute/detail/path.hpp:38
+#4  0x000000000048eec3 in boost::compute::detail::program_binary_path (hash="d27987d5bd61e2d28cd32b8d7a7916126354dc81", create=create@entry=false)
+    at C:/boost/boost-build/include/boost/compute/detail/path.hpp:46
+#5  0x00000000004913de in boost::compute::program::load_program_binary (hash="d27987d5bd61e2d28cd32b8d7a7916126354dc81", ctx=...)
+    at C:/boost/boost-build/include/boost/compute/program.hpp:605
+#6  0x0000000000490ece in boost::compute::program::build_with_source (
+    source="\n#ifndef _HISTOGRAM_256_KERNEL_\n#define _HISTOGRAM_256_KERNEL_\n\n#pragma OPENCL EXTENSION cl_khr_local_int32_base_atomics : enable\n#pragma OPENC
+L EXTENSION cl_khr_global_int32_base_atomics : enable\n\n//"..., context=...,
+    options=" -D POWER_FEATURE_WORKGROUPS=5 -D USE_CONSTANT_BUF=0 -D USE_DP_FLOAT=0 -D CONST_HESSIAN=0 -cl-strict-aliasing -cl-mad-enable -cl-no-signed-zeros -c
+l-fast-relaxed-math") at C:/boost/boost-build/include/boost/compute/program.hpp:549
+#7  0x0000000000454339 in LightGBM::GPUTreeLearner::BuildGPUKernels () at C:\xgboost\LightGBM\src\treelearner\gpu_tree_learner.cpp:583
+#8  0x00000000636044f2 in libgomp-1!GOMP_parallel () from C:\Program Files\mingw-w64\x86_64-5.3.0-posix-seh-rt_v4-rev0\mingw64\bin\libgomp-1.dll
+#9  0x0000000000455e7e in LightGBM::GPUTreeLearner::BuildGPUKernels (this=this@entry=0x3b9cac0)
+    at C:\xgboost\LightGBM\src\treelearner\gpu_tree_learner.cpp:569
+#10 0x0000000000457b49 in LightGBM::GPUTreeLearner::InitGPU (this=0x3b9cac0, platform_id=<optimized out>, device_id=<optimized out>)
+    at C:\xgboost\LightGBM\src\treelearner\gpu_tree_learner.cpp:720
+#11 0x0000000000410395 in LightGBM::GBDT::ResetTrainingData (this=0x1f26c90, config=<optimized out>, train_data=0x1f28180, objective_function=0x1f280e0,
+    training_metrics=std::vector of length 2, capacity 2 = {...}) at C:\xgboost\LightGBM\src\boosting\gbdt.cpp:98
+#12 0x0000000000402e93 in LightGBM::Application::InitTrain (this=this@entry=0x23f9d0) at C:\xgboost\LightGBM\src\application\application.cpp:213
+---Type <return> to continue, or q <return> to quit---
+#13 0x00000000004f0b55 in LightGBM::Application::Run (this=0x23f9d0) at C:/xgboost/LightGBM/include/LightGBM/application.h:84
+#14 main (argc=6, argv=0x1f21e90) at C:\xgboost\LightGBM\src\main.cpp:7
+```
+
+And open an issue in GitHub here with that log: https://github.com/Microsoft/LightGBM/issues
