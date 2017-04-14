@@ -314,7 +314,6 @@ Congratulations for reaching this stage!
 
 **R users**
 
-Unlike CLI / Python version, you do not need the `gpu_tree_learner.h` hack.
 This gets a bit complicated for this step.
 
 First of all, you need to to find the correct paths for the following, and keep them in a notepad:
