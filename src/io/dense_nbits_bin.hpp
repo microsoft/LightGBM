@@ -80,8 +80,55 @@ public:
   void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
                           const score_t* ordered_gradients, const score_t* ordered_hessians, int num_bin,
                           HistogramBinEntry* out) const override {
+    const data_size_t group_rest = num_data & 65535;
     const data_size_t rest = num_data & 0x7;
     data_size_t i = 0;
+    for (; i < num_data - group_rest;) {
+      std::vector<HistogramBinEntry> tmp_sumup_buf(num_bin);
+      for (data_size_t k = 0; k < 65536; k += 8, i += 8) {
+        data_size_t idx = data_indices[i];
+        const auto bin0 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 1];
+        const auto bin1 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 2];
+        const auto bin2 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 3];
+        const auto bin3 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 4];
+        const auto bin4 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 5];
+        const auto bin5 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 6];
+        const auto bin6 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 7];
+        const auto bin7 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+
+        AddGradientToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                               ordered_gradients[i], ordered_gradients[i + 1],
+                               ordered_gradients[i + 2], ordered_gradients[i + 3],
+                               ordered_gradients[i + 4], ordered_gradients[i + 5],
+                               ordered_gradients[i + 6], ordered_gradients[i + 7]);
+        AddHessianToHessian(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                            ordered_hessians[i], ordered_hessians[i + 1],
+                            ordered_hessians[i + 2], ordered_hessians[i + 3],
+                            ordered_hessians[i + 4], ordered_hessians[i + 5],
+                            ordered_hessians[i + 6], ordered_hessians[i + 7]);
+        AddCountToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7);
+      }
+      for (int j = 0; j < num_bin; ++j) {
+        out[j].sum_gradients += tmp_sumup_buf[j].sum_gradients;
+        out[j].sum_hessians += tmp_sumup_buf[j].sum_hessians;
+        out[j].cnt += tmp_sumup_buf[j].cnt;
+      }
+    }
     for (; i < num_data - rest; i += 8) {
 
       data_size_t idx = data_indices[i];
@@ -135,8 +182,44 @@ public:
   void ConstructHistogram(data_size_t num_data,
                           const score_t* ordered_gradients, const score_t* ordered_hessians, int num_bin,
                           HistogramBinEntry* out) const override {
+    const data_size_t group_rest = num_data & 65535;
     const data_size_t rest = num_data & 0x7;
     data_size_t i = 0;
+    for (; i < num_data - group_rest;) {
+      std::vector<HistogramBinEntry> tmp_sumup_buf(num_bin);
+      for (data_size_t k = 0; k < 65536; k += 8, i += 8) {
+        int j = i >> 1;
+        const auto bin0 = (data_[j]) & 0xf;
+        const auto bin1 = (data_[j] >> 4) & 0xf;
+        ++j;
+        const auto bin2 = (data_[j]) & 0xf;
+        const auto bin3 = (data_[j] >> 4) & 0xf;
+        ++j;
+        const auto bin4 = (data_[j]) & 0xf;
+        const auto bin5 = (data_[j] >> 4) & 0xf;
+        ++j;
+        const auto bin6 = (data_[j]) & 0xf;
+        const auto bin7 = (data_[j] >> 4) & 0xf;
+
+
+        AddGradientToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                               ordered_gradients[i], ordered_gradients[i + 1],
+                               ordered_gradients[i + 2], ordered_gradients[i + 3],
+                               ordered_gradients[i + 4], ordered_gradients[i + 5],
+                               ordered_gradients[i + 6], ordered_gradients[i + 7]);
+        AddHessianToHessian(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                            ordered_hessians[i], ordered_hessians[i + 1],
+                            ordered_hessians[i + 2], ordered_hessians[i + 3],
+                            ordered_hessians[i + 4], ordered_hessians[i + 5],
+                            ordered_hessians[i + 6], ordered_hessians[i + 7]);
+        AddCountToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7);
+      }
+      for (int j = 0; j < num_bin; ++j) {
+        out[j].sum_gradients += tmp_sumup_buf[j].sum_gradients;
+        out[j].sum_hessians += tmp_sumup_buf[j].sum_hessians;
+        out[j].cnt += tmp_sumup_buf[j].cnt;
+      }
+    }
     for (; i < num_data - rest; i += 8) {
       int j = i >> 1;
       const auto bin0 = (data_[j]) & 0xf;
@@ -174,8 +257,50 @@ public:
   void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
                           const score_t* ordered_gradients, int num_bin,
                           HistogramBinEntry* out) const override {
+    const data_size_t group_rest = num_data & 65535;
     const data_size_t rest = num_data & 0x7;
     data_size_t i = 0;
+    for (; i < num_data - group_rest;) {
+      std::vector<HistogramBinEntry> tmp_sumup_buf(num_bin);
+      for (data_size_t k = 0; k < 65536; k += 8, i += 8) {
+        data_size_t idx = data_indices[i];
+        const auto bin0 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 1];
+        const auto bin1 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 2];
+        const auto bin2 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 3];
+        const auto bin3 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 4];
+        const auto bin4 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 5];
+        const auto bin5 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 6];
+        const auto bin6 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+        idx = data_indices[i + 7];
+        const auto bin7 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+
+
+        AddGradientToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                               ordered_gradients[i], ordered_gradients[i + 1],
+                               ordered_gradients[i + 2], ordered_gradients[i + 3],
+                               ordered_gradients[i + 4], ordered_gradients[i + 5],
+                               ordered_gradients[i + 6], ordered_gradients[i + 7]);
+        AddCountToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7);
+      }
+      for (int j = 0; j < num_bin; ++j) {
+        out[j].sum_gradients += tmp_sumup_buf[j].sum_gradients;
+        out[j].sum_hessians += tmp_sumup_buf[j].sum_hessians;
+        out[j].cnt += tmp_sumup_buf[j].cnt;
+      }
+    }
     for (; i < num_data - rest; i += 8) {
 
       data_size_t idx = data_indices[i];
@@ -223,8 +348,39 @@ public:
   void ConstructHistogram(data_size_t num_data,
                           const score_t* ordered_gradients, int num_bin,
                           HistogramBinEntry* out) const override {
+    const data_size_t group_rest = num_data & 65535;
     const data_size_t rest = num_data & 0x7;
     data_size_t i = 0;
+    for (; i < num_data - group_rest;) {
+      std::vector<HistogramBinEntry> tmp_sumup_buf(num_bin);
+      for (data_size_t k = 0; k < 65536; k += 8, i += 8) {
+        int j = i >> 1;
+        const auto bin0 = (data_[j]) & 0xf;
+        const auto bin1 = (data_[j] >> 4) & 0xf;
+        ++j;
+        const auto bin2 = (data_[j]) & 0xf;
+        const auto bin3 = (data_[j] >> 4) & 0xf;
+        ++j;
+        const auto bin4 = (data_[j]) & 0xf;
+        const auto bin5 = (data_[j] >> 4) & 0xf;
+        ++j;
+        const auto bin6 = (data_[j]) & 0xf;
+        const auto bin7 = (data_[j] >> 4) & 0xf;
+
+
+        AddGradientToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                               ordered_gradients[i], ordered_gradients[i + 1],
+                               ordered_gradients[i + 2], ordered_gradients[i + 3],
+                               ordered_gradients[i + 4], ordered_gradients[i + 5],
+                               ordered_gradients[i + 6], ordered_gradients[i + 7]);
+        AddCountToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7);
+      }
+      for (int j = 0; j < num_bin; ++j) {
+        out[j].sum_gradients += tmp_sumup_buf[j].sum_gradients;
+        out[j].sum_hessians += tmp_sumup_buf[j].sum_hessians;
+        out[j].cnt += tmp_sumup_buf[j].cnt;
+      }
+    }
     for (; i < num_data - rest; i += 8) {
       int j = i >> 1;
       const auto bin0 = (data_[j]) & 0xf;

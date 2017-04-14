@@ -83,8 +83,50 @@ public:
     // get current leaf boundary
     const data_size_t start = leaf_start_[leaf];
     const data_size_t end = start + leaf_cnt_[leaf];
-    const int rest = (end - start) % 8;
+    const data_size_t group_rest = (end - start) & 65535;
+    const data_size_t rest = (end - start) & 0x7;
     data_size_t i = start;
+    for (; i < end - group_rest;) {
+      std::vector<HistogramBinEntry> tmp_sumup_buf(num_bin);
+      for (data_size_t j = 0; j < 65536; j += 8, i += 8) {
+        const VAL_T bin0 = ordered_pair_[i].bin;
+        const VAL_T bin1 = ordered_pair_[i + 1].bin;
+        const VAL_T bin2 = ordered_pair_[i + 2].bin;
+        const VAL_T bin3 = ordered_pair_[i + 3].bin;
+        const VAL_T bin4 = ordered_pair_[i + 4].bin;
+        const VAL_T bin5 = ordered_pair_[i + 5].bin;
+        const VAL_T bin6 = ordered_pair_[i + 6].bin;
+        const VAL_T bin7 = ordered_pair_[i + 7].bin;
+
+        const auto g0 = gradient[ordered_pair_[i].ridx];
+        const auto h0 = hessian[ordered_pair_[i].ridx];
+        const auto g1 = gradient[ordered_pair_[i + 1].ridx];
+        const auto h1 = hessian[ordered_pair_[i + 1].ridx];
+        const auto g2 = gradient[ordered_pair_[i + 2].ridx];
+        const auto h2 = hessian[ordered_pair_[i + 2].ridx];
+        const auto g3 = gradient[ordered_pair_[i + 3].ridx];
+        const auto h3 = hessian[ordered_pair_[i + 3].ridx];
+        const auto g4 = gradient[ordered_pair_[i + 4].ridx];
+        const auto h4 = hessian[ordered_pair_[i + 4].ridx];
+        const auto g5 = gradient[ordered_pair_[i + 5].ridx];
+        const auto h5 = hessian[ordered_pair_[i + 5].ridx];
+        const auto g6 = gradient[ordered_pair_[i + 6].ridx];
+        const auto h6 = hessian[ordered_pair_[i + 6].ridx];
+        const auto g7 = gradient[ordered_pair_[i + 7].ridx];
+        const auto h7 = hessian[ordered_pair_[i + 7].ridx];
+
+        AddGradientToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                               g0, g1, g2, g3, g4, g5, g6, g7);
+        AddHessianToHessian(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                            h0, h1, h2, h3, h4, h5, h6, h7);
+        AddCountToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7);
+      }
+      for (int j = 0; j < num_bin; ++j) {
+        out[j].sum_gradients += tmp_sumup_buf[j].sum_gradients;
+        out[j].sum_hessians += tmp_sumup_buf[j].sum_hessians;
+        out[j].cnt += tmp_sumup_buf[j].cnt;
+      }
+    }
     // use data on current leaf to construct histogram
     for (; i < end - rest; i += 8) {
 
@@ -132,7 +174,6 @@ public:
       out[bin0].sum_hessians += h0;
       ++out[bin0].cnt;
     }
-
   }
 
   void ConstructHistogram(int leaf, const score_t* gradient, int num_bin,
@@ -140,8 +181,40 @@ public:
     // get current leaf boundary
     const data_size_t start = leaf_start_[leaf];
     const data_size_t end = start + leaf_cnt_[leaf];
-    const int rest = (end - start) % 8;
+    const data_size_t group_rest = (end - start) & 65535;
+    const data_size_t rest = (end - start) & 0x7;
     data_size_t i = start;
+    for (; i < end - group_rest;) {
+      std::vector<HistogramBinEntry> tmp_sumup_buf(num_bin);
+      for (data_size_t j = 0; j < 65536; j += 8, i += 8) {
+        const VAL_T bin0 = ordered_pair_[i].bin;
+        const VAL_T bin1 = ordered_pair_[i + 1].bin;
+        const VAL_T bin2 = ordered_pair_[i + 2].bin;
+        const VAL_T bin3 = ordered_pair_[i + 3].bin;
+        const VAL_T bin4 = ordered_pair_[i + 4].bin;
+        const VAL_T bin5 = ordered_pair_[i + 5].bin;
+        const VAL_T bin6 = ordered_pair_[i + 6].bin;
+        const VAL_T bin7 = ordered_pair_[i + 7].bin;
+
+        const auto g0 = gradient[ordered_pair_[i].ridx];
+        const auto g1 = gradient[ordered_pair_[i + 1].ridx];
+        const auto g2 = gradient[ordered_pair_[i + 2].ridx];
+        const auto g3 = gradient[ordered_pair_[i + 3].ridx];
+        const auto g4 = gradient[ordered_pair_[i + 4].ridx];
+        const auto g5 = gradient[ordered_pair_[i + 5].ridx];
+        const auto g6 = gradient[ordered_pair_[i + 6].ridx];
+        const auto g7 = gradient[ordered_pair_[i + 7].ridx];
+
+        AddGradientToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7,
+                               g0, g1, g2, g3, g4, g5, g6, g7);
+        AddCountToHistogram(tmp_sumup_buf.data(), bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7);
+      }
+      for (int j = 0; j < num_bin; ++j) {
+        out[j].sum_gradients += tmp_sumup_buf[j].sum_gradients;
+        out[j].sum_hessians += tmp_sumup_buf[j].sum_hessians;
+        out[j].cnt += tmp_sumup_buf[j].cnt;
+      }
+    }
     // use data on current leaf to construct histogram
     for (; i < end - rest; i += 8) {
 
@@ -167,9 +240,13 @@ public:
                              g0, g1, g2, g3, g4, g5, g6, g7);
       AddCountToHistogram(out, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7);
     }
+
     for (; i < end; ++i) {
+
       const VAL_T bin0 = ordered_pair_[i].bin;
+
       const auto g0 = gradient[ordered_pair_[i].ridx];
+
       out[bin0].sum_gradients += g0;
       ++out[bin0].cnt;
     }
