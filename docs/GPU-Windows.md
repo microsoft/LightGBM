@@ -223,6 +223,8 @@ This is straightforward, as cmake is providing a large help into locating the co
 
 ## LightGBM Compilation (CLI: final step)
 
+### Installation in CLI
+
 **CLI / Python users**
 
 Creating LightGBM libraries is very simple as all the important and hard steps were done before.
@@ -237,6 +239,8 @@ You can do everything in the Git Bash console you left open:
 ![LightGBM with GPU support compiled](https://cloud.githubusercontent.com/assets/9083669/24923499/0cb90572-1ef2-11e7-8842-371d038fb5e9.png)
 
 If everything was done correctly, you now compiled CLI LightGBM with GPU support!
+
+### Testing in CLI
 
 You can now test LightGBM directly in CLI in a **command prompt** (not Git Bash):
 
@@ -253,6 +257,8 @@ Congratulations for reaching this stage!
 
 ## LightGBM Setup and Installation for Python (Python: final step)
 
+### Installation in Python
+
 **Python users, extra steps**
 
 Installing in Python is as straightforward as CLI. Assuming you already have `numpy`, `scipy`, `scikit-learn`, and `setuptools`, run the following in the Git Console:
@@ -263,6 +269,8 @@ python setup.py install
 ```
 
 ![LightGBM with GPU support in Python](https://cloud.githubusercontent.com/assets/9083669/24957399/f14d0da2-1f8b-11e7-8f90-e8a606266265.png)
+
+### Testing in Python
 
 You can try to run the following demo script in Python to test if it works:
 
@@ -312,6 +320,8 @@ Congratulations for reaching this stage!
 
 ## LightGBM Setup and Installation for R (R: final step)
 
+### Preparation for R
+
 **R users**
 
 This gets a bit complicated for this step.
@@ -346,12 +356,66 @@ OpenCL_LIBRARY = "C:/Program Files (x86)/AMD APP SDK/3.0/lib/x86_64"
 
 From there, you have two solutions:
 
-* Method 1 (hard): Use your local LightGBM repository with the latest and recent development features
-* Method 2 (easy): Use ez_lgb, @Laurae2 's repository for installing LightGBM easily, but it might not be up to date. It uses compute to patch boostorg/compute#704 (boostorg/compute@6de7f64)
+* Installation Method 1 (hard): Use your local LightGBM repository with the latest and recent development features
+* Installation Method 2 (easy): Use ez_lgb, [Laurae2/LightGBM 's repository](https://github.com/Laurae2/LightGBM) for installing LightGBM easily, but it might not be up to date. It uses compute to patch boostorg/compute#704 (boostorg/compute@6de7f64)
 
-### Method 1
+### Installation Method 1
 
-You need to edit the `Makevars.win` in `R-package\src` appropriately by overwriting the following flags (`LGBM_RFLAGS`, `PKG_CPPFLAGS`, `PKG_LIBS`) with the following:
+Edit 1 to do: you need to include proper GPU compilation support to the R package by adding the following to `R-package\src\lightgbm-all.cpp`:
+
+```r
+// gpu support
+#include "../../src/treelearner/gpu_tree_learner.cpp"
+
+```
+
+The `lightgbm-all.cpp` becomes:
+
+```r
+// application
+#include "../../src/application/application.cpp"
+
+// boosting
+#include "../../src/boosting/boosting.cpp"
+#include "../../src/boosting/gbdt.cpp"
+
+// io
+#include "../../src/io/bin.cpp"
+#include "../../src/io/config.cpp"
+#include "../../src/io/dataset.cpp"
+#include "../../src/io/dataset_loader.cpp"
+#include "../../src/io/metadata.cpp"
+#include "../../src/io/parser.cpp"
+#include "../../src/io/tree.cpp"
+
+// metric
+#include "../../src/metric/dcg_calculator.cpp"
+#include "../../src/metric/metric.cpp"
+
+// network
+#include "../../src/network/linker_topo.cpp"
+#include "../../src/network/linkers_socket.cpp"
+#include "../../src/network/network.cpp"
+
+// objective
+#include "../../src/objective/objective_function.cpp"
+
+// treelearner
+#include "../../src/treelearner/data_parallel_tree_learner.cpp"
+#include "../../src/treelearner/feature_parallel_tree_learner.cpp"
+#include "../../src/treelearner/serial_tree_learner.cpp"
+#include "../../src/treelearner/tree_learner.cpp"
+#include "../../src/treelearner/voting_parallel_tree_learner.cpp"
+
+// c_api
+#include "../../src/c_api.cpp"
+
+// gpu support
+#include "../../src/treelearner/gpu_tree_learner.cpp"
+
+```
+
+Edit 2 to do: you need to edit the `Makevars.win` in `R-package\src` appropriately by overwriting the following flags (`LGBM_RFLAGS`, `PKG_CPPFLAGS`, `PKG_LIBS`) with the following:
 
 ```r
 LGBM_RFLAGS = -DUSE_SOCKET -DUSE_GPU=1
@@ -390,7 +454,7 @@ Now, we need to install LightGBM as usual:
 
 ![LightGBM installed with GPU support](https://cloud.githubusercontent.com/assets/9083669/24955074/40179df8-1f82-11e7-909b-d64e62e92641.png)
 
-### Method 2
+### Installation Method 2
 
 This is very simple, as you only need to open an R interactive console and run:
 
@@ -398,7 +462,15 @@ This is very simple, as you only need to open an R interactive console and run:
 devtools::install_github("Laurae2/LightGBM", subdir = "R-package")
 ```
 
-It will install automatically LightGBM for R with GPU support, without the need to edit manually the Makevars.
+It will install automatically LightGBM for R with GPU support, without the need to edit manually the `Makevars.win` and `lightgbm-all.cpp`.
+
+Laurae's LightGBM has all the steps of installation method 1 done for you. Therefore, this is a GPU-only version. You can check how many days it is behind Microsoft/LightGBM master branch and the latest master branch commit made here:
+
+![image](https://cloud.githubusercontent.com/assets/9083669/25041428/3cacfc00-2110-11e7-8000-a783cde6f124.png)
+
+Self-contained packages are not provided are untested. It might work but it was untested, and requires to modify the `fullcode` files instead of the regular files (`lightgbm-fullcode.cpp` and `Makevars_fullcode.win`).
+
+### Testing in R
 
 When you run LightGBM with a specific amount of bins, it will create the appropriate kernels. This will be obviously leading to poor performance during the first usages of LightGBM. But once the kernels are built for the number of bins you are using, you do not have to care about building them again.
 
