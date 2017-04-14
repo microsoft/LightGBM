@@ -505,11 +505,28 @@ Now that you compiled LightGBM, you try it... and you always see a segmentation 
 
 ![Segmentation Fault](https://cloud.githubusercontent.com/assets/9083669/25015529/7326860a-207c-11e7-8fc3-320b2be619a6.png)
 
-Assuming your LightGBM is in `C:\github_repos\LightGBM`, open a command prompt and run the following:
+You will have to redo the compilation steps for LightGBM to add debugging mode. This involves:
+
+* Deleting `C:/github_repos/LightGBM/build` folder
+* Deleting `lightgbm.exe`, `lib_lightgbm.dll`, and `lib_lightgbm.dll.a` files
+
+![Files to remove](https://cloud.githubusercontent.com/assets/9083669/25051307/3b7dd084-214c-11e7-9758-c338c8cacb1e.png)
+
+Once you removed the file, go into cmake, and follow the usual steps. Before clicking "Generate", click on "Add Entry":
+
+![Added manual entry in cmake](https://cloud.githubusercontent.com/assets/9083669/25051323/508969ca-214c-11e7-884a-20882cd3936a.png)
+
+In addition, click on Configure and Generate:
+
+![Configured and Generated cmake](https://cloud.githubusercontent.com/assets/9083669/25051236/e71237ce-214b-11e7-8faa-d885d7826fe1.png)
+
+And then, follow the regular LightGBM CLI installation from there.
+
+Once you have installed LightGBM CLI, assuming your LightGBM is in `C:\github_repos\LightGBM`, open a command prompt and run the following:
 
 `gdb --args "../../lightgbm.exe" config=train.conf data=binary.train valid=binary.test objective=binary device=gpu`
 
-![debug: run](https://cloud.githubusercontent.com/assets/9083669/25041067/8fdbee66-210d-11e7-8adb-79b688c051d5.png)
+![Debug run](https://cloud.githubusercontent.com/assets/9083669/25041067/8fdbee66-210d-11e7-8adb-79b688c051d5.png)
 
 Type `run` and Enter key.
 
