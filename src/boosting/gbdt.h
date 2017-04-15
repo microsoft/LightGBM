@@ -347,8 +347,6 @@ protected:
   std::vector<double> class_default_output_;
   bool is_constant_hessian_;
   std::unique_ptr<ObjectiveFunction> loaded_objective_;
-  /*! \brief Gradients and Hessians need to align to 32. So num_gradients_per_class_ = (num_data + 7) / 8 * 8 */
-  data_size_t num_gradients_per_class_;
 
 };
 

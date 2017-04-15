@@ -114,9 +114,8 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
       }
     }
     num_data_ = train_data->num_data();
-    num_gradients_per_class_ = (num_data_ + 7) / 8 * 8;
     // create buffer for gradients and hessians
-    size_t total_gradient_size = static_cast<size_t>(num_gradients_per_class_) * num_tree_per_iteration_;
+    size_t total_gradient_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
     gradients_.resize(total_gradient_size);
     hessians_.resize(total_gradient_size);
     // get max feature index
@@ -363,12 +362,11 @@ bool GBDT::TrainOneIter(const float* gradient, const float* hessian, bool is_eva
     #endif
   } else {
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
-      const int bias1 = k * num_gradients_per_class_;
-      const int bias2 = k * num_data_;
+      const size_t bias = static_cast<size_t>(k) * num_data_;
       #pragma omp parallel for schedule(static)
-      for (int i = 0; i < num_gradients_per_class_; ++i) {
-        gradients_[bias1 + i] = gradient[bias2 + i];
-        hessians_[bias1 + i] = hessian[bias2 + i];
+      for (int i = 0; i < num_data_; ++i) {
+        gradients_[bias + i] = gradient[bias + i];
+        hessians_[bias + i] = hessian[bias + i];
       }
     }
   }
@@ -386,7 +384,7 @@ bool GBDT::TrainOneIter(const float* gradient, const float* hessian, bool is_eva
     #endif
     // get sub gradients
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-      size_t bias = static_cast<size_t>(cur_tree_id)* num_gradients_per_class_;
+      size_t bias = static_cast<size_t>(cur_tree_id)* num_data_;
       // cannot multi-threading here.
       for (int i = 0; i < bag_data_cnt_; ++i) {
         gradients_[bias + i] = gradients_[bias + bag_data_indices_[i]];
@@ -403,7 +401,7 @@ bool GBDT::TrainOneIter(const float* gradient, const float* hessian, bool is_eva
     start_time = std::chrono::steady_clock::now();
     #endif
     std::unique_ptr<Tree> new_tree(new Tree(2));
-    size_t gbias = static_cast<size_t>(cur_tree_id) * num_gradients_per_class_;
+    size_t gbias = static_cast<size_t>(cur_tree_id) * num_data_;
     if (class_need_train_[cur_tree_id]) {
       new_tree.reset(
         tree_learner_->Train(gradients_.data() + gbias,
