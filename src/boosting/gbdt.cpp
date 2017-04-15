@@ -19,9 +19,9 @@ namespace LightGBM {
 
 #ifdef TIMETAG
 std::chrono::duration<double, std::milli> boosting_time;
-std::chrono::duration<double, std::milli> train_floatime;
-std::chrono::duration<double, std::milli> out_of_bag_floatime;
-std::chrono::duration<double, std::milli> valid_floatime;
+std::chrono::duration<double, std::milli> train_score_time;
+std::chrono::duration<double, std::milli> out_of_bag_score_time;
+std::chrono::duration<double, std::milli> valid_score_time;
 std::chrono::duration<double, std::milli> metric_time;
 std::chrono::duration<double, std::milli> bagging_time;
 std::chrono::duration<double, std::milli> sub_gradient_time;
@@ -50,9 +50,9 @@ GBDT::GBDT()
 GBDT::~GBDT() {
   #ifdef TIMETAG
   Log::Info("GBDT::boosting costs %f", boosting_time * 1e-3);
-  Log::Info("GBDT::train_score costs %f", train_floatime * 1e-3);
-  Log::Info("GBDT::out_of_bag_score costs %f", out_of_bag_floatime * 1e-3);
-  Log::Info("GBDT::valid_score costs %f", valid_floatime * 1e-3);
+  Log::Info("GBDT::train_score costs %f", train_score_time * 1e-3);
+  Log::Info("GBDT::out_of_bag_score costs %f", out_of_bag_score_time * 1e-3);
+  Log::Info("GBDT::valid_score costs %f", valid_score_time * 1e-3);
   Log::Info("GBDT::metric costs %f", metric_time * 1e-3);
   Log::Info("GBDT::bagging costs %f", bagging_time * 1e-3);
   Log::Info("GBDT::sub_gradient costs %f", sub_gradient_time * 1e-3);
@@ -323,7 +323,7 @@ void GBDT::UpdateScoreOutOfBag(const Tree* tree, const int cur_tree_id) {
     train_score_updater_->AddScore(tree, bag_data_indices_.data() + bag_data_cnt_, num_data_ - bag_data_cnt_, cur_tree_id);
   }
   #ifdef TIMETAG
-  out_of_bag_floatime += std::chrono::steady_clock::now() - start_time;
+  out_of_bag_score_time += std::chrono::steady_clock::now() - start_time;
   #endif
 }
 
@@ -502,7 +502,7 @@ void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
     train_score_updater_->AddScore(tree, cur_tree_id);
   }
   #ifdef TIMETAG
-  train_floatime += std::chrono::steady_clock::now() - start_time;
+  train_score_time += std::chrono::steady_clock::now() - start_time;
   #endif
   #ifdef TIMETAG
   start_time = std::chrono::steady_clock::now();
@@ -512,7 +512,7 @@ void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
     score_updater->AddScore(tree, cur_tree_id);
   }
   #ifdef TIMETAG
-  valid_floatime += std::chrono::steady_clock::now() - start_time;
+  valid_score_time += std::chrono::steady_clock::now() - start_time;
   #endif
 }
 

@@ -508,8 +508,8 @@ public:
   data_size_t cnt = 0;
 };
 
-#define KNumSumupGroup (65536)
-#define KNumSumupGroupMask (65535)
+#define KNumSumupGroup (32768)
+#define KNumSumupGroupMask (32767)
 
 
 }  // namespace LightGBM
