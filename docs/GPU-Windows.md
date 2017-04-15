@@ -60,7 +60,9 @@ Installing the appropriate OpenCL SDK requires you to download the correct vendo
 
 If you are expecting to use LightGBM without R, you need to install MinGW. Installing MinGW is straightforward, download this: http://iweb.dl.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/mingw-w64-install.exe
 
-Make sure you are using the x86_64 architecture, and do not modify anything else.
+Make sure you are using the x86_64 architecture, and do not modify anything else. You may choose a version other than the most recent one if you need a previous MinGW version.
+
+![MinGW installation](https://cloud.githubusercontent.com/assets/9083669/25063112/a7374ee2-21db-11e7-89f4-ae6f413a16f1.png)
 
 Then, add to your PATH the following (to adjust to your MinGW version):
 
