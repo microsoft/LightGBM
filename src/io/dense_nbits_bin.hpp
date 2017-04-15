@@ -487,7 +487,7 @@ public:
 
 protected:
   data_size_t num_data_;
-  std::vector<uint8_t, aligned_allocator<uint8_t, 32>> data_;
+  std::vector<uint8_t> data_;
   std::vector<uint8_t> buf_;
 };
 

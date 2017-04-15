@@ -142,9 +142,9 @@ protected:
   std::vector<float, boost::alignment::aligned_allocator<float, 4096>> ordered_hessians_;
 #else
   /*! \brief gradients of current iteration, ordered for cache optimized */
-  std::vector<float, aligned_allocator<float, 32>> ordered_gradients_;
+  std::vector<float> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized */
-  std::vector<float, aligned_allocator<float, 32>> ordered_hessians_;
+  std::vector<float> ordered_hessians_;
 #endif
 
   /*! \brief Store ordered bin */
