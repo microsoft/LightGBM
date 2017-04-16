@@ -721,7 +721,7 @@ The methods of each Class is in alphabetical order.
     X_leaves : array_like, shape=[n_samples, n_trees]
 
 
-#### fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric=None, early_stopping_rounds=None, verbose=True, feature_name='auto', categorical_feature='auto', callbacks=None)
+#### fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_names=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric=None, early_stopping_rounds=None, verbose=True, feature_name='auto', categorical_feature='auto', callbacks=None)
 
     Fit the gradient boosting model.
 
@@ -739,6 +739,8 @@ The methods of each Class is in alphabetical order.
         group data of training data
     eval_set : list, optional
         A list of (X, y) tuple pairs to use as a validation set for early-stopping
+    eval_names: list of string
+        Names of eval_set
     eval_sample_weight : list or dict of array
         weight of eval data; if you use dict, the index should start from 0
     eval_init_score : list or dict of array
@@ -854,7 +856,7 @@ The methods of each Class is in alphabetical order.
 
 ### LGBMRanker
 
-#### fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric='ndcg', eval_at=1, early_stopping_rounds=None, verbose=True, feature_name='auto', categorical_feature='auto', callbacks=None)
+#### fit(X, y, sample_weight=None, init_score=None, group=None, eval_set=None, eval_names=None, eval_sample_weight=None, eval_init_score=None, eval_group=None, eval_metric='ndcg', eval_at=1, early_stopping_rounds=None, verbose=True, feature_name='auto', categorical_feature='auto', callbacks=None)
 
     Most arguments are same as Common Methods except:
 
