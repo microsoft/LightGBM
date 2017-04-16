@@ -183,6 +183,9 @@
     <ClInclude Include="..\src\metric\map_metric.hpp">
       <Filter>src\metric</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\treelearner\gpu_tree_learner.h">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp">
@@ -255,6 +258,9 @@
       <Filter>src\io</Filter>
     </ClCompile>
     <ClCompile Include="..\src\treelearner\voting_parallel_tree_learner.cpp">
+      <Filter>src\treelearner</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\treelearner\gpu_tree_learner.cpp">
       <Filter>src\treelearner</Filter>
     </ClCompile>
   </ItemGroup>

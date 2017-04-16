@@ -71,8 +71,8 @@ public:
     ConstructSigmoidTable();
   }
 
-  void GetGradients(const double* score, score_t* gradients,
-                    score_t* hessians) const override {
+  void GetGradients(const double* score, float* gradients,
+                    float* hessians) const override {
     #pragma omp parallel for schedule(guided)
     for (data_size_t i = 0; i < num_queries_; ++i) {
       GetGradientsForOneQuery(score, gradients, hessians, i);
@@ -80,7 +80,7 @@ public:
   }
 
   inline void GetGradientsForOneQuery(const double* score,
-              score_t* lambdas, score_t* hessians, data_size_t query_id) const {
+              float* lambdas, float* hessians, data_size_t query_id) const {
     // get doc boundary for current query
     const data_size_t start = query_boundaries_[query_id];
     const data_size_t cnt =
@@ -153,12 +153,12 @@ public:
         p_hessian *= 2 * delta_pair_NDCG;
         high_sum_lambda += p_lambda;
         high_sum_hessian += p_hessian;
-        lambdas[low] -= static_cast<score_t>(p_lambda);
-        hessians[low] += static_cast<score_t>(p_hessian);
+        lambdas[low] -= static_cast<float>(p_lambda);
+        hessians[low] += static_cast<float>(p_hessian);
       }
       // update
-      lambdas[high] += static_cast<score_t>(high_sum_lambda);
-      hessians[high] += static_cast<score_t>(high_sum_hessian);
+      lambdas[high] += static_cast<float>(high_sum_lambda);
+      hessians[high] += static_cast<float>(high_sum_hessian);
     }
     // if need weights
     if (weights_ != nullptr) {

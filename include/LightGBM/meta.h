@@ -7,17 +7,28 @@
 #include <vector>
 #include <functional>
 #include <memory>
+#include <cstdlib>
+
+#if defined(_WIN32)
+
+#include <malloc.h>
+
+#else
+
+#include <mm_malloc.h>
+
+#endif // (_WIN32)
+
+
 
 namespace LightGBM {
 
 /*! \brief Type of data size, it is better to use signed type*/
 typedef int32_t data_size_t;
-/*! \brief Type of score, and gradients */
-typedef float score_t;
 
-const score_t kMinScore = -std::numeric_limits<score_t>::infinity();
+const float kMinScore = -std::numeric_limits<float>::infinity();
 
-const score_t kEpsilon = 1e-15f;
+const float kEpsilon = 1e-15f;
 
 using ReduceFunction = std::function<void(const char*, char*, int)>;
 

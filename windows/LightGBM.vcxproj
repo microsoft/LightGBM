@@ -234,6 +234,7 @@
     <ClInclude Include="..\src\objective\multiclass_objective.hpp" />
     <ClInclude Include="..\src\treelearner\data_partition.hpp" />
     <ClInclude Include="..\src\treelearner\feature_histogram.hpp" />
+    <ClInclude Include="..\src\treelearner\gpu_tree_learner.h" />
     <ClInclude Include="..\src\treelearner\leaf_splits.hpp" />
     <ClInclude Include="..\src\treelearner\parallel_tree_learner.h" />
     <ClInclude Include="..\src\treelearner\serial_tree_learner.h" />
@@ -261,6 +262,7 @@
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\treelearner\data_parallel_tree_learner.cpp" />
     <ClCompile Include="..\src\treelearner\feature_parallel_tree_learner.cpp" />
+    <ClCompile Include="..\src\treelearner\gpu_tree_learner.cpp" />
     <ClCompile Include="..\src\treelearner\serial_tree_learner.cpp" />
     <ClCompile Include="..\src\treelearner\tree_learner.cpp" />
     <ClCompile Include="..\src\treelearner\voting_parallel_tree_learner.cpp" />
