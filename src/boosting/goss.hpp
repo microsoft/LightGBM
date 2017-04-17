@@ -80,7 +80,7 @@ public:
     std::vector<score_t> tmp_gradients(cnt, 0.0f);
     for (data_size_t i = 0; i < cnt; ++i) {
       for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-        int idx = cur_tree_id * num_data_ + start + i;
+        size_t idx = static_cast<size_t>(cur_tree_id) * num_data_ + start + i;
         tmp_gradients[i] += std::fabs(gradients_[idx] * hessians_[idx]);
       }
     }
@@ -97,7 +97,7 @@ public:
     for (data_size_t i = 0; i < cnt; ++i) {
       score_t grad = 0.0f;
       for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-        int idx = cur_tree_id * num_data_ + start + i;
+        size_t idx = static_cast<size_t>(cur_tree_id) * num_data_ + start + i;
         grad += std::fabs(gradients_[idx] * hessians_[idx]);
       }
       if (grad >= threshold) {
@@ -111,7 +111,7 @@ public:
         if (cur_rand.NextFloat() < prob) {
           buffer[cur_left_cnt++] = start + i;
           for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-            int idx = cur_tree_id * num_data_ + start + i;
+            size_t idx = static_cast<size_t>(cur_tree_id) * num_data_ + start + i;
             gradients_[idx] *= multiply;
             hessians_[idx] *= multiply;
           }

@@ -333,6 +333,10 @@ public:
     const score_t* ordered_gradients, const score_t* ordered_hessians,
     HistogramBinEntry* out) const = 0;
 
+  virtual void ConstructHistogram(data_size_t num_data,
+    const score_t* ordered_gradients, const score_t* ordered_hessians,
+    HistogramBinEntry* out) const = 0;
+
   /*!
   * \brief Construct histogram of this feature,
   *        Note: We use ordered_gradients and ordered_hessians to improve cache hit chance
@@ -346,6 +350,9 @@ public:
   * \param out Output Result
   */
   virtual void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
+                                  const score_t* ordered_gradients, HistogramBinEntry* out) const = 0;
+
+  virtual void ConstructHistogram(data_size_t num_data,
                                   const score_t* ordered_gradients, HistogramBinEntry* out) const = 0;
 
   /*!

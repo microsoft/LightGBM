@@ -384,7 +384,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
     }
     // get sub gradients
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-      auto bias = cur_tree_id * num_data_;
+      size_t bias = static_cast<size_t>(cur_tree_id)* num_data_;
       // cannot multi-threading here.
       for (int i = 0; i < bag_data_cnt_; ++i) {
         gradients_[bias + i] = gradient[bias + bag_data_indices_[i]];
@@ -404,8 +404,9 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
     #endif
     std::unique_ptr<Tree> new_tree(new Tree(2));
     if (class_need_train_[cur_tree_id]) {
+      size_t bias = static_cast<size_t>(cur_tree_id)* num_data_;
       new_tree.reset(
-        tree_learner_->Train(gradient + cur_tree_id * num_data_, hessian + cur_tree_id * num_data_, is_constant_hessian_));
+        tree_learner_->Train(gradient + bias, hessian + bias, is_constant_hessian_));
     }
     #ifdef TIMETAG
     tree_time += std::chrono::steady_clock::now() - start_time;

@@ -435,85 +435,163 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
     }
     ptr_ordered_grad = ordered_gradients;
     ptr_ordered_hess = ordered_hessians;
-  }
-  if (!is_constant_hessian) {
-    OMP_INIT_EX();
-    #pragma omp parallel for schedule(static)
-    for (int group = 0; group < num_groups_; ++group) {
-      OMP_LOOP_EX_BEGIN();
-      bool is_groud_used = false;
-      const int f_cnt = group_feature_cnt_[group];
-      for (int j = 0; j < f_cnt; ++j) {
-        const int fidx = group_feature_start_[group] + j;
-        if (is_feature_used[fidx]) {
-          is_groud_used = true;
-          break;
+    if (!is_constant_hessian) {
+      OMP_INIT_EX();
+      #pragma omp parallel for schedule(static)
+      for (int group = 0; group < num_groups_; ++group) {
+        OMP_LOOP_EX_BEGIN();
+        bool is_groud_used = false;
+        const int f_cnt = group_feature_cnt_[group];
+        for (int j = 0; j < f_cnt; ++j) {
+          const int fidx = group_feature_start_[group] + j;
+          if (is_feature_used[fidx]) {
+            is_groud_used = true;
+            break;
+          }
         }
+        if (!is_groud_used) { continue; }
+        // feature is not used
+        auto data_ptr = hist_data + group_bin_boundaries_[group];
+        const int num_bin = feature_groups_[group]->num_total_bin_;
+        std::memset(data_ptr + 1, 0, (num_bin - 1) * sizeof(HistogramBinEntry));
+        // construct histograms for smaller leaf
+        if (ordered_bins[group] == nullptr) {
+          // if not use ordered bin
+          feature_groups_[group]->bin_data_->ConstructHistogram(
+            data_indices,
+            num_data,
+            ptr_ordered_grad,
+            ptr_ordered_hess,
+            data_ptr);
+        } else {
+          // used ordered bin
+          ordered_bins[group]->ConstructHistogram(leaf_idx,
+                                                  gradients,
+                                                  hessians,
+                                                  data_ptr);
+        }
+        OMP_LOOP_EX_END();
       }
-      if (!is_groud_used) { continue; }
-      // feature is not used
-      auto data_ptr = hist_data + group_bin_boundaries_[group];
-      const int num_bin = feature_groups_[group]->num_total_bin_;
-      std::memset(data_ptr + 1, 0, (num_bin - 1) * sizeof(HistogramBinEntry));
-      // construct histograms for smaller leaf
-      if (ordered_bins[group] == nullptr) {
-        // if not use ordered bin
-        feature_groups_[group]->bin_data_->ConstructHistogram(
-          data_indices,
-          num_data,
-          ptr_ordered_grad,
-          ptr_ordered_hess,
-          data_ptr);
-      } else {
-        // used ordered bin
-        ordered_bins[group]->ConstructHistogram(leaf_idx,
-                                                gradients,
-                                                hessians,
-                                                data_ptr);
+      OMP_THROW_EX();
+    } else {
+      OMP_INIT_EX();
+      #pragma omp parallel for schedule(static)
+      for (int group = 0; group < num_groups_; ++group) {
+        OMP_LOOP_EX_BEGIN();
+        bool is_groud_used = false;
+        const int f_cnt = group_feature_cnt_[group];
+        for (int j = 0; j < f_cnt; ++j) {
+          const int fidx = group_feature_start_[group] + j;
+          if (is_feature_used[fidx]) {
+            is_groud_used = true;
+            break;
+          }
+        }
+        if (!is_groud_used) { continue; }
+        // feature is not used
+        auto data_ptr = hist_data + group_bin_boundaries_[group];
+        const int num_bin = feature_groups_[group]->num_total_bin_;
+        std::memset(data_ptr + 1, 0, (num_bin - 1) * sizeof(HistogramBinEntry));
+        // construct histograms for smaller leaf
+        if (ordered_bins[group] == nullptr) {
+          // if not use ordered bin
+          feature_groups_[group]->bin_data_->ConstructHistogram(
+            data_indices,
+            num_data,
+            ptr_ordered_grad,
+            data_ptr);
+        } else {
+          // used ordered bin
+          ordered_bins[group]->ConstructHistogram(leaf_idx,
+                                                  gradients,
+                                                  data_ptr);
+        }
+        // fixed hessian.
+        for (int i = 0; i < num_bin; ++i) {
+          data_ptr[i].sum_hessians = data_ptr[i].cnt * hessians[0];
+        }
+        OMP_LOOP_EX_END();
       }
-      OMP_LOOP_EX_END();
+      OMP_THROW_EX();
     }
-    OMP_THROW_EX();
   } else {
-    OMP_INIT_EX();
-    #pragma omp parallel for schedule(static)
-    for (int group = 0; group < num_groups_; ++group) {
-      OMP_LOOP_EX_BEGIN();
-      bool is_groud_used = false;
-      const int f_cnt = group_feature_cnt_[group];
-      for (int j = 0; j < f_cnt; ++j) {
-        const int fidx = group_feature_start_[group] + j;
-        if (is_feature_used[fidx]) {
-          is_groud_used = true;
-          break;
+    if (!is_constant_hessian) {
+      OMP_INIT_EX();
+      #pragma omp parallel for schedule(static)
+      for (int group = 0; group < num_groups_; ++group) {
+        OMP_LOOP_EX_BEGIN();
+        bool is_groud_used = false;
+        const int f_cnt = group_feature_cnt_[group];
+        for (int j = 0; j < f_cnt; ++j) {
+          const int fidx = group_feature_start_[group] + j;
+          if (is_feature_used[fidx]) {
+            is_groud_used = true;
+            break;
+          }
         }
+        if (!is_groud_used) { continue; }
+        // feature is not used
+        auto data_ptr = hist_data + group_bin_boundaries_[group];
+        const int num_bin = feature_groups_[group]->num_total_bin_;
+        std::memset(data_ptr + 1, 0, (num_bin - 1) * sizeof(HistogramBinEntry));
+        // construct histograms for smaller leaf
+        if (ordered_bins[group] == nullptr) {
+          // if not use ordered bin
+          feature_groups_[group]->bin_data_->ConstructHistogram(
+            num_data,
+            ptr_ordered_grad,
+            ptr_ordered_hess,
+            data_ptr);
+        } else {
+          // used ordered bin
+          ordered_bins[group]->ConstructHistogram(leaf_idx,
+                                                  gradients,
+                                                  hessians,
+                                                  data_ptr);
+        }
+        OMP_LOOP_EX_END();
       }
-      if (!is_groud_used) { continue; }
-      // feature is not used
-      auto data_ptr = hist_data + group_bin_boundaries_[group];
-      const int num_bin = feature_groups_[group]->num_total_bin_;
-      std::memset(data_ptr + 1, 0, (num_bin - 1) * sizeof(HistogramBinEntry));
-      // construct histograms for smaller leaf
-      if (ordered_bins[group] == nullptr) {
-        // if not use ordered bin
-        feature_groups_[group]->bin_data_->ConstructHistogram(
-          data_indices,
-          num_data,
-          ptr_ordered_grad,
-          data_ptr);
-      } else {
-        // used ordered bin
-        ordered_bins[group]->ConstructHistogram(leaf_idx,
-                                                gradients,
-                                                data_ptr);
+      OMP_THROW_EX();
+    } else {
+      OMP_INIT_EX();
+      #pragma omp parallel for schedule(static)
+      for (int group = 0; group < num_groups_; ++group) {
+        OMP_LOOP_EX_BEGIN();
+        bool is_groud_used = false;
+        const int f_cnt = group_feature_cnt_[group];
+        for (int j = 0; j < f_cnt; ++j) {
+          const int fidx = group_feature_start_[group] + j;
+          if (is_feature_used[fidx]) {
+            is_groud_used = true;
+            break;
+          }
+        }
+        if (!is_groud_used) { continue; }
+        // feature is not used
+        auto data_ptr = hist_data + group_bin_boundaries_[group];
+        const int num_bin = feature_groups_[group]->num_total_bin_;
+        std::memset(data_ptr + 1, 0, (num_bin - 1) * sizeof(HistogramBinEntry));
+        // construct histograms for smaller leaf
+        if (ordered_bins[group] == nullptr) {
+          // if not use ordered bin
+          feature_groups_[group]->bin_data_->ConstructHistogram(
+            num_data,
+            ptr_ordered_grad,
+            data_ptr);
+        } else {
+          // used ordered bin
+          ordered_bins[group]->ConstructHistogram(leaf_idx,
+                                                  gradients,
+                                                  data_ptr);
+        }
+        // fixed hessian.
+        for (int i = 0; i < num_bin; ++i) {
+          data_ptr[i].sum_hessians = data_ptr[i].cnt * hessians[0];
+        }
+        OMP_LOOP_EX_END();
       }
-      // fixed hessian.
-      for (int i = 0; i < num_bin; ++i) {
-        data_ptr[i].sum_hessians = data_ptr[i].cnt * hessians[0];
-      }
-      OMP_LOOP_EX_END();
+      OMP_THROW_EX();
     }
-    OMP_THROW_EX();
   }
 }
 
