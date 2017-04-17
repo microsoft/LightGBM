@@ -32,8 +32,8 @@ class template(object):
     @staticmethod
     def test_template(params={'objective': 'regression', 'metric': 'l2'},
                       X_y=load_boston(True), feval=mean_squared_error,
-                      num_round=200, init_model=None, custom_eval=None,
-                      early_stopping_rounds=5,
+                      num_round=50, init_model=None, custom_eval=None,
+                      early_stopping_rounds=2,
                       return_data=False, return_model=False):
         params['verbose'], params['seed'] = -1, 42
         X_train, X_test, y_train, y_test = train_test_split(*X_y, test_size=0.1, random_state=42)
