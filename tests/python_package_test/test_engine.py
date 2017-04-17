@@ -164,8 +164,12 @@ class TestEngine(unittest.TestCase):
 
     def test_feature_name(self):
         lgb_train, _ = template.test_template(return_data=True)
-        feature_names = ['f' + str(i) for i in range(13)]
-        gbm = lgb.train({'verbose': -1}, lgb_train, num_boost_round=10, feature_name=feature_names)
+        feature_names = ['f_' + str(i) for i in range(13)]
+        gbm = lgb.train({'verbose': -1}, lgb_train, num_boost_round=5, feature_name=feature_names)
+        self.assertListEqual(feature_names, gbm.feature_name())
+        # test feature_names with whitespaces
+        feature_names_with_space = ['f ' + str(i) for i in range(13)]
+        gbm = lgb.train({'verbose': -1}, lgb_train, num_boost_round=5, feature_name=feature_names_with_space)
         self.assertListEqual(feature_names, gbm.feature_name())
 
     def test_save_load_copy_pickle(self):
