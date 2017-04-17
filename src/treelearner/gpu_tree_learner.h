@@ -40,7 +40,7 @@ public:
   ~GPUTreeLearner();
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
   void ResetTrainingData(const Dataset* train_data) override;
-  Tree* Train(const float* gradients, const float *hessians, bool is_constant_hessian) override;
+  Tree* Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian) override;
 
   void SetBaggingData(const data_size_t* used_indices, data_size_t num_data) override {
     SerialTreeLearner::SetBaggingData(used_indices, num_data);
@@ -77,8 +77,8 @@ private:
   
   /*! \brief Single precision histogram entiry for GPU */
   struct GPUHistogramBinEntry {
-    float sum_gradients;
-    float sum_hessians;
+    score_t sum_gradients;
+    score_t sum_hessians;
     uint32_t cnt;
   };
 
@@ -146,8 +146,8 @@ private:
   bool ConstructGPUHistogramsAsync(
     const std::vector<int8_t>& is_feature_used,
     const data_size_t* data_indices, data_size_t num_data,
-    const float* gradients, const float* hessians,
-    float* ordered_gradients, float* ordered_hessians);
+    const score_t* gradients, const score_t* hessians,
+    score_t* ordered_gradients, score_t* ordered_hessians);
 
 
   /*! brief Log2 of max number of workgroups per feature*/

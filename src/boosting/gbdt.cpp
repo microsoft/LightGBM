@@ -115,9 +115,11 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
     }
     num_data_ = train_data->num_data();
     // create buffer for gradients and hessians
-    size_t total_gradient_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
-    gradients_.resize(total_gradient_size);
-    hessians_.resize(total_gradient_size);
+    if (objective_function_ != nullptr) {
+      size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+      gradients_.resize(total_size);
+      hessians_.resize(total_size);
+    }
     // get max feature index
     max_feature_idx_ = train_data->num_total_features() - 1;
     // get label index
@@ -327,7 +329,7 @@ void GBDT::UpdateScoreOutOfBag(const Tree* tree, const int cur_tree_id) {
   #endif
 }
 
-bool GBDT::TrainOneIter(const float* gradient, const float* hessian, bool is_eval) {
+bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) {
   // boosting from average prediction. It doesn't work well for classification, remove it for now.
   if (models_.empty()
       && gbdt_config_->boost_from_average
@@ -357,18 +359,11 @@ bool GBDT::TrainOneIter(const float* gradient, const float* hessian, bool is_eva
     auto start_time = std::chrono::steady_clock::now();
     #endif
     Boosting();
+    gradient = gradients_.data();
+    hessian = hessians_.data();
     #ifdef TIMETAG
     boosting_time += std::chrono::steady_clock::now() - start_time;
     #endif
-  } else {
-    for (int k = 0; k < num_tree_per_iteration_; ++k) {
-      const size_t bias = static_cast<size_t>(k) * num_data_;
-      #pragma omp parallel for schedule(static)
-      for (int i = 0; i < num_data_; ++i) {
-        gradients_[bias + i] = gradient[bias + i];
-        hessians_[bias + i] = hessian[bias + i];
-      }
-    }
   }
   #ifdef TIMETAG
   auto start_time = std::chrono::steady_clock::now();
@@ -382,15 +377,22 @@ bool GBDT::TrainOneIter(const float* gradient, const float* hessian, bool is_eva
     #ifdef TIMETAG
     start_time = std::chrono::steady_clock::now();
     #endif
+    if (gradients_.empty()) {
+      size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+      gradients_.resize(total_size);
+      hessians_.resize(total_size);
+    }
     // get sub gradients
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-      size_t bias = static_cast<size_t>(cur_tree_id)* num_data_;
+      auto bias = cur_tree_id * num_data_;
       // cannot multi-threading here.
       for (int i = 0; i < bag_data_cnt_; ++i) {
-        gradients_[bias + i] = gradients_[bias + bag_data_indices_[i]];
-        hessians_[bias + i] = hessians_[bias + bag_data_indices_[i]];
+        gradients_[bias + i] = gradient[bias + bag_data_indices_[i]];
+        hessians_[bias + i] = hessian[bias + bag_data_indices_[i]];
       }
     }
+    gradient = gradients_.data();
+    hessian = hessians_.data();
     #ifdef TIMETAG
     sub_gradient_time += std::chrono::steady_clock::now() - start_time;
     #endif
@@ -401,11 +403,9 @@ bool GBDT::TrainOneIter(const float* gradient, const float* hessian, bool is_eva
     start_time = std::chrono::steady_clock::now();
     #endif
     std::unique_ptr<Tree> new_tree(new Tree(2));
-    size_t gbias = static_cast<size_t>(cur_tree_id) * num_data_;
     if (class_need_train_[cur_tree_id]) {
       new_tree.reset(
-        tree_learner_->Train(gradients_.data() + gbias,
-                             hessians_.data() + gbias, is_constant_hessian_));
+        tree_learner_->Train(gradient + cur_tree_id * num_data_, hessian + cur_tree_id * num_data_, is_constant_hessian_));
     }
     #ifdef TIMETAG
     tree_time += std::chrono::steady_clock::now() - start_time;

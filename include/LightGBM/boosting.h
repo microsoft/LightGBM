@@ -66,7 +66,7 @@ public:
   * \param is_eval true if need evaluation or early stop
   * \return True if meet early stopping or cannot boosting
   */
-  virtual bool TrainOneIter(const float* gradient, const float* hessian, bool is_eval) = 0;
+  virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) = 0;
 
   /*!
   * \brief Rollback one iteration
