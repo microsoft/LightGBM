@@ -2,7 +2,6 @@
 #define LIGHTGBM_TREE_H_
 
 #include <LightGBM/meta.h>
-#include <LightGBM/feature.h>
 #include <LightGBM/dataset.h>
 
 #include <string>
@@ -11,6 +10,7 @@
 
 namespace LightGBM {
 
+#define kMaxTreeOutput (100)
 
 /*!
 * \brief Tree model
@@ -46,9 +46,9 @@ public:
   * \param gain Split gain
   * \return The index of new leaf.
   */
-  int Split(int leaf, int feature, BinType bin_type, unsigned int threshold, int real_feature,
-    double threshold_double, double left_value,
-    double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain);
+  int Split(int leaf, int feature, BinType bin_type, uint32_t threshold, int real_feature,
+            double threshold_double, double left_value,
+            double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain);
 
   /*! \brief Get the output of one leaf */
   inline double LeafOutput(int leaf) const { return leaf_value_[leaf]; }
@@ -64,8 +64,9 @@ public:
   * \param num_data Number of total data
   * \param score Will add prediction to score
   */
-  void AddPredictionToScore(const Dataset* data, data_size_t num_data,
-                                                       double* score) const;
+  void AddPredictionToScore(const Dataset* data,
+                            data_size_t num_data,
+                            double* score) const;
 
   /*!
   * \brief Adding prediction value of this tree model to scorese
@@ -79,7 +80,7 @@ public:
                             data_size_t num_data, double* score) const;
 
   /*!
-  * \brief Prediction on one record 
+  * \brief Prediction on one record
   * \param feature_values Feature value of this record
   * \return Prediction result
   */
@@ -93,7 +94,7 @@ public:
   inline int leaf_depth(int leaf_idx) const { return leaf_depth_[leaf_idx]; }
 
   /*! \brief Get feature of specific split*/
-  inline int split_feature_real(int split_idx) const { return split_feature_real_[split_idx]; }
+  inline int split_feature(int split_idx) const { return split_feature_[split_idx]; }
 
   /*!
   * \brief Shrinkage for the tree's output
@@ -101,9 +102,13 @@ public:
   * \param rate The factor of shrinkage
   */
   inline void Shrinkage(double rate) {
+    #pragma omp parallel for schedule(static, 512) if (num_leaves_ >= 1024)
     for (int i = 0; i < num_leaves_; ++i) {
-      leaf_value_[i] = leaf_value_[i] * rate;
+      leaf_value_[i] *= rate;
+      if (leaf_value_[i] > kMaxTreeOutput) { leaf_value_[i] = kMaxTreeOutput; } 
+      else if (leaf_value_[i] < -kMaxTreeOutput) { leaf_value_[i] = -kMaxTreeOutput; }
     }
+    shrinkage_ *= rate;
   }
 
   /*! \brief Serialize this object to string*/
@@ -138,18 +143,10 @@ public:
     }
   }
 
-  static std::vector<bool(*)(unsigned int, unsigned int)> inner_decision_funs;
+  static std::vector<bool(*)(uint32_t, uint32_t)> inner_decision_funs;
   static std::vector<bool(*)(double, double)> decision_funs;
 
 private:
-  /*!
-  * \brief Find leaf index of which record belongs by data
-  * \param data The dataset
-  * \param data_idx Index of record
-  * \return Leaf index
-  */
-  inline int GetLeaf(const std::vector<std::unique_ptr<BinIterator>>& iterators,
-                                           data_size_t data_idx) const;
 
   /*!
   * \brief Find leaf index of which record belongs by features
@@ -171,11 +168,11 @@ private:
   /*! \brief A non-leaf node's right child */
   std::vector<int> right_child_;
   /*! \brief A non-leaf node's split feature */
-  std::vector<int> split_feature_;
+  std::vector<int> split_feature_inner;
   /*! \brief A non-leaf node's split feature, the original index */
-  std::vector<int> split_feature_real_;
+  std::vector<int> split_feature_;
   /*! \brief A non-leaf node's split threshold in bin */
-  std::vector<unsigned int> threshold_in_bin_;
+  std::vector<uint32_t> threshold_in_bin_;
   /*! \brief A non-leaf node's split threshold in feature value */
   std::vector<double> threshold_;
   /*! \brief Decision type, 0 for '<='(numerical feature), 1 for 'is'(categorical feature) */
@@ -195,43 +192,49 @@ private:
   std::vector<data_size_t> internal_count_;
   /*! \brief Depth for leaves */
   std::vector<int> leaf_depth_;
+  double shrinkage_;
+  bool has_categorical_;
 };
 
-
 inline double Tree::Predict(const double* feature_values) const {
-  int leaf = GetLeaf(feature_values);
-  return LeafOutput(leaf);
+  if (num_leaves_ > 1) {
+    int leaf = GetLeaf(feature_values);
+    return LeafOutput(leaf);
+  } else {
+    return 0.0f;
+  }
 }
 
 inline int Tree::PredictLeafIndex(const double* feature_values) const {
-  int leaf = GetLeaf(feature_values);
-  return leaf;
-}
-
-inline int Tree::GetLeaf(const std::vector<std::unique_ptr<BinIterator>>& iterators,
-                                       data_size_t data_idx) const {
-  int node = 0;
-  while (node >= 0) {
-    if (inner_decision_funs[decision_type_[node]](
-        iterators[split_feature_[node]]->Get(data_idx),
-        threshold_in_bin_[node])) {
-      node = left_child_[node];
-    } else {
-      node = right_child_[node];
-    }
+  if (num_leaves_ > 1) {
+    int leaf = GetLeaf(feature_values);
+    return leaf;
+  } else {
+    return 0;
   }
-  return ~node;
 }
 
 inline int Tree::GetLeaf(const double* feature_values) const {
   int node = 0;
-  while (node >= 0) {
-    if (decision_funs[decision_type_[node]](
-        feature_values[split_feature_real_[node]],
+  if (has_categorical_) {
+    while (node >= 0) {
+      if (decision_funs[decision_type_[node]](
+        feature_values[split_feature_[node]],
         threshold_[node])) {
-      node = left_child_[node];
-    } else {
-      node = right_child_[node];
+        node = left_child_[node];
+      } else {
+        node = right_child_[node];
+      }
+    }
+  } else {
+    while (node >= 0) {
+      if (NumericalDecision<double>(
+        feature_values[split_feature_[node]],
+        threshold_[node])) {
+        node = left_child_[node];
+      } else {
+        node = right_child_[node];
+      }
     }
   }
   return ~node;

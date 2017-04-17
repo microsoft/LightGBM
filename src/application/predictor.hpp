@@ -19,79 +19,78 @@
 namespace LightGBM {
 
 /*!
-* \brief Used to prediction data with input model
+* \brief Used to predict data with input model
 */
 class Predictor {
 public:
   /*!
   * \brief Constructor
   * \param boosting Input boosting model
+  * \param num_iteration Number of boosting round
   * \param is_raw_score True if need to predict result with raw score
-  * \param predict_leaf_index True if output leaf index instead of prediction score
+  * \param is_predict_leaf_index True if output leaf index instead of prediction score
   */
-  Predictor(const Boosting* boosting, bool is_raw_score, bool is_predict_leaf_index) {
+  Predictor(Boosting* boosting, int num_iteration,
+            bool is_raw_score, bool is_predict_leaf_index) {
+
+    boosting->InitPredict(num_iteration);
     boosting_ = boosting;
-    num_features_ = boosting_->MaxFeatureIdx() + 1;
-#pragma omp parallel
-#pragma omp master
-    {
-      num_threads_ = omp_get_num_threads();
-    }
-    for (int i = 0; i < num_threads_; ++i) {
-      features_.push_back(std::vector<double>(num_features_));
-    }
-    features_.shrink_to_fit();
+    num_pred_one_row_ = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf_index);
+    predict_buf_ = std::vector<double>(boosting_->MaxFeatureIdx() + 1, 0.0f);
+
     if (is_predict_leaf_index) {
-      predict_fun_ = [this](const std::vector<std::pair<int, double>>& features) {
-        const int tid = PutFeatureValuesToBuffer(features);
+      predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
+        CopyToPredictBuffer(features);
         // get result for leaf index
-        auto result = boosting_->PredictLeafIndex(features_[tid].data());
-        return std::vector<double>(result.begin(), result.end());
+        boosting_->PredictLeafIndex(predict_buf_.data(), output);
+        ClearPredictBuffer(features);
       };
+
     } else {
       if (is_raw_score) {
-        predict_fun_ = [this](const std::vector<std::pair<int, double>>& features) {
-          const int tid = PutFeatureValuesToBuffer(features);
-          // get result without sigmoid transformation
-          return boosting_->PredictRaw(features_[tid].data());
+        predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
+          CopyToPredictBuffer(features);
+          boosting_->PredictRaw(predict_buf_.data(), output);
+          ClearPredictBuffer(features);
         };
       } else {
-        predict_fun_ = [this](const std::vector<std::pair<int, double>>& features) {
-          const int tid = PutFeatureValuesToBuffer(features);
-          return boosting_->Predict(features_[tid].data());
+        predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
+          CopyToPredictBuffer(features);
+          boosting_->Predict(predict_buf_.data(), output);
+          ClearPredictBuffer(features);
         };
       }
     }
   }
+
   /*!
   * \brief Destructor
   */
   ~Predictor() {
   }
 
-  inline const PredictFunction& GetPredictFunction() {
+  inline const PredictFunction& GetPredictFunction() const {
     return predict_fun_;
   }
 
   /*!
   * \brief predicting on data, then saving result to disk
   * \param data_filename Filename of data
-  * \param has_label True if this data contains label
   * \param result_filename Filename of output result
   */
   void Predict(const char* data_filename, const char* result_filename, bool has_header) {
     FILE* result_file;
 
-#ifdef _MSC_VER
+    #ifdef _MSC_VER
     fopen_s(&result_file, result_filename, "w");
-#else
+    #else
     result_file = fopen(result_filename, "w");
-#endif
+    #endif
 
     if (result_file == NULL) {
       Log::Fatal("Prediction results file %s doesn't exist", data_filename);
     }
-    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, has_header, num_features_, boosting_->LabelIdx()));
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, has_header, boosting_->MaxFeatureIdx() + 1, boosting_->LabelIdx()));
 
     if (parser == nullptr) {
       Log::Fatal("Could not recognize the data format of data file %s", data_filename);
@@ -109,49 +108,50 @@ public:
       [this, &parser_fun, &result_file]
     (data_size_t, const std::vector<std::string>& lines) {
       std::vector<std::pair<int, double>> oneline_features;
-      std::vector<std::string> pred_result(lines.size(), "");
-#pragma omp parallel for schedule(static) private(oneline_features)
       for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); ++i) {
         oneline_features.clear();
         // parser
         parser_fun(lines[i].c_str(), &oneline_features);
         // predict
-        pred_result[i] = Common::Join<double>(predict_fun_(oneline_features), "\t");
-      }
-
-      for (size_t i = 0; i < pred_result.size(); ++i) {
-        fprintf(result_file, "%s\n", pred_result[i].c_str());
+        std::vector<double> result(num_pred_one_row_);
+        predict_fun_(oneline_features, result.data());
+        auto str_result = Common::Join<double>(result, "\t");
+        fprintf(result_file, "%s\n", str_result.c_str());
       }
     };
     TextReader<data_size_t> predict_data_reader(data_filename, has_header);
     predict_data_reader.ReadAllAndProcessParallel(process_fun);
-
     fclose(result_file);
   }
 
 private:
-  int PutFeatureValuesToBuffer(const std::vector<std::pair<int, double>>& features) {
-    int tid = omp_get_thread_num();
-    // init feature value
-    std::memset(features_[tid].data(), 0, sizeof(double)*num_features_);
-    // put feature value
-    for (const auto& p : features) {
-      if (p.first < num_features_) {
-        features_[tid][p.first] = p.second;
+
+  void CopyToPredictBuffer(const std::vector<std::pair<int, double>>& features) {
+    int loop_size = static_cast<int>(features.size());
+    #pragma omp parallel for schedule(static,128) if (loop_size >= 256)
+    for (int i = 0; i < loop_size; ++i) {
+      predict_buf_[features[i].first] = features[i].second;
+    }
+  }
+
+  void ClearPredictBuffer(const std::vector<std::pair<int, double>>& features) {
+    if (features.size() < static_cast<size_t>(predict_buf_.size() / 2)) {
+      std::memset(predict_buf_.data(), 0, sizeof(double)*(predict_buf_.size()));
+    } else {
+      int loop_size = static_cast<int>(features.size());
+      #pragma omp parallel for schedule(static,128) if (loop_size >= 256)
+      for (int i = 0; i < loop_size; ++i) {
+        predict_buf_[features[i].first] = 0.0f;
       }
     }
-    return tid;
   }
+
   /*! \brief Boosting model */
   const Boosting* boosting_;
-  /*! \brief Buffer for feature values */
-  std::vector<std::vector<double>> features_;
-  /*! \brief Number of features */
-  int num_features_;
-  /*! \brief Number of threads */
-  int num_threads_;
   /*! \brief function for prediction */
   PredictFunction predict_fun_;
+  int num_pred_one_row_;
+  std::vector<double> predict_buf_;
 };
 
 }  // namespace LightGBM

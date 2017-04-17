@@ -96,13 +96,7 @@
     <ClInclude Include="..\src\treelearner\data_partition.hpp">
       <Filter>src\treelearner</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\treelearner\feature_histogram.hpp">
-      <Filter>src\treelearner</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\treelearner\leaf_splits.hpp">
-      <Filter>src\treelearner</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\treelearner\split_info.hpp">
       <Filter>src\treelearner</Filter>
     </ClInclude>
     <ClInclude Include="..\include\LightGBM\application.h">
@@ -118,9 +112,6 @@
       <Filter>include\LightGBM</Filter>
     </ClInclude>
     <ClInclude Include="..\include\LightGBM\dataset.h">
-      <Filter>include\LightGBM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\LightGBM\feature.h">
       <Filter>include\LightGBM</Filter>
     </ClInclude>
     <ClInclude Include="..\include\LightGBM\meta.h">
@@ -170,6 +161,27 @@
     </ClInclude>
     <ClInclude Include="..\src\boosting\dart.hpp">
       <Filter>src\boosting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\feature_group.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\treelearner\feature_histogram.hpp">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\treelearner\split_info.hpp">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\boosting\goss.hpp">
+      <Filter>src\boosting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\io\dense_nbits_bin.hpp">
+      <Filter>src\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\openmp_wrapper.h">
+      <Filter>include\LightGBM\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\metric\map_metric.hpp">
+      <Filter>src\metric</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -3,25 +3,43 @@
 #'
 #' @rdname lgb.train
 #' @export
-lightgbm <- function(data, label = NULL, weight = NULL,
-                    params = list(), nrounds = 10,
-                    verbose = 1, eval_freq = 1L,
-                    early_stopping_rounds = NULL,
-                    save_name = "lightgbm.model",
-                    init_model = NULL, callbacks = list(), ...) {
+lightgbm <- function(data,
+                     label = NULL,
+                     weight = NULL,
+                     params = list(),
+                     nrounds = 10,
+                     verbose = 1,
+                     eval_freq = 1L,
+                     early_stopping_rounds = NULL,
+                     save_name = "lightgbm.model",
+                     init_model = NULL,
+                     callbacks = list(),
+                     ...) {
+  
+  # Set data to a temporary variable
   dtrain <- data
+  
+  # Check whether data is lgb.Dataset, if not then create lgb.Dataset manually
   if (!lgb.is.Dataset(dtrain)) {
     dtrain <- lgb.Dataset(data, label = label, weight = weight)
   }
 
+  # Set validation as oneself
   valids <- list()
-  if (verbose > 0) { valids$train = dtrain }
-
+  if (verbose > 0) {
+    valids$train = dtrain
+  }
+  
+  # Train a model using the regular way
   bst <- lgb.train(params, dtrain, nrounds, valids, verbose = verbose, eval_freq = eval_freq,
                    early_stopping_rounds = early_stopping_rounds,
                    init_model = init_model, callbacks = callbacks, ...)
+  
+  # Store model under a specific name
   bst$save_model(save_name)
-  bst
+  
+  # Return booster
+  return(bst)
 }
 
 #' Training part from Mushroom Data Set

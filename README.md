@@ -7,7 +7,7 @@ LightGBM is a gradient boosting framework that uses tree based learning algorith
 - Faster training speed and higher efficiency
 - Lower memory usage
 - Better accuracy
-- Parallel learning supported
+- Parallel and GPU learning supported
 - Capable of handling large-scale data
 
 For more details, please refer to [Features](https://github.com/Microsoft/LightGBM/wiki/Features).
@@ -16,12 +16,24 @@ For more details, please refer to [Features](https://github.com/Microsoft/LightG
 
 News
 ----
+
+04/10/2017 : LightGBM now supports GPU-accelerated tree learning. Please read our [GPU Tutorial](./docs/GPU-Tutorial.md) and [Performance Comparison](./docs/GPU-Performance.md).
+
+02/20/2017 : Update to LightGBM v2.
+
 01/08/2017 : Release [**R-package**](./R-package) beta version, welcome to have a try and provide feedback.
 
-12/05/2016 : **Categorical Features as input directly**(without one-hot coding). Experiment on [Expo data](http://stat-computing.org/dataexpo/2009/) shows about 8x speed-up with same accuracy compared with one-hot coding (refer to [categorical log]( https://github.com/guolinke/boosting_tree_benchmarks/blob/master/lightgbm/lightgbm_dataexpo_speed.log) and [one-hot log]( https://github.com/guolinke/boosting_tree_benchmarks/blob/master/lightgbm/lightgbm_dataexpo_onehot_speed.log)).
-For the setting details, please refer to [IO Parameters](./docs/Parameters.md#io-parameters).
+12/05/2016 : **Categorical Features as input directly**(without one-hot coding). Experiment on [Expo data](http://stat-computing.org/dataexpo/2009/) shows about 8x speed-up with same accuracy compared with one-hot coding.
 
 12/02/2016 : Release [**python-package**](./python-package) beta version, welcome to have a try and provide feedback.
+
+External(unofficial) Repo
+-------------------------
+
+Julia Package: https://github.com/Allardvm/LightGBM.jl
+
+JPMML: https://github.com/jpmml/jpmml-lightgbm
+
 
 Get Started And Documents
 -------------------------
@@ -33,6 +45,7 @@ To get started, please follow the [Installation Guide](https://github.com/Micros
 * [**Examples**](https://github.com/Microsoft/LightGBM/tree/master/examples)
 * [**Features**](https://github.com/Microsoft/LightGBM/wiki/Features)
 * [**Parallel Learning Guide**](https://github.com/Microsoft/LightGBM/wiki/Parallel-Learning-Guide)
+* [**GPU Learning Tutorial**](./docs/GPU-Tutorial.md)
 * [**Configuration**](https://github.com/Microsoft/LightGBM/wiki/Configuration)
 * [**Document Indexer**](https://github.com/Microsoft/LightGBM/blob/master/docs/Readme.md)
 

@@ -18,11 +18,8 @@ namespace LightGBM {
 template<typename PointWiseLossCalculator>
 class BinaryMetric: public Metric {
 public:
-  explicit BinaryMetric(const MetricConfig& config) {
-    sigmoid_ = static_cast<double>(config.sigmoid);
-    if (sigmoid_ <= 0.0f) {
-      Log::Fatal("Sigmoid parameter %f should greater than zero", sigmoid_);
-    }
+  explicit BinaryMetric(const MetricConfig&) {
+
   }
 
   virtual ~BinaryMetric() {
@@ -57,23 +54,39 @@ public:
     return -1.0f;
   }
 
-  std::vector<double> Eval(const double* score) const override {
+  std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
     double sum_loss = 0.0f;
-    if (weights_ == nullptr) {
-#pragma omp parallel for schedule(static) reduction(+:sum_loss)
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        // sigmoid transform
-        double prob = 1.0f / (1.0f + std::exp(-sigmoid_ * score[i]));
-        // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob);
+    if (objective == nullptr) {
+      if (weights_ == nullptr) {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i]);
+        }
+      } else {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i]) * weights_[i];
+        }
       }
     } else {
-#pragma omp parallel for schedule(static) reduction(+:sum_loss)
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        // sigmoid transform
-        double prob = 1.0f / (1.0f + std::exp(-sigmoid_ * score[i]));
-        // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob) * weights_[i];
+      if (weights_ == nullptr) {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          double prob = 0;
+          objective->ConvertOutput(&score[i], &prob);
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob);
+        }
+      } else {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          double prob = 0;
+          objective->ConvertOutput(&score[i], &prob);
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob) * weights_[i];
+        }
       }
     }
     double loss = sum_loss / sum_weights_;
@@ -91,8 +104,6 @@ private:
   double sum_weights_;
   /*! \brief Name of test set */
   std::vector<std::string> name_;
-  /*! \brief Sigmoid parameter */
-  double sigmoid_;
 };
 
 /*!
@@ -103,7 +114,7 @@ public:
   explicit BinaryLoglossMetric(const MetricConfig& config) :BinaryMetric<BinaryLoglossMetric>(config) {}
 
   inline static double LossOnPoint(float label, double prob) {
-    if (label == 0) {
+    if (label <= 0) {
       if (1.0f - prob > kEpsilon) {
         return -std::log(1.0f - prob);
       }
@@ -128,9 +139,9 @@ public:
 
   inline static double LossOnPoint(float label, double prob) {
     if (prob <= 0.5f) {
-      return label;
+      return label > 0;
     } else {
-      return 1.0f - label;
+      return label <= 0;
     }
   }
 
@@ -178,7 +189,7 @@ public:
     }
   }
 
-  std::vector<double> Eval(const double* score) const override {
+  std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
     // get indices sorted by score, descent order
     std::vector<data_size_t> sorted_idx;
     for (data_size_t i = 0; i < num_data_; ++i) {
@@ -207,8 +218,8 @@ public:
           // reset
           cur_neg = cur_pos = 0.0f;
         }
-        cur_neg += 1.0f - cur_label;
-        cur_pos += cur_label;
+        cur_neg += (cur_label <= 0);
+        cur_pos += (cur_label > 0);
       }
     } else {  // has weights
       for (data_size_t i = 0; i < num_data_; ++i) {
@@ -224,8 +235,8 @@ public:
           // reset
           cur_neg = cur_pos = 0.0f;
         }
-        cur_neg += (1.0f - cur_label)*cur_weight;
-        cur_pos += cur_label*cur_weight;
+        cur_neg += (cur_label <= 0)*cur_weight;
+        cur_pos += (cur_label > 0)*cur_weight;
       }
     }
     accum += cur_neg*(cur_pos * 0.5f + sum_pos);

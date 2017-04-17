@@ -4,9 +4,9 @@
 #include <LightGBM/meta.h>
 #include <LightGBM/config.h>
 #include <LightGBM/dataset.h>
+#include <functional>
 
 namespace LightGBM {
-
 /*!
 * \brief The interface of Objective Function.
 */
@@ -33,6 +33,22 @@ public:
 
   virtual const char* GetName() const = 0;
 
+  virtual bool IsConstantHessian() const { return false; }
+
+  virtual bool BoostFromAverage() const { return false; }
+
+  virtual bool SkipEmptyClass() const { return false; }
+
+  virtual int NumTreePerIteration() const { return 1; }
+
+  virtual int NumPredictOneRow() const { return 1; }
+
+  virtual void ConvertOutput(const double* input, double* output) const {
+    output[0] = input[0];
+  }
+
+  virtual std::string ToString() const = 0;
+
   ObjectiveFunction() = default;
   /*! \brief Disable copy */
   ObjectiveFunction& operator=(const ObjectiveFunction&) = delete;
@@ -46,6 +62,11 @@ public:
   */
   LIGHTGBM_EXPORT static ObjectiveFunction* CreateObjectiveFunction(const std::string& type,
     const ObjectiveConfig& config);
+
+  /*!
+  * \brief Load objective function from string object
+  */
+  LIGHTGBM_EXPORT static ObjectiveFunction* CreateObjectiveFunction(const std::string& str);
 };
 
 }  // namespace LightGBM

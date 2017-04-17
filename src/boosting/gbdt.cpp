@@ -4,7 +4,6 @@
 
 #include <LightGBM/utils/common.h>
 
-#include <LightGBM/feature.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/metric.h>
 
@@ -18,30 +17,51 @@
 
 namespace LightGBM {
 
+#ifdef TIMETAG
+std::chrono::duration<double, std::milli> boosting_time;
+std::chrono::duration<double, std::milli> train_score_time;
+std::chrono::duration<double, std::milli> out_of_bag_score_time;
+std::chrono::duration<double, std::milli> valid_score_time;
+std::chrono::duration<double, std::milli> metric_time;
+std::chrono::duration<double, std::milli> bagging_time;
+std::chrono::duration<double, std::milli> sub_gradient_time;
+std::chrono::duration<double, std::milli> tree_time;
+#endif // TIMETAG
+
 GBDT::GBDT()
   :iter_(0),
   train_data_(nullptr),
-  object_function_(nullptr),
+  objective_function_(nullptr),
   early_stopping_round_(0),
   max_feature_idx_(0),
+  num_tree_per_iteration_(1),
   num_class_(1),
-  sigmoid_(-1.0f),
   num_iteration_for_pred_(0),
   shrinkage_rate_(0.1f),
-  num_init_iteration_(0) {
-#pragma omp parallel
-#pragma omp master
+  num_init_iteration_(0),
+  boost_from_average_(false) {
+  #pragma omp parallel
+  #pragma omp master
     {
       num_threads_ = omp_get_num_threads();
     }
 }
 
 GBDT::~GBDT() {
-
+  #ifdef TIMETAG
+  Log::Info("GBDT::boosting costs %f", boosting_time * 1e-3);
+  Log::Info("GBDT::train_score costs %f", train_score_time * 1e-3);
+  Log::Info("GBDT::out_of_bag_score costs %f", out_of_bag_score_time * 1e-3);
+  Log::Info("GBDT::valid_score costs %f", valid_score_time * 1e-3);
+  Log::Info("GBDT::metric costs %f", metric_time * 1e-3);
+  Log::Info("GBDT::bagging costs %f", bagging_time * 1e-3);
+  Log::Info("GBDT::sub_gradient costs %f", sub_gradient_time * 1e-3);
+  Log::Info("GBDT::tree costs %f", tree_time * 1e-3);
+  #endif
 }
 
-void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
-     const std::vector<const Metric*>& training_metrics) {
+void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
+                const std::vector<const Metric*>& training_metrics) {
   iter_ = 0;
   num_iteration_for_pred_ = 0;
   max_feature_idx_ = 0;
@@ -49,11 +69,11 @@ void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const O
   train_data_ = nullptr;
   gbdt_config_ = nullptr;
   tree_learner_ = nullptr;
-  ResetTrainingData(config, train_data, object_function, training_metrics);
+  ResetTrainingData(config, train_data, objective_function, training_metrics);
 }
 
-void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
-  const std::vector<const Metric*>& training_metrics) {
+void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
+                             const std::vector<const Metric*>& training_metrics) {
   auto new_config = std::unique_ptr<BoostingConfig>(new BoostingConfig(*config));
   if (train_data_ != nullptr && !train_data_->CheckAlign(*train_data)) {
     Log::Fatal("cannot reset training data, since new training data has different bin mappers");
@@ -61,21 +81,21 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
   early_stopping_round_ = new_config->early_stopping_round;
   shrinkage_rate_ = new_config->learning_rate;
 
-  object_function_ = object_function;
-
-  sigmoid_ = -1.0f;
-  if (object_function_ != nullptr
-    && std::string(object_function_->GetName()) == std::string("binary")) {
-    // only binary classification need sigmoid transform
-    sigmoid_ = new_config->sigmoid;
+  objective_function_ = objective_function;
+  num_tree_per_iteration_ = num_class_;
+  if (objective_function_ != nullptr) {
+    is_constant_hessian_ = objective_function_->IsConstantHessian();
+    num_tree_per_iteration_ = objective_function_->NumTreePerIteration();
+  } else {
+    is_constant_hessian_ = false;
   }
 
   if (train_data_ != train_data && train_data != nullptr) {
     if (tree_learner_ == nullptr) {
-      tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(new_config->tree_learner_type, &new_config->tree_config));
+      tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(new_config->tree_learner_type, new_config->device_type, &new_config->tree_config));
     }
     // init tree learner
-    tree_learner_->Init(train_data);
+    tree_learner_->Init(train_data, is_constant_hessian_);
 
     // push training metrics
     training_metrics_.clear();
@@ -85,18 +105,18 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
     training_metrics_.shrink_to_fit();
     // not same training data, need reset score and others
     // create score tracker
-    train_score_updater_.reset(new ScoreUpdater(train_data, num_class_));
+    train_score_updater_.reset(new ScoreUpdater(train_data, num_tree_per_iteration_));
     // update score
     for (int i = 0; i < iter_; ++i) {
-      for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-        auto curr_tree = (i + num_init_iteration_) * num_class_ + curr_class;
-        train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
+      for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+        auto curr_tree = (i + num_init_iteration_) * num_tree_per_iteration_ + cur_tree_id;
+        train_score_updater_->AddScore(models_[curr_tree].get(), cur_tree_id);
       }
     }
     num_data_ = train_data->num_data();
     // create buffer for gradients and hessians
-    if (object_function_ != nullptr) {
-      size_t total_size = static_cast<size_t>(num_data_) * num_class_;
+    if (objective_function_ != nullptr) {
+      size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
       gradients_.resize(total_size);
       hessians_.resize(total_size);
     }
@@ -106,20 +126,12 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
     label_idx_ = train_data->label_idx();
     // get feature names
     feature_names_ = train_data->feature_names();
-    // get feature infos
-    feature_infos_.clear();
-    for (int i = 0; i < max_feature_idx_ + 1; ++i) {
-      int feature_idx = train_data->GetInnerFeatureIndex(i);
-      if (feature_idx < 0) { 
-        feature_infos_.push_back("trival feature"); 
-      } else {
-        feature_infos_.push_back(train_data->FeatureAt(feature_idx)->bin_mapper()->bin_info());
-      }
-    }
+
+    feature_infos_ = train_data->feature_infos();
   }
 
   if ((train_data_ != train_data && train_data != nullptr)
-    || (gbdt_config_ != nullptr && gbdt_config_->bagging_fraction != new_config->bagging_fraction)) {
+      || (gbdt_config_ != nullptr && gbdt_config_->bagging_fraction != new_config->bagging_fraction)) {
     // if need bagging, create buffer
     if (new_config->bagging_fraction < 1.0 && new_config->bagging_freq > 0) {
       bag_data_cnt_ =
@@ -150,22 +162,53 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
   if (train_data_ != nullptr) {
     // reset config for tree learner
     tree_learner_->ResetConfig(&new_config->tree_config);
+    class_need_train_ = std::vector<bool>(num_tree_per_iteration_, true);
+    if (objective_function_ != nullptr && objective_function_->SkipEmptyClass()) {
+      CHECK(num_tree_per_iteration_ == num_class_);
+      // + 1 here for the binary classification
+      class_default_output_ = std::vector<double>(num_tree_per_iteration_ + 1, 0.0f);
+      std::vector<data_size_t> cnt_per_class(num_tree_per_iteration_ + 1, 0);
+      auto label = train_data_->metadata().label();
+      for (int i = 0; i < num_data_; ++i) {
+        ++cnt_per_class[static_cast<int>(label[i])];
+      }
+      if (num_tree_per_iteration_ > 1) {
+        for (int i = 0; i < num_tree_per_iteration_; ++i) {
+          if (cnt_per_class[i] == num_data_) {
+            class_need_train_[i] = false;
+            class_default_output_[i] = -std::log(kEpsilon);
+          } else if (cnt_per_class[i] == 0) {
+            class_need_train_[i] = false;
+            class_default_output_[i] = -std::log(1.0f / kEpsilon - 1.0f);
+          }
+        }
+      } else {
+        // binary classification. 
+        if (cnt_per_class[1] == 0) {
+          class_need_train_[0] = false;
+          class_default_output_[0] = -std::log(1.0f / kEpsilon - 1.0f);
+        } else if (cnt_per_class[1] == num_data_) {
+          class_need_train_[0] = false;
+          class_default_output_[0] = -std::log(kEpsilon);
+        }
+      }
+    }
   }
   gbdt_config_.reset(new_config.release());
 }
 
 void GBDT::AddValidDataset(const Dataset* valid_data,
-  const std::vector<const Metric*>& valid_metrics) {
+                           const std::vector<const Metric*>& valid_metrics) {
   if (!train_data_->CheckAlign(*valid_data)) {
     Log::Fatal("cannot add validation data, since it has different bin mappers with training data");
   }
   // for a validation dataset, we need its score and metric
-  auto new_score_updater = std::unique_ptr<ScoreUpdater>(new ScoreUpdater(valid_data, num_class_));
+  auto new_score_updater = std::unique_ptr<ScoreUpdater>(new ScoreUpdater(valid_data, num_tree_per_iteration_));
   // update score
   for (int i = 0; i < iter_; ++i) {
-    for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-      auto curr_tree = (i + num_init_iteration_) * num_class_ + curr_class;
-      new_score_updater->AddScore(models_[curr_tree].get(), curr_class);
+    for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+      auto curr_tree = (i + num_init_iteration_) * num_tree_per_iteration_ + cur_tree_id;
+      new_score_updater->AddScore(models_[curr_tree].get(), cur_tree_id);
     }
   }
   valid_score_updater_.push_back(std::move(new_score_updater));
@@ -186,7 +229,7 @@ void GBDT::AddValidDataset(const Dataset* valid_data,
   valid_metrics_.back().shrink_to_fit();
 }
 
-data_size_t GBDT::BaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer){
+data_size_t GBDT::BaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer) {
   if (cnt <= 0) {
     return 0;
   }
@@ -217,9 +260,10 @@ void GBDT::Bagging(int iter) {
     const data_size_t min_inner_size = 1000;
     data_size_t inner_size = (num_data_ + num_threads_ - 1) / num_threads_;
     if (inner_size < min_inner_size) { inner_size = min_inner_size; }
-
-#pragma omp parallel for schedule(static,1)
+    OMP_INIT_EX();
+    #pragma omp parallel for schedule(static,1)
     for (int i = 0; i < num_threads_; ++i) {
+      OMP_LOOP_EX_BEGIN();
       left_cnts_buf_[i] = 0;
       right_cnts_buf_[i] = 0;
       data_size_t cur_start = i * inner_size;
@@ -231,7 +275,9 @@ void GBDT::Bagging(int iter) {
       offsets_buf_[i] = cur_start;
       left_cnts_buf_[i] = cur_left_count;
       right_cnts_buf_[i] = cur_cnt - cur_left_count;
+      OMP_LOOP_EX_END();
     }
+    OMP_THROW_EX();
     data_size_t left_cnt = 0;
     left_write_pos_buf_[0] = 0;
     right_write_pos_buf_[0] = 0;
@@ -241,17 +287,20 @@ void GBDT::Bagging(int iter) {
     }
     left_cnt = left_write_pos_buf_[num_threads_ - 1] + left_cnts_buf_[num_threads_ - 1];
 
-#pragma omp parallel for schedule(static, 1)
+    #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < num_threads_; ++i) {
+      OMP_LOOP_EX_BEGIN();
       if (left_cnts_buf_[i] > 0) {
         std::memcpy(bag_data_indices_.data() + left_write_pos_buf_[i],
-          tmp_indices_.data() + offsets_buf_[i], left_cnts_buf_[i] * sizeof(data_size_t));
+                    tmp_indices_.data() + offsets_buf_[i], left_cnts_buf_[i] * sizeof(data_size_t));
       }
       if (right_cnts_buf_[i] > 0) {
         std::memcpy(bag_data_indices_.data() + left_cnt + right_write_pos_buf_[i],
-          tmp_indices_.data() + offsets_buf_[i] + left_cnts_buf_[i], right_cnts_buf_[i] * sizeof(data_size_t));
+                    tmp_indices_.data() + offsets_buf_[i] + left_cnts_buf_[i], right_cnts_buf_[i] * sizeof(data_size_t));
       }
+      OMP_LOOP_EX_END();
     }
+    OMP_THROW_EX();
     bag_data_cnt_ = left_cnt;
     CHECK(bag_data_indices_[bag_data_cnt_ - 1] > bag_data_indices_[bag_data_cnt_]);
     Log::Debug("Re-bagging, using %d data to train", bag_data_cnt_);
@@ -267,31 +316,76 @@ void GBDT::Bagging(int iter) {
   }
 }
 
-void GBDT::UpdateScoreOutOfBag(const Tree* tree, const int curr_class) {
-  // we need to predict out-of-bag socres of data for boosting
+void GBDT::UpdateScoreOutOfBag(const Tree* tree, const int cur_tree_id) {
+  #ifdef TIMETAG
+  auto start_time = std::chrono::steady_clock::now();
+  #endif
+  // we need to predict out-of-bag scores of data for boosting
   if (num_data_ - bag_data_cnt_ > 0 && !is_use_subset_) {
-    train_score_updater_->AddScore(tree, bag_data_indices_.data() + bag_data_cnt_, num_data_ - bag_data_cnt_, curr_class);
+    train_score_updater_->AddScore(tree, bag_data_indices_.data() + bag_data_cnt_, num_data_ - bag_data_cnt_, cur_tree_id);
   }
+  #ifdef TIMETAG
+  out_of_bag_score_time += std::chrono::steady_clock::now() - start_time;
+  #endif
 }
 
 bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) {
+  // boosting from average prediction. It doesn't work well for classification, remove it for now.
+  if (models_.empty()
+      && gbdt_config_->boost_from_average
+      && !train_score_updater_->has_init_score()
+      && num_class_ <= 1
+      && objective_function_ != nullptr
+      && objective_function_->BoostFromAverage()) {
+    double init_score = 0.0f;
+    auto label = train_data_->metadata().label();
+    #pragma omp parallel for schedule(static) reduction(+:init_score)
+    for (data_size_t i = 0; i < num_data_; ++i) {
+      init_score += label[i];
+    }
+    init_score /= num_data_;
+    std::unique_ptr<Tree> new_tree(new Tree(2));
+    new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0, init_score, init_score, 0, num_data_, 1);
+    train_score_updater_->AddScore(init_score, 0);
+    for (auto& score_updater : valid_score_updater_) {
+      score_updater->AddScore(init_score, 0);
+    }
+    models_.push_back(std::move(new_tree));
+    boost_from_average_ = true;
+  }
   // boosting first
   if (gradient == nullptr || hessian == nullptr) {
+    #ifdef TIMETAG
+    auto start_time = std::chrono::steady_clock::now();
+    #endif
     Boosting();
     gradient = gradients_.data();
     hessian = hessians_.data();
+    #ifdef TIMETAG
+    boosting_time += std::chrono::steady_clock::now() - start_time;
+    #endif
   }
+  #ifdef TIMETAG
+  auto start_time = std::chrono::steady_clock::now();
+  #endif
   // bagging logic
   Bagging(iter_);
+  #ifdef TIMETAG
+  bagging_time += std::chrono::steady_clock::now() - start_time;
+  #endif
   if (is_use_subset_ && bag_data_cnt_ < num_data_) {
+    #ifdef TIMETAG
+    start_time = std::chrono::steady_clock::now();
+    #endif
     if (gradients_.empty()) {
-      size_t total_size = static_cast<size_t>(num_data_) * num_class_;
+      size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
       gradients_.resize(total_size);
       hessians_.resize(total_size);
-    }    
+    }
     // get sub gradients
-    for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-      auto bias = curr_class * num_data_;
+    for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+      size_t bias = static_cast<size_t>(cur_tree_id)* num_data_;
+      // cannot multi-threading here.
       for (int i = 0; i < bag_data_cnt_; ++i) {
         gradients_[bias + i] = gradient[bias + bag_data_indices_[i]];
         hessians_[bias + i] = hessian[bias + bag_data_indices_[i]];
@@ -299,24 +393,53 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
     }
     gradient = gradients_.data();
     hessian = hessians_.data();
+    #ifdef TIMETAG
+    sub_gradient_time += std::chrono::steady_clock::now() - start_time;
+    #endif
   }
-  for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-    // train a new tree
-    std::unique_ptr<Tree> new_tree(tree_learner_->Train(gradient + curr_class * num_data_, hessian + curr_class * num_data_));
-    // if cannot learn a new tree, then stop
-    if (new_tree->num_leaves() <= 1) {
-      Log::Info("Stopped training because there are no more leafs that meet the split requirements.");
-      return true;
+  bool should_continue = false;
+  for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+    #ifdef TIMETAG
+    start_time = std::chrono::steady_clock::now();
+    #endif
+    std::unique_ptr<Tree> new_tree(new Tree(2));
+    if (class_need_train_[cur_tree_id]) {
+      size_t bias = static_cast<size_t>(cur_tree_id)* num_data_;
+      new_tree.reset(
+        tree_learner_->Train(gradient + bias, hessian + bias, is_constant_hessian_));
     }
+    #ifdef TIMETAG
+    tree_time += std::chrono::steady_clock::now() - start_time;
+    #endif
 
-    // shrinkage by learning rate
-    new_tree->Shrinkage(shrinkage_rate_);
-    // update score
-    UpdateScore(new_tree.get(), curr_class);
-    UpdateScoreOutOfBag(new_tree.get(), curr_class);
-
+    if (new_tree->num_leaves() > 1) {
+      should_continue = true;
+      // shrinkage by learning rate
+      new_tree->Shrinkage(shrinkage_rate_);
+      // update score
+      UpdateScore(new_tree.get(), cur_tree_id);
+      UpdateScoreOutOfBag(new_tree.get(), cur_tree_id);
+    } else {
+      // only add default score one-time
+      if (!class_need_train_[cur_tree_id] && models_.size() < static_cast<size_t>(num_tree_per_iteration_)) {
+        auto output = class_default_output_[cur_tree_id];
+        new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0,
+                        output, output, 0, num_data_, 1);
+        train_score_updater_->AddScore(output, cur_tree_id);
+        for (auto& score_updater : valid_score_updater_) {
+          score_updater->AddScore(output, cur_tree_id);
+        }
+      }
+    }
     // add model
     models_.push_back(std::move(new_tree));
+  }
+  if (!should_continue) {
+    Log::Warning("Stopped training because there are no more leaves that meet the split requirements.");
+    for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+      models_.pop_back();
+    }
+    return true;
   }
   ++iter_;
   if (is_eval) {
@@ -331,16 +454,16 @@ void GBDT::RollbackOneIter() {
   if (iter_ <= 0) { return; }
   int cur_iter = iter_ + num_init_iteration_ - 1;
   // reset score
-  for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-    auto curr_tree = cur_iter * num_class_ + curr_class;
+  for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+    auto curr_tree = cur_iter * num_tree_per_iteration_ + cur_tree_id;
     models_[curr_tree]->Shrinkage(-1.0);
-    train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
+    train_score_updater_->AddScore(models_[curr_tree].get(), cur_tree_id);
     for (auto& score_updater : valid_score_updater_) {
-      score_updater->AddScore(models_[curr_tree].get(), curr_class);
+      score_updater->AddScore(models_[curr_tree].get(), cur_tree_id);
     }
   }
   // remove model
-  for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
+  for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
     models_.pop_back();
   }
   --iter_;
@@ -348,32 +471,50 @@ void GBDT::RollbackOneIter() {
 
 bool GBDT::EvalAndCheckEarlyStopping() {
   bool is_met_early_stopping = false;
+  #ifdef TIMETAG
+  auto start_time = std::chrono::steady_clock::now();
+  #endif
   // print message for metric
   auto best_msg = OutputMetric(iter_);
+  #ifdef TIMETAG
+  metric_time += std::chrono::steady_clock::now() - start_time;
+  #endif
   is_met_early_stopping = !best_msg.empty();
   if (is_met_early_stopping) {
     Log::Info("Early stopping at iteration %d, the best iteration round is %d",
-      iter_, iter_ - early_stopping_round_);
+              iter_, iter_ - early_stopping_round_);
     Log::Info("Output of best iteration round:\n%s", best_msg.c_str());
     // pop last early_stopping_round_ models
-    for (int i = 0; i < early_stopping_round_ * num_class_; ++i) {
+    for (int i = 0; i < early_stopping_round_ * num_tree_per_iteration_; ++i) {
       models_.pop_back();
     }
   }
   return is_met_early_stopping;
 }
 
-void GBDT::UpdateScore(const Tree* tree, const int curr_class) {
+void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
+  #ifdef TIMETAG
+  auto start_time = std::chrono::steady_clock::now();
+  #endif
   // update training score
   if (!is_use_subset_) {
-    train_score_updater_->AddScore(tree_learner_.get(), curr_class);
+    train_score_updater_->AddScore(tree_learner_.get(), tree, cur_tree_id);
   } else {
-    train_score_updater_->AddScore(tree, curr_class);
+    train_score_updater_->AddScore(tree, cur_tree_id);
   }
+  #ifdef TIMETAG
+  train_score_time += std::chrono::steady_clock::now() - start_time;
+  #endif
+  #ifdef TIMETAG
+  start_time = std::chrono::steady_clock::now();
+  #endif
   // update validation score
   for (auto& score_updater : valid_score_updater_) {
-    score_updater->AddScore(tree, curr_class);
+    score_updater->AddScore(tree, cur_tree_id);
   }
+  #ifdef TIMETAG
+  valid_score_time += std::chrono::steady_clock::now() - start_time;
+  #endif
 }
 
 std::string GBDT::OutputMetric(int iter) {
@@ -385,7 +526,7 @@ std::string GBDT::OutputMetric(int iter) {
   if (need_output) {
     for (auto& sub_metric : training_metrics_) {
       auto name = sub_metric->GetName();
-      auto scores = sub_metric->Eval(train_score_updater_->score());
+      auto scores = sub_metric->Eval(train_score_updater_->score(), objective_function_);
       for (size_t k = 0; k < name.size(); ++k) {
         std::stringstream tmp_buf;
         tmp_buf << "Iteration:" << iter
@@ -402,7 +543,8 @@ std::string GBDT::OutputMetric(int iter) {
   if (need_output || early_stopping_round_ > 0) {
     for (size_t i = 0; i < valid_metrics_.size(); ++i) {
       for (size_t j = 0; j < valid_metrics_[i].size(); ++j) {
-        auto test_scores = valid_metrics_[i][j]->Eval(valid_score_updater_[i]->score());
+        auto test_scores = valid_metrics_[i][j]->Eval(valid_score_updater_[i]->score(),
+                                                      objective_function_);
         auto name = valid_metrics_[i][j]->GetName();
         for (size_t k = 0; k < name.size(); ++k) {
           std::stringstream tmp_buf;
@@ -441,16 +583,16 @@ std::vector<double> GBDT::GetEvalAt(int data_idx) const {
   std::vector<double> ret;
   if (data_idx == 0) {
     for (auto& sub_metric : training_metrics_) {
-      auto scores = sub_metric->Eval(train_score_updater_->score());
+      auto scores = sub_metric->Eval(train_score_updater_->score(), objective_function_);
       for (auto score : scores) {
         ret.push_back(score);
       }
     }
-  }
-  else {
+  } else {
     auto used_idx = data_idx - 1;
     for (size_t j = 0; j < valid_metrics_[used_idx].size(); ++j) {
-      auto test_scores = valid_metrics_[used_idx][j]->Eval(valid_score_updater_[used_idx]->score());
+      auto test_scores = valid_metrics_[used_idx][j]->Eval(valid_score_updater_[used_idx]->score(),
+                                                           objective_function_);
       for (auto score : test_scores) {
         ret.push_back(score);
       }
@@ -479,39 +621,37 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
     num_data = valid_score_updater_[used_idx]->num_data();
     *out_len = static_cast<int64_t>(num_data) * num_class_;
   }
-  if (num_class_ > 1) {
-#pragma omp parallel for schedule(static)
+  if (objective_function_ != nullptr) {
+    #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_data; ++i) {
-      std::vector<double> tmp_result(num_class_);
-      for (int j = 0; j < num_class_; ++j) {
-        tmp_result[j] = raw_scores[j * num_data + i];
+      std::vector<double> tree_pred(num_tree_per_iteration_);
+      for (int j = 0; j < num_tree_per_iteration_; ++j) {
+        tree_pred[j] = raw_scores[j * num_data + i];
       }
-      Common::Softmax(&tmp_result);
+      std::vector<double> tmp_result(num_class_);
+      objective_function_->ConvertOutput(tree_pred.data(), tmp_result.data());
       for (int j = 0; j < num_class_; ++j) {
         out_result[j * num_data + i] = static_cast<double>(tmp_result[j]);
       }
     }
-  } else if(sigmoid_ > 0.0f){
-#pragma omp parallel for schedule(static)
-    for (data_size_t i = 0; i < num_data; ++i) {
-      out_result[i] = static_cast<double>(1.0f / (1.0f + std::exp(- sigmoid_ * raw_scores[i])));
-    }
   } else {
-#pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_data; ++i) {
-      out_result[i] = static_cast<double>(raw_scores[i]);
+      std::vector<double> tmp_result(num_tree_per_iteration_);
+      for (int j = 0; j < num_tree_per_iteration_; ++j) {
+        out_result[j * num_data + i] = static_cast<double>(raw_scores[j * num_data + i]);
+      }
     }
   }
-
 }
 
 void GBDT::Boosting() {
-  if (object_function_ == nullptr) {
+  if (objective_function_ == nullptr) {
     Log::Fatal("No object function provided");
   }
   // objective function will calculate gradients and hessians
   int64_t num_score = 0;
-  object_function_->
+  objective_function_->
     GetGradients(GetTrainingScore(&num_score), gradients_.data(), hessians_.data());
 }
 
@@ -521,19 +661,20 @@ std::string GBDT::DumpModel(int num_iteration) const {
   str_buf << "{";
   str_buf << "\"name\":\"" << SubModelName() << "\"," << std::endl;
   str_buf << "\"num_class\":" << num_class_ << "," << std::endl;
+  str_buf << "\"num_tree_per_iteration\":" << num_tree_per_iteration_ << "," << std::endl;
   str_buf << "\"label_index\":" << label_idx_ << "," << std::endl;
   str_buf << "\"max_feature_idx\":" << max_feature_idx_ << "," << std::endl;
-  str_buf << "\"sigmoid\":" << sigmoid_ << "," << std::endl;
 
-  str_buf << "\"feature_names\":[\"" 
-     << Common::Join(feature_names_, "\",\"") << "\"]," 
-     << std::endl;
+  str_buf << "\"feature_names\":[\""
+    << Common::Join(feature_names_, "\",\"") << "\"],"
+    << std::endl;
 
   str_buf << "\"tree_info\":[";
   int num_used_model = static_cast<int>(models_.size());
   if (num_iteration > 0) {
-    num_used_model = std::min(num_iteration * num_class_, num_used_model);
-  } 
+    num_iteration += boost_from_average_ ? 1 : 0;
+    num_used_model = std::min(num_iteration * num_tree_per_iteration_, num_used_model);
+  }
   for (int i = 0; i < num_used_model; ++i) {
     if (i > 0) {
       str_buf << ",";
@@ -550,49 +691,50 @@ std::string GBDT::DumpModel(int num_iteration) const {
   return str_buf.str();
 }
 
-std::string GBDT::SaveModelToString(int num_iterations) const {
-    std::stringstream ss;
+std::string GBDT::SaveModelToString(int num_iteration) const {
+  std::stringstream ss;
 
-    // output model type
-    ss << SubModelName() << std::endl;
-    // output number of class
-    ss << "num_class=" << num_class_ << std::endl;
-    // output label index
-    ss << "label_index=" << label_idx_ << std::endl;
-    // output max_feature_idx
-    ss << "max_feature_idx=" << max_feature_idx_ << std::endl;
-    // output objective name
-    if (object_function_ != nullptr) {
-      ss << "objective=" << object_function_->GetName() << std::endl;
-    }
-    // output sigmoid parameter
-    ss << "sigmoid=" << sigmoid_ << std::endl;
+  // output model type
+  ss << SubModelName() << std::endl;
+  // output number of class
+  ss << "num_class=" << num_class_ << std::endl;
+  ss << "num_tree_per_iteration=" << num_tree_per_iteration_ << std::endl;
+  // output label index
+  ss << "label_index=" << label_idx_ << std::endl;
+  // output max_feature_idx
+  ss << "max_feature_idx=" << max_feature_idx_ << std::endl;
+  // output objective
+  if (objective_function_ != nullptr) {
+    ss << "objective=" << objective_function_->ToString() << std::endl;
+  }
 
-    ss << "feature_names=" << Common::Join(feature_names_, " ") << std::endl;
+  if (boost_from_average_) {
+    ss << "boost_from_average" << std::endl;
+  }
 
-    ss << std::endl;
-    int num_used_model = static_cast<int>(models_.size());
-    if (num_iterations > 0) {
-      num_used_model = std::min(num_iterations * num_class_, num_used_model);
-    }
-    // output tree models
-    for (int i = 0; i < num_used_model; ++i) {
-      ss << "Tree=" << i << std::endl;
-      ss << models_[i]->ToString() << std::endl;
-    }
+  ss << "feature_names=" << Common::Join(feature_names_, " ") << std::endl;
 
-    std::vector<std::pair<size_t, std::string>> pairs = FeatureImportance();
-    ss << std::endl << "feature importances:" << std::endl;
-    for (size_t i = 0; i < pairs.size(); ++i) {
-      ss << pairs[i].second << "=" << std::to_string(pairs[i].first) << std::endl;
-    }
+  ss << "feature_infos=" << Common::Join(feature_infos_, " ") << std::endl;
 
-    ss << std::endl << "feature information:" << std::endl;
-    for (int i = 0; i < max_feature_idx_ + 1; ++i) {
-      ss << feature_names_[i] << "=" << feature_infos_[i] << std::endl;
-    }
+  ss << std::endl;
+  int num_used_model = static_cast<int>(models_.size());
+  if (num_iteration > 0) {
+    num_iteration += boost_from_average_ ? 1 : 0;
+    num_used_model = std::min(num_iteration * num_tree_per_iteration_, num_used_model);
+  }
+  // output tree models
+  for (int i = 0; i < num_used_model; ++i) {
+    ss << "Tree=" << i << std::endl;
+    ss << models_[i]->ToString() << std::endl;
+  }
 
-    return ss.str();
+  std::vector<std::pair<size_t, std::string>> pairs = FeatureImportance();
+  ss << std::endl << "feature importances:" << std::endl;
+  for (size_t i = 0; i < pairs.size(); ++i) {
+    ss << pairs[i].second << "=" << std::to_string(pairs[i].first) << std::endl;
+  }
+
+  return ss.str();
 }
 
 bool GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
@@ -620,6 +762,14 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
     Log::Fatal("Model file doesn't specify the number of classes");
     return false;
   }
+
+  line = Common::FindFromLines(lines, "num_tree_per_iteration=");
+  if (line.size() > 0) {
+    Common::Atoi(Common::Split(line.c_str(), '=')[1].c_str(), &num_tree_per_iteration_);
+  } else {
+    num_tree_per_iteration_ = num_class_;
+  }
+
   // get index of label
   line = Common::FindFromLines(lines, "label_index=");
   if (line.size() > 0) {
@@ -636,12 +786,10 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
     Log::Fatal("Model file doesn't specify max_feature_idx");
     return false;
   }
-  // get sigmoid parameter
-  line = Common::FindFromLines(lines, "sigmoid=");
+  // get boost_from_average_
+  line = Common::FindFromLines(lines, "boost_from_average");
   if (line.size() > 0) {
-    Common::Atof(Common::Split(line.c_str(), '=')[1].c_str(), &sigmoid_);
-  } else {
-    sigmoid_ = -1.0f;
+    boost_from_average_ = true;
   }
   // get feature names
   line = Common::FindFromLines(lines, "feature_names=");
@@ -656,44 +804,24 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
     return false;
   }
 
-  // returns offset, or lines.size() if not found.
-  auto find_string_lineno = [&lines](const std::string &str, size_t start_line)
-  {
-    size_t i = start_line;
-    size_t featinfo_find_pos = std::string::npos;
-    while (i < lines.size()) {
-      featinfo_find_pos = lines[i].find(str);
-      if (featinfo_find_pos != std::string::npos)
-        break;
-      ++i;
-    }
-
-    return i;
-  };
-
-  // load feature information
-  {
-    size_t finfo_line_idx = find_string_lineno("feature information:", 0);
-
-    if (finfo_line_idx >= lines.size()) {
-      Log::Fatal("Model file doesn't contain feature information");
+  line = Common::FindFromLines(lines, "feature_infos=");
+  if (line.size() > 0) {
+    feature_infos_ = Common::Split(line.substr(std::strlen("feature_infos=")).c_str(), " ");
+    if (feature_infos_.size() != static_cast<size_t>(max_feature_idx_ + 1)) {
+      Log::Fatal("Wrong size of feature_infos");
       return false;
     }
+  } else {
+    Log::Fatal("Model file doesn't contain feature infos");
+    return false;
+  }
 
-    feature_infos_.resize(max_feature_idx_ + 1);
+  line = Common::FindFromLines(lines, "objective=");
 
-    // search for each feature name
-    for (int i=0; i < max_feature_idx_ + 1; i++) {
-      const auto feat_name = feature_names_[i];
-      size_t line_idx = find_string_lineno(feat_name + "=", finfo_line_idx + 1);
-      if (line_idx >= lines.size()) {
-        Log::Fatal(("Model file doesn't contain feature information for feature " + feat_name).c_str());
-        return false;
-      }
-
-      const auto this_line = lines[line_idx];
-      feature_infos_[i] = this_line.substr((feat_name + "=").size());
-    }
+  if (line.size() > 0) {
+    auto str = Common::Split(line.c_str(), '=')[1];
+    loaded_objective_.reset(ObjectiveFunction::CreateObjectiveFunction(str));
+    objective_function_ = loaded_objective_.get();
   }
 
   // get tree models
@@ -706,14 +834,13 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
       while (i < lines.size() && lines[i].find("Tree=") == std::string::npos) { ++i; }
       int end = static_cast<int>(i);
       std::string tree_str = Common::Join<std::string>(lines, start, end, "\n");
-      auto new_tree = std::unique_ptr<Tree>(new Tree(tree_str));
-      models_.push_back(std::move(new_tree));
+      models_.emplace_back(new Tree(tree_str));
     } else {
       ++i;
     }
   }
   Log::Info("Finished loading %d models", models_.size());
-  num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_class_;
+  num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
   num_init_iteration_ = num_iteration_for_pred_;
   iter_ = 0;
 
@@ -723,61 +850,76 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
 std::vector<std::pair<size_t, std::string>> GBDT::FeatureImportance() const {
 
   std::vector<size_t> feature_importances(max_feature_idx_ + 1, 0);
-    for (size_t iter = 0; iter < models_.size(); ++iter) {
-        for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
-            ++feature_importances[models_[iter]->split_feature_real(split_idx)];
-        }
+  for (size_t iter = 0; iter < models_.size(); ++iter) {
+    for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
+      ++feature_importances[models_[iter]->split_feature(split_idx)];
     }
-    // store the importance first
-    std::vector<std::pair<size_t, std::string>> pairs;
-    for (size_t i = 0; i < feature_importances.size(); ++i) {
-      if (feature_importances[i] > 0) {
-        pairs.emplace_back(feature_importances[i], feature_names_[i]);
+  }
+  // store the importance first
+  std::vector<std::pair<size_t, std::string>> pairs;
+  for (size_t i = 0; i < feature_importances.size(); ++i) {
+    if (feature_importances[i] > 0) {
+      pairs.emplace_back(feature_importances[i], feature_names_[i]);
+    }
+  }
+  // sort the importance
+  std::sort(pairs.begin(), pairs.end(),
+            [](const std::pair<size_t, std::string>& lhs,
+               const std::pair<size_t, std::string>& rhs) {
+    return lhs.first > rhs.first;
+  });
+  return pairs;
+}
+
+void GBDT::PredictRaw(const double* features, double* output) const {
+  if (num_threads_ <= num_tree_per_iteration_) {
+    #pragma omp parallel for schedule(static)
+    for (int k = 0; k < num_tree_per_iteration_; ++k) {
+      for (int i = 0; i < num_iteration_for_pred_; ++i) {
+        output[k] += models_[i * num_tree_per_iteration_ + k]->Predict(features);
       }
     }
-    // sort the importance
-    std::sort(pairs.begin(), pairs.end(),
-      [](const std::pair<size_t, std::string>& lhs,
-        const std::pair<size_t, std::string>& rhs) {
-      return lhs.first > rhs.first;
-    });
-    return pairs;
-}
-
-std::vector<double> GBDT::PredictRaw(const double* value) const {
-  std::vector<double> ret(num_class_, 0.0f);
-  for (int i = 0; i < num_iteration_for_pred_; ++i) {
-    for (int j = 0; j < num_class_; ++j) {
-      ret[j] += models_[i * num_class_ + j]->Predict(value);
+  } else {
+    for (int k = 0; k < num_tree_per_iteration_; ++k) {
+      double t = 0.0f;
+      #pragma omp parallel for schedule(static) reduction(+:t)
+      for (int i = 0; i < num_iteration_for_pred_; ++i) {
+        t += models_[i * num_tree_per_iteration_ + k]->Predict(features);
+      }
+      output[k] = t;
     }
   }
-  return ret;
 }
 
-std::vector<double> GBDT::Predict(const double* value) const {
-  std::vector<double> ret(num_class_, 0.0f);
-  for (int i = 0; i < num_iteration_for_pred_; ++i) {
-    for (int j = 0; j < num_class_; ++j) {
-      ret[j] += models_[i * num_class_ + j]->Predict(value);
+void GBDT::Predict(const double* features, double* output) const {
+  if (num_threads_ <= num_tree_per_iteration_) {
+    #pragma omp parallel for schedule(static)
+    for (int k = 0; k < num_tree_per_iteration_; ++k) {
+      for (int i = 0; i < num_iteration_for_pred_; ++i) {
+        output[k] += models_[i * num_tree_per_iteration_ + k]->Predict(features);
+      }
+    }
+  } else {
+    for (int k = 0; k < num_tree_per_iteration_; ++k) {
+      double t = 0.0f;
+      #pragma omp parallel for schedule(static) reduction(+:t)
+      for (int i = 0; i < num_iteration_for_pred_; ++i) {
+        t += models_[i * num_tree_per_iteration_ + k]->Predict(features);
+      }
+      output[k] = t;
     }
   }
-  // if need sigmoid transform
-  if (sigmoid_ > 0 && num_class_ == 1) {
-    ret[0] = 1.0f / (1.0f + std::exp(-sigmoid_ * ret[0]));
-  } else if (num_class_ > 1) {
-    Common::Softmax(&ret);
+  if (objective_function_ != nullptr) {
+    objective_function_->ConvertOutput(output, output);
   }
-  return ret;
 }
 
-std::vector<int> GBDT::PredictLeafIndex(const double* value) const {
-  std::vector<int> ret;
-  for (int i = 0; i < num_iteration_for_pred_; ++i) {
-    for (int j = 0; j < num_class_; ++j) {
-      ret.push_back(models_[i * num_class_ + j]->PredictLeafIndex(value));
-    }
+void GBDT::PredictLeafIndex(const double* features, double* output) const {
+  int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;
+  #pragma omp parallel for schedule(static)
+  for (int i = 0; i < total_tree; ++i) {
+    output[i] = models_[i]->PredictLeafIndex(features);
   }
-  return ret;
 }
 
 }  // namespace LightGBM

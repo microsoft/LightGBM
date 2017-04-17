@@ -19,8 +19,8 @@ class Metric;
 * \brief The main entrance of LightGBM. this application has two tasks:
 *        Train and Predict.
 *        Train task will train a new model
-*        Predict task will predicting the scores of test data using exsiting model,
-*        and saving the score to disk.
+*        Predict task will predict the scores of test data using exsisting model,
+*        and save the score to disk.
 */
 class Application {
 public:
@@ -29,7 +29,7 @@ public:
   /*! \brief Destructor */
   ~Application();
 
-  /*! \brief To call this funciton  to run application*/
+  /*! \brief To call this funciton to run application*/
   inline void Run();
 
 private:
@@ -41,7 +41,7 @@ private:
   template<typename T>
   T GlobalSyncUpByMin(T& local);
 
-  /*! \brief Load parametes from command line and config file*/
+  /*! \brief Load parameters from command line and config file*/
   void LoadParameters(int argc, char** argv);
 
   /*! \brief Load data, including training data and validation data*/

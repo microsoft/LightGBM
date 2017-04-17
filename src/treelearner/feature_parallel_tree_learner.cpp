@@ -6,15 +6,20 @@
 
 namespace LightGBM {
 
-FeatureParallelTreeLearner::FeatureParallelTreeLearner(const TreeConfig* tree_config)
-  :SerialTreeLearner(tree_config) {
+
+template <typename TREELEARNER_T>
+FeatureParallelTreeLearner<TREELEARNER_T>::FeatureParallelTreeLearner(const TreeConfig* tree_config)
+  :TREELEARNER_T(tree_config) {
 }
 
-FeatureParallelTreeLearner::~FeatureParallelTreeLearner() {
+template <typename TREELEARNER_T>
+FeatureParallelTreeLearner<TREELEARNER_T>::~FeatureParallelTreeLearner() {
 
 }
-void FeatureParallelTreeLearner::Init(const Dataset* train_data) {
-  SerialTreeLearner::Init(train_data);
+
+template <typename TREELEARNER_T>
+void FeatureParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, bool is_constant_hessian) {
+  TREELEARNER_T::Init(train_data, is_constant_hessian);
   rank_ = Network::rank();
   num_machines_ = Network::num_machines();
   input_buffer_.resize(sizeof(SplitInfo) * 2);
@@ -22,44 +27,36 @@ void FeatureParallelTreeLearner::Init(const Dataset* train_data) {
 }
 
 
-
-void FeatureParallelTreeLearner::BeforeTrain() {
-  SerialTreeLearner::BeforeTrain();
+template <typename TREELEARNER_T>
+void FeatureParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
+  TREELEARNER_T::BeforeTrain();
   // get feature partition
   std::vector<std::vector<int>> feature_distribution(num_machines_, std::vector<int>());
   std::vector<int> num_bins_distributed(num_machines_, 0);
-  for (int i = 0; i < train_data_->num_features(); ++i) {
-    if (is_feature_used_[i]) {
+  for (int i = 0; i < this->train_data_->num_total_features(); ++i) {
+    int inner_feature_index = this->train_data_->InnerFeatureIndex(i);
+    if (inner_feature_index == -1) { continue; }
+    if (this->is_feature_used_[inner_feature_index]) {
       int cur_min_machine = static_cast<int>(ArrayArgs<int>::ArgMin(num_bins_distributed));
-      feature_distribution[cur_min_machine].push_back(i);
-      num_bins_distributed[cur_min_machine] += train_data_->FeatureAt(i)->num_bin();
-      is_feature_used_[i] = false;
+      feature_distribution[cur_min_machine].push_back(inner_feature_index);
+      num_bins_distributed[cur_min_machine] += this->train_data_->FeatureNumBin(inner_feature_index);
+      this->is_feature_used_[inner_feature_index] = false;
     }
   }
   // get local used features
   for (auto fid : feature_distribution[rank_]) {
-    is_feature_used_[fid] = true;
+    this->is_feature_used_[fid] = true;
   }
 }
 
-void FeatureParallelTreeLearner::FindBestSplitsForLeaves() {
-  int smaller_best_feature = -1, larger_best_feature = -1;
+template <typename TREELEARNER_T>
+void FeatureParallelTreeLearner<TREELEARNER_T>::FindBestSplitsForLeaves() {
   SplitInfo smaller_best, larger_best;
   // get best split at smaller leaf
-  std::vector<double> gains;
-  for (size_t i = 0; i < smaller_leaf_splits_->BestSplitPerFeature().size(); ++i) {
-    gains.push_back(smaller_leaf_splits_->BestSplitPerFeature()[i].gain);
-  }
-  smaller_best_feature = static_cast<int>(ArrayArgs<double>::ArgMax(gains));
-  smaller_best = smaller_leaf_splits_->BestSplitPerFeature()[smaller_best_feature];
-  // get best split at larger leaf
-  if (larger_leaf_splits_->LeafIndex() >= 0) {
-    gains.clear();
-    for (size_t i = 0; i < larger_leaf_splits_->BestSplitPerFeature().size(); ++i) {
-      gains.push_back(larger_leaf_splits_->BestSplitPerFeature()[i].gain);
-    }
-    larger_best_feature = static_cast<int>(ArrayArgs<double>::ArgMax(gains));
-    larger_best = larger_leaf_splits_->BestSplitPerFeature()[larger_best_feature];
+  smaller_best = this->best_split_per_leaf_[this->smaller_leaf_splits_->LeafIndex()];
+  // find local best split for larger leaf
+  if (this->larger_leaf_splits_->LeafIndex() >= 0) {
+    larger_best = this->best_split_per_leaf_[this->larger_leaf_splits_->LeafIndex()];
   }
   // sync global best info
   std::memcpy(input_buffer_.data(), &smaller_best, sizeof(SplitInfo));
@@ -71,10 +68,13 @@ void FeatureParallelTreeLearner::FindBestSplitsForLeaves() {
   std::memcpy(&smaller_best, output_buffer_.data(), sizeof(SplitInfo));
   std::memcpy(&larger_best, output_buffer_.data() + sizeof(SplitInfo), sizeof(SplitInfo));
   // update best split
-  best_split_per_leaf_[smaller_leaf_splits_->LeafIndex()] = smaller_best;
-  if (larger_leaf_splits_->LeafIndex() >= 0) {
-    best_split_per_leaf_[larger_leaf_splits_->LeafIndex()] = larger_best;
+  this->best_split_per_leaf_[this->smaller_leaf_splits_->LeafIndex()] = smaller_best;
+  if (this->larger_leaf_splits_->LeafIndex() >= 0) {
+    this->best_split_per_leaf_[this->larger_leaf_splits_->LeafIndex()] = larger_best;
   }
 }
 
+// instantiate template classes, otherwise linker cannot find the code
+template class FeatureParallelTreeLearner<GPUTreeLearner>;
+template class FeatureParallelTreeLearner<SerialTreeLearner>;
 }  // namespace LightGBM

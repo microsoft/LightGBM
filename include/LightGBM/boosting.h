@@ -26,13 +26,13 @@ public:
   * \brief Initialization logic
   * \param config Configs for boosting
   * \param train_data Training data
-  * \param object_function Training objective function
+  * \param objective_function Training objective function
   * \param training_metrics Training metric
   */
   virtual void Init(
     const BoostingConfig* config,
     const Dataset* train_data,
-    const ObjectiveFunction* object_function,
+    const ObjectiveFunction* objective_function,
     const std::vector<const Metric*>& training_metrics) = 0;
 
   /*!
@@ -46,10 +46,10 @@ public:
   * \brief Reset training data for current boosting
   * \param config Configs for boosting
   * \param train_data Training data
-  * \param object_function Training objective function
+  * \param objective_function Training objective function
   * \param training_metrics Training metric
   */
-  virtual void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function, const std::vector<const Metric*>& training_metrics) = 0;
+  virtual void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function, const std::vector<const Metric*>& training_metrics) = 0;
 
   /*!
   * \brief Add a validation data
@@ -99,38 +99,40 @@ public:
   /*!
   * \brief Get prediction result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
-  * \return out_len lenght of returned score
+  * \return out_len length of returned score
   */
   virtual int64_t GetNumPredictAt(int data_idx) const = 0;
   /*!
   * \brief Get prediction result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
   * \param result used to store prediction result, should allocate memory before call this function
-  * \param out_len lenght of returned score
+  * \param out_len length of returned score
   */
   virtual void GetPredictAt(int data_idx, double* result, int64_t* out_len) = 0;
+
+  virtual int NumPredictOneRow(int num_iteration, int is_pred_leaf) const = 0;
 
   /*!
   * \brief Prediction for one record, not sigmoid transform
   * \param feature_values Feature value on this record
-  * \return Prediction result for this record
+  * \param output Prediction result for this record
   */
-  virtual std::vector<double> PredictRaw(const double* feature_values) const = 0;
+  virtual void PredictRaw(const double* features, double* output) const = 0;
 
   /*!
   * \brief Prediction for one record, sigmoid transformation will be used if needed
   * \param feature_values Feature value on this record
-  * \return Prediction result for this record
+  * \param output Prediction result for this record
   */
-  virtual std::vector<double> Predict(const double* feature_values) const = 0;
+  virtual void Predict(const double* features, double* output) const = 0;
   
   /*!
-  * \brief Predtion for one record with leaf index
+  * \brief Prediction for one record with leaf index
   * \param feature_values Feature value on this record
-  * \return Predicted leaf index for this record
+  * \param output Prediction result for this record
   */
-  virtual std::vector<int> PredictLeafIndex(
-    const double* feature_values) const = 0;
+  virtual void PredictLeafIndex(
+    const double* features, double* output) const = 0;
 
   /*!
   * \brief Dump model to json format string
@@ -186,15 +188,22 @@ public:
   virtual int NumberOfTotalModel() const = 0;
   
   /*!
+  * \brief Get number of trees per iteration
+  * \return Number of trees per iteration
+  */
+  virtual int NumTreePerIteration() const = 0;
+
+  /*!
   * \brief Get number of classes
   * \return Number of classes
   */
   virtual int NumberOfClasses() const = 0;
 
   /*!
-  * \brief Set number of used model for prediction
+  * \brief Initial work for the prediction
+  * \param num_iteration number of used iteration
   */
-  virtual void SetNumIterationForPred(int num_iteration) = 0;
+  virtual void InitPredict(int num_iteration) = 0;
   
   /*!
   * \brief Name of submodel

@@ -5,3 +5,5 @@ LightGBM R examples
 * [Early Stopping](early_stopping.R)
 * [Cross Validation](cross_validation.R)
 * [Multiclass Training/Prediction](multiclass.R)
+* [Leaf (in)Stability](leaf_stability.R)
+* [Weight-Parameter Adjustment Relationship](weight_param.R)

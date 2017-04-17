@@ -22,7 +22,7 @@ const score_t kEpsilon = 1e-15f;
 using ReduceFunction = std::function<void(const char*, char*, int)>;
 
 using PredictFunction =
-std::function<std::vector<double>(const std::vector<std::pair<int, double>>&)>;
+std::function<void(const std::vector<std::pair<int, double>>&, double* output)>;
 
 #define NO_SPECIFIC (-1)
 

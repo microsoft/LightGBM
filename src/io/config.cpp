@@ -39,11 +39,11 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
   // generate seeds by seed.
   if (GetInt(params, "seed", &seed)) {
     Random rand(seed);
-    int int_max = std::numeric_limits<int>::max();
-    io_config.data_random_seed = static_cast<int>(rand.NextInt(0, int_max));
-    boosting_config.bagging_seed = static_cast<int>(rand.NextInt(0, int_max));
-    boosting_config.drop_seed = static_cast<int>(rand.NextInt(0, int_max));
-    boosting_config.tree_config.feature_fraction_seed = static_cast<int>(rand.NextInt(0, int_max));
+    int int_max = std::numeric_limits<short>::max();
+    io_config.data_random_seed = static_cast<int>(rand.NextShort(0, int_max));
+    boosting_config.bagging_seed = static_cast<int>(rand.NextShort(0, int_max));
+    boosting_config.drop_seed = static_cast<int>(rand.NextShort(0, int_max));
+    boosting_config.tree_config.feature_fraction_seed = static_cast<int>(rand.NextShort(0, int_max));
   }
   GetTaskType(params);
   GetBoostingType(params);
@@ -79,6 +79,8 @@ void OverallConfig::GetBoostingType(const std::unordered_map<std::string, std::s
       boosting_type = "gbdt";
     } else if (value == std::string("dart")) {
       boosting_type = "dart";
+    } else if (value == std::string("goss")) {
+      boosting_type = "goss";
     } else {
       Log::Fatal("Unknown boosting type %s", value.c_str());
     }
@@ -102,7 +104,7 @@ void OverallConfig::GetMetricType(const std::unordered_map<std::string, std::str
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     // split
     std::vector<std::string> metrics = Common::Split(value.c_str(), ',');
-    // remove dumplicate
+    // remove duplicate
     std::unordered_set<std::string> metric_sets;
     for (auto& metric : metrics) {
       std::transform(metric.begin(), metric.end(), metric.begin(), Common::tolower);
@@ -136,11 +138,12 @@ void OverallConfig::GetTaskType(const std::unordered_map<std::string, std::strin
 void OverallConfig::CheckParamConflict() {
 
   // check if objective_type, metric_type, and num_class match
-  bool objective_type_multiclass = (objective_type == std::string("multiclass"));
+  bool objective_type_multiclass = (objective_type == std::string("multiclass") 
+                                    || objective_type == std::string("multiclassova"));
   int num_class_check = boosting_config.num_class;
   if (objective_type_multiclass) {
-    if (num_class_check <= 2) {
-      Log::Fatal("Number of classes should be specified and greater than 2 for multiclass training");
+    if (num_class_check <= 1) {
+      Log::Fatal("Number of classes should be specified and greater than 1 for multiclass training");
     }
   } else {
     if (task_type == TaskType::kTrain && num_class_check != 1) {
@@ -149,7 +152,8 @@ void OverallConfig::CheckParamConflict() {
   }
   if (boosting_config.is_provide_training_metric || !io_config.valid_data_filenames.empty()) {
     for (std::string metric_type : metric_types) {
-      bool metric_type_multiclass = (metric_type == std::string("multi_logloss") || metric_type == std::string("multi_error"));
+      bool metric_type_multiclass = (metric_type == std::string("multi_logloss") 
+                                     || metric_type == std::string("multi_error"));
       if ((objective_type_multiclass && !metric_type_multiclass)
         || (!objective_type_multiclass && metric_type_multiclass)) {
         Log::Fatal("Objective and metrics don't match");
@@ -179,7 +183,7 @@ void OverallConfig::CheckParamConflict() {
         && boosting_config.tree_learner_type == std::string("data")) {
       Log::Warning("Histogram LRU queue was enabled (histogram_pool_size=%f). Will disable this to reduce communication costs"
         , boosting_config.tree_config.histogram_pool_size);
-      // Change pool size to -1 (not limit) when using data parallel to reduce communication costs
+      // Change pool size to -1 (no limit) when using data parallel to reduce communication costs
       boosting_config.tree_config.histogram_pool_size = -1;
     }
 
@@ -197,6 +201,7 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "bin_construct_sample_cnt", &bin_construct_sample_cnt);
   GetBool(params, "is_pre_partition", &is_pre_partition);
   GetBool(params, "is_enable_sparse", &is_enable_sparse);
+  GetDouble(params, "sparse_threshold", &sparse_threshold);
   GetBool(params, "use_two_round_loading", &use_two_round_loading);
   GetBool(params, "is_save_binary_file", &is_save_binary_file);
   GetBool(params, "enable_load_from_binary_file", &enable_load_from_binary_file);
@@ -215,6 +220,11 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetString(params, "group_column", &group_column);
   GetString(params, "ignore_column", &ignore_column);
   GetString(params, "categorical_column", &categorical_column);
+  GetInt(params, "min_data_in_leaf", &min_data_in_leaf);
+  GetInt(params, "min_dato_in_bin", &min_data_in_bin);
+  GetDouble(params, "max_conflict_rate", &max_conflict_rate);
+  GetBool(params, "enable_bundle", &enable_bundle);
+  GetBool(params, "adjacent_bundle", &adjacent_bundle);
 }
 
 
@@ -296,7 +306,9 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   GetDouble(params, "histogram_pool_size", &histogram_pool_size);
   GetInt(params, "max_depth", &max_depth);
   GetInt(params, "top_k", &top_k);
-  CHECK(max_depth > 1 || max_depth < 0);
+  GetInt(params, "gpu_platform_id", &gpu_platform_id);
+  GetInt(params, "gpu_device_id", &gpu_device_id);
+  GetBool(params, "gpu_use_dp", &gpu_use_dp);
 }
 
 
@@ -323,8 +335,12 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   GetInt(params, "max_drop", &max_drop);
   GetBool(params, "xgboost_dart_mode", &xgboost_dart_mode);
   GetBool(params, "uniform_drop", &uniform_drop);
+  GetDouble(params, "top_rate", &top_rate);
+  GetDouble(params, "other_rate", &other_rate);
+  GetBool(params, "boost_from_average", &boost_from_average);
   CHECK(drop_rate <= 1.0 && drop_rate >= 0.0);
   CHECK(skip_drop <= 1.0 && skip_drop >= 0.0);
+  GetDeviceType(params);
   GetTreeLearnerType(params);
   tree_config.Set(params);
 }
@@ -335,6 +351,9 @@ void BoostingConfig::GetTreeLearnerType(const std::unordered_map<std::string, st
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("serial")) {
       tree_learner_type = "serial";
+    } else if (value == std::string("gpu")) {
+      tree_learner_type = "serial";
+      device_type = "gpu";
     } else if (value == std::string("feature") || value == std::string("feature_parallel")) {
       tree_learner_type = "feature";
     } else if (value == std::string("data") || value == std::string("data_parallel")) {
@@ -343,6 +362,20 @@ void BoostingConfig::GetTreeLearnerType(const std::unordered_map<std::string, st
       tree_learner_type = "voting";
     } else {
       Log::Fatal("Unknown tree learner type %s", value.c_str());
+    }
+  }
+}
+
+void BoostingConfig::GetDeviceType(const std::unordered_map<std::string, std::string>& params) {
+  std::string value;
+  if (GetString(params, "device", &value)) {
+    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
+    if (value == std::string("cpu")) {
+      device_type = "cpu";
+    } else if (value == std::string("gpu")) {
+      device_type = "gpu";
+    } else {
+      Log::Fatal("Unknown device type %s", value.c_str());
     }
   }
 }

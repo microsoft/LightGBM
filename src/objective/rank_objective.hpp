@@ -35,6 +35,11 @@ public:
       Log::Fatal("Sigmoid param %f should be greater than zero", sigmoid_);
     }
   }
+
+  explicit LambdarankNDCG(const std::vector<std::string>&) {
+
+  }
+
   ~LambdarankNDCG() {
 
   }
@@ -52,6 +57,7 @@ public:
     num_queries_ = metadata.num_queries();
     // cache inverse max DCG, avoid computation many times
     inverse_max_dcgs_.resize(num_queries_);
+#pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_queries_; ++i) {
       inverse_max_dcgs_[i] = DCGCalculator::CalMaxDCGAtK(optimize_pos_at_,
         label_ + query_boundaries_[i],
@@ -193,6 +199,12 @@ public:
 
   const char* GetName() const override {
     return "lambdarank";
+  }
+
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName();
+    return str_buf.str();
   }
 
 private:

@@ -3,6 +3,12 @@
 import lightgbm as lgb
 import pandas as pd
 import numpy as np
+from sklearn.metrics import mean_squared_error
+
+try:
+    import cPickle as pickle
+except:
+    import pickle
 
 # load or create your dataset
 print('Load data...')
@@ -11,10 +17,10 @@ df_test = pd.read_csv('../binary_classification/binary.test', header=None, sep='
 W_train = pd.read_csv('../binary_classification/binary.train.weight', header=None)[0]
 W_test = pd.read_csv('../binary_classification/binary.test.weight', header=None)[0]
 
-y_train = df_train[0]
-y_test = df_test[0]
-X_train = df_train.drop(0, axis=1)
-X_test = df_test.drop(0, axis=1)
+y_train = df_train[0].values
+y_test = df_test[0].values
+X_train = df_train.drop(0, axis=1).values
+X_test = df_test.drop(0, axis=1).values
 
 num_train, num_feature = X_train.shape
 
@@ -56,6 +62,25 @@ print('7th feature name is:', repr(lgb_train.feature_name[6]))
 
 # save model to file
 gbm.save_model('model.txt')
+
+# load model to predict
+print('Load model to predict')
+bst = lgb.Booster(model_file='model.txt')
+# can only predict with the best iteration (or the saving iteration)
+y_pred = bst.predict(X_test)
+# eval with loaded model
+print('The rmse of loaded model\'s prediction is:', mean_squared_error(y_test, y_pred) ** 0.5)
+
+# dump model with pickle
+with open('model.pkl', 'wb') as fout:
+    pickle.dump(gbm, fout)
+# load model with pickle to predict
+with open('model.pkl', 'rb') as fin:
+    pkl_bst = pickle.load(fin)
+# can predict with any iteration when loaded in pickle way
+y_pred = pkl_bst.predict(X_test, num_iteration=7)
+# eval with loaded model
+print('The rmse of pickled model\'s prediction is:', mean_squared_error(y_test, y_pred) ** 0.5)
 
 # continue training
 # init_model accepts:

@@ -48,19 +48,39 @@ public:
     }
   }
 
-  std::vector<double> Eval(const double* score) const override {
+  std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
     double sum_loss = 0.0f;
-    if (weights_ == nullptr) {
-#pragma omp parallel for schedule(static) reduction(+:sum_loss)
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], huber_delta_, fair_c_);
+    if (objective == nullptr) {
+      if (weights_ == nullptr) {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], huber_delta_, fair_c_);
+        }
+      } else {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          // add loss
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], huber_delta_, fair_c_) * weights_[i];
+        }
       }
     } else {
-#pragma omp parallel for schedule(static) reduction(+:sum_loss)
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        // add loss
-        sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], huber_delta_, fair_c_) * weights_[i];
+      if (weights_ == nullptr) {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          // add loss
+          double t = 0;
+          objective->ConvertOutput(&score[i], &t);
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], t, huber_delta_, fair_c_);
+        }
+      } else {
+        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          // add loss
+          double t = 0;
+          objective->ConvertOutput(&score[i], &t);
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], t, huber_delta_, fair_c_) * weights_[i];
+        }
       }
     }
     double loss = PointWiseLossCalculator::AverageLoss(sum_loss, sum_weights_);
@@ -91,6 +111,25 @@ private:
   std::vector<std::string> name_;
 };
 
+/*! \brief RMSE loss for regression task */
+class RMSEMetric: public RegressionMetric<RMSEMetric> {
+public:
+  explicit RMSEMetric(const MetricConfig& config) :RegressionMetric<RMSEMetric>(config) {}
+
+  inline static double LossOnPoint(float label, double score, double, double) {
+    return (score - label)*(score - label);
+  }
+
+  inline static double AverageLoss(double sum_loss, double sum_weights) {
+    // need sqrt the result for RMSE loss
+    return std::sqrt(sum_loss / sum_weights);
+  }
+
+  inline static const char* Name() {
+    return "rmse";
+  }
+};
+
 /*! \brief L2 loss for regression task */
 class L2Metric: public RegressionMetric<L2Metric> {
 public:
@@ -101,8 +140,8 @@ public:
   }
 
   inline static double AverageLoss(double sum_loss, double sum_weights) {
-    // need sqrt the result for L2 loss
-    return std::sqrt(sum_loss / sum_weights);
+    // need mean of the result for L2 loss
+    return sum_loss / sum_weights;
   }
 
   inline static const char* Name() {

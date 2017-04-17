@@ -24,8 +24,9 @@ public:
   /*!
   * \brief Initialize tree learner with training dataset
   * \param train_data The used training data
+  * \param is_constant_hessian True if all hessians share the same value
   */
-  virtual void Init(const Dataset* train_data) = 0;
+  virtual void Init(const Dataset* train_data, bool is_constant_hessian) = 0;
 
   virtual void ResetTrainingData(const Dataset* train_data) = 0;
 
@@ -39,9 +40,15 @@ public:
   * \brief training tree model on dataset 
   * \param gradients The first order gradients
   * \param hessians The second order gradients
+  * \param is_constant_hessian True if all hessians share the same value
   * \return A trained tree
   */
-  virtual Tree* Train(const score_t* gradients, const score_t* hessians) = 0;
+  virtual Tree* Train(const score_t* gradients, const score_t* hessians, bool is_constant_hessian) = 0;
+
+  /*!
+  * \brief use a existing tree to fit the new gradients and hessians.
+  */
+  virtual Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const = 0;
 
   /*!
   * \brief Set bagging data
@@ -55,7 +62,7 @@ public:
   * \brief Using last trained tree to predict score then adding to out_score;
   * \param out_score output score
   */
-  virtual void AddPredictionToScore(double* out_score) const = 0;
+  virtual void AddPredictionToScore(const Tree* tree, double* out_score) const = 0;
 
   TreeLearner() = default;
   /*! \brief Disable copy */
@@ -65,10 +72,12 @@ public:
 
   /*!
   * \brief Create object of tree learner
-  * \param type Type of tree learner
+  * \param learner_type Type of tree learner
+  * \param device_type Type of tree learner
   * \param tree_config config of tree
   */
-  static TreeLearner* CreateTreeLearner(const std::string& type,
+  static TreeLearner* CreateTreeLearner(const std::string& learner_type,
+    const std::string& device_type,
     const TreeConfig* tree_config);
 };
 

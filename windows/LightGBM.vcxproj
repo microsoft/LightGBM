@@ -196,7 +196,7 @@
     <ClInclude Include="..\include\LightGBM\c_api.h" />
     <ClInclude Include="..\include\LightGBM\dataset.h" />
     <ClInclude Include="..\include\LightGBM\dataset_loader.h" />
-    <ClInclude Include="..\include\LightGBM\feature.h" />
+    <ClInclude Include="..\include\LightGBM\feature_group.h" />
     <ClInclude Include="..\include\LightGBM\meta.h" />
     <ClInclude Include="..\include\LightGBM\metric.h" />
     <ClInclude Include="..\include\LightGBM\network.h" />
@@ -206,6 +206,7 @@
     <ClInclude Include="..\include\LightGBM\utils\array_args.h" />
     <ClInclude Include="..\include\LightGBM\utils\common.h" />
     <ClInclude Include="..\include\LightGBM\utils\log.h" />
+    <ClInclude Include="..\include\LightGBM\utils\openmp_wrapper.h" />
     <ClInclude Include="..\include\LightGBM\utils\pipeline_reader.h" />
     <ClInclude Include="..\include\LightGBM\utils\random.h" />
     <ClInclude Include="..\include\LightGBM\utils\text_reader.h" />
@@ -213,12 +214,15 @@
     <ClInclude Include="..\src\application\predictor.hpp" />
     <ClInclude Include="..\src\boosting\gbdt.h" />
     <ClInclude Include="..\src\boosting\dart.hpp" />
+    <ClInclude Include="..\src\boosting\goss.hpp" />
     <ClInclude Include="..\src\boosting\score_updater.hpp" />
     <ClInclude Include="..\src\io\dense_bin.hpp" />
+    <ClInclude Include="..\src\io\dense_nbits_bin.hpp" />
     <ClInclude Include="..\src\io\ordered_sparse_bin.hpp" />
     <ClInclude Include="..\src\io\parser.hpp" />
     <ClInclude Include="..\src\io\sparse_bin.hpp" />
     <ClInclude Include="..\src\metric\binary_metric.hpp" />
+    <ClInclude Include="..\src\metric\map_metric.hpp" />
     <ClInclude Include="..\src\metric\rank_metric.hpp" />
     <ClInclude Include="..\src\metric\regression_metric.hpp" />
     <ClInclude Include="..\src\metric\multiclass_metric.hpp" />

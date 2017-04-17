@@ -10,7 +10,7 @@ import numpy as np
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
                               load_iris)
 from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, TimeSeriesSplit
 
 try:
     import pandas as pd
@@ -32,8 +32,8 @@ class template(object):
     @staticmethod
     def test_template(params={'objective': 'regression', 'metric': 'l2'},
                       X_y=load_boston(True), feval=mean_squared_error,
-                      num_round=100, init_model=None, custom_eval=None,
-                      early_stopping_rounds=10,
+                      num_round=50, init_model=None, custom_eval=None,
+                      early_stopping_rounds=2,
                       return_data=False, return_model=False):
         params['verbose'], params['seed'] = -1, 42
         X_train, X_test, y_train, y_test = train_test_split(*X_y, test_size=0.1, random_state=42)
@@ -71,8 +71,7 @@ class TestEngine(unittest.TestCase):
 
     def test_regreesion(self):
         evals_result, ret = template.test_template()
-        ret **= 0.5
-        self.assertLess(ret, 4)
+        self.assertLess(ret, 16)
         self.assertAlmostEqual(min(evals_result['eval']['l2']), ret, places=5)
 
     def test_multiclass(self):
@@ -86,6 +85,39 @@ class TestEngine(unittest.TestCase):
         self.assertLess(ret, 0.2)
         self.assertAlmostEqual(min(evals_result['eval']['multi_logloss']), ret, places=5)
 
+    def test_early_stopping(self):
+        X_y = load_breast_cancer(True)
+        params = {
+            'objective': 'binary',
+            'metric': 'binary_logloss',
+            'verbose': -1,
+            'seed': 42
+        }
+        X_train, X_test, y_train, y_test = train_test_split(*X_y, test_size=0.1, random_state=42)
+        lgb_train = lgb.Dataset(X_train, y_train)
+        lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+        valid_set_name = 'valid_set'
+        # no early stopping
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=10,
+                        valid_sets=lgb_eval,
+                        valid_names=valid_set_name,
+                        verbose_eval=False,
+                        early_stopping_rounds=5)
+        self.assertEqual(gbm.best_iteration, -1)
+        self.assertIn(valid_set_name, gbm.best_score)
+        self.assertIn('binary_logloss', gbm.best_score[valid_set_name])
+        # early stopping occurs
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=100,
+                        valid_sets=lgb_eval,
+                        valid_names=valid_set_name,
+                        verbose_eval=False,
+                        early_stopping_rounds=5)
+        self.assertLessEqual(gbm.best_iteration, 100)
+        self.assertIn(valid_set_name, gbm.best_score)
+        self.assertIn('binary_logloss', gbm.best_score[valid_set_name])
+
     def test_continue_train_and_other(self):
         params = {
             'objective': 'regression',
@@ -97,7 +129,7 @@ class TestEngine(unittest.TestCase):
         evals_result, ret = template.test_template(params, feval=mean_absolute_error,
                                                    num_round=80, init_model=model_name,
                                                    custom_eval=(lambda p, d: ('mae', mean_absolute_error(p, d.get_label()), False)))
-        self.assertLess(ret, 3)
+        self.assertLess(ret, 3.5)
         self.assertAlmostEqual(min(evals_result['eval']['l1']), ret, places=5)
         for l1, mae in zip(evals_result['eval']['l1'], evals_result['eval']['mae']):
             self.assertAlmostEqual(l1, mae, places=5)
@@ -120,9 +152,15 @@ class TestEngine(unittest.TestCase):
 
     def test_cv(self):
         lgb_train, _ = template.test_template(return_data=True)
-        lgb.cv({'verbose': -1}, lgb_train, num_boost_round=20, nfold=5,
+        lgb.cv({'verbose': -1}, lgb_train, num_boost_round=20, nfold=5, shuffle=False,
                metrics='l1', verbose_eval=False,
                callbacks=[lgb.reset_parameter(learning_rate=lambda i: 0.1 - 0.001 * i)])
+        lgb.cv({'verbose': -1}, lgb_train, num_boost_round=20, nfold=5, shuffle=True,
+               metrics='l1', verbose_eval=False,
+               callbacks=[lgb.reset_parameter(learning_rate=lambda i: 0.1 - 0.001 * i)])
+        tss = TimeSeriesSplit(3)
+        lgb.cv({'verbose': -1}, lgb_train, num_boost_round=20, data_splitter=tss, nfold=5,  # test if wrong nfold is ignored
+               metrics='l2', verbose_eval=False)
 
     def test_feature_name(self):
         lgb_train, _ = template.test_template(return_data=True)
@@ -188,10 +226,10 @@ class TestEngine(unittest.TestCase):
         gbm3.save_model('categorical.model')
         gbm4 = lgb.Booster(model_file='categorical.model')
         pred4 = list(gbm4.predict(X_test))
-        self.assertListEqual(pred0, pred1)
-        self.assertListEqual(pred0, pred2)
-        self.assertListEqual(pred0, pred3)
-        self.assertListEqual(pred0, pred4)
+        np.testing.assert_almost_equal(pred0, pred1)
+        np.testing.assert_almost_equal(pred0, pred2)
+        np.testing.assert_almost_equal(pred0, pred3)
+        np.testing.assert_almost_equal(pred0, pred4)
 
 
 print("----------------------------------------------------------------------")

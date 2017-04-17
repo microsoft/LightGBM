@@ -13,6 +13,10 @@ public:
   explicit RegressionL2loss(const ObjectiveConfig&) {
   }
 
+  explicit RegressionL2loss(const std::vector<std::string>&) {
+
+  }
+
   ~RegressionL2loss() {
   }
 
@@ -23,15 +27,15 @@ public:
   }
 
   void GetGradients(const double* score, score_t* gradients,
-    score_t* hessians) const override {
+                    score_t* hessians) const override {
     if (weights_ == nullptr) {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         gradients[i] = static_cast<score_t>(score[i] - label_[i]);
         hessians[i] = 1.0f;
       }
     } else {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         gradients[i] = static_cast<score_t>(score[i] - label_[i]) * weights_[i];
         hessians[i] = weights_[i];
@@ -42,6 +46,22 @@ public:
   const char* GetName() const override {
     return "regression";
   }
+
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName();
+    return str_buf.str();
+  }
+
+  bool IsConstantHessian() const override {
+    if (weights_ == nullptr) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  bool BoostFromAverage() const override { return true; }
 
 private:
   /*! \brief Number of data */
@@ -61,6 +81,10 @@ public:
     eta_ = static_cast<double>(config.gaussian_eta);
   }
 
+  explicit RegressionL1loss(const std::vector<std::string>&) {
+
+  }
+
   ~RegressionL1loss() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
@@ -70,9 +94,9 @@ public:
   }
 
   void GetGradients(const double* score, score_t* gradients,
-    score_t* hessians) const override {
+                    score_t* hessians) const override {
     if (weights_ == nullptr) {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
         if (diff >= 0.0f) {
@@ -83,7 +107,7 @@ public:
         hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], eta_));
       }
     } else {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
         if (diff >= 0.0f) {
@@ -99,6 +123,14 @@ public:
   const char* GetName() const override {
     return "regression_l1";
   }
+
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName();
+    return str_buf.str();
+  }
+
+  bool BoostFromAverage() const override { return true; }
 
 private:
   /*! \brief Number of data */
@@ -121,6 +153,10 @@ public:
     eta_ = static_cast<double>(config.gaussian_eta);
   }
 
+  explicit RegressionHuberLoss(const std::vector<std::string>&) {
+
+  }
+
   ~RegressionHuberLoss() {
   }
 
@@ -131,9 +167,9 @@ public:
   }
 
   void GetGradients(const double* score, score_t* gradients,
-    score_t* hessians) const override {
+                    score_t* hessians) const override {
     if (weights_ == nullptr) {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
 
@@ -150,7 +186,7 @@ public:
         }
       }
     } else {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
 
@@ -173,6 +209,14 @@ public:
     return "huber";
   }
 
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName();
+    return str_buf.str();
+  }
+
+  bool BoostFromAverage() const override { return true; }
+
 private:
   /*! \brief Number of data */
   data_size_t num_data_;
@@ -194,6 +238,10 @@ public:
     c_ = static_cast<double>(config.fair_c);
   }
 
+  explicit RegressionFairLoss(const std::vector<std::string>&) {
+
+  }
+
   ~RegressionFairLoss() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
@@ -203,16 +251,16 @@ public:
   }
 
   void GetGradients(const double* score, score_t* gradients,
-    score_t* hessians) const override {
+                    score_t* hessians) const override {
     if (weights_ == nullptr) {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double x = score[i] - label_[i];
         gradients[i] = static_cast<score_t>(c_ * x / (std::fabs(x) + c_));
         hessians[i] = static_cast<score_t>(c_ * c_ / ((std::fabs(x) + c_) * (std::fabs(x) + c_)));
       }
     } else {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double x = score[i] - label_[i];
         gradients[i] = static_cast<score_t>(c_ * x / (std::fabs(x) + c_) * weights_[i]);
@@ -224,6 +272,14 @@ public:
   const char* GetName() const override {
     return "fair";
   }
+
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName();
+    return str_buf.str();
+  }
+
+  bool BoostFromAverage() const override { return true; }
 
 private:
   /*! \brief Number of data */
@@ -243,7 +299,11 @@ private:
 class RegressionPoissonLoss: public ObjectiveFunction {
 public:
   explicit RegressionPoissonLoss(const ObjectiveConfig& config) {
-    max_delta_step_ =  static_cast<double>(config.poisson_max_delta_step);
+    max_delta_step_ = static_cast<double>(config.poisson_max_delta_step);
+  }
+
+  explicit RegressionPoissonLoss(const std::vector<std::string>&) {
+
   }
 
   ~RegressionPoissonLoss() {}
@@ -255,18 +315,18 @@ public:
   }
 
   void GetGradients(const double* score, score_t* gradients,
-    score_t* hessians) const override {
+                    score_t* hessians) const override {
     if (weights_ == nullptr) {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        gradients[i] = score[i] - label_[i];
-        hessians[i] = score[i] + max_delta_step_;
+        gradients[i] = static_cast<score_t>(score[i] - label_[i]);
+        hessians[i] = static_cast<score_t>(score[i] + max_delta_step_);
       }
     } else {
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        gradients[i] = (score[i] - label_[i]) * weights_[i];
-        hessians[i] = (score[i] + max_delta_step_) * weights_[i];
+        gradients[i] = static_cast<score_t>((score[i] - label_[i]) * weights_[i]);
+        hessians[i] = static_cast<score_t>((score[i] + max_delta_step_) * weights_[i]);
       }
     }
   }
@@ -274,6 +334,14 @@ public:
   const char* GetName() const override {
     return "poisson";
   }
+
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName();
+    return str_buf.str();
+  }
+
+  bool BoostFromAverage() const override { return true; }
 
 private:
   /*! \brief Number of data */

@@ -36,7 +36,7 @@ public:
   }
 
   Booster(const Dataset* train_data,
-    const char* parameters) {
+          const char* parameters) {
     auto param = ConfigBase::Str2Map(parameters);
     config_.Set(param);
     if (config_.num_threads > 0) {
@@ -52,7 +52,7 @@ public:
 
     // initialize the boosting
     boosting_->Init(&config_.boosting_config, nullptr, objective_fun_.get(),
-      Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
+                    Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
 
     ResetTrainingData(train_data);
   }
@@ -71,7 +71,7 @@ public:
     train_data_ = train_data;
     // create objective function
     objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
-      config_.objective_config));
+                                                                    config_.objective_config));
     if (objective_fun_ == nullptr) {
       Log::Warning("Using self-defined objective function");
     }
@@ -92,7 +92,7 @@ public:
     train_metric_.shrink_to_fit();
     // reset the boosting
     boosting_->ResetTrainingData(&config_.boosting_config, train_data_,
-      objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
+                                 objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
   }
 
   void ResetConfig(const char* parameters) {
@@ -116,7 +116,7 @@ public:
     if (param.count("objective")) {
       // create objective function
       objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
-        config_.objective_config));
+                                                                      config_.objective_config));
       if (objective_fun_ == nullptr) {
         Log::Warning("Using self-defined objective function");
       }
@@ -127,7 +127,7 @@ public:
     }
 
     boosting_->ResetTrainingData(&config_.boosting_config, train_data_,
-      objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
+                                 objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
 
   }
 
@@ -142,7 +142,7 @@ public:
     }
     valid_metrics_.back().shrink_to_fit();
     boosting_->AddValidDataset(valid_data,
-      Common::ConstPtrInVectorWrapper<Metric>(valid_metrics_.back()));
+                               Common::ConstPtrInVectorWrapper<Metric>(valid_metrics_.back()));
   }
 
   bool TrainOneIter() {
@@ -160,9 +160,10 @@ public:
     boosting_->RollbackOneIter();
   }
 
-  Predictor NewPredictor(int num_iteration, int predict_type) {
+  void Predict(int num_iteration, int predict_type, int nrow,
+               std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
+               double* out_result, int64_t* out_len) {
     std::lock_guard<std::mutex> lock(mutex_);
-    boosting_->SetNumIterationForPred(num_iteration);
     bool is_predict_leaf = false;
     bool is_raw_score = false;
     if (predict_type == C_API_PREDICT_LEAF_INDEX) {
@@ -172,9 +173,33 @@ public:
     } else {
       is_raw_score = false;
     }
-    // not threading safe now
-    // boosting_->SetNumIterationForPred may be set by other thread during prediction. 
-    return Predictor(boosting_.get(), is_raw_score, is_predict_leaf);
+    Predictor predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf);
+    int64_t num_preb_in_one_row = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf);
+    auto pred_fun = predictor.GetPredictFunction();
+    auto pred_wrt_ptr = out_result;
+    for (int i = 0; i < nrow; ++i) {
+      auto one_row = get_row_fun(i);
+      pred_fun(one_row, pred_wrt_ptr);
+      pred_wrt_ptr += num_preb_in_one_row;
+    }
+    *out_len = nrow * num_preb_in_one_row;
+  }
+
+  void Predict(int num_iteration, int predict_type, const char* data_filename,
+               int data_has_header, const char* result_filename) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    bool is_predict_leaf = false;
+    bool is_raw_score = false;
+    if (predict_type == C_API_PREDICT_LEAF_INDEX) {
+      is_predict_leaf = true;
+    } else if (predict_type == C_API_PREDICT_RAW_SCORE) {
+      is_raw_score = true;
+    } else {
+      is_raw_score = false;
+    }
+    Predictor predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf);
+    bool bool_data_has_header = data_has_header > 0 ? true : false;
+    predictor.Predict(data_filename, result_filename, bool_data_has_header);
   }
 
   void GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
@@ -266,13 +291,13 @@ RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int d
 
 std::function<std::vector<std::pair<int, double>>(int idx)>
 RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices,
-  const void* data, int data_type, int64_t nindptr, int64_t nelem);
+                   const void* data, int data_type, int64_t nindptr, int64_t nelem);
 
 // Row iterator of on column for CSC matrix
 class CSC_RowIterator {
 public:
   CSC_RowIterator(const void* col_ptr, int col_ptr_type, const int32_t* indices,
-    const void* data, int data_type, int64_t ncol_ptr, int64_t nelem, int col_idx);
+                  const void* data, int data_type, int64_t ncol_ptr, int64_t nelem, int col_idx);
   ~CSC_RowIterator() {}
   // return value at idx, only can access by ascent order
   double Get(int idx);
@@ -288,14 +313,14 @@ private:
 
 // start of c_api functions
 
-LIGHTGBM_C_EXPORT const char* LGBM_GetLastError() {
+const char* LGBM_GetLastError() {
   return LastErrorMsg();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromFile(const char* filename,
-  const char* parameters,
-  const DatasetHandle reference,
-  DatasetHandle* out) {
+int LGBM_DatasetCreateFromFile(const char* filename,
+                               const char* parameters,
+                               const DatasetHandle reference,
+                               DatasetHandle* out) {
   API_BEGIN();
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
@@ -305,19 +330,107 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromFile(const char* filename,
     *out = loader.LoadFromFile(filename);
   } else {
     *out = loader.LoadFromFileAlignWithOtherDataset(filename,
-      reinterpret_cast<const Dataset*>(reference));
+                                                    reinterpret_cast<const Dataset*>(reference));
   }
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
-  int data_type,
-  int32_t nrow,
-  int32_t ncol,
-  int is_row_major,
-  const char* parameters,
-  const DatasetHandle reference,
-  DatasetHandle* out) {
+
+int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
+                                        int** sample_indices,
+                                        int32_t ncol,
+                                        const int* num_per_col,
+                                        int32_t num_sample_row,
+                                        int32_t num_total_row,
+                                        const char* parameters,
+                                        DatasetHandle* out) {
+  API_BEGIN();
+  auto param = ConfigBase::Str2Map(parameters);
+  IOConfig io_config;
+  io_config.Set(param);
+  DatasetLoader loader(io_config, nullptr, 1, nullptr);
+  *out = loader.CostructFromSampleData(sample_data, sample_indices, ncol, num_per_col,
+                                       num_sample_row,
+                                       static_cast<data_size_t>(num_total_row));
+  API_END();
+}
+
+
+int LGBM_DatasetCreateByReference(const DatasetHandle reference,
+                                  int64_t num_total_row,
+                                  DatasetHandle* out) {
+  API_BEGIN();
+  std::unique_ptr<Dataset> ret;
+  ret.reset(new Dataset(static_cast<data_size_t>(num_total_row)));
+  ret->CreateValid(reinterpret_cast<const Dataset*>(reference));
+  *out = ret.release();
+  API_END();
+}
+
+int LGBM_DatasetPushRows(DatasetHandle dataset,
+                         const void* data,
+                         int data_type,
+                         int32_t nrow,
+                         int32_t ncol,
+                         int32_t start_row) {
+  API_BEGIN();
+  auto p_dataset = reinterpret_cast<Dataset*>(dataset);
+  auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, 1);
+  OMP_INIT_EX();
+  #pragma omp parallel for schedule(static)
+  for (int i = 0; i < nrow; ++i) {
+    OMP_LOOP_EX_BEGIN();
+    const int tid = omp_get_thread_num();
+    auto one_row = get_row_fun(i);
+    p_dataset->PushOneRow(tid, start_row + i, one_row);
+    OMP_LOOP_EX_END();
+  }
+  OMP_THROW_EX();
+  if (start_row + nrow == p_dataset->num_data()) {
+    p_dataset->FinishLoad();
+  }
+  API_END();
+}
+
+int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
+                              const void* indptr,
+                              int indptr_type,
+                              const int32_t* indices,
+                              const void* data,
+                              int data_type,
+                              int64_t nindptr,
+                              int64_t nelem,
+                              int64_t,
+                              int64_t start_row) {
+  API_BEGIN();
+  auto p_dataset = reinterpret_cast<Dataset*>(dataset);
+  auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
+  int32_t nrow = static_cast<int32_t>(nindptr - 1);
+  OMP_INIT_EX();
+  #pragma omp parallel for schedule(static)
+  for (int i = 0; i < nrow; ++i) {
+    OMP_LOOP_EX_BEGIN();
+    const int tid = omp_get_thread_num();
+    auto one_row = get_row_fun(i);
+    p_dataset->PushOneRow(tid,
+                          static_cast<data_size_t>(start_row + i), one_row);
+    OMP_LOOP_EX_END();
+  }
+  OMP_THROW_EX();
+  if (start_row + nrow == static_cast<int64_t>(p_dataset->num_data())) {
+    p_dataset->FinishLoad();
+  }
+  API_END();
+}
+
+int LGBM_DatasetCreateFromMat(const void* data,
+                              int data_type,
+                              int32_t nrow,
+                              int32_t ncol,
+                              int is_row_major,
+                              const char* parameters,
+                              const DatasetHandle reference,
+                              DatasetHandle* out) {
   API_BEGIN();
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
@@ -327,48 +440,58 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
   if (reference == nullptr) {
     // sample data first
     Random rand(io_config.data_random_seed);
-    const int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
+    int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
+    sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values(ncol);
+    std::vector<std::vector<int>> sample_idx(ncol);
     for (size_t i = 0; i < sample_indices.size(); ++i) {
       auto idx = sample_indices[i];
       auto row = get_row_fun(static_cast<int>(idx));
       for (size_t j = 0; j < row.size(); ++j) {
-        if (std::fabs(row[j]) > 1e-15) {
-          sample_values[j].push_back(row[j]);
+        if (std::fabs(row[j]) > kEpsilon) {
+          sample_values[j].emplace_back(row[j]);
+          sample_idx[j].emplace_back(static_cast<int>(i));
         }
       }
     }
     DatasetLoader loader(io_config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(sample_values, sample_cnt, nrow));
+    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values).data(),
+                                            Common::Vector2Ptr<int>(sample_idx).data(),
+                                            static_cast<int>(sample_values.size()),
+                                            Common::VectorSize<double>(sample_values).data(),
+                                            sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
-    ret->CopyFeatureMapperFrom(
+    ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
   }
-
-#pragma omp parallel for schedule(guided)
+  OMP_INIT_EX();
+  #pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {
+    OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     auto one_row = get_row_fun(i);
     ret->PushOneRow(tid, i, one_row);
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
   ret->FinishLoad();
   *out = ret.release();
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSR(const void* indptr,
-  int indptr_type,
-  const int32_t* indices,
-  const void* data,
-  int data_type,
-  int64_t nindptr,
-  int64_t nelem,
-  int64_t num_col,
-  const char* parameters,
-  const DatasetHandle reference,
-  DatasetHandle* out) {
+int LGBM_DatasetCreateFromCSR(const void* indptr,
+                              int indptr_type,
+                              const int32_t* indices,
+                              const void* data,
+                              int data_type,
+                              int64_t nindptr,
+                              int64_t nelem,
+                              int64_t num_col,
+                              const char* parameters,
+                              const DatasetHandle reference,
+                              DatasetHandle* out) {
   API_BEGIN();
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
@@ -379,57 +502,63 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSR(const void* indptr,
   if (reference == nullptr) {
     // sample data first
     Random rand(io_config.data_random_seed);
-    const int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
+    int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
+    sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values;
+    std::vector<std::vector<int>> sample_idx;
     for (size_t i = 0; i < sample_indices.size(); ++i) {
       auto idx = sample_indices[i];
       auto row = get_row_fun(static_cast<int>(idx));
       for (std::pair<int, double>& inner_data : row) {
         if (static_cast<size_t>(inner_data.first) >= sample_values.size()) {
-          // if need expand feature set
-          size_t need_size = inner_data.first - sample_values.size() + 1;
-          for (size_t j = 0; j < need_size; ++j) {
-            sample_values.emplace_back();
-          }
+          sample_values.resize(inner_data.first + 1);
+          sample_idx.resize(inner_data.first + 1);
         }
-        if (std::fabs(inner_data.second) > 1e-15) {
-          // edit the feature value
-          sample_values[inner_data.first].push_back(inner_data.second);
+        if (std::fabs(inner_data.second) > kEpsilon) {
+          sample_values[inner_data.first].emplace_back(inner_data.second);
+          sample_idx[inner_data.first].emplace_back(static_cast<int>(i));
         }
       }
     }
     CHECK(num_col >= static_cast<int>(sample_values.size()));
     DatasetLoader loader(io_config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(sample_values, sample_cnt, nrow));
+    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values).data(),
+                                            Common::Vector2Ptr<int>(sample_idx).data(),
+                                            static_cast<int>(sample_values.size()),
+                                            Common::VectorSize<double>(sample_values).data(),
+                                            sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
-    ret->CopyFeatureMapperFrom(
+    ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
   }
-
-#pragma omp parallel for schedule(guided)
+  OMP_INIT_EX();
+  #pragma omp parallel for schedule(static)
   for (int i = 0; i < nindptr - 1; ++i) {
+    OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     auto one_row = get_row_fun(i);
     ret->PushOneRow(tid, i, one_row);
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
   ret->FinishLoad();
   *out = ret.release();
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
-  int col_ptr_type,
-  const int32_t* indices,
-  const void* data,
-  int data_type,
-  int64_t ncol_ptr,
-  int64_t nelem,
-  int64_t num_row,
-  const char* parameters,
-  const DatasetHandle reference,
-  DatasetHandle* out) {
+int LGBM_DatasetCreateFromCSC(const void* col_ptr,
+                              int col_ptr_type,
+                              const int32_t* indices,
+                              const void* data,
+                              int data_type,
+                              int64_t ncol_ptr,
+                              int64_t nelem,
+                              int64_t num_row,
+                              const char* parameters,
+                              const DatasetHandle reference,
+                              DatasetHandle* out) {
   API_BEGIN();
   auto param = ConfigBase::Str2Map(parameters);
   IOConfig io_config;
@@ -439,32 +568,46 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   if (reference == nullptr) {
     // sample data first
     Random rand(io_config.data_random_seed);
-    const int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
+    int sample_cnt = static_cast<int>(nrow < io_config.bin_construct_sample_cnt ? nrow : io_config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
+    sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values(ncol_ptr - 1);
-#pragma omp parallel for schedule(guided)
+    std::vector<std::vector<int>> sample_idx(ncol_ptr - 1);
+    OMP_INIT_EX();
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
+      OMP_LOOP_EX_BEGIN();
       CSC_RowIterator col_it(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i);
       for (int j = 0; j < sample_cnt; j++) {
         auto val = col_it.Get(sample_indices[j]);
         if (std::fabs(val) > kEpsilon) {
-          sample_values[i].push_back(val);
+          sample_values[i].emplace_back(val);
+          sample_idx[i].emplace_back(j);
         }
       }
+      OMP_LOOP_EX_END();
     }
+    OMP_THROW_EX();
     DatasetLoader loader(io_config, nullptr, 1, nullptr);
-    ret.reset(loader.CostructFromSampleData(sample_values, sample_cnt, nrow));
+    ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values).data(),
+                                            Common::Vector2Ptr<int>(sample_idx).data(),
+                                            static_cast<int>(sample_values.size()),
+                                            Common::VectorSize<double>(sample_values).data(),
+                                            sample_cnt, nrow));
   } else {
     ret.reset(new Dataset(nrow));
-    ret->CopyFeatureMapperFrom(
+    ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
   }
-
-#pragma omp parallel for schedule(guided)
+  OMP_INIT_EX();
+  #pragma omp parallel for schedule(static)
   for (int i = 0; i < ncol_ptr - 1; ++i) {
+    OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
-    int feature_idx = ret->GetInnerFeatureIndex(i);
+    int feature_idx = ret->InnerFeatureIndex(i);
     if (feature_idx < 0) { continue; }
+    int group = ret->Feature2Group(feature_idx);
+    int sub_feature = ret->Feture2SubFeature(feature_idx);
     CSC_RowIterator col_it(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i);
     int row_idx = 0;
     while (row_idx < nrow) {
@@ -472,15 +615,17 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSC(const void* col_ptr,
       row_idx = pair.first;
       // no more data
       if (row_idx < 0) { break; }
-      ret->FeatureAt(feature_idx)->PushData(tid, row_idx, pair.second);
+      ret->PushOneData(tid, row_idx, group, sub_feature, pair.second);
     }
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
   ret->FinishLoad();
   *out = ret.release();
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_DatasetGetSubset(
+int LGBM_DatasetGetSubset(
   const DatasetHandle handle,
   const int32_t* used_row_indices,
   int32_t num_used_row_indices,
@@ -498,7 +643,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetSubset(
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_DatasetSetFeatureNames(
+int LGBM_DatasetSetFeatureNames(
   DatasetHandle handle,
   const char** feature_names,
   int num_feature_names) {
@@ -512,7 +657,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSetFeatureNames(
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_DatasetGetFeatureNames(
+int LGBM_DatasetGetFeatureNames(
   DatasetHandle handle,
   char** feature_names,
   int* num_feature_names) {
@@ -526,25 +671,25 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetFeatureNames(
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_DatasetFree(DatasetHandle handle) {
+int LGBM_DatasetFree(DatasetHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Dataset*>(handle);
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_DatasetSaveBinary(DatasetHandle handle,
-  const char* filename) {
+int LGBM_DatasetSaveBinary(DatasetHandle handle,
+                           const char* filename) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
   dataset->SaveBinaryFile(filename);
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_DatasetSetField(DatasetHandle handle,
-  const char* field_name,
-  const void* field_data,
-  int num_element,
-  int type) {
+int LGBM_DatasetSetField(DatasetHandle handle,
+                         const char* field_name,
+                         const void* field_data,
+                         int num_element,
+                         int type) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
   bool is_success = false;
@@ -559,11 +704,11 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSetField(DatasetHandle handle,
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_DatasetGetField(DatasetHandle handle,
-  const char* field_name,
-  int* out_len,
-  const void** out_ptr,
-  int* out_type) {
+int LGBM_DatasetGetField(DatasetHandle handle,
+                         const char* field_name,
+                         int* out_len,
+                         const void** out_ptr,
+                         int* out_type) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
   bool is_success = false;
@@ -582,16 +727,16 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetField(DatasetHandle handle,
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumData(DatasetHandle handle,
-  int* out) {
+int LGBM_DatasetGetNumData(DatasetHandle handle,
+                           int* out) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
   *out = dataset->num_data();
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumFeature(DatasetHandle handle,
-  int* out) {
+int LGBM_DatasetGetNumFeature(DatasetHandle handle,
+                              int* out) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
   *out = dataset->num_total_features();
@@ -600,9 +745,9 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumFeature(DatasetHandle handle,
 
 // ---- start of booster
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterCreate(const DatasetHandle train_data,
-  const char* parameters,
-  BoosterHandle* out) {
+int LGBM_BoosterCreate(const DatasetHandle train_data,
+                       const char* parameters,
+                       BoosterHandle* out) {
   API_BEGIN();
   const Dataset* p_train_data = reinterpret_cast<const Dataset*>(train_data);
   auto ret = std::unique_ptr<Booster>(new Booster(p_train_data, parameters));
@@ -610,7 +755,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterCreate(const DatasetHandle train_data,
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterCreateFromModelfile(
+int LGBM_BoosterCreateFromModelfile(
   const char* filename,
   int* out_num_iterations,
   BoosterHandle* out) {
@@ -621,7 +766,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterCreateFromModelfile(
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterLoadModelFromString(
+int LGBM_BoosterLoadModelFromString(
   const char* model_str,
   int* out_num_iterations,
   BoosterHandle* out) {
@@ -633,14 +778,14 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterLoadModelFromString(
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterFree(BoosterHandle handle) {
+int LGBM_BoosterFree(BoosterHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Booster*>(handle);
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterMerge(BoosterHandle handle,
-  BoosterHandle other_handle) {
+int LGBM_BoosterMerge(BoosterHandle handle,
+                      BoosterHandle other_handle) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   Booster* ref_other_booster = reinterpret_cast<Booster*>(other_handle);
@@ -648,8 +793,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterMerge(BoosterHandle handle,
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterAddValidData(BoosterHandle handle,
-  const DatasetHandle valid_data) {
+int LGBM_BoosterAddValidData(BoosterHandle handle,
+                             const DatasetHandle valid_data) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   const Dataset* p_dataset = reinterpret_cast<const Dataset*>(valid_data);
@@ -657,8 +802,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterAddValidData(BoosterHandle handle,
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterResetTrainingData(BoosterHandle handle,
-  const DatasetHandle train_data) {
+int LGBM_BoosterResetTrainingData(BoosterHandle handle,
+                                  const DatasetHandle train_data) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   const Dataset* p_dataset = reinterpret_cast<const Dataset*>(train_data);
@@ -666,21 +811,21 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterResetTrainingData(BoosterHandle handle,
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterResetParameter(BoosterHandle handle, const char* parameters) {
+int LGBM_BoosterResetParameter(BoosterHandle handle, const char* parameters) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->ResetConfig(parameters);
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumClasses(BoosterHandle handle, int* out_len) {
+int LGBM_BoosterGetNumClasses(BoosterHandle handle, int* out_len) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetBoosting()->NumberOfClasses();
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished) {
+int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   if (ref_booster->TrainOneIter()) {
@@ -691,10 +836,10 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_fi
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
-  const float* grad,
-  const float* hess,
-  int* is_finished) {
+int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
+                                    const float* grad,
+                                    const float* hess,
+                                    int* is_finished) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   if (ref_booster->TrainOneIter(grad, hess)) {
@@ -705,52 +850,52 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterRollbackOneIter(BoosterHandle handle) {
+int LGBM_BoosterRollbackOneIter(BoosterHandle handle) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->RollbackOneIter();
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetCurrentIteration(BoosterHandle handle, int* out_iteration) {
+int LGBM_BoosterGetCurrentIteration(BoosterHandle handle, int* out_iteration) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_iteration = ref_booster->GetBoosting()->GetCurrentIteration();
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int* out_len) {
+int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int* out_len) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetEvalCounts();
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalNames(BoosterHandle handle, int* out_len, char** out_strs) {
+int LGBM_BoosterGetEvalNames(BoosterHandle handle, int* out_len, char** out_strs) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetEvalNames(out_strs);
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetFeatureNames(BoosterHandle handle, int* out_len, char** out_strs) {
+int LGBM_BoosterGetFeatureNames(BoosterHandle handle, int* out_len, char** out_strs) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetFeatureNames(out_strs);
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumFeature(BoosterHandle handle, int* out_len) {
+int LGBM_BoosterGetNumFeature(BoosterHandle handle, int* out_len) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_len = ref_booster->GetBoosting()->MaxFeatureIdx() + 1;
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetEval(BoosterHandle handle,
-  int data_idx,
-  int* out_len,
-  double* out_results) {
+int LGBM_BoosterGetEval(BoosterHandle handle,
+                        int data_idx,
+                        int* out_len,
+                        double* out_results) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto boosting = ref_booster->GetBoosting();
@@ -762,180 +907,136 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetEval(BoosterHandle handle,
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumPredict(BoosterHandle handle,
-  int data_idx,
-  int64_t* out_len) {
+int LGBM_BoosterGetNumPredict(BoosterHandle handle,
+                              int data_idx,
+                              int64_t* out_len) {
   API_BEGIN();
   auto boosting = reinterpret_cast<Booster*>(handle)->GetBoosting();
   *out_len = boosting->GetNumPredictAt(data_idx);
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetPredict(BoosterHandle handle,
-  int data_idx,
-  int64_t* out_len,
-  double* out_result) {
+int LGBM_BoosterGetPredict(BoosterHandle handle,
+                           int data_idx,
+                           int64_t* out_len,
+                           double* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->GetPredictAt(data_idx, out_result, out_len);
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForFile(BoosterHandle handle,
-  const char* data_filename,
-  int data_has_header,
-  int predict_type,
-  int num_iteration,
-  const char* result_filename) {
+int LGBM_BoosterPredictForFile(BoosterHandle handle,
+                               const char* data_filename,
+                               int data_has_header,
+                               int predict_type,
+                               int num_iteration,
+                               const char* result_filename) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  auto predictor = ref_booster->NewPredictor(static_cast<int>(num_iteration), predict_type);
-  bool bool_data_has_header = data_has_header > 0 ? true : false;
-  predictor.Predict(data_filename, result_filename, bool_data_has_header);
+  ref_booster->Predict(num_iteration, predict_type, data_filename, data_has_header, result_filename);
   API_END();
 }
 
-int64_t GetNumPredOneRow(const Booster* ref_booster, int predict_type, int64_t num_iteration) {
-  int64_t num_preb_in_one_row = ref_booster->GetBoosting()->NumberOfClasses();
-  if (predict_type == C_API_PREDICT_LEAF_INDEX) {
-    int64_t max_iteration = ref_booster->GetBoosting()->GetCurrentIteration();
-    if (num_iteration > 0) {
-      num_preb_in_one_row *= static_cast<int>(std::min(max_iteration, num_iteration));
-    } else {
-      num_preb_in_one_row *= max_iteration;
-    }
-  }
-  return num_preb_in_one_row;
-}
-
-LIGHTGBM_C_EXPORT int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
-  int num_row,
-  int predict_type,
-  int num_iteration,
-  int64_t* out_len) {
+int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
+                               int num_row,
+                               int predict_type,
+                               int num_iteration,
+                               int64_t* out_len) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  *out_len = static_cast<int64_t>(num_row * GetNumPredOneRow(ref_booster, predict_type, num_iteration));
+  *out_len = static_cast<int64_t>(num_row * ref_booster->GetBoosting()->NumPredictOneRow(
+    num_iteration, predict_type == C_API_PREDICT_LEAF_INDEX));
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
-  const void* indptr,
-  int indptr_type,
-  const int32_t* indices,
-  const void* data,
-  int data_type,
-  int64_t nindptr,
-  int64_t nelem,
-  int64_t,
-  int predict_type,
-  int num_iteration,
-  int64_t* out_len,
-  double* out_result) {
+int LGBM_BoosterPredictForCSR(BoosterHandle handle,
+                              const void* indptr,
+                              int indptr_type,
+                              const int32_t* indices,
+                              const void* data,
+                              int data_type,
+                              int64_t nindptr,
+                              int64_t nelem,
+                              int64_t,
+                              int predict_type,
+                              int num_iteration,
+                              int64_t* out_len,
+                              double* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  auto predictor = ref_booster->NewPredictor(static_cast<int>(num_iteration), predict_type);
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
-  int64_t num_preb_in_one_row = GetNumPredOneRow(ref_booster, predict_type, num_iteration);
   int nrow = static_cast<int>(nindptr - 1);
-#pragma omp parallel for schedule(guided)
-  for (int i = 0; i < nrow; ++i) {
-    auto one_row = get_row_fun(i);
-    auto predicton_result = predictor.GetPredictFunction()(one_row);
-    for (int j = 0; j < static_cast<int>(predicton_result.size()); ++j) {
-      out_result[i * num_preb_in_one_row + j] = static_cast<double>(predicton_result[j]);
-    }
-  }
-  *out_len = nrow * num_preb_in_one_row;
+  ref_booster->Predict(num_iteration, predict_type, nrow, get_row_fun, out_result, out_len);
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSC(BoosterHandle handle,
-  const void* col_ptr,
-  int col_ptr_type,
-  const int32_t* indices,
-  const void* data,
-  int data_type,
-  int64_t ncol_ptr,
-  int64_t nelem,
-  int64_t num_row,
-  int predict_type,
-  int num_iteration,
-  int64_t* out_len,
-  double* out_result) {
+int LGBM_BoosterPredictForCSC(BoosterHandle handle,
+                              const void* col_ptr,
+                              int col_ptr_type,
+                              const int32_t* indices,
+                              const void* data,
+                              int data_type,
+                              int64_t ncol_ptr,
+                              int64_t nelem,
+                              int64_t num_row,
+                              int predict_type,
+                              int num_iteration,
+                              int64_t* out_len,
+                              double* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  auto predictor = ref_booster->NewPredictor(static_cast<int>(num_iteration), predict_type);
-  int64_t num_preb_in_one_row = GetNumPredOneRow(ref_booster, predict_type, num_iteration);
   int ncol = static_cast<int>(ncol_ptr - 1);
-
-  Threading::For<int64_t>(0, num_row,
-    [&predictor, &out_result, num_preb_in_one_row, ncol, col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem]
-  (int, data_size_t start, data_size_t end) {
-    std::vector<CSC_RowIterator> iterators;
-    for (int j = 0; j < ncol; ++j) {
-      iterators.emplace_back(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, j);
-    }
+  std::vector<CSC_RowIterator> iterators;
+  for (int j = 0; j < ncol; ++j) {
+    iterators.emplace_back(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, j);
+  }
+  std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun =
+    [&iterators, ncol](int i) {
     std::vector<std::pair<int, double>> one_row;
-    for (int64_t i = start; i < end; ++i) {
-      one_row.clear();
-      for (int j = 0; j < ncol; ++j) {
-        auto val = iterators[j].Get(static_cast<int>(i));
-        if (std::fabs(val) > kEpsilon) {
-          one_row.emplace_back(j, val);
-        }
-      }
-      auto predicton_result = predictor.GetPredictFunction()(one_row);
-      for (int j = 0; j < static_cast<int>(predicton_result.size()); ++j) {
-        out_result[i * num_preb_in_one_row + j] = static_cast<double>(predicton_result[j]);
+    for (int j = 0; j < ncol; ++j) {
+      auto val = iterators[j].Get(i);
+      if (std::fabs(val) > kEpsilon) {
+        one_row.emplace_back(j, val);
       }
     }
-  });
-  *out_len = num_row * num_preb_in_one_row;
+    return one_row;
+  };
+  ref_booster->Predict(num_iteration, predict_type, static_cast<int>(num_row), get_row_fun, out_result, out_len);
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
-  const void* data,
-  int data_type,
-  int32_t nrow,
-  int32_t ncol,
-  int is_row_major,
-  int predict_type,
-  int num_iteration,
-  int64_t* out_len,
-  double* out_result) {
+int LGBM_BoosterPredictForMat(BoosterHandle handle,
+                              const void* data,
+                              int data_type,
+                              int32_t nrow,
+                              int32_t ncol,
+                              int is_row_major,
+                              int predict_type,
+                              int num_iteration,
+                              int64_t* out_len,
+                              double* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  auto predictor = ref_booster->NewPredictor(static_cast<int>(num_iteration), predict_type);
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
-  int64_t num_preb_in_one_row = GetNumPredOneRow(ref_booster, predict_type, num_iteration);
-#pragma omp parallel for schedule(guided)
-  for (int i = 0; i < nrow; ++i) {
-    auto one_row = get_row_fun(i);
-    auto predicton_result = predictor.GetPredictFunction()(one_row);
-    for (int j = 0; j < static_cast<int>(predicton_result.size()); ++j) {
-      out_result[i * num_preb_in_one_row + j] = static_cast<double>(predicton_result[j]);
-    }
-  }
-  *out_len = nrow * num_preb_in_one_row;
+  ref_booster->Predict(num_iteration, predict_type, nrow, get_row_fun, out_result, out_len);
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel(BoosterHandle handle,
-  int num_iteration,
-  const char* filename) {
+int LGBM_BoosterSaveModel(BoosterHandle handle,
+                          int num_iteration,
+                          const char* filename) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->SaveModelToFile(num_iteration, filename);
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(BoosterHandle handle,
-  int num_iteration,
-  int buffer_len,
-  int* out_len,
-  char* out_str) {
+int LGBM_BoosterSaveModelToString(BoosterHandle handle,
+                                  int num_iteration,
+                                  int buffer_len,
+                                  int* out_len,
+                                  char* out_str) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   std::string model = ref_booster->SaveModelToString(num_iteration);
@@ -946,11 +1047,11 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(BoosterHandle handle,
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterDumpModel(BoosterHandle handle,
-  int num_iteration,
-  int buffer_len,
-  int* out_len,
-  char* out_str) {
+int LGBM_BoosterDumpModel(BoosterHandle handle,
+                          int num_iteration,
+                          int buffer_len,
+                          int* out_len,
+                          char* out_str) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   std::string model = ref_booster->DumpModel(num_iteration);
@@ -961,20 +1062,20 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterDumpModel(BoosterHandle handle,
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetLeafValue(BoosterHandle handle,
-  int tree_idx,
-  int leaf_idx,
-  double* out_val) {
+int LGBM_BoosterGetLeafValue(BoosterHandle handle,
+                             int tree_idx,
+                             int leaf_idx,
+                             double* out_val) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   *out_val = static_cast<double>(ref_booster->GetLeafValue(tree_idx, leaf_idx));
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_BoosterSetLeafValue(BoosterHandle handle,
-  int tree_idx,
-  int leaf_idx,
-  double val) {
+int LGBM_BoosterSetLeafValue(BoosterHandle handle,
+                             int tree_idx,
+                             int leaf_idx,
+                             double val) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->SetLeafValue(tree_idx, leaf_idx, val);
@@ -990,7 +1091,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
     if (is_row_major) {
       return [data_ptr, num_col, num_row](int row_idx) {
         std::vector<double> ret(num_col);
-        auto tmp_ptr = data_ptr + num_col * row_idx;
+        auto tmp_ptr = data_ptr + static_cast<size_t>(num_col) * row_idx;
         for (int i = 0; i < num_col; ++i) {
           ret[i] = static_cast<double>(*(tmp_ptr + i));
         }
@@ -1000,7 +1101,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
       return [data_ptr, num_col, num_row](int row_idx) {
         std::vector<double> ret(num_col);
         for (int i = 0; i < num_col; ++i) {
-          ret[i] = static_cast<double>(*(data_ptr + num_row * i + row_idx));
+          ret[i] = static_cast<double>(*(data_ptr + static_cast<size_t>(num_row) * i + row_idx));
         }
         return ret;
       };
@@ -1010,7 +1111,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
     if (is_row_major) {
       return [data_ptr, num_col, num_row](int row_idx) {
         std::vector<double> ret(num_col);
-        auto tmp_ptr = data_ptr + num_col * row_idx;
+        auto tmp_ptr = data_ptr + static_cast<size_t>(num_col) * row_idx;
         for (int i = 0; i < num_col; ++i) {
           ret[i] = static_cast<double>(*(tmp_ptr + i));
         }
@@ -1020,7 +1121,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
       return [data_ptr, num_col, num_row](int row_idx) {
         std::vector<double> ret(num_col);
         for (int i = 0; i < num_col; ++i) {
-          ret[i] = static_cast<double>(*(data_ptr + num_row * i + row_idx));
+          ret[i] = static_cast<double>(*(data_ptr + static_cast<size_t>(num_row) * i + row_idx));
         }
         return ret;
       };
@@ -1169,7 +1270,7 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
 }
 
 CSC_RowIterator::CSC_RowIterator(const void* col_ptr, int col_ptr_type, const int32_t* indices,
-  const void* data, int data_type, int64_t ncol_ptr, int64_t nelem, int col_idx) {
+                                 const void* data, int data_type, int64_t ncol_ptr, int64_t nelem, int col_idx) {
   iter_fun_ = IterateFunctionFromCSC(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, col_idx);
 }
 

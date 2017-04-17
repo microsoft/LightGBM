@@ -97,32 +97,41 @@ public:
   int num_iteration_predict = -1;
   bool is_pre_partition = false;
   bool is_enable_sparse = true;
+  /*! \brief The threshold of zero elements precentage for treating a feature as a sparse feature.
+   *  Default is 0.8, where a feature is treated as a sparse feature when there are over 80% zeros.
+   *  When setting to 1.0, all features are processed as dense features.
+   */
+  double sparse_threshold = 0.8;
   bool use_two_round_loading = false;
   bool is_save_binary_file = false;
   bool enable_load_from_binary_file = true;
-  int bin_construct_sample_cnt = 50000;
+  int bin_construct_sample_cnt = 200000;
   bool is_predict_leaf_index = false;
   bool is_predict_raw_score = false;
-
+  int min_data_in_leaf = 20;
+  int min_data_in_bin = 5;
+  double max_conflict_rate = 0.0f;
+  bool enable_bundle = true;
+  bool adjacent_bundle = false;
   bool has_header = false;
   /*! \brief Index or column name of label, default is the first column
    * And add an prefix "name:" while using column name */
   std::string label_column = "";
   /*! \brief Index or column name of weight, < 0 means not used
   * And add an prefix "name:" while using column name 
-  * Note: when using Index, it dosen't count the label index */
+  * Note: when using Index, it doesn't count the label index */
   std::string weight_column = "";
   /*! \brief Index or column name of group/query id, < 0 means not used
   * And add an prefix "name:" while using column name
-  * Note: when using Index, it dosen't count the label index */
+  * Note: when using Index, it doesn't count the label index */
   std::string group_column = "";
   /*! \brief ignored features, separate by ','
   * And add an prefix "name:" while using column name
-  * Note: when using Index, it dosen't count the label index */
+  * Note: when using Index, it doesn't count the label index */
   std::string ignore_column = "";
   /*! \brief specific categorical columns, Note:only support for integer type categorical
   * And add an prefix "name:" while using column name
-  * Note: when using Index, it dosen't count the label index */
+  * Note: when using Index, it doesn't count the label index */
   std::string categorical_column = "";
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
@@ -134,7 +143,7 @@ public:
   double sigmoid = 1.0f;
   double huber_delta = 1.0f;
   double fair_c = 1.0f;
-  // for ApproximateHessianWithGaussian
+  // for Approximate Hessian With Gaussian
   double gaussian_eta = 1.0f;
   double poisson_max_delta_step = 0.7f;
   // for lambdarank
@@ -167,23 +176,33 @@ public:
 /*! \brief Config for tree model */
 struct TreeConfig: public ConfigBase {
 public:
-  int min_data_in_leaf = 100;
-  double min_sum_hessian_in_leaf = 10.0f;
+  int min_data_in_leaf = 20;
+  double min_sum_hessian_in_leaf = 1e-3f;
   double lambda_l1 = 0.0f;
   double lambda_l2 = 0.0f;
   double min_gain_to_split = 0.0f;
-  // should > 1, only one leaf means not need to learning
-  int num_leaves = 127;
+  // should > 1
+  int num_leaves = 31;
   int feature_fraction_seed = 2;
   double feature_fraction = 1.0f;
-  // max cache size(unit:MB) for historical histogram. < 0 means not limit
+  // max cache size(unit:MB) for historical histogram. < 0 means no limit
   double histogram_pool_size = -1.0f;
   // max depth of tree model.
   // Still grow tree by leaf-wise, but limit the max depth to avoid over-fitting
-  // And the max leaves will be min(num_leaves, pow(2, max_depth - 1))
-  // max_depth < 0 means not limit
+  // And the max leaves will be min(num_leaves, pow(2, max_depth))
+  // max_depth < 0 means no limit
   int max_depth = -1;
   int top_k = 20;
+  /*! \brief OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform.
+   *  Default value is -1, using the system-wide default platform
+   */
+  int gpu_platform_id = -1;
+  /*! \brief OpenCL device ID in the specified platform. Each GPU in the selected platform has a
+   *  unique device ID. Default value is -1, using the default device in the selected platform
+   */
+  int gpu_device_id = -1;
+  /*! \brief Set to true to use double precision math on GPU (default using single precision) */
+  bool gpu_use_dp = false;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -194,7 +213,7 @@ public:
   double sigmoid = 1.0f;
   int output_freq = 1;
   bool is_provide_training_metric = false;
-  int num_iterations = 10;
+  int num_iterations = 100;
   double learning_rate = 0.1f;
   double bagging_fraction = 1.0f;
   int bagging_seed = 3;
@@ -207,11 +226,18 @@ public:
   bool xgboost_dart_mode = false;
   bool uniform_drop = false;
   int drop_seed = 4;
+  double top_rate = 0.2f;
+  double other_rate = 0.1f;
+  // only used for the regression. Will boost from the average labels.
+  bool boost_from_average = true;
   std::string tree_learner_type = "serial";
+  std::string device_type = "cpu";
   TreeConfig tree_config;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 private:
   void GetTreeLearnerType(const std::unordered_map<std::string,
+    std::string>& params);
+  void GetDeviceType(const std::unordered_map<std::string,
     std::string>& params);
 };
 
@@ -337,6 +363,8 @@ struct ParameterAlias {
       { "test_data", "valid_data" },
       { "test", "valid_data" },
       { "is_sparse", "is_enable_sparse" },
+      { "enable_sparse", "is_enable_sparse" },
+      { "pre_partition", "is_pre_partition" },
       { "tranining_metric", "is_training_metric" },
       { "train_metric", "is_training_metric" },
       { "ndcg_at", "ndcg_eval_at" },
@@ -390,7 +418,8 @@ struct ParameterAlias {
       { "topk", "top_k" },
       { "reg_alpha", "lambda_l1" },
       { "reg_lambda", "lambda_l2" },
-      { "num_classes", "num_class" }
+      { "num_classes", "num_class" },
+      { "unbalanced_sets", "is_unbalance" }
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {

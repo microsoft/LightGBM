@@ -150,7 +150,7 @@ inline static const char* Atof(const char* p, double* out) {
     frac = 0;
     scale = 1.0;
     if ((*p == 'e') || (*p == 'E')) {
-      unsigned int expon;
+      uint32_t expon;
       // Get sign of exponent, if any.
       ++p;
       if (*p == '-') {
@@ -271,21 +271,33 @@ inline static std::string ArrayToString(const std::vector<T>& arr, size_t n, cha
   return str_buf.str();
 }
 
+template<typename T, bool is_float>
+struct __StringToTHelper {
+  T operator()(const std::string& str) const {
+    return static_cast<T>(std::stol(str));
+  }
+};
+
+template<typename T>
+struct __StringToTHelper<T, true> {
+  T operator()(const std::string& str) const {
+    return static_cast<T>(std::stod(str));
+  }
+};
+
 template<typename T>
 inline static std::vector<T> StringToArray(const std::string& str, char delimiter, size_t n) {
+  if (n == 0) {
+    return std::vector<T>();
+  }
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   if (strs.size() != n) {
     Log::Fatal("StringToArray error, size doesn't match.");
   }
   std::vector<T> ret(n);
-  if (std::is_same<T, float>::value || std::is_same<T, double>::value) {
-    for (size_t i = 0; i < n; ++i) {
-      ret[i] = static_cast<T>(std::stod(strs[i]));
-    }
-  } else {
-    for (size_t i = 0; i < n; ++i) {
-      ret[i] = static_cast<T>(std::stol(strs[i]));
-    }
+  __StringToTHelper<T, std::is_floating_point<T>::value> helper;
+  for (size_t i = 0; i < n; ++i) {
+    ret[i] = helper(strs[i]);
   }
   return ret;
 }
@@ -294,14 +306,10 @@ template<typename T>
 inline static std::vector<T> StringToArray(const std::string& str, char delimiter) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   std::vector<T> ret;
-  if (std::is_same<T, float>::value || std::is_same<T, double>::value) {
-    for (const auto& s : strs) {
-      ret.push_back(static_cast<T>(std::stod(s)));
-    }
-  } else {
-    for (const auto& s : strs) {
-      ret.push_back(static_cast<T>(std::stol(s)));
-    }
+  ret.reserve(strs.size());
+  __StringToTHelper<T, std::is_floating_point<T>::value> helper;
+  for (const auto& s : strs) {
+    ret.push_back(helper(s));
   }
   return ret;
 }
@@ -369,6 +377,21 @@ inline void Softmax(std::vector<double>* p_rec) {
   }
 }
 
+inline void Softmax(const double* input, double* output, int len) {
+  double wmax = input[0];
+  for (int i = 1; i < len; ++i) {
+    wmax = std::max(input[i], wmax);
+  }
+  double wsum = 0.0f;
+  for (int i = 0; i < len; ++i) {
+    output[i] = std::exp(input[i] - wmax);
+    wsum += output[i];
+  }
+  for (int i = 0; i < len; ++i) {
+    output[i] /= static_cast<double>(wsum);
+  }
+}
+
 template<typename T>
 std::vector<const T*> ConstPtrInVectorWrapper(const std::vector<std::unique_ptr<T>>& input) {
   std::vector<const T*> ret;
@@ -419,6 +442,24 @@ inline static double ApproximateHessianWithGaussian(const double y, const double
   const double b = 0.0;
   const double c = std::max((std::fabs(y) + std::fabs(t)) * eta, 1.0e-10);
   return w * std::exp(-(x - b) * (x - b) / (2.0 * c * c)) * a / (c * std::sqrt(2 * pi));
+}
+
+template <typename T>
+inline static std::vector<T*> Vector2Ptr(std::vector<std::vector<T>>& data) {
+  std::vector<T*> ptr(data.size());
+  for (size_t i = 0; i < data.size(); ++i) {
+    ptr[i] = data[i].data();
+  }
+  return ptr;
+}
+
+template <typename T>
+inline static std::vector<int> VectorSize(const std::vector<std::vector<T>>& data) {
+  std::vector<int> ret(data.size());
+  for (size_t i = 0; i < data.size(); ++i) {
+    ret[i] = static_cast<int>(data[i].size());
+  }
+  return ret;
 }
 
 }  // namespace Common
