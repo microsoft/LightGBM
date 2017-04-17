@@ -22,9 +22,9 @@ enum BinType {
 struct HistogramBinEntry {
 public:
   /*! \brief Sum of gradients on this bin */
-  float sum_gradients = 0.0f;
+  double sum_gradients = 0.0f;
   /*! \brief Sum of hessians on this bin */
-  float sum_hessians = 0.0f;
+  double sum_hessians = 0.0f;
   /*! \brief Number of data on this bin */
   data_size_t cnt = 0;
   /*!
@@ -221,11 +221,10 @@ public:
   * \param leaf Using which leaf's data to construct
   * \param gradients Gradients, Note:non-oredered by leaf
   * \param hessians Hessians, Note:non-oredered by leaf
-  * \param num_bin The number of bins
   * \param out Output Result
   */
-  virtual void ConstructHistogram(int leaf, const float* gradients,
-    const float* hessians, int num_bin, HistogramBinEntry* out) const = 0;
+  virtual void ConstructHistogram(int leaf, const score_t* gradients,
+    const score_t* hessians, HistogramBinEntry* out) const = 0;
 
   /*!
   * \brief Construct histogram by using this bin
@@ -233,10 +232,9 @@ public:
   *        Because it is hard to know the relative index in one leaf for sparse bin, since we skipped zero bins.
   * \param leaf Using which leaf's data to construct
   * \param gradients Gradients, Note:non-oredered by leaf
-  * \param num_bin The number of bins
   * \param out Output Result
   */
-  virtual void ConstructHistogram(int leaf, const float* gradients, int num_bin, HistogramBinEntry* out) const = 0;
+  virtual void ConstructHistogram(int leaf, const score_t* gradients, HistogramBinEntry* out) const = 0;
 
   /*!
   * \brief Split current bin, and perform re-order by leaf
@@ -328,16 +326,11 @@ public:
   * \param num_data Number of used data
   * \param ordered_gradients Pointer to gradients, the data_indices[i]-th data's gradient is ordered_gradients[i]
   * \param ordered_hessians Pointer to hessians, the data_indices[i]-th data's hessian is ordered_hessians[i]
-  * \param num_bin The number of bins
   * \param out Output Result
   */
   virtual void ConstructHistogram(
     const data_size_t* data_indices, data_size_t num_data,
-    const float* ordered_gradients, const float* ordered_hessians, int num_bin,
-    HistogramBinEntry* out) const = 0;
-
-  virtual void ConstructHistogram(data_size_t num_data,
-    const float* ordered_gradients, const float* ordered_hessians, int num_bin,
+    const score_t* ordered_gradients, const score_t* ordered_hessians,
     HistogramBinEntry* out) const = 0;
 
   /*!
@@ -350,14 +343,10 @@ public:
   * \param data_indices Used data indices in current leaf
   * \param num_data Number of used data
   * \param ordered_gradients Pointer to gradients, the data_indices[i]-th data's gradient is ordered_gradients[i]
-  * \param num_bin The number of bins
   * \param out Output Result
   */
   virtual void ConstructHistogram(const data_size_t* data_indices, data_size_t num_data,
-                                  const float* ordered_gradients, int num_bin, HistogramBinEntry* out) const = 0;
-
-  virtual void ConstructHistogram(data_size_t num_data,
-                                  const float* ordered_gradients, int num_bin, HistogramBinEntry* out) const = 0;
+                                  const score_t* ordered_gradients, HistogramBinEntry* out) const = 0;
 
   /*!
   * \brief Split data according to threshold, if bin <= threshold, will put into left(lte_indices), else put into right(gt_indices)
@@ -442,75 +431,6 @@ inline uint32_t BinMapper::ValueToBin(double value) const {
     }
   }
 }
-
-#define AddGradientPtrToHistogram(data, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7, \
-gptr) { \
-data[bin0].sum_gradients += *(gptr + 0);\
-data[bin1].sum_gradients += *(gptr + 1);\
-data[bin2].sum_gradients += *(gptr + 2);\
-data[bin3].sum_gradients += *(gptr + 3);\
-data[bin4].sum_gradients += *(gptr + 4);\
-data[bin5].sum_gradients += *(gptr + 5);\
-data[bin6].sum_gradients += *(gptr + 6);\
-data[bin7].sum_gradients += *(gptr + 7);\
-}
-
-#define AddGradientToHistogram(data, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7, \
-g0, g1, g2, g3, g4, g5, g6, g7) { \
-data[bin0].sum_gradients += (g0);\
-data[bin1].sum_gradients += (g1);\
-data[bin2].sum_gradients += (g2);\
-data[bin3].sum_gradients += (g3);\
-data[bin4].sum_gradients += (g4);\
-data[bin5].sum_gradients += (g5);\
-data[bin6].sum_gradients += (g6);\
-data[bin7].sum_gradients += (g7);\
-}
-
-#define AddHessianPtrToHistogram(data, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7, \
-hptr) { \
-data[bin0].sum_hessians += *(hptr + 0);\
-data[bin1].sum_hessians += *(hptr + 1);\
-data[bin2].sum_hessians += *(hptr + 2);\
-data[bin3].sum_hessians += *(hptr + 3);\
-data[bin4].sum_hessians += *(hptr + 4);\
-data[bin5].sum_hessians += *(hptr + 5);\
-data[bin6].sum_hessians += *(hptr + 6);\
-data[bin7].sum_hessians += *(hptr + 7);\
-}
-
-#define AddHessianToHistogram(data, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7, \
-h0, h1, h2, h3, h4, h5, h6, h7) { \
-data[bin0].sum_hessians += (h0);\
-data[bin1].sum_hessians += (h1);\
-data[bin2].sum_hessians += (h2);\
-data[bin3].sum_hessians += (h3);\
-data[bin4].sum_hessians += (h4);\
-data[bin5].sum_hessians += (h5);\
-data[bin6].sum_hessians += (h6);\
-data[bin7].sum_hessians += (h7);\
-}
-
-#define AddCountToHistogram(data, bin0, bin1, bin2, bin3, bin4, bin5, bin6, bin7) { \
-++data[bin0].cnt;\
-++data[bin1].cnt;\
-++data[bin2].cnt;\
-++data[bin3].cnt;\
-++data[bin4].cnt;\
-++data[bin5].cnt;\
-++data[bin6].cnt;\
-++data[bin7].cnt;\
-}
-
-struct TmpGradCntPair {
-public:
-  float sum_gradients = 0.0f;
-  data_size_t cnt = 0;
-};
-
-#define KNumSumupGroup (32768)
-#define KNumSumupGroupMask (32767)
-
 
 }  // namespace LightGBM
 

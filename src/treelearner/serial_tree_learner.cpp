@@ -165,7 +165,7 @@ void SerialTreeLearner::ResetConfig(const TreeConfig* tree_config) {
   histogram_pool_.ResetConfig(tree_config_);
 }
 
-Tree* SerialTreeLearner::Train(const float* gradients, const float *hessians, bool is_constant_hessian) {
+Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian) {
   gradients_ = gradients;
   hessians_ = hessians;
   is_constant_hessian_ = is_constant_hessian;
@@ -222,7 +222,7 @@ Tree* SerialTreeLearner::Train(const float* gradients, const float *hessians, bo
   return tree.release();
 }
 
-Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const float* gradients, const float *hessians) const {
+Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t *hessians) const {
   auto tree = std::unique_ptr<Tree>(new Tree(*old_tree));
   CHECK(data_partition_->num_leaves() >= tree->num_leaves());
   OMP_INIT_EX();

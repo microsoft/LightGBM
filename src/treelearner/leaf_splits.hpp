@@ -44,7 +44,7 @@ public:
   * \param gradients
   * \param hessians
   */
-  void Init(const float* gradients, const float* hessians) {
+  void Init(const score_t* gradients, const score_t* hessians) {
     num_data_in_leaf_ = num_data_;
     leaf_index_ = 0;
     data_indices_ = nullptr;
@@ -66,7 +66,7 @@ public:
   * \param gradients
   * \param hessians
   */
-  void Init(int leaf, const DataPartition* data_partition, const float* gradients, const float* hessians) {
+  void Init(int leaf, const DataPartition* data_partition, const score_t* gradients, const score_t* hessians) {
     leaf_index_ = leaf;
     data_indices_ = data_partition->GetIndexOnLeaf(leaf, &num_data_in_leaf_);
     double tmp_sum_gradients = 0.0f;

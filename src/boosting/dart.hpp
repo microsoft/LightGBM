@@ -46,7 +46,7 @@ public:
   /*!
   * \brief one training iteration
   */
-  bool TrainOneIter(const float* gradient, const float* hessian, bool is_eval) override {
+  bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override {
     is_update_score_cur_iter_ = false;
     GBDT::TrainOneIter(gradient, hessian, false);
     // normalize

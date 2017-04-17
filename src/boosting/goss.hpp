@@ -77,27 +77,27 @@ public:
   }
 
   data_size_t BaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer, data_size_t* buffer_right) {
-    std::vector<float> tmp_gradients(cnt, 0.0f);
+    std::vector<score_t> tmp_gradients(cnt, 0.0f);
     for (data_size_t i = 0; i < cnt; ++i) {
       for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-        size_t idx = static_cast<size_t>(cur_tree_id) * num_data_ + start + i;
+        int idx = cur_tree_id * num_data_ + start + i;
         tmp_gradients[i] += std::fabs(gradients_[idx] * hessians_[idx]);
       }
     }
     data_size_t top_k = static_cast<data_size_t>(cnt * gbdt_config_->top_rate);
     data_size_t other_k = static_cast<data_size_t>(cnt * gbdt_config_->other_rate);
     top_k = std::max(1, top_k);
-    ArrayArgs<float>::ArgMaxAtK(&tmp_gradients, 0, static_cast<int>(tmp_gradients.size()), top_k);
-    float threshold = tmp_gradients[top_k - 1];
+    ArrayArgs<score_t>::ArgMaxAtK(&tmp_gradients, 0, static_cast<int>(tmp_gradients.size()), top_k);
+    score_t threshold = tmp_gradients[top_k - 1];
 
-    float multiply = static_cast<float>(cnt - top_k) / other_k;
+    score_t multiply = static_cast<score_t>(cnt - top_k) / other_k;
     data_size_t cur_left_cnt = 0;
     data_size_t cur_right_cnt = 0;
     data_size_t big_weight_cnt = 0;
     for (data_size_t i = 0; i < cnt; ++i) {
-      float grad = 0.0f;
+      score_t grad = 0.0f;
       for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-        size_t idx = static_cast<size_t>(cur_tree_id) * num_data_ + start + i;
+        int idx = cur_tree_id * num_data_ + start + i;
         grad += std::fabs(gradients_[idx] * hessians_[idx]);
       }
       if (grad >= threshold) {
@@ -111,7 +111,7 @@ public:
         if (cur_rand.NextFloat() < prob) {
           buffer[cur_left_cnt++] = start + i;
           for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-            size_t idx = static_cast<size_t>(cur_tree_id) * num_data_ + start + i;
+            int idx = cur_tree_id * num_data_ + start + i;
             gradients_[idx] *= multiply;
             hessians_[idx] *= multiply;
           }

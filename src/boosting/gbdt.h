@@ -82,7 +82,7 @@ public:
   * \param is_eval true if need evaluation or early stop
   * \return True if meet early stopping or cannot boosting
   */
-  virtual bool TrainOneIter(const float* gradient, const float* hessian, bool is_eval) override;
+  virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override;
 
   /*!
   * \brief Rollback one iteration
@@ -302,9 +302,9 @@ protected:
   /*! \brief Max feature index of training data*/
   int max_feature_idx_;
   /*! \brief First order derivative of training data */
-  std::vector<float> gradients_;
+  std::vector<score_t> gradients_;
   /*! \brief Secend order derivative of training data */
-  std::vector<float> hessians_;
+  std::vector<score_t> hessians_;
   /*! \brief Store the indices of in-bag data */
   std::vector<data_size_t> bag_data_indices_;
   /*! \brief Number of in-bag data */

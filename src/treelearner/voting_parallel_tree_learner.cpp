@@ -166,7 +166,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::GlobalVoting(int leaf_idx, const 
     return;
   }
   // get mean number on machines
-  float mean_num_data = GetGlobalDataCountInLeaf(leaf_idx) / static_cast<float>(num_machines_);
+  score_t mean_num_data = GetGlobalDataCountInLeaf(leaf_idx) / static_cast<score_t>(num_machines_);
   std::vector<SplitInfo> feature_best_split(this->num_features_, SplitInfo());
   for (auto & split : splits) {
     int fid = split.feature;
