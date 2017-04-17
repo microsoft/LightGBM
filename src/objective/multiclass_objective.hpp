@@ -17,7 +17,6 @@ class MulticlassSoftmax: public ObjectiveFunction {
 public:
   explicit MulticlassSoftmax(const ObjectiveConfig& config) {
     num_class_ = config.num_class;
-    softmax_weight_decay_ = 1e-3;
   }
 
   explicit MulticlassSoftmax(const std::vector<std::string>& strs) {
@@ -44,25 +43,12 @@ public:
     label_ = metadata.label();
     weights_ = metadata.weights();
     label_int_.resize(num_data_);
-    std::vector<data_size_t> cnt_per_class(num_class_, 0);
     for (int i = 0; i < num_data_; ++i) {
       label_int_[i] = static_cast<int>(label_[i]);
       if (label_int_[i] < 0 || label_int_[i] >= num_class_) {
         Log::Fatal("Label must be in [0, %d), but found %d in label", num_class_, label_int_[i]);
       }
-      ++cnt_per_class[label_int_[i]];
     }
-    int non_empty_class = 0;
-    is_empty_class_ = std::vector<bool>(num_class_, false);
-    for (int i = 0; i < num_class_; ++i) {
-      if (cnt_per_class[i] > 0) {
-        ++non_empty_class;
-      } else {
-        is_empty_class_[i] = true;
-      }
-    }
-    if (non_empty_class < 2) { non_empty_class = 2; }
-    hessian_nor_ = static_cast<score_t>(non_empty_class) / (non_empty_class - 1);
   }
 
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
@@ -77,15 +63,14 @@ public:
         }
         Common::Softmax(&rec);
         for (int k = 0; k < num_class_; ++k) {
-          if (is_empty_class_[k]) { continue; }
           auto p = rec[k];
           size_t idx = static_cast<size_t>(num_data_) * k + i;
           if (label_int_[i] == k) {
-            gradients[idx] = static_cast<score_t>(p - 1.0f + softmax_weight_decay_ * score[idx]);
+            gradients[idx] = static_cast<score_t>(p - 1.0f);
           } else {
-            gradients[idx] = static_cast<score_t>(p + softmax_weight_decay_ * score[idx]);
+            gradients[idx] = static_cast<score_t>(p);
           }
-          hessians[idx] = static_cast<score_t>(hessian_nor_ * p * (1.0f - p) + softmax_weight_decay_);
+          hessians[idx] = static_cast<score_t>(2.0f * p * (1.0f - p));
         }
       }
     } else {
@@ -99,15 +84,14 @@ public:
         }
         Common::Softmax(&rec);
         for (int k = 0; k < num_class_; ++k) {
-          if (is_empty_class_[k]) { continue; }
           auto p = rec[k];
           size_t idx = static_cast<size_t>(num_data_) * k + i;
           if (label_int_[i] == k) {
-            gradients[idx] = static_cast<score_t>((p - 1.0f + softmax_weight_decay_ * score[idx]) * weights_[i]);
+            gradients[idx] = static_cast<score_t>((p - 1.0f) * weights_[i]);
           } else {
-            gradients[idx] = static_cast<score_t>((p + softmax_weight_decay_ * score[idx]) * weights_[i]);
+            gradients[idx] = static_cast<score_t>((p) * weights_[i]);
           }
-          hessians[idx] = static_cast<score_t>((hessian_nor_ * p * (1.0f - p) + softmax_weight_decay_)* weights_[i]);
+          hessians[idx] = static_cast<score_t>((2.0f * p * (1.0f - p))* weights_[i]);
         }
       }
     }
@@ -145,9 +129,6 @@ private:
   std::vector<int> label_int_;
   /*! \brief Weights for data */
   const float* weights_;
-  std::vector<bool> is_empty_class_;
-  double softmax_weight_decay_;
-  score_t hessian_nor_;
 };
 
 /*!
