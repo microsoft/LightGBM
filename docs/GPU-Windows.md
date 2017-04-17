@@ -568,24 +568,24 @@ Program received signal SIGSEGV, Segmentation fault.
 L EXTENSION cl_khr_global_int32_base_atomics : enable\n\n//"..., context=...,
     options=" -D POWER_FEATURE_WORKGROUPS=5 -D USE_CONSTANT_BUF=0 -D USE_DP_FLOAT=0 -D CONST_HESSIAN=0 -cl-strict-aliasing -cl-mad-enable -cl-no-signed-zeros -c
 l-fast-relaxed-math") at C:/boost/boost-build/include/boost/compute/program.hpp:549
-#7  0x0000000000454339 in LightGBM::GPUTreeLearner::BuildGPUKernels () at C:\xgboost\LightGBM\src\treelearner\gpu_tree_learner.cpp:583
+#7  0x0000000000454339 in LightGBM::GPUTreeLearner::BuildGPUKernels () at C:\LightGBM\src\treelearner\gpu_tree_learner.cpp:583
 #8  0x00000000636044f2 in libgomp-1!GOMP_parallel () from C:\Program Files\mingw-w64\x86_64-5.3.0-posix-seh-rt_v4-rev0\mingw64\bin\libgomp-1.dll
 #9  0x0000000000455e7e in LightGBM::GPUTreeLearner::BuildGPUKernels (this=this@entry=0x3b9cac0)
-    at C:\xgboost\LightGBM\src\treelearner\gpu_tree_learner.cpp:569
+    at C:\LightGBM\src\treelearner\gpu_tree_learner.cpp:569
 #10 0x0000000000457b49 in LightGBM::GPUTreeLearner::InitGPU (this=0x3b9cac0, platform_id=<optimized out>, device_id=<optimized out>)
-    at C:\xgboost\LightGBM\src\treelearner\gpu_tree_learner.cpp:720
+    at C:\LightGBM\src\treelearner\gpu_tree_learner.cpp:720
 #11 0x0000000000410395 in LightGBM::GBDT::ResetTrainingData (this=0x1f26c90, config=<optimized out>, train_data=0x1f28180, objective_function=0x1f280e0,
-    training_metrics=std::vector of length 2, capacity 2 = {...}) at C:\xgboost\LightGBM\src\boosting\gbdt.cpp:98
-#12 0x0000000000402e93 in LightGBM::Application::InitTrain (this=this@entry=0x23f9d0) at C:\xgboost\LightGBM\src\application\application.cpp:213
+    training_metrics=std::vector of length 2, capacity 2 = {...}) at C:\LightGBM\src\boosting\gbdt.cpp:98
+#12 0x0000000000402e93 in LightGBM::Application::InitTrain (this=this@entry=0x23f9d0) at C:\LightGBM\src\application\application.cpp:213
 ---Type <return> to continue, or q <return> to quit---
-#13 0x00000000004f0b55 in LightGBM::Application::Run (this=0x23f9d0) at C:/xgboost/LightGBM/include/LightGBM/application.h:84
-#14 main (argc=6, argv=0x1f21e90) at C:\xgboost\LightGBM\src\main.cpp:7
+#13 0x00000000004f0b55 in LightGBM::Application::Run (this=0x23f9d0) at C:/LightGBM/include/LightGBM/application.h:84
+#14 main (argc=6, argv=0x1f21e90) at C:\LightGBM\src\main.cpp:7
 ```
 
 Right-click the command prompt, click "Mark", and select all the text from the first line (with the command prompt containing gdb) to the last line printed, containing all the log, such as:
 
 ```
-C:\xgboost\LightGBM\examples\binary_classification>gdb --args "../../lightgbm.exe" config=train.conf data=binary.train valid=binary.test objective=binary device
+C:\LightGBM\examples\binary_classification>gdb --args "../../lightgbm.exe" config=train.conf data=binary.train valid=binary.test objective=binary device
 =gpu
 GNU gdb (GDB) 7.10.1
 Copyright (C) 2015 Free Software Foundation, Inc.
@@ -603,7 +603,7 @@ For help, type "help".
 Type "apropos word" to search for commands related to "word"...
 Reading symbols from ../../lightgbm.exe...done.
 (gdb) run
-Starting program: C:\xgboost\LightGBM\lightgbm.exe "config=train.conf" "data=binary.train" "valid=binary.test" "objective=binary" "device=gpu"
+Starting program: C:\LightGBM\lightgbm.exe "config=train.conf" "data=binary.train" "valid=binary.test" "objective=binary" "device=gpu"
 [New Thread 105220.0x199b8]
 [New Thread 105220.0x783c]
 [Thread 105220.0x783c exited with code 0]
@@ -648,18 +648,18 @@ Program received signal SIGSEGV, Segmentation fault.
 L EXTENSION cl_khr_global_int32_base_atomics : enable\n\n//"..., context=...,
     options=" -D POWER_FEATURE_WORKGROUPS=5 -D USE_CONSTANT_BUF=0 -D USE_DP_FLOAT=0 -D CONST_HESSIAN=0 -cl-strict-aliasing -cl-mad-enable -cl-no-signed-zeros -c
 l-fast-relaxed-math") at C:/boost/boost-build/include/boost/compute/program.hpp:549
-#7  0x0000000000454339 in LightGBM::GPUTreeLearner::BuildGPUKernels () at C:\xgboost\LightGBM\src\treelearner\gpu_tree_learner.cpp:583
+#7  0x0000000000454339 in LightGBM::GPUTreeLearner::BuildGPUKernels () at C:\LightGBM\src\treelearner\gpu_tree_learner.cpp:583
 #8  0x00000000636044f2 in libgomp-1!GOMP_parallel () from C:\Program Files\mingw-w64\x86_64-5.3.0-posix-seh-rt_v4-rev0\mingw64\bin\libgomp-1.dll
 #9  0x0000000000455e7e in LightGBM::GPUTreeLearner::BuildGPUKernels (this=this@entry=0x3b9cac0)
-    at C:\xgboost\LightGBM\src\treelearner\gpu_tree_learner.cpp:569
+    at C:\LightGBM\src\treelearner\gpu_tree_learner.cpp:569
 #10 0x0000000000457b49 in LightGBM::GPUTreeLearner::InitGPU (this=0x3b9cac0, platform_id=<optimized out>, device_id=<optimized out>)
-    at C:\xgboost\LightGBM\src\treelearner\gpu_tree_learner.cpp:720
+    at C:\LightGBM\src\treelearner\gpu_tree_learner.cpp:720
 #11 0x0000000000410395 in LightGBM::GBDT::ResetTrainingData (this=0x1f26c90, config=<optimized out>, train_data=0x1f28180, objective_function=0x1f280e0,
-    training_metrics=std::vector of length 2, capacity 2 = {...}) at C:\xgboost\LightGBM\src\boosting\gbdt.cpp:98
-#12 0x0000000000402e93 in LightGBM::Application::InitTrain (this=this@entry=0x23f9d0) at C:\xgboost\LightGBM\src\application\application.cpp:213
+    training_metrics=std::vector of length 2, capacity 2 = {...}) at C:\LightGBM\src\boosting\gbdt.cpp:98
+#12 0x0000000000402e93 in LightGBM::Application::InitTrain (this=this@entry=0x23f9d0) at C:\LightGBM\src\application\application.cpp:213
 ---Type <return> to continue, or q <return> to quit---
-#13 0x00000000004f0b55 in LightGBM::Application::Run (this=0x23f9d0) at C:/xgboost/LightGBM/include/LightGBM/application.h:84
-#14 main (argc=6, argv=0x1f21e90) at C:\xgboost\LightGBM\src\main.cpp:7
+#13 0x00000000004f0b55 in LightGBM::Application::Run (this=0x23f9d0) at C:/LightGBM/include/LightGBM/application.h:84
+#14 main (argc=6, argv=0x1f21e90) at C:\LightGBM\src\main.cpp:7
 ```
 
 And open an issue in GitHub here with that log: https://github.com/Microsoft/LightGBM/issues
