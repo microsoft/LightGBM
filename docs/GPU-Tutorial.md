@@ -2,21 +2,18 @@ LightGBM GPU Tutorial
 ==================================
 
 The purpose of this document is to give you a quick step-by-step tutorial on GPU training.
-We will use the GPU instance on
-[Microsoft Azure cloud computing platform](https://azure.microsoft.com/)
-for demonstration, but you can use any machine with modern AMD or NVIDIA GPUs.
+
+For Windows, please see [GPU Windows Tutorial](./GPU-Windows.md).
+
+We will use the GPU instance on [Microsoft Azure cloud computing platform](https://azure.microsoft.com/) for demonstration, but you can use any machine with modern AMD or NVIDIA GPUs.
 
 
 GPU Setup
 -------------------------
 
-You need to launch a `NV` type instance on Azure (available in East US, North
-Central US, South Central US, West Europe and Southeast Asia zones)
-and select Ubuntu 16.04 LTS as the operating system.
-For testing, the smallest `NV6` type virtual machine is sufficient, which includes
-1/2 M60 GPU, with 8 GB memory, 180 GB/s memory bandwidth and 4,825 GFLOPS peak
-computation power. Don't use the `NC` type instance as the GPUs (K80) are
-based on an older architecture (Kepler).
+You need to launch a `NV` type instance on Azure (available in East US, North Central US, South Central US, West Europe and Southeast Asia zones) and select Ubuntu 16.04 LTS as the operating system.
+
+For testing, the smallest `NV6` type virtual machine is sufficient, which includes 1/2 M60 GPU, with 8 GB memory, 180 GB/s memory bandwidth and 4,825 GFLOPS peak computation power. Don't use the `NC` type instance as the GPUs (K80) are based on an older architecture (Kepler).
 
 First we need to install minimal NVIDIA drivers and OpenCL development environment:
 
@@ -34,9 +31,7 @@ sudo init 6
 
 After about 30 seconds, the server should be up again.
 
-If you are using a AMD GPU, you should download and install the
-[AMDGPU-Pro](http://support.amd.com/en-us/download/linux) driver and 
-also install package `ocl-icd-libopencl1` and `ocl-icd-opencl-dev`.
+If you are using a AMD GPU, you should download and install the [AMDGPU-Pro](http://support.amd.com/en-us/download/linux) driver and also install package `ocl-icd-libopencl1` and `ocl-icd-opencl-dev`.
 
 Build LightGBM
 ----------------------------
@@ -46,8 +41,7 @@ Now install necessary building tools and dependencies:
 sudo apt-get install --no-install-recommends git cmake build-essential libboost-dev libboost-system-dev libboost-filesystem-dev
 ```
 
-The NV6 GPU instance has a 320 GB ultra-fast SSD mounted at /mnt. Let's use it 
-as our workspace (skip this if you are using your own machine):
+The NV6 GPU instance has a 320 GB ultra-fast SSD mounted at /mnt. Let's use it as our workspace (skip this if you are using your own machine):
 
 ```
 sudo mkdir -p /mnt/workspace
@@ -68,15 +62,12 @@ cd ..
 
 You will see two binaries are generated, `lightgbm` and `lib_lightgbm.so`.
 
-If you are building on OSX, you probably need to remove macro
-`BOOST_COMPUTE_USE_OFFLINE_CACHE` in `src/treelearner/gpu_tree_learner.h` to
-avoid a known crash bug in Boost.Compute.
+If you are building on OSX, you probably need to remove macro `BOOST_COMPUTE_USE_OFFLINE_CACHE` in `src/treelearner/gpu_tree_learner.h` to avoid a known crash bug in Boost.Compute.
 
 Install Python Interface (optional)
 -----------------------------------
 
-If you want to use the Python interface of LightGBM, you can install it now 
-(along with some necessary Python package dependencies):
+If you want to use the Python interface of LightGBM, you can install it now (along with some necessary Python package dependencies):
 
 ```
 sudo apt-get -y install python-pip
@@ -86,10 +77,9 @@ sudo python setup.py install
 cd ..
 ```
 
-You need to set an additional parameter `"device" : "gpu"` (along with your other options
-like `learning_rate`, `num_leaves`, etc) to use GPU in Python.
-You can read our [Python Guide](https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide)
-for more information on how to use the Python interface.
+You need to set an additional parameter `"device" : "gpu"` (along with your other options like `learning_rate`, `num_leaves`, etc) to use GPU in Python.
+
+You can read our [Python Guide](https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide) for more information on how to use the Python interface.
 
 Dataset Preparation
 ----------------------------
@@ -107,8 +97,7 @@ ln -s boosting_tree_benchmarks/data/higgs.train
 ln -s boosting_tree_benchmarks/data/higgs.test
 ```
 
-Now we create a configuration file for LightGBM by running the following commands
-(please copy the entire block and run it as a whole):
+Now we create a configuration file for LightGBM by running the following commands (please copy the entire block and run it as a whole):
 
 ```
 cat > lightgbm_gpu.conf <<EOF
@@ -130,16 +119,12 @@ EOF
 echo "num_threads=$(nproc)" >> lightgbm_gpu.conf
 ```
 
-GPU is enabled in the configuration file we just created by setting `device=gpu`.  It will use
-the first GPU installed on the system by default (`gpu_platform_id=0` and
-`gpu_device_id=0`).
+GPU is enabled in the configuration file we just created by setting `device=gpu`. It will use the first GPU installed on the system by default (`gpu_platform_id=0` and `gpu_device_id=0`).
 
 Run Your First Learning Task on GPU
 -----------------------------------
 
-Now we are ready to start GPU training! First we want to verify the GPU works
-correctly. Run the following command to train on GPU, and take a note of the
-AUC after 50 iterations:
+Now we are ready to start GPU training! First we want to verify the GPU works correctly. Run the following command to train on GPU, and take a note of the AUC after 50 iterations:
 
 ```
 ./lightgbm config=lightgbm_gpu.conf data=higgs.train valid=higgs.test objective=binary metric=auc
@@ -165,8 +150,7 @@ Speed test on CPU:
 
 You should observe over three times speedup on this GPU.
 
-The GPU acceleration can be used on other tasks/metrics (regression, multi-class classification, ranking, etc) 
-as well. For example, we can train the Higgs dataset on GPU as a regression task:
+The GPU acceleration can be used on other tasks/metrics (regression, multi-class classification, ranking, etc) as well. For example, we can train the Higgs dataset on GPU as a regression task:
 
 ```
 ./lightgbm config=lightgbm_gpu.conf data=higgs.train objective=regression_l2 metric=l2
@@ -182,4 +166,8 @@ Further Reading
 ---------------
 
 [GPU Tuning Guide and Performance Comparison](./GPU-Performance.md)
+
+[GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.md).
+
+[GPU Windows Tutorial](./GPU-Windows.md)
 

@@ -50,9 +50,11 @@ Does not apply to you if you do not use a third-party antivirus nor the default 
 
 Installing the appropriate OpenCL SDK requires you to download the correct vendor source SDK. You need to know on what you are going to use LightGBM!:
 
-* For running on Intel, get Intel OpenCL SDK: https://software.intel.com/en-us/articles/opencl-drivers
+* For running on Intel, get Intel SDK for OpenCL: https://software.intel.com/en-us/articles/opencl-drivers
 * For running on AMD, get AMD APP SDK: http://developer.amd.com/tools-and-sdks/opencl-zone/amd-accelerated-parallel-processing-app-sdk/
-* For running on NVIDIA, get CUDA: https://developer.nvidia.com/cuda-downloads
+* For running on NVIDIA, get CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
+
+Further reading and correspondnce table (especially if you intend to use cross-platform devices, like Intel CPU with AMD APP SDK): [GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.md).
 
 ---
 
@@ -255,6 +257,8 @@ cd C:/github_repos/LightGBM/examples/binary_classification
 
 Congratulations for reaching this stage!
 
+To learn how to target a correct CPU or GPU for training, please see: [GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.md).
+
 ---
 
 ## LightGBM Setup and Installation for Python (Python: final step)
@@ -317,6 +321,8 @@ gbm = lgb.train(params,
 ![LightGBM GPU in Python](https://cloud.githubusercontent.com/assets/9083669/24959269/9202a670-1f92-11e7-94a1-a7c062eaf91c.png)
 
 Congratulations for reaching this stage!
+
+To learn how to target a correct CPU or GPU for training, please see: [GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.md).
 
 ---
 
@@ -501,11 +507,15 @@ model <- lgb.train(params,
 
 Congratulations for reaching this stage!
 
+To learn how to target a correct CPU or GPU for training, please see: [GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.md).
+
 ## Debugging LightGBM crashes in CLI
 
 Now that you compiled LightGBM, you try it... and you always see a segmentation fault or an undocumented crash with GPU support:
 
 ![Segmentation Fault](https://cloud.githubusercontent.com/assets/9083669/25015529/7326860a-207c-11e7-8fc3-320b2be619a6.png)
+
+Please check you are using the right device and whether it works with the default `gpu_device_id = 0` and `gpu_platform_id = 0`. If it still does not work with the default values, then you should follow all the steps below.
 
 You will have to redo the compilation steps for LightGBM to add debugging mode. This involves:
 
