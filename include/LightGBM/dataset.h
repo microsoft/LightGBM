@@ -495,10 +495,20 @@ public:
 
   inline void set_feature_names(const std::vector<std::string>& feature_names) {
     if (feature_names.size() != static_cast<size_t>(num_total_features_)) {
-      Log::Warning("size of feature_names error, should equal with total number of features");
-      return;
+      Log::Fatal("Size of feature_names error, should equal with total number of features");
     }
     feature_names_ = std::vector<std::string>(feature_names);
+    // replace ' ' in feature_names with '_'
+    bool spaceInFeatureName = false;
+    for (auto& feature_name: feature_names_){
+      if (feature_name.find(' ') != std::string::npos){
+        spaceInFeatureName = true;
+        std::replace(feature_name.begin(), feature_name.end(), ' ', '_');
+      }
+    }
+    if (spaceInFeatureName){
+      Log::Warning("Find whitespaces in feature_names, replace with underlines");
+    }
   }
 
   inline std::vector<std::string> feature_infos() const {

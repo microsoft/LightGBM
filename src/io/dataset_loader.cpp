@@ -28,7 +28,7 @@ void DatasetLoader::SetHeader(const char* filename) {
     // get column names
     if (io_config_.has_header) {
       std::string first_line = text_reader.first_line();
-      feature_names_ = Common::Split(first_line.c_str(), "\t ,");
+      feature_names_ = Common::Split(first_line.c_str(), "\t,");
     }
 
     // load label idx first
@@ -509,8 +509,8 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
   }
   OMP_THROW_EX();
   auto dataset = std::unique_ptr<Dataset>(new Dataset(num_data));
-  dataset->feature_names_ = feature_names_;
   dataset->Construct(bin_mappers, sample_indices, num_per_col, total_sample_size, io_config_);
+  dataset->set_feature_names(feature_names_);
   return dataset.release();
 }
 
@@ -704,7 +704,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
       feature_names_.push_back(str_buf.str());
     }
   }
-  dataset->feature_names_ = feature_names_;
+  dataset->set_feature_names(feature_names_);
   std::vector<std::unique_ptr<BinMapper>> bin_mappers(sample_values.size());
   const data_size_t filter_cnt = static_cast<data_size_t>(
     static_cast<double>(io_config_.min_data_in_leaf* sample_data.size()) / dataset->num_data_);
