@@ -10,8 +10,8 @@ Default values for the following parameters have changed:
 
 * min_data_in_leaf = 100 => 20
 * min_sum_hessian_in_leaf = 10 => 1e-3
-* num_leaves = 255 => 31
-* num_iterations = 100 => 10
+* num_leaves = 127 => 31
+* num_iterations = 10 => 100
 
 ## Parameter format
 
