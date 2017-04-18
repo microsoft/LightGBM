@@ -176,7 +176,7 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
 * `predict_leaf_index `, default=`false`, type=bool, alias=`leaf_index `,`is_predict_leaf_index `
   * only used in prediction task
   * Set to `true` to predict with leaf index of all trees
-* `bin_construct_sample_cnt`, default=`50000`, type=int
+* `bin_construct_sample_cnt`, default=`200000`, type=int
   * Number of data that sampled to construct histogram bins.
   * Will give better training result when set this larger. But will increase data loading time.
   * Set this to larger value if data is very sparse.
