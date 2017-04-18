@@ -418,6 +418,10 @@ class LGBMModel(LGBMModelBase):
         if early_stopping_rounds is not None:
             self.best_iteration = self._Booster.best_iteration
         self.best_score = self._Booster.best_score
+
+        # free dataset
+        self.booster_.free_dataset()
+        del train_set, valid_sets
         return self
 
     def predict(self, X, raw_score=False, num_iteration=0):

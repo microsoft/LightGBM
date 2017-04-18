@@ -1267,6 +1267,10 @@ class Booster(object):
             state['handle'] = handle
         self.__dict__.update(state)
 
+    def free_dataset(self):
+        self.__dict__.pop('train_set', None)
+        self.__dict__.pop('valid_sets', None)
+
     def set_train_data_name(self, name):
         self.__train_data_name = name
 
