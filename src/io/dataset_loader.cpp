@@ -509,8 +509,8 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
   }
   OMP_THROW_EX();
   auto dataset = std::unique_ptr<Dataset>(new Dataset(num_data));
-  dataset->set_feature_names(feature_names_);
   dataset->Construct(bin_mappers, sample_indices, num_per_col, total_sample_size, io_config_);
+  dataset->set_feature_names(feature_names_);
   return dataset.release();
 }
 
