@@ -495,8 +495,7 @@ public:
 
   inline void set_feature_names(const std::vector<std::string>& feature_names) {
     if (feature_names.size() != static_cast<size_t>(num_total_features_)) {
-      Log::Warning("Size of feature_names error, should equal with total number of features");
-      return;
+      Log::Fatal("Size of feature_names error, should equal with total number of features");
     }
     feature_names_ = std::vector<std::string>(feature_names);
     // replace ' ' in feature_names with '_'
