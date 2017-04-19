@@ -235,13 +235,14 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
 
 ## Network parameters
 
-Following parameters are used for parallel learning, and only used for base(socket) version. It doesn't need to set them for MPI version. 
+Following parameters are used for parallel learning, and only used for base(socket) version. 
 
 * `num_machines`, default=`1`, type=int, alias=`num_machine`
   * Used for parallel learning, the number of machines for parallel learning application
+  * Need to set this in both socket and mpi version. 
 * `local_listen_port`, default=`12400`, type=int, alias=`local_port`
   * TCP listen port for local machines.
-  * Should allow this port in firewall setting before training.
+  * Should allow this port in firewall setting before training. 
 * `time_out`, default=`120`, type=int
   * Socket time-out in minutes.
 * `machine_list_file`, default=`""`, type=string
