@@ -172,7 +172,9 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
         // multi-class
         std::vector<data_size_t> cnt_per_class(num_tree_per_iteration_, 0);
         for (data_size_t i = 0; i < num_data_; ++i) {
-          ++cnt_per_class[static_cast<int>(label[i])];
+          int index = static_cast<int>(label[i]);
+          CHECK(index < num_tree_per_iteration_);
+          ++cnt_per_class[index];
         }
         for (int i = 0; i < num_tree_per_iteration_; ++i) {
           if (cnt_per_class[i] == num_data_) {
