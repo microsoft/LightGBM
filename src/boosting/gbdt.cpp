@@ -166,17 +166,15 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
     class_need_train_ = std::vector<bool>(num_class_, true);
     if (num_class_ > 1 || sigmoid_ > 0) {
       // + 1 here for the binary classification
-      class_default_output_ = std::vector<double>(num_tree_per_iteration_ + 1, 0.0f);
-      std::vector<data_size_t> cnt_per_class(num_tree_per_iteration_ + 1, 0);
+      class_default_output_ = std::vector<double>(num_tree_per_iteration_, 0.0f);
       auto label = train_data_->metadata().label();
-      for (int i = 0; i < num_data_; ++i) {
-		  int index = static_cast<int>(label[i]);
-		  //Check if user gave a multi-class dataset for a binary class problem.
-		  if (index <= num_tree_per_iteration_)
-			  ++cnt_per_class[static_cast<int>(label[i])];
-      }
-      if (num_class_ > 1) {
-        for (int i = 0; i < num_class_; ++i) {
+      if (num_tree_per_iteration_ > 1) {
+        // multi-class
+        std::vector<data_size_t> cnt_per_class(num_tree_per_iteration_, 0);
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          ++cnt_per_class[static_cast<int>(label[i])];
+        }
+        for (int i = 0; i < num_tree_per_iteration_; ++i) {
           if (cnt_per_class[i] == num_data_) {
             class_need_train_[i] = false;
             class_default_output_[i] = -std::log(kEpsilon);
@@ -190,11 +188,17 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
           }
         }
       } else {
-        // binary classification. 
-        if (cnt_per_class[1] == 0) {
+        // binary class
+        data_size_t cnt_pos = 0;
+        for (data_size_t i = 0; i < num_data_; ++i) {
+          if (label[i] > 0) {
+            ++cnt_pos;
+          }
+        }
+        if (cnt_pos == 0) {
           class_need_train_[0] = false;
           class_default_output_[0] = -std::log(1.0f / kEpsilon - 1.0f);
-        } else if (cnt_per_class[1] == num_data_) {
+        } else if (cnt_pos == num_data_) {
           class_need_train_[0] = false;
           class_default_output_[0] = -std::log(kEpsilon);
         }
