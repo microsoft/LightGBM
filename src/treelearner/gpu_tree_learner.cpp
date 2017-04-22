@@ -104,7 +104,7 @@ int GPUTreeLearner::GetNumWorkgroupsPerFeature(data_size_t leaf_num_data) {
   // we roughly want 256 workgroups per device, and we have num_dense_feature4_ feature tuples.
   // also guarantee that there are at least 2K examples per workgroup
   double x = 256.0 / num_dense_feature4_;
-  int exp_workgroups_per_feature = ceil(log2(x));
+  int exp_workgroups_per_feature = (int)ceil(log2(x));
   double t = leaf_num_data / 1024.0;
   #if GPU_DEBUG >= 4
   printf("Computing histogram for %d examples and (%d * %d) feature groups\n", leaf_num_data, dword_features_, num_dense_feature4_);
@@ -191,7 +191,7 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featur
 }
 
 template <typename HistType>
-void GPUTreeLearner::WaitAndGetHistograms(HistogramBinEntry* histograms, const std::vector<int8_t>& is_feature_used) {
+void GPUTreeLearner::WaitAndGetHistograms(HistogramBinEntry* histograms) {
   HistType* hist_outputs = (HistType*) host_histogram_outputs_;
   // when the output is ready, the computation is done
   histograms_wait_obj_.wait();
@@ -323,9 +323,9 @@ void GPUTreeLearner::AllocateGPUMemory() {
   device_histogram_outputs_ = boost::compute::buffer(ctx_, num_dense_feature4_ * dword_features_ * device_bin_size_ * hist_bin_entry_sz_, 
                            boost::compute::memory_object::write_only | boost::compute::memory_object::alloc_host_ptr, nullptr);
   // find the dense feature-groups and group then into Feature4 data structure (several feature-groups packed into 4 bytes)
-  int i, k, copied_feature4 = 0;
+  int k = 0, copied_feature4 = 0;
   std::vector<int> dense_dword_ind(dword_features_);
-  for (i = 0, k = 0; i < num_feature_groups_; ++i) {
+  for (int i = 0; i < num_feature_groups_; ++i) {
     // looking for dword_features_ non-sparse feature-groups
     if (ordered_bins_[i] == nullptr) {
       dense_dword_ind[k] = i;
@@ -370,7 +370,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
   }
   // building Feature4 bundles; each thread handles dword_features_ features
   #pragma omp parallel for schedule(static)
-  for (unsigned int i = 0; i < dense_feature_group_map_.size() / dword_features_; ++i) {
+  for (int i = 0; i < (int)(dense_feature_group_map_.size() / dword_features_); ++i) {
     int tid = omp_get_thread_num();
     Feature4* host4 = host4_ptrs[tid];
     auto dense_ind = dense_feature_group_map_.begin() + i * dword_features_;
@@ -459,7 +459,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
     #if GPU_DEBUG >= 1
     printf("%d features left\n", k);
     #endif
-    for (i = 0; i < k; ++i) {
+    for (int i = 0; i < k; ++i) {
       if (dword_features_ == 8) {
         BinIterator* bin_iter = train_data_->FeatureGroupIterator(dense_dword_ind[i]);
         if (dynamic_cast<Dense4bitsBinIterator*>(bin_iter) != 0) {
@@ -505,7 +505,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
     if (dword_features_ == 8) {
       #pragma omp parallel for schedule(static)
       for (int j = 0; j < num_data_; ++j) {
-        for (i = k; i < dword_features_; ++i) {
+        for (int i = k; i < dword_features_; ++i) {
           // fill this empty feature with some "random" value
           host4[j].s[i >> 1] |= (uint8_t)((j & 0xf) << ((i & 1) << 2));
         }
@@ -514,7 +514,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
     else if (dword_features_ == 4) {
       #pragma omp parallel for schedule(static)
       for (int j = 0; j < num_data_; ++j) {
-        for (i = k; i < dword_features_; ++i) {
+        for (int i = k; i < dword_features_; ++i) {
           // fill this empty feature with some "random" value
           host4[j].s[i] = (uint8_t)j;
         }
@@ -526,7 +526,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
     #if GPU_DEBUG >= 1
     printf("Last features copied to device\n");
     #endif
-    for (i = 0; i < k; ++i) {
+    for (int i = 0; i < k; ++i) {
       dense_feature_group_map_.push_back(dense_dword_ind[i]);
     }
   }
@@ -543,12 +543,12 @@ void GPUTreeLearner::AllocateGPUMemory() {
             end_time * 1e-3, sparse_feature_group_map_.size());
   #if GPU_DEBUG >= 1
   printf("Dense feature group list (size %lu): ", dense_feature_group_map_.size());
-  for (i = 0; i < num_dense_feature_groups_; ++i) {
+  for (int i = 0; i < num_dense_feature_groups_; ++i) {
     printf("%d ", dense_feature_group_map_[i]);
   }
   printf("\n");
   printf("Sparse feature group list (size %lu): ", sparse_feature_group_map_.size());
-  for (i = 0; i < num_feature_groups_ - num_dense_feature_groups_; ++i) {
+  for (int i = 0; i < num_feature_groups_ - num_dense_feature_groups_; ++i) {
     printf("%d ", sparse_feature_group_map_[i]);
   }
   printf("\n");
@@ -585,10 +585,10 @@ void GPUTreeLearner::BuildGPUKernels() {
     }
     catch (boost::compute::opencl_error &e) {
       if (program.build_log().size() > 0) {
-        Log::Fatal("GPU program built failure:\n %s", program.build_log().c_str());
+        Log::Fatal("GPU program built failure: %s\n %s", e.what(), program.build_log().c_str());
       }
       else {
-        Log::Fatal("GPU program built failure, log unavailable");
+        Log::Fatal("GPU program built failure: %s\nlog unavailable", e.what());
       }
     }
     histogram_kernels_[i] = program.create_kernel(kernel_name_);
@@ -600,10 +600,10 @@ void GPUTreeLearner::BuildGPUKernels() {
     }
     catch (boost::compute::opencl_error &e) {
       if (program.build_log().size() > 0) {
-        Log::Fatal("GPU program built failure:\n %s", program.build_log().c_str());
+        Log::Fatal("GPU program built failure: %s\n %s", e.what(), program.build_log().c_str());
       }
       else {
-        Log::Fatal("GPU program built failure, log unavailable");
+        Log::Fatal("GPU program built failure: %s\nlog unavailable", e.what());
       }
     }
     histogram_allfeats_kernels_[i] = program.create_kernel(kernel_name_);
@@ -615,10 +615,10 @@ void GPUTreeLearner::BuildGPUKernels() {
     }
     catch (boost::compute::opencl_error &e) {
       if (program.build_log().size() > 0) {
-        Log::Fatal("GPU program built failure:\n %s", program.build_log().c_str());
+        Log::Fatal("GPU program built failure: %s\n %s", e.what(), program.build_log().c_str());
       }
       else {
-        Log::Fatal("GPU program built failure, log unavailable");
+        Log::Fatal("GPU program built failure: %s\nlog unavailable", e.what());
       }
     }
     histogram_fulldata_kernels_[i] = program.create_kernel(kernel_name_);
@@ -980,11 +980,11 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
   if (is_gpu_used) {
     if (tree_config_->gpu_use_dp) {
       // use double precision
-      WaitAndGetHistograms<HistogramBinEntry>(ptr_smaller_leaf_hist_data, is_feature_used);
+      WaitAndGetHistograms<HistogramBinEntry>(ptr_smaller_leaf_hist_data);
     }
     else {
       // use single precision
-      WaitAndGetHistograms<GPUHistogramBinEntry>(ptr_smaller_leaf_hist_data, is_feature_used);
+      WaitAndGetHistograms<GPUHistogramBinEntry>(ptr_smaller_leaf_hist_data);
     }
   }
 
@@ -1034,11 +1034,11 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
     if (is_gpu_used) {
       if (tree_config_->gpu_use_dp) {
         // use double precision
-        WaitAndGetHistograms<HistogramBinEntry>(ptr_larger_leaf_hist_data, is_feature_used);
+        WaitAndGetHistograms<HistogramBinEntry>(ptr_larger_leaf_hist_data);
       }
       else {
         // use single precision
-        WaitAndGetHistograms<GPUHistogramBinEntry>(ptr_larger_leaf_hist_data, is_feature_used);
+        WaitAndGetHistograms<GPUHistogramBinEntry>(ptr_larger_leaf_hist_data);
       }
     }
   }
