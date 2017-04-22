@@ -64,15 +64,7 @@ protected:
 private:
   /*! \brief 4-byte feature tuple used by GPU kernels */
   struct Feature4 {
-	  union {
-		  unsigned char s[4];
-		  struct {
-			  unsigned char s0;
-			  unsigned char s1;
-			  unsigned char s2;
-			  unsigned char s3;
-		  };
-	  };
+      uint8_t s[4];
   };
   
   /*! \brief Single precision histogram entiry for GPU */
