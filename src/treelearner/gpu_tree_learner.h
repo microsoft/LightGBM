@@ -98,6 +98,13 @@ private:
   * \brief Compile OpenCL GPU source code to kernel binaries
   */
   void BuildGPUKernels();
+  
+  /*!
+   * \brief Returns OpenCL kernel build log when compiled with option opts
+   * \param opts OpenCL build options 
+   * \return OpenCL build log
+  */
+  std::string GetBuildLog(const std::string &opts);
 
   /*!
   * \brief Setup GPU kernel arguments, preparing for launching
