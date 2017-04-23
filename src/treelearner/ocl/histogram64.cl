@@ -142,6 +142,11 @@ inline void atomic_local_add_f(__local acc_type *addr, const float val)
 #endif
 }
 
+
+/* Makes MSVC happy with long string literal
+)""
+R""()
+*/
 // this function will be called by histogram64
 // we have one sub-histogram of one feature in registers, and need to read others
 void within_kernel_reduction64x4(uchar4 feature_mask,
@@ -199,8 +204,10 @@ void within_kernel_reduction64x4(uchar4 feature_mask,
     }
 }
 
-#define printf
-
+/* Makes MSVC happy with long string literal
+)""
+R""()
+*/
 __attribute__((reqd_work_group_size(LOCAL_SIZE_0, 1, 1)))
 #if USE_CONSTANT_BUF == 1
 __kernel void histogram64(__global const uchar4* restrict feature_data_base, 
@@ -360,6 +367,10 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     acc_type s1_stat1 = 0.0f, s1_stat2 = 0.0f;
     acc_type s0_stat1 = 0.0f, s0_stat2 = 0.0f;
 
+/* Makes MSVC happy with long string literal
+)""
+R""()
+*/
     // there are 2^POWER_FEATURE_WORKGROUPS workgroups processing each feature4
     for (uint i = subglobal_tid; i < num_data; i += subglobal_size) {
         // prefetch the next iteration variables
@@ -567,6 +578,10 @@ __kernel void histogram64(__global const uchar4* feature_data_base,
     #endif
     barrier(CLK_LOCAL_MEM_FENCE);
     
+/* Makes MSVC happy with long string literal
+)""
+R""()
+*/
     #if ENABLE_ALL_FEATURES == 0
     // restore feature_mask
     feature_mask = feature_masks[group_feature];

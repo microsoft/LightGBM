@@ -104,7 +104,7 @@ int GPUTreeLearner::GetNumWorkgroupsPerFeature(data_size_t leaf_num_data) {
   // we roughly want 256 workgroups per device, and we have num_dense_feature4_ feature tuples.
   // also guarantee that there are at least 2K examples per workgroup
   double x = 256.0 / num_dense_feature4_;
-  int exp_workgroups_per_feature = ceil(log2(x));
+  int exp_workgroups_per_feature = (int)ceil(log2(x));
   double t = leaf_num_data / 1024.0;
   #if GPU_DEBUG >= 4
   printf("Computing histogram for %d examples and (%d * %d) feature groups\n", leaf_num_data, dword_features_, num_dense_feature4_);
@@ -191,7 +191,7 @@ void GPUTreeLearner::GPUHistogram(data_size_t leaf_num_data, bool use_all_featur
 }
 
 template <typename HistType>
-void GPUTreeLearner::WaitAndGetHistograms(HistogramBinEntry* histograms, const std::vector<int8_t>& is_feature_used) {
+void GPUTreeLearner::WaitAndGetHistograms(HistogramBinEntry* histograms) {
   HistType* hist_outputs = (HistType*) host_histogram_outputs_;
   // when the output is ready, the computation is done
   histograms_wait_obj_.wait();
@@ -207,7 +207,7 @@ void GPUTreeLearner::WaitAndGetHistograms(HistogramBinEntry* histograms, const s
       for (int j = 0; j < bin_size; ++j) {
         old_histogram_array[j].sum_gradients = hist_outputs[i * device_bin_size_+ j].sum_gradients;
         old_histogram_array[j].sum_hessians = hist_outputs[i * device_bin_size_ + j].sum_hessians;
-        old_histogram_array[j].cnt = hist_outputs[i * device_bin_size_ + j].cnt;
+        old_histogram_array[j].cnt = (data_size_t)hist_outputs[i * device_bin_size_ + j].cnt;
       }
     }
     else {
@@ -224,7 +224,7 @@ void GPUTreeLearner::WaitAndGetHistograms(HistogramBinEntry* histograms, const s
         }
         old_histogram_array[j].sum_gradients = sum_g;
         old_histogram_array[j].sum_hessians = sum_h;
-        old_histogram_array[j].cnt = cnt;
+        old_histogram_array[j].cnt = (data_size_t)cnt;
       }
     }
   }
@@ -323,11 +323,12 @@ void GPUTreeLearner::AllocateGPUMemory() {
   device_histogram_outputs_ = boost::compute::buffer(ctx_, num_dense_feature4_ * dword_features_ * device_bin_size_ * hist_bin_entry_sz_, 
                            boost::compute::memory_object::write_only | boost::compute::memory_object::alloc_host_ptr, nullptr);
   // find the dense feature-groups and group then into Feature4 data structure (several feature-groups packed into 4 bytes)
-  int i, k, copied_feature4 = 0, dense_ind[dword_features_];
-  for (i = 0, k = 0; i < num_feature_groups_; ++i) {
+  int k = 0, copied_feature4 = 0;
+  std::vector<int> dense_dword_ind(dword_features_);
+  for (int i = 0; i < num_feature_groups_; ++i) {
     // looking for dword_features_ non-sparse feature-groups
     if (ordered_bins_[i] == nullptr) {
-      dense_ind[k] = i;
+      dense_dword_ind[k] = i;
       // decide if we need to redistribute the bin
       double t = device_bin_size_ / (double)train_data_->FeatureGroupNumBin(i);
       // multiplier must be a power of 2
@@ -345,7 +346,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
     if (k == dword_features_) {
       k = 0;
       for (int j = 0; j < dword_features_; ++j) {
-        dense_feature_group_map_.push_back(dense_ind[j]);
+        dense_feature_group_map_.push_back(dense_dword_ind[j]);
       }
       copied_feature4++;
     }
@@ -369,7 +370,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
   }
   // building Feature4 bundles; each thread handles dword_features_ features
   #pragma omp parallel for schedule(static)
-  for (unsigned int i = 0; i < dense_feature_group_map_.size() / dword_features_; ++i) {
+  for (int i = 0; i < (int)(dense_feature_group_map_.size() / dword_features_); ++i) {
     int tid = omp_get_thread_num();
     Feature4* host4 = host4_ptrs[tid];
     auto dense_ind = dense_feature_group_map_.begin() + i * dword_features_;
@@ -401,14 +402,14 @@ void GPUTreeLearner::AllocateGPUMemory() {
         *static_cast<Dense4bitsBinIterator*>(bin_iters[6]),
         *static_cast<Dense4bitsBinIterator*>(bin_iters[7])};
       for (int j = 0; j < num_data_; ++j) {
-        host4[j].s0 = (iters[0].RawGet(j) * dev_bin_mult[0] + ((j+0) & (dev_bin_mult[0] - 1))) 
-                    |((iters[1].RawGet(j) * dev_bin_mult[1] + ((j+1) & (dev_bin_mult[1] - 1))) << 4);
-        host4[j].s1 = (iters[2].RawGet(j) * dev_bin_mult[2] + ((j+2) & (dev_bin_mult[2] - 1))) 
-                    |((iters[3].RawGet(j) * dev_bin_mult[3] + ((j+3) & (dev_bin_mult[3] - 1))) << 4);
-        host4[j].s2 = (iters[4].RawGet(j) * dev_bin_mult[4] + ((j+4) & (dev_bin_mult[4] - 1))) 
-                    |((iters[5].RawGet(j) * dev_bin_mult[5] + ((j+5) & (dev_bin_mult[5] - 1))) << 4);
-        host4[j].s3 = (iters[6].RawGet(j) * dev_bin_mult[6] + ((j+6) & (dev_bin_mult[6] - 1))) 
-                    |((iters[7].RawGet(j) * dev_bin_mult[7] + ((j+7) & (dev_bin_mult[7] - 1))) << 4);
+        host4[j].s[0] = (uint8_t)((iters[0].RawGet(j) * dev_bin_mult[0] + ((j+0) & (dev_bin_mult[0] - 1))) 
+                      |((iters[1].RawGet(j) * dev_bin_mult[1] + ((j+1) & (dev_bin_mult[1] - 1))) << 4));
+        host4[j].s[1] = (uint8_t)((iters[2].RawGet(j) * dev_bin_mult[2] + ((j+2) & (dev_bin_mult[2] - 1))) 
+                      |((iters[3].RawGet(j) * dev_bin_mult[3] + ((j+3) & (dev_bin_mult[3] - 1))) << 4));
+        host4[j].s[2] = (uint8_t)((iters[4].RawGet(j) * dev_bin_mult[4] + ((j+4) & (dev_bin_mult[4] - 1))) 
+                      |((iters[5].RawGet(j) * dev_bin_mult[5] + ((j+5) & (dev_bin_mult[5] - 1))) << 4));
+        host4[j].s[3] = (uint8_t)((iters[6].RawGet(j) * dev_bin_mult[6] + ((j+6) & (dev_bin_mult[6] - 1))) 
+                      |((iters[7].RawGet(j) * dev_bin_mult[7] + ((j+7) & (dev_bin_mult[7] - 1))) << 4));
       }
     }
     else if (dword_features_ == 4) {
@@ -420,14 +421,14 @@ void GPUTreeLearner::AllocateGPUMemory() {
           // Dense bin
           DenseBinIterator<uint8_t> iter = *static_cast<DenseBinIterator<uint8_t>*>(bin_iter);
           for (int j = 0; j < num_data_; ++j) {
-            host4[j].s[s_idx] = iter.RawGet(j) * dev_bin_mult[s_idx] + ((j+s_idx) & (dev_bin_mult[s_idx] - 1));
+            host4[j].s[s_idx] = (uint8_t)(iter.RawGet(j) * dev_bin_mult[s_idx] + ((j+s_idx) & (dev_bin_mult[s_idx] - 1)));
           }
         }
         else if (dynamic_cast<Dense4bitsBinIterator*>(bin_iter) != 0) {
           // Dense 4-bit bin
           Dense4bitsBinIterator iter = *static_cast<Dense4bitsBinIterator*>(bin_iter);
           for (int j = 0; j < num_data_; ++j) {
-            host4[j].s[s_idx] = iter.RawGet(j) * dev_bin_mult[s_idx] + ((j+s_idx) & (dev_bin_mult[s_idx] - 1));
+            host4[j].s[s_idx] = (uint8_t)(iter.RawGet(j) * dev_bin_mult[s_idx] + ((j+s_idx) & (dev_bin_mult[s_idx] - 1)));
           }
         }
         else {
@@ -458,38 +459,38 @@ void GPUTreeLearner::AllocateGPUMemory() {
     #if GPU_DEBUG >= 1
     printf("%d features left\n", k);
     #endif
-    for (i = 0; i < k; ++i) {
+    for (int i = 0; i < k; ++i) {
       if (dword_features_ == 8) {
-        BinIterator* bin_iter = train_data_->FeatureGroupIterator(dense_ind[i]);
+        BinIterator* bin_iter = train_data_->FeatureGroupIterator(dense_dword_ind[i]);
         if (dynamic_cast<Dense4bitsBinIterator*>(bin_iter) != 0) {
           Dense4bitsBinIterator iter = *static_cast<Dense4bitsBinIterator*>(bin_iter);
           #pragma omp parallel for schedule(static)
           for (int j = 0; j < num_data_; ++j) {
-            host4[j].s[i >> 1] |= ((iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i]
+            host4[j].s[i >> 1] |= (uint8_t)((iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i]
                                 + ((j+i) & (device_bin_mults_[copied_feature4 * dword_features_ + i] - 1)))
                                << ((i & 1) << 2));
           }
         }
         else {
-          Log::Fatal("GPU tree learner assumes that all bins are Dense4bitsBin when num_bin <= 16, but feature %d is not.", dense_ind[i]);
+          Log::Fatal("GPU tree learner assumes that all bins are Dense4bitsBin when num_bin <= 16, but feature %d is not.", dense_dword_ind[i]);
         }
       }
       else if (dword_features_ == 4) {
-        BinIterator* bin_iter = train_data_->FeatureGroupIterator(dense_ind[i]);
+        BinIterator* bin_iter = train_data_->FeatureGroupIterator(dense_dword_ind[i]);
         if (dynamic_cast<DenseBinIterator<uint8_t>*>(bin_iter) != 0) {
           DenseBinIterator<uint8_t> iter = *static_cast<DenseBinIterator<uint8_t>*>(bin_iter);
           #pragma omp parallel for schedule(static)
           for (int j = 0; j < num_data_; ++j) {
-            host4[j].s[i] = iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i] 
-                          + ((j+i) & (device_bin_mults_[copied_feature4 * dword_features_ + i] - 1));
+            host4[j].s[i] = (uint8_t)(iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i] 
+                          + ((j+i) & (device_bin_mults_[copied_feature4 * dword_features_ + i] - 1)));
           }
         }
         else if (dynamic_cast<Dense4bitsBinIterator*>(bin_iter) != 0) {
           Dense4bitsBinIterator iter = *static_cast<Dense4bitsBinIterator*>(bin_iter);
           #pragma omp parallel for schedule(static)
           for (int j = 0; j < num_data_; ++j) {
-            host4[j].s[i] = iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i] 
-                          + ((j+i) & (device_bin_mults_[copied_feature4 * dword_features_ + i] - 1));
+            host4[j].s[i] = (uint8_t)(iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i] 
+                          + ((j+i) & (device_bin_mults_[copied_feature4 * dword_features_ + i] - 1)));
           }
         }
         else {
@@ -504,18 +505,18 @@ void GPUTreeLearner::AllocateGPUMemory() {
     if (dword_features_ == 8) {
       #pragma omp parallel for schedule(static)
       for (int j = 0; j < num_data_; ++j) {
-        for (i = k; i < dword_features_; ++i) {
+        for (int i = k; i < dword_features_; ++i) {
           // fill this empty feature with some "random" value
-          host4[j].s[i >> 1] |= ((j & 0xf) << ((i & 1) << 2));
+          host4[j].s[i >> 1] |= (uint8_t)((j & 0xf) << ((i & 1) << 2));
         }
       }
     }
     else if (dword_features_ == 4) {
       #pragma omp parallel for schedule(static)
       for (int j = 0; j < num_data_; ++j) {
-        for (i = k; i < dword_features_; ++i) {
+        for (int i = k; i < dword_features_; ++i) {
           // fill this empty feature with some "random" value
-          host4[j].s[i] = j;
+          host4[j].s[i] = (uint8_t)j;
         }
       }
     }
@@ -525,8 +526,8 @@ void GPUTreeLearner::AllocateGPUMemory() {
     #if GPU_DEBUG >= 1
     printf("Last features copied to device\n");
     #endif
-    for (i = 0; i < k; ++i) {
-      dense_feature_group_map_.push_back(dense_ind[i]);
+    for (int i = 0; i < k; ++i) {
+      dense_feature_group_map_.push_back(dense_dword_ind[i]);
     }
   }
   // deallocate pinned space for feature copying
@@ -542,12 +543,12 @@ void GPUTreeLearner::AllocateGPUMemory() {
             end_time * 1e-3, sparse_feature_group_map_.size());
   #if GPU_DEBUG >= 1
   printf("Dense feature group list (size %lu): ", dense_feature_group_map_.size());
-  for (i = 0; i < num_dense_feature_groups_; ++i) {
+  for (int i = 0; i < num_dense_feature_groups_; ++i) {
     printf("%d ", dense_feature_group_map_[i]);
   }
   printf("\n");
   printf("Sparse feature group list (size %lu): ", sparse_feature_group_map_.size());
-  for (i = 0; i < num_feature_groups_ - num_dense_feature_groups_; ++i) {
+  for (int i = 0; i < num_feature_groups_ - num_dense_feature_groups_; ++i) {
     printf("%d ", sparse_feature_group_map_[i]);
   }
   printf("\n");
@@ -584,10 +585,10 @@ void GPUTreeLearner::BuildGPUKernels() {
     }
     catch (boost::compute::opencl_error &e) {
       if (program.build_log().size() > 0) {
-        Log::Fatal("GPU program built failure:\n %s", program.build_log().c_str());
+        Log::Fatal("GPU program built failure: %s\n %s", e.what(), program.build_log().c_str());
       }
       else {
-        Log::Fatal("GPU program built failure, log unavailable");
+        Log::Fatal("GPU program built failure: %s\nlog unavailable", e.what());
       }
     }
     histogram_kernels_[i] = program.create_kernel(kernel_name_);
@@ -599,10 +600,10 @@ void GPUTreeLearner::BuildGPUKernels() {
     }
     catch (boost::compute::opencl_error &e) {
       if (program.build_log().size() > 0) {
-        Log::Fatal("GPU program built failure:\n %s", program.build_log().c_str());
+        Log::Fatal("GPU program built failure: %s\n %s", e.what(), program.build_log().c_str());
       }
       else {
-        Log::Fatal("GPU program built failure, log unavailable");
+        Log::Fatal("GPU program built failure: %s\nlog unavailable", e.what());
       }
     }
     histogram_allfeats_kernels_[i] = program.create_kernel(kernel_name_);
@@ -614,10 +615,10 @@ void GPUTreeLearner::BuildGPUKernels() {
     }
     catch (boost::compute::opencl_error &e) {
       if (program.build_log().size() > 0) {
-        Log::Fatal("GPU program built failure:\n %s", program.build_log().c_str());
+        Log::Fatal("GPU program built failure: %s\n %s", e.what(), program.build_log().c_str());
       }
       else {
-        Log::Fatal("GPU program built failure, log unavailable");
+        Log::Fatal("GPU program built failure: %s\nlog unavailable", e.what());
       }
     }
     histogram_fulldata_kernels_[i] = program.create_kernel(kernel_name_);
@@ -979,11 +980,11 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
   if (is_gpu_used) {
     if (tree_config_->gpu_use_dp) {
       // use double precision
-      WaitAndGetHistograms<HistogramBinEntry>(ptr_smaller_leaf_hist_data, is_feature_used);
+      WaitAndGetHistograms<HistogramBinEntry>(ptr_smaller_leaf_hist_data);
     }
     else {
       // use single precision
-      WaitAndGetHistograms<GPUHistogramBinEntry>(ptr_smaller_leaf_hist_data, is_feature_used);
+      WaitAndGetHistograms<GPUHistogramBinEntry>(ptr_smaller_leaf_hist_data);
     }
   }
 
@@ -1033,11 +1034,11 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
     if (is_gpu_used) {
       if (tree_config_->gpu_use_dp) {
         // use double precision
-        WaitAndGetHistograms<HistogramBinEntry>(ptr_larger_leaf_hist_data, is_feature_used);
+        WaitAndGetHistograms<HistogramBinEntry>(ptr_larger_leaf_hist_data);
       }
       else {
         // use single precision
-        WaitAndGetHistograms<GPUHistogramBinEntry>(ptr_larger_leaf_hist_data, is_feature_used);
+        WaitAndGetHistograms<GPUHistogramBinEntry>(ptr_larger_leaf_hist_data);
       }
     }
   }

@@ -64,15 +64,7 @@ protected:
 private:
   /*! \brief 4-byte feature tuple used by GPU kernels */
   struct Feature4 {
-	  union {
-		  unsigned char s[4];
-		  struct {
-			  unsigned char s0;
-			  unsigned char s1;
-			  unsigned char s2;
-			  unsigned char s3;
-		  };
-	  };
+      uint8_t s[4];
   };
   
   /*! \brief Single precision histogram entiry for GPU */
@@ -123,10 +115,9 @@ private:
   /*!
    * \brief Wait for GPU kernel execution and read histogram
    * \param histograms Destination of histogram results from GPU.
-   * \param is_feature_used A predicate vector for enabling each feature
   */
   template <typename HistType>
-  void WaitAndGetHistograms(HistogramBinEntry* histograms, const std::vector<int8_t>& is_feature_used);
+  void WaitAndGetHistograms(HistogramBinEntry* histograms);
 
   /*!
    * \brief Construct GPU histogram asynchronously. 
@@ -173,7 +164,7 @@ private:
   const char *kernel64_src_ = 
   #include "ocl/histogram64.cl"
   ;
-  /*! \brief GPU kernel for 64 bins */
+  /*! \brief GPU kernel for 16 bins */
   const char *kernel16_src_ = 
   #include "ocl/histogram16.cl"
   ;

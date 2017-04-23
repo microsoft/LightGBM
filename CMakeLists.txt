@@ -43,6 +43,10 @@ if(USE_GPU)
     MESSAGE(STATUS "OpenCL include directory:" ${OpenCL_INCLUDE_DIRS})
     find_package(Boost 1.56.0 COMPONENTS filesystem system REQUIRED)
     include_directories(${Boost_INCLUDE_DIRS})
+    if (WIN32)
+        # disable autolinking in boost
+        ADD_DEFINITIONS(-DBOOST_ALL_NO_LIB)
+    endif()
     ADD_DEFINITIONS(-DUSE_GPU)
 endif(USE_GPU)
 
