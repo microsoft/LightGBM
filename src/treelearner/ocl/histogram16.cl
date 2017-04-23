@@ -149,6 +149,10 @@ inline void atomic_local_add_f(__local acc_type *addr, const float val)
 #endif
 }
 
+/* Makes MSVC happy with long string literal
+)""
+R""()
+*/
 // this function will be called by histogram16
 // we have one sub-histogram of one feature in registers, and need to read others
 void within_kernel_reduction16x8(uchar8 feature_mask,
@@ -203,6 +207,11 @@ void within_kernel_reduction16x8(uchar8 feature_mask,
     }
 }
 
+
+/* Makes MSVC happy with long string literal
+)""
+R""()
+*/
 
 __attribute__((reqd_work_group_size(LOCAL_SIZE_0, 1, 1)))
 #if USE_CONSTANT_BUF == 1
@@ -379,6 +388,10 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
     #endif
     feature4 = feature_data[ind];
 
+/* Makes MSVC happy with long string literal
+)""
+R""()
+*/
     // there are 2^POWER_FEATURE_WORKGROUPS workgroups processing each feature4
     for (uint i = subglobal_tid; i < num_data; i += subglobal_size) {
         // prefetch the next iteration variables
@@ -601,6 +614,11 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
         feature4 = feature4_next;
     }
     barrier(CLK_LOCAL_MEM_FENCE);
+
+/* Makes MSVC happy with long string literal
+)""
+R""()
+*/
     
     #if ENABLE_ALL_FEATURES == 0
     // restore feature_mask
