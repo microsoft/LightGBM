@@ -193,7 +193,6 @@ public:
     return ip_list;
   }
 #else
-  // see in http://stackoverflow.com/questions/212528/get-the-ip-address-of-the-machine
   inline static std::unordered_set<std::string> GetLocalIpList() {
     std::unordered_set<std::string> ip_list;
     struct ifaddrs * ifAddrStruct = NULL;
