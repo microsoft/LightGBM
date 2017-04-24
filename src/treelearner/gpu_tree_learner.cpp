@@ -555,6 +555,29 @@ void GPUTreeLearner::AllocateGPUMemory() {
   #endif
 }
 
+std::string GPUTreeLearner::GetBuildLog(const std::string &opts) {
+  boost::compute::program program = boost::compute::program::create_with_source(kernel_source_, ctx_);
+  try {
+    program.build(opts);
+  }
+  catch (boost::compute::opencl_error &e) {
+    auto error_code = e.error_code();
+    std::string log("No log available.\n");
+    // for other types of failure, build log might not be available; program.build_log() can crash
+    if (error_code == CL_INVALID_PROGRAM || error_code == CL_BUILD_PROGRAM_FAILURE) {
+      try {
+        log = program.build_log();
+      }
+      catch(...) {
+        // Something bad happened. Just return "No log available."
+      }
+    }
+    return log;
+  }
+  // build is okay, log may contain warnings
+  return program.build_log();
+}
+
 void GPUTreeLearner::BuildGPUKernels() {
   Log::Info("Compiling OpenCL Kernel with %d bins...", device_bin_size_);
   // destroy any old kernels
@@ -567,8 +590,10 @@ void GPUTreeLearner::BuildGPUKernels() {
   histogram_fulldata_kernels_.resize(kMaxLogWorkgroupsPerFeature+1);
   // currently we don't use constant memory
   int use_constants = 0;
+  OMP_INIT_EX();
   #pragma omp parallel for schedule(guided)
   for (int i = 0; i <= kMaxLogWorkgroupsPerFeature; ++i) {
+    OMP_LOOP_EX_BEGIN();
     boost::compute::program program;
     std::ostringstream opts;
     // compile the GPU kernel depending if double precision is used, constant hessian is used, etc 
@@ -584,11 +609,11 @@ void GPUTreeLearner::BuildGPUKernels() {
       program = boost::compute::program::build_with_source(kernel_source_, ctx_, opts.str());
     }
     catch (boost::compute::opencl_error &e) {
-      if (program.build_log().size() > 0) {
-        Log::Fatal("GPU program built failure: %s\n %s", e.what(), program.build_log().c_str());
-      }
-      else {
-        Log::Fatal("GPU program built failure: %s\nlog unavailable", e.what());
+      #pragma omp critical
+      {
+        std::cerr << "Build Options:" << opts.str() << std::endl;
+        std::cerr << "Build Log:" << std::endl << GetBuildLog(opts.str()) << std::endl;
+        Log::Fatal("Cannot build GPU program: %s", e.what());
       }
     }
     histogram_kernels_[i] = program.create_kernel(kernel_name_);
@@ -599,11 +624,11 @@ void GPUTreeLearner::BuildGPUKernels() {
       program = boost::compute::program::build_with_source(kernel_source_, ctx_, opts.str());
     }
     catch (boost::compute::opencl_error &e) {
-      if (program.build_log().size() > 0) {
-        Log::Fatal("GPU program built failure: %s\n %s", e.what(), program.build_log().c_str());
-      }
-      else {
-        Log::Fatal("GPU program built failure: %s\nlog unavailable", e.what());
+      #pragma omp critical
+      {
+        std::cerr << "Build Options:" << opts.str() << std::endl;
+        std::cerr << "Build Log:" << std::endl << GetBuildLog(opts.str()) << std::endl;
+        Log::Fatal("Cannot build GPU program: %s", e.what());
       }
     }
     histogram_allfeats_kernels_[i] = program.create_kernel(kernel_name_);
@@ -614,15 +639,17 @@ void GPUTreeLearner::BuildGPUKernels() {
       program = boost::compute::program::build_with_source(kernel_source_, ctx_, opts.str());
     }
     catch (boost::compute::opencl_error &e) {
-      if (program.build_log().size() > 0) {
-        Log::Fatal("GPU program built failure: %s\n %s", e.what(), program.build_log().c_str());
-      }
-      else {
-        Log::Fatal("GPU program built failure: %s\nlog unavailable", e.what());
+      #pragma omp critical
+      {
+        std::cerr << "Build Options:" << opts.str() << std::endl;
+        std::cerr << "Build Log:" << std::endl << GetBuildLog(opts.str()) << std::endl;
+        Log::Fatal("Cannot build GPU program: %s", e.what());
       }
     }
     histogram_fulldata_kernels_[i] = program.create_kernel(kernel_name_);
+    OMP_LOOP_EX_END();
   }
+  OMP_THROW_EX();
   Log::Info("GPU programs have been built");
 }
 
