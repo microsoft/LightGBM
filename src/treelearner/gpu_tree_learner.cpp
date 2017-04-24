@@ -575,7 +575,7 @@ void GPUTreeLearner::BuildGPUKernels() {
     opts << " -D POWER_FEATURE_WORKGROUPS=" << i
          << " -D USE_CONSTANT_BUF=" << use_constants << " -D USE_DP_FLOAT=" << int(tree_config_->gpu_use_dp)
          << " -D CONST_HESSIAN=" << int(is_constant_hessian_)
-         << " -cl-strict-aliasing -cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math";
+         << " -cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math";
     #if GPU_DEBUG >= 1
     std::cout << "Building GPU kernels with options: " << opts.str() << std::endl;
     #endif
