@@ -126,15 +126,16 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
       bin_upper_bound_.push_back(std::numeric_limits<double>::infinity());
       num_bin_ = static_cast<int>(bin_upper_bound_.size());
     } else {
+      double mean_bin_size = static_cast<double>(total_sample_cnt) / max_bin;
       if (min_data_in_bin > 0) {
         max_bin = std::min(max_bin, static_cast<int>(total_sample_cnt / min_data_in_bin));
         max_bin = std::max(max_bin, 1);
-      }
-      double mean_bin_size = static_cast<double>(total_sample_cnt) / max_bin;
-      if (zero_cnt > mean_bin_size) {
-        int non_zero_cnt = num_sample_values;
-        max_bin = std::min(max_bin, 1 + static_cast<int>(non_zero_cnt / min_data_in_bin));
-      }
+		mean_bin_size = static_cast<double>(total_sample_cnt) / max_bin;
+		if (zero_cnt > mean_bin_size) {
+			int non_zero_cnt = num_sample_values;
+			max_bin = std::min(max_bin, 1 + static_cast<int>(non_zero_cnt / min_data_in_bin));
+		}
+	  }
       // mean size for one bin
       int rest_bin_cnt = max_bin;
       int rest_sample_cnt = static_cast<int>(total_sample_cnt);
