@@ -572,7 +572,7 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
             feature_name='auto', categorical_feature='auto',
             callbacks=None):
         self._le = LGBMLabelEncoder().fit(y)
-        y = self._le.transform(y)
+        _y = self._le.transform(y)
 
         self.classes = self._le.classes_
         self.n_classes = len(self.classes_)
@@ -589,11 +589,18 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
             elif eval_metric == 'error' or eval_metric == 'multi_error':
                 eval_metric = 'binary_error'
 
+        _eval_set = []
         if eval_set is not None:
-            eval_set = [(x[0], self._le.transform(x[1])) for x in eval_set]
+            if isinstance(eval_set, tuple):
+                eval_set = [eval_set]
+            for valid_x, valid_y in eval_set:
+                if valid_x is X and valid_y is y:
+                    _eval_set.append((valid_x, _y))
+                else:
+                    _eval_set.append((valid_x, self._le.transform(valid_y)))
 
-        super(LGBMClassifier, self).fit(X, y, sample_weight=sample_weight,
-                                        init_score=init_score, eval_set=eval_set,
+        super(LGBMClassifier, self).fit(X, _y, sample_weight=sample_weight,
+                                        init_score=init_score, eval_set=_eval_set,
                                         eval_names=eval_names,
                                         eval_sample_weight=eval_sample_weight,
                                         eval_init_score=eval_init_score,
