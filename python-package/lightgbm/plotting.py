@@ -277,8 +277,9 @@ def _to_graphviz(tree_info, show_info, feature_names,
             add(root['left_child'], name, l_dec)
             add(root['right_child'], name, r_dec)
         else:  # leaf
-            name = 'left' + str(root['leaf_index'])
-            label = 'leaf_value:' + str(root['leaf_value'])
+            name = 'leaf' + str(root['leaf_index'])
+            label = 'leaf_index:' + str(root['leaf_index'])
+            label += '\nleaf_value:' + str(root['leaf_value'])
             if 'leaf_count' in show_info:
                 label += '\nleaf_count:' + str(root['leaf_count'])
             graph.node(name, label=label)
