@@ -123,14 +123,14 @@ public:
   }
 
   inline bool NextNonzero(data_size_t* i_delta,
-    data_size_t* cur_pos) const {
+                          data_size_t* cur_pos) const {
     ++(*i_delta);
     data_size_t shift = 0;
     data_size_t delta = deltas_[*i_delta];
     while (*i_delta < num_vals_ && vals_[*i_delta] == 0) {
       ++(*i_delta);
       shift += 8;
-      delta |=  static_cast<data_size_t>(deltas_[*i_delta]) << shift;
+      delta |= static_cast<data_size_t>(deltas_[*i_delta]) << shift;
     }
     *cur_pos += delta;
     if (*i_delta < num_vals_) {
@@ -252,7 +252,6 @@ public:
   }
 
   void GetFastIndex() {
-
     fast_index_.clear();
     // get shift cnt
     data_size_t mod_size = (num_data_ + kNumFastIndex - 1) / kNumFastIndex;
@@ -333,10 +332,12 @@ public:
   }
 
   void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override {
-    auto other_bin = reinterpret_cast<const SparseBin<VAL_T>*>(full_bin);
-    SparseBinIterator<VAL_T> iterator(other_bin, used_indices[0]);
-    deltas_.clear();
-    vals_.clear();
+    auto other_bin = dynamic_cast<const SparseBin<VAL_T>*>(full_bin);
+    data_size_t start = 0;
+    if (num_used_indices > 0) {
+      start = used_indices[0];
+    }
+    SparseBinIterator<VAL_T> iterator(other_bin, start);
     // transform to delta array
     data_size_t last_idx = 0;
     for (data_size_t i = 0; i < num_used_indices; ++i) {
@@ -394,9 +395,15 @@ inline VAL_T SparseBinIterator<VAL_T>::InnerRawGet(data_size_t idx) {
 
 template <typename VAL_T>
 inline void SparseBinIterator<VAL_T>::Reset(data_size_t start_idx) {
-  const auto fast_pair = bin_data_->fast_index_[start_idx >> bin_data_->fast_index_shift_];
-  i_delta_ = fast_pair.first;
-  cur_pos_ = fast_pair.second;
+  auto idx = start_idx >> bin_data_->fast_index_shift_;
+  if (static_cast<size_t>(idx) < bin_data_->fast_index_.size()) {
+    const auto fast_pair = bin_data_->fast_index_[start_idx >> bin_data_->fast_index_shift_];
+    i_delta_ = fast_pair.first;
+    cur_pos_ = fast_pair.second;
+  } else {
+    i_delta_ = -1;
+    cur_pos_ = 0;
+  }
 }
 
 template <typename VAL_T>

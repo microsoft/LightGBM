@@ -316,7 +316,7 @@ public:
   }
 
   void CopySubset(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override {
-    auto other_bin = reinterpret_cast<const Dense4bitsBin*>(full_bin);
+    auto other_bin = dynamic_cast<const Dense4bitsBin*>(full_bin);
     const data_size_t rest = num_used_indices & 1;
     for (int i = 0; i < num_used_indices - rest; i += 2) {
       data_size_t idx = used_indices[i];
