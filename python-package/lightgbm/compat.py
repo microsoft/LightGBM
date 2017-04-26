@@ -65,9 +65,9 @@ try:
     from sklearn.preprocessing import LabelEncoder
     from sklearn.utils import deprecated
     try:
-        from sklearn.model_selection import StratifiedKFold
+        from sklearn.model_selection import StratifiedKFold, GroupKFold
     except ImportError:
-        from sklearn.cross_validation import StratifiedKFold
+        from sklearn.cross_validation import StratifiedKFold, GroupKFold
     SKLEARN_INSTALLED = True
     LGBMModelBase = BaseEstimator
     LGBMRegressorBase = RegressorMixin
@@ -75,6 +75,7 @@ try:
     LGBMLabelEncoder = LabelEncoder
     LGBMDeprecated = deprecated
     LGBMStratifiedKFold = StratifiedKFold
+    LGBMGroupKFold = GroupKFold
 except ImportError:
     SKLEARN_INSTALLED = False
     LGBMModelBase = object
@@ -82,3 +83,4 @@ except ImportError:
     LGBMRegressorBase = object
     LGBMLabelEncoder = None
     LGBMStratifiedKFold = None
+    LGBMGroupKFold = None
