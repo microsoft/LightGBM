@@ -1,5 +1,3 @@
-run travis
-
 LightGBM, Light Gradient Boosting Machine
 =========================================
 [![Build Status](https://travis-ci.org/Microsoft/LightGBM.svg?branch=master)](https://travis-ci.org/Microsoft/LightGBM)
