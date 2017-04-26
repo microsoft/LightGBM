@@ -82,7 +82,7 @@ class TestEngine(unittest.TestCase):
             'num_class': 10
         }
         evals_result, ret = template.test_template(params, X_y, multi_logloss)
-        self.assertLess(ret, 0.2)
+        self.assertLess(ret, 0.25)
         self.assertAlmostEqual(min(evals_result['eval']['multi_logloss']), ret, places=5)
 
     def test_early_stopping(self):
