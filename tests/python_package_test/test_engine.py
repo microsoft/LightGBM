@@ -33,7 +33,7 @@ class template(object):
     def test_template(params={'objective': 'regression', 'metric': 'l2'},
                       X_y=load_boston(True), feval=mean_squared_error,
                       num_round=200, init_model=None, custom_eval=None,
-                      early_stopping_rounds=5,
+                      early_stopping_rounds=2,
                       return_data=False, return_model=False):
         params['verbose'], params['seed'] = -1, 42
         X_train, X_test, y_train, y_test = train_test_split(*X_y, test_size=0.1, random_state=42)
@@ -71,7 +71,7 @@ class TestEngine(unittest.TestCase):
 
     def test_regreesion(self):
         evals_result, ret = template.test_template()
-        self.assertLess(ret, 16)
+        self.assertLess(ret, 20)
         self.assertAlmostEqual(min(evals_result['eval']['l2']), ret, places=5)
 
     def test_multiclass(self):
