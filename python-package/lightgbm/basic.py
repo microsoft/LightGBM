@@ -1109,7 +1109,7 @@ class Dataset(object):
 
     def get_group(self):
         """
-        Get the initial score of the Dataset.
+        Get the group of the Dataset.
 
         Returns
         -------

@@ -8,7 +8,7 @@ import unittest
 import lightgbm as lgb
 import numpy as np
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
-                              load_iris)
+                              load_iris, load_svmlight_file)
 from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error
 from sklearn.model_selection import train_test_split, TimeSeriesSplit
 
@@ -152,15 +152,23 @@ class TestEngine(unittest.TestCase):
 
     def test_cv(self):
         lgb_train, _ = template.test_template(return_data=True)
-        lgb.cv({'verbose': -1}, lgb_train, num_boost_round=20, nfold=5, shuffle=False,
+        # shuffle = False
+        lgb.cv({'verbose': -1}, lgb_train, num_boost_round=10, nfold=3, shuffle=False,
+               metrics='l1', verbose_eval=False)
+        # shuffle = True, callbacks
+        lgb.cv({'verbose': -1}, lgb_train, num_boost_round=10, nfold=3, shuffle=True,
                metrics='l1', verbose_eval=False,
                callbacks=[lgb.reset_parameter(learning_rate=lambda i: 0.1 - 0.001 * i)])
-        lgb.cv({'verbose': -1}, lgb_train, num_boost_round=20, nfold=5, shuffle=True,
-               metrics='l1', verbose_eval=False,
-               callbacks=[lgb.reset_parameter(learning_rate=lambda i: 0.1 - 0.001 * i)])
+        # self defined data_splitter
         tss = TimeSeriesSplit(3)
-        lgb.cv({'verbose': -1}, lgb_train, num_boost_round=20, data_splitter=tss, nfold=5,  # test if wrong nfold is ignored
+        lgb.cv({'verbose': -1}, lgb_train, num_boost_round=10, data_splitter=tss, nfold=5,  # test if wrong nfold is ignored
                metrics='l2', verbose_eval=False)
+        # lambdarank
+        X_train, y_train = load_svmlight_file('../../examples/lambdarank/rank.train')
+        q_train = np.loadtxt('../../examples/lambdarank/rank.train.query')
+        params = {'objective': 'lambdarank', 'verbose': -1}
+        lgb_train = lgb.Dataset(X_train, y_train, group=q_train, params=params)
+        lgb.cv(params, lgb_train, num_boost_round=20, nfold=3, metrics='l2', verbose_eval=False)
 
     def test_feature_name(self):
         lgb_train, _ = template.test_template(return_data=True)

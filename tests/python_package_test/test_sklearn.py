@@ -95,11 +95,11 @@ class TestSklearn(unittest.TestCase):
     def test_grid_search(self):
         X_train, X_test, y_train, y_test = template.test_template(return_data=True)
         params = {'boosting_type': ['dart', 'gbdt'],
-                  'n_estimators': [15, 20],
-                  'drop_rate': [0.1, 0.2]}
+                  'n_estimators': [5, 8],
+                  'drop_rate': [0.05, 0.1]}
         gbm = GridSearchCV(lgb.LGBMRegressor(), params, cv=3)
         gbm.fit(X_train, y_train)
-        self.assertIn(gbm.best_params_['n_estimators'], [15, 20])
+        self.assertIn(gbm.best_params_['n_estimators'], [5, 8])
 
     def test_clone_and_property(self):
         gbm = template.test_template(return_model=True)

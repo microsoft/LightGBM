@@ -10,7 +10,7 @@ import numpy as np
 
 from . import callback
 from .basic import Booster, Dataset, LightGBMError, _InnerPredictor
-from .compat import (SKLEARN_INSTALLED, LGBMStratifiedKFold, integer_types,
+from .compat import (SKLEARN_INSTALLED, LGBMStratifiedKFold, LGBMGroupKFold, integer_types,
                      range_, string_type)
 
 
@@ -228,25 +228,35 @@ def _make_n_folds(full_data, data_splitter, nfold, params, seed, fpreproc=None, 
     """
     Make an n-fold list of Booster from random indices.
     """
-    num_data = full_data.construct().num_data()
+    full_data = full_data.construct()
+    num_data = full_data.num_data()
     if data_splitter is not None:
         if not hasattr(data_splitter, 'split'):
             raise AttributeError("data_splitter has no method 'split'")
         folds = data_splitter.split(np.arange(num_data))
-    elif stratified:
-        if not SKLEARN_INSTALLED:
-            raise LightGBMError('Scikit-learn is required for stratified cv')
-        sfk = LGBMStratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
-        folds = sfk.split(X=np.zeros(num_data), y=full_data.get_label())
     else:
-        if shuffle:
-            randidx = np.random.RandomState(seed).permutation(num_data)
+        if 'objective' in params and params['objective'] == 'lambdarank':
+            if not SKLEARN_INSTALLED:
+                raise LightGBMError('Scikit-learn is required for lambdarank cv.')
+            # lambdarank task, split according to groups
+            group_info = full_data.get_group().astype(int)
+            flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
+            group_kfold = LGBMGroupKFold(n_splits=nfold)
+            folds = group_kfold.split(X=np.zeros(num_data), groups=flatted_group)
+        elif stratified:
+            if not SKLEARN_INSTALLED:
+                raise LightGBMError('Scikit-learn is required for stratified cv.')
+            skf = LGBMStratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
+            folds = skf.split(X=np.zeros(num_data), y=full_data.get_label())
         else:
-            randidx = np.arange(num_data)
-        kstep = int(num_data / nfold)
-        test_id = [randidx[i: i + kstep] for i in range_(0, num_data, kstep)]
-        train_id = [np.concatenate([test_id[i] for i in range_(nfold) if k != i]) for k in range_(nfold)]
-        folds = zip(train_id, test_id)
+            if shuffle:
+                randidx = np.random.RandomState(seed).permutation(num_data)
+            else:
+                randidx = np.arange(num_data)
+            kstep = int(num_data / nfold)
+            test_id = [randidx[i: i + kstep] for i in range_(0, num_data, kstep)]
+            train_id = [np.concatenate([test_id[i] for i in range_(nfold) if k != i]) for k in range_(nfold)]
+            folds = zip(train_id, test_id)
 
     ret = CVBooster()
     for train_idx, test_idx in folds:
