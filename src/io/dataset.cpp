@@ -129,7 +129,6 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   feature_groups_.clear();
   num_features_ = dataset->num_features_;
   num_groups_ = dataset->num_groups_;
-  sparse_threshold_ = dataset->sparse_threshold_;
   // copy feature bin mapper data
   for (int i = 0; i < num_groups_; ++i) {
     std::vector<std::unique_ptr<BinMapper>> bin_mappers;
@@ -140,7 +139,8 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
       dataset->feature_groups_[i]->num_feature_,
       bin_mappers,
       num_data_,
-      dataset->feature_groups_[i]->is_sparse_));
+      dataset->feature_groups_[i]->is_sparse_,
+      0));
   }
   feature_groups_.shrink_to_fit();
   used_feature_map_ = dataset->used_feature_map_;

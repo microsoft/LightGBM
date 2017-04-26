@@ -166,15 +166,15 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
     class_need_train_ = std::vector<bool>(num_class_, true);
     if (num_class_ > 1 || sigmoid_ > 0) {
       // + 1 here for the binary classification
-      class_default_output_ = std::vector<double>(num_tree_per_iteration_, 0.0f);
+      class_default_output_ = std::vector<double>(num_class_, 0.0f);
       auto label = train_data_->metadata().label();
-      if (num_tree_per_iteration_ > 1) {
+      if (num_class_ > 1) {
         // multi-class
-        std::vector<data_size_t> cnt_per_class(num_tree_per_iteration_, 0);
+        std::vector<data_size_t> cnt_per_class(num_class_, 0);
         for (data_size_t i = 0; i < num_data_; ++i) {
           ++cnt_per_class[static_cast<int>(label[i])];
         }
-        for (int i = 0; i < num_tree_per_iteration_; ++i) {
+        for (int i = 0; i < num_class_; ++i) {
           if (cnt_per_class[i] == num_data_) {
             class_need_train_[i] = false;
             class_default_output_[i] = -std::log(kEpsilon);

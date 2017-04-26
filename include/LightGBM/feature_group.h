@@ -51,7 +51,7 @@ public:
 
   FeatureGroup(int num_feature,
                std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
-               data_size_t num_data, bool is_sparse) : num_feature_(num_feature) {
+               data_size_t num_data, bool is_sparse, int) : num_feature_(num_feature) {
     CHECK(static_cast<int>(bin_mappers.size()) == num_feature);
     // use bin at zero to store default_bin
     num_total_bin_ = 1;
