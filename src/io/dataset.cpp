@@ -129,13 +129,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   feature_groups_.clear();
   num_features_ = dataset->num_features_;
   num_groups_ = dataset->num_groups_;
-  bool is_enable_sparse = false;
-  for (int i = 0; i < num_groups_; ++i) {
-    if (dataset->feature_groups_[i]->is_sparse_) {
-      is_enable_sparse = true;
-      break;
-    }
-  }
+  sparse_threshold_ = dataset->sparse_threshold_;
   // copy feature bin mapper data
   for (int i = 0; i < num_groups_; ++i) {
     std::vector<std::unique_ptr<BinMapper>> bin_mappers;
@@ -146,7 +140,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
       dataset->feature_groups_[i]->num_feature_,
       bin_mappers,
       num_data_,
-      is_enable_sparse));
+      dataset->feature_groups_[i]->is_sparse_));
   }
   feature_groups_.shrink_to_fit();
   used_feature_map_ = dataset->used_feature_map_;
@@ -228,7 +222,7 @@ void Dataset::ReSize(data_size_t num_data) {
 void Dataset::CopySubset(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data) {
   CHECK(num_used_indices == num_data_);
   OMP_INIT_EX();
-#pragma omp parallel for schedule(static)
+  #pragma omp parallel for schedule(static)
   for (int group = 0; group < num_groups_; ++group) {
     OMP_LOOP_EX_BEGIN();
     feature_groups_[group]->CopySubset(fullset->feature_groups_[group].get(), used_indices, num_used_indices);

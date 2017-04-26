@@ -611,6 +611,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetSubset(
   IOConfig io_config;
   io_config.Set(param);
   auto full_dataset = reinterpret_cast<const Dataset*>(handle);
+  CHECK(num_used_row_indices > 0);
   auto ret = std::unique_ptr<Dataset>(new Dataset(num_used_row_indices));
   ret->CopyFeatureMapperFrom(full_dataset);
   ret->CopySubset(full_dataset, used_row_indices, num_used_row_indices, true);
