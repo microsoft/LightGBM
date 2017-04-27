@@ -35,6 +35,7 @@ std::unordered_map<std::string, std::string> ConfigBase::Str2Map(const char* par
 void OverallConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   // load main config types
   GetInt(params, "num_threads", &num_threads);
+  GetString(params, "translate_language", &translate_language);
 
   // generate seeds by seed.
   if (GetInt(params, "seed", &seed)) {
@@ -210,6 +211,7 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "snapshot_freq", &snapshot_freq);
   GetString(params, "output_model", &output_model);
   GetString(params, "input_model", &input_model);
+  GetString(params, "translate_model", &translate_model);
   GetString(params, "output_result", &output_result);
   std::string tmp_str = "";
   if (GetString(params, "valid_data", &tmp_str)) {

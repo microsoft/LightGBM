@@ -700,6 +700,44 @@ std::string GBDT::DumpModel(int num_iteration) const {
   return str_buf.str();
 }
 
+std::string GBDT::ModelToIfElse(int num_iteration) const {
+  std::stringstream str_buf;
+
+  int num_used_model = static_cast<int>(models_.size());
+  if (num_iteration > 0) {
+    num_iteration += boost_from_average_ ? 1 : 0;
+    num_used_model = std::min(num_iteration * num_tree_per_iteration_, num_used_model);
+  }
+
+  for (int i = 0; i < num_used_model; ++i) {
+    str_buf << models_[i]->ToIfElse(i) << std::endl;
+  }
+
+  str_buf << "double predict(double[] arr) { return ";
+
+  for (int i = 0; i < num_used_model; ++i) {
+    if (i > 0) {
+      str_buf << " + ";
+    }
+    str_buf << "predictTree" << i << "(arr)";
+  }
+    
+  str_buf << "; }" << std::endl;
+  return str_buf.str();
+}
+
+bool GBDT::SaveModelToIfElse(int num_iteration, const char* filename) const {
+  /*! \brief File to write models */
+  std::ofstream output_file;
+  output_file.open(filename);
+
+  output_file << ModelToIfElse(num_iteration);
+
+  output_file.close();
+
+  return (bool)output_file;
+}
+
 std::string GBDT::SaveModelToString(int num_iteration) const {
   std::stringstream ss;
 
