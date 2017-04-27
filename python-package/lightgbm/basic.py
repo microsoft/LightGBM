@@ -1653,10 +1653,11 @@ class Booster(object):
 
         def dfs(root):
             if "split_feature" in root:
-                if importance_type == 'split':
-                    ret[root["split_feature"]] += 1
-                elif importance_type == 'gain':
-                    ret[root["split_feature"]] += root["split_gain"]
+                if root['split_gain'] > 0:
+                    if importance_type == 'split':
+                        ret[root["split_feature"]] += 1
+                    elif importance_type == 'gain':
+                        ret[root["split_feature"]] += root["split_gain"]
                 dfs(root["left_child"])
                 dfs(root["right_child"])
         for tree in dump_model["tree_info"]:
