@@ -329,7 +329,11 @@ std::string Tree::ToJSON() {
   str_buf << "\"num_leaves\":" << num_leaves_ << "," << std::endl;
   str_buf << "\"shrinkage\":" << shrinkage_ << "," << std::endl;
   str_buf << "\"has_categorical\":" << (has_categorical_ ? 1 : 0) << "," << std::endl;
-  str_buf << "\"tree_structure\":" << NodeToJSON(0) << std::endl;
+  if (num_leaves_ == 1) {
+    str_buf << "\"tree_structure\":" << NodeToJSON(-1) << std::endl;
+  } else {
+    str_buf << "\"tree_structure\":" << NodeToJSON(0) << std::endl;
+  }
 
   return str_buf.str();
 }
