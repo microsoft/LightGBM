@@ -90,6 +90,7 @@ public:
   int data_random_seed = 1;
   std::string data_filename = "";
   std::vector<std::string> valid_data_filenames;
+  int snapshot_freq = 100;
   std::string output_model = "LightGBM_model.txt";
   std::string output_result = "LightGBM_predict_result.txt";
   std::string input_model = "";
