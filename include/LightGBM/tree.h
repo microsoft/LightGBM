@@ -96,6 +96,8 @@ public:
   /*! \brief Get feature of specific split*/
   inline int split_feature(int split_idx) const { return split_feature_[split_idx]; }
 
+  inline double split_gain(int split_idx) const { return split_gain_[split_idx]; }
+
   /*!
   * \brief Shrinkage for the tree's output
   *        shrinkage rate (a.k.a learning rate) is used to tune the traning process

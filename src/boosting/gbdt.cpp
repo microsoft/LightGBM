@@ -355,7 +355,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
     }
     init_score /= num_data_;
     std::unique_ptr<Tree> new_tree(new Tree(2));
-    new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0, init_score, init_score, 0, num_data_, 1);
+    new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0, init_score, init_score, 0, num_data_, -1);
     train_score_updater_->AddScore(init_score, 0);
     for (auto& score_updater : valid_score_updater_) {
       score_updater->AddScore(init_score, 0);
@@ -433,7 +433,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
       if (!class_need_train_[curr_class] && models_.size() < static_cast<size_t>(num_class_)) {
         auto output = class_default_output_[curr_class];
         new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0,
-                        output, output, 0, num_data_, 1);
+                        output, output, 0, num_data_, -1);
         train_score_updater_->AddScore(output, curr_class);
         for (auto& score_updater : valid_score_updater_) {
           score_updater->AddScore(output, curr_class);
@@ -857,7 +857,9 @@ std::vector<std::pair<size_t, std::string>> GBDT::FeatureImportance() const {
   std::vector<size_t> feature_importances(max_feature_idx_ + 1, 0);
   for (size_t iter = 0; iter < models_.size(); ++iter) {
     for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
-      ++feature_importances[models_[iter]->split_feature(split_idx)];
+      if (models_[iter]->split_gain(split_idx) > 0) {
+        ++feature_importances[models_[iter]->split_feature(split_idx)];
+      }
     }
   }
   // store the importance first
