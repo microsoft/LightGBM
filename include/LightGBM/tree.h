@@ -120,7 +120,7 @@ public:
   std::string ToJSON();
 
   /*! \brief Serialize this object to if-else statement*/
-  std::string ToIfElse(int index);
+  std::string ToIfElse(int index, bool is_predict_leaf_index);
 
   template<typename T>
   static bool CategoricalDecision(T fval, T threshold) {
@@ -164,7 +164,7 @@ private:
   inline std::string NodeToJSON(int index);
 
   /*! \brief Serialize one node to if-else statement*/
-  inline std::string NodeToIfElse(int index);
+  inline std::string NodeToIfElse(int index, bool is_predict_leaf_index);
 
   /*! \brief Number of max leaves*/
   int max_leaves_;

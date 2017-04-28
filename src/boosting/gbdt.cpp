@@ -709,20 +709,43 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
     num_used_model = std::min(num_iteration * num_tree_per_iteration_, num_used_model);
   }
 
+  // PredictRaw
   for (int i = 0; i < num_used_model; ++i) {
-    str_buf << models_[i]->ToIfElse(i) << std::endl;
+    str_buf << models_[i]->ToIfElse(i, false) << std::endl;
   }
 
-  str_buf << "double predict(double[] arr) { return ";
-
-  for (int i = 0; i < num_used_model; ++i) {
-    if (i > 0) {
-      str_buf << " + ";
+  str_buf << "void GBDT::PredictRaw(const double* features, double *output) const {" << std::endl;
+  for (int k = 0; k < num_tree_per_iteration_; ++k) {
+    for (int i = 0; i < num_used_model / num_tree_per_iteration_; ++i) {
+      str_buf << "\t" << "output[" << k << "] += " << "PredictTree" << i * num_tree_per_iteration_ + k << "(features);" << std::endl;
     }
-    str_buf << "predictTree" << i << "(arr)";
   }
-    
-  str_buf << "; }" << std::endl;
+  str_buf << "}" << std::endl;
+  str_buf << std::endl;
+
+  // Predict
+  str_buf << "void GBDT::Predict(const double* features, double *output) const {" << std::endl;
+  for (int k = 0; k < num_tree_per_iteration_; ++k) {
+    for (int i = 0; i < num_used_model / num_tree_per_iteration_; ++i) {
+      str_buf << "\t" << "output[" << k << "] += " << "PredictTree" << i * num_tree_per_iteration_ + k << "(features);" << std::endl;
+    }
+  }
+  str_buf << "\t" << "if (objective_function_ != nullptr) {" << std::endl;
+  str_buf << "\t\t" << "objective_function_->ConvertOutput(output, output);" << std::endl;
+  str_buf << "\t" << "}" << std::endl;
+  str_buf << "}" << std::endl;
+  str_buf << std::endl;
+
+  // PredictLeafIndex
+  for (int i = 0; i < num_used_model; ++i) {
+    str_buf << models_[i]->ToIfElse(i, true) << std::endl;
+  }
+
+  str_buf << "void GBDT::PredictLeafIndex(const double* features, double *output) const {" << std::endl;
+  for (int i = 0; i < num_used_model; ++i) {
+    str_buf << "\t" << "output[" << i << "] = PredictTree" << i << "Leaf(features);" << std::endl;  
+  }
+  str_buf << "}" << std::endl;
   return str_buf.str();
 }
 

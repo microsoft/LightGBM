@@ -239,13 +239,12 @@ void Application::Train() {
   }
   // save model to file
   boosting_->SaveModelToFile(-1, config_.io_config.output_model.c_str());
-  // translate model to if-else statement code
-  if (config_.translate_language == std::string("cpp") || config_.translate_language == std::string("java")) {
-    boosting_->SaveModelToIfElse(-1, config_.io_config.translate_model.c_str());
+  // convert model to if-else statement code
+  if (config_.convert_model_language == std::string("cpp") || config_.convert_model_language == std::string("java")) {
+    boosting_->SaveModelToIfElse(-1, config_.io_config.convert_model.c_str());
   }
   Log::Info("Finished training");
 }
-
 
 void Application::Predict() {
   // create predictor
@@ -260,6 +259,13 @@ void Application::InitPredict() {
   boosting_.reset(
     Boosting::CreateBoosting(config_.io_config.input_model.c_str()));
   Log::Info("Finished initializing prediction");
+}
+
+void Application::ConvertModel() {
+  boosting_.reset(
+    Boosting::CreateBoosting(config_.boosting_type,
+                             config_.io_config.input_model.c_str()));
+  boosting_->SaveModelToIfElse(-1, config_.io_config.convert_model.c_str());
 }
 
 template<typename T>

@@ -59,6 +59,9 @@ private:
   /*! \brief Main predicting logic */
   void Predict();
 
+  /*! \brief Main Convert model logic */
+  void ConvertModel();
+
   /*! \brief All configs */
   OverallConfig config_;
   /*! \brief Training data */
@@ -80,6 +83,8 @@ inline void Application::Run() {
   if (config_.task_type == TaskType::kPredict) {
     InitPredict();
     Predict();
+  } else if (config_.task_type == TaskType::kConvertModel) {
+    ConvertModel();
   } else {
     InitTrain();
     Train();
