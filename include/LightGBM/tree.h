@@ -119,6 +119,9 @@ public:
   /*! \brief Serialize this object to json*/
   std::string ToJSON();
 
+  /*! \brief Serialize this object to if-else statement*/
+  std::string ToIfElse(int index, bool is_predict_leaf_index);
+
   template<typename T>
   static bool CategoricalDecision(T fval, T threshold) {
     if (static_cast<int>(fval) == static_cast<int>(threshold)) {
@@ -159,6 +162,9 @@ private:
 
   /*! \brief Serialize one node to json*/
   inline std::string NodeToJSON(int index);
+
+  /*! \brief Serialize one node to if-else statement*/
+  inline std::string NodeToIfElse(int index, bool is_predict_leaf_index);
 
   /*! \brief Number of max leaves*/
   int max_leaves_;

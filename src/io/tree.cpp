@@ -368,6 +368,54 @@ std::string Tree::NodeToJSON(int index) {
   return str_buf.str();
 }
 
+std::string Tree::ToIfElse(int index, bool is_predict_leaf_index) {
+  std::stringstream str_buf;
+  str_buf << "double PredictTree" << index;
+  if (is_predict_leaf_index) {
+    str_buf << "Leaf";
+  }
+  str_buf << "(const double* arr) { ";
+  if (num_leaves_ == 1) {
+    str_buf << "return 0";
+  } else {
+    str_buf << NodeToIfElse(0, is_predict_leaf_index);
+  }
+  str_buf << " }" << std::endl;
+  return str_buf.str();
+}
+
+std::string Tree::NodeToIfElse(int index, bool is_predict_leaf_index) {
+  std::stringstream str_buf;
+  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
+  if (index >= 0) {
+    // non-leaf
+    str_buf << "if ( arr[" << split_feature_[index] << "] ";
+    if (decision_type_[index] == 0) {
+      str_buf << "<";
+    } else {
+      str_buf << "=";
+    }
+    str_buf << "= " << threshold_[index] << " ) { ";
+    // left subtree
+    str_buf << NodeToIfElse(left_child_[index], is_predict_leaf_index);
+    str_buf << " } else { ";
+    // right subtree
+    str_buf << NodeToIfElse(right_child_[index], is_predict_leaf_index);
+    str_buf << " }";
+  } else {
+    // leaf
+    str_buf << "return ";
+    if (is_predict_leaf_index) {
+      str_buf << ~index;
+    } else {
+      str_buf << leaf_value_[~index];
+    }
+    str_buf << ";";
+  }
+
+  return str_buf.str();
+}
+
 Tree::Tree(const std::string& str) {
   std::vector<std::string> lines = Common::Split(str.c_str(), '\n');
   std::unordered_map<std::string, std::string> key_vals;

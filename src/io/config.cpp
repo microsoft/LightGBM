@@ -35,6 +35,7 @@ std::unordered_map<std::string, std::string> ConfigBase::Str2Map(const char* par
 void OverallConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   // load main config types
   GetInt(params, "num_threads", &num_threads);
+  GetString(params, "convert_model_language", &convert_model_language);
 
   // generate seeds by seed.
   if (GetInt(params, "seed", &seed)) {
@@ -129,6 +130,8 @@ void OverallConfig::GetTaskType(const std::unordered_map<std::string, std::strin
     } else if (value == std::string("predict") || value == std::string("prediction")
       || value == std::string("test")) {
       task_type = TaskType::kPredict;
+    } else if (value == std::string("convert_model")) {
+      task_type = TaskType::kConvertModel;
     } else {
       Log::Fatal("Unknown task type %s", value.c_str());
     }
@@ -210,6 +213,7 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "snapshot_freq", &snapshot_freq);
   GetString(params, "output_model", &output_model);
   GetString(params, "input_model", &input_model);
+  GetString(params, "convert_model", &convert_model);
   GetString(params, "output_result", &output_result);
   std::string tmp_str = "";
   if (GetString(params, "valid_data", &tmp_str)) {

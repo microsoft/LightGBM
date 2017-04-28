@@ -144,15 +144,31 @@ public:
 
   /*!
   * \brief Dump model to json format string
+  * \param num_iteration Number of iterations that want to dump, -1 means dump all
   * \return Json format string of model
   */
   std::string DumpModel(int num_iteration) const override;
 
   /*!
+  * \brief Translate model to if-else statement
+  * \param num_iteration Number of iterations that want to translate, -1 means translate all
+  * \return if-else format codes of model
+  */
+  std::string ModelToIfElse(int num_iteration) const override;
+
+  /*!
+  * \brief Translate model to if-else statement
+  * \param num_iteration Number of iterations that want to translate, -1 means translate all
+  * \param filename Filename that want to save to
+  * \return is_finish Is training finished or not
+  */
+  bool SaveModelToIfElse(int num_iteration, const char* filename) const override;
+
+  /*!
   * \brief Save model to file
   * \param num_used_model Number of model that want to save, -1 means save all
-  * \param is_finish Is training finished or not
   * \param filename Filename that want to save to
+  * \return is_finish Is training finished or not
   */
   virtual bool SaveModelToFile(int num_iterations, const char* filename) const override;
 

@@ -700,6 +700,99 @@ std::string GBDT::DumpModel(int num_iteration) const {
   return str_buf.str();
 }
 
+std::string GBDT::ModelToIfElse(int num_iteration) const {
+  std::stringstream str_buf;
+
+  int num_used_model = static_cast<int>(models_.size());
+  if (num_iteration > 0) {
+    num_iteration += boost_from_average_ ? 1 : 0;
+    num_used_model = std::min(num_iteration * num_tree_per_iteration_, num_used_model);
+  }
+
+  // PredictRaw
+  for (int i = 0; i < num_used_model; ++i) {
+    str_buf << models_[i]->ToIfElse(i, false) << std::endl;
+  }
+
+  str_buf << "double (*PredictTreePtr[])(const double*) = { ";
+  for (int i = 0; i < num_used_model; ++i) {
+    if (i > 0) {
+      str_buf << " , ";
+    }
+    str_buf << "PredictTree" << i;
+  }
+  str_buf << " };" << std::endl << std::endl;
+
+  std::stringstream pred_str_buf;
+
+  pred_str_buf << "\t" << "if (num_threads_ <= num_tree_per_iteration_) {" << std::endl;
+  pred_str_buf << "\t\t" << "#pragma omp parallel for schedule(static)" << std::endl;
+  pred_str_buf << "\t\t" << "for (int k = 0; k < num_tree_per_iteration_; ++k) {" << std::endl;
+  pred_str_buf << "\t\t\t" << "for (int i = 0; i < num_iteration_for_pred_; ++i) {" << std::endl;
+  pred_str_buf << "\t\t\t\t" << "output[k] += (*PredictTreePtr[i * num_tree_per_iteration_ + k])(features);" << std::endl;
+  pred_str_buf << "\t\t\t" << "}" << std::endl;
+  pred_str_buf << "\t\t" << "}" << std::endl;
+  pred_str_buf << "\t" << "} else {" << std::endl;
+  pred_str_buf << "\t\t" << "for (int k = 0; k < num_tree_per_iteration_; ++k) {" << std::endl;
+  pred_str_buf << "\t\t\t" << "double t = 0.0f;" << std::endl;
+  pred_str_buf << "\t\t\t" << "#pragma omp parallel for schedule(static) reduction(+:t)" << std::endl;
+  pred_str_buf << "\t\t\t" << "for (int i = 0; i < num_iteration_for_pred_; ++i) {" << std::endl;
+  pred_str_buf << "\t\t\t\t" << "t += (*PredictTreePtr[i * num_tree_per_iteration_ + k])(features);" << std::endl;
+  pred_str_buf << "\t\t\t" << "}" << std::endl;
+  pred_str_buf << "\t\t\t" << "output[k] = t;" << std::endl;
+  pred_str_buf << "\t\t" << "}" << std::endl;
+  pred_str_buf << "\t" << "}" << std::endl;
+
+  str_buf << "void GBDT::PredictRaw(const double* features, double *output) const {" << std::endl;
+  str_buf << pred_str_buf.str();
+  str_buf << "}" << std::endl;
+  str_buf << std::endl;
+
+  // Predict
+  str_buf << "void GBDT::Predict(const double* features, double *output) const {" << std::endl;
+  str_buf << pred_str_buf.str();
+  str_buf << "\t" << "if (objective_function_ != nullptr) {" << std::endl;
+  str_buf << "\t\t" << "objective_function_->ConvertOutput(output, output);" << std::endl;
+  str_buf << "\t" << "}" << std::endl;
+  str_buf << "}" << std::endl;
+  str_buf << std::endl;
+
+  // PredictLeafIndex
+  for (int i = 0; i < num_used_model; ++i) {
+    str_buf << models_[i]->ToIfElse(i, true) << std::endl;
+  }
+
+  str_buf << "double (*PredictTreeLeafPtr[])(const double*) = { ";
+  for (int i = 0; i < num_used_model; ++i) {
+    if (i > 0) {
+      str_buf << " , ";
+    }
+    str_buf << "PredictTree" << i << "Leaf";
+  }
+  str_buf << " };" << std::endl << std::endl;
+
+  str_buf << "void GBDT::PredictLeafIndex(const double* features, double *output) const {" << std::endl;
+  str_buf << "\t" << "int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;" << std::endl;
+  str_buf << "\t" << "#pragma omp parallel for schedule(static)" << std::endl;
+  str_buf << "\t" << "for (int i = 0; i < total_tree; ++i) {" << std::endl;
+  str_buf << "\t\t" << "output[i] = (*PredictTreeLeafPtr[i])(features);" << std::endl;
+  str_buf << "\t" << "}" << std::endl;
+  str_buf << "}" << std::endl;
+  return str_buf.str();
+}
+
+bool GBDT::SaveModelToIfElse(int num_iteration, const char* filename) const {
+  /*! \brief File to write models */
+  std::ofstream output_file;
+  output_file.open(filename);
+
+  output_file << ModelToIfElse(num_iteration);
+
+  output_file.close();
+
+  return (bool)output_file;
+}
+
 std::string GBDT::SaveModelToString(int num_iteration) const {
   std::stringstream ss;
 

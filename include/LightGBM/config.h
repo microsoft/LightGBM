@@ -79,7 +79,7 @@ public:
 
 /*! \brief Types of tasks */
 enum TaskType {
-  kTrain, kPredict
+  kTrain, kPredict, kConvertModel
 };
 
 /*! \brief Config for input and output files */
@@ -93,6 +93,7 @@ public:
   int snapshot_freq = 100;
   std::string output_model = "LightGBM_model.txt";
   std::string output_result = "LightGBM_predict_result.txt";
+  std::string convert_model = "LightGBM_convert_model.cpp";
   std::string input_model = "";
   int verbosity = 1;
   int num_iteration_predict = -1;
@@ -269,6 +270,7 @@ public:
   ObjectiveConfig objective_config;
   std::vector<std::string> metric_types;
   MetricConfig metric_config;
+  std::string convert_model_language = "";
 
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 
