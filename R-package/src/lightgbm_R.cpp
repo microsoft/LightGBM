@@ -324,6 +324,18 @@ LGBM_SE LGBM_BoosterCreateFromModelfile_R(LGBM_SE filename,
   R_API_END();
 }
 
+LGBM_SE LGBM_BoosterLoadModelFromString_R(LGBM_SE model_str,
+  LGBM_SE out,
+  LGBM_SE call_state) {
+
+  R_API_BEGIN();
+  int out_num_iterations = 0;
+  BoosterHandle handle;
+  CHECK_CALL(LGBM_BoosterLoadModelFromString(R_CHAR_PTR(model_str), &out_num_iterations, &handle));
+  R_SET_PTR(out, handle);
+  R_API_END();
+}
+
 LGBM_SE LGBM_BoosterMerge_R(LGBM_SE handle,
   LGBM_SE other_handle,
   LGBM_SE call_state) {
