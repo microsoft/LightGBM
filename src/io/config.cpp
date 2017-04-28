@@ -130,7 +130,7 @@ void OverallConfig::GetTaskType(const std::unordered_map<std::string, std::strin
     } else if (value == std::string("predict") || value == std::string("prediction")
       || value == std::string("test")) {
       task_type = TaskType::kPredict;
-    } else if (value == std::string("covert_model")) {
+    } else if (value == std::string("convert_model")) {
       task_type = TaskType::kConvertModel;
     } else {
       Log::Fatal("Unknown task type %s", value.c_str());

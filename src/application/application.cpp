@@ -32,7 +32,7 @@ Application::Application(int argc, char** argv) {
   if (config_.num_threads > 0) {
     omp_set_num_threads(config_.num_threads);
   }
-  if (config_.io_config.data_filename.size() == 0) {
+  if (config_.io_config.data_filename.size() == 0 && config_.task_type != TaskType::kConvertModel) {
     Log::Fatal("No training/prediction data, application quit");
   }
 }
