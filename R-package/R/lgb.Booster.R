@@ -24,6 +24,7 @@ Booster <- R6Class(
     initialize = function(params = list(),
                           train_set = NULL,
                           modelfile = NULL,
+                          model_str = NULL,
                           ...) {
       
       # Create parameters and handle
@@ -73,10 +74,22 @@ Booster <- R6Class(
                            ret = handle,
                            lgb.c_str(modelfile))
         
+      } else if (!is.null(model_str)) {
+        
+        # Do we have a model_str as character?
+          if (!is.character(model_str)) {
+            stop("lgb.Booster: Can only use a string as model_str")
+          }
+          
+          # Create booster from model
+          handle <- lgb.call("LGBM_BoosterLoadModelFromString_R",
+                             ret = handle,
+                             lgb.c_str(model_str))
+        
       } else {
         
         # Booster non existent
-        stop("lgb.Booster: Need at least either training dataset or model file to create booster instance")
+        stop("lgb.Booster: Need at least either training dataset, model file, or model_str to create booster instance")
         
       }
       
@@ -671,6 +684,7 @@ predict.lgb.Booster <- function(object, data,
 #'                    early_stopping_rounds = 10)
 #' lgb.save(model, "model.txt")
 #' load_booster <- lgb.load("model.txt")
+#' load_booster <- lgb.load(model_str)
 #' }
 #' 
 #' @rdname lgb.load
@@ -678,12 +692,21 @@ predict.lgb.Booster <- function(object, data,
 lgb.load <- function(filename){
   
   # Check if file name is character or not
-  if (!is.character(filename)) {
+  if (supplied(filename) && !is.null(filename) && !is.character(filename)) {
     stop("lgb.load: filename should be character")
   }
-  
+    
+  if (supplied(model_str) && !is.null(model_str) && !is.character(model_str)) {
+    stop("lgb.load: model_str should be character")
+  }
+    
+  if (!supplied(filename) && !supplied(model_str)) {
+    stop("lgb.load: either filename or model_str must be supplied")
+  }
+    
   # Return new booster
-  Booster$new(modelfile = filename)
+  if (supplied(filename)) Booster$new(modelfile = filename)
+  if (supplied(model_str)) Booster$new(model_str = model_str)
   
 }
 
