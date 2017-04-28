@@ -714,22 +714,43 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
     str_buf << models_[i]->ToIfElse(i, false) << std::endl;
   }
 
-  str_buf << "void GBDT::PredictRaw(const double* features, double *output) const {" << std::endl;
-  for (int k = 0; k < num_tree_per_iteration_; ++k) {
-    for (int i = 0; i < num_used_model / num_tree_per_iteration_; ++i) {
-      str_buf << "\t" << "output[" << k << "] += " << "PredictTree" << i * num_tree_per_iteration_ + k << "(features);" << std::endl;
+  str_buf << "double (*PredictTreePtr[])(const double*) = { ";
+  for (int i = 0; i < num_used_model; ++i) {
+    if (i > 0) {
+      str_buf << " , ";
     }
+    str_buf << "PredictTree" << i;
   }
+  str_buf << " };" << std::endl << std::endl;
+
+  std::stringstream pred_str_buf;
+
+  pred_str_buf << "\t" << "if (num_threads_ <= num_tree_per_iteration_) {" << std::endl;
+  pred_str_buf << "\t\t" << "#pragma omp parallel for schedule(static)" << std::endl;
+  pred_str_buf << "\t\t" << "for (int k = 0; k < num_tree_per_iteration_; ++k) {" << std::endl;
+  pred_str_buf << "\t\t\t" << "for (int i = 0; i < num_iteration_for_pred_; ++i) {" << std::endl;
+  pred_str_buf << "\t\t\t\t" << "output[k] += (*PredictTreePtr[i * num_tree_per_iteration_ + k])(features);" << std::endl;
+  pred_str_buf << "\t\t\t" << "}" << std::endl;
+  pred_str_buf << "\t\t" << "}" << std::endl;
+  pred_str_buf << "\t" << "} else {" << std::endl;
+  pred_str_buf << "\t\t" << "for (int k = 0; k < num_tree_per_iteration_; ++k) {" << std::endl;
+  pred_str_buf << "\t\t\t" << "double t = 0.0f;" << std::endl;
+  pred_str_buf << "\t\t\t" << "#pragma omp parallel for schedule(static) reduction(+:t)" << std::endl;
+  pred_str_buf << "\t\t\t" << "for (int i = 0; i < num_iteration_for_pred_; ++i) {" << std::endl;
+  pred_str_buf << "\t\t\t\t" << "t += (*PredictTreePtr[i * num_tree_per_iteration_ + k])(features);" << std::endl;
+  pred_str_buf << "\t\t\t" << "}" << std::endl;
+  pred_str_buf << "\t\t\t" << "output[k] = t;" << std::endl;
+  pred_str_buf << "\t\t" << "}" << std::endl;
+  pred_str_buf << "\t" << "}" << std::endl;
+
+  str_buf << "void GBDT::PredictRaw(const double* features, double *output) const {" << std::endl;
+  str_buf << pred_str_buf.str();
   str_buf << "}" << std::endl;
   str_buf << std::endl;
 
   // Predict
   str_buf << "void GBDT::Predict(const double* features, double *output) const {" << std::endl;
-  for (int k = 0; k < num_tree_per_iteration_; ++k) {
-    for (int i = 0; i < num_used_model / num_tree_per_iteration_; ++i) {
-      str_buf << "\t" << "output[" << k << "] += " << "PredictTree" << i * num_tree_per_iteration_ + k << "(features);" << std::endl;
-    }
-  }
+  str_buf << pred_str_buf.str();
   str_buf << "\t" << "if (objective_function_ != nullptr) {" << std::endl;
   str_buf << "\t\t" << "objective_function_->ConvertOutput(output, output);" << std::endl;
   str_buf << "\t" << "}" << std::endl;
@@ -741,10 +762,21 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
     str_buf << models_[i]->ToIfElse(i, true) << std::endl;
   }
 
-  str_buf << "void GBDT::PredictLeafIndex(const double* features, double *output) const {" << std::endl;
+  str_buf << "double (*PredictTreeLeafPtr[])(const double*) = { ";
   for (int i = 0; i < num_used_model; ++i) {
-    str_buf << "\t" << "output[" << i << "] = PredictTree" << i << "Leaf(features);" << std::endl;  
+    if (i > 0) {
+      str_buf << " , ";
+    }
+    str_buf << "PredictTree" << i << "Leaf";
   }
+  str_buf << " };" << std::endl << std::endl;
+
+  str_buf << "void GBDT::PredictLeafIndex(const double* features, double *output) const {" << std::endl;
+  str_buf << "\t" << "int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;" << std::endl;
+  str_buf << "\t" << "#pragma omp parallel for schedule(static)" << std::endl;
+  str_buf << "\t" << "for (int i = 0; i < total_tree; ++i) {" << std::endl;
+  str_buf << "\t\t" << "output[i] = (*PredictTreeLeafPtr[i])(features);" << std::endl;
+  str_buf << "\t" << "}" << std::endl;
   str_buf << "}" << std::endl;
   return str_buf.str();
 }
