@@ -240,7 +240,7 @@ void Application::Train() {
   // save model to file
   boosting_->SaveModelToFile(-1, config_.io_config.output_model.c_str());
   // convert model to if-else statement code
-  if (config_.convert_model_language == std::string("cpp") || config_.convert_model_language == std::string("java")) {
+  if (config_.convert_model_language == std::string("cpp")) {
     boosting_->SaveModelToIfElse(-1, config_.io_config.convert_model.c_str());
   }
   Log::Info("Finished training");
