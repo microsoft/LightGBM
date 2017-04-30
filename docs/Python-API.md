@@ -556,8 +556,9 @@ The methods of each Class is in alphabetical order.
         Perform stratified sampling.
     shuffle: bool
         Whether shuffle before split data.
-    metrics : str or list of str
+    metrics : str or list of str, default None
         Evaluation metrics to be watched in CV.
+        If `metrics` is not None, the metric in `params` will be overridden.
     fobj : function
         Custom objective function.
     feval : function
