@@ -314,6 +314,7 @@ def cv(params, train_set, num_boost_round=10,
         Whether shuffle before split data
     metrics : string or list of strings
         Evaluation metrics to be watched in CV.
+        If `metrics` is not None, the metric in `params` will be overridden.
     fobj : function
         Custom objective function.
     feval : function
@@ -368,12 +369,8 @@ def cv(params, train_set, num_boost_round=10,
     train_set.set_feature_name(feature_name)
     train_set.set_categorical_feature(categorical_feature)
 
-    if metrics:
-        params.setdefault('metric', [])
-        if isinstance(metrics, string_type):
-            params['metric'].append(metrics)
-        else:
-            params['metric'].extend(metrics)
+    if metrics is not None:
+        params['metric'] = metrics
 
     results = collections.defaultdict(list)
     cvfolds = _make_n_folds(train_set, data_splitter=data_splitter,
