@@ -35,6 +35,7 @@ Application::Application(int argc, char** argv) {
   if (config_.io_config.data_filename.size() == 0 && config_.task_type != TaskType::kConvertModel) {
     Log::Fatal("No training/prediction data, application quit");
   }
+  omp_set_nested(0);
 }
 
 Application::~Application() {
