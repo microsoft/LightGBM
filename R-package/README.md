@@ -51,9 +51,9 @@ touch ~/.R/Makevars
 cat <<EOF >>~/.R/Makevars
 C=gcc-6
 CXX=g++-6
-CXX1X=g++-6
-LDFLAGS=-L/usr/local/Cellar/gcc/6.3.0/lib
-CPPFLAGS=-I/usr/local/Cellar/gcc/6.3.0/include
+CXX11=g++-6
+LDFLAGS=-L/usr/local/Cellar/gcc/6.3.0_1/lib
+CPPFLAGS=-I/usr/local/Cellar/gcc/6.3.0_1/include
 SHLIB_OPENMP_CFLAGS = -fopenmp
 SHLIB_OPENMP_CXXFLAGS = -fopenmp
 SHLIB_OPENMP_FCFLAGS = -fopenmp
@@ -61,7 +61,7 @@ SHLIB_OPENMP_FFLAGS = -fopenmp
 EOF
 ```
 
-Note: for `LDFLAGS=-L/usr/local/Cellar/gcc/6.3.0/lib` and `CPPFLAGS=-I/usr/local/Cellar/gcc/6.3.0/include`, you may need to change `6.3.0` to your gcc version.
+Note: for `LDFLAGS=-L/usr/local/Cellar/gcc/6.3.0_1/lib` and `CPPFLAGS=-I/usr/local/Cellar/gcc/6.3.0_1/include`, you may need to change `6.3.0_1` to your gcc version.
 
 To check your LightGBM installation, the test is identical to Linux/Windows versions (check the test provided just before OSX Installation part)
 
