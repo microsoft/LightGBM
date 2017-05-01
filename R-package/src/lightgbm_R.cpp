@@ -336,6 +336,17 @@ LGBM_SE LGBM_BoosterLoadModelFromString_R(LGBM_SE model_str,
   R_API_END();
 }
 
+LGBM_SE LGBM_BoosterSaveModelToString_R(LGBM_SE handle,
+  LGBM_SE num_iteration,
+  LGBM_SE buffer_len,
+  LGBM_SE out_len,
+  LGBM_SE out_str) {
+
+  R_API_BEGIN();
+  CHECK_CALL(LGBM_BoosterSaveModelToString(R_GET_PTR(handle), R_AS_INT(num_iteration), R_AS_INT(buffer_len), R_INT_PTR(out_len), R_CHAR_PTR(out_str)));
+  R_API_END();
+}
+
 LGBM_SE LGBM_BoosterMerge_R(LGBM_SE handle,
   LGBM_SE other_handle,
   LGBM_SE call_state) {
