@@ -356,6 +356,21 @@ Booster <- R6Class(
       return(self)
     },
     
+    # Save model to string
+    save_model_to_string = function(num_iteration = NULL) {
+      
+      # Check if number of iteration is non existent
+      if (is.null(num_iteration)) {
+        num_iteration <- self$best_iter
+      }
+      
+      # Return model string
+      lgb.call.return.str("LGBM_BoosterSaveModelToString_R",
+                          private$handle,
+                          as.integer(num_iteration))
+      
+    },
+    
     # Dump model in memory
     dump_model = function(num_iteration = NULL) {
       
