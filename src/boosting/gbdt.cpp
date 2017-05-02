@@ -800,9 +800,21 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
 bool GBDT::SaveModelToIfElse(int num_iteration, const char* filename) const {
   /*! \brief File to write models */
   std::ofstream output_file;
-  output_file.open(filename);
-
-  output_file << ModelToIfElse(num_iteration);
+  std::ifstream ifs(filename);
+  if (ifs.good()) {
+    std::string origin((std::istreambuf_iterator<char>(ifs)),
+                       (std::istreambuf_iterator<char>()));
+    output_file.open(filename);
+    output_file << "#define USE_HARD_CODE 0" << std::endl;
+    output_file << "#ifndef USE_HARD_CODE" << std::endl;
+    output_file << origin << std::endl;
+    output_file << "#else" << std::endl;
+    output_file << ModelToIfElse(num_iteration);
+    output_file << "#endif" << std::endl;
+  } else {
+    output_file.open(filename);
+    output_file << ModelToIfElse(num_iteration);
+  }
 
   output_file.close();
 
