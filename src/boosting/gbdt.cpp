@@ -311,7 +311,6 @@ void GBDT::Bagging(int iter) {
     }
     OMP_THROW_EX();
     bag_data_cnt_ = left_cnt;
-    CHECK(bag_data_indices_[bag_data_cnt_ - 1] > bag_data_indices_[bag_data_cnt_]);
     Log::Debug("Re-bagging, using %d data to train", bag_data_cnt_);
     // set bagging data to tree learner
     if (!is_use_subset_) {
