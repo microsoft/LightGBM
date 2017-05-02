@@ -702,6 +702,19 @@ std::string GBDT::DumpModel(int num_iteration) const {
 std::string GBDT::ModelToIfElse(int num_iteration) const {
   std::stringstream str_buf;
 
+  str_buf << "#include \"gbdt.h\"" << std::endl;
+  str_buf << "#include <LightGBM/utils/openmp_wrapper.h>" << std::endl;
+  str_buf << "#include <LightGBM/utils/common.h>" << std::endl;
+  str_buf << "#include <LightGBM/objective_function.h>" << std::endl;
+  str_buf << "#include <LightGBM/metric.h>" << std::endl;
+  str_buf << "#include <ctime>" << std::endl;
+  str_buf << "#include <sstream>" << std::endl;
+  str_buf << "#include <chrono>" << std::endl;
+  str_buf << "#include <string>" << std::endl;
+  str_buf << "#include <vector>" << std::endl;
+  str_buf << "#include <utility>" << std::endl;
+  str_buf << "namespace LightGBM {" << std::endl;
+
   int num_used_model = static_cast<int>(models_.size());
   if (num_iteration > 0) {
     num_iteration += boost_from_average_ ? 1 : 0;
@@ -777,16 +790,32 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   str_buf << "\t\t" << "output[i] = (*PredictTreeLeafPtr[i])(features);" << std::endl;
   str_buf << "\t" << "}" << std::endl;
   str_buf << "}" << std::endl;
+
+  str_buf << "}  // namespace LightGBM" << std::endl;
+
   return str_buf.str();
 }
 
 bool GBDT::SaveModelToIfElse(int num_iteration, const char* filename) const {
   /*! \brief File to write models */
   std::ofstream output_file;
-  output_file.open(filename);
+  std::ifstream ifs(filename);
+  if (ifs.good()) {
+    std::string origin((std::istreambuf_iterator<char>(ifs)),
+                       (std::istreambuf_iterator<char>()));
+    output_file.open(filename);
+    output_file << "#define USE_HARD_CODE 0" << std::endl;
+    output_file << "#ifndef USE_HARD_CODE" << std::endl;
+    output_file << origin << std::endl;
+    output_file << "#else" << std::endl;
+    output_file << ModelToIfElse(num_iteration);
+    output_file << "#endif" << std::endl;
+  } else {
+    output_file.open(filename);
+    output_file << ModelToIfElse(num_iteration);
+  }
 
-  output_file << ModelToIfElse(num_iteration);
-
+  ifs.close();
   output_file.close();
 
   return (bool)output_file;
@@ -972,57 +1001,6 @@ std::vector<std::pair<size_t, std::string>> GBDT::FeatureImportance() const {
     return lhs.first > rhs.first;
   });
   return pairs;
-}
-
-void GBDT::PredictRaw(const double* features, double* output) const {
-  if (num_threads_ <= num_tree_per_iteration_) {
-    #pragma omp parallel for schedule(static)
-    for (int k = 0; k < num_tree_per_iteration_; ++k) {
-      for (int i = 0; i < num_iteration_for_pred_; ++i) {
-        output[k] += models_[i * num_tree_per_iteration_ + k]->Predict(features);
-      }
-    }
-  } else {
-    for (int k = 0; k < num_tree_per_iteration_; ++k) {
-      double t = 0.0f;
-      #pragma omp parallel for schedule(static) reduction(+:t)
-      for (int i = 0; i < num_iteration_for_pred_; ++i) {
-        t += models_[i * num_tree_per_iteration_ + k]->Predict(features);
-      }
-      output[k] = t;
-    }
-  }
-}
-
-void GBDT::Predict(const double* features, double* output) const {
-  if (num_threads_ <= num_tree_per_iteration_) {
-    #pragma omp parallel for schedule(static)
-    for (int k = 0; k < num_tree_per_iteration_; ++k) {
-      for (int i = 0; i < num_iteration_for_pred_; ++i) {
-        output[k] += models_[i * num_tree_per_iteration_ + k]->Predict(features);
-      }
-    }
-  } else {
-    for (int k = 0; k < num_tree_per_iteration_; ++k) {
-      double t = 0.0f;
-      #pragma omp parallel for schedule(static) reduction(+:t)
-      for (int i = 0; i < num_iteration_for_pred_; ++i) {
-        t += models_[i * num_tree_per_iteration_ + k]->Predict(features);
-      }
-      output[k] = t;
-    }
-  }
-  if (objective_function_ != nullptr) {
-    objective_function_->ConvertOutput(output, output);
-  }
-}
-
-void GBDT::PredictLeafIndex(const double* features, double* output) const {
-  int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;
-  #pragma omp parallel for schedule(static)
-  for (int i = 0; i < total_tree; ++i) {
-    output[i] = models_[i]->PredictLeafIndex(features);
-  }
 }
 
 }  // namespace LightGBM

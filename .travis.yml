@@ -36,15 +36,11 @@ install:
 
 script:
 - cd $TRAVIS_BUILD_DIR
-- mkdir build && cd build && cmake .. && make
+- mkdir build && cd build && cmake -DUSE_MPI=ON ..&& make
 - cd $TRAVIS_BUILD_DIR/tests/c_api_test && python test.py
 - cd $TRAVIS_BUILD_DIR/python-package && python setup.py install
 - cd $TRAVIS_BUILD_DIR/tests/python_package_test && python test_basic.py && python test_engine.py && python test_sklearn.py && python test_plotting.py
 - cd $TRAVIS_BUILD_DIR && pep8 --ignore=E501 --exclude=./compute .
-- rm -rf build && mkdir build && cd build && cmake -DUSE_MPI=ON ..&& make
-- cd $TRAVIS_BUILD_DIR/tests/c_api_test && python test.py
-- cd $TRAVIS_BUILD_DIR/python-package && python setup.py install
-- cd $TRAVIS_BUILD_DIR/tests/python_package_test && python test_basic.py && python test_engine.py && python test_sklearn.py && python test_plotting.py
 - cd $TRAVIS_BUILD_DIR
 - rm -rf build && mkdir build && cd build && cmake -DUSE_GPU=ON -DBOOST_ROOT="$HOME/miniconda/" -DOpenCL_INCLUDE_DIR=$AMDAPPSDK/include/ ..
 - sed -i 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' ../include/LightGBM/config.h
@@ -53,6 +49,14 @@ script:
 - cd $TRAVIS_BUILD_DIR/tests/c_api_test && python test.py
 - cd $TRAVIS_BUILD_DIR/python-package && python setup.py install
 - cd $TRAVIS_BUILD_DIR/tests/python_package_test && python test_basic.py && python test_engine.py && python test_sklearn.py && python test_plotting.py
+- cd $TRAVIS_BUILD_DIR
+- rm -rf build && mkdir build && cd build && cmake .. && make
+- cd $TRAVIS_BUILD_DIR/tests/c_api_test && python test.py
+- cd $TRAVIS_BUILD_DIR/python-package && python setup.py install
+- cd $TRAVIS_BUILD_DIR/tests/python_package_test && python test_basic.py && python test_engine.py && python test_sklearn.py && python test_plotting.py
+- cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=train.conf && ../../lightgbm config=predict.conf output_result=origin.pred
+- cd $TRAVIS_BUILD_DIR/build && make
+- cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py
 
 notifications:
   email: false
