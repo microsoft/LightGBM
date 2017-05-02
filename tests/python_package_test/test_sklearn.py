@@ -1,5 +1,6 @@
 # coding: utf-8
 # pylint: skip-file
+import math
 import unittest
 
 import lightgbm as lgb
@@ -12,66 +13,66 @@ from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, train_test_split
 
 
-class template(object):
-    @staticmethod
-    def test_template(X_y=load_boston(True), model=lgb.LGBMRegressor,
-                      feval=mean_squared_error, num_round=100,
-                      custom_obj=None, predict_proba=False,
-                      return_data=False, return_model=False):
-        X_train, X_test, y_train, y_test = train_test_split(*X_y, test_size=0.1, random_state=42)
-        if return_data:
-            return X_train, X_test, y_train, y_test
-        arguments = {'n_estimators': num_round, 'silent': True}
-        if custom_obj:
-            arguments['objective'] = custom_obj
-        gbm = model(**arguments)
-        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=10, verbose=False)
-        if return_model:
-            return gbm
-        elif predict_proba:
-            return feval(y_test, gbm.predict_proba(X_test))
-        else:
-            return feval(y_test, gbm.predict(X_test))
+def multi_error(y_true, y_pred):
+    return np.mean(y_true != y_pred)
+
+
+def multi_logloss(y_true, y_pred):
+    return np.mean([-math.log(y_pred[i][y]) for i, y in enumerate(y_true)])
 
 
 class TestSklearn(unittest.TestCase):
 
     def test_binary(self):
-        X_y = load_breast_cancer(True)
-        ret = template.test_template(X_y, lgb.LGBMClassifier, log_loss, predict_proba=True)
+        X, y = load_breast_cancer(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        gbm = lgb.LGBMClassifier(n_estimators=50, silent=True)
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+        ret = log_loss(y_test, gbm.predict_proba(X_test))
         self.assertLess(ret, 0.15)
+        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['binary_logloss'][-1], places=5)
 
     def test_regreesion(self):
-        self.assertLess(template.test_template() ** 0.5, 4)
+        X, y = load_boston(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        gbm = lgb.LGBMRegressor(n_estimators=50, silent=True)
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+        ret = mean_squared_error(y_test, gbm.predict(X_test))
+        self.assertLess(ret, 16)
+        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['l2'][-1], places=5)
 
     def test_multiclass(self):
-        X_y = load_digits(10, True)
-
-        def multi_error(y_true, y_pred):
-            return np.mean(y_true != y_pred)
-        ret = template.test_template(X_y, lgb.LGBMClassifier, multi_error)
+        X, y = load_digits(10, True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        gbm = lgb.LGBMClassifier(n_estimators=50, silent=True)
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+        ret = multi_error(y_test, gbm.predict(X_test))
         self.assertLess(ret, 0.2)
+        ret = multi_logloss(y_test, gbm.predict_proba(X_test))
+        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['multi_logloss'][-1], places=5)
 
     def test_lambdarank(self):
         X_train, y_train = load_svmlight_file('../../examples/lambdarank/rank.train')
         X_test, y_test = load_svmlight_file('../../examples/lambdarank/rank.test')
         q_train = np.loadtxt('../../examples/lambdarank/rank.train.query')
         q_test = np.loadtxt('../../examples/lambdarank/rank.test.query')
-        lgb_model = lgb.LGBMRanker().fit(X_train, y_train,
-                                         group=q_train,
-                                         eval_set=[(X_test, y_test)],
-                                         eval_group=[q_test],
-                                         eval_at=[1],
-                                         verbose=False,
-                                         callbacks=[lgb.reset_parameter(learning_rate=lambda x: 0.95 ** x * 0.1)])
+        gbm = lgb.LGBMRanker()
+        gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)],
+                eval_group=[q_test], eval_at=[1, 3], verbose=False,
+                callbacks=[lgb.reset_parameter(learning_rate=lambda x: 0.95 ** x * 0.1)])
 
     def test_regression_with_custom_objective(self):
         def objective_ls(y_true, y_pred):
             grad = (y_pred - y_true)
             hess = np.ones(len(y_true))
             return grad, hess
-        ret = template.test_template(custom_obj=objective_ls)
+        X, y = load_boston(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        gbm = lgb.LGBMRegressor(n_estimators=50, silent=True, objective=objective_ls)
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+        ret = mean_squared_error(y_test, gbm.predict(X_test))
         self.assertLess(ret, 100)
+        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['l2'][-1], places=5)
 
     def test_binary_classification_with_custom_objective(self):
         def logregobj(y_true, y_pred):
@@ -79,21 +80,26 @@ class TestSklearn(unittest.TestCase):
             grad = y_pred - y_true
             hess = y_pred * (1.0 - y_pred)
             return grad, hess
-        X_y = load_digits(2, True)
+        X, y = load_digits(2, True)
 
         def binary_error(y_test, y_pred):
             return np.mean([int(p > 0.5) != y for y, p in zip(y_test, y_pred)])
-        ret = template.test_template(X_y, lgb.LGBMClassifier, feval=binary_error, custom_obj=logregobj)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        gbm = lgb.LGBMClassifier(n_estimators=50, silent=True, objective=logregobj)
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+        ret = binary_error(y_test, gbm.predict(X_test))
         self.assertLess(ret, 0.1)
 
     def test_dart(self):
-        X_train, X_test, y_train, y_test = template.test_template(return_data=True)
+        X, y = load_boston(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(boosting_type='dart')
         gbm.fit(X_train, y_train)
         self.assertLessEqual(gbm.score(X_train, y_train), 1.)
 
     def test_grid_search(self):
-        X_train, X_test, y_train, y_test = template.test_template(return_data=True)
+        X, y = load_boston(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {'boosting_type': ['dart', 'gbdt'],
                   'n_estimators': [5, 8],
                   'drop_rate': [0.05, 0.1]}
@@ -102,24 +108,38 @@ class TestSklearn(unittest.TestCase):
         self.assertIn(gbm.best_params_['n_estimators'], [5, 8])
 
     def test_clone_and_property(self):
-        gbm = template.test_template(return_model=True)
+        X, y = load_boston(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        gbm = lgb.LGBMRegressor(n_estimators=100, silent=True)
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=10, verbose=False)
+
         gbm_clone = clone(gbm)
         self.assertIsInstance(gbm.booster_, lgb.Booster)
         self.assertIsInstance(gbm.feature_importances_, np.ndarray)
-        clf = template.test_template(load_digits(2, True), model=lgb.LGBMClassifier, return_model=True)
+
+        X, y = load_digits(2, True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        clf = lgb.LGBMClassifier()
+        clf.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=10, verbose=False)
         self.assertListEqual(sorted(clf.classes_), [0, 1])
         self.assertEqual(clf.n_classes_, 2)
         self.assertIsInstance(clf.booster_, lgb.Booster)
         self.assertIsInstance(clf.feature_importances_, np.ndarray)
 
     def test_joblib(self):
-        gbm = template.test_template(num_round=10, return_model=True)
+        X, y = load_boston(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        gbm = lgb.LGBMRegressor(n_estimators=100, silent=True)
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=10, verbose=False)
+
         joblib.dump(gbm, 'lgb.pkl')
         gbm_pickle = joblib.load('lgb.pkl')
         self.assertIsInstance(gbm_pickle.booster_, lgb.Booster)
         self.assertDictEqual(gbm.get_params(), gbm_pickle.get_params())
         self.assertListEqual(list(gbm.feature_importances_), list(gbm_pickle.feature_importances_))
-        X_train, X_test, y_train, y_test = template.test_template(return_data=True)
+
+        X, y = load_boston(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
         gbm_pickle.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
         for key in gbm.evals_result_:
