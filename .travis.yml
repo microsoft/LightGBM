@@ -53,6 +53,11 @@ script:
 - cd $TRAVIS_BUILD_DIR/tests/c_api_test && python test.py
 - cd $TRAVIS_BUILD_DIR/python-package && python setup.py install
 - cd $TRAVIS_BUILD_DIR/tests/python_package_test && python test_basic.py && python test_engine.py && python test_sklearn.py && python test_plotting.py
+- cd $TRAVIS_BUILD_DIR
+- rm -rf build && mkdir build && cd build && cmake .. && make
+- cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=train.conf && ../../lightgbm config=predict.conf output_result=origin.pred
+- cd $TRAVIS_BUILD_DIR/build && make clean && make
+- cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py
 
 notifications:
   email: false
