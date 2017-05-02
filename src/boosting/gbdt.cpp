@@ -816,6 +816,7 @@ bool GBDT::SaveModelToIfElse(int num_iteration, const char* filename) const {
     output_file << ModelToIfElse(num_iteration);
   }
 
+  ifs.close();
   output_file.close();
 
   return (bool)output_file;
