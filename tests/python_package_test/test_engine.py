@@ -194,8 +194,8 @@ class TestEngine(unittest.TestCase):
         lgb.cv(params, lgb_train, num_boost_round=10, data_splitter=tss, nfold=5,  # test if wrong nfold is ignored
                metrics='l2', verbose_eval=False)
         # lambdarank
-        X_train, y_train = load_svmlight_file('../../examples/lambdarank/rank.train')
-        q_train = np.loadtxt('../../examples/lambdarank/rank.train.query')
+        X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.train'))
+        q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.train.query'))
         params_lambdarank = {'objective': 'lambdarank', 'verbose': -1}
         lgb_train = lgb.Dataset(X_train, y_train, group=q_train)
         lgb.cv(params_lambdarank, lgb_train, num_boost_round=10, nfold=3, metrics='l2', verbose_eval=False)
@@ -286,8 +286,3 @@ class TestEngine(unittest.TestCase):
         np.testing.assert_almost_equal(pred0, pred2)
         np.testing.assert_almost_equal(pred0, pred3)
         np.testing.assert_almost_equal(pred0, pred4)
-
-
-print("----------------------------------------------------------------------")
-print("running test_engine.py")
-unittest.main()
