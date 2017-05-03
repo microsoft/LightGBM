@@ -243,6 +243,7 @@
     <ClCompile Include="..\src\application\application.cpp" />
     <ClCompile Include="..\src\boosting\boosting.cpp" />
     <ClCompile Include="..\src\boosting\gbdt.cpp" />
+    <ClCompile Include="..\src\boosting\gbdt_prediction.cpp" />
     <ClCompile Include="..\src\c_api.cpp" />
     <ClCompile Include="..\src\io\bin.cpp" />
     <ClCompile Include="..\src\io\config.cpp" />

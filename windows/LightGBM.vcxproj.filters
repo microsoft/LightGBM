@@ -257,5 +257,8 @@
     <ClCompile Include="..\src\treelearner\voting_parallel_tree_learner.cpp">
       <Filter>src\treelearner</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\boosting\gbdt_prediction.cpp">
+      <Filter>src\boosting</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
