@@ -7,10 +7,21 @@ Welcome to LightGBM's documentation!
 ====================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
-
+   Installation Guide <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide>
+   Quick Start <Quick-Start>
+   Python Quick Start <Python-intro>
+   Features <https://github.com/Microsoft/LightGBM/wiki/Features>
+   Experiments <https://github.com/Microsoft/LightGBM/wiki/Experiments>
+   Parameters <Parameters>
+   Parameters Tuning <Parameters-tuning>
+   Python API Reference <Python-API>
+   Parallel Learning Guide <https://github.com/Microsoft/LightGBM/wiki/Parallel-Learning-Guide>
+   GPU Tutorial <GPU-Tutorial>
+   FAQ <FAQ>
+   Development Guide <development>
 
 Indices and tables
 ==================
