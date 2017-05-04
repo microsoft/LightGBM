@@ -4,6 +4,7 @@
 // boosting
 #include "./src/boosting/boosting.cpp"
 #include "./src/boosting/gbdt.cpp"
+#include "./src/boosting/gbdt_prediction.cpp"
 
 // io
 #include "./src/io/bin.cpp"
