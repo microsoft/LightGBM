@@ -1,11 +1,11 @@
 LightGBM FAQ
 =======================
 
-###Catalog
+### Catalog
 
 - [Python-package](FAQ.md#python-package)
 
-###Python-package
+### Python-package
 
 - **Question 1**: I see error messages like this when install from github using `python setup.py install`.
 

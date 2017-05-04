@@ -1,3 +1,5 @@
+# Quick Start
+
 This is a quick start guide for LightGBM of cli version.
 
 Follow the [Installation Guide](./Installation-Guide.md) to install LightGBM first.
