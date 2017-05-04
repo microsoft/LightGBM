@@ -709,25 +709,25 @@ predict.lgb.Booster <- function(object, data,
 #' @export
 lgb.load <- function(filename = NULL, model_str = NULL){
   
-  if (!supplied(filename) && !supplied(model_str)) {
-    stop("lgb.load: either filename or model_str must be supplied")
+  if (is.null(filename) && is.null(model_str)) {
+    stop("lgb.load: either filename or model_str must be given")
   }
   
   # Load from filename
-  if (supplied(filename) && !is.null(filename) && !is.character(filename)) {
+  if (!is.null(filename) && !is.character(filename)) {
     stop("lgb.load: filename should be character")
   }
   
   # Return new booster
-  if (supplied(filename) && !file.exists(filename)) stop("lgb.load: file does not exist for supplied filename")
-  if (supplied(filename)) Booster$new(modelfile = filename)
+  if (!is.null(filename) && !file.exists(filename)) stop("lgb.load: file does not exist for supplied filename")
+  if (!is.null(filename)) return(Booster$new(modelfile = filename))
   
   # Load from model_str
-  if (supplied(model_str) && !is.null(model_str) && !is.character(model_str)) {
+  if (!is.null(model_str) && !is.character(model_str)) {
     stop("lgb.load: model_str should be character")
   }    
   # Return new booster
-  if (supplied(model_str)) Booster$new(model_str = model_str)
+  if (!is.null(model_str)) return(Booster$new(model_str = model_str))
   
 }
 
