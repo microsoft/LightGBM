@@ -365,9 +365,9 @@ Booster <- R6Class(
       }
       
       # Return model string
-      lgb.call.return.str("LGBM_BoosterSaveModelToString_R",
+      return(lgb.call.return.str("LGBM_BoosterSaveModelToString_R",
                           private$handle,
-                          as.integer(num_iteration))
+                          as.integer(num_iteration)))
       
     },
     
@@ -673,9 +673,12 @@ predict.lgb.Booster <- function(object, data,
 
 #' Load LightGBM model
 #'
-#' Load LightGBM model from saved model file
+#' Load LightGBM model from saved model file or string
+#' Load LightGBM takes in either a file path or model string
+#' If both are provided, Load will default to loading from file
 #'
 #' @param filename path of model file
+#' @param model_str a str containing the model
 #'
 #' @return booster
 #' 
@@ -699,28 +702,31 @@ predict.lgb.Booster <- function(object, data,
 #'                    early_stopping_rounds = 10)
 #' lgb.save(model, "model.txt")
 #' load_booster <- lgb.load("model.txt")
-#' load_booster <- lgb.load(model_str)
+#' load_booster_from_str <- lgb.load(model$raw)
 #' }
 #' 
 #' @rdname lgb.load
 #' @export
-lgb.load <- function(filename){
+lgb.load <- function(filename = NULL, model_str = NULL){
   
-  # Check if file name is character or not
-  if (supplied(filename) && !is.null(filename) && !is.character(filename)) {
-    stop("lgb.load: filename should be character")
-  }
-    
-  if (supplied(model_str) && !is.null(model_str) && !is.character(model_str)) {
-    stop("lgb.load: model_str should be character")
-  }
-    
   if (!supplied(filename) && !supplied(model_str)) {
     stop("lgb.load: either filename or model_str must be supplied")
   }
-    
+  
+  # Load from filename
+  if (supplied(filename) && !is.null(filename) && !is.character(filename)) {
+    stop("lgb.load: filename should be character")
+  }
+  
   # Return new booster
+  if (supplied(filename) && !file.exists(filename)) stop("lgb.load: file does not exist for supplied filename")
   if (supplied(filename)) Booster$new(modelfile = filename)
+  
+  # Load from model_str
+  if (supplied(model_str) && !is.null(model_str) && !is.character(model_str)) {
+    stop("lgb.load: model_str should be character")
+  }    
+  # Return new booster
   if (supplied(model_str)) Booster$new(model_str = model_str)
   
 }
