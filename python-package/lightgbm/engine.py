@@ -165,7 +165,7 @@ def train(params, train_set, num_boost_round=100,
         booster.set_train_data_name(train_data_name)
     for valid_set, name_valid_set in zip(reduced_valid_sets, name_valid_sets):
         booster.add_valid(valid_set, name_valid_set)
-    booster.best_iteration = -1
+    booster.best_iteration = 0
 
     """start training"""
     for i in range_(init_iteration, init_iteration + num_boost_round):
