@@ -24,6 +24,7 @@ Booster <- R6Class(
     initialize = function(params = list(),
                           train_set = NULL,
                           modelfile = NULL,
+                          model_str = NULL,
                           ...) {
       
       # Create parameters and handle
@@ -73,10 +74,22 @@ Booster <- R6Class(
                            ret = handle,
                            lgb.c_str(modelfile))
         
+      } else if (!is.null(model_str)) {
+        
+        # Do we have a model_str as character?
+          if (!is.character(model_str)) {
+            stop("lgb.Booster: Can only use a string as model_str")
+          }
+          
+          # Create booster from model
+          handle <- lgb.call("LGBM_BoosterLoadModelFromString_R",
+                             ret = handle,
+                             lgb.c_str(model_str))
+        
       } else {
         
         # Booster non existent
-        stop("lgb.Booster: Need at least either training dataset or model file to create booster instance")
+        stop("lgb.Booster: Need at least either training dataset, model file, or model_str to create booster instance")
         
       }
       
@@ -341,6 +354,21 @@ Booster <- R6Class(
       
       # Return self
       return(self)
+    },
+    
+    # Save model to string
+    save_model_to_string = function(num_iteration = NULL) {
+      
+      # Check if number of iteration is non existent
+      if (is.null(num_iteration)) {
+        num_iteration <- self$best_iter
+      }
+      
+      # Return model string
+      return(lgb.call.return.str("LGBM_BoosterSaveModelToString_R",
+                          private$handle,
+                          as.integer(num_iteration)))
+      
     },
     
     # Dump model in memory
@@ -645,9 +673,12 @@ predict.lgb.Booster <- function(object, data,
 
 #' Load LightGBM model
 #'
-#' Load LightGBM model from saved model file
+#' Load LightGBM model from saved model file or string
+#' Load LightGBM takes in either a file path or model string
+#' If both are provided, Load will default to loading from file
 #'
 #' @param filename path of model file
+#' @param model_str a str containing the model
 #'
 #' @return booster
 #' 
@@ -671,19 +702,32 @@ predict.lgb.Booster <- function(object, data,
 #'                    early_stopping_rounds = 10)
 #' lgb.save(model, "model.txt")
 #' load_booster <- lgb.load("model.txt")
+#' load_booster_from_str <- lgb.load(model$raw)
 #' }
 #' 
 #' @rdname lgb.load
 #' @export
-lgb.load <- function(filename){
+lgb.load <- function(filename = NULL, model_str = NULL){
   
-  # Check if file name is character or not
-  if (!is.character(filename)) {
+  if (is.null(filename) && is.null(model_str)) {
+    stop("lgb.load: either filename or model_str must be given")
+  }
+  
+  # Load from filename
+  if (!is.null(filename) && !is.character(filename)) {
     stop("lgb.load: filename should be character")
   }
   
   # Return new booster
-  Booster$new(modelfile = filename)
+  if (!is.null(filename) && !file.exists(filename)) stop("lgb.load: file does not exist for supplied filename")
+  if (!is.null(filename)) return(Booster$new(modelfile = filename))
+  
+  # Load from model_str
+  if (!is.null(model_str) && !is.character(model_str)) {
+    stop("lgb.load: model_str should be character")
+  }    
+  # Return new booster
+  if (!is.null(model_str)) return(Booster$new(model_str = model_str))
   
 }
 

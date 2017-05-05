@@ -225,6 +225,16 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterCreateFromModelfile_R(LGBM_SE filename,
   LGBM_SE call_state);
 
 /*!
+* \brief load an existing boosting from model_str
+* \param model_str string containing the model
+* \param out handle of created Booster
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterLoadModelFromString_R(LGBM_SE model_str,
+  LGBM_SE out,
+  LGBM_SE call_state);
+  
+/*!
 * \brief Merge model in two boosters to first handle
 * \param handle handle, will merge other handle to this
 * \param other_handle
@@ -466,6 +476,20 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterPredictForMat_R(LGBM_SE handle,
 LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterSaveModel_R(LGBM_SE handle,
   LGBM_SE num_iteration,
   LGBM_SE filename,
+  LGBM_SE call_state);
+
+/*!
+* \brief create string containing model
+* \param handle handle
+* \param num_iteration, <= 0 means save all
+* \param out_str string of model
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterSaveModelToString_R(LGBM_SE handle,
+  LGBM_SE num_iteration,
+  LGBM_SE buffer_len,
+  LGBM_SE actual_len,
+  LGBM_SE out_str,
   LGBM_SE call_state);
 
 /*!

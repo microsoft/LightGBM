@@ -324,6 +324,18 @@ LGBM_SE LGBM_BoosterCreateFromModelfile_R(LGBM_SE filename,
   R_API_END();
 }
 
+LGBM_SE LGBM_BoosterLoadModelFromString_R(LGBM_SE model_str,
+  LGBM_SE out,
+  LGBM_SE call_state) {
+
+  R_API_BEGIN();
+  int out_num_iterations = 0;
+  BoosterHandle handle;
+  CHECK_CALL(LGBM_BoosterLoadModelFromString(R_CHAR_PTR(model_str), &out_num_iterations, &handle));
+  R_SET_PTR(out, handle);
+  R_API_END();
+}
+
 LGBM_SE LGBM_BoosterMerge_R(LGBM_SE handle,
   LGBM_SE other_handle,
   LGBM_SE call_state) {
@@ -576,6 +588,25 @@ LGBM_SE LGBM_BoosterSaveModel_R(LGBM_SE handle,
   LGBM_SE call_state) {
   R_API_BEGIN();
   CHECK_CALL(LGBM_BoosterSaveModel(R_GET_PTR(handle), R_AS_INT(num_iteration), R_CHAR_PTR(filename)));
+  R_API_END();
+}
+
+LGBM_SE LGBM_BoosterSaveModelToString_R(LGBM_SE handle,
+  LGBM_SE num_iteration,
+  LGBM_SE buffer_len,
+  LGBM_SE actual_len,
+  LGBM_SE out_str,
+  LGBM_SE call_state) {
+  R_API_BEGIN();
+  int out_len = 0;
+  std::vector<char> inner_char_buf(R_AS_INT(buffer_len));
+  CHECK_CALL(LGBM_BoosterSaveModelToString(R_GET_PTR(handle), R_AS_INT(num_iteration), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
+  EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len);
+  if (out_len < R_AS_INT(buffer_len)) {
+    EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len);
+  } else {
+    R_INT_PTR(actual_len)[0] = static_cast<int>(out_len);
+  }
   R_API_END();
 }
 
