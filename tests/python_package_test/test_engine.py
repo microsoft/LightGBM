@@ -108,7 +108,7 @@ class TestEngine(unittest.TestCase):
                         valid_names=valid_set_name,
                         verbose_eval=False,
                         early_stopping_rounds=5)
-        self.assertEqual(gbm.best_iteration, -1)
+        self.assertEqual(gbm.best_iteration, 0)
         self.assertIn(valid_set_name, gbm.best_score)
         self.assertIn('binary_logloss', gbm.best_score[valid_set_name])
         # early stopping occurs
