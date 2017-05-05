@@ -22,7 +22,7 @@ def _load_lib():
     """Load LightGBM Library."""
     lib_path = find_lib_path()
     if len(lib_path) == 0:
-        raise Exception("cannot find LightGBM library")
+        return None
     lib = ctypes.cdll.LoadLibrary(lib_path[0])
     lib.LGBM_GetLastError.restype = ctypes.c_char_p
     return lib

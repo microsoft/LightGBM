@@ -11,6 +11,10 @@ def find_lib_path():
     lib_path: list(string)
        List of all found library path to LightGBM
     """
+    if os.environ.get('LIGHTGBM_BUILD_DOC', False):
+        # we don't need lib_lightgbm while building docs
+        return []
+
     curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
     dll_path = [curr_path, os.path.join(curr_path, '../../lib/'),
                 os.path.join(curr_path, '../../'),

@@ -19,13 +19,23 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../python-package'))
+
+curr_path = os.path.dirname(os.path.realpath(__file__))
+libpath = os.path.join(curr_path, '../python-package/')
+sys.path.insert(0, libpath)
 
 from recommonmark.parser import CommonMarkParser
 from recommonmark.transform import AutoStructify
 
+# -- mock out modules
+from unittest.mock import Mock
+MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse', 'sklearn', 'matplotlib', 'pandas', 'graphviz']
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = Mock()
 
 # -- General configuration ------------------------------------------------
+
+os.environ['LIGHTGBM_BUILD_DOC'] = '1'
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
