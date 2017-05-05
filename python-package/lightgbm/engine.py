@@ -224,16 +224,15 @@ class CVBooster(object):
         return handlerFunction
 
 
-def _make_n_folds(full_data, data_splitter, nfold, params, seed, fpreproc=None, stratified=False, shuffle=True):
+def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratified=False, shuffle=True):
     """
     Make an n-fold list of Booster from random indices.
     """
     full_data = full_data.construct()
     num_data = full_data.num_data()
-    if data_splitter is not None:
-        if not hasattr(data_splitter, 'split'):
-            raise AttributeError("data_splitter has no method 'split'")
-        folds = data_splitter.split(np.arange(num_data))
+    if folds is not None:
+        if not hasattr(folds, '__iter__'):
+            raise AttributeError("folds should be a generator or iterator of (train_idx, test_idx)")
     else:
         if 'objective' in params and params['objective'] == 'lambdarank':
             if not SKLEARN_INSTALLED:
@@ -287,7 +286,7 @@ def _agg_cv_result(raw_results):
 
 
 def cv(params, train_set, num_boost_round=10,
-       data_splitter=None, nfold=5, stratified=False, shuffle=True,
+       folds=None, nfold=5, stratified=False, shuffle=True,
        metrics=None, fobj=None, feval=None, init_model=None,
        feature_name='auto', categorical_feature='auto',
        early_stopping_rounds=None, fpreproc=None,
@@ -304,8 +303,9 @@ def cv(params, train_set, num_boost_round=10,
         Data to be trained.
     num_boost_round : int
         Number of boosting iterations.
-    data_splitter : an instance with split(X) method
-        Instance with split(X) method.
+    folds : a generator or iterator of (train_idx, test_idx) tuples
+        The train indices and test indices for each folds.
+        This argument has highest priority over other data split arguments.
     nfold : int
         Number of folds in CV.
     stratified : bool
@@ -373,10 +373,9 @@ def cv(params, train_set, num_boost_round=10,
         params['metric'] = metrics
 
     results = collections.defaultdict(list)
-    cvfolds = _make_n_folds(train_set, data_splitter=data_splitter,
-                            nfold=nfold, params=params, seed=seed,
-                            fpreproc=fpreproc, stratified=stratified,
-                            shuffle=shuffle)
+    cvfolds = _make_n_folds(train_set, folds=folds, nfold=nfold,
+                            params=params, seed=seed, fpreproc=fpreproc,
+                            stratified=stratified, shuffle=shuffle)
 
     # setup callbacks
     if callbacks is None:

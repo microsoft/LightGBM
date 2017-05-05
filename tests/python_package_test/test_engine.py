@@ -189,10 +189,10 @@ class TestEngine(unittest.TestCase):
         lgb.cv(params, lgb_train, num_boost_round=10, nfold=3, shuffle=True,
                metrics='l1', verbose_eval=False,
                callbacks=[lgb.reset_parameter(learning_rate=lambda i: 0.1 - 0.001 * i)])
-        # self defined data_splitter
+        # self defined folds
         tss = TimeSeriesSplit(3)
-        lgb.cv(params, lgb_train, num_boost_round=10, data_splitter=tss, nfold=5,  # test if wrong nfold is ignored
-               metrics='l2', verbose_eval=False)
+        folds = tss.split(X_train)
+        lgb.cv(params_with_metric, lgb_train, num_boost_round=10, folds=folds, verbose_eval=False)
         # lambdarank
         X_train, y_train = load_svmlight_file('../../examples/lambdarank/rank.train')
         q_train = np.loadtxt('../../examples/lambdarank/rank.train.query')
