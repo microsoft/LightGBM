@@ -29,7 +29,11 @@ from recommonmark.transform import AutoStructify
 
 # -- mock out modules
 from unittest.mock import Mock
-MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse', 'sklearn', 'matplotlib', 'pandas', 'graphviz']
+MOCK_MODULES = [
+    'numpy', 'scipy', 'scipy.sparse',
+    'sklearn', 'matplotlib', 'pandas', 'graphviz',
+    'lightgbm.compat.LGBMDeprecated'
+]
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
 
