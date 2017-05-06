@@ -27,29 +27,29 @@ class TestSklearn(unittest.TestCase):
         X, y = load_breast_cancer(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMClassifier(n_estimators=50, silent=True)
-        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
         ret = log_loss(y_test, gbm.predict_proba(X_test))
         self.assertLess(ret, 0.15)
-        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['binary_logloss'][-1], places=5)
+        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['binary_logloss'][gbm.best_iteration - 1], places=5)
 
     def test_regreesion(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(n_estimators=50, silent=True)
-        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
         ret = mean_squared_error(y_test, gbm.predict(X_test))
         self.assertLess(ret, 16)
-        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['l2'][-1], places=5)
+        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['l2'][gbm.best_iteration - 1], places=5)
 
     def test_multiclass(self):
         X, y = load_digits(10, True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMClassifier(n_estimators=50, silent=True)
-        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
         ret = multi_error(y_test, gbm.predict(X_test))
         self.assertLess(ret, 0.2)
         ret = multi_logloss(y_test, gbm.predict_proba(X_test))
-        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['multi_logloss'][-1], places=5)
+        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['multi_logloss'][gbm.best_iteration - 1], places=5)
 
     def test_lambdarank(self):
         X_train, y_train = load_svmlight_file('../../examples/lambdarank/rank.train')
@@ -58,7 +58,7 @@ class TestSklearn(unittest.TestCase):
         q_test = np.loadtxt('../../examples/lambdarank/rank.test.query')
         gbm = lgb.LGBMRanker()
         gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)],
-                eval_group=[q_test], eval_at=[1, 3], verbose=False,
+                eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=5, verbose=False,
                 callbacks=[lgb.reset_parameter(learning_rate=lambda x: 0.95 ** x * 0.1)])
 
     def test_regression_with_custom_objective(self):
@@ -69,10 +69,10 @@ class TestSklearn(unittest.TestCase):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(n_estimators=50, silent=True, objective=objective_ls)
-        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
         ret = mean_squared_error(y_test, gbm.predict(X_test))
         self.assertLess(ret, 100)
-        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['l2'][-1], places=5)
+        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['l2'][gbm.best_iteration - 1], places=5)
 
     def test_binary_classification_with_custom_objective(self):
         def logregobj(y_true, y_pred):
@@ -86,7 +86,7 @@ class TestSklearn(unittest.TestCase):
             return np.mean([int(p > 0.5) != y for y, p in zip(y_test, y_pred)])
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMClassifier(n_estimators=50, silent=True, objective=logregobj)
-        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
         ret = binary_error(y_test, gbm.predict(X_test))
         self.assertLess(ret, 0.1)
 

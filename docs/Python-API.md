@@ -8,7 +8,7 @@
 
 * [Training API](Python-API.md#training-api)
     - [train](Python-API.md#trainparams-train_set-num_boost_round100-valid_setsnone-valid_namesnone-fobjnone-fevalnone-init_modelnone-feature_nameauto-categorical_featureauto-early_stopping_roundsnone-evals_resultnone-verbose_evaltrue-learning_ratesnone-callbacksnone)
-    - [cv](Python-API.md#cvparams-train_set-num_boost_round10-data_splitternone-nfold5-stratifiedfalse-shuffletrue-metricsnone-fobjnone-fevalnone-init_modelnone-feature_nameauto-categorical_featureauto-early_stopping_roundsnone-fpreprocnone-verbose_evalnone-show_stdvtrue-seed0-callbacksnone)
+    - [cv](Python-API.md#cvparams-train_set-num_boost_round10-foldsnone-nfold5-stratifiedfalse-shuffletrue-metricsnone-fobjnone-fevalnone-init_modelnone-feature_nameauto-categorical_featureauto-early_stopping_roundsnone-fpreprocnone-verbose_evalnone-show_stdvtrue-seed0-callbacksnone)
 
 * [Scikit-learn API](Python-API.md#scikit-learn-api)
     - [Common Methods](Python-API.md#common-methods)
@@ -538,7 +538,7 @@ The methods of each Class is in alphabetical order.
     booster : a trained booster model
 
 
-#### cv(params, train_set, num_boost_round=10, data_splitter=None, nfold=5, stratified=False, shuffle=True, metrics=None, fobj=None, feval=None, init_model=None, feature_name='auto', categorical_feature='auto', early_stopping_rounds=None, fpreproc=None, verbose_eval=None, show_stdv=True, seed=0, callbacks=None)
+#### cv(params, train_set, num_boost_round=10, folds=None, nfold=5, stratified=False, shuffle=True, metrics=None, fobj=None, feval=None, init_model=None, feature_name='auto', categorical_feature='auto', early_stopping_rounds=None, fpreproc=None, verbose_eval=None, show_stdv=True, seed=0, callbacks=None)
 
     Cross-validation with given paramaters.
 
@@ -550,8 +550,9 @@ The methods of each Class is in alphabetical order.
         Data to be trained.
     num_boost_round : int
         Number of boosting iterations.
-    data_splitter : an instance with split(X) method
-        Instance with split(X) method.
+    folds : a generator or iterator of (train_idx, test_idx) tuples
+        The train indices and test indices for each folds.
+        This argument has highest priority over other data split arguments.
     nfold : int
         Number of folds in CV.
     stratified : bool
