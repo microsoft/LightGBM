@@ -1,3 +1,7 @@
+This guide is for the MinGW build. 
+
+For the MSVC build with GPU, please refer to https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#windows-2 
+
 # Install LightGBM GPU version in Windows (CLI / R / Python), using MinGW/gcc
 
 This is for a vanilla installation of Boost, including full compilation steps from source without precompiled libraries.
