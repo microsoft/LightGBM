@@ -1,67 +1,67 @@
 lightgbm package
 ================
 
-lightgbm\.basic
----------------
 
-.. automodule:: lightgbm.basic
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-lightgbm\.callback
+Data Structure API
 ------------------
 
-.. automodule:: lightgbm.callback
+.. autoclass:: lightgbm.Dataset
     :members:
-    :undoc-members:
     :show-inheritance:
 
-lightgbm\.compat
+.. autoclass:: lightgbm.Booster
+    :members:
+    :show-inheritance:
+
+
+Training API
+------------
+
+.. autofunction:: lightgbm.train
+
+.. autofunction:: lightgbm.cv
+
+
+Scikit-learn API
 ----------------
 
-.. automodule:: lightgbm.compat
+.. autoclass:: lightgbm.LGBMModel
     :members:
-    :undoc-members:
     :show-inheritance:
 
-lightgbm\.engine
-----------------
-
-.. automodule:: lightgbm.engine
+.. autoclass:: lightgbm.LGBMClassifier
     :members:
-    :undoc-members:
     :show-inheritance:
 
-lightgbm\.libpath
------------------
-
-.. automodule:: lightgbm.libpath
+.. autoclass:: lightgbm.LGBMRegressor
     :members:
-    :undoc-members:
     :show-inheritance:
 
-lightgbm\.plotting
-------------------
-
-.. automodule:: lightgbm.plotting
+.. autoclass:: lightgbm.LGBMRanker
     :members:
-    :undoc-members:
-    :show-inheritance:
-
-lightgbm\.sklearn
------------------
-
-.. automodule:: lightgbm.sklearn
-    :members:
-    :undoc-members:
     :show-inheritance:
 
 
-Module contents
----------------
+Callbacks
+---------
 
-.. automodule:: lightgbm
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. autofunction:: lightgbm.early_stopping
+
+.. autofunction:: lightgbm.print_evaluation
+
+.. autofunction:: lightgbm.record_evaluation
+
+.. autofunction:: lightgbm.reset_parameter
+
+
+Plotting
+--------
+
+.. autofunction:: lightgbm.plot_importance
+
+.. autofunction:: lightgbm.plot_metric
+
+.. autofunction:: lightgbm.plot_tree
+
+.. autofunction:: lightgbm.create_tree_digraph
+
