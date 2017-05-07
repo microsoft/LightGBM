@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 
 if(APPLE)
-    SET(CMAKE_CXX_COMPILER "g++-6")
-    SET(CMAKE_C_COMPILER "gcc-6")
+    SET(CMAKE_CXX_COMPILER "g++-7")
+    SET(CMAKE_C_COMPILER "gcc-7")
 endif()
 
 PROJECT(lightgbm)
