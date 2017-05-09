@@ -31,6 +31,7 @@
 #include "../../src/treelearner/data_parallel_tree_learner.cpp"
 #include "../../src/treelearner/feature_parallel_tree_learner.cpp"
 #include "../../src/treelearner/serial_tree_learner.cpp"
+#include "../../src/treelearner/gpu_tree_learner.cpp"
 #include "../../src/treelearner/tree_learner.cpp"
 #include "../../src/treelearner/voting_parallel_tree_learner.cpp"
 
