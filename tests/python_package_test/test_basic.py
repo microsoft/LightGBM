@@ -1,6 +1,7 @@
 # coding: utf-8
 # pylint: skip-file
 import os
+import subprocess
 import tempfile
 import unittest
 
@@ -51,9 +52,4 @@ class TestBasic(unittest.TestCase):
             # we need to check the consistency of model file here, so test for exact equal
             self.assertEqual(*preds)
         # check pmml
-        os.system('python ../../pmml/pmml.py model.txt')
-
-
-print("----------------------------------------------------------------------")
-print("running test_basic.py")
-unittest.main()
+        subprocess.call(['python', os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../pmml/pmml.py'), 'model.txt'])

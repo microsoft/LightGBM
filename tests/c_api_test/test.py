@@ -4,14 +4,15 @@ import ctypes
 import os
 
 import numpy as np
+import pytest
 from scipy import sparse
 
 
 def LoadDll():
     if os.name == 'nt':
-        lib_path = '../../windows/x64/DLL/lib_lightgbm.dll'
+        lib_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../windows/x64/DLL/lib_lightgbm.dll')
     else:
-        lib_path = '../../lib_lightgbm.so'
+        lib_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../lib_lightgbm.so')
     lib = ctypes.cdll.LoadLibrary(lib_path)
     return lib
 
@@ -34,6 +35,7 @@ def c_str(string):
     return ctypes.c_char_p(string.encode('ascii'))
 
 
+@pytest.mark.skip
 def test_load_from_file(filename, reference):
     ref = None
     if reference is not None:
@@ -52,10 +54,12 @@ def test_load_from_file(filename, reference):
     return handle
 
 
+@pytest.mark.skip
 def test_save_to_binary(handle, filename):
     LIB.LGBM_DatasetSaveBinary(handle, c_str(filename))
 
 
+@pytest.mark.skip
 def test_load_from_csr(filename, reference):
     data = []
     label = []
@@ -93,6 +97,7 @@ def test_load_from_csr(filename, reference):
     return handle
 
 
+@pytest.mark.skip
 def test_load_from_csc(filename, reference):
     data = []
     label = []
@@ -130,6 +135,7 @@ def test_load_from_csc(filename, reference):
     return handle
 
 
+@pytest.mark.skip
 def test_load_from_mat(filename, reference):
     data = []
     label = []
@@ -164,17 +170,18 @@ def test_load_from_mat(filename, reference):
     return handle
 
 
+@pytest.mark.skip
 def test_free_dataset(handle):
     LIB.LGBM_DatasetFree(handle)
 
 
 def test_dataset():
-    train = test_load_from_file('../../examples/binary_classification/binary.train', None)
-    test = test_load_from_mat('../../examples/binary_classification/binary.test', train)
+    train = test_load_from_file(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.train'), None)
+    test = test_load_from_mat(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.test'), train)
     test_free_dataset(test)
-    test = test_load_from_csr('../../examples/binary_classification/binary.test', train)
+    test = test_load_from_csr(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.test'), train)
     test_free_dataset(test)
-    test = test_load_from_csc('../../examples/binary_classification/binary.test', train)
+    test = test_load_from_csc(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.test'), train)
     test_free_dataset(test)
     test_save_to_binary(train, 'train.binary.bin')
     test_free_dataset(train)
@@ -183,8 +190,8 @@ def test_dataset():
 
 
 def test_booster():
-    train = test_load_from_mat('../../examples/binary_classification/binary.train', None)
-    test = test_load_from_mat('../../examples/binary_classification/binary.test', train)
+    train = test_load_from_mat(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.train'), None)
+    test = test_load_from_mat(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.test'), train)
     booster = ctypes.c_void_p()
     LIB.LGBM_BoosterCreate(train, c_str("app=binary metric=auc num_leaves=31 verbose=0"), ctypes.byref(booster))
     LIB.LGBM_BoosterAddValidData(booster, test)
@@ -204,7 +211,7 @@ def test_booster():
     num_total_model = ctypes.c_long()
     LIB.LGBM_BoosterCreateFromModelfile(c_str('model.txt'), ctypes.byref(num_total_model), ctypes.byref(booster2))
     data = []
-    inp = open('../../examples/binary_classification/binary.test', 'r')
+    inp = open(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.test'), 'r')
     for line in inp.readlines():
         data.append([float(x) for x in line.split('\t')[1:]])
     inp.close()
@@ -223,9 +230,5 @@ def test_booster():
         50,
         ctypes.byref(num_preb),
         preb.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
-    LIB.LGBM_BoosterPredictForFile(booster2, c_str('../../examples/binary_classification/binary.test'), 0, 0, 50, c_str('preb.txt'))
+    LIB.LGBM_BoosterPredictForFile(booster2, c_str(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.test')), 0, 0, 50, c_str('preb.txt'))
     LIB.LGBM_BoosterFree(booster2)
-
-
-test_dataset()
-test_booster()

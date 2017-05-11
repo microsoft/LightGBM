@@ -104,8 +104,3 @@ class TestBasic(unittest.TestCase):
         self.assertEqual(ax2.get_title(), '')
         self.assertEqual(ax2.get_xlabel(), '')
         self.assertEqual(ax2.get_ylabel(), '')
-
-
-print("----------------------------------------------------------------------")
-print("running test_plotting.py")
-unittest.main()

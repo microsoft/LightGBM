@@ -1,6 +1,7 @@
 # coding: utf-8
 # pylint: skip-file
 import math
+import os
 import unittest
 
 import lightgbm as lgb
@@ -52,10 +53,10 @@ class TestSklearn(unittest.TestCase):
         self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['multi_logloss'][gbm.best_iteration - 1], places=5)
 
     def test_lambdarank(self):
-        X_train, y_train = load_svmlight_file('../../examples/lambdarank/rank.train')
-        X_test, y_test = load_svmlight_file('../../examples/lambdarank/rank.test')
-        q_train = np.loadtxt('../../examples/lambdarank/rank.train.query')
-        q_test = np.loadtxt('../../examples/lambdarank/rank.test.query')
+        X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.train'))
+        X_test, y_test = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.test'))
+        q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.train.query'))
+        q_test = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.test.query'))
         gbm = lgb.LGBMRanker()
         gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)],
                 eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=5, verbose=False,
@@ -150,8 +151,3 @@ class TestSklearn(unittest.TestCase):
         self.assertEqual(len(pred_origin), len(pred_pickle))
         for preds in zip(pred_origin, pred_pickle):
             self.assertAlmostEqual(*preds, places=5)
-
-
-print("----------------------------------------------------------------------")
-print("running test_sklearn.py")
-unittest.main()
