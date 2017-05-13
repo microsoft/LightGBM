@@ -145,8 +145,8 @@ Your folder should look like this at the end (not fully detailed):
   |--------- bin
   |--------- include
   |------------ boost
-  |------ lib
-  |------ share
+  |--------- lib
+  |--------- share
 ```
 
 This is what you should (approximately) get at the end of Boost compilation:
