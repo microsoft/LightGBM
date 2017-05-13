@@ -61,11 +61,37 @@ SHLIB_OPENMP_FFLAGS = -fopenmp
 EOF
 ```
 
-Note: for `LDFLAGS=-L/usr/local/Cellar/gcc/6.3.0/lib` and `CPPFLAGS=-I/usr/local/Cellar/gcc/6.3.0/include`, you may need to change `6.3.0` to your gcc version.
+Note:
+
+* For `LDFLAGS=-L/usr/local/Cellar/gcc/6.3.0/lib` and `CPPFLAGS=-I/usr/local/Cellar/gcc/6.3.0/include`, you may need to change `6.3.0` to your gcc version.
+* For `gcc-6` and `g++-6`, you may need to change to your gcc version (like `gcc-7` and `g++7` if using gcc with version 7).
+* For `CXX1X`, if you are using R 3.4 or a more recent version, you must change it to `CXX11`.
 
 To check your LightGBM installation, the test is identical to Linux/Windows versions (check the test provided just before OSX Installation part)
+
+Performance note
+------------
+
+With `gcc`, it is recommended to use `-O3 -mtune=native` instead of the default `-O2 -mtune=core2` by modifying the appropriate file (`Makeconf` or `Makevars`) if you want to achieve maximum speed.
+
+Benchmark example using Intel Ivy Bridge CPU on 1M x 1K dataset:
+
+| Compilation Flag | Performance Index |
+| --- | ---: |
+| `-O2 -mtune=core2` | 100.00% |
+| `-O2 -mtune=native` | 100.90% |
+| `-O3 -mtune=native` | 102.78% |
+| `-O3 -ffast-math -mtune=native` | 100.64% |
 
 Examples
 ------------
 
-* Please visit [demo](demo).
+Please visit [demo](demo):
+
+* [Basic walkthrough of wrappers](demo/basic_walkthrough.R)
+* [Boosting from existing prediction](demo/boost_from_prediction.R)
+* [Early Stopping](demo/early_stopping.R)
+* [Cross Validation](demo/cross_validation.R)
+* [Multiclass Training/Prediction](demo/multiclass.R)
+* [Leaf (in)Stability](demo/leaf_stability.R)
+* [Weight-Parameter Adjustment Relationship](demo/weight_param.R)
