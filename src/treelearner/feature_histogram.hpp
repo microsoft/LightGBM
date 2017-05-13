@@ -374,13 +374,17 @@ public:
     }
     uint64_t num_total_bin = train_data->NumTotalBin();
     Log::Info("Total Bins %d", num_total_bin);
-    int old_cache_size = cache_size_;
+    int old_cache_size = static_cast<int>(pool_.size());
     Reset(cache_size, total_size);
-    pool_.resize(cache_size);
-    data_.resize(cache_size);
+
+    if (cache_size > old_cache_size) {
+      pool_.resize(cache_size);
+      data_.resize(cache_size);
+    }
+
     OMP_INIT_EX();
     #pragma omp parallel for schedule(static)
-    for (int i = old_cache_size; i < cache_size_; ++i) {
+    for (int i = old_cache_size; i < cache_size; ++i) {
       OMP_LOOP_EX_BEGIN();
       pool_[i].reset(new FeatureHistogram[train_data->num_features()]);
       data_[i].resize(num_total_bin);
