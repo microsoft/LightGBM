@@ -1,4 +1,5 @@
-# Correspondence Table
+GPU Targets Table
+==================================
 
 When using OpenCL SDKs, targeting CPU and GPU at the same time is sometimes possible. This is especially true for Intel OpenCL SDK and AMD APP SDK.
 
