@@ -1,0 +1,35 @@
+# Recommendations when using gcc
+
+It is recommended to use `-O3 -mtune=native` to achieve maximum speed during LightGBM training.
+
+Using Intel Ivy Bridge CPU on 1M x 1K Bosch dataset, the performance increases as follow:
+
+| Compilation Flag | Performance Index |
+| --- | ---: |
+| `-O2 -mtune=core2` | 100.00% |
+| `-O2 -mtune=native` | 100.90% |
+| `-O3 -mtune=native` | 102.78% |
+| `-O3 -ffast-math -mtune=native` | 100.64% |
+
+You can find more details on the experimentation below:
+
+* [Laurae++/Benchmarks](https://sites.google.com/view/lauraepp/benchmarks)
+* [Laurae2/gbt_benchmarks](https://github.com/Laurae2/gbt_benchmarks)
+* [Laurae's Benchmark Master Data (Interactive)](https://public.tableau.com/views/gbt_benchmarks/Master-Data?:showVizHome=no)
+* [Kaggle Paris Meetup #12 Slides](https://drive.google.com/file/d/0B6qJBmoIxFe0ZHNCOXdoRWMxUm8/view)
+
+Some pictures below:
+
+![gcc table](https://cloud.githubusercontent.com/assets/9083669/26027337/c376e22e-380c-11e7-91bc-fe0a333c03e9.png)
+
+![gcc bars](https://cloud.githubusercontent.com/assets/9083669/26027338/d1caebcc-380c-11e7-864e-d704b39f1e63.png)
+
+![gcc chart](https://cloud.githubusercontent.com/assets/9083669/26027353/e1bdb866-380c-11e7-97b5-22c7eac349b2.png)
+
+![gcc comparison 1](https://cloud.githubusercontent.com/assets/9083669/26027401/c31f2f74-380d-11e7-857a-f5119791bed7.png)
+
+![gcc comparison 2](https://cloud.githubusercontent.com/assets/9083669/26027486/d7d7e72a-380e-11e7-86c3-ccbbf42a9c55.png)
+
+![gcc meetup 1](https://cloud.githubusercontent.com/assets/9083669/26027427/21b38f44-380e-11e7-9c95-05437782dd46.png)
+
+![gcc meetup 2](https://cloud.githubusercontent.com/assets/9083669/26027433/362be250-380e-11e7-8982-76ac167bcd3e.png)

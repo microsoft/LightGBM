@@ -46,9 +46,9 @@ To get started, please follow the [Installation Guide](https://github.com/Micros
 * [**Examples**](https://github.com/Microsoft/LightGBM/tree/master/examples)
 * [**Features**](https://github.com/Microsoft/LightGBM/wiki/Features)
 * [**Parallel Learning Guide**](https://github.com/Microsoft/LightGBM/wiki/Parallel-Learning-Guide)
-* [**GPU Learning Tutorial**](./docs/GPU-Tutorial.md)
+* [**GPU Learning Tutorial**](https://github.com/Microsoft/LightGBM/blob/master/docs/GPU-Tutorial.md)
 * [**Configuration**](https://github.com/Microsoft/LightGBM/wiki/Configuration)
-* [**Document Indexer**](https://github.com/Microsoft/LightGBM/blob/master/docs/Readme.md)
+* [**Document Indexer**](https://github.com/Microsoft/LightGBM/blob/master/docs/README.md)
 
 How to Contribute
 -----------------
