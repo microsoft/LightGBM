@@ -1,3 +1,6 @@
+GPU Windows Compilation
+=========================
+
 This guide is for the MinGW build. 
 
 For the MSVC build with GPU, please refer to https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#windows-2 
