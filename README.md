@@ -18,9 +18,13 @@ For more details, please refer to [Features](https://github.com/Microsoft/LightG
 News
 ----
 
+05/03/2017: LightGBM v2 stable release.
+
 04/10/2017 : LightGBM now supports GPU-accelerated tree learning. Please read our [GPU Tutorial](./docs/GPU-Tutorial.md) and [Performance Comparison](./docs/GPU-Performance.md).
 
 02/20/2017 : Update to LightGBM v2.
+
+02/12/2017: LightGBM v1 stable release.
 
 01/08/2017 : Release [**R-package**](./R-package) beta version, welcome to have a try and provide feedback.
 
@@ -28,8 +32,8 @@ News
 
 12/02/2016 : Release [**python-package**](./python-package) beta version, welcome to have a try and provide feedback.
 
-External(unofficial) Repo
--------------------------
+External (unofficial) Repositories
+----------------------------------
 
 Julia Package: https://github.com/Allardvm/LightGBM.jl
 
@@ -49,6 +53,13 @@ To get started, please follow the [Installation Guide](https://github.com/Micros
 * [**GPU Learning Tutorial**](https://github.com/Microsoft/LightGBM/blob/master/docs/GPU-Tutorial.md)
 * [**Configuration**](https://github.com/Microsoft/LightGBM/wiki/Configuration)
 * [**Document Indexer**](https://github.com/Microsoft/LightGBM/blob/master/docs/README.md)
+
+External Links
+--------------
+Useful if you are looking for details:
+
+* [**Read The Docs**](http://lightgbm.readthedocs.io/en/latest/) for an all in one documentation from this repository in a browsable fashion
+* [**Laurae++ interactive documentation**](https://sites.google.com/view/lauraepp/parameters) for an interactive and detailed documentation on hyperparameters
 
 How to Contribute
 -----------------
