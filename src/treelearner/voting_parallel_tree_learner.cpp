@@ -67,6 +67,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
 #pragma omp parallel for schedule(static)
   for (int i = 0; i < train_data->num_features(); ++i) {
     feature_metas_[i].num_bin = train_data->FeatureNumBin(i);
+    feature_metas_[i].default_bin = train_data->FeatureBinMapper(i)->GetDefaultBin();
     if (train_data->FeatureBinMapper(i)->GetDefaultBin() == 0) {
       feature_metas_[i].bias = 1;
     } else {

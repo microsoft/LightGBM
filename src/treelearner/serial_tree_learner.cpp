@@ -543,6 +543,10 @@ void SerialTreeLearner::Split(Tree* tree, int best_Leaf, int* left_leaf, int* ri
   const int inner_feature_index = train_data_->InnerFeatureIndex(best_split_info.feature);
   // left = parent
   *left_leaf = best_Leaf;
+  double default_value = 0.0f;
+  if (train_data_->FeatureBinMapper(inner_feature_index)->GetDefaultBin() != best_split_info.default_bin_for_zero) {
+    default_value = train_data_->RealThreshold(inner_feature_index, best_split_info.default_bin_for_zero);
+  }
   // split tree, will return right leaf
   *right_leaf = tree->Split(best_Leaf,
                             inner_feature_index,
@@ -554,10 +558,13 @@ void SerialTreeLearner::Split(Tree* tree, int best_Leaf, int* left_leaf, int* ri
                             static_cast<double>(best_split_info.right_output),
                             static_cast<data_size_t>(best_split_info.left_count),
                             static_cast<data_size_t>(best_split_info.right_count),
-                            static_cast<double>(best_split_info.gain));
+                            static_cast<double>(best_split_info.gain),
+                            train_data_->FeatureBinMapper(inner_feature_index)->GetDefaultBin(),
+                            best_split_info.default_bin_for_zero,
+                            default_value);
   // split data partition
   data_partition_->Split(best_Leaf, train_data_, inner_feature_index,
-                         best_split_info.threshold, *right_leaf);
+                         best_split_info.threshold, best_split_info.default_bin_for_zero, *right_leaf, best_split_info.left_count);
 
   // init the leaves that used on next iteration
   if (best_split_info.left_count < best_split_info.right_count) {
