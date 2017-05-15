@@ -360,6 +360,7 @@ public:
   * \param min_bin min_bin of current used feature
   * \param max_bin max_bin of current used feature
   * \param default_bin defualt bin if bin not in [min_bin, max_bin]
+  * \param default_bin_for_zero defualt bin for the zero(missing) bin
   * \param threshold The split threshold.
   * \param data_indices Used data indices. After called this function. The less than or equal data indices will store on this object.
   * \param num_data Number of used data
@@ -369,7 +370,7 @@ public:
   * \return The number of less than or equal data.
   */
   virtual data_size_t Split(uint32_t min_bin, uint32_t max_bin, 
-    uint32_t default_bin, uint32_t threshold,
+    uint32_t default_bin, uint32_t default_bin_for_zero, uint32_t threshold,
     data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices, BinType bin_type) const = 0;
 

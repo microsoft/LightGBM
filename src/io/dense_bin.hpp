@@ -188,29 +188,31 @@ public:
   }
 
   virtual data_size_t Split(
-    uint32_t min_bin, uint32_t max_bin, uint32_t default_bin,
+    uint32_t min_bin, uint32_t max_bin, uint32_t default_bin, uint32_t default_bin_for_zero,
     uint32_t threshold, data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices, BinType bin_type) const override {
     if (num_data <= 0) { return 0; }
     VAL_T th = static_cast<VAL_T>(threshold + min_bin);
     VAL_T minb = static_cast<VAL_T>(min_bin);
     VAL_T maxb = static_cast<VAL_T>(max_bin);
+    VAL_T t_default_bin = static_cast<VAL_T>(min_bin + default_bin);
     if (default_bin == 0) {
       th -= 1;
+      t_default_bin -= 1;
     }
     data_size_t lte_count = 0;
     data_size_t gt_count = 0;
     data_size_t* default_indices = gt_indices;
     data_size_t* default_count = &gt_count;
     if (bin_type == BinType::NumericalBin) {
-      if (default_bin <= threshold) {
+      if (default_bin_for_zero <= threshold) {
         default_indices = lte_indices;
         default_count = &lte_count;
       }
       for (data_size_t i = 0; i < num_data; ++i) {
         const data_size_t idx = data_indices[i];
         VAL_T bin = data_[idx];
-        if (bin > maxb || bin < minb) {
+        if ( bin < minb || bin > maxb || t_default_bin == bin) {
           default_indices[(*default_count)++] = idx;
         } else if (bin > th) {
           gt_indices[gt_count++] = idx;
@@ -219,14 +221,14 @@ public:
         }
       }
     } else {
-      if (default_bin == threshold) {
+      if (default_bin_for_zero == threshold) {
         default_indices = lte_indices;
         default_count = &lte_count;
       }
       for (data_size_t i = 0; i < num_data; ++i) {
         const data_size_t idx = data_indices[i];
         VAL_T bin = data_[idx];
-        if (bin > maxb || bin < minb) {
+        if (bin < minb || bin > maxb || t_default_bin == bin) {
           default_indices[(*default_count)++] = idx;
         } else if (bin != th) {
           gt_indices[gt_count++] = idx;

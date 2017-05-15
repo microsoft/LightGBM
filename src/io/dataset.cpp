@@ -15,6 +15,10 @@
 
 namespace LightGBM {
 
+#ifdef USE_GPU
+const int kMaxBinPerGroup = 256;
+#endif // USE_GPU
+
 const char* Dataset::binary_file_token = "______LightGBM_Binary_File_Token______\n";
 
 Dataset::Dataset() {
@@ -43,12 +47,180 @@ std::vector<std::vector<int>> NoGroup(
   return features_in_group;
 }
 
+int GetConfilctCount(const std::vector<bool>& mark, const int* indices, int num_indices, int max_cnt) {
+  int ret = 0;
+  for (int i = 0; i < num_indices; ++i) {
+    if (mark[indices[i]]) {
+      ++ret;
+      if (ret > max_cnt) {
+        return -1;
+      }
+    }
+  }
+  return ret;
+}
+void MarkUsed(std::vector<bool>& mark, const int* indices, int num_indices) {
+  for (int i = 0; i < num_indices; ++i) {
+    mark[indices[i]] = true;
+  }
+}
+
+
+std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
+                                         const std::vector<int>& find_order,
+                                         int** sample_indices,
+                                         const int* num_per_col,
+                                         size_t total_sample_cnt,
+                                         data_size_t max_error_cnt,
+                                         data_size_t filter_cnt,
+                                         data_size_t num_data) {
+  const int max_search_group = 100;
+  Random rand(num_data);
+  std::vector<std::vector<int>> features_in_group;
+  std::vector<std::vector<bool>> conflict_marks;
+  std::vector<int> group_conflict_cnt;
+  std::vector<size_t> group_non_zero_cnt;
+
+  #ifdef USE_GPU
+  std::vector<int> group_num_bin;
+  #endif // USE_GPU
+
+  for (auto fidx : find_order) {
+    const size_t cur_non_zero_cnt = num_per_col[fidx];
+    bool need_new_group = true;
+    std::vector<int> available_groups;
+    for (int gid = 0; gid < static_cast<int>(features_in_group.size()); ++gid) {
+      if (group_non_zero_cnt[gid] + cur_non_zero_cnt <= total_sample_cnt + max_error_cnt
+          #ifdef USE_GPU
+          && group_num_bin[gid] + bin_mappers[fidx]->num_bin() + (bin_mappers[fidx]->GetDefaultBin() == 0 ? -1 : 0)
+          <= kMaxBinPerGroup
+          #endif // USE_GPU
+          ) {
+        available_groups.push_back(gid);
+      }
+    }
+    std::vector<int> search_groups;
+    if (!available_groups.empty()) {
+      int last = static_cast<int>(available_groups.size()) - 1;
+      auto indices = rand.Sample(last, std::min(last, max_search_group - 1));
+      search_groups.push_back(available_groups.back());
+      for (auto idx : indices) {
+        search_groups.push_back(available_groups[idx]);
+      }
+    }
+    for (auto gid : search_groups) {
+      const int rest_max_cnt = max_error_cnt - group_conflict_cnt[gid];
+      int cnt = GetConfilctCount(conflict_marks[gid], sample_indices[fidx], num_per_col[fidx], rest_max_cnt);
+      if (cnt >= 0 && cnt <= rest_max_cnt) {
+        data_size_t rest_non_zero_data = static_cast<data_size_t>(
+          static_cast<double>(cur_non_zero_cnt - cnt) * num_data / total_sample_cnt);
+        if (rest_non_zero_data < filter_cnt) { continue; }
+        need_new_group = false;
+        features_in_group[gid].push_back(fidx);
+        group_conflict_cnt[gid] += cnt;
+        group_non_zero_cnt[gid] += cur_non_zero_cnt - cnt;
+        MarkUsed(conflict_marks[gid], sample_indices[fidx], num_per_col[fidx]);
+        #ifdef USE_GPU
+        group_num_bin[gid] += bin_mappers[fidx]->num_bin() + (bin_mappers[fidx]->GetDefaultBin() == 0 ? -1 : 0);
+        #endif // USE_GPU
+        break;
+      }
+    }
+    if (need_new_group) {
+      features_in_group.emplace_back();
+      features_in_group.back().push_back(fidx);
+      group_conflict_cnt.push_back(0);
+      conflict_marks.emplace_back(total_sample_cnt, false);
+      MarkUsed(conflict_marks.back(), sample_indices[fidx], num_per_col[fidx]);
+      group_non_zero_cnt.emplace_back(cur_non_zero_cnt);
+      #ifdef USE_GPU
+      group_num_bin.push_back(1 + bin_mappers[fidx]->num_bin() + (bin_mappers[fidx]->GetDefaultBin() == 0 ? -1 : 0));
+      #endif // USE_GPU
+    }
+  }
+  return features_in_group;
+}
+
+std::vector<std::vector<int>> FastFeatureBundling(std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
+                                                  int** sample_indices,
+                                                  const int* num_per_col,
+                                                  size_t total_sample_cnt,
+                                                  const std::vector<int>& used_features,
+                                                  double max_conflict_rate,
+                                                  data_size_t num_data,
+                                                  data_size_t min_data,
+                                                  double sparse_threshold,
+                                                  bool is_enable_sparse) {
+  // filter is based on sampling data, so decrease its range
+  const data_size_t filter_cnt = static_cast<data_size_t>(static_cast<double>(0.95 * min_data) / num_data * total_sample_cnt);
+  const data_size_t max_error_cnt = static_cast<data_size_t>(total_sample_cnt * max_conflict_rate);
+  int cur_used_feature_cnt = 0;
+  std::vector<size_t> feature_non_zero_cnt;
+  // put dense feature first
+  for (auto fidx : used_features) {
+    feature_non_zero_cnt.emplace_back(num_per_col[fidx]);
+    ++cur_used_feature_cnt;
+  }
+  // sort by non zero cnt
+  std::vector<int> sorted_idx;
+  for (int i = 0; i < cur_used_feature_cnt; ++i) {
+    sorted_idx.emplace_back(i);
+  }
+  // sort by non zero cnt, bigger first
+  std::sort(sorted_idx.begin(), sorted_idx.end(),
+            [&feature_non_zero_cnt](int a, int b) {
+    return feature_non_zero_cnt[a] > feature_non_zero_cnt[b];
+  });
+
+  std::vector<int> feature_order_by_cnt;
+  for (auto sidx : sorted_idx) {
+    feature_order_by_cnt.push_back(used_features[sidx]);
+  }
+  auto features_in_group = FindGroups(bin_mappers, used_features, sample_indices, num_per_col, total_sample_cnt, max_error_cnt, filter_cnt, num_data);
+  auto group2 = FindGroups(bin_mappers, feature_order_by_cnt, sample_indices, num_per_col, total_sample_cnt, max_error_cnt, filter_cnt, num_data);
+  if (features_in_group.size() > group2.size()) {
+    features_in_group = group2;
+  }
+  std::vector<std::vector<int>> ret;
+  for (size_t i = 0; i < features_in_group.size(); ++i) {
+    if (features_in_group[i].size() <= 1 || features_in_group[i].size() >= 5) {
+      ret.push_back(features_in_group[i]);
+    } else {
+      int cnt_non_zero = 0;
+      for (size_t j = 0; j < features_in_group[i].size(); ++j) {
+        const int fidx = features_in_group[i][j];
+        cnt_non_zero += static_cast<int>(num_data * (1.0f - bin_mappers[fidx]->sparse_rate()));
+      }
+      double sparse_rate = 1.0f - static_cast<double>(cnt_non_zero) / (num_data);
+      // take apart small sparse group, due it will not gain on speed 
+      if (sparse_rate >= sparse_threshold && is_enable_sparse) {
+        for (size_t j = 0; j < features_in_group[i].size(); ++j) {
+          const int fidx = features_in_group[i][j];
+          ret.emplace_back();
+          ret.back().push_back(fidx);
+        }
+      } else {
+        ret.push_back(features_in_group[i]);
+      }
+    }
+  }
+  // shuffle groups
+  int num_group = static_cast<int>(ret.size());
+  Random tmp_rand(12);
+  for (int i = 0; i < num_group - 1; ++i) {
+    int j = tmp_rand.NextShort(i + 1, num_group);
+    std::swap(ret[i], ret[j]);
+  }
+  return ret;
+}
+
 void Dataset::Construct(
   std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
-  int**,
-  const int*,
-  size_t,
+  int** sample_non_zero_indices,
+  const int* num_per_col,
+  size_t total_sample_cnt,
   const IOConfig& io_config) {
+
   num_total_features_ = static_cast<int>(bin_mappers.size());
   sparse_threshold_ = io_config.sparse_threshold;
   // get num_features
@@ -60,6 +232,15 @@ void Dataset::Construct(
   }
 
   auto features_in_group = NoGroup(used_features);
+
+  if (io_config.enable_bundle) {
+    std::chrono::duration<double, std::milli> bundling_time_;
+    features_in_group = FastFeatureBundling(bin_mappers,
+                                            sample_non_zero_indices, num_per_col, total_sample_cnt,
+                                            used_features, io_config.max_conflict_rate,
+                                            num_data_, io_config.min_data_in_leaf,
+                                            sparse_threshold_, io_config.is_enable_sparse);
+  }
 
   num_features_ = 0;
   for (const auto& fs : features_in_group) {
@@ -86,7 +267,8 @@ void Dataset::Construct(
       ++cur_fidx;
     }
     feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(
-      new FeatureGroup(cur_cnt_features, cur_bin_mappers, num_data_, sparse_threshold_, io_config.is_enable_sparse)));
+      new FeatureGroup(cur_cnt_features, cur_bin_mappers, num_data_, sparse_threshold_,
+                       io_config.is_enable_sparse)));
   }
   feature_groups_.shrink_to_fit();
   group_bin_boundaries_.clear();
@@ -116,7 +298,7 @@ void Dataset::Construct(
 void Dataset::FinishLoad() {
   if (is_finish_load_) { return; }
   OMP_INIT_EX();
-#pragma omp parallel for schedule(guided)
+  #pragma omp parallel for schedule(guided)
   for (int i = 0; i < num_groups_; ++i) {
     OMP_LOOP_EX_BEGIN();
     feature_groups_[i]->bin_data_->FinishLoad();
@@ -212,7 +394,7 @@ void Dataset::ReSize(data_size_t num_data) {
   if (num_data_ != num_data) {
     num_data_ = num_data;
     OMP_INIT_EX();
-#pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(static)
     for (int group = 0; group < num_groups_; ++group) {
       OMP_LOOP_EX_BEGIN();
       feature_groups_[group]->bin_data_->ReSize(num_data_);
@@ -314,7 +496,7 @@ bool Dataset::GetIntField(const char* field_name, data_size_t* out_len, const in
 
 void Dataset::SaveBinaryFile(const char* bin_filename) {
   if (bin_filename != nullptr
-    && std::string(bin_filename) == std::string(data_filename_)) {
+      && std::string(bin_filename) == std::string(data_filename_)) {
     Log::Warning("Bianry file %s already existed", bin_filename);
     return;
   }
@@ -326,11 +508,11 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
   }
   bool is_file_existed = false;
   FILE* file;
-#ifdef _MSC_VER
+  #ifdef _MSC_VER
   fopen_s(&file, bin_filename, "rb");
-#else
+  #else
   file = fopen(bin_filename, "rb");
-#endif
+  #endif
 
   if (file != NULL) {
     is_file_existed = true;
@@ -339,11 +521,11 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
   }
 
   if (!is_file_existed) {
-#ifdef _MSC_VER
+    #ifdef _MSC_VER
     fopen_s(&file, bin_filename, "wb");
-#else
+    #else
     file = fopen(bin_filename, "wb");
-#endif
+    #endif
     if (file == NULL) {
       Log::Fatal("Cannot write binary data to %s ", bin_filename);
     }

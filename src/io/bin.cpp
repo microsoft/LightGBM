@@ -63,6 +63,76 @@ bool NeedFilter(std::vector<int>& cnt_in_bin, int total_cnt, int filter_cnt, Bin
   }
   return true;
 }
+std::vector<double> GreedyFindBin(const double* distinct_values, const int* counts, 
+                                  int num_distinct_values, int max_bin, int total_cnt, int min_data_in_bin) {
+  std::vector<double> bin_upper_bound;
+  if (num_distinct_values <= max_bin) {
+    bin_upper_bound.clear();
+    int cur_cnt_inbin = 0;
+    for (int i = 0; i < num_distinct_values - 1; ++i) {
+      cur_cnt_inbin += counts[i];
+      if (cur_cnt_inbin >= min_data_in_bin) {
+        bin_upper_bound.push_back((distinct_values[i] + distinct_values[i + 1]) / 2);
+        cur_cnt_inbin = 0;
+      }
+    }
+    cur_cnt_inbin += counts[num_distinct_values - 1];
+    bin_upper_bound.push_back(std::numeric_limits<double>::infinity());
+  } else {
+    if (min_data_in_bin > 0) {
+      max_bin = std::min(max_bin, static_cast<int>(total_cnt / min_data_in_bin));
+      max_bin = std::max(max_bin, 1);
+    }
+    double mean_bin_size = static_cast<double>(total_cnt) / max_bin;
+
+    // mean size for one bin
+    int rest_bin_cnt = max_bin;
+    int rest_sample_cnt = static_cast<int>(total_cnt);
+    std::vector<bool> is_big_count_value(num_distinct_values, false);
+    for (int i = 0; i < num_distinct_values; ++i) {
+      if (counts[i] >= mean_bin_size) {
+        is_big_count_value[i] = true;
+        --rest_bin_cnt;
+        rest_sample_cnt -= counts[i];
+      }
+    }
+    mean_bin_size = static_cast<double>(rest_sample_cnt) / rest_bin_cnt;
+    std::vector<double> upper_bounds(max_bin, std::numeric_limits<double>::infinity());
+    std::vector<double> lower_bounds(max_bin, std::numeric_limits<double>::infinity());
+
+    int bin_cnt = 0;
+    lower_bounds[bin_cnt] = distinct_values[0];
+    int cur_cnt_inbin = 0;
+    for (int i = 0; i < num_distinct_values - 1; ++i) {
+      if (!is_big_count_value[i]) {
+        rest_sample_cnt -= counts[i];
+      }
+      cur_cnt_inbin += counts[i];
+      // need a new bin
+      if (is_big_count_value[i] || cur_cnt_inbin >= mean_bin_size ||
+        (is_big_count_value[i + 1] && cur_cnt_inbin >= std::max(1.0, mean_bin_size * 0.5f))) {
+        upper_bounds[bin_cnt] = distinct_values[i];
+        ++bin_cnt;
+        lower_bounds[bin_cnt] = distinct_values[i + 1];
+        if (bin_cnt >= max_bin - 1) { break; }
+        cur_cnt_inbin = 0;
+        if (!is_big_count_value[i]) {
+          --rest_bin_cnt;
+          mean_bin_size = rest_sample_cnt / static_cast<double>(rest_bin_cnt);
+        }
+      }
+    }
+    ++bin_cnt;
+    // update bin upper bound
+    bin_upper_bound.resize(bin_cnt);
+    for (int i = 0; i < bin_cnt - 1; ++i) {
+      bin_upper_bound[i] = (upper_bounds[i] + lower_bounds[i + 1]) / 2.0f;
+    }
+    // last bin upper bound
+    bin_upper_bound[bin_cnt - 1] = std::numeric_limits<double>::infinity();
+  }
+  return bin_upper_bound;
+}
 
 void BinMapper::FindBin(double* values, int num_sample_values, size_t total_sample_cnt,
   int max_bin, int min_data_in_bin, int min_split_data, BinType bin_type) {
@@ -109,81 +179,62 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
   std::vector<int> cnt_in_bin;
   int num_distinct_values = static_cast<int>(distinct_values.size());
   if (bin_type_ == BinType::NumericalBin) {
-    if (num_distinct_values <= max_bin) {
-      // use distinct value is enough
-      bin_upper_bound_.clear();
-      int cur_cnt_inbin = 0;
-      for (int i = 0; i < num_distinct_values - 1; ++i) {
-        cur_cnt_inbin += counts[i];
-        if (cur_cnt_inbin >= min_data_in_bin) {
-          bin_upper_bound_.push_back((distinct_values[i] + distinct_values[i + 1]) / 2);
-          cnt_in_bin.push_back(cur_cnt_inbin);
-          cur_cnt_inbin = 0;
-        }
+    bin_upper_bound_.clear();
+    int left_cnt_data = 0;
+    int missing_cnt_data = 0;
+    int right_cnt_data = 0;
+    for (int i = 0; i < num_distinct_values; ++i) {
+      if (distinct_values[i] <= -kMissingValueRange) {
+        left_cnt_data += counts[i];
+      } else if (distinct_values[i] > kMissingValueRange) {
+        right_cnt_data += counts[i];
+      } else {
+        missing_cnt_data += counts[i];
       }
-      cur_cnt_inbin += counts.back();
-      cnt_in_bin.push_back(cur_cnt_inbin);
-      bin_upper_bound_.push_back(std::numeric_limits<double>::infinity());
-      num_bin_ = static_cast<int>(bin_upper_bound_.size());
-    } else {
-      if (min_data_in_bin > 0) {
-        max_bin = std::min(max_bin, static_cast<int>(total_sample_cnt / min_data_in_bin));
-        max_bin = std::max(max_bin, 1);
-      }
-      double mean_bin_size = static_cast<double>(total_sample_cnt) / max_bin;
-      if (zero_cnt > mean_bin_size) {
-        int non_zero_cnt = num_sample_values;
-        max_bin = std::min(max_bin, 1 + static_cast<int>(non_zero_cnt / min_data_in_bin));
-      }
-      // mean size for one bin
-      int rest_bin_cnt = max_bin;
-      int rest_sample_cnt = static_cast<int>(total_sample_cnt);
-      std::vector<bool> is_big_count_value(num_distinct_values, false);
-      for (int i = 0; i < num_distinct_values; ++i) {
-        if (counts[i] >= mean_bin_size) {
-          is_big_count_value[i] = true;
-          --rest_bin_cnt;
-          rest_sample_cnt -= counts[i];
-        }
-      }
-      mean_bin_size = static_cast<double>(rest_sample_cnt) / rest_bin_cnt;
-      std::vector<double> upper_bounds(max_bin, std::numeric_limits<double>::infinity());
-      std::vector<double> lower_bounds(max_bin, std::numeric_limits<double>::infinity());
+    }
 
-      int bin_cnt = 0;
-      lower_bounds[bin_cnt] = distinct_values[0];
-      int cur_cnt_inbin = 0;
-      for (int i = 0; i < num_distinct_values - 1; ++i) {
-        if (!is_big_count_value[i]) {
-          rest_sample_cnt -= counts[i];
-        }
-        cur_cnt_inbin += counts[i];
-        // need a new bin
-        if (is_big_count_value[i] || cur_cnt_inbin >= mean_bin_size ||
-          (is_big_count_value[i + 1] && cur_cnt_inbin >= std::max(1.0, mean_bin_size * 0.5f))) {
-          upper_bounds[bin_cnt] = distinct_values[i];
-          cnt_in_bin.push_back(cur_cnt_inbin);
-          ++bin_cnt;
-          lower_bounds[bin_cnt] = distinct_values[i + 1];
-          if (bin_cnt >= max_bin - 1) { break; }
-          cur_cnt_inbin = 0;
-          if (!is_big_count_value[i]) {
-            --rest_bin_cnt;
-            mean_bin_size = rest_sample_cnt / static_cast<double>(rest_bin_cnt);
-          }
-        }
+    int left_cnt = 0;
+    for (int i = 0; i < num_distinct_values; ++i) {
+      if (distinct_values[i] > -kMissingValueRange) {
+        left_cnt = i;
+        break;
+      } 
+    }
+
+    if (left_cnt > 0) {
+      int left_max_bin = static_cast<int>(static_cast<double>(left_cnt_data) / (total_sample_cnt - missing_cnt_data) * (max_bin - 1));
+      bin_upper_bound_ = GreedyFindBin(distinct_values.data(), counts.data(), left_cnt, left_max_bin, left_cnt_data, min_data_in_bin);
+      bin_upper_bound_.back() = -kMissingValueRange;
+    }
+
+    int right_start = -1;
+    for (int i = left_cnt; i < num_distinct_values; ++i) {
+      if (distinct_values[i] > kMissingValueRange) {
+        right_start = i;
+        break;
       }
-      cur_cnt_inbin += counts.back();
-      cnt_in_bin.push_back(cur_cnt_inbin);
-      ++bin_cnt;
-      // update bin upper bound
-      bin_upper_bound_ = std::vector<double>(bin_cnt);
-      num_bin_ = bin_cnt;
-      for (int i = 0; i < bin_cnt - 1; ++i) {
-        bin_upper_bound_[i] = (upper_bounds[i] + lower_bounds[i + 1]) / 2.0f;
+    }
+
+    if (right_start >= 0) {
+      int right_max_bin = max_bin - 1 - static_cast<int>(bin_upper_bound_.size());
+      auto right_bounds = GreedyFindBin(distinct_values.data() + right_start, counts.data() + right_start, 
+                                   num_distinct_values - right_start, right_max_bin, right_cnt_data, min_data_in_bin);
+      bin_upper_bound_.push_back(kMissingValueRange);
+      bin_upper_bound_.insert(bin_upper_bound_.end(), right_bounds.begin(), right_bounds.end());
+    } else {
+      bin_upper_bound_.push_back(std::numeric_limits<double>::infinity());
+    }
+
+    num_bin_ = static_cast<int>(bin_upper_bound_.size());
+    {
+      cnt_in_bin.resize(num_bin_, 0);
+      int i_bin = 0;
+      for (int i = 0; i < num_distinct_values; ++i) {
+        if (distinct_values[i] > bin_upper_bound_[i_bin]) {
+          ++i_bin;
+        } 
+        cnt_in_bin[i_bin] += counts[i];
       }
-      // last bin upper bound
-      bin_upper_bound_[bin_cnt - 1] = std::numeric_limits<double>::infinity();
     }
     CHECK(num_bin_ <= max_bin);
   } else {

@@ -19,7 +19,9 @@ public:
   /*! \brief Feature index */
   int feature;
   /*! \brief Split threshold */
-  unsigned int threshold;
+  uint32_t threshold;
+
+  uint32_t default_bin_for_zero;
   /*! \brief Left output after split */
   double left_output;
   /*! \brief Right output after split */

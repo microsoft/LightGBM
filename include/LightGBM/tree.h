@@ -44,11 +44,15 @@ public:
   * \param left_cnt Count of left child
   * \param right_cnt Count of right child
   * \param gain Split gain
+  * \param zero_bin bin value for value==0 (missing value)
+  * \param default_bin default conversion for the missing value, in bin
+  * \param default_value default conversion for the missing value, in float value
   * \return The index of new leaf.
   */
-  int Split(int leaf, int feature, BinType bin_type, uint32_t threshold, int real_feature,
-            double threshold_double, double left_value,
-            double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain);
+  int Split(int leaf, int feature, BinType bin_type, uint32_t threshold, int real_feature, 
+            double threshold_double, double left_value, double right_value, 
+            data_size_t left_cnt, data_size_t right_cnt, double gain,
+            uint32_t zero_bin, uint32_t default_bin_for_zero, double default_value);
 
   /*! \brief Get the output of one leaf */
   inline double LeafOutput(int leaf) const { return leaf_value_[leaf]; }
@@ -140,6 +144,23 @@ public:
     }
   }
 
+  static double DefaultValueForZero(double fval, double zero, double out) {
+    if (fval > -zero && fval <= zero) {
+      return out;
+    } else {
+      return fval;
+    }
+  }
+
+  static uint32_t DefaultValueForZero(uint32_t fval, uint32_t zero, uint32_t out) {
+    if (fval == zero) {
+      return out;
+    } else {
+      return fval;
+    }
+  }
+
+
   static const char* GetDecisionTypeName(int8_t type) {
     if (type == 0) {
       return "no_greater";
@@ -176,7 +197,7 @@ private:
   /*! \brief A non-leaf node's right child */
   std::vector<int> right_child_;
   /*! \brief A non-leaf node's split feature */
-  std::vector<int> split_feature_inner;
+  std::vector<int> split_feature_inner_;
   /*! \brief A non-leaf node's split feature, the original index */
   std::vector<int> split_feature_;
   /*! \brief A non-leaf node's split threshold in bin */
@@ -185,6 +206,10 @@ private:
   std::vector<double> threshold_;
   /*! \brief Decision type, 0 for '<='(numerical feature), 1 for 'is'(categorical feature) */
   std::vector<int8_t> decision_type_;
+  /*! \brief Default values for the na/0 feature values */
+  std::vector<double> default_value_;
+  std::vector<uint32_t> zero_bin_;
+  std::vector<uint32_t> default_bin_for_zero_;
   /*! \brief A non-leaf node's split gain */
   std::vector<double> split_gain_;
   // used for leaf node
@@ -226,8 +251,9 @@ inline int Tree::GetLeaf(const double* feature_values) const {
   int node = 0;
   if (has_categorical_) {
     while (node >= 0) {
+      double fval = DefaultValueForZero(feature_values[split_feature_[node]], kMissingValueRange, default_value_[node]);
       if (decision_funs[decision_type_[node]](
-        feature_values[split_feature_[node]],
+        fval,
         threshold_[node])) {
         node = left_child_[node];
       } else {
@@ -236,8 +262,9 @@ inline int Tree::GetLeaf(const double* feature_values) const {
     }
   } else {
     while (node >= 0) {
+      double fval = DefaultValueForZero(feature_values[split_feature_[node]], kMissingValueRange, default_value_[node]);
       if (NumericalDecision<double>(
-        feature_values[split_feature_[node]],
+        fval,
         threshold_[node])) {
         node = left_child_[node];
       } else {

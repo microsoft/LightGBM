@@ -462,6 +462,16 @@ inline static std::vector<int> VectorSize(const std::vector<std::vector<T>>& dat
   return ret;
 }
 
+inline static double AvoidInf(double x) {
+  if (x >= std::numeric_limits<double>::max()) {
+    return std::numeric_limits<double>::max();
+  } else if(x <= std::numeric_limits<double>::min()) {
+    return std::numeric_limits<double>::min();
+  } else {
+    return x;
+  }
+}
+
 }  // namespace Common
 
 }  // namespace LightGBM
