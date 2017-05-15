@@ -6,6 +6,9 @@ This is a page contains all parameters in LightGBM.
 * [Python API Reference](./Python-API.md)
 * [Parameters Tuning](./Parameters-tuning.md)
 
+***External Links***
+* [Laurae++ Interactive Documentation](https://sites.google.com/view/lauraepp/parameters)
+
 ***Update of 04/13/2017***
 
 Default values for the following parameters have changed:
