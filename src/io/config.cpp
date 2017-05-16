@@ -230,9 +230,22 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   CHECK(min_data_in_bin > 0);
   GetDouble(params, "max_conflict_rate", &max_conflict_rate);
   GetBool(params, "enable_bundle", &enable_bundle);
-  GetBool(params, "adjacent_bundle", &adjacent_bundle);
+  GetDeviceType(params);
 }
 
+void IOConfig::GetDeviceType(const std::unordered_map<std::string, std::string>& params) {
+  std::string value;
+  if (GetString(params, "device", &value)) {
+    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
+    if (value == std::string("cpu")) {
+      device_type = "cpu";
+    } else if (value == std::string("gpu")) {
+      device_type = "gpu";
+    } else {
+      Log::Fatal("Unknown device type %s", value.c_str());
+    }
+  }
+}
 
 void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetBool(params, "is_unbalance", &is_unbalance);
@@ -357,9 +370,6 @@ void BoostingConfig::GetTreeLearnerType(const std::unordered_map<std::string, st
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("serial")) {
       tree_learner_type = "serial";
-    } else if (value == std::string("gpu")) {
-      tree_learner_type = "serial";
-      device_type = "gpu";
     } else if (value == std::string("feature") || value == std::string("feature_parallel")) {
       tree_learner_type = "feature";
     } else if (value == std::string("data") || value == std::string("data_parallel")) {

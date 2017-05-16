@@ -232,6 +232,7 @@ public:
       const data_size_t cur_idx = idx_val_pairs[i].first;
       const VAL_T bin = idx_val_pairs[i].second;
       data_size_t cur_delta = cur_idx - last_idx;
+      if (i > 0 && cur_delta == 0) { continue; }
       while (cur_delta >= 256) {
         deltas_.push_back(cur_delta & 0xff);
         vals_.push_back(0);

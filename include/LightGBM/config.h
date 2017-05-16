@@ -114,7 +114,6 @@ public:
   int min_data_in_bin = 5;
   double max_conflict_rate = 0.0f;
   bool enable_bundle = true;
-  bool adjacent_bundle = false;
   bool has_header = false;
   /*! \brief Index or column name of label, default is the first column
    * And add an prefix "name:" while using column name */
@@ -135,7 +134,11 @@ public:
   * And add an prefix "name:" while using column name
   * Note: when using Index, it doesn't count the label index */
   std::string categorical_column = "";
+  std::string device_type = "cpu";
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
+private:
+  void GetDeviceType(const std::unordered_map<std::string,
+                     std::string>& params);
 };
 
 /*! \brief Config for objective function */
