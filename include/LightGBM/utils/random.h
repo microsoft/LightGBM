@@ -103,7 +103,25 @@ private:
     return x & 0x7FFFFFF;
   }
 
+#ifdef __GNUC__
+  #if __GNUC__ == 7
+    #if __GNUC_MINOR__ == 1
+      #if __GNUC_PATCHLEVEL__ > 0
+        #error please check here
+      #else
+        // work around for a bug of gcc-7.1.0's optimization
+        // cf. https://github.com/Microsoft/LightGBM/issues/521
+        volatile int x = 123456789;
+      #endif
+    #else
+      #error please check here
+    #endif
+  #else
+    int x = 123456789;
+  #endif
+#else
   int x = 123456789;
+#endif
 };
 
 
