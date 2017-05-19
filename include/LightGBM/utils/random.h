@@ -103,7 +103,7 @@ private:
     return x & 0x7FFFFFF;
   }
 
-  int x = 123456789;
+  unsigned int x = 123456789;
 };
 
 
