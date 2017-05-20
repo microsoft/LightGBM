@@ -40,7 +40,8 @@ public:
     boosting->InitPredict(num_iteration);
     boosting_ = boosting;
     num_pred_one_row_ = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf_index);
-    predict_buf_ = std::vector<std::vector<double>>(num_threads_, std::vector<double>(boosting_->MaxFeatureIdx() + 1, 0.0f));
+    num_feature_ = boosting_->MaxFeatureIdx() + 1;
+    predict_buf_ = std::vector<std::vector<double>>(num_threads_, std::vector<double>(num_feature_, 0.0f));
 
     if (is_predict_leaf_index) {
       predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
@@ -137,7 +138,9 @@ private:
     int loop_size = static_cast<int>(features.size());
     #pragma omp parallel for schedule(static,128) if (loop_size >= 256)
     for (int i = 0; i < loop_size; ++i) {
-      pred_buf[features[i].first] = features[i].second;
+      if (features[i].first < num_feature_) {
+        pred_buf[features[i].first] = features[i].second;
+      }
     }
   }
 
@@ -157,6 +160,7 @@ private:
   const Boosting* boosting_;
   /*! \brief function for prediction */
   PredictFunction predict_fun_;
+  int num_feature_;
   int num_pred_one_row_;
   int num_threads_;
   std::vector<std::vector<double>> predict_buf_;
