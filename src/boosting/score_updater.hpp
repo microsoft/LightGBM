@@ -91,7 +91,7 @@ public:
   }
   /*! \brief Pointer of score */
   inline const double* score() const { return score_.data(); }
-  inline const data_size_t num_data() const { return num_data_; }
+  inline data_size_t num_data() const { return num_data_; }
 
   /*! \brief Disable copy */
   ScoreUpdater& operator=(const ScoreUpdater&) = delete;
