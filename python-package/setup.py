@@ -21,7 +21,7 @@ print("Install lib_lightgbm from: %s" % LIB_PATH)
 
 
 setup(name='lightgbm',
-      version=0.1,
+      version=0.2,
       description="LightGBM Python Package",
       install_requires=[
           'numpy',
