@@ -95,12 +95,12 @@ public:
 private:
   inline int RandInt16() {
     x = (214013 * x + 2531011);
-    return (x >> 16) & 0x7FFF;
+    return static_cast<int>((x >> 16) & 0x7FFF);
   }
 
   inline int RandInt32() {
     x = (214013 * x + 2531011);
-    return x & 0x7FFFFFF;
+    return static_cast<int>(x & 0x7FFFFFFF);
   }
 
   unsigned int x = 123456789;
