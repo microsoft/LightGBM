@@ -158,6 +158,13 @@ This is what you should (approximately) get at the end of Boost compilation:
 
 ![Boost compiled](https://cloud.githubusercontent.com/assets/9083669/24918623/5152a3c0-1ee1-11e7-9d59-d75fb1193241.png)
 
+If you are getting an error:
+
+* Wipe your boost directory
+* Close the command prompt
+* Make sure you added `C:\boost\boost-build\bin;C:\boost\boost-build\include\boost` to your PATH (adjust accordingly if you use another folder)
+* Do the boost compilation steps again (extract => command prompt => `cd` => `bootstrap` => `b2` => `cd` => `b2`
+
 ---
 
 ## Git Installation
