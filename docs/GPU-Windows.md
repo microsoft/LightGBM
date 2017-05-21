@@ -57,11 +57,13 @@ Does not apply to you if you do not use a third-party antivirus nor the default 
 
 Installing the appropriate OpenCL SDK requires you to download the correct vendor source SDK. You need to know on what you are going to use LightGBM!:
 
-* For running on Intel, get Intel SDK for OpenCL: https://software.intel.com/en-us/articles/opencl-drivers
+* For running on Intel, get Intel SDK for OpenCL: https://software.intel.com/en-us/articles/opencl-drivers (NOT RECOMMENDED)
 * For running on AMD, get AMD APP SDK: http://developer.amd.com/tools-and-sdks/opencl-zone/amd-accelerated-parallel-processing-app-sdk/
 * For running on NVIDIA, get CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 
 Further reading and correspondnce table (especially if you intend to use cross-platform devices, like Intel CPU with AMD APP SDK): [GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.md).
+
+Warning: using Intel OpenCL is not recommended and may crash your machine due to being non compliant to OpenCL standards. If your objective is to use LightGBM + OpenCL on CPU, please use AMD APP SDK instead (it can run also on Intel CPUs without any issues).
 
 ---
 
