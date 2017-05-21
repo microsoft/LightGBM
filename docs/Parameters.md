@@ -65,6 +65,8 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
 * `num_threads`, default=OpenMP_default, type=int, alias=`num_thread`,`nthread`
   * Number of threads for LightGBM. 
   * For the best speed, set this to the number of **real CPU cores**, not the number of threads (most CPU using [hyper-threading](https://en.wikipedia.org/wiki/Hyper-threading) to generate 2 threads per CPU core).
+  * Do not set it too large if your dataset is small (do not use 64 threads for a dataset with 10,000 for instance).
+  * Be aware a task manager or any similar CPU monitoring tool might report cores not being fully utilized. This is normal.
   * For parallel learning, should not use full CPU cores since this will cause poor performance for the network.
 * `device`, default=`cpu`, options=`cpu`,`gpu`
   * Choose device for the tree learning, can use gpu to achieve the faster learning.
