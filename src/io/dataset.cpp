@@ -227,7 +227,6 @@ void Dataset::Construct(
   auto features_in_group = NoGroup(used_features);
 
   if (io_config.enable_bundle) {
-    std::chrono::duration<double, std::milli> bundling_time_;
     features_in_group = FastFeatureBundling(bin_mappers,
                                             sample_non_zero_indices, num_per_col, total_sample_cnt,
                                             used_features, io_config.max_conflict_rate,

@@ -22,7 +22,6 @@ public:
   void ReThrow() {
     if (ex_ptr_ != nullptr) {
       std::rethrow_exception(ex_ptr_);
-      ex_ptr_ = nullptr;
     }
   }
   void CaptureException() {
