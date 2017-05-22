@@ -57,11 +57,13 @@ Does not apply to you if you do not use a third-party antivirus nor the default 
 
 Installing the appropriate OpenCL SDK requires you to download the correct vendor source SDK. You need to know on what you are going to use LightGBM!:
 
-* For running on Intel, get Intel SDK for OpenCL: https://software.intel.com/en-us/articles/opencl-drivers
+* For running on Intel, get Intel SDK for OpenCL: https://software.intel.com/en-us/articles/opencl-drivers (NOT RECOMMENDED)
 * For running on AMD, get AMD APP SDK: http://developer.amd.com/tools-and-sdks/opencl-zone/amd-accelerated-parallel-processing-app-sdk/
 * For running on NVIDIA, get CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 
 Further reading and correspondnce table (especially if you intend to use cross-platform devices, like Intel CPU with AMD APP SDK): [GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.md).
+
+Warning: using Intel OpenCL is not recommended and may crash your machine due to being non compliant to OpenCL standards. If your objective is to use LightGBM + OpenCL on CPU, please use AMD APP SDK instead (it can run also on Intel CPUs without any issues).
 
 ---
 
@@ -155,6 +157,13 @@ Your folder should look like this at the end (not fully detailed):
 This is what you should (approximately) get at the end of Boost compilation:
 
 ![Boost compiled](https://cloud.githubusercontent.com/assets/9083669/24918623/5152a3c0-1ee1-11e7-9d59-d75fb1193241.png)
+
+If you are getting an error:
+
+* Wipe your boost directory
+* Close the command prompt
+* Make sure you added `C:\boost\boost-build\bin;C:\boost\boost-build\include\boost` to your PATH (adjust accordingly if you use another folder)
+* Do the boost compilation steps again (extract => command prompt => `cd` => `bootstrap` => `b2` => `cd` => `b2`
 
 ---
 
