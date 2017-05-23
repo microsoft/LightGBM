@@ -1179,7 +1179,7 @@ class Booster(object):
         self.__need_reload_eval_info = True
         self.__train_data_name = "training"
         self.__attr = {}
-        self.best_iteration = -1
+        self.best_iteration = 0
         self.best_score = {}
         params = {} if params is None else params
         if silent:

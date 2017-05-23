@@ -207,7 +207,7 @@ class CVBooster(object):
     """"Auxiliary data struct to hold all boosters of CV."""
     def __init__(self):
         self.boosters = []
-        self.best_iteration = -1
+        self.best_iteration = 0
 
     def append(self, booster):
         """add a booster to CVBooster"""
