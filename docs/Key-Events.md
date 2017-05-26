@@ -6,6 +6,8 @@ The list includes the commits where the major feature added is considered workin
 
 | Date | Commit | Type | Description |
 | --- | --- | --- | --- |
+| 26/05/2017 | [3abff37](https://github.com/Microsoft/LightGBM/commit/3abff370bb353293e4a03e516111dd02785fbd97) | Feature | Parameter to disable missing values (Commit) |
+| 21/05/2017 | [4cf9376](https://github.com/Microsoft/LightGBM/commit/4cf9376d6652d3d7afa82e98dfb363af9275969d) | Feature | Limitation of threads for dataset construction (Commit) |
 | 15/05/2017 | [e984b0d](https://github.com/Microsoft/LightGBM/pull/516) | Feature | Support for missing values (Pull Request 516) |
 | 14/05/2017 | [358553d](https://github.com/Microsoft/LightGBM/pull/511) | Docs | Interactive External Website (Pull Request 511) |
 | 04/05/2017 | [ca30b8c](https://github.com/Microsoft/LightGBM/pull/489) | Docs | Read The Docs (Pull Request 489) |
@@ -52,6 +54,8 @@ The list includes the commits where the major feature added is considered workin
 
 ## Modification List
 
+* 26/05/2017 [Microsoft/LightGBM@3abff37](https://github.com/Microsoft/LightGBM/commit/3abff370bb353293e4a03e516111dd02785fbd97): Feature: Parameter to disable missing values (Commit)
+* 21/05/2017 [Microsoft/LightGBM@4cf9376](https://github.com/Microsoft/LightGBM/commit/4cf9376d6652d3d7afa82e98dfb363af9275969d): Feature: Limitation of threads for dataset construction (Commit)
 * 15/05/2017 [Microsoft/LightGBM@e984b0d](https://github.com/Microsoft/LightGBM/pull/516): Feature: Support for missing values (Pull Request 516)
 * 14/05/2017 [Microsoft/LightGBM@358553d](https://github.com/Microsoft/LightGBM/pull/511): Docs: Interactive External Website (Pull Request 511)
 * 04/05/2017 [Microsoft/LightGBM@ca30b8c](https://github.com/Microsoft/LightGBM/pull/489): Docs: Read The Docs (Pull Request 489)
