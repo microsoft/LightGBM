@@ -82,14 +82,17 @@ public:
     double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian,
                                          meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2);
     double min_gain_shift = gain_shift + meta_->tree_config->min_gain_to_split;
-
-    FindBestThresholdSequence(sum_gradient, sum_hessian, num_data, min_gain_shift, output, 0);
-    // Zero is not in leftmost or rightmost
-    if (static_cast<int>(meta_->default_bin) > 0 && static_cast<int>(meta_->default_bin) < meta_->num_bin - 1) {
+    if (meta_->tree_config->use_missing) {
+      FindBestThresholdSequence(sum_gradient, sum_hessian, num_data, min_gain_shift, output, 0);
+      // Zero is not in leftmost or rightmost
+      if (static_cast<int>(meta_->default_bin) > 0 && static_cast<int>(meta_->default_bin) < meta_->num_bin - 1) {
+        FindBestThresholdSequence(sum_gradient, sum_hessian, num_data, min_gain_shift, output, meta_->default_bin);
+      }
+      if (meta_->num_bin > 2) {
+        FindBestThresholdSequence(sum_gradient, sum_hessian, num_data, min_gain_shift, output, meta_->num_bin - 1);
+      }
+    } else {
       FindBestThresholdSequence(sum_gradient, sum_hessian, num_data, min_gain_shift, output, meta_->default_bin);
-    }
-    if (meta_->num_bin > 2) {
-      FindBestThresholdSequence(sum_gradient, sum_hessian, num_data, min_gain_shift, output, meta_->num_bin - 1);
     }
     output->gain -= min_gain_shift;
   }

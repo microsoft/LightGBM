@@ -208,6 +208,8 @@ public:
   int gpu_device_id = -1;
   /*! \brief Set to true to use double precision math on GPU (default using single precision) */
   bool gpu_use_dp = false;
+  /*! \brief Set to false to disable the handle of missing values */
+  bool use_missing = true;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 

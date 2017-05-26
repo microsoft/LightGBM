@@ -128,6 +128,8 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
 * `max_bin`, default=`255`, type=int
   * max number of bin that feature values will bucket in. Small bin may reduce training accuracy but may increase general power (deal with over-fit).
   * LightGBM will auto compress memory according `max_bin`. For example, LightGBM will use `uint8_t` for feature value if `max_bin=255`.
+* `min_data_in_bin`, default=`5`, type=int
+  * min number of data inside one bin, use this to avoid one-data-one-bin (may over-fitting).
 * `data_random_seed`, default=`1`, type=int
   * random seed for data partition in parallel learning(not include feature parallel).
 * `output_model`, default=`LightGBM_model.txt`, type=string, alias=`model_output`,`model_out`
@@ -190,6 +192,8 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
 * `num_iteration_predict`, default=`-1`, type=int
   * only used in prediction task, used to how many trained iterations will be used in prediction. 
   * `<= 0` means no limit
+* `use_missing`, default=`true`, type=bool
+  * Set to `false` will disbale the special handle of missing value. 
 
 
 ## Objective parameters
