@@ -14,7 +14,7 @@ lgb.save(booster, filename, num_iteration = NULL)
 \item{num_iteration}{number of iteration want to predict with, NULL or <= 0 means use best iteration}
 }
 \value{
-booster
+lgb.Booster
 }
 \description{
 Save LightGBM model

@@ -12,7 +12,7 @@ lgb.load(filename = NULL, model_str = NULL)
 \item{model_str}{a str containing the model}
 }
 \value{
-booster
+lgb.Booster
 }
 \description{
 Load LightGBM model from saved model file or string
@@ -38,8 +38,9 @@ model <- lgb.train(params,
                    learning_rate = 1,
                    early_stopping_rounds = 10)
 lgb.save(model, "model.txt")
-load_booster <- lgb.load("model.txt")
-load_booster_from_str <- lgb.load(model$raw)
+load_booster <- lgb.load(filename = "model.txt")
+model_string <- model$save_model_to_string(NULL) # saves best iteration
+load_booster_from_str <- lgb.load(model_str = model_string)
 }
 
 }

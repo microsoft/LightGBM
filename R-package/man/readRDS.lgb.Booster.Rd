@@ -12,7 +12,7 @@ readRDS.lgb.Booster(file = "", refhook = NULL)
 \item{refhook}{a hook function for handling reference objects.}
 }
 \value{
-an R object.
+lgb.Booster.
 }
 \description{
 Attemps to load a model using RDS.

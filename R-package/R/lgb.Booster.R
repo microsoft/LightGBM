@@ -366,8 +366,8 @@ Booster <- R6Class(
       
       # Return model string
       return(lgb.call.return.str("LGBM_BoosterSaveModelToString_R",
-                          private$handle,
-                          as.integer(num_iteration)))
+                                 private$handle,
+                                 as.integer(num_iteration)))
       
     },
     
@@ -671,7 +671,7 @@ predict.lgb.Booster <- function(object, data,
 #' @param filename path of model file
 #' @param model_str a str containing the model
 #'
-#' @return booster
+#' @return lgb.Booster
 #' 
 #' @examples
 #' \dontrun{
@@ -692,8 +692,9 @@ predict.lgb.Booster <- function(object, data,
 #'                    learning_rate = 1,
 #'                    early_stopping_rounds = 10)
 #' lgb.save(model, "model.txt")
-#' load_booster <- lgb.load("model.txt")
-#' load_booster_from_str <- lgb.load(model$raw)
+#' load_booster <- lgb.load(filename = "model.txt")
+#' model_string <- model$save_model_to_string(NULL) # saves best iteration
+#' load_booster_from_str <- lgb.load(model_str = model_string)
 #' }
 #' 
 #' @rdname lgb.load
@@ -730,7 +731,7 @@ lgb.load <- function(filename = NULL, model_str = NULL){
 #' @param filename saved filename
 #' @param num_iteration number of iteration want to predict with, NULL or <= 0 means use best iteration
 #'
-#' @return booster
+#' @return lgb.Booster
 #' 
 #' @examples
 #' \dontrun{
