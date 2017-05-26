@@ -274,7 +274,7 @@ Dataset <- R6Class(
         stop("lgb.Dataset.construct: label should be set")
       }
       
-      # Return oneself
+      # return oneself
       return(self)
       
     },
@@ -445,8 +445,8 @@ Dataset <- R6Class(
         
       }
       
-      # Return self
-      return(self)
+      # return(self) goes NUTS in R6 object + memory displacement
+      return(NULL)
       
     },
     
