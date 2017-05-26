@@ -446,8 +446,7 @@ Dataset <- R6Class(
       }
       
       # return(self) goes NUTS in R6 object + memory displacement
-      self$finalize()
-      return(self)
+      return(NULL)
       
     },
     
