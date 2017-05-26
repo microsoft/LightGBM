@@ -416,17 +416,8 @@ Booster <- R6Class(
     # Save model to temporary file for in-memory saving
     save = function() {
       
-      # Create temporary file
-      temp <- tempfile()
-      
-      # Save model to file
-      lgb.save(self, temp)
-      
       # Overwrite model in object
-      self$raw <- readChar(temp, file.info(temp)$size)
-      
-      # Remove temporary file
-      file.remove(temp)
+      self$raw <- self$save_model_to_string(NULL)
       
     }
     
