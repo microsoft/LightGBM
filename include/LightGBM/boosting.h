@@ -13,6 +13,7 @@ namespace LightGBM {
 class Dataset;
 class ObjectiveFunction;
 class Metric;
+class PredictionEarlyStopInstance;
 
 /*!
 * \brief The interface for Boosting
@@ -116,15 +117,19 @@ public:
   * \brief Prediction for one record, not sigmoid transform
   * \param feature_values Feature value on this record
   * \param output Prediction result for this record
+  * \param earlyStop Early stopping instance. If nullptr, no early stopping is applied and all trees are evaluated.
   */
-  virtual void PredictRaw(const double* features, double* output) const = 0;
+  virtual void PredictRaw(const double* features, double* output,
+                          const PredictionEarlyStopInstance* earlyStop = nullptr) const = 0;
 
   /*!
   * \brief Prediction for one record, sigmoid transformation will be used if needed
   * \param feature_values Feature value on this record
   * \param output Prediction result for this record
+  * \param earlyStop Early stopping instance. If nullptr, no early stopping is applied and all trees are evaluated.
   */
-  virtual void Predict(const double* features, double* output) const = 0;
+  virtual void Predict(const double* features, double* output,
+                       const PredictionEarlyStopInstance* earlyStop = nullptr) const = 0;
   
   /*!
   * \brief Prediction for one record with leaf index

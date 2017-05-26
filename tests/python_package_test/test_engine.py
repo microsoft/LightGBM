@@ -90,6 +90,33 @@ class TestEngine(unittest.TestCase):
         self.assertLess(ret, 0.2)
         self.assertAlmostEqual(evals_result['valid_0']['multi_logloss'][-1], ret, places=5)
 
+    def test_multiclass_prediction_early_stopping(self):
+        X, y = load_digits(10, True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {
+            'objective': 'multiclass',
+            'metric': 'multi_logloss',
+            'num_class': 10,
+            'verbose': -1
+        }
+        lgb_train = lgb.Dataset(X_train, y_train, params=params)
+        lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, params=params)
+        evals_result = {}
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=50,
+                        valid_sets=lgb_eval,
+                        verbose_eval=False,
+                        evals_result=evals_result)
+
+        estop = lgb.PredictionEarlyStopInstance("multiclass", round_period=5, margin_threshold=1.5)
+        ret = multi_logloss(y_test, gbm.predict(X_test, early_stop_instance=estop))
+        self.assertLess(ret, 0.8)
+        self.assertGreater(ret, 0.5)  # loss will be higher than when evaluating the full model
+
+        estop = lgb.PredictionEarlyStopInstance("multiclass", round_period=5, margin_threshold=5.5)
+        ret = multi_logloss(y_test, gbm.predict(X_test, early_stop_instance=estop))
+        self.assertLess(ret, 0.2)
+
     def test_early_stopping(self):
         X, y = load_breast_cancer(True)
         params = {

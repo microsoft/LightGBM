@@ -6,6 +6,7 @@
 
 #include <LightGBM/objective_function.h>
 #include <LightGBM/metric.h>
+#include <LightGBM/prediction_early_stop.h>
 
 #include <ctime>
 

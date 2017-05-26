@@ -31,7 +31,8 @@ public:
   * \param is_predict_leaf_index True if output leaf index instead of prediction score
   */
   Predictor(Boosting* boosting, int num_iteration,
-            bool is_raw_score, bool is_predict_leaf_index) {
+            bool is_raw_score, bool is_predict_leaf_index,
+            const PredictionEarlyStopInstance* earlyStop = nullptr) {
     #pragma omp parallel
     #pragma omp master
     {
@@ -54,17 +55,17 @@ public:
 
     } else {
       if (is_raw_score) {
-        predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
+        predict_fun_ = [this, earlyStop](const std::vector<std::pair<int, double>>& features, double* output) {
           int tid = omp_get_thread_num();
           CopyToPredictBuffer(predict_buf_[tid].data(), features);
-          boosting_->PredictRaw(predict_buf_[tid].data(), output);
+          boosting_->PredictRaw(predict_buf_[tid].data(), output, earlyStop);
           ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
         };
       } else {
-        predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
+        predict_fun_ = [this, earlyStop](const std::vector<std::pair<int, double>>& features, double* output) {
           int tid = omp_get_thread_num();
           CopyToPredictBuffer(predict_buf_[tid].data(), features);
-          boosting_->Predict(predict_buf_[tid].data(), output);
+          boosting_->Predict(predict_buf_[tid].data(), output, earlyStop);
           ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
         };
       }

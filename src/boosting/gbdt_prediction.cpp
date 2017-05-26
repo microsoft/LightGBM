@@ -6,6 +6,7 @@
 
 #include <LightGBM/objective_function.h>
 #include <LightGBM/metric.h>
+#include <LightGBM/prediction_early_stop.h>
 
 #include <ctime>
 
@@ -17,44 +18,33 @@
 
 namespace LightGBM {
 
-void GBDT::PredictRaw(const double* features, double* output) const {
-  if (num_threads_ <= num_tree_per_iteration_) {
-    #pragma omp parallel for schedule(static)
+void GBDT::PredictRaw(const double* features, double* output, const PredictionEarlyStopInstance* earlyStop) const {
+  const auto noEarlyStop = createPredictionEarlyStopInstance("none", PredictionEarlyStopConfig());
+  if (earlyStop == nullptr)
+  {
+    earlyStop = &noEarlyStop;
+  }
+
+  int earlyStopRoundCounter = 0;
+  for (int i = 0; i < num_iteration_for_pred_; ++i) {
+    // predict all the trees for one iteration
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
-      for (int i = 0; i < num_iteration_for_pred_; ++i) {
-        output[k] += models_[i * num_tree_per_iteration_ + k]->Predict(features);
-      }
+      output[k] += models_[i * num_tree_per_iteration_ + k]->Predict(features);
     }
-  } else {
-    for (int k = 0; k < num_tree_per_iteration_; ++k) {
-      double t = 0.0f;
-      #pragma omp parallel for schedule(static) reduction(+:t)
-      for (int i = 0; i < num_iteration_for_pred_; ++i) {
-        t += models_[i * num_tree_per_iteration_ + k]->Predict(features);
-      }
-      output[k] = t;
+
+    // check early stopping
+    ++earlyStopRoundCounter;
+    if (earlyStop->roundPeriod == earlyStopRoundCounter) {
+      if (earlyStop->callbackFunction(output, num_tree_per_iteration_))
+        return;
+      earlyStopRoundCounter = 0;
     }
   }
 }
 
-void GBDT::Predict(const double* features, double* output) const {
-  if (num_threads_ <= num_tree_per_iteration_) {
-    #pragma omp parallel for schedule(static)
-    for (int k = 0; k < num_tree_per_iteration_; ++k) {
-      for (int i = 0; i < num_iteration_for_pred_; ++i) {
-        output[k] += models_[i * num_tree_per_iteration_ + k]->Predict(features);
-      }
-    }
-  } else {
-    for (int k = 0; k < num_tree_per_iteration_; ++k) {
-      double t = 0.0f;
-      #pragma omp parallel for schedule(static) reduction(+:t)
-      for (int i = 0; i < num_iteration_for_pred_; ++i) {
-        t += models_[i * num_tree_per_iteration_ + k]->Predict(features);
-      }
-      output[k] = t;
-    }
-  }
+void GBDT::Predict(const double* features, double* output, const PredictionEarlyStopInstance* earlyStop) const {
+  PredictRaw(features, output, earlyStop);
+
   if (objective_function_ != nullptr) {
     objective_function_->ConvertOutput(output, output);
   }
