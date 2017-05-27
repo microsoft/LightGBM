@@ -3,7 +3,66 @@ LightGBM FAQ
 
 ### Catalog
 
+- [Critical](FAQ.md#Critical)
+- [LightGBM](FAQ.md#LightGBM)
+- [R-package](FAQ.md#R-package)
 - [Python-package](FAQ.md#python-package)
+
+---
+
+### Critical
+
+You encountered a critical issue when using LightGBM (crash, prediction error, non sense outputs...). Who should you contact?
+
+If your issue is not critical, just post an issue [Microsoft/LightGBM repository](https://github.com/Microsoft/LightGBM/issues).
+
+If it is a critical issue, identify first what error you have:
+
+* Do you think it is reproducible on CLI (command line interface), R, and/or Python?
+* Is it specific to a wrapper? (R or Python?)
+* Is it specific to the compiler? (gcc versions? MinGW versions?)
+* Is it specific to your Operating System? (Windows? Linux?)
+* Are you able to reproduce this issue with a simple case?
+* Are you able to (not) reproduce this issue after removing all optimization flags and compiling LightGBM in debug mode?
+
+Depending on the answers, while opening your issue, feel free to ping (just mention them with the arobase (@) symbol) appropriately so we can attempt to solve your problem faster:
+
+* [@guolinke](https://github.com/guolinke) (C++ code / R package / Python package)
+* [@Laurae2](https://github.com/Laurae2) (R package)
+* [@wxchan](https://github.com/wxchan) (Python package)
+* [@huanzhang12](https://github.com/huanzhang12) (GPU support)
+
+Remember this is a free/open community support. We may not be available 24/7 to provide support.
+
+---
+
+### LightGBM
+
+- **Question 1**: Where do I find more details about LightGBM parameters?
+
+- **Solution 1**: Look at [Parameters.md](Parameters.md) and [Laurae++/Parameters](https://sites.google.com/view/lauraepp/parameters) website
+
+---
+
+- **Question 2**: On datasets with million of features, training do not start (or starts after a very long time).
+
+- **Solution 2**: Use a smaller value for `bin_construct_sample_cnt` and a larger value for `min_data`.
+
+---
+
+- **Question 3**: I am using Windows. Should I use Visual Studio or MinGW for compiling LightGBM?
+
+- **Solution 3**: It is recommended to [use Visual Studio](https://github.com/Microsoft/LightGBM/issues/542) as its performance is higher for LightGBM.
+
+---
+
+### R-package
+
+- **Question 1**: I used `setinfo`, tried to print my `lgb.Dataset`, and now the R console froze!
+
+- **Solution 1**: Avoid printing the `lgb.Dataset` after using `setinfo`. This is a known bug: [Microsoft/LightGBM#539](https://github.com/Microsoft/LightGBM/issues/539).
+
+---
 
 ### Python-package
 
@@ -19,6 +78,8 @@ LightGBM FAQ
     ```
 
 - **Solution 1**: this error should be solved in latest version. If you still meet this error, try to remove lightgbm.egg-info folder in your python-package and reinstall, or check [this thread on stackoverflow](http://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path).
+
+---
 
 - **Question 2**: I see error messages like `Cannot get/set label/weight/init_score/group/num_data/num_feature before construct dataset`, but I already construct dataset by some code like `train = lightgbm.Dataset(X_train, y_train)`, or error messages like `Cannot set predictor/reference/categorical feature after freed raw data, set free_raw_data=False when construct Dataset to avoid this.`.
 
