@@ -133,7 +133,7 @@ class LGBMModel(LGBMModelBase):
                  poisson_max_delta_step=0.7,
                  max_position=20, label_gain=None,
                  drop_rate=0.1, skip_drop=0.5, max_drop=50,
-                 uniform_drop=False, xgboost_dart_mode=False):
+                 uniform_drop=False, xgboost_dart_mode=False, use_missing=True):
         """
         Implementation of the Scikit-Learn API for LightGBM.
 
@@ -211,6 +211,8 @@ class LGBMModel(LGBMModelBase):
             Only used when boosting_type='dart'. If true, drop trees uniformly, else drop according to weights.
         xgboost_dart_mode : bool
             Only used when boosting_type='dart'. Whether use xgboost dart mode.
+        use_missing : bool
+            Set to False will disbale the special handle of missing value (default: True).
 
         Note
         ----
@@ -270,6 +272,7 @@ class LGBMModel(LGBMModelBase):
         self.max_drop = max_drop
         self.uniform_drop = uniform_drop
         self.xgboost_dart_mode = xgboost_dart_mode
+        self.use_missing = use_missing
         self._Booster = None
         self.evals_result = None
         self.best_iteration = -1
@@ -501,7 +504,7 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
                  huber_delta=1.0, gaussian_eta=1.0, fair_c=1.0,
                  poisson_max_delta_step=0.7,
                  drop_rate=0.1, skip_drop=0.5, max_drop=50,
-                 uniform_drop=False, xgboost_dart_mode=False):
+                 uniform_drop=False, xgboost_dart_mode=False, use_missing=True):
         super(LGBMRegressor, self).__init__(boosting_type=boosting_type, num_leaves=num_leaves,
                                             max_depth=max_depth, learning_rate=learning_rate,
                                             n_estimators=n_estimators, max_bin=max_bin,
@@ -514,7 +517,8 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
                                             huber_delta=huber_delta, gaussian_eta=gaussian_eta, fair_c=fair_c,
                                             poisson_max_delta_step=poisson_max_delta_step,
                                             drop_rate=drop_rate, skip_drop=skip_drop, max_drop=max_drop,
-                                            uniform_drop=uniform_drop, xgboost_dart_mode=xgboost_dart_mode)
+                                            uniform_drop=uniform_drop, xgboost_dart_mode=xgboost_dart_mode,
+                                            use_missing=use_missing)
 
     def fit(self, X, y,
             sample_weight=None, init_score=None,
@@ -548,7 +552,7 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
                  is_unbalance=False, seed=0, nthread=-1,
                  silent=True, sigmoid=1.0,
                  drop_rate=0.1, skip_drop=0.5, max_drop=50,
-                 uniform_drop=False, xgboost_dart_mode=False):
+                 uniform_drop=False, xgboost_dart_mode=False, use_missing=True):
         self.classes, self.n_classes = None, None
         super(LGBMClassifier, self).__init__(boosting_type=boosting_type, num_leaves=num_leaves,
                                              max_depth=max_depth, learning_rate=learning_rate,
@@ -561,7 +565,8 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
                                              scale_pos_weight=scale_pos_weight, is_unbalance=is_unbalance,
                                              seed=seed, nthread=nthread, silent=silent, sigmoid=sigmoid,
                                              drop_rate=drop_rate, skip_drop=skip_drop, max_drop=max_drop,
-                                             uniform_drop=uniform_drop, xgboost_dart_mode=xgboost_dart_mode)
+                                             uniform_drop=uniform_drop, xgboost_dart_mode=xgboost_dart_mode,
+                                             use_missing=use_missing)
 
     def fit(self, X, y,
             sample_weight=None, init_score=None,
@@ -663,7 +668,7 @@ class LGBMRanker(LGBMModel):
                  is_unbalance=False, seed=0, nthread=-1, silent=True,
                  sigmoid=1.0, max_position=20, label_gain=None,
                  drop_rate=0.1, skip_drop=0.5, max_drop=50,
-                 uniform_drop=False, xgboost_dart_mode=False):
+                 uniform_drop=False, xgboost_dart_mode=False, use_missing=True):
         super(LGBMRanker, self).__init__(boosting_type=boosting_type, num_leaves=num_leaves,
                                          max_depth=max_depth, learning_rate=learning_rate,
                                          n_estimators=n_estimators, max_bin=max_bin,
@@ -676,7 +681,8 @@ class LGBMRanker(LGBMModel):
                                          seed=seed, nthread=nthread, silent=silent,
                                          sigmoid=sigmoid, max_position=max_position, label_gain=label_gain,
                                          drop_rate=drop_rate, skip_drop=skip_drop, max_drop=max_drop,
-                                         uniform_drop=uniform_drop, xgboost_dart_mode=xgboost_dart_mode)
+                                         uniform_drop=uniform_drop, xgboost_dart_mode=xgboost_dart_mode,
+                                         use_missing=use_missing)
 
     def fit(self, X, y,
             sample_weight=None, init_score=None, group=None,
