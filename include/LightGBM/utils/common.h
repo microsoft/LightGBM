@@ -474,8 +474,13 @@ inline static double AvoidInf(double x) {
   }
 }
 
-template<class _RanIt, class _Pr> inline
-static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred) {
+template<class _Iter> inline
+static typename std::iterator_traits<_Iter>::value_type* IteratorValType(_Iter) {
+  return (0);
+}
+
+template<class _RanIt, class _Pr, class _VTRanIt> inline
+static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   size_t len = _Last - _First;
   const size_t kMinInnerLen = 1024;
   int num_threads = 1;
@@ -501,7 +506,7 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred) {
     }
   }
   // Buffer for merge.
-  std::vector<std::iterator_traits<_RanIt>::value_type> temp_buf(len);
+  std::vector<_VTRanIt> temp_buf(len);
   _RanIt buf = temp_buf.begin();
   int s = inner_size;
   // Recursive merge
@@ -520,9 +525,9 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred) {
   }
 }
 
-template<class _RanIt> inline
-static void ParallelSort(_RanIt _First, _RanIt _Last) {
-  ParallelSort(_First, _Last, std::less<>());
+template<class _RanIt, class _Pr> inline
+static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred) {
+  return ParallelSort(_First, _Last, _Pred, IteratorValType(_First));
 }
 
 }  // namespace Common
