@@ -98,7 +98,7 @@ Dataset <- R6Class(
                          ...)
       
       # Return ret
-      return(ret)
+      return(invisible(ret))
       
     },
     
@@ -107,7 +107,7 @@ Dataset <- R6Class(
       
       # Check for handle null
       if (!lgb.is.null.handle(private$handle)) {
-        return(self)
+        return(invisible(self))
       }
       
       # Get feature names
@@ -274,8 +274,8 @@ Dataset <- R6Class(
         stop("lgb.Dataset.construct: label should be set")
       }
       
-      # Return oneself
-      return(self)
+      # Return self
+      return(invisible(self))
       
     },
     
@@ -336,13 +336,13 @@ Dataset <- R6Class(
       
       # Check column names non-existence
       if (is.null(colnames)) {
-        return(self)
+        return(invisible(self))
       }
       
       # Check empty column names
       colnames <- as.character(colnames)
       if (length(colnames) == 0) {
-        return(self)
+        return(invisible(self))
       }
       
       # Write column names
@@ -359,7 +359,7 @@ Dataset <- R6Class(
       }
       
       # Return self
-      return(self)
+      return(invisible(self))
       
     },
     
@@ -446,7 +446,7 @@ Dataset <- R6Class(
       }
       
       # Return self
-      return(self)
+      return(invisible(self))
       
     },
     
@@ -472,7 +472,7 @@ Dataset <- R6Class(
       
       # Parameter updating
       private$params <- modifyList(private$params, params)
-      self
+      return(invisible(self))
       
     },
     
@@ -481,7 +481,7 @@ Dataset <- R6Class(
       
       # Check for identical input
       if (identical(private$categorical_feature, categorical_feature)) {
-        return(self)
+        return(invisible(self))
       }
       
       # Check for empty data
@@ -495,7 +495,7 @@ Dataset <- R6Class(
       
       # Finalize and return self
       self$finalize()
-      return(self)
+      return(invisible(self))
       
     },
     
@@ -509,7 +509,7 @@ Dataset <- R6Class(
       
       # Check for identical references
       if (identical(private$reference, reference)) {
-        return(self)
+        return(invisible(self))
       }
       
       # Check for empty data
@@ -535,7 +535,7 @@ Dataset <- R6Class(
       
       # Finalize and return self
       self$finalize()
-      return(self)
+      return(invisible(self))
       
     },
     
@@ -548,7 +548,7 @@ Dataset <- R6Class(
                ret = NULL,
                private$handle,
                lgb.c_str(fname))
-      return(self)
+      return(invisible(self))
     }
     
   ),
@@ -580,7 +580,7 @@ Dataset <- R6Class(
       
       # Return self is identical predictor
       if (identical(private$predictor, predictor)) {
-        return(self)
+        return(invisible(self))
       }
       
       # Check for empty data
@@ -604,7 +604,7 @@ Dataset <- R6Class(
       
       # Finalize and return self
       self$finalize()
-      return(self)
+      return(invisible(self))
       
     }
     
@@ -649,7 +649,7 @@ lgb.Dataset <- function(data,
                         ...) {
   
   # Create new dataset
-  Dataset$new(data,
+  invisible(Dataset$new(data,
               params,
               reference,
               colnames,
@@ -658,7 +658,7 @@ lgb.Dataset <- function(data,
               free_raw_data,
               NULL,
               info,
-              ...)
+              ...))
   
 }
 
@@ -693,7 +693,7 @@ lgb.Dataset.create.valid <- function(dataset, data, info = list(), ...) {
   }
   
   # Create validation dataset
-  dataset$create_valid(data, info, ...)
+  invisible(dataset$create_valid(data, info, ...))
   
 }
 
@@ -719,7 +719,7 @@ lgb.Dataset.construct <- function(dataset) {
   }
   
   # Construct the dataset
-  dataset$construct()
+  invisible(dataset$construct())
   
 }
 
@@ -871,7 +871,7 @@ slice.lgb.Dataset <- function(dataset, idxset, ...) {
   }
   
   # Return sliced set
-  dataset$slice(idxset, ...)
+  invisible(dataset$slice(idxset, ...))
   
 }
 
@@ -974,7 +974,7 @@ setinfo.lgb.Dataset <- function(dataset, name, info, ...) {
   }
   
   # Set information
-  dataset$setinfo(name, info)
+  invisible(dataset$setinfo(name, info))
 }
 
 #' Set categorical feature of \code{lgb.Dataset}
@@ -1005,7 +1005,7 @@ lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
   }
   
   # Set categoricals
-  dataset$set_categorical_feature(categorical_feature)
+  invisible(dataset$set_categorical_feature(categorical_feature))
   
 }
 
@@ -1040,7 +1040,7 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
   }
   
   # Set reference
-  dataset$set_reference(reference)
+  invisible(dataset$set_reference(reference))
 }
 
 #' Save \code{lgb.Dataset} to a binary file
@@ -1075,5 +1075,5 @@ lgb.Dataset.save <- function(dataset, fname) {
   }
   
   # Store binary
-  dataset$save_binary(fname)
+  invisible(dataset$save_binary(fname))
 }

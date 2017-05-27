@@ -108,7 +108,7 @@ Booster <- R6Class(
       
       # Set name
       private$name_train_set <- name
-      self
+      return(invisible(self))
       
     },
     
@@ -143,7 +143,7 @@ Booster <- R6Class(
       private$is_predicted_cur_iter <- c(private$is_predicted_cur_iter, FALSE)
       
       # Return self
-      return(self)
+      return(invisible(self))
       
     },
     
@@ -161,7 +161,7 @@ Booster <- R6Class(
                params_str)
       
       # Return self
-      return(self)
+      return(invisible(self))
       
     },
     
@@ -229,7 +229,6 @@ Booster <- R6Class(
         private$is_predicted_cur_iter[[i]] <- FALSE
       }
       
-      # Return self
       return(ret)
       
     },
@@ -248,7 +247,7 @@ Booster <- R6Class(
       }
       
       # Return self
-      return(self)
+      return(invisible(self))
       
     },
     
@@ -353,7 +352,7 @@ Booster <- R6Class(
                lgb.c_str(filename))
       
       # Return self
-      return(self)
+      return(invisible(self))
     },
     
     # Save model to string
@@ -712,14 +711,14 @@ lgb.load <- function(filename = NULL, model_str = NULL){
   
   # Return new booster
   if (!is.null(filename) && !file.exists(filename)) stop("lgb.load: file does not exist for supplied filename")
-  if (!is.null(filename)) return(Booster$new(modelfile = filename))
+  if (!is.null(filename)) return(invisible(Booster$new(modelfile = filename)))
   
   # Load from model_str
   if (!is.null(model_str) && !is.character(model_str)) {
     stop("lgb.load: model_str should be character")
   }    
   # Return new booster
-  if (!is.null(model_str)) return(Booster$new(model_str = model_str))
+  if (!is.null(model_str)) return(invisible(Booster$new(model_str = model_str)))
   
 }
 
@@ -769,7 +768,7 @@ lgb.save <- function(booster, filename, num_iteration = NULL){
   }
   
   # Store booster
-  booster$save_model(filename, num_iteration)
+  invisible(booster$save_model(filename, num_iteration))
   
 }
 
