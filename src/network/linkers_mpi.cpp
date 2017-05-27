@@ -3,7 +3,7 @@
 
 namespace LightGBM {
 
-Linkers::Linkers(NetworkConfig config) {
+Linkers::Linkers(NetworkConfig) {
   int argc = 0;
   char**argv = nullptr;
   int flag = 0;
