@@ -2,6 +2,7 @@
 #define LIGHTGBM_METRIC_BINARY_METRIC_HPP_
 
 #include <LightGBM/utils/log.h>
+#include <LightGBM/utils/common.h>
 
 #include <LightGBM/metric.h>
 
@@ -195,7 +196,7 @@ public:
     for (data_size_t i = 0; i < num_data_; ++i) {
       sorted_idx.emplace_back(i);
     }
-    std::sort(sorted_idx.begin(), sorted_idx.end(), [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
+    Common::ParallelSort(sorted_idx.begin(), sorted_idx.end(), [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
     // temp sum of postive label
     double cur_pos = 0.0f;
     // total sum of postive label
