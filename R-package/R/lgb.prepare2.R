@@ -1,6 +1,6 @@
 #' Data preparator for LightGBM datasets (numeric)
 #'
-#' Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors and characters are converted to numeric without integers. This is useful if you have a specific need for numeric dataset instead of integer dataset. There are programs which do not support integer-only input. Consider this is a fallback solution if you cannot use integers.
+#' Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors and characters are converted to numeric without integers. This is useful if you have a specific need for numeric dataset instead of integer dataset. There are programs which do not support integer-only input. Consider this is a fallback solution if you cannot use integers. Please use \code{lgb.prepare_rules2} if you want to apply this transformation to other datasets.
 #' 
 #' @param data A data.frame or data.table to prepare.
 #' 

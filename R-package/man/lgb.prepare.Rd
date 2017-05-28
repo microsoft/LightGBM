@@ -13,7 +13,7 @@ lgb.prepare(data)
 The cleaned dataset. It must be converted to a matrix format (\code{as.matrix}) for input in lgb.Dataset.
 }
 \description{
-Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors and characters are converted to numeric (specifically: integer).
+Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors and characters are converted to numeric (specifically: integer). Please use \code{lgb.prepare_rules} if you want to apply this transformation to other datasets.
 }
 \examples{
 \dontrun{
