@@ -50,4 +50,3 @@ Attemps to save a model using RDS. Has an additional parameter (\code{raw}) whic
 }
 
 }
-

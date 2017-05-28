@@ -39,4 +39,3 @@ json_model <- lgb.dump(model)
 }
 
 }
-

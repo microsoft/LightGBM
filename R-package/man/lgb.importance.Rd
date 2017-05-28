@@ -41,4 +41,3 @@ tree_imp2 <- lgb.importance(model, percentage = FALSE)
 }
 
 }
-

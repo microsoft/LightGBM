@@ -35,4 +35,4 @@ Imports:
     data.table (>= 1.9.6),
     magrittr (>= 1.5),
     jsonlite
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1

@@ -48,4 +48,3 @@ stopifnot(all(labels2 == 1 - labels))
 }
 
 }
-
