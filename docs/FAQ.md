@@ -56,6 +56,12 @@ Remember this is a free/open community support. We may not be available 24/7 to 
 
 ---
 
+- **Question 4**: When using LightGBM GPU, I cannot reproduce results over several runs.
+
+- **Solution 4**: It is a normal issue, there is nothing we/you can do about. For reproducible results, please use CPU version.
+
+---
+
 ### R-package
 
 - **Question 1**: I used `setinfo`, tried to print my `lgb.Dataset`, and now the R console froze!
