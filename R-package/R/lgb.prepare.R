@@ -1,4 +1,4 @@
-#' Data preparator for LightGBM datasets (integer)
+#' Data preparator for LightGBM datasets (integer) 
 #'
 #' Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors and characters are converted to numeric (specifically: integer). Please use \code{lgb.prepare_rules} if you want to apply this transformation to other datasets.
 #' 
