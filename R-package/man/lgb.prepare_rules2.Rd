@@ -2,7 +2,7 @@
 % Please edit documentation in R/lgb.prepare_rules2.R
 \name{lgb.prepare_rules2}
 \alias{lgb.prepare_rules2}
-\title{Data preparator for LightGBM datasets with rules (numeric)}
+\title{Data preparator for LightGBM datasets with rules (integer)}
 \usage{
 lgb.prepare_rules2(data, rules = NULL)
 }
@@ -15,7 +15,7 @@ lgb.prepare_rules2(data, rules = NULL)
 A list with the cleaned dataset (\code{data}) and the rules (\code{rules}). The data must be converted to a matrix format (\code{as.matrix}) for input in lgb.Dataset.
 }
 \description{
-Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors and characters are converted to numeric. In addition, keeps rules created so you can convert other datasets using this converter. This is useful if you have a specific need for numeric dataset instead of integer dataset. There are programs which do not support integer-only input. Consider this is a fallback solution if you cannot use integers.
+Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors and characters are converted to numeric (specifically: integer). In addition, keeps rules created so you can convert other datasets using this converter. This is useful if you have a specific need for integer dataset instead of numeric dataset. Note that there are programs which do not support integer-only input. Consider this as a half memory technique which is dangerous, especially for LightGBM.
 }
 \examples{
 \dontrun{
@@ -37,7 +37,7 @@ Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors 
   # $ Sepal.Width : num  3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
   # $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
   # $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
-  # $ Species     : num  1 1 1 1 1 1 1 1 1 1 ...
+  # $ Species     : int  1 1 1 1 1 1 1 1 1 1 ...
   
   data(iris) # Erase iris dataset
   iris$Species[1] <- "NEW FACTOR" # Introduce junk factor (NA)
@@ -64,9 +64,9 @@ Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors 
   data(iris) # Erase iris dataset
   
   # We remapped values differently
-  personal_rules <- list(Species = c("setosa" = 3,
-                                     "versicolor" = 2,
-                                     "virginica" = 1))
+  personal_rules <- list(Species = c("setosa" = 3L,
+                                     "versicolor" = 2L,
+                                     "virginica" = 1L))
   newest_iris <- lgb.prepare_rules2(data = iris, rules = personal_rules)
   str(newest_iris$data) # SUCCESS!
   # 'data.frame':	150 obs. of  5 variables:
@@ -74,7 +74,7 @@ Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors 
   # $ Sepal.Width : num  3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
   # $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
   # $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
-  # $ Species     : num  3 3 3 3 3 3 3 3 3 3 ...
+  # $ Species     : int  3 3 3 3 3 3 3 3 3 3 ...
   
 }
 
