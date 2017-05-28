@@ -24,4 +24,3 @@ vector of evaluation result
 \description{
 Get record evaluation result from booster
 }
-

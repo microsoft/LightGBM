@@ -44,4 +44,3 @@ load_booster_from_str <- lgb.load(model_str = model_string)
 }
 
 }
-
