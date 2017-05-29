@@ -5,6 +5,7 @@
 #include "./src/boosting/boosting.cpp"
 #include "./src/boosting/gbdt.cpp"
 #include "./src/boosting/gbdt_prediction.cpp"
+#include "./src/boosting/prediction_early_stop.cpp"
 
 // io
 #include "./src/io/bin.cpp"

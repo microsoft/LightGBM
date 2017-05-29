@@ -786,7 +786,6 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
 
   str_buf << "void GBDT::PredictLeafIndex(const double* features, double *output) const {" << std::endl;
   str_buf << "\t" << "int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;" << std::endl;
-  str_buf << "\t" << "#pragma omp parallel for schedule(static)" << std::endl;
   str_buf << "\t" << "for (int i = 0; i < total_tree; ++i) {" << std::endl;
   str_buf << "\t\t" << "output[i] = (*PredictTreeLeafPtr[i])(features);" << std::endl;
   str_buf << "\t" << "}" << std::endl;

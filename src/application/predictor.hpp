@@ -117,7 +117,11 @@ public:
       [this, &parser_fun, &result_file]
     (data_size_t, const std::vector<std::string>& lines) {
       std::vector<std::pair<int, double>> oneline_features;
+      std::vector<std::string> result_to_write(lines.size());
+      OMP_INIT_EX();
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); ++i) {
+        OMP_LOOP_EX_BEGIN();
         oneline_features.clear();
         // parser
         parser_fun(lines[i].c_str(), &oneline_features);
@@ -125,7 +129,12 @@ public:
         std::vector<double> result(num_pred_one_row_);
         predict_fun_(oneline_features, result.data());
         auto str_result = Common::Join<double>(result, "\t");
-        fprintf(result_file, "%s\n", str_result.c_str());
+        result_to_write[i] = str_result;
+        OMP_LOOP_EX_END();
+      }
+      OMP_THROW_EX();
+      for (data_size_t i = 0; i < static_cast<data_size_t>(result_to_write.size()); ++i) {
+        fprintf(result_file, "%s\n", result_to_write[i].c_str());
       }
     };
     TextReader<data_size_t> predict_data_reader(data_filename, has_header);
@@ -137,7 +146,6 @@ private:
 
   void CopyToPredictBuffer(double* pred_buf, const std::vector<std::pair<int, double>>& features) {
     int loop_size = static_cast<int>(features.size());
-    #pragma omp parallel for schedule(static,128) if (loop_size >= 256)
     for (int i = 0; i < loop_size; ++i) {
       if (features[i].first < num_feature_) {
         pred_buf[features[i].first] = features[i].second;
@@ -150,7 +158,6 @@ private:
       std::memset(pred_buf, 0, sizeof(double)*(buf_size));
     } else {
       int loop_size = static_cast<int>(features.size());
-      #pragma omp parallel for schedule(static,128) if (loop_size >= 256)
       for (int i = 0; i < loop_size; ++i) {
         pred_buf[features[i].first] = 0.0f;
       }

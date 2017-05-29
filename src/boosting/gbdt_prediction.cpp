@@ -58,7 +58,6 @@ void GBDT::Predict(const double* features, double* output, const PredictionEarly
 
 void GBDT::PredictLeafIndex(const double* features, double* output) const {
   int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;
-  #pragma omp parallel for schedule(static)
   for (int i = 0; i < total_tree; ++i) {
     output[i] = models_[i]->PredictLeafIndex(features);
   }
