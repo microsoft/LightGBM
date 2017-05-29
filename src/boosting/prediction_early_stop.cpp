@@ -1,4 +1,5 @@
 #include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/utils/log.h>
 
 using namespace LightGBM;
 
@@ -28,6 +29,10 @@ namespace
     return PredictionEarlyStopInstance{
       [marginThreshold](const double* pred, int sz)
       {
+        if(sz < 2) {
+          Log::Fatal("Multiclass early stopping needs predictions to be of length two or larger");
+        }
+
         // copy and sort
         std::vector<double> votes(static_cast<size_t>(sz));
         for (int i=0; i < sz; ++i) {
@@ -53,8 +58,11 @@ namespace
     const double marginThreshold = config.marginThreshold;
 
     return PredictionEarlyStopInstance{
-      [marginThreshold](const double* pred, int)
+      [marginThreshold](const double* pred, int sz)
       {
+        if(sz != 1) {
+          Log::Fatal("Binary early stopping needs predictions to be of length one");
+        }
         const auto margin = 2.0 * fabs(pred[0]);
 
         if (margin > marginThreshold) {
