@@ -43,9 +43,9 @@ GBDT::GBDT()
   boost_from_average_(false) {
   #pragma omp parallel
   #pragma omp master
-    {
-      num_threads_ = omp_get_num_threads();
-    }
+  {
+    num_threads_ = omp_get_num_threads();
+  }
 }
 
 GBDT::~GBDT() {
@@ -261,8 +261,6 @@ data_size_t GBDT::BaggingHelper(Random& cur_rand, data_size_t start, data_size_t
   CHECK(cur_left_cnt == bag_data_cnt);
   return cur_left_cnt;
 }
-
-
 
 void GBDT::Bagging(int iter) {
   // if need bagging
@@ -714,7 +712,6 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   str_buf << "#include <string>" << std::endl;
   str_buf << "#include <vector>" << std::endl;
   str_buf << "#include <utility>" << std::endl;
-  str_buf << "namespace { const auto kNoEarlyStop = createPredictionEarlyStopInstance(\"none\", PredictionEarlyStopConfig()); }" << std::endl;
   str_buf << "namespace LightGBM {" << std::endl;
 
   int num_used_model = static_cast<int>(models_.size());
@@ -738,10 +735,6 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   str_buf << " };" << std::endl << std::endl;
 
   std::stringstream pred_str_buf;
-
-  pred_str_buf << "\t" << "if (early_stop == nullptr) {" << std::endl;
-  pred_str_buf << "\t\t" << "early_stop = &kNoEarlyStop;" << std::endl;
-  pred_str_buf << "\t" << "}" << std::endl;
 
   pred_str_buf << "\t" << "int early_stop_round_counter = 0;" << std::endl;
   pred_str_buf << "\t" << "for (int i = 0; i < num_iteration_for_pred_; ++i) {" << std::endl;

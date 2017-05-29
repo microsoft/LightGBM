@@ -1135,7 +1135,7 @@ int LGBM_PredictionEarlyStopInstanceCreate(const char* type,
   config.margin_threshold = margin_threshold;
   config.round_period = round_period;
 
-  auto earlyStop = createPredictionEarlyStopInstance(type, config);
+  auto earlyStop = CreatePredictionEarlyStopInstance(type, config);
 
   // create new by copying
   *out = new PredictionEarlyStopInstance(earlyStop);

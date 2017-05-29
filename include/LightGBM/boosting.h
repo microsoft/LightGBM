@@ -220,6 +220,9 @@ public:
   */
   virtual int NumberOfClasses() const = 0;
 
+  /*! \brief The prediction should be accurate or not. True will disable early stopping for prediction. */
+  virtual bool NeedAccuratePrediction() const = 0;
+
   /*!
   * \brief Initial work for the prediction
   * \param num_iteration number of used iteration

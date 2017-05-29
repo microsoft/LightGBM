@@ -192,6 +192,12 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
 * `num_iteration_predict`, default=`-1`, type=int
   * only used in prediction task, used to how many trained iterations will be used in prediction. 
   * `<= 0` means no limit
+* `pred_early_stop`, default=`false`, type=bool
+  * Set to `true` will use early-stopping to speed up the prediction. May affect the accuracy.
+* `pred_early_stop_freq`, default=`10`, type=int
+  * The frequency of checking early-stopping prediction.
+* `pred_early_stop_margin`, default=`10.0`, type=double
+  * The Threshold of margin in early-stopping prediction. 
 * `use_missing`, default=`true`, type=bool
   * Set to `false` will disbale the special handle of missing value. 
 

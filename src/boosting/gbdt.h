@@ -2,6 +2,8 @@
 #define LIGHTGBM_BOOSTING_GBDT_H_
 
 #include <LightGBM/boosting.h>
+#include <LightGBM/objective_function.h>
+
 #include "score_updater.hpp"
 
 #include <cstdio>
@@ -92,6 +94,14 @@ public:
   int GetCurrentIteration() const override { return static_cast<int>(models_.size()) / num_tree_per_iteration_; }
 
   bool EvalAndCheckEarlyStopping() override;
+
+  bool NeedAccuratePrediction() const override { 
+    if (objective_function_ == nullptr) {
+      return true;
+    } else {
+      return objective_function_->NeedAccuratePrediction();
+    }
+  }
 
   /*!
   * \brief Get evaluation result at data_idx data
@@ -365,7 +375,6 @@ protected:
   std::vector<double> class_default_output_;
   bool is_constant_hessian_;
   std::unique_ptr<ObjectiveFunction> loaded_objective_;
-
 };
 
 }  // namespace LightGBM

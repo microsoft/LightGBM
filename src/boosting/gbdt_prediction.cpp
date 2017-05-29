@@ -16,18 +16,9 @@
 #include <vector>
 #include <utility>
 
-namespace {
-/// Singleton used when early_stop is nullptr in PredictRaw()
-const auto kNoEarlyStop = LightGBM::createPredictionEarlyStopInstance("none", LightGBM::PredictionEarlyStopConfig());
-}
-
 namespace LightGBM {
 
 void GBDT::PredictRaw(const double* features, double* output, const PredictionEarlyStopInstance* early_stop) const {
-  if (early_stop == nullptr) {
-    early_stop = &kNoEarlyStop;
-  }
-
   int early_stop_round_counter = 0;
   for (int i = 0; i < num_iteration_for_pred_; ++i) {
     // predict all the trees for one iteration

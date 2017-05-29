@@ -74,7 +74,7 @@ PredictionEarlyStopInstance CreateBinary(const PredictionEarlyStopConfig& config
 
 namespace LightGBM {
 
-PredictionEarlyStopInstance createPredictionEarlyStopInstance(const std::string& type,
+PredictionEarlyStopInstance CreatePredictionEarlyStopInstance(const std::string& type,
                                                               const PredictionEarlyStopConfig& config) {
   if (type == "none") {
     return CreateNone(config);

@@ -230,6 +230,11 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   CHECK(min_data_in_bin > 0);
   GetDouble(params, "max_conflict_rate", &max_conflict_rate);
   GetBool(params, "enable_bundle", &enable_bundle);
+
+  GetBool(params, "pred_early_stop", &pred_early_stop);
+  GetInt(params, "pred_early_stop_freq", &pred_early_stop_freq);
+  GetDouble(params, "pred_early_stop_margin", &pred_early_stop_margin);
+
   GetDeviceType(params);
 }
 

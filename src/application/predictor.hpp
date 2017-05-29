@@ -32,7 +32,8 @@ public:
   */
   Predictor(Boosting* boosting, int num_iteration,
             bool is_raw_score, bool is_predict_leaf_index,
-            const PredictionEarlyStopInstance* early_stop = nullptr) {
+            const PredictionEarlyStopInstance* early_stop) {
+    CHECK(early_stop != nullptr);
     #pragma omp parallel
     #pragma omp master
     {

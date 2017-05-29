@@ -135,6 +135,14 @@ public:
   * Note: when using Index, it doesn't count the label index */
   std::string categorical_column = "";
   std::string device_type = "cpu";
+
+  /*! \brief Set to true if want to use early stop for the prediction */
+  bool pred_early_stop = false;
+  /*! \brief Frequency of checking the pred_early_stop */
+  int pred_early_stop_freq = 10;
+  /*! \brief Threshold of margin of pred_early_stop */
+  double pred_early_stop_margin = 10.0f;
+
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 private:
   void GetDeviceType(const std::unordered_map<std::string,
