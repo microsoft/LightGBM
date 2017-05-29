@@ -30,14 +30,16 @@ namespace
       {
         // copy and sort
         std::vector<double> votes(static_cast<size_t>(sz));
-        for (int i=0; i < sz; ++i)
+        for (int i=0; i < sz; ++i) {
            votes[i] = pred[i];
+        }
         std::partial_sort(votes.begin(), votes.begin() + 2, votes.end(), std::greater<double>());
 
         const auto margin = votes[0] - votes[1];
 
-        if (margin > marginThreshold)
+        if (margin > marginThreshold) {
           return true;
+        }
 
         return false;
       },
@@ -55,8 +57,9 @@ namespace
       {
         const auto margin = 2.0 * fabs(pred[0]);
 
-        if (margin > marginThreshold)
+        if (margin > marginThreshold) {
           return true;
+        }
 
         return false;
       },

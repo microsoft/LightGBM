@@ -35,8 +35,9 @@ void GBDT::PredictRaw(const double* features, double* output, const PredictionEa
     // check early stopping
     ++earlyStopRoundCounter;
     if (earlyStop->roundPeriod == earlyStopRoundCounter) {
-      if (earlyStop->callbackFunction(output, num_tree_per_iteration_))
+      if (earlyStop->callbackFunction(output, num_tree_per_iteration_)) {
         return;
+      }
       earlyStopRoundCounter = 0;
     }
   }

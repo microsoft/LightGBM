@@ -163,7 +163,7 @@ public:
 
   void Predict(int num_iteration, int predict_type, int nrow,
                std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
-               PredictionEarlyStoppingHandle early_stop_handle,
+               const PredictionEarlyStoppingHandle early_stop_handle,
                double* out_result, int64_t* out_len) {
     std::lock_guard<std::mutex> lock(mutex_);
     bool is_predict_leaf = false;
@@ -189,7 +189,7 @@ public:
   }
 
   void Predict(int num_iteration, int predict_type, const char* data_filename,
-               int data_has_header, PredictionEarlyStoppingHandle early_stop_handle,
+               int data_has_header, const PredictionEarlyStoppingHandle early_stop_handle,
                const char* result_filename) {
     std::lock_guard<std::mutex> lock(mutex_);
     bool is_predict_leaf = false;
@@ -955,7 +955,7 @@ int LGBM_BoosterPredictForFile(BoosterHandle handle,
                                int data_has_header,
                                int predict_type,
                                int num_iteration,
-                               PredictionEarlyStoppingHandle early_stop_handle,
+                               const PredictionEarlyStoppingHandle early_stop_handle,
                                const char* result_filename) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
@@ -987,7 +987,7 @@ int LGBM_BoosterPredictForCSR(BoosterHandle handle,
                               int64_t,
                               int predict_type,
                               int num_iteration,
-                              PredictionEarlyStoppingHandle early_stop_handle,
+                              const PredictionEarlyStoppingHandle early_stop_handle,
                               int64_t* out_len,
                               double* out_result) {
   API_BEGIN();
@@ -1010,7 +1010,7 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
                               int64_t num_row,
                               int predict_type,
                               int num_iteration,
-                              PredictionEarlyStoppingHandle early_stop_handle,
+                              const PredictionEarlyStoppingHandle early_stop_handle,
                               int64_t* out_len,
                               double* out_result) {
   API_BEGIN();
@@ -1044,7 +1044,7 @@ int LGBM_BoosterPredictForMat(BoosterHandle handle,
                               int is_row_major,
                               int predict_type,
                               int num_iteration,
-                              PredictionEarlyStoppingHandle early_stop_handle,
+                              const PredictionEarlyStoppingHandle early_stop_handle,
                               int64_t* out_len,
                               double* out_result) {
   API_BEGIN();
@@ -1132,10 +1132,10 @@ int LGBM_PredictionEarlyStopInstanceCreate(const char* type,
   API_END();
 }
 
-int LGBM_PredictionEarlyStopInstanceFree(PredictionEarlyStoppingHandle handle)
+int LGBM_PredictionEarlyStopInstanceFree(const PredictionEarlyStoppingHandle handle)
 {
   API_BEGIN();
-  delete reinterpret_cast<PredictionEarlyStopInstance*>(handle);
+  delete reinterpret_cast<const PredictionEarlyStopInstance*>(handle);
   API_END();
 }
 

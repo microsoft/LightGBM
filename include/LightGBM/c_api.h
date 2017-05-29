@@ -522,7 +522,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForFile(BoosterHandle handle,
                                                  int data_has_header,
                                                  int predict_type,
                                                  int num_iteration,
-                                                 PredictionEarlyStoppingHandle early_stop_handle,
+                                                 const PredictionEarlyStoppingHandle early_stop_handle,
                                                  const char* result_filename);
 
 /*!
@@ -578,7 +578,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
                                                 int64_t num_col,
                                                 int predict_type,
                                                 int num_iteration,
-                                                PredictionEarlyStoppingHandle early_stop_handle,
+                                                const PredictionEarlyStoppingHandle early_stop_handle,
                                                 int64_t* out_len,
                                                 double* out_result);
 
@@ -617,7 +617,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSC(BoosterHandle handle,
                                                 int64_t num_row,
                                                 int predict_type,
                                                 int num_iteration,
-                                                PredictionEarlyStoppingHandle early_stop_handle,
+                                                const PredictionEarlyStoppingHandle early_stop_handle,
                                                 int64_t* out_len,
                                                 double* out_result);
 
@@ -650,7 +650,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
                                                 int is_row_major,
                                                 int predict_type,
                                                 int num_iteration,
-                                                PredictionEarlyStoppingHandle early_stop_handle,
+                                                const PredictionEarlyStoppingHandle early_stop_handle,
                                                 int64_t* out_len,
                                                 double* out_result);
 
@@ -738,7 +738,7 @@ LIGHTGBM_C_EXPORT int LGBM_PredictionEarlyStopInstanceCreate(const char* type,
   \brief free prediction early stop instance
   \return 0 when succeed
  */
-LIGHTGBM_C_EXPORT int LGBM_PredictionEarlyStopInstanceFree(PredictionEarlyStoppingHandle handle);
+LIGHTGBM_C_EXPORT int LGBM_PredictionEarlyStopInstanceFree(const PredictionEarlyStoppingHandle handle);
 
 #if defined(_MSC_VER)
 // exception handle and error msg
