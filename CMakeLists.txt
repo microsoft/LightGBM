@@ -54,7 +54,7 @@ if(USE_GPU)
 endif(USE_GPU)
 
 if(UNIX OR MINGW OR CYGWIN)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -O3 -Wextra -Wall -std=c++11 -Wno-ignored-attributes")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -O3 -Wextra -Wall -std=c++11 -Wno-ignored-attributes -Wunknown-pragmas")
 endif()
 
 if(MSVC)
