@@ -2,7 +2,7 @@
 % Please edit documentation in R/lgb.prepare2.R
 \name{lgb.prepare2}
 \alias{lgb.prepare2}
-\title{Data preparator for LightGBM datasets (numeric)}
+\title{Data preparator for LightGBM datasets (integer)}
 \usage{
 lgb.prepare2(data)
 }
@@ -13,7 +13,7 @@ lgb.prepare2(data)
 The cleaned dataset. It must be converted to a matrix format (\code{as.matrix}) for input in lgb.Dataset.
 }
 \description{
-Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors and characters are converted to numeric without integers. This is useful if you have a specific need for numeric dataset instead of integer dataset. There are programs which do not support integer-only input. Consider this is a fallback solution if you cannot use integers. Please use \code{lgb.prepare_rules2} if you want to apply this transformation to other datasets.
+Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors and characters are converted to numeric (specifically: integer). Please use \code{lgb.prepare_rules2} if you want to apply this transformation to other datasets. This is useful if you have a specific need for integer dataset instead of numeric dataset. Note that there are programs which do not support integer-only input. Consider this as a half memory technique which is dangerous, especially for LightGBM.
 }
 \examples{
 \dontrun{
@@ -28,13 +28,13 @@ Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors 
   # $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
   # $ Species     : Factor w/ 3 levels "setosa","versicolor",..: 1 1 1 1 ...
   
-  str(lgb.prepare2(data = iris)) # Convert all factors/chars to numeric
+  str(lgb.prepare2(data = iris)) # Convert all factors/chars to integer
   # 'data.frame':	150 obs. of  5 variables:
   # $ Sepal.Length: num  5.1 4.9 4.7 4.6 5 5.4 4.6 5 4.4 4.9 ...
   # $ Sepal.Width : num  3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
   # $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
   # $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
-  # $ Species     : num  1 1 1 1 1 1 1 1 1 1 ...
+  # $ Species     : int  1 1 1 1 1 1 1 1 1 1 ...
   
   # When lightgbm package is installed, and you do not want to load it
   # You can still use the function!
@@ -45,7 +45,8 @@ Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors 
   # $ Sepal.Width : num  3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
   # $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
   # $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
-  # $ Species     : num  1 1 1 1 1 1 1 1 1 1 ...
+  # $ Species     : int  1 1 1 1 1 1 1 1 1 1 ...
+  
 }
 
 }

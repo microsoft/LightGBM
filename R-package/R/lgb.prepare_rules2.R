@@ -1,6 +1,6 @@
-#' Data preparator for LightGBM datasets with rules (numeric)
+#' Data preparator for LightGBM datasets with rules (integer)
 #'
-#' Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors and characters are converted to numeric. In addition, keeps rules created so you can convert other datasets using this converter. This is useful if you have a specific need for numeric dataset instead of integer dataset. There are programs which do not support integer-only input. Consider this is a fallback solution if you cannot use integers.
+#' Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors and characters are converted to numeric (specifically: integer). In addition, keeps rules created so you can convert other datasets using this converter. This is useful if you have a specific need for integer dataset instead of numeric dataset. Note that there are programs which do not support integer-only input. Consider this as a half memory technique which is dangerous, especially for LightGBM.
 #' 
 #' @param data A data.frame or data.table to prepare.
 #' @param rules A set of rules from the data preparator, if already used.
@@ -27,7 +27,7 @@
 #'   # $ Sepal.Width : num  3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
 #'   # $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
 #'   # $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
-#'   # $ Species     : num  1 1 1 1 1 1 1 1 1 1 ...
+#'   # $ Species     : int  1 1 1 1 1 1 1 1 1 1 ...
 #'   
 #'   data(iris) # Erase iris dataset
 #'   iris$Species[1] <- "NEW FACTOR" # Introduce junk factor (NA)
@@ -54,9 +54,9 @@
 #'   data(iris) # Erase iris dataset
 #'   
 #'   # We remapped values differently
-#'   personal_rules <- list(Species = c("setosa" = 3,
-#'                                      "versicolor" = 2,
-#'                                      "virginica" = 1))
+#'   personal_rules <- list(Species = c("setosa" = 3L,
+#'                                      "versicolor" = 2L,
+#'                                      "virginica" = 1L))
 #'   newest_iris <- lgb.prepare_rules2(data = iris, rules = personal_rules)
 #'   str(newest_iris$data) # SUCCESS!
 #'   # 'data.frame':	150 obs. of  5 variables:
@@ -64,7 +64,7 @@
 #'   # $ Sepal.Width : num  3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
 #'   # $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
 #'   # $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
-#'   # $ Species     : num  3 3 3 3 3 3 3 3 3 3 ...
+#'   # $ Species     : int  3 3 3 3 3 3 3 3 3 3 ...
 #'   
 #' }
 #' 
@@ -81,7 +81,7 @@ lgb.prepare_rules2 <- function(data, rules = NULL) {
       for (i in names(rules)) {
         
         set(data, j = i, value = unname(rules[[i]][data[[i]]]))
-        data[[i]][is.na(data[[i]])] <- 0 # Overwrite NAs by 0s
+        data[[i]][is.na(data[[i]])] <- 0L # Overwrite NAs by 0s as integer
         
       }
       
@@ -106,11 +106,10 @@ lgb.prepare_rules2 <- function(data, rules = NULL) {
           # Get unique values
           if (class(mini_data) == "factor") {
             mini_unique <- levels(mini_data) # Factor
-            mini_numeric <- numeric(length(mini_unique))
-            mini_numeric[1:length(mini_unique)] <- 1:length(mini_unique) # Respect ordinal if needed
+            mini_numeric <- 1:length(mini_unique) # Respect ordinal if needed
           } else {
             mini_unique <- as.factor(unique(mini_data)) # Character
-            mini_numeric <- as.numeric(mini_unique) # No respect of ordinality
+            mini_numeric <- as.integer(mini_unique) # No respect of ordinality
           }
           
           # Create ruleset
@@ -136,7 +135,7 @@ lgb.prepare_rules2 <- function(data, rules = NULL) {
       for (i in names(rules)) {
         
         data[[i]] <- unname(rules[[i]][data[[i]]])
-        data[[i]][is.na(data[[i]])] <- 0 # Overwrite NAs by 0s
+        data[[i]][is.na(data[[i]])] <- 0L # Overwrite NAs by 0s as integer
         
       }
       
@@ -164,11 +163,10 @@ lgb.prepare_rules2 <- function(data, rules = NULL) {
             # Get unique values
             if (class(mini_data) == "factor") {
               mini_unique <- levels(mini_data) # Factor
-              mini_numeric <- numeric(length(mini_unique))
-              mini_numeric[1:length(mini_unique)] <- 1:length(mini_unique) # Respect ordinal if needed
+              mini_numeric <- 1:length(mini_unique) # Respect ordinal if needed
             } else {
               mini_unique <- as.factor(unique(mini_data)) # Character
-              mini_numeric <- as.numeric(mini_unique) # No respect of ordinality
+              mini_numeric <- as.integer(mini_unique) # No respect of ordinality
             }
             
             # Create ruleset
