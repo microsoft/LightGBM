@@ -16,21 +16,19 @@
 #include <vector>
 #include <utility>
 
-namespace
-{
-    /// Singleton used when earlyStop is nullptr in PredictRaw()
-    const auto noEarlyStop = LightGBM::createPredictionEarlyStopInstance("none", LightGBM::PredictionEarlyStopConfig());
+namespace {
+/// Singleton used when early_stop is nullptr in PredictRaw()
+const auto kNoEarlyStop = LightGBM::createPredictionEarlyStopInstance("none", LightGBM::PredictionEarlyStopConfig());
 }
 
 namespace LightGBM {
 
-void GBDT::PredictRaw(const double* features, double* output, const PredictionEarlyStopInstance* earlyStop) const {
-  if (earlyStop == nullptr)
-  {
-    earlyStop = &noEarlyStop;
+void GBDT::PredictRaw(const double* features, double* output, const PredictionEarlyStopInstance* early_stop) const {
+  if (early_stop == nullptr) {
+    early_stop = &kNoEarlyStop;
   }
 
-  int earlyStopRoundCounter = 0;
+  int early_stop_round_counter = 0;
   for (int i = 0; i < num_iteration_for_pred_; ++i) {
     // predict all the trees for one iteration
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
@@ -38,18 +36,18 @@ void GBDT::PredictRaw(const double* features, double* output, const PredictionEa
     }
 
     // check early stopping
-    ++earlyStopRoundCounter;
-    if (earlyStop->roundPeriod == earlyStopRoundCounter) {
-      if (earlyStop->callbackFunction(output, num_tree_per_iteration_)) {
+    ++early_stop_round_counter;
+    if (early_stop->round_period == early_stop_round_counter) {
+      if (early_stop->callback_function(output, num_tree_per_iteration_)) {
         return;
       }
-      earlyStopRoundCounter = 0;
+      early_stop_round_counter = 0;
     }
   }
 }
 
-void GBDT::Predict(const double* features, double* output, const PredictionEarlyStopInstance* earlyStop) const {
-  PredictRaw(features, output, earlyStop);
+void GBDT::Predict(const double* features, double* output, const PredictionEarlyStopInstance* early_stop) const {
+  PredictRaw(features, output, early_stop);
 
   if (objective_function_ != nullptr) {
     objective_function_->ConvertOutput(output, output);

@@ -714,6 +714,7 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   str_buf << "#include <string>" << std::endl;
   str_buf << "#include <vector>" << std::endl;
   str_buf << "#include <utility>" << std::endl;
+  str_buf << "namespace { const auto kNoEarlyStop = createPredictionEarlyStopInstance(\"none\", PredictionEarlyStopConfig()); }" << std::endl;
   str_buf << "namespace LightGBM {" << std::endl;
 
   int num_used_model = static_cast<int>(models_.size());
@@ -738,32 +739,31 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
 
   std::stringstream pred_str_buf;
 
-  pred_str_buf << "\t" << "const auto noEarlyStop = createPredictionEarlyStopInstance(\"none\", PredictionEarlyStopConfig());" << std::endl;
-  pred_str_buf << "\t" << "if (earlyStop == nullptr) {" << std::endl;
-  pred_str_buf << "\t\t" << "earlyStop = &noEarlyStop;" << std::endl;
+  pred_str_buf << "\t" << "if (early_stop == nullptr) {" << std::endl;
+  pred_str_buf << "\t\t" << "early_stop = &kNoEarlyStop;" << std::endl;
   pred_str_buf << "\t" << "}" << std::endl;
 
-  pred_str_buf << "\t" << "int earlyStopRoundCounter = 0;" << std::endl;
+  pred_str_buf << "\t" << "int early_stop_round_counter = 0;" << std::endl;
   pred_str_buf << "\t" << "for (int i = 0; i < num_iteration_for_pred_; ++i) {" << std::endl;
   pred_str_buf << "\t\t" << "for (int k = 0; k < num_tree_per_iteration_; ++k) {" << std::endl;
   pred_str_buf << "\t\t\t" << "output[k] += (*PredictTreePtr[i * num_tree_per_iteration_ + k])(features);" << std::endl;
   pred_str_buf << "\t\t" << "}" << std::endl;
-  pred_str_buf << "\t\t" << "++earlyStopRoundCounter;" << std::endl;
-  pred_str_buf << "\t\t" << "if (earlyStop->roundPeriod == earlyStopRoundCounter) {" << std::endl;
-  pred_str_buf << "\t\t\t" << "if (earlyStop->callbackFunction(output, num_tree_per_iteration_))" << std::endl;
+  pred_str_buf << "\t\t" << "++early_stop_round_counter;" << std::endl;
+  pred_str_buf << "\t\t" << "if (earlyStop->round_period == early_stop_round_counter) {" << std::endl;
+  pred_str_buf << "\t\t\t" << "if (earlyStop->callback_function(output, num_tree_per_iteration_))" << std::endl;
   pred_str_buf << "\t\t\t\t" << "return;" << std::endl;
-  pred_str_buf << "\t\t\t" << "earlyStopRoundCounter = 0;" << std::endl;
+  pred_str_buf << "\t\t\t" << "early_stop_round_counter = 0;" << std::endl;
   pred_str_buf << "\t\t" << "}" << std::endl;
   pred_str_buf << "\t" << "}" << std::endl;
 
-  str_buf << "void GBDT::PredictRaw(const double* features, double *output, const PredictionEarlyStopInstance* earlyStop) const {" << std::endl;
+  str_buf << "void GBDT::PredictRaw(const double* features, double *output, const PredictionEarlyStopInstance* early_stop) const {" << std::endl;
   str_buf << pred_str_buf.str();
   str_buf << "}" << std::endl;
   str_buf << std::endl;
 
   // Predict
-  str_buf << "void GBDT::Predict(const double* features, double *output, const PredictionEarlyStopInstance* earlyStop) const {" << std::endl;
-  str_buf << "\t" << "PredictRaw(features, output, earlyStop);" << std::endl;
+  str_buf << "void GBDT::Predict(const double* features, double *output, const PredictionEarlyStopInstance* early_stop) const {" << std::endl;
+  str_buf << "\t" << "PredictRaw(features, output, early_stop);" << std::endl;
   str_buf << "\t" << "if (objective_function_ != nullptr) {" << std::endl;
   str_buf << "\t\t" << "objective_function_->ConvertOutput(output, output);" << std::endl;
   str_buf << "\t" << "}" << std::endl;

@@ -248,6 +248,7 @@ public:
     return ret;
   }
 
+  #pragma warning(disable : 4996)
   int GetEvalNames(char** out_strs) const {
     int idx = 0;
     for (const auto& metric : train_metric_) {
@@ -259,6 +260,7 @@ public:
     return idx;
   }
 
+  #pragma warning(disable : 4996)
   int GetFeatureNames(char** out_strs) const {
     int idx = 0;
     for (const auto& name : boosting_->FeatureNames()) {
@@ -685,6 +687,7 @@ int LGBM_DatasetSetFeatureNames(
   API_END();
 }
 
+#pragma warning(disable : 4996)
 int LGBM_DatasetGetFeatureNames(
   DatasetHandle handle,
   char** feature_names,
@@ -699,6 +702,7 @@ int LGBM_DatasetGetFeatureNames(
   API_END();
 }
 
+#pragma warning(disable : 4702)
 int LGBM_DatasetFree(DatasetHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Dataset*>(handle);
@@ -806,6 +810,7 @@ int LGBM_BoosterLoadModelFromString(
   API_END();
 }
 
+#pragma warning(disable : 4702)
 int LGBM_BoosterFree(BoosterHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Booster*>(handle);
@@ -1068,6 +1073,7 @@ int LGBM_BoosterSaveModel(BoosterHandle handle,
   API_END();
 }
 
+#pragma warning(disable : 4996)
 int LGBM_BoosterSaveModelToString(BoosterHandle handle,
                                   int num_iteration,
                                   int buffer_len,
@@ -1083,6 +1089,7 @@ int LGBM_BoosterSaveModelToString(BoosterHandle handle,
   API_END();
 }
 
+#pragma warning(disable : 4996)
 int LGBM_BoosterDumpModel(BoosterHandle handle,
                           int num_iteration,
                           int buffer_len,
@@ -1125,8 +1132,8 @@ int LGBM_PredictionEarlyStopInstanceCreate(const char* type,
                                            PredictionEarlyStoppingHandle* out) {
   API_BEGIN();
   PredictionEarlyStopConfig config;
-  config.marginThreshold = margin_threshold;
-  config.roundPeriod = round_period;
+  config.margin_threshold = margin_threshold;
+  config.round_period = round_period;
 
   auto earlyStop = createPredictionEarlyStopInstance(type, config);
 
@@ -1135,6 +1142,7 @@ int LGBM_PredictionEarlyStopInstanceCreate(const char* type,
   API_END();
 }
 
+#pragma warning(disable : 4702)
 int LGBM_PredictionEarlyStopInstanceFree(const PredictionEarlyStoppingHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<const PredictionEarlyStopInstance*>(handle);

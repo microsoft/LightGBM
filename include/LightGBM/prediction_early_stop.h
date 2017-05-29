@@ -8,22 +8,24 @@
 
 namespace LightGBM {
 
+#pragma warning(disable : 4099)
 struct PredictionEarlyStopInstance {
   /// Callback function type for early stopping.
   /// Takes current prediction and number of elements in prediction
   /// @returns true if prediction should stop according to criterion
   using FunctionType = std::function<bool(const double*, int)>;
 
-  FunctionType callbackFunction;  // callback function itself
-  int          roundPeriod;       // call callbackFunction every `runPeriod` iterations
+  FunctionType callback_function;  // callback function itself
+  int          round_period;       // call callback_function every `runPeriod` iterations
 };
 
+#pragma warning(disable : 4099)
 struct PredictionEarlyStopConfig {
-  int roundPeriod;
-  double marginThreshold;
+  int round_period;
+  double margin_threshold;
 };
 
-/// Create an early stopping algorithm of type `type`, with given roundPeriod and margin threshold
+/// Create an early stopping algorithm of type `type`, with given round_period and margin threshold
 LIGHTGBM_EXPORT PredictionEarlyStopInstance createPredictionEarlyStopInstance(const std::string& type,
                                                                               const PredictionEarlyStopConfig& config);
 

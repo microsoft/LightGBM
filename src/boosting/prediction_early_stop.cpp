@@ -11,7 +11,7 @@ namespace {
 
 using namespace LightGBM;
 
-PredictionEarlyStopInstance createNone(const PredictionEarlyStopConfig&) {
+PredictionEarlyStopInstance CreateNone(const PredictionEarlyStopConfig&) {
   return PredictionEarlyStopInstance{
     [](const double*, int) {
     return false;
@@ -20,12 +20,12 @@ PredictionEarlyStopInstance createNone(const PredictionEarlyStopConfig&) {
   };
 }
 
-PredictionEarlyStopInstance createMulticlass(const PredictionEarlyStopConfig& config) {
-  // marginThreshold will be captured by value
-  const double marginThreshold = config.marginThreshold;
+PredictionEarlyStopInstance CreateMulticlass(const PredictionEarlyStopConfig& config) {
+  // margin_threshold will be captured by value
+  const double margin_threshold = config.margin_threshold;
 
   return PredictionEarlyStopInstance{
-    [marginThreshold](const double* pred, int sz) {
+    [margin_threshold](const double* pred, int sz) {
     if (sz < 2) {
       Log::Fatal("Multiclass early stopping needs predictions to be of length two or larger");
     }
@@ -39,34 +39,34 @@ PredictionEarlyStopInstance createMulticlass(const PredictionEarlyStopConfig& co
 
     const auto margin = votes[0] - votes[1];
 
-    if (margin > marginThreshold) {
+    if (margin > margin_threshold) {
       return true;
     }
 
     return false;
   },
-    config.roundPeriod
+    config.round_period
   };
 }
 
-PredictionEarlyStopInstance createBinary(const PredictionEarlyStopConfig& config) {
-  // marginThreshold will be captured by value
-  const double marginThreshold = config.marginThreshold;
+PredictionEarlyStopInstance CreateBinary(const PredictionEarlyStopConfig& config) {
+  // margin_threshold will be captured by value
+  const double margin_threshold = config.margin_threshold;
 
   return PredictionEarlyStopInstance{
-    [marginThreshold](const double* pred, int sz) {
+    [margin_threshold](const double* pred, int sz) {
     if (sz != 1) {
       Log::Fatal("Binary early stopping needs predictions to be of length one");
     }
     const auto margin = 2.0 * fabs(pred[0]);
 
-    if (margin > marginThreshold) {
+    if (margin > margin_threshold) {
       return true;
     }
 
     return false;
   },
-    config.roundPeriod
+    config.round_period
   };
 }
 
@@ -77,11 +77,11 @@ namespace LightGBM {
 PredictionEarlyStopInstance createPredictionEarlyStopInstance(const std::string& type,
                                                               const PredictionEarlyStopConfig& config) {
   if (type == "none") {
-    return createNone(config);
+    return CreateNone(config);
   } else if (type == "multiclass") {
-    return createMulticlass(config);
+    return CreateMulticlass(config);
   } else if (type == "binary") {
-    return createBinary(config);
+    return CreateBinary(config);
   } else {
     throw std::runtime_error("Unknown early stopping type: " + type);
   }

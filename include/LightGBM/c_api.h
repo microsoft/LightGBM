@@ -747,6 +747,7 @@ static char* LastErrorMsg() { static __declspec(thread) char err_msg[512] = "Eve
 static char* LastErrorMsg() { static thread_local char err_msg[512] = "Everything is fine"; return err_msg; }
 #endif
 
+#pragma warning(disable : 4996)
 inline void LGBM_SetLastError(const char* msg) {
   std::strcpy(LastErrorMsg(), msg);
 }
