@@ -1811,7 +1811,7 @@ class PredictionEarlyStopInstance(object):
         Parameters
         ----------
         early_stop_type: string
-            "none", "binary" or "multiclass". Regression is not supported.
+            None, "none", "binary" or "multiclass". Regression is not supported.
         round_period : int
             The score will be checked every round_period to check if the early stopping criteria is met
         margin_threshold : double
@@ -1819,6 +1819,9 @@ class PredictionEarlyStopInstance(object):
         """
         self.handle = ctypes.c_void_p(0)
         self.__attr = {}
+
+        if early_stop_type is None:
+            early_stop_type = "none"
 
         _safe_call(_LIB.LGBM_PredictionEarlyStopInstanceCreate(
             c_str(early_stop_type),

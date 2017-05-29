@@ -23,8 +23,8 @@ except ImportError:
 
 __version__ = 0.2
 
-__all__ = ['Dataset', 'Booster',
+__all__ = ['Dataset', 'Booster', 'PredictionEarlyStopInstance',
            'train', 'cv',
            'LGBMModel', 'LGBMRegressor', 'LGBMClassifier', 'LGBMRanker',
            'print_evaluation', 'record_evaluation', 'reset_parameter', 'early_stopping',
-           'plot_importance', 'plot_metric', 'plot_tree', 'create_tree_digraph', 'PredictionEarlyStopInstance']
+           'plot_importance', 'plot_metric', 'plot_tree', 'create_tree_digraph']
