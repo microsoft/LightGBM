@@ -24,7 +24,7 @@ namespace
 
 namespace LightGBM {
 
-inline void GBDT::PredictRaw(const double* features, double* output, const PredictionEarlyStopInstance* earlyStop) const {
+void GBDT::PredictRaw(const double* features, double* output, const PredictionEarlyStopInstance* earlyStop) const {
   if (earlyStop == nullptr)
   {
     earlyStop = &noEarlyStop;
