@@ -296,7 +296,7 @@ class _InnerPredictor(object):
     Only used for prediction, usually used for continued-train
     Note: Can convert from Booster, but cannot convert to Booster
     """
-    def __init__(self, model_file=None, booster_handle=None):
+    def __init__(self, model_file=None, booster_handle=None, early_stop_instance=None):
         """Initialize the _InnerPredictor. Not expose to user
 
         Parameters
@@ -305,6 +305,8 @@ class _InnerPredictor(object):
             Path to the model file.
         booster_handle : Handle of Booster
             use handle to init
+        early_stop_instance: object of type PredictionEarlyStopInstance
+            If None, no early stopping is applied
         """
         self.handle = ctypes.c_void_p()
         self.__is_manage_handle = True
@@ -338,6 +340,11 @@ class _InnerPredictor(object):
             self.pandas_categorical = None
         else:
             raise TypeError('Need Model file or Booster handle to create a predictor')
+
+        if early_stop_instance is None:
+            self.early_stop_instance = PredictionEarlyStopInstance("none")
+        else:
+            self.early_stop_instance = early_stop_instance
 
     def __del__(self):
         if self.__is_manage_handle:
@@ -385,6 +392,7 @@ class _InnerPredictor(object):
         int_data_has_header = 1 if data_has_header else 0
         if num_iteration > self.num_total_iteration:
             num_iteration = self.num_total_iteration
+
         if isinstance(data, string_type):
             with _temp_file() as f:
                 _safe_call(_LIB.LGBM_BoosterPredictForFile(
@@ -393,6 +401,7 @@ class _InnerPredictor(object):
                     ctypes.c_int(int_data_has_header),
                     ctypes.c_int(predict_type),
                     ctypes.c_int(num_iteration),
+                    self.early_stop_instance.handle,
                     c_str(f.name)))
                 lines = f.readlines()
                 nrow = len(lines)
@@ -409,7 +418,7 @@ class _InnerPredictor(object):
                                                predict_type)
         elif isinstance(data, DataFrame):
             preds, nrow = self.__pred_for_np2d(data.values, num_iteration,
-                                               predict_type)
+                                               predict_type, early_stop_instance_handle)
         else:
             try:
                 csr = scipy.sparse.csr_matrix(data)
@@ -466,6 +475,7 @@ class _InnerPredictor(object):
             ctypes.c_int(C_API_IS_ROW_MAJOR),
             ctypes.c_int(predict_type),
             ctypes.c_int(num_iteration),
+            self.early_stop_instance.handle,
             ctypes.byref(out_num_preds),
             preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
         if n_preds != out_num_preds.value:
@@ -496,6 +506,7 @@ class _InnerPredictor(object):
             ctypes.c_int64(csr.shape[1]),
             ctypes.c_int(predict_type),
             ctypes.c_int(num_iteration),
+            self.early_stop_instance.handle,
             ctypes.byref(out_num_preds),
             preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
         if n_preds != out_num_preds.value:
@@ -526,6 +537,7 @@ class _InnerPredictor(object):
             ctypes.c_int64(csc.shape[0]),
             ctypes.c_int(predict_type),
             ctypes.c_int(num_iteration),
+            self.early_stop_instance.handle,
             ctypes.byref(out_num_preds),
             preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
         if n_preds != out_num_preds.value:
@@ -1568,7 +1580,8 @@ class Booster(object):
                 ptr_string_buffer))
         return json.loads(string_buffer.value.decode())
 
-    def predict(self, data, num_iteration=-1, raw_score=False, pred_leaf=False, data_has_header=False, is_reshape=True):
+    def predict(self, data, num_iteration=-1, raw_score=False, pred_leaf=False, data_has_header=False, is_reshape=True,
+                early_stop_instance=None):
         """
         Predict logic
 
@@ -1587,19 +1600,21 @@ class Booster(object):
             Used for txt data
         is_reshape : bool
             Reshape to (nrow, ncol) if true
+        early_stop_instance: object of type PredictionEarlyStopInstance.
+            If None, no early stopping is applied
 
         Returns
         -------
         Prediction result
         """
-        predictor = self._to_predictor()
+        predictor = self._to_predictor(early_stop_instance)
         if num_iteration <= 0:
             num_iteration = self.best_iteration
         return predictor.predict(data, num_iteration, raw_score, pred_leaf, data_has_header, is_reshape)
 
-    def _to_predictor(self):
+    def _to_predictor(self, early_stop_instance=None):
         """Convert to predictor"""
-        predictor = _InnerPredictor(booster_handle=self.handle)
+        predictor = _InnerPredictor(booster_handle=self.handle, early_stop_instance=early_stop_instance)
         predictor.pandas_categorical = self.pandas_categorical
         return predictor
 
@@ -1785,3 +1800,35 @@ class Booster(object):
                 self.__attr[key] = value
             else:
                 self.__attr.pop(key, None)
+
+
+class PredictionEarlyStopInstance(object):
+    """"PredictionEarlyStopInstance in LightGBM."""
+    def __init__(self, early_stop_type="none", round_period=20, margin_threshold=1.5):
+        """
+        Create an early stopping object
+
+        Parameters
+        ----------
+        early_stop_type: string
+            None, "none", "binary" or "multiclass". Regression is not supported.
+        round_period : int
+            The score will be checked every round_period to check if the early stopping criteria is met
+        margin_threshold : double
+            Early stopping will kick in when the margin is greater than margin_threshold
+        """
+        self.handle = ctypes.c_void_p(0)
+        self.__attr = {}
+
+        if early_stop_type is None:
+            early_stop_type = "none"
+
+        _safe_call(_LIB.LGBM_PredictionEarlyStopInstanceCreate(
+            c_str(early_stop_type),
+            ctypes.c_int(round_period),
+            ctypes.c_double(margin_threshold),
+            ctypes.byref(self.handle)))
+
+    def __del__(self):
+        if self.handle is not None:
+            _safe_call(_LIB.LGBM_PredictionEarlyStopInstanceFree(self.handle))

@@ -126,6 +126,9 @@
     <ClInclude Include="..\include\LightGBM\objective_function.h">
       <Filter>include\LightGBM</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\LightGBM\prediction_early_stop.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\LightGBM\tree.h">
       <Filter>include\LightGBM</Filter>
     </ClInclude>
@@ -260,5 +263,9 @@
     <ClCompile Include="..\src\boosting\gbdt_prediction.cpp">
       <Filter>src\boosting</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\boosting\prediction_early_stop.cpp">
+      <Filter>src\boosting</Filter>
+    </ClCompile>
+
   </ItemGroup>
 </Project>

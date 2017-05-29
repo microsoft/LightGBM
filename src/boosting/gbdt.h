@@ -136,9 +136,11 @@ public:
     return num_preb_in_one_row;
   }
 
-  void PredictRaw(const double* features, double* output) const override;
+  void PredictRaw(const double* features, double* output,
+                  const PredictionEarlyStopInstance* earlyStop = nullptr) const override;
 
-  void Predict(const double* features, double* output) const override;
+  void Predict(const double* features, double* output,
+               const PredictionEarlyStopInstance* earlyStop) const override;
 
   void PredictLeafIndex(const double* features, double* output) const override;
 

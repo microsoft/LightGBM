@@ -10,6 +10,7 @@
 #include <LightGBM/objective_function.h>
 #include <LightGBM/metric.h>
 #include <LightGBM/config.h>
+#include <LightGBM/prediction_early_stop.h>
 
 #include <cstdio>
 #include <vector>
@@ -162,6 +163,7 @@ public:
 
   void Predict(int num_iteration, int predict_type, int nrow,
                std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
+               const PredictionEarlyStoppingHandle early_stop_handle,
                double* out_result, int64_t* out_len) {
     std::lock_guard<std::mutex> lock(mutex_);
     bool is_predict_leaf = false;
@@ -173,7 +175,8 @@ public:
     } else {
       is_raw_score = false;
     }
-    Predictor predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf);
+    Predictor predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf,
+                        reinterpret_cast<const PredictionEarlyStopInstance*>(early_stop_handle));
     int64_t num_preb_in_one_row = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf);
     auto pred_fun = predictor.GetPredictFunction();
     auto pred_wrt_ptr = out_result;
@@ -186,7 +189,8 @@ public:
   }
 
   void Predict(int num_iteration, int predict_type, const char* data_filename,
-               int data_has_header, const char* result_filename) {
+               int data_has_header, const PredictionEarlyStoppingHandle early_stop_handle,
+               const char* result_filename) {
     std::lock_guard<std::mutex> lock(mutex_);
     bool is_predict_leaf = false;
     bool is_raw_score = false;
@@ -197,7 +201,8 @@ public:
     } else {
       is_raw_score = false;
     }
-    Predictor predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf);
+    Predictor predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf,
+                        reinterpret_cast<const PredictionEarlyStopInstance*>(early_stop_handle));
     bool bool_data_has_header = data_has_header > 0 ? true : false;
     predictor.Predict(data_filename, result_filename, bool_data_has_header);
   }
@@ -950,10 +955,12 @@ int LGBM_BoosterPredictForFile(BoosterHandle handle,
                                int data_has_header,
                                int predict_type,
                                int num_iteration,
+                               const PredictionEarlyStoppingHandle early_stop_handle,
                                const char* result_filename) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  ref_booster->Predict(num_iteration, predict_type, data_filename, data_has_header, result_filename);
+  ref_booster->Predict(num_iteration, predict_type, data_filename, data_has_header,
+                       early_stop_handle, result_filename);
   API_END();
 }
 
@@ -980,13 +987,15 @@ int LGBM_BoosterPredictForCSR(BoosterHandle handle,
                               int64_t,
                               int predict_type,
                               int num_iteration,
+                              const PredictionEarlyStoppingHandle early_stop_handle,
                               int64_t* out_len,
                               double* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int nrow = static_cast<int>(nindptr - 1);
-  ref_booster->Predict(num_iteration, predict_type, nrow, get_row_fun, out_result, out_len);
+  ref_booster->Predict(num_iteration, predict_type, nrow, get_row_fun,
+                       early_stop_handle, out_result, out_len);
   API_END();
 }
 
@@ -1001,6 +1010,7 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
                               int64_t num_row,
                               int predict_type,
                               int num_iteration,
+                              const PredictionEarlyStoppingHandle early_stop_handle,
                               int64_t* out_len,
                               double* out_result) {
   API_BEGIN();
@@ -1021,7 +1031,8 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
     }
     return one_row;
   };
-  ref_booster->Predict(num_iteration, predict_type, static_cast<int>(num_row), get_row_fun, out_result, out_len);
+  ref_booster->Predict(num_iteration, predict_type, static_cast<int>(num_row), get_row_fun, early_stop_handle,
+                       out_result, out_len);
   API_END();
 }
 
@@ -1033,12 +1044,14 @@ int LGBM_BoosterPredictForMat(BoosterHandle handle,
                               int is_row_major,
                               int predict_type,
                               int num_iteration,
+                              const PredictionEarlyStoppingHandle early_stop_handle,
                               int64_t* out_len,
                               double* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
-  ref_booster->Predict(num_iteration, predict_type, nrow, get_row_fun, out_result, out_len);
+  ref_booster->Predict(num_iteration, predict_type, nrow, get_row_fun,
+                      early_stop_handle, out_result, out_len);
   API_END();
 }
 
@@ -1098,6 +1111,31 @@ int LGBM_BoosterSetLeafValue(BoosterHandle handle,
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->SetLeafValue(tree_idx, leaf_idx, val);
+  API_END();
+}
+
+
+int LGBM_PredictionEarlyStopInstanceCreate(const char* type,
+                                         int   round_period,
+                                         double margin_threshold,
+                                         PredictionEarlyStoppingHandle* out)
+{
+  API_BEGIN();
+  PredictionEarlyStopConfig config;
+  config.marginThreshold = margin_threshold;
+  config.roundPeriod = round_period;
+
+  auto earlyStop = createPredictionEarlyStopInstance(type, config);
+
+    // create new by copying
+  *out = new PredictionEarlyStopInstance(earlyStop);
+  API_END();
+}
+
+int LGBM_PredictionEarlyStopInstanceFree(const PredictionEarlyStoppingHandle handle)
+{
+  API_BEGIN();
+  delete reinterpret_cast<const PredictionEarlyStopInstance*>(handle);
   API_END();
 }
 
