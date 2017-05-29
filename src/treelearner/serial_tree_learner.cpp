@@ -484,15 +484,15 @@ void SerialTreeLearner::FindBestThresholds() {
                               smaller_leaf_splits_->sum_gradients(), smaller_leaf_splits_->sum_hessians(),
                               smaller_leaf_splits_->num_data_in_leaf(),
                               smaller_leaf_histogram_array_[feature_index].RawData());
-
+    int real_fidx = train_data_->RealFeatureIndex(feature_index);
     smaller_leaf_histogram_array_[feature_index].FindBestThreshold(
       smaller_leaf_splits_->sum_gradients(),
       smaller_leaf_splits_->sum_hessians(),
       smaller_leaf_splits_->num_data_in_leaf(),
       &smaller_split);
-    if (smaller_split.gain > smaller_best[tid].gain) {
+    smaller_split.feature = real_fidx;
+    if (smaller_split > smaller_best[tid]) {
       smaller_best[tid] = smaller_split;
-      smaller_best[tid].feature = train_data_->RealFeatureIndex(feature_index);
     }
     // only has root leaf
     if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->LeafIndex() < 0) { continue; }
@@ -511,10 +511,10 @@ void SerialTreeLearner::FindBestThresholds() {
       larger_leaf_splits_->sum_hessians(),
       larger_leaf_splits_->num_data_in_leaf(),
       &larger_split);
-    if (larger_split.gain > larger_best[tid].gain) {
+    larger_split.feature = real_fidx;
+    if (larger_split > larger_best[tid]) {
       larger_best[tid] = larger_split;
-      larger_best[tid].feature = train_data_->RealFeatureIndex(feature_index);
-    }
+    } 
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
