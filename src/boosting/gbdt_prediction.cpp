@@ -16,10 +16,15 @@
 #include <vector>
 #include <utility>
 
+namespace
+{
+    /// Singleton used when earlyStop is nullptr in PredictRaw()
+    const auto noEarlyStop = LightGBM::createPredictionEarlyStopInstance("none", LightGBM::PredictionEarlyStopConfig());
+}
+
 namespace LightGBM {
 
-void GBDT::PredictRaw(const double* features, double* output, const PredictionEarlyStopInstance* earlyStop) const {
-  const auto noEarlyStop = createPredictionEarlyStopInstance("none", PredictionEarlyStopConfig());
+inline void GBDT::PredictRaw(const double* features, double* output, const PredictionEarlyStopInstance* earlyStop) const {
   if (earlyStop == nullptr)
   {
     earlyStop = &noEarlyStop;
