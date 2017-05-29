@@ -129,6 +129,8 @@ public:
 
   bool SkipEmptyClass() const override { return true; }
 
+  bool NeedAccuratePrediction() const override { return false; }
+
 private:
   /*! \brief Number of data */
   data_size_t num_data_;

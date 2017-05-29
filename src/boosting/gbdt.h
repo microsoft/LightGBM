@@ -147,7 +147,7 @@ public:
   }
 
   void PredictRaw(const double* features, double* output,
-                  const PredictionEarlyStopInstance* earlyStop = nullptr) const override;
+                  const PredictionEarlyStopInstance* earlyStop) const override;
 
   void Predict(const double* features, double* output,
                const PredictionEarlyStopInstance* earlyStop) const override;

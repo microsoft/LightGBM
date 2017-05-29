@@ -118,6 +118,8 @@ public:
 
   int NumPredictOneRow() const override { return num_class_; }
 
+  bool NeedAccuratePrediction() const override { return false; }
+
 private:
   /*! \brief Number of data */
   data_size_t num_data_;
@@ -207,6 +209,8 @@ public:
   int NumTreePerIteration() const override { return num_class_; }
 
   int NumPredictOneRow() const override { return num_class_; }
+
+  bool NeedAccuratePrediction() const override { return false; }
 
 private:
   /*! \brief Number of data */

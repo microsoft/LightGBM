@@ -120,7 +120,7 @@ public:
   * \param early_stop Early stopping instance. If nullptr, no early stopping is applied and all trees are evaluated.
   */
   virtual void PredictRaw(const double* features, double* output,
-                          const PredictionEarlyStopInstance* early_stop = nullptr) const = 0;
+                          const PredictionEarlyStopInstance* early_stop) const = 0;
 
   /*!
   * \brief Prediction for one record, sigmoid transformation will be used if needed
@@ -129,7 +129,7 @@ public:
   * \param early_stop Early stopping instance. If nullptr, no early stopping is applied and all trees are evaluated.
   */
   virtual void Predict(const double* features, double* output,
-                       const PredictionEarlyStopInstance* early_stop = nullptr) const = 0;
+                       const PredictionEarlyStopInstance* early_stop) const = 0;
   
   /*!
   * \brief Prediction for one record with leaf index
