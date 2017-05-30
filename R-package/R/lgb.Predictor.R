@@ -87,7 +87,7 @@ Predictor <- R6Class(
           as.integer(rawscore),
           as.integer(predleaf),
           as.integer(num_iteration),
-          lgb.c_str(private$params),
+          private$params,
           lgb.c_str(tmp_filename))
         
         # Get predictions from file
@@ -124,7 +124,7 @@ Predictor <- R6Class(
                             as.integer(rawscore),
                             as.integer(predleaf),
                             as.integer(num_iteration),
-                            lgb.c_str(private$params))
+                            private$params)
           
         } else if (is(data, "dgCMatrix")) {
           
@@ -141,7 +141,7 @@ Predictor <- R6Class(
                             as.integer(rawscore),
                             as.integer(predleaf),
                             as.integer(num_iteration),
-                            lgb.c_str(private$params))
+                            private$params)
           
         } else {
           
