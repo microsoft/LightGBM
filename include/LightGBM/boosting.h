@@ -13,7 +13,7 @@ namespace LightGBM {
 class Dataset;
 class ObjectiveFunction;
 class Metric;
-class PredictionEarlyStopInstance;
+struct PredictionEarlyStopInstance;
 
 /*!
 * \brief The interface for Boosting

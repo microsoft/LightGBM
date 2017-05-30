@@ -8,7 +8,6 @@
 
 namespace LightGBM {
 
-#pragma warning(disable : 4099)
 struct PredictionEarlyStopInstance {
   /// Callback function type for early stopping.
   /// Takes current prediction and number of elements in prediction
@@ -19,7 +18,6 @@ struct PredictionEarlyStopInstance {
   int          round_period;       // call callback_function every `runPeriod` iterations
 };
 
-#pragma warning(disable : 4099)
 struct PredictionEarlyStopConfig {
   int round_period;
   double margin_threshold;
