@@ -111,7 +111,7 @@ void Application::LoadData() {
   PredictionEarlyStopInstance pred_early_stop = CreatePredictionEarlyStopInstance("none", LightGBM::PredictionEarlyStopConfig());
   // need to continue training
   if (boosting_->NumberOfTotalModel() > 0) {
-    predictor.reset(new Predictor(boosting_.get(), -1, true, false, &pred_early_stop));
+    predictor.reset(new Predictor(boosting_.get(), -1, true, false, false, -1, -1));
     predict_fun = predictor->GetPredictFunction();
   }
 
@@ -250,20 +250,10 @@ void Application::Train() {
 }
 
 void Application::Predict() {
-  PredictionEarlyStopInstance pred_early_stop = CreatePredictionEarlyStopInstance("none", LightGBM::PredictionEarlyStopConfig());
-  if (config_.io_config.pred_early_stop && !boosting_->NeedAccuratePrediction()) {
-    PredictionEarlyStopConfig pred_early_stop_config;
-    pred_early_stop_config.margin_threshold = config_.io_config.pred_early_stop_margin;
-    pred_early_stop_config.round_period = config_.io_config.pred_early_stop_freq;
-    if (boosting_->NumberOfClasses() == 1) {
-      pred_early_stop = CreatePredictionEarlyStopInstance("binary", pred_early_stop_config);
-    } else {
-      pred_early_stop = CreatePredictionEarlyStopInstance("multiclass", pred_early_stop_config);
-    }
-  }
   // create predictor
   Predictor predictor(boosting_.get(), config_.io_config.num_iteration_predict, config_.io_config.is_predict_raw_score,
-                      config_.io_config.is_predict_leaf_index, &pred_early_stop);
+                      config_.io_config.is_predict_leaf_index, config_.io_config.pred_early_stop, 
+                      config_.io_config.pred_early_stop_freq, config_.io_config.pred_early_stop_margin);
   predictor.Predict(config_.io_config.data_filename.c_str(),
                     config_.io_config.output_result.c_str(), config_.io_config.has_header);
   Log::Info("Finished prediction");

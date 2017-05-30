@@ -18,7 +18,6 @@
 
 typedef void* DatasetHandle;
 typedef void* BoosterHandle;
-typedef void* PredictionEarlyStoppingHandle;
 
 #define C_API_DTYPE_FLOAT32 (0)
 #define C_API_DTYPE_FLOAT64 (1)
@@ -522,7 +521,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForFile(BoosterHandle handle,
                                                  int data_has_header,
                                                  int predict_type,
                                                  int num_iteration,
-                                                 const PredictionEarlyStoppingHandle early_stop_handle,
+                                                 const char* parameter,
                                                  const char* result_filename);
 
 /*!
@@ -578,7 +577,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
                                                 int64_t num_col,
                                                 int predict_type,
                                                 int num_iteration,
-                                                const PredictionEarlyStoppingHandle early_stop_handle,
+                                                const char* parameter,
                                                 int64_t* out_len,
                                                 double* out_result);
 
@@ -617,7 +616,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSC(BoosterHandle handle,
                                                 int64_t num_row,
                                                 int predict_type,
                                                 int num_iteration,
-                                                const PredictionEarlyStoppingHandle early_stop_handle,
+                                                const char* parameter,
                                                 int64_t* out_len,
                                                 double* out_result);
 
@@ -650,7 +649,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
                                                 int is_row_major,
                                                 int predict_type,
                                                 int num_iteration,
-                                                const PredictionEarlyStoppingHandle early_stop_handle,
+                                                const char* parameter,
                                                 int64_t* out_len,
                                                 double* out_result);
 
@@ -720,25 +719,6 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSetLeafValue(BoosterHandle handle,
                                                int tree_idx,
                                                int leaf_idx,
                                                double val);
-
-
-/*!
-* \brief create an new prediction early stopping instance that can be used to speed up prediction
-* \param type early stopping type: "none", "multiclass" or "binary"
-* \param round_period how often the classifier score is checked for the early stopping condition
-* \param margin_threshold when the margin exceeds this value, early stopping kicks in and no more trees are evaluated
-* \param out handle of created instance
-* \return 0 when succeed, -1 when failure happens
-*/
-LIGHTGBM_C_EXPORT int LGBM_PredictionEarlyStopInstanceCreate(const char* type,
-                                         int   round_period,
-                                         double margin_threshold,
-                                         PredictionEarlyStoppingHandle* out);
-/*!
-  \brief free prediction early stop instance
-  \return 0 when succeed
- */
-LIGHTGBM_C_EXPORT int LGBM_PredictionEarlyStopInstanceFree(const PredictionEarlyStoppingHandle handle);
 
 #if defined(_MSC_VER)
 // exception handle and error msg

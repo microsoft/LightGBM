@@ -6,7 +6,7 @@ Contributors: https://github.com/Microsoft/LightGBM/graphs/contributors
 
 from __future__ import absolute_import
 
-from .basic import Booster, Dataset, PredictionEarlyStopInstance
+from .basic import Booster, Dataset
 from .callback import (early_stopping, print_evaluation, record_evaluation,
                        reset_parameter)
 from .engine import cv, train
@@ -23,7 +23,7 @@ except ImportError:
 
 __version__ = 0.2
 
-__all__ = ['Dataset', 'Booster', 'PredictionEarlyStopInstance',
+__all__ = ['Dataset', 'Booster',
            'train', 'cv',
            'LGBMModel', 'LGBMRegressor', 'LGBMClassifier', 'LGBMRanker',
            'print_evaluation', 'record_evaluation', 'reset_parameter', 'early_stopping',

@@ -32,8 +32,20 @@ public:
   */
   Predictor(Boosting* boosting, int num_iteration,
             bool is_raw_score, bool is_predict_leaf_index,
-            const PredictionEarlyStopInstance* early_stop) {
-    CHECK(early_stop != nullptr);
+            bool early_stop, int early_stop_freq, double early_stop_margin) {
+
+    early_stop_ = CreatePredictionEarlyStopInstance("none", LightGBM::PredictionEarlyStopConfig());
+    if (early_stop && !boosting->NeedAccuratePrediction()) {
+      PredictionEarlyStopConfig pred_early_stop_config;
+      pred_early_stop_config.margin_threshold = early_stop_margin;
+      pred_early_stop_config.round_period = early_stop_freq;
+      if (boosting->NumPredictOneRow() == 1) {
+        early_stop_ = CreatePredictionEarlyStopInstance("binary", pred_early_stop_config);
+      } else {
+        early_stop_ = CreatePredictionEarlyStopInstance("multiclass", pred_early_stop_config);
+      }
+    }
+
     #pragma omp parallel
     #pragma omp master
     {
@@ -56,17 +68,17 @@ public:
 
     } else {
       if (is_raw_score) {
-        predict_fun_ = [this, early_stop](const std::vector<std::pair<int, double>>& features, double* output) {
+        predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
           int tid = omp_get_thread_num();
           CopyToPredictBuffer(predict_buf_[tid].data(), features);
-          boosting_->PredictRaw(predict_buf_[tid].data(), output, early_stop);
+          boosting_->PredictRaw(predict_buf_[tid].data(), output, &early_stop_);
           ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
         };
       } else {
-        predict_fun_ = [this, early_stop](const std::vector<std::pair<int, double>>& features, double* output) {
+        predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
           int tid = omp_get_thread_num();
           CopyToPredictBuffer(predict_buf_[tid].data(), features);
-          boosting_->Predict(predict_buf_[tid].data(), output, early_stop);
+          boosting_->Predict(predict_buf_[tid].data(), output, &early_stop_);
           ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
         };
       }
@@ -169,6 +181,7 @@ private:
   const Boosting* boosting_;
   /*! \brief function for prediction */
   PredictFunction predict_fun_;
+  PredictionEarlyStopInstance early_stop_;
   int num_feature_;
   int num_pred_one_row_;
   int num_threads_;
