@@ -1,20 +1,8 @@
 #include "gbdt.h"
 
 #include <LightGBM/utils/openmp_wrapper.h>
-
-#include <LightGBM/utils/common.h>
-
 #include <LightGBM/objective_function.h>
-#include <LightGBM/metric.h>
 #include <LightGBM/prediction_early_stop.h>
-
-#include <ctime>
-
-#include <sstream>
-#include <chrono>
-#include <string>
-#include <vector>
-#include <utility>
 
 namespace LightGBM {
 

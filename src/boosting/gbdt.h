@@ -3,6 +3,7 @@
 
 #include <LightGBM/boosting.h>
 #include <LightGBM/objective_function.h>
+#include <LightGBM/prediction_early_stop.h>
 
 #include "score_updater.hpp"
 
