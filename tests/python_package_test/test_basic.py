@@ -54,7 +54,7 @@ class TestBasic(unittest.TestCase):
             self.assertEqual(*preds)
 
         # check early stopping is working. Make it stop very early, so the scores should be very close to zero
-        pred_parameter = {"pred_early_stop": True, "pred_early_stop_freq": 5, "pred_early_margin": 1.5}
+        pred_parameter = {"pred_early_stop": True, "pred_early_stop_freq": 5, "pred_early_stop_margin": 1.5}
         pred_early_stopping = bst.predict(X_test, pred_parameter=pred_parameter)
         self.assertEqual(len(pred_from_matr), len(pred_early_stopping))
         for preds in zip(pred_early_stopping, pred_from_matr):
