@@ -508,7 +508,7 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   // Buffer for merge.
   std::vector<_VTRanIt> temp_buf(len);
   _RanIt buf = temp_buf.begin();
-  int s = inner_size;
+  size_t s = inner_size;
   // Recursive merge
   while (s < len) {
     int loop_size = static_cast<int>((len + s * 2 - 1) / (s * 2));

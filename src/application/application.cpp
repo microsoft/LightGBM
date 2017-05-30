@@ -8,6 +8,7 @@
 #include <LightGBM/dataset_loader.h>
 #include <LightGBM/boosting.h>
 #include <LightGBM/objective_function.h>
+#include <LightGBM/prediction_early_stop.h>
 #include <LightGBM/metric.h>
 
 #include "predictor.hpp"
@@ -107,9 +108,10 @@ void Application::LoadData() {
   std::unique_ptr<Predictor> predictor;
   // prediction is needed if using input initial model(continued train)
   PredictFunction predict_fun = nullptr;
+  PredictionEarlyStopInstance pred_early_stop = CreatePredictionEarlyStopInstance("none", LightGBM::PredictionEarlyStopConfig());
   // need to continue training
   if (boosting_->NumberOfTotalModel() > 0) {
-    predictor.reset(new Predictor(boosting_.get(), -1, true, false));
+    predictor.reset(new Predictor(boosting_.get(), -1, true, false, false, -1, -1));
     predict_fun = predictor->GetPredictFunction();
   }
 
@@ -250,7 +252,8 @@ void Application::Train() {
 void Application::Predict() {
   // create predictor
   Predictor predictor(boosting_.get(), config_.io_config.num_iteration_predict, config_.io_config.is_predict_raw_score,
-                      config_.io_config.is_predict_leaf_index);
+                      config_.io_config.is_predict_leaf_index, config_.io_config.pred_early_stop, 
+                      config_.io_config.pred_early_stop_freq, config_.io_config.pred_early_stop_margin);
   predictor.Predict(config_.io_config.data_filename.c_str(),
                     config_.io_config.output_result.c_str(), config_.io_config.has_header);
   Log::Info("Finished prediction");

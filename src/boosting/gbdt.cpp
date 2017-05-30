@@ -43,9 +43,9 @@ GBDT::GBDT()
   boost_from_average_(false) {
   #pragma omp parallel
   #pragma omp master
-    {
-      num_threads_ = omp_get_num_threads();
-    }
+  {
+    num_threads_ = omp_get_num_threads();
+  }
 }
 
 GBDT::~GBDT() {
@@ -261,8 +261,6 @@ data_size_t GBDT::BaggingHelper(Random& cur_rand, data_size_t start, data_size_t
   CHECK(cur_left_cnt == bag_data_cnt);
   return cur_left_cnt;
 }
-
-
 
 void GBDT::Bagging(int iter) {
   // if need bagging
@@ -738,32 +736,27 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
 
   std::stringstream pred_str_buf;
 
-  pred_str_buf << "\t" << "const auto noEarlyStop = createPredictionEarlyStopInstance(\"none\", PredictionEarlyStopConfig());" << std::endl;
-  pred_str_buf << "\t" << "if (earlyStop == nullptr) {" << std::endl;
-  pred_str_buf << "\t\t" << "earlyStop = &noEarlyStop;" << std::endl;
-  pred_str_buf << "\t" << "}" << std::endl;
-
-  pred_str_buf << "\t" << "int earlyStopRoundCounter = 0;" << std::endl;
+  pred_str_buf << "\t" << "int early_stop_round_counter = 0;" << std::endl;
   pred_str_buf << "\t" << "for (int i = 0; i < num_iteration_for_pred_; ++i) {" << std::endl;
   pred_str_buf << "\t\t" << "for (int k = 0; k < num_tree_per_iteration_; ++k) {" << std::endl;
   pred_str_buf << "\t\t\t" << "output[k] += (*PredictTreePtr[i * num_tree_per_iteration_ + k])(features);" << std::endl;
   pred_str_buf << "\t\t" << "}" << std::endl;
-  pred_str_buf << "\t\t" << "++earlyStopRoundCounter;" << std::endl;
-  pred_str_buf << "\t\t" << "if (earlyStop->roundPeriod == earlyStopRoundCounter) {" << std::endl;
-  pred_str_buf << "\t\t\t" << "if (earlyStop->callbackFunction(output, num_tree_per_iteration_))" << std::endl;
+  pred_str_buf << "\t\t" << "++early_stop_round_counter;" << std::endl;
+  pred_str_buf << "\t\t" << "if (early_stop->round_period == early_stop_round_counter) {" << std::endl;
+  pred_str_buf << "\t\t\t" << "if (early_stop->callback_function(output, num_tree_per_iteration_))" << std::endl;
   pred_str_buf << "\t\t\t\t" << "return;" << std::endl;
-  pred_str_buf << "\t\t\t" << "earlyStopRoundCounter = 0;" << std::endl;
+  pred_str_buf << "\t\t\t" << "early_stop_round_counter = 0;" << std::endl;
   pred_str_buf << "\t\t" << "}" << std::endl;
   pred_str_buf << "\t" << "}" << std::endl;
 
-  str_buf << "void GBDT::PredictRaw(const double* features, double *output, const PredictionEarlyStopInstance* earlyStop) const {" << std::endl;
+  str_buf << "void GBDT::PredictRaw(const double* features, double *output, const PredictionEarlyStopInstance* early_stop) const {" << std::endl;
   str_buf << pred_str_buf.str();
   str_buf << "}" << std::endl;
   str_buf << std::endl;
 
   // Predict
-  str_buf << "void GBDT::Predict(const double* features, double *output, const PredictionEarlyStopInstance* earlyStop) const {" << std::endl;
-  str_buf << "\t" << "PredictRaw(features, output, earlyStop);" << std::endl;
+  str_buf << "void GBDT::Predict(const double* features, double *output, const PredictionEarlyStopInstance* early_stop) const {" << std::endl;
+  str_buf << "\t" << "PredictRaw(features, output, early_stop);" << std::endl;
   str_buf << "\t" << "if (objective_function_ != nullptr) {" << std::endl;
   str_buf << "\t\t" << "objective_function_->ConvertOutput(output, output);" << std::endl;
   str_buf << "\t" << "}" << std::endl;
@@ -786,7 +779,6 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
 
   str_buf << "void GBDT::PredictLeafIndex(const double* features, double *output) const {" << std::endl;
   str_buf << "\t" << "int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;" << std::endl;
-  str_buf << "\t" << "#pragma omp parallel for schedule(static)" << std::endl;
   str_buf << "\t" << "for (int i = 0; i < total_tree; ++i) {" << std::endl;
   str_buf << "\t\t" << "output[i] = (*PredictTreeLeafPtr[i])(features);" << std::endl;
   str_buf << "\t" << "}" << std::endl;

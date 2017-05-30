@@ -207,6 +207,8 @@ public:
     return str_buf.str();
   }
 
+  bool NeedAccuratePrediction() const override { return false; }
+
 private:
   /*! \brief Gains for labels */
   std::vector<double> label_gain_;

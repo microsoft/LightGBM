@@ -2,6 +2,8 @@
 #define LIGHTGBM_BOOSTING_GBDT_H_
 
 #include <LightGBM/boosting.h>
+#include <LightGBM/objective_function.h>
+
 #include "score_updater.hpp"
 
 #include <cstdio>
@@ -93,6 +95,14 @@ public:
 
   bool EvalAndCheckEarlyStopping() override;
 
+  bool NeedAccuratePrediction() const override { 
+    if (objective_function_ == nullptr) {
+      return true;
+    } else {
+      return objective_function_->NeedAccuratePrediction();
+    }
+  }
+
   /*!
   * \brief Get evaluation result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
@@ -137,7 +147,7 @@ public:
   }
 
   void PredictRaw(const double* features, double* output,
-                  const PredictionEarlyStopInstance* earlyStop = nullptr) const override;
+                  const PredictionEarlyStopInstance* earlyStop) const override;
 
   void Predict(const double* features, double* output,
                const PredictionEarlyStopInstance* earlyStop) const override;
@@ -365,7 +375,6 @@ protected:
   std::vector<double> class_default_output_;
   bool is_constant_hessian_;
   std::unique_ptr<ObjectiveFunction> loaded_objective_;
-
 };
 
 }  // namespace LightGBM

@@ -18,8 +18,9 @@ Predictor <- R6Class(
     },
     
     # Initialize will create a starter model
-    initialize = function(modelfile) {
-      
+    initialize = function(modelfile, ...) {
+      params <- list(...)
+      private$params <- lgb.params2str(params)
       # Create new lgb handle
       handle <- lgb.new.handle()
       
@@ -86,6 +87,7 @@ Predictor <- R6Class(
           as.integer(rawscore),
           as.integer(predleaf),
           as.integer(num_iteration),
+          private$params,
           lgb.c_str(tmp_filename))
         
         # Get predictions from file
@@ -121,7 +123,8 @@ Predictor <- R6Class(
                             as.integer(ncol(data)),
                             as.integer(rawscore),
                             as.integer(predleaf),
-                            as.integer(num_iteration))
+                            as.integer(num_iteration),
+                            private$params)
           
         } else if (is(data, "dgCMatrix")) {
           
@@ -137,7 +140,8 @@ Predictor <- R6Class(
                             nrow(data),
                             as.integer(rawscore),
                             as.integer(predleaf),
-                            as.integer(num_iteration))
+                            as.integer(num_iteration),
+                            private$params)
           
         } else {
           
@@ -178,5 +182,6 @@ Predictor <- R6Class(
     
   ),
   private = list(handle = NULL,
-                 need_free_handle = FALSE)
+                 need_free_handle = FALSE,
+                 params = "")
 )

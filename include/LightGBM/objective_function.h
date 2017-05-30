@@ -43,6 +43,9 @@ public:
 
   virtual int NumPredictOneRow() const { return 1; }
 
+  /*! \brief The prediction should be accurate or not. True will disable early stopping for prediction. */
+  virtual bool NeedAccuratePrediction() const { return true; }
+
   virtual void ConvertOutput(const double* input, double* output) const {
     output[0] = input[0];
   }

@@ -389,6 +389,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterPredictForFile_R(LGBM_SE handle,
   LGBM_SE is_rawscore,
   LGBM_SE is_leafidx,
   LGBM_SE num_iteration,
+  LGBM_SE parameter,
   LGBM_SE result_filename,
   LGBM_SE call_state);
 
@@ -438,6 +439,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterPredictForCSC_R(LGBM_SE handle,
   LGBM_SE is_rawscore,
   LGBM_SE is_leafidx,
   LGBM_SE num_iteration,
+  LGBM_SE parameter,
   LGBM_SE out_result,
   LGBM_SE call_state);
 
@@ -463,6 +465,7 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_BoosterPredictForMat_R(LGBM_SE handle,
   LGBM_SE is_rawscore,
   LGBM_SE is_leafidx,
   LGBM_SE num_iteration,
+  LGBM_SE parameter,
   LGBM_SE out_result,
   LGBM_SE call_state);
 

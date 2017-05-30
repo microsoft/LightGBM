@@ -32,7 +32,20 @@ public:
   */
   Predictor(Boosting* boosting, int num_iteration,
             bool is_raw_score, bool is_predict_leaf_index,
-            const PredictionEarlyStopInstance* earlyStop = nullptr) {
+            bool early_stop, int early_stop_freq, double early_stop_margin) {
+
+    early_stop_ = CreatePredictionEarlyStopInstance("none", LightGBM::PredictionEarlyStopConfig());
+    if (early_stop && !boosting->NeedAccuratePrediction()) {
+      PredictionEarlyStopConfig pred_early_stop_config;
+      pred_early_stop_config.margin_threshold = early_stop_margin;
+      pred_early_stop_config.round_period = early_stop_freq;
+      if (boosting->NumberOfClasses() == 1) {
+        early_stop_ = CreatePredictionEarlyStopInstance("binary", pred_early_stop_config);
+      } else {
+        early_stop_ = CreatePredictionEarlyStopInstance("multiclass", pred_early_stop_config);
+      }
+    }
+
     #pragma omp parallel
     #pragma omp master
     {
@@ -55,17 +68,17 @@ public:
 
     } else {
       if (is_raw_score) {
-        predict_fun_ = [this, earlyStop](const std::vector<std::pair<int, double>>& features, double* output) {
+        predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
           int tid = omp_get_thread_num();
           CopyToPredictBuffer(predict_buf_[tid].data(), features);
-          boosting_->PredictRaw(predict_buf_[tid].data(), output, earlyStop);
+          boosting_->PredictRaw(predict_buf_[tid].data(), output, &early_stop_);
           ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
         };
       } else {
-        predict_fun_ = [this, earlyStop](const std::vector<std::pair<int, double>>& features, double* output) {
+        predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
           int tid = omp_get_thread_num();
           CopyToPredictBuffer(predict_buf_[tid].data(), features);
-          boosting_->Predict(predict_buf_[tid].data(), output, earlyStop);
+          boosting_->Predict(predict_buf_[tid].data(), output, &early_stop_);
           ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
         };
       }
@@ -117,7 +130,11 @@ public:
       [this, &parser_fun, &result_file]
     (data_size_t, const std::vector<std::string>& lines) {
       std::vector<std::pair<int, double>> oneline_features;
+      std::vector<std::string> result_to_write(lines.size());
+      OMP_INIT_EX();
+      #pragma omp parallel for schedule(static) firstprivate(oneline_features)
       for (data_size_t i = 0; i < static_cast<data_size_t>(lines.size()); ++i) {
+        OMP_LOOP_EX_BEGIN();
         oneline_features.clear();
         // parser
         parser_fun(lines[i].c_str(), &oneline_features);
@@ -125,7 +142,12 @@ public:
         std::vector<double> result(num_pred_one_row_);
         predict_fun_(oneline_features, result.data());
         auto str_result = Common::Join<double>(result, "\t");
-        fprintf(result_file, "%s\n", str_result.c_str());
+        result_to_write[i] = str_result;
+        OMP_LOOP_EX_END();
+      }
+      OMP_THROW_EX();
+      for (data_size_t i = 0; i < static_cast<data_size_t>(result_to_write.size()); ++i) {
+        fprintf(result_file, "%s\n", result_to_write[i].c_str());
       }
     };
     TextReader<data_size_t> predict_data_reader(data_filename, has_header);
@@ -137,7 +159,6 @@ private:
 
   void CopyToPredictBuffer(double* pred_buf, const std::vector<std::pair<int, double>>& features) {
     int loop_size = static_cast<int>(features.size());
-    #pragma omp parallel for schedule(static,128) if (loop_size >= 256)
     for (int i = 0; i < loop_size; ++i) {
       if (features[i].first < num_feature_) {
         pred_buf[features[i].first] = features[i].second;
@@ -150,7 +171,6 @@ private:
       std::memset(pred_buf, 0, sizeof(double)*(buf_size));
     } else {
       int loop_size = static_cast<int>(features.size());
-      #pragma omp parallel for schedule(static,128) if (loop_size >= 256)
       for (int i = 0; i < loop_size; ++i) {
         pred_buf[features[i].first] = 0.0f;
       }
@@ -161,6 +181,7 @@ private:
   const Boosting* boosting_;
   /*! \brief function for prediction */
   PredictFunction predict_fun_;
+  PredictionEarlyStopInstance early_stop_;
   int num_feature_;
   int num_pred_one_row_;
   int num_threads_;
