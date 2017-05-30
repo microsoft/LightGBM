@@ -1798,4 +1798,3 @@ class Booster(object):
                 self.__attr[key] = value
             else:
                 self.__attr.pop(key, None)
-
