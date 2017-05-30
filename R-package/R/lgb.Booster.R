@@ -391,7 +391,7 @@ Booster <- R6Class(
                        rawscore = FALSE,
                        predleaf = FALSE,
                        header = FALSE,
-                       reshape = FALSE) {
+                       reshape = FALSE, ...) {
       
       # Check if number of iteration is  non existent
       if (is.null(num_iteration)) {
@@ -399,7 +399,7 @@ Booster <- R6Class(
       }
       
       # Predict on new data
-      predictor <- Predictor$new(private$handle)
+      predictor <- Predictor$new(private$handle, ...)
       predictor$predict(data, num_iteration, rawscore, predleaf, header, reshape)
       
     },
@@ -645,7 +645,7 @@ predict.lgb.Booster <- function(object, data,
                         rawscore = FALSE,
                         predleaf = FALSE,
                         header = FALSE,
-                        reshape = FALSE) {
+                        reshape = FALSE, ...) {
   
   # Check booster existence
   if (!lgb.is.Booster(object)) {
@@ -658,7 +658,7 @@ predict.lgb.Booster <- function(object, data,
                  rawscore,
                  predleaf,
                  header,
-                 reshape)
+                 reshape, ...)
 }
 
 #' Load LightGBM model

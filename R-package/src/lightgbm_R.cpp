@@ -498,12 +498,13 @@ LGBM_SE LGBM_BoosterPredictForFile_R(LGBM_SE handle,
   LGBM_SE is_rawscore,
   LGBM_SE is_leafidx,
   LGBM_SE num_iteration,
+  LGBM_SE parameter,
   LGBM_SE result_filename,
   LGBM_SE call_state) {
   R_API_BEGIN();
   int pred_type = GetPredictType(is_rawscore, is_leafidx);
   CHECK_CALL(LGBM_BoosterPredictForFile(R_GET_PTR(handle), R_CHAR_PTR(data_filename),
-    R_AS_INT(data_has_header), pred_type, R_AS_INT(num_iteration),
+    R_AS_INT(data_has_header), pred_type, R_AS_INT(num_iteration), R_CHAR_PTR(parameter),
     R_CHAR_PTR(result_filename)));
   R_API_END();
 }
@@ -534,6 +535,7 @@ LGBM_SE LGBM_BoosterPredictForCSC_R(LGBM_SE handle,
   LGBM_SE is_rawscore,
   LGBM_SE is_leafidx,
   LGBM_SE num_iteration,
+  LGBM_SE parameter,
   LGBM_SE out_result,
   LGBM_SE call_state) {
 
@@ -552,7 +554,7 @@ LGBM_SE LGBM_BoosterPredictForCSC_R(LGBM_SE handle,
   CHECK_CALL(LGBM_BoosterPredictForCSC(R_GET_PTR(handle),
     p_indptr, C_API_DTYPE_INT32, p_indices,
     p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
-    nrow, pred_type, R_AS_INT(num_iteration), &out_len, ptr_ret));
+    nrow, pred_type, R_AS_INT(num_iteration), R_CHAR_PTR(parameter), &out_len, ptr_ret));
   R_API_END();
 }
 
@@ -563,6 +565,7 @@ LGBM_SE LGBM_BoosterPredictForMat_R(LGBM_SE handle,
   LGBM_SE is_rawscore,
   LGBM_SE is_leafidx,
   LGBM_SE num_iteration,
+  LGBM_SE parameter,
   LGBM_SE out_result,
   LGBM_SE call_state) {
 
@@ -577,7 +580,7 @@ LGBM_SE LGBM_BoosterPredictForMat_R(LGBM_SE handle,
   int64_t out_len;
   CHECK_CALL(LGBM_BoosterPredictForMat(R_GET_PTR(handle),
     p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
-    pred_type, R_AS_INT(num_iteration), &out_len, ptr_ret));
+    pred_type, R_AS_INT(num_iteration), R_CHAR_PTR(parameter), &out_len, ptr_ret));
 
   R_API_END();
 }

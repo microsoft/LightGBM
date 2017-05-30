@@ -39,7 +39,7 @@ public:
       PredictionEarlyStopConfig pred_early_stop_config;
       pred_early_stop_config.margin_threshold = early_stop_margin;
       pred_early_stop_config.round_period = early_stop_freq;
-      if (boosting->NumPredictOneRow() == 1) {
+      if (boosting->NumberOfClasses() == 1) {
         early_stop_ = CreatePredictionEarlyStopInstance("binary", pred_early_stop_config);
       } else {
         early_stop_ = CreatePredictionEarlyStopInstance("multiclass", pred_early_stop_config);
