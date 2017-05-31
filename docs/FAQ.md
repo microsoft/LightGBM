@@ -50,15 +50,21 @@ Remember this is a free/open community support. We may not be available 24/7 to 
 
 ---
 
-- **Question 3**: I am using Windows. Should I use Visual Studio or MinGW for compiling LightGBM?
+- **Question 3**: When running LightGBM on a large dataset, my computer runs out of RAM.
 
-- **Solution 3**: It is recommended to [use Visual Studio](https://github.com/Microsoft/LightGBM/issues/542) as its performance is higher for LightGBM.
+- **Solution 3**: Multiple solutions: set `histogram_pool_size` parameter to the MB you want to use for LightGBM (histogram_pool_size + dataset size = approximately RAM used), lower `num_leaves`, lower `max_depth`, or lower `max_bin` (see [issue #562](https://github.com/Microsoft/LightGBM/issues/562)).
 
 ---
 
-- **Question 4**: When using LightGBM GPU, I cannot reproduce results over several runs.
+- **Question 4**: I am using Windows. Should I use Visual Studio or MinGW for compiling LightGBM?
 
-- **Solution 4**: It is a normal issue, there is nothing we/you can do about, you may try to use `gpu_use_dp = true` for reproducibility (see [issue #560](https://github.com/Microsoft/LightGBM/pull/560#issuecomment-304561654)). You may also use CPU version.
+- **Solution 4**: It is recommended to [use Visual Studio](https://github.com/Microsoft/LightGBM/issues/542) as its performance is higher for LightGBM.
+
+---
+
+- **Question 5**: When using LightGBM GPU, I cannot reproduce results over several runs.
+
+- **Solution 5**: It is a normal issue, there is nothing we/you can do about, you may try to use `gpu_use_dp = true` for reproducibility (see [issue #560](https://github.com/Microsoft/LightGBM/pull/560#issuecomment-304561654)). You may also use CPU version.
 
 ---
 
