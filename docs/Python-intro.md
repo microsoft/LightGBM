@@ -41,9 +41,9 @@ train_data = lgb.Dataset('train.svm.bin')
 
 ####  To load a numpy array into ```Dataset```:
 ```python
-data = np.random.rand(500,10) # 500 entities, each contains 10 features
+data = np.random.rand(500, 10) # 500 entities, each contains 10 features
 label = np.random.randint(2, size=500) # binary target
-train_data = lgb.Dataset( data, label=label)
+train_data = lgb.Dataset(data, label=label)
 ```
 #### To load a scpiy.sparse.csr_matrix array into ```Dataset```:
 ```python
@@ -53,7 +53,7 @@ train_data = lgb.Dataset(csr)
 #### Saving ```Dataset``` into a LightGBM binary file will make loading faster:
 ```python
 train_data = lgb.Dataset('train.svm.txt')
-train_data.save_binary("train.bin")
+train_data.save_binary('train.bin')
 ```
 #### Create validation data
 ```python
