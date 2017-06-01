@@ -513,6 +513,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetPredict(BoosterHandle handle,
 *          C_API_PREDICT_RAW_SCORE: raw score
 *          C_API_PREDICT_LEAF_INDEX: leaf index
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
+* \param parameter Other parameters for the parameters, e.g. early stopping for prediction.
 * \param result_filename filename of result file
 * \return 0 when succeed, -1 when failure happens
 */
@@ -561,7 +562,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
 *          C_API_PREDICT_RAW_SCORE: raw score
 *          C_API_PREDICT_LEAF_INDEX: leaf index
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
-* \param early_stop_handle early stopping to use for prediction. If null, no early stopping is applied
+* \param parameter Other parameters for the parameters, e.g. early stopping for prediction.
 * \param out_len len of output result
 * \param out_result used to set a pointer to array, should allocate memory before call this function
 * \return 0 when succeed, -1 when failure happens
@@ -600,7 +601,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
 *          C_API_PREDICT_RAW_SCORE: raw score
 *          C_API_PREDICT_LEAF_INDEX: leaf index
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
-* \param early_stop_handle early stopping to use for prediction. If null, no early stopping is applied
+* \param parameter Other parameters for the parameters, e.g. early stopping for prediction.
 * \param out_len len of output result
 * \param out_result used to set a pointer to array, should allocate memory before call this function
 * \return 0 when succeed, -1 when failure happens
@@ -636,7 +637,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSC(BoosterHandle handle,
 *          C_API_PREDICT_RAW_SCORE: raw score
 *          C_API_PREDICT_LEAF_INDEX: leaf index
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
-* \param early_stop_handle early stopping to use for prediction. If null, no early stopping is applied
+* \param parameter Other parameters for the parameters, e.g. early stopping for prediction.
 * \param out_len len of output result
 * \param out_result used to set a pointer to array, should allocate memory before call this function
 * \return 0 when succeed, -1 when failure happens
