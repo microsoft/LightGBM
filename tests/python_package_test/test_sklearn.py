@@ -33,6 +33,13 @@ class TestSklearn(unittest.TestCase):
         self.assertLess(ret, 0.15)
         self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['binary_logloss'][gbm.best_iteration - 1], places=5)
 
+    # See https://github.com/Microsoft/LightGBM/issues/307
+    def test_binary_issue307(self):
+        (_X, y) = load_breast_cancer(True)
+        X_without_columns = np.ones(shape=(_X.shape[0], 0))
+        X_y = (X_without_columns, y)
+        ret = template.test_template(X_y, lgb.LGBMClassifier, log_loss, predict_proba=True)
+
     def test_regreesion(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
