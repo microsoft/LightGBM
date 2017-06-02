@@ -6,17 +6,18 @@ This is a page contains all parameters in LightGBM.
 * [Parameters](./Parameters.md)
 * [Python API Reference](./Python-API.md)
 
-## Convert parameters from XGBoost
+## Tune parameters for the leaf-wise(best-first) tree
 
-LightGBM uses [leaf-wise](https://github.com/Microsoft/LightGBM/wiki/Features#optimization-in-accuracy) tree growth algorithm. But other popular tools, e.g. XGBoost, use depth-wise tree growth. So LightGBM use ```num_leaves``` to control complexity of tree model, and other tools usually use ```max_depth```. Following table is the correspond between leaves and depths. The relation is ```num_leaves = 2^(max_depth) ```.
+LightGBM uses [leaf-wise](https://github.com/Microsoft/LightGBM/wiki/Features#optimization-in-accuracy) tree growth algorithm, while many other popular tools use depth-wise tree growth. Comparing with depth-wise growth, the leaf-wise can convenge much faster. However, the leaf-wise growth may be over-fitting if not using appropriate parameters. 
 
-| max_depth | num_leaves |
-| --------- | ---------- |
-| 1 | 2 |
-| 2 | 4 |
-| 3 | 8 |
-| 7 | 128 |
-| 10 | 1024 |   
+To get the good results by leaf-wise tree, there are some important parameters:
+
+1. ```num_leaves```. This is the main parameter to control the complexity of tree model. Theoretically, we can ```num_leaves = 2^(max_depth) ``` to convert from depth-wise tree. However, This simple conversion is not good in practice. The reason is, when number of leaves are the same, the leaf-wise tree is much deeper than depth-wise tree. As a result, it may be over-fitting. Thus, when trying to tune the ```num_leaves```, we should let it smaller than ```2^(max_depth)```. For example, when the ```max_depth=6``` of depth-wise tree can get the good accuracy, set ```num_leaves``` to ```127``` may cause over-fitting, and set to ```70``` or ```80``` may get better accuracy than depth-wise. Actually, the concept ```depth``` can be forgot in leaf-wise tree, since it doesn't have a correct mapping from ```leaves``` to ```depth```. 
+
+2. ```min_data_in_leaf```. This is a very important paramater to deal with over-fitting in leaf-wise tree. Its value depends on the number of training data and ```num_leaves```. Set it to a large value can avoid grow too deeper tree, but may cause under-fitting. In practice, set it to hundreds or thousands is engouh for the large dataset. 
+
+3. ```max_depth```. You also can use ```max_depth``` to limit the tree depth explicitly. 
+
 
 ## For faster speed
 
