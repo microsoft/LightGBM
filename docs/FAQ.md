@@ -52,7 +52,7 @@ Remember this is a free/open community support. We may not be available 24/7 to 
 
 - **Question 3**: When running LightGBM on a large dataset, my computer runs out of RAM.
 
-- **Solution 3**: Multiple solutions: set `histogram_pool_size` parameter to the MB you want to use for LightGBM (histogram_pool_size + dataset size = approximately RAM used), lower `num_leaves`, lower `max_depth`, or lower `max_bin` (see [issue #562](https://github.com/Microsoft/LightGBM/issues/562)).
+- **Solution 3**: Multiple solutions: set `histogram_pool_size` parameter to the MB you want to use for LightGBM (histogram_pool_size + dataset size = approximately RAM used), lower `num_leaves` or lower `max_bin` (see [issue #562](https://github.com/Microsoft/LightGBM/issues/562)).
 
 ---
 
