@@ -175,9 +175,8 @@ class LGBMModel(LGBMModelBase):
         silent : boolean
             Whether to print messages while running boosting.
         **kwargs : other parameters
-            Please check `Parameters` section.
-            Note: **kwargs is not supported in sklearn,
-                  it may cause unexpected issues.
+            Check http://lightgbm.readthedocs.io/en/latest/Parameters.html for more parameters.
+            Note: **kwargs is not supported in sklearn, it may cause unexpected issues.
 
         Note
         ----
@@ -336,8 +335,6 @@ class LGBMModel(LGBMModelBase):
         params['verbose'] = -1 if self.silent else 1
         if hasattr(self, 'n_classes_') and self.n_classes_ > 2:
             params['num_class'] = self.n_classes_
-        if hasattr(self, 'eval_at'):
-            params['ndcg_eval_at'] = self.eval_at
         if self.fobj:
             params['objective'] = 'None'  # objective = nullptr for unknown objective
 
