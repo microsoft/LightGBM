@@ -332,7 +332,8 @@ class LGBMModel(LGBMModelBase):
         """
         evals_result = {}
         params = self.get_params()
-        params['verbose'] = -1 if self.silent else 1
+        params['verbose'] = -1 if params.pop('silent', True) else 1
+        params.pop('n_estimators', None)
         if hasattr(self, 'n_classes_') and self.n_classes_ > 2:
             params['num_class'] = self.n_classes_
         if self.fobj:
