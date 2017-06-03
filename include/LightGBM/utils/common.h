@@ -518,6 +518,7 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
       size_t mid = left + s;
       size_t right = mid + s;
       right = std::min(len, right);
+      if (mid >= right) { continue; }
       std::copy(_First + left, _First + mid, buf + left);
       std::merge(buf + left, buf + mid, _First + mid, _First + right, _First + left, _Pred);
     }
