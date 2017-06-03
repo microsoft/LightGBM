@@ -186,6 +186,12 @@
     <ClInclude Include="..\src\metric\map_metric.hpp">
       <Filter>src\metric</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\LightGBM\lightgbm_R.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\R_object_helper.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp">
@@ -266,6 +272,8 @@
     <ClCompile Include="..\src\boosting\prediction_early_stop.cpp">
       <Filter>src\boosting</Filter>
     </ClCompile>
-
+    <ClCompile Include="..\src\lightgbm_R.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

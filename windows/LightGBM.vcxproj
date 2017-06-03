@@ -197,11 +197,13 @@
     <ClInclude Include="..\include\LightGBM\dataset.h" />
     <ClInclude Include="..\include\LightGBM\dataset_loader.h" />
     <ClInclude Include="..\include\LightGBM\feature_group.h" />
+    <ClInclude Include="..\include\LightGBM\lightgbm_R.h" />
     <ClInclude Include="..\include\LightGBM\meta.h" />
     <ClInclude Include="..\include\LightGBM\metric.h" />
     <ClInclude Include="..\include\LightGBM\network.h" />
     <ClInclude Include="..\include\LightGBM\objective_function.h" />
     <ClInclude Include="..\include\LightGBM\prediction_early_stop.h" />
+    <ClInclude Include="..\include\LightGBM\R_object_helper.h" />
     <ClInclude Include="..\include\LightGBM\tree.h" />
     <ClInclude Include="..\include\LightGBM\tree_learner.h" />
     <ClInclude Include="..\include\LightGBM\utils\array_args.h" />
@@ -254,6 +256,7 @@
     <ClCompile Include="..\src\io\metadata.cpp" />
     <ClCompile Include="..\src\io\parser.cpp" />
     <ClCompile Include="..\src\io\tree.cpp" />
+    <ClCompile Include="..\src\lightgbm_R.cpp" />
     <ClCompile Include="..\src\metric\dcg_calculator.cpp" />
     <ClCompile Include="..\src\metric\metric.cpp" />
     <ClCompile Include="..\src\network\network.cpp" />
