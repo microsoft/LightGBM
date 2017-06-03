@@ -461,16 +461,15 @@ struct ParameterAlias {
       "fair_c", "poission_max_delta_step", "scale_pos_weight",
       "boost_from_average", "max_position", "label_gain",
       "metric", "metric_freq", "time_out",
-      "gpu_platform_id", "gpu_device_id", "gpu_use_dp"
+      "gpu_platform_id", "gpu_device_id", "gpu_use_dp",
+      "convert_model", "convert_model_language"
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
       if (alias_table.count(pair.first) > 0) {
         tmp_map[alias_table[pair.first]] = pair.second;
-        params->erase(pair.first);
       } else if (parameter_set.count(pair.first) == 0) {
         Log::Warning("Unknown parameter: %s", pair.first.c_str());
-        params->erase(pair.first);
       }
     }
     for (const auto& pair : tmp_map) {
