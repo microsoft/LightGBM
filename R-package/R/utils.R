@@ -31,9 +31,9 @@ lgb.call <- function(fun_name, ret, ...) {
   
   # Check for a ret call
   if (!is.null(ret)) {
-    call_state <- .Call(fun_name, ..., ret, call_state, PACKAGE = "lightgbm") # Call with ret
+    call_state <- .Call(fun_name, ..., ret, call_state, PACKAGE = "lib_lightgbm") # Call with ret
   } else {
-    call_state <- .Call(fun_name, ..., call_state, PACKAGE = "lightgbm") # Call without ret
+    call_state <- .Call(fun_name, ..., call_state, PACKAGE = "lib_lightgbm") # Call without ret
   }
   
   # Check for call state value post call
@@ -43,7 +43,7 @@ lgb.call <- function(fun_name, ret, ...) {
     buf_len <- 200L
     act_len <- 0L
     err_msg <- raw(buf_len)
-    err_msg <- .Call("LGBM_GetLastError_R", buf_len, act_len, err_msg, PACKAGE = "lightgbm")
+    err_msg <- .Call("LGBM_GetLastError_R", buf_len, act_len, err_msg, PACKAGE = "lib_lightgbm")
     
     # Check error buffer
     if (act_len > buf_len) {
@@ -53,7 +53,7 @@ lgb.call <- function(fun_name, ret, ...) {
                         buf_len,
                         act_len,
                         err_msg,
-                        PACKAGE = "lightgbm")
+                        PACKAGE = "lib_lightgbm")
     }
     
     # Return error
