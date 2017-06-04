@@ -468,10 +468,8 @@ struct ParameterAlias {
     for (const auto& pair : *params) {
       if (alias_table.count(pair.first) > 0) {
         tmp_map[alias_table[pair.first]] = pair.second;
-        params->erase(pair.first);
       } else if (parameter_set.count(pair.first) == 0) {
         Log::Fatal("Unknown parameter: %s", pair.first.c_str());
-        params->erase(pair.first);
       }
     }
     for (const auto& pair : tmp_map) {
