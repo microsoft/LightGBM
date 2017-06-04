@@ -10,6 +10,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <algorithm>
 #include <memory>
 
@@ -437,10 +438,38 @@ struct ParameterAlias {
       { "num_classes", "num_class" },
       { "unbalanced_sets", "is_unbalance" }
     });
+    std::unordered_set<std::string> parameter_set({
+      "config", "config_file", "task", "device",
+      "num_threads", "seed", "boosting_type", "objective", "data",
+      "output_model", "input_model", "output_result", "valid_data",
+      "is_enable_sparse", "is_pre_partition", "is_training_metric",
+      "ndcg_eval_at", "min_data_in_leaf", "min_sum_hessian_in_leaf",
+      "num_leaves", "feature_fraction", "num_iterations",
+      "bagging_fraction", "bagging_freq", "learning_rate", "tree_learner",
+      "num_machines", "local_listen_port", "use_two_round_loading",
+      "machine_list_file", "is_save_binary_file", "early_stopping_round",
+      "verbose", "has_header, label_column", "weight_column", "group_column",
+      "ignore_column", "categorical_column", "is_predict_raw_score",
+      "is_predict_leaf_index", "min_gain_to_split", "top_k",
+      "lambda_l1", "lambda_l2", "num_class", "is_unbalance",
+      "max_depth", "subsample_for_bin", "max_bin", "bagging_seed",
+      "drop_rate", "skip_drop", "max_drop", "uniform_drop",
+      "xgboost_dart_mode", "drop_seed", "top_rate", "other_rate",
+      "min_data_in_bin", "data_random_seed", "bin_construct_sample_cnt",
+      "num_iteration_predict", "pred_early_stop", "pred_early_stop_freq",
+      "pred_early_stop_margin", "use_missing", "sigmoid", "huber_delta",
+      "fair_c", "poission_max_delta_step", "scale_pos_weight",
+      "boost_from_average", "max_position", "label_gain",
+      "metric", "metric_freq", "time_out",
+      "gpu_platform_id", "gpu_device_id", "gpu_use_dp",
+      "convert_model", "convert_model_language"
+    });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
       if (alias_table.count(pair.first) > 0) {
         tmp_map[alias_table[pair.first]] = pair.second;
+      } else if (parameter_set.count(pair.first) == 0) {
+        Log::Fatal("Unknown parameter: %s", pair.first.c_str());
       }
     }
     for (const auto& pair : tmp_map) {
