@@ -467,9 +467,8 @@ struct ParameterAlias {
       "convert_model", "convert_model_language", 
       "feature_fraction_seed", "enable_bundle", "data_filename", "valid_data_filenames",
       "snapshot_freq", "verbosity", "sparse_threshold", "enable_load_from_binary_file",
-      "max_conflict_rate", "device_type","poisson_max_delta_step", "gaussian_eta",
-      "histogram_pool_size", "output_freq", "is_provide_training_metric", "tree_learner_type", "machine_list_filename",
-      "task_type", "objective_type", "metric_types"
+      "max_conflict_rate", "poisson_max_delta_step", "gaussian_eta",
+      "histogram_pool_size", "output_freq", "is_provide_training_metric", "machine_list_filename"
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
