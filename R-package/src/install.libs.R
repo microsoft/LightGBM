@@ -1,6 +1,22 @@
 use_gpu <- FALSE
 use_mingw <- FALSE
-
+if(!file.exists("_IS_FULL_PACKAGE")){
+  if(!file.copy("./../../include", "./", overwrite=TRUE, recursive = TRUE)){
+    stop("cannot find folder LightGBM/include")
+  }
+  if(!file.copy("./../../src", "./", overwrite=TRUE, recursive = TRUE)){
+    stop("cannot find folder LightGBM/src")
+  }
+  if(use_gpu){
+    if(!file.copy("./../../compute", "./", overwrite=TRUE, recursive = TRUE)){
+      print("cannot find folder LightGBM/compute, will disable GPU build")
+      use_gpu <- FALSE
+    }
+  }
+  if(!file.copy("./../../CMakeLists.txt", "./", overwrite=TRUE, recursive=TRUE)){
+    stop("cannot find file LightGBM/CMakeLists.txt")
+  }
+}
 cmake_cmd <- "cmake"
 build_cmd <- "make -j"
 lib_folder <- paste0(R_PACKAGE_SOURCE, '/src')
