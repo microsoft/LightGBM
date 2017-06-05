@@ -60,13 +60,13 @@ if (!use_precompile) {
   
 } else {
   
-  lib_folder <- paste0(R_PACKAGE_SOURCE, "/..")
-  if (file.exists(paste0(lib_folder, "./lib_lightgbm", SHLIB_EXT))) {
-    src <- paste0(lib_folder, "./lib_lightgbm", SHLIB_EXT)
-  } else if (file.exists(paste0(lib_folder, "./windows/x64/DLL/lib_lightgbm", SHLIB_EXT))) {
-    src <- paste0(lib_folder, "./windows/x64/DLL/lib_lightgbm", SHLIB_EXT)
+  lib_folder <- paste0(R_PACKAGE_SOURCE, "/src")
+  if (file.exists(paste0(lib_folder, "./../../lib_lightgbm", SHLIB_EXT))) {
+    src <- paste0(lib_folder, "./../../lib_lightgbm", SHLIB_EXT)
+  } else if (file.exists(paste0(lib_folder, "./../../windows/x64/DLL/lib_lightgbm", SHLIB_EXT))) {
+    src <- paste0(lib_folder, "./../../windows/x64/DLL/lib_lightgbm", SHLIB_EXT)
   } else {
-    src <- paste0(lib_folder, "./Release/lib_lightgbm", SHLIB_EXT) # Expected result: installation will fail if it is not here or any other
+    src <- paste0(lib_folder, "./../../Release/lib_lightgbm", SHLIB_EXT) # Expected result: installation will fail if it is not here or any other
   }
   
 }
@@ -78,5 +78,5 @@ if (file.exists(src)) {
   print(paste0("Found library file: ", src, " to move to ", dest))
   file.copy(src, dest, overwrite = TRUE)
 } else {
-  stop(paste0("Cannot find lib_lightgbm.", SHLIB_EXT))
+  stop(paste0("Cannot find lib_lightgbm", SHLIB_EXT))
 }
