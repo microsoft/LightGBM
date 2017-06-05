@@ -1267,12 +1267,12 @@ class Booster(object):
         return this
 
     def __setstate__(self, state):
-        model_str = state.get('handle', None)
+        model_str = state.get('handle', None)  # list of str
         if model_str is not None:
             handle = ctypes.c_void_p()
             out_num_iterations = ctypes.c_int(0)
             _safe_call(_LIB.LGBM_BoosterLoadModelFromString(
-                c_str(model_str),
+                c_str(''.join(model_str)),
                 ctypes.byref(out_num_iterations),
                 ctypes.byref(handle)))
             state['handle'] = handle
