@@ -436,7 +436,9 @@ struct ParameterAlias {
       { "reg_alpha", "lambda_l1" },
       { "reg_lambda", "lambda_l2" },
       { "num_classes", "num_class" },
-      { "unbalanced_sets", "is_unbalance" }
+      { "unbalanced_sets", "is_unbalance" },
+      { "bagging_fraction_seed", "bagging_seed" }, 
+      { "num_boost_round", "num_iterations" }
     });
     std::unordered_set<std::string> parameter_set({
       "config", "config_file", "task", "device",
@@ -462,7 +464,11 @@ struct ParameterAlias {
       "boost_from_average", "max_position", "label_gain",
       "metric", "metric_freq", "time_out",
       "gpu_platform_id", "gpu_device_id", "gpu_use_dp",
-      "convert_model", "convert_model_language"
+      "convert_model", "convert_model_language", 
+      "feature_fraction_seed", "enable_bundle", "data_filename", "valid_data_filenames",
+      "snapshot_freq", "verbosity", "sparse_threshold", "enable_load_from_binary_file",
+      "max_conflict_rate", "poisson_max_delta_step", "gaussian_eta",
+      "histogram_pool_size", "output_freq", "is_provide_training_metric", "machine_list_filename"
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
