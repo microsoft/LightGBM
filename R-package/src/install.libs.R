@@ -1,5 +1,7 @@
 use_gpu <- FALSE
 use_mingw <- FALSE
+source_dir <- paste0(R_PACKAGE_SOURCE, '/src')
+setwd(source_dir)
 if(!file.exists("_IS_FULL_PACKAGE")){
   if(!file.copy("./../../include", "./", overwrite=TRUE, recursive = TRUE)){
     stop("cannot find folder LightGBM/include")
@@ -17,6 +19,11 @@ if(!file.exists("_IS_FULL_PACKAGE")){
     stop("cannot find file LightGBM/CMakeLists.txt")
   }
 }
+
+build_dir <- paste0(source_dir, "/build")
+dir.create(build_dir, recursive = TRUE, showWarnings = FALSE)
+setwd(build_dir)
+
 cmake_cmd <- "cmake"
 build_cmd <- "make -j"
 lib_folder <- paste0(R_PACKAGE_SOURCE, '/src')
@@ -36,7 +43,7 @@ if(use_gpu) {
   cmake_cmd <- paste0(cmake_cmd, " -DUSE_GPU=1 ")
 }
 
-system(paste0(cmake_cmd, " ."))
+system(paste0(cmake_cmd, " .."))
 system(build_cmd)
 dest <- file.path(R_PACKAGE_DIR, paste0('libs', R_ARCH))
 dir.create(dest, recursive = TRUE, showWarnings = FALSE)
