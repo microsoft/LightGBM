@@ -19,7 +19,7 @@ if (!use_precompile) {
 	  }
 	  if (use_gpu) {
       if (!file.copy("./../../compute", "./", overwrite = TRUE, recursive = TRUE)) {
-        print("Cannot find folder LightGBM/compute, will disable GPU build")
+        print("Cannot find folder LightGBM/compute, disabling GPU build.")
         use_gpu <- FALSE
       }
     }
@@ -56,30 +56,27 @@ if (!use_precompile) {
   # Install
   system(paste0(cmake_cmd, " .."))
   system(build_cmd)
-  dest <- file.path(R_PACKAGE_DIR, paste0("libs", R_ARCH))
-  dir.create(dest, recursive = TRUE, showWarnings = FALSE)
   src <- paste0(lib_folder, "/lib_lightgbm", SHLIB_EXT)
   
 } else {
   
-  lib_folder <- paste0(R_PACKAGE_SOURCE, "/src")
-  print(lib_folder)
-  dest <- file.path(R_PACKAGE_DIR, paste0("libs", R_ARCH))
-  dir.create(dest, recursive = TRUE, showWarnings = FALSE)
-  print(dest)
-  if (file.exists(paste0(lib_folder, "/../../lib_lightgbm", SHLIB_EXT))) {
-    src <- paste0(lib_folder, "/../../lib_lightgbm", SHLIB_EXT)
+  lib_folder <- paste0(R_PACKAGE_SOURCE, "/..")
+  if (file.exists(paste0(lib_folder, "./lib_lightgbm", SHLIB_EXT))) {
+    src <- paste0(lib_folder, "./lib_lightgbm", SHLIB_EXT)
+  } else if (file.exists(paste0(lib_folder, "./windows/x64/DLL/lib_lightgbm", SHLIB_EXT))) {
+    src <- paste0(lib_folder, "./windows/x64/DLL/lib_lightgbm", SHLIB_EXT)
   } else {
-    src <- paste0(lib_folder, "/../../windows/x64/DLL/lib_lightgbm", SHLIB_EXT)
+    src <- paste0(lib_folder, "./Release/lib_lightgbm", SHLIB_EXT) # Expected result: installation will fail if it is not here or any other
   }
-  print(src)
   
 }
 
 # Check installation correctness
+dest <- file.path(R_PACKAGE_DIR, paste0("libs", R_ARCH))
+dir.create(dest, recursive = TRUE, showWarnings = FALSE)
 if (file.exists(src)) {
   print(paste0("Found library file: ", src, " to move to ", dest))
   file.copy(src, dest, overwrite = TRUE)
 } else {
-  stop("Cannot find lib_lightgbm.dll")
+  stop(paste0("Cannot find lib_lightgbm.", SHLIB_EXT))
 }
