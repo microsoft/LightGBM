@@ -60,6 +60,7 @@ if (!use_precompile) {
   
 } else {
   
+  # Has precompiled package
   lib_folder <- paste0(R_PACKAGE_SOURCE, "/../")
   if (file.exists(paste0(lib_folder, "lib_lightgbm", SHLIB_EXT))) {
     src <- paste0(lib_folder, "lib_lightgbm", SHLIB_EXT)
@@ -75,7 +76,7 @@ if (!use_precompile) {
 dest <- file.path(R_PACKAGE_DIR, paste0("libs", R_ARCH))
 dir.create(dest, recursive = TRUE, showWarnings = FALSE)
 if (file.exists(src)) {
-  print(paste0("Found library file: ", src, " to move to ", dest))
+  cat("Found library file: ", src, " to move to ", dest, sep = "")
   file.copy(src, dest, overwrite = TRUE)
 } else {
   stop(paste0("Cannot find lib_lightgbm", SHLIB_EXT))
