@@ -11,7 +11,7 @@
 #include <LightGBM/utils/text_reader.h>
 #include <LightGBM/utils/common.h>
 
-#include "./lightgbm_R.h"
+#include <LightGBM/lightgbm_R.h>
 
 #define COL_MAJOR (0)
 

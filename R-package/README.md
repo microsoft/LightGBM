@@ -4,29 +4,40 @@ LightGBM R Package
 Installation
 ------------
 
+### Preparation
+You need to install *git* and [cmake](https://cmake.org/) first. 
+
+The default compiler is Visual Studio (or [MS Build](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017)) in Windows. You also can use MinGW64 to compile by set ```use_mingw <- TRUE``` in ```R-package/src/install.libs.R``` (We recommend *Visual Studio* for its better multi-threading efficency in Windows).
+
+For OSX user, gcc need to be installed first (refer to https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#osx). 
+
+### Install
+Install LightGBM R-package by following command:
+
+```
+git clone --recursive https://github.com/Microsoft/LightGBM
+cd LightGBM/R-package
+R CMD INSTALL --build .
+``` 
+Or build a self-contained R package then install:
+```
+git clone --recursive https://github.com/Microsoft/LightGBM
+cd LightGBM/R-package
+Rscript build_package.R
+R CMD INSTALL lightgbm_0.1.tar.gz
+``` 
+
+
 Windows users may need to run with administrator rights (either R or the command prompt, depending on the way you are installing this package). Rtools must be installed for Windows. Linux users might require the appropriate user write permissions for packages.
 
-You can use a command prompt to install via command line:
 
-```
-cd R-package
-R CMD INSTALL --build  .
-```
+Set ```use_gpu <- TRUE``` in ```R-package/src/install.libs.R``` can enable the build with GPU support (Need to install *Boost* and *OpenCL* first, details can be found in [gpu-support](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support)).
 
 You can also install directly from R using the repository with `devtools`:
 
 ```r
 devtools::install_github("Microsoft/LightGBM", subdir = "R-package")
 ```
-
-For the `devtools` install scenario, you can safely ignore this message:
-
-```r
-Warning message:
-GitHub repo contains submodules, may not function as expected! 
-```
-
-If you want to build the self-contained R package, you can run ```unix_build_package.sh```(for UNIX) or ```win_build_package.cmd ```(for Windows). Then use ```R CMD INSTALL lightgbm_0.1.tar.gz``` to install.
 
 When your package installation is done, you can check quickly if your LightGBM R package is working by running the following:
 
@@ -38,50 +49,6 @@ dtrain <- lgb.Dataset(train$data, label=train$label)
 params <- list(objective="regression", metric="l2")
 model <- lgb.cv(params, dtrain, 10, nfold=5, min_data=1, learning_rate=1, early_stopping_rounds=10)
 ```
-### OSX installation 
-
-The default installation cannot successfully complete in OSX because clang doesn't support OpenMP.
-
-You can use the following script to change default compiler to gcc, then compile LightGBM R package:
-
-```bash
-brew install gcc --without-multilib
-mkdir -p ~/.R
-touch ~/.R/Makevars
-cat <<EOF >>~/.R/Makevars
-C=gcc-6
-CXX=g++-6
-CXX1X=g++-6
-LDFLAGS=-L/usr/local/Cellar/gcc/6.3.0/lib
-CPPFLAGS=-I/usr/local/Cellar/gcc/6.3.0/include
-SHLIB_OPENMP_CFLAGS = -fopenmp
-SHLIB_OPENMP_CXXFLAGS = -fopenmp
-SHLIB_OPENMP_FCFLAGS = -fopenmp
-SHLIB_OPENMP_FFLAGS = -fopenmp
-EOF
-```
-
-Note:
-
-* For `LDFLAGS=-L/usr/local/Cellar/gcc/6.3.0/lib` and `CPPFLAGS=-I/usr/local/Cellar/gcc/6.3.0/include`, you may need to change `6.3.0` to your gcc version.
-* For `gcc-6` and `g++-6`, you may need to change to your gcc version (like `gcc-7` and `g++7` if using gcc with version 7).
-* For `CXX1X`, if you are using R 3.4 or a more recent version, you must change it to `CXX11`.
-
-To check your LightGBM installation, the test is identical to Linux/Windows versions (check the test provided just before OSX Installation part)
-
-Performance note
-------------
-
-With `gcc`, it is recommended to use `-O3 -mtune=native` instead of the default `-O2 -mtune=core2` by modifying the appropriate file (`Makeconf` or `Makevars`) if you want to achieve maximum speed.
-
-Benchmark example using Intel Ivy Bridge CPU on 1M x 1K dataset:
-
-| Compilation Flag | Performance Index |
-| --- | ---: |
-| `-O2 -mtune=core2` | 100.00% |
-| `-O2 -mtune=native` | 100.90% |
-| `-O3 -mtune=native` | 102.78% |
-| `-O3 -ffast-math -mtune=native` | 100.64% |
 
 Examples
 ------------

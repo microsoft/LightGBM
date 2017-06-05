@@ -108,7 +108,7 @@ file(GLOB SOURCES
 )
 
 add_executable(lightgbm src/main.cpp ${SOURCES})
-add_library(_lightgbm SHARED src/c_api.cpp ${SOURCES})
+add_library(_lightgbm SHARED src/c_api.cpp src/lightgbm_R.cpp ${SOURCES})
 
 if(MSVC)
     set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
