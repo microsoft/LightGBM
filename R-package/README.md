@@ -13,6 +13,8 @@ It is recommended to use *Visual Studio* for its better multi-threading efficenc
 
 For Mac OS X users, gcc with OpenMP support must be installed first. Refer to [wiki](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#osx) for installing gcc with OpenMP support.
 
+To avoid critical package issues if you are using R 3.4.0 (not the patched/devel version), it is recommended to install once the LightGBM R package, even if it is an old version: `devtools::install_github("Microsoft/LightGBM@v1", subdir = "R-package")`. Make sure you have the correct permissions to install the package.
+
 ### Install
 Install LightGBM R-package with the following command:
 
