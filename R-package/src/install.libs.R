@@ -7,7 +7,7 @@ use_mingw <- FALSE
 if (!use_precompile) {
 
   # Check repository content
-  source_dir <- paste0(R_PACKAGE_SOURCE, "/src")
+  source_dir <- paste0(R_PACKAGE_SOURCE, "/src/")
   setwd(source_dir)
   
   if (!file.exists("_IS_FULL_PACKAGE")) {
@@ -29,14 +29,14 @@ if (!use_precompile) {
   }
   
   # Prepare building package
-  build_dir <- paste0(source_dir, "/build")
+  build_dir <- paste0(source_dir, "build/")
   dir.create(build_dir, recursive = TRUE, showWarnings = FALSE)
   setwd(build_dir)
   
   # Prepare installatio nsteps
   cmake_cmd <- "cmake"
   build_cmd <- "make -j"
-  lib_folder <- paste0(R_PACKAGE_SOURCE, "/src")
+  lib_folder <- paste0(R_PACKAGE_SOURCE, "/src/")
   
   if (WINDOWS) {
     if (use_mingw) {
@@ -45,7 +45,7 @@ if (!use_precompile) {
     } else {
       cmake_cmd <- paste0(cmake_cmd, " -DCMAKE_GENERATOR_PLATFORM=x64 ")
       build_cmd <- "cmake --build . --target _lightgbm  --config Release"
-      lib_folder <- paste0(R_PACKAGE_SOURCE, "/src/Release")
+      lib_folder <- paste0(R_PACKAGE_SOURCE, "src/Release/")
     }
   }
   
@@ -56,18 +56,18 @@ if (!use_precompile) {
   # Install
   system(paste0(cmake_cmd, " .."))
   system(build_cmd)
-  src <- paste0(lib_folder, "/lib_lightgbm", SHLIB_EXT)
+  src <- paste0(lib_folder, "lib_lightgbm", SHLIB_EXT)
   
 } else {
-  
+
   # Has precompiled package
   lib_folder <- paste0(R_PACKAGE_SOURCE, "/../")
   if (file.exists(paste0(lib_folder, "lib_lightgbm", SHLIB_EXT))) {
     src <- paste0(lib_folder, "lib_lightgbm", SHLIB_EXT)
-  } else if (file.exists(paste0(lib_folder, "windows/x64/DLL/lib_lightgbm", SHLIB_EXT))) {
-    src <- paste0(lib_folder, "windows/x64/DLL/lib_lightgbm", SHLIB_EXT)
+  } else if (file.exists(paste0(lib_folder, "Release/lib_lightgbm", SHLIB_EXT))){
+    src <- paste0(lib_folder, "Release/lib_lightgbm", SHLIB_EXT) 
   } else {
-    src <- paste0(lib_folder, "Release/lib_lightgbm", SHLIB_EXT) # Expected result: installation will fail if it is not here or any other
+    src <- paste0(lib_folder, "windows/x64/DLL/lib_lightgbm", SHLIB_EXT) # Expected result: installation will fail if it is not here or any other
   }
   
 }
