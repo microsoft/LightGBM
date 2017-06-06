@@ -14,10 +14,10 @@ if (!use_precompile) {
     if (!file.copy("./../../include", "./", overwrite = TRUE, recursive = TRUE)) {
       stop("Cannot find folder LightGBM/include")
     }
-	  if (!file.copy("./../../src", "./", overwrite = TRUE, recursive = TRUE)) {
-		  stop("Cannot find folder LightGBM/src")
-	  }
-	  if (use_gpu) {
+    if (!file.copy("./../../src", "./", overwrite = TRUE, recursive = TRUE)) {
+      stop("Cannot find folder LightGBM/src")
+    }
+    if (use_gpu) {
       if (!file.copy("./../../compute", "./", overwrite = TRUE, recursive = TRUE)) {
         print("Cannot find folder LightGBM/compute, disabling GPU build.")
         use_gpu <- FALSE
@@ -33,11 +33,12 @@ if (!use_precompile) {
   dir.create(build_dir, recursive = TRUE, showWarnings = FALSE)
   setwd(build_dir)
   
-  # Prepare installatio nsteps
+  # Prepare installation steps
   cmake_cmd <- "cmake"
   build_cmd <- "make -j"
   lib_folder <- paste0(R_PACKAGE_SOURCE, "/src/")
   
+  # Check if Windows installation (for gcc vs Visual Studio)
   if (WINDOWS) {
     if (use_mingw) {
       cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ")
