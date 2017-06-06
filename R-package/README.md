@@ -5,33 +5,37 @@ Installation
 ------------
 
 ### Preparation
-You need to install *git* and [cmake](https://cmake.org/) first. 
+You need to install git and [cmake](https://cmake.org/) first.
 
-The default compiler is Visual Studio (or [MS Build](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017)) in Windows. You also can use MinGW64 to compile by set ```use_mingw <- TRUE``` in ```R-package/src/install.libs.R``` (We recommend *Visual Studio* for its better multi-threading efficency in Windows).
+The default compiler is Visual Studio (or [MS Build](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017)) in Windows. You also can use Rtools (default) or [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) to compile by setting `use_mingw` to `TRUE` in `R-package/src/install.libs.R`.
 
-For OSX user, gcc need to be installed first (refer to https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#osx). 
+It is recommended to use *Visual Studio* for its better multi-threading efficency in Windows for many core systems. For simple systems (like laptops or small desktops), MinGW64 is recommended.
+
+For Mac OS X users, gcc with OpenMP support must be installed first. Refer to [wiki](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#osx) for installing gcc with OpenMP support.
+
+To avoid critical package issues if you are using R 3.4.0 (not the patched/devel version), it is recommended to install once the LightGBM R package, even if it is an old version: `devtools::install_github("Microsoft/LightGBM@v1", subdir = "R-package")`. Make sure you have the correct permissions to install the package.
 
 ### Install
-Install LightGBM R-package by following command:
+Install LightGBM R-package with the following command:
 
-```
+```sh
 git clone --recursive https://github.com/Microsoft/LightGBM
 cd LightGBM/R-package
 R CMD INSTALL --build .
-``` 
-Or build a self-contained R package then install:
 ```
+
+Or build a self-contained R package which can be installed afterwards:
+
+```sh
 git clone --recursive https://github.com/Microsoft/LightGBM
 cd LightGBM/R-package
 Rscript build_package.R
-R CMD INSTALL lightgbm_0.1.tar.gz
+R CMD INSTALL lightgbm_0.2.tar.gz
 ``` 
-
 
 Windows users may need to run with administrator rights (either R or the command prompt, depending on the way you are installing this package). Rtools must be installed for Windows. Linux users might require the appropriate user write permissions for packages.
 
-
-Set ```use_gpu <- TRUE``` in ```R-package/src/install.libs.R``` can enable the build with GPU support (Need to install *Boost* and *OpenCL* first, details can be found in [gpu-support](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support)).
+Set `use_gpu` to `TRUE` in `R-package/src/install.libs.R` to enable the build with GPU support. You will need to install Boost and OpenCL first: details for installation can be found in [gpu-support](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support).
 
 You can also install directly from R using the repository with `devtools`:
 
