@@ -43,6 +43,8 @@ You can also install directly from R using the repository with `devtools`:
 devtools::install_github("Microsoft/LightGBM", subdir = "R-package")
 ```
 
+If you are using a precompiled dll/lib locally, you can move the dll/lib into LightGBM root folder, modify `LightGBM/R-package/src/install.libs.R`'s 2nd line (change `use_precompile <- FALSE` to `use_precompile <- TRUE`), and install R-package as usual.
+
 When your package installation is done, you can check quickly if your LightGBM R package is working by running the following:
 
 ```r
@@ -53,6 +55,42 @@ dtrain <- lgb.Dataset(train$data, label=train$label)
 params <- list(objective="regression", metric="l2")
 model <- lgb.cv(params, dtrain, 10, nfold=5, min_data=1, learning_rate=1, early_stopping_rounds=10)
 ```
+
+Installation with precompiled dll/lib from R using GitHub
+------------
+
+You can install LightGBM R-package from GitHub with devtools thanks to a helper package for LightGBM.
+
+### Prerequisites
+
+You will need:
+
+* Precompiled LightGBM dll/lib
+* MinGW / Visual Studio / gcc (depending on your OS and your needs) with make in PATH environment variable
+* git in PATH environment variable
+* cmake in PATH environment variable
+* lgbdl R-package, which can be installed using `devtools::install_github("Laurae2/lgbdl")`
+
+Once you have all this setup, you can use `lgb.dl` from `lgbdl` package to install LightGBM from repository.
+
+For instance, you can install the R package from LightGBM master commit of GitHub using the following from R:
+
+```r
+lgb.dl(commit = "master",
+       compiler = "gcc",
+       repo = "https://github.com/Microsoft/LightGBM",
+       cores = 4)
+```
+
+You may also install using a precompiled dll/lib using the following from R:
+
+```r
+lgb.dl(commit = "master",
+       libdll = "C:\\LightGBM\\windows\\x64\\DLL\\lib_lightgbm.dll", # YOUR PRECOMPILED DLL
+       repo = "https://github.com/Microsoft/LightGBM")
+```
+
+For more details about options, please check [Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/) R-package.
 
 Examples
 ------------
