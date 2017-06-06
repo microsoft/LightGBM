@@ -44,6 +44,7 @@ inline static std::string& RemoveQuotationSymbol(std::string& str) {
   str.erase(0, str.find_first_not_of("'\""));
   return str;
 }
+
 inline static bool StartsWith(const std::string& str, const std::string prefix) {
   if (str.substr(0, prefix.size()) == prefix) {
     return true;
@@ -51,32 +52,79 @@ inline static bool StartsWith(const std::string& str, const std::string prefix) 
     return false;
   }
 }
+
 inline static std::vector<std::string> Split(const char* c_str, char delimiter) {
   std::vector<std::string> ret;
   std::string str(c_str);
   size_t i = 0;
-  size_t pos = str.find(delimiter);
-  while (pos != std::string::npos) {
-    ret.push_back(str.substr(i, pos - i));
-    i = ++pos;
-    pos = str.find(delimiter, pos);
+  size_t pos = 0;
+  while (pos < str.length()) {
+    if (str[pos] == delimiter) {
+      if (i < pos) {
+        ret.push_back(str.substr(i, pos - i));
+      }
+      ++pos;
+      i = pos;
+    } else {
+      ++pos;
+    }
   }
-  ret.push_back(str.substr(i));
+  if (i < pos) {
+    ret.push_back(str.substr(i));
+  }
+  return ret;
+}
+
+inline static std::vector<std::string> SplitLines(const char* c_str) {
+  std::vector<std::string> ret;
+  std::string str(c_str);
+  size_t i = 0;
+  size_t pos = 0;
+  while (pos < str.length()) {
+    if (str[pos] == '\n' || str[pos] == '\r') {
+      if (i < pos) {
+        ret.push_back(str.substr(i, pos - i));
+      }
+      // skip the line endings
+      while (str[pos] == '\n' || str[pos] == '\r') ++pos;
+      // new begin
+      i = pos;
+    } else {
+      ++pos;
+    }
+  }
+  if (i < pos) {
+    ret.push_back(str.substr(i));
+  }
   return ret;
 }
 
 inline static std::vector<std::string> Split(const char* c_str, const char* delimiters) {
-  // will split when met any chars in delimiters
   std::vector<std::string> ret;
   std::string str(c_str);
   size_t i = 0;
-  size_t pos = str.find_first_of(delimiters);
-  while (pos != std::string::npos) {
-    ret.push_back(str.substr(i, pos - i));
-    i = ++pos;
-    pos = str.find_first_of(delimiters, pos);
+  size_t pos = 0;
+  while (pos < str.length()) {
+    bool met_delimiters = false;
+    for (int j = 0; delimiters[j] != '\0'; ++j) {
+      if (str[pos] == delimiters[j]) {
+        met_delimiters = true;
+        break;
+      }
+    }
+    if (met_delimiters) {
+      if (i < pos) {
+        ret.push_back(str.substr(i, pos - i));
+      }
+      ++pos;
+      i = pos;
+    } else {
+      ++pos;
+    }
   }
-  ret.push_back(str.substr(i));
+  if (i < pos) {
+    ret.push_back(str.substr(i));
+  }
   return ret;
 }
 

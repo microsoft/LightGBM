@@ -135,7 +135,7 @@ LGBM_SE LGBM_DatasetSetFeatureNames_R(LGBM_SE handle,
   LGBM_SE feature_names,
   LGBM_SE call_state) {
   R_API_BEGIN();
-  auto vec_names = Common::Split(R_CHAR_PTR(feature_names), "\t");
+  auto vec_names = Common::Split(R_CHAR_PTR(feature_names), '\t');
   std::vector<const char*> vec_sptr;
   int len = static_cast<int>(vec_names.size());
   for (int i = 0; i < len; ++i) {

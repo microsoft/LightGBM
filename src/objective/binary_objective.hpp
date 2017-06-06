@@ -28,7 +28,7 @@ public:
   explicit BinaryLogloss(const std::vector<std::string>& strs) {
     sigmoid_ = -1;
     for (auto str : strs) {
-      auto tokens = Common::Split(str.c_str(), ":");
+      auto tokens = Common::Split(str.c_str(), ':');
       if (tokens.size() == 2) {
         if (tokens[0] == std::string("sigmoid")) {
           Common::Atof(tokens[1].c_str(), &sigmoid_);

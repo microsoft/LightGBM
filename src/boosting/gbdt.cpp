@@ -875,7 +875,7 @@ bool GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
 bool GBDT::LoadModelFromString(const std::string& model_str) {
   // use serialized string to restore this object
   models_.clear();
-  std::vector<std::string> lines = Common::Split(model_str.c_str(), '\n');
+  std::vector<std::string> lines = Common::SplitLines(model_str.c_str());
 
   // get number of classes
   auto line = Common::FindFromLines(lines, "num_class=");
@@ -917,7 +917,7 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
   // get feature names
   line = Common::FindFromLines(lines, "feature_names=");
   if (line.size() > 0) {
-    feature_names_ = Common::Split(line.substr(std::strlen("feature_names=")).c_str(), " ");
+    feature_names_ = Common::Split(line.substr(std::strlen("feature_names=")).c_str(), ' ');
     if (feature_names_.size() != static_cast<size_t>(max_feature_idx_ + 1)) {
       Log::Fatal("Wrong size of feature_names");
       return false;
@@ -929,7 +929,7 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
 
   line = Common::FindFromLines(lines, "feature_infos=");
   if (line.size() > 0) {
-    feature_infos_ = Common::Split(line.substr(std::strlen("feature_infos=")).c_str(), " ");
+    feature_infos_ = Common::Split(line.substr(std::strlen("feature_infos=")).c_str(), ' ');
     if (feature_infos_.size() != static_cast<size_t>(max_feature_idx_ + 1)) {
       Log::Fatal("Wrong size of feature_infos");
       return false;

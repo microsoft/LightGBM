@@ -441,7 +441,7 @@ std::string Tree::NodeToIfElse(int index, bool is_predict_leaf_index) {
 }
 
 Tree::Tree(const std::string& str) {
-  std::vector<std::string> lines = Common::Split(str.c_str(), '\n');
+  std::vector<std::string> lines = Common::SplitLines(str.c_str());
   std::unordered_map<std::string, std::string> key_vals;
   for (const std::string& line : lines) {
     std::vector<std::string> tmp_strs = Common::Split(line.c_str(), '=');

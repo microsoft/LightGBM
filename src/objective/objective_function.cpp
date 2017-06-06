@@ -31,7 +31,7 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
 }
 
 ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string& str) {
-  auto strs = Common::Split(str.c_str(), " ");
+  auto strs = Common::Split(str.c_str(), ' ');
   auto type = strs[0];
   if (type == std::string("regression")) {
     return new RegressionL2loss(strs);

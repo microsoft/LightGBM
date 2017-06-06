@@ -22,7 +22,7 @@ public:
   explicit MulticlassSoftmax(const std::vector<std::string>& strs) {
     num_class_ = -1;
     for (auto str : strs) {
-      auto tokens = Common::Split(str.c_str(), ":");
+      auto tokens = Common::Split(str.c_str(), ':');
       if (tokens.size() == 2) {
         if (tokens[0] == std::string("num_class")) {
           Common::Atoi(tokens[1].c_str(), &num_class_);
@@ -151,7 +151,7 @@ public:
     num_class_ = -1;
     sigmoid_ = -1;
     for (auto str : strs) {
-      auto tokens = Common::Split(str.c_str(), ":");
+      auto tokens = Common::Split(str.c_str(), ':');
       if (tokens.size() == 2) {
         if (tokens[0] == std::string("num_class")) {
           Common::Atoi(tokens[1].c_str(), &num_class_);
