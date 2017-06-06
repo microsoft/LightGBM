@@ -11,6 +11,8 @@ The default compiler is Visual Studio (or [MS Build](https://www.visualstudio.co
 
 It is recommended to use *Visual Studio* for its better multi-threading efficency in Windows for many core systems. For simple systems (like laptops or small desktops), MinGW64 is recommended for maximum performance.
 
+For Windows users, installing [Rtools](https://cran.r-project.org/bin/windows/Rtools/) is mandatory.
+
 For Mac OS X users, gcc with OpenMP support must be installed first. Refer to [wiki](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#osx) for installing gcc with OpenMP support.
 
 To avoid critical package issues if you are using R 3.4.0 (not the patched/devel version), it is recommended to install once the LightGBM R package, even if it is an old version: `devtools::install_github("Microsoft/LightGBM@v1", subdir = "R-package")`. Make sure you have the correct permissions to install the package.
@@ -68,8 +70,9 @@ You will need:
 * Precompiled LightGBM dll/lib
 * MinGW / Visual Studio / gcc (depending on your OS and your needs) with make in PATH environment variable
 * git in PATH environment variable
-* cmake in PATH environment variable
-* lgbdl R-package, which can be installed using `devtools::install_github("Laurae2/lgbdl")`
+* [cmake](https://cmake.org/) in PATH environment variable
+* [lgbdl](https://github.com/Laurae2/lgbdl/) R-package, which can be installed using `devtools::install_github("Laurae2/lgbdl")`
+* [Rtools](https://cran.r-project.org/bin/windows/Rtools/) if using Windows
 
 Once you have all this setup, you can use `lgb.dl` from `lgbdl` package to install LightGBM from repository.
 
