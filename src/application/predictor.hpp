@@ -172,7 +172,9 @@ private:
     } else {
       int loop_size = static_cast<int>(features.size());
       for (int i = 0; i < loop_size; ++i) {
-        pred_buf[features[i].first] = 0.0f;
+        if (features[i].first < num_feature_) {
+          pred_buf[features[i].first] = 0.0f;
+        }
       }
     }
   }
