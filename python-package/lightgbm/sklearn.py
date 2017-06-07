@@ -240,7 +240,8 @@ class LGBMModel(LGBMModelBase):
             self.fobj = _objective_function_wrapper(self.objective)
         else:
             self.fobj = None
-        self.other_params = kwargs
+        self.other_params = {}
+        self.set_params(**kwargs)
 
     def get_params(self, deep=True):
         params = super(LGBMModel, self).get_params(deep=deep)
