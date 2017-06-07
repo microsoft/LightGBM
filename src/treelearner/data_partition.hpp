@@ -91,7 +91,7 @@ public:
   * \param threshold threshold that want to split
   * \param right_leaf index of right leaf
   */
-  void Split(int leaf, const Dataset* dataset, int feature, uint32_t threshold, uint32_t default_bin_for_zero, int right_leaf, int expected_left_cnt) {
+  void Split(int leaf, const Dataset* dataset, int feature, uint32_t threshold, uint32_t default_bin_for_zero, int right_leaf) {
     const data_size_t min_inner_size = 512;
     // get leaf boundary
     const data_size_t begin = leaf_begin_[leaf];
@@ -141,7 +141,6 @@ public:
     }
     // update leaf boundary
     leaf_count_[leaf] = left_cnt;
-    CHECK(left_cnt == expected_left_cnt);
     leaf_begin_[right_leaf] = left_cnt + begin;
     leaf_count_[right_leaf] = cnt - left_cnt;
   }
