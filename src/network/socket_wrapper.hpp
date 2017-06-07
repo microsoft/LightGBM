@@ -81,8 +81,8 @@ inline int inet_pton(int af, const char *src, void *dst)
 #define FREE(x) HeapFree(GetProcessHeap(), 0, (x))
 
 namespace SocketConfig {
-const int kSocketBufferSize = 10 * 1024 * 1024;
-const int kMaxReceiveSize = 2 * 1024 * 1024;
+const int kSocketBufferSize = 100 * 1024;
+const int kMaxReceiveSize = 100 * 1024;
 const bool kNoDelay = true;
 }
 
@@ -119,9 +119,9 @@ public:
     if (sockfd_ == INVALID_SOCKET) {
       return;
     }
-    setsockopt(sockfd_, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<const char*>(&SocketConfig::kSocketBufferSize), sizeof(SocketConfig::kSocketBufferSize));
-    setsockopt(sockfd_, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<const char*>(&SocketConfig::kSocketBufferSize), sizeof(SocketConfig::kSocketBufferSize));
-    setsockopt(sockfd_, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char*>(&SocketConfig::kNoDelay), sizeof(SocketConfig::kNoDelay));
+    CHECK(setsockopt(sockfd_, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<const char*>(&SocketConfig::kSocketBufferSize), sizeof(SocketConfig::kSocketBufferSize)) == 0);
+    CHECK(setsockopt(sockfd_, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<const char*>(&SocketConfig::kSocketBufferSize), sizeof(SocketConfig::kSocketBufferSize)) == 0);
+    CHECK(setsockopt(sockfd_, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char*>(&SocketConfig::kNoDelay), sizeof(SocketConfig::kNoDelay)) == 0);
   }
 
   inline static void Startup() {
