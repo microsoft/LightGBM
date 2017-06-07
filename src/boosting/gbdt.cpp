@@ -7,6 +7,7 @@
 #include <LightGBM/objective_function.h>
 #include <LightGBM/metric.h>
 #include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/network.h>
 
 #include <ctime>
 
@@ -336,6 +337,38 @@ void GBDT::UpdateScoreOutOfBag(const Tree* tree, const int cur_tree_id) {
   #endif
 }
 
+double LabelAverage(const float* label, data_size_t num_data) {
+  double sum_label = 0.0f;
+  #pragma omp parallel for schedule(static) reduction(+:sum_label)
+  for (data_size_t i = 0; i < num_data; ++i) {
+    sum_label += label[i];
+  }
+  double init_score = sum_label / num_data;
+  if (Network::num_machines() > 1) {
+    double global_init_score = 0.0f;
+    Network::Allreduce(reinterpret_cast<char*>(&init_score),
+                       sizeof(init_score), sizeof(init_score),
+                       reinterpret_cast<char*>(&global_init_score),
+                       [](const char* src, char* dst, int len) {
+      int used_size = 0;
+      const int type_size = sizeof(double);
+      const double *p1;
+      double *p2;
+      while (used_size < len) {
+        p1 = reinterpret_cast<const double *>(src);
+        p2 = reinterpret_cast<double *>(dst);
+        *p2 += *p1;
+        src += type_size;
+        dst += type_size;
+        used_size += type_size;
+      }
+    });
+    return global_init_score / Network::num_machines();
+  } else {
+    return init_score;
+  }
+}
+
 bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) {
   // boosting from average prediction. It doesn't work well for classification, remove it for now.
   if (models_.empty()
@@ -344,15 +377,10 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
       && num_class_ <= 1
       && objective_function_ != nullptr
       && objective_function_->BoostFromAverage()) {
-    double init_score = 0.0f;
     auto label = train_data_->metadata().label();
-    #pragma omp parallel for schedule(static) reduction(+:init_score)
-    for (data_size_t i = 0; i < num_data_; ++i) {
-      init_score += label[i];
-    }
-    init_score /= num_data_;
+    double init_score = LabelAverage(label, num_data_);
     std::unique_ptr<Tree> new_tree(new Tree(2));
-    new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0, init_score, init_score, 0, num_data_, -1, 0, 0, 0);
+    new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0, init_score, init_score, 0, 0, -1, 0, 0, 0);
     train_score_updater_->AddScore(init_score, 0);
     for (auto& score_updater : valid_score_updater_) {
       score_updater->AddScore(init_score, 0);
@@ -431,7 +459,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
       if (!class_need_train_[cur_tree_id] && models_.size() < static_cast<size_t>(num_tree_per_iteration_)) {
         auto output = class_default_output_[cur_tree_id];
         new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0,
-                        output, output, 0, num_data_, -1, 0, 0, 0);
+                        output, output, 0, 0, -1, 0, 0, 0);
         train_score_updater_->AddScore(output, cur_tree_id);
         for (auto& score_updater : valid_score_updater_) {
           score_updater->AddScore(output, cur_tree_id);
