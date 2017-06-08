@@ -106,6 +106,7 @@ lgb.cv <- function(params = list(),
   params <- lgb.check.eval(params, eval)
   fobj <- NULL
   feval <- NULL
+  query_exists <- NULL
   
   # Check for objective (function or not)
   if (is.function(params$objective)) {
@@ -167,6 +168,11 @@ lgb.cv <- function(params = list(),
     data$set_categorical_feature(categorical_feature)
   }
   
+  # Check for the existence of query group
+  if (!is.null(getinfo(data, "group"))) {
+    query_exists <- getinfo(data, "group")
+  }
+  
   # Construct datasets, if needed
   data$construct()
   
@@ -217,14 +223,36 @@ lgb.cv <- function(params = list(),
   # Categorize callbacks
   cb <- categorize.callbacks(callbacks)
   
-  # Construct booster using a list apply
-  bst_folds <- lapply(seq_along(folds), function(k) {
-    dtest <- slice(data, folds[[k]])
-    dtrain <- slice(data, unlist(folds[-k]))
-    booster <- Booster$new(params, dtrain)
-    booster$add_valid(dtest, "valid")
-    list(booster = booster)
-  })
+  if (!is.null(query_exists)) {
+    
+    # Cheapest solution inverse RLE: 2,3,4 => 1,1,2,2,2,3,3,3,3
+    # Cheapest solution RLE = 1,1,2,2,2,3,3,3,3 => 2,3,4
+    inverted.rle <- inverse.rle(list(lengths = query_exists,
+                                     values = 1:length(query_exists)))
+  
+    # Construct booster with group using a list apply
+    bst_folds <- lapply(seq_along(folds), function(k, query) {
+      dtest <- slice(data, folds[[k]])
+      dtrain <- slice(data, unlist(folds[-k]))
+      setinfo(dtest, "group", rle(query[folds[[k]]])$lengths)
+      setinfo(dtrain, "group", rle(query[-folds[[k]]])$lengths)
+      booster <- Booster$new(params, dtrain)
+      booster$add_valid(dtest, "valid")
+      list(booster = booster)
+    }, query = inverted.rle)
+    
+  } else {
+  
+    # Construct booster without group using a list apply
+    bst_folds <- lapply(seq_along(folds), function(k) {
+      dtest <- slice(data, folds[[k]])
+      dtrain <- slice(data, unlist(folds[-k]))
+      booster <- Booster$new(params, dtrain)
+      booster$add_valid(dtest, "valid")
+      list(booster = booster)
+    })
+    
+  }
   
   # Create new booster
   cv_booster <- CVBooster$new(bst_folds)
