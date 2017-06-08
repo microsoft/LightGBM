@@ -234,7 +234,7 @@ class LGBMModel(LGBMModelBase):
         self.silent = silent
         self._Booster = None
         self.evals_result = None
-        self.best_iteration = -1
+        self.best_iteration = 0
         self.best_score = {}
         if callable(self.objective):
             self.fobj = _objective_function_wrapper(self.objective)
