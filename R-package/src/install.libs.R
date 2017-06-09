@@ -46,7 +46,7 @@ if (!use_precompile) {
     } else {
       cmake_cmd <- paste0(cmake_cmd, " -DCMAKE_GENERATOR_PLATFORM=x64 ")
       build_cmd <- "cmake --build . --target _lightgbm  --config Release"
-      lib_folder <- paste0(R_PACKAGE_SOURCE, "src/Release/")
+      lib_folder <- paste0(R_PACKAGE_SOURCE, "/src/Release/")
     }
   }
   
