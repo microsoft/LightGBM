@@ -18,6 +18,8 @@ For more details, please refer to [Features](https://github.com/Microsoft/LightG
 News
 ----
 
+06/09/2017: [LightGBM Slack team](https://lightgbm.slack.com) is available.
+
 05/03/2017: LightGBM v2 stable release.
 
 04/10/2017 : LightGBM now supports GPU-accelerated tree learning. Please read our [GPU Tutorial](./docs/GPU-Tutorial.md) and [Performance Comparison](./docs/GPU-Performance.md).
@@ -31,6 +33,7 @@ News
 12/05/2016 : **Categorical Features as input directly**(without one-hot coding). Experiment on [Expo data](http://stat-computing.org/dataexpo/2009/) shows about 8x speed-up with same accuracy compared with one-hot coding.
 
 12/02/2016 : Release [**python-package**](./python-package) beta version, welcome to have a try and provide feedback.
+
 
 External (unofficial) Repositories
 ----------------------------------
@@ -60,6 +63,16 @@ Useful if you are looking for details:
 
 * [**Read The Docs**](http://lightgbm.readthedocs.io/en/latest/) for an all in one documentation from this repository in a browsable fashion
 * [**Laurae++ interactive documentation**](https://sites.google.com/view/lauraepp/parameters) for an interactive and detailed documentation on hyperparameters
+
+Support
+-------
+
+You can ask questions and join the development discussion on:
+
+* [LightGBM Slack team](https://lightgbm.slack.com).
+  * Use [this invite link](https://join.slack.com/lightgbm/shared_invite/MTk1MjM1Mjg2NDA1LTE0OTY5NzMwNDgtYTRiZGQ5YzM3OQ) to join the team.
+
+You can also create **bug reports and feature requests** (not including questions) in [Github issues](https://github.com/Microsoft/LightGBM/issues).
 
 How to Contribute
 -----------------
