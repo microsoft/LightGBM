@@ -73,6 +73,7 @@ You will need:
 * [cmake](https://cmake.org/) in PATH environment variable
 * [lgbdl](https://github.com/Laurae2/lgbdl/) R-package, which can be installed using `devtools::install_github("Laurae2/lgbdl")`
 * [Rtools](https://cran.r-project.org/bin/windows/Rtools/) if using Windows
+* [Visual Studio Runtime](https://www.microsoft.com/en-us/download/details.aspx?id=52685) (mandatory when using a Visual Studio precompiled DLL, else you will get an error about MSVCP140.dll missing)
 
 Once you have all this setup, you can use `lgb.dl` from `lgbdl` package to install LightGBM from repository.
 
