@@ -7,7 +7,7 @@ use_mingw <- FALSE
 if (!use_precompile) {
 
   # Check repository content
-  source_dir <- paste0(R_PACKAGE_SOURCE, "/src/")
+  source_dir <- file.path(R_PACKAGE_SOURCE, "src/", fsep = "/")
   setwd(source_dir)
   
   if (!file.exists("_IS_FULL_PACKAGE")) {
@@ -36,7 +36,7 @@ if (!use_precompile) {
   # Prepare installation steps
   cmake_cmd <- "cmake"
   build_cmd <- "make -j"
-  lib_folder <- paste0(R_PACKAGE_SOURCE, "/src/")
+  lib_folder <- file.path(R_PACKAGE_SOURCE, "src/", fsep = "/")
   
   # Check if Windows installation (for gcc vs Visual Studio)
   if (WINDOWS) {
@@ -46,7 +46,7 @@ if (!use_precompile) {
     } else {
       cmake_cmd <- paste0(cmake_cmd, " -DCMAKE_GENERATOR_PLATFORM=x64 ")
       build_cmd <- "cmake --build . --target _lightgbm  --config Release"
-      lib_folder <- paste0(R_PACKAGE_SOURCE, "/src/Release/")
+      lib_folder <- file.path(R_PACKAGE_SOURCE, "src/Release/", fsep = "/")
     }
   }
   
@@ -62,7 +62,7 @@ if (!use_precompile) {
 } else {
 
   # Has precompiled package
-  lib_folder <- paste0(R_PACKAGE_SOURCE, "/../")
+  lib_folder <- file.path(R_PACKAGE_SOURCE, "../", fsep "/")
   if (file.exists(paste0(lib_folder, "lib_lightgbm", SHLIB_EXT))) {
     src <- paste0(lib_folder, "lib_lightgbm", SHLIB_EXT)
   } else if (file.exists(paste0(lib_folder, "Release/lib_lightgbm", SHLIB_EXT))){
