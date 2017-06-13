@@ -366,7 +366,7 @@ std::string Tree::NodeToJSON(int index) {
     str_buf << "\"split_index\":" << index << "," << std::endl;
     str_buf << "\"split_feature\":" << split_feature_[index] << "," << std::endl;
     str_buf << "\"split_gain\":" << split_gain_[index] << "," << std::endl;
-    str_buf << "\"threshold\":" << threshold_[index] << "," << std::endl;
+    str_buf << "\"threshold\":" << Common::AvoidInf(threshold_[index]) << "," << std::endl;
     str_buf << "\"decision_type\":\"" << Tree::GetDecisionTypeName(decision_type_[index]) << "\"," << std::endl;
     str_buf << "\"default_value\":" << default_value_[index] << "," << std::endl;
     str_buf << "\"internal_value\":" << internal_value_[index] << "," << std::endl;
