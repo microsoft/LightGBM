@@ -1661,20 +1661,29 @@ class Booster(object):
         """
         if importance_type not in ["split", "gain"]:
             raise KeyError("importance_type must be split or gain")
-        dump_model = self.dump_model()
-        ret = [0] * (dump_model["max_feature_idx"] + 1)
-
-        def dfs(root):
-            if "split_feature" in root:
-                if root['split_gain'] > 0:
-                    if importance_type == 'split':
-                        ret[root["split_feature"]] += 1
-                    elif importance_type == 'gain':
-                        ret[root["split_feature"]] += root["split_gain"]
-                dfs(root["left_child"])
-                dfs(root["right_child"])
-        for tree in dump_model["tree_info"]:
-            dfs(tree["tree_structure"])
+        dump_model = self.__save_model_to_string()
+        type_is_gain = importance_type == 'gain'
+        split_feature = []
+        split_gain = []
+        max_feature_idx = None
+        for line in dump_model.split('\n'):
+            if line.startswith('split_feature='):
+                tokens = [int(token) for token in line[len('split_feature='):].split()]
+                split_feature.append(tokens)
+            elif type_is_gain and line.startswith('split_gain='):
+                tokens = [float(token) for token in line[len('split_gain='):].split()]
+                split_gain.append(tokens)
+            elif max_feature_idx is None and line.startswith('max_feature_idx='):
+                max_feature_idx = int(line[len('max_feature_idx='):])
+        ret = [0] * (max_feature_idx + 1)
+        if type_is_gain:
+            for features, gains in zip(split_feature, split_gain):
+                for feature, gain in zip(features, gains):
+                    ret[feature] += gain
+        else:
+            for features in split_feature:
+                for feature in features:
+                    ret[feature] += 1
         return np.array(ret)
 
     def __inner_eval(self, data_name, data_idx, feval=None):

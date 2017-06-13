@@ -82,7 +82,7 @@ int Tree::Split(int leaf, int feature, BinType bin_type, uint32_t threshold_bin,
   }
 
   threshold_in_bin_[new_node_idx] = threshold_bin;
-  threshold_[new_node_idx] = threshold_double;
+  threshold_[new_node_idx] = Common::AvoidInf(threshold_double);
   split_gain_[new_node_idx] = Common::AvoidInf(gain);
   // add two new leaves
   left_child_[new_node_idx] = ~leaf;
