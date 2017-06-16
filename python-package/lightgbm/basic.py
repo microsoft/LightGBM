@@ -457,7 +457,7 @@ class _InnerPredictor(object):
         Predict for a 2-D numpy matrix.
         """
         if len(mat.shape) != 2:
-            raise ValueError('Input numpy.ndarray must be 2 dimensional')
+            raise ValueError('Input numpy.ndarray or list must be 2 dimensional')
 
         if mat.dtype == np.float32 or mat.dtype == np.float64:
             data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
