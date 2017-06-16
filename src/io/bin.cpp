@@ -302,7 +302,7 @@ int BinMapper::SizeForSpecificBin(int bin) {
   return size;
 }
 
-void BinMapper::CopyTo(char * buffer) {
+void BinMapper::CopyTo(char * buffer) const {
   std::memcpy(buffer, &num_bin_, sizeof(num_bin_));
   buffer += sizeof(num_bin_);
   std::memcpy(buffer, &is_trival_, sizeof(is_trival_));

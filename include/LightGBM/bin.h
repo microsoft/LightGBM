@@ -143,7 +143,7 @@ public:
   * \brief Seirilizing this object to buffer
   * \param buffer The destination
   */
-  void CopyTo(char* buffer);
+  void CopyTo(char* buffer) const;
 
   /*!
   * \brief Deserilizing this object from buffer
