@@ -311,11 +311,11 @@ void BinMapper::CopyTo(char * buffer) {
   buffer += sizeof(sparse_rate_);
   std::memcpy(buffer, &bin_type_, sizeof(bin_type_));
   buffer += sizeof(bin_type_);
-  std::memcpy(&min_val_, buffer, sizeof(min_val_));
+  std::memcpy(buffer, &min_val_, sizeof(min_val_));
   buffer += sizeof(min_val_);
-  std::memcpy(&max_val_, buffer, sizeof(max_val_));
+  std::memcpy(buffer, &max_val_, sizeof(max_val_));
   buffer += sizeof(max_val_);
-  std::memcpy(&default_bin_, buffer, sizeof(default_bin_));
+  std::memcpy(buffer, &default_bin_, sizeof(default_bin_));
   buffer += sizeof(default_bin_);
   if (bin_type_ == BinType::NumericalBin) {
     std::memcpy(buffer, bin_upper_bound_.data(), num_bin_ * sizeof(double));
