@@ -68,6 +68,12 @@ Remember this is a free/open community support. We may not be available 24/7 to 
 
 ---
 
+- **Question 6**: Bagging is not reproducible when changing the number of threads.
+
+- **Solution 6**: As LightGBM bagging is running multithreaded, its output is dependent on the number of threads used. There is [no workaround currently](https://github.com/Microsoft/LightGBM/issues/632).
+
+---
+
 ### R-package
 
 - **Question 1**: I used `setinfo`, tried to print my `lgb.Dataset`, and now the R console froze!
