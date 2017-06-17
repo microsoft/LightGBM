@@ -92,7 +92,7 @@ lgb.prepare_rules2 <- function(data, rules = NULL) {
       
       # Map characters/factors
       is_fix <- which(list_classes %in% c("character", "factor"))
-      ruleset <- list()
+      rules <- list()
       
       # Need to create rules?
       if (length(is_fix) > 0) {
@@ -112,13 +112,13 @@ lgb.prepare_rules2 <- function(data, rules = NULL) {
             mini_numeric <- as.integer(mini_unique) # No respect of ordinality
           }
           
-          # Create ruleset
+          # Create rules
           indexed <- colnames(data)[i] # Index value
-          ruleset[[indexed]] <- mini_numeric # Numeric content
-          names(ruleset[[indexed]]) <- mini_unique # Character equivalent
+          rules[[indexed]] <- mini_numeric # Numeric content
+          names(rules[[indexed]]) <- mini_unique # Character equivalent
           
           # Apply to real data column
-          set(data, j = i, value = unname(ruleset[[indexed]][mini_data]))
+          set(data, j = i, value = unname(rules[[indexed]][mini_data]))
           
         }
         
@@ -149,7 +149,7 @@ lgb.prepare_rules2 <- function(data, rules = NULL) {
         
         # Map characters/factors
         is_fix <- which(list_classes %in% c("character", "factor"))
-        ruleset <- list()
+        rules <- list()
         
         # Need to create rules?
         if (length(is_fix) > 0) {
@@ -169,13 +169,13 @@ lgb.prepare_rules2 <- function(data, rules = NULL) {
               mini_numeric <- as.integer(mini_unique) # No respect of ordinality
             }
             
-            # Create ruleset
+            # Create rules
             indexed <- colnames(data)[i] # Index value
-            ruleset[[indexed]] <- mini_numeric # Numeric content
-            names(ruleset[[indexed]]) <- mini_unique # Character equivalent
+            rules[[indexed]] <- mini_numeric # Numeric content
+            names(rules[[indexed]]) <- mini_unique # Character equivalent
             
             # Apply to real data column
-            data[[i]] <- unname(ruleset[[indexed]][mini_data])
+            data[[i]] <- unname(rules[[indexed]][mini_data])
             
           }
           
@@ -192,6 +192,6 @@ lgb.prepare_rules2 <- function(data, rules = NULL) {
     
   }
   
-  return(list(data = data, rules = ruleset))
+  return(list(data = data, rules = rules))
   
 }
