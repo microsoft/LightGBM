@@ -444,6 +444,10 @@ public:
     return feature_groups_[group]->bin_data_.get();
   }
 
+  inline bool FeatureGroupIsSparse(int group) const {
+    return feature_groups_[group]->is_sparse_;
+  }
+
   inline BinIterator* FeatureIterator(int i) const {
     const int group = feature2group_[i];
     const int sub_feature = feature2subfeature_[i];

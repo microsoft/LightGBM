@@ -146,8 +146,17 @@ void GBDT::ResetTrainingData(const BoostingConfig* config, const Dataset* train_
       left_write_pos_buf_.resize(num_threads_);
       right_write_pos_buf_.resize(num_threads_);
       double average_bag_rate = new_config->bagging_fraction / new_config->bagging_freq;
+      int sparse_group = 0;
+      for (int i = 0; i < train_data->num_feature_groups(); ++i) {
+        if (train_data->FeatureGroupIsSparse(i)) {
+          ++sparse_group;
+        }
+      }
       is_use_subset_ = false;
-      if (average_bag_rate <= 0.5) {
+      const int group_threshold_usesubset = 100;
+      const int sparse_group_threshold_usesubset = train_data->num_feature_groups() / 4;
+      if (average_bag_rate <= 0.5 
+          && (train_data->num_feature_groups() < group_threshold_usesubset || sparse_group < sparse_group_threshold_usesubset)) {
         tmp_subset_.reset(new Dataset(bag_data_cnt_));
         tmp_subset_->CopyFeatureMapperFrom(train_data);
         is_use_subset_ = true;
