@@ -13,6 +13,8 @@ For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/dow
 
 For Mac OS X users, gcc with OpenMP support must be installed first. Refer to `wiki <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#osx>`_ for installing gcc with OpenMP support.
 
+Note: 32-bit python is not supported. Please install 64-bit version.
+
 Install from pip
 ''''''''''''''''
 
@@ -29,6 +31,7 @@ Install from GitHub
     cd LightGBM/python-package
     python setup.py install
 
+You may need to use ``sudo`` (or administrator rights in Windows) to perform ``python setup.py install``.
 
 Use ``python setup.py install --mingw`` to use MinGW in Windows.
 
