@@ -30,9 +30,9 @@ Install from GitHub
     python setup.py install
 
 
-Set `use_mingw` to `True` to use MinGW in Windows.
+Set ``use_mingw`` to ``True`` to use MinGW in Windows.
 
-Set `use_gpu` to `True` to enable GPU support. You will need to install Boost and OpenCL first: details for installation can be found in `gpu-support <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support>`_.
+Set ``use_gpu`` to ``True`` to enable GPU support. You will need to install Boost and OpenCL first: details for installation can be found in `gpu-support <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support>`_.
 
 Note: Make sure you have `setuptools <https://pypi.python.org/pypi/setuptools>`__
 
