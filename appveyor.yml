@@ -23,7 +23,7 @@ test_script:
   - conda info -a
   - conda install --yes numpy scipy scikit-learn pandas matplotlib
   - pip install pep8 pytest
-  - cd python-package && python setup.py install && cd ..
+  - cd python-package && python setup.py install --precompile && cd ..
   - pytest tests/c_api_test/test.py
   - pytest tests/python_package_test
   - pep8 --ignore=E501 --exclude=./compute,./docs .

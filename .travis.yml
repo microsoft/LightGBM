@@ -37,7 +37,7 @@ install:
 script:
 - cd $TRAVIS_BUILD_DIR
 - mkdir build && cd build && cmake -DUSE_MPI=ON ..&& make
-- cd $TRAVIS_BUILD_DIR/python-package && python setup.py install
+- cd $TRAVIS_BUILD_DIR/python-package && python setup.py install --precompile
 - cd $TRAVIS_BUILD_DIR && pytest tests/c_api_test/test.py
 - cd $TRAVIS_BUILD_DIR && pytest tests/python_package_test
 - cd $TRAVIS_BUILD_DIR && pep8 --ignore=E501 --exclude=./compute,./docs .
@@ -46,11 +46,11 @@ script:
 - sed -i 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' ../include/LightGBM/config.h
 - make
 - sed -i 's/std::string device_type = "gpu";/std::string device_type = "cpu";/' ../include/LightGBM/config.h
-- cd $TRAVIS_BUILD_DIR/python-package && python setup.py install
+- cd $TRAVIS_BUILD_DIR/python-package && python setup.py install --precompile
 - cd $TRAVIS_BUILD_DIR && pytest tests/c_api_test/test.py
 - cd $TRAVIS_BUILD_DIR && pytest tests/python_package_test
 - cd $TRAVIS_BUILD_DIR
-- rm -rf build && mkdir build && cd build && cmake .. && make
+- rm -rf build
 - cd $TRAVIS_BUILD_DIR/python-package && python setup.py install
 - cd $TRAVIS_BUILD_DIR && pytest tests/c_api_test/test.py
 - cd $TRAVIS_BUILD_DIR && pytest tests/python_package_test

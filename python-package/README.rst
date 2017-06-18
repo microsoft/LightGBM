@@ -7,7 +7,7 @@ Installation
 Preparation
 '''''''''''
 
-You need to install `cmake <https://cmake.org/>`_ first. 
+You need to install `cmake <https://cmake.org/>`_ and `setuptools <https://pypi.python.org/pypi/setuptools>`_ first. 
 
 For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed. You also can use MinGW instead if installing from GitHub.
 
@@ -30,11 +30,9 @@ Install from GitHub
     python setup.py install
 
 
-Set ``use_mingw`` to ``True`` to use MinGW in Windows.
+Use ``python setup.py install --mingw`` to use MinGW in Windows.
 
-Set ``use_gpu`` to ``True`` to enable GPU support. You will need to install Boost and OpenCL first: details for installation can be found in `gpu-support <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support>`_.
-
-Note: Make sure you have `setuptools <https://pypi.python.org/pypi/setuptools>`__
+Use ``python setup.py install --gpu`` to enable GPU support. You will need to install Boost and OpenCL first: details for installation can be found in `gpu-support <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support>`_.
 
 Examples
 --------
