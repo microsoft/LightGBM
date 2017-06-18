@@ -34,5 +34,5 @@ build_script:
 nuget:
   project_feed: true
 artifacts:
-- path: '*.dll'
-  name: dll
+- path: Release/lib_lightgbm.dll
+  name: Library
