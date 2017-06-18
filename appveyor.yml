@@ -32,3 +32,5 @@ nuget:
 artifacts:
 - path: Release/lib_lightgbm.dll
   name: Library
+- path: Release/lightgbm.exe
+  name: Exe
