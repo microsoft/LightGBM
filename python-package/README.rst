@@ -23,11 +23,12 @@ For the MinGW build in Windows and GPU support, please install the latest versio
 Install from GitHub
 '''''''''''''''''''
 
-```
-git clone --recursive https://github.com/Microsoft/LightGBM
-cd LightGBM/python-package
-python setup.py install
-```
+.. code:: sh
+
+    git clone --recursive https://github.com/Microsoft/LightGBM
+    cd LightGBM/python-package
+    python setup.py install
+
 
 Set `use_mingw` to `True` to use MinGW in Windows.
 
