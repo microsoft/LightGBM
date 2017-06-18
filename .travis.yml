@@ -64,4 +64,3 @@ notifications:
 matrix:
   include:
     - compiler: gcc
-    - compiler: clang
