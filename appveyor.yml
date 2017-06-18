@@ -30,3 +30,9 @@ build_script:
   - pytest tests/c_api_test/test.py
   - pytest tests/python_package_test
   - pep8 --ignore=E501 --exclude=./compute,./docs .
+
+nuget:
+  project_feed: true
+artifacts:
+- path: '*.dll'
+  name: dll
