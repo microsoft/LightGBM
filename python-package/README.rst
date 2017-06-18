@@ -4,12 +4,36 @@ LightGBM Python Package
 Installation
 ------------
 
-1. Following `Installation Guide <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide>`__ to build first.
-   For the windows user, please change the build config to ``DLL``.
-2. Install with ``cd python-package; python setup.py install`` 
+Preparation
+'''''''''''
+
+You need to install `cmake <https://cmake.org/>`_ first. 
+
+For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed. You also can use MinGW instead if installing from GitHub.
+
+For Mac OS X users, gcc with OpenMP support must be installed first. Refer to `wiki <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#osx>`_ for installing gcc with OpenMP support.
+
+Install from pip
+''''''''''''''''
+
+``pip install lightgbm``
+
+For the MinGW build in Windows and GPU support, please install the latest version from GitHub.
+
+Install from GitHub
+'''''''''''''''''''
+
+```
+git clone --recursive https://github.com/Microsoft/LightGBM
+cd LightGBM/python-package
+python setup.py install
+```
+
+Set `use_mingw` to `True` to use MinGW in Windows.
+
+Set `use_gpu` to `True` to enable GPU support. You will need to install Boost and OpenCL first: details for installation can be found in `gpu-support <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support>`_.
 
 Note: Make sure you have `setuptools <https://pypi.python.org/pypi/setuptools>`__
-
 
 Examples
 --------
@@ -18,7 +42,7 @@ Refer to the walk through examples in `python-guide folder <https://github.com/M
 
 
 Troubleshooting
---------
+---------------
 
 Refer to `FAQ <https://github.com/Microsoft/LightGBM/tree/master/docs/FAQ.md>`__ 
 
