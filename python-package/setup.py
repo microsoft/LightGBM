@@ -28,10 +28,10 @@ if __name__ == "__main__":
 
     if not use_precompile:
         if not os.path.isfile("_IS_FULL_PACKAGE.txt"):
-            distutils.dir_util.copy_tree("../include", "./include")
-            distutils.dir_util.copy_tree("../src", "./src")
-            distutils.dir_util.copy_tree("../compute", "./compute")
-            distutils.file_util.copy_file("../CMakeLists.txt", ".")
+            distutils.dir_util.copy_tree("../include", "./lightgbm/include")
+            distutils.dir_util.copy_tree("../src", "./lightgbm/src")
+            distutils.dir_util.copy_tree("../compute", "./lightgbm/compute")
+            distutils.file_util.copy_file("../CMakeLists.txt", "./lightgbm/")
             file_flag = open("_IS_FULL_PACKAGE.txt", 'w')
             file_flag.close()
 
@@ -52,7 +52,7 @@ if __name__ == "__main__":
         if use_gpu:
             cmake_cmd = cmake_cmd + " -DUSE_GPU=1 "
         print("Start to build libarary.")
-        os.system(cmake_cmd + " ..")
+        os.system(cmake_cmd + " ../lightgbm/")
         os.system(build_cmd)
         os.chdir("..")
 
