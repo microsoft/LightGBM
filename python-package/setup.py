@@ -11,26 +11,27 @@ from distutils import dir_util
 from distutils import file_util
 from setuptools import find_packages, setup
 if __name__ == "__main__":
-    try:
-        opts, args = getopt.getopt(sys.argv[2:], 'mgp', ['mingw=', 'gpu=','precompile='])
-    except getopt.GetoptError:
-        pass
     use_gpu = False
     use_mingw = False
     use_precompile = False
-    for opt, arg in opts:
-        if opt in ('-m', '--mingw'):
-            use_gpu = True
-        elif opt in ('-g', '--gpu'):
-            use_mingw = True
-        elif opt in ('-p', '--precompile'):
-            use_precompile = True
-
+    try:
+        opts, args = getopt.getopt(sys.argv[2:], 'mgp', ['mingw', 'gpu', 'precompile'])
+        for opt, arg in opts:
+            if opt in ('-m', '--mingw'):
+                use_mingw = True
+            elif opt in ('-g', '--gpu'):
+                use_gpu = True
+            elif opt in ('-p', '--precompile'):
+                use_precompile = True
+    except getopt.GetoptError as err:
+        pass
+    sys.argv = sys.argv[0:2]
     if not use_precompile:
         if not os.path.isfile("_IS_FULL_PACKAGE.txt"):
             distutils.dir_util.copy_tree("../include", "./lightgbm/include")
             distutils.dir_util.copy_tree("../src", "./lightgbm/src")
-            distutils.dir_util.copy_tree("../compute", "./lightgbm/compute")
+            if use_gpu:
+                distutils.dir_util.copy_tree("../compute", "./lightgbm/compute")
             distutils.file_util.copy_file("../CMakeLists.txt", "./lightgbm/")
             file_flag = open("_IS_FULL_PACKAGE.txt", 'w')
             file_flag.close()
