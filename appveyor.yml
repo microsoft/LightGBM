@@ -1,0 +1,32 @@
+
+version: 1.0.{build}
+environment:
+  matrix:
+    - PYTHON: "C:/Python27-x64"
+      PYTHON_VERSION: 2.7
+      MINICONDA: "C:/Miniconda-x64"
+    - PYTHON: "C:/Python36-x64"
+      PYTHON_VERSION: 3.6
+      MINICONDA: "C:/Miniconda36-x64"
+configuration: Release
+platform: x64
+clone_depth: 50
+
+init:
+  - "ECHO %PYTHON_VERSION% %MINICONDA%"
+
+install:
+  - "set PATH=%MINICONDA%;%MINICONDA%/Scripts;%PATH%"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - conda install --yes numpy scipy scikit-learn pandas matplotlib
+  - pip install pep8 pytest
+  
+build_script:
+  - mkdir build && cd build
+  - cmake -DCMAKE_GENERATOR_PLATFORM=x64 .. && cmake --build . --target ALL_BUILD --config Release
+  - cd ../python-package && python setup.py install && cd ..
+  - pytest tests/c_api_test/test.py
+  - pytest tests/python_package_test
+  - pep8 --ignore=E501 --exclude=./compute,./docs .

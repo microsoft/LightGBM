@@ -2,18 +2,41 @@
 # pylint: skip-file
 import ctypes
 import os
+import sys
 
 import numpy as np
 import pytest
 from scipy import sparse
 
 
-def LoadDll():
+def find_lib_path():
+    if os.environ.get('LIGHTGBM_BUILD_DOC', False):
+        # we don't need lib_lightgbm while building docs
+        return []
+
+    curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
+    dll_path = [curr_path, os.path.join(curr_path, '../../lib/'),
+                os.path.join(curr_path, '../../'),
+                os.path.join(curr_path, './lib/'),
+                os.path.join(sys.prefix, 'lightgbm')]
     if os.name == 'nt':
-        lib_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../windows/x64/DLL/lib_lightgbm.dll')
+        dll_path.append(os.path.join(curr_path, '../../Release/'))
+        dll_path.append(os.path.join(curr_path, '../../windows/x64/DLL/'))
+        dll_path = [os.path.join(p, 'lib_lightgbm.dll') for p in dll_path]
     else:
-        lib_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../lib_lightgbm.so')
-    lib = ctypes.cdll.LoadLibrary(lib_path)
+        dll_path = [os.path.join(p, 'lib_lightgbm.so') for p in dll_path]
+    lib_path = [p for p in dll_path if os.path.exists(p) and os.path.isfile(p)]
+    if not lib_path:
+        dll_path = [os.path.realpath(p) for p in dll_path]
+        raise Exception('Cannot find lightgbm Library in following paths: ' + ','.join(dll_path))
+    return lib_path
+
+
+def LoadDll():
+    lib_path = find_lib_path()
+    if len(lib_path) == 0:
+        return None
+    lib = ctypes.cdll.LoadLibrary(lib_path[0])
     return lib
 
 
