@@ -1,0 +1,9 @@
+include *.md *.rst *.txt
+recursive-include lightgbm *
+recursive-include include *
+recursive-include src *
+global-exclude *.o
+global-exclude *.obj
+global-exclude *.a
+global-exclude *.pyo
+global-exclude *.pyc
