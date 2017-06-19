@@ -3,6 +3,7 @@
 """Setup lightgbm package."""
 from __future__ import absolute_import
 
+import struct
 import os
 import sys
 import getopt
@@ -12,6 +13,8 @@ from distutils import file_util
 from setuptools import find_packages, setup
 
 if __name__ == "__main__":
+    if (8 * struct.calcsize("P")) != 64:
+        raise Exception('Cannot install LightGBM in 32-bit python, please use 64-bit python instead.')
     use_gpu = False
     use_mingw = False
     use_precompile = False
