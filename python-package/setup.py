@@ -10,6 +10,7 @@ import distutils
 from distutils import dir_util
 from distutils import file_util
 from setuptools import find_packages, setup
+
 if __name__ == "__main__":
     use_gpu = False
     use_mingw = False
@@ -28,10 +29,19 @@ if __name__ == "__main__":
     sys.argv = sys.argv[0:2]
     if not use_precompile:
         if not os.path.isfile("_IS_FULL_PACKAGE.txt"):
-            distutils.dir_util.copy_tree("../include", "./lightgbm/include")
-            distutils.dir_util.copy_tree("../src", "./lightgbm/src")
+            if os.path.exists("../include"):
+                distutils.dir_util.copy_tree("../include", "./lightgbm/include")
+            else:
+                raise Exception('Cannot copy ../include folder')
+            if os.path.exists("../src"):
+                distutils.dir_util.copy_tree("../src", "./lightgbm/src")
+            else:
+                raise Exception('Cannot copy ../src folder')
             if use_gpu:
-                distutils.dir_util.copy_tree("../compute", "./lightgbm/compute")
+                if os.path.exists("../compute"):
+                    distutils.dir_util.copy_tree("../compute", "./lightgbm/compute")
+                else:
+                    raise Exception('Cannot copy ../compute folder')
             distutils.file_util.copy_file("../CMakeLists.txt", "./lightgbm/")
             file_flag = open("_IS_FULL_PACKAGE.txt", 'w')
             file_flag.close()
