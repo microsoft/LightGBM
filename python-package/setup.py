@@ -82,7 +82,7 @@ if __name__ == "__main__":
     print("Install lib_lightgbm from: %s" % LIB_PATH)
     setup(name='lightgbm',
           version='0.2a0',
-          description="LightGBM Python Package",
+          description='LightGBM Python Package',
           install_requires=[
               'numpy',
               'scipy',

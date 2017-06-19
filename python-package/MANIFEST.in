@@ -1,9 +1,9 @@
+prune build
+prune lightgbm/Release
+prune lightgbm/__pycache__
+global-exclude *.so
+global-exclude *.dll 
 include *.rst *.txt
-recursive-include lightgbm *
+recursive-include lightgbm *.py *.txt
 recursive-include lightgbm/include *
 recursive-include lightgbm/src *
-exclude *.so
-exclude *.dll
-recursive-exclude build *
-recursive-exclude lightgbm/Release *
-recursive-exclude lightgbm/__pycache__ *
