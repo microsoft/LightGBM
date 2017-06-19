@@ -122,7 +122,7 @@ endif()
 
 if(MSVC AND BUILD_LIB)
     set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
-endif(MSVC)
+endif()
 
 if(USE_MPI)
     if(BUILD_EXE)
