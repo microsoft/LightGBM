@@ -13,7 +13,7 @@ init:
 
 build_script:
   - mkdir build && cd build
-  - cmake -DCMAKE_GENERATOR_PLATFORM=x64 .. && cmake --build . --target ALL_BUILD --config Release
+  - cmake -DCMAKE_GENERATOR_PLATFORM=x64 -DBUILD_EXE=ON -DBUILD_LIB=ON .. && cmake --build . --target ALL_BUILD --config Release
   - cd ..
 
 test_script:

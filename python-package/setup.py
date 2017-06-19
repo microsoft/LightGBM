@@ -53,7 +53,7 @@ if __name__ == "__main__":
             os.makedirs("build")
         os.chdir("build")
 
-        cmake_cmd = "cmake"
+        cmake_cmd = "cmake -DBUILD_EXE=OFF -DBUILD_LIB=ON "
         build_cmd = "make"
 
         if os.name == "nt":
@@ -64,7 +64,7 @@ if __name__ == "__main__":
                 cmake_cmd = cmake_cmd + " -DCMAKE_GENERATOR_PLATFORM=x64 "
                 build_cmd = "cmake --build . --target _lightgbm  --config Release"
         if use_gpu:
-            cmake_cmd = cmake_cmd + " -DUSE_GPU=1 "
+            cmake_cmd = cmake_cmd + " -DUSE_GPU=ON "
         print("Start to build libarary.")
         os.system(cmake_cmd + " ../lightgbm/")
         os.system(build_cmd)
