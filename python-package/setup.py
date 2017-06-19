@@ -80,9 +80,8 @@ if __name__ == "__main__":
 
     LIB_PATH = [os.path.relpath(path, CURRENT_DIR) for path in libpath['find_lib_path']()]
     print("Install lib_lightgbm from: %s" % LIB_PATH)
-
     setup(name='lightgbm',
-          version=0.2,
+          version='0.2a0',
           description="LightGBM Python Package",
           install_requires=[
               'numpy',
@@ -95,4 +94,5 @@ if __name__ == "__main__":
           packages=find_packages(),
           include_package_data=True,
           data_files=[('lightgbm', LIB_PATH)],
+          license='The MIT License(https://github.com/Microsoft/LightGBM/blob/master/LICENSE)',
           url='https://github.com/Microsoft/LightGBM')

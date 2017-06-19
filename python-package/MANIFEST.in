@@ -2,3 +2,8 @@ include *.rst *.txt
 recursive-include lightgbm *
 recursive-include lightgbm/include *
 recursive-include lightgbm/src *
+exclude *.so
+exclude *.dll
+recursive-exclude build *
+recursive-exclude lightgbm/Release *
+recursive-exclude lightgbm/__pycache__ *
