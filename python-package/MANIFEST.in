@@ -3,6 +3,7 @@ prune lightgbm/Release
 prune lightgbm/__pycache__
 global-exclude *.so
 global-exclude *.dll 
+recursive-exclude lightgbm lightgbm
 include *.rst *.txt
 recursive-include lightgbm *.py *.txt
 recursive-include lightgbm/include *
