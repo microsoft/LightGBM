@@ -98,9 +98,13 @@ if __name__ == "__main__":
         LIB_PATH = [os.path.relpath(path, CURRENT_DIR) for path in libpath['find_lib_path']()]
         print("Install lib_lightgbm from: %s" % LIB_PATH)
         data_files = [('lightgbm', LIB_PATH)]
-
+    version = '2.0.1'
+    if os.path.isfile('./lightgbm/VERSION.txt'):
+        version = open('./lightgbm/VERSION.txt').read().strip()
+    elif os.path.isfile('../VERSION.txt'):
+        version = open('../VERSION.txt').read().strip()
     setup(name='lightgbm',
-          version=open('./lightgbm/VERSION.txt').read().strip(),
+          version=version,
           description='LightGBM Python Package',
           install_requires=[
               'numpy',
