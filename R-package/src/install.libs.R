@@ -34,7 +34,7 @@ if (!use_precompile) {
   setwd(build_dir)
   
   # Prepare installation steps
-  cmake_cmd <- "cmake"
+  cmake_cmd <- "cmake -DBUILD_EXE=OFF -DBUILD_LIB=ON "
   build_cmd <- "make -j4"
   lib_folder <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
   
@@ -51,7 +51,7 @@ if (!use_precompile) {
   }
   
   if (use_gpu) {
-    cmake_cmd <- paste0(cmake_cmd, " -DUSE_GPU=1 ")
+    cmake_cmd <- paste0(cmake_cmd, " -DUSE_GPU=ON ")
   }
   
   # Install

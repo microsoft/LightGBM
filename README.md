@@ -3,6 +3,7 @@ LightGBM, Light Gradient Boosting Machine
 [![Build Status](https://travis-ci.org/Microsoft/LightGBM.svg?branch=master)](https://travis-ci.org/Microsoft/LightGBM)
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/1ys5ot401m0fep6l/branch/master?svg=true)](https://ci.appveyor.com/project/guolinke/lightgbm/branch/master)
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](http://lightgbm.readthedocs.io/)
+[![PyPI version](https://badge.fury.io/py/lightgbm.svg)](https://badge.fury.io/py/lightgbm)
 
 LightGBM is a gradient boosting framework that uses tree based learning algorithms. It is designed to be distributed and efficient with the following advantages:
 
@@ -18,6 +19,8 @@ For more details, please refer to [Features](https://github.com/Microsoft/LightG
 
 News
 ----
+
+06/20/2017: Python-package is on PyPI now.
 
 06/09/2017: [LightGBM Slack team](https://lightgbm.slack.com) is available.
 

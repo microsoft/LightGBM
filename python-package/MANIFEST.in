@@ -1,0 +1,8 @@
+prune build
+include *.rst *.txt
+recursive-include lightgbm *.py *.txt *.so
+recursive-include lightgbm/Release *.dll
+recursive-include lightgbm/include *
+recursive-include lightgbm/src *
+global-exclude *.pyo
+global-exclude *.pyc

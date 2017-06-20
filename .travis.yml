@@ -36,24 +36,30 @@ install:
 
 script:
 - cd $TRAVIS_BUILD_DIR
-- mkdir build && cd build && cmake -DUSE_MPI=ON ..&& make
-- cd $TRAVIS_BUILD_DIR/python-package && python setup.py install
+- mkdir build && cd build && cmake -DUSE_MPI=ON -DBUILD_EXE=OFF -DBUILD_LIB=ON ..&& make
+- cd $TRAVIS_BUILD_DIR/python-package && python setup.py install --precompile
 - cd $TRAVIS_BUILD_DIR && pytest tests/c_api_test/test.py
 - cd $TRAVIS_BUILD_DIR && pytest tests/python_package_test
 - cd $TRAVIS_BUILD_DIR && pep8 --ignore=E501 --exclude=./compute,./docs .
 - cd $TRAVIS_BUILD_DIR
-- rm -rf build && mkdir build && cd build && cmake -DUSE_GPU=ON -DBOOST_ROOT="$HOME/miniconda/" -DOpenCL_INCLUDE_DIR=$AMDAPPSDK/include/ ..
+- rm -rf build && mkdir build && cd build && cmake -DBUILD_EXE=OFF -DBUILD_LIB=ON -DUSE_GPU=ON -DBOOST_ROOT="$HOME/miniconda/" -DOpenCL_INCLUDE_DIR=$AMDAPPSDK/include/ ..
 - sed -i 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' ../include/LightGBM/config.h
 - make
 - sed -i 's/std::string device_type = "gpu";/std::string device_type = "cpu";/' ../include/LightGBM/config.h
-- cd $TRAVIS_BUILD_DIR/python-package && python setup.py install
+- cd $TRAVIS_BUILD_DIR/python-package && python setup.py install --precompile
 - cd $TRAVIS_BUILD_DIR && pytest tests/c_api_test/test.py
 - cd $TRAVIS_BUILD_DIR && pytest tests/python_package_test
 - cd $TRAVIS_BUILD_DIR
-- rm -rf build && mkdir build && cd build && cmake .. && make
+- rm -rf build && rm -f lib_lightgbm.so
 - cd $TRAVIS_BUILD_DIR/python-package && python setup.py install
-- cd $TRAVIS_BUILD_DIR && pytest tests/c_api_test/test.py
 - cd $TRAVIS_BUILD_DIR && pytest tests/python_package_test
+- cd $TRAVIS_BUILD_DIR
+- LGB_VER=$(head -n 1 VERSION.txt)
+- cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist
+- cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v
+- cd $TRAVIS_BUILD_DIR && pytest tests/python_package_test
+- cd $TRAVIS_BUILD_DIR
+- rm -rf build && mkdir build && cd build && cmake .. && make
 - cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=train.conf && ../../lightgbm config=predict.conf output_result=origin.pred
 - cd $TRAVIS_BUILD_DIR/build && make
 - cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py
