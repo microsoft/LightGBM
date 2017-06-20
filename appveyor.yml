@@ -27,6 +27,12 @@ test_script:
   - pytest tests/c_api_test/test.py
   - pytest tests/python_package_test
   - pep8 --ignore=E501 --exclude=./compute,./docs .
+  - "set /p LGB_VER=< VERSION.txt"
+  - cd python-package && python setup.py sdist --formats gztar
+  - cd dist 
+  - "pip install lightgbm-%LGB_VER%.tar.gz -v"
+  - cd ../..
+  - pytest tests/python_package_test
 
 nuget:
   project_feed: true

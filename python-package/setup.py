@@ -33,22 +33,29 @@ if __name__ == "__main__":
     except getopt.GetoptError as err:
         pass
     if not use_precompile or build_sdist:
-        if not os.path.isfile("_IS_FULL_PACKAGE.txt"):
+        if not os.path.isfile('./_IS_SOURCE_PACKAGE.txt'):
             if os.path.exists("../include"):
+                if os.path.exists("./lightgbm/include"):
+                    shutil.rmtree('./lightgbm/include')
                 distutils.dir_util.copy_tree("../include", "./lightgbm/include")
             else:
                 raise Exception('Cannot copy ../include folder')
             if os.path.exists("../src"):
+                if os.path.exists("./lightgbm/src"):
+                    shutil.rmtree('./lightgbm/src')
                 distutils.dir_util.copy_tree("../src", "./lightgbm/src")
             else:
                 raise Exception('Cannot copy ../src folder')
             if use_gpu:
                 if os.path.exists("../compute"):
+                    if os.path.exists("./lightgbm/compute"):
+                        shutil.rmtree('./lightgbm/compute')
                     distutils.dir_util.copy_tree("../compute", "./lightgbm/compute")
                 else:
                     raise Exception('Cannot copy ../compute folder')
             distutils.file_util.copy_file("../CMakeLists.txt", "./lightgbm/")
-            file_flag = open("_IS_FULL_PACKAGE.txt", 'w')
+            distutils.file_util.copy_file("../VERSION.txt", "./lightgbm/")
+            file_flag = open("./_IS_SOURCE_PACKAGE.txt", 'w')
             file_flag.close()
 
         if not os.path.exists("build"):
@@ -77,12 +84,12 @@ if __name__ == "__main__":
 
     if build_sdist:
         print("remove library when building source distribution")
-        if os.path.exists("lightgbm/Release/"):
-            shutil.rmtree('lightgbm/Release/')
-        if os.path.isfile('lightgbm/lib_lightgbm.so'):
-            os.remove('lightgbm/lib_lightgbm.so')
+        if os.path.exists("./lightgbm/Release/"):
+            shutil.rmtree('./lightgbm/Release/')
+        if os.path.isfile('./lightgbm/lib_lightgbm.so'):
+            os.remove('./lightgbm/lib_lightgbm.so')
     else:
-        sys.path.insert(0, '.')
+	    sys.path.insert(0, '.')
         CURRENT_DIR = os.path.dirname(__file__)
         libpath_py = os.path.join(CURRENT_DIR, 'lightgbm/libpath.py')
         libpath = {'__file__': libpath_py}
@@ -93,7 +100,7 @@ if __name__ == "__main__":
         data_files = [('lightgbm', LIB_PATH)]
 
     setup(name='lightgbm',
-          version='0.2a0',
+          version=open('./lightgbm/VERSION.txt').read().strip(),
           description='LightGBM Python Package',
           install_requires=[
               'numpy',
@@ -108,3 +115,5 @@ if __name__ == "__main__":
           data_files=data_files,
           license='The MIT License(https://github.com/Microsoft/LightGBM/blob/master/LICENSE)',
           url='https://github.com/Microsoft/LightGBM')
+    if build_sdist:
+        os.remove('./_IS_SOURCE_PACKAGE.txt')
