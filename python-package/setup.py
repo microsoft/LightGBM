@@ -8,11 +8,13 @@ import os
 import sys
 import getopt
 import distutils
+import shutil
 from distutils import dir_util
 from distutils import file_util
 from setuptools import find_packages, setup
 
 if __name__ == "__main__":
+    build_sdist = sys.argv[1] == 'sdist'
     if (8 * struct.calcsize("P")) != 64:
         raise Exception('Cannot install LightGBM in 32-bit python, please use 64-bit python instead.')
     use_gpu = False
@@ -27,10 +29,10 @@ if __name__ == "__main__":
                 use_gpu = True
             elif opt in ('-p', '--precompile'):
                 use_precompile = True
+        sys.argv = sys.argv[0:2]
     except getopt.GetoptError as err:
         pass
-    sys.argv = sys.argv[0:2]
-    if not use_precompile:
+    if not use_precompile or build_sdist:
         if not os.path.isfile("_IS_FULL_PACKAGE.txt"):
             if os.path.exists("../include"):
                 distutils.dir_util.copy_tree("../include", "./lightgbm/include")
@@ -65,21 +67,31 @@ if __name__ == "__main__":
                 build_cmd = "cmake --build . --target _lightgbm  --config Release"
         if use_gpu:
             cmake_cmd = cmake_cmd + " -DUSE_GPU=ON "
-        print("Start to build libarary.")
-        os.system(cmake_cmd + " ../lightgbm/")
-        os.system(build_cmd)
+        if not build_sdist:
+            print("Start to compile libarary.")
+            os.system(cmake_cmd + " ../lightgbm/")
+            os.system(build_cmd)
         os.chdir("..")
 
-    sys.path.insert(0, '.')
+    data_files=[]
 
-    CURRENT_DIR = os.path.dirname(__file__)
+    if build_sdist:
+        print("remove library when building source distribution")
+        if os.path.exists("lightgbm/Release/"):
+            shutil.rmtree('lightgbm/Release/')
+        if os.path.isfile('lightgbm/lib_lightgbm.so'):
+            os.remove('lightgbm/lib_lightgbm.so')
+    else:
+        sys.path.insert(0, '.')
+        CURRENT_DIR = os.path.dirname(__file__)
+        libpath_py = os.path.join(CURRENT_DIR, 'lightgbm/libpath.py')
+        libpath = {'__file__': libpath_py}
+        exec(compile(open(libpath_py, "rb").read(), libpath_py, 'exec'), libpath, libpath)
 
-    libpath_py = os.path.join(CURRENT_DIR, 'lightgbm/libpath.py')
-    libpath = {'__file__': libpath_py}
-    exec(compile(open(libpath_py, "rb").read(), libpath_py, 'exec'), libpath, libpath)
+        LIB_PATH = [os.path.relpath(path, CURRENT_DIR) for path in libpath['find_lib_path']()]
+        print("Install lib_lightgbm from: %s" % LIB_PATH)
+        data_files=[('lightgbm', LIB_PATH)]
 
-    LIB_PATH = [os.path.relpath(path, CURRENT_DIR) for path in libpath['find_lib_path']()]
-    print("Install lib_lightgbm from: %s" % LIB_PATH)
     setup(name='lightgbm',
           version='0.2a0',
           description='LightGBM Python Package',
@@ -93,6 +105,6 @@ if __name__ == "__main__":
           zip_safe=False,
           packages=find_packages(),
           include_package_data=True,
-          data_files=[('lightgbm', LIB_PATH)],
+          data_files=data_files,
           license='The MIT License(https://github.com/Microsoft/LightGBM/blob/master/LICENSE)',
           url='https://github.com/Microsoft/LightGBM')
