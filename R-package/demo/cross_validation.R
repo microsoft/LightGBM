@@ -31,7 +31,7 @@ lgb.cv(param,
        eval = "binary_error",
        showsd = FALSE)
 
-# Tou can also do cross validation with cutomized loss function
+# You can also do cross validation with cutomized loss function
 # See custom_objective.R
 print("Running cross validation, with cutomsized loss function")
 
