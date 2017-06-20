@@ -119,5 +119,5 @@ if __name__ == "__main__":
           data_files=data_files,
           license='The MIT License(https://github.com/Microsoft/LightGBM/blob/master/LICENSE)',
           url='https://github.com/Microsoft/LightGBM')
-    if build_sdist:
+    if os.path.isfile('./_IS_SOURCE_PACKAGE.txt'):
         os.remove('./_IS_SOURCE_PACKAGE.txt')
