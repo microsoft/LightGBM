@@ -73,7 +73,7 @@ if __name__ == "__main__":
             os.system(build_cmd)
         os.chdir("..")
 
-    data_files=[]
+    data_files = []
 
     if build_sdist:
         print("remove library when building source distribution")
@@ -90,7 +90,7 @@ if __name__ == "__main__":
 
         LIB_PATH = [os.path.relpath(path, CURRENT_DIR) for path in libpath['find_lib_path']()]
         print("Install lib_lightgbm from: %s" % LIB_PATH)
-        data_files=[('lightgbm', LIB_PATH)]
+        data_files = [('lightgbm', LIB_PATH)]
 
     setup(name='lightgbm',
           version='0.2a0',
