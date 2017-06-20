@@ -774,6 +774,7 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   std::stringstream pred_str_buf;
 
   pred_str_buf << "\t" << "int early_stop_round_counter = 0;" << std::endl;
+  pred_str_buf << "\t" << "std::memset(output, 0, sizeof(double) * num_tree_per_iteration_);" << std::endl;
   pred_str_buf << "\t" << "for (int i = 0; i < num_iteration_for_pred_; ++i) {" << std::endl;
   pred_str_buf << "\t\t" << "for (int k = 0; k < num_tree_per_iteration_; ++k) {" << std::endl;
   pred_str_buf << "\t\t\t" << "output[k] += (*PredictTreePtr[i * num_tree_per_iteration_ + k])(features);" << std::endl;
