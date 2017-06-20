@@ -61,7 +61,7 @@ script:
 - cd $TRAVIS_BUILD_DIR
 - rm -rf build && mkdir build && cd build && cmake .. && make lightgbm
 - cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=train.conf && ../../lightgbm config=predict.conf output_result=origin.pred
-- cd $TRAVIS_BUILD_DIR/build && make
+- cd $TRAVIS_BUILD_DIR/build && make lightgbm
 - cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py
 
 notifications:
