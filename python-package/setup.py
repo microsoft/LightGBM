@@ -89,7 +89,7 @@ if __name__ == "__main__":
         if os.path.isfile('./lightgbm/lib_lightgbm.so'):
             os.remove('./lightgbm/lib_lightgbm.so')
     else:
-	    sys.path.insert(0, '.')
+        sys.path.insert(0, '.')
         CURRENT_DIR = os.path.dirname(__file__)
         libpath_py = os.path.join(CURRENT_DIR, 'lightgbm/libpath.py')
         libpath = {'__file__': libpath_py}
