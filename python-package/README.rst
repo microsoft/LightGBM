@@ -1,6 +1,9 @@
 LightGBM Python Package
 =======================
 
+|PyPI version|
+
+
 Installation
 ------------
 
@@ -40,18 +43,18 @@ Use ``python setup.py install --gpu`` to enable GPU support. You will need to in
 Examples
 --------
 
-Refer to the walk through examples in `python-guide folder <https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide>`__
+Refer to the walk through examples in `python-guide folder <https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide>`_
 
 
 Troubleshooting
 ---------------
 
-Refer to `FAQ <https://github.com/Microsoft/LightGBM/tree/master/docs/FAQ.md>`__ 
+Refer to `FAQ <https://github.com/Microsoft/LightGBM/tree/master/docs/FAQ.md>`_ 
 
 Developments
---------
+------------
 
-The code style of python package follows `pep8 <https://www.python.org/dev/peps/pep-0008/>`__. If you would like to make a contribution and not familiar with pep-8, please check the pep8 style guide first. Otherwise, you won't pass the check. You should be careful about:
+The code style of python package follows `pep8 <https://www.python.org/dev/peps/pep-0008/>`_. If you would like to make a contribution and not familiar with pep-8, please check the pep8 style guide first. Otherwise, you won't pass the check. You should be careful about:
 
 - E1 Indentation (check pep8 link above)
 - E202 whitespace before and after brackets
@@ -62,3 +65,7 @@ The code style of python package follows `pep8 <https://www.python.org/dev/peps/
 - E302 expected 2 blank lines in front of and at the end of a function or a class
 
 You can ignore E501 (line too long).
+
+
+.. |PyPI version| image:: https://badge.fury.io/py/lightgbm.svg
+    :target: https://badge.fury.io/py/lightgbm
