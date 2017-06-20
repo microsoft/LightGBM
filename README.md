@@ -20,6 +20,8 @@ For more details, please refer to [Features](https://github.com/Microsoft/LightG
 News
 ----
 
+06/20/2017: Python-package is on PyPI now.
+
 06/09/2017: [LightGBM Slack team](https://lightgbm.slack.com) is available.
 
 05/03/2017: LightGBM v2 stable release.
