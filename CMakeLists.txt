@@ -10,12 +10,6 @@ PROJECT(lightgbm)
 OPTION(USE_MPI "MPI based parallel learning" OFF)
 OPTION(USE_OPENMP "Enable OpenMP" ON)
 OPTION(USE_GPU "Enable GPU-acclerated training (EXPERIMENTAL)" OFF)
-OPTION(BUILD_EXE "Build execute program" ON)
-OPTION(BUILD_LIB "Build dynamic library" OFF)
-
-if(NOT BUILD_EXE AND NOT BUILD_LIB)
-    message( FATAL_ERROR "You cannot disable BUILD_EXE and BUILD_LIB at the same time." )
-endif()
 
 if(APPLE)
     OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
@@ -113,51 +107,33 @@ file(GLOB SOURCES
     src/treelearner/*.cpp
 )
 
-if(BUILD_EXE)
-    add_executable(lightgbm src/main.cpp ${SOURCES})
-endif()
-if(BUILD_LIB)
-    add_library(_lightgbm SHARED src/c_api.cpp src/lightgbm_R.cpp ${SOURCES})
-endif()
+add_executable(lightgbm src/main.cpp ${SOURCES})
+add_library(_lightgbm SHARED src/c_api.cpp src/lightgbm_R.cpp ${SOURCES})
 
-if(MSVC AND BUILD_LIB)
+if(MSVC)
     set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
-endif()
+endif(MSVC)
 
 if(USE_MPI)
-    if(BUILD_EXE)
-        TARGET_LINK_LIBRARIES(lightgbm ${MPI_CXX_LIBRARIES})
-    endif()
-    if(BUILD_LIB)
-        TARGET_LINK_LIBRARIES(_lightgbm ${MPI_CXX_LIBRARIES})
-    endif()
+  TARGET_LINK_LIBRARIES(lightgbm ${MPI_CXX_LIBRARIES})
+  TARGET_LINK_LIBRARIES(_lightgbm ${MPI_CXX_LIBRARIES})
 endif(USE_MPI)
 
 if(USE_GPU)
-    if(BUILD_EXE)
-        TARGET_LINK_LIBRARIES(lightgbm ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
-    endif()
-    if(BUILD_LIB)
-        TARGET_LINK_LIBRARIES(_lightgbm ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
-    endif()
+  TARGET_LINK_LIBRARIES(lightgbm ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
+  TARGET_LINK_LIBRARIES(_lightgbm ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
 endif(USE_GPU)
 
 if(WIN32 AND (MINGW OR CYGWIN))
-    if(BUILD_EXE)
-        TARGET_LINK_LIBRARIES(lightgbm Ws2_32)
-        TARGET_LINK_LIBRARIES(lightgbm IPHLPAPI)
-    endif()
-    if(BUILD_LIB)
-        TARGET_LINK_LIBRARIES(_lightgbm Ws2_32)
-        TARGET_LINK_LIBRARIES(_lightgbm IPHLPAPI)
-    endif()
+    TARGET_LINK_LIBRARIES(lightgbm Ws2_32)
+    TARGET_LINK_LIBRARIES(_lightgbm Ws2_32)
+    TARGET_LINK_LIBRARIES(lightgbm IPHLPAPI)
+    TARGET_LINK_LIBRARIES(_lightgbm IPHLPAPI)
 endif()
 
-if(BUILD_EXE AND BUILD_LIB)
-    install(TARGETS lightgbm _lightgbm
-            RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
-            LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-    install(DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
-endif()
+install(TARGETS lightgbm _lightgbm
+        RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+        LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
+install(DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM DESTINATION ${CMAKE_INSTALL_PREFIX}/include)

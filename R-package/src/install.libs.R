@@ -34,15 +34,15 @@ if (!use_precompile) {
   setwd(build_dir)
   
   # Prepare installation steps
-  cmake_cmd <- "cmake -DBUILD_EXE=OFF -DBUILD_LIB=ON "
-  build_cmd <- "make -j4"
+  cmake_cmd <- "cmake "
+  build_cmd <- "make _lightgbm -j4"
   lib_folder <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
   
   # Check if Windows installation (for gcc vs Visual Studio)
   if (WINDOWS) {
     if (use_mingw) {
       cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ")
-      build_cmd <- "mingw32-make.exe -j4"
+      build_cmd <- "mingw32-make.exe _lightgbm -j4"
     } else {
       cmake_cmd <- paste0(cmake_cmd, " -DCMAKE_GENERATOR_PLATFORM=x64 ")
       build_cmd <- "cmake --build . --target _lightgbm  --config Release"

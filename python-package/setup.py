@@ -62,13 +62,13 @@ if __name__ == "__main__":
             os.makedirs("build")
         os.chdir("build")
 
-        cmake_cmd = "cmake -DBUILD_EXE=OFF -DBUILD_LIB=ON "
-        build_cmd = "make"
+        cmake_cmd = "cmake "
+        build_cmd = "make _lightgbm"
 
         if os.name == "nt":
             if use_mingw:
                 cmake_cmd = cmake_cmd + " -G \"MinGW Makefiles\" "
-                build_cmd = "mingw32-make.exe"
+                build_cmd = "mingw32-make.exe _lightgbm"
             else:
                 cmake_cmd = cmake_cmd + " -DCMAKE_GENERATOR_PLATFORM=x64 "
                 build_cmd = "cmake --build . --target _lightgbm  --config Release"
