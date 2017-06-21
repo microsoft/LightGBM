@@ -340,6 +340,8 @@ class LGBMModel(LGBMModelBase):
         params.pop('n_estimators', None)
         if hasattr(self, 'n_classes_') and self.n_classes_ > 2:
             params['num_class'] = self.n_classes_
+        if hasattr(self, 'eval_at'):
+            params['ndcg_eval_at'] = self.eval_at
         if self.fobj:
             params['objective'] = 'None'  # objective = nullptr for unknown objective
 
