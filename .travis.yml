@@ -21,6 +21,8 @@ matrix:
       env: TASK=regular
     - os: osx
       env: TASK=mpi
+    - os: osx
+      env: TASK=pip
 
 before_install:
 - test -n $CC  && unset CC
