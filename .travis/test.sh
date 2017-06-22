@@ -14,6 +14,14 @@ if [[ $TRAVIS_OS_NAME == "linux" ]]; then
     conda install --yes -c conda-forge boost=1.63.0
 fi
 
+if [[ ${TASK} == "pip" ]]; then
+    LGB_VER=$(head -n 1 VERSION.txt)
+    cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
+    cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v || exit -1
+    cd $TRAVIS_BUILD_DIR && pytest tests/python_package_test || exit -1
+    exit 0
+fi
+
 mkdir build && cd build
 
 if [[ ${TASK} == "regular" ]]; then

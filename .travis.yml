@@ -14,6 +14,8 @@ matrix:
     - os: linux
       env: TASK=gpu
     - os: linux
+      env: TASK=pip
+    - os: linux
       env: TASK=pylint
     - os: osx
       env: TASK=regular
