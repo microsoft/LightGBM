@@ -32,7 +32,7 @@ Or build a self-contained R package which can be installed afterwards:
 git clone --recursive https://github.com/Microsoft/LightGBM
 cd LightGBM/R-package
 Rscript build_package.R
-R CMD INSTALL lightgbm_0.2.tar.gz
+R CMD INSTALL lightgbm_2.0.2.tar.gz
 ``` 
 
 Windows users may need to run with administrator rights (either R or the command prompt, depending on the way you are installing this package). Rtools must be installed for Windows. Linux users might require the appropriate user write permissions for packages.
