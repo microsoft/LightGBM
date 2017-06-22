@@ -17,6 +17,8 @@ matrix:
       env: TASK=pip
     - os: linux
       env: TASK=pylint
+    - os: linux
+      env: TASK=if-else
     - os: osx
       env: TASK=regular
     - os: osx
