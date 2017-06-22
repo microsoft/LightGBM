@@ -3,6 +3,10 @@ use_precompile <- FALSE
 use_gpu <- FALSE
 use_mingw <- FALSE
 
+if (.Machine$sizeof.pointer != 8){
+  stop("Only support 64-bit R, please check your the version of your R and Rtools.")
+}
+
 # Check for precompilation
 if (!use_precompile) {
 
@@ -11,6 +15,10 @@ if (!use_precompile) {
   setwd(source_dir)
   
   if (!file.exists("_IS_FULL_PACKAGE")) {
+    unlink("./include", recursive = TRUE)
+    unlink("./src", recursive = TRUE)
+    unlink("./compute", recursive = TRUE)
+	unlink("./build", recursive = TRUE)
     if (!file.copy("./../../include", "./", overwrite = TRUE, recursive = TRUE)) {
       stop("Cannot find folder LightGBM/include")
     }
@@ -24,7 +32,7 @@ if (!use_precompile) {
       }
     }
     if (!file.copy("./../../CMakeLists.txt", "./", overwrite = TRUE, recursive = TRUE)) {
-  	  stop("Cannot find file LightGBM/CMakeLists.txt")
+      stop("Cannot find file LightGBM/CMakeLists.txt")
     }
   }
   
