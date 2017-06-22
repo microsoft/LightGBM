@@ -55,8 +55,9 @@ if __name__ == "__main__":
                     raise Exception('Cannot copy ../compute folder')
             distutils.file_util.copy_file("../CMakeLists.txt", "./lightgbm/")
             distutils.file_util.copy_file("../VERSION.txt", "./lightgbm/")
-            file_flag = open("./_IS_SOURCE_PACKAGE.txt", 'w')
-            file_flag.close()
+            if build_sdist:
+                file_flag = open("./_IS_SOURCE_PACKAGE.txt", 'w')
+                file_flag.close()
 
         if not os.path.exists("build"):
             os.makedirs("build")
@@ -119,5 +120,5 @@ if __name__ == "__main__":
           data_files=data_files,
           license='The MIT License(https://github.com/Microsoft/LightGBM/blob/master/LICENSE)',
           url='https://github.com/Microsoft/LightGBM')
-    if os.path.isfile('./_IS_SOURCE_PACKAGE.txt'):
+    if build_sdist and os.path.isfile('./_IS_SOURCE_PACKAGE.txt'):
         os.remove('./_IS_SOURCE_PACKAGE.txt')
