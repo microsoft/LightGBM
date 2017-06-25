@@ -10,9 +10,7 @@ Installation
 Preparation
 '''''''''''
 
-You need to install `cmake <https://cmake.org/>`_ and `setuptools <https://pypi.python.org/pypi/setuptools>`_ first. 
-
-For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed. You also can use MinGW instead if installing from GitHub.
+`setuptools <https://pypi.python.org/pypi/setuptools>`_ is needed. 
 
 For Mac OS X users, gcc with OpenMP support must be installed first. Refer to `wiki <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#osx>`_ for installing gcc with OpenMP support.
 
@@ -21,12 +19,24 @@ Note: 32-bit python is not supported. Please install 64-bit version.
 Install from pip
 ''''''''''''''''
 
+Install `wheel <http://pythonwheels.com>`_ via ``pip install wheel`` first. For windows user, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if Visual Studio(2015 or 2017) is not installed.
+
+Install from wheel package:
+
 ``pip install lightgbm``
 
-For the MinGW build in Windows and GPU support, please install the latest version from GitHub.
+Install from source package:
+
+``pip install --no-binary :all: lightgbm``
+
+Note: Installation from source package require installing `cmake <https://cmake.org/>`_ first, and Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed in Windows. 
+
+For the MinGW build in Windows or GPU support, please install the latest version from GitHub.
 
 Install from GitHub
 '''''''''''''''''''
+
+Installation from GitHub require installing `cmake <https://cmake.org/>`_ first, and Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed in Windows.
 
 .. code:: sh
 
@@ -34,11 +44,11 @@ Install from GitHub
     cd LightGBM/python-package
     python setup.py install
 
-You may need to use ``sudo`` (or administrator rights in Windows) to perform ``python setup.py install``.
+``sudo`` (or administrator rights in Windows) may is needed to perform ``python setup.py install``.
 
 Use ``python setup.py install --mingw`` to use MinGW in Windows.
 
-Use ``python setup.py install --gpu`` to enable GPU support. You will need to install Boost and OpenCL first: details for installation can be found in `gpu-support <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support>`_.
+Use ``python setup.py install --gpu`` to enable GPU support. Boost and OpenCL are needed: details for installation can be found in `gpu-support <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support>`_.
 
 Examples
 --------
@@ -54,7 +64,7 @@ Refer to `FAQ <https://github.com/Microsoft/LightGBM/tree/master/docs/FAQ.md>`_
 Developments
 ------------
 
-The code style of python package follows `pep8 <https://www.python.org/dev/peps/pep-0008/>`_. If you would like to make a contribution and not familiar with pep-8, please check the pep8 style guide first. Otherwise, you won't pass the check. You should be careful about:
+The code style of python package follows `pep8 <https://www.python.org/dev/peps/pep-0008/>`_. If you would like to make a contribution and not familiar with pep-8, please check the pep8 style guide first. Otherwise, the check won't pass. You should be careful about:
 
 - E1 Indentation (check pep8 link above)
 - E202 whitespace before and after brackets
@@ -64,8 +74,7 @@ The code style of python package follows `pep8 <https://www.python.org/dev/peps/
 - E301 expected 1 blank line in front of and at the end of a method
 - E302 expected 2 blank lines in front of and at the end of a function or a class
 
-You can ignore E501 (line too long).
-
+E501 can be ignored (line too long).
 
 .. |PyPI version| image:: https://badge.fury.io/py/lightgbm.svg
     :target: https://badge.fury.io/py/lightgbm
