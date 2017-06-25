@@ -39,6 +39,12 @@ if [[ ${TASK} == "pip" ]]; then
     cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
     cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v || exit -1
     cd $TRAVIS_BUILD_DIR && pytest tests/python_package_test || exit -1
+    if [[ $TRAVIS_OS_NAME == "osx" ]]; then
+        cd $TRAVIS_BUILD_DIR/python-package && python setup.py bdist_wheel --plat-name=macosx --universal || exit -1
+        mv dist/lightgbm-${LGB_VER}-py2.py3-none-macosx.whl dist/lightgbm-${LGB_VER}-py2.py3-none-macosx_10_9_x86_64.macosx_10_10_x86_64.macosx_10_11_x86_64.macosx_10_12_x86_64.whl
+    else
+        cd $TRAVIS_BUILD_DIR/python-package && python setup.py bdist_wheel --plat-name=manylinux1_x86_64 --universal || exit -1
+    fi
     exit 0
 fi
 
