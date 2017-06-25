@@ -35,30 +35,12 @@ public:
   static BruckMap Construct(int rank, int num_machines);
 };
 
-
-/*!
-* \brief node type on recursive halving algorithm
-*        When number of machines is not power of 2, need group machines into power of 2 group.
-*        And we can let each group has at most 2 machines.
-*        if the group only has 1 machine. this machine is the normal node
-*        if the group has 2 machines, this group will have two type of nodes, one is the leader.
-*        leader will represent this group and communication with others.
-*/
-enum RecursiveHalvingNodeType {
-  Normal,  // normal node, 1 group only have 1 machine
-  GroupLeader,  // leader of group when number of machines in this group is 2.
-  Other  // non-leader machines in group
-};
-
 /*! \brief Network structure for recursive halving algorithm */
 class RecursiveHalvingMap {
 public:
+  bool need_pairwise;
   /*! \brief Communication times for one recursize halving algorithm  */
   int k;
-  /*! \brief Node type */
-  RecursiveHalvingNodeType type;
-  /*! \brief Neighbor, only used for non-normal node*/
-  int neighbor;
   /*! \brief ranks[i] means the machines that will communicate with on i-th communication*/
   std::vector<int> ranks;
   /*! \brief  send_block_start[i] means send block start index at i-th communication*/
@@ -72,7 +54,7 @@ public:
 
   RecursiveHalvingMap();
 
-  RecursiveHalvingMap(RecursiveHalvingNodeType _type, int n);
+  RecursiveHalvingMap(int k, bool in_need_pairwise);
 
   /*!
   * \brief Create the object of recursive halving map

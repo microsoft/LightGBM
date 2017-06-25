@@ -107,21 +107,19 @@ void Network::Allgather(char* input, int all_size, const int* block_start, const
     int cur_block_size = std::min(1 << i, num_machines_ - accumulated_block);
     // get out rank
     int out_rank = bruck_map_.out_ranks[i];
-    // get send information
-    int send_len = 0;
-    for (int j = 0; j < cur_block_size; ++j) {
-      send_len += block_len[(rank_ + j) % num_machines_];
-    }
     // get in rank
     int in_rank = bruck_map_.in_ranks[i];
+    // get send information
+    int need_send_len = 0;
     // get recv information
-    int need_recv_cnt = 0;
+    int need_recv_len = 0;
     for (int j = 0; j < cur_block_size; ++j) {
-      need_recv_cnt += block_len[(rank_ + accumulated_block + j) % num_machines_];
+      need_send_len += block_len[(rank_ + j) % num_machines_];
+      need_recv_len += block_len[(rank_ + accumulated_block + j) % num_machines_];
     }
     // send and recv at same time
-    linkers_->SendRecv(out_rank, output, send_len, in_rank, output + write_pos, need_recv_cnt);
-    write_pos += need_recv_cnt;
+    linkers_->SendRecv(out_rank, output, need_send_len, in_rank, output + write_pos, need_recv_len);
+    write_pos += need_recv_len;
     accumulated_block += cur_block_size;
   }
   // rotate in-place
@@ -130,22 +128,15 @@ void Network::Allgather(char* input, int all_size, const int* block_start, const
   std::reverse<char*>(output + block_start[rank_], output + all_size);
 }
 
-void Network::ReduceScatter(char* input, int input_size, const int* block_start, const int* block_len, char* output, const ReduceFunction& reducer) {
-  bool is_powerof_2 = (num_machines_ & (num_machines_ - 1)) == 0;
-  if (!is_powerof_2) {
-    if (recursive_halving_map_.type == RecursiveHalvingNodeType::Other) {
-      // send local data to neighbor first
-      linkers_->Send(recursive_halving_map_.neighbor, input, input_size);
-    } else if (recursive_halving_map_.type == RecursiveHalvingNodeType::GroupLeader) {
-      // receive neighbor data first
-      int need_recv_cnt = input_size;
-      linkers_->Recv(recursive_halving_map_.neighbor, output, need_recv_cnt);
-      // reduce
-      reducer(output, input, input_size);
+void Network::ReduceScatter(char* input, int, const int* block_start, const int* block_len, char* output, const ReduceFunction& reducer) {
+  if (recursive_halving_map_.need_pairwise) {
+    for (int i = 1; i < num_machines_; ++i) {
+      int out_rank = (rank_ + i) % num_machines_;
+      int in_rank = (rank_ - i + num_machines_) % num_machines_;
+      linkers_->SendRecv(out_rank, input + block_start[out_rank], block_len[out_rank], in_rank, output, block_len[rank_]);
+      reducer(output, input + block_start[rank_], block_len[rank_]);
     }
-  }
-  // start recursive halfing
-  if (recursive_halving_map_.type != RecursiveHalvingNodeType::Other) {
+  } else {
     for (int i = 0; i < recursive_halving_map_.k; ++i) {
       // get target
       int target = recursive_halving_map_.ranks[i];
@@ -165,19 +156,6 @@ void Network::ReduceScatter(char* input, int input_size, const int* block_start,
       linkers_->SendRecv(target, input + block_start[send_block_start], send_size, target, output, need_recv_cnt);
       // reduce
       reducer(output, input + block_start[recv_block_start], need_recv_cnt);
-    }
-  }
-  if (!is_powerof_2) {
-    if (recursive_halving_map_.type == RecursiveHalvingNodeType::GroupLeader) {
-      // send result to neighbor
-      linkers_->Send(recursive_halving_map_.neighbor,
-                     input + block_start[recursive_halving_map_.neighbor],
-                     block_len[recursive_halving_map_.neighbor]);
-    } else if (recursive_halving_map_.type == RecursiveHalvingNodeType::Other) {
-      // receive result from neighbor
-      int need_recv_cnt = block_len[rank_];
-      linkers_->Recv(recursive_halving_map_.neighbor, output, need_recv_cnt);
-      return;
     }
   }
   // copy result

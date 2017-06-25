@@ -151,14 +151,17 @@ void Linkers::ListenThread(int incoming_cnt) {
 void Linkers::Construct() {
   // save ranks that need to connect with
   std::unordered_map<int, int> need_connect;
-  for (int i = 0; i < bruck_map_.k; ++i) {
-    need_connect[bruck_map_.out_ranks[i]] = 1;
-    need_connect[bruck_map_.in_ranks[i]] = 1;
-  }
-  if (recursive_halving_map_.type != RecursiveHalvingNodeType::Normal) {
-    need_connect[recursive_halving_map_.neighbor] = 1;
-  }
-  if (recursive_halving_map_.type != RecursiveHalvingNodeType::Other) {
+  if (recursive_halving_map_.need_pairwise) {
+    for (int i = 0; i < num_machines_; ++i) {
+      if (i != rank_) {
+        need_connect[i] = 1;
+      }
+    }
+  } else {
+    for (int i = 0; i < bruck_map_.k; ++i) {
+      need_connect[bruck_map_.out_ranks[i]] = 1;
+      need_connect[bruck_map_.in_ranks[i]] = 1;
+    }
     for (int i = 0; i < recursive_halving_map_.k; ++i) {
       need_connect[recursive_halving_map_.ranks[i]] = 1;
     }
@@ -175,6 +178,7 @@ void Linkers::Construct() {
       ++incoming_cnt;
     }
   }
+
   // start listener
   listener_->SetTimeout(socket_timeout_);
   listener_->Listen(incoming_cnt);
