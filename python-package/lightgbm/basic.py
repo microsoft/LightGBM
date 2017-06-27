@@ -1655,9 +1655,9 @@ class Booster(object):
         Parameters
         ----------
         importance_type : str, default "split"
-        How the importance is calculated: "split" or "gain"
-        "split" is the number of times a feature is used in a model
-        "gain" is the total gain of splits which use the feature
+            How the importance is calculated: "split" or "gain"
+            "split" is the number of times a feature is used in a model
+            "gain" is the total gain of splits which use the feature
 
         Returns
         -------
