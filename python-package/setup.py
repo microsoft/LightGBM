@@ -32,6 +32,8 @@ if __name__ == "__main__":
         sys.argv = sys.argv[0:2]
     except getopt.GetoptError as err:
         pass
+    if os.path.isfile('../VERSION.txt'):
+        distutils.file_util.copy_file("../VERSION.txt", "./lightgbm/")
     if not use_precompile or build_sdist:
         if not os.path.isfile('./_IS_SOURCE_PACKAGE.txt'):
             if os.path.exists("../include"):
@@ -54,7 +56,6 @@ if __name__ == "__main__":
                 else:
                     raise Exception('Cannot copy ../compute folder')
             distutils.file_util.copy_file("../CMakeLists.txt", "./lightgbm/")
-            distutils.file_util.copy_file("../VERSION.txt", "./lightgbm/")
             if build_sdist:
                 file_flag = open("./_IS_SOURCE_PACKAGE.txt", 'w')
                 file_flag.close()
@@ -102,8 +103,6 @@ if __name__ == "__main__":
     version = '2.0.1'
     if os.path.isfile('./lightgbm/VERSION.txt'):
         version = open('./lightgbm/VERSION.txt').read().strip()
-    elif os.path.isfile('../VERSION.txt'):
-        version = open('../VERSION.txt').read().strip()
     setup(name='lightgbm',
           version=version,
           description='LightGBM Python Package',
