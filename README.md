@@ -1,24 +1,9 @@
 LightGBM, Light Gradient Boosting Machine
 =========================================
+[![Build Status](https://travis-ci.org/Microsoft/LightGBM.svg?branch=master)](https://travis-ci.org/Microsoft/LightGBM)		
+[![Windows Build status](https://ci.appveyor.com/api/projects/status/1ys5ot401m0fep6l/branch/master?svg=true)](https://ci.appveyor.com/project/guolinke/lightgbm/branch/master)
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](http://lightgbm.readthedocs.io/)
 [![PyPI version](https://badge.fury.io/py/lightgbm.svg)](https://badge.fury.io/py/lightgbm)
-
-
-|| Linux            | Windows            | macOS            |
-|-----|----------------|----------------|----------------|
-|CPU| [![CPU][1]][5] | [![CPU][4]][6]  | [![CPU][7]][5] |
-|GPU| [![GPU][2]][5] | [![CPU][4]][6]  |  |
-|Pip| [![Pip][3]][5] | [![CPU][4]][6]  | [![Pip][8]][5] |
-
-
-[1]: https://travis-matrix-badges.herokuapp.com/repos/Microsoft/LightGBM/branches/master/1
-[2]: https://travis-matrix-badges.herokuapp.com/repos/Microsoft/LightGBM/branches/master/3
-[3]: https://travis-matrix-badges.herokuapp.com/repos/Microsoft/LightGBM/branches/master/4
-[4]: https://ci.appveyor.com/api/projects/status/1ys5ot401m0fep6l/branch/master?svg=true
-[5]: https://travis-ci.org/Microsoft/LightGBM
-[6]: https://ci.appveyor.com/project/guolinke/lightgbm/branch/master
-[7]: https://travis-matrix-badges.herokuapp.com/repos/Microsoft/LightGBM/branches/master/7
-[8]: https://travis-matrix-badges.herokuapp.com/repos/Microsoft/LightGBM/branches/master/9
 
 LightGBM is a gradient boosting framework that uses tree based learning algorithms. It is designed to be distributed and efficient with the following advantages:
 
