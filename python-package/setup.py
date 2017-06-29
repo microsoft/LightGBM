@@ -8,10 +8,10 @@ import os
 import shutil
 import struct
 import sys
+from distutils.command.install import install
+from distutils.command.sdist import sdist
 
 from setuptools import find_packages, setup
-from setuptools.command.install import install
-from setuptools.command.sdist import sdist
 
 
 def find_lib():
@@ -86,7 +86,7 @@ class CustomInstall(install):
         if not self.precompile:
             compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu)
         self.distribution.data_files = [('lightgbm', find_lib())]
-        install.do_egg_install(self)
+        install.run(self)
 
 
 class CustomSdist(sdist):
@@ -119,10 +119,7 @@ if __name__ == "__main__":
         with open('./lightgbm/VERSION.txt') as file_version:
             version = file_version.readline().strip()
     sys.path.insert(0, '.')
-    try:
-        data_files = find_lib()
-    except:
-        data_files = []
+    data_files = []
     setup(name='lightgbm',
           version=version,
           description='LightGBM Python Package',
