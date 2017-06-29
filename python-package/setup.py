@@ -9,6 +9,7 @@ import shutil
 import struct
 import sys
 from distutils.command.install import install
+from distutils.command.install_lib import install_lib
 from distutils.command.sdist import sdist
 
 from setuptools import find_packages, setup
@@ -67,6 +68,16 @@ def compile_cpp(use_mingw=False, use_gpu=False, build_sdist=False):
         os.system(build_cmd)
         os.chdir("..")
 
+
+class CustomInstallLib(install_lib):
+
+    def install(self):
+        outfiles = install_lib.install(self)
+        src = find_lib()[0]
+        dst = os.path.join(self.install_dir, 'lightgbm')
+        dst, _ = self.copy_file(src, dst)
+        outfiles.append(dst)
+        return outfiles
 
 class CustomInstall(install):
 
@@ -134,6 +145,7 @@ if __name__ == "__main__":
           zip_safe=False,
           cmdclass={
               'install': CustomInstall,
+              'install_lib': CustomInstallLib,
               'sdist': CustomSdist,
           },
           packages=find_packages(),
