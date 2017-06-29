@@ -14,7 +14,9 @@ matrix:
     - os: linux
       env: TASK=gpu
     - os: linux
-      env: TASK=pip
+      env: TASK=sdist
+    - os: linux
+      env: TASK=bdist
     - os: linux
       env: TASK=pylint
     - os: linux
@@ -24,7 +26,9 @@ matrix:
     - os: osx
       env: TASK=mpi
     - os: osx
-      env: TASK=pip
+      env: TASK=sdist
+    - os: osx
+      env: TASK=bdist
 
 before_install:
 - test -n $CC  && unset CC
@@ -53,6 +57,6 @@ deploy:
   draft: true
   tag_name: $TRAVIS_TAG
   on:
-    condition: "$TASK = pip"
+    condition: "$TASK = bdist"
     tags: true
     all_branches: true
