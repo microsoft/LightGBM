@@ -13,6 +13,7 @@ from setuptools import find_packages, setup
 from setuptools.command.install import install
 from setuptools.command.sdist import sdist
 
+
 def compile_cpp(use_mingw=False, use_gpu=False, build_sdist=False):
 
     def copy_files(folder_name):
@@ -56,6 +57,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, build_sdist=False):
         os.system(build_cmd)
     os.chdir("..")
 
+
 class CustomInstall(install):
 
     user_options = install.user_options + [
@@ -83,6 +85,7 @@ class CustomInstall(install):
         print("Install lib_lightgbm from: %s" % LIB_PATH)
         self.distribution.data_files = [('lightgbm', LIB_PATH)]
         install.do_egg_install(self)
+
 
 class CustomSdist(sdist):
 
