@@ -8,11 +8,11 @@ import os
 import shutil
 import struct
 import sys
-from distutils.command.install import install
-from distutils.command.install_lib import install_lib
-from distutils.command.sdist import sdist
 
 from setuptools import find_packages, setup
+from setuptools.command.install import install
+from setuptools.command.install_lib import install_lib
+from setuptools.command.sdist import sdist
 
 
 def find_lib():
