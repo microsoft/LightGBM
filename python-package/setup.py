@@ -14,6 +14,17 @@ from setuptools.command.install import install
 from setuptools.command.sdist import sdist
 
 
+def find_lib():
+    CURRENT_DIR = os.path.dirname(__file__)
+    libpath_py = os.path.join(CURRENT_DIR, 'lightgbm/libpath.py')
+    libpath = {'__file__': libpath_py}
+    exec(compile(open(libpath_py, "rb").read(), libpath_py, 'exec'), libpath, libpath)
+
+    LIB_PATH = [os.path.relpath(path, CURRENT_DIR) for path in libpath['find_lib_path']()]
+    print("Install lib_lightgbm from: %s" % LIB_PATH)
+    return LIB_PATH
+
+
 def compile_cpp(use_mingw=False, use_gpu=False, build_sdist=False):
 
     def copy_files(folder_name):
@@ -34,28 +45,27 @@ def compile_cpp(use_mingw=False, use_gpu=False, build_sdist=False):
 
     if build_sdist:
         open("./_IS_SOURCE_PACKAGE.txt", 'w').close()
+    else:
+        if not os.path.exists("build"):
+            os.makedirs("build")
+        os.chdir("build")
 
-    if not os.path.exists("build"):
-        os.makedirs("build")
-    os.chdir("build")
+        cmake_cmd = "cmake "
+        build_cmd = "make _lightgbm"
 
-    cmake_cmd = "cmake "
-    build_cmd = "make _lightgbm"
-
-    if os.name == "nt":
-        if use_mingw:
-            cmake_cmd += " -G \"MinGW Makefiles\" "
-            build_cmd = "mingw32-make.exe _lightgbm"
-        else:
-            cmake_cmd += " -DCMAKE_GENERATOR_PLATFORM=x64 "
-            build_cmd = "cmake --build . --target _lightgbm  --config Release"
-    if use_gpu:
-        cmake_cmd += " -DUSE_GPU=ON "
-    if not build_sdist:
+        if os.name == "nt":
+            if use_mingw:
+                cmake_cmd += " -G \"MinGW Makefiles\" "
+                build_cmd = "mingw32-make.exe _lightgbm"
+            else:
+                cmake_cmd += " -DCMAKE_GENERATOR_PLATFORM=x64 "
+                build_cmd = "cmake --build . --target _lightgbm  --config Release"
+        if use_gpu:
+            cmake_cmd += " -DUSE_GPU=ON "
         print("Start to compile libarary.")
         os.system(cmake_cmd + " ../lightgbm/")
         os.system(build_cmd)
-    os.chdir("..")
+        os.chdir("..")
 
 
 class CustomInstall(install):
@@ -75,33 +85,22 @@ class CustomInstall(install):
     def run(self):
         if not self.precompile:
             compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu)
-        sys.path.insert(0, '.')
-        CURRENT_DIR = os.path.dirname(__file__)
-        libpath_py = os.path.join(CURRENT_DIR, 'lightgbm/libpath.py')
-        libpath = {'__file__': libpath_py}
-        exec(compile(open(libpath_py, "rb").read(), libpath_py, 'exec'), libpath, libpath)
-
-        LIB_PATH = [os.path.relpath(path, CURRENT_DIR) for path in libpath['find_lib_path']()]
-        print("Install lib_lightgbm from: %s" % LIB_PATH)
-        self.distribution.data_files = [('lightgbm', LIB_PATH)]
+        self.distribution.data_files = [('lightgbm', find_lib())]
         install.do_egg_install(self)
 
 
 class CustomSdist(sdist):
 
     user_options = sdist.user_options + [
-        ('mingw', 'm', 'compile with mingw'),
         ('gpu', 'g', 'compile gpu version')
     ]
 
     def initialize_options(self):
         sdist.initialize_options(self)
-        self.mingw = 0
         self.gpu = 0
 
     def run(self):
-        compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, build_sdist=True)
-        print("remove library when building source distribution")
+        compile_cpp(use_gpu=self.gpu, build_sdist=True)
         if os.path.exists("./lightgbm/Release/"):
             shutil.rmtree('./lightgbm/Release/')
         if os.path.isfile('./lightgbm/lib_lightgbm.so'):
@@ -119,7 +118,11 @@ if __name__ == "__main__":
     if os.path.isfile('./lightgbm/VERSION.txt'):
         with open('./lightgbm/VERSION.txt') as file_version:
             version = file_version.readline().strip()
-    data_files = []
+    sys.path.insert(0, '.')
+    try:
+        data_files = find_lib()
+    except:
+        data_files = []
     setup(name='lightgbm',
           version=version,
           description='LightGBM Python Package',
