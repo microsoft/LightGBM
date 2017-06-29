@@ -1,5 +1,5 @@
 # coding: utf-8
-# pylint: disable=invalid-name, exec-used
+# pylint: disable=invalid-name, exec-used, C0111
 """Setup lightgbm package."""
 from __future__ import absolute_import
 
@@ -26,9 +26,9 @@ def find_lib():
     return LIB_PATH
 
 
-def compile_cpp(use_mingw=False, use_gpu=False, build_sdist=False):
+def copy_files(use_gpu=False):
 
-    def copy_files(folder_name):
+    def copy_files_helper(folder_name):
         src = os.path.join('..', folder_name)
         if os.path.exists(src):
             dst = os.path.join('./lightgbm', folder_name)
@@ -38,35 +38,35 @@ def compile_cpp(use_mingw=False, use_gpu=False, build_sdist=False):
             raise Exception('Cannot copy {} folder'.format(src))
 
     if not os.path.isfile('./_IS_SOURCE_PACKAGE.txt'):
-        copy_files('include')
-        copy_files('src')
+        copy_files_helper('include')
+        copy_files_helper('src')
         if use_gpu:
-            copy_files('compute')
+            copy_files_helper('compute')
         distutils.file_util.copy_file("../CMakeLists.txt", "./lightgbm/")
 
-    if build_sdist:
-        open("./_IS_SOURCE_PACKAGE.txt", 'w').close()
-    else:
-        if not os.path.exists("build"):
-            os.makedirs("build")
-        os.chdir("build")
 
-        cmake_cmd = "cmake "
-        build_cmd = "make _lightgbm"
+def compile_cpp(use_mingw=False, use_gpu=False):
 
-        if os.name == "nt":
-            if use_mingw:
-                cmake_cmd += " -G \"MinGW Makefiles\" "
-                build_cmd = "mingw32-make.exe _lightgbm"
-            else:
-                cmake_cmd += " -DCMAKE_GENERATOR_PLATFORM=x64 "
-                build_cmd = "cmake --build . --target _lightgbm  --config Release"
-        if use_gpu:
-            cmake_cmd += " -DUSE_GPU=ON "
-        print("Start to compile libarary.")
-        os.system(cmake_cmd + " ../lightgbm/")
-        os.system(build_cmd)
-        os.chdir("..")
+    if not os.path.exists("build"):
+        os.makedirs("build")
+    os.chdir("build")
+
+    cmake_cmd = "cmake "
+    build_cmd = "make _lightgbm"
+
+    if os.name == "nt":
+        if use_mingw:
+            cmake_cmd += " -G \"MinGW Makefiles\" "
+            build_cmd = "mingw32-make.exe _lightgbm"
+        else:
+            cmake_cmd += " -DCMAKE_GENERATOR_PLATFORM=x64 "
+            build_cmd = "cmake --build . --target _lightgbm  --config Release"
+    if use_gpu:
+        cmake_cmd += " -DUSE_GPU=ON "
+    print("Start to compile libarary.")
+    os.system(cmake_cmd + " ../lightgbm/")
+    os.system(build_cmd)
+    os.chdir("..")
 
 
 class CustomInstallLib(install_lib):
@@ -78,6 +78,7 @@ class CustomInstallLib(install_lib):
         dst, _ = self.copy_file(src, dst)
         outfiles.append(dst)
         return outfiles
+
 
 class CustomInstall(install):
 
@@ -95,6 +96,7 @@ class CustomInstall(install):
 
     def run(self):
         if not self.precompile:
+            copy_files(use_gpu=self.gpu)
             compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu)
         self.distribution.data_files = [('lightgbm', find_lib())]
         install.run(self)
@@ -111,7 +113,8 @@ class CustomSdist(sdist):
         self.gpu = 0
 
     def run(self):
-        compile_cpp(use_gpu=self.gpu, build_sdist=True)
+        copy_files(use_gpu=self.gpu)
+        open("./_IS_SOURCE_PACKAGE.txt", 'w').close()
         if os.path.exists("./lightgbm/Release/"):
             shutil.rmtree('./lightgbm/Release/')
         if os.path.isfile('./lightgbm/lib_lightgbm.so'):
@@ -119,6 +122,7 @@ class CustomSdist(sdist):
         sdist.run(self)
         if os.path.isfile('./_IS_SOURCE_PACKAGE.txt'):
             os.remove('./_IS_SOURCE_PACKAGE.txt')
+
 
 if __name__ == "__main__":
     if (8 * struct.calcsize("P")) != 64:
