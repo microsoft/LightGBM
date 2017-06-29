@@ -9,10 +9,11 @@ import shutil
 import struct
 import sys
 
-from setuptools import find_packages, setup, command
+from setuptools import find_packages, setup
 from setuptools.command.install import install
 from setuptools.command.sdist import sdist
 
+data_files = []
 
 def compile_cpp(use_mingw=False, use_gpu=False, build_sdist=False):
 
@@ -114,7 +115,6 @@ if __name__ == "__main__":
         raise Exception('Cannot install LightGBM in 32-bit python, please use 64-bit python instead.')
     if os.path.isfile('../VERSION.txt'):
         distutils.file_util.copy_file("../VERSION.txt", "./lightgbm/")
-    data_files = []
     version = '2.0.3'
     if os.path.isfile('./lightgbm/VERSION.txt'):
         with open('./lightgbm/VERSION.txt') as file_version:
