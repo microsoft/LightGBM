@@ -13,8 +13,6 @@ from setuptools import find_packages, setup
 from setuptools.command.install import install
 from setuptools.command.sdist import sdist
 
-data_files = []
-
 def compile_cpp(use_mingw=False, use_gpu=False, build_sdist=False):
 
     def copy_files(folder_name):
@@ -83,9 +81,8 @@ class CustomInstall(install):
 
         LIB_PATH = [os.path.relpath(path, CURRENT_DIR) for path in libpath['find_lib_path']()]
         print("Install lib_lightgbm from: %s" % LIB_PATH)
-        global data_files
-        data_files = [('lightgbm', LIB_PATH)]
-        install.run(self)
+        self.distribution.data_files = [('lightgbm', LIB_PATH)]
+        install.do_egg_install(self)
 
 class CustomSdist(sdist):
 
@@ -119,6 +116,7 @@ if __name__ == "__main__":
     if os.path.isfile('./lightgbm/VERSION.txt'):
         with open('./lightgbm/VERSION.txt') as file_version:
             version = file_version.readline().strip()
+    data_files = []
     setup(name='lightgbm',
           version=version,
           description='LightGBM Python Package',
