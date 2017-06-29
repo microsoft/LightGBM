@@ -12,9 +12,11 @@ matrix:
     - os: linux
       env: TASK=mpi
     - os: linux
-      env: TASK=gpu
+      env: TASK=gpu METHOD=source
     - os: linux
       env: TASK=sdist
+    - os: linux
+      env: TASK=gpu METHOD=pip
     - os: linux
       env: TASK=bdist
     - os: linux
