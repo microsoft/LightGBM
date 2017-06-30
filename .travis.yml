@@ -12,10 +12,10 @@ os:
 env:
   - TASK=regular
   - TASK=mpi
-  - TASK=gpu METHOD=source
-  - TASK=gpu METHOD=sdist
-  - TASK=sdist
-  - TASK=bdist
+  - TASK=gpu
+  - TASK=gpu METHOD=dist
+  - METHOD=dist DIST=source
+  - METHOD=dist DIST=binary
   - TASK=pylint
   - TASK=if-else
 
