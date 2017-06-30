@@ -29,15 +29,17 @@ Install from source package:
 
 ``pip install --no-binary :all: lightgbm``
 
+Note: Installation from source package require installing `cmake <https://cmake.org/>`_ first, and Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed in Windows.
+
 Install GPU version
 
 ``pip install lightgbm --install-option=--gpu``
 
+Note: You need to export `OpenCL_INCLUDE_DIR` and `BOOST_ROOT` before install gpu version.
+
 Install with MinGW on Windows
 
 ``pip install lightgbm --install-option=--mingw``
-
-Note: Installation from source package require installing `cmake <https://cmake.org/>`_ first, and Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed in Windows.
 
 Install from GitHub
 '''''''''''''''''''
