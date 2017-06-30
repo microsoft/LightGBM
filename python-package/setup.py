@@ -104,16 +104,8 @@ class CustomInstall(install):
 
 class CustomSdist(sdist):
 
-    user_options = sdist.user_options + [
-        ('gpu', 'g', 'compile gpu version')
-    ]
-
-    def initialize_options(self):
-        sdist.initialize_options(self)
-        self.gpu = 0
-
     def run(self):
-        copy_files(use_gpu=self.gpu)
+        copy_files(use_gpu=True)
         open("./_IS_SOURCE_PACKAGE.txt", 'w').close()
         if os.path.exists("./lightgbm/Release/"):
             shutil.rmtree('./lightgbm/Release/')
