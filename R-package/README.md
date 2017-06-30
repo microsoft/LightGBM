@@ -7,11 +7,11 @@ Installation
 ### Preparation
 You need to install git and [cmake](https://cmake.org/) first.
 
-The default compiler is Visual Studio (or [MS Build](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017)) in Windows. You also can use Rtools (default) or [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) to compile by setting `use_mingw` to `TRUE` in `R-package/src/install.libs.R`. For MinGW users who wants to install online, please check the end of this document for installation using a helper package ([Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/)).
+The default compiler is gcc (Linux) or Rtools' MinGW (Windows). You may also compile with Visual Studio (or [MS Build](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017)) by setting `use_mingw` to `TRUE` in `R-package/src/install.libs.R`. It is also possible to compile with [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) in Windows. For Visual Studio users who wants to install online, please check the end of this document for installation using a helper package ([Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/)).
 
 It is recommended to use *Visual Studio* for its better multi-threading efficency in Windows for many core systems. For very simple systems (dual core computers or worse), MinGW64 is recommended for maximum performance. If you do not know what to choose, it is recommended to use [Visual Studio](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017).
 
-For Windows users, installing [Rtools](https://cran.r-project.org/bin/windows/Rtools/) is mandatory.
+For Windows users, installing [Rtools](https://cran.r-project.org/bin/windows/Rtools/) is mandatory even when using Visual Studio compilation.
 
 For Mac OS X users, gcc with OpenMP support must be installed first. Refer to [wiki](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#osx) for installing gcc with OpenMP support.
 
@@ -81,13 +81,12 @@ In addition, if you are using a Visual Studio precompiled DLL, assuming you do n
 
 Once you have all this setup, you can use `lgb.dl` from `lgbdl` package to install LightGBM from repository.
 
-For instance, you can install the R package from LightGBM master commit of GitHub using the following from R:
+For instance, you can install the R package from LightGBM master commit of GitHub with Visual Studio using the following from R:
 
 ```r
 lgb.dl(commit = "master",
-       compiler = "gcc",
-       repo = "https://github.com/Microsoft/LightGBM",
-       cores = 4)
+       compiler = "vs",
+       repo = "https://github.com/Microsoft/LightGBM")
 ```
 
 You may also install using a precompiled dll/lib using the following from R:
