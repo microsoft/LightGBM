@@ -1,7 +1,7 @@
 # User options
 use_precompile <- FALSE
 use_gpu <- FALSE
-use_mingw <- FALSE
+use_mingw <- TRUE
 
 if (.Machine$sizeof.pointer != 8){
   stop("Only support 64-bit R, please check your the version of your R and Rtools.")
