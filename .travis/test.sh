@@ -56,7 +56,7 @@ if [[ ${TASK} == "gpu" ]]; then
     conda install --yes -c conda-forge boost=1.63.0
     if [[ ${METHOD} == "pip" ]]; then
         LGB_VER=$(head -n 1 VERSION.txt)
-        cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
+        cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist --gpu || exit -1
         cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu || exit -1
         cd $TRAVIS_BUILD_DIR && pytest tests/python_package_test || exit -1
         exit 0
