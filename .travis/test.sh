@@ -35,9 +35,12 @@ if [[ ${TASK} == "gpu" ]]; then
         export PATH="$AMDAPPSDK/include/:$PATH"
         
         conda install --yes -c conda-forge boost=1.63.0
+
+        sed -i 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $TRAVIS_BUILD_DIR/include/LightGBM/config.h
+    else
+        sed -i '' 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $TRAVIS_BUILD_DIR/include/LightGBM/config.h
     fi
     export BOOST_ROOT="$HOME/miniconda/"
-    sed -i 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $TRAVIS_BUILD_DIR/include/LightGBM/config.h
 fi
 
 if [[ ${METHOD} == "dist" ]]; then
