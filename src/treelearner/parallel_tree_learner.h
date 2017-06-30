@@ -28,7 +28,7 @@ public:
 
 protected:
   void BeforeTrain() override;
-  void FindBestSplitsForLeaves() override;
+  void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
 private:
   /*! \brief rank of local machine */
   int rank_;
@@ -54,8 +54,8 @@ public:
   void ResetConfig(const TreeConfig* tree_config) override;
 protected:
   void BeforeTrain() override;
-  void FindBestThresholds() override;
-  void FindBestSplitsForLeaves() override;
+  void FindBestSplits() override;
+  void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
   void Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) override;
 
   inline data_size_t GetGlobalDataCountInLeaf(int leaf_idx) const override {
@@ -108,8 +108,8 @@ public:
 protected:
   void BeforeTrain() override;
   bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) override;
-  void FindBestThresholds() override;
-  void FindBestSplitsForLeaves() override;
+  void FindBestSplits() override;
+  void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
   void Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) override;
 
   inline data_size_t GetGlobalDataCountInLeaf(int leaf_idx) const override {
