@@ -34,22 +34,36 @@ fi
 conda install --yes numpy scipy scikit-learn pandas matplotlib
 pip install pytest
 
-if [[ ${TASK} == "pip" ]]; then
+if [[ ${TASK} == "sdist" ]]; then
     LGB_VER=$(head -n 1 VERSION.txt)
     cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
     cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v || exit -1
     cd $TRAVIS_BUILD_DIR && pytest tests/python_package_test || exit -1
+    exit 0
+elif [[ ${TASK} == "bdist" ]]; then
+    LGB_VER=$(head -n 1 VERSION.txt)
     if [[ $TRAVIS_OS_NAME == "osx" ]]; then
         cd $TRAVIS_BUILD_DIR/python-package && python setup.py bdist_wheel --plat-name=macosx --universal || exit -1
         mv dist/lightgbm-${LGB_VER}-py2.py3-none-macosx.whl dist/lightgbm-${LGB_VER}-py2.py3-none-macosx_10_9_x86_64.macosx_10_10_x86_64.macosx_10_11_x86_64.macosx_10_12_x86_64.whl
     else
         cd $TRAVIS_BUILD_DIR/python-package && python setup.py bdist_wheel --plat-name=manylinux1_x86_64 --universal || exit -1
     fi
+    cd $TRAVIS_BUILD_DIR/python-package && pip install dist/*.whl || exit -1
+    cd $TRAVIS_BUILD_DIR && pytest tests/python_package_test || exit -1
     exit 0
 fi
 
 if [[ ${TASK} == "gpu" ]]; then 
     conda install --yes -c conda-forge boost=1.63.0
+    if [[ ${METHOD} == "pip" ]]; then
+        export PATH="$AMDAPPSDK/include/:$PATH"
+        export BOOST_ROOT="$HOME/miniconda/"
+        LGB_VER=$(head -n 1 VERSION.txt)
+        cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist --gpu || exit -1
+        cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu || exit -1
+        cd $TRAVIS_BUILD_DIR && pytest tests/python_package_test || exit -1
+        exit 0
+    fi
 fi
 
 mkdir build && cd build
