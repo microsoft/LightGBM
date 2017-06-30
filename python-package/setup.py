@@ -147,5 +147,5 @@ if __name__ == "__main__":
           packages=find_packages(),
           include_package_data=True,
           data_files=data_files,
-          license='The MIT License(https://github.com/Microsoft/LightGBM/blob/master/LICENSE)',
+          license='The MIT License (Microsoft)',
           url='https://github.com/Microsoft/LightGBM')
