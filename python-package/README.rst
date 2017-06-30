@@ -35,7 +35,7 @@ Install GPU version
 
 ``pip install lightgbm --install-option=--gpu``
 
-Note: Boost and OpenCL are needed: details for installation can be found in `gpu-support <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support>`_. Need to export `OpenCL_INCLUDE_DIR` and `BOOST_ROOT` before installation.
+Note: Boost and OpenCL are needed: details for installation can be found in `gpu-support <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support>`_. Need to add OpenCL_INCLUDE_DIR to PATH and export BOOST_ROOT before installation.
 
 Install with MinGW on Windows
 
