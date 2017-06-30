@@ -5,32 +5,26 @@ dist: trusty
 compiler:
   - gcc
 
+os:
+  - linux
+  - osx
+
+env:
+  - TASK=regular
+  - TASK=mpi
+  - TASK=gpu METHOD=source
+  - TASK=gpu METHOD=sdist
+  - TASK=sdist
+  - TASK=bdist
+  - TASK=pylint
+  - TASK=if-else
+
 matrix:
-  include:
-    - os: linux
-      env: TASK=regular
-    - os: linux
-      env: TASK=mpi
-    - os: linux
-      env: TASK=gpu METHOD=source
-    - os: linux
-      env: TASK=sdist
-    - os: linux
-      env: TASK=gpu METHOD=pip
-    - os: linux
-      env: TASK=bdist
-    - os: linux
+  exclude:
+    - os: osx
       env: TASK=pylint
-    - os: linux
+    - os: osx
       env: TASK=if-else
-    - os: osx
-      env: TASK=regular
-    - os: osx
-      env: TASK=mpi
-    - os: osx
-      env: TASK=sdist
-    - os: osx
-      env: TASK=bdist
 
 before_install:
 - test -n $CC  && unset CC
