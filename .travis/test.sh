@@ -39,6 +39,7 @@ if [[ ${TASK} == "gpu" ]]; then
         sed -i 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $TRAVIS_BUILD_DIR/include/LightGBM/config.h
     else
         sed -i '' 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $TRAVIS_BUILD_DIR/include/LightGBM/config.h
+        sed -i '' '/#define BOOST_COMPUTE_USE_OFFLINE_CACHE/d' $TRAVIS_BUILD_DIR/src/treelearner/gpu_tree_learner.h
     fi
     export BOOST_ROOT="$HOME/miniconda/"
 fi
@@ -79,4 +80,4 @@ fi
 make _lightgbm || exit -1
 
 cd $TRAVIS_BUILD_DIR/python-package && python setup.py install --precompile || exit -1
-cd $TRAVIS_BUILD_DIR && pytest . || exit -1
+pytest $TRAVIS_BUILD_DIR/tests || exit -1
