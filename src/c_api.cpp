@@ -51,11 +51,12 @@ public:
 
     boosting_.reset(Boosting::CreateBoosting(config_.boosting_type, nullptr));
 
+    train_data_ = train_data;
+    CreateObjectiveAndMetrics();
     // initialize the boosting
-    boosting_->Init(&config_.boosting_config, nullptr, objective_fun_.get(),
+    boosting_->Init(&config_.boosting_config, train_data_, objective_fun_.get(),
                     Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
 
-    ResetTrainingData(train_data);
   }
 
   void MergeFrom(const Booster* other) {
@@ -67,9 +68,7 @@ public:
 
   }
 
-  void ResetTrainingData(const Dataset* train_data) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    train_data_ = train_data;
+  void CreateObjectiveAndMetrics() {
     // create objective function
     objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
                                                                     config_.objective_config));
@@ -91,9 +90,17 @@ public:
       train_metric_.push_back(std::move(metric));
     }
     train_metric_.shrink_to_fit();
-    // reset the boosting
-    boosting_->ResetTrainingData(&config_.boosting_config, train_data_,
-                                 objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
+  }
+
+  void ResetTrainingData(const Dataset* train_data) {
+    if (train_data != train_data_) {
+      std::lock_guard<std::mutex> lock(mutex_);
+      train_data_ = train_data;
+      CreateObjectiveAndMetrics();
+      // reset the boosting
+      boosting_->ResetTrainingData(train_data_,
+                                   objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
+    }
   }
 
   void ResetConfig(const char* parameters) {
@@ -125,10 +132,11 @@ public:
       if (objective_fun_ != nullptr) {
         objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
       }
+      boosting_->ResetTrainingData(train_data_,
+                                   objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
     }
 
-    boosting_->ResetTrainingData(&config_.boosting_config, train_data_,
-                                 objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
+    boosting_->ResetConfig(&config_.boosting_config);
 
   }
 

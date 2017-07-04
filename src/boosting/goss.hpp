@@ -41,21 +41,28 @@ public:
   void Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
             const std::vector<const Metric*>& training_metrics) override {
     GBDT::Init(config, train_data, objective_function, training_metrics);
+    ResetGoss();
+  }
+
+  void ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* objective_function,
+                         const std::vector<const Metric*>& training_metrics) override {
+    GBDT::ResetTrainingData(train_data, objective_function, training_metrics);
+    ResetGoss();
+  }
+
+  void ResetConfig(const BoostingConfig* config) override {
+    GBDT::ResetConfig(config);
+    ResetGoss();
+  }
+
+  void ResetGoss() {
     CHECK(gbdt_config_->top_rate + gbdt_config_->other_rate <= 1.0f);
     CHECK(gbdt_config_->top_rate > 0.0f && gbdt_config_->other_rate > 0.0f);
     if (gbdt_config_->bagging_freq > 0 && gbdt_config_->bagging_fraction != 1.0f) {
       Log::Fatal("cannot use bagging in GOSS");
     }
     Log::Info("using GOSS");
-  }
 
-  void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
-                         const std::vector<const Metric*>& training_metrics) override {
-    if (config->bagging_freq > 0 && config->bagging_fraction != 1.0f) {
-      Log::Fatal("cannot use bagging in GOSS");
-    }
-    GBDT::ResetTrainingData(config, train_data, objective_function, training_metrics);
-    if (train_data_ == nullptr) { return; }
     bag_data_indices_.resize(num_data_);
     tmp_indices_.resize(num_data_);
     tmp_indice_right_.resize(num_data_);
@@ -66,8 +73,8 @@ public:
     right_write_pos_buf_.resize(num_threads_);
 
     is_use_subset_ = false;
-    if (config->top_rate + config->other_rate <= 0.5) {
-      auto bag_data_cnt = static_cast<data_size_t>((config->top_rate + config->other_rate) * num_data_);
+    if (gbdt_config_->top_rate + gbdt_config_->other_rate <= 0.5) {
+      auto bag_data_cnt = static_cast<data_size_t>((gbdt_config_->top_rate + gbdt_config_->other_rate) * num_data_);
       tmp_subset_.reset(new Dataset(bag_data_cnt));
       tmp_subset_->CopyFeatureMapperFrom(train_data_);
       is_use_subset_ = true;

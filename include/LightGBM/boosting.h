@@ -43,14 +43,10 @@ public:
   */
   virtual void MergeFrom(const Boosting* other) = 0;
 
-  /*!
-  * \brief Reset training data for current boosting
-  * \param config Configs for boosting
-  * \param train_data Training data
-  * \param objective_function Training objective function
-  * \param training_metrics Training metric
-  */
-  virtual void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function, const std::vector<const Metric*>& training_metrics) = 0;
+  virtual void ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* objective_function,
+                                 const std::vector<const Metric*>& training_metrics) = 0;
+
+  virtual void ResetConfig(const BoostingConfig* config) = 0;
 
   /*!
   * \brief Add a validation data
