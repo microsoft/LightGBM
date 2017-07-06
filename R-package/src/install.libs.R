@@ -43,7 +43,7 @@ if (!use_precompile) {
   
   # Prepare installation steps
   cmake_cmd <- "cmake "
-  build_cmd <- "make _lightgbm -j4"
+  build_cmd <- "make _lightgbm -j"
   lib_folder <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
   
   # Check if Windows installation (for gcc vs Visual Studio)
@@ -64,6 +64,9 @@ if (!use_precompile) {
   
   # Install
   system(paste0(cmake_cmd, " .."))
+  if (WINDOWS && use_mingw) {
+    system(build_cmd) # Must build twice for Windows due sh.exe in Rtools
+  }
   system(build_cmd)
   src <- file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/")
   
