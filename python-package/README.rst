@@ -21,30 +21,36 @@ Install from pip
 
 Install `wheel <http://pythonwheels.com>`_ via ``pip install wheel`` first. For windows user, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if Visual Studio(2015 or 2017) is not installed.
 
-Install from wheel package:
 
 ``pip install lightgbm``
 
-Install from source package:
+
+Install source package from pip
+*******************************
 
 ``pip install --no-binary :all: lightgbm``
 
-Note: Installation from source package require installing `cmake <https://cmake.org/>`_ first, and Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed in Windows.
 
-Install GPU version
+Note: Installation from source package require installing `cmake <https://cmake.org/>`_ first.
+
+For Windows user, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed, and `cmake <https://cmake.org/>`_ must be version 3.8 or higher.
+
+Install GPU version:
 
 ``pip install lightgbm --install-option=--gpu``
 
 Note: Boost and OpenCL are needed: details for installation can be found in `gpu-support <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support>`_. Need to add OpenCL_INCLUDE_DIR to PATH and export BOOST_ROOT before installation.
 
-Install with MinGW on Windows
+Install with MinGW on Windows:
 
 ``pip install lightgbm --install-option=--mingw``
 
 Install from GitHub
 '''''''''''''''''''
 
-Installation from GitHub require installing `cmake <https://cmake.org/>`_ first, and Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed in Windows.
+Installation from GitHub require installing `cmake <https://cmake.org/>`_ first. 
+
+For Windows user, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed, and `cmake <https://cmake.org/>`_ must be version 3.8 or higher.
 
 .. code:: sh
 
