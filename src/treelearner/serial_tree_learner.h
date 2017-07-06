@@ -74,20 +74,11 @@ protected:
   */
   virtual bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf);
 
+  virtual void FindBestSplits();
+
   virtual void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract);
 
-  /*!
-  * \brief Find best thresholds for all features, using multi-threading.
-  *  The result will be stored in smaller_leaf_splits_ and larger_leaf_splits_.
-  *  This function will be called in FindBestSplit.
-  */
-  virtual void FindBestThresholds();
-
-  /*!
-  * \brief Find best features for leaves from smaller_leaf_splits_ and larger_leaf_splits_.
-  *  This function will be called after FindBestThresholds.
-  */
-  virtual void FindBestSplitsForLeaves();
+  virtual void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract);
 
   /*!
   * \brief Partition tree and data according best split.

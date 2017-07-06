@@ -63,14 +63,10 @@ public:
     num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
   }
 
-  /*!
-  * \brief Reset training data for current boosting
-  * \param train_data Training data
-  * \param objective_function Training objective function
-  * \param training_metrics Training metric
-  */
-  void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function, const std::vector<const Metric*>& training_metrics) override;
+  void ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* objective_function,
+                         const std::vector<const Metric*>& training_metrics) override;
 
+  void ResetConfig(const BoostingConfig* config) override;
   /*!
   * \brief Adding a validation dataset
   * \param valid_data Validation dataset
@@ -258,6 +254,7 @@ public:
   virtual const char* SubModelName() const override { return "tree"; }
 
 protected:
+  void ResetBaggingConfig(const BoostingConfig* config);
   /*!
   * \brief Implement bagging logic
   * \param iter Current interation

@@ -5,19 +5,29 @@ Installation
 ------------
 
 ### Preparation
+
 You need to install git and [cmake](https://cmake.org/) first.
 
-The default compiler is gcc (Linux) or Rtools' MinGW (Windows). You may also compile with Visual Studio (or [MS Build](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017)) by setting `use_mingw` to `TRUE` in `R-package/src/install.libs.R`. It is also possible to compile with [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) in Windows. For Visual Studio users who wants to install online, please check the end of this document for installation using a helper package ([Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/)).
+Note: 32-bit R/Rtools is not supported.
+
+#### Windows Preparation
+
+Installing [Rtools](https://cran.r-project.org/bin/windows/Rtools/) is mandatory, and only support the 64-bit version.
+
+[cmake](https://cmake.org/) must be version 3.8 or higher.
+
+The default compiler is Rtools or any [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) to compile by setting `use_mingw` to `TRUE` in `R-package/src/install.libs.R`. You also can use Visual Studio (or [MS Build](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017)) in Windows.
+
+For Visual Studio users who wants to install online, please check the end of this document for installation using a helper package ([Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/)).
 
 It is recommended to use *Visual Studio* for its better multi-threading efficency in Windows for many core systems. For very simple systems (dual core computers or worse), MinGW64 is recommended for maximum performance. If you do not know what to choose, it is recommended to use [Visual Studio](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017).
 
-For Windows users, installing [Rtools](https://cran.r-project.org/bin/windows/Rtools/) is mandatory even when using Visual Studio compilation.
+#### Mac OS X Preparation
 
-For Mac OS X users, gcc with OpenMP support must be installed first. Refer to [wiki](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#osx) for installing gcc with OpenMP support.
-
-To avoid critical package issues if you are using R 3.4.0 (not the patched/devel version), it is recommended to install once the LightGBM R package, even if it is an old version: `devtools::install_github("Microsoft/LightGBM@v1", subdir = "R-package")`. Make sure you have the correct permissions to install the package.
+gcc with OpenMP support must be installed first. Refer to [wiki](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#osx) for installing gcc with OpenMP support.
 
 ### Install
+
 Install LightGBM R-package with the following command:
 
 ```sh
@@ -35,7 +45,9 @@ Rscript build_package.R
 R CMD INSTALL lightgbm_2.0.2.tar.gz
 ``` 
 
-Windows users may need to run with administrator rights (either R or the command prompt, depending on the way you are installing this package). Rtools must be installed for Windows. Linux users might require the appropriate user write permissions for packages.
+Note: for the build with Visual Studio/MSBuild in Windows, you should use the Windows CMD or Powershell.
+
+Windows users may need to run with administrator rights (either R or the command prompt, depending on the way you are installing this package). Linux users might require the appropriate user write permissions for packages.
 
 Set `use_gpu` to `TRUE` in `R-package/src/install.libs.R` to enable the build with GPU support. You will need to install Boost and OpenCL first: details for installation can be found in [gpu-support](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support).
 

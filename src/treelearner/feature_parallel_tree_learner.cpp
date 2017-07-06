@@ -50,27 +50,28 @@ void FeatureParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
 }
 
 template <typename TREELEARNER_T>
-void FeatureParallelTreeLearner<TREELEARNER_T>::FindBestSplitsForLeaves() {
-  SplitInfo smaller_best, larger_best;
+void FeatureParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) {
+  TREELEARNER_T::FindBestSplitsFromHistograms(is_feature_used, use_subtract);
+  SplitInfo smaller_best_split, larger_best_split;
   // get best split at smaller leaf
-  smaller_best = this->best_split_per_leaf_[this->smaller_leaf_splits_->LeafIndex()];
+  smaller_best_split = this->best_split_per_leaf_[this->smaller_leaf_splits_->LeafIndex()];
   // find local best split for larger leaf
   if (this->larger_leaf_splits_->LeafIndex() >= 0) {
-    larger_best = this->best_split_per_leaf_[this->larger_leaf_splits_->LeafIndex()];
+    larger_best_split = this->best_split_per_leaf_[this->larger_leaf_splits_->LeafIndex()];
   }
   // sync global best info
-  std::memcpy(input_buffer_.data(), &smaller_best, sizeof(SplitInfo));
-  std::memcpy(input_buffer_.data() + sizeof(SplitInfo), &larger_best, sizeof(SplitInfo));
+  std::memcpy(input_buffer_.data(), &smaller_best_split, sizeof(SplitInfo));
+  std::memcpy(input_buffer_.data() + sizeof(SplitInfo), &larger_best_split, sizeof(SplitInfo));
 
   Network::Allreduce(input_buffer_.data(), sizeof(SplitInfo) * 2, sizeof(SplitInfo),
                      output_buffer_.data(), &SplitInfo::MaxReducer);
   // copy back
-  std::memcpy(&smaller_best, output_buffer_.data(), sizeof(SplitInfo));
-  std::memcpy(&larger_best, output_buffer_.data() + sizeof(SplitInfo), sizeof(SplitInfo));
+  std::memcpy(&smaller_best_split, output_buffer_.data(), sizeof(SplitInfo));
+  std::memcpy(&larger_best_split, output_buffer_.data() + sizeof(SplitInfo), sizeof(SplitInfo));
   // update best split
-  this->best_split_per_leaf_[this->smaller_leaf_splits_->LeafIndex()] = smaller_best;
+  this->best_split_per_leaf_[this->smaller_leaf_splits_->LeafIndex()] = smaller_best_split;
   if (this->larger_leaf_splits_->LeafIndex() >= 0) {
-    this->best_split_per_leaf_[this->larger_leaf_splits_->LeafIndex()] = larger_best;
+    this->best_split_per_leaf_[this->larger_leaf_splits_->LeafIndex()] = larger_best_split;
   }
 }
 

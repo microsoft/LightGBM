@@ -10,7 +10,7 @@ RUN apt-get update && \
     export PATH="/opt/conda/bin:$PATH" && \
     # lightgbm
     conda install -y numpy scipy scikit-learn pandas && \
-    git clone --recursive https://github.com/Microsoft/LightGBM
+    git clone --recursive https://github.com/Microsoft/LightGBM && \
     cd LightGBM/python-package && python setup.py install && \
 
 # clean
