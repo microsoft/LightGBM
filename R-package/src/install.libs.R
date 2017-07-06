@@ -50,7 +50,8 @@ if (!use_precompile) {
   if (WINDOWS) {
     if (use_mingw) {
       cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ")
-      build_cmd <- "mingw32-make.exe _lightgbm -j4"
+      build_cmd <- "mingw32-make.exe _lightgbm -j"
+      system(build_cmd) # Must build twice for Windows due sh.exe in Rtools
     } else {
       cmake_cmd <- paste0(cmake_cmd, " -DCMAKE_GENERATOR_PLATFORM=x64 ")
       build_cmd <- "cmake --build . --target _lightgbm  --config Release"
@@ -64,9 +65,6 @@ if (!use_precompile) {
   
   # Install
   system(paste0(cmake_cmd, " .."))
-  if (WINDOWS && use_mingw) {
-    system(build_cmd) # Must build twice for Windows due sh.exe in Rtools
-  }
   system(build_cmd)
   src <- file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/")
   
