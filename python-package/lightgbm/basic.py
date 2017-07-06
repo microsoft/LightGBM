@@ -1245,7 +1245,8 @@ class Booster(object):
             self.__num_class = out_num_class.value
             self.pandas_categorical = _load_pandas_categorical(model_file)
         elif 'model_str' in params:
-            self.__load_model_from_string(params['model_str'])
+            self._load_model_from_string(params['model_str'])
+            self.pandas_categorical = params['pandas_categorical']
         else:
             raise TypeError('Need at least one training dataset or model file to create booster instance')
 
@@ -1257,9 +1258,9 @@ class Booster(object):
         return self.__deepcopy__(None)
 
     def __deepcopy__(self, _):
-        model_str = self.__save_model_to_string()
-        booster = Booster({'model_str': model_str})
-        booster.pandas_categorical = self.pandas_categorical
+        model_str = self._save_model_to_string()
+        booster = Booster({'model_str': model_str,
+            'pandas_categorical': self.pandas_categorical})
         return booster
 
     def __getstate__(self):
@@ -1268,7 +1269,7 @@ class Booster(object):
         this.pop('train_set', None)
         this.pop('valid_sets', None)
         if handle is not None:
-            this["handle"] = self.__save_model_to_string()
+            this["handle"] = self._save_model_to_string()
         return this
 
     def __setstate__(self, state):
@@ -1505,7 +1506,7 @@ class Booster(object):
             c_str(filename)))
         _save_pandas_categorical(filename, self.pandas_categorical)
 
-    def __load_model_from_string(self, model_str):
+    def _load_model_from_string(self, model_str):
         """[Private] Load model from string"""
         out_num_iterations = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterLoadModelFromString(
@@ -1518,7 +1519,7 @@ class Booster(object):
             ctypes.byref(out_num_class)))
         self.__num_class = out_num_class.value
 
-    def __save_model_to_string(self, num_iteration=-1):
+    def _save_model_to_string(self, num_iteration=-1):
         """[Private] Save model to string"""
         if num_iteration <= 0:
             num_iteration = self.best_iteration

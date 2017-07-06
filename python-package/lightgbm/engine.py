@@ -208,7 +208,10 @@ def train(params, train_set, num_boost_round=100,
     if keep_training_booster:
         return booster
     else:
-        return booster._to_predictor()
+        return Booster(params={
+            'model_str': booster._save_model_to_string(),
+            'pandas_categorical': booster.pandas_categorical
+        })
 
 
 class CVBooster(object):
