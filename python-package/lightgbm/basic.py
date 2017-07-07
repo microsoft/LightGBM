@@ -1246,7 +1246,6 @@ class Booster(object):
             self.pandas_categorical = _load_pandas_categorical(model_file)
         elif 'model_str' in params:
             self._load_model_from_string(params['model_str'])
-            self.pandas_categorical = params['pandas_categorical']
         else:
             raise TypeError('Need at least one training dataset or model file to create booster instance')
 
@@ -1259,8 +1258,8 @@ class Booster(object):
 
     def __deepcopy__(self, _):
         model_str = self._save_model_to_string()
-        booster = Booster({'model_str': model_str,
-            'pandas_categorical': self.pandas_categorical})
+        booster = Booster({'model_str': model_str})
+        booster.pandas_categorical = self.pandas_categorical
         return booster
 
     def __getstate__(self):
@@ -1287,6 +1286,7 @@ class Booster(object):
     def free_dataset(self):
         self.__dict__.pop('train_set', None)
         self.__dict__.pop('valid_sets', None)
+        self.__num_dataset = 0
 
     def set_train_data_name(self, name):
         self.__train_data_name = name
