@@ -848,6 +848,8 @@ class Dataset(object):
         params : dict
             Other parameters
         """
+        if params is None:
+            params = self.params
         ret = Dataset(None, reference=self, feature_name=self.feature_name,
                       categorical_feature=self.categorical_feature, params=params)
         ret._predictor = self._predictor
