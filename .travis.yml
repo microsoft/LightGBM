@@ -5,32 +5,26 @@ dist: trusty
 compiler:
   - gcc
 
+os:
+  - linux
+  - osx
+
+env:
+  - TASK=regular
+  - TASK=mpi
+  - TASK=gpu
+  - TASK=gpu METHOD=dist
+  - METHOD=dist DIST=source
+  - METHOD=dist DIST=binary
+  - TASK=pylint
+  - TASK=if-else
+
 matrix:
-  include:
-    - os: linux
-      env: TASK=regular
-    - os: linux
-      env: TASK=mpi
-    - os: linux
-      env: TASK=gpu METHOD=source
-    - os: linux
-      env: TASK=sdist
-    - os: linux
-      env: TASK=gpu METHOD=pip
-    - os: linux
-      env: TASK=bdist
-    - os: linux
+  exclude:
+    - os: osx
       env: TASK=pylint
-    - os: linux
+    - os: osx
       env: TASK=if-else
-    - os: osx
-      env: TASK=regular
-    - os: osx
-      env: TASK=mpi
-    - os: osx
-      env: TASK=sdist
-    - os: osx
-      env: TASK=bdist
 
 before_install:
 - test -n $CC  && unset CC
@@ -59,6 +53,6 @@ deploy:
   draft: true
   tag_name: $TRAVIS_TAG
   on:
-    condition: "$TASK = bdist"
+    condition: "$DIST = binary"
     tags: true
     all_branches: true
