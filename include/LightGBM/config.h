@@ -16,6 +16,11 @@
 
 namespace LightGBM {
 
+const std::string kDefaultTreeLearnerType = "serial";
+const std::string kDefaultDevice = "cpu";
+const std::string kDefaultBoostingType = "gbdt";
+const std::string kDefaultObjectiveType = "regression";
+
 /*!
 * \brief The interface for Config
 */
@@ -38,7 +43,7 @@ public:
   * \param out Value will assign to out if key exists
   * \return True if key exists
   */
-  inline bool GetString(
+  inline static bool GetString(
     const std::unordered_map<std::string, std::string>& params,
     const std::string& name, std::string* out);
 
@@ -49,7 +54,7 @@ public:
   * \param out Value will assign to out if key exists
   * \return True if key exists
   */
-  inline bool GetInt(
+  inline static bool GetInt(
     const std::unordered_map<std::string, std::string>& params,
     const std::string& name, int* out);
 
@@ -60,7 +65,7 @@ public:
   * \param out Value will assign to out if key exists
   * \return True if key exists
   */
-  inline bool GetDouble(
+  inline static bool GetDouble(
     const std::unordered_map<std::string, std::string>& params,
     const std::string& name, double* out);
 
@@ -71,7 +76,7 @@ public:
   * \param out Value will assign to out if key exists
   * \return True if key exists
   */
-  inline bool GetBool(
+  inline static bool GetBool(
     const std::unordered_map<std::string, std::string>& params,
     const std::string& name, bool* out);
 
@@ -135,7 +140,7 @@ public:
   * And add an prefix "name:" while using column name
   * Note: when using Index, it doesn't count the label index */
   std::string categorical_column = "";
-  std::string device_type = "cpu";
+  std::string device_type = kDefaultDevice;
 
   /*! \brief Set to true if want to use early stop for the prediction */
   bool pred_early_stop = false;
@@ -145,9 +150,6 @@ public:
   double pred_early_stop_margin = 10.0f;
 
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
-private:
-  void GetDeviceType(const std::unordered_map<std::string,
-                     std::string>& params);
 };
 
 /*! \brief Config for objective function */
@@ -246,15 +248,10 @@ public:
   double other_rate = 0.1f;
   // only used for the regression. Will boost from the average labels.
   bool boost_from_average = true;
-  std::string tree_learner_type = "serial";
-  std::string device_type = "cpu";
+  std::string tree_learner_type = kDefaultTreeLearnerType;
+  std::string device_type = kDefaultDevice;
   TreeConfig tree_config;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
-private:
-  void GetTreeLearnerType(const std::unordered_map<std::string,
-    std::string>& params);
-  void GetDeviceType(const std::unordered_map<std::string,
-    std::string>& params);
 };
 
 /*! \brief Config for Network */
@@ -278,25 +275,16 @@ public:
   bool is_parallel = false;
   bool is_parallel_find_bin = false;
   IOConfig io_config;
-  std::string boosting_type = "gbdt";
+  std::string boosting_type = kDefaultBoostingType;
   BoostingConfig boosting_config;
-  std::string objective_type = "regression";
+  std::string objective_type =  kDefaultObjectiveType;
   ObjectiveConfig objective_config;
   std::vector<std::string> metric_types;
   MetricConfig metric_config;
   std::string convert_model_language = "";
-
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 
 private:
-  void GetBoostingType(const std::unordered_map<std::string, std::string>& params);
-
-  void GetObjectiveType(const std::unordered_map<std::string, std::string>& params);
-
-  void GetMetricType(const std::unordered_map<std::string, std::string>& params);
-
-  void GetTaskType(const std::unordered_map<std::string, std::string>& params);
-
   void CheckParamConflict();
 };
 
