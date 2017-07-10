@@ -2,6 +2,7 @@
 #define LIGHTGBM_BOOSTING_RF_H_
 
 #include <LightGBM/boosting.h>
+#include <LightGBM/metric.h>
 #include "score_updater.hpp"
 #include "gbdt.h"
 
@@ -28,7 +29,7 @@ public:
     CHECK(config->bagging_freq > 0 && config->bagging_fraction < 1.0f && config->bagging_fraction > 0.0f);
     CHECK(config->tree_config.feature_fraction < 1.0f && config->tree_config.feature_fraction > 0.0f);
     GBDT::Init(config, train_data, objective_function, training_metrics);
-    // cannot use init score for RF.
+
     if (num_init_iteration_ > 0) {
       for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
         MultiplyScore(cur_tree_id, 1.0f / num_init_iteration_);
@@ -60,9 +61,10 @@ public:
   void ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* objective_function,
                          const std::vector<const Metric*>& training_metrics) override {
     GBDT::ResetTrainingData(train_data, objective_function, training_metrics);
-    // cannot use init score for RF.
-    for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-      train_score_updater_->MultiplyScore(1.0f / (iter_ + num_init_iteration_), cur_tree_id);
+    if (iter_ + num_init_iteration_ > 0) {
+      for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+        train_score_updater_->MultiplyScore(1.0f / (iter_ + num_init_iteration_), cur_tree_id);
+      }
     }
     // cannot use RF for multi-class.
     CHECK(num_tree_per_iteration_ == 1);
@@ -79,9 +81,9 @@ public:
     if (objective_function_ == nullptr) {
       Log::Fatal("No object function provided");
     }
-    auto tmp_score_updater = new ScoreUpdater(train_data_, num_tree_per_iteration_);
+    std::vector<double> tmp_score(num_tree_per_iteration_ * num_data_, 0.0f);
     objective_function_->
-      GetGradients(tmp_score_updater->score(), gradients_.data(), hessians_.data());
+      GetGradients(tmp_score.data(), gradients_.data(), hessians_.data());
   }
 
   bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override {
@@ -173,6 +175,7 @@ public:
   }
 
   void ConvertTreeOutput(Tree* tree) {
+    tree->Shrinkage(1.0f);
     for (int i = 0; i < tree->num_leaves(); ++i) {
       double output = tree->LeafOutput(i);
       objective_function_->ConvertOutput(&output, &output);
@@ -183,9 +186,20 @@ public:
   void AddValidDataset(const Dataset* valid_data,
                        const std::vector<const Metric*>& valid_metrics) override {
     GBDT::AddValidDataset(valid_data, valid_metrics);
-    for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-      valid_score_updater_.back()->MultiplyScore(1.0f / (iter_ + num_init_iteration_), cur_tree_id);
+    if (iter_ + num_init_iteration_ > 0) {
+      for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+        valid_score_updater_.back()->MultiplyScore(1.0f / (iter_ + num_init_iteration_), cur_tree_id);
+      }
     }
+  }
+
+  bool NeedAccuratePrediction() const override {
+    // No early stopping for prediction
+    return true;
+  };
+
+  std::vector<double> EvalOneMetric(const Metric* metric, const double* score) const override {
+    return metric->Eval(score, nullptr);
   }
 
 private:

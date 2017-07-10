@@ -165,10 +165,9 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
   }
 
   objective_function_ = objective_function;
-  num_tree_per_iteration_ = num_class_;
   if (objective_function_ != nullptr) {
     is_constant_hessian_ = objective_function_->IsConstantHessian();
-    num_tree_per_iteration_ = objective_function_->NumTreePerIteration();
+    CHECK(num_tree_per_iteration_ == objective_function_->NumTreePerIteration());
   } else {
     is_constant_hessian_ = false;
   }
@@ -609,6 +608,10 @@ void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
   #endif
 }
 
+std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* score) const {
+  return metric->Eval(score, objective_function_);
+}
+
 std::string GBDT::OutputMetric(int iter) {
   bool need_output = (iter % gbdt_config_->output_freq) == 0;
   std::string ret = "";
@@ -618,7 +621,7 @@ std::string GBDT::OutputMetric(int iter) {
   if (need_output) {
     for (auto& sub_metric : training_metrics_) {
       auto name = sub_metric->GetName();
-      auto scores = sub_metric->Eval(train_score_updater_->score(), objective_function_);
+      auto scores = EvalOneMetric(sub_metric, train_score_updater_->score());
       for (size_t k = 0; k < name.size(); ++k) {
         std::stringstream tmp_buf;
         tmp_buf << "Iteration:" << iter
@@ -635,8 +638,7 @@ std::string GBDT::OutputMetric(int iter) {
   if (need_output || early_stopping_round_ > 0) {
     for (size_t i = 0; i < valid_metrics_.size(); ++i) {
       for (size_t j = 0; j < valid_metrics_[i].size(); ++j) {
-        auto test_scores = valid_metrics_[i][j]->Eval(valid_score_updater_[i]->score(),
-                                                      objective_function_);
+        auto test_scores = EvalOneMetric(valid_metrics_[i][j], valid_score_updater_[i]->score());
         auto name = valid_metrics_[i][j]->GetName();
         for (size_t k = 0; k < name.size(); ++k) {
           std::stringstream tmp_buf;
@@ -675,7 +677,7 @@ std::vector<double> GBDT::GetEvalAt(int data_idx) const {
   std::vector<double> ret;
   if (data_idx == 0) {
     for (auto& sub_metric : training_metrics_) {
-      auto scores = sub_metric->Eval(train_score_updater_->score(), objective_function_);
+      auto scores = EvalOneMetric(sub_metric, train_score_updater_->score());
       for (auto score : scores) {
         ret.push_back(score);
       }
@@ -683,8 +685,7 @@ std::vector<double> GBDT::GetEvalAt(int data_idx) const {
   } else {
     auto used_idx = data_idx - 1;
     for (size_t j = 0; j < valid_metrics_[used_idx].size(); ++j) {
-      auto test_scores = valid_metrics_[used_idx][j]->Eval(valid_score_updater_[used_idx]->score(),
-                                                           objective_function_);
+      auto test_scores = EvalOneMetric(valid_metrics_[used_idx][j], valid_score_updater_[used_idx]->score());
       for (auto score : test_scores) {
         ret.push_back(score);
       }

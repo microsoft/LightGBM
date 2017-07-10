@@ -286,6 +286,8 @@ protected:
   * \param cur_tree_id Current tree for multiclass training
   */
   virtual void UpdateScore(const Tree* tree, const int cur_tree_id);
+
+  virtual std::vector<double> EvalOneMetric(const Metric* metric, const double* score) const;
   /*!
   * \brief Print metric result of current iteration
   * \param iter Current interation
