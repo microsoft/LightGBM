@@ -61,12 +61,8 @@ public:
                          const std::vector<const Metric*>& training_metrics) override {
     GBDT::ResetTrainingData(train_data, objective_function, training_metrics);
     // cannot use init score for RF.
-    if (num_init_iteration_ > 0) {
-      for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-        MultiplyScore(cur_tree_id, 1.0f / (iter_ + num_init_iteration_));
-      }
-    } else {
-      CHECK(train_data->metadata().init_score() == nullptr);
+    for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+      train_score_updater_->MultiplyScore(1.0f / (iter_ + num_init_iteration_), cur_tree_id);
     }
     // cannot use RF for multi-class.
     CHECK(num_tree_per_iteration_ == 1);
@@ -181,6 +177,14 @@ public:
       double output = tree->LeafOutput(i);
       objective_function_->ConvertOutput(&output, &output);
       tree->SetLeafOutput(i, output);
+    }
+  }
+
+  void AddValidDataset(const Dataset* valid_data,
+                       const std::vector<const Metric*>& valid_metrics) override {
+    GBDT::AddValidDataset(valid_data, valid_metrics);
+    for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+      valid_score_updater_.back()->MultiplyScore(1.0f / (iter_ + num_init_iteration_), cur_tree_id);
     }
   }
 
