@@ -51,9 +51,11 @@ Some important parameters:
   * ```binary```, binary classification application 
   * ```lambdarank```, lambdarank application
   * ```multiclass```, multi-class classification application, should set ```num_class``` as well
-* ```boosting```, default=```gbdt```, type=enum, options=```gbdt```,```dart```, alias=```boost```,```boosting_type```
-  * ```gbdt```, traditional Gradient Boosting Decision Tree 
-  * ```dart```, [Dropouts meet Multiple Additive Regression Trees](https://arxiv.org/abs/1505.01866)
+* `boosting`, default=`gbdt`, type=enum, options=`gbdt`,`rf`,`dart`,`goss`, alias=`boost`,`boosting_type`
+  * `gbdt`, traditional Gradient Boosting Decision Tree 
+  * `rf`, Random Forest
+  * `dart`, [Dropouts meet Multiple Additive Regression Trees](https://arxiv.org/abs/1505.01866)
+  * `goss`, Gradient-based One-Side Sampling
 * ```data```, default=```""```, type=string, alias=```train```,```train_data```
   * training data, LightGBM will train from this data
 * ```valid```, default=```""```, type=multi-string, alias=```test```,```valid_data```,```test_data```

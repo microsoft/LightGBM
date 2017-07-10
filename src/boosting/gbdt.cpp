@@ -44,9 +44,10 @@ GBDT::GBDT()
   boost_from_average_(false) {
   #pragma omp parallel
   #pragma omp master
-    {
-      num_threads_ = omp_get_num_threads();
-    }
+  {
+    num_threads_ = omp_get_num_threads();
+  }
+  average_output_ = false;
 }
 
 GBDT::~GBDT() {
@@ -164,10 +165,9 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
   }
 
   objective_function_ = objective_function;
-  num_tree_per_iteration_ = num_class_;
   if (objective_function_ != nullptr) {
     is_constant_hessian_ = objective_function_->IsConstantHessian();
-    num_tree_per_iteration_ = objective_function_->NumTreePerIteration();
+    CHECK(num_tree_per_iteration_ == objective_function_->NumTreePerIteration());
   } else {
     is_constant_hessian_ = false;
   }
@@ -608,6 +608,10 @@ void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
   #endif
 }
 
+std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* score) const {
+  return metric->Eval(score, objective_function_);
+}
+
 std::string GBDT::OutputMetric(int iter) {
   bool need_output = (iter % gbdt_config_->output_freq) == 0;
   std::string ret = "";
@@ -617,7 +621,7 @@ std::string GBDT::OutputMetric(int iter) {
   if (need_output) {
     for (auto& sub_metric : training_metrics_) {
       auto name = sub_metric->GetName();
-      auto scores = sub_metric->Eval(train_score_updater_->score(), objective_function_);
+      auto scores = EvalOneMetric(sub_metric, train_score_updater_->score());
       for (size_t k = 0; k < name.size(); ++k) {
         std::stringstream tmp_buf;
         tmp_buf << "Iteration:" << iter
@@ -634,8 +638,7 @@ std::string GBDT::OutputMetric(int iter) {
   if (need_output || early_stopping_round_ > 0) {
     for (size_t i = 0; i < valid_metrics_.size(); ++i) {
       for (size_t j = 0; j < valid_metrics_[i].size(); ++j) {
-        auto test_scores = valid_metrics_[i][j]->Eval(valid_score_updater_[i]->score(),
-                                                      objective_function_);
+        auto test_scores = EvalOneMetric(valid_metrics_[i][j], valid_score_updater_[i]->score());
         auto name = valid_metrics_[i][j]->GetName();
         for (size_t k = 0; k < name.size(); ++k) {
           std::stringstream tmp_buf;
@@ -674,7 +677,7 @@ std::vector<double> GBDT::GetEvalAt(int data_idx) const {
   std::vector<double> ret;
   if (data_idx == 0) {
     for (auto& sub_metric : training_metrics_) {
-      auto scores = sub_metric->Eval(train_score_updater_->score(), objective_function_);
+      auto scores = EvalOneMetric(sub_metric, train_score_updater_->score());
       for (auto score : scores) {
         ret.push_back(score);
       }
@@ -682,8 +685,7 @@ std::vector<double> GBDT::GetEvalAt(int data_idx) const {
   } else {
     auto used_idx = data_idx - 1;
     for (size_t j = 0; j < valid_metrics_[used_idx].size(); ++j) {
-      auto test_scores = valid_metrics_[used_idx][j]->Eval(valid_score_updater_[used_idx]->score(),
-                                                           objective_function_);
+      auto test_scores = EvalOneMetric(valid_metrics_[used_idx][j], valid_score_updater_[used_idx]->score());
       for (auto score : test_scores) {
         ret.push_back(score);
       }
@@ -712,7 +714,7 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
     num_data = valid_score_updater_[used_idx]->num_data();
     *out_len = static_cast<int64_t>(num_data) * num_class_;
   }
-  if (objective_function_ != nullptr) {
+  if (objective_function_ != nullptr && !average_output_) {
     #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_data; ++i) {
       std::vector<double> tree_pred(num_tree_per_iteration_);
@@ -842,7 +844,12 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   // Predict
   str_buf << "void GBDT::Predict(const double* features, double *output, const PredictionEarlyStopInstance* early_stop) const {" << std::endl;
   str_buf << "\t" << "PredictRaw(features, output, early_stop);" << std::endl;
-  str_buf << "\t" << "if (objective_function_ != nullptr) {" << std::endl;
+  str_buf << "\t" << "if (average_output_) {" << std::endl;
+  str_buf << "\t\t" << "for (int k = 0; k < num_tree_per_iteration_; ++k) {" << std::endl;
+  str_buf << "\t\t\t" << "output[k] /= num_iteration_for_pred_;" << std::endl;
+  str_buf << "\t\t" << "}" << std::endl;
+  str_buf << "\t" << "}" << std::endl;
+  str_buf << "\t" << "else if (objective_function_ != nullptr) {" << std::endl;
   str_buf << "\t\t" << "objective_function_->ConvertOutput(output, output);" << std::endl;
   str_buf << "\t" << "}" << std::endl;
   str_buf << "}" << std::endl;
@@ -918,6 +925,10 @@ std::string GBDT::SaveModelToString(int num_iteration) const {
 
   if (boost_from_average_) {
     ss << "boost_from_average" << std::endl;
+  }
+
+  if (average_output_) {
+    ss << "average_output" << std::endl;
   }
 
   ss << "feature_names=" << Common::Join(feature_names_, " ") << std::endl;
@@ -998,6 +1009,11 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
   line = Common::FindFromLines(lines, "boost_from_average");
   if (line.size() > 0) {
     boost_from_average_ = true;
+  }
+  // get average_output
+  line = Common::FindFromLines(lines, "average_output");
+  if (line.size() > 0) {
+    average_output_ = true;
   }
   // get feature names
   line = Common::FindFromLines(lines, "feature_names=");

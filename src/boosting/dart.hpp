@@ -39,6 +39,12 @@ public:
     sum_weight_ = 0.0f;
   }
 
+  void ResetConfig(const BoostingConfig* config) override {
+    GBDT::ResetConfig(config);
+    random_for_drop_ = Random(gbdt_config_->drop_seed);
+    sum_weight_ = 0.0f;
+  }
+
   /*!
   * \brief one training iteration
   */
