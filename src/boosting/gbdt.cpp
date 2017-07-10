@@ -44,9 +44,10 @@ GBDT::GBDT()
   boost_from_average_(false) {
   #pragma omp parallel
   #pragma omp master
-    {
-      num_threads_ = omp_get_num_threads();
-    }
+  {
+    num_threads_ = omp_get_num_threads();
+  }
+  average_output_ = false;
 }
 
 GBDT::~GBDT() {
@@ -842,7 +843,12 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   // Predict
   str_buf << "void GBDT::Predict(const double* features, double *output, const PredictionEarlyStopInstance* early_stop) const {" << std::endl;
   str_buf << "\t" << "PredictRaw(features, output, early_stop);" << std::endl;
-  str_buf << "\t" << "if (objective_function_ != nullptr) {" << std::endl;
+  str_buf << "\t" << "if (average_output_) {" << std::endl;
+  str_buf << "\t\t" << "for (int k = 0; k < num_tree_per_iteration_; ++k) {" << std::endl;
+  str_buf << "\t\t\t" << "output[k] /= num_iteration_for_pred_;" << std::endl;
+  str_buf << "\t\t" << "}" << std::endl;
+  str_buf << "\t" << "}" << std::endl;
+  str_buf << "\t" << "else if (objective_function_ != nullptr) {" << std::endl;
   str_buf << "\t\t" << "objective_function_->ConvertOutput(output, output);" << std::endl;
   str_buf << "\t" << "}" << std::endl;
   str_buf << "}" << std::endl;
@@ -918,6 +924,10 @@ std::string GBDT::SaveModelToString(int num_iteration) const {
 
   if (boost_from_average_) {
     ss << "boost_from_average" << std::endl;
+  }
+
+  if (average_output_) {
+    ss << "average_output" << std::endl;
   }
 
   ss << "feature_names=" << Common::Join(feature_names_, " ") << std::endl;
@@ -998,6 +1008,11 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
   line = Common::FindFromLines(lines, "boost_from_average");
   if (line.size() > 0) {
     boost_from_average_ = true;
+  }
+  // get average_output
+  line = Common::FindFromLines(lines, "average_output");
+  if (line.size() > 0) {
+    average_output_ = true;
   }
   // get feature names
   line = Common::FindFromLines(lines, "feature_names=");
