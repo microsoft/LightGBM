@@ -59,7 +59,7 @@ class TestEngine(unittest.TestCase):
             'bagging_freq': 1,
             'bagging_fraction': 0.5,
             'feature_fraction': 0.5,
-            'num_leaves': 100,
+            'num_leaves': 50,
             'metric': 'binary_logloss',
             'verbose': -1
         }
@@ -67,12 +67,12 @@ class TestEngine(unittest.TestCase):
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
         evals_result = {}
         gbm = lgb.train(params, lgb_train,
-                        num_boost_round=100,
+                        num_boost_round=50,
                         valid_sets=lgb_eval,
                         verbose_eval=False,
                         evals_result=evals_result)
         ret = log_loss(y_test, gbm.predict(X_test))
-        self.assertLess(ret, 0.15)
+        self.assertLess(ret, 0.25)
         self.assertAlmostEqual(evals_result['valid_0']['binary_logloss'][-1], ret, places=5)
 
     def test_regreesion(self):

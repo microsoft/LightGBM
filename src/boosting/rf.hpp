@@ -29,7 +29,13 @@ public:
     CHECK(config->tree_config.feature_fraction < 1.0f && config->tree_config.feature_fraction > 0.0f);
     GBDT::Init(config, train_data, objective_function, training_metrics);
     // cannot use init score for RF.
-    CHECK(train_data->metadata().init_score() == nullptr);
+    if (num_init_iteration_ > 0) {
+      for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+        MultiplyScore(cur_tree_id, 1.0f / num_init_iteration_);
+      }
+    } else {
+      CHECK(train_data->metadata().init_score() == nullptr);
+    }
     // cannot use RF for multi-class. 
     CHECK(num_tree_per_iteration_ == 1);
     // not shrinkage rate for the RF
@@ -55,7 +61,13 @@ public:
                          const std::vector<const Metric*>& training_metrics) override {
     GBDT::ResetTrainingData(train_data, objective_function, training_metrics);
     // cannot use init score for RF.
-    CHECK(train_data->metadata().init_score() == nullptr);
+    if (num_init_iteration_ > 0) {
+      for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+        MultiplyScore(cur_tree_id, 1.0f / (iter_ + num_init_iteration_));
+      }
+    } else {
+      CHECK(train_data->metadata().init_score() == nullptr);
+    }
     // cannot use RF for multi-class.
     CHECK(num_tree_per_iteration_ == 1);
     // only boosting one time
