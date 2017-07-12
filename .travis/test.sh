@@ -38,6 +38,14 @@ if [[ ${TASK} == "gpu" ]]; then
 
         sed -i 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $TRAVIS_BUILD_DIR/include/LightGBM/config.h
     else
+        export PATH=/usr/local/opt/llvm/bin:$PATH
+        
+        wget https://www.open-mpi.org/software/hwloc/v1.11/downloads/hwloc-1.11.7.tar.gz && tar -xzf *.tar.gz
+        cd hwloc-* && ./configure && make && make install && cd ..
+
+        git clone https://github.com/pocl/pocl
+        cd pocl && mkdir build && cd build && cmake .. && make && make install
+
         sed -i '' 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $TRAVIS_BUILD_DIR/include/LightGBM/config.h
         sed -i '' '/#define BOOST_COMPUTE_USE_OFFLINE_CACHE/d' $TRAVIS_BUILD_DIR/src/treelearner/gpu_tree_learner.h
     fi
