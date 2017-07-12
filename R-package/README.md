@@ -31,7 +31,7 @@ Install LightGBM R-package with the following command:
 ```sh
 git clone --recursive https://github.com/Microsoft/LightGBM
 cd LightGBM/R-package
-R CMD INSTALL --build .
+R CMD INSTALL --build . --no-multiarch
 ```
 
 Or build a self-contained R package which can be installed afterwards:
@@ -40,7 +40,7 @@ Or build a self-contained R package which can be installed afterwards:
 git clone --recursive https://github.com/Microsoft/LightGBM
 cd LightGBM/R-package
 Rscript build_package.R
-R CMD INSTALL lightgbm_2.0.2.tar.gz
+R CMD INSTALL lightgbm_2.0.2.tar.gz --no-multiarch
 ``` 
 
 Note: for the build with Visual Studio/MSBuild in Windows, you should use the Windows CMD or Powershell.
@@ -52,7 +52,9 @@ Set `use_gpu` to `TRUE` in `R-package/src/install.libs.R` to enable the build wi
 You can also install directly from R using the repository with `devtools`:
 
 ```r
-devtools::install_github("Microsoft/LightGBM", subdir = "R-package")
+library(devtools)
+options(devtools.install.args = "--no-multiarch")   
+install_github("Microsoft/LightGBM", subdir = "R-package")
 ```
 
 If you are using a precompiled dll/lib locally, you can move the dll/lib into LightGBM root folder, modify `LightGBM/R-package/src/install.libs.R`'s 2nd line (change `use_precompile <- FALSE` to `use_precompile <- TRUE`), and install R-package as usual.
