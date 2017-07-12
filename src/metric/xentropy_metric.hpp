@@ -41,11 +41,8 @@ namespace LightGBM {
 //
 class CrossEntropyMetric : public Metric {
 public:
-	explicit CrossEntropyMetric(const MetricConfig&) {
-  }
-
-  virtual ~CrossEntropyMetric() {
-  }
+	explicit CrossEntropyMetric(const MetricConfig&) {}
+  virtual ~CrossEntropyMetric() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
     name_.emplace_back("xentropy");
@@ -121,7 +118,7 @@ public:
   }
 
   double factor_to_bigger_better() const override {
-    return -1.0f; // not sure what this one means
+    return -1.0f; // negative means smaller loss is better, positive means larger loss is better
   }
 
 private:
@@ -142,11 +139,8 @@ private:
 //
 class CrossEntropyMetric1 : public Metric {
 public:
-  explicit CrossEntropyMetric1(const MetricConfig&) {
-  }
-
-  virtual ~CrossEntropyMetric1() {
-  }
+  explicit CrossEntropyMetric1(const MetricConfig&) {}
+  virtual ~CrossEntropyMetric1() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
     name_.emplace_back("xentropy1");
@@ -184,10 +178,10 @@ public:
       if (weights_ == nullptr) {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
-          //double p = 1.0f / (1.0f + std::exp(-score[i])); // auto-convert
           double hhat = std::log(1.0f + std::exp(score[i])); // auto-convert
-          //sum_loss += XentLoss(label_[i], p);
           sum_loss += XentLoss1(label_[i], 1.0f, hhat);
+          //double p = 1.0f / (1.0f + std::exp(-score[i])); // auto-convert
+          //sum_loss += XentLoss(label_[i], p);
         }
       } else {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
@@ -201,14 +195,14 @@ public:
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double hhat = 0;
-          objective->ConvertOutput(&score[i], &hhat); // this only works if objective = "xentropy1"
+          objective->ConvertOutput(&score[i], &hhat); // NOTE: this only works if objective = "xentropy1"
           sum_loss += XentLoss1(label_[i], 1.0f, hhat);
         }
       } else {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double hhat = 0;
-          objective->ConvertOutput(&score[i], &hhat); // this only works if objective = "xentropy1"
+          objective->ConvertOutput(&score[i], &hhat); // NOTE: this only works if objective = "xentropy1"
           sum_loss += XentLoss1(label_[i], weights_[i], hhat);
         }
       }
@@ -221,7 +215,7 @@ public:
   }
 
   double factor_to_bigger_better() const override {
-    return -1.0f; // not sure what this one means
+    return -1.0f;
   }
 
 private:
