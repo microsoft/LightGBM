@@ -47,15 +47,15 @@ namespace LightGBM {
     return XentLoss(label, 1.0f - std::exp(-weight * hhat));
   }
 
-  // Computes the entropy for label p; p should be in interval [0, 1];
-  // This is used to presum the KL-divergence offset term (to be _added_ to cross-entropy).
+  // Computes the (negative) entropy for label p; p should be in interval [0, 1];
+  // This is used to presum the KL-divergence offset term (to be _added_ to the cross-entropy loss).
   // NOTE: x*log(x) = 0 for x=0,1; so only add when in (0, 1); avoid log(0)*0
   inline static double YentLoss(double p) {
     double hp = 0.0;
     if (p > 0) hp += p * std::log(p);
     double q = 1.0f - p;
     if (q > 0) hp += q * std::log(q);
-    return -hp;
+    return hp;
   }
 
 //
