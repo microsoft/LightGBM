@@ -3,6 +3,7 @@
 #include "binary_objective.hpp"
 #include "rank_objective.hpp"
 #include "multiclass_objective.hpp"
+#include "xentropy_objective.hpp"
 
 namespace LightGBM {
 
@@ -26,6 +27,10 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new MulticlassSoftmax(config);
   } else if (type == std::string("multiclassova")) {
     return new MulticlassOVA(config);
+  } else if (type == std::string("xentropy") || type == std::string("cross_entropy")) {
+    return new CrossEntropy(config);
+  } else if (type == std::string("xentropy1")) {
+    return new CrossEntropy1(config);
   }
   return nullptr;
 }
@@ -51,6 +56,10 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new MulticlassSoftmax(strs);
   } else if (type == std::string("multiclassova")) {
     return new MulticlassOVA(strs);
+  } else if (type == std::string("xentropy") || type == std::string("cross_entropy")) {
+    return new CrossEntropy(strs);
+  } else if (type == std::string("xentropy1")) {
+    return new CrossEntropy1(strs);
   }
   return nullptr;
 }

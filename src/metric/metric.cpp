@@ -4,6 +4,7 @@
 #include "rank_metric.hpp"
 #include "map_metric.hpp"
 #include "multiclass_metric.hpp"
+#include "xentropy_metric.hpp"
 
 namespace LightGBM {
 
@@ -34,6 +35,10 @@ Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config
     return new MultiSoftmaxLoglossMetric(config);
   } else if (type == std::string("multi_error")) {
     return new MultiErrorMetric(config);
+  } else if (type == std::string("xentropy") || type == std::string("cross_entropy")) {
+    return new CrossEntropyMetric(config);
+  } else if (type == std::string("xentropy1")) {
+    return new CrossEntropyMetric1(config);
   }
   return nullptr;
 }
