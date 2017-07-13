@@ -59,7 +59,7 @@ if [[ ${TASK} == "gpu" ]]; then
         export PATH="$AMDAPPSDK/include/:$PATH"
         export BOOST_ROOT="$HOME/miniconda/"
         LGB_VER=$(head -n 1 VERSION.txt)
-        sed -i 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' ../include/LightGBM/config.h
+        sed -i 's/const std::string kDefaultDevice = "cpu";/const std::string kDefaultDevice = "gpu";/' ../include/LightGBM/config.h
         cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
         cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu || exit -1
         cd $TRAVIS_BUILD_DIR && pytest tests/python_package_test || exit -1
@@ -73,7 +73,7 @@ if [[ ${TASK} == "mpi" ]]; then
     cmake -DUSE_MPI=ON ..
 elif [[ ${TASK} == "gpu" ]]; then
     cmake -DUSE_GPU=ON -DBOOST_ROOT="$HOME/miniconda/" -DOpenCL_INCLUDE_DIR=$AMDAPPSDK/include/ ..
-    sed -i 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' ../include/LightGBM/config.h
+    sed -i 's/const std::string kDefaultDevice = "cpu";/const std::string kDefaultDevice = "gpu";/' ../include/LightGBM/config.h
 else
     cmake ..
 fi

@@ -58,6 +58,14 @@ public:
       score_[offset + i] += val;
     }
   }
+
+  inline void MultiplyScore(double val, int cur_tree_id) {
+    int64_t offset = cur_tree_id * num_data_;
+    #pragma omp parallel for schedule(static)
+    for (int64_t i = 0; i < num_data_; ++i) {
+      score_[offset + i] *= val;
+    }
+  }
   /*!
   * \brief Using tree model to get prediction number, then adding to scores for all data
   *        Note: this function generally will be used on validation data too.

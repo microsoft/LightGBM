@@ -32,49 +32,10 @@ std::unordered_map<std::string, std::string> ConfigBase::Str2Map(const char* par
   return params;
 }
 
-void OverallConfig::Set(const std::unordered_map<std::string, std::string>& params) {
-  // load main config types
-  GetInt(params, "num_threads", &num_threads);
-  GetString(params, "convert_model_language", &convert_model_language);
-
-  // generate seeds by seed.
-  if (GetInt(params, "seed", &seed)) {
-    Random rand(seed);
-    int int_max = std::numeric_limits<short>::max();
-    io_config.data_random_seed = static_cast<int>(rand.NextShort(0, int_max));
-    boosting_config.bagging_seed = static_cast<int>(rand.NextShort(0, int_max));
-    boosting_config.drop_seed = static_cast<int>(rand.NextShort(0, int_max));
-    boosting_config.tree_config.feature_fraction_seed = static_cast<int>(rand.NextShort(0, int_max));
-  }
-  GetTaskType(params);
-  GetBoostingType(params);
-  GetObjectiveType(params);
-  GetMetricType(params);
-
-  // sub-config setup
-  network_config.Set(params);
-  io_config.Set(params);
-
-  boosting_config.Set(params);
-  objective_config.Set(params);
-  metric_config.Set(params);
-  // check for conflicts
-  CheckParamConflict();
-
-  if (io_config.verbosity == 1) {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);
-  } else if (io_config.verbosity == 0) {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Warning);
-  } else if (io_config.verbosity >= 2) {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Debug);
-  } else {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
-  }
-}
-
-void OverallConfig::GetBoostingType(const std::unordered_map<std::string, std::string>& params) {
+std::string GetBoostingType(const std::unordered_map<std::string, std::string>& params) {
   std::string value;
-  if (GetString(params, "boosting_type", &value)) {
+  std::string boosting_type = kDefaultBoostingType;
+  if (ConfigBase::GetString(params, "boosting_type", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("gbdt") || value == std::string("gbrt")) {
       boosting_type = "gbdt";
@@ -82,23 +43,29 @@ void OverallConfig::GetBoostingType(const std::unordered_map<std::string, std::s
       boosting_type = "dart";
     } else if (value == std::string("goss")) {
       boosting_type = "goss";
+    } else if (value == std::string("rf") || value == std::string("randomforest")) {
+      boosting_type = "rf";
     } else {
       Log::Fatal("Unknown boosting type %s", value.c_str());
     }
   }
+  return boosting_type;
 }
 
-void OverallConfig::GetObjectiveType(const std::unordered_map<std::string, std::string>& params) {
+std::string GetObjectiveType(const std::unordered_map<std::string, std::string>& params) {
   std::string value;
-  if (GetString(params, "objective", &value)) {
+  std::string objective_type = kDefaultObjectiveType;
+  if (ConfigBase::GetString(params, "objective", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     objective_type = value;
   }
+  return objective_type;
 }
 
-void OverallConfig::GetMetricType(const std::unordered_map<std::string, std::string>& params) {
+std::vector<std::string> GetMetricType(const std::unordered_map<std::string, std::string>& params) {
   std::string value;
-  if (GetString(params, "metric", &value)) {
+  std::vector<std::string> metric_types;
+  if (ConfigBase::GetString(params, "metric", &value)) {
     // clear old metrics
     metric_types.clear();
     // to lower
@@ -118,17 +85,18 @@ void OverallConfig::GetMetricType(const std::unordered_map<std::string, std::str
     }
     metric_types.shrink_to_fit();
   }
+  return metric_types;
 }
 
-
-void OverallConfig::GetTaskType(const std::unordered_map<std::string, std::string>& params) {
+TaskType GetTaskType(const std::unordered_map<std::string, std::string>& params) {
   std::string value;
-  if (GetString(params, "task", &value)) {
+  TaskType task_type = TaskType::kTrain;
+  if (ConfigBase::GetString(params, "task", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("train") || value == std::string("training")) {
       task_type = TaskType::kTrain;
     } else if (value == std::string("predict") || value == std::string("prediction")
-      || value == std::string("test")) {
+               || value == std::string("test")) {
       task_type = TaskType::kPredict;
     } else if (value == std::string("convert_model")) {
       task_type = TaskType::kConvertModel;
@@ -136,10 +104,88 @@ void OverallConfig::GetTaskType(const std::unordered_map<std::string, std::strin
       Log::Fatal("Unknown task type %s", value.c_str());
     }
   }
+  return task_type;
+}
+
+std::string GetDeviceType(const std::unordered_map<std::string, std::string>& params) {
+  std::string value;
+  std::string device_type = kDefaultDevice;
+  if (ConfigBase::GetString(params, "device", &value)) {
+    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
+    if (value == std::string("cpu")) {
+      device_type = "cpu";
+    } else if (value == std::string("gpu")) {
+      device_type = "gpu";
+    } else {
+      Log::Fatal("Unknown device type %s", value.c_str());
+    }
+  }
+  return device_type;
+}
+
+std::string GetTreeLearnerType(const std::unordered_map<std::string, std::string>& params) {
+  std::string value;
+  std::string tree_learner_type = kDefaultTreeLearnerType;
+  if (ConfigBase::GetString(params, "tree_learner", &value)) {
+    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
+    if (value == std::string("serial")) {
+      tree_learner_type = "serial";
+    } else if (value == std::string("feature") || value == std::string("feature_parallel")) {
+      tree_learner_type = "feature";
+    } else if (value == std::string("data") || value == std::string("data_parallel")) {
+      tree_learner_type = "data";
+    } else if (value == std::string("voting") || value == std::string("voting_parallel")) {
+      tree_learner_type = "voting";
+    } else {
+      Log::Fatal("Unknown tree learner type %s", value.c_str());
+    }
+  }
+  return tree_learner_type;
+}
+
+void OverallConfig::Set(const std::unordered_map<std::string, std::string>& params) {
+  // load main config types
+  GetInt(params, "num_threads", &num_threads);
+  GetString(params, "convert_model_language", &convert_model_language);
+
+  // generate seeds by seed.
+  if (GetInt(params, "seed", &seed)) {
+    Random rand(seed);
+    int int_max = std::numeric_limits<short>::max();
+    io_config.data_random_seed = static_cast<int>(rand.NextShort(0, int_max));
+    boosting_config.bagging_seed = static_cast<int>(rand.NextShort(0, int_max));
+    boosting_config.drop_seed = static_cast<int>(rand.NextShort(0, int_max));
+    boosting_config.tree_config.feature_fraction_seed = static_cast<int>(rand.NextShort(0, int_max));
+  }
+  task_type = GetTaskType(params);
+  boosting_type = GetBoostingType(params);
+
+  metric_types = GetMetricType(params);
+
+  // sub-config setup
+  network_config.Set(params);
+  io_config.Set(params);
+
+  boosting_config.Set(params);
+  objective_type = GetObjectiveType(params);
+  objective_config.Set(params);
+  metric_config.Set(params);
+
+  // check for conflicts
+  CheckParamConflict();
+
+  if (io_config.verbosity == 1) {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);
+  } else if (io_config.verbosity == 0) {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Warning);
+  } else if (io_config.verbosity >= 2) {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Debug);
+  } else {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
+  }
 }
 
 void OverallConfig::CheckParamConflict() {
-
   // check if objective_type, metric_type, and num_class match
   bool objective_type_multiclass = (objective_type == std::string("multiclass") 
                                     || objective_type == std::string("multiclassova"));
@@ -163,7 +209,7 @@ void OverallConfig::CheckParamConflict() {
       }
     }
   }
-
+  
   if (network_config.num_machines > 1) {
     is_parallel = true;
   } else {
@@ -171,13 +217,14 @@ void OverallConfig::CheckParamConflict() {
     boosting_config.tree_learner_type = "serial";
   }
 
-  if (boosting_config.tree_learner_type == std::string("serial")) {
+  bool is_single_tree_learner = boosting_config.tree_learner_type == std::string("serial");
+
+  if (is_single_tree_learner) {
     is_parallel = false;
     network_config.num_machines = 1;
   }
 
-  if (boosting_config.tree_learner_type == std::string("serial") 
-      || boosting_config.tree_learner_type == std::string("feature")) {
+  if (is_single_tree_learner || boosting_config.tree_learner_type == std::string("feature")) {
     is_parallel_find_bin = false;
   } else if (boosting_config.tree_learner_type == std::string("data")
              || boosting_config.tree_learner_type == std::string("voting")) {
@@ -189,7 +236,6 @@ void OverallConfig::CheckParamConflict() {
       // Change pool size to -1 (no limit) when using data parallel to reduce communication costs
       boosting_config.tree_config.histogram_pool_size = -1;
     }
-
   }
 }
 
@@ -235,21 +281,7 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "pred_early_stop_freq", &pred_early_stop_freq);
   GetDouble(params, "pred_early_stop_margin", &pred_early_stop_margin);
 
-  GetDeviceType(params);
-}
-
-void IOConfig::GetDeviceType(const std::unordered_map<std::string, std::string>& params) {
-  std::string value;
-  if (GetString(params, "device", &value)) {
-    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
-    if (value == std::string("cpu")) {
-      device_type = "cpu";
-    } else if (value == std::string("gpu")) {
-      device_type = "gpu";
-    } else {
-      Log::Fatal("Unknown device type %s", value.c_str());
-    }
-  }
+  device_type = GetDeviceType(params);
 }
 
 void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& params) {
@@ -336,7 +368,6 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   GetBool(params, "use_missing", &use_missing);
 }
 
-
 void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "num_iterations", &num_iterations);
   GetDouble(params, "sigmoid", &sigmoid);
@@ -365,42 +396,12 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   GetBool(params, "boost_from_average", &boost_from_average);
   CHECK(drop_rate <= 1.0 && drop_rate >= 0.0);
   CHECK(skip_drop <= 1.0 && skip_drop >= 0.0);
-  GetDeviceType(params);
-  GetTreeLearnerType(params);
+  device_type = GetDeviceType(params);
+  tree_learner_type = GetTreeLearnerType(params);
   tree_config.Set(params);
 }
 
-void BoostingConfig::GetTreeLearnerType(const std::unordered_map<std::string, std::string>& params) {
-  std::string value;
-  if (GetString(params, "tree_learner", &value)) {
-    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
-    if (value == std::string("serial")) {
-      tree_learner_type = "serial";
-    } else if (value == std::string("feature") || value == std::string("feature_parallel")) {
-      tree_learner_type = "feature";
-    } else if (value == std::string("data") || value == std::string("data_parallel")) {
-      tree_learner_type = "data";
-    } else if (value == std::string("voting") || value == std::string("voting_parallel")) {
-      tree_learner_type = "voting";
-    } else {
-      Log::Fatal("Unknown tree learner type %s", value.c_str());
-    }
-  }
-}
 
-void BoostingConfig::GetDeviceType(const std::unordered_map<std::string, std::string>& params) {
-  std::string value;
-  if (GetString(params, "device", &value)) {
-    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
-    if (value == std::string("cpu")) {
-      device_type = "cpu";
-    } else if (value == std::string("gpu")) {
-      device_type = "gpu";
-    } else {
-      Log::Fatal("Unknown device type %s", value.c_str());
-    }
-  }
-}
 
 void NetworkConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "num_machines", &num_machines);

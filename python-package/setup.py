@@ -43,6 +43,7 @@ def copy_files(use_gpu=False):
         if use_gpu:
             copy_files_helper('compute')
         distutils.file_util.copy_file("../CMakeLists.txt", "./lightgbm/")
+        distutils.file_util.copy_file("../LICENSE", "./")
 
 
 def compile_cpp(use_mingw=False, use_gpu=False):

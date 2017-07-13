@@ -28,7 +28,11 @@ void GBDT::PredictRaw(const double* features, double* output, const PredictionEa
 
 void GBDT::Predict(const double* features, double* output, const PredictionEarlyStopInstance* early_stop) const {
   PredictRaw(features, output, early_stop);
-  if (objective_function_ != nullptr) {
+  if (average_output_) {
+    for (int k = 0; k < num_tree_per_iteration_; ++k) {
+      output[k] /= num_iteration_for_pred_;
+    }
+  } else if (objective_function_ != nullptr) {
     objective_function_->ConvertOutput(output, output);
   }
 }

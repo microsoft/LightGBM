@@ -1,4 +1,5 @@
 prune build
+include LICENSE
 include *.rst *.txt
 recursive-include lightgbm *.py *.txt *.so
 recursive-include lightgbm/Release *.dll

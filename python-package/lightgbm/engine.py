@@ -19,7 +19,8 @@ def train(params, train_set, num_boost_round=100,
           fobj=None, feval=None, init_model=None,
           feature_name='auto', categorical_feature='auto',
           early_stopping_rounds=None, evals_result=None,
-          verbose_eval=True, learning_rates=None, callbacks=None):
+          verbose_eval=True, learning_rates=None,
+          keep_training_booster=False, callbacks=None):
     """
     Train with given parameters.
 
@@ -80,6 +81,10 @@ def train(params, train_set, num_boost_round=100,
         in terms of current number of round (e.g. yields learning rate decay)
         - list l: learning_rate = l[current_round]
         - function f: learning_rate = f(current_round)
+    keep_training_booster : boolean
+        Whether the return booster will be used to keep training.
+        If false, will convert into _InnerPredictor before return.
+        You can still use _InnerPredictor as init_model for future continue training.
     callbacks : list of callback functions
         List of callback functions that are applied at each iteration.
         See Callbacks in Python-API.md for more information.
@@ -200,6 +205,9 @@ def train(params, train_set, num_boost_round=100,
     booster.best_score = collections.defaultdict(dict)
     for dataset_name, eval_name, score, _ in evaluation_result_list:
         booster.best_score[dataset_name][eval_name] = score
+    if not keep_training_booster:
+        booster._load_model_from_string(booster._save_model_to_string())
+        booster.free_dataset()
     return booster
 
 

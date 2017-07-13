@@ -1,5 +1,7 @@
 LightGBM, Light Gradient Boosting Machine
 =========================================
+
+[![Join the chat at https://gitter.im/Microsoft/LightGBM](https://badges.gitter.im/Microsoft/LightGBM.svg)](https://gitter.im/Microsoft/LightGBM?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/Microsoft/LightGBM.svg?branch=master)](https://travis-ci.org/Microsoft/LightGBM)
 [![GitHub
 Issues](https://img.shields.io/github/issues/Microsoft/LightGBM.svg)](https://github.com/Microsoft/LightGBM/issues)
@@ -21,6 +23,7 @@ For more details, please refer to [Features](https://github.com/Microsoft/LightG
 
 News
 ----
+07/13/2017: [Gitter](https://gitter.im/Microsoft/LightGBM) is avaiable.
 
 06/20/2017: Python-package is on PyPI now.
 
@@ -28,7 +31,7 @@ News
 
 05/03/2017: LightGBM v2 stable release.
 
-04/10/2017 : LightGBM now supports GPU-accelerated tree learning. Please read our [GPU Tutorial](./docs/GPU-Tutorial.md) and [Performance Comparison](./docs/GPU-Performance.md).
+04/10/2017 : LightGBM supports GPU-accelerated tree learning now. Please read our [GPU Tutorial](./docs/GPU-Tutorial.md) and [Performance Comparison](./docs/GPU-Performance.md).
 
 02/20/2017 : Update to LightGBM v2.
 
@@ -75,8 +78,8 @@ Support
 
 You can ask questions and join the development discussion on:
 
-* [LightGBM Slack team](https://lightgbm.slack.com).
-  * Use [this invite link](https://join.slack.com/lightgbm/shared_invite/MTk1MjM1Mjg2NDA1LTE0OTY5NzMwNDgtYTRiZGQ5YzM3OQ) to join the team.
+* [LightGBM Gitter](https://gitter.im/Microsoft/LightGBM).
+
 
 You can also create **bug reports and feature requests** (not including questions) in [Github issues](https://github.com/Microsoft/LightGBM/issues).
 
