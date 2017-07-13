@@ -20,7 +20,7 @@ The default compiler is Visual Studio (or [MS Build](https://www.visualstudio.co
 
 To force the usage of Rtools / MinGW, you can set `use_mingw` to `TRUE` in `R-package/src/install.libs.R`.
 
-For users who wants to install online with GPU, please check the end of this document for installation using a helper package ([Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/)).
+For users who wants to install online with GPU or want to choose a specific compiler, please check the end of this document for installation using a helper package ([Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/)).
 
 It is recommended to use *Visual Studio* for its better multi-threading efficency in Windows for many core systems. For very simple systems (dual core computers or worse), MinGW64 is recommended for maximum performance. If you do not know what to choose, it is recommended to use [Visual Studio](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017), the default compiler.
 
@@ -113,10 +113,11 @@ lgb.dl(commit = "master",
        repo = "https://github.com/Microsoft/LightGBM")
 ```
 
-You may also install online using a LightGBM with proper GPU support using the following from R:
+You may also install online using a LightGBM with proper GPU support using Visual Studio (as an example here) using the following from R:
 
 ```r
 lgb.dl(commit = "master",
+       compiler = "vs", # Remove this for MinGW + GPU installation
        repo = "https://github.com/Microsoft/LightGBM",
        use_gpu = TRUE)
 ```
