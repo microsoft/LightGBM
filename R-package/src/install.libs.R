@@ -42,19 +42,28 @@ if (!use_precompile) {
   setwd(build_dir)
   
   # Prepare installation steps
-  cmake_cmd <- "cmake "
-  build_cmd <- "make _lightgbm -j4"
+  cmake_base <- "cmake "
+  build_cmd <- "make _lightgbm -j"
   lib_folder <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
   
   # Check if Windows installation (for gcc vs Visual Studio)
   if (WINDOWS) {
     if (use_mingw) {
-      cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ")
-      build_cmd <- "mingw32-make.exe _lightgbm -j4"
+      cmake_cmd <- paste0(cmake_base, " -G \"MinGW Makefiles\" ")
+      build_cmd <- "mingw32-make.exe _lightgbm -j"
+      system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
     } else {
-      cmake_cmd <- paste0(cmake_cmd, " -DCMAKE_GENERATOR_PLATFORM=x64 ")
-      build_cmd <- "cmake --build . --target _lightgbm  --config Release"
-      lib_folder <- file.path(R_PACKAGE_SOURCE, "src/Release", fsep = "/")
+      cmake_cmd <- paste0(cmake_base, " -DCMAKE_GENERATOR_PLATFORM=x64 ")
+      tryVS <- system(paste0(cmake_cmd, " .."))
+      if (tryVS == 1) {
+        unlink("./*", recursive = TRUE) # Clean up build directory
+        cmake_cmd <- paste0(cmake_base, " -G \"MinGW Makefiles\" ") # Switch to MinGW on failure, try build once
+        system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
+        build_cmd <- "mingw32-make.exe _lightgbm -j"
+      } else {
+        build_cmd <- "cmake --build . --target _lightgbm  --config Release"
+        lib_folder <- file.path(R_PACKAGE_SOURCE, "src/Release", fsep = "/")
+      }
     }
   }
   

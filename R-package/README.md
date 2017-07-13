@@ -14,18 +14,22 @@ Note: 32-bit R/Rtools is not supported.
 
 Installing [Rtools](https://cran.r-project.org/bin/windows/Rtools/) is mandatory, and only support the 64-bit version.
 
-[cmake](https://cmake.org/) must be version 3.8 or higher. 
+[cmake](https://cmake.org/) must be version 3.8 or higher.
 
-The default compiler is Visual Studio (or [MS Build](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017)) in Windows. You also can use [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) to compile by setting `use_mingw` to `TRUE` in `R-package/src/install.libs.R`. For MinGW users who wants to install online, please check the end of this document for installation using a helper package ([Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/)).
+The default compiler is Visual Studio (or [MS Build](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017)) in Windows, with an automatic fallback to Rtools or any [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) available (this means if you have only Rtools and cmake, it will compile fine).
 
-It is recommended to use *Visual Studio* for its better multi-threading efficency in Windows for many core systems. For very simple systems (dual core computers or worse), MinGW64 is recommended for maximum performance. If you do not know what to choose, it is recommended to use [Visual Studio](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017).
+To force the usage of Rtools / MinGW, you can set `use_mingw` to `TRUE` in `R-package/src/install.libs.R`.
+
+For users who wants to install online with GPU or want to choose a specific compiler, please check the end of this document for installation using a helper package ([Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/)).
+
+It is recommended to use *Visual Studio* for its better multi-threading efficency in Windows for many core systems. For very simple systems (dual core computers or worse), MinGW64 is recommended for maximum performance. If you do not know what to choose, it is recommended to use [Visual Studio](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017), the default compiler.
 
 #### Mac OS X Preparation
 
-Gcc with OpenMP support must be installed first. Refer to [wiki](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#osx) for installing gcc with OpenMP support.
-
+gcc with OpenMP support must be installed first. Refer to [wiki](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#osx) for installing gcc with OpenMP support.
 
 ### Install
+
 Install LightGBM R-package with the following command:
 
 ```sh
@@ -53,7 +57,7 @@ You can also install directly from R using the repository with `devtools`:
 
 ```r
 library(devtools)
-options(devtools.install.args = "--no-multiarch")   
+options(devtools.install.args = "--no-multiarch") # if you have 64-bit R only, you can skip this
 install_github("Microsoft/LightGBM", subdir = "R-package")
 ```
 
@@ -93,13 +97,12 @@ In addition, if you are using a Visual Studio precompiled DLL, assuming you do n
 
 Once you have all this setup, you can use `lgb.dl` from `lgbdl` package to install LightGBM from repository.
 
-For instance, you can install the R package from LightGBM master commit of GitHub using the following from R:
+For instance, you can install the R package from LightGBM master commit of GitHub with Visual Studio using the following from R:
 
 ```r
 lgb.dl(commit = "master",
-       compiler = "gcc",
-       repo = "https://github.com/Microsoft/LightGBM",
-       cores = 4)
+       compiler = "vs",
+       repo = "https://github.com/Microsoft/LightGBM")
 ```
 
 You may also install using a precompiled dll/lib using the following from R:
@@ -108,6 +111,15 @@ You may also install using a precompiled dll/lib using the following from R:
 lgb.dl(commit = "master",
        libdll = "C:\\LightGBM\\windows\\x64\\DLL\\lib_lightgbm.dll", # YOUR PRECOMPILED DLL
        repo = "https://github.com/Microsoft/LightGBM")
+```
+
+You may also install online using a LightGBM with proper GPU support using Visual Studio (as an example here) using the following from R:
+
+```r
+lgb.dl(commit = "master",
+       compiler = "vs", # Remove this for MinGW + GPU installation
+       repo = "https://github.com/Microsoft/LightGBM",
+       use_gpu = TRUE)
 ```
 
 For more details about options, please check [Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/) R-package.
