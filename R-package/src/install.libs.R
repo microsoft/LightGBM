@@ -1,7 +1,7 @@
 # User options
 use_precompile <- FALSE
 use_gpu <- FALSE
-use_mingw <- TRUE
+use_mingw <- FALSE
 
 if (.Machine$sizeof.pointer != 8){
   stop("Only support 64-bit R, please check your the version of your R and Rtools.")
@@ -42,18 +42,24 @@ if (!use_precompile) {
   setwd(build_dir)
   
   # Prepare installation steps
-  cmake_cmd <- "cmake "
+  cmake_base <- "cmake "
   build_cmd <- "make _lightgbm -j"
   lib_folder <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
   
   # Check if Windows installation (for gcc vs Visual Studio)
   if (WINDOWS) {
     if (use_mingw) {
-      cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ")
+      cmake_cmd <- paste0(cmake_base, " -G \"MinGW Makefiles\" ")
       build_cmd <- "mingw32-make.exe _lightgbm -j"
       system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
     } else {
-      cmake_cmd <- paste0(cmake_cmd, " -DCMAKE_GENERATOR_PLATFORM=x64 ")
+      cmake_cmd <- paste0(cmake_base, " -DCMAKE_GENERATOR_PLATFORM=x64 ")
+      tryVS <- system(paste0(cmake_cmd, " .."), intern = TRUE)
+      cat(tryVS, "\n", sep = "") # try building with Visual Studio
+      if (regexpr("(does not support platform specification, but platform)", tryVS) != -1) {
+        cmake_cmd <- paste0(cmake_base, " -G \"MinGW Makefiles\" ") # Switch to MinGW on failure, try build once
+        system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
+      }
       build_cmd <- "cmake --build . --target _lightgbm  --config Release"
       lib_folder <- file.path(R_PACKAGE_SOURCE, "src/Release", fsep = "/")
     }
