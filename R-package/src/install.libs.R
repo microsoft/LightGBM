@@ -56,7 +56,7 @@ if (!use_precompile) {
       cmake_cmd <- paste0(cmake_base, " -DCMAKE_GENERATOR_PLATFORM=x64 ")
       tryVS <- system(paste0(cmake_cmd, " .."))
       if (tryVS == 1) {
-        system("rm -rf .")
+        unlink("./*", recursive = TRUE) # Clean up build directory
         cmake_cmd <- paste0(cmake_base, " -G \"MinGW Makefiles\" ") # Switch to MinGW on failure, try build once
         system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
       }
