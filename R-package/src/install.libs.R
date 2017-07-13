@@ -59,9 +59,11 @@ if (!use_precompile) {
         unlink("./*", recursive = TRUE) # Clean up build directory
         cmake_cmd <- paste0(cmake_base, " -G \"MinGW Makefiles\" ") # Switch to MinGW on failure, try build once
         system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
+        build_cmd <- "mingw32-make.exe _lightgbm -j"
+      } else {
+        build_cmd <- "cmake --build . --target _lightgbm  --config Release"
+        lib_folder <- file.path(R_PACKAGE_SOURCE, "src/Release", fsep = "/")
       }
-      build_cmd <- "cmake --build . --target _lightgbm  --config Release"
-      lib_folder <- file.path(R_PACKAGE_SOURCE, "src/Release", fsep = "/")
     }
   }
   
