@@ -54,9 +54,8 @@ if (!use_precompile) {
       system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
     } else {
       cmake_cmd <- paste0(cmake_base, " -DCMAKE_GENERATOR_PLATFORM=x64 ")
-      tryVS <- system(paste0(cmake_cmd, " .."), intern = TRUE)
-      cat(tryVS, "\n", sep = "") # try building with Visual Studio
-      if (regexpr("(does not support platform specification, but platform)", tryVS) != -1) {
+      tryVS <- system(paste0(cmake_cmd, " .."))
+      if (tryVS == 1) {
         cmake_cmd <- paste0(cmake_base, " -G \"MinGW Makefiles\" ") # Switch to MinGW on failure, try build once
         system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
       }
