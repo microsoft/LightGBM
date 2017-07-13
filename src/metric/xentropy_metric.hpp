@@ -172,20 +172,20 @@ public:
 
     // ensure that labels are in interval [0, 1], interval ends included
     if (label_ == nullptr) {
-       Log::Fatal("[%s]: label nullptr", __PRETTY_FUNCTION__);
+       Log::Fatal("[%s : %d]: label nullptr", __FILE__, __LINE__);
     }
     for (data_size_t i = 0; i < num_data; ++i) {
       if (label_[i] < 0.0f || label_[i] > 1.0f) {
-        Log::Fatal("[%s]: metric does not tolerate label [#%i] outside [0, 1]", __PRETTY_FUNCTION__, i);
+        Log::Fatal("[%s]: does not tolerate label [#%i] outside [0, 1]", GetName()[0].c_str(), i);
       }
     }
-    Log::Info("[%s:%s:metric]: labels passed interval [0, 1] check",  GetName()[0].c_str(), __func__);
+    Log::Info("[%s:metric]: labels passed interval [0, 1] check",  GetName()[0].c_str());
 
     // check all weights are strictly positive; throw error if not
     if (weights_ != nullptr) {
       for (data_size_t i = 0; i < num_data; ++i) {
         if (weights_[i] <= 0) {
-          Log::Fatal("[%s]: weight [#%i] required to be positive", __PRETTY_FUNCTION__, i);
+          Log::Fatal("[%s : %d]: weight [#%i] required to be positive", __FILE__, __LINE__, i);
         }
       }
     } else {
@@ -301,12 +301,12 @@ public:
     // evaluate offset term
     presum_label_entropy_ = 0.0f;
     if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static) reduction(+:presum_label_entropy_)
+    //  #pragma omp parallel for schedule(static) reduction(+:presum_label_entropy_)
       for (data_size_t i = 0; i < num_data; ++i) {
         presum_label_entropy_ += YentLoss(label_[i]);
       }
     } else {
-      #pragma omp parallel for schedule(static) reduction(+:presum_label_entropy_)
+    //  #pragma omp parallel for schedule(static) reduction(+:presum_label_entropy_)
       for (data_size_t i = 0; i < num_data; ++i) {
         presum_label_entropy_ += YentLoss(label_[i]) * weights_[i];
       }
