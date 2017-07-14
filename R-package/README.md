@@ -14,8 +14,6 @@ Note: 32-bit R/Rtools is not supported.
 
 Installing [Rtools](https://cran.r-project.org/bin/windows/Rtools/) is mandatory, and only support the 64-bit version.
 
-[cmake](https://cmake.org/) must be version 3.8 or higher.
-
 The default compiler is Visual Studio (or [MS Build](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017)) in Windows, with an automatic fallback to Rtools or any [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) available (this means if you have only Rtools and cmake, it will compile fine).
 
 To force the usage of Rtools / MinGW, you can set `use_mingw` to `TRUE` in `R-package/src/install.libs.R`.
@@ -44,7 +42,7 @@ Or build a self-contained R package which can be installed afterwards:
 git clone --recursive https://github.com/Microsoft/LightGBM
 cd LightGBM/R-package
 Rscript build_package.R
-R CMD INSTALL lightgbm_2.0.2.tar.gz --no-multiarch
+R CMD INSTALL lightgbm_2.0.4.tar.gz --no-multiarch
 ``` 
 
 Note: for the build with Visual Studio/MSBuild in Windows, you should use the Windows CMD or Powershell.

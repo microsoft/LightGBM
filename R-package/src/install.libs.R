@@ -18,18 +18,16 @@ if (!use_precompile) {
     unlink("./include", recursive = TRUE)
     unlink("./src", recursive = TRUE)
     unlink("./compute", recursive = TRUE)
-	unlink("./build", recursive = TRUE)
+    unlink("./build", recursive = TRUE)
     if (!file.copy("./../../include", "./", overwrite = TRUE, recursive = TRUE)) {
       stop("Cannot find folder LightGBM/include")
     }
     if (!file.copy("./../../src", "./", overwrite = TRUE, recursive = TRUE)) {
       stop("Cannot find folder LightGBM/src")
     }
-    if (use_gpu) {
-      if (!file.copy("./../../compute", "./", overwrite = TRUE, recursive = TRUE)) {
-        print("Cannot find folder LightGBM/compute, disabling GPU build.")
-        use_gpu <- FALSE
-      }
+    if (!file.copy("./../../compute", "./", overwrite = TRUE, recursive = TRUE)) {
+      print("Cannot find folder LightGBM/compute, disabling GPU build.")
+      use_gpu <- FALSE
     }
     if (!file.copy("./../../CMakeLists.txt", "./", overwrite = TRUE, recursive = TRUE)) {
       stop("Cannot find file LightGBM/CMakeLists.txt")
@@ -42,33 +40,44 @@ if (!use_precompile) {
   setwd(build_dir)
   
   # Prepare installation steps
-  cmake_base <- "cmake "
+  cmake_cmd <- "cmake "
   build_cmd <- "make _lightgbm -j"
   lib_folder <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
   
+  if (use_gpu) {
+    cmake_cmd <- paste0(cmake_cmd, " -DUSE_GPU=ON ")
+  }
+
   # Check if Windows installation (for gcc vs Visual Studio)
   if (WINDOWS) {
     if (use_mingw) {
-      cmake_cmd <- paste0(cmake_base, " -G \"MinGW Makefiles\" ")
+      cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ")
       build_cmd <- "mingw32-make.exe _lightgbm -j"
       system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
     } else {
-      cmake_cmd <- paste0(cmake_base, " -DCMAKE_GENERATOR_PLATFORM=x64 ")
-      tryVS <- system(paste0(cmake_cmd, " .."))
-      if (tryVS == 1) {
+      try_vs <- 0
+      local_vs_def <- ""
+      vs_versions <- c("Visual Studio 15 2017 Win64", "Visual Studio 14 2015 Win64", "Visual Studio 12 2013 Win64")
+      for(vs in vs_versions){
+        vs_def <- paste0(" -G \"", vs, "\"")
+        tmp_cmake_cmd <- paste0(cmake_cmd, vs_def)
+        try_vs <- system(paste0(tmp_cmake_cmd, " .."))
         unlink("./*", recursive = TRUE) # Clean up build directory
-        cmake_cmd <- paste0(cmake_base, " -G \"MinGW Makefiles\" ") # Switch to MinGW on failure, try build once
+        if (try_vs == 0) {
+          local_vs_def = vs_def
+          break
+        }
+      }
+      if (try_vs == 1) {
+        cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ") # Switch to MinGW on failure, try build once
         system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
         build_cmd <- "mingw32-make.exe _lightgbm -j"
       } else {
+        cmake_cmd <- paste0(cmake_cmd, local_vs_def)
         build_cmd <- "cmake --build . --target _lightgbm  --config Release"
         lib_folder <- file.path(R_PACKAGE_SOURCE, "src/Release", fsep = "/")
       }
     }
-  }
-  
-  if (use_gpu) {
-    cmake_cmd <- paste0(cmake_cmd, " -DUSE_GPU=ON ")
   }
   
   # Install
