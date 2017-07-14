@@ -58,10 +58,10 @@ def clear_path(path):
 
 def compile_cpp(use_mingw=False, use_gpu=False):
 
-    if os.path.exists("build"):
-        shutil.rmtree("build")
-    os.makedirs("build")
-    os.chdir("build")
+    if os.path.exists("build_cpp"):
+        shutil.rmtree("build_cpp")
+    os.makedirs("build_cpp")
+    os.chdir("build_cpp")
 
     cmake_cmd = "cmake "
     build_cmd = "make _lightgbm"
