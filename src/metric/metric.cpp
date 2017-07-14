@@ -37,8 +37,8 @@ Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config
     return new MultiErrorMetric(config);
   } else if (type == std::string("xentropy") || type == std::string("cross_entropy")) {
     return new CrossEntropyMetric(config);
-  } else if (type == std::string("xentropy1")) {
-    return new CrossEntropyMetric1(config);
+  } else if (type == std::string("xentlambda")) {
+    return new CrossEntropyLambdaMetric(config);
   } else if (type == std::string("kldiv") || type == std::string("kullback_leibler")) {
     return new KullbackLeiblerDivergence(config);
   }

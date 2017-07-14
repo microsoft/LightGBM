@@ -6,6 +6,28 @@
 #include <cstring>
 #include <cmath>
 
+/*
+ * Implements gradients and hessians for the following point losses.
+ * Target y is anything in interval [0, 1].
+ *
+ * (1) CrossEntropy; "xentropy";
+ * 
+ * loss(y, p, w) = { -(1-y)*log(1-p)-y*log(p) }*w,
+ * with probability p = 1/(1+exp(-f)), where f is being boosted
+ *
+ * ConvertToOutput: f -> p
+ *
+ * (2) CrossEntropyLambda; "xentlambda"
+ *
+ * loss(y, p, w) = -(1-y)*log(1-p)-y*log(p), 
+ * with p = 1-exp(-lambda*w), lambda = log(1+exp(f)), f being boosted, and w > 0
+ *
+ * ConvertToOutput: f -> lambda
+ *
+ * (1) and (2) are the same if w=1; but outputs still differ.
+ *
+ */
+
 namespace LightGBM {
 /*!
 * \brief Objective function for cross-entropy (with optional linear weights)
@@ -75,6 +97,7 @@ public:
     return "xentropy";
   }
 
+  // convert score to a probability
   void ConvertOutput(const double* input, double* output) const override {
     output[0] = 1.0f / (1.0f + std::exp(-input[0]));
   }
@@ -97,18 +120,18 @@ private:
 };
 
 /*!
-* \brief Objective function for 1st variant of cross-entropy (with optional "nonlinear" weights)
+* \brief Objective function for alternative parameterization of cross-entropy (see top of file for explanation)
 */
-class CrossEntropy1: public ObjectiveFunction {
+class CrossEntropyLambda: public ObjectiveFunction {
 public:
-  explicit CrossEntropy1(const ObjectiveConfig&) {
+  explicit CrossEntropyLambda(const ObjectiveConfig&) {
     min_weight_ = max_weight_ = 0.0f;
   }
 
-  explicit CrossEntropy1(const std::vector<std::string>&) {
+  explicit CrossEntropyLambda(const std::vector<std::string>&) {
   }
 
-  ~CrossEntropy1() {}
+  ~CrossEntropyLambda() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
     num_data_ = num_data;
@@ -174,18 +197,19 @@ public:
   }
 
   const char* GetName() const override {
-    return "xentropy1";
+    return "xentlambda";
   }
 
-  // ATTENTION: this is NOT the true probability conversion for a point (unless all weights=1).
-  // Let output from this member be z; then prob(z) = 1-(1-z)^w is the probability for a point with weight w>0.
-  // But this member has no access to w; so this has to be done in the associated metric class.
+  //
+  // ATTENTION: the function output is the "normalized exponential parameter" lambda > 0, not the probability
+  //
+  // If this code would read: output[0] = 1.0f / (1.0f + std::exp(-input[0]));
+  // The output would still not be the probability unless the weights are unity.
+  //
+  // Let z = 1 / (1 + exp(-f)), then prob(z) = 1-(1-z)^w, where w is the weight for the specific point.
+  //
 
-  //
-  // ATTENTION: the function output is the "normalized exponential parameter" > 0, not the probability
-  //
   void ConvertOutput(const double* input, double* output) const override {
-  //  output[0] = 1.0f / (1.0f + std::exp(-input[0]));
     output[0] = std::log(1.0f + std::exp(input[0]));
   }
 
@@ -195,7 +219,7 @@ public:
     return str_buf.str();
   }
 
-  // TODO: default boost from different (weighted) average; not quite the same ...
+  // TODO: default boost from different (weighted) average ?; not quite the same ...
   bool BoostFromAverage() const override { return true; }
 
 private:

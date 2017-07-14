@@ -29,8 +29,8 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new MulticlassOVA(config);
   } else if (type == std::string("xentropy") || type == std::string("cross_entropy")) {
     return new CrossEntropy(config);
-  } else if (type == std::string("xentropy1")) {
-    return new CrossEntropy1(config);
+  } else if (type == std::string("xentlambda") || type == std::string("cross_entropy_lambda")) {
+    return new CrossEntropyLambda(config);
   }
   return nullptr;
 }
@@ -58,8 +58,8 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new MulticlassOVA(strs);
   } else if (type == std::string("xentropy") || type == std::string("cross_entropy")) {
     return new CrossEntropy(strs);
-  } else if (type == std::string("xentropy1")) {
-    return new CrossEntropy1(strs);
+  } else if (type == std::string("xentlambda") || type == std::string("cross_entropy_lambda")) {
+    return new CrossEntropyLambda(strs);
   }
   return nullptr;
 }

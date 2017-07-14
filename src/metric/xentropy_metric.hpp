@@ -19,6 +19,8 @@
  *
  * (3) adds an offset term to (1); the entropy of the label
  *
+ * See xentropy_objective.hpp for further details.
+ *
  */
 
 namespace LightGBM {
@@ -157,15 +159,16 @@ private:
 };
 
 //
-// CrossEntropyMetric1 : "xentropy1" : (optional) weights have a different meaning than for "xentropy"
+// CrossEntropyLambdaMetric : "xentlambda" : (optional) weights have a different meaning than for "xentropy"
+// ATTENTION: Supposed to be used when the objective also is "xentlambda"
 //
-class CrossEntropyMetric1 : public Metric {
+class CrossEntropyLambdaMetric : public Metric {
 public:
-  explicit CrossEntropyMetric1(const MetricConfig&) {}
-  virtual ~CrossEntropyMetric1() {}
+  explicit CrossEntropyLambdaMetric(const MetricConfig&) {}
+  virtual ~CrossEntropyLambdaMetric() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
-    name_.emplace_back("xentropy1");
+    name_.emplace_back("xentlambda");
     num_data_ = num_data;
     label_ = metadata.label();
     weights_ = metadata.weights();
@@ -217,14 +220,14 @@ public:
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double hhat = 0;
-          objective->ConvertOutput(&score[i], &hhat); // NOTE: this only works if objective = "xentropy1"
+          objective->ConvertOutput(&score[i], &hhat); // NOTE: this only works if objective = "xentlambda"
           sum_loss += XentLoss1(label_[i], 1.0f, hhat);
         }
       } else {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double hhat = 0;
-          objective->ConvertOutput(&score[i], &hhat); // NOTE: this only works if objective = "xentropy1"
+          objective->ConvertOutput(&score[i], &hhat); // NOTE: this only works if objective = "xentlambda"
           sum_loss += XentLoss1(label_[i], weights_[i], hhat);
         }
       }
@@ -301,12 +304,12 @@ public:
     // evaluate offset term
     presum_label_entropy_ = 0.0f;
     if (weights_ == nullptr) {
-    //  #pragma omp parallel for schedule(static) reduction(+:presum_label_entropy_)
+    //  #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data; ++i) {
         presum_label_entropy_ += YentLoss(label_[i]);
       }
     } else {
-    //  #pragma omp parallel for schedule(static) reduction(+:presum_label_entropy_)
+    //  #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data; ++i) {
         presum_label_entropy_ += YentLoss(label_[i]) * weights_[i];
       }
