@@ -62,10 +62,11 @@ if (!use_precompile) {
         vs_def <- paste0(" -G \"", vs, "\"")
         tmp_cmake_cmd <- paste0(cmake_cmd, vs_def)
         try_vs <- system(paste0(tmp_cmake_cmd, " .."))
-        unlink("./*", recursive = TRUE) # Clean up build directory
         if (try_vs == 0) {
           local_vs_def = vs_def
           break
+        } else {
+          unlink("./*", recursive = TRUE) # Clean up build directory
         }
       }
       if (try_vs == 1) {
