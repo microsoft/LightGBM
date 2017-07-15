@@ -74,6 +74,12 @@ Remember this is a free/open community support. We may not be available 24/7 to 
 
 ---
 
+- **Question 7**: I tried to use Random Forest mode, and LightGBM crashes!
+
+- **Solution 7**: It is by design. You must use `bagging_fraction` and `feature_fraction` different from 1, along with a `bagging_freq`. See [this thread](https://github.com/Microsoft/LightGBM/issues/691) as an example.
+
+---
+
 ### R-package
 
 - **Question 1**: I used `setinfo`, tried to print my `lgb.Dataset`, and now the R console froze!
