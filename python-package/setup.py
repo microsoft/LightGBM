@@ -43,26 +43,50 @@ def copy_files(use_gpu=False):
         if use_gpu:
             copy_files_helper('compute')
         distutils.file_util.copy_file("../CMakeLists.txt", "./lightgbm/")
+        distutils.file_util.copy_file("../LICENSE", "./")
+
+
+def clear_path(path):
+    contents = os.listdir(path)
+    for file in contents:
+        file_path = os.path.join(path, file)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+        else:
+            shutil.rmtree(file_path)
 
 
 def compile_cpp(use_mingw=False, use_gpu=False):
 
-    if not os.path.exists("build"):
-        os.makedirs("build")
-    os.chdir("build")
+    if os.path.exists("build_cpp"):
+        shutil.rmtree("build_cpp")
+    os.makedirs("build_cpp")
+    os.chdir("build_cpp")
 
     cmake_cmd = "cmake "
     build_cmd = "make _lightgbm"
-
+    if use_gpu:
+        cmake_cmd += " -DUSE_GPU=ON "
     if os.name == "nt":
         if use_mingw:
             cmake_cmd += " -G \"MinGW Makefiles\" "
+            os.system(cmake_cmd + " ../lightgbm/")
             build_cmd = "mingw32-make.exe _lightgbm"
         else:
-            cmake_cmd += " -DCMAKE_GENERATOR_PLATFORM=x64 "
+            vs_versions = ["Visual Studio 15 2017 Win64", "Visual Studio 14 2015 Win64", "Visual Studio 12 2013 Win64"]
+            try_vs = 1
+            for vs in vs_versions:
+                tmp_cmake_cmd = "%s -G \"%s\"" % (cmake_cmd, vs)
+                try_vs = os.system(tmp_cmake_cmd + " ../lightgbm/")
+                if try_vs == 0:
+                    cmake_cmd = tmp_cmake_cmd
+                    break
+                else:
+                    clear_path("./")
+            if try_vs != 0:
+                raise Exception('Please install Visual Studio or MS Build first')
+
             build_cmd = "cmake --build . --target _lightgbm  --config Release"
-    if use_gpu:
-        cmake_cmd += " -DUSE_GPU=ON "
     print("Start to compile libarary.")
     os.system(cmake_cmd + " ../lightgbm/")
     os.system(build_cmd)
