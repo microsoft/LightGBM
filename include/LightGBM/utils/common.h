@@ -579,6 +579,15 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred) {
   return ParallelSort(_First, _Last, _Pred, IteratorValType(_First));
 }
 
+// Check that all y[] are in interval [ymin, ymax] (end points included); throws error if not
+inline void check_elements_interval_closed(const float *y, float ymin, float ymax, int ny, const char *callername) {
+  for (int i = 0; i < ny; ++i) {
+    if (y[i] < ymin || y[i] > ymax) {
+      Log::Fatal("[%s]: does not tolerate element [#%i = %f] outside [%f, %f]", callername, i, y[i], ymin, ymax);
+    }
+  }
+}
+
 }  // namespace Common
 
 }  // namespace LightGBM

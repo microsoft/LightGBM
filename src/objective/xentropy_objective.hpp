@@ -1,6 +1,8 @@
 #ifndef LIGHTGBM_OBJECTIVE_XENTROPY_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_XENTROPY_OBJECTIVE_HPP_
 
+#include <LightGBM/utils/common.h>
+
 #include <LightGBM/objective_function.h>
 
 #include <cstring>
@@ -47,14 +49,9 @@ public:
     label_ = metadata.label();
     weights_ = metadata.weights();
 
-    // ensure that labels are in interval [0, 1], interval ends included
-    for (data_size_t i = 0; i < num_data; ++i) {
-      if (label_[i] < 0.0f || label_[i] > 1.0f) {
-        Log::Fatal("[%s]: does not tolerate label [#%i] outside [0, 1]",  GetName(), i);
-      }
-    }
-
-    Log::Info("[%s:%s]: labels passed interval [0, 1] check (objective)",  GetName(), __func__);
+    CHECK_NOTNULL(label_);
+    Common::check_elements_interval_closed(label_, 0.0f, 1.0f, num_data_, GetName());
+    Log::Info("[%s:%s]: (objective) labels passed interval [0, 1] check",  GetName(), __func__);
 
     if (weights_ != nullptr) {
       // ensure that every weight is non-negative; and count number of zero weights
@@ -137,13 +134,11 @@ public:
     num_data_ = num_data;
     label_ = metadata.label();
     weights_ = metadata.weights();
-    // ensure that labels are in interval [0, 1], interval ends included
-    for (data_size_t i = 0; i < num_data; ++i) {
-      if (label_[i] < 0.0f || label_[i] > 1.0f) {
-        Log::Fatal("[%s]: does not tolerate label [#%i] outside [0, 1]",  GetName(), i);
-      }
-    }
-    Log::Info("[%s:%s]: labels passed interval [0, 1] check (objective)",  GetName(), __func__);
+
+    CHECK_NOTNULL(label_);
+    Common::check_elements_interval_closed(label_, 0.0f, 1.0f, num_data_, GetName());
+    Log::Info("[%s:%s]: (objective) labels passed interval [0, 1] check",  GetName(), __func__);
+
     if (weights_ != nullptr) {
       min_weight_ = weights_[0];
       max_weight_ = weights_[0];

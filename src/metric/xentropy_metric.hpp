@@ -45,7 +45,7 @@ namespace LightGBM {
   }
 
   // hhat >(=) 0 assumed; and weight > 0 required; but not checked here
-  inline static double XentLoss1(float label, float weight, double hhat) {
+  inline static double XentLambdaLoss(float label, float weight, double hhat) {
     return XentLoss(label, 1.0f - std::exp(-weight * hhat));
   }
 
@@ -74,16 +74,10 @@ public:
     label_ = metadata.label();
     weights_ = metadata.weights();
 
-    // ensure that labels are in interval [0, 1], interval ends included
-    if (label_ == nullptr) {
-       Log::Fatal("[%s]: label nullptr", __func__);
-    }
-    for (data_size_t i = 0; i < num_data; ++i) {
-    	if (label_[i] < 0.0f || label_[i] > 1.0f) {
-    		Log::Fatal("[%s]: metric does not tolerate label [#%i] outside [0, 1]", __func__, i);
-    	}
-    }
-    Log::Info("[%s:%s]: labels passed interval [0, 1] check (metric)",  GetName()[0].c_str(), __func__);
+    CHECK_NOTNULL(label_);
+    // ensure that (non-null) labels are in interval [0, 1], interval ends included
+    Common::check_elements_interval_closed(label_, 0.0f, 1.0f, num_data_, GetName()[0].c_str());
+    Log::Info("[%s:%s]: (metric) labels passed interval [0, 1] check",  GetName()[0].c_str(), __func__);
 
     if (weights_ == nullptr) {
       sum_weights_ = static_cast<double>(num_data_);
@@ -104,7 +98,6 @@ public:
   std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
     double sum_loss = 0.0f;
     if (objective == nullptr) {
-      Log::Warning("[%s : %d]: objective nullptr", __FILE__, __LINE__);
       if (weights_ == nullptr) {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
@@ -137,7 +130,7 @@ public:
     return std::vector<double>(1, loss);
   }
 
-	const std::vector<std::string>& GetName() const override {
+  const std::vector<std::string>& GetName() const override {
     return name_;
   }
 
@@ -173,16 +166,9 @@ public:
     label_ = metadata.label();
     weights_ = metadata.weights();
 
-    // ensure that labels are in interval [0, 1], interval ends included
-    if (label_ == nullptr) {
-       Log::Fatal("[%s : %d]: label nullptr", __FILE__, __LINE__);
-    }
-    for (data_size_t i = 0; i < num_data; ++i) {
-      if (label_[i] < 0.0f || label_[i] > 1.0f) {
-        Log::Fatal("[%s]: does not tolerate label [#%i] outside [0, 1]", GetName()[0].c_str(), i);
-      }
-    }
-    Log::Info("[%s:metric]: labels passed interval [0, 1] check",  GetName()[0].c_str());
+    CHECK_NOTNULL(label_);
+    Common::check_elements_interval_closed(label_, 0.0f, 1.0f, num_data_, GetName()[0].c_str());
+    Log::Info("[%s:%s]: (metric) labels passed interval [0, 1] check",  GetName()[0].c_str(), __func__);
 
     // check all weights are strictly positive; throw error if not
     if (weights_ != nullptr) {
@@ -199,20 +185,17 @@ public:
   std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
     double sum_loss = 0.0f;
     if (objective == nullptr) {
-      Log::Warning("[%s : %d]: objective nullptr", __FILE__, __LINE__);
       if (weights_ == nullptr) {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double hhat = std::log(1.0f + std::exp(score[i])); // auto-convert
-          sum_loss += XentLoss1(label_[i], 1.0f, hhat);
-          //double p = 1.0f / (1.0f + std::exp(-score[i])); // auto-convert
-          //sum_loss += XentLoss(label_[i], p);
+          sum_loss += XentLambdaLoss(label_[i], 1.0f, hhat);
         }
       } else {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double hhat = std::log(1.0f + std::exp(score[i])); // auto-convert
-          sum_loss += XentLoss1(label_[i], weights_[i], hhat);
+          sum_loss += XentLambdaLoss(label_[i], weights_[i], hhat);
         }
       }
     } else {
@@ -221,14 +204,14 @@ public:
         for (data_size_t i = 0; i < num_data_; ++i) {
           double hhat = 0;
           objective->ConvertOutput(&score[i], &hhat); // NOTE: this only works if objective = "xentlambda"
-          sum_loss += XentLoss1(label_[i], 1.0f, hhat);
+          sum_loss += XentLambdaLoss(label_[i], 1.0f, hhat);
         }
       } else {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double hhat = 0;
           objective->ConvertOutput(&score[i], &hhat); // NOTE: this only works if objective = "xentlambda"
-          sum_loss += XentLoss1(label_[i], weights_[i], hhat);
+          sum_loss += XentLambdaLoss(label_[i], weights_[i], hhat);
         }
       }
     }
@@ -268,16 +251,9 @@ public:
     label_ = metadata.label();
     weights_ = metadata.weights();
 
-    // ensure that labels are in interval [0, 1], interval ends included
-    if (label_ == nullptr) {
-       Log::Fatal("[%s]: label nullptr", __func__);
-    }
-    for (data_size_t i = 0; i < num_data; ++i) {
-      if (label_[i] < 0.0f || label_[i] > 1.0f) {
-        Log::Fatal("[%s]: metric does not tolerate label [#%i] outside [0, 1]", __func__, i);
-      }
-    }
-    Log::Info("[%s:%s]: labels passed interval [0, 1] check (metric)",  GetName()[0].c_str(), __func__);
+    CHECK_NOTNULL(label_);
+    Common::check_elements_interval_closed(label_, 0.0f, 1.0f, num_data_, GetName()[0].c_str());
+    Log::Info("[%s:%s]: (metric) labels passed interval [0, 1] check",  GetName()[0].c_str(), __func__);
 
     if (weights_ == nullptr) {
       sum_weights_ = static_cast<double>(num_data_);
@@ -323,7 +299,6 @@ public:
   std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
     double sum_loss = 0.0f;
     if (objective == nullptr) {
-      Log::Warning("[%s : %d]: objective nullptr", __FILE__, __LINE__);
       if (weights_ == nullptr) {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
