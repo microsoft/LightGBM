@@ -7,15 +7,10 @@ The list includes the commits where the major feature added is considered workin
 | Date | Commit | Type | Description |
 | --- | --- | --- | --- |
 | 13/07/2017 | [3421bc6](https://github.com/Microsoft/LightGBM/pull/664) | Feature | Automatic Compiler for R-package compilation (Pull Request 664) |
-| 
 | 10/07/2017 | [ce999b7](https://github.com/Microsoft/LightGBM/pull/678) | Feature | Random Forest mode (Pull Request 678) |
-| 
 | 22/06/2017 | [d862b3e](https://github.com/Microsoft/LightGBM/pull/642) | CIntegration | Travis OSX Support (Pull Request 642) |
-| 
 | 18/06/2017 | [4d2aa84](https://github.com/Microsoft/LightGBM/pull/634) | CIntegration | AppVeyor Support (Pull Request 634) |
-| 
 | 06/06/2017 | [2c9ce59](https://github.com/Microsoft/LightGBM/pull/592) | Release | R-package version 0.2 (Pull Request 592) |
-| 
 | 05/06/2017 | [f98d75f](https://github.com/Microsoft/LightGBM/pull/584) | Feature | Use custom compiler for R-package (Pull Request 584) |
 | 29/05/2017 | [993bbd5](https://github.com/Microsoft/LightGBM/pull/559) | Parameter | Early Stopping for predictions (Pull Request 559) |
 | 26/05/2017 | [3abff37](https://github.com/Microsoft/LightGBM/commit/3abff370bb353293e4a03e516111dd02785fbd97) | Feature | Parameter to disable missing values (Commit) |
