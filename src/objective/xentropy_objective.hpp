@@ -54,17 +54,14 @@ public:
     Log::Info("[%s:%s]: (objective) labels passed interval [0, 1] check",  GetName(), __func__);
 
     if (weights_ != nullptr) {
-      // ensure that every weight is non-negative; and count number of zero weights
-      data_size_t cnt_zero_weights = 0;
-      for (data_size_t i = 0; i < num_data; ++i) {
-        if (weights_[i] == 0.0f) {
-          ++cnt_zero_weights;
-        } else if (weights_[i] < 0.0f) {
-          Log::Fatal("[%s]: does not tolerate negative weight [#%i]", GetName(), i);
-        }
+      float minw;
+      double sumw;
+      Common::obtain_min_max_sum(weights_, num_data_, &minw, nullptr, &sumw);
+      if (minw < 0.0f) {
+        Log::Fatal("[%s]: at least one weight is negative.", GetName());
       }
-      if (cnt_zero_weights > 0) {
-        Log::Warning("[%s]: counted #%i zero weights",  GetName(), cnt_zero_weights);
+      if (sumw == 0.0f) {
+        Log::Fatal("[%s]: sum of weights is zero.", GetName());
       }
     }
     
@@ -140,17 +137,13 @@ public:
     Log::Info("[%s:%s]: (objective) labels passed interval [0, 1] check",  GetName(), __func__);
 
     if (weights_ != nullptr) {
-      min_weight_ = weights_[0];
-      max_weight_ = weights_[0];
-      // ensure that every weight is strictly positive; and determine ratio : largest/smallest weight
-      for (data_size_t i = 0; i < num_data; ++i) {
-        if (weights_[i] <= 0.0f) {
-          Log::Fatal("[%s]: does not tolerate non-positive weight [#%i]", GetName(), i);
-        }
-        if (weights_[i] < min_weight_) min_weight_ = weights_[i];
-        if (weights_[i] > max_weight_) max_weight_ = weights_[i];
+
+      Common::obtain_min_max_sum(weights_, num_data_, &min_weight_, &max_weight_, nullptr);
+      if (min_weight_ <= 0.0f) {
+        Log::Fatal("[%s]: at least one weight is non-positive.", GetName());
       }
-      // Issue an info statement about this ratio; and possibly warn if excessively large ?!
+
+      // Issue an info statement about this ratio
       double weight_ratio = max_weight_ / min_weight_;
       Log::Info("[%s:%s]: min, max weights = %f, %f; ratio = %f", 
                 GetName(), __func__,
@@ -214,7 +207,7 @@ public:
     return str_buf.str();
   }
 
-  // TODO: default boost from different (weighted) average ?; not quite the same ...
+  // might want to boost from a weighted average in general, if possible
   bool BoostFromAverage() const override { return true; }
 
 private:

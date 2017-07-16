@@ -75,24 +75,27 @@ public:
     weights_ = metadata.weights();
 
     CHECK_NOTNULL(label_);
-    // ensure that (non-null) labels are in interval [0, 1], interval ends included
+
+    // ensure that labels are in interval [0, 1], interval ends included
     Common::check_elements_interval_closed(label_, 0.0f, 1.0f, num_data_, GetName()[0].c_str());
     Log::Info("[%s:%s]: (metric) labels passed interval [0, 1] check",  GetName()[0].c_str(), __func__);
 
+    // check that weights are non-negative and sum is positive
     if (weights_ == nullptr) {
       sum_weights_ = static_cast<double>(num_data_);
     } else {
-      sum_weights_ = 0.0f;
-      for (data_size_t i = 0; i < num_data; ++i) {
-        sum_weights_ += weights_[i];
+      float minw;
+      Common::obtain_min_max_sum(weights_, num_data_, &minw, nullptr, &sum_weights_);
+      if (minw < 0.0f) {
+        Log::Fatal("[%s:%s]: (metric) weights not allowed to be negative", GetName()[0].c_str(), __func__);
       }
     }
-    // check weight sum
+
+    // check weight sum (may fail to be zero)
     if (sum_weights_ <= 0.0f) {
-      Log::Fatal("[%s]: sum-of-weights = %f is non-positive", __func__, sum_weights_);
-    } else {
-      Log::Info("[%s:%s]: sum-of-weights = %f",  GetName()[0].c_str(), __func__, sum_weights_);
+      Log::Fatal("[%s:%s]: sum-of-weights = %f is non-positive", __func__, GetName()[0].c_str(), sum_weights_);
     }
+    Log::Info("[%s:%s]: sum-of-weights = %f", GetName()[0].c_str(), __func__, sum_weights_);
   }
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
@@ -172,14 +175,13 @@ public:
 
     // check all weights are strictly positive; throw error if not
     if (weights_ != nullptr) {
-      for (data_size_t i = 0; i < num_data; ++i) {
-        if (weights_[i] <= 0) {
-          Log::Fatal("[%s : %d]: weight [#%i] required to be positive", __FILE__, __LINE__, i);
-        }
+      float minw;
+      Common::obtain_min_max_sum(weights_, num_data_, &minw, nullptr, nullptr);
+      if (minw <= 0.0f) {
+        Log::Fatal("[%s:%s]: (metric) all weights must be positive", GetName()[0].c_str(), __func__);
       }
-    } else {
-      // safe to not do anything
     }
+    
   }
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
@@ -258,24 +260,19 @@ public:
     if (weights_ == nullptr) {
       sum_weights_ = static_cast<double>(num_data_);
     } else {
-      float min_weight = weights_[0];
-      sum_weights_ = 0.0f;
-      for (data_size_t i = 0; i < num_data; ++i) {
-        sum_weights_ += weights_[i];
-        if (weights_[i] < min_weight) min_weight = weights_[i];
-      }
-      // warn if there is at least one negative weight
-      if (min_weight < 0.0f) {
-        Log::Warning("[%s:%s]: minimum weight = %f is negative", GetName()[0].c_str(), __func__, min_weight);
+      float minw;
+      Common::obtain_min_max_sum(weights_, num_data_, &minw, nullptr, &sum_weights_);
+      if (minw < 0.0f) {
+        Log::Fatal("[%s:%s]: (metric) at least one weight is negative", GetName()[0].c_str(), __func__);
       }
     }
 
     // check weight sum
     if (sum_weights_ <= 0.0f) {
-      Log::Fatal("[%s]: sum-of-weights = %f is non-positive", __func__, sum_weights_);
-    } else {
-      Log::Info("[%s:%s]: sum-of-weights = %f",  GetName()[0].c_str(), __func__, sum_weights_);
+      Log::Fatal("[%s:%s]: sum-of-weights = %f is non-positive", GetName()[0].c_str(), __func__, sum_weights_);
     }
+
+    Log::Info("[%s:%s]: sum-of-weights = %f", GetName()[0].c_str(), __func__, sum_weights_);
 
     // evaluate offset term
     presum_label_entropy_ = 0.0f;
@@ -347,7 +344,7 @@ private:
   /*! \brief Pointer to weights */
   const float* weights_;
   /*! \brief Sum of weights */
-  float sum_weights_;
+  double sum_weights_;
   /*! \brief Offset term to cross-entropy; precomputed during init */
   double presum_label_entropy_;
   /*! \brief Name of this metric */
