@@ -579,6 +579,31 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred) {
   return ParallelSort(_First, _Last, _Pred, IteratorValType(_First));
 }
 
+// Check that all y[] are in interval [ymin, ymax] (end points included); throws error if not
+inline void check_elements_interval_closed(const float *y, float ymin, float ymax, int ny, const char *callername) {
+  for (int i = 0; i < ny; ++i) {
+    if (y[i] < ymin || y[i] > ymax) {
+      Log::Fatal("[%s]: does not tolerate element [#%i = %f] outside [%f, %f]", callername, i, y[i], ymin, ymax);
+    }
+  }
+}
+
+// One-pass scan over array w with nw elements: find min, max and sum of elements;
+// this is useful for checking weight requirements.
+inline void obtain_min_max_sum(const float *w, int nw, float *mi, float *ma, double *su) {
+  float minw = w[0];
+  float maxw = w[0];
+  double sumw = static_cast<double>(w[0]);
+  for (int i = 1; i < nw; ++i) {
+    sumw += w[i];
+    if (w[i] < minw) minw = w[i];
+    if (w[i] > maxw) maxw = w[i];
+  }
+  if (mi != nullptr) *mi = minw;
+  if (ma != nullptr) *ma = maxw;
+  if (su != nullptr) *su = sumw;
+}
+
 }  // namespace Common
 
 }  // namespace LightGBM
