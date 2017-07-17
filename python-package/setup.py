@@ -155,7 +155,6 @@ if __name__ == "__main__":
           version=version,
           description='LightGBM Python Package',
           install_requires=[
-              'wheel',
               'numpy',
               'scipy',
               'scikit-learn'
