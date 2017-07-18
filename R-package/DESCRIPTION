@@ -28,11 +28,11 @@ Suggests:
     stringi (>= 0.5.2)
 Depends:
     R (>= 3.0),
-    R6
+    R6 (>= 2.0)
 Imports:
     methods,
     Matrix (>= 1.1-0),
     data.table (>= 1.9.6),
     magrittr (>= 1.5),
-    jsonlite
+    jsonlite (>= 1.0)
 RoxygenNote: 6.0.1
