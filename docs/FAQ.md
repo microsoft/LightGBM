@@ -82,9 +82,13 @@ Remember this is a free/open community support. We may not be available 24/7 to 
 
 ### R-package
 
-- **Question 1**: I used `setinfo`, tried to print my `lgb.Dataset`, and now the R console froze!
+- **Question 1**: Any training command using LightGBM does not work after an error occurred during the training of a previous LightGBM model.
 
-- **Solution 1**: Avoid printing the `lgb.Dataset` after using `setinfo`. This is a known bug: [Microsoft/LightGBM#539](https://github.com/Microsoft/LightGBM/issues/539).
+- **Solution 1**: Run `lgb.unloader(wipe = TRUE)` in the R console, and recreate the LightGBM datasets (this will wipe all LightGBM-related variables). Due to the pointers, choosing to not wipe variables will not fix the error. This is a known issue: [Microsoft/LightGBM#698](https://github.com/Microsoft/LightGBM/issues/698).
+
+- **Question 2**: I used `setinfo`, tried to print my `lgb.Dataset`, and now the R console froze!
+
+- **Solution 2**: Avoid printing the `lgb.Dataset` after using `setinfo`. This is a known bug: [Microsoft/LightGBM#539](https://github.com/Microsoft/LightGBM/issues/539).
 
 ---
 
