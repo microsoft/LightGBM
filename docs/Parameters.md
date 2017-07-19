@@ -211,6 +211,8 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
   * parameter for [Huber loss](https://en.wikipedia.org/wiki/Huber_loss "Huber loss - Wikipedia"). Will be used in regression task.
 * `fair_c`, default=`1.0`, type=double
   * parameter for [Fair loss](https://www.kaggle.com/c/allstate-claims-severity/discussion/24520). Will be used in regression task.
+* `gaussian_eta`, default=`1.0`, type=double
+  * parameter to control the width of Gaussian function. Will be used in l1 and huber regression loss.
 * `poission_max_delta_step`, default=`0.7`, type=double
   * parameter used to safeguard optimization
 * `scale_pos_weight`, default=`1.0`, type=double
