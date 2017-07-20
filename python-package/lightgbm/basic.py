@@ -1618,6 +1618,15 @@ class Booster(object):
             num_iteration = self.best_iteration
         return predictor.predict(data, num_iteration, raw_score, pred_leaf, data_has_header, is_reshape)
 
+    def get_leaf_output(tree_id, leaf_id):
+        ret = ctypes.c_double(0)
+        _safe_call(_LIB.LGBM_BoosterGetLeafValue(
+            self.handle,
+            ctypes.c_int(tree_id),
+            ctypes.c_int(leaf_id),
+            ctypes.byref(ret)))
+        return ret.value
+
     def _to_predictor(self, pred_parameter=None):
         """Convert to predictor"""
         predictor = _InnerPredictor(booster_handle=self.handle, pred_parameter=pred_parameter)
