@@ -47,6 +47,7 @@ public:
     num_data_ = num_data;
     // get label
     label_ = metadata.label();
+    DCGCalculator::CheckLabel(label_, num_data_);
     // get weights
     weights_ = metadata.weights();
     // get boundries

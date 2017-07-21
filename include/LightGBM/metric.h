@@ -96,6 +96,13 @@ public:
     const float* label, data_size_t num_data);
 
   /*!
+  * \brief Check the label range for NDCG and lambdarank
+  * \param label Pointer of label
+  * \param num_data Number of data
+  */
+  static void CheckLabel(const float* label, data_size_t num_data);
+
+  /*!
   * \brief Calculate the Max DCG score at multi position
   * \param ks The positions want to eval at
   * \param label Pointer of label

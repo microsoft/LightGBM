@@ -56,7 +56,6 @@ void DCGCalculator::CalMaxDCG(const std::vector<data_size_t>& ks,
   std::vector<data_size_t> label_cnt(label_gain_.size(), 0);
   // counts for all labels
   for (data_size_t i = 0; i < num_data; ++i) {
-    if (static_cast<size_t>(label[i]) >= label_cnt.size()) { Log::Fatal("Label excel %d", label[i]); }
     ++label_cnt[static_cast<int>(label[i])];
   }
   double cur_result = 0.0f;
@@ -124,6 +123,19 @@ void DCGCalculator::CalDCG(const std::vector<data_size_t>& ks, const float* labe
     }
     (*out)[i] = cur_result;
     cur_left = cur_k;
+  }
+}
+
+void DCGCalculator::CheckLabel(const float* label, data_size_t num_data) {
+  for (data_size_t i = 0; i < num_data; ++i) {
+    float delta = std::fabs(label[i] - static_cast<int>(label[i]));
+    if (delta > kEpsilon) {
+      Log::Fatal("label should be int type (met %f) for ranking task, \
+                 for the gain of label, please set the label_gain parameter.", label[i]);
+    }
+    if (static_cast<size_t>(label[i]) >= label_gain_.size() || label[i] < 0) {
+      Log::Fatal("label (%d) excel the max range %d", label[i], label_gain_.size());
+    }
   }
 }
 
