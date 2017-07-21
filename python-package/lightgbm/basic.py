@@ -1618,7 +1618,7 @@ class Booster(object):
             num_iteration = self.best_iteration
         return predictor.predict(data, num_iteration, raw_score, pred_leaf, data_has_header, is_reshape)
 
-    def get_leaf_output(tree_id, leaf_id):
+    def get_leaf_output(self, tree_id, leaf_id):
         ret = ctypes.c_double(0)
         _safe_call(_LIB.LGBM_BoosterGetLeafValue(
             self.handle,
