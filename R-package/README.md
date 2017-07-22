@@ -33,6 +33,7 @@ Install LightGBM R-package with the following command:
 ```sh
 git clone --recursive https://github.com/Microsoft/LightGBM
 cd LightGBM/R-package
+# export CXX=g++-7 CC=gcc-7 # for OSX
 R CMD INSTALL --build . --no-multiarch
 ```
 
@@ -42,6 +43,7 @@ Or build a self-contained R package which can be installed afterwards:
 git clone --recursive https://github.com/Microsoft/LightGBM
 cd LightGBM/R-package
 Rscript build_package.R
+# export CXX=g++-7 CC=gcc-7 # for OSX
 R CMD INSTALL lightgbm_2.0.4.tar.gz --no-multiarch
 ``` 
 

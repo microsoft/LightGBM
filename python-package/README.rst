@@ -35,6 +35,8 @@ Note: Installation from source package require installing `cmake <https://cmake.
 
 For Windows user, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed, and `cmake <https://cmake.org/>`_ must be version 3.8 or higher.
 
+For OSX user, you need to run ```export CXX=g++-7 CC=gcc-7``` before running ```pip install ... ```.
+
 Install GPU version:
 
 ``pip install lightgbm --install-option=--gpu``
@@ -56,6 +58,7 @@ For Windows user, Visual Studio (or `MS Build <https://www.visualstudio.com/down
 
     git clone --recursive https://github.com/Microsoft/LightGBM
     cd LightGBM/python-package
+    # export CXX=g++-7 CC=gcc-7 # for OSX
     python setup.py install
 
 ``sudo`` (or administrator rights in Windows) may is needed to perform ``python setup.py install``.
