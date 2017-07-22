@@ -14,6 +14,12 @@ if [[ ${TASK} == "gpu" ]]; then
     export CPLUS_INCLUDE_PATH="$HOME/miniconda/include:$AMDAPPSDK/include/:$CPLUS_INCLUDE_PATH"
 fi
 
+case ${TRAVIS_OS_NAME} in
+    osx*)
+        export CXX=g++-7
+        export CC=gcc-7
+esac
+
 cd $TRAVIS_BUILD_DIR
 
 if [[ ${TASK} == "pylint" ]]; then
