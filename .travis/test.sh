@@ -15,9 +15,12 @@ if [[ ${TASK} == "gpu" ]]; then
 fi
 
 case ${TRAVIS_OS_NAME} in
-    osx*)
+    osx)
         export CXX=g++-7
         export CC=gcc-7
+        ;;
+    linux)
+        ;;
 esac
 
 cd $TRAVIS_BUILD_DIR
