@@ -350,6 +350,7 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
           
           # Check if model is not null
           if (!is.null(env$model)) {
+            env$model$best_score <- best_score[i]
             env$model$best_iter <- best_iter[i]
           }
           
