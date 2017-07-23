@@ -4,6 +4,7 @@ Booster <- R6Class(
   public = list(
     
     best_iter = -1,
+    best_score = -1,
     record_evals = list(),
     
     # Finalize will free up the handles
