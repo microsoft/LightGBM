@@ -8,7 +8,8 @@ CB_ENV <- R6Class(
     end_iteration = NULL,
     eval_list = list(),
     eval_err_list = list(),
-    best_iter = -1,
+    best_iter = -1,,
+    best_score = -1,
     met_early_stop = FALSE
   )
 )
