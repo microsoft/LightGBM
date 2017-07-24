@@ -1,4 +1,10 @@
-cmake_minimum_required(VERSION 3.2)
+if(MSVC)
+  cmake_minimum_required(VERSION 3.8)
+elseif(USE_GPU)
+  cmake_minimum_required(VERSION 3.2)
+else()
+  cmake_minimum_required(VERSION 2.8)
+endif()
 
 PROJECT(lightgbm)
 
