@@ -1,6 +1,6 @@
 if(MSVC)
   cmake_minimum_required(VERSION 3.8)
-elseif(USE_GPU)
+elseif(USE_GPU OR APPLE)
   cmake_minimum_required(VERSION 3.2)
 else()
   cmake_minimum_required(VERSION 2.8)
