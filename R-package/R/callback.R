@@ -9,6 +9,7 @@ CB_ENV <- R6Class(
     eval_list = list(),
     eval_err_list = list(),
     best_iter = -1,
+    best_score = -1,
     met_early_stop = FALSE
   )
 )
@@ -350,6 +351,7 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
           
           # Check if model is not null
           if (!is.null(env$model)) {
+            env$model$best_score <- best_score[i]
             env$model$best_iter <- best_iter[i]
           }
           
