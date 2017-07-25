@@ -35,9 +35,8 @@ public:
   * \brief Performing a split on tree leaves.
   * \param leaf Index of leaf to be split
   * \param feature Index of feature; the converted index after removing useless features
-  * \param bin_type type of this feature, numerical or categorical
-  * \param threshold Threshold(bin) of split
   * \param real_feature Index of feature, the original index on data
+  * \param threshold_bin Threshold(bin) of split
   * \param threshold_double Threshold on feature value
   * \param left_value Model Left child output
   * \param right_value Model Right child output
@@ -49,8 +48,31 @@ public:
   * \param default_value default conversion for the missing value, in float value
   * \return The index of new leaf.
   */
-  int Split(int leaf, int feature, BinType bin_type, uint32_t threshold, int real_feature, 
-            double threshold_double, double left_value, double right_value, 
+  int Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
+            double threshold_double, double left_value, double right_value,
+            data_size_t left_cnt, data_size_t right_cnt, double gain,
+            uint32_t zero_bin, uint32_t default_bin_for_zero, double default_value);
+
+  /*!
+  * \brief Performing a split on tree leaves, with categorical feature
+  * \param leaf Index of leaf to be split
+  * \param feature Index of feature; the converted index after removing useless features
+  * \param real_feature Index of feature, the original index on data
+  * \param threshold_bin Threshold(bin) of split
+  * \param threshold_double Threshold on feature value
+  * \param num_threshold Number of thresholds
+  * \param left_value Model Left child output
+  * \param right_value Model Right child output
+  * \param left_cnt Count of left child
+  * \param right_cnt Count of right child
+  * \param gain Split gain
+  * \param zero_bin bin value for value==0 (missing value)
+  * \param default_bin default conversion for the missing value, in bin
+  * \param default_value default conversion for the missing value, in float value
+  * \return The index of new leaf.
+  */
+  int SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin,
+            const double* threshold_double, int num_threshold, double left_value, double right_value,
             data_size_t left_cnt, data_size_t right_cnt, double gain,
             uint32_t zero_bin, uint32_t default_bin_for_zero, double default_value);
 
@@ -89,6 +111,7 @@ public:
   * \return Prediction result
   */
   inline double Predict(const double* feature_values) const;
+
   inline int PredictLeafIndex(const double* feature_values) const;
 
   /*! \brief Get Number of leaves*/
@@ -108,7 +131,7 @@ public:
   * \param rate The factor of shrinkage
   */
   inline void Shrinkage(double rate) {
-    #pragma omp parallel for schedule(static, 512) if (num_leaves_ >= 1024)
+    #pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
     for (int i = 0; i < num_leaves_; ++i) {
       leaf_value_[i] *= rate;
       if (leaf_value_[i] > kMaxTreeOutput) { leaf_value_[i] = kMaxTreeOutput; } 
@@ -173,7 +196,9 @@ public:
   static std::vector<bool(*)(double, double)> decision_funs;
 
 private:
-
+  inline void Split(int leaf, int feature, int real_feature, double left_value, double right_value,
+                    data_size_t left_cnt, data_size_t right_cnt, double gain,
+                    uint32_t zero_bin, uint32_t default_bin_for_zero, double default_value);
   /*!
   * \brief Find leaf index of which record belongs by features
   * \param feature_values Feature value of this record
@@ -228,6 +253,49 @@ private:
   double shrinkage_;
   bool has_categorical_;
 };
+
+inline void Tree::Split(int leaf, int feature, int real_feature, double left_value, double right_value,
+           data_size_t left_cnt, data_size_t right_cnt, double gain,
+           uint32_t zero_bin, uint32_t default_bin_for_zero, double default_value) {
+  int new_node_idx = num_leaves_ - 1;
+  // update parent info
+  int parent = leaf_parent_[leaf];
+  if (parent >= 0) {
+    // if cur node is left child
+    if (left_child_[parent] == ~leaf) {
+      left_child_[parent] = new_node_idx;
+    } else {
+      right_child_[parent] = new_node_idx;
+    }
+  }
+  // add new node
+  split_feature_inner_[new_node_idx] = feature;
+  split_feature_[new_node_idx] = real_feature;
+
+  zero_bin_[new_node_idx] = zero_bin;
+  default_bin_for_zero_[new_node_idx] = default_bin_for_zero;
+  default_value_[new_node_idx] = Common::AvoidInf(default_value);
+
+  decision_type_[new_node_idx] = 0;
+
+  split_gain_[new_node_idx] = Common::AvoidInf(gain);
+  // add two new leaves
+  left_child_[new_node_idx] = ~leaf;
+  right_child_[new_node_idx] = ~num_leaves_;
+  // update new leaves
+  leaf_parent_[leaf] = new_node_idx;
+  leaf_parent_[num_leaves_] = new_node_idx;
+  // save current leaf value to internal node before change
+  internal_value_[new_node_idx] = leaf_value_[leaf];
+  internal_count_[new_node_idx] = left_cnt + right_cnt;
+  leaf_value_[leaf] = std::isnan(left_value) ? 0.0f : left_value;
+  leaf_count_[leaf] = left_cnt;
+  leaf_value_[num_leaves_] = std::isnan(right_value) ? 0.0f : right_value;
+  leaf_count_[num_leaves_] = right_cnt;
+  // update leaf depth
+  leaf_depth_[num_leaves_] = leaf_depth_[leaf] + 1;
+  leaf_depth_[leaf]++;
+}
 
 inline double Tree::Predict(const double* feature_values) const {
   if (num_leaves_ > 1) {

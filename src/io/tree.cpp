@@ -52,55 +52,24 @@ Tree::~Tree() {
 
 }
 
-int Tree::Split(int leaf, int feature, BinType bin_type, uint32_t threshold_bin, int real_feature, double threshold_double, 
-                double left_value, double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain,
+int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
+                double threshold_double, double left_value, double right_value,
+                data_size_t left_cnt, data_size_t right_cnt, double gain,
                 uint32_t zero_bin, uint32_t default_bin_for_zero, double default_value) {
-  int new_node_idx = num_leaves_ - 1;
-  // update parent info
-  int parent = leaf_parent_[leaf];
-  if (parent >= 0) {
-    // if cur node is left child
-    if (left_child_[parent] == ~leaf) {
-      left_child_[parent] = new_node_idx;
-    } else {
-      right_child_[parent] = new_node_idx;
-    }
-  }
-  // add new node
-  split_feature_inner_[new_node_idx] = feature;
-  split_feature_[new_node_idx] = real_feature;
+  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain, zero_bin, default_bin_for_zero, default_value);
+  threshold_in_bin_[num_leaves_ - 1] = threshold_bin;
+  threshold_[num_leaves_ - 1] = Common::AvoidInf(threshold_double);
+  ++num_leaves_;
+  return num_leaves_ - 1;
+}
 
-  zero_bin_[new_node_idx] = zero_bin;
-  default_bin_for_zero_[new_node_idx] = default_bin_for_zero;
-  default_value_[new_node_idx] = Common::AvoidInf(default_value);
-
-  if (bin_type == BinType::NumericalBin) {
-    decision_type_[new_node_idx] = 0;
-  } else {
-    has_categorical_ = true;
-    decision_type_[new_node_idx] = 1;
-  }
-
-  threshold_in_bin_[new_node_idx] = threshold_bin;
-  threshold_[new_node_idx] = Common::AvoidInf(threshold_double);
-  split_gain_[new_node_idx] = Common::AvoidInf(gain);
-  // add two new leaves
-  left_child_[new_node_idx] = ~leaf;
-  right_child_[new_node_idx] = ~num_leaves_;
-  // update new leaves
-  leaf_parent_[leaf] = new_node_idx;
-  leaf_parent_[num_leaves_] = new_node_idx;
-  // save current leaf value to internal node before change
-  internal_value_[new_node_idx] = leaf_value_[leaf];
-  internal_count_[new_node_idx] = left_cnt + right_cnt;
-  leaf_value_[leaf] = std::isnan(left_value) ? 0.0f : left_value;
-  leaf_count_[leaf] = left_cnt;
-  leaf_value_[num_leaves_] = std::isnan(right_value) ? 0.0f : right_value;
-  leaf_count_[num_leaves_] = right_cnt;
-  // update leaf depth
-  leaf_depth_[num_leaves_] = leaf_depth_[leaf] + 1;
-  leaf_depth_[leaf]++;
-
+int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin,
+                     const double* threshold_double, int num_threshold, double left_value, double right_value,
+                     data_size_t left_cnt, data_size_t right_cnt, double gain,
+                     uint32_t zero_bin, uint32_t default_bin_for_zero, double default_value) {
+  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain, zero_bin, default_bin_for_zero, default_value);
+  threshold_in_bin_[num_leaves_ - 1] = *threshold_bin;
+  threshold_[num_leaves_ - 1] = Common::AvoidInf(*threshold_double);
   ++num_leaves_;
   return num_leaves_ - 1;
 }

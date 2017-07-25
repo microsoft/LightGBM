@@ -254,7 +254,7 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
     // sort by counts
     Common::SortForPair<int, int>(counts_int, distinct_values_int, 0, true);
     // will ignore the categorical of small counts
-    const int cut_cnt = static_cast<int>(total_sample_cnt * 0.98f);
+    const int cut_cnt = static_cast<int>(total_sample_cnt * 0.99f);
     categorical_2_bin_.clear();
     bin_2_categorical_.clear();
     num_bin_ = 0;
