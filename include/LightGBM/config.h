@@ -346,7 +346,7 @@ inline bool ConfigBase::GetBool(
 
 struct ParameterAlias {
   static void KeyAliasTransform(std::unordered_map<std::string, std::string>* params) {
-    std::unordered_map<std::string, std::string> alias_table(
+    const std::unordered_map<std::string, std::string> alias_table(
     {
       { "config", "config_file" },
       { "nthread", "num_threads" },
@@ -428,7 +428,7 @@ struct ParameterAlias {
       { "bagging_fraction_seed", "bagging_seed" }, 
       { "num_boost_round", "num_iterations" }
     });
-    std::unordered_set<std::string> parameter_set({
+    const std::unordered_set<std::string> parameter_set({
       "config", "config_file", "task", "device",
       "num_threads", "seed", "boosting_type", "objective", "data",
       "output_model", "input_model", "output_result", "valid_data",
@@ -438,7 +438,7 @@ struct ParameterAlias {
       "bagging_fraction", "bagging_freq", "learning_rate", "tree_learner",
       "num_machines", "local_listen_port", "use_two_round_loading",
       "machine_list_file", "is_save_binary_file", "early_stopping_round",
-      "verbose", "has_header, label_column", "weight_column", "group_column",
+      "verbose", "has_header", "label_column", "weight_column", "group_column",
       "ignore_column", "categorical_column", "is_predict_raw_score",
       "is_predict_leaf_index", "min_gain_to_split", "top_k",
       "lambda_l1", "lambda_l2", "num_class", "is_unbalance",
@@ -461,7 +461,7 @@ struct ParameterAlias {
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
       if (alias_table.count(pair.first) > 0) {
-        tmp_map[alias_table[pair.first]] = pair.second;
+        tmp_map[alias_table.at(pair.first)] = pair.second;
       } else if (parameter_set.count(pair.first) == 0) {
         Log::Fatal("Unknown parameter: %s", pair.first.c_str());
       }
