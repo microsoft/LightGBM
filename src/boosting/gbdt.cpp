@@ -433,8 +433,13 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
       && num_class_ <= 1
       && objective_function_ != nullptr
       && objective_function_->BoostFromAverage()) {
-    auto label = train_data_->metadata().label();
-    double init_score = LabelAverage(label, num_data_);
+    double init_score = 0.0f;
+    // First try to poll the optional custom average score calculation for the specific objective
+    if (!objective_function_->GetCustomAverage(&init_score)) {
+      // otherwise compute a standard label average
+      auto label = train_data_->metadata().label();
+      init_score = LabelAverage(label, num_data_);
+    }
     std::unique_ptr<Tree> new_tree(new Tree(2));
     new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0, init_score, init_score, 0, 0, -1, 0, 0, 0);
     train_score_updater_->AddScore(init_score, 0);
