@@ -370,7 +370,7 @@ struct ParameterAlias {
       { "is_sparse", "is_enable_sparse" },
       { "enable_sparse", "is_enable_sparse" },
       { "pre_partition", "is_pre_partition" },
-      { "tranining_metric", "is_training_metric" },
+      { "training_metric", "is_training_metric" },
       { "train_metric", "is_training_metric" },
       { "ndcg_at", "ndcg_eval_at" },
       { "eval_at", "ndcg_eval_at" },
