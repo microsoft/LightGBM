@@ -526,7 +526,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     fwrite(binary_file_token, sizeof(char), size_of_token, file);
     // get size of header
     size_t size_of_header = sizeof(num_data_) + sizeof(num_features_) + sizeof(num_total_features_)
-      + sizeof(int) * num_total_features_ + sizeof(num_groups_)
+      + sizeof(int) * num_total_features_ + sizeof(label_idx_) + sizeof(num_groups_)
       + 3 * sizeof(int) * num_features_ + sizeof(uint64_t) * (num_groups_ + 1) + 2 * sizeof(int) * num_groups_;
     // size of feature names
     for (int i = 0; i < num_total_features_; ++i) {
@@ -537,6 +537,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     fwrite(&num_data_, sizeof(num_data_), 1, file);
     fwrite(&num_features_, sizeof(num_features_), 1, file);
     fwrite(&num_total_features_, sizeof(num_total_features_), 1, file);
+    fwrite(&label_idx_, sizeof(label_idx_), 1, file);
     fwrite(used_feature_map_.data(), sizeof(int), num_total_features_, file);
     fwrite(&num_groups_, sizeof(num_groups_), 1, file);
     fwrite(real_feature_idx_.data(), sizeof(int), num_features_, file);
