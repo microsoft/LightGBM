@@ -37,6 +37,8 @@ public:
 
   virtual bool BoostFromAverage() const { return false; }
 
+  virtual bool GetCustomAverage(double *) const { return false; }
+
   virtual bool SkipEmptyClass() const { return false; }
 
   virtual int NumTreePerIteration() const { return 1; }
