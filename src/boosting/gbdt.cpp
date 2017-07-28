@@ -403,7 +403,7 @@ void GBDT::UpdateScoreOutOfBag(const Tree* tree, const int cur_tree_id) {
  * (i) and (ii) could be selected as say "auto_init_score" = 0 or 1 etc..
  *
  */
-double LabelAverage(const ObjectiveFunction* objf, const float* label, data_size_t num_data) {
+double ObtainAutomaticInitialScore(const ObjectiveFunction* objf, const float* label, data_size_t num_data) {
   double init_score = 0.0f;
   bool got_custom = false;
   if (objf != nullptr) {
@@ -451,7 +451,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
       && objective_function_ != nullptr
       && objective_function_->BoostFromAverage()) {
     auto label = train_data_->metadata().label();
-    double init_score = LabelAverage(objective_function_, label, num_data_);
+    double init_score = ObtainAutomaticInitialScore(objective_function_, label, num_data_);
     std::unique_ptr<Tree> new_tree(new Tree(2));
     new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0, init_score, init_score, 0, 0, -1, 0, 0, 0);
     train_score_updater_->AddScore(init_score, 0);
