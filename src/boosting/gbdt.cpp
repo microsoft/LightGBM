@@ -425,6 +425,46 @@ double LabelAverage(const float* label, data_size_t num_data) {
   }
 }
 
+/* If the custom "average" is implemented it will be used inplace of the label average (if enabled)
+ *
+ * An improvement to this is to have options to explicitly choose
+ * (i) standard average
+ * (ii) custom average if available
+ * (iii) any user defined scalar bias (e.g. using a new option "init_score" that overrides (i) and (ii) )
+ *
+ * (i) and (ii) could be selected as say "auto_init_score" = 0 or 1 etc..
+ *
+ */
+bool PollCustomAverage(const ObjectiveFunction* objf, double *thescore) {
+  if (objf == nullptr || thescore == nullptr) return false;
+  double init_score = 0.0f;
+  if (!objf->GetCustomAverage(&init_score)) return false;
+  if (Network::num_machines() > 1) {
+    double global_init_score = 0.0f;
+    Network::Allreduce(reinterpret_cast<char*>(&init_score),
+                       sizeof(init_score), sizeof(init_score),
+                       reinterpret_cast<char*>(&global_init_score),
+                       [] (const char* src, char* dst, int len) {
+      int used_size = 0;
+      const int type_size = sizeof(double);
+      const double *p1;
+      double *p2;
+      while (used_size < len) {
+        p1 = reinterpret_cast<const double *>(src);
+        p2 = reinterpret_cast<double *>(dst);
+        *p2 += *p1;
+        src += type_size;
+        dst += type_size;
+        used_size += type_size;
+      }
+    });
+    *thescore = global_init_score / Network::num_machines();
+  } else {
+    *thescore = init_score;
+  }
+  return true;
+}
+
 bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) {
   // boosting from average prediction. It doesn't work well for classification, remove it for now.
   if (models_.empty()
@@ -435,7 +475,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
       && objective_function_->BoostFromAverage()) {
     double init_score = 0.0f;
     // First try to poll the optional custom average score calculation for the specific objective
-    if (!objective_function_->GetCustomAverage(&init_score)) {
+    if (!PollCustomAverage(objective_function_, &init_score)) {
       // otherwise compute a standard label average
       auto label = train_data_->metadata().label();
       init_score = LabelAverage(label, num_data_);
