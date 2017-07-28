@@ -13,12 +13,15 @@ namespace LightGBM {
 class BinaryLogloss: public ObjectiveFunction {
 public:
   explicit BinaryLogloss(const ObjectiveConfig& config, std::function<bool(float)> is_pos = nullptr) {
-    is_unbalance_ = config.is_unbalance;
     sigmoid_ = static_cast<double>(config.sigmoid);
     if (sigmoid_ <= 0.0) {
       Log::Fatal("Sigmoid parameter %f should be greater than zero", sigmoid_);
     }
+    is_unbalance_ = config.is_unbalance;
     scale_pos_weight_ = static_cast<double>(config.scale_pos_weight);
+    if(is_unbalance_ && std::fabs(scale_pos_weight_ - 1.0f) > 1e-6) {
+      Log::Fatal("Cannot set is_unbalance and scale_pos_weight at the same time.");
+    }
     is_pos_ = is_pos;
     if (is_pos_ == nullptr) {
       is_pos_ = [](float label) {return label > 0; };
