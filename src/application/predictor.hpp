@@ -110,12 +110,12 @@ public:
     #endif
 
     if (result_file == NULL) {
-      Log::Fatal("Prediction results file %s doesn't exist", data_filename);
+      Log::Fatal("Prediction results file %s cannot be found.", result_filename);
     }
     auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, has_header, boosting_->MaxFeatureIdx() + 1, boosting_->LabelIdx()));
 
     if (parser == nullptr) {
-      Log::Fatal("Could not recognize the data format of data file %s", data_filename);
+      Log::Fatal("Could not recognize the data format of data file %s.", data_filename);
     }
 
     // function for parse data
