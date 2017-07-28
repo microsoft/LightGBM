@@ -393,13 +393,30 @@ void GBDT::UpdateScoreOutOfBag(const Tree* tree, const int cur_tree_id) {
   #endif
 }
 
-double LabelAverage(const float* label, data_size_t num_data) {
-  double sum_label = 0.0f;
-  #pragma omp parallel for schedule(static) reduction(+:sum_label)
-  for (data_size_t i = 0; i < num_data; ++i) {
-    sum_label += label[i];
+/* If the custom "average" is implemented it will be used inplace of the label average (if enabled)
+ *
+ * An improvement to this is to have options to explicitly choose
+ * (i) standard average
+ * (ii) custom average if available
+ * (iii) any user defined scalar bias (e.g. using a new option "init_score" that overrides (i) and (ii) )
+ *
+ * (i) and (ii) could be selected as say "auto_init_score" = 0 or 1 etc..
+ *
+ */
+double LabelAverage(const ObjectiveFunction* objf, const float* label, data_size_t num_data) {
+  double init_score = 0.0f;
+  bool got_custom = false;
+  if (objf != nullptr) {
+    got_custom = objf->GetCustomAverage(&init_score);
   }
-  double init_score = sum_label / num_data;
+  if (!got_custom) {
+    double sum_label = 0.0f;
+    #pragma omp parallel for schedule(static) reduction(+:sum_label)
+    for (data_size_t i = 0; i < num_data; ++i) {
+      sum_label += label[i];
+    }
+    init_score = sum_label / num_data;
+  }
   if (Network::num_machines() > 1) {
     double global_init_score = 0.0f;
     Network::Allreduce(reinterpret_cast<char*>(&init_score),
@@ -425,61 +442,16 @@ double LabelAverage(const float* label, data_size_t num_data) {
   }
 }
 
-/* If the custom "average" is implemented it will be used inplace of the label average (if enabled)
- *
- * An improvement to this is to have options to explicitly choose
- * (i) standard average
- * (ii) custom average if available
- * (iii) any user defined scalar bias (e.g. using a new option "init_score" that overrides (i) and (ii) )
- *
- * (i) and (ii) could be selected as say "auto_init_score" = 0 or 1 etc..
- *
- */
-bool PollCustomAverage(const ObjectiveFunction* objf, double *thescore) {
-  if (objf == nullptr || thescore == nullptr) return false;
-  double init_score = 0.0f;
-  if (!objf->GetCustomAverage(&init_score)) return false;
-  if (Network::num_machines() > 1) {
-    double global_init_score = 0.0f;
-    Network::Allreduce(reinterpret_cast<char*>(&init_score),
-                       sizeof(init_score), sizeof(init_score),
-                       reinterpret_cast<char*>(&global_init_score),
-                       [] (const char* src, char* dst, int len) {
-      int used_size = 0;
-      const int type_size = sizeof(double);
-      const double *p1;
-      double *p2;
-      while (used_size < len) {
-        p1 = reinterpret_cast<const double *>(src);
-        p2 = reinterpret_cast<double *>(dst);
-        *p2 += *p1;
-        src += type_size;
-        dst += type_size;
-        used_size += type_size;
-      }
-    });
-    *thescore = global_init_score / Network::num_machines();
-  } else {
-    *thescore = init_score;
-  }
-  return true;
-}
-
 bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) {
-  // boosting from average prediction. It doesn't work well for classification, remove it for now.
+  // boosting from average label; or customized "average" if implemented for the current objective
   if (models_.empty()
       && gbdt_config_->boost_from_average
       && !train_score_updater_->has_init_score()
       && num_class_ <= 1
       && objective_function_ != nullptr
       && objective_function_->BoostFromAverage()) {
-    double init_score = 0.0f;
-    // First try to poll the optional custom average score calculation for the specific objective
-    if (!PollCustomAverage(objective_function_, &init_score)) {
-      // otherwise compute a standard label average
-      auto label = train_data_->metadata().label();
-      init_score = LabelAverage(label, num_data_);
-    }
+    auto label = train_data_->metadata().label();
+    double init_score = LabelAverage(objective_function_, label, num_data_);
     std::unique_ptr<Tree> new_tree(new Tree(2));
     new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0, init_score, init_score, 0, 0, -1, 0, 0, 0);
     train_score_updater_->AddScore(init_score, 0);
