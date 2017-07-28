@@ -237,7 +237,7 @@ public:
     double sumy = 0.0f;
     for (data_size_t i = 0; i < num_data_; ++i) sumy += label_[i];
     double sumw = 0.0f;
-    if (weights_ == nullptr) {
+    if (weights_ != nullptr) {
       for (data_size_t i = 0; i < num_data_; ++i) sumw += weights_[i];
     } else {
       sumw = static_cast<double>(num_data_);
