@@ -6,6 +6,7 @@ import os
 import unittest
 
 import lightgbm as lgb
+import random
 import numpy as np
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
                               load_iris, load_svmlight_file)
