@@ -113,7 +113,7 @@ class TestEngine(unittest.TestCase):
         gbm = lgb.train(params, lgb_train,
                         num_boost_round=20,
                         valid_sets=lgb_eval,
-                        verbose_eval=False,
+                        verbose_eval=True,
                         evals_result=evals_result)
         ret = mean_squared_error(y_train, gbm.predict(X_train))
         self.assertLess(ret, 0.005)

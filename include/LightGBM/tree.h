@@ -186,6 +186,24 @@ public:
     return fval;
   }
 
+  inline static double ConvertMissingValue(double fval, double threshold, int8_t decision_type) {
+    uint8_t missing_type = GetMissingType(decision_type);
+    if (std::isnan(fval)) {
+      if (missing_type != 2) {
+        fval = 0.0f;
+      }
+    }
+    if ((missing_type == 1 && IsZero(fval))
+        || (missing_type == 2 && std::isnan(fval))) {
+      if (GetDecisionType(decision_type, kDefaultLeftMask)) {
+        fval = threshold;
+      } else {
+        fval = 10.0f * threshold;
+      }
+    }
+    return fval;
+  }
+
   inline static const char* GetDecisionTypeName(int8_t type) {
     if (type == 0) {
       return "no_greater";
@@ -272,21 +290,8 @@ inline int Tree::GetLeaf(const double* feature_values) const {
   int node = 0;
   if (has_categorical_) {
     while (node >= 0) {
-      double fval = feature_values[split_feature_[node]];
-      uint8_t missing_type = GetMissingType(decision_type_[node]);
-      if (std::isnan(fval)) {
-        if (missing_type != 2) {
-          fval = 0.0f;
-        }
-      }
-      if ((missing_type == 1 && IsZero(fval))
-          || (missing_type == 2 && std::isnan(fval))) {
-        if (GetDecisionType(decision_type_[node], kDefaultLeftMask)) {
-          node = left_child_[node];
-        } else {
-          node = right_child_[node];
-        }
-      } else if (decision_funs[GetDecisionType(decision_type_[node], kCategoricalMask)](
+      double fval = ConvertMissingValue(feature_values[split_feature_[node]], threshold_[node], decision_type_[node]);
+      if (decision_funs[GetDecisionType(decision_type_[node], kCategoricalMask)](
         fval,
         threshold_[node])) {
         node = left_child_[node];
@@ -296,21 +301,8 @@ inline int Tree::GetLeaf(const double* feature_values) const {
     }
   } else {
     while (node >= 0) {
-      double fval = feature_values[split_feature_[node]];
-      uint8_t missing_type = GetMissingType(decision_type_[node]);
-      if (std::isnan(fval)) {
-        if (missing_type != 2) {
-          fval = 0.0f;
-        }
-      }
-      if ((missing_type == 1 && IsZero(fval))
-          || (missing_type == 2 && std::isnan(fval))) {
-        if (GetDecisionType(decision_type_[node], kDefaultLeftMask)) {
-          node = left_child_[node];
-        } else {
-          node = right_child_[node];
-        }
-      } else if (NumericalDecision<double>(
+      double fval = ConvertMissingValue(feature_values[split_feature_[node]], threshold_[node], decision_type_[node]);
+      if (NumericalDecision<double>(
         fval,
         threshold_[node])) {
         node = left_child_[node];

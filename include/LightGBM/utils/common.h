@@ -513,10 +513,10 @@ inline static std::vector<int> VectorSize(const std::vector<std::vector<T>>& dat
 }
 
 inline static double AvoidInf(double x) {
-  if (x >= std::numeric_limits<double>::max()) {
-    return std::numeric_limits<double>::max();
-  } else if(x <= std::numeric_limits<double>::lowest()) {
-    return std::numeric_limits<double>::lowest();
+  if (x >= 1e300) {
+    return 1e300;
+  } else if(x <= -1e300) {
+    return -1e300;
   } else {
     return x;
   }
