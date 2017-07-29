@@ -29,7 +29,7 @@ public:
         *out_label = val;
         bias = -1;
       }
-      else if (fabs(val) > 1e-10) {
+      else if (std::fabs(val) > kEpsilon || std::isnan(val)) {
         out_features->emplace_back(idx + bias, val);
       }
       ++idx;
@@ -59,7 +59,7 @@ public:
       if (idx == label_idx_) {
         *out_label = val;
         bias = -1;
-      } else if (fabs(val) > 1e-10) {
+      } else if (std::fabs(val) > kEpsilon || std::isnan(val)) {
         out_features->emplace_back(idx + bias, val);
       }
       ++idx;

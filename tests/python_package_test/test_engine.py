@@ -94,6 +94,31 @@ class TestEngine(unittest.TestCase):
         self.assertLess(ret, 16)
         self.assertAlmostEqual(evals_result['valid_0']['l2'][-1], ret, places=5)
 
+    def test_missing_value_handle(self):
+        X_train = np.zeros((1000, 1))
+        y_train = np.zeros(1000)
+        trues = random.sample(range(1000), 200)
+        for idx in trues:
+            X_train[idx, 0] = np.nan
+            y_train[idx] = 1
+        lgb_train = lgb.Dataset(X_train, y_train)
+        lgb_eval = lgb.Dataset(X_train, y_train)
+
+        params = {
+            'metric': 'l2',
+            'verbose': 1,
+            'boost_from_average': False
+        } 
+        evals_result = {}
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=20,
+                        valid_sets=lgb_eval,
+                        verbose_eval=True,
+                        evals_result=evals_result)
+        ret = mean_squared_error(y_train, gbm.predict(X_train))
+        self.assertLess(ret, 0.005)
+        self.assertAlmostEqual(evals_result['valid_0']['l2'][-1], ret, places=5)
+
     def test_multiclass(self):
         X, y = load_digits(10, True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)

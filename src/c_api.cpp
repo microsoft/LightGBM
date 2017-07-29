@@ -1070,7 +1070,7 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
     const int tid = omp_get_thread_num();
     for (int j = 0; j < ncol; ++j) {
       auto val = iterators[tid][j].Get(i);
-      if (std::fabs(val) > kEpsilon) {
+      if (std::fabs(val) > kEpsilon || std::isnan(val)) {
         one_row.emplace_back(j, val);
       }
     }
@@ -1223,7 +1223,7 @@ RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int d
       auto raw_values = inner_function(row_idx);
       std::vector<std::pair<int, double>> ret;
       for (int i = 0; i < static_cast<int>(raw_values.size()); ++i) {
-        if (std::fabs(raw_values[i]) > 1e-15) {
+        if (std::fabs(raw_values[i]) > kEpsilon || std::isnan(raw_values[i])) {
           ret.emplace_back(i, raw_values[i]);
         }
       }
