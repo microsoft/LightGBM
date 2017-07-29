@@ -1174,6 +1174,25 @@ class Dataset(object):
         else:
             raise LightGBMError("Cannot get num_feature before construct dataset")
 
+    def get_ref_chain(self, ref_limit = 100):
+        '''
+        Gets a chain of Dataset objects, starting with r, then going to r.reference if exists, 
+            then to r.reference.reference, etc. until we hit ref_limit or a reference loop
+
+        Returns
+        -------
+        chain of references of self : set of Dataset objects
+        '''
+        head = self
+        ref_chain=[]
+        while len(ref_chain)<ref_limit:
+            ref_chain += ([head] if isinstance(head, Dataset) else [])
+            if isinstance(head, Dataset) and (head.reference is not None) and (head.reference not in ref_chain):
+                head = head.reference
+            else:
+                break
+        return(set(ref_chain))
+
 
 class Booster(object):
     """"Booster in LightGBM."""

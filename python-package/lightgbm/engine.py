@@ -128,7 +128,8 @@ def train(params, train_set, num_boost_round=100,
                 continue
             if not isinstance(valid_data, Dataset):
                 raise TypeError("Traninig only accepts Dataset object")
-            valid_data.set_reference(train_set)
+            if not train_set.get_ref_chain().intersection(valid_data.get_ref_chain()):
+                valid_data.set_reference(train_set)
             reduced_valid_sets.append(valid_data)
             if valid_names is not None and len(valid_names) > i:
                 name_valid_sets.append(valid_names[i])
