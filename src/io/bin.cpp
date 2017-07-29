@@ -282,7 +282,7 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
         cnt_in_bin[i_bin] += counts[i];
       }
       if (missing_type_ == MissingType::NaN) {
-        cnt_in_bin[num_bin_ - 1] == na_cnt;
+        cnt_in_bin[num_bin_ - 1] = na_cnt;
       }
     }
     CHECK(num_bin_ <= max_bin);

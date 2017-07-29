@@ -71,7 +71,7 @@ public:
 
   void FindBestThreshold(double sum_gradient, double sum_hessian, data_size_t num_data,
                          SplitInfo* output) {
-    output->default_bin_for_zero = meta_->default_bin;
+    output->default_left = true;
     output->gain = kMinScore;
     find_best_threshold_fun_(sum_gradient, sum_hessian + 2 * kEpsilon, num_data, output);
   }
@@ -83,7 +83,7 @@ public:
     double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian,
                                          meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2);
     double min_gain_shift = gain_shift + meta_->tree_config->min_gain_to_split;
-    if (meta_->missing_type != MissingType::None && meta_->num_bin > 2) {
+    if (meta_->missing_type == MissingType::Zero && meta_->num_bin > 2) {
       FindBestThresholdSequence(sum_gradient, sum_hessian, num_data, min_gain_shift, output, 0);
       FindBestThresholdSequence(sum_gradient, sum_hessian, num_data, min_gain_shift, output, meta_->num_bin - 1);
     } else {
@@ -377,7 +377,7 @@ private:
       output->right_sum_gradient = sum_gradient - best_sum_left_gradient;
       output->right_sum_hessian = sum_hessian - best_sum_left_hessian - kEpsilon;
       output->gain = best_gain;
-      output->default_bin_for_zero = default_bin_for_zero;
+      output->default_left = dir == -1;
     }
   }
 

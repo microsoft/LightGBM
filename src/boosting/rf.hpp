@@ -128,7 +128,7 @@ public:
           double output = class_default_output_[cur_tree_id];
           objective_function_->ConvertOutput(&output, &output);
           new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0,
-                          output, output, 0, 0, -1, 0, 0, 0);
+                          output, output, 0, 0, -1, MissingType::None, true);
           train_score_updater_->AddScore(output, cur_tree_id);
           for (auto& score_updater : valid_score_updater_) {
             score_updater->AddScore(output, cur_tree_id);
