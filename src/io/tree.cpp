@@ -132,7 +132,7 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
           int node = 0;
           while (node >= 0) {
             uint32_t fval = ConvertMissingValue(iter[node]->Get(i), threshold_in_bin_[node], decision_type_[node], default_bins[node], max_bins[node]);
-            if (inner_decision_funs[decision_type_[node]](
+            if (inner_decision_funs[GetDecisionType(decision_type_[node], kCategoricalMask)](
               fval,
               threshold_in_bin_[node])) {
               node = left_child_[node];
@@ -155,7 +155,7 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
           int node = 0;
           while (node >= 0) {
             uint32_t fval = ConvertMissingValue(iter[split_feature_inner_[node]]->Get(i), threshold_in_bin_[node], decision_type_[node], default_bins[node], max_bins[node]);
-            if (inner_decision_funs[decision_type_[node]](
+            if (inner_decision_funs[GetDecisionType(decision_type_[node], kCategoricalMask)](
               fval,
               threshold_in_bin_[node])) {
               node = left_child_[node];
@@ -242,7 +242,7 @@ void Tree::AddPredictionToScore(const Dataset* data,
           const data_size_t idx = used_data_indices[i];
           while (node >= 0) {
             uint32_t fval = ConvertMissingValue(iter[node]->Get(idx), threshold_in_bin_[node], decision_type_[node], default_bins[node], max_bins[node]);
-            if (inner_decision_funs[decision_type_[node]](
+            if (inner_decision_funs[GetDecisionType(decision_type_[node], kCategoricalMask)](
               fval,
               threshold_in_bin_[node])) {
               node = left_child_[node];
@@ -266,7 +266,7 @@ void Tree::AddPredictionToScore(const Dataset* data,
           int node = 0;
           while (node >= 0) {
             uint32_t fval = ConvertMissingValue(iter[split_feature_inner_[node]]->Get(idx), threshold_in_bin_[node], decision_type_[node], default_bins[node], max_bins[node]);
-            if (inner_decision_funs[decision_type_[node]](
+            if (inner_decision_funs[GetDecisionType(decision_type_[node], kCategoricalMask)](
               fval,
               threshold_in_bin_[node])) {
               node = left_child_[node];
@@ -425,8 +425,8 @@ std::string Tree::NodeToIfElse(int index, bool is_predict_leaf_index) {
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   if (index >= 0) {
     // non-leaf
-    str_buf << "if (Tree::ConvertMissingValue(arr[" << split_feature_[index] << "], " << threshold_[index] << ", " << decision_type_[index] << ") ";
-    if (decision_type_[index] == 0) {
+    str_buf << "if (Tree::ConvertMissingValue(arr[" << split_feature_[index] << "], " << threshold_[index] << ", " << static_cast<int>(decision_type_[index]) << ") ";
+    if (GetDecisionType(decision_type_[index], kCategoricalMask) == 0) {
       str_buf << "<";
     } else {
       str_buf << "=";
