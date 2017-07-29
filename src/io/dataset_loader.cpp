@@ -677,7 +677,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
         sample_values.resize(inner_data.first + 1);
         sample_indices.resize(inner_data.first + 1);
       }
-      if (std::fabs(inner_data.second) > kEpsilon) {
+      if (std::fabs(inner_data.second) > kEpsilon || std::isnan(inner_data.second)) {
         sample_values[inner_data.first].emplace_back(inner_data.second);
         sample_indices[inner_data.first].emplace_back(i);
       }

@@ -189,36 +189,25 @@ std::vector<double> FindBinWithZeroAsMissing(const double* distinct_values, cons
 void BinMapper::FindBin(double* values, int num_sample_values, size_t total_sample_cnt,
   int max_bin, int min_data_in_bin, int min_split_data, BinType bin_type, bool use_missing, bool zero_as_missing) {
   int na_cnt = 0;
-  if (!use_missing) {
-    for (int i = 0; i < num_sample_values; ++i) {
-      if (std::isnan(values[i])) {
-        values[i] = 0.0f;
-      }
+  int tmp_num_sample_values = 0;
+  for (int i = 0; i < num_sample_values; ++i) {
+    if (!std::isnan(values[i])) {
+      values[tmp_num_sample_values++] = values[i];
     }
+  }
+  if (!use_missing) {
     missing_type_ = MissingType::None;
   } else if (zero_as_missing) {
-    // convert all nan to zero
-    for (int i = 0; i < num_sample_values; ++i) {
-      if (std::isnan(values[i])) {
-        values[i] = 0.0f;
-      }
-    }
     missing_type_ = MissingType::Zero;
   } else {
-    int j = 0;
-    for (int i = 0; i < num_sample_values; ++i) {
-      if (!std::isnan(values[i])) {
-        values[j++] = values[i];
-      }
-    }
-    if (j == num_sample_values) {
+    if (tmp_num_sample_values == num_sample_values) {
       missing_type_ = MissingType::None;
     } else {
       missing_type_ = MissingType::NaN;
     }
-    na_cnt = num_sample_values - j;
-    num_sample_values = j;
+    na_cnt = num_sample_values - tmp_num_sample_values;
   }
+  num_sample_values = tmp_num_sample_values;
 
   bin_type_ = bin_type;
   default_bin_ = 0;
@@ -265,6 +254,9 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
   if (bin_type_ == BinType::NumericalBin) {
     if (missing_type_ == MissingType::Zero) {
       bin_upper_bound_ = FindBinWithZeroAsMissing(distinct_values.data(), counts.data(), num_distinct_values, max_bin, total_sample_cnt, min_data_in_bin);
+      if (bin_upper_bound_.size() == 2) {
+        missing_type_ = MissingType::None;
+      }
     } else if (missing_type_ == MissingType::None) {
       bin_upper_bound_ = GreedyFindBin(distinct_values.data(), counts.data(), num_distinct_values, max_bin, total_sample_cnt, min_data_in_bin);
     } else {

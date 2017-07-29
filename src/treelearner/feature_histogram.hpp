@@ -93,6 +93,10 @@ public:
       }
     } else {
       FindBestThresholdSequence(sum_gradient, sum_hessian, num_data, min_gain_shift, output, -1, false, false);
+      // fix the direction error when only have 2 bins
+      if (meta_->missing_type == MissingType::NaN) {
+        output->default_left = false;
+      }
     }
     output->gain -= min_gain_shift;
   }
