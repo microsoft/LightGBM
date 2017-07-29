@@ -106,14 +106,14 @@ class TestEngine(unittest.TestCase):
 
         params = {
             'metric': 'l2',
-            'verbose': 1,
+            'verbose': -1,
             'boost_from_average': False
-        } 
+        }
         evals_result = {}
         gbm = lgb.train(params, lgb_train,
                         num_boost_round=20,
                         valid_sets=lgb_eval,
-                        verbose_eval=True,
+                        verbose_eval=False,
                         evals_result=evals_result)
         ret = mean_squared_error(y_train, gbm.predict(X_train))
         self.assertLess(ret, 0.005)
