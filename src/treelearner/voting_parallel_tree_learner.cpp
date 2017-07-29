@@ -68,6 +68,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
   for (int i = 0; i < train_data->num_features(); ++i) {
     feature_metas_[i].num_bin = train_data->FeatureNumBin(i);
     feature_metas_[i].default_bin = train_data->FeatureBinMapper(i)->GetDefaultBin();
+    feature_metas_[i].missing_type = train_data->FeatureBinMapper(i)->missing_type();
     if (train_data->FeatureBinMapper(i)->GetDefaultBin() == 0) {
       feature_metas_[i].bias = 1;
     } else {

@@ -14,6 +14,7 @@ namespace LightGBM
 class FeatureMetainfo {
 public:
   int num_bin;
+  MissingType missing_type;
   int bias = 0;
   uint32_t default_bin;
   /*! \brief pointer of tree config */
@@ -82,7 +83,7 @@ public:
     double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian,
                                          meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2);
     double min_gain_shift = gain_shift + meta_->tree_config->min_gain_to_split;
-    if (meta_->tree_config->use_missing && meta_->num_bin > 2) {
+    if (meta_->missing_type != MissingType::None && meta_->num_bin > 2) {
       FindBestThresholdSequence(sum_gradient, sum_hessian, num_data, min_gain_shift, output, 0);
       FindBestThresholdSequence(sum_gradient, sum_hessian, num_data, min_gain_shift, output, meta_->num_bin - 1);
     } else {
@@ -444,6 +445,7 @@ public:
       for (int i = 0; i < num_feature; ++i) {
         feature_metas_[i].num_bin = train_data->FeatureNumBin(i);
         feature_metas_[i].default_bin = train_data->FeatureBinMapper(i)->GetDefaultBin();
+        feature_metas_[i].missing_type = train_data->FeatureBinMapper(i)->missing_type();
         if (train_data->FeatureBinMapper(i)->GetDefaultBin() == 0) {
           feature_metas_[i].bias = 1;
         } else {

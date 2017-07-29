@@ -1179,9 +1179,6 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
         auto tmp_ptr = data_ptr + static_cast<size_t>(num_col) * row_idx;
         for (int i = 0; i < num_col; ++i) {
           ret[i] = static_cast<double>(*(tmp_ptr + i));
-          if (std::isnan(ret[i])) {
-            ret[i] = 0.0f;
-          }
         }
         return ret;
       };
@@ -1190,9 +1187,6 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
         std::vector<double> ret(num_col);
         for (int i = 0; i < num_col; ++i) {
           ret[i] = static_cast<double>(*(data_ptr + static_cast<size_t>(num_row) * i + row_idx));
-          if (std::isnan(ret[i])) {
-            ret[i] = 0.0f;
-          }
         }
         return ret;
       };
@@ -1205,9 +1199,6 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
         auto tmp_ptr = data_ptr + static_cast<size_t>(num_col) * row_idx;
         for (int i = 0; i < num_col; ++i) {
           ret[i] = static_cast<double>(*(tmp_ptr + i));
-          if (std::isnan(ret[i])) {
-            ret[i] = 0.0f;
-          }
         }
         return ret;
       };
@@ -1216,9 +1207,6 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
         std::vector<double> ret(num_col);
         for (int i = 0; i < num_col; ++i) {
           ret[i] = static_cast<double>(*(data_ptr + static_cast<size_t>(num_row) * i + row_idx));
-          if (std::isnan(ret[i])) {
-            ret[i] = 0.0f;
-          }
         }
         return ret;
       };
@@ -1256,9 +1244,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
         int64_t start = ptr_indptr[idx];
         int64_t end = ptr_indptr[idx + 1];
         for (int64_t i = start; i < end; ++i) {
-          if (!std::isnan(data_ptr[i])) {
-            ret.emplace_back(indices[i], data_ptr[i]);
-          }
+          ret.emplace_back(indices[i], data_ptr[i]);
         }
         return ret;
       };
@@ -1269,9 +1255,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
         int64_t start = ptr_indptr[idx];
         int64_t end = ptr_indptr[idx + 1];
         for (int64_t i = start; i < end; ++i) {
-          if (!std::isnan(data_ptr[i])) {
-            ret.emplace_back(indices[i], data_ptr[i]);
-          }
+          ret.emplace_back(indices[i], data_ptr[i]);
         }
         return ret;
       };
@@ -1285,9 +1269,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
         int64_t start = ptr_indptr[idx];
         int64_t end = ptr_indptr[idx + 1];
         for (int64_t i = start; i < end; ++i) {
-          if (!std::isnan(data_ptr[i])) {
-            ret.emplace_back(indices[i], data_ptr[i]);
-          }
+          ret.emplace_back(indices[i], data_ptr[i]);
         }
         return ret;
       };
@@ -1298,9 +1280,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
         int64_t start = ptr_indptr[idx];
         int64_t end = ptr_indptr[idx + 1];
         for (int64_t i = start; i < end; ++i) {
-          if (!std::isnan(data_ptr[i])) {
-            ret.emplace_back(indices[i], data_ptr[i]);
-          }
+          ret.emplace_back(indices[i], data_ptr[i]);
         }
         return ret;
       };
@@ -1325,7 +1305,6 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
         }
         int idx = static_cast<int>(indices[i]);
         double val = static_cast<double>(data_ptr[i]);
-        if (std::isnan(val)) { val = 0.0f; }
         return std::make_pair(idx, val);
       };
     } else if (col_ptr_type == C_API_DTYPE_INT64) {
@@ -1339,7 +1318,6 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
         }
         int idx = static_cast<int>(indices[i]);
         double val = static_cast<double>(data_ptr[i]);
-        if (std::isnan(val)) { val = 0.0f; }
         return std::make_pair(idx, val);
       };
     }
@@ -1356,7 +1334,6 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
         }
         int idx = static_cast<int>(indices[i]);
         double val = static_cast<double>(data_ptr[i]);
-        if (std::isnan(val)) { val = 0.0f; }
         return std::make_pair(idx, val);
       };
     } else if (col_ptr_type == C_API_DTYPE_INT64) {
@@ -1370,7 +1347,6 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
         }
         int idx = static_cast<int>(indices[i]);
         double val = static_cast<double>(data_ptr[i]);
-        if (std::isnan(val)) { val = 0.0f; }
         return std::make_pair(idx, val);
       };
     }

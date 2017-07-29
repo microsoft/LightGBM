@@ -233,7 +233,7 @@ inline static const char* Atof(const char* p, double* out) {
       std::string tmp_str(p, cnt);
       std::transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(), Common::tolower);
       if (tmp_str == std::string("na") || tmp_str == std::string("nan")) {
-        *out = 0;
+        *out = NAN;
       } else if (tmp_str == std::string("inf") || tmp_str == std::string("infinity")) {
         *out = sign * 1e308;
       } else {

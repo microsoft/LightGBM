@@ -251,7 +251,7 @@ inline int Tree::GetLeaf(const double* feature_values) const {
   int node = 0;
   if (has_categorical_) {
     while (node >= 0) {
-      double fval = DefaultValueForZero(feature_values[split_feature_[node]], kMissingValueRange, default_value_[node]);
+      double fval = DefaultValueForZero(feature_values[split_feature_[node]], kZeroAsMissingValueRange, default_value_[node]);
       if (decision_funs[decision_type_[node]](
         fval,
         threshold_[node])) {
@@ -262,7 +262,7 @@ inline int Tree::GetLeaf(const double* feature_values) const {
     }
   } else {
     while (node >= 0) {
-      double fval = DefaultValueForZero(feature_values[split_feature_[node]], kMissingValueRange, default_value_[node]);
+      double fval = DefaultValueForZero(feature_values[split_feature_[node]], kZeroAsMissingValueRange, default_value_[node]);
       if (NumericalDecision<double>(
         fval,
         threshold_[node])) {

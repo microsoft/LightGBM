@@ -412,7 +412,7 @@ std::string Tree::NodeToIfElse(int index, bool is_predict_leaf_index) {
     std::stringstream tmp_str_buf;
     tmp_str_buf << "arr[" << split_feature_[index] << "]";
     std::string str_fval = tmp_str_buf.str();
-    str_buf << "if( ( " << str_fval <<" <= " << kMissingValueRange  << " && "<< str_fval << " > -" << kMissingValueRange <<" ?  "
+    str_buf << "if( ( " << str_fval <<" <= " << kZeroAsMissingValueRange  << " && "<< str_fval << " > -" << kZeroAsMissingValueRange <<" ?  "
       << default_value_[index] << " : " << str_fval << " ) ";
     if (decision_type_[index] == 0) {
       str_buf << "<";

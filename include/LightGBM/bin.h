@@ -17,6 +17,11 @@ enum BinType {
   CategoricalBin
 };
 
+enum MissingType {
+  None,
+  NaN,
+  Zero,
+};
 
 /*! \brief Store data for one histogram bin */
 struct HistogramBinEntry {
@@ -63,6 +68,9 @@ public:
     if (num_bin_ != other.num_bin_) {
       return false;
     }
+    if (missing_type_ != other.missing_type_) {
+      return false;
+    }
     if (bin_type_ == BinType::NumericalBin) {
       for (int i = 0; i < num_bin_; ++i) {
         if (bin_upper_bound_[i] != other.bin_upper_bound_[i]) {
@@ -81,6 +89,8 @@ public:
 
   /*! \brief Get number of bins */
   inline int num_bin() const { return num_bin_; }
+  /*! \brief True if has missing value */
+  inline MissingType missing_type() const { return missing_type_; }
   /*! \brief True if bin is trival (contains only one bin) */
   inline bool is_trival() const { return is_trival_; }
   /*! \brief Sparsity of this bin ( num_zero_bins / num_data ) */
@@ -129,8 +139,11 @@ public:
   * \param min_data_in_bin min number of data in one bin
   * \param min_split_data
   * \param bin_type Type of this bin
+  * \param use_missing True to enable missing value handle
+  * \param zero_as_missing True to use zero as missing value
   */
-  void FindBin(double* values, int num_values, size_t total_sample_cnt, int max_bin, int min_data_in_bin, int min_split_data, BinType bin_type);
+  void FindBin(double* values, int num_values, size_t total_sample_cnt, int max_bin, int min_data_in_bin, int min_split_data, BinType bin_type, 
+               bool use_missing, bool zero_as_missing);
 
   /*!
   * \brief Use specific number of bin to calculate the size of this class
@@ -173,6 +186,7 @@ public:
 private:
   /*! \brief Number of bins */
   int num_bin_;
+  MissingType missing_type_;
   /*! \brief Store upper bound for each bin */
   std::vector<double> bin_upper_bound_;
   /*! \brief True if this feature is trival */
@@ -417,10 +431,20 @@ public:
 };
 
 inline uint32_t BinMapper::ValueToBin(double value) const {
+  if (std::isnan(value)) {
+    if (missing_type_ == MissingType::NaN) {
+      return num_bin_ - 1;
+    } else {
+      value = 0.0f;
+    }
+  }
   if (bin_type_ == BinType::NumericalBin) {
     // binary search to find bin
     int l = 0;
     int r = num_bin_ - 1;
+    if (missing_type_ == MissingType::NaN) {
+      r -= 1;
+    }
     while (l < r) {
       int m = (r + l - 1) / 2;
       if (value <= bin_upper_bound_[m]) {
