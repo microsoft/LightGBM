@@ -103,6 +103,7 @@ public:
 
   void FindBestThresholdCategorical(double sum_gradient, double sum_hessian, data_size_t num_data,
                                     SplitInfo* output) {
+    output->default_left = false;
     double best_gain = kMinScore;
     uint32_t best_threshold = static_cast<uint32_t>(meta_->num_bin);
     data_size_t best_left_count = 0;

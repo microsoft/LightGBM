@@ -280,6 +280,7 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
     CHECK(num_bin_ <= max_bin);
   } else {
     // No missing handle for categorical features 
+    missing_type_ = MissingType::None;
     // convert to int type first
     std::vector<int> distinct_values_int;
     std::vector<int> counts_int;
