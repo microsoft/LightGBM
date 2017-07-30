@@ -280,7 +280,8 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetBool(params, "pred_early_stop", &pred_early_stop);
   GetInt(params, "pred_early_stop_freq", &pred_early_stop_freq);
   GetDouble(params, "pred_early_stop_margin", &pred_early_stop_margin);
-
+  GetBool(params, "use_missing", &use_missing);
+  GetBool(params, "zero_as_missing", &zero_as_missing);
   device_type = GetDeviceType(params);
 }
 
@@ -365,7 +366,6 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   GetInt(params, "gpu_platform_id", &gpu_platform_id);
   GetInt(params, "gpu_device_id", &gpu_device_id);
   GetBool(params, "gpu_use_dp", &gpu_use_dp);
-  GetBool(params, "use_missing", &use_missing);
 }
 
 void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& params) {

@@ -79,6 +79,7 @@ Support
 You can ask questions and join the development discussion on:
 
 * [LightGBM Gitter](https://gitter.im/Microsoft/LightGBM).
+* [Stack Overflow](https://stackoverflow.com/questions/tagged/lightgbm).
 
 
 You can also create **bug reports and feature requests** (not including questions) in [Github issues](https://github.com/Microsoft/LightGBM/issues).

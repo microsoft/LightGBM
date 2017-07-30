@@ -174,6 +174,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       Log::Fatal("Could not recognize data format of %s", filename);
     }
     dataset->data_filename_ = filename;
+    dataset->label_idx_ = label_idx_;
     dataset->metadata_.Init(filename);
     if (!io_config_.use_two_round_loading) {
       // read data to memory
@@ -228,6 +229,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
       Log::Fatal("Could not recognize data format of %s", filename);
     }
     dataset->data_filename_ = filename;
+    dataset->label_idx_ = label_idx_;
     dataset->metadata_.Init(filename);
     if (!io_config_.use_two_round_loading) {
       // read data in memory
@@ -315,6 +317,8 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   mem_ptr += sizeof(dataset->num_features_);
   dataset->num_total_features_ = *(reinterpret_cast<const int*>(mem_ptr));
   mem_ptr += sizeof(dataset->num_total_features_);
+  dataset->label_idx_ = *(reinterpret_cast<const int*>(mem_ptr));
+  mem_ptr += sizeof(dataset->label_idx_);
   const int* tmp_feature_map = reinterpret_cast<const int*>(mem_ptr);
   dataset->used_feature_map_.clear();
   for (int i = 0; i < dataset->num_total_features_; ++i) {
@@ -504,7 +508,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
     }
     bin_mappers[i].reset(new BinMapper());
     bin_mappers[i]->FindBin(sample_values[i], num_per_col[i], total_sample_size,
-                            io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt, bin_type);
+                            io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt, bin_type, io_config_.use_missing, io_config_.zero_as_missing);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
@@ -673,7 +677,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
         sample_values.resize(inner_data.first + 1);
         sample_indices.resize(inner_data.first + 1);
       }
-      if (std::fabs(inner_data.second) > kEpsilon) {
+      if (std::fabs(inner_data.second) > kEpsilon || std::isnan(inner_data.second)) {
         sample_values[inner_data.first].emplace_back(inner_data.second);
         sample_indices[inner_data.first].emplace_back(i);
       }
@@ -726,7 +730,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
       }
       bin_mappers[i].reset(new BinMapper());
       bin_mappers[i]->FindBin(sample_values[i].data(), static_cast<int>(sample_values[i].size()),
-                              sample_data.size(), io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt, bin_type);
+                              sample_data.size(), io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt, bin_type, io_config_.use_missing, io_config_.zero_as_missing);
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
@@ -789,7 +793,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
       }
       bin_mappers[i].reset(new BinMapper());
       bin_mappers[i]->FindBin(sample_values[start[rank] + i].data(), static_cast<int>(sample_values[start[rank] + i].size()),
-                              sample_data.size(), io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt, bin_type);
+                              sample_data.size(), io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt, bin_type, io_config_.use_missing, io_config_.zero_as_missing);
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();

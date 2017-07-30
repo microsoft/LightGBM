@@ -148,7 +148,8 @@ public:
   int pred_early_stop_freq = 10;
   /*! \brief Threshold of margin of pred_early_stop */
   double pred_early_stop_margin = 10.0f;
-
+  bool zero_as_missing = false;
+  bool use_missing = true;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -219,8 +220,6 @@ public:
   int gpu_device_id = -1;
   /*! \brief Set to true to use double precision math on GPU (default using single precision) */
   bool gpu_use_dp = false;
-  /*! \brief Set to false to disable the handle of missing values */
-  bool use_missing = true;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -346,7 +345,7 @@ inline bool ConfigBase::GetBool(
 
 struct ParameterAlias {
   static void KeyAliasTransform(std::unordered_map<std::string, std::string>* params) {
-    std::unordered_map<std::string, std::string> alias_table(
+    const std::unordered_map<std::string, std::string> alias_table(
     {
       { "config", "config_file" },
       { "nthread", "num_threads" },
@@ -370,7 +369,7 @@ struct ParameterAlias {
       { "is_sparse", "is_enable_sparse" },
       { "enable_sparse", "is_enable_sparse" },
       { "pre_partition", "is_pre_partition" },
-      { "tranining_metric", "is_training_metric" },
+      { "training_metric", "is_training_metric" },
       { "train_metric", "is_training_metric" },
       { "ndcg_at", "ndcg_eval_at" },
       { "eval_at", "ndcg_eval_at" },
@@ -428,7 +427,7 @@ struct ParameterAlias {
       { "bagging_fraction_seed", "bagging_seed" }, 
       { "num_boost_round", "num_iterations" }
     });
-    std::unordered_set<std::string> parameter_set({
+    const std::unordered_set<std::string> parameter_set({
       "config", "config_file", "task", "device",
       "num_threads", "seed", "boosting_type", "objective", "data",
       "output_model", "input_model", "output_result", "valid_data",
@@ -438,7 +437,7 @@ struct ParameterAlias {
       "bagging_fraction", "bagging_freq", "learning_rate", "tree_learner",
       "num_machines", "local_listen_port", "use_two_round_loading",
       "machine_list_file", "is_save_binary_file", "early_stopping_round",
-      "verbose", "has_header, label_column", "weight_column", "group_column",
+      "verbose", "has_header", "label_column", "weight_column", "group_column",
       "ignore_column", "categorical_column", "is_predict_raw_score",
       "is_predict_leaf_index", "min_gain_to_split", "top_k",
       "lambda_l1", "lambda_l2", "num_class", "is_unbalance",
@@ -456,12 +455,12 @@ struct ParameterAlias {
       "feature_fraction_seed", "enable_bundle", "data_filename", "valid_data_filenames",
       "snapshot_freq", "verbosity", "sparse_threshold", "enable_load_from_binary_file",
       "max_conflict_rate", "poisson_max_delta_step", "gaussian_eta",
-      "histogram_pool_size", "output_freq", "is_provide_training_metric", "machine_list_filename"
+      "histogram_pool_size", "output_freq", "is_provide_training_metric", "machine_list_filename", "zero_as_missing"
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
       if (alias_table.count(pair.first) > 0) {
-        tmp_map[alias_table[pair.first]] = pair.second;
+        tmp_map[alias_table.at(pair.first)] = pair.second;
       } else if (parameter_set.count(pair.first) == 0) {
         Log::Fatal("Unknown parameter: %s", pair.first.c_str());
       }

@@ -232,7 +232,7 @@ class CVBooster(object):
         return handlerFunction
 
 
-def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratified=False, shuffle=True):
+def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratified=True, shuffle=True):
     """
     Make an n-fold list of Booster from random indices.
     """
@@ -294,7 +294,7 @@ def _agg_cv_result(raw_results):
 
 
 def cv(params, train_set, num_boost_round=10,
-       folds=None, nfold=5, stratified=False, shuffle=True,
+       folds=None, nfold=5, stratified=True, shuffle=True,
        metrics=None, fobj=None, feval=None, init_model=None,
        feature_name='auto', categorical_feature='auto',
        early_stopping_rounds=None, fpreproc=None,

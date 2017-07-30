@@ -218,6 +218,7 @@
     <ClInclude Include="..\src\boosting\gbdt.h" />
     <ClInclude Include="..\src\boosting\dart.hpp" />
     <ClInclude Include="..\src\boosting\goss.hpp" />
+    <ClInclude Include="..\src\boosting\rf.hpp" />
     <ClInclude Include="..\src\boosting\score_updater.hpp" />
     <ClInclude Include="..\src\io\dense_bin.hpp" />
     <ClInclude Include="..\src\io\dense_nbits_bin.hpp" />

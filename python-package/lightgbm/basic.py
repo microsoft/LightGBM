@@ -66,7 +66,7 @@ def is_numpy_1d_array(data):
 def is_1d_list(data):
     """Check is 1d list"""
     return isinstance(data, list) and \
-        (not data or isinstance(data[0], numeric_types))
+        (not data or is_numeric(data[0]))
 
 
 def list_to_1d_numpy(data, dtype=np.float32, name='list'):

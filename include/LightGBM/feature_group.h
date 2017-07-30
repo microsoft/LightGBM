@@ -161,14 +161,15 @@ public:
   inline data_size_t Split(
     int sub_feature,
     uint32_t threshold,
-    uint32_t default_bin_for_zero,
+    bool default_left,
     data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const {
 
     uint32_t min_bin = bin_offsets_[sub_feature];
     uint32_t max_bin = bin_offsets_[sub_feature + 1] - 1;
     uint32_t default_bin = bin_mappers_[sub_feature]->GetDefaultBin();
-    return bin_data_->Split(min_bin, max_bin, default_bin, default_bin_for_zero,
+    auto missing_type = bin_mappers_[sub_feature]->missing_type();
+    return bin_data_->Split(min_bin, max_bin, default_bin, missing_type, default_left,
       threshold, data_indices, num_data, lte_indices, gt_indices, bin_mappers_[sub_feature]->bin_type());
   }
   /*!

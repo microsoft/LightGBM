@@ -393,13 +393,30 @@ void GBDT::UpdateScoreOutOfBag(const Tree* tree, const int cur_tree_id) {
   #endif
 }
 
-double LabelAverage(const float* label, data_size_t num_data) {
-  double sum_label = 0.0f;
-  #pragma omp parallel for schedule(static) reduction(+:sum_label)
-  for (data_size_t i = 0; i < num_data; ++i) {
-    sum_label += label[i];
+/* If the custom "average" is implemented it will be used inplace of the label average (if enabled)
+ *
+ * An improvement to this is to have options to explicitly choose
+ * (i) standard average
+ * (ii) custom average if available
+ * (iii) any user defined scalar bias (e.g. using a new option "init_score" that overrides (i) and (ii) )
+ *
+ * (i) and (ii) could be selected as say "auto_init_score" = 0 or 1 etc..
+ *
+ */
+double ObtainAutomaticInitialScore(const ObjectiveFunction* objf, const float* label, data_size_t num_data) {
+  double init_score = 0.0f;
+  bool got_custom = false;
+  if (objf != nullptr) {
+    got_custom = objf->GetCustomAverage(&init_score);
   }
-  double init_score = sum_label / num_data;
+  if (!got_custom) {
+    double sum_label = 0.0f;
+    #pragma omp parallel for schedule(static) reduction(+:sum_label)
+    for (data_size_t i = 0; i < num_data; ++i) {
+      sum_label += label[i];
+    }
+    init_score = sum_label / num_data;
+  }
   if (Network::num_machines() > 1) {
     double global_init_score = 0.0f;
     Network::Allreduce(reinterpret_cast<char*>(&init_score),
@@ -426,7 +443,7 @@ double LabelAverage(const float* label, data_size_t num_data) {
 }
 
 bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) {
-  // boosting from average prediction. It doesn't work well for classification, remove it for now.
+  // boosting from average label; or customized "average" if implemented for the current objective
   if (models_.empty()
       && gbdt_config_->boost_from_average
       && !train_score_updater_->has_init_score()
@@ -434,9 +451,9 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
       && objective_function_ != nullptr
       && objective_function_->BoostFromAverage()) {
     auto label = train_data_->metadata().label();
-    double init_score = LabelAverage(label, num_data_);
+    double init_score = ObtainAutomaticInitialScore(objective_function_, label, num_data_);
     std::unique_ptr<Tree> new_tree(new Tree(2));
-    new_tree->Split(0, 0, 0, 0, 0, init_score, init_score, 0, 0, -1, 0, 0, 0);
+    new_tree->Split(0, 0, 0, 0, 0, init_score, init_score, 0, 0, -1, MissingType::None, true);
     train_score_updater_->AddScore(init_score, 0);
     for (auto& score_updater : valid_score_updater_) {
       score_updater->AddScore(init_score, 0);
@@ -515,7 +532,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
       if (!class_need_train_[cur_tree_id] && models_.size() < static_cast<size_t>(num_tree_per_iteration_)) {
         auto output = class_default_output_[cur_tree_id];
         new_tree->Split(0, 0, 0, 0, 0,
-                        output, output, 0, 0, -1, 0, 0, 0);
+                        output, output, 0, 0, -1, MissingType::None, true);
         train_score_updater_->AddScore(output, cur_tree_id);
         for (auto& score_updater : valid_score_updater_) {
           score_updater->AddScore(output, cur_tree_id);

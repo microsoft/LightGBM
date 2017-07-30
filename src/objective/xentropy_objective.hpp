@@ -102,7 +102,30 @@ public:
     return str_buf.str();
   }
 
+  // allow boost from average option
   bool BoostFromAverage() const override { return true; }
+
+  // implement custom average to boost from (if enabled among options)
+  bool GetCustomAverage(double *initscore) const override {
+    if (initscore == nullptr) return false;
+    double suml = 0.0f;
+    double sumw = 0.0f;
+    if (weights_ != nullptr) {
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        suml += label_[i] * weights_[i];
+        sumw += weights_[i];
+      }
+    } else {
+      sumw = static_cast<double>(num_data_);
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        suml += label_[i];
+      }
+    }
+    double pavg = suml / sumw;
+    *initscore = std::log(pavg / (1.0f - pavg));
+    Log::Info("[%s:%s]: pavg=%f -> initscore=%f",  GetName(), __func__, pavg, *initscore);
+    return true;
+  }
 
 private:
   /*! \brief Number of data points */
@@ -207,8 +230,23 @@ public:
     return str_buf.str();
   }
 
-  // might want to boost from a weighted average in general, if possible
   bool BoostFromAverage() const override { return true; }
+
+  bool GetCustomAverage(double *initscore) const override {
+    if (initscore == nullptr) return false;
+    double sumy = 0.0f;
+    for (data_size_t i = 0; i < num_data_; ++i) sumy += label_[i];
+    double sumw = 0.0f;
+    if (weights_ != nullptr) {
+      for (data_size_t i = 0; i < num_data_; ++i) sumw += weights_[i];
+    } else {
+      sumw = static_cast<double>(num_data_);
+    }
+    double havg = sumy / sumw;
+    *initscore = std::log(std::exp(havg) - 1.0f);
+    Log::Info("[%s:%s]: havg=%f -> initscore=%f",  GetName(), __func__, havg, *initscore);
+    return true;
+  }
 
 private:
   /*! \brief Number of data points */
