@@ -1004,7 +1004,8 @@ class Dataset(object):
         self.set_categorical_feature(reference.categorical_feature)
         self.set_feature_name(reference.feature_name)
         self._set_predictor(reference._predictor)
-        if self.reference is reference:
+        # we're done if self and reference share a common upstrem reference
+        if self.get_ref_chain().intersection(reference.get_ref_chain()):
             return
         if self.data is not None:
             self.reference = reference
