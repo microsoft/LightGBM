@@ -80,6 +80,12 @@ Remember this is a free/open community support. We may not be available 24/7 to 
 
 ---
 
+- **Question 8**: CPU are not kept busy (like 10% CPU usage only) in Windows when using LightGBM on very large datasets with many core systems.
+
+- **Solution 8**: Please use [use Visual Studio](https://github.com/Microsoft/LightGBM/issues/740) as it may be 10x faster than MinGW especially for very large trees.
+
+---
+
 ### R-package
 
 - **Question 1**: Any training command using LightGBM does not work after an error occurred during the training of a previous LightGBM model.
