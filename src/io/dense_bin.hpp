@@ -247,50 +247,25 @@ public:
         }
       }
     } else {
-      if (missing_type != MissingType::Zero && default_bin == threshold) {
+      if (default_bin == threshold) {
         default_indices = lte_indices;
         default_count = &lte_count;
       }
-      if (default_left && missing_type == MissingType::Zero) {
-        default_indices = lte_indices;
-        default_count = &lte_count;
-      }
-      if (missing_type == MissingType::NaN) {
-        data_size_t* missing_default_indices = gt_indices;
-        data_size_t* missing_default_count = &gt_count;
-        if (default_left) {
-          missing_default_indices = lte_indices;
-          missing_default_count = &lte_count;
-        }
-        for (data_size_t i = 0; i < num_data; ++i) {
-          const data_size_t idx = data_indices[i];
-          VAL_T bin = data_[idx];
-          if (bin < minb || bin > maxb || t_default_bin == bin) {
-            default_indices[(*default_count)++] = idx;
-          } else if (bin == maxb) {
-            missing_default_indices[(*missing_default_count)++] = idx;
-          } else if (bin != th) {
-            gt_indices[gt_count++] = idx;
-          } else {
-            lte_indices[lte_count++] = idx;
-          }
-        }
-      } else {
-        for (data_size_t i = 0; i < num_data; ++i) {
-          const data_size_t idx = data_indices[i];
-          VAL_T bin = data_[idx];
-          if (bin < minb || bin > maxb || t_default_bin == bin) {
-            default_indices[(*default_count)++] = idx;
-          } else if (bin != th) {
-            gt_indices[gt_count++] = idx;
-          } else {
-            lte_indices[lte_count++] = idx;
-          }
+      for (data_size_t i = 0; i < num_data; ++i) {
+        const data_size_t idx = data_indices[i];
+        VAL_T bin = data_[idx];
+        if (bin < minb || bin > maxb || t_default_bin == bin) {
+          default_indices[(*default_count)++] = idx;
+        } else if (bin != th) {
+          gt_indices[gt_count++] = idx;
+        } else {
+          lte_indices[lte_count++] = idx;
         }
       }
     }
     return lte_count;
   }
+
   data_size_t num_data() const override { return num_data_; }
 
   /*! \brief not ordered bin for dense feature */
