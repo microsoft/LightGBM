@@ -153,7 +153,7 @@ public:
   }
 
   inline static bool GetDecisionType(int8_t decision_type, int8_t mask) {
-    return (decision_type & mask) == 1;
+    return (decision_type & mask) > 0;
   }
 
   inline static void SetDecisionType(int8_t* decision_type, bool input, int8_t mask) {
