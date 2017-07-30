@@ -224,10 +224,6 @@ PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
 def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
     if isinstance(data, DataFrame):
         if feature_name == 'auto' or feature_name is None:
-            if all([isinstance(name, integer_types + (np.integer, )) for name in data.columns]):
-                msg = """Using Pandas (default) integer column names, not column indexes. You can use indexes with DataFrame.values."""
-                warnings.filterwarnings('once')
-                warnings.warn(msg, stacklevel=5)
             data = data.rename(columns=str)
         cat_cols = data.select_dtypes(include=['category']).columns
         if pandas_categorical is None:  # train dataset
@@ -624,6 +620,8 @@ class Dataset(object):
         self.max_bin = max_bin
         self.predictor = predictor
         params["max_bin"] = max_bin
+        if "verbosity" in params:
+            params.setdefault("verbose", params.pop("verbosity"))
         if silent:
             params["verbose"] = 0
         elif "verbose" not in params:
@@ -642,8 +640,8 @@ class Dataset(object):
                 else:
                     raise TypeError("Wrong type({}) or unknown name({}) in categorical_feature"
                                     .format(type(name).__name__, name))
-
-            params['categorical_column'] = sorted(categorical_indices)
+            if categorical_indices:
+                params['categorical_column'] = sorted(categorical_indices)
 
         params_str = param_dict_to_str(params)
         """process for reference dataset"""
@@ -1199,6 +1197,8 @@ class Booster(object):
         self.best_iteration = -1
         self.best_score = {}
         params = {} if params is None else params
+        if "verbosity" in params:
+            params.setdefault("verbose", params.pop("verbosity"))
         if silent:
             params["verbose"] = 0
         elif "verbose" not in params:
