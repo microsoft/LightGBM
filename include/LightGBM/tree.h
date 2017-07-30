@@ -11,6 +11,8 @@
 namespace LightGBM {
 
 #define kMaxTreeOutput (100)
+#define kCategoricalMask (1)
+#define kDefaultLeftMask (2)
 
 /*!
 * \brief Tree model
@@ -44,15 +46,13 @@ public:
   * \param left_cnt Count of left child
   * \param right_cnt Count of right child
   * \param gain Split gain
-  * \param zero_bin bin value for value==0 (missing value)
-  * \param default_bin default conversion for the missing value, in bin
-  * \param default_value default conversion for the missing value, in float value
+  * \param missing_type missing type
+  * \param default_left default direction for missing value
   * \return The index of new leaf.
   */
   int Split(int leaf, int feature, BinType bin_type, uint32_t threshold, int real_feature, 
             double threshold_double, double left_value, double right_value, 
-            data_size_t left_cnt, data_size_t right_cnt, double gain,
-            uint32_t zero_bin, uint32_t default_bin_for_zero, double default_value);
+            data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type, bool default_left);
 
   /*! \brief Get the output of one leaf */
   inline double LeafOutput(int leaf) const { return leaf_value_[leaf]; }
@@ -127,7 +127,7 @@ public:
   std::string ToIfElse(int index, bool is_predict_leaf_index);
 
   template<typename T>
-  static bool CategoricalDecision(T fval, T threshold) {
+  inline static bool CategoricalDecision(T fval, T threshold) {
     if (static_cast<int>(fval) == static_cast<int>(threshold)) {
       return true;
     } else {
@@ -136,7 +136,7 @@ public:
   }
 
   template<typename T>
-  static bool NumericalDecision(T fval, T threshold) {
+  inline static bool NumericalDecision(T fval, T threshold) {
     if (fval <= threshold) {
       return true;
     } else {
@@ -144,24 +144,67 @@ public:
     }
   }
 
-  static double DefaultValueForZero(double fval, double zero, double out) {
-    if (fval > -zero && fval <= zero) {
-      return out;
+  inline static bool IsZero(double fval) {
+    if (fval > -kZeroAsMissingValueRange && fval <= kZeroAsMissingValueRange) {
+      return true;
     } else {
-      return fval;
+      return false;
     }
   }
 
-  static uint32_t DefaultValueForZero(uint32_t fval, uint32_t zero, uint32_t out) {
-    if (fval == zero) {
-      return out;
+  inline static bool GetDecisionType(int8_t decision_type, int8_t mask) {
+    return (decision_type & mask) > 0;
+  }
+
+  inline static void SetDecisionType(int8_t* decision_type, bool input, int8_t mask) {
+    if (input) {
+      (*decision_type) |= mask;
     } else {
-      return fval;
+      (*decision_type) &= (127 - mask);
     }
   }
 
+  inline static int8_t GetMissingType(int8_t decision_type) {
+    return (decision_type >> 2) & 3;
+  }
 
-  static const char* GetDecisionTypeName(int8_t type) {
+  inline static void SetMissingType(int8_t* decision_type, int8_t input) {
+    (*decision_type) &= 3;
+    (*decision_type) |= (input << 2);
+  }
+
+  inline static uint32_t ConvertMissingValue(uint32_t fval, uint32_t threshold, int8_t decision_type, uint32_t default_bin, uint32_t max_bin) {
+    uint8_t missing_type = GetMissingType(decision_type);
+    if ((missing_type == 1 && fval == default_bin)
+        || (missing_type == 2 && fval == max_bin)) {
+      if (GetDecisionType(decision_type, kDefaultLeftMask)) {
+        fval = threshold;
+      } else {
+        fval = threshold + 1;
+      }
+    }
+    return fval;
+  }
+
+  inline static double ConvertMissingValue(double fval, double threshold, int8_t decision_type) {
+    uint8_t missing_type = GetMissingType(decision_type);
+    if (std::isnan(fval)) {
+      if (missing_type != 2) {
+        fval = 0.0f;
+      }
+    }
+    if ((missing_type == 1 && IsZero(fval))
+        || (missing_type == 2 && std::isnan(fval))) {
+      if (GetDecisionType(decision_type, kDefaultLeftMask)) {
+        fval = threshold;
+      } else {
+        fval = 10.0f * threshold;
+      }
+    }
+    return fval;
+  }
+
+  inline static const char* GetDecisionTypeName(int8_t type) {
     if (type == 0) {
       return "no_greater";
     } else {
@@ -204,12 +247,8 @@ private:
   std::vector<uint32_t> threshold_in_bin_;
   /*! \brief A non-leaf node's split threshold in feature value */
   std::vector<double> threshold_;
-  /*! \brief Decision type, 0 for '<='(numerical feature), 1 for 'is'(categorical feature) */
+  /*! \brief Store the information for categorical feature handle and mising value handle. */
   std::vector<int8_t> decision_type_;
-  /*! \brief Default values for the na/0 feature values */
-  std::vector<double> default_value_;
-  std::vector<uint32_t> zero_bin_;
-  std::vector<uint32_t> default_bin_for_zero_;
   /*! \brief A non-leaf node's split gain */
   std::vector<double> split_gain_;
   // used for leaf node
@@ -251,8 +290,8 @@ inline int Tree::GetLeaf(const double* feature_values) const {
   int node = 0;
   if (has_categorical_) {
     while (node >= 0) {
-      double fval = DefaultValueForZero(feature_values[split_feature_[node]], kMissingValueRange, default_value_[node]);
-      if (decision_funs[decision_type_[node]](
+      double fval = ConvertMissingValue(feature_values[split_feature_[node]], threshold_[node], decision_type_[node]);
+      if (decision_funs[GetDecisionType(decision_type_[node], kCategoricalMask)](
         fval,
         threshold_[node])) {
         node = left_child_[node];
@@ -262,7 +301,7 @@ inline int Tree::GetLeaf(const double* feature_values) const {
     }
   } else {
     while (node >= 0) {
-      double fval = DefaultValueForZero(feature_values[split_feature_[node]], kMissingValueRange, default_value_[node]);
+      double fval = ConvertMissingValue(feature_values[split_feature_[node]], threshold_[node], decision_type_[node]);
       if (NumericalDecision<double>(
         fval,
         threshold_[node])) {

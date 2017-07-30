@@ -22,6 +22,7 @@ BinMapper::BinMapper() {
 // deep copy function for BinMapper
 BinMapper::BinMapper(const BinMapper& other) {
   num_bin_ = other.num_bin_;
+  missing_type_ = other.missing_type_;
   is_trival_ = other.is_trival_;
   sparse_rate_ = other.sparse_rate_;
   bin_type_ = other.bin_type_;
@@ -63,8 +64,9 @@ bool NeedFilter(std::vector<int>& cnt_in_bin, int total_cnt, int filter_cnt, Bin
   }
   return true;
 }
+
 std::vector<double> GreedyFindBin(const double* distinct_values, const int* counts, 
-                                  int num_distinct_values, int max_bin, int total_cnt, int min_data_in_bin) {
+                                  int num_distinct_values, int max_bin, size_t total_cnt, int min_data_in_bin) {
   std::vector<double> bin_upper_bound;
   if (num_distinct_values <= max_bin) {
     bin_upper_bound.clear();
@@ -134,11 +136,82 @@ std::vector<double> GreedyFindBin(const double* distinct_values, const int* coun
   return bin_upper_bound;
 }
 
+std::vector<double> FindBinWithZeroAsMissing(const double* distinct_values, const int* counts,
+                                             int num_distinct_values, int max_bin, size_t total_sample_cnt, int min_data_in_bin) {
+  std::vector<double> bin_upper_bound;
+  int left_cnt_data = 0;
+  int cnt_missing = 0;
+  int right_cnt_data = 0;
+  for (int i = 0; i < num_distinct_values; ++i) {
+    if (distinct_values[i] <= -kZeroAsMissingValueRange) {
+      left_cnt_data += counts[i];
+    } else if (distinct_values[i] > kZeroAsMissingValueRange) {
+      right_cnt_data += counts[i];
+    } else {
+      cnt_missing += counts[i];
+    }
+  }
+
+  int left_cnt = 0;
+  for (int i = 0; i < num_distinct_values; ++i) {
+    if (distinct_values[i] > -kZeroAsMissingValueRange) {
+      left_cnt = i;
+      break;
+    }
+  }
+
+  if (left_cnt > 0) {
+    int left_max_bin = static_cast<int>(static_cast<double>(left_cnt_data) / (total_sample_cnt - cnt_missing) * (max_bin - 1));
+    bin_upper_bound = GreedyFindBin(distinct_values, counts, left_cnt, left_max_bin, left_cnt_data, min_data_in_bin);
+    bin_upper_bound.back() = -kZeroAsMissingValueRange;
+  }
+
+  int right_start = -1;
+  for (int i = left_cnt; i < num_distinct_values; ++i) {
+    if (distinct_values[i] > kZeroAsMissingValueRange) {
+      right_start = i;
+      break;
+    }
+  }
+
+  if (right_start >= 0) {
+    int right_max_bin = max_bin - 1 - static_cast<int>(bin_upper_bound.size());
+    auto right_bounds = GreedyFindBin(distinct_values + right_start, counts + right_start,
+                                      num_distinct_values - right_start, right_max_bin, right_cnt_data, min_data_in_bin);
+    bin_upper_bound.push_back(kZeroAsMissingValueRange);
+    bin_upper_bound.insert(bin_upper_bound.end(), right_bounds.begin(), right_bounds.end());
+  } else {
+    bin_upper_bound.push_back(std::numeric_limits<double>::infinity());
+  }
+  return bin_upper_bound;
+}
+
 void BinMapper::FindBin(double* values, int num_sample_values, size_t total_sample_cnt,
-  int max_bin, int min_data_in_bin, int min_split_data, BinType bin_type) {
+  int max_bin, int min_data_in_bin, int min_split_data, BinType bin_type, bool use_missing, bool zero_as_missing) {
+  int na_cnt = 0;
+  int tmp_num_sample_values = 0;
+  for (int i = 0; i < num_sample_values; ++i) {
+    if (!std::isnan(values[i])) {
+      values[tmp_num_sample_values++] = values[i];
+    }
+  }
+  if (!use_missing) {
+    missing_type_ = MissingType::None;
+  } else if (zero_as_missing) {
+    missing_type_ = MissingType::Zero;
+  } else {
+    if (tmp_num_sample_values == num_sample_values) {
+      missing_type_ = MissingType::None;
+    } else {
+      missing_type_ = MissingType::NaN;
+    }
+    na_cnt = num_sample_values - tmp_num_sample_values;
+  }
+  num_sample_values = tmp_num_sample_values;
+
   bin_type_ = bin_type;
   default_bin_ = 0;
-  int zero_cnt = static_cast<int>(total_sample_cnt - num_sample_values);
+  int zero_cnt = static_cast<int>(total_sample_cnt - num_sample_values - na_cnt);
   // find distinct_values first
   std::vector<double> distinct_values;
   std::vector<int> counts;
@@ -179,52 +252,17 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
   std::vector<int> cnt_in_bin;
   int num_distinct_values = static_cast<int>(distinct_values.size());
   if (bin_type_ == BinType::NumericalBin) {
-    bin_upper_bound_.clear();
-    int left_cnt_data = 0;
-    int missing_cnt_data = 0;
-    int right_cnt_data = 0;
-    for (int i = 0; i < num_distinct_values; ++i) {
-      if (distinct_values[i] <= -kMissingValueRange) {
-        left_cnt_data += counts[i];
-      } else if (distinct_values[i] > kMissingValueRange) {
-        right_cnt_data += counts[i];
-      } else {
-        missing_cnt_data += counts[i];
+    if (missing_type_ == MissingType::Zero) {
+      bin_upper_bound_ = FindBinWithZeroAsMissing(distinct_values.data(), counts.data(), num_distinct_values, max_bin, total_sample_cnt, min_data_in_bin);
+      if (bin_upper_bound_.size() == 2) {
+        missing_type_ = MissingType::None;
       }
-    }
-
-    int left_cnt = 0;
-    for (int i = 0; i < num_distinct_values; ++i) {
-      if (distinct_values[i] > -kMissingValueRange) {
-        left_cnt = i;
-        break;
-      } 
-    }
-
-    if (left_cnt > 0) {
-      int left_max_bin = static_cast<int>(static_cast<double>(left_cnt_data) / (total_sample_cnt - missing_cnt_data) * (max_bin - 1));
-      bin_upper_bound_ = GreedyFindBin(distinct_values.data(), counts.data(), left_cnt, left_max_bin, left_cnt_data, min_data_in_bin);
-      bin_upper_bound_.back() = -kMissingValueRange;
-    }
-
-    int right_start = -1;
-    for (int i = left_cnt; i < num_distinct_values; ++i) {
-      if (distinct_values[i] > kMissingValueRange) {
-        right_start = i;
-        break;
-      }
-    }
-
-    if (right_start >= 0) {
-      int right_max_bin = max_bin - 1 - static_cast<int>(bin_upper_bound_.size());
-      auto right_bounds = GreedyFindBin(distinct_values.data() + right_start, counts.data() + right_start, 
-                                   num_distinct_values - right_start, right_max_bin, right_cnt_data, min_data_in_bin);
-      bin_upper_bound_.push_back(kMissingValueRange);
-      bin_upper_bound_.insert(bin_upper_bound_.end(), right_bounds.begin(), right_bounds.end());
+    } else if (missing_type_ == MissingType::None) {
+      bin_upper_bound_ = GreedyFindBin(distinct_values.data(), counts.data(), num_distinct_values, max_bin, total_sample_cnt, min_data_in_bin);
     } else {
-      bin_upper_bound_.push_back(std::numeric_limits<double>::infinity());
+      bin_upper_bound_ = GreedyFindBin(distinct_values.data(), counts.data(), num_distinct_values, max_bin - 1, total_sample_cnt - na_cnt, min_data_in_bin);
+      bin_upper_bound_.push_back(NaN);
     }
-
     num_bin_ = static_cast<int>(bin_upper_bound_.size());
     {
       cnt_in_bin.resize(num_bin_, 0);
@@ -235,9 +273,14 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
         } 
         cnt_in_bin[i_bin] += counts[i];
       }
+      if (missing_type_ == MissingType::NaN) {
+        cnt_in_bin[num_bin_ - 1] = na_cnt;
+      }
     }
     CHECK(num_bin_ <= max_bin);
   } else {
+    // No missing handle for categorical features 
+    missing_type_ = MissingType::None;
     // convert to int type first
     std::vector<int> distinct_values_int;
     std::vector<int> counts_int;
@@ -293,6 +336,7 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
 int BinMapper::SizeForSpecificBin(int bin) {
   int size = 0;
   size += sizeof(int);
+  size += sizeof(MissingType);
   size += sizeof(bool);
   size += sizeof(double);
   size += sizeof(BinType);
@@ -305,6 +349,8 @@ int BinMapper::SizeForSpecificBin(int bin) {
 void BinMapper::CopyTo(char * buffer) const {
   std::memcpy(buffer, &num_bin_, sizeof(num_bin_));
   buffer += sizeof(num_bin_);
+  std::memcpy(buffer, &missing_type_, sizeof(missing_type_));
+  buffer += sizeof(missing_type_);
   std::memcpy(buffer, &is_trival_, sizeof(is_trival_));
   buffer += sizeof(is_trival_);
   std::memcpy(buffer, &sparse_rate_, sizeof(sparse_rate_));
@@ -327,6 +373,8 @@ void BinMapper::CopyTo(char * buffer) const {
 void BinMapper::CopyFrom(const char * buffer) {
   std::memcpy(&num_bin_, buffer, sizeof(num_bin_));
   buffer += sizeof(num_bin_);
+  std::memcpy(&missing_type_, buffer, sizeof(missing_type_));
+  buffer += sizeof(missing_type_);
   std::memcpy(&is_trival_, buffer, sizeof(is_trival_));
   buffer += sizeof(is_trival_);
   std::memcpy(&sparse_rate_, buffer, sizeof(sparse_rate_));
@@ -354,6 +402,7 @@ void BinMapper::CopyFrom(const char * buffer) {
 
 void BinMapper::SaveBinaryToFile(FILE* file) const {
   fwrite(&num_bin_, sizeof(num_bin_), 1, file);
+  fwrite(&missing_type_, sizeof(missing_type_), 1, file);
   fwrite(&is_trival_, sizeof(is_trival_), 1, file);
   fwrite(&sparse_rate_, sizeof(sparse_rate_), 1, file);
   fwrite(&bin_type_, sizeof(bin_type_), 1, file);
@@ -368,7 +417,7 @@ void BinMapper::SaveBinaryToFile(FILE* file) const {
 }
 
 size_t BinMapper::SizesInByte() const {
-  size_t ret = sizeof(num_bin_) + sizeof(is_trival_) + sizeof(sparse_rate_)
+  size_t ret = sizeof(num_bin_) + sizeof(missing_type_) + sizeof(is_trival_) + sizeof(sparse_rate_)
     + sizeof(bin_type_) + sizeof(min_val_) + sizeof(max_val_) + sizeof(default_bin_);
   if (bin_type_ == BinType::NumericalBin) {
     ret += sizeof(double) *  num_bin_;

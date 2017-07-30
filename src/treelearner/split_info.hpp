@@ -20,8 +20,8 @@ public:
   int feature;
   /*! \brief Split threshold */
   uint32_t threshold;
-
-  uint32_t default_bin_for_zero;
+  /*! \brief True if default split is left */
+  bool default_left;
   /*! \brief Left output after split */
   double left_output;
   /*! \brief Right output after split */

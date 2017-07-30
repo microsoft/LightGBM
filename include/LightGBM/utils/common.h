@@ -233,7 +233,7 @@ inline static const char* Atof(const char* p, double* out) {
       std::string tmp_str(p, cnt);
       std::transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(), Common::tolower);
       if (tmp_str == std::string("na") || tmp_str == std::string("nan")) {
-        *out = 0;
+        *out = NAN;
       } else if (tmp_str == std::string("inf") || tmp_str == std::string("infinity")) {
         *out = sign * 1e308;
       } else {
@@ -513,10 +513,10 @@ inline static std::vector<int> VectorSize(const std::vector<std::vector<T>>& dat
 }
 
 inline static double AvoidInf(double x) {
-  if (x >= std::numeric_limits<double>::max()) {
-    return std::numeric_limits<double>::max();
-  } else if(x <= std::numeric_limits<double>::lowest()) {
-    return std::numeric_limits<double>::lowest();
+  if (x >= 1e300) {
+    return 1e300;
+  } else if(x <= -1e300) {
+    return -1e300;
   } else {
     return x;
   }
