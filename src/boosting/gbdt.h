@@ -175,7 +175,7 @@ public:
 
   /*!
   * \brief Save model to file
-  * \param num_used_model Number of model that want to save, -1 means save all
+  * \param num_iterations Number of model that want to save, -1 means save all
   * \param filename Filename that want to save to
   * \return is_finish Is training finished or not
   */
@@ -183,7 +183,7 @@ public:
 
   /*!
   * \brief Save model to string
-  * \param num_used_model Number of model that want to save, -1 means save all
+  * \param num_iterations Number of model that want to save, -1 means save all
   * \return Non-empty string if succeeded
   */
   virtual std::string SaveModelToString(int num_iterations) const override;
@@ -296,8 +296,10 @@ protected:
   std::string OutputMetric(int iter);
   /*!
   * \brief Calculate feature importances
+  * \param num_iterations Number of model that want to use for feature importance, -1 means use all 
+  * \return sorted pairs of (feature_importance, feature_name)
   */
-  std::vector<std::pair<size_t, std::string>> FeatureImportance() const;
+  std::vector<std::pair<size_t, std::string>> FeatureImportance(int num_iteration) const;
 
   /*! \brief current iteration */
   int iter_;
