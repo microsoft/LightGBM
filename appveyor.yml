@@ -23,7 +23,7 @@ test_script:
   - conda info -a
   - conda install --yes numpy scipy scikit-learn pandas matplotlib
   - pip install pep8 pytest
-  - pytest tests/c_api_test/test_.py
+  - pytest tests/c_api_test/test.py
   - "set /p LGB_VER=< VERSION.txt"
   - cd python-package && python setup.py sdist --formats gztar
   - cd dist 
