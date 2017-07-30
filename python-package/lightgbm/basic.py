@@ -1175,9 +1175,9 @@ class Dataset(object):
         else:
             raise LightGBMError("Cannot get num_feature before construct dataset")
 
-    def get_ref_chain(self, ref_limit = 100):
+    def get_ref_chain(self, ref_limit=100):
         '''
-        Gets a chain of Dataset objects, starting with r, then going to r.reference if exists, 
+        Gets a chain of Dataset objects, starting with r, then going to r.reference if exists,
             then to r.reference.reference, etc. until we hit ref_limit or a reference loop
 
         Returns
@@ -1185,11 +1185,14 @@ class Dataset(object):
         chain of references of self : set of Dataset objects
         '''
         head = self
-        ref_chain=[]
-        while len(ref_chain)<ref_limit:
-            ref_chain += ([head] if isinstance(head, Dataset) else [])
-            if isinstance(head, Dataset) and (head.reference is not None) and (head.reference not in ref_chain):
-                head = head.reference
+        ref_chain = []
+        while len(ref_chain) < ref_limit:
+            if isinstance(head, Dataset) and head.handle is not None:
+                ref_chain += ([head] if isinstance(head, Dataset) else [])
+                if (head.reference is not None) and (head.reference not in ref_chain):
+                    head = head.reference
+                else:
+                    break
             else:
                 break
         return(set(ref_chain))
