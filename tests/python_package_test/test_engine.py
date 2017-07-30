@@ -121,8 +121,8 @@ class TestEngine(unittest.TestCase):
         self.assertAlmostEqual(evals_result['valid_0']['l2'][-1], ret, places=5)
 
     def test_missing_value_handle_na(self):
-        x = [0, 1, 2, 3, 4, 5 ,6, 7, np.nan]
-        y = [1, 1, 1, 1, 0, 0 ,0, 0, 1]
+        x = [0, 1, 2, 3, 4, 5, 6, 7, np.nan]
+        y = [1, 1, 1, 1, 0, 0, 0, 0, 1]
 
         X_train = np.array(x).reshape(len(x), 1)
         y_train = np.array(y)
@@ -147,11 +147,11 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=True,
                         evals_result=evals_result)
         pred = gbm.predict(X_train)
-        self.assertAlmostEqual(pred[-1] , pred[0], places=5)
+        self.assertAlmostEqual(pred[-1], pred[0], places=5)
 
     def test_missing_value_handle_zero(self):
-        x = [0, 1, 2, 3, 4, 5 ,6, 7, np.nan]
-        y = [0, 1, 1, 1, 0, 0 ,0, 0, 0]
+        x = [0, 1, 2, 3, 4, 5, 6, 7, np.nan]
+        y = [0, 1, 1, 1, 0, 0, 0, 0, 0]
 
         X_train = np.array(x).reshape(len(x), 1)
         y_train = np.array(y)
@@ -176,12 +176,12 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=True,
                         evals_result=evals_result)
         pred = gbm.predict(X_train)
-        self.assertAlmostEqual(pred[-1] , pred[-2], places=5)
-        self.assertAlmostEqual(pred[-1] , pred[0], places=5)
+        self.assertAlmostEqual(pred[-1], pred[-2], places=5)
+        self.assertAlmostEqual(pred[-1], pred[0], places=5)
 
     def test_missing_value_handle_none(self):
-        x = [0, 1, 2, 3, 4, 5 ,6, 7, np.nan]
-        y = [0, 1, 1, 1, 0, 0 ,0, 0, 0]
+        x = [0, 1, 2, 3, 4, 5, 6, 7, np.nan]
+        y = [0, 1, 1, 1, 0, 0, 0, 0, 0]
 
         X_train = np.array(x).reshape(len(x), 1)
         y_train = np.array(y)
@@ -206,8 +206,8 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=True,
                         evals_result=evals_result)
         pred = gbm.predict(X_train)
-        self.assertAlmostEqual(pred[0] , pred[1], places=5)
-        self.assertAlmostEqual(pred[-1] , pred[0], places=5)
+        self.assertAlmostEqual(pred[0], pred[1], places=5)
+        self.assertAlmostEqual(pred[-1], pred[0], places=5)
 
     def test_multiclass(self):
         X, y = load_digits(10, True)
