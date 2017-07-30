@@ -174,4 +174,10 @@ significant when the dataset is small.
 | GPU Memory Usage (MB) | 611   | 901     |  1067  |   413   |  405  |  291     |
 
 
+Further Reading
+--------------------------
+
+You can find more details about the GPU algorithm and benchmarks in the following article:
+
+Huan Zhang, Si Si and Cho-Jui Hsieh. [GPU Acceleration for Large-scale Tree Boosting](https://arxiv.org/abs/1706.08359). arXiv:1706.08359, 2017.
 

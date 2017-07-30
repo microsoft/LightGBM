@@ -171,3 +171,10 @@ Further Reading
 
 [GPU Windows Tutorial](./GPU-Windows.md)
 
+Reference
+---------------
+
+Please kindly cite the following article in your publications if you find the GPU acceleration useful:
+
+Huan Zhang, Si Si and Cho-Jui Hsieh. [GPU Acceleration for Large-scale Tree Boosting](https://arxiv.org/abs/1706.08359). arXiv:1706.08359, 2017.
+
