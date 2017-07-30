@@ -244,7 +244,7 @@ public:
     data_size_t* default_indices = gt_indices;
     data_size_t* default_count = &gt_count;
     if (bin_type == BinType::NumericalBin) {
-      if (default_bin <= threshold) {
+      if (missing_type != MissingType::Zero && default_bin <= threshold) {
         default_indices = lte_indices;
         default_count = &lte_count;
       }
@@ -286,7 +286,7 @@ public:
         }
       }
     } else {
-      if (default_bin == threshold) {
+      if (missing_type != MissingType::Zero && default_bin == threshold) {
         default_indices = lte_indices;
         default_count = &lte_count;
       }
