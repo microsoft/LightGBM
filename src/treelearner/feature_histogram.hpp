@@ -322,13 +322,13 @@ private:
       data_size_t left_count = 0;
 
       int t = 0;
-      const int t_end = meta_->num_bin - 2 - bias - use_na_as_missing;
+      const int t_end = meta_->num_bin - 2 - bias;
 
       if (use_na_as_missing && bias == 1) {
         sum_left_gradient = sum_gradient;
         sum_left_hessian = sum_hessian - kEpsilon;
         left_count = num_data;
-        for (int i = 0; i <= meta_->num_bin - 2; ++i) {
+        for (int i = 0; i < meta_->num_bin - bias; ++i) {
           sum_left_gradient -= data_[i].sum_gradients;
           sum_left_hessian -= data_[i].sum_hessians;
           left_count -= data_[i].cnt;
