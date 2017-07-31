@@ -296,10 +296,10 @@ protected:
   std::string OutputMetric(int iter);
   /*!
   * \brief Calculate feature importances
-  * \param num_iterations Number of model that want to use for feature importance, -1 means use all 
+  * \param num_used_model Number of model that want to use for feature importance, -1 means use all 
   * \return sorted pairs of (feature_importance, feature_name)
   */
-  std::vector<std::pair<size_t, std::string>> FeatureImportance(int num_iteration) const;
+  std::vector<std::pair<size_t, std::string>> FeatureImportance(int num_used_model) const;
 
   /*! \brief current iteration */
   int iter_;
