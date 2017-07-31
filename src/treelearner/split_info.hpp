@@ -17,37 +17,31 @@ namespace LightGBM {
 struct SplitInfo {
 public:
   /*! \brief Feature index */
-  int feature;
+  int feature = -1;
   /*! \brief Split threshold */
-  uint32_t threshold;
+  uint32_t threshold = 0;
   /*! \brief Left number of data after split */
-  data_size_t left_count;
+  data_size_t left_count = 0;
   /*! \brief Right number of data after split */
-  data_size_t right_count;
-  int num_cat_threshold;
+  data_size_t right_count = 0;
+  int num_cat_threshold = 0;
   /*! \brief Left output after split */
-  double left_output;
+  double left_output = 0.0;
   /*! \brief Right output after split */
-  double right_output;
+  double right_output = 0.0;
   /*! \brief Split gain */
-  double gain;
+  double gain = kMinScore;
   /*! \brief Left sum gradient after split */
-  double left_sum_gradient;
+  double left_sum_gradient = 0;
   /*! \brief Left sum hessian after split */
-  double left_sum_hessian;
+  double left_sum_hessian = 0;
   /*! \brief Right sum gradient after split */
-  double right_sum_gradient;
+  double right_sum_gradient = 0;
   /*! \brief Right sum hessian after split */
   double right_sum_hessian;
   std::vector<uint32_t> cat_threshold;
   /*! \brief True if default split is left */
-  bool default_left;
-
-  SplitInfo() {
-    // initialize with -1 and -inf gain
-    feature = -1;
-    gain = kMinScore;
-  }
+  bool default_left = true;
 
   inline static int Size(int max_left_cat) {
     return 2 * sizeof(int) + sizeof(uint32_t) + sizeof(bool) + sizeof(double) * 7 + sizeof(data_size_t) * 2 + max_left_cat * sizeof(uint32_t);
@@ -185,19 +179,13 @@ public:
 struct LightSplitInfo {
 public:
   /*! \brief Feature index */
-  int feature;
+  int feature = -1;
   /*! \brief Split gain */
-  double gain;
+  double gain = kMinScore;
   /*! \brief Left number of data after split */
-  data_size_t left_count;
+  data_size_t left_count = 0;
   /*! \brief Right number of data after split */
-  data_size_t right_count;
-
-  LightSplitInfo() {
-    // initialize with -1 and -inf gain
-    feature = -1;
-    gain = kMinScore;
-  }
+  data_size_t right_count = 0;
 
   inline void Reset() {
     // initialize with -1 and -inf gain
