@@ -15,11 +15,6 @@
 
 namespace LightGBM {
 
-std::vector<bool(*)(uint32_t, uint32_t)> Tree::inner_decision_funs =
-{ Tree::NumericalDecision<uint32_t>, Tree::CategoricalDecision<uint32_t> };
-std::vector<bool(*)(double, double)> Tree::decision_funs =
-{ Tree::NumericalDecision<double>, Tree::CategoricalDecision<double> };
-
 Tree::Tree(int max_leaves)
   :max_leaves_(max_leaves) {
 
@@ -74,12 +69,20 @@ int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
 
 int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin,
                      const double* threshold_double, int num_threshold, double left_value, double right_value,
-                     data_size_t left_cnt, data_size_t right_cnt, double gain) {
+                     data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type) {
   Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain);
-  decision_type_[num_leaves_ - 1] = 0;
-  SetDecisionType(&decision_type_[num_leaves_ - 1], true, kCategoricalMask);
-  threshold_in_bin_[num_leaves_ - 1] = num_cat_;
-  threshold_[num_leaves_ - 1] = num_cat_;
+  int new_node_idx = num_leaves_ - 1;
+  decision_type_[new_node_idx] = 0;
+  SetDecisionType(&decision_type_[new_node_idx], true, kCategoricalMask);
+  if (missing_type == MissingType::None) {
+    SetMissingType(&decision_type_[new_node_idx], 0);
+  } else if (missing_type == MissingType::Zero) {
+    SetMissingType(&decision_type_[new_node_idx], 1);
+  } else if (missing_type == MissingType::NaN) {
+    SetMissingType(&decision_type_[new_node_idx], 2);
+  }
+  threshold_in_bin_[new_node_idx] = num_cat_;
+  threshold_[new_node_idx] = num_cat_;
   ++num_cat_;
   cat_boundaries_.push_back(cat_boundaries_.back() + num_threshold);
   for (int i = 0; i < num_threshold; ++i) {
@@ -114,14 +117,7 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
         for (data_size_t i = start; i < end; ++i) {
           int node = 0;
           while (node >= 0) {
-            uint32_t fval = ConvertMissingValue(iter[node]->Get(i), threshold_in_bin_[node], decision_type_[node], default_bins[node], max_bins[node]);
-            if (inner_decision_funs[GetDecisionType(decision_type_[node], kCategoricalMask)](
-              fval,
-              threshold_in_bin_[node])) {
-              node = left_child_[node];
-            } else {
-              node = right_child_[node];
-            }
+            node = DecisionInner(iter[node]->Get(i), node, default_bins[node], max_bins[node]);
           }
           score[i] += static_cast<double>(leaf_value_[~node]);
         }
@@ -137,14 +133,7 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
         for (data_size_t i = start; i < end; ++i) {
           int node = 0;
           while (node >= 0) {
-            uint32_t fval = ConvertMissingValue(iter[split_feature_inner_[node]]->Get(i), threshold_in_bin_[node], decision_type_[node], default_bins[node], max_bins[node]);
-            if (inner_decision_funs[GetDecisionType(decision_type_[node], kCategoricalMask)](
-              fval,
-              threshold_in_bin_[node])) {
-              node = left_child_[node];
-            } else {
-              node = right_child_[node];
-            }
+            node = DecisionInner(iter[split_feature_inner_[node]]->Get(i), node, default_bins[node], max_bins[node]);
           }
           score[i] += static_cast<double>(leaf_value_[~node]);
         }
@@ -224,14 +213,7 @@ void Tree::AddPredictionToScore(const Dataset* data,
           int node = 0;
           const data_size_t idx = used_data_indices[i];
           while (node >= 0) {
-            uint32_t fval = ConvertMissingValue(iter[node]->Get(idx), threshold_in_bin_[node], decision_type_[node], default_bins[node], max_bins[node]);
-            if (inner_decision_funs[GetDecisionType(decision_type_[node], kCategoricalMask)](
-              fval,
-              threshold_in_bin_[node])) {
-              node = left_child_[node];
-            } else {
-              node = right_child_[node];
-            }
+            node = DecisionInner(iter[node]->Get(idx), node, default_bins[node], max_bins[node]);
           }
           score[idx] += static_cast<double>(leaf_value_[~node]);
         }
@@ -248,14 +230,7 @@ void Tree::AddPredictionToScore(const Dataset* data,
           const data_size_t idx = used_data_indices[i];
           int node = 0;
           while (node >= 0) {
-            uint32_t fval = ConvertMissingValue(iter[split_feature_inner_[node]]->Get(idx), threshold_in_bin_[node], decision_type_[node], default_bins[node], max_bins[node]);
-            if (inner_decision_funs[GetDecisionType(decision_type_[node], kCategoricalMask)](
-              fval,
-              threshold_in_bin_[node])) {
-              node = left_child_[node];
-            } else {
-              node = right_child_[node];
-            }
+            node = DecisionInner(iter[split_feature_inner_[node]]->Get(idx), node, default_bins[node], max_bins[node]);
           }
           score[idx] += static_cast<double>(leaf_value_[~node]);
         }

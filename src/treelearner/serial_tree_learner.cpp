@@ -547,7 +547,8 @@ void SerialTreeLearner::Split(Tree* tree, int best_Leaf, int* left_leaf, int* ri
                                          static_cast<double>(best_split_info.right_output),
                                          static_cast<data_size_t>(best_split_info.left_count),
                                          static_cast<data_size_t>(best_split_info.right_count),
-                                         static_cast<double>(best_split_info.gain));
+                                         static_cast<double>(best_split_info.gain),
+                                         train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
   }
   // split data partition
   data_partition_->Split(best_Leaf, train_data_, inner_feature_index,

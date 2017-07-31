@@ -55,10 +55,12 @@ bool NeedFilter(std::vector<int>& cnt_in_bin, int total_cnt, int filter_cnt, Bin
       }
     }
   } else {
-    for (size_t i = 0; i < cnt_in_bin.size() - 1; ++i) {
-      int sum_left = cnt_in_bin[i];
-      if (sum_left >= filter_cnt && total_cnt - sum_left >= filter_cnt) {
-        return false;
+    if (cnt_in_bin.size() <= 2) {
+      for (size_t i = 0; i < cnt_in_bin.size() - 1; ++i) {
+        int sum_left = cnt_in_bin[i];
+        if (sum_left >= filter_cnt && total_cnt - sum_left >= filter_cnt) {
+          return false;
+        }
       }
     }
   }
@@ -204,8 +206,8 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
       missing_type_ = MissingType::None;
     } else {
       missing_type_ = MissingType::NaN;
+      na_cnt = num_sample_values - tmp_num_sample_values;
     }
-    na_cnt = num_sample_values - tmp_num_sample_values;
   }
   num_sample_values = tmp_num_sample_values;
 
@@ -251,6 +253,9 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
   max_val_ = distinct_values.back();
   std::vector<int> cnt_in_bin;
   int num_distinct_values = static_cast<int>(distinct_values.size());
+  if (num_distinct_values + (na_cnt > 0) <= 2) {
+    bin_type_ = BinType::NumericalBin;
+  }
   if (bin_type_ == BinType::NumericalBin) {
     if (missing_type_ == MissingType::Zero) {
       bin_upper_bound_ = FindBinWithZeroAsMissing(distinct_values.data(), counts.data(), num_distinct_values, max_bin, total_sample_cnt, min_data_in_bin);
@@ -279,8 +284,6 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
     }
     CHECK(num_bin_ <= max_bin);
   } else {
-    // No missing handle for categorical features 
-    missing_type_ = MissingType::None;
     // convert to int type first
     std::vector<int> distinct_values_int;
     std::vector<int> counts_int;

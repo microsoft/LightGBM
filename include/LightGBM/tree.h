@@ -70,7 +70,7 @@ public:
   */
   int SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin,
             const double* threshold_double, int num_threshold, double left_value, double right_value,
-            data_size_t left_cnt, data_size_t right_cnt, double gain);
+            data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type);
 
   /*! \brief Get the output of one leaf */
   inline double LeafOutput(int leaf) const { return leaf_value_[leaf]; }
@@ -145,24 +145,6 @@ public:
   /*! \brief Serialize this object to if-else statement*/
   std::string ToIfElse(int index, bool is_predict_leaf_index);
 
-  template<typename T>
-  inline static bool CategoricalDecision(T fval, T threshold) {
-    if (static_cast<int>(fval) == static_cast<int>(threshold)) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  template<typename T>
-  inline static bool NumericalDecision(T fval, T threshold) {
-    if (fval <= threshold) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
   inline static bool IsZero(double fval) {
     if (fval > -kZeroAsMissingValueRange && fval <= kZeroAsMissingValueRange) {
       return true;
@@ -223,18 +205,57 @@ public:
     return fval;
   }
 
-  inline static const char* GetDecisionTypeName(int8_t type) {
-    if (type == 0) {
-      return "no_greater";
+private:
+
+  inline int Decision(double fval, int node) const {
+    if (GetDecisionType(decision_type_[node], kCategoricalMask)) {
+      uint8_t missing_type = GetMissingType(decision_type_[node]);
+      int int_fval = static_cast<int>(fval);
+      if (std::isnan(fval)) {
+        // NaN is always in the right
+        if (missing_type == 2) {
+          return right_child_[node];
+        }
+        int_fval = 0;
+      }
+      int cat_idx = int(threshold_[node]);
+      // To-Do : use binary search to speed up
+      for (int i = cat_boundaries_[cat_idx]; i < cat_boundaries_[cat_idx + 1]; ++i) {
+        if (int_fval == cat_threshold_[i]) {
+          return left_child_[node];
+        }
+      }
+      return right_child_[node];
     } else {
-      return "is";
+      fval = ConvertMissingValue(fval, threshold_[node], decision_type_[node]);
+      if (fval <= threshold_[node]) {
+        return left_child_[node];
+      } else {
+        return right_child_[node];
+      }
     }
   }
 
-  static std::vector<bool(*)(uint32_t, uint32_t)> inner_decision_funs;
-  static std::vector<bool(*)(double, double)> decision_funs;
+  inline int DecisionInner(uint32_t fval, int node, uint32_t default_bin, uint32_t max_bin) const {
+    if (GetDecisionType(decision_type_[node], kCategoricalMask)) {
+      int cat_idx = int(threshold_in_bin_[node]);
+      // To-Do : use binary search to speed up
+      for (int i = cat_boundaries_[cat_idx]; i < cat_boundaries_[cat_idx + 1]; ++i) {
+        if (fval == cat_threshold_in_bin_[i]) {
+          return left_child_[node];
+        }
+      }
+      return right_child_[node];
+    } else {
+      fval = ConvertMissingValue(fval, threshold_in_bin_[node], decision_type_[node], default_bin, max_bin);
+      if (fval <= threshold_in_bin_[node]) {
+        return left_child_[node];
+      } else {
+        return right_child_[node];
+      }
+    }
+  }
 
-private:
   inline void Split(int leaf, int feature, int real_feature,
                     double left_value, double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain);
   /*!
@@ -349,21 +370,12 @@ inline int Tree::GetLeaf(const double* feature_values) const {
   int node = 0;
   if (num_cat_ > 0) {
     while (node >= 0) {
-      double fval = ConvertMissingValue(feature_values[split_feature_[node]], threshold_[node], decision_type_[node]);
-      if (decision_funs[GetDecisionType(decision_type_[node], kCategoricalMask)](
-        fval,
-        threshold_[node])) {
-        node = left_child_[node];
-      } else {
-        node = right_child_[node];
-      }
+      node = Decision(feature_values[split_feature_[node]], node);
     }
   } else {
     while (node >= 0) {
       double fval = ConvertMissingValue(feature_values[split_feature_[node]], threshold_[node], decision_type_[node]);
-      if (NumericalDecision<double>(
-        fval,
-        threshold_[node])) {
+      if (fval <= threshold_[node]) {
         node = left_child_[node];
       } else {
         node = right_child_[node];
