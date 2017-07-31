@@ -174,19 +174,6 @@ public:
     (*decision_type) |= (input << 2);
   }
 
-  inline static uint32_t ConvertMissingValue(uint32_t fval, uint32_t threshold, int8_t decision_type, uint32_t default_bin, uint32_t max_bin) {
-    uint8_t missing_type = GetMissingType(decision_type);
-    if ((missing_type == 1 && fval == default_bin)
-        || (missing_type == 2 && fval == max_bin)) {
-      if (GetDecisionType(decision_type, kDefaultLeftMask)) {
-        fval = threshold;
-      } else {
-        fval = threshold + 1;
-      }
-    }
-    return fval;
-  }
-
   inline static double ConvertMissingValue(double fval, double threshold, int8_t decision_type) {
     uint8_t missing_type = GetMissingType(decision_type);
     if (std::isnan(fval)) {
@@ -207,52 +194,89 @@ public:
 
 private:
 
-  inline int Decision(double fval, int node) const {
-    if (GetDecisionType(decision_type_[node], kCategoricalMask)) {
-      uint8_t missing_type = GetMissingType(decision_type_[node]);
-      int int_fval = static_cast<int>(fval);
-      if (std::isnan(fval)) {
-        // NaN is always in the right
-        if (missing_type == 2) {
-          return right_child_[node];
-        }
-        int_fval = 0;
+  inline int NumericalDecision(double fval, int node) const {
+    uint8_t missing_type = GetMissingType(decision_type_[node]);
+    if (std::isnan(fval)) {
+      if (missing_type != 2) {
+        fval = 0.0f;
       }
-      int cat_idx = int(threshold_[node]);
-      // To-Do : use binary search to speed up
-      for (int i = cat_boundaries_[cat_idx]; i < cat_boundaries_[cat_idx + 1]; ++i) {
-        if (int_fval == cat_threshold_[i]) {
-          return left_child_[node];
-        }
-      }
-      return right_child_[node];
-    } else {
-      fval = ConvertMissingValue(fval, threshold_[node], decision_type_[node]);
-      if (fval <= threshold_[node]) {
+    }
+    if ((missing_type == 1 && IsZero(fval))
+        || (missing_type == 2 && std::isnan(fval))) {
+      if (GetDecisionType(decision_type_[node], kDefaultLeftMask)) {
         return left_child_[node];
       } else {
         return right_child_[node];
       }
     }
+    if (fval <= threshold_[node]) {
+      return left_child_[node];
+    } else {
+      return right_child_[node];
+    }
   }
 
-  inline int DecisionInner(uint32_t fval, int node, uint32_t default_bin, uint32_t max_bin) const {
-    if (GetDecisionType(decision_type_[node], kCategoricalMask)) {
-      int cat_idx = int(threshold_in_bin_[node]);
-      // To-Do : use binary search to speed up
-      for (int i = cat_boundaries_[cat_idx]; i < cat_boundaries_[cat_idx + 1]; ++i) {
-        if (fval == cat_threshold_in_bin_[i]) {
-          return left_child_[node];
-        }
-      }
-      return right_child_[node];
-    } else {
-      fval = ConvertMissingValue(fval, threshold_in_bin_[node], decision_type_[node], default_bin, max_bin);
-      if (fval <= threshold_in_bin_[node]) {
+  inline int NumericalDecisionInner(uint32_t fval, int node, uint32_t default_bin, uint32_t max_bin) const {
+    uint8_t missing_type = GetMissingType(decision_type_[node]);
+    if ((missing_type == 1 && fval == default_bin)
+        || (missing_type == 2 && fval == max_bin)) {
+      if (GetDecisionType(decision_type_[node], kDefaultLeftMask)) {
         return left_child_[node];
       } else {
         return right_child_[node];
       }
+    }
+    if (fval <= threshold_in_bin_[node]) {
+      return left_child_[node];
+    } else {
+      return right_child_[node];
+    }
+  }
+
+  inline int CategoricalDecision(double fval, int node) const {
+    uint8_t missing_type = GetMissingType(decision_type_[node]);
+    int int_fval = static_cast<int>(fval);
+    if (std::isnan(fval)) {
+      // NaN is always in the right
+      if (missing_type == 2) {
+        return right_child_[node];
+      }
+      int_fval = 0;
+    }
+    int cat_idx = int(threshold_[node]);
+    // To-Do : use binary search to speed up
+    for (int i = cat_boundaries_[cat_idx]; i < cat_boundaries_[cat_idx + 1]; ++i) {
+      if (int_fval == cat_threshold_[i]) {
+        return left_child_[node];
+      }
+    }
+    return right_child_[node];
+  }
+
+  inline int CategoricalDecisionInner(double fval, int node) const {
+    int cat_idx = int(threshold_in_bin_[node]);
+    // To-Do : use binary search to speed up
+    for (int i = cat_boundaries_[cat_idx]; i < cat_boundaries_[cat_idx + 1]; ++i) {
+      if (fval == cat_threshold_in_bin_[i]) {
+        return left_child_[node];
+      }
+    }
+    return right_child_[node];
+  }
+
+  inline int Decision(double fval, int node) const {
+    if (GetDecisionType(decision_type_[node], kCategoricalMask)) {
+      return CategoricalDecision(fval, node);
+    } else {
+      return NumericalDecision(fval, node);
+    }
+  }
+
+  inline int DecisionInner(uint32_t fval, int node, uint32_t default_bin, uint32_t max_bin) const {
+    if (GetDecisionType(decision_type_[node], kCategoricalMask)) {
+      return CategoricalDecisionInner(fval, node);
+    } else {
+      return NumericalDecisionInner(fval, node, default_bin, max_bin);
     }
   }
 
@@ -374,12 +398,7 @@ inline int Tree::GetLeaf(const double* feature_values) const {
     }
   } else {
     while (node >= 0) {
-      double fval = ConvertMissingValue(feature_values[split_feature_[node]], threshold_[node], decision_type_[node]);
-      if (fval <= threshold_[node]) {
-        node = left_child_[node];
-      } else {
-        node = right_child_[node];
-      }
+      node = NumericalDecision(feature_values[split_feature_[node]], node);
     }
   }
   return ~node;
