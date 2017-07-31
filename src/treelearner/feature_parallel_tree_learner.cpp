@@ -22,8 +22,8 @@ void FeatureParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, 
   TREELEARNER_T::Init(train_data, is_constant_hessian);
   rank_ = Network::rank();
   num_machines_ = Network::num_machines();
-  input_buffer_.resize(sizeof(SplitInfo) * 2);
-  output_buffer_.resize(sizeof(SplitInfo) * 2);
+  input_buffer_.resize((sizeof(SplitInfo) + sizeof(uint32_t) * this->tree_config_->max_left_cat) * 2);
+  output_buffer_.resize((sizeof(SplitInfo) + sizeof(uint32_t) * this->tree_config_->max_left_cat) * 2);
 }
 
 
@@ -60,14 +60,7 @@ void FeatureParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(con
     larger_best_split = this->best_split_per_leaf_[this->larger_leaf_splits_->LeafIndex()];
   }
   // sync global best info
-  std::memcpy(input_buffer_.data(), &smaller_best_split, sizeof(SplitInfo));
-  std::memcpy(input_buffer_.data() + sizeof(SplitInfo), &larger_best_split, sizeof(SplitInfo));
-
-  Network::Allreduce(input_buffer_.data(), sizeof(SplitInfo) * 2, sizeof(SplitInfo),
-                     output_buffer_.data(), &SplitInfo::MaxReducer);
-  // copy back
-  std::memcpy(&smaller_best_split, output_buffer_.data(), sizeof(SplitInfo));
-  std::memcpy(&larger_best_split, output_buffer_.data() + sizeof(SplitInfo), sizeof(SplitInfo));
+  SyncUpGlobalBestSplit(input_buffer_.data(), input_buffer_.data(), &smaller_best_split, &larger_best_split, this->tree_config_->max_left_cat);
   // update best split
   this->best_split_per_leaf_[this->smaller_leaf_splits_->LeafIndex()] = smaller_best_split;
   if (this->larger_leaf_splits_->LeafIndex() >= 0) {

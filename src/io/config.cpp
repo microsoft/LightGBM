@@ -366,6 +366,8 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   GetInt(params, "gpu_platform_id", &gpu_platform_id);
   GetInt(params, "gpu_device_id", &gpu_device_id);
   GetBool(params, "gpu_use_dp", &gpu_use_dp);
+  GetInt(params, "max_cat_group", &max_cat_group);
+  GetInt(params, "max_left_cat", &max_left_cat);
 }
 
 void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& params) {

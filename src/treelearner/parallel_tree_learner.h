@@ -125,7 +125,7 @@ protected:
   * \param splits All splits from local voting
   * \param out Result of gobal voting, only store feature indices
   */
-  void GlobalVoting(int leaf_idx, const std::vector<SplitInfo>& splits,
+  void GlobalVoting(int leaf_idx, const std::vector<LightSplitInfo>& splits,
     std::vector<int>* out);
   /*!
   * \brief Copy local histgram to buffer
@@ -179,6 +179,31 @@ private:
   std::vector<HistogramBinEntry> larger_leaf_histogram_data_;
   std::vector<FeatureMetainfo> feature_metas_;
 };
+
+inline void SyncUpGlobalBestSplit(char* input_buffer_, char* output_buffer_, SplitInfo* smaller_best_split, SplitInfo* larger_best_split, int max_left_cat) {
+  // sync global best info
+  int size = SplitInfo::Size(max_left_cat);
+  smaller_best_split->CopyTo(input_buffer_);
+  larger_best_split->CopyTo(input_buffer_ + size);
+  Network::Allreduce(input_buffer_, size * 2, size, output_buffer_, 
+                     [&size] (const char* src, char* dst, int len) {
+    int used_size = 0;
+    LightSplitInfo p1, p2;
+    while (used_size < len) {
+      p1.CopyFrom(src);
+      p2.CopyFrom(dst);
+      if (p1 > p2) {
+        std::memcpy(dst, src, size);
+      }
+      src += size;
+      dst += size;
+      used_size += size;
+    }
+  });
+  // copy back
+  smaller_best_split->CopyFrom(output_buffer_);
+  larger_best_split->CopyFrom(output_buffer_ + size);
+}
 
 }  // namespace LightGBM
 #endif   // LightGBM_TREELEARNER_PARALLEL_TREE_LEARNER_H_
