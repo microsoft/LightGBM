@@ -236,8 +236,7 @@ public:
 
 private:
   inline void Split(int leaf, int feature, int real_feature,
-                    double left_value, double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain,
-                    MissingType missing_type, bool default_left);
+                    double left_value, double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain);
   /*!
   * \brief Find leaf index of which record belongs by features
   * \param feature_values Feature value of this record
@@ -290,8 +289,7 @@ private:
 };
 
 inline void Tree::Split(int leaf, int feature, int real_feature,
-                        double left_value, double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain,
-                        MissingType missing_type, bool default_left) {
+                        double left_value, double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain) {
   int new_node_idx = num_leaves_ - 1;
   // update parent info
   int parent = leaf_parent_[leaf];
@@ -307,16 +305,6 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
   split_feature_inner_[new_node_idx] = feature;
   split_feature_[new_node_idx] = real_feature;
 
-  decision_type_[new_node_idx] = 0;
-  SetDecisionType(&decision_type_[new_node_idx], false, kCategoricalMask);
-  SetDecisionType(&decision_type_[new_node_idx], default_left, kDefaultLeftMask);
-  if (missing_type == MissingType::None) {
-    SetMissingType(&decision_type_[new_node_idx], 0);
-  } else if (missing_type == MissingType::Zero) {
-    SetMissingType(&decision_type_[new_node_idx], 1);
-  } else if (missing_type == MissingType::NaN) {
-    SetMissingType(&decision_type_[new_node_idx], 2);
-  }
   split_gain_[new_node_idx] = Common::AvoidInf(gain);
   // add two new leaves
   left_child_[new_node_idx] = ~leaf;

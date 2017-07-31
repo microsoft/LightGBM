@@ -53,9 +53,20 @@ Tree::~Tree() {
 int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
                 double threshold_double, double left_value, double right_value,
                 data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type, bool default_left) {
-  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain, missing_type, default_left);
-  threshold_in_bin_[num_leaves_ - 1] = threshold_bin;
-  threshold_[num_leaves_ - 1] = Common::AvoidInf(threshold_double);
+  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain);
+  int new_node_idx = num_leaves_ - 1;
+  decision_type_[new_node_idx] = 0;
+  SetDecisionType(&decision_type_[new_node_idx], false, kCategoricalMask);
+  SetDecisionType(&decision_type_[new_node_idx], default_left, kDefaultLeftMask);
+  if (missing_type == MissingType::None) {
+    SetMissingType(&decision_type_[new_node_idx], 0);
+  } else if (missing_type == MissingType::Zero) {
+    SetMissingType(&decision_type_[new_node_idx], 1);
+  } else if (missing_type == MissingType::NaN) {
+    SetMissingType(&decision_type_[new_node_idx], 2);
+  }
+  threshold_in_bin_[new_node_idx] = threshold_bin;
+  threshold_[new_node_idx] = Common::AvoidInf(threshold_double);
   ++num_leaves_;
   return num_leaves_ - 1;
 }
@@ -63,7 +74,9 @@ int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
 int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin,
                      const double* threshold_double, int num_threshold, double left_value, double right_value,
                      data_size_t left_cnt, data_size_t right_cnt, double gain) {
-  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain, MissingType::None, false);
+  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain);
+  decision_type_[num_leaves_ - 1] = 0;
+  SetDecisionType(&decision_type_[num_leaves_ - 1], false, kCategoricalMask);
   threshold_in_bin_[num_leaves_ - 1] = *threshold_bin;
   threshold_[num_leaves_ - 1] = Common::AvoidInf(*threshold_double);
   ++num_leaves_;
