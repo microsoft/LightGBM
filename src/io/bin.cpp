@@ -45,7 +45,7 @@ BinMapper::~BinMapper() {
 
 }
 
-bool NeedFilter(std::vector<int>& cnt_in_bin, int total_cnt, int filter_cnt, BinType bin_type) {
+bool NeedFilter(const std::vector<int>& cnt_in_bin, int total_cnt, int filter_cnt, BinType bin_type) {
   if (bin_type == BinType::NumericalBin) {
     int sum_left = 0;
     for (size_t i = 0; i < cnt_in_bin.size() - 1; ++i) {
@@ -62,6 +62,8 @@ bool NeedFilter(std::vector<int>& cnt_in_bin, int total_cnt, int filter_cnt, Bin
           return false;
         }
       }
+    } else {
+      return false;
     }
   }
   return true;
