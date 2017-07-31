@@ -152,7 +152,7 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
         for (data_size_t i = start; i < end; ++i) {
           int node = 0;
           while (node >= 0) {
-            node = NumericalDecisionInner(iter[node]->Get(i), decision_type_[node], default_bins[node], max_bins[node]);
+            node = NumericalDecisionInner(iter[node]->Get(i), node, default_bins[node], max_bins[node]);
           }
           score[i] += static_cast<double>(leaf_value_[~node]);
         }
@@ -168,7 +168,7 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
         for (data_size_t i = start; i < end; ++i) {
           int node = 0;
           while (node >= 0) {
-            node = NumericalDecisionInner(iter[split_feature_inner_[node]]->Get(i), decision_type_[node], default_bins[node], max_bins[node]);
+            node = NumericalDecisionInner(iter[split_feature_inner_[node]]->Get(i), node, default_bins[node], max_bins[node]);
           }
           score[i] += static_cast<double>(leaf_value_[~node]);
         }
@@ -240,7 +240,7 @@ void Tree::AddPredictionToScore(const Dataset* data,
           int node = 0;
           const data_size_t idx = used_data_indices[i];
           while (node >= 0) {
-            node = NumericalDecisionInner(iter[node]->Get(idx), decision_type_[node], default_bins[node], max_bins[node]);
+            node = NumericalDecisionInner(iter[node]->Get(idx), node, default_bins[node], max_bins[node]);
           }
           score[idx] += static_cast<double>(leaf_value_[~node]);
         }
@@ -257,7 +257,7 @@ void Tree::AddPredictionToScore(const Dataset* data,
           const data_size_t idx = used_data_indices[i];
           int node = 0;
           while (node >= 0) {
-            node = NumericalDecisionInner(iter[split_feature_inner_[node]]->Get(idx), decision_type_[node], default_bins[node], max_bins[node]);
+            node = NumericalDecisionInner(iter[split_feature_inner_[node]]->Get(idx), node, default_bins[node], max_bins[node]);
           }
           score[idx] += static_cast<double>(leaf_value_[~node]);
         }
