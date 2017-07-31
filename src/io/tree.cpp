@@ -370,7 +370,9 @@ std::string Tree::ToIfElse(int index, bool is_predict_leaf_index) {
   } else {
     // use this for the missing value conversion
     str_buf << "double fval = 0.0f; ";
-    str_buf << "int int_fval = 0; ";
+    if (num_cat_ > 0) {
+      str_buf << "int int_fval = 0; ";
+    }
     str_buf << NodeToIfElse(0, is_predict_leaf_index);
   }
   str_buf << " }" << std::endl;
