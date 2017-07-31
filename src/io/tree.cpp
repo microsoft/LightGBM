@@ -76,7 +76,7 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
                      data_size_t left_cnt, data_size_t right_cnt, double gain) {
   Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain);
   decision_type_[num_leaves_ - 1] = 0;
-  SetDecisionType(&decision_type_[num_leaves_ - 1], false, kCategoricalMask);
+  SetDecisionType(&decision_type_[num_leaves_ - 1], true, kCategoricalMask);
   threshold_in_bin_[num_leaves_ - 1] = *threshold_bin;
   threshold_[num_leaves_ - 1] = Common::AvoidInf(*threshold_double);
   ++num_leaves_;
