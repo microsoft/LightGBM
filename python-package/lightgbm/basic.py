@@ -1004,7 +1004,8 @@ class Dataset(object):
         self.set_categorical_feature(reference.categorical_feature)
         self.set_feature_name(reference.feature_name)
         self._set_predictor(reference._predictor)
-        if self.reference is reference:
+        # we're done if self and reference share a common upstrem reference
+        if self.get_ref_chain().intersection(reference.get_ref_chain()):
             return
         if self.data is not None:
             self.reference = reference
@@ -1173,6 +1174,28 @@ class Dataset(object):
             return ret.value
         else:
             raise LightGBMError("Cannot get num_feature before construct dataset")
+
+    def get_ref_chain(self, ref_limit=100):
+        '''
+        Gets a chain of Dataset objects, starting with r, then going to r.reference if exists,
+            then to r.reference.reference, etc. until we hit ref_limit or a reference loop
+
+        Returns
+        -------
+        chain of references of self : set of Dataset objects
+        '''
+        head = self
+        ref_chain = []
+        while len(ref_chain) < ref_limit:
+            if isinstance(head, Dataset):
+                ref_chain += [head]
+                if (head.reference is not None) and (head.reference not in ref_chain):
+                    head = head.reference
+                else:
+                    break
+            else:
+                break
+        return(set(ref_chain))
 
 
 class Booster(object):
