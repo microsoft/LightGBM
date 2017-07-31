@@ -1187,8 +1187,8 @@ class Dataset(object):
         head = self
         ref_chain = []
         while len(ref_chain) < ref_limit:
-            if isinstance(head, Dataset) and head.handle is not None:
-                ref_chain += ([head] if isinstance(head, Dataset) else [])
+            if isinstance(head, Dataset):
+                ref_chain += [head]
                 if (head.reference is not None) and (head.reference not in ref_chain):
                     head = head.reference
                 else:
