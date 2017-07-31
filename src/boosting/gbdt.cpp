@@ -1074,13 +1074,13 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
 std::vector<std::pair<size_t, std::string>> GBDT::FeatureImportance(int num_iteration) const {
 
   int num_used_model = static_cast<int>(models_.size());
+  int start = boost_from_average_ ? 1 : 0;
   if (num_iteration > 0) {
-    num_iteration += boost_from_average_ ? 1 : 0;
     num_used_model = std::min(num_iteration * num_tree_per_iteration_, num_used_model);
   }
 
   std::vector<size_t> feature_importances(max_feature_idx_ + 1, 0);
-  for (size_t iter = 0; iter < num_used_model; ++iter) {
+  for (int iter = start; iter < start + num_used_model; ++iter) {
     for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
       if (models_[iter]->split_gain(split_idx) > 0) {
         ++feature_importances[models_[iter]->split_feature(split_idx)];
