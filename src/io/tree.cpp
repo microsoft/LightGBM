@@ -43,7 +43,8 @@ Tree::Tree(int max_leaves)
   num_leaves_ = 1;
   leaf_parent_[0] = -1;
   shrinkage_ = 1.0f;
-  has_categorical_ = false;
+  num_cat_ = 0;
+  cat_boundaries_.push_back(0);
 }
 
 Tree::~Tree() {
@@ -77,8 +78,15 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
   Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain);
   decision_type_[num_leaves_ - 1] = 0;
   SetDecisionType(&decision_type_[num_leaves_ - 1], true, kCategoricalMask);
-  threshold_in_bin_[num_leaves_ - 1] = *threshold_bin;
-  threshold_[num_leaves_ - 1] = Common::AvoidInf(*threshold_double);
+  threshold_in_bin_[num_leaves_ - 1] = num_cat_;
+  threshold_[num_leaves_ - 1] = num_cat_;
+  ++num_cat_;
+  cat_boundaries_.push_back(cat_boundaries_.back() + num_threshold);
+  for (int i = 0; i < num_threshold; ++i) {
+    cat_threshold_.push_back(static_cast<int>(threshold_double[i]));
+    cat_threshold_in_bin_.push_back(threshold_bin[i]);
+  }
+  CHECK(cat_boundaries_.back() == static_cast<int>(cat_threshold_.size()));
   ++num_leaves_;
   return num_leaves_ - 1;
 }
@@ -93,7 +101,7 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
     default_bins[i] = bin_mapper->GetDefaultBin();
     max_bins[i] = bin_mapper->num_bin() - 1;
   }
-  if (has_categorical_) {
+  if (num_cat_ > 0) {
     if (data->num_features() > num_leaves_ - 1) {
       Threading::For<data_size_t>(0, num_data,
         [this, &data, score, &default_bins, &max_bins](int, data_size_t start, data_size_t end) {
@@ -202,7 +210,7 @@ void Tree::AddPredictionToScore(const Dataset* data,
     default_bins[i] = bin_mapper->GetDefaultBin();
     max_bins[i] = bin_mapper->num_bin() - 1;
   }
-  if (has_categorical_) {
+  if (num_cat_ >  0) {
     if (data->num_features() > num_leaves_ - 1) {
       Threading::For<data_size_t>(0, num_data,
         [this, data, used_data_indices, score, &default_bins, &max_bins](int, data_size_t start, data_size_t end) {
@@ -306,6 +314,7 @@ void Tree::AddPredictionToScore(const Dataset* data,
 std::string Tree::ToString() {
   std::stringstream str_buf;
   str_buf << "num_leaves=" << num_leaves_ << std::endl;
+  str_buf << "num_cat=" << num_cat_ << std::endl;
   str_buf << "split_feature="
     << Common::ArrayToString<int>(split_feature_, num_leaves_ - 1, ' ') << std::endl;
   str_buf << "split_gain="
@@ -328,8 +337,13 @@ std::string Tree::ToString() {
     << Common::ArrayToString<double>(internal_value_, num_leaves_ - 1, ' ') << std::endl;
   str_buf << "internal_count="
     << Common::ArrayToString<data_size_t>(internal_count_, num_leaves_ - 1, ' ') << std::endl;
+  if (num_cat_ > 0) {
+    str_buf << "cat_boundaries="
+      << Common::ArrayToString<int>(cat_boundaries_, num_cat_ + 1, ' ') << std::endl;
+    str_buf << "cat_threshold="
+      << Common::ArrayToString<int>(cat_threshold_, cat_threshold_.size(), ' ') << std::endl;
+  }
   str_buf << "shrinkage=" << shrinkage_ << std::endl;
-  str_buf << "has_categorical=" << (has_categorical_ ? 1 : 0) << std::endl;
   str_buf << std::endl;
   return str_buf.str();
 }
@@ -338,8 +352,8 @@ std::string Tree::ToJSON() {
   std::stringstream str_buf;
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   str_buf << "\"num_leaves\":" << num_leaves_ << "," << std::endl;
+  str_buf << "\"num_cat\":" << num_cat_ << "," << std::endl;
   str_buf << "\"shrinkage\":" << shrinkage_ << "," << std::endl;
-  str_buf << "\"has_categorical\":" << (has_categorical_ ? 1 : 0) << "," << std::endl;
   if (num_leaves_ == 1) {
     str_buf << "\"tree_structure\":" << NodeToJSON(-1) << std::endl;
   } else {
@@ -358,8 +372,18 @@ std::string Tree::NodeToJSON(int index) {
     str_buf << "\"split_index\":" << index << "," << std::endl;
     str_buf << "\"split_feature\":" << split_feature_[index] << "," << std::endl;
     str_buf << "\"split_gain\":" << split_gain_[index] << "," << std::endl;
-    str_buf << "\"threshold\":" << Common::AvoidInf(threshold_[index]) << "," << std::endl;
-    str_buf << "\"decision_type\":\"" << Tree::GetDecisionTypeName(decision_type_[index]) << "\"," << std::endl;
+    if (GetDecisionType(decision_type_[index], kCategoricalMask)) {
+      std::vector<std::string> thresholds;
+      int cat_idx = static_cast<int>(threshold_[index]);
+      for (int i = cat_boundaries_[cat_idx]; i < cat_boundaries_[cat_idx + 1]; ++i) {
+        thresholds.push_back(std::to_string(cat_threshold_[i]));
+      }
+      str_buf << "\"threshold\":\"" << Common::Join(thresholds, "||") << "\"," << std::endl;
+      str_buf << "\"decision_type\":\"==\"," << std::endl;
+    } else {
+      str_buf << "\"threshold\":" << Common::AvoidInf(threshold_[index]) << "," << std::endl;
+      str_buf << "\"decision_type\":\"<=\"," << std::endl;
+    }
     str_buf << "\"internal_value\":" << internal_value_[index] << "," << std::endl;
     str_buf << "\"internal_count\":" << internal_count_[index] << "," << std::endl;
     str_buf << "\"left_child\":" << NodeToJSON(left_child_[index]) << "," << std::endl;
@@ -395,6 +419,7 @@ std::string Tree::ToIfElse(int index, bool is_predict_leaf_index) {
   return str_buf.str();
 }
 
+// To-do: fix if else for categorical features
 std::string Tree::NodeToIfElse(int index, bool is_predict_leaf_index) {
   std::stringstream str_buf;
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
@@ -445,6 +470,12 @@ Tree::Tree(const std::string& str) {
   }
 
   Common::Atoi(key_vals["num_leaves"].c_str(), &num_leaves_);
+
+  if (key_vals.count("num_cat") <= 0) {
+    Log::Fatal("Tree model should contain num_cat field.");
+  }
+
+  Common::Atoi(key_vals["num_cat"].c_str(), &num_cat_);
 
   if (num_leaves_ <= 1) { return; }
 
@@ -514,20 +545,25 @@ Tree::Tree(const std::string& str) {
     decision_type_ = std::vector<int8_t>(num_leaves_ - 1, 0);
   }
 
+  if (num_cat_ > 0) {
+    if (key_vals.count("cat_boundaries")) {
+      cat_boundaries_ = Common::StringToArray<int>(key_vals["cat_boundaries"], ' ', num_cat_ + 1);
+    } else {
+      Log::Fatal("Tree model should contain cat_boundaries field.");
+    }
+
+    if (key_vals.count("cat_threshold")) {
+      cat_threshold_ = Common::StringToArray<int>(key_vals["cat_threshold"], ' ', cat_boundaries_.back());
+    } else {
+      Log::Fatal("Tree model should contain cat_threshold field.");
+    }
+  }
+
   if (key_vals.count("shrinkage")) {
     Common::Atof(key_vals["shrinkage"].c_str(), &shrinkage_);
   } else {
     shrinkage_ = 1.0f;
   }
-
-  if (key_vals.count("has_categorical")) {
-    int t = 0;
-    Common::Atoi(key_vals["has_categorical"].c_str(), &t);
-    has_categorical_ = t > 0;
-  } else {
-    has_categorical_ = false;
-  }
-
 }
 
 }  // namespace LightGBM

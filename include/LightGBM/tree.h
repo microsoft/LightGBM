@@ -267,6 +267,10 @@ private:
   std::vector<uint32_t> threshold_in_bin_;
   /*! \brief A non-leaf node's split threshold in feature value */
   std::vector<double> threshold_;
+  int num_cat_;
+  std::vector<int> cat_boundaries_;
+  std::vector<uint32_t> cat_threshold_in_bin_;
+  std::vector<int> cat_threshold_;
   /*! \brief Store the information for categorical feature handle and mising value handle. */
   std::vector<int8_t> decision_type_;
   /*! \brief A non-leaf node's split gain */
@@ -285,7 +289,6 @@ private:
   /*! \brief Depth for leaves */
   std::vector<int> leaf_depth_;
   double shrinkage_;
-  bool has_categorical_;
 };
 
 inline void Tree::Split(int leaf, int feature, int real_feature,
@@ -344,7 +347,7 @@ inline int Tree::PredictLeafIndex(const double* feature_values) const {
 
 inline int Tree::GetLeaf(const double* feature_values) const {
   int node = 0;
-  if (has_categorical_) {
+  if (num_cat_ > 0) {
     while (node >= 0) {
       double fval = ConvertMissingValue(feature_values[split_feature_[node]], threshold_[node], decision_type_[node]);
       if (decision_funs[GetDecisionType(decision_type_[node], kCategoricalMask)](
