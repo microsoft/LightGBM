@@ -244,22 +244,18 @@ private:
       int_fval = 0;
     }
     int cat_idx = int(threshold_[node]);
-    // To-Do : use binary search to speed up
-    for (int i = cat_boundaries_[cat_idx]; i < cat_boundaries_[cat_idx + 1]; ++i) {
-      if (int_fval == cat_threshold_[i]) {
-        return left_child_[node];
-      }
+    if (Common::BinSearch(cat_threshold_.data(), cat_boundaries_[cat_idx],
+                          cat_boundaries_[cat_idx + 1], int_fval)) {
+      return left_child_[node];
     }
     return right_child_[node];
   }
 
-  inline int CategoricalDecisionInner(double fval, int node) const {
+  inline int CategoricalDecisionInner(uint32_t fval, int node) const {
     int cat_idx = int(threshold_in_bin_[node]);
-    // To-Do : use binary search to speed up
-    for (int i = cat_boundaries_[cat_idx]; i < cat_boundaries_[cat_idx + 1]; ++i) {
-      if (fval == cat_threshold_in_bin_[i]) {
-        return left_child_[node];
-      }
+    if (Common::BinSearch(cat_threshold_in_bin_.data(), cat_boundaries_[cat_idx],
+                          cat_boundaries_[cat_idx + 1], fval)) {
+      return left_child_[node];
     }
     return right_child_[node];
   }

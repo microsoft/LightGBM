@@ -604,6 +604,23 @@ inline void obtain_min_max_sum(const float *w, int nw, float *mi, float *ma, dou
   if (su != nullptr) *su = sumw;
 }
 
+template<class T>
+inline bool BinSearch(const T* arr, int l, int r, T key) {
+  --r;
+  while (l <= r) {
+    int m = (l + r) / 2;
+    if (arr[m] == key) {
+      return true;
+    } else if (arr[m] > key) {
+      r = m - 1;
+    } else {
+      l = m + 1;
+    }
+  }
+  return false;
+}
+
+
 }  // namespace Common
 
 }  // namespace LightGBM
