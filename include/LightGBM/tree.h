@@ -174,25 +174,46 @@ public:
     (*decision_type) |= (input << 2);
   }
 
-  inline static double ConvertMissingValue(double fval, double threshold, int8_t decision_type) {
-    uint8_t missing_type = GetMissingType(decision_type);
-    if (std::isnan(fval)) {
-      if (missing_type != 2) {
-        fval = 0.0f;
-      }
-    }
-    if ((missing_type == 1 && IsZero(fval))
-        || (missing_type == 2 && std::isnan(fval))) {
-      if (GetDecisionType(decision_type, kDefaultLeftMask)) {
-        fval = threshold;
+private:
+
+  inline std::string NumericalDecisionIfElse(int node) {
+    std::stringstream str_buf;
+    uint8_t missing_type = GetMissingType(decision_type_[node]);
+    bool default_left = GetDecisionType(decision_type_[node], kDefaultLeftMask);
+    if (missing_type == 0 || (missing_type == 1 && default_left && kZeroAsMissingValueRange < threshold_[node])) {
+      str_buf << "if ( fval <= " << threshold_[node] << ") {";
+    } else if (missing_type == 1) {
+      if (default_left) {
+        str_buf << "if ( fval <= " << threshold_[node] << " || Tree::IsZero(fval)" << " || std::isnan(fval) ) {";
       } else {
-        fval = 10.0f * threshold;
+        str_buf << "if ( fval <= " << threshold_[node] << " && !Tree::IsZero(fval)" << " && !std::isnan(fval) ) {";
+      }
+    } else {
+      if (default_left) {
+        str_buf << "if ( fval <= " << threshold_[node] << " || std::isnan(fval)) {";
+      } else {
+        str_buf << "if ( fval <= " << threshold_[node] << " && !std::isnan(fval)) {";
       }
     }
-    return fval;
+    return str_buf.str();
   }
 
-private:
+  inline std::string CategoricalDecisionIfElse(int node) const {
+    uint8_t missing_type = GetMissingType(decision_type_[node]);
+    std::stringstream str_buf;
+    if (missing_type == 2) {
+      str_buf << "if(std::isnan(fval)) { int_fval = -1; } else { int_fval = static_cast<int>(fval); }";
+    } else {
+      str_buf << "if(std::isnan(fval)) { int_fval = 0; } else { int_fval = static_cast<int>(fval); }";
+    }
+    str_buf << "if ( ";
+    int cat_idx = int(threshold_[node]);
+    for (int i = cat_boundaries_[cat_idx]; i < cat_boundaries_[cat_idx + 1] - 1; ++i) {
+      str_buf << " int_fval == " << cat_threshold_[i] << " || ";
+    }
+    str_buf << "int_fval == " << cat_threshold_[cat_boundaries_[cat_idx + 1] - 1] << ") {";
+    return str_buf.str();
+  }
 
   inline int NumericalDecision(double fval, int node) const {
     uint8_t missing_type = GetMissingType(decision_type_[node]);

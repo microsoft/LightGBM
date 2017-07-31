@@ -368,25 +368,26 @@ std::string Tree::ToIfElse(int index, bool is_predict_leaf_index) {
   if (num_leaves_ == 1) {
     str_buf << "return 0";
   } else {
+    // use this for the missing value conversion
+    str_buf << "double fval = 0.0f; ";
+    str_buf << "int int_fval = 0; ";
     str_buf << NodeToIfElse(0, is_predict_leaf_index);
   }
   str_buf << " }" << std::endl;
   return str_buf.str();
 }
 
-// To-do: fix if else for categorical features
 std::string Tree::NodeToIfElse(int index, bool is_predict_leaf_index) {
   std::stringstream str_buf;
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   if (index >= 0) {
     // non-leaf
-    str_buf << "if (Tree::ConvertMissingValue(arr[" << split_feature_[index] << "], " << threshold_[index] << ", " << static_cast<int>(decision_type_[index]) << ") ";
+    str_buf << "fval = arr[" << split_feature_[index] << "];";
     if (GetDecisionType(decision_type_[index], kCategoricalMask) == 0) {
-      str_buf << "<";
+      str_buf << NumericalDecisionIfElse(index);
     } else {
-      str_buf << "=";
+      str_buf << CategoricalDecisionIfElse(index);
     }
-    str_buf << "= " << threshold_[index] << " ) { ";
     // left subtree
     str_buf << NodeToIfElse(left_child_[index], is_predict_leaf_index);
     str_buf << " } else { ";
