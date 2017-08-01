@@ -460,7 +460,7 @@ class TestEngine(unittest.TestCase):
         takes subsets of it, and uses the subsets for training and validation
         '''
         n = 1000
-        X = np.random.normal(size=n * 2).reshape(n, 2)
+        X = np.random.normal(size=(n, 2))
         y = np.random.normal(size=n)
         tmp_dat = lgb.Dataset(X, y)
         # take subsets and train
