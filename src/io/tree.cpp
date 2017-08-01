@@ -68,7 +68,7 @@ int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
 }
 
 int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin,
-                     const double* threshold_double, int num_threshold, double left_value, double right_value,
+                     const int* threshold_int, int num_threshold, double left_value, double right_value,
                      data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type) {
   Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain);
   int new_node_idx = num_leaves_ - 1;
@@ -86,7 +86,7 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
   ++num_cat_;
   cat_boundaries_.push_back(cat_boundaries_.back() + num_threshold);
   for (int i = 0; i < num_threshold; ++i) {
-    cat_threshold_.push_back(static_cast<int>(threshold_double[i]));
+    cat_threshold_.push_back(threshold_int[i]);
     cat_threshold_in_bin_.push_back(threshold_bin[i]);
   }
   CHECK(cat_boundaries_.back() == static_cast<int>(cat_threshold_.size()));

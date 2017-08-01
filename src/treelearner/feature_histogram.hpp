@@ -15,7 +15,7 @@ class FeatureMetainfo {
 public:
   int num_bin;
   MissingType missing_type;
-  int bias = 0;
+  int8_t bias = 0;
   uint32_t default_bin;
   /*! \brief pointer of tree config */
   const TreeConfig* tree_config;
@@ -103,9 +103,27 @@ public:
 
   void FindBestThresholdCategorical(double sum_gradient, double sum_hessian, data_size_t num_data,
                                     SplitInfo* output) {
+    const int8_t bias = meta_->bias;
+    double na_sum_gradient = 0.0f;
+    double na_sum_hessian = 0.0f;
+    data_size_t na_cnt = 0;
+    if (bias > 0) {
+      // use meta_->num_bin - 2 to represent zero bin
+      na_sum_gradient = data_[meta_->num_bin - 2].sum_gradients;
+      na_sum_hessian = data_[meta_->num_bin - 2].sum_hessians;
+      na_cnt = data_[meta_->num_bin - 2].cnt;
+      // use last bin to store bin_0
+      data_[meta_->num_bin - 2].sum_gradients = sum_gradient - na_sum_gradient;
+      data_[meta_->num_bin - 2].sum_hessians = sum_hessian - 2 * kEpsilon - na_sum_hessian;
+      data_[meta_->num_bin - 2].cnt = num_data - na_cnt;
+      for (int i = 0; i < meta_->num_bin - 2;++i) {
+        data_[meta_->num_bin - 2].sum_gradients -= data_[i].sum_gradients;
+        data_[meta_->num_bin - 2].sum_hessians -= data_[i].sum_hessians;
+        data_[meta_->num_bin - 2].cnt -= data_[i].cnt;
+      }
+    } 
     output->default_left = false;
     double best_gain = kMinScore;
-    uint32_t best_threshold = static_cast<uint32_t>(meta_->num_bin);
     data_size_t best_left_count = 0;
     double best_sum_left_gradient = 0.0f;
     double best_sum_left_hessian = 0.0f;
@@ -113,80 +131,84 @@ public:
                                          meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2);
     double min_gain_shift = gain_shift + meta_->tree_config->min_gain_to_split;
     is_splittable_ = false;
-    const int bias = meta_->bias;
-    int t = meta_->num_bin - 1 - bias;
-    const int t_end = 0;
-    // from right to left, and we don't need data in bin0
-    for (; t >= t_end; --t) {
-      // if data not enough, or sum hessian too small
-      if (data_[t].cnt < meta_->tree_config->min_data_in_leaf
-          || data_[t].sum_hessians < meta_->tree_config->min_sum_hessian_in_leaf) continue;
-      data_size_t other_count = num_data - data_[t].cnt;
-      // if data not enough
-      if (other_count < meta_->tree_config->min_data_in_leaf) continue;
 
-      double sum_other_hessian = sum_hessian - data_[t].sum_hessians - kEpsilon;
-      // if sum hessian too small
-      if (sum_other_hessian < meta_->tree_config->min_sum_hessian_in_leaf) continue;
-
-      double sum_other_gradient = sum_gradient - data_[t].sum_gradients;
-      // current split gain
-      double current_gain = GetLeafSplitGain(sum_other_gradient, sum_other_hessian,
-                                             meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2)
-        + GetLeafSplitGain(data_[t].sum_gradients, data_[t].sum_hessians + kEpsilon,
-                           meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2);
-      // gain with split is worse than without split
-      if (current_gain <= min_gain_shift) continue;
-
-      // mark to is splittable
-      is_splittable_ = true;
-      // better split point
-      if (current_gain > best_gain) {
-        best_threshold = static_cast<uint32_t>(t + bias);
-        best_sum_left_gradient = data_[t].sum_gradients;
-        best_sum_left_hessian = data_[t].sum_hessians + kEpsilon;
-        best_left_count = data_[t].cnt;
-        best_gain = current_gain;
-      }
+    std::vector<int> sorted_idx(meta_->num_bin - 1);
+    for (int i = 0; i < meta_->num_bin - 1; ++i) {
+      sorted_idx[i] = i;
     }
-    // need restore zero bin
-    if (bias == 1) {
-      t = meta_->num_bin - 1 - bias;
-      double sum_bin0_gradient = sum_gradient;
-      double sum_bin0_hessian = sum_hessian - 2 * kEpsilon;
-      data_size_t cnt_bin0 = num_data;
-      for (; t >= 0; --t) {
-        sum_bin0_gradient -= data_[t].sum_gradients;
-        sum_bin0_hessian -= data_[t].sum_hessians;
-        cnt_bin0 -= data_[t].cnt;
-      }
-      data_size_t other_count = num_data - cnt_bin0;
-      double sum_other_hessian = sum_hessian - sum_bin0_hessian - kEpsilon;
-      if (cnt_bin0 >= meta_->tree_config->min_data_in_leaf
-          && sum_bin0_hessian >= meta_->tree_config->min_sum_hessian_in_leaf
-          && other_count >= meta_->tree_config->min_data_in_leaf
-          && sum_other_hessian >= meta_->tree_config->min_sum_hessian_in_leaf) {
-        double sum_other_gradient = sum_gradient - sum_bin0_gradient;
-        double current_gain = GetLeafSplitGain(sum_other_gradient, sum_other_hessian,
-                                               meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2)
-          + GetLeafSplitGain(sum_bin0_gradient, sum_bin0_hessian + kEpsilon,
-                             meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2);
-        if (current_gain > min_gain_shift) {
+
+    const double smooth_hess = 10;
+    const double smooth_grad = 10 * sum_gradient / sum_hessian;
+
+    // sort the histogram
+    std::sort(sorted_idx.begin(), sorted_idx.end(),
+              [this, &smooth_hess, &smooth_grad] (int a, int b) {
+      return (data_[a].sum_gradients + smooth_grad) / (data_[a].sum_hessians + smooth_hess)
+             < (data_[b].sum_gradients + smooth_grad) / (data_[b].sum_hessians + smooth_hess);
+    });
+    std::vector<int> dirs = { 1, -1 };
+    int best_threshold = -1;
+    int best_dir = 1;
+    for (int dir: dirs) {
+      data_size_t rest_group = meta_->tree_config->max_cat_group;
+      data_size_t min_data_per_group = std::max(1, num_data / rest_group);
+      data_size_t cnt_cur_group = 0;
+      double sum_left_gradient = 0.0f;
+      double sum_left_hessian = kEpsilon;
+      data_size_t left_count = 0;
+      // left to right
+      for (int i = 0; i < meta_->num_bin - 1 && i < meta_->tree_config->max_left_cat; ++i) {
+        auto t = sorted_idx[i];
+        if (dir == -1) {
+          t = sorted_idx[meta_->num_bin - 2 - i];
+        }
+        sum_left_gradient += data_[t].sum_gradients;
+        sum_left_hessian += data_[t].sum_hessians;
+        left_count += data_[t].cnt;
+        cnt_cur_group += data_[t].cnt;
+        // if data not enough, or sum hessian too small
+        if (left_count < meta_->tree_config->min_data_in_leaf
+            || sum_left_hessian < meta_->tree_config->min_sum_hessian_in_leaf) continue;
+        data_size_t right_count = num_data - left_count;
+        // if data not enough
+        if (right_count < meta_->tree_config->min_data_in_leaf) break;
+
+        double sum_right_hessian = sum_hessian - sum_left_hessian;
+        // if sum hessian too small
+        if (sum_right_hessian < meta_->tree_config->min_sum_hessian_in_leaf) break;
+
+        // can find best split on current point
+        if (cnt_cur_group >= min_data_per_group) {
+          cnt_cur_group = 0;
+          --rest_group;
+          if (rest_group > 0) {
+            min_data_per_group = std::max(1, right_count / rest_group);
+          }
+          double sum_right_gradient = sum_gradient - sum_left_gradient;
+          // current split gain
+          double current_gain = GetLeafSplitGain(sum_left_gradient, sum_left_hessian,
+                                                 meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2)
+            + GetLeafSplitGain(sum_right_gradient, sum_right_hessian,
+                               meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2);
+          // gain with split is worse than without split
+          if (current_gain <= min_gain_shift) continue;
+
+          // mark to is splittable
           is_splittable_ = true;
           // better split point
           if (current_gain > best_gain) {
-            best_threshold = static_cast<uint32_t>(0);
-            best_sum_left_gradient = sum_bin0_gradient;
-            best_sum_left_hessian = sum_bin0_hessian + kEpsilon;
-            best_left_count = cnt_bin0;
+            best_left_count = left_count;
+            best_sum_left_gradient = sum_left_gradient;
+            best_sum_left_hessian = sum_left_hessian;
+            best_threshold = i;
             best_gain = current_gain;
+            best_dir = dir;
           }
         }
       }
     }
     if (is_splittable_) {
       // update split information
-      output->threshold = best_threshold;
       output->left_output = CalculateSplittedLeafOutput(best_sum_left_gradient, best_sum_left_hessian,
                                                         meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2);
       output->left_count = best_left_count;
@@ -199,7 +221,26 @@ public:
       output->right_sum_gradient = sum_gradient - best_sum_left_gradient;
       output->right_sum_hessian = sum_hessian - best_sum_left_hessian - kEpsilon;
       output->gain = best_gain - min_gain_shift;
-    } 
+      output->num_cat_threshold = best_threshold + 1;
+      output->cat_threshold.resize(output->num_cat_threshold);
+      for (int i = 0; i < output->num_cat_threshold; ++i) {
+        auto t = sorted_idx[i];
+        if (best_dir == -1) {
+          t = sorted_idx[meta_->num_bin - 2 - i];
+        }
+        if (bias > 0 && t == meta_->num_bin - 2) {
+          output->cat_threshold[i] = meta_->default_bin;
+        } else {
+          output->cat_threshold[i] = t + bias;
+        }
+      }
+    }
+    if (bias > 0) {
+      // restore na bin
+      data_[meta_->num_bin - 2].sum_gradients = na_sum_gradient;
+      data_[meta_->num_bin - 2].sum_hessians = na_sum_hessian;
+      data_[meta_->num_bin - 2].cnt = na_cnt;
+    }
   }
 
   /*!
@@ -258,7 +299,7 @@ private:
   void FindBestThresholdSequence(double sum_gradient, double sum_hessian, data_size_t num_data, double min_gain_shift,
                                  SplitInfo* output, int dir, bool skip_default_bin, bool use_na_as_missing) {
 
-    const int bias = meta_->bias;
+    const int8_t bias = meta_->bias;
 
     double best_sum_left_gradient = NAN;
     double best_sum_left_hessian = NAN;

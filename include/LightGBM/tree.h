@@ -69,7 +69,7 @@ public:
   * \return The index of new leaf.
   */
   int SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin,
-            const double* threshold_double, int num_threshold, double left_value, double right_value,
+            const int* threshold_int, int num_threshold, double left_value, double right_value,
             data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type);
 
   /*! \brief Get the output of one leaf */
