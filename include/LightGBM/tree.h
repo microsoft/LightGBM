@@ -209,10 +209,20 @@ private:
     }
     str_buf << "if (";
     int cat_idx = int(threshold_[node]);
-    for (int i = cat_boundaries_[cat_idx]; i < cat_boundaries_[cat_idx + 1] - 1; ++i) {
-      str_buf << "int_fval == " << cat_threshold_[i] << " || ";
+    std::vector<int> cats;
+    for (int i = cat_boundaries_[cat_idx]; i < cat_boundaries_[cat_idx + 1]; ++i) {
+      for (int j = 0; j < 32; ++j) {
+        int cat = i * 32 + j;
+        if (Common::FindInBitset(cat_threshold_.data() + cat_boundaries_[cat_idx],
+                                 cat_boundaries_[cat_idx + 1] - cat_boundaries_[cat_idx], cat)) {
+          cats.push_back(cat);
+        }
+      }
     }
-    str_buf << "int_fval == " << cat_threshold_[cat_boundaries_[cat_idx + 1] - 1] << ") {";
+    for (int i = 0; i < static_cast<int>(cats.size()) - 1; ++i) {
+      str_buf << "int_fval == " << cats[i] << " || ";
+    }
+    str_buf << "int_fval == " << cats.back() << ") {";
     return str_buf.str();
   }
 
