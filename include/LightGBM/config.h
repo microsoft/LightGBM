@@ -222,6 +222,7 @@ public:
   bool gpu_use_dp = false;
   int max_cat_group = 255;
   int max_left_cat = 512;
+  int cat_smooth = 5;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -458,7 +459,7 @@ struct ParameterAlias {
       "snapshot_freq", "verbosity", "sparse_threshold", "enable_load_from_binary_file",
       "max_conflict_rate", "poisson_max_delta_step", "gaussian_eta",
       "histogram_pool_size", "output_freq", "is_provide_training_metric", "machine_list_filename", 
-      "zero_as_missing", "max_cat_group", "max_left_cat"
+      "zero_as_missing", "max_cat_group", "max_left_cat", "cat_smooth"
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {

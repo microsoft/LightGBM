@@ -137,8 +137,8 @@ public:
       sorted_idx[i] = i;
     }
 
-    const double smooth_hess = 10;
-    const double smooth_grad = 10 * sum_gradient / sum_hessian;
+    const double smooth_hess = meta_->tree_config->cat_smooth;
+    const double smooth_grad = smooth_hess * sum_gradient / sum_hessian;
 
     // sort the histogram
     std::sort(sorted_idx.begin(), sorted_idx.end(),
