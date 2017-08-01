@@ -43,8 +43,8 @@ public:
   /*! \brief True if default split is left */
   bool default_left = true;
 
-  inline static int Size(int max_left_cat) {
-    return 2 * sizeof(int) + sizeof(uint32_t) + sizeof(bool) + sizeof(double) * 7 + sizeof(data_size_t) * 2 + max_left_cat * sizeof(uint32_t);
+  inline static int Size(int max_cat_threshold) {
+    return 2 * sizeof(int) + sizeof(uint32_t) + sizeof(bool) + sizeof(double) * 7 + sizeof(data_size_t) * 2 + max_cat_threshold * sizeof(uint32_t);
   }
 
   inline void CopyTo(char* buffer) const {

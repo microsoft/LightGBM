@@ -367,10 +367,10 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   GetInt(params, "gpu_device_id", &gpu_device_id);
   GetBool(params, "gpu_use_dp", &gpu_use_dp);
   GetInt(params, "max_cat_group", &max_cat_group);
-  GetInt(params, "max_left_cat", &max_left_cat);
+  GetInt(params, "max_cat_threshold", &max_cat_threshold);
   GetInt(params, "cat_smooth", &cat_smooth);
   CHECK(max_cat_group > 1);
-  CHECK(max_left_cat > 0);
+  CHECK(max_cat_threshold > 0);
   CHECK(cat_smooth >= 0);
 }
 

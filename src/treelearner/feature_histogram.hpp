@@ -132,7 +132,7 @@ public:
 
     std::vector<int> dirs = { 1, -1 };
     // not need to search two round
-    if (is_full_categorical && meta_->tree_config->max_left_cat * 2 >= meta_->num_bin) {
+    if (is_full_categorical && meta_->tree_config->max_cat_threshold * 2 >= meta_->num_bin) {
       dirs.pop_back();
     }
     is_splittable_ = false;
@@ -146,7 +146,7 @@ public:
       double sum_left_hessian = kEpsilon;
       data_size_t left_count = 0;
       // left to right
-      for (int i = 0; i < used_bin && i < meta_->tree_config->max_left_cat; ++i) {
+      for (int i = 0; i < used_bin && i < meta_->tree_config->max_cat_threshold; ++i) {
         auto t = sorted_idx[i];
         if (dir == -1) {
           t = sorted_idx[used_bin - 1 - i];
