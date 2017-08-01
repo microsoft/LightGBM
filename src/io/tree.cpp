@@ -67,9 +67,9 @@ int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
   return num_leaves_ - 1;
 }
 
-int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin,
-                     const int* threshold_int, int num_threshold, double left_value, double right_value,
-                     data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type) {
+int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin, int num_threshold_bin,
+                           const uint32_t* threshold, int num_threshold, double left_value, double right_value,
+                           data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type) {
   Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain);
   int new_node_idx = num_leaves_ - 1;
   decision_type_[new_node_idx] = 0;
@@ -86,8 +86,11 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
   ++num_cat_;
   cat_boundaries_.push_back(cat_boundaries_.back() + num_threshold);
   for (int i = 0; i < num_threshold; ++i) {
-    cat_threshold_.push_back(threshold_int[i]);
-    cat_threshold_in_bin_.push_back(threshold_bin[i]);
+    cat_threshold_.push_back(threshold[i]);
+  }
+  cat_boundaries_inner_.push_back(cat_boundaries_inner_.back() + num_threshold_bin);
+  for (int i = 0; i < num_threshold_bin; ++i) {
+    cat_threshold_inner_.push_back(threshold_bin[i]);
   }
   CHECK(cat_boundaries_.back() == static_cast<int>(cat_threshold_.size()));
   ++num_leaves_;
@@ -296,7 +299,7 @@ std::string Tree::ToString() {
     str_buf << "cat_boundaries="
       << Common::ArrayToString<int>(cat_boundaries_, num_cat_ + 1, ' ') << std::endl;
     str_buf << "cat_threshold="
-      << Common::ArrayToString<int>(cat_threshold_, cat_threshold_.size(), ' ') << std::endl;
+      << Common::ArrayToString<uint32_t>(cat_threshold_, cat_threshold_.size(), ' ') << std::endl;
   }
   str_buf << "shrinkage=" << shrinkage_ << std::endl;
   str_buf << std::endl;
@@ -511,7 +514,7 @@ Tree::Tree(const std::string& str) {
     }
 
     if (key_vals.count("cat_threshold")) {
-      cat_threshold_ = Common::StringToArray<int>(key_vals["cat_threshold"], ' ', cat_boundaries_.back());
+      cat_threshold_ = Common::StringToArray<uint32_t>(key_vals["cat_threshold"], ' ', cat_boundaries_.back());
     } else {
       Log::Fatal("Tree model should contain cat_threshold field.");
     }

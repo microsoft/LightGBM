@@ -58,9 +58,10 @@ public:
   * \param leaf Index of leaf to be split
   * \param feature Index of feature; the converted index after removing useless features
   * \param real_feature Index of feature, the original index on data
-  * \param threshold_bin Threshold(bin) of split
-  * \param threshold_double Threshold on feature value
-  * \param num_threshold Number of thresholds
+  * \param threshold_bin Threshold(bin) of split, use bitset to represent
+  * \param num_threshold_bin size of threshold_bin
+  * \param threshold Thresholds of real feature value, use bitset to represent
+  * \param num_threshold size of threshold
   * \param left_value Model Left child output
   * \param right_value Model Right child output
   * \param left_cnt Count of left child
@@ -68,8 +69,8 @@ public:
   * \param gain Split gain
   * \return The index of new leaf.
   */
-  int SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin,
-            const int* threshold_int, int num_threshold, double left_value, double right_value,
+  int SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin, int num_threshold_bin,
+            const uint32_t* threshold, int num_threshold, double left_value, double right_value,
             data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type);
 
   /*! \brief Get the output of one leaf */
@@ -265,8 +266,8 @@ private:
       int_fval = 0;
     }
     int cat_idx = int(threshold_[node]);
-    if (Common::BinSearch(cat_threshold_.data(), cat_boundaries_[cat_idx],
-                          cat_boundaries_[cat_idx + 1], int_fval)) {
+    if (Common::FindInBitset(cat_threshold_.data() + cat_boundaries_[cat_idx],
+                             cat_boundaries_[cat_idx + 1] - cat_boundaries_[cat_idx], int_fval)) {
       return left_child_[node];
     }
     return right_child_[node];
@@ -274,8 +275,8 @@ private:
 
   inline int CategoricalDecisionInner(uint32_t fval, int node) const {
     int cat_idx = int(threshold_in_bin_[node]);
-    if (Common::BinSearch(cat_threshold_in_bin_.data(), cat_boundaries_[cat_idx],
-                          cat_boundaries_[cat_idx + 1], fval)) {
+    if (Common::FindInBitset(cat_threshold_inner_.data()+ cat_boundaries_inner_[cat_idx],
+                          cat_boundaries_inner_[cat_idx + 1] - cat_boundaries_inner_[cat_idx], fval)) {
       return left_child_[node];
     }
     return right_child_[node];
@@ -330,9 +331,10 @@ private:
   /*! \brief A non-leaf node's split threshold in feature value */
   std::vector<double> threshold_;
   int num_cat_;
+  std::vector<int> cat_boundaries_inner_;
+  std::vector<uint32_t> cat_threshold_inner_;
   std::vector<int> cat_boundaries_;
-  std::vector<uint32_t> cat_threshold_in_bin_;
-  std::vector<int> cat_threshold_;
+  std::vector<uint32_t> cat_threshold_;
   /*! \brief Store the information for categorical feature handle and mising value handle. */
   std::vector<int8_t> decision_type_;
   /*! \brief A non-leaf node's split gain */

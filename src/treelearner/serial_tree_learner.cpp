@@ -517,7 +517,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
 
 
 void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf) {
-  SplitInfo& best_split_info = best_split_per_leaf_[best_leaf];
+  const SplitInfo& best_split_info = best_split_per_leaf_[best_leaf];
   const int inner_feature_index = train_data_->InnerFeatureIndex(best_split_info.feature);
   // left = parent
   *left_leaf = best_leaf;
@@ -539,32 +539,27 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
     data_partition_->Split(best_leaf, train_data_, inner_feature_index,
                            &best_split_info.threshold, 1, best_split_info.default_left, *right_leaf);
   } else {
-    std::sort(best_split_info.cat_threshold.begin(), best_split_info.cat_threshold.end());
+    std::vector<uint32_t> cat_bitset_inner = Common::ConstructBitset(best_split_info.cat_threshold.data(), best_split_info.num_cat_threshold);
     std::vector<int> threshold_int(best_split_info.num_cat_threshold);
     for (int i = 0; i < best_split_info.num_cat_threshold; ++i) {
       threshold_int[i] = static_cast<int>(train_data_->RealThreshold(inner_feature_index, best_split_info.cat_threshold[i]));
     }
-    std::sort(threshold_int.begin(), threshold_int.end());
+    std::vector<uint32_t> cat_bitset = Common::ConstructBitset(threshold_int.data(), best_split_info.num_cat_threshold);
     *right_leaf = tree->SplitCategorical(best_leaf,
                                          inner_feature_index,
                                          best_split_info.feature,
-                                         best_split_info.cat_threshold.data(),
-                                         threshold_int.data(),
-                                         best_split_info.num_cat_threshold,
+                                         cat_bitset_inner.data(),
+                                         static_cast<int>(cat_bitset_inner.size()),
+                                         cat_bitset.data(),
+                                         static_cast<int>(cat_bitset.size()),
                                          static_cast<double>(best_split_info.left_output),
                                          static_cast<double>(best_split_info.right_output),
                                          static_cast<data_size_t>(best_split_info.left_count),
                                          static_cast<data_size_t>(best_split_info.right_count),
                                          static_cast<double>(best_split_info.gain),
                                          train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
-    std::vector<uint32_t> cat_bitset((train_data_->FeatureBinMapper(inner_feature_index)->num_bin() + 31) / 32, 0);
-    for (int i = 0; i < best_split_info.num_cat_threshold; ++i) {
-      int i1 = best_split_info.cat_threshold[i] / 32;
-      int i2 = best_split_info.cat_threshold[i] % 32;
-      cat_bitset[i1] |= (1 << i2);
-    }
     data_partition_->Split(best_leaf, train_data_, inner_feature_index,
-                           cat_bitset.data(), static_cast<int>(cat_bitset.size()), best_split_info.default_left, *right_leaf);
+                           cat_bitset_inner.data(), static_cast<int>(cat_bitset_inner.size()), best_split_info.default_left, *right_leaf);
   }
   CHECK(best_split_info.left_count == data_partition_->leaf_count(best_leaf));
 
