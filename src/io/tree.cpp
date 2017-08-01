@@ -40,6 +40,7 @@ Tree::Tree(int max_leaves)
   shrinkage_ = 1.0f;
   num_cat_ = 0;
   cat_boundaries_.push_back(0);
+  cat_boundaries_inner_.push_back(0);
 }
 
 Tree::~Tree() {
@@ -92,7 +93,6 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
   for (int i = 0; i < num_threshold_bin; ++i) {
     cat_threshold_inner_.push_back(threshold_bin[i]);
   }
-  CHECK(cat_boundaries_.back() == static_cast<int>(cat_threshold_.size()));
   ++num_leaves_;
   return num_leaves_ - 1;
 }

@@ -70,8 +70,8 @@ public:
   * \return The index of new leaf.
   */
   int SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin, int num_threshold_bin,
-            const uint32_t* threshold, int num_threshold, double left_value, double right_value,
-            data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type);
+                       const uint32_t* threshold, int num_threshold, double left_value, double right_value,
+                       data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type);
 
   /*! \brief Get the output of one leaf */
   inline double LeafOutput(int leaf) const { return leaf_value_[leaf]; }
@@ -275,8 +275,8 @@ private:
 
   inline int CategoricalDecisionInner(uint32_t fval, int node) const {
     int cat_idx = int(threshold_in_bin_[node]);
-    if (Common::FindInBitset(cat_threshold_inner_.data()+ cat_boundaries_inner_[cat_idx],
-                          cat_boundaries_inner_[cat_idx + 1] - cat_boundaries_inner_[cat_idx], fval)) {
+    if (Common::FindInBitset(cat_threshold_inner_.data() + cat_boundaries_inner_[cat_idx],
+                             cat_boundaries_inner_[cat_idx + 1] - cat_boundaries_inner_[cat_idx], fval)) {
       return left_child_[node];
     }
     return right_child_[node];
