@@ -456,15 +456,14 @@ class TestEngine(unittest.TestCase):
 
     def test_subset_train_val(self):
         '''
-        Tests that it's fine to construct a single lgb.Dataframe object, 
+        Tests that it's fine to construct a single lgb.Dataframe object,
         takes subsets of it, and uses the subsets for training and validation
         '''
         n = 1000
-        X = np.random.normal(size=n*2).reshape(n, 2)
+        X = np.random.normal(size=n * 2).reshape(n, 2)
         y = np.random.normal(size=n)
         tmp_dat = lgb.Dataset(X, y)
-        tmp_dat_train = tmp_dat.subset(np.arange(int(n*.8)))
-        tmp_dat_val = tmp_dat.subset(np.arange(int(n*.8), n))
-        params = {'objective':'regression_l2', 'metric':'rmse'}
+        tmp_dat_train = tmp_dat.subset(np.arange(int(n * .8)))
+        tmp_dat_val = tmp_dat.subset(np.arange(int(n * .8), n))
+        params = {'objective': 'regression_l2', 'metric': 'rmse'}
         gbm = lgb.train(params, tmp_dat_train, num_boost_round=20, valid_sets=[tmp_dat_train, tmp_dat_val])
-
