@@ -1185,17 +1185,17 @@ class Dataset(object):
         chain of references of self : set of Dataset objects
         '''
         head = self
-        ref_chain = []
+        ref_chain = set()
         while len(ref_chain) < ref_limit:
             if isinstance(head, Dataset):
-                ref_chain += [head]
+                ref_chain.add(head)
                 if (head.reference is not None) and (head.reference not in ref_chain):
                     head = head.reference
                 else:
                     break
             else:
                 break
-        return(set(ref_chain))
+        return(ref_chain)
 
 
 class Booster(object):
