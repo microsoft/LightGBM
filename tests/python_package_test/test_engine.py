@@ -470,5 +470,5 @@ class TestEngine(unittest.TestCase):
         gbm = lgb.train(params, tmp_dat_train, num_boost_round=20, valid_sets=[tmp_dat_train, tmp_dat_val])
         # now take subsets of the subsets and train
         tmp_dat_train2 = tmp_dat_train.subset(np.arange(n * .8 * .9))
-        tmp_dat_val2 = tmp_dat_val.subset(np.arange(n * .2* .9))
+        tmp_dat_val2 = tmp_dat_val.subset(np.arange(n * .2 * .9))
         gbm = lgb.train(params, tmp_dat_train2, num_boost_round=20, valid_sets=[tmp_dat_train2, tmp_dat_val2])
