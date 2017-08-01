@@ -561,7 +561,10 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
     data_partition_->Split(best_leaf, train_data_, inner_feature_index,
                            cat_bitset_inner.data(), static_cast<int>(cat_bitset_inner.size()), best_split_info.default_left, *right_leaf);
   }
+
+  #ifdef DEBUG
   CHECK(best_split_info.left_count == data_partition_->leaf_count(best_leaf));
+  #endif
 
   // init the leaves that used on next iteration
   if (best_split_info.left_count < best_split_info.right_count) {
