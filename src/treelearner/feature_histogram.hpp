@@ -111,12 +111,12 @@ public:
     double best_sum_left_hessian = 0.0f;
     double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian,
                                          meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2);
+    
     double min_gain_shift = gain_shift + meta_->tree_config->min_gain_to_split;
-    is_splittable_ = false;
     bool is_full_categorical = meta_->missing_type == MissingType::None;
-
-    std::vector<int> sorted_idx(meta_->num_bin - 1 + is_full_categorical);
-    for (int i = 0; i < meta_->num_bin - 1 + is_full_categorical; ++i) {
+    int used_bin = meta_->num_bin - 1 + is_full_categorical;
+    std::vector<int> sorted_idx(used_bin);
+    for (int i = 0; i < used_bin; ++i) {
       sorted_idx[i] = i;
     }
 
@@ -135,6 +135,7 @@ public:
     if (is_full_categorical && meta_->tree_config->max_left_cat * 2 >= meta_->num_bin) {
       dirs.pop_back();
     }
+    is_splittable_ = false;
     int best_threshold = -1;
     int best_dir = 1;
     for (int dir: dirs) {
@@ -145,11 +146,10 @@ public:
       double sum_left_hessian = kEpsilon;
       data_size_t left_count = 0;
       // left to right
-      int loop_size = meta_->num_bin - 1 + is_full_categorical;
-      for (int i = 0; i < loop_size && i < meta_->tree_config->max_left_cat; ++i) {
+      for (int i = 0; i < used_bin && i < meta_->tree_config->max_left_cat; ++i) {
         auto t = sorted_idx[i];
         if (dir == -1) {
-          t = sorted_idx[loop_size - 1 - i];
+          t = sorted_idx[used_bin - 1 - i];
         }
         sum_left_gradient += data_[t].sum_gradients;
         sum_left_hessian += data_[t].sum_hessians;
@@ -215,7 +215,7 @@ public:
       for (int i = 0; i < output->num_cat_threshold; ++i) {
         auto t = sorted_idx[i];
         if (best_dir == -1) {
-          t = sorted_idx[meta_->num_bin - 2 - i + is_full_categorical];
+          t = sorted_idx[used_bin - 1 - i];
         }
         output->cat_threshold[i] = t;
       }

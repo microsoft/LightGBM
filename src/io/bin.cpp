@@ -324,7 +324,9 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
       missing_type_ = MissingType::None;
     } else if (na_cnt == 0) {
       missing_type_ = MissingType::Zero;
-    } 
+    } else {
+      missing_type_ = MissingType::NaN;
+    }
     cnt_in_bin = counts_int;
     counts_int.resize(num_bin_);
     counts_int.back() += static_cast<int>(total_sample_cnt - used_cnt);

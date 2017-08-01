@@ -220,9 +220,9 @@ public:
   int gpu_device_id = -1;
   /*! \brief Set to true to use double precision math on GPU (default using single precision) */
   bool gpu_use_dp = false;
-  int max_cat_group = 255;
-  int max_left_cat = 512;
-  int cat_smooth = 5;
+  int max_cat_group = 64;
+  int max_left_cat = 256;
+  int cat_smooth = 10;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
