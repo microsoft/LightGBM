@@ -253,29 +253,17 @@ public:
     const uint32_t* threshold, int num_threshold, data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const override {
     if (num_data <= 0) { return 0; }
-    std::vector<VAL_T> ths(num_threshold);
-    for (int i = 0; i < num_threshold; ++i) {
-      ths[i] = static_cast<VAL_T>(threshold[i] + min_bin);
-    }
-    VAL_T minb = static_cast<VAL_T>(min_bin);
-    VAL_T maxb = static_cast<VAL_T>(max_bin);
-    VAL_T t_default_bin = static_cast<VAL_T>(min_bin + default_bin);
-    if (default_bin == 0) {
-      for (int i = 0; i < num_threshold; ++i) {
-        ths[i] -= 1;
-      }
-      t_default_bin -= 1;
-    }
     data_size_t lte_count = 0;
     data_size_t gt_count = 0;
-
     for (data_size_t i = 0; i < num_data; ++i) {
       const data_size_t idx = data_indices[i];
-      VAL_T bin = data_[idx];
-      if (bin < minb || bin > maxb) {
-        bin = t_default_bin;
+      uint32_t bin = data_[idx];
+      if (bin < min_bin || bin > max_bin) {
+        bin = default_bin;
+      } else {
+        bin -= min_bin;
       }
-      if (Common::BinSearch(ths.data(), 0, num_threshold, bin)) {
+      if (Common::BinSearch(threshold, 0, num_threshold, bin)) {
         lte_indices[lte_count++] = idx;
       } else {
         gt_indices[gt_count++] = idx;

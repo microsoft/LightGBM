@@ -292,29 +292,17 @@ public:
     const uint32_t* threshold, int num_threshold, data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const override {
     if (num_data <= 0) { return 0; }
-    std::vector<uint8_t> ths(num_threshold);
-    for (int i = 0; i < num_threshold; ++i) {
-      ths[i] = static_cast<uint8_t>(threshold[i] + min_bin);
-    }
-    uint8_t minb = static_cast<uint8_t>(min_bin);
-    uint8_t maxb = static_cast<uint8_t>(max_bin);
-    uint8_t t_default_bin = static_cast<uint8_t>(min_bin + default_bin);
-    if (default_bin == 0) {
-      for (int i = 0; i < num_threshold; ++i) {
-        ths[i] -= 1;
-      }
-      t_default_bin -= 1;
-    }
     data_size_t lte_count = 0;
     data_size_t gt_count = 0;
-
     for (data_size_t i = 0; i < num_data; ++i) {
       const data_size_t idx = data_indices[i];
-      uint8_t bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
-      if (bin < minb || bin > maxb) {
-        bin = t_default_bin;
+      uint32_t bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      if (bin < min_bin || bin > max_bin) {
+        bin = default_bin;
+      } else {
+        bin -= min_bin;
       }
-      if (Common::BinSearch(ths.data(), 0, num_threshold, bin)) {
+      if (Common::BinSearch(threshold, 0, num_threshold, bin)) {
         lte_indices[lte_count++] = idx;
       } else {
         gt_indices[gt_count++] = idx;
