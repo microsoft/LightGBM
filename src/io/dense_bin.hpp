@@ -250,14 +250,14 @@ public:
 
   virtual data_size_t SplitCategorical(
     uint32_t min_bin, uint32_t max_bin, uint32_t default_bin,
-    const uint32_t* threshold, int num_threshold, data_size_t* data_indices, data_size_t num_data,
+    const uint32_t* threshold, int, data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const override {
     if (num_data <= 0) { return 0; }
     data_size_t lte_count = 0;
     data_size_t gt_count = 0;
     data_size_t* default_indices = gt_indices;
     data_size_t* default_count = &gt_count;
-    if (Common::BinSearch(threshold, 0, num_threshold, default_bin)) {
+    if (Common::FindInBitset(threshold, default_bin)) {
       default_indices = lte_indices;
       default_count = &lte_count;
     }
@@ -266,7 +266,7 @@ public:
       const uint32_t bin = data_[idx];
       if (bin < min_bin || bin > max_bin) {
         default_indices[(*default_count)++] = idx;
-      } else if (Common::BinSearch(threshold, 0, num_threshold, bin - min_bin)) {
+      } else if (Common::FindInBitset(threshold, bin - min_bin)) {
         lte_indices[lte_count++] = idx;
       } else {
         gt_indices[gt_count++] = idx;

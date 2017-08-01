@@ -620,6 +620,11 @@ inline bool BinSearch(const T* arr, int l, int r, T key) {
   return false;
 }
 
+inline bool FindInBitset(const uint32_t* bits, uint32_t pos) {
+  int i1 = pos / 32;
+  int i2 = pos % 32;
+  return (bits[i1] >> i2) & 1;
+}
 
 }  // namespace Common
 

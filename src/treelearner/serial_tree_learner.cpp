@@ -557,8 +557,14 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
                                          static_cast<data_size_t>(best_split_info.right_count),
                                          static_cast<double>(best_split_info.gain),
                                          train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
+    std::vector<uint32_t> cat_bitset((train_data_->FeatureBinMapper(inner_feature_index)->num_bin() + 31) / 32, 0);
+    for (int i = 0; i < best_split_info.num_cat_threshold; ++i) {
+      int i1 = best_split_info.cat_threshold[i] / 32;
+      int i2 = best_split_info.cat_threshold[i] % 32;
+      cat_bitset[i1] |= (1 << i2);
+    }
     data_partition_->Split(best_leaf, train_data_, inner_feature_index,
-                           best_split_info.cat_threshold.data(), best_split_info.num_cat_threshold, best_split_info.default_left, *right_leaf);
+                           cat_bitset.data(), static_cast<int>(cat_bitset.size()), best_split_info.default_left, *right_leaf);
   }
   CHECK(best_split_info.left_count == data_partition_->leaf_count(best_leaf));
 
