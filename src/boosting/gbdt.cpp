@@ -964,7 +964,7 @@ std::string GBDT::SaveModelToString(int num_iteration) const {
     ss << models_[i]->ToString() << std::endl;
   }
 
-  std::vector<std::pair<size_t, std::string>> pairs = FeatureImportance();
+  std::vector<std::pair<size_t, std::string>> pairs = FeatureImportance(num_used_model);
   ss << std::endl << "feature importances:" << std::endl;
   for (size_t i = 0; i < pairs.size(); ++i) {
     ss << pairs[i].second << "=" << std::to_string(pairs[i].first) << std::endl;
@@ -1088,10 +1088,10 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
   return true;
 }
 
-std::vector<std::pair<size_t, std::string>> GBDT::FeatureImportance() const {
+std::vector<std::pair<size_t, std::string>> GBDT::FeatureImportance(int num_used_model) const {
 
   std::vector<size_t> feature_importances(max_feature_idx_ + 1, 0);
-  for (size_t iter = 0; iter < models_.size(); ++iter) {
+  for (int iter = 0; iter < num_used_model; ++iter) {
     for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
       if (models_[iter]->split_gain(split_idx) > 0) {
         ++feature_importances[models_[iter]->split_feature(split_idx)];
