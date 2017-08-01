@@ -48,6 +48,7 @@ GBDT::GBDT()
     num_threads_ = omp_get_num_threads();
   }
   average_output_ = false;
+  tree_learner_ = nullptr;
 }
 
 GBDT::~GBDT() {
@@ -217,13 +218,12 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
 
 void GBDT::ResetConfig(const BoostingConfig* config) {
   auto new_config = std::unique_ptr<BoostingConfig>(new BoostingConfig(*config));
-
   early_stopping_round_ = new_config->early_stopping_round;
   shrinkage_rate_ = new_config->learning_rate;
-
-  ResetBaggingConfig(new_config.get());
-
-  tree_learner_->ResetConfig(&new_config->tree_config);
+  if (tree_learner_ != nullptr) {
+    ResetBaggingConfig(new_config.get());
+    tree_learner_->ResetConfig(&new_config->tree_config);
+  }
   gbdt_config_.reset(new_config.release());
 }
 
