@@ -212,7 +212,7 @@ private:
     std::vector<int> cats;
     for (int i = cat_boundaries_[cat_idx]; i < cat_boundaries_[cat_idx + 1]; ++i) {
       for (int j = 0; j < 32; ++j) {
-        int cat = i * 32 + j;
+        int cat = (i - cat_boundaries_[cat_idx]) * 32 + j;
         if (Common::FindInBitset(cat_threshold_.data() + cat_boundaries_[cat_idx],
                                  cat_boundaries_[cat_idx + 1] - cat_boundaries_[cat_idx], cat)) {
           cats.push_back(cat);
