@@ -103,25 +103,7 @@ public:
 
   void FindBestThresholdCategorical(double sum_gradient, double sum_hessian, data_size_t num_data,
                                     SplitInfo* output) {
-    const int8_t bias = meta_->bias;
-    double na_sum_gradient = 0.0f;
-    double na_sum_hessian = 0.0f;
-    data_size_t na_cnt = 0;
-    if (bias > 0) {
-      // use meta_->num_bin - 2 to represent zero bin
-      na_sum_gradient = data_[meta_->num_bin - 2].sum_gradients;
-      na_sum_hessian = data_[meta_->num_bin - 2].sum_hessians;
-      na_cnt = data_[meta_->num_bin - 2].cnt;
-      // use last bin to store bin_0
-      data_[meta_->num_bin - 2].sum_gradients = sum_gradient - na_sum_gradient;
-      data_[meta_->num_bin - 2].sum_hessians = sum_hessian - 2 * kEpsilon - na_sum_hessian;
-      data_[meta_->num_bin - 2].cnt = num_data - na_cnt;
-      for (int i = 0; i < meta_->num_bin - 2;++i) {
-        data_[meta_->num_bin - 2].sum_gradients -= data_[i].sum_gradients;
-        data_[meta_->num_bin - 2].sum_hessians -= data_[i].sum_hessians;
-        data_[meta_->num_bin - 2].cnt -= data_[i].cnt;
-      }
-    } 
+    CHECK(meta_->bias == 0);
     output->default_left = false;
     double best_gain = kMinScore;
     data_size_t best_left_count = 0;
@@ -131,9 +113,10 @@ public:
                                          meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2);
     double min_gain_shift = gain_shift + meta_->tree_config->min_gain_to_split;
     is_splittable_ = false;
+    bool is_full_categorical = meta_->missing_type == MissingType::None;
 
-    std::vector<int> sorted_idx(meta_->num_bin - 1);
-    for (int i = 0; i < meta_->num_bin - 1; ++i) {
+    std::vector<int> sorted_idx(meta_->num_bin - 1 + is_full_categorical);
+    for (int i = 0; i < meta_->num_bin - 1 + is_full_categorical; ++i) {
       sorted_idx[i] = i;
     }
 
@@ -146,7 +129,12 @@ public:
       return (data_[a].sum_gradients + smooth_grad) / (data_[a].sum_hessians + smooth_hess)
              < (data_[b].sum_gradients + smooth_grad) / (data_[b].sum_hessians + smooth_hess);
     });
+
     std::vector<int> dirs = { 1, -1 };
+    // not need to search two round
+    if (is_full_categorical && meta_->tree_config->max_left_cat * 2 >= meta_->num_bin) {
+      dirs.pop_back();
+    }
     int best_threshold = -1;
     int best_dir = 1;
     for (int dir: dirs) {
@@ -157,10 +145,11 @@ public:
       double sum_left_hessian = kEpsilon;
       data_size_t left_count = 0;
       // left to right
-      for (int i = 0; i < meta_->num_bin - 1 && i < meta_->tree_config->max_left_cat; ++i) {
+      int loop_size = meta_->num_bin - 1 + is_full_categorical;
+      for (int i = 0; i < loop_size && i < meta_->tree_config->max_left_cat; ++i) {
         auto t = sorted_idx[i];
         if (dir == -1) {
-          t = sorted_idx[meta_->num_bin - 2 - i];
+          t = sorted_idx[loop_size - 1 - i];
         }
         sum_left_gradient += data_[t].sum_gradients;
         sum_left_hessian += data_[t].sum_hessians;
@@ -226,20 +215,10 @@ public:
       for (int i = 0; i < output->num_cat_threshold; ++i) {
         auto t = sorted_idx[i];
         if (best_dir == -1) {
-          t = sorted_idx[meta_->num_bin - 2 - i];
+          t = sorted_idx[meta_->num_bin - 2 - i + is_full_categorical];
         }
-        if (bias > 0 && t == meta_->num_bin - 2) {
-          output->cat_threshold[i] = meta_->default_bin;
-        } else {
-          output->cat_threshold[i] = t + bias;
-        }
+        output->cat_threshold[i] = t;
       }
-    }
-    if (bias > 0) {
-      // restore na bin
-      data_[meta_->num_bin - 2].sum_gradients = na_sum_gradient;
-      data_[meta_->num_bin - 2].sum_hessians = na_sum_hessian;
-      data_[meta_->num_bin - 2].cnt = na_cnt;
     }
   }
 

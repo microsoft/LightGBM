@@ -301,8 +301,13 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
     }
     // sort by counts
     Common::SortForPair<int, int>(counts_int, distinct_values_int, 0, true);
+    // avoid first bin is zero
+    if (distinct_values_int[0] == 0 && counts_int.size() > 1) {
+      std::swap(counts_int[0], counts_int[1]);
+      std::swap(distinct_values_int[0], distinct_values_int[1]);
+    }
     // will ignore the categorical of small counts
-    const int cut_cnt = static_cast<int>(total_sample_cnt * 0.99f);
+    const int cut_cnt = static_cast<int>((total_sample_cnt - na_cnt) * 0.99f);
     categorical_2_bin_.clear();
     bin_2_categorical_.clear();
     num_bin_ = 0;
@@ -314,6 +319,12 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
       used_cnt += counts_int[num_bin_];
       ++num_bin_;
     }
+    // Use MissingType::None to represent this bin contains all categoricals
+    if (num_bin_ == static_cast<int>(distinct_values_int.size()) && na_cnt == 0) {
+      missing_type_ = MissingType::None;
+    } else if (na_cnt == 0) {
+      missing_type_ = MissingType::Zero;
+    } 
     cnt_in_bin = counts_int;
     counts_int.resize(num_bin_);
     counts_int.back() += static_cast<int>(total_sample_cnt - used_cnt);
@@ -332,6 +343,9 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
 
   if (!is_trival_) {
     default_bin_ = ValueToBin(0);
+    if (bin_type_ == BinType::CategoricalBin) {
+      CHECK(default_bin_ > 0);
+    }
   }
   // calculate sparse rate
   sparse_rate_ = static_cast<double>(cnt_in_bin[default_bin_]) / static_cast<double>(total_sample_cnt);

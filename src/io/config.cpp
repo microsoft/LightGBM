@@ -407,8 +407,6 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   tree_config.Set(params);
 }
 
-
-
 void NetworkConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "num_machines", &num_machines);
   CHECK(num_machines >= 1);
