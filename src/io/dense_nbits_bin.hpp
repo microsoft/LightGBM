@@ -229,11 +229,11 @@ public:
   virtual data_size_t Split(
     uint32_t min_bin, uint32_t max_bin, uint32_t default_bin, MissingType missing_type, bool default_left,
     uint32_t threshold, data_size_t* data_indices, data_size_t num_data,
-    data_size_t* lte_indices, data_size_t* gt_indices, BinType bin_type) const override {
+    data_size_t* lte_indices, data_size_t* gt_indices) const override {
     if (num_data <= 0) { return 0; }
     uint8_t th = static_cast<uint8_t>(threshold + min_bin);
-    uint8_t minb = static_cast<uint8_t>(min_bin);
-    uint8_t maxb = static_cast<uint8_t>(max_bin);
+    const uint8_t minb = static_cast<uint8_t>(min_bin);
+    const uint8_t maxb = static_cast<uint8_t>(max_bin);
     uint8_t t_default_bin = static_cast<uint8_t>(min_bin + default_bin);
     if (default_bin == 0) {
       th -= 1;
@@ -243,59 +243,41 @@ public:
     data_size_t gt_count = 0;
     data_size_t* default_indices = gt_indices;
     data_size_t* default_count = &gt_count;
-    if (bin_type == BinType::NumericalBin) {
-      if (missing_type != MissingType::Zero && default_bin <= threshold) {
+    if (missing_type == MissingType::NaN) {
+      if (default_bin <= threshold) {
         default_indices = lte_indices;
         default_count = &lte_count;
       }
-      if (default_left && missing_type == MissingType::Zero) {
-        default_indices = lte_indices;
-        default_count = &lte_count;
+      data_size_t* missing_default_indices = gt_indices;
+      data_size_t* missing_default_count = &gt_count;
+      if (default_left) {
+        missing_default_indices = lte_indices;
+        missing_default_count = &lte_count;
       }
-      if (missing_type == MissingType::NaN) {
-        data_size_t* missing_default_indices = gt_indices;
-        data_size_t* missing_default_count = &gt_count;
-        if (default_left) {
-          missing_default_indices = lte_indices;
-          missing_default_count = &lte_count;
-        }
-        for (data_size_t i = 0; i < num_data; ++i) {
-          const data_size_t idx = data_indices[i];
-          const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
-          if (bin < minb || bin > maxb || t_default_bin == bin) {
-            default_indices[(*default_count)++] = idx;
-          } else if (bin == maxb) {
-            missing_default_indices[(*missing_default_count)++] = idx;
-          } else if (bin > th) {
-            gt_indices[gt_count++] = idx;
-          } else {
-            lte_indices[lte_count++] = idx;
-          }
-        }
-      } else {
-        for (data_size_t i = 0; i < num_data; ++i) {
-          const data_size_t idx = data_indices[i];
-          const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
-          if (bin < minb || bin > maxb || t_default_bin == bin) {
-            default_indices[(*default_count)++] = idx;
-          } else if (bin > th) {
-            gt_indices[gt_count++] = idx;
-          } else {
-            lte_indices[lte_count++] = idx;
-          }
+      for (data_size_t i = 0; i < num_data; ++i) {
+        const data_size_t idx = data_indices[i];
+        const uint8_t bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+        if (bin < minb || bin > maxb || t_default_bin == bin) {
+          default_indices[(*default_count)++] = idx;
+        } else if (bin == maxb) {
+          missing_default_indices[(*missing_default_count)++] = idx;
+        } else if (bin > th) {
+          gt_indices[gt_count++] = idx;
+        } else {
+          lte_indices[lte_count++] = idx;
         }
       }
     } else {
-      if (default_bin == threshold) {
+      if ((default_left && missing_type == MissingType::Zero) || (default_bin <= threshold && missing_type != MissingType::Zero)) {
         default_indices = lte_indices;
         default_count = &lte_count;
       }
       for (data_size_t i = 0; i < num_data; ++i) {
         const data_size_t idx = data_indices[i];
-        const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+        const uint8_t bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
         if (bin < minb || bin > maxb || t_default_bin == bin) {
           default_indices[(*default_count)++] = idx;
-        } else if (bin != th) {
+        } else if (bin > th) {
           gt_indices[gt_count++] = idx;
         } else {
           lte_indices[lte_count++] = idx;
@@ -304,6 +286,34 @@ public:
     }
     return lte_count;
   }
+
+  virtual data_size_t SplitCategorical(
+    uint32_t min_bin, uint32_t max_bin, uint32_t default_bin,
+    const uint32_t* threshold, int num_threahold, data_size_t* data_indices, data_size_t num_data,
+    data_size_t* lte_indices, data_size_t* gt_indices) const override {
+    if (num_data <= 0) { return 0; }
+    data_size_t lte_count = 0;
+    data_size_t gt_count = 0;
+    data_size_t* default_indices = gt_indices;
+    data_size_t* default_count = &gt_count;
+    if (Common::FindInBitset(threshold, num_threahold, default_bin)) {
+      default_indices = lte_indices;
+      default_count = &lte_count;
+    }
+    for (data_size_t i = 0; i < num_data; ++i) {
+      const data_size_t idx = data_indices[i];
+      const uint32_t bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      if (bin < min_bin || bin > max_bin) {
+        default_indices[(*default_count)++] = idx;
+      } else if (Common::FindInBitset(threshold, num_threahold, bin - min_bin)) {
+        lte_indices[lte_count++] = idx;
+      } else {
+        gt_indices[gt_count++] = idx;
+      }
+    }
+    return lte_count;
+  }
+
   data_size_t num_data() const override { return num_data_; }
 
   /*! \brief not ordered bin for dense feature */

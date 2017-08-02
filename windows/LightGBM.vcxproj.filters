@@ -192,6 +192,9 @@
     <ClInclude Include="..\include\LightGBM\R_object_helper.h">
       <Filter>include\LightGBM</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\boosting\rf.hpp">
+      <Filter>src\boosting</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp">

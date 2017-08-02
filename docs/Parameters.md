@@ -124,7 +124,13 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
   * only used in `goss`,  the retain ratio of large gradient data
 * `other_rate`, default=`0.1`, type=int
   * only used in `goss`,  the retain ratio of small gradient data
-
+* `max_cat_group`, default=`64`, type=int
+  * use for the categorical features. 
+  * When #catogory is large, finding the split point on it is easily over-fitting. So LightGBM merges them into `max_cat_group` groups, and finds the split points on the group boundaries. 
+* `max_cat_threshold`, default=`256`, type=int
+  * use for the categorical features. Limit the max threshold points in categorical features. 
+* `cat_smooth`, default=`10`, type=int
+  * use for the categorical features. This can reduce the effect of noises in categorical features, especially for categories with few data. 
 
 ## IO parameters
 

@@ -366,6 +366,12 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   GetInt(params, "gpu_platform_id", &gpu_platform_id);
   GetInt(params, "gpu_device_id", &gpu_device_id);
   GetBool(params, "gpu_use_dp", &gpu_use_dp);
+  GetInt(params, "max_cat_group", &max_cat_group);
+  GetInt(params, "max_cat_threshold", &max_cat_threshold);
+  GetInt(params, "cat_smooth", &cat_smooth);
+  CHECK(max_cat_group > 1);
+  CHECK(max_cat_threshold > 0);
+  CHECK(cat_smooth >= 0);
 }
 
 void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& params) {
@@ -400,8 +406,6 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   tree_learner_type = GetTreeLearnerType(params);
   tree_config.Set(params);
 }
-
-
 
 void NetworkConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "num_machines", &num_machines);

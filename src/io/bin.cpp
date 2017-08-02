@@ -45,7 +45,7 @@ BinMapper::~BinMapper() {
 
 }
 
-bool NeedFilter(std::vector<int>& cnt_in_bin, int total_cnt, int filter_cnt, BinType bin_type) {
+bool NeedFilter(const std::vector<int>& cnt_in_bin, int total_cnt, int filter_cnt, BinType bin_type) {
   if (bin_type == BinType::NumericalBin) {
     int sum_left = 0;
     for (size_t i = 0; i < cnt_in_bin.size() - 1; ++i) {
@@ -55,11 +55,15 @@ bool NeedFilter(std::vector<int>& cnt_in_bin, int total_cnt, int filter_cnt, Bin
       }
     }
   } else {
-    for (size_t i = 0; i < cnt_in_bin.size() - 1; ++i) {
-      int sum_left = cnt_in_bin[i];
-      if (sum_left >= filter_cnt && total_cnt - sum_left >= filter_cnt) {
-        return false;
+    if (cnt_in_bin.size() <= 2) {
+      for (size_t i = 0; i < cnt_in_bin.size() - 1; ++i) {
+        int sum_left = cnt_in_bin[i];
+        if (sum_left >= filter_cnt && total_cnt - sum_left >= filter_cnt) {
+          return false;
+        }
       }
+    } else {
+      return false;
     }
   }
   return true;
@@ -204,8 +208,8 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
       missing_type_ = MissingType::None;
     } else {
       missing_type_ = MissingType::NaN;
+      na_cnt = num_sample_values - tmp_num_sample_values;
     }
-    na_cnt = num_sample_values - tmp_num_sample_values;
   }
   num_sample_values = tmp_num_sample_values;
 
@@ -251,6 +255,9 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
   max_val_ = distinct_values.back();
   std::vector<int> cnt_in_bin;
   int num_distinct_values = static_cast<int>(distinct_values.size());
+  if (num_distinct_values + (na_cnt > 0) <= 2) {
+    bin_type_ = BinType::NumericalBin;
+  }
   if (bin_type_ == BinType::NumericalBin) {
     if (missing_type_ == MissingType::Zero) {
       bin_upper_bound_ = FindBinWithZeroAsMissing(distinct_values.data(), counts.data(), num_distinct_values, max_bin, total_sample_cnt, min_data_in_bin);
@@ -279,8 +286,6 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
     }
     CHECK(num_bin_ <= max_bin);
   } else {
-    // No missing handle for categorical features 
-    missing_type_ = MissingType::None;
     // convert to int type first
     std::vector<int> distinct_values_int;
     std::vector<int> counts_int;
@@ -296,8 +301,13 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
     }
     // sort by counts
     Common::SortForPair<int, int>(counts_int, distinct_values_int, 0, true);
+    // avoid first bin is zero
+    if (distinct_values_int[0] == 0 && counts_int.size() > 1) {
+      std::swap(counts_int[0], counts_int[1]);
+      std::swap(distinct_values_int[0], distinct_values_int[1]);
+    }
     // will ignore the categorical of small counts
-    const int cut_cnt = static_cast<int>(total_sample_cnt * 0.98f);
+    const int cut_cnt = static_cast<int>((total_sample_cnt - na_cnt) * 0.99f);
     categorical_2_bin_.clear();
     bin_2_categorical_.clear();
     num_bin_ = 0;
@@ -308,6 +318,14 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
       categorical_2_bin_[distinct_values_int[num_bin_]] = static_cast<unsigned int>(num_bin_);
       used_cnt += counts_int[num_bin_];
       ++num_bin_;
+    }
+    // Use MissingType::None to represent this bin contains all categoricals
+    if (num_bin_ == static_cast<int>(distinct_values_int.size()) && na_cnt == 0) {
+      missing_type_ = MissingType::None;
+    } else if (na_cnt == 0) {
+      missing_type_ = MissingType::Zero;
+    } else {
+      missing_type_ = MissingType::NaN;
     }
     cnt_in_bin = counts_int;
     counts_int.resize(num_bin_);
@@ -327,6 +345,9 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
 
   if (!is_trival_) {
     default_bin_ = ValueToBin(0);
+    if (bin_type_ == BinType::CategoricalBin) {
+      CHECK(default_bin_ > 0);
+    }
   }
   // calculate sparse rate
   sparse_rate_ = static_cast<double>(cnt_in_bin[default_bin_]) / static_cast<double>(total_sample_cnt);

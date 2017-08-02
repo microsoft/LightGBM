@@ -85,7 +85,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_mpi|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>USE_MPI</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_MPI;DEBUG</PreprocessorDefinitions>
       <WarningLevel>Level4</WarningLevel>
       <OpenMPSupport>true</OpenMPSupport>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
@@ -106,7 +106,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>USE_SOCKET</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_SOCKET;DEBUG</PreprocessorDefinitions>
       <WarningLevel>Level4</WarningLevel>
       <OpenMPSupport>true</OpenMPSupport>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
@@ -218,6 +218,7 @@
     <ClInclude Include="..\src\boosting\gbdt.h" />
     <ClInclude Include="..\src\boosting\dart.hpp" />
     <ClInclude Include="..\src\boosting\goss.hpp" />
+    <ClInclude Include="..\src\boosting\rf.hpp" />
     <ClInclude Include="..\src\boosting\score_updater.hpp" />
     <ClInclude Include="..\src\io\dense_bin.hpp" />
     <ClInclude Include="..\src\io\dense_nbits_bin.hpp" />

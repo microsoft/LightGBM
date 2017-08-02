@@ -604,6 +604,30 @@ inline void obtain_min_max_sum(const float *w, int nw, float *mi, float *ma, dou
   if (su != nullptr) *su = sumw;
 }
 
+template<class T>
+inline std::vector<uint32_t> ConstructBitset(const T* vals, int n) {
+  std::vector<uint32_t> ret;
+  for (int i = 0; i < n; ++i) {
+    int i1 = vals[i] / 32;
+    int i2 = vals[i] % 32;
+    if (ret.size() < i1 + 1) {
+      ret.resize(i1 + 1, 0);
+    }
+    ret[i1] |= (1 << i2);
+  }
+  return ret;
+}
+
+template<class T>
+inline bool FindInBitset(const uint32_t* bits, int n, T pos) {
+  int i1 = pos / 32;
+  if (i1 >= n) {
+    return false;
+  }
+  int i2 = pos % 32;
+  return (bits[i1] >> i2) & 1;
+}
+
 }  // namespace Common
 
 }  // namespace LightGBM

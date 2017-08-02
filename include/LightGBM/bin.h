@@ -381,13 +381,30 @@ public:
   * \param num_data Number of used data
   * \param lte_indices After called this function. The less or equal data indices will store on this object.
   * \param gt_indices After called this function. The greater data indices will store on this object.
-  * \param bin_type type of bin
   * \return The number of less than or equal data.
   */
   virtual data_size_t Split(uint32_t min_bin, uint32_t max_bin, 
     uint32_t default_bin, MissingType missing_type, bool default_left, uint32_t threshold,
     data_size_t* data_indices, data_size_t num_data,
-    data_size_t* lte_indices, data_size_t* gt_indices, BinType bin_type) const = 0;
+    data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
+
+  /*!
+  * \brief Split data according to threshold, if bin <= threshold, will put into left(lte_indices), else put into right(gt_indices)
+  * \param min_bin min_bin of current used feature
+  * \param max_bin max_bin of current used feature
+  * \param default_bin defualt bin if bin not in [min_bin, max_bin]
+  * \param threshold The split threshold.
+  * \param num_threshold Number of threshold
+  * \param data_indices Used data indices. After called this function. The less than or equal data indices will store on this object.
+  * \param num_data Number of used data
+  * \param lte_indices After called this function. The less or equal data indices will store on this object.
+  * \param gt_indices After called this function. The greater data indices will store on this object.
+  * \return The number of less than or equal data.
+  */
+  virtual data_size_t SplitCategorical(uint32_t min_bin, uint32_t max_bin,
+                            uint32_t default_bin, const uint32_t* threshold, int num_threshold,
+                            data_size_t* data_indices, data_size_t num_data,
+                            data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
 
   /*!
   * \brief Create the ordered bin for this bin

@@ -37,9 +37,8 @@ public:
   * \brief Performing a split on tree leaves.
   * \param leaf Index of leaf to be split
   * \param feature Index of feature; the converted index after removing useless features
-  * \param bin_type type of this feature, numerical or categorical
-  * \param threshold Threshold(bin) of split
   * \param real_feature Index of feature, the original index on data
+  * \param threshold_bin Threshold(bin) of split
   * \param threshold_double Threshold on feature value
   * \param left_value Model Left child output
   * \param right_value Model Right child output
@@ -50,9 +49,29 @@ public:
   * \param default_left default direction for missing value
   * \return The index of new leaf.
   */
-  int Split(int leaf, int feature, BinType bin_type, uint32_t threshold, int real_feature, 
+  int Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
             double threshold_double, double left_value, double right_value, 
             data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type, bool default_left);
+
+  /*!
+  * \brief Performing a split on tree leaves, with categorical feature
+  * \param leaf Index of leaf to be split
+  * \param feature Index of feature; the converted index after removing useless features
+  * \param real_feature Index of feature, the original index on data
+  * \param threshold_bin Threshold(bin) of split, use bitset to represent
+  * \param num_threshold_bin size of threshold_bin
+  * \param threshold Thresholds of real feature value, use bitset to represent
+  * \param num_threshold size of threshold
+  * \param left_value Model Left child output
+  * \param right_value Model Right child output
+  * \param left_cnt Count of left child
+  * \param right_cnt Count of right child
+  * \param gain Split gain
+  * \return The index of new leaf.
+  */
+  int SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin, int num_threshold_bin,
+                       const uint32_t* threshold, int num_threshold, double left_value, double right_value,
+                       data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type);
 
   /*! \brief Get the output of one leaf */
   inline double LeafOutput(int leaf) const { return leaf_value_[leaf]; }
@@ -89,6 +108,7 @@ public:
   * \return Prediction result
   */
   inline double Predict(const double* feature_values) const;
+
   inline int PredictLeafIndex(const double* feature_values) const;
 
   /*! \brief Get Number of leaves*/
@@ -108,7 +128,7 @@ public:
   * \param rate The factor of shrinkage
   */
   inline void Shrinkage(double rate) {
-    #pragma omp parallel for schedule(static, 512) if (num_leaves_ >= 1024)
+    #pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
     for (int i = 0; i < num_leaves_; ++i) {
       leaf_value_[i] *= rate;
       if (leaf_value_[i] > kMaxTreeOutput) { leaf_value_[i] = kMaxTreeOutput; } 
@@ -125,24 +145,6 @@ public:
 
   /*! \brief Serialize this object to if-else statement*/
   std::string ToIfElse(int index, bool is_predict_leaf_index);
-
-  template<typename T>
-  inline static bool CategoricalDecision(T fval, T threshold) {
-    if (static_cast<int>(fval) == static_cast<int>(threshold)) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  template<typename T>
-  inline static bool NumericalDecision(T fval, T threshold) {
-    if (fval <= threshold) {
-      return true;
-    } else {
-      return false;
-    }
-  }
 
   inline static bool IsZero(double fval) {
     if (fval > -kZeroAsMissingValueRange && fval <= kZeroAsMissingValueRange) {
@@ -173,21 +175,60 @@ public:
     (*decision_type) |= (input << 2);
   }
 
-  inline static uint32_t ConvertMissingValue(uint32_t fval, uint32_t threshold, int8_t decision_type, uint32_t default_bin, uint32_t max_bin) {
-    uint8_t missing_type = GetMissingType(decision_type);
-    if ((missing_type == 1 && fval == default_bin)
-        || (missing_type == 2 && fval == max_bin)) {
-      if (GetDecisionType(decision_type, kDefaultLeftMask)) {
-        fval = threshold;
+private:
+
+  inline std::string NumericalDecisionIfElse(int node) {
+    std::stringstream str_buf;
+    uint8_t missing_type = GetMissingType(decision_type_[node]);
+    bool default_left = GetDecisionType(decision_type_[node], kDefaultLeftMask);
+    if (missing_type == 0 || (missing_type == 1 && default_left && kZeroAsMissingValueRange < threshold_[node])) {
+      str_buf << "if (fval <= " << threshold_[node] << ") {";
+    } else if (missing_type == 1) {
+      if (default_left) {
+        str_buf << "if (fval <= " << threshold_[node] << " || Tree::IsZero(fval)" << " || std::isnan(fval)) {";
       } else {
-        fval = threshold + 1;
+        str_buf << "if (fval <= " << threshold_[node] << " && !Tree::IsZero(fval)" << " && !std::isnan(fval)) {";
+      }
+    } else {
+      if (default_left) {
+        str_buf << "if (fval <= " << threshold_[node] << " || std::isnan(fval)) {";
+      } else {
+        str_buf << "if (fval <= " << threshold_[node] << " && !std::isnan(fval)) {";
       }
     }
-    return fval;
+    return str_buf.str();
   }
 
-  inline static double ConvertMissingValue(double fval, double threshold, int8_t decision_type) {
-    uint8_t missing_type = GetMissingType(decision_type);
+  inline std::string CategoricalDecisionIfElse(int node) const {
+    uint8_t missing_type = GetMissingType(decision_type_[node]);
+    std::stringstream str_buf;
+    if (missing_type == 2) {
+      str_buf << "if (std::isnan(fval)) { int_fval = -1; } else { int_fval = static_cast<int>(fval); }";
+    } else {
+      str_buf << "if (std::isnan(fval)) { int_fval = 0; } else { int_fval = static_cast<int>(fval); }";
+    }
+    str_buf << "if (";
+    int cat_idx = int(threshold_[node]);
+    // To-do: optimize this by using bitset
+    std::vector<int> cats;
+    for (int i = cat_boundaries_[cat_idx]; i < cat_boundaries_[cat_idx + 1]; ++i) {
+      for (int j = 0; j < 32; ++j) {
+        int cat = (i - cat_boundaries_[cat_idx]) * 32 + j;
+        if (Common::FindInBitset(cat_threshold_.data() + cat_boundaries_[cat_idx],
+                                 cat_boundaries_[cat_idx + 1] - cat_boundaries_[cat_idx], cat)) {
+          cats.push_back(cat);
+        }
+      }
+    }
+    for (int i = 0; i < static_cast<int>(cats.size()) - 1; ++i) {
+      str_buf << "int_fval == " << cats[i] << " || ";
+    }
+    str_buf << "int_fval == " << cats.back() << ") {";
+    return str_buf.str();
+  }
+
+  inline int NumericalDecision(double fval, int node) const {
+    uint8_t missing_type = GetMissingType(decision_type_[node]);
     if (std::isnan(fval)) {
       if (missing_type != 2) {
         fval = 0.0f;
@@ -195,28 +236,81 @@ public:
     }
     if ((missing_type == 1 && IsZero(fval))
         || (missing_type == 2 && std::isnan(fval))) {
-      if (GetDecisionType(decision_type, kDefaultLeftMask)) {
-        fval = threshold;
+      if (GetDecisionType(decision_type_[node], kDefaultLeftMask)) {
+        return left_child_[node];
       } else {
-        fval = 10.0f * threshold;
+        return right_child_[node];
       }
     }
-    return fval;
-  }
-
-  inline static const char* GetDecisionTypeName(int8_t type) {
-    if (type == 0) {
-      return "no_greater";
+    if (fval <= threshold_[node]) {
+      return left_child_[node];
     } else {
-      return "is";
+      return right_child_[node];
     }
   }
 
-  static std::vector<bool(*)(uint32_t, uint32_t)> inner_decision_funs;
-  static std::vector<bool(*)(double, double)> decision_funs;
+  inline int NumericalDecisionInner(uint32_t fval, int node, uint32_t default_bin, uint32_t max_bin) const {
+    uint8_t missing_type = GetMissingType(decision_type_[node]);
+    if ((missing_type == 1 && fval == default_bin)
+        || (missing_type == 2 && fval == max_bin)) {
+      if (GetDecisionType(decision_type_[node], kDefaultLeftMask)) {
+        return left_child_[node];
+      } else {
+        return right_child_[node];
+      }
+    }
+    if (fval <= threshold_in_bin_[node]) {
+      return left_child_[node];
+    } else {
+      return right_child_[node];
+    }
+  }
 
-private:
+  inline int CategoricalDecision(double fval, int node) const {
+    uint8_t missing_type = GetMissingType(decision_type_[node]);
+    int int_fval = static_cast<int>(fval);
+    if (std::isnan(fval)) {
+      // NaN is always in the right
+      if (missing_type == 2) {
+        return right_child_[node];
+      }
+      int_fval = 0;
+    }
+    int cat_idx = int(threshold_[node]);
+    if (Common::FindInBitset(cat_threshold_.data() + cat_boundaries_[cat_idx],
+                             cat_boundaries_[cat_idx + 1] - cat_boundaries_[cat_idx], int_fval)) {
+      return left_child_[node];
+    }
+    return right_child_[node];
+  }
 
+  inline int CategoricalDecisionInner(uint32_t fval, int node) const {
+    int cat_idx = int(threshold_in_bin_[node]);
+    if (Common::FindInBitset(cat_threshold_inner_.data() + cat_boundaries_inner_[cat_idx],
+                             cat_boundaries_inner_[cat_idx + 1] - cat_boundaries_inner_[cat_idx], fval)) {
+      return left_child_[node];
+    }
+    return right_child_[node];
+  }
+
+  inline int Decision(double fval, int node) const {
+    if (GetDecisionType(decision_type_[node], kCategoricalMask)) {
+      return CategoricalDecision(fval, node);
+    } else {
+      return NumericalDecision(fval, node);
+    }
+  }
+
+  inline int DecisionInner(uint32_t fval, int node, uint32_t default_bin, uint32_t max_bin) const {
+    if (GetDecisionType(decision_type_[node], kCategoricalMask)) {
+      return CategoricalDecisionInner(fval, node);
+    } else {
+      return NumericalDecisionInner(fval, node, default_bin, max_bin);
+    }
+  }
+
+  inline void Split(int leaf, int feature, int real_feature,
+                    double left_value, double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain);
   /*!
   * \brief Find leaf index of which record belongs by features
   * \param feature_values Feature value of this record
@@ -247,6 +341,11 @@ private:
   std::vector<uint32_t> threshold_in_bin_;
   /*! \brief A non-leaf node's split threshold in feature value */
   std::vector<double> threshold_;
+  int num_cat_;
+  std::vector<int> cat_boundaries_inner_;
+  std::vector<uint32_t> cat_threshold_inner_;
+  std::vector<int> cat_boundaries_;
+  std::vector<uint32_t> cat_threshold_;
   /*! \brief Store the information for categorical feature handle and mising value handle. */
   std::vector<int8_t> decision_type_;
   /*! \brief A non-leaf node's split gain */
@@ -265,8 +364,43 @@ private:
   /*! \brief Depth for leaves */
   std::vector<int> leaf_depth_;
   double shrinkage_;
-  bool has_categorical_;
 };
+
+inline void Tree::Split(int leaf, int feature, int real_feature,
+                        double left_value, double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain) {
+  int new_node_idx = num_leaves_ - 1;
+  // update parent info
+  int parent = leaf_parent_[leaf];
+  if (parent >= 0) {
+    // if cur node is left child
+    if (left_child_[parent] == ~leaf) {
+      left_child_[parent] = new_node_idx;
+    } else {
+      right_child_[parent] = new_node_idx;
+    }
+  }
+  // add new node
+  split_feature_inner_[new_node_idx] = feature;
+  split_feature_[new_node_idx] = real_feature;
+
+  split_gain_[new_node_idx] = Common::AvoidInf(gain);
+  // add two new leaves
+  left_child_[new_node_idx] = ~leaf;
+  right_child_[new_node_idx] = ~num_leaves_;
+  // update new leaves
+  leaf_parent_[leaf] = new_node_idx;
+  leaf_parent_[num_leaves_] = new_node_idx;
+  // save current leaf value to internal node before change
+  internal_value_[new_node_idx] = leaf_value_[leaf];
+  internal_count_[new_node_idx] = left_cnt + right_cnt;
+  leaf_value_[leaf] = std::isnan(left_value) ? 0.0f : left_value;
+  leaf_count_[leaf] = left_cnt;
+  leaf_value_[num_leaves_] = std::isnan(right_value) ? 0.0f : right_value;
+  leaf_count_[num_leaves_] = right_cnt;
+  // update leaf depth
+  leaf_depth_[num_leaves_] = leaf_depth_[leaf] + 1;
+  leaf_depth_[leaf]++;
+}
 
 inline double Tree::Predict(const double* feature_values) const {
   if (num_leaves_ > 1) {
@@ -288,27 +422,13 @@ inline int Tree::PredictLeafIndex(const double* feature_values) const {
 
 inline int Tree::GetLeaf(const double* feature_values) const {
   int node = 0;
-  if (has_categorical_) {
+  if (num_cat_ > 0) {
     while (node >= 0) {
-      double fval = ConvertMissingValue(feature_values[split_feature_[node]], threshold_[node], decision_type_[node]);
-      if (decision_funs[GetDecisionType(decision_type_[node], kCategoricalMask)](
-        fval,
-        threshold_[node])) {
-        node = left_child_[node];
-      } else {
-        node = right_child_[node];
-      }
+      node = Decision(feature_values[split_feature_[node]], node);
     }
   } else {
     while (node >= 0) {
-      double fval = ConvertMissingValue(feature_values[split_feature_[node]], threshold_[node], decision_type_[node]);
-      if (NumericalDecision<double>(
-        fval,
-        threshold_[node])) {
-        node = left_child_[node];
-      } else {
-        node = right_child_[node];
-      }
+      node = NumericalDecision(feature_values[split_feature_[node]], node);
     }
   }
   return ~node;
