@@ -34,6 +34,7 @@ To get good results using a leaf-wise tree, these are some important parameters:
 * Use large ```num_leaves```(may cause over-fitting)
 * Use bigger training data
 * Try ```dart```
+* Try to use categorical feature directly
 
 ## Deal with over-fitting
 
