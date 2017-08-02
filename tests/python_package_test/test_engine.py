@@ -465,10 +465,6 @@ class TestEngine(unittest.TestCase):
         tmp_dat = lgb.Dataset(X, y)
         # take subsets and train
         tmp_dat_train = tmp_dat.subset(np.arange(int(n * .8)))
-        tmp_dat_val = tmp_dat.subset(np.arange(int(n * .8), n))
+        tmp_dat_val = tmp_dat.subset(np.arange(int(n * .8), n)).subset(np.arange(n * .2 * .9))
         params = {'objective': 'regression_l2', 'metric': 'rmse'}
         gbm = lgb.train(params, tmp_dat_train, num_boost_round=20, valid_sets=[tmp_dat_train, tmp_dat_val])
-        # now take subsets of the subsets and train
-        tmp_dat_train2 = tmp_dat_train.subset(np.arange(n * .8 * .9))
-        tmp_dat_val2 = tmp_dat_val.subset(np.arange(n * .2 * .9))
-        gbm = lgb.train(params, tmp_dat_train2, num_boost_round=20, valid_sets=[tmp_dat_train2, tmp_dat_val2])
