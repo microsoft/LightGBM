@@ -368,10 +368,14 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   GetBool(params, "gpu_use_dp", &gpu_use_dp);
   GetInt(params, "max_cat_group", &max_cat_group);
   GetInt(params, "max_cat_threshold", &max_cat_threshold);
-  GetInt(params, "cat_smooth", &cat_smooth);
+  GetDouble(params, "cat_smooth_ratio", &cat_smooth_ratio);
+  GetDouble(params, "min_cat_smooth", &min_cat_smooth);
+  GetDouble(params, "max_cat_smooth", &max_cat_smooth);
   CHECK(max_cat_group > 1);
   CHECK(max_cat_threshold > 0);
-  CHECK(cat_smooth >= 0);
+  CHECK(cat_smooth_ratio >= 0);
+  CHECK(min_cat_smooth >= 0);
+  CHECK(max_cat_smooth > min_cat_smooth);
 }
 
 void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& params) {

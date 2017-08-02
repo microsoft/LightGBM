@@ -119,9 +119,10 @@ public:
       sorted_idx[i] = i;
     }
 
-    const double smooth_hess = meta_->tree_config->cat_smooth;
-    const double smooth_grad = smooth_hess * sum_gradient / sum_hessian;
+    const double smooth_hess = std::min(meta_->tree_config->max_cat_smooth, 
+                                        std::max(meta_->tree_config->cat_smooth_ratio * num_data / meta_->num_bin, meta_->tree_config->min_cat_smooth));
 
+    const double smooth_grad = smooth_hess * sum_gradient / sum_hessian;
     // sort the histogram
     std::sort(sorted_idx.begin(), sorted_idx.end(),
               [this, &smooth_hess, &smooth_grad] (int a, int b) {

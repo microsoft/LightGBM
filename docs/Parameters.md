@@ -129,8 +129,15 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
   * When #catogory is large, finding the split point on it is easily over-fitting. So LightGBM merges them into `max_cat_group` groups, and finds the split points on the group boundaries. 
 * `max_cat_threshold`, default=`256`, type=int
   * use for the categorical features. Limit the max threshold points in categorical features. 
-* `cat_smooth`, default=`10`, type=int
+* `min_cat_smooth`, default=`5`, type=double
+  * use for the categorical features. Refer to the descrption in paramater `cat_smooth_ratio`.
+* `max_cat_smooth`, default=`100`, type=double
+  * use for the categorical features. Refer to the descrption in paramater `cat_smooth_ratio`.
+* `cat_smooth_ratio`, default=`0.01`, type=double
   * use for the categorical features. This can reduce the effect of noises in categorical features, especially for categories with few data. 
+  * The smooth denominator is `a = min(max_cat_smooth, max(min_cat_smooth, num_data/num_category*cat_smooth_ratio))`.
+  * The smooth numerator  is `b = a * sum_gradient / sum_hessian`.
+
 
 ## IO parameters
 
