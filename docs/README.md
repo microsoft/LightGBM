@@ -27,6 +27,8 @@ make html
 * [Experiments](https://github.com/Microsoft/LightGBM/wiki/Experiments)
 * [Parameters](./Parameters.md)
 * [Parameters Tuning](./Parameters-tuning.md)
+* [Advanced Topic](./Advanced-Topic.md)
+* [GPU Tutorial](./GPU-Tutorial.md)
 * [Python API Reference](./Python-API.md)
 * [Parallel Learning Guide](https://github.com/Microsoft/LightGBM/wiki/Parallel-Learning-Guide)
 * [GPU Tutorial](./GPU-Tutorial.md)
