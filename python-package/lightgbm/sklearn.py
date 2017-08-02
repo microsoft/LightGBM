@@ -454,9 +454,13 @@ class LGBMModel(LGBMModelBase):
 
     @property
     def feature_importances_(self):
-        """Get normailized feature importances."""
-        importace_array = self.booster_.feature_importance().astype(np.float32)
-        return importace_array / importace_array.sum()
+        """
+        Get feature importances.
+
+        Note: feature importance in sklearn interface used to normalize to 1,
+            it's deprecated after 2.0.4 and same as Booster.feature_importance() now
+        """
+        return self.booster_.feature_importance()
 
     @LGBMDeprecated('Use attribute booster_ instead.')
     def booster(self):
