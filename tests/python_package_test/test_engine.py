@@ -482,3 +482,18 @@ class TestEngine(unittest.TestCase):
         np.testing.assert_almost_equal(pred0, pred2)
         np.testing.assert_almost_equal(pred0, pred3)
         np.testing.assert_almost_equal(pred0, pred4)
+
+    def test_subset_train_val(self):
+        '''
+        Tests that it's fine to construct a single lgb.Dataframe object,
+        takes subsets of it, and uses the subsets for training and validation
+        '''
+        n = 1000
+        X = np.random.normal(size=(n, 2))
+        y = np.random.normal(size=n)
+        tmp_dat = lgb.Dataset(X, y)
+        # take subsets and train
+        tmp_dat_train = tmp_dat.subset(np.arange(int(n * .8)))
+        tmp_dat_val = tmp_dat.subset(np.arange(int(n * .8), n)).subset(np.arange(n * .2 * .9))
+        params = {'objective': 'regression_l2', 'metric': 'rmse'}
+        gbm = lgb.train(params, tmp_dat_train, num_boost_round=20, valid_sets=[tmp_dat_train, tmp_dat_val])
