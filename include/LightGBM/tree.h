@@ -209,6 +209,7 @@ private:
     }
     str_buf << "if (";
     int cat_idx = int(threshold_[node]);
+    // To-do: optimize this by using bitset
     std::vector<int> cats;
     for (int i = cat_boundaries_[cat_idx]; i < cat_boundaries_[cat_idx + 1]; ++i) {
       for (int j = 0; j < 32; ++j) {
