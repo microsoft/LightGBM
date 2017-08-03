@@ -16,6 +16,7 @@ Welcome to LightGBM's documentation!
    Features <https://github.com/Microsoft/LightGBM/wiki/Features>
    Experiments <https://github.com/Microsoft/LightGBM/wiki/Experiments>
    Parameters <Parameters>
+   Advanced Topic <Advanced-Topic>
    Parameters Tuning <Parameters-tuning>
    Python API Reference <python/lightgbm>
    Parallel Learning Guide <https://github.com/Microsoft/LightGBM/wiki/Parallel-Learning-Guide>
