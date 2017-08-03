@@ -38,7 +38,7 @@ public:
   /*! \brief Right sum gradient after split */
   double right_sum_gradient = 0;
   /*! \brief Right sum hessian after split */
-  double right_sum_hessian;
+  double right_sum_hessian = 0;
   std::vector<uint32_t> cat_threshold;
   /*! \brief True if default split is left */
   bool default_left = true;
