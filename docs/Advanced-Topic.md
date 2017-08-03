@@ -1,3 +1,5 @@
+# Advanced Topics
+
 ## Missing value handle
 
 * LightGBM enables the missing value handle by default, you can disable it by set ```use_missing=false```.
