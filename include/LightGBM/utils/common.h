@@ -610,7 +610,7 @@ inline std::vector<uint32_t> ConstructBitset(const T* vals, int n) {
   for (int i = 0; i < n; ++i) {
     int i1 = vals[i] / 32;
     int i2 = vals[i] % 32;
-    if (ret.size() < i1 + 1) {
+    if (static_cast<int>(ret.size()) < i1 + 1) {
       ret.resize(i1 + 1, 0);
     }
     ret[i1] |= (1 << i2);
