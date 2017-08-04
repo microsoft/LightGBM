@@ -220,10 +220,11 @@ private:
         }
       }
     }
+    str_buf << "int_fval >= 0 && (";
     for (int i = 0; i < static_cast<int>(cats.size()) - 1; ++i) {
       str_buf << "int_fval == " << cats[i] << " || ";
     }
-    str_buf << "int_fval == " << cats.back() << ") {";
+    str_buf << "int_fval == " << cats.back() << ")) {";
     return str_buf.str();
   }
 
@@ -269,7 +270,9 @@ private:
   inline int CategoricalDecision(double fval, int node) const {
     uint8_t missing_type = GetMissingType(decision_type_[node]);
     int int_fval = static_cast<int>(fval);
-    if (std::isnan(fval)) {
+    if (int_fval < 0) {
+      return right_child_[node];;
+    } else if (std::isnan(fval)) {
       // NaN is always in the right
       if (missing_type == 2) {
         return right_child_[node];
