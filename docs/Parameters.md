@@ -9,7 +9,7 @@ This is a page contains all parameters in LightGBM.
 ***External Links***
 * [Laurae++ Interactive Documentation](https://sites.google.com/view/lauraepp/parameters)
 
-***Update of 04/13/2017***
+***Update of 08/04/2017***
 
 Default values for the following parameters have changed:
 
@@ -29,6 +29,7 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
 * `task`, default=`train`, type=enum, options=`train`,`prediction`
   * `train` for training
   * `prediction` for prediction.
+  * `convert_model` for converting model file into if-else format, see more information in [Convert model parameters](Parameters.md#convert-model-parameters)
 * `application`, default=`regression`, type=enum, options=`regression`,`regression_l1`,`huber`,`fair`,`poisson`,`binary`,`lambdarank`,`multiclass`, alias=`objective`,`app`
   * `regression`, regression application
     * `regression_l2`, L2 loss, alias=`mean_squared_error`,`mse`
@@ -297,6 +298,17 @@ Following parameters are used for parallel learning, and only used for base(sock
   * Default value is -1, using the default device in the selected platform. 
 * `gpu_use_dp`, default=`false`, type=bool
   * Set to true to use double precision math on GPU (default using single precision).
+
+## Convert model parameters
+
+This feature is only supported in command line version yet.
+
+* `convert_model_language`, default=`""`, type=string
+  * only `cpp` is supported yet.
+  * if `convert_model_language` is set when `task` is set to `train`, the model will also be converted.
+
+* `convert_model`, default=`"gbdt_prediction.cpp"`, type=string
+  * output file name of converted model.
 
 ## Others
 
