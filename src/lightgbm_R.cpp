@@ -26,7 +26,8 @@
 
 #define CHECK_CALL(x) \
   if ((x) != 0) { \
-    Log::Fatal("Call c_api: %s met a error", __func__);\
+    R_INT_PTR(call_state)[0] = -1;\
+    return call_state;\
   }
 
 using namespace LightGBM;
