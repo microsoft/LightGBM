@@ -324,7 +324,7 @@ inline static std::string ArrayToString(const std::vector<T>& arr, size_t n, cha
 template<typename T, bool is_float>
 struct __StringToTHelper {
   T operator()(const std::string& str) const {
-    return static_cast<T>(std::stol(str));
+    return static_cast<T>(std::stoll(str));
   }
 };
 
