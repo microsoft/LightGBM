@@ -314,6 +314,9 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
     int used_cnt = 0;
     max_bin = std::min(static_cast<int>(distinct_values_int.size()), max_bin);
     while (used_cnt < cut_cnt || num_bin_ < max_bin) {
+      if (distinct_values_int[num_bin_] < 0) {
+        Log::Fatal("Cannot use negative numbers in categorcial features.");
+      }
       bin_2_categorical_.push_back(distinct_values_int[num_bin_]);
       categorical_2_bin_[distinct_values_int[num_bin_]] = static_cast<unsigned int>(num_bin_);
       used_cnt += counts_int[num_bin_];

@@ -11,7 +11,7 @@
 
 * LightGBM can offer a good accuracy when using native categorical features. Not like simply one-hot coding, LightGBM can find the optimal split of categorical features. Such a optimal split can provide the much better accuracy than one-hot coding solution. 
 * Use `categorical_feature` to specific the categorical features. Refer to the parameter `categorical_feature` in [Parameters](./Parameters.md).
-* Need to convert to `int` type first, and it is better to convert into continues ranges.
+* Need to convert to `int` type first, and only support non-negative numbers. It is better to convert into continues ranges.
 * Use `max_cat_group`, `cat_smooth_ratio` to deal with over-fitting (when #data is small or #category is large).
 * For categocal features with high cardinality (#categoriy is large), it is better to convert it to numerical features. 
 
