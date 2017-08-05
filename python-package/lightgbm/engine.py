@@ -128,14 +128,13 @@ def train(params, train_set, num_boost_round=100,
                 continue
             if not isinstance(valid_data, Dataset):
                 raise TypeError("Traninig only accepts Dataset object")
+            valid_data._update_params(params)
             valid_data.set_reference(train_set)
             reduced_valid_sets.append(valid_data)
             if valid_names is not None and len(valid_names) > i:
                 name_valid_sets.append(valid_names[i])
             else:
                 name_valid_sets.append('valid_' + str(i))
-        for valid_data in valid_sets:
-            valid_data._update_params(params)
     """process callbacks"""
     if callbacks is None:
         callbacks = set()
@@ -202,6 +201,7 @@ def train(params, train_set, num_boost_round=100,
             booster.best_iteration = earlyStopException.best_iteration + 1
             evaluation_result_list = earlyStopException.best_score
             break
+    booster._reverse_update_params()
     booster.best_score = collections.defaultdict(dict)
     for dataset_name, eval_name, score, _ in evaluation_result_list:
         booster.best_score[dataset_name][eval_name] = score
