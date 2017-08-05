@@ -164,11 +164,16 @@ def train(params, train_set, num_boost_round=100,
     callbacks_after_iter = sorted(callbacks_after_iter, key=attrgetter('order'))
 
     """construct booster"""
-    booster = Booster(params=params, train_set=train_set)
-    if is_valid_contain_train:
-        booster.set_train_data_name(train_data_name)
-    for valid_set, name_valid_set in zip(reduced_valid_sets, name_valid_sets):
-        booster.add_valid(valid_set, name_valid_set)
+    try:
+        booster = Booster(params=params, train_set=train_set)
+        if is_valid_contain_train:
+            booster.set_train_data_name(train_data_name)
+        for valid_set, name_valid_set in zip(reduced_valid_sets, name_valid_sets):
+            booster.add_valid(valid_set, name_valid_set)
+    finally:
+        train_set._reverse_update_params()
+        for valid_set in reduced_valid_sets:
+            valid_set._reverse_update_params()
     booster.best_iteration = 0
 
     """start training"""
@@ -201,7 +206,6 @@ def train(params, train_set, num_boost_round=100,
             booster.best_iteration = earlyStopException.best_iteration + 1
             evaluation_result_list = earlyStopException.best_score
             break
-    booster._reverse_update_params()
     booster.best_score = collections.defaultdict(dict)
     for dataset_name, eval_name, score, _ in evaluation_result_list:
         booster.best_score[dataset_name][eval_name] = score

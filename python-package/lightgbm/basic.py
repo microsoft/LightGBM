@@ -1315,11 +1315,6 @@ class Booster(object):
             state['handle'] = handle
         self.__dict__.update(state)
 
-    def _reverse_update_params(self):
-        self.train_set._reverse_update_params()
-        for valid_set in self.valid_sets:
-            valid_set._reverse_update_params()
-
     def free_dataset(self):
         self.__dict__.pop('train_set', None)
         self.__dict__.pop('valid_sets', None)
