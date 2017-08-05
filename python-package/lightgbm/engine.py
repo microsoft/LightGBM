@@ -128,14 +128,13 @@ def train(params, train_set, num_boost_round=100,
                 continue
             if not isinstance(valid_data, Dataset):
                 raise TypeError("Traninig only accepts Dataset object")
+            valid_data._update_params(params)
             valid_data.set_reference(train_set)
             reduced_valid_sets.append(valid_data)
             if valid_names is not None and len(valid_names) > i:
                 name_valid_sets.append(valid_names[i])
             else:
                 name_valid_sets.append('valid_' + str(i))
-        for valid_data in valid_sets:
-            valid_data._update_params(params)
     """process callbacks"""
     if callbacks is None:
         callbacks = set()
@@ -165,11 +164,16 @@ def train(params, train_set, num_boost_round=100,
     callbacks_after_iter = sorted(callbacks_after_iter, key=attrgetter('order'))
 
     """construct booster"""
-    booster = Booster(params=params, train_set=train_set)
-    if is_valid_contain_train:
-        booster.set_train_data_name(train_data_name)
-    for valid_set, name_valid_set in zip(reduced_valid_sets, name_valid_sets):
-        booster.add_valid(valid_set, name_valid_set)
+    try:
+        booster = Booster(params=params, train_set=train_set)
+        if is_valid_contain_train:
+            booster.set_train_data_name(train_data_name)
+        for valid_set, name_valid_set in zip(reduced_valid_sets, name_valid_sets):
+            booster.add_valid(valid_set, name_valid_set)
+    finally:
+        train_set._reverse_update_params()
+        for valid_set in reduced_valid_sets:
+            valid_set._reverse_update_params()
     booster.best_iteration = 0
 
     """start training"""

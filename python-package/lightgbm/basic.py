@@ -4,6 +4,7 @@
 """Wrapper c_api of LightGBM"""
 from __future__ import absolute_import
 
+import copy
 import ctypes
 import os
 import warnings
@@ -591,11 +592,12 @@ class Dataset(object):
         self.silent = silent
         self.feature_name = feature_name
         self.categorical_feature = categorical_feature
-        self.params = params
+        self.params = copy.deepcopy(params)
         self.free_raw_data = free_raw_data
         self.used_indices = None
         self._predictor = None
         self.pandas_categorical = None
+        self.params_back_up = None
 
     def __del__(self):
         self._free_handle()
@@ -872,7 +874,12 @@ class Dataset(object):
         if not self.params:
             self.params = params
         else:
+            self.params_back_up = copy.deepcopy(self.params)
             self.params.update(params)
+
+    def _reverse_update_params(self):
+        self.params = copy.deepcopy(self.params_back_up)
+        self.params_back_up = None
 
     def set_field(self, field_name, data):
         """Set property into the Dataset.
