@@ -31,8 +31,7 @@ Booster <- R6Class(
       # Create parameters and handle
       params <- append(params, list(...))
       params_str <- lgb.params2str(params)
-      handle <- lgb.new.handle()
-      
+      handle <- 0.0
       # Check if training dataset is not null
       if (!is.null(train_set)) {
         
@@ -40,10 +39,10 @@ Booster <- R6Class(
         if (!lgb.check.r6.class(train_set, "lgb.Dataset")) {
           stop("lgb.Booster: Can only use lgb.Dataset as training data")
         }
-        
+
         # Store booster handle
         handle <- lgb.call("LGBM_BoosterCreate_R", ret = handle, train_set$.__enclos_env__$private$get_handle(), params_str)
-        
+
         # Create private booster information
         private$train_set <- train_set
         private$num_dataset <- 1
@@ -93,14 +92,17 @@ Booster <- R6Class(
         stop("lgb.Booster: Need at least either training dataset, model file, or model_str to create booster instance")
         
       }
-      
-      # Create class
-      class(handle) <- "lgb.Booster.handle"
-      private$handle <- handle
-      private$num_class <- 1L
-      private$num_class <- lgb.call("LGBM_BoosterGetNumClasses_R",
-                                    ret = private$num_class,
-                                    private$handle)
+      if (lgb.is.null.handle(handle)) {
+        stop("lgb.Booster: cannot create Booster handle")
+      } else {
+        # Create class
+        class(handle) <- "lgb.Booster.handle"
+        private$handle <- handle
+        private$num_class <- 1L
+        private$num_class <- lgb.call("LGBM_BoosterGetNumClasses_R",
+                                      ret = private$num_class,
+                                      private$handle)
+      }
       
     },
     
