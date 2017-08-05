@@ -6,13 +6,8 @@ lgb.is.Dataset <- function(x) {
   lgb.check.r6.class(x, "lgb.Dataset") # Checking if it is of class lgb.Dataset or not
 }
 
-# use 64bit data to store address
-lgb.new.handle <- function() {
-  0.0 # Return numeric type in R
-}
-
 lgb.is.null.handle <- function(x) {
-  is.null(x) || x == 0 # Is it null or zero?
+  is.null(x) || x == 0.0
 }
 
 lgb.encode.char <- function(arr, len) {
@@ -25,9 +20,8 @@ lgb.encode.char <- function(arr, len) {
 }
 
 lgb.call <- function(fun_name, ret, ...) {
-  
   # Set call state to a zero value
-  call_state <- 0L
+  call_state <- as.integer(0L)
   
   # Check for a ret call
   if (!is.null(ret)) {
@@ -35,10 +29,10 @@ lgb.call <- function(fun_name, ret, ...) {
   } else {
     call_state <- .Call(fun_name, ..., call_state, PACKAGE = "lib_lightgbm") # Call without ret
   }
-  
+  call_state <- as.integer(call_state)
   # Check for call state value post call
   if (call_state != 0L) {
-    
+
     # Perform text error buffering
     buf_len <- 200L
     act_len <- 0L
@@ -58,9 +52,9 @@ lgb.call <- function(fun_name, ret, ...) {
     
     # Return error
     stop(paste0("api error: ", lgb.encode.char(err_msg, act_len)))
-    
+
   }
-  
+
   return(ret)
   
 }

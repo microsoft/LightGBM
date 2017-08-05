@@ -26,8 +26,8 @@
 
 #define CHECK_CALL(x) \
   if ((x) != 0) { \
-    R_INT_PTR(call_state)[0] = -1; \
-    return call_state; \
+    R_INT_PTR(call_state)[0] = -1;\
+    return call_state;\
   }
 
 using namespace LightGBM;
@@ -56,7 +56,7 @@ LGBM_SE LGBM_DatasetCreateFromFile_R(LGBM_SE filename,
   LGBM_SE call_state) {
 
   R_API_BEGIN();
-  DatasetHandle handle;
+  DatasetHandle handle = nullptr;
   CHECK_CALL(LGBM_DatasetCreateFromFile(R_CHAR_PTR(filename), R_CHAR_PTR(parameters),
     R_GET_PTR(reference), &handle));
   R_SET_PTR(out, handle);
@@ -81,7 +81,7 @@ LGBM_SE LGBM_DatasetCreateFromCSC_R(LGBM_SE indptr,
   int64_t nindptr = static_cast<int64_t>(R_AS_INT(num_indptr));
   int64_t ndata = static_cast<int64_t>(R_AS_INT(nelem));
   int64_t nrow = static_cast<int64_t>(R_AS_INT(num_row));
-  DatasetHandle handle;
+  DatasetHandle handle = nullptr;
   CHECK_CALL(LGBM_DatasetCreateFromCSC(p_indptr, C_API_DTYPE_INT32, p_indices,
     p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
     nrow, R_CHAR_PTR(parameters), R_GET_PTR(reference), &handle));
@@ -101,7 +101,7 @@ LGBM_SE LGBM_DatasetCreateFromMat_R(LGBM_SE data,
   int32_t nrow = static_cast<int32_t>(R_AS_INT(num_row));
   int32_t ncol = static_cast<int32_t>(R_AS_INT(num_col));
   double* p_mat = R_REAL_PTR(data);
-  DatasetHandle handle;
+  DatasetHandle handle = nullptr;
   CHECK_CALL(LGBM_DatasetCreateFromMat(p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
     R_CHAR_PTR(parameters), R_GET_PTR(reference), &handle));
   R_SET_PTR(out, handle);
@@ -123,7 +123,7 @@ LGBM_SE LGBM_DatasetGetSubset_R(LGBM_SE handle,
   for (int i = 0; i < len; ++i) {
     idxvec[i] = R_INT_PTR(used_row_indices)[i] - 1;
   }
-  DatasetHandle res;
+  DatasetHandle res = nullptr;
   CHECK_CALL(LGBM_DatasetGetSubset(R_GET_PTR(handle),
     idxvec.data(), len, R_CHAR_PTR(parameters),
     &res));
@@ -306,7 +306,7 @@ LGBM_SE LGBM_BoosterCreate_R(LGBM_SE train_data,
   LGBM_SE out,
   LGBM_SE call_state) {
   R_API_BEGIN();
-  BoosterHandle handle;
+  BoosterHandle handle = nullptr;
   CHECK_CALL(LGBM_BoosterCreate(R_GET_PTR(train_data), R_CHAR_PTR(parameters), &handle));
   R_SET_PTR(out, handle);
   R_API_END();
@@ -318,7 +318,7 @@ LGBM_SE LGBM_BoosterCreateFromModelfile_R(LGBM_SE filename,
 
   R_API_BEGIN();
   int out_num_iterations = 0;
-  BoosterHandle handle;
+  BoosterHandle handle = nullptr;
   CHECK_CALL(LGBM_BoosterCreateFromModelfile(R_CHAR_PTR(filename), &out_num_iterations, &handle));
   R_SET_PTR(out, handle);
   R_API_END();
@@ -330,7 +330,7 @@ LGBM_SE LGBM_BoosterLoadModelFromString_R(LGBM_SE model_str,
 
   R_API_BEGIN();
   int out_num_iterations = 0;
-  BoosterHandle handle;
+  BoosterHandle handle = nullptr;
   CHECK_CALL(LGBM_BoosterLoadModelFromString(R_CHAR_PTR(model_str), &out_num_iterations, &handle));
   R_SET_PTR(out, handle);
   R_API_END();
