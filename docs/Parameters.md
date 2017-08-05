@@ -54,8 +54,8 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
   * support multi validation data, separate by `,`
 * `num_iterations`, default=`100`, type=int, alias=`num_iteration`,`num_tree`,`num_trees`,`num_round`,`num_rounds`
   * number of boosting iterations
-  * note: `num_tree` here equal with `num_iterations`. For multi-class, it actually learns `num_class * num_iterations` trees.
-  * note: For python/R package, cannot use this parameters to control number of iterations.
+  * note: For python/R package, **this parameter is ignored**, use `num_boost_round` (Python) or `nrounds` (R) input arguments of `train` and `cv` methods instead
+  * note: internally, LightGBM constructs `num_class * num_iterations` trees for `multiclass` problems
 * `learning_rate`, default=`0.1`, type=double, alias=`shrinkage_rate`
   * shrinkage rate
   * in `dart`, it also affects normalization weights of dropped trees
