@@ -194,7 +194,7 @@ lgb.cv <- function(params = list(),
                                nrow(data),
                                stratified,
                                getinfo(data, "label"),
-                               getinfo(data, "group")
+                               getinfo(data, "group"),
                                params)
     
   }
