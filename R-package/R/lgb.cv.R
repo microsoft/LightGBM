@@ -220,7 +220,7 @@ lgb.cv <- function(params = list(),
   cb <- categorize.callbacks(callbacks)
   
   # Construct booster using a list apply, check if requires group or not
-  if (is.null(folds[[1]]$group)) {
+  if (!is.list(folds[[1]])) {
     bst_folds <- lapply(seq_along(folds), function(k) {
       dtest <- slice(data, folds[[k]])
       dtrain <- slice(data, unlist(folds[-k]))
