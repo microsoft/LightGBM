@@ -71,7 +71,7 @@ lgb.train <- function(params = list(),
                       categorical_feature = NULL,
                       early_stopping_rounds = NULL,
                       callbacks = list(),
-                      reset_data = FALSE
+                      reset_data = FALSE,
                       ...) {
   
   # Setup temporary variables
