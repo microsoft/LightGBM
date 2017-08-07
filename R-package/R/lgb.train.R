@@ -27,6 +27,7 @@
 #'        If there's more than one, will check all of them
 #'        Returns the model with (best_iter + early_stopping_rounds)
 #'        If early stopping occurs, the model will have 'best_iter' field
+#' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model into a predictor model which frees up memory and the original datasets
 #' @param callbacks list of callback functions
 #'        List of callback functions that are applied at each iteration.
 #' @param ... other parameters, see parameters.md for more informations
@@ -70,6 +71,7 @@ lgb.train <- function(params = list(),
                       categorical_feature = NULL,
                       early_stopping_rounds = NULL,
                       callbacks = list(),
+                      reset_data = FALSE
                       ...) {
   
   # Setup temporary variables
@@ -215,7 +217,7 @@ lgb.train <- function(params = list(),
   env$model <- booster
   env$begin_iteration <- begin_iteration
   env$end_iteration <- end_iteration
-
+  
   # Start training model using number of iterations to start and end with
   for (i in seq(from = begin_iteration, to = end_iteration)) {
     
@@ -256,6 +258,22 @@ lgb.train <- function(params = list(),
     
     # Check for early stopping and break if needed
     if (env$met_early_stop) break
+    
+  }
+  
+  # Check for booster model conversion to predictor model
+  if (reset_data) {
+    
+    # Store temporarily model data elsewhere
+    booster_old <- list(best_iter = booster$best_iter,
+                        best_score = booster$best_score,
+                        record_evals = booster$record_evals)
+    
+    # Reload model
+    booster <- lgb.load(model_str = booster$save_model_to_string())
+    booster$best_iter <- booster_old$best_iter
+    booster$best_score <- booster_old$best_score
+    booster$record_evals <- booster_old$record_evals
     
   }
   
