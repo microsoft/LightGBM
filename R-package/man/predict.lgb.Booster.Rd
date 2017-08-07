@@ -5,7 +5,8 @@
 \title{Predict method for LightGBM model}
 \usage{
 \method{predict}{lgb.Booster}(object, data, num_iteration = NULL,
-  rawscore = FALSE, predleaf = FALSE, header = FALSE, reshape = FALSE)
+  rawscore = FALSE, predleaf = FALSE, header = FALSE, reshape = FALSE,
+  ...)
 }
 \arguments{
 \item{object}{Object of class \code{lgb.Booster}}
