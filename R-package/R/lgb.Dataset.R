@@ -1,6 +1,6 @@
 Dataset <- R6Class(
   classname = "lgb.Dataset",
-  cloneable = FALSE,
+  cloneable = TRUE,
   public = list(
     
     # Finalize will free up the handles
