@@ -265,9 +265,9 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
         missing_type_ = MissingType::None;
       }
     } else if (missing_type_ == MissingType::None) {
-      bin_upper_bound_ = GreedyFindBin(distinct_values.data(), counts.data(), num_distinct_values, max_bin, total_sample_cnt, min_data_in_bin);
+      bin_upper_bound_ = FindBinWithZeroAsMissing(distinct_values.data(), counts.data(), num_distinct_values, max_bin, total_sample_cnt, min_data_in_bin);
     } else {
-      bin_upper_bound_ = GreedyFindBin(distinct_values.data(), counts.data(), num_distinct_values, max_bin - 1, total_sample_cnt - na_cnt, min_data_in_bin);
+      bin_upper_bound_ = FindBinWithZeroAsMissing(distinct_values.data(), counts.data(), num_distinct_values, max_bin - 1, total_sample_cnt - na_cnt, min_data_in_bin);
       bin_upper_bound_.push_back(NaN);
     }
     num_bin_ = static_cast<int>(bin_upper_bound_.size());
