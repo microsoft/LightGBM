@@ -4,7 +4,7 @@ Dataset <- R6Class(
   public = list(
     
     # Logical to check whether a dataset can be used re-modeled in-memory as another Dataset or not
-    remodel <- TRUE
+    remodel <- TRUE,
     
     # Finalize will free up the handles
     finalize = function() {
