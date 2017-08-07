@@ -153,10 +153,7 @@ lgb.train <- function(params = list(),
   }
   
   # Construct datasets, if needed
-  if (data$remodel == TRUE) {
-    data <- data$clone(deep = FALSE)
-    data$construct()
-  }
+  data$construct()
   vaild_contain_train <- FALSE
   train_data_name <- "train"
   reduced_valid_sets <- list()

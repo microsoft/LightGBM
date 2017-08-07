@@ -1,10 +1,7 @@
 Dataset <- R6Class(
   classname = "lgb.Dataset",
-  cloneable = TRUE,
+  cloneable = FALSE,
   public = list(
-    
-    # Logical to check whether a dataset can be used re-modeled in-memory as another Dataset or not
-    remodel = TRUE,
     
     # Finalize will free up the handles
     finalize = function() {
@@ -278,9 +275,6 @@ Dataset <- R6Class(
       if (is.null(self$getinfo("label"))) {
         stop("lgb.Dataset.construct: label should be set")
       }
-      
-      # Forcefully block construction
-      self$remodel <- FALSE
       
       # Return self
       return(invisible(self))
