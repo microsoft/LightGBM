@@ -60,6 +60,3 @@ class TestBasic(unittest.TestCase):
         for preds in zip(pred_early_stopping, pred_from_matr):
             # scores likely to be different, but prediction should still be the same
             self.assertEqual(preds[0] > 0, preds[1] > 0)
-
-        # check pmml
-        subprocess.call(['python', os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../pmml/pmml.py'), 'model.txt'])
