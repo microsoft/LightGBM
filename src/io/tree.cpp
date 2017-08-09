@@ -331,12 +331,18 @@ std::string Tree::NodeToJSON(int index) {
     str_buf << "\"split_feature\":" << split_feature_[index] << "," << std::endl;
     str_buf << "\"split_gain\":" << split_gain_[index] << "," << std::endl;
     if (GetDecisionType(decision_type_[index], kCategoricalMask)) {
-      std::vector<std::string> thresholds;
       int cat_idx = static_cast<int>(threshold_[index]);
+      std::vector<int> cats;
       for (int i = cat_boundaries_[cat_idx]; i < cat_boundaries_[cat_idx + 1]; ++i) {
-        thresholds.push_back(std::to_string(cat_threshold_[i]));
+        for (int j = 0; j < 32; ++j) {
+          int cat = (i - cat_boundaries_[cat_idx]) * 32 + j;
+          if (Common::FindInBitset(cat_threshold_.data() + cat_boundaries_[cat_idx],
+                                   cat_boundaries_[cat_idx + 1] - cat_boundaries_[cat_idx], cat)) {
+            cats.push_back(cat);
+          }
+        }
       }
-      str_buf << "\"threshold\":\"" << Common::Join(thresholds, "||") << "\"," << std::endl;
+      str_buf << "\"threshold\":\"" << Common::Join(cats, "||") << "\"," << std::endl;
       str_buf << "\"decision_type\":\"==\"," << std::endl;
     } else {
       str_buf << "\"threshold\":" << Common::AvoidInf(threshold_[index]) << "," << std::endl;
