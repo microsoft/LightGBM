@@ -33,4 +33,4 @@ make html
 * [Parallel Learning Guide](https://github.com/Microsoft/LightGBM/wiki/Parallel-Learning-Guide)
 * [GPU Tutorial](./GPU-Tutorial.md)
 * [FAQ](./FAQ.md)
-* [Development Guide](./development.md)
+* [Development Guide](./development.rst)
