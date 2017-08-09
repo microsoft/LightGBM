@@ -56,6 +56,8 @@ public:
   virtual void AddValidDataset(const Dataset* valid_data,
     const std::vector<const Metric*>& valid_metrics) = 0;
 
+  virtual void Train(int snapshot_freq, const std::string& model_output_path) = 0;
+
   /*!
   * \brief Training logic
   * \param gradient nullptr for using default objective, otherwise use self-defined boosting

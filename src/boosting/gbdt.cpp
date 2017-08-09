@@ -442,6 +442,25 @@ double ObtainAutomaticInitialScore(const ObjectiveFunction* objf, const float* l
   }
 }
 
+void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
+  bool is_finished = false;
+  bool need_eval = true;
+  auto start_time = std::chrono::steady_clock::now();
+  for (int iter = 0; iter < gbdt_config_->num_iterations && !is_finished; ++iter) {
+    is_finished = TrainOneIter(nullptr, nullptr, need_eval);
+    auto end_time = std::chrono::steady_clock::now();
+    // output used time per iteration
+    Log::Info("%f seconds elapsed, finished iteration %d", std::chrono::duration<double,
+              std::milli>(end_time - start_time) * 1e-3, iter + 1);
+    if (snapshot_freq > 0
+        && (iter + 1) % snapshot_freq == 0) {
+      std::string snapshot_out = model_output_path + ".snapshot_iter_" + std::to_string(iter + 1);
+      SaveModelToFile(-1, snapshot_out.c_str());
+    }
+  }
+  SaveModelToFile(-1, model_output_path.c_str());
+}
+
 bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) {
   // boosting from average label; or customized "average" if implemented for the current objective
   if (models_.empty()
@@ -461,6 +480,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
     models_.push_back(std::move(new_tree));
     boost_from_average_ = true;
   }
+
   // boosting first
   if (gradient == nullptr || hessian == nullptr) {
     #ifdef TIMETAG
@@ -481,6 +501,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
   #ifdef TIMETAG
   bagging_time += std::chrono::steady_clock::now() - start_time;
   #endif
+  // need to use subset gradient and hessian
   if (is_use_subset_ && bag_data_cnt_ < num_data_) {
     #ifdef TIMETAG
     start_time = std::chrono::steady_clock::now();

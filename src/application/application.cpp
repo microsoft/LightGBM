@@ -224,24 +224,7 @@ void Application::InitTrain() {
 
 void Application::Train() {
   Log::Info("Started training...");
-  int total_iter = config_.boosting_config.num_iterations;
-  bool is_finished = false;
-  bool need_eval = true;
-  auto start_time = std::chrono::steady_clock::now();
-  for (int iter = 0; iter < total_iter && !is_finished; ++iter) {
-    is_finished = boosting_->TrainOneIter(nullptr, nullptr, need_eval);
-    auto end_time = std::chrono::steady_clock::now();
-    // output used time per iteration
-    Log::Info("%f seconds elapsed, finished iteration %d", std::chrono::duration<double,
-              std::milli>(end_time - start_time) * 1e-3, iter + 1);
-    if (config_.io_config.snapshot_freq > 0 
-        && (iter+1) % config_.io_config.snapshot_freq == 0) {
-      std::string snapshot_out = config_.io_config.output_model + ".snapshot_iter_" + std::to_string(iter + 1);
-      boosting_->SaveModelToFile(-1, snapshot_out.c_str());
-    }
-  }
-  // save model to file
-  boosting_->SaveModelToFile(-1, config_.io_config.output_model.c_str());
+  boosting_->Train(config_.io_config.snapshot_freq, config_.io_config.output_model);
   // convert model to if-else statement code
   if (config_.convert_model_language == std::string("cpp")) {
     boosting_->SaveModelToIfElse(-1, config_.io_config.convert_model.c_str());
