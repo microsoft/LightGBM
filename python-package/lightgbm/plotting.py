@@ -270,7 +270,7 @@ def _to_graphviz(tree_info, show_info, feature_names,
             graph.node(name, label=label)
             if root['decision_type'] == '<=':
                 l_dec, r_dec = '<=', '>'
-            elif root['decision_type'] == '=':
+            elif root['decision_type'] == '==':
                 l_dec, r_dec = 'is', "isn't"
             else:
                 raise ValueError('Invalid decision type in tree model.')
