@@ -96,7 +96,7 @@ LightGBM has been developed and used by many active community members. Your help
 - Contribute to the [tests](https://github.com/Microsoft/LightGBM/tree/master/tests) to make it more reliable. 
 - Contribute to the [documents](https://github.com/Microsoft/LightGBM/tree/master/docs) to make it clearer for everyone.
 - Contribute to the [examples](https://github.com/Microsoft/LightGBM/tree/master/examples) to share your experience with other users.
-- Check out [Development Guide](./docs/development.md).
+- Check out [Development Guide](./docs/development.rst).
 - Open issue if you met problems during development.
 
 Microsoft Open Source Code of Conduct
