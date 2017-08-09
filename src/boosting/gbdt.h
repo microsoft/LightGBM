@@ -74,6 +74,9 @@ public:
   */
   void AddValidDataset(const Dataset* valid_data,
                        const std::vector<const Metric*>& valid_metrics) override;
+
+  void Train(int snapshot_freq, const std::string& model_output_path) override;
+
   /*!
   * \brief Training logic
   * \param gradient nullptr for using default objective, otherwise use self-defined boosting
