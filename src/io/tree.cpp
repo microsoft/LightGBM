@@ -348,6 +348,19 @@ std::string Tree::NodeToJSON(int index) {
       str_buf << "\"threshold\":" << Common::AvoidInf(threshold_[index]) << "," << std::endl;
       str_buf << "\"decision_type\":\"<=\"," << std::endl;
     }
+    if (GetDecisionType(decision_type_[index], kDefaultLeftMask)) {
+      str_buf << "\"default_left\":\"true\"," << std::endl;
+    } else {
+      str_buf << "\"default_left\":\"false\"," << std::endl;
+    }
+    uint8_t missing_type = GetMissingType(decision_type_[index]);
+    if (missing_type == 0) {
+      str_buf << "\"missing_type\":\"None\"," << std::endl;
+    } else if (missing_type == 1) {
+      str_buf << "\"missing_type\":\"Zero\"," << std::endl;
+    } else {
+      str_buf << "\"missing_type\":\"NaN\"," << std::endl;
+    }
     str_buf << "\"internal_value\":" << internal_value_[index] << "," << std::endl;
     str_buf << "\"internal_count\":" << internal_count_[index] << "," << std::endl;
     str_buf << "\"left_child\":" << NodeToJSON(left_child_[index]) << "," << std::endl;
