@@ -3,7 +3,7 @@
 # Original script from https://github.com/gregvw/amd_sdk/
 
 # Location from which get nonce and file name from
-URL="http://developer.amd.com/tools-and-sdks/opencl-zone/opencl-tools-sdks/amd-accelerated-parallel-processing-app-sdk/"
+URL="http://developer.amd.com/amd-accelerated-parallel-processing-app-sdk/"
 URLDOWN="http://developer.amd.com/amd-license-agreement-appsdk/"
 
 NONCE1_STRING='name="amd_developer_central_downloads_page_nonce"'
