@@ -66,6 +66,7 @@ GBDT::~GBDT() {
 
 void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
                 const std::vector<const Metric*>& training_metrics) {
+  CHECK(train_data->num_features() > 0);
   train_data_ = train_data;
   iter_ = 0;
   num_iteration_for_pred_ = 0;
@@ -164,7 +165,7 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
   if (train_data != train_data_ && !train_data_->CheckAlign(*train_data)) {
     Log::Fatal("cannot reset training data, since new training data has different bin mappers");
   }
-
+  CHECK(train_data->num_features() > 0);
   objective_function_ = objective_function;
   if (objective_function_ != nullptr) {
     is_constant_hessian_ = objective_function_->IsConstantHessian();

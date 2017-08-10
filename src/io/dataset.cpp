@@ -24,10 +24,12 @@ Dataset::Dataset() {
 }
 
 Dataset::Dataset(data_size_t num_data) {
+  CHECK(num_data > 0);
   data_filename_ = "noname";
   num_data_ = num_data;
   metadata_.Init(num_data_, NO_SPECIFIC, NO_SPECIFIC);
   is_finish_load_ = false;
+  group_bin_boundaries_.push_back(0);
 }
 
 Dataset::~Dataset() {
@@ -223,7 +225,9 @@ void Dataset::Construct(
       used_features.emplace_back(i);
     }
   }
-
+  if (used_features.empty()) {
+    Log::Fatal("Cannot construct Dataset since there are not useful features.");
+  }
   auto features_in_group = NoGroup(used_features);
 
   if (io_config.enable_bundle) {
