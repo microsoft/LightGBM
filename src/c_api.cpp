@@ -38,6 +38,7 @@ public:
 
   Booster(const Dataset* train_data,
           const char* parameters) {
+    CHECK(train_data->num_features() > 0);
     auto param = ConfigBase::Str2Map(parameters);
     config_.Set(param);
     if (config_.num_threads > 0) {
@@ -94,6 +95,7 @@ public:
 
   void ResetTrainingData(const Dataset* train_data) {
     if (train_data != train_data_) {
+      CHECK(train_data->num_features() > 0);
       std::lock_guard<std::mutex> lock(mutex_);
       train_data_ = train_data;
       CreateObjectiveAndMetrics();
