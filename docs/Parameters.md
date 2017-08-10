@@ -203,7 +203,7 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
 * `pred_early_stop_margin`, default=`10.0`, type=double
   * The Threshold of margin in early-stopping prediction. 
 * `use_missing`, default=`true`, type=bool
-  * Set to `false` will disbale the special handle of missing value. 
+  * Set to `false` will disable the special handle of missing value.
 * `zero_as_missing`, default=`false`, type=bool
   * Set to `true` will treat all zero as missing values (including the unshown values in libsvm/sparse matrics).
   * Set to `false` will use `na` to represent missing values.
