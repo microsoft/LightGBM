@@ -86,7 +86,7 @@ public:
         data_size_t idx = sorted_idx[j];
         if (label[idx] > 0.5f) {
           ++num_hit;
-          sum_ap += static_cast<double>(num_hit) / (i + 1.0f);
+          sum_ap += static_cast<double>(num_hit) / (j + 1.0f);
         }
       }
       (*out)[i] = sum_ap / cur_k;
