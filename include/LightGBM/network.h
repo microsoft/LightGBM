@@ -139,6 +139,56 @@ public:
     const int* block_start, const int* block_len, char* output,
     const ReduceFunction& reducer);
 
+  template<class T>
+  static T GlobalSyncUpByMin(T& local) {
+    T global = local;
+    Allreduce(reinterpret_cast<char*>(&local),
+              sizeof(local), sizeof(local),
+              reinterpret_cast<char*>(&global),
+              [] (const char* src, char* dst, int len) {
+      int used_size = 0;
+      const int type_size = sizeof(T);
+      const T *p1;
+      T *p2;
+      while (used_size < len) {
+        p1 = reinterpret_cast<const T *>(src);
+        p2 = reinterpret_cast<T *>(dst);
+        if (*p1 < *p2) {
+          std::memcpy(dst, src, type_size);
+        }
+        src += type_size;
+        dst += type_size;
+        used_size += type_size;
+      }
+    });
+    return global;
+  }
+
+  template<class T>
+  static T GlobalSyncUpByMax(T& local) {
+    T global = local;
+    Allreduce(reinterpret_cast<char*>(&local),
+              sizeof(local), sizeof(local),
+              reinterpret_cast<char*>(&global),
+              [] (const char* src, char* dst, int len) {
+      int used_size = 0;
+      const int type_size = sizeof(T);
+      const T *p1;
+      T *p2;
+      while (used_size < len) {
+        p1 = reinterpret_cast<const T *>(src);
+        p2 = reinterpret_cast<T *>(dst);
+        if (*p1 > *p2) {
+          std::memcpy(dst, src, type_size);
+        }
+        src += type_size;
+        dst += type_size;
+        used_size += type_size;
+      }
+    });
+    return global;
+  }
+
 private:
   /*! \brief Number of all machines */
   static int num_machines_;
