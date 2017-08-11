@@ -87,7 +87,7 @@ def compile_cpp(use_mingw=False, use_gpu=False):
                 raise Exception('Please install Visual Studio or MS Build first')
 
             build_cmd = "cmake --build . --target _lightgbm  --config Release"
-    print("Start to compile libarary.")
+    print("Start to compile library.")
     os.system(cmake_cmd + " ../lightgbm/")
     os.system(build_cmd)
     os.chdir("..")
