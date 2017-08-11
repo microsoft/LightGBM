@@ -95,7 +95,9 @@ public:
   int num_class = 1;
   int data_random_seed = 1;
   std::string data_filename = "";
+  std::string initscore_filename = "";
   std::vector<std::string> valid_data_filenames;
+  std::vector<std::string> valid_data_initscores;
   int snapshot_freq = -1;
   std::string output_model = "LightGBM_model.txt";
   std::string output_result = "LightGBM_predict_result.txt";
@@ -461,7 +463,8 @@ struct ParameterAlias {
       "snapshot_freq", "verbosity", "sparse_threshold", "enable_load_from_binary_file",
       "max_conflict_rate", "poisson_max_delta_step", "gaussian_eta",
       "histogram_pool_size", "output_freq", "is_provide_training_metric", "machine_list_filename", 
-      "zero_as_missing", "max_cat_group", "max_cat_threshold", "cat_smooth_ratio", "min_cat_smooth", "max_cat_smooth"
+      "zero_as_missing", "max_cat_group", "max_cat_threshold", "cat_smooth_ratio", "min_cat_smooth", "max_cat_smooth",
+      "init_score_file", "valid_init_score_file"
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {

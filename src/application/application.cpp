@@ -126,10 +126,12 @@ void Application::LoadData() {
   if (config_.is_parallel_find_bin) {
     // load data for parallel training
     train_data_.reset(dataset_loader.LoadFromFile(config_.io_config.data_filename.c_str(),
+                                                  config_.io_config.initscore_filename.c_str(),
                                                   Network::rank(), Network::num_machines()));
   } else {
     // load data for single machine
-    train_data_.reset(dataset_loader.LoadFromFile(config_.io_config.data_filename.c_str(), 0, 1));
+    train_data_.reset(dataset_loader.LoadFromFile(config_.io_config.data_filename.c_str(), config_.io_config.initscore_filename.c_str(),
+                                                  0, 1));
   }
   // need save binary file
   if (config_.io_config.is_save_binary_file) {
@@ -156,6 +158,7 @@ void Application::LoadData() {
       auto new_dataset = std::unique_ptr<Dataset>(
         dataset_loader.LoadFromFileAlignWithOtherDataset(
           config_.io_config.valid_data_filenames[i].c_str(),
+          config_.io_config.valid_data_initscores[i].c_str(),
           train_data_.get())
         );
       valid_datas_.push_back(std::move(new_dataset));

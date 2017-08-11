@@ -245,6 +245,7 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "num_class", &num_class);
   GetInt(params, "data_random_seed", &data_random_seed);
   GetString(params, "data", &data_filename);
+  GetString(params, "init_score_file", &initscore_filename);
   GetInt(params, "verbose", &verbosity);
   GetInt(params, "num_iteration_predict", &num_iteration_predict);
   GetInt(params, "bin_construct_sample_cnt", &bin_construct_sample_cnt);
@@ -265,6 +266,12 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   if (GetString(params, "valid_data", &tmp_str)) {
     valid_data_filenames = Common::Split(tmp_str.c_str(), ',');
   }
+  if (GetString(params, "valid_init_score_file", &tmp_str)) {
+    valid_data_initscores = Common::Split(tmp_str.c_str(), ',');
+  } else {
+    valid_data_initscores = std::vector<std::string>(valid_data_filenames.size(), "");
+  }
+  CHECK(valid_data_filenames.size() == valid_data_initscores.size());
   GetBool(params, "has_header", &has_header);
   GetString(params, "label_column", &label_column);
   GetString(params, "weight_column", &weight_column);

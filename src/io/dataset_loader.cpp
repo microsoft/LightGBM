@@ -156,7 +156,7 @@ void DatasetLoader::SetHeader(const char* filename) {
   }
 }
 
-Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_machines) {
+Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore_file, int rank, int num_machines) {
   // don't support query id in data file when training in parallel
   if (num_machines > 1 && !io_config_.is_pre_partition) {
     if (group_idx_ > 0) {
@@ -175,7 +175,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     }
     dataset->data_filename_ = filename;
     dataset->label_idx_ = label_idx_;
-    dataset->metadata_.Init(filename);
+    dataset->metadata_.Init(filename, initscore_file);
     if (!io_config_.use_two_round_loading) {
       // read data to memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, rank, num_machines, &num_global_data, &used_data_indices);
@@ -218,7 +218,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
 
 
 
-Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data) {
+Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, const char* initscore_file, const Dataset* train_data) {
   data_size_t num_global_data = 0;
   std::vector<data_size_t> used_data_indices;
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
@@ -230,7 +230,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
     }
     dataset->data_filename_ = filename;
     dataset->label_idx_ = label_idx_;
-    dataset->metadata_.Init(filename);
+    dataset->metadata_.Init(filename, initscore_file);
     if (!io_config_.use_two_round_loading) {
       // read data in memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, 0, 1, &num_global_data, &used_data_indices);
