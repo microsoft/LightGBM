@@ -4,14 +4,15 @@
 from __future__ import absolute_import
 
 import collections
+import warnings
 from operator import attrgetter
 
 import numpy as np
 
 from . import callback
 from .basic import Booster, Dataset, LightGBMError, _InnerPredictor
-from .compat import (SKLEARN_INSTALLED, LGBMStratifiedKFold, LGBMGroupKFold, integer_types,
-                     range_, string_type)
+from .compat import (SKLEARN_INSTALLED, LGBMGroupKFold, LGBMStratifiedKFold,
+                     integer_types, range_, string_type)
 
 
 def train(params, train_set, num_boost_round=100,
@@ -94,6 +95,17 @@ def train(params, train_set, num_boost_round=100,
     booster : a trained booster model
     """
     """create predictor first"""
+    for alias in ["num_boost_round", "num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds"]:
+        if alias in params:
+            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            num_boost_round = params.pop(alias)
+            break
+    for alias in ["early_stopping_round", "early_stopping_rounds", "early_stopping"]:
+        if alias in params:
+            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            early_stopping_rounds = params.pop(alias)
+            break
+
     if isinstance(init_model, string_type):
         predictor = _InnerPredictor(model_file=init_model)
     elif isinstance(init_model, Booster):
@@ -369,6 +381,17 @@ def cv(params, train_set, num_boost_round=10,
     """
     if not isinstance(train_set, Dataset):
         raise TypeError("Traninig only accepts Dataset object")
+
+    for alias in ["num_boost_round", "num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds"]:
+        if alias in params:
+            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            num_boost_round = params.pop(alias)
+            break
+    for alias in ["early_stopping_round", "early_stopping_rounds", "early_stopping"]:
+        if alias in params:
+            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            early_stopping_rounds = params.pop(alias)
+            break
 
     if isinstance(init_model, string_type):
         predictor = _InnerPredictor(model_file=init_model)
