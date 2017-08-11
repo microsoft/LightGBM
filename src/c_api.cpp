@@ -350,11 +350,11 @@ int LGBM_DatasetCreateFromFile(const char* filename,
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
   }
-  DatasetLoader loader(config.io_config, nullptr, 1, filename);
+  DatasetLoader loader(config.io_config,nullptr, 1, filename);
   if (reference == nullptr) {
-    *out = loader.LoadFromFile(filename);
+    *out = loader.LoadFromFile(filename, "");
   } else {
-    *out = loader.LoadFromFileAlignWithOtherDataset(filename,
+    *out = loader.LoadFromFileAlignWithOtherDataset(filename, "",
                                                     reinterpret_cast<const Dataset*>(reference));
   }
   API_END();

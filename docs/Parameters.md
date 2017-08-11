@@ -207,7 +207,11 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
 * `zero_as_missing`, default=`false`, type=bool
   * Set to `true` will treat all zero as missing values (including the unshown values in libsvm/sparse matrics).
   * Set to `false` will use `na` to represent missing values.
-
+* `init_score_file`, default=`""`, type=string
+  * Path of training initial score file, `""` will use `train_data_file+".init"` (if exists).
+* `valid_init_score_file`, default=`""`, type=multi-string
+  * Path of validation initial score file, `""` will use `valid_data_file+".init"` (if exists).
+  * separate by `,` for multi-validation data
 
 ## Objective parameters
 

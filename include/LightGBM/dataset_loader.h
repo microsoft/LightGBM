@@ -12,13 +12,13 @@ public:
 
   LIGHTGBM_EXPORT ~DatasetLoader();
 
-  LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename, int rank, int num_machines);
+  LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename, const char* initscore_file, int rank, int num_machines);
 
-  LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename) {
-    return LoadFromFile(filename, 0, 1);
+  LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename, const char* initscore_file) {
+    return LoadFromFile(filename, initscore_file, 0, 1);
   }
 
-  LIGHTGBM_EXPORT Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data);
+  LIGHTGBM_EXPORT Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const char* initscore_file, const Dataset* train_data);
 
   LIGHTGBM_EXPORT Dataset* CostructFromSampleData(double** sample_values,
     int** sample_indices, int num_col, const int* num_per_col,

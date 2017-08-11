@@ -44,7 +44,7 @@ public:
   * \param data_filename Filename of data
   * \param init_score_filename Filename of initial score
   */
-  void Init(const char* data_filename);
+  void Init(const char* data_filename, const char* initscore_file);
   /*!
   * \brief init as subset
   * \param metadata Filename of data
@@ -211,7 +211,7 @@ public:
 
 private:
   /*! \brief Load initial scores from file */
-  void LoadInitialScore();
+  void LoadInitialScore(const char* initscore_file);
   /*! \brief Load wights from file */
   void LoadWeights();
   /*! \brief Load query boundaries from file */
