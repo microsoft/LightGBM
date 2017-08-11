@@ -589,6 +589,22 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
   if (leaf_idx < 0 || num_data <= 0 || hist_data == nullptr) {
     return;
   }
+
+  std::vector<int> used_group;
+  used_group.reserve(num_groups_);
+  for (int group = 0; group < num_groups_; ++group) {
+    bool is_groud_used = false;
+    const int f_cnt = group_feature_cnt_[group];
+    for (int j = 0; j < f_cnt; ++j) {
+      const int fidx = group_feature_start_[group] + j;
+      if (is_feature_used[fidx]) {
+        is_groud_used = true;
+        break;
+      }
+    }
+    used_group.push_back(group);
+  }
+  int num_used_group = static_cast<int>(used_group.size());
   auto ptr_ordered_grad = gradients;
   auto ptr_ordered_hess = hessians;
   if (data_indices != nullptr && num_data < num_data_) {
@@ -609,18 +625,9 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
     if (!is_constant_hessian) {
       OMP_INIT_EX();
       #pragma omp parallel for schedule(static)
-      for (int group = 0; group < num_groups_; ++group) {
+      for (int gi = 0; gi < num_used_group; ++gi) {
         OMP_LOOP_EX_BEGIN();
-        bool is_groud_used = false;
-        const int f_cnt = group_feature_cnt_[group];
-        for (int j = 0; j < f_cnt; ++j) {
-          const int fidx = group_feature_start_[group] + j;
-          if (is_feature_used[fidx]) {
-            is_groud_used = true;
-            break;
-          }
-        }
-        if (!is_groud_used) { continue; }
+        int group = used_group[gi];
         // feature is not used
         auto data_ptr = hist_data + group_bin_boundaries_[group];
         const int num_bin = feature_groups_[group]->num_total_bin_;
@@ -647,18 +654,9 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
     } else {
       OMP_INIT_EX();
       #pragma omp parallel for schedule(static)
-      for (int group = 0; group < num_groups_; ++group) {
+      for (int gi = 0; gi < num_used_group; ++gi) {
         OMP_LOOP_EX_BEGIN();
-        bool is_groud_used = false;
-        const int f_cnt = group_feature_cnt_[group];
-        for (int j = 0; j < f_cnt; ++j) {
-          const int fidx = group_feature_start_[group] + j;
-          if (is_feature_used[fidx]) {
-            is_groud_used = true;
-            break;
-          }
-        }
-        if (!is_groud_used) { continue; }
+        int group = used_group[gi];
         // feature is not used
         auto data_ptr = hist_data + group_bin_boundaries_[group];
         const int num_bin = feature_groups_[group]->num_total_bin_;
@@ -689,18 +687,9 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
     if (!is_constant_hessian) {
       OMP_INIT_EX();
       #pragma omp parallel for schedule(static)
-      for (int group = 0; group < num_groups_; ++group) {
+      for (int gi = 0; gi < num_used_group; ++gi) {
         OMP_LOOP_EX_BEGIN();
-        bool is_groud_used = false;
-        const int f_cnt = group_feature_cnt_[group];
-        for (int j = 0; j < f_cnt; ++j) {
-          const int fidx = group_feature_start_[group] + j;
-          if (is_feature_used[fidx]) {
-            is_groud_used = true;
-            break;
-          }
-        }
-        if (!is_groud_used) { continue; }
+        int group = used_group[gi];
         // feature is not used
         auto data_ptr = hist_data + group_bin_boundaries_[group];
         const int num_bin = feature_groups_[group]->num_total_bin_;
@@ -726,18 +715,9 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
     } else {
       OMP_INIT_EX();
       #pragma omp parallel for schedule(static)
-      for (int group = 0; group < num_groups_; ++group) {
+      for (int gi = 0; gi < num_used_group; ++gi) {
         OMP_LOOP_EX_BEGIN();
-        bool is_groud_used = false;
-        const int f_cnt = group_feature_cnt_[group];
-        for (int j = 0; j < f_cnt; ++j) {
-          const int fidx = group_feature_start_[group] + j;
-          if (is_feature_used[fidx]) {
-            is_groud_used = true;
-            break;
-          }
-        }
-        if (!is_groud_used) { continue; }
+        int group = used_group[gi];
         // feature is not used
         auto data_ptr = hist_data + group_bin_boundaries_[group];
         const int num_bin = feature_groups_[group]->num_total_bin_;

@@ -97,6 +97,20 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
   return num_leaves_ - 1;
 }
 
+#define PredictionFun(niter, fidx_in_iter, start_pos, decision_fun, iter_idx, data_idx) \
+std::vector<std::unique_ptr<BinIterator>> iter((niter)); \
+for (int i = 0; i < (niter); ++i) { \
+  iter[i].reset(data->FeatureIterator((fidx_in_iter))); \
+  iter[i]->Reset((start_pos)); \
+}\
+for (data_size_t i = start; i < end; ++i) {\
+  int node = 0;\
+  while (node >= 0) {\
+    node = decision_fun(iter[(iter_idx)]->Get((data_idx)), node, default_bins[node], max_bins[node]);\
+  }\
+  score[(data_idx)] += static_cast<double>(leaf_value_[~node]);\
+}\
+
 void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, double* score) const {
   if (num_leaves_ <= 1) { return; }
   std::vector<uint32_t> default_bins(num_leaves_ - 1);
@@ -109,72 +123,26 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
   }
   if (num_cat_ > 0) {
     if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data,
-        [this, &data, score, &default_bins, &max_bins](int, data_size_t start, data_size_t end) {
-        std::vector<std::unique_ptr<BinIterator>> iter(num_leaves_ - 1);
-        for (int i = 0; i < num_leaves_ - 1; ++i) {
-          const int fidx = split_feature_inner_[i];
-          iter[i].reset(data->FeatureIterator(fidx));
-          iter[i]->Reset(start);
-        }
-        for (data_size_t i = start; i < end; ++i) {
-          int node = 0;
-          while (node >= 0) {
-            node = DecisionInner(iter[node]->Get(i), node, default_bins[node], max_bins[node]);
-          }
-          score[i] += static_cast<double>(leaf_value_[~node]);
-        }
+      Threading::For<data_size_t>(0, num_data, [this, &data, score, &default_bins, &max_bins]
+      (int, data_size_t start, data_size_t end) {
+        PredictionFun(num_leaves_ - 1, split_feature_inner_[i], start, DecisionInner, node, i);
       });
     } else {
-      Threading::For<data_size_t>(0, num_data,
-        [this, &data, score, &default_bins, &max_bins](int, data_size_t start, data_size_t end) {
-        std::vector<std::unique_ptr<BinIterator>> iter(data->num_features());
-        for (int i = 0; i < data->num_features(); ++i) {
-          iter[i].reset(data->FeatureIterator(i));
-          iter[i]->Reset(start);
-        }
-        for (data_size_t i = start; i < end; ++i) {
-          int node = 0;
-          while (node >= 0) {
-            node = DecisionInner(iter[split_feature_inner_[node]]->Get(i), node, default_bins[node], max_bins[node]);
-          }
-          score[i] += static_cast<double>(leaf_value_[~node]);
-        }
+      Threading::For<data_size_t>(0, num_data, [this, &data, score, &default_bins, &max_bins]
+      (int, data_size_t start, data_size_t end) {
+        PredictionFun(data->num_features(), i, start, DecisionInner, split_feature_inner_[node], i);
       });
     }
   } else {
     if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data,
-        [this, &data, score, &default_bins, &max_bins](int, data_size_t start, data_size_t end) {
-        std::vector<std::unique_ptr<BinIterator>> iter(num_leaves_ - 1);
-        for (int i = 0; i < num_leaves_ - 1; ++i) {
-          const int fidx = split_feature_inner_[i];
-          iter[i].reset(data->FeatureIterator(fidx));
-          iter[i]->Reset(start);
-        }
-        for (data_size_t i = start; i < end; ++i) {
-          int node = 0;
-          while (node >= 0) {
-            node = NumericalDecisionInner(iter[node]->Get(i), node, default_bins[node], max_bins[node]);
-          }
-          score[i] += static_cast<double>(leaf_value_[~node]);
-        }
+      Threading::For<data_size_t>(0, num_data, [this, &data, score, &default_bins, &max_bins]
+      (int, data_size_t start, data_size_t end) {
+        PredictionFun(num_leaves_ - 1, split_feature_inner_[i], start, NumericalDecisionInner, node, i);
       });
     } else {
-      Threading::For<data_size_t>(0, num_data,
-        [this, &data, score, &default_bins, &max_bins](int, data_size_t start, data_size_t end) {
-        std::vector<std::unique_ptr<BinIterator>> iter(data->num_features());
-        for (int i = 0; i < data->num_features(); ++i) {
-          iter[i].reset(data->FeatureIterator(i));
-          iter[i]->Reset(start);
-        }
-        for (data_size_t i = start; i < end; ++i) {
-          int node = 0;
-          while (node >= 0) {
-            node = NumericalDecisionInner(iter[split_feature_inner_[node]]->Get(i), node, default_bins[node], max_bins[node]);
-          }
-          score[i] += static_cast<double>(leaf_value_[~node]);
-        }
+      Threading::For<data_size_t>(0, num_data, [this, &data, score, &default_bins, &max_bins]
+      (int, data_size_t start, data_size_t end) {
+        PredictionFun(data->num_features(), i, start, NumericalDecisionInner, split_feature_inner_[node], i);
       });
     }
   }
@@ -192,82 +160,34 @@ void Tree::AddPredictionToScore(const Dataset* data,
     default_bins[i] = bin_mapper->GetDefaultBin();
     max_bins[i] = bin_mapper->num_bin() - 1;
   }
-  if (num_cat_ >  0) {
+  if (num_cat_ > 0) {
     if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data,
-        [this, data, used_data_indices, score, &default_bins, &max_bins](int, data_size_t start, data_size_t end) {
-        std::vector<std::unique_ptr<BinIterator>> iter(num_leaves_ - 1);
-        for (int i = 0; i < num_leaves_ - 1; ++i) {
-          const int fidx = split_feature_inner_[i];
-          iter[i].reset(data->FeatureIterator(fidx));
-          iter[i]->Reset(used_data_indices[start]);
-        }
-        for (data_size_t i = start; i < end; ++i) {
-          int node = 0;
-          const data_size_t idx = used_data_indices[i];
-          while (node >= 0) {
-            node = DecisionInner(iter[node]->Get(idx), node, default_bins[node], max_bins[node]);
-          }
-          score[idx] += static_cast<double>(leaf_value_[~node]);
-        }
+      Threading::For<data_size_t>(0, num_data, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+      (int, data_size_t start, data_size_t end) {
+        PredictionFun(num_leaves_ - 1, split_feature_inner_[i], used_data_indices[start], DecisionInner, node, used_data_indices[i]);
       });
     } else {
-      Threading::For<data_size_t>(0, num_data,
-        [this, data, used_data_indices, score, &default_bins, &max_bins](int, data_size_t start, data_size_t end) {
-        std::vector<std::unique_ptr<BinIterator>> iter(data->num_features());
-        for (int i = 0; i < data->num_features(); ++i) {
-          iter[i].reset(data->FeatureIterator(i));
-          iter[i]->Reset(used_data_indices[start]);
-        }
-        for (data_size_t i = start; i < end; ++i) {
-          const data_size_t idx = used_data_indices[i];
-          int node = 0;
-          while (node >= 0) {
-            node = DecisionInner(iter[split_feature_inner_[node]]->Get(idx), node, default_bins[node], max_bins[node]);
-          }
-          score[idx] += static_cast<double>(leaf_value_[~node]);
-        }
+      Threading::For<data_size_t>(0, num_data, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+      (int, data_size_t start, data_size_t end) {
+        PredictionFun(data->num_features(), i, used_data_indices[start], DecisionInner, split_feature_inner_[node], used_data_indices[i]);
       });
     }
   } else {
     if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data,
-        [this, data, used_data_indices, score, &default_bins, &max_bins](int, data_size_t start, data_size_t end) {
-        std::vector<std::unique_ptr<BinIterator>> iter(num_leaves_ - 1);
-        for (int i = 0; i < num_leaves_ - 1; ++i) {
-          const int fidx = split_feature_inner_[i];
-          iter[i].reset(data->FeatureIterator(fidx));
-          iter[i]->Reset(used_data_indices[start]);
-        }
-        for (data_size_t i = start; i < end; ++i) {
-          int node = 0;
-          const data_size_t idx = used_data_indices[i];
-          while (node >= 0) {
-            node = NumericalDecisionInner(iter[node]->Get(idx), node, default_bins[node], max_bins[node]);
-          }
-          score[idx] += static_cast<double>(leaf_value_[~node]);
-        }
+      Threading::For<data_size_t>(0, num_data, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+      (int, data_size_t start, data_size_t end) {
+        PredictionFun(num_leaves_ - 1, split_feature_inner_[i], used_data_indices[start], NumericalDecisionInner, node, used_data_indices[i]);
       });
     } else {
-      Threading::For<data_size_t>(0, num_data,
-        [this, data, used_data_indices, score, &default_bins, &max_bins](int, data_size_t start, data_size_t end) {
-        std::vector<std::unique_ptr<BinIterator>> iter(data->num_features());
-        for (int i = 0; i < data->num_features(); ++i) {
-          iter[i].reset(data->FeatureIterator(i));
-          iter[i]->Reset(used_data_indices[start]);
-        }
-        for (data_size_t i = start; i < end; ++i) {
-          const data_size_t idx = used_data_indices[i];
-          int node = 0;
-          while (node >= 0) {
-            node = NumericalDecisionInner(iter[split_feature_inner_[node]]->Get(idx), node, default_bins[node], max_bins[node]);
-          }
-          score[idx] += static_cast<double>(leaf_value_[~node]);
-        }
+      Threading::For<data_size_t>(0, num_data, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+      (int, data_size_t start, data_size_t end) {
+        PredictionFun(data->num_features(), i, used_data_indices[start], NumericalDecisionInner, split_feature_inner_[node], used_data_indices[i]);
       });
     }
   }
 }
+
+#undef PredictionFun
 
 std::string Tree::ToString() {
   std::stringstream str_buf;
