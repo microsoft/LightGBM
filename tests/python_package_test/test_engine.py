@@ -37,18 +37,20 @@ class TestEngine(unittest.TestCase):
         params = {
             'objective': 'binary',
             'metric': 'binary_logloss',
-            'verbose': -1
+            'verbose': -1,
+            'num_iteration': 50  # test num_iteration in dict here
         }
         lgb_train = lgb.Dataset(X_train, y_train)
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
         evals_result = {}
         gbm = lgb.train(params, lgb_train,
-                        num_boost_round=50,
+                        num_boost_round=20,
                         valid_sets=lgb_eval,
                         verbose_eval=False,
                         evals_result=evals_result)
         ret = log_loss(y_test, gbm.predict(X_test))
         self.assertLess(ret, 0.15)
+        self.assertEqual(len(evals_result['valid_0']['binary_logloss']), 50)
         self.assertAlmostEqual(evals_result['valid_0']['binary_logloss'][-1], ret, places=5)
 
     def test_rf(self):
@@ -483,17 +485,12 @@ class TestEngine(unittest.TestCase):
         np.testing.assert_almost_equal(pred0, pred3)
         np.testing.assert_almost_equal(pred0, pred4)
 
-    def test_subset_train_val(self):
-        '''
-        Tests that it's fine to construct a single lgb.Dataframe object,
-        takes subsets of it, and uses the subsets for training and validation
-        '''
-        n = 1000
-        X = np.random.normal(size=(n, 2))
-        y = np.random.normal(size=n)
+    def test_reference_chain(self):
+        X = np.random.normal(size=(100, 2))
+        y = np.random.normal(size=100)
         tmp_dat = lgb.Dataset(X, y)
         # take subsets and train
-        tmp_dat_train = tmp_dat.subset(np.arange(int(n * .8)))
-        tmp_dat_val = tmp_dat.subset(np.arange(int(n * .8), n)).subset(np.arange(n * .2 * .9))
+        tmp_dat_train = tmp_dat.subset(np.arange(80))
+        tmp_dat_val = tmp_dat.subset(np.arange(80, 100)).subset(np.arange(18))
         params = {'objective': 'regression_l2', 'metric': 'rmse'}
         gbm = lgb.train(params, tmp_dat_train, num_boost_round=20, valid_sets=[tmp_dat_train, tmp_dat_val])

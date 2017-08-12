@@ -38,6 +38,7 @@ public:
 
   Booster(const Dataset* train_data,
           const char* parameters) {
+    CHECK(train_data->num_features() > 0);
     auto param = ConfigBase::Str2Map(parameters);
     config_.Set(param);
     if (config_.num_threads > 0) {
@@ -94,6 +95,7 @@ public:
 
   void ResetTrainingData(const Dataset* train_data) {
     if (train_data != train_data_) {
+      CHECK(train_data->num_features() > 0);
       std::lock_guard<std::mutex> lock(mutex_);
       train_data_ = train_data;
       CreateObjectiveAndMetrics();
@@ -354,11 +356,11 @@ int LGBM_DatasetCreateFromFile(const char* filename,
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
   }
-  DatasetLoader loader(config.io_config, nullptr, 1, filename);
+  DatasetLoader loader(config.io_config,nullptr, 1, filename);
   if (reference == nullptr) {
-    *out = loader.LoadFromFile(filename);
+    *out = loader.LoadFromFile(filename, "");
   } else {
-    *out = loader.LoadFromFileAlignWithOtherDataset(filename,
+    *out = loader.LoadFromFileAlignWithOtherDataset(filename, "",
                                                     reinterpret_cast<const Dataset*>(reference));
   }
   API_END();

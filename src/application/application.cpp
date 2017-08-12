@@ -117,8 +117,7 @@ void Application::LoadData() {
 
   // sync up random seed for data partition
   if (config_.is_parallel_find_bin) {
-    config_.io_config.data_random_seed =
-      GlobalSyncUpByMin<int>(config_.io_config.data_random_seed);
+    config_.io_config.data_random_seed = Network::GlobalSyncUpByMin(config_.io_config.data_random_seed);
   }
 
   DatasetLoader dataset_loader(config_.io_config, predict_fun,
@@ -127,10 +126,12 @@ void Application::LoadData() {
   if (config_.is_parallel_find_bin) {
     // load data for parallel training
     train_data_.reset(dataset_loader.LoadFromFile(config_.io_config.data_filename.c_str(),
+                                                  config_.io_config.initscore_filename.c_str(),
                                                   Network::rank(), Network::num_machines()));
   } else {
     // load data for single machine
-    train_data_.reset(dataset_loader.LoadFromFile(config_.io_config.data_filename.c_str(), 0, 1));
+    train_data_.reset(dataset_loader.LoadFromFile(config_.io_config.data_filename.c_str(), config_.io_config.initscore_filename.c_str(),
+                                                  0, 1));
   }
   // need save binary file
   if (config_.io_config.is_save_binary_file) {
@@ -157,6 +158,7 @@ void Application::LoadData() {
       auto new_dataset = std::unique_ptr<Dataset>(
         dataset_loader.LoadFromFileAlignWithOtherDataset(
           config_.io_config.valid_data_filenames[i].c_str(),
+          config_.io_config.valid_data_initscores[i].c_str(),
           train_data_.get())
         );
       valid_datas_.push_back(std::move(new_dataset));
@@ -190,13 +192,12 @@ void Application::InitTrain() {
     // need init network
     Network::Init(config_.network_config);
     Log::Info("Finished initializing network");
-    // sync global random seed for feature patition
     config_.boosting_config.tree_config.feature_fraction_seed =
-      GlobalSyncUpByMin<int>(config_.boosting_config.tree_config.feature_fraction_seed);
+      Network::GlobalSyncUpByMin(config_.boosting_config.tree_config.feature_fraction_seed);
     config_.boosting_config.tree_config.feature_fraction =
-      GlobalSyncUpByMin<double>(config_.boosting_config.tree_config.feature_fraction);
+      Network::GlobalSyncUpByMin(config_.boosting_config.tree_config.feature_fraction);
     config_.boosting_config.drop_seed =
-      GlobalSyncUpByMin<int>(config_.boosting_config.drop_seed);
+      Network::GlobalSyncUpByMin(config_.boosting_config.drop_seed);
   }
 
   // create boosting
@@ -256,33 +257,5 @@ void Application::ConvertModel() {
   boosting_->SaveModelToIfElse(-1, config_.io_config.convert_model.c_str());
 }
 
-template<typename T>
-T Application::GlobalSyncUpByMin(T& local) {
-  T global = local;
-  if (!config_.is_parallel) {
-    // no need to sync if not parallel learning
-    return global;
-  }
-  Network::Allreduce(reinterpret_cast<char*>(&local),
-                     sizeof(local), sizeof(local),
-                     reinterpret_cast<char*>(&global),
-                     [](const char* src, char* dst, int len) {
-    int used_size = 0;
-    const int type_size = sizeof(T);
-    const T *p1;
-    T *p2;
-    while (used_size < len) {
-      p1 = reinterpret_cast<const T *>(src);
-      p2 = reinterpret_cast<T *>(dst);
-      if (*p1 < *p2) {
-        std::memcpy(dst, src, type_size);
-      }
-      src += type_size;
-      dst += type_size;
-      used_size += type_size;
-    }
-  });
-  return global;
-}
 
 }  // namespace LightGBM

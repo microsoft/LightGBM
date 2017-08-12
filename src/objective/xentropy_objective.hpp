@@ -1,6 +1,8 @@
 #ifndef LIGHTGBM_OBJECTIVE_XENTROPY_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_XENTROPY_OBJECTIVE_HPP_
 
+#include <LightGBM/meta.h>
+
 #include <LightGBM/utils/common.h>
 
 #include <LightGBM/objective_function.h>

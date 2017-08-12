@@ -33,13 +33,6 @@ public:
   inline void Run();
 
 private:
-  /*! 
-  * \brief Global Sync by minimal, will return minimal T across nodes
-  * \param local Local data
-  * \return minimal values across nodes 
-  */
-  template<typename T>
-  T GlobalSyncUpByMin(T& local);
 
   /*! \brief Load parameters from command line and config file*/
   void LoadParameters(int argc, char** argv);
