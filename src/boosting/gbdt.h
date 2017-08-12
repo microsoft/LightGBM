@@ -95,7 +95,7 @@ public:
 
   bool EvalAndCheckEarlyStopping() override;
 
-  bool NeedAccuratePrediction() const override { 
+  bool NeedAccuratePrediction() const override {
     if (objective_function_ == nullptr) {
       return true;
     } else {
@@ -133,7 +133,7 @@ public:
   */
   void GetPredictAt(int data_idx, double* out_result, int64_t* out_len) override;
 
-  inline int NumPredictOneRow(int num_iteration, int is_pred_leaf) const override {
+  inline int NumPredictOneRow(int num_iteration, bool is_pred_leaf, bool is_pred_contrib) const override {
     int num_preb_in_one_row = num_class_;
     if (is_pred_leaf) {
       int max_iteration = GetCurrentIteration();
@@ -142,6 +142,8 @@ public:
       } else {
         num_preb_in_one_row *= max_iteration;
       }
+    } else if (is_pred_contrib) {
+      num_preb_in_one_row = max_feature_idx_ + 2; // +1 for 0-based indexing, +1 for baseline
     }
     return num_preb_in_one_row;
   }
@@ -153,6 +155,9 @@ public:
                const PredictionEarlyStopInstance* earlyStop) const override;
 
   void PredictLeafIndex(const double* features, double* output) const override;
+
+  void PredictContrib(const double* features, double* output,
+                      const PredictionEarlyStopInstance* earlyStop) const override;
 
   /*!
   * \brief Dump model to json format string
@@ -299,7 +304,7 @@ protected:
   std::string OutputMetric(int iter);
   /*!
   * \brief Calculate feature importances
-  * \param num_used_model Number of model that want to use for feature importance, -1 means use all 
+  * \param num_used_model Number of model that want to use for feature importance, -1 means use all
   * \return sorted pairs of (feature_importance, feature_name)
   */
   std::vector<std::pair<size_t, std::string>> FeatureImportance(int num_used_model) const;

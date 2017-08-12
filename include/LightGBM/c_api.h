@@ -27,6 +27,7 @@ typedef void* BoosterHandle;
 #define C_API_PREDICT_NORMAL     (0)
 #define C_API_PREDICT_RAW_SCORE  (1)
 #define C_API_PREDICT_LEAF_INDEX (2)
+#define C_API_PREDICT_CONTRIB    (3)
 
 /*!
 * \brief get string message of the last error
@@ -54,7 +55,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromFile(const char* filename,
 /*!
 * \brief create a empty dataset by sampling data.
 * \param sample_data sampled data, grouped by the column.
-* \param sample_indices indices of sampled data. 
+* \param sample_indices indices of sampled data.
 * \param ncol number columns
 * \param num_per_col Size of each sampling column
 * \param num_sample_row Number of sampled rows
