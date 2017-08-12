@@ -255,9 +255,6 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
   max_val_ = distinct_values.back();
   std::vector<int> cnt_in_bin;
   int num_distinct_values = static_cast<int>(distinct_values.size());
-  if (num_distinct_values + (na_cnt > 0) <= 2) {
-    bin_type_ = BinType::NumericalBin;
-  }
   if (bin_type_ == BinType::NumericalBin) {
     if (missing_type_ == MissingType::Zero) {
       bin_upper_bound_ = FindBinWithZeroAsMissing(distinct_values.data(), counts.data(), num_distinct_values, max_bin, total_sample_cnt, min_data_in_bin);
