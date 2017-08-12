@@ -115,7 +115,7 @@ public:
 
   inline double ExpectedValue(int node = 0) const;
 
-  inline int MaxDepth(int node = 0) const;
+  inline int MaxDepth() const;
 
   /*!
   * \brief Used by TreeSHAP for data we keep about our decision path
@@ -128,7 +128,7 @@ public:
     // note that pweight is included for convenience and is not tied with the other attributes,
     // the pweight of the i'th path element is the permuation weight of paths with i-1 ones in them
     double pweight;
-    
+
     PathElement() {}
     PathElement(int i, double z, double o, double w) : feature_index(i), zero_fraction(z), one_fraction(o), pweight(w) {}
   };
@@ -151,7 +151,7 @@ public:
   inline double split_gain(int split_idx) const { return split_gain_[split_idx]; }
 
   /*! \brief Get the number of data points that fall at or below this node*/
-  inline double data_count(int node = 0) const { return node >= 0 ? internal_count_[node] : leaf_count_[~node]; }
+  inline int data_count(int node = 0) const { return node >= 0 ? internal_count_[node] : leaf_count_[~node]; }
 
   /*!
   * \brief Shrinkage for the tree's output
@@ -595,12 +595,12 @@ inline double Tree::ExpectedValue(int node) const {
   }
 }
 
-inline int Tree::MaxDepth(int node) const {
-  if (node >= 0) {
-    return std::max(MaxDepth(left_child_[node]), MaxDepth(right_child_[node]));
-  } else {
-    return leaf_depth_[~node];
+inline int Tree::MaxDepth() const {
+  int max_depth = 0;
+  for (int i = 0; i < num_leaves(); ++i) {
+    if (max_depth < leaf_depth_[i]) max_depth = leaf_depth_[i];
   }
+  return max_depth;
 }
 
 inline int Tree::GetLeaf(const double* feature_values) const {

@@ -467,7 +467,7 @@ struct ParameterAlias {
       "max_conflict_rate", "poisson_max_delta_step", "gaussian_eta",
       "histogram_pool_size", "output_freq", "is_provide_training_metric", "machine_list_filename",
       "zero_as_missing", "max_cat_group", "max_cat_threshold", "cat_smooth_ratio", "min_cat_smooth", "max_cat_smooth",
-      "init_score_file", "valid_init_score_file"
+      "init_score_file", "valid_init_score_file", "is_predict_contrib"
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
