@@ -593,12 +593,10 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
   std::vector<int> used_group;
   used_group.reserve(num_groups_);
   for (int group = 0; group < num_groups_; ++group) {
-    bool is_groud_used = false;
     const int f_cnt = group_feature_cnt_[group];
     for (int j = 0; j < f_cnt; ++j) {
       const int fidx = group_feature_start_[group] + j;
       if (is_feature_used[fidx]) {
-        is_groud_used = true;
         break;
       }
     }
