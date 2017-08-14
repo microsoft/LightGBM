@@ -37,13 +37,13 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
     * `huber`, [Huber loss](https://en.wikipedia.org/wiki/Huber_loss "Huber loss - Wikipedia")
     * `fair`, [Fair loss](https://www.kaggle.com/c/allstate-claims-severity/discussion/24520)
     * `poisson`, [Poisson regression](https://en.wikipedia.org/wiki/Poisson_regression "Poisson regression")
-  * `binary`, binary classification application 
+  * `binary`, binary classification application
   * `lambdarank`, [lambdarank](https://pdfs.semanticscholar.org/fc9a/e09f9ced555558fdf1e997c0a5411fb51f15.pdf) application
     * The label should be `int` type in lambdarank tasks, and larger number represent the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect).
     * `label_gain` can be used to set the gain(weight) of `int` label.
   * `multiclass`, multi-class classification application, should set `num_class` as well
 * `boosting`, default=`gbdt`, type=enum, options=`gbdt`,`rf`,`dart`,`goss`, alias=`boost`,`boosting_type`
-  * `gbdt`, traditional Gradient Boosting Decision Tree 
+  * `gbdt`, traditional Gradient Boosting Decision Tree
   * `rf`, Random Forest
   * `dart`, [Dropouts meet Multiple Additive Regression Trees](https://arxiv.org/abs/1505.01866)
   * `goss`, Gradient-based One-Side Sampling
@@ -67,7 +67,7 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
   * `data`, data parallel tree learner
   * Refer to [Parallel Learning Guide](./Parallel-Learning-Guide.md) to get more details.
 * `num_threads`, default=OpenMP_default, type=int, alias=`num_thread`,`nthread`
-  * Number of threads for LightGBM. 
+  * Number of threads for LightGBM.
   * For the best speed, set this to the number of **real CPU cores**, not the number of threads (most CPU using [hyper-threading](https://en.wikipedia.org/wiki/Hyper-threading) to generate 2 threads per CPU core).
   * Do not set it too large if your dataset is small (do not use 64 threads for a dataset with 10,000 for instance).
   * Be aware a task manager or any similar CPU monitoring tool might report cores not being fully utilized. This is normal.
@@ -79,8 +79,8 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
 
 ## Learning control parameters
 * `max_depth`, default=`-1`, type=int
-  * Limit the max depth for tree model. This is used to deal with overfit when #data is small. Tree still grow by leaf-wise. 
-  * `< 0` means no limit 
+  * Limit the max depth for tree model. This is used to deal with overfit when #data is small. Tree still grow by leaf-wise.
+  * `< 0` means no limit
 * `min_data_in_leaf`, default=`20`, type=int, alias=`min_data_per_leaf` , `min_data`
   * Minimal number of data in one leaf. Can use this to deal with over-fit.
 * `min_sum_hessian_in_leaf`, default=`1e-3`, type=double, alias=`min_sum_hessian_per_leaf`, `min_sum_hessian`, `min_hessian`
@@ -104,11 +104,11 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
 * `early_stopping_round` , default=`0`, type=int, alias=`early_stopping_rounds`,`early_stopping`
   * Will stop training if one metric of one validation data doesn't improve in last `early_stopping_round` rounds.
 * `lambda_l1` , default=`0`, type=double
-  * l1 regularization 
+  * l1 regularization
 * `lambda_l2` , default=`0`, type=double
-  * l2 regularization 
+  * l2 regularization
 * `min_gain_to_split` , default=`0`, type=double
-  * The minimal gain to perform split 
+  * The minimal gain to perform split
 * `drop_rate`, default=`0.1`, type=double
   * only used in `dart`
 * `skip_drop`, default=`0.5`, type=double
@@ -186,22 +186,25 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
   * only used in prediction task
   * Set to `true` will only predict the raw scores.
   * Set to `false` will transformed score
-* `predict_leaf_index `, default=`false`, type=bool, alias=`leaf_index `,`is_predict_leaf_index `
+* `predict_leaf_index`, default=`false`, type=bool, alias=`leaf_index`,`is_predict_leaf_index`
   * only used in prediction task
   * Set to `true` to predict with leaf index of all trees
+* `predict_contrib`, default=`false`, type=bool, alias=`contrib`,`is_predict_contrib`
+  * only used in prediction task
+  * Set to `true` to estimate [SHAP values](https://arxiv.org/abs/1706.06060), which represent how each feature contributed to each prediction. Produces number of features + 1 values where the last value is the expected value of the model output over the training data.
 * `bin_construct_sample_cnt`, default=`200000`, type=int
   * Number of data that sampled to construct histogram bins.
   * Will give better training result when set this larger. But will increase data loading time.
   * Set this to larger value if data is very sparse.
 * `num_iteration_predict`, default=`-1`, type=int
-  * only used in prediction task, used to how many trained iterations will be used in prediction. 
+  * only used in prediction task, used to how many trained iterations will be used in prediction.
   * `<= 0` means no limit
 * `pred_early_stop`, default=`false`, type=bool
   * Set to `true` will use early-stopping to speed up the prediction. May affect the accuracy.
 * `pred_early_stop_freq`, default=`10`, type=int
   * The frequency of checking early-stopping prediction.
 * `pred_early_stop_margin`, default=`10.0`, type=double
-  * The Threshold of margin in early-stopping prediction. 
+  * The Threshold of margin in early-stopping prediction.
 * `use_missing`, default=`true`, type=bool
   * Set to `false` will disable the special handle of missing value.
 * `zero_as_missing`, default=`false`, type=bool
@@ -265,14 +268,14 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
 
 ## Network parameters
 
-Following parameters are used for parallel learning, and only used for base(socket) version. 
+Following parameters are used for parallel learning, and only used for base(socket) version.
 
 * `num_machines`, default=`1`, type=int, alias=`num_machine`
   * Used for parallel learning, the number of machines for parallel learning application
-  * Need to set this in both socket and mpi version. 
+  * Need to set this in both socket and mpi version.
 * `local_listen_port`, default=`12400`, type=int, alias=`local_port`
   * TCP listen port for local machines.
-  * Should allow this port in firewall setting before training. 
+  * Should allow this port in firewall setting before training.
 * `time_out`, default=`120`, type=int
   * Socket time-out in minutes.
 * `machine_list_file`, default=`""`, type=string
@@ -285,8 +288,8 @@ Following parameters are used for parallel learning, and only used for base(sock
   * OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform.
   * Default value is -1, using the system-wide default platform.
 * `gpu_device_id`, default=`-1`, type=int
-  * OpenCL device ID in the specified platform. Each GPU in the selected platform has a unique device ID. 
-  * Default value is -1, using the default device in the selected platform. 
+  * OpenCL device ID in the specified platform. Each GPU in the selected platform has a unique device ID.
+  * Default value is -1, using the default device in the selected platform.
 * `gpu_use_dp`, default=`false`, type=bool
   * Set to true to use double precision math on GPU (default using single precision).
 
@@ -313,7 +316,7 @@ LightGBM support continued train with initial score. It uses an additional file 
 ...
 ```
 
-It means the initial score of first data is `0.5`, second is `-0.1`, and so on. The initial score file corresponds with data file line by line, and has per score per line. And if the name of data file is "train.txt", the initial score file should be named as "train.txt.init" and in the same folder as the data file. And LightGBM will auto load initial score file if it exists. 
+It means the initial score of first data is `0.5`, second is `-0.1`, and so on. The initial score file corresponds with data file line by line, and has per score per line. And if the name of data file is "train.txt", the initial score file should be named as "train.txt.init" and in the same folder as the data file. And LightGBM will auto load initial score file if it exists.
 
 
 ### Weight data

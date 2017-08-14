@@ -111,7 +111,7 @@ void Application::LoadData() {
   PredictionEarlyStopInstance pred_early_stop = CreatePredictionEarlyStopInstance("none", LightGBM::PredictionEarlyStopConfig());
   // need to continue training
   if (boosting_->NumberOfTotalModel() > 0) {
-    predictor.reset(new Predictor(boosting_.get(), -1, true, false, false, -1, -1));
+    predictor.reset(new Predictor(boosting_.get(), -1, true, false, false, false, -1, -1));
     predict_fun = predictor->GetPredictFunction();
   }
 
@@ -236,8 +236,9 @@ void Application::Train() {
 void Application::Predict() {
   // create predictor
   Predictor predictor(boosting_.get(), config_.io_config.num_iteration_predict, config_.io_config.is_predict_raw_score,
-                      config_.io_config.is_predict_leaf_index, config_.io_config.pred_early_stop, 
-                      config_.io_config.pred_early_stop_freq, config_.io_config.pred_early_stop_margin);
+                      config_.io_config.is_predict_leaf_index, config_.io_config.is_predict_contrib,
+                      config_.io_config.pred_early_stop, config_.io_config.pred_early_stop_freq,
+                      config_.io_config.pred_early_stop_margin);
   predictor.Predict(config_.io_config.data_filename.c_str(),
                     config_.io_config.output_result.c_str(), config_.io_config.has_header);
   Log::Info("Finished prediction");

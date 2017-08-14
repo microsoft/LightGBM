@@ -109,7 +109,7 @@ public:
   */
   virtual void GetPredictAt(int data_idx, double* result, int64_t* out_len) = 0;
 
-  virtual int NumPredictOneRow(int num_iteration, int is_pred_leaf) const = 0;
+  virtual int NumPredictOneRow(int num_iteration, bool is_pred_leaf, bool is_pred_contrib) const = 0;
 
   /*!
   * \brief Prediction for one record, not sigmoid transform
@@ -128,7 +128,7 @@ public:
   */
   virtual void Predict(const double* features, double* output,
                        const PredictionEarlyStopInstance* early_stop) const = 0;
-  
+
   /*!
   * \brief Prediction for one record with leaf index
   * \param feature_values Feature value on this record
@@ -136,6 +136,15 @@ public:
   */
   virtual void PredictLeafIndex(
     const double* features, double* output) const = 0;
+
+ /*!
+  * \brief Feature contributions for the model's prediction of one record
+  * \param feature_values Feature value on this record
+  * \param output Prediction result for this record
+  * \param early_stop Early stopping instance. If nullptr, no early stopping is applied and all trees are evaluated.
+  */
+  virtual void PredictContrib(const double* features, double* output,
+                       const PredictionEarlyStopInstance* early_stop) const = 0;
 
   /*!
   * \brief Dump model to json format string
@@ -205,7 +214,7 @@ public:
   * \return Number of weak sub-models
   */
   virtual int NumberOfTotalModel() const = 0;
-  
+
   /*!
   * \brief Get number of trees per iteration
   * \return Number of trees per iteration
@@ -226,7 +235,7 @@ public:
   * \param num_iteration number of used iteration
   */
   virtual void InitPredict(int num_iteration) = 0;
-  
+
   /*!
   * \brief Name of submodel
   */

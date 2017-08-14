@@ -28,10 +28,11 @@ public:
   * \param boosting Input boosting model
   * \param num_iteration Number of boosting round
   * \param is_raw_score True if need to predict result with raw score
-  * \param is_predict_leaf_index True if output leaf index instead of prediction score
+  * \param is_predict_leaf_index True to output leaf index instead of prediction score
+  * \param is_predict_contrib True to output feature contributions instead of prediction score
   */
   Predictor(Boosting* boosting, int num_iteration,
-            bool is_raw_score, bool is_predict_leaf_index,
+            bool is_raw_score, bool is_predict_leaf_index, bool is_predict_contrib,
             bool early_stop, int early_stop_freq, double early_stop_margin) {
 
     early_stop_ = CreatePredictionEarlyStopInstance("none", LightGBM::PredictionEarlyStopConfig());
@@ -53,7 +54,7 @@ public:
     }
     boosting->InitPredict(num_iteration);
     boosting_ = boosting;
-    num_pred_one_row_ = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf_index);
+    num_pred_one_row_ = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf_index, is_predict_contrib);
     num_feature_ = boosting_->MaxFeatureIdx() + 1;
     predict_buf_ = std::vector<std::vector<double>>(num_threads_, std::vector<double>(num_feature_, 0.0f));
 
@@ -63,6 +64,15 @@ public:
         CopyToPredictBuffer(predict_buf_[tid].data(), features);
         // get result for leaf index
         boosting_->PredictLeafIndex(predict_buf_[tid].data(), output);
+        ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
+      };
+
+    } else if (is_predict_contrib) {
+      predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
+        int tid = omp_get_thread_num();
+        CopyToPredictBuffer(predict_buf_[tid].data(), features);
+        // get result for leaf index
+        boosting_->PredictContrib(predict_buf_[tid].data(), output, &early_stop_);
         ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
       };
 
