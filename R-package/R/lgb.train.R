@@ -114,7 +114,7 @@ lgb.train <- function(params = list(),
   }
   # Check for number of rounds passed as parameter - in case there are multiple ones, take only the first one
   if (sum(names(params) %in% c("num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds")) > 0) {
-    end_iteration <- begin_iteration + params[which(names(params) %in% c("num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds"))[1]] - 1
+    end_iteration <- begin_iteration + params[[which(names(params) %in% c("num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds"))[1]]] - 1
   } else {
     end_iteration <- begin_iteration + nrounds - 1
   }
@@ -203,8 +203,8 @@ lgb.train <- function(params = list(),
   
   # Check for early stopping passed as parameter when adding early stopping callback
   if (sum(names(params) %in% c("early_stopping_round", "early_stopping_rounds", "early_stopping")) > 0) {
-    if (params[which(names(params) %in% c("early_stopping_round", "early_stopping_rounds", "early_stopping"))[1]] > 0) {
-      callbacks <- add.cb(callbacks, cb.early.stop(params[which(names(params) %in% c("early_stopping_round", "early_stopping_rounds", "early_stopping"))[1]], verbose = verbose))
+    if (params[[which(names(params) %in% c("early_stopping_round", "early_stopping_rounds", "early_stopping"))[1]]] > 0) {
+      callbacks <- add.cb(callbacks, cb.early.stop(params[[which(names(params) %in% c("early_stopping_round", "early_stopping_rounds", "early_stopping"))[1]]], verbose = verbose))
     }
   } else {
     if (!is.null(early_stopping_rounds)) {
