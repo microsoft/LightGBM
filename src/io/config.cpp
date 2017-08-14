@@ -187,7 +187,7 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
 
 void OverallConfig::CheckParamConflict() {
   // check if objective_type, metric_type, and num_class match
-  bool objective_type_multiclass = (objective_type == std::string("multiclass") 
+  bool objective_type_multiclass = (objective_type == std::string("multiclass")
                                     || objective_type == std::string("multiclassova"));
   int num_class_check = boosting_config.num_class;
   if (objective_type_multiclass) {
@@ -201,7 +201,7 @@ void OverallConfig::CheckParamConflict() {
   }
   if (boosting_config.is_provide_training_metric || !io_config.valid_data_filenames.empty()) {
     for (std::string metric_type : metric_types) {
-      bool metric_type_multiclass = (metric_type == std::string("multi_logloss") 
+      bool metric_type_multiclass = (metric_type == std::string("multi_logloss")
                                      || metric_type == std::string("multi_error"));
       if ((objective_type_multiclass && !metric_type_multiclass)
         || (!objective_type_multiclass && metric_type_multiclass)) {
@@ -209,7 +209,7 @@ void OverallConfig::CheckParamConflict() {
       }
     }
   }
-  
+
   if (network_config.num_machines > 1) {
     is_parallel = true;
   } else {
@@ -229,7 +229,7 @@ void OverallConfig::CheckParamConflict() {
   } else if (boosting_config.tree_learner_type == std::string("data")
              || boosting_config.tree_learner_type == std::string("voting")) {
     is_parallel_find_bin = true;
-    if (boosting_config.tree_config.histogram_pool_size >= 0 
+    if (boosting_config.tree_config.histogram_pool_size >= 0
         && boosting_config.tree_learner_type == std::string("data")) {
       Log::Warning("Histogram LRU queue was enabled (histogram_pool_size=%f). Will disable this to reduce communication costs"
         , boosting_config.tree_config.histogram_pool_size);
@@ -257,6 +257,7 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetBool(params, "enable_load_from_binary_file", &enable_load_from_binary_file);
   GetBool(params, "is_predict_raw_score", &is_predict_raw_score);
   GetBool(params, "is_predict_leaf_index", &is_predict_leaf_index);
+  GetBool(params, "is_predict_contrib", &is_predict_contrib);
   GetInt(params, "snapshot_freq", &snapshot_freq);
   GetString(params, "output_model", &output_model);
   GetString(params, "input_model", &input_model);

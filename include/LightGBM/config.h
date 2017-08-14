@@ -117,6 +117,7 @@ public:
   bool enable_load_from_binary_file = true;
   int bin_construct_sample_cnt = 200000;
   bool is_predict_leaf_index = false;
+  bool is_predict_contrib = false;
   bool is_predict_raw_score = false;
   int min_data_in_leaf = 20;
   int min_data_in_bin = 5;
@@ -127,7 +128,7 @@ public:
    * And add an prefix "name:" while using column name */
   std::string label_column = "";
   /*! \brief Index or column name of weight, < 0 means not used
-  * And add an prefix "name:" while using column name 
+  * And add an prefix "name:" while using column name
   * Note: when using Index, it doesn't count the label index */
   std::string weight_column = "";
   /*! \brief Index or column name of group/query id, < 0 means not used
@@ -422,16 +423,18 @@ struct ParameterAlias {
       { "cat_column", "categorical_column" },
       { "cat_feature", "categorical_column" },
       { "predict_raw_score", "is_predict_raw_score" },
-      { "predict_leaf_index", "is_predict_leaf_index" }, 
+      { "predict_leaf_index", "is_predict_leaf_index" },
       { "raw_score", "is_predict_raw_score" },
       { "leaf_index", "is_predict_leaf_index" },
+      { "contrib", "is_predict_contrib" },
+      { "predict_contrib", "is_predict_contrib" },
       { "min_split_gain", "min_gain_to_split" },
       { "topk", "top_k" },
       { "reg_alpha", "lambda_l1" },
       { "reg_lambda", "lambda_l2" },
       { "num_classes", "num_class" },
       { "unbalanced_sets", "is_unbalance" },
-      { "bagging_fraction_seed", "bagging_seed" }, 
+      { "bagging_fraction_seed", "bagging_seed" },
       { "num_boost_round", "num_iterations" }
     });
     const std::unordered_set<std::string> parameter_set({
@@ -458,13 +461,13 @@ struct ParameterAlias {
       "boost_from_average", "max_position", "label_gain",
       "metric", "metric_freq", "time_out",
       "gpu_platform_id", "gpu_device_id", "gpu_use_dp",
-      "convert_model", "convert_model_language", 
+      "convert_model", "convert_model_language",
       "feature_fraction_seed", "enable_bundle", "data_filename", "valid_data_filenames",
       "snapshot_freq", "verbosity", "sparse_threshold", "enable_load_from_binary_file",
       "max_conflict_rate", "poisson_max_delta_step", "gaussian_eta",
-      "histogram_pool_size", "output_freq", "is_provide_training_metric", "machine_list_filename", 
+      "histogram_pool_size", "output_freq", "is_provide_training_metric", "machine_list_filename",
       "zero_as_missing", "max_cat_group", "max_cat_threshold", "cat_smooth_ratio", "min_cat_smooth", "max_cat_smooth",
-      "init_score_file", "valid_init_score_file"
+      "init_score_file", "valid_init_score_file", "is_predict_contrib"
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
