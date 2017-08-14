@@ -97,6 +97,10 @@ lgb.train <- function(params = list(),
   # Check for parameters
   lgb.check.params(params)
   
+  # Check for early stopping passed as parameter
+  
+  # Check for number of rounds passed as parameter
+  
   # Init predictor to empty
   predictor <- NULL
   
