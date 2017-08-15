@@ -310,7 +310,7 @@ std::string Tree::ToIfElse(int index, bool is_predict_leaf_index) {
   if (num_leaves_ == 1) {
     str_buf << "return 0";
   } else {
-    str_buf << "std::vector<uint32_t> cat_threshold = {";
+    str_buf << "const std::vector<uint32_t> cat_threshold = {";
     for (size_t i = 0; i < cat_threshold_.size(); ++i) {
       if (i != 0) {
         str_buf << ",";
