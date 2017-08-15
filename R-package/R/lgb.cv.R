@@ -137,7 +137,12 @@ lgb.cv <- function(params = list(),
   if (!is.null(predictor)) {
     begin_iteration <- predictor$current_iter() + 1
   }
-  end_iteration <- begin_iteration + nrounds - 1
+  # Check for number of rounds passed as parameter - in case there are multiple ones, take only the first one
+  if (sum(names(params) %in% c("num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds")) > 0) {
+    end_iteration <- begin_iteration + params[[which(names(params) %in% c("num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds"))[1]]] - 1
+  } else {
+    end_iteration <- begin_iteration + nrounds - 1
+  }
   
   # Check for training dataset type correctness
   if (!lgb.is.Dataset(data)) {
@@ -146,7 +151,7 @@ lgb.cv <- function(params = list(),
     }
     data <- lgb.Dataset(data, label = label)
   }
-
+  
   # Check for weights
   if (!is.null(weight)) {
     data$set_info("weight", weight)
@@ -209,10 +214,16 @@ lgb.cv <- function(params = list(),
     callbacks <- add.cb(callbacks, cb.record.evaluation())
   }
   
-  # Add early stopping callback
-  if (!is.null(early_stopping_rounds)) {
-    if (early_stopping_rounds > 0) {
-      callbacks <- add.cb(callbacks, cb.early.stop(early_stopping_rounds, verbose = verbose))
+  # Check for early stopping passed as parameter when adding early stopping callback
+  if (sum(names(params) %in% c("early_stopping_round", "early_stopping_rounds", "early_stopping")) > 0) {
+    if (params[[which(names(params) %in% c("early_stopping_round", "early_stopping_rounds", "early_stopping"))[1]]] > 0) {
+      callbacks <- add.cb(callbacks, cb.early.stop(params[[which(names(params) %in% c("early_stopping_round", "early_stopping_rounds", "early_stopping"))[1]]], verbose = verbose))
+    }
+  } else {
+    if (!is.null(early_stopping_rounds)) {
+      if (early_stopping_rounds > 0) {
+        callbacks <- add.cb(callbacks, cb.early.stop(early_stopping_rounds, verbose = verbose))
+      }
     }
   }
   
