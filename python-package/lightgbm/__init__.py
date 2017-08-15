@@ -20,11 +20,12 @@ try:
 except ImportError:
     pass
 
-version = '2.0.1'
-if os.path.isfile('./VERSION.txt'):
-    version = open('./VERSION.txt').read().strip()
 
-__version__ = version
+dir_path = os.path.dirname(os.path.realpath(__file__))
+
+if os.path.isfile(os.path.join(dir_path, 'VERSION.txt')):
+    version = open(os.path.join(dir_path, 'VERSION.txt')).read().strip()
+    __version__ = version
 
 __all__ = ['Dataset', 'Booster',
            'train', 'cv',

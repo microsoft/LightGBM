@@ -143,14 +143,17 @@ class CustomSdist(sdist):
 if __name__ == "__main__":
     if (8 * struct.calcsize("P")) != 64:
         raise Exception('Cannot install LightGBM in 32-bit python, please use 64-bit python instead.')
-    if os.path.isfile('../VERSION.txt'):
-        distutils.file_util.copy_file("../VERSION.txt", "./lightgbm/")
-    version = '2.0.3'
-    if os.path.isfile('./lightgbm/VERSION.txt'):
-        with open('./lightgbm/VERSION.txt') as file_version:
-            version = file_version.readline().strip()
+
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    if os.path.isfile(os.path.join('..', 'VERSION.txt')):
+        distutils.file_util.copy_file(
+            os.path.join('..', 'VERSION.txt'),
+            os.path.join('.', 'lightgbm'))
+    if os.path.isfile(os.path.join(dir_path, 'lightgbm', 'VERSION.txt')):
+        version = open(os.path.join(dir_path, 'lightgbm', 'VERSION.txt')).read().strip()
+
     sys.path.insert(0, '.')
-    data_files = []
+
     setup(name='lightgbm',
           version=version,
           description='LightGBM Python Package',
@@ -169,6 +172,6 @@ if __name__ == "__main__":
           },
           packages=find_packages(),
           include_package_data=True,
-          data_files=data_files,
+          data_files=[],
           license='The MIT License (Microsoft)',
           url='https://github.com/Microsoft/LightGBM')
