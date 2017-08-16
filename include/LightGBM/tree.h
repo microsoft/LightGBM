@@ -238,24 +238,11 @@ private:
     } else {
       str_buf << "if (std::isnan(fval)) { int_fval = 0; } else { int_fval = static_cast<int>(fval); }";
     }
-    str_buf << "if (";
     int cat_idx = int(threshold_[node]);
-    // To-do: optimize this by using bitset
-    std::vector<int> cats;
-    for (int i = cat_boundaries_[cat_idx]; i < cat_boundaries_[cat_idx + 1]; ++i) {
-      for (int j = 0; j < 32; ++j) {
-        int cat = (i - cat_boundaries_[cat_idx]) * 32 + j;
-        if (Common::FindInBitset(cat_threshold_.data() + cat_boundaries_[cat_idx],
-                                 cat_boundaries_[cat_idx + 1] - cat_boundaries_[cat_idx], cat)) {
-          cats.push_back(cat);
-        }
-      }
-    }
-    str_buf << "int_fval >= 0 && (";
-    for (int i = 0; i < static_cast<int>(cats.size()) - 1; ++i) {
-      str_buf << "int_fval == " << cats[i] << " || ";
-    }
-    str_buf << "int_fval == " << cats.back() << ")) {";
+    str_buf << "if (int_fval >= 0 && int_fval < 32 * (";
+    str_buf << cat_boundaries_[cat_idx + 1] - cat_boundaries_[cat_idx];
+    str_buf << ") && (((cat_threshold[" << cat_boundaries_[cat_idx];
+    str_buf << " + int_fval / 32] >> (int_fval & 31)) & 1))) {";
     return str_buf.str();
   }
 

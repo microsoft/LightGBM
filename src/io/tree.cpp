@@ -310,6 +310,14 @@ std::string Tree::ToIfElse(int index, bool is_predict_leaf_index) {
   if (num_leaves_ == 1) {
     str_buf << "return 0";
   } else {
+    str_buf << "const std::vector<uint32_t> cat_threshold = {";
+    for (size_t i = 0; i < cat_threshold_.size(); ++i) {
+      if (i != 0) {
+        str_buf << ",";
+      }
+      str_buf << cat_threshold_[i];
+    }
+    str_buf << "};";
     // use this for the missing value conversion
     str_buf << "double fval = 0.0f; ";
     if (num_cat_ > 0) {
