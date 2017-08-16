@@ -1556,6 +1556,7 @@ class Booster(object):
         if self.handle is not None:
             _safe_call(_LIB.LGBM_BoosterFree(self.handle))
         self._free_buffer()
+        self.handle = ctypes.c_void_p()
         out_num_iterations = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterLoadModelFromString(
             c_str(model_str),
