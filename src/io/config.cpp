@@ -237,6 +237,14 @@ void OverallConfig::CheckParamConflict() {
       boosting_config.tree_config.histogram_pool_size = -1;
     }
   }
+  // Check max_depth and num_leaves
+  if (boosting_config.tree_config.max_depth > 0) {
+    int full_num_leaves = std::pow(2, boosting_config.tree_config.max_depth);
+    if (full_num_leaves > boosting_config.tree_config.num_leaves 
+        && boosting_config.tree_config.num_leaves == kDefaultNumLeaves) {
+      Log::Warning("Accuarcy may be bad since you didn't set num_leaves.");
+    }
+  }
 }
 
 void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
