@@ -20,6 +20,7 @@ const std::string kDefaultTreeLearnerType = "serial";
 const std::string kDefaultDevice = "cpu";
 const std::string kDefaultBoostingType = "gbdt";
 const std::string kDefaultObjectiveType = "regression";
+const int kDefaultNumLeaves = 31;
 
 /*!
 * \brief The interface for Config
@@ -202,7 +203,7 @@ public:
   double lambda_l2 = 0.0f;
   double min_gain_to_split = 0.0f;
   // should > 1
-  int num_leaves = 31;
+  int num_leaves = kDefaultNumLeaves;
   int feature_fraction_seed = 2;
   double feature_fraction = 1.0f;
   // max cache size(unit:MB) for historical histogram. < 0 means no limit
