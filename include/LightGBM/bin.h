@@ -474,6 +474,10 @@ inline uint32_t BinMapper::ValueToBin(double value) const {
     return l;
   } else {
     int int_value = static_cast<int>(value);
+    // convert negative value to NaN bin
+    if (int_value < 0) {
+      return num_bin_ - 1;
+    }
     if (categorical_2_bin_.count(int_value)) {
       return categorical_2_bin_.at(int_value);
     } else {

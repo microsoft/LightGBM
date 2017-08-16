@@ -308,39 +308,46 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
       std::swap(distinct_values_int[0], distinct_values_int[1]);
     }
     // will ignore the categorical of small counts
-    const int cut_cnt = static_cast<int>((total_sample_cnt - na_cnt) * 0.99f);
+    int cut_cnt = static_cast<int>((total_sample_cnt - na_cnt) * 0.99f);
+    size_t cur_cat = 0;
     categorical_2_bin_.clear();
     bin_2_categorical_.clear();
     num_bin_ = 0;
     int used_cnt = 0;
     max_bin = std::min(static_cast<int>(distinct_values_int.size()), max_bin);
-    while (used_cnt < cut_cnt || num_bin_ < max_bin) {
-      if (distinct_values_int[num_bin_] < 0) {
-        Log::Fatal("Cannot use negative numbers in categorcial features.");
+    cnt_in_bin.clear();
+    while (cur_cat < distinct_values_int.size() 
+           && (used_cnt < cut_cnt || num_bin_ < max_bin)) {
+      if (distinct_values_int[cur_cat] < 0) {
+        na_cnt += counts_int[cur_cat];
+        cut_cnt -= counts_int[cur_cat];
+        Log::Warning("Met negative value in categorical features, will convert it to NaN");
+      } else {
+        bin_2_categorical_.push_back(distinct_values_int[cur_cat]);
+        categorical_2_bin_[distinct_values_int[cur_cat]] = static_cast<unsigned int>(num_bin_);
+        used_cnt += counts_int[cur_cat];
+        cnt_in_bin.push_back(counts_int[cur_cat]);
+        ++num_bin_;
       }
-      bin_2_categorical_.push_back(distinct_values_int[num_bin_]);
-      categorical_2_bin_[distinct_values_int[num_bin_]] = static_cast<unsigned int>(num_bin_);
-      used_cnt += counts_int[num_bin_];
-      ++num_bin_;
+      ++cur_cat;
     }
     // need an additional bin for NaN
-    if (num_bin_ == static_cast<int>(distinct_values_int.size()) && na_cnt > 0) {
+    if (cur_cat == distinct_values_int.size() && na_cnt > 0) {
       // use -1 to represent NaN
       bin_2_categorical_.push_back(-1);
       categorical_2_bin_[-1] = num_bin_;
+      cnt_in_bin.push_back(0);
       ++num_bin_;
     }
     // Use MissingType::None to represent this bin contains all categoricals
-    if (num_bin_ == static_cast<int>(distinct_values_int.size()) && na_cnt == 0) {
+    if (cur_cat == distinct_values_int.size() && na_cnt == 0) {
       missing_type_ = MissingType::None;
     } else if (na_cnt == 0) {
       missing_type_ = MissingType::Zero;
     } else {
       missing_type_ = MissingType::NaN;
     }
-    counts_int.resize(num_bin_);
-    counts_int.back() += static_cast<int>(total_sample_cnt - used_cnt);
-    cnt_in_bin = counts_int;
+    cnt_in_bin.back() += static_cast<int>(total_sample_cnt - used_cnt);
   }
 
   // check trival(num_bin_ == 1) feature
