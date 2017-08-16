@@ -323,6 +323,13 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
       used_cnt += counts_int[num_bin_];
       ++num_bin_;
     }
+    // need an additional bin for NaN
+    if (num_bin_ == static_cast<int>(distinct_values_int.size()) && na_cnt > 0) {
+      // use -1 to represent NaN
+      bin_2_categorical_.push_back(-1);
+      categorical_2_bin_[-1] = num_bin_;
+      ++num_bin_;
+    }
     // Use MissingType::None to represent this bin contains all categoricals
     if (num_bin_ == static_cast<int>(distinct_values_int.size()) && na_cnt == 0) {
       missing_type_ = MissingType::None;
@@ -331,9 +338,9 @@ void BinMapper::FindBin(double* values, int num_sample_values, size_t total_samp
     } else {
       missing_type_ = MissingType::NaN;
     }
-    cnt_in_bin = counts_int;
     counts_int.resize(num_bin_);
     counts_int.back() += static_cast<int>(total_sample_cnt - used_cnt);
+    cnt_in_bin = counts_int;
   }
 
   // check trival(num_bin_ == 1) feature
