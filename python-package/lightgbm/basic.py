@@ -1329,6 +1329,10 @@ class Booster(object):
         self.__dict__.pop('valid_sets', None)
         self.__num_dataset = 0
 
+    def _free_buffer(self):
+        self.__inner_predict_buffer = []
+        self.__is_predicted_cur_iter = []
+
     def set_train_data_name(self, name):
         self.__train_data_name = name
 
@@ -1551,6 +1555,7 @@ class Booster(object):
         """[Private] Load model from string"""
         if self.handle is not None:
             _safe_call(_LIB.LGBM_BoosterFree(self.handle))
+        self._free_buffer()
         out_num_iterations = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterLoadModelFromString(
             c_str(model_str),
