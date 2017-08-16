@@ -1227,7 +1227,7 @@ class Booster(object):
         silent : boolean, optional
             Whether print messages during construction
         """
-        self.handle = ctypes.c_void_p()
+        self.handle = None
         self.__need_reload_eval_info = True
         self.__train_data_name = "training"
         self.__attr = {}
@@ -1246,6 +1246,7 @@ class Booster(object):
                 raise TypeError('Training data should be Dataset instance, met {}'.format(type(train_set).__name__))
             params_str = param_dict_to_str(params)
             """construct booster object"""
+            self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_BoosterCreate(
                 train_set.construct().handle,
                 c_str(params_str),
@@ -1273,6 +1274,7 @@ class Booster(object):
         elif model_file is not None:
             """Prediction task"""
             out_num_iterations = ctypes.c_int(0)
+            self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
                 c_str(model_file),
                 ctypes.byref(out_num_iterations),
@@ -1547,6 +1549,8 @@ class Booster(object):
 
     def _load_model_from_string(self, model_str):
         """[Private] Load model from string"""
+        if self.handle is not None:
+            _safe_call(_LIB.LGBM_BoosterFree(self.handle))
         out_num_iterations = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterLoadModelFromString(
             c_str(model_str),
