@@ -378,7 +378,6 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   CHECK(feature_fraction > 0.0f && feature_fraction <= 1.0f);
   GetDouble(params, "histogram_pool_size", &histogram_pool_size);
   GetInt(params, "max_depth", &max_depth);
-  CHECK(max_depth > 0);
   GetInt(params, "top_k", &top_k);
   GetInt(params, "gpu_platform_id", &gpu_platform_id);
   GetInt(params, "gpu_device_id", &gpu_device_id);
