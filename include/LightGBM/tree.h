@@ -409,7 +409,8 @@ inline void Tree::TreeSHAP(const double *feature_values, double *phi,
 
   // internal node
   } else {
-    const int hot_index = Decision(feature_values[split_index], node);
+    const int hot_index = 
+      decision_funs[GetDecisionType(decision_type_[node], kCategoricalMask)](feature_values[split_index], threshold_[node]);
     const int cold_index = (hot_index == left_child_[node] ? right_child_[node] : left_child_[node]);
     const double w = data_count(node);
     const double hot_zero_fraction = data_count(hot_index)/w;
