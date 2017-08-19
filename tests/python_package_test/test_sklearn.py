@@ -158,4 +158,3 @@ class TestSklearn(unittest.TestCase):
         clf.fit(data.data, data.target)
         importances = clf.feature_importances_
         self.assertEqual(len(importances), 4)
-
