@@ -40,6 +40,14 @@ if [[ ${TASK} == "if-else" ]]; then
     exit 0
 fi
 
+if [[ ${TASK} == "pred_contrib" ]]; then
+    mkdir build && cd build && cmake .. && make lightgbm || exit -1
+    cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm data=../data/categorical.data app=binary num_trees=10 || exit -1
+    cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=predict.conf || exit -1
+    cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=predict.conf predict_contrib=true || exit -1
+    exit 0
+fi
+
 conda install --yes numpy scipy scikit-learn pandas matplotlib
 pip install pytest
 
