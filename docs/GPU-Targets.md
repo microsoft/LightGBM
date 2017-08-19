@@ -8,7 +8,7 @@ You can find below a table of correspondence:
 | SDK | CPU Intel/AMD | GPU Intel | GPU AMD | GPU NVIDIA |
 | --- | :---: | :---: | :---: | :---: |
 | [Intel SDK for OpenCL](https://software.intel.com/en-us/articles/opencl-drivers) | Supported | Supported * | Supported | Untested |
-| [AMD APP SDK](http://developer.amd.com/tools-and-sdks/opencl-zone/amd-accelerated-parallel-processing-app-sdk/) | Supported | Untested * | Supported | Untested |
+| [AMD APP SDK](http://developer.amd.com/amd-accelerated-parallel-processing-app-sdk/) | Supported | Untested * | Supported | Untested |
 | [NVIDIA CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) | Untested ** | Untested ** | Untested ** | Supported |
 
 Legend:
