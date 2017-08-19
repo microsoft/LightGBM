@@ -394,10 +394,16 @@ std::string Tree::NodeToJSON(int index) {
     // leaf
     index = ~index;
     str_buf << "{" << std::endl;
-    str_buf << "\"leaf_index\":" << index << "," << std::endl;
-    str_buf << "\"leaf_parent\":" << leaf_parent_[index] << "," << std::endl;
-    str_buf << "\"leaf_value\":" << leaf_value_[index] << "," << std::endl;
-    str_buf << "\"leaf_count\":" << leaf_count_[index] << std::endl;
+    str_buf << "\"leaf_index\":" << index;
+    if (leaf_value_.size() > 0) {
+      str_buf << "," << std::endl;
+      str_buf << "\"leaf_parent\":" << leaf_parent_[index] << "," << std::endl;
+      str_buf << "\"leaf_value\":" << leaf_value_[index] << "," << std::endl;
+      str_buf << "\"leaf_count\":" << leaf_count_[index] << std::endl;
+    }
+    else {
+      str_buf << std::endl;
+    }
     str_buf << "}";
   }
 
