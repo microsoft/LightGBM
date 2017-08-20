@@ -8,7 +8,7 @@ import lightgbm as lgb
 import numpy as np
 from sklearn.base import clone
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
-                              load_svmlight_file)
+                              load_iris, load_svmlight_file)
 from sklearn.externals import joblib
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, train_test_split
@@ -151,3 +151,10 @@ class TestSklearn(unittest.TestCase):
         self.assertEqual(len(pred_origin), len(pred_pickle))
         for preds in zip(pred_origin, pred_pickle):
             self.assertAlmostEqual(*preds, places=5)
+
+    def test_feature_importances_single_leaf(self):
+        clf = lgb.LGBMClassifier(n_estimators=100)
+        data = load_iris()
+        clf.fit(data.data, data.target)
+        importances = clf.feature_importances_
+        self.assertEqual(len(importances), 4)
