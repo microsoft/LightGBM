@@ -167,6 +167,12 @@ public:
     shrinkage_ *= rate;
   }
 
+  inline void AsConstantTree(double val) {
+    num_leaves_ = 1;
+    shrinkage_ = 1.0f;
+    leaf_value_[0] = val;
+  }
+
   /*! \brief Serialize this object to string*/
   std::string ToString();
 
@@ -425,7 +431,7 @@ inline double Tree::Predict(const double* feature_values) const {
     int leaf = GetLeaf(feature_values);
     return LeafOutput(leaf);
   } else {
-    return 0.0f;
+    return leaf_value_[0];
   }
 }
 

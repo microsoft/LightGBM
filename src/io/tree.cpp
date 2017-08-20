@@ -18,7 +18,6 @@ namespace LightGBM {
 Tree::Tree(int max_leaves)
   :max_leaves_(max_leaves) {
 
-  num_leaves_ = 0;
   left_child_.resize(max_leaves_ - 1);
   right_child_.resize(max_leaves_ - 1);
   split_feature_inner_.resize(max_leaves_ - 1);
@@ -36,6 +35,7 @@ Tree::Tree(int max_leaves)
   // root is in the depth 0
   leaf_depth_[0] = 0;
   num_leaves_ = 1;
+  leaf_value_[0] = 0.0f;
   leaf_parent_[0] = -1;
   shrinkage_ = 1.0f;
   num_cat_ = 0;
@@ -195,8 +195,6 @@ std::string Tree::ToString() {
     << Common::ArrayToString<int>(left_child_, num_leaves_ - 1, ' ') << std::endl;
   str_buf << "right_child="
     << Common::ArrayToString<int>(right_child_, num_leaves_ - 1, ' ') << std::endl;
-  str_buf << "leaf_parent="
-    << Common::ArrayToString<int>(leaf_parent_, num_leaves_, ' ') << std::endl;
   str_buf << "leaf_value="
     << Common::ArrayToString<double>(leaf_value_, num_leaves_, ' ') << std::endl;
   str_buf << "leaf_count="
@@ -217,7 +215,7 @@ std::string Tree::ToJSON() {
   str_buf << "\"num_cat\":" << num_cat_ << "," << std::endl;
   str_buf << "\"shrinkage\":" << shrinkage_ << "," << std::endl;
   if (num_leaves_ == 1) {
-    str_buf << "\"tree_structure\":" << NodeToJSON(-1) << std::endl;
+    str_buf << "\"tree_structure\":{" << "\"leaf_value\":" << leaf_value_[0] << "}"  << std::endl;
   } else {
     str_buf << "\"tree_structure\":" << NodeToJSON(0) << std::endl;
   }
@@ -264,7 +262,6 @@ std::string Tree::NodeToJSON(int index) {
     index = ~index;
     str_buf << "{" << std::endl;
     str_buf << "\"leaf_index\":" << index << "," << std::endl;
-    str_buf << "\"leaf_parent\":" << leaf_parent_[index] << "," << std::endl;
     str_buf << "\"leaf_value\":" << leaf_value_[index] << "," << std::endl;
     str_buf << "\"leaf_count\":" << leaf_count_[index] << std::endl;
     str_buf << "}";
@@ -280,8 +277,8 @@ std::string Tree::ToIfElse(int index, bool is_predict_leaf_index) {
     str_buf << "Leaf";
   }
   str_buf << "(const double* arr) { ";
-  if (num_leaves_ == 1) {
-    str_buf << "return 0";
+  if (num_leaves_ <= 1) {
+    str_buf << "return " << leaf_value_[0] << ";";
   } else {
     // use this for the missing value conversion
     str_buf << "double fval = 0.0f; ";
@@ -350,6 +347,12 @@ Tree::Tree(const std::string& str) {
 
   Common::Atoi(key_vals["num_cat"].c_str(), &num_cat_);
 
+  if (key_vals.count("leaf_value")) {
+    leaf_value_ = Common::StringToArray<double>(key_vals["leaf_value"], ' ', num_leaves_);
+  } else {
+    Log::Fatal("Tree model string format error, should contain leaf_value field");
+  }
+
   if (num_leaves_ <= 1) { return; }
 
   if (key_vals.count("left_child")) {
@@ -376,12 +379,6 @@ Tree::Tree(const std::string& str) {
     Log::Fatal("Tree model string format error, should contain threshold field");
   }
 
-  if (key_vals.count("leaf_value")) {
-    leaf_value_ = Common::StringToArray<double>(key_vals["leaf_value"], ' ', num_leaves_);
-  } else {
-    Log::Fatal("Tree model string format error, should contain leaf_value field");
-  }
-
   if (key_vals.count("split_gain")) {
     split_gain_ = Common::StringToArray<double>(key_vals["split_gain"], ' ', num_leaves_ - 1);
   } else {
@@ -404,12 +401,6 @@ Tree::Tree(const std::string& str) {
     leaf_count_ = Common::StringToArray<data_size_t>(key_vals["leaf_count"], ' ', num_leaves_);
   } else {
     leaf_count_.resize(num_leaves_);
-  }
-
-  if (key_vals.count("leaf_parent")) {
-    leaf_parent_ = Common::StringToArray<int>(key_vals["leaf_parent"], ' ', num_leaves_);
-  } else {
-    leaf_parent_.resize(num_leaves_);
   }
 
   if (key_vals.count("decision_type")) {
