@@ -84,9 +84,9 @@ void DCGCalculator::CalMaxDCG(const std::vector<data_size_t>& ks,
 double DCGCalculator::CalDCGAtK(data_size_t k, const float* label,
                                 const double* score, data_size_t num_data) {
   // get sorted indices by score
-  std::vector<data_size_t> sorted_idx;
+  std::vector<data_size_t> sorted_idx(num_data);
   for (data_size_t i = 0; i < num_data; ++i) {
-    sorted_idx.emplace_back(i);
+    sorted_idx[i] = i;
   }
   std::sort(sorted_idx.begin(), sorted_idx.end(),
            [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
@@ -104,9 +104,9 @@ double DCGCalculator::CalDCGAtK(data_size_t k, const float* label,
 void DCGCalculator::CalDCG(const std::vector<data_size_t>& ks, const float* label,
                            const double * score, data_size_t num_data, std::vector<double>* out) {
   // get sorted indices by score
-  std::vector<data_size_t> sorted_idx;
+  std::vector<data_size_t> sorted_idx(num_data);
   for (data_size_t i = 0; i < num_data; ++i) {
-    sorted_idx.emplace_back(i);
+    sorted_idx[i] = i;
   }
   std::sort(sorted_idx.begin(), sorted_idx.end(),
             [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });

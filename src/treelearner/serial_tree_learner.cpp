@@ -516,27 +516,40 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
 }
 
 
-void SerialTreeLearner::Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) {
-  const SplitInfo& best_split_info = best_split_per_leaf_[best_Leaf];
+void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf) {
+  const SplitInfo& best_split_info = best_split_per_leaf_[best_leaf];
   const int inner_feature_index = train_data_->InnerFeatureIndex(best_split_info.feature);
   // left = parent
-  *left_leaf = best_Leaf;
-  // split tree, will return right leaf
-  *right_leaf = tree->Split(best_Leaf,
-                            inner_feature_index,
-                            train_data_->FeatureBinMapper(inner_feature_index)->bin_type(),
-                            best_split_info.threshold,
-                            best_split_info.feature,
-                            train_data_->RealThreshold(inner_feature_index, best_split_info.threshold),
-                            static_cast<double>(best_split_info.left_output),
-                            static_cast<double>(best_split_info.right_output),
-                            static_cast<data_size_t>(best_split_info.left_count),
-                            static_cast<data_size_t>(best_split_info.right_count),
-                            static_cast<double>(best_split_info.gain),
-                            train_data_->FeatureBinMapper(inner_feature_index)->missing_type(),
-                            best_split_info.default_left);
+  *left_leaf = best_leaf;
+  if (train_data_->FeatureBinMapper(inner_feature_index)->bin_type() == BinType::NumericalBin) {
+    // split tree, will return right leaf
+    *right_leaf = tree->Split(best_leaf,
+                              inner_feature_index,
+                              best_split_info.feature,
+                              best_split_info.threshold,
+                              train_data_->RealThreshold(inner_feature_index, best_split_info.threshold),
+                              static_cast<double>(best_split_info.left_output),
+                              static_cast<double>(best_split_info.right_output),
+                              static_cast<data_size_t>(best_split_info.left_count),
+                              static_cast<data_size_t>(best_split_info.right_count),
+                              static_cast<double>(best_split_info.gain),
+                              train_data_->FeatureBinMapper(inner_feature_index)->missing_type(),
+                              best_split_info.default_left);
+  } else {
+    *right_leaf = tree->SplitCategorical(best_leaf,
+                                         inner_feature_index,
+                                         best_split_info.feature,
+                                         best_split_info.threshold,
+                                         train_data_->RealThreshold(inner_feature_index, best_split_info.threshold),
+                                         static_cast<double>(best_split_info.left_output),
+                                         static_cast<double>(best_split_info.right_output),
+                                         static_cast<data_size_t>(best_split_info.left_count),
+                                         static_cast<data_size_t>(best_split_info.right_count),
+                                         static_cast<double>(best_split_info.gain),
+                                         train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
+  }
   // split data partition
-  data_partition_->Split(best_Leaf, train_data_, inner_feature_index,
+  data_partition_->Split(best_leaf, train_data_, inner_feature_index,
                          best_split_info.threshold, best_split_info.default_left, *right_leaf);
 
   // init the leaves that used on next iteration

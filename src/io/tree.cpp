@@ -15,11 +15,6 @@
 
 namespace LightGBM {
 
-std::vector<bool(*)(uint32_t, uint32_t)> Tree::inner_decision_funs =
-{ Tree::NumericalDecision<uint32_t>, Tree::CategoricalDecision<uint32_t> };
-std::vector<bool(*)(double, double)> Tree::decision_funs =
-{ Tree::NumericalDecision<double>, Tree::CategoricalDecision<double> };
-
 Tree::Tree(int max_leaves)
   :max_leaves_(max_leaves) {
 
@@ -43,38 +38,20 @@ Tree::Tree(int max_leaves)
   num_leaves_ = 1;
   leaf_parent_[0] = -1;
   shrinkage_ = 1.0f;
-  has_categorical_ = false;
+  num_cat_ = 0;
 }
 
 Tree::~Tree() {
 
 }
 
-int Tree::Split(int leaf, int feature, BinType bin_type, uint32_t threshold_bin, int real_feature, double threshold_double, 
-                double left_value, double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain,
-                MissingType missing_type, bool default_left) {
+int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
+                double threshold_double, double left_value, double right_value,
+                data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type, bool default_left) {
+  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain);
   int new_node_idx = num_leaves_ - 1;
-  // update parent info
-  int parent = leaf_parent_[leaf];
-  if (parent >= 0) {
-    // if cur node is left child
-    if (left_child_[parent] == ~leaf) {
-      left_child_[parent] = new_node_idx;
-    } else {
-      right_child_[parent] = new_node_idx;
-    }
-  }
-  // add new node
-  split_feature_inner_[new_node_idx] = feature;
-  split_feature_[new_node_idx] = real_feature;
-
   decision_type_[new_node_idx] = 0;
-  if (bin_type == BinType::NumericalBin) {
-    SetDecisionType(&decision_type_[new_node_idx], false, kCategoricalMask);
-  } else {
-    has_categorical_ = true;
-    SetDecisionType(&decision_type_[new_node_idx], true, kCategoricalMask);
-  }
+  SetDecisionType(&decision_type_[new_node_idx], false, kCategoricalMask);
   SetDecisionType(&decision_type_[new_node_idx], default_left, kDefaultLeftMask);
   if (missing_type == MissingType::None) {
     SetMissingType(&decision_type_[new_node_idx], 0);
@@ -83,30 +60,46 @@ int Tree::Split(int leaf, int feature, BinType bin_type, uint32_t threshold_bin,
   } else if (missing_type == MissingType::NaN) {
     SetMissingType(&decision_type_[new_node_idx], 2);
   }
-
   threshold_in_bin_[new_node_idx] = threshold_bin;
   threshold_[new_node_idx] = Common::AvoidInf(threshold_double);
-  split_gain_[new_node_idx] = Common::AvoidInf(gain);
-  // add two new leaves
-  left_child_[new_node_idx] = ~leaf;
-  right_child_[new_node_idx] = ~num_leaves_;
-  // update new leaves
-  leaf_parent_[leaf] = new_node_idx;
-  leaf_parent_[num_leaves_] = new_node_idx;
-  // save current leaf value to internal node before change
-  internal_value_[new_node_idx] = leaf_value_[leaf];
-  internal_count_[new_node_idx] = left_cnt + right_cnt;
-  leaf_value_[leaf] = std::isnan(left_value) ? 0.0f : left_value;
-  leaf_count_[leaf] = left_cnt;
-  leaf_value_[num_leaves_] = std::isnan(right_value) ? 0.0f : right_value;
-  leaf_count_[num_leaves_] = right_cnt;
-  // update leaf depth
-  leaf_depth_[num_leaves_] = leaf_depth_[leaf] + 1;
-  leaf_depth_[leaf]++;
-
   ++num_leaves_;
   return num_leaves_ - 1;
 }
+
+int Tree::SplitCategorical(int leaf, int feature, int real_feature, uint32_t threshold_bin,
+                           double threshold, double left_value, double right_value,
+                           data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type) {
+  Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain);
+  int new_node_idx = num_leaves_ - 1;
+  decision_type_[new_node_idx] = 0;
+  SetDecisionType(&decision_type_[new_node_idx], true, kCategoricalMask);
+  if (missing_type == MissingType::None) {
+    SetMissingType(&decision_type_[new_node_idx], 0);
+  } else if (missing_type == MissingType::Zero) {
+    SetMissingType(&decision_type_[new_node_idx], 1);
+  } else if (missing_type == MissingType::NaN) {
+    SetMissingType(&decision_type_[new_node_idx], 2);
+  }
+  threshold_in_bin_[new_node_idx] = threshold_bin;
+  threshold_[new_node_idx] = threshold;
+  ++num_cat_;
+  ++num_leaves_;
+  return num_leaves_ - 1;
+}
+
+#define PredictionFun(niter, fidx_in_iter, start_pos, decision_fun, iter_idx, data_idx) \
+std::vector<std::unique_ptr<BinIterator>> iter((niter)); \
+for (int i = 0; i < (niter); ++i) { \
+  iter[i].reset(data->FeatureIterator((fidx_in_iter))); \
+  iter[i]->Reset((start_pos)); \
+}\
+for (data_size_t i = start; i < end; ++i) {\
+  int node = 0;\
+  while (node >= 0) {\
+    node = decision_fun(iter[(iter_idx)]->Get((data_idx)), node, default_bins[node], max_bins[node]);\
+  }\
+  score[(data_idx)] += static_cast<double>(leaf_value_[~node]);\
+}\
 
 void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, double* score) const {
   if (num_leaves_ <= 1) { return; }
@@ -118,98 +111,28 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
     default_bins[i] = bin_mapper->GetDefaultBin();
     max_bins[i] = bin_mapper->num_bin() - 1;
   }
-  if (has_categorical_) {
+  if (num_cat_ > 0) {
     if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data,
-        [this, &data, score, &default_bins, &max_bins](int, data_size_t start, data_size_t end) {
-        std::vector<std::unique_ptr<BinIterator>> iter(num_leaves_ - 1);
-        for (int i = 0; i < num_leaves_ - 1; ++i) {
-          const int fidx = split_feature_inner_[i];
-          iter[i].reset(data->FeatureIterator(fidx));
-          iter[i]->Reset(start);
-        }
-        for (data_size_t i = start; i < end; ++i) {
-          int node = 0;
-          while (node >= 0) {
-            uint32_t fval = ConvertMissingValue(iter[node]->Get(i), threshold_in_bin_[node], decision_type_[node], default_bins[node], max_bins[node]);
-            if (inner_decision_funs[GetDecisionType(decision_type_[node], kCategoricalMask)](
-              fval,
-              threshold_in_bin_[node])) {
-              node = left_child_[node];
-            } else {
-              node = right_child_[node];
-            }
-          }
-          score[i] += static_cast<double>(leaf_value_[~node]);
-        }
+      Threading::For<data_size_t>(0, num_data, [this, &data, score, &default_bins, &max_bins]
+      (int, data_size_t start, data_size_t end) {
+        PredictionFun(num_leaves_ - 1, split_feature_inner_[i], start, DecisionInner, node, i);
       });
     } else {
-      Threading::For<data_size_t>(0, num_data,
-        [this, &data, score, &default_bins, &max_bins](int, data_size_t start, data_size_t end) {
-        std::vector<std::unique_ptr<BinIterator>> iter(data->num_features());
-        for (int i = 0; i < data->num_features(); ++i) {
-          iter[i].reset(data->FeatureIterator(i));
-          iter[i]->Reset(start);
-        }
-        for (data_size_t i = start; i < end; ++i) {
-          int node = 0;
-          while (node >= 0) {
-            uint32_t fval = ConvertMissingValue(iter[split_feature_inner_[node]]->Get(i), threshold_in_bin_[node], decision_type_[node], default_bins[node], max_bins[node]);
-            if (inner_decision_funs[GetDecisionType(decision_type_[node], kCategoricalMask)](
-              fval,
-              threshold_in_bin_[node])) {
-              node = left_child_[node];
-            } else {
-              node = right_child_[node];
-            }
-          }
-          score[i] += static_cast<double>(leaf_value_[~node]);
-        }
+      Threading::For<data_size_t>(0, num_data, [this, &data, score, &default_bins, &max_bins]
+      (int, data_size_t start, data_size_t end) {
+        PredictionFun(data->num_features(), i, start, DecisionInner, split_feature_inner_[node], i);
       });
     }
   } else {
     if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data,
-        [this, &data, score, &default_bins, &max_bins](int, data_size_t start, data_size_t end) {
-        std::vector<std::unique_ptr<BinIterator>> iter(num_leaves_ - 1);
-        for (int i = 0; i < num_leaves_ - 1; ++i) {
-          const int fidx = split_feature_inner_[i];
-          iter[i].reset(data->FeatureIterator(fidx));
-          iter[i]->Reset(start);
-        }
-        for (data_size_t i = start; i < end; ++i) {
-          int node = 0;
-          while (node >= 0) {
-            uint32_t fval = ConvertMissingValue(iter[node]->Get(i), threshold_in_bin_[node], decision_type_[node], default_bins[node], max_bins[node]);
-            if (fval <= threshold_in_bin_[node]) {
-              node = left_child_[node];
-            } else {
-              node = right_child_[node];
-            }
-          }
-          score[i] += static_cast<double>(leaf_value_[~node]);
-        }
+      Threading::For<data_size_t>(0, num_data, [this, &data, score, &default_bins, &max_bins]
+      (int, data_size_t start, data_size_t end) {
+        PredictionFun(num_leaves_ - 1, split_feature_inner_[i], start, NumericalDecisionInner, node, i);
       });
     } else {
-      Threading::For<data_size_t>(0, num_data,
-        [this, &data, score, &default_bins, &max_bins](int, data_size_t start, data_size_t end) {
-        std::vector<std::unique_ptr<BinIterator>> iter(data->num_features());
-        for (int i = 0; i < data->num_features(); ++i) {
-          iter[i].reset(data->FeatureIterator(i));
-          iter[i]->Reset(start);
-        }
-        for (data_size_t i = start; i < end; ++i) {
-          int node = 0;
-          while (node >= 0) {
-            uint32_t fval = ConvertMissingValue(iter[split_feature_inner_[node]]->Get(i), threshold_in_bin_[node], decision_type_[node], default_bins[node], max_bins[node]);
-            if (fval <= threshold_in_bin_[node]) {
-              node = left_child_[node];
-            } else {
-              node = right_child_[node];
-            }
-          }
-          score[i] += static_cast<double>(leaf_value_[~node]);
-        }
+      Threading::For<data_size_t>(0, num_data, [this, &data, score, &default_bins, &max_bins]
+      (int, data_size_t start, data_size_t end) {
+        PredictionFun(data->num_features(), i, start, NumericalDecisionInner, split_feature_inner_[node], i);
       });
     }
   }
@@ -227,110 +150,39 @@ void Tree::AddPredictionToScore(const Dataset* data,
     default_bins[i] = bin_mapper->GetDefaultBin();
     max_bins[i] = bin_mapper->num_bin() - 1;
   }
-  if (has_categorical_) {
+  if (num_cat_ > 0) {
     if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data,
-        [this, data, used_data_indices, score, &default_bins, &max_bins](int, data_size_t start, data_size_t end) {
-        std::vector<std::unique_ptr<BinIterator>> iter(num_leaves_ - 1);
-        for (int i = 0; i < num_leaves_ - 1; ++i) {
-          const int fidx = split_feature_inner_[i];
-          iter[i].reset(data->FeatureIterator(fidx));
-          iter[i]->Reset(used_data_indices[start]);
-        }
-        for (data_size_t i = start; i < end; ++i) {
-          int node = 0;
-          const data_size_t idx = used_data_indices[i];
-          while (node >= 0) {
-            uint32_t fval = ConvertMissingValue(iter[node]->Get(idx), threshold_in_bin_[node], decision_type_[node], default_bins[node], max_bins[node]);
-            if (inner_decision_funs[GetDecisionType(decision_type_[node], kCategoricalMask)](
-              fval,
-              threshold_in_bin_[node])) {
-              node = left_child_[node];
-            } else {
-              node = right_child_[node];
-            }
-          }
-          score[idx] += static_cast<double>(leaf_value_[~node]);
-        }
+      Threading::For<data_size_t>(0, num_data, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+      (int, data_size_t start, data_size_t end) {
+        PredictionFun(num_leaves_ - 1, split_feature_inner_[i], used_data_indices[start], DecisionInner, node, used_data_indices[i]);
       });
     } else {
-      Threading::For<data_size_t>(0, num_data,
-        [this, data, used_data_indices, score, &default_bins, &max_bins](int, data_size_t start, data_size_t end) {
-        std::vector<std::unique_ptr<BinIterator>> iter(data->num_features());
-        for (int i = 0; i < data->num_features(); ++i) {
-          iter[i].reset(data->FeatureIterator(i));
-          iter[i]->Reset(used_data_indices[start]);
-        }
-        for (data_size_t i = start; i < end; ++i) {
-          const data_size_t idx = used_data_indices[i];
-          int node = 0;
-          while (node >= 0) {
-            uint32_t fval = ConvertMissingValue(iter[split_feature_inner_[node]]->Get(idx), threshold_in_bin_[node], decision_type_[node], default_bins[node], max_bins[node]);
-            if (inner_decision_funs[GetDecisionType(decision_type_[node], kCategoricalMask)](
-              fval,
-              threshold_in_bin_[node])) {
-              node = left_child_[node];
-            } else {
-              node = right_child_[node];
-            }
-          }
-          score[idx] += static_cast<double>(leaf_value_[~node]);
-        }
+      Threading::For<data_size_t>(0, num_data, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+      (int, data_size_t start, data_size_t end) {
+        PredictionFun(data->num_features(), i, used_data_indices[start], DecisionInner, split_feature_inner_[node], used_data_indices[i]);
       });
     }
   } else {
     if (data->num_features() > num_leaves_ - 1) {
-      Threading::For<data_size_t>(0, num_data,
-        [this, data, used_data_indices, score, &default_bins, &max_bins](int, data_size_t start, data_size_t end) {
-        std::vector<std::unique_ptr<BinIterator>> iter(num_leaves_ - 1);
-        for (int i = 0; i < num_leaves_ - 1; ++i) {
-          const int fidx = split_feature_inner_[i];
-          iter[i].reset(data->FeatureIterator(fidx));
-          iter[i]->Reset(used_data_indices[start]);
-        }
-        for (data_size_t i = start; i < end; ++i) {
-          int node = 0;
-          const data_size_t idx = used_data_indices[i];
-          while (node >= 0) {
-            uint32_t fval = ConvertMissingValue(iter[node]->Get(idx), threshold_in_bin_[node], decision_type_[node], default_bins[node], max_bins[node]);
-            if (fval <= threshold_in_bin_[node]) {
-              node = left_child_[node];
-            } else {
-              node = right_child_[node];
-            }
-          }
-          score[idx] += static_cast<double>(leaf_value_[~node]);
-        }
+      Threading::For<data_size_t>(0, num_data, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+      (int, data_size_t start, data_size_t end) {
+        PredictionFun(num_leaves_ - 1, split_feature_inner_[i], used_data_indices[start], NumericalDecisionInner, node, used_data_indices[i]);
       });
     } else {
-      Threading::For<data_size_t>(0, num_data,
-        [this, data, used_data_indices, score, &default_bins, &max_bins](int, data_size_t start, data_size_t end) {
-        std::vector<std::unique_ptr<BinIterator>> iter(data->num_features());
-        for (int i = 0; i < data->num_features(); ++i) {
-          iter[i].reset(data->FeatureIterator(i));
-          iter[i]->Reset(used_data_indices[start]);
-        }
-        for (data_size_t i = start; i < end; ++i) {
-          const data_size_t idx = used_data_indices[i];
-          int node = 0;
-          while (node >= 0) {
-            uint32_t fval = ConvertMissingValue(iter[split_feature_inner_[node]]->Get(idx), threshold_in_bin_[node], decision_type_[node], default_bins[node], max_bins[node]);
-            if (fval <= threshold_in_bin_[node]) {
-              node = left_child_[node];
-            } else {
-              node = right_child_[node];
-            }
-          }
-          score[idx] += static_cast<double>(leaf_value_[~node]);
-        }
+      Threading::For<data_size_t>(0, num_data, [this, &data, score, used_data_indices, &default_bins, &max_bins]
+      (int, data_size_t start, data_size_t end) {
+        PredictionFun(data->num_features(), i, used_data_indices[start], NumericalDecisionInner, split_feature_inner_[node], used_data_indices[i]);
       });
     }
   }
 }
 
+#undef PredictionFun
+
 std::string Tree::ToString() {
   std::stringstream str_buf;
   str_buf << "num_leaves=" << num_leaves_ << std::endl;
+  str_buf << "num_cat=" << num_cat_ << std::endl;
   str_buf << "split_feature="
     << Common::ArrayToString<int>(split_feature_, num_leaves_ - 1, ' ') << std::endl;
   str_buf << "split_gain="
@@ -354,7 +206,6 @@ std::string Tree::ToString() {
   str_buf << "internal_count="
     << Common::ArrayToString<data_size_t>(internal_count_, num_leaves_ - 1, ' ') << std::endl;
   str_buf << "shrinkage=" << shrinkage_ << std::endl;
-  str_buf << "has_categorical=" << (has_categorical_ ? 1 : 0) << std::endl;
   str_buf << std::endl;
   return str_buf.str();
 }
@@ -363,8 +214,8 @@ std::string Tree::ToJSON() {
   std::stringstream str_buf;
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   str_buf << "\"num_leaves\":" << num_leaves_ << "," << std::endl;
+  str_buf << "\"num_cat\":" << num_cat_ << "," << std::endl;
   str_buf << "\"shrinkage\":" << shrinkage_ << "," << std::endl;
-  str_buf << "\"has_categorical\":" << (has_categorical_ ? 1 : 0) << "," << std::endl;
   if (num_leaves_ == 1) {
     str_buf << "\"tree_structure\":" << NodeToJSON(-1) << std::endl;
   } else {
@@ -383,8 +234,26 @@ std::string Tree::NodeToJSON(int index) {
     str_buf << "\"split_index\":" << index << "," << std::endl;
     str_buf << "\"split_feature\":" << split_feature_[index] << "," << std::endl;
     str_buf << "\"split_gain\":" << split_gain_[index] << "," << std::endl;
-    str_buf << "\"threshold\":" << Common::AvoidInf(threshold_[index]) << "," << std::endl;
-    str_buf << "\"decision_type\":\"" << Tree::GetDecisionTypeName(decision_type_[index]) << "\"," << std::endl;
+    if (GetDecisionType(decision_type_[index], kCategoricalMask)) {
+      str_buf << "\"threshold\":" << static_cast<int>(threshold_[index]) << "," << std::endl;
+      str_buf << "\"decision_type\":\"==\"," << std::endl;
+    } else {
+      str_buf << "\"threshold\":" << Common::AvoidInf(threshold_[index]) << "," << std::endl;
+      str_buf << "\"decision_type\":\"<=\"," << std::endl;
+    }
+    if (GetDecisionType(decision_type_[index], kDefaultLeftMask)) {
+      str_buf << "\"default_left\":true," << std::endl;
+    } else {
+      str_buf << "\"default_left\":false," << std::endl;
+    }
+    uint8_t missing_type = GetMissingType(decision_type_[index]);
+    if (missing_type == 0) {
+      str_buf << "\"missing_type\":\"None\"," << std::endl;
+    } else if (missing_type == 1) {
+      str_buf << "\"missing_type\":\"Zero\"," << std::endl;
+    } else {
+      str_buf << "\"missing_type\":\"NaN\"," << std::endl;
+    }
     str_buf << "\"internal_value\":" << internal_value_[index] << "," << std::endl;
     str_buf << "\"internal_count\":" << internal_count_[index] << "," << std::endl;
     str_buf << "\"left_child\":" << NodeToJSON(left_child_[index]) << "," << std::endl;
@@ -414,6 +283,11 @@ std::string Tree::ToIfElse(int index, bool is_predict_leaf_index) {
   if (num_leaves_ == 1) {
     str_buf << "return 0";
   } else {
+    // use this for the missing value conversion
+    str_buf << "double fval = 0.0f; ";
+    if (num_cat_ > 0) {
+      str_buf << "int int_fval = 0; ";
+    }
     str_buf << NodeToIfElse(0, is_predict_leaf_index);
   }
   str_buf << " }" << std::endl;
@@ -425,13 +299,12 @@ std::string Tree::NodeToIfElse(int index, bool is_predict_leaf_index) {
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   if (index >= 0) {
     // non-leaf
-    str_buf << "if (Tree::ConvertMissingValue(arr[" << split_feature_[index] << "], " << threshold_[index] << ", " << static_cast<int>(decision_type_[index]) << ") ";
+    str_buf << "fval = arr[" << split_feature_[index] << "];";
     if (GetDecisionType(decision_type_[index], kCategoricalMask) == 0) {
-      str_buf << "<";
+      str_buf << NumericalDecisionIfElse(index);
     } else {
-      str_buf << "=";
+      str_buf << CategoricalDecisionIfElse(index);
     }
-    str_buf << "= " << threshold_[index] << " ) { ";
     // left subtree
     str_buf << NodeToIfElse(left_child_[index], is_predict_leaf_index);
     str_buf << " } else { ";
@@ -470,6 +343,12 @@ Tree::Tree(const std::string& str) {
   }
 
   Common::Atoi(key_vals["num_leaves"].c_str(), &num_leaves_);
+
+  if (key_vals.count("num_cat") <= 0) {
+    Log::Fatal("Tree model should contain num_cat field.");
+  }
+
+  Common::Atoi(key_vals["num_cat"].c_str(), &num_cat_);
 
   if (num_leaves_ <= 1) { return; }
 
@@ -544,15 +423,6 @@ Tree::Tree(const std::string& str) {
   } else {
     shrinkage_ = 1.0f;
   }
-
-  if (key_vals.count("has_categorical")) {
-    int t = 0;
-    Common::Atoi(key_vals["has_categorical"].c_str(), &t);
-    has_categorical_ = t > 0;
-  } else {
-    has_categorical_ = false;
-  }
-
 }
 
 }  // namespace LightGBM

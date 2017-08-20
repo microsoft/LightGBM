@@ -473,7 +473,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
     auto label = train_data_->metadata().label();
     double init_score = ObtainAutomaticInitialScore(objective_function_, label, num_data_);
     std::unique_ptr<Tree> new_tree(new Tree(2));
-    new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0, init_score, init_score, 0, 0, -1, MissingType::None, true);
+    new_tree->Split(0, 0, 0, 0, 0, init_score, init_score, 0, 0, -1, MissingType::None, true);
     train_score_updater_->AddScore(init_score, 0);
     for (auto& score_updater : valid_score_updater_) {
       score_updater->AddScore(init_score, 0);
@@ -553,7 +553,7 @@ bool GBDT::TrainOneIter(const score_t* gradient, const score_t* hessian, bool is
       // only add default score one-time
       if (!class_need_train_[cur_tree_id] && models_.size() < static_cast<size_t>(num_tree_per_iteration_)) {
         auto output = class_default_output_[cur_tree_id];
-        new_tree->Split(0, 0, BinType::NumericalBin, 0, 0, 0,
+        new_tree->Split(0, 0, 0, 0, 0,
                         output, output, 0, 0, -1, MissingType::None, true);
         train_score_updater_->AddScore(output, cur_tree_id);
         for (auto& score_updater : valid_score_updater_) {
