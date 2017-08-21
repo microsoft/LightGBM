@@ -4,12 +4,16 @@
 from __future__ import absolute_import
 
 import numpy as np
+import warnings
 
 from .basic import Dataset, LightGBMError
 from .compat import (SKLEARN_INSTALLED, LGBMClassifierBase, LGBMDeprecated,
                      LGBMLabelEncoder, LGBMModelBase, LGBMRegressorBase, argc_,
                      range_)
 from .engine import train
+
+
+warnings.simplefilter('always', DeprecationWarning)
 
 
 def _objective_function_wrapper(func):
@@ -127,51 +131,56 @@ class LGBMModel(LGBMModelBase):
                  subsample_for_bin=50000, objective=None,
                  min_split_gain=0, min_child_weight=5, min_child_samples=10,
                  subsample=1, subsample_freq=1, colsample_bytree=1,
-                 reg_alpha=0, reg_lambda=0, seed=0, nthread=-1, silent=True, **kwargs):
+                 reg_alpha=0, reg_lambda=0, seed=None, random_state=0,
+                 nthread=None, n_jobs=-1, silent=True, **kwargs):
         """
         Implementation of the Scikit-Learn API for LightGBM.
 
         Parameters
         ----------
         boosting_type : string
-            gbdt, traditional Gradient Boosting Decision Tree
-            dart, Dropouts meet Multiple Additive Regression Trees
+            gbdt, traditional Gradient Boosting Decision Tree.
+            dart, Dropouts meet Multiple Additive Regression Trees.
         num_leaves : int
             Maximum tree leaves for base learners.
         max_depth : int
             Maximum tree depth for base learners, -1 means no limit.
         learning_rate : float
-            Boosting learning rate
+            Boosting learning rate.
         n_estimators : int
             Number of boosted trees to fit.
         max_bin : int
-            Number of bucketed bin for feature values
+            Number of bucketed bin for feature values.
         subsample_for_bin : int
             Number of samples for constructing bins.
         objective : string or callable
             Specify the learning task and the corresponding learning objective or
             a custom objective function to be used (see note below).
-            default: binary for LGBMClassifier, lambdarank for LGBMRanker
+            default: binary for LGBMClassifier, lambdarank for LGBMRanker.
         min_split_gain : float
             Minimum loss reduction required to make a further partition on a leaf node of the tree.
         min_child_weight : int
-            Minimum sum of instance weight(hessian) needed in a child(leaf)
+            Minimum sum of instance weight(hessian) needed in a child(leaf).
         min_child_samples : int
-            Minimum number of data need in a child(leaf)
+            Minimum number of data need in a child(leaf).
         subsample : float
             Subsample ratio of the training instance.
         subsample_freq : int
-            frequence of subsample, <=0 means no enable
+            frequence of subsample, <=0 means no enable.
         colsample_bytree : float
             Subsample ratio of columns when constructing each tree.
         reg_alpha : float
-            L1 regularization term on weights
+            L1 regularization term on weights.
         reg_lambda : float
-            L2 regularization term on weights
+            L2 regularization term on weights.
         seed : int
+            Deprecated. Please use random_state.
+        random_state : int
             Random number seed.
         nthread : int
-            Number of parallel threads
+            Deprecated. Please use n_jobs.
+        n_jobs : int
+            Number of parallel threads.
         silent : boolean
             Whether to print messages while running boosting.
         **kwargs : other parameters
@@ -186,15 +195,15 @@ class LGBMModel(LGBMModelBase):
             or ``objective(y_true, y_pred, group) -> grad, hess``:
 
             y_true: array_like of shape [n_samples]
-                The target values
+                The target values.
             y_pred: array_like of shape [n_samples] or shape[n_samples * n_class]
-                The predicted values
+                The predicted values.
             group: array_like
-                group/query data, used for ranking task
+                group/query data, used for ranking task.
             grad: array_like of shape [n_samples] or shape[n_samples * n_class]
                 The value of the gradient for each sample point.
             hess: array_like of shape [n_samples] or shape[n_samples * n_class]
-                The value of the second derivative for each sample point
+                The value of the second derivative for each sample point.
 
         for multi-class task, the y_pred is group by class_id first, then group by row_id
             if you want to get i-th row y_pred in j-th class, the access way is y_pred[j*num_data+i]
@@ -230,7 +239,19 @@ class LGBMModel(LGBMModelBase):
         self.reg_alpha = reg_alpha
         self.reg_lambda = reg_lambda
         self.seed = seed
+        if seed is not None:
+            warnings.warn('The seed parameter is deprecated. Please use random_state instead.',
+                          DeprecationWarning)
+            self.random_state = seed
+        else:
+            self.random_state = random_state
         self.nthread = nthread
+        if nthread is not None:
+            warnings.warn('The nthread parameter is deprecated. Please use n_jobs instead.',
+                          DeprecationWarning)
+            self.n_jobs = nthread
+        else:
+            self.n_jobs = n_jobs
         self.silent = silent
         self._Booster = None
         self.evals_result = None
@@ -333,6 +354,9 @@ class LGBMModel(LGBMModelBase):
         """
         evals_result = {}
         params = self.get_params()
+        # Don't touch basic interface, only sklearn
+        params['seed'] = params.pop('random_state')
+        params['nthread'] = params.pop('n_jobs')
         # user can set verbose with kwargs, it has higher priority
         if 'verbose' not in params and self.silent:
             params['verbose'] = -1
