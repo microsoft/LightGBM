@@ -273,6 +273,21 @@ class LGBMModel(LGBMModelBase):
     def set_params(self, **params):
         for key, value in params.items():
             setattr(self, key, value)
+            # Old names have higher priority for backward compatibility
+            if key == 'seed' and value is not None:
+                warnings.warn('The seed parameter is deprecated and will be removed in next version. '
+                              'Please use random_state instead.', DeprecationWarning)
+                setattr(self, 'random_state', value)
+                if 'random_state' in params:
+                    params['random_state'] = value
+            if key == 'nthread' and value is not None:
+                warnings.warn('The nthread parameter is deprecated and will be removed in next version. '
+                              'Please use n_jobs instead.', DeprecationWarning)
+                setattr(self, 'n_jobs', value)
+                if 'n_jobs' in params:
+                    params['n_jobs'] = value
+            if key in ('seed', 'random_state', 'nthread', 'n_jobs'):
+                continue  # Don't add to `other_params` in order to avoid a collision in `get_params`
             self.other_params[key] = value
         return self
 
