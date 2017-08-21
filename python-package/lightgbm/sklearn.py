@@ -240,15 +240,15 @@ class LGBMModel(LGBMModelBase):
         self.reg_lambda = reg_lambda
         self.seed = seed
         if seed is not None:
-            warnings.warn('The seed parameter is deprecated. Please use random_state instead.',
-                          DeprecationWarning)
+            warnings.warn('The seed parameter is deprecated and will be removed in next version. '
+                          'Please use random_state instead.', DeprecationWarning)
             self.random_state = seed
         else:
             self.random_state = random_state
         self.nthread = nthread
         if nthread is not None:
-            warnings.warn('The nthread parameter is deprecated. Please use n_jobs instead.',
-                          DeprecationWarning)
+            warnings.warn('The nthread parameter is deprecated and will be removed in next version. '
+                          'Please use n_jobs instead.', DeprecationWarning)
             self.n_jobs = nthread
         else:
             self.n_jobs = n_jobs
@@ -354,7 +354,7 @@ class LGBMModel(LGBMModelBase):
         """
         evals_result = {}
         params = self.get_params()
-        # Don't touch basic interface, only sklearn
+        # sklearn interface has another naming convention
         params['seed'] = params.pop('random_state')
         params['nthread'] = params.pop('n_jobs')
         # user can set verbose with kwargs, it has higher priority
