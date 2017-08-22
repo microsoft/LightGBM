@@ -4,12 +4,16 @@
 from __future__ import absolute_import
 
 import numpy as np
+import warnings
 
 from .basic import Dataset, LightGBMError
 from .compat import (SKLEARN_INSTALLED, LGBMClassifierBase, LGBMDeprecated,
                      LGBMLabelEncoder, LGBMModelBase, LGBMRegressorBase, argc_,
                      range_)
 from .engine import train
+
+
+warnings.simplefilter('always', DeprecationWarning)
 
 
 def _objective_function_wrapper(func):
@@ -247,6 +251,12 @@ class LGBMModel(LGBMModelBase):
     def get_params(self, deep=True):
         params = super(LGBMModel, self).get_params(deep=deep)
         params.update(self.other_params)
+        if 'seed' in params:
+            warnings.warn('The seed parameter is deprecated and will be removed in next version. '
+                          'Please use random_state instead.', DeprecationWarning)
+        if 'nthread' in params:
+            warnings.warn('The nthread parameter is deprecated and will be removed in next version. '
+                          'Please use n_jobs instead.', DeprecationWarning)
         return params
 
     # minor change to support `**kwargs`
