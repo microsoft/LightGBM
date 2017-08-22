@@ -6,7 +6,7 @@ Algorithms
 
 Refer to `Features <https://github.com/Microsoft/LightGBM/wiki/Features>`__ to get important algorithms used in LightGBM.
 
-Classes And Code Structure
+Classes and Code Structure
 --------------------------
 
 Important Classes
@@ -31,7 +31,7 @@ Important Classes
 +-------------------------+--------------------------------------------------------------------------------------+
 | ``Metric``              | Evaluation metrics                                                                   |
 +-------------------------+--------------------------------------------------------------------------------------+
-| ``Network``             | Newwork interfaces and communication algorithms                                      |
+| ``Network``             | Network interfaces and communication algorithms                                      |
 +-------------------------+--------------------------------------------------------------------------------------+
 | ``ObjectiveFunction``   | Objective function used to train                                                     |
 +-------------------------+--------------------------------------------------------------------------------------+
@@ -46,9 +46,9 @@ Code Structure
 +---------------------+------------------------------------------------------------------------------------------------------------------------------------+
 | Path                | description                                                                                                                        |
 +=====================+====================================================================================================================================+
-| ./include           | header files                                                                                                                       |
+| ./include           | Header files                                                                                                                       |
 +---------------------+------------------------------------------------------------------------------------------------------------------------------------+
-| ./include/utils     | some common functions                                                                                                              |
+| ./include/utils     | Some common functions                                                                                                              |
 +---------------------+------------------------------------------------------------------------------------------------------------------------------------+
 | ./src/application   | Implementations of training and prediction logic                                                                                   |
 +---------------------+------------------------------------------------------------------------------------------------------------------------------------+
@@ -75,7 +75,7 @@ C API
 
 Refere to the comments in `c\_api.h <https://github.com/Microsoft/LightGBM/blob/master/include/LightGBM/c_api.h>`__.
 
-High level Language package
+High Level Language Package
 ---------------------------
 
 Follow the implementation of `python-package <https://github.com/Microsoft/LightGBM/tree/master/python-package/lightgbm>`__.
