@@ -336,9 +336,7 @@ class LGBMModel(LGBMModelBase):
         params = self.get_params()
         # sklearn interface has another naming convention
         params['seed'] = params.pop('seed', params.pop('random_state'))
-        params.pop('random_state', None)  # Avoid unknown parameter error from `train`
         params['nthread'] = params.pop('nthread', params.pop('n_jobs'))
-        params.pop('n_jobs', None)
         print(params)
         # user can set verbose with kwargs, it has higher priority
         if 'verbose' not in params and self.silent:
