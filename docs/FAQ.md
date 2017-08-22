@@ -82,7 +82,7 @@ Remember this is a free/open community support. We may not be available 24/7 to 
 
 - **Question 8**: CPU are not kept busy (like 10% CPU usage only) in Windows when using LightGBM on very large datasets with many core systems.
 
-- **Solution 8**: Please [use Visual Studio](https://github.com/Microsoft/LightGBM/issues/740) as it may be 10x faster than MinGW especially for very large trees.
+- **Solution 8**: Please use [Visual Studio](https://www.visualstudio.com/downloads/) as it may be [10x faster than MinGW](https://github.com/Microsoft/LightGBM/issues/749) especially for very large trees.
 
 ---
 
