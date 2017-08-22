@@ -4,16 +4,12 @@
 from __future__ import absolute_import
 
 import numpy as np
-import warnings
 
 from .basic import Dataset, LightGBMError
 from .compat import (SKLEARN_INSTALLED, LGBMClassifierBase, LGBMDeprecated,
                      LGBMLabelEncoder, LGBMModelBase, LGBMRegressorBase, argc_,
                      range_)
 from .engine import train
-
-
-warnings.simplefilter('always', DeprecationWarning)
 
 
 def _objective_function_wrapper(func):
@@ -131,8 +127,8 @@ class LGBMModel(LGBMModelBase):
                  subsample_for_bin=50000, objective=None,
                  min_split_gain=0, min_child_weight=5, min_child_samples=10,
                  subsample=1, subsample_freq=1, colsample_bytree=1,
-                 reg_alpha=0, reg_lambda=0, seed=None, random_state=0,
-                 nthread=None, n_jobs=-1, silent=True, **kwargs):
+                 reg_alpha=0, reg_lambda=0, random_state=0,
+                 n_jobs=-1, silent=True, **kwargs):
         """
         Implementation of the Scikit-Learn API for LightGBM.
 
@@ -173,12 +169,8 @@ class LGBMModel(LGBMModelBase):
             L1 regularization term on weights.
         reg_lambda : float
             L2 regularization term on weights.
-        seed : int
-            Deprecated. Please use random_state.
         random_state : int
             Random number seed.
-        nthread : int
-            Deprecated. Please use n_jobs.
         n_jobs : int
             Number of parallel threads.
         silent : boolean
@@ -238,20 +230,8 @@ class LGBMModel(LGBMModelBase):
         self.colsample_bytree = colsample_bytree
         self.reg_alpha = reg_alpha
         self.reg_lambda = reg_lambda
-        self.seed = seed
-        if seed is not None:
-            warnings.warn('The seed parameter is deprecated and will be removed in next version. '
-                          'Please use random_state instead.', DeprecationWarning)
-            self.random_state = seed
-        else:
-            self.random_state = random_state
-        self.nthread = nthread
-        if nthread is not None:
-            warnings.warn('The nthread parameter is deprecated and will be removed in next version. '
-                          'Please use n_jobs instead.', DeprecationWarning)
-            self.n_jobs = nthread
-        else:
-            self.n_jobs = n_jobs
+        self.random_state = random_state
+        self.n_jobs = n_jobs
         self.silent = silent
         self._Booster = None
         self.evals_result = None
@@ -273,21 +253,6 @@ class LGBMModel(LGBMModelBase):
     def set_params(self, **params):
         for key, value in params.items():
             setattr(self, key, value)
-            # Old names have higher priority for backward compatibility
-            if key == 'seed' and value is not None:
-                warnings.warn('The seed parameter is deprecated and will be removed in next version. '
-                              'Please use random_state instead.', DeprecationWarning)
-                setattr(self, 'random_state', value)
-                if 'random_state' in params:
-                    params['random_state'] = value
-            if key == 'nthread' and value is not None:
-                warnings.warn('The nthread parameter is deprecated and will be removed in next version. '
-                              'Please use n_jobs instead.', DeprecationWarning)
-                setattr(self, 'n_jobs', value)
-                if 'n_jobs' in params:
-                    params['n_jobs'] = value
-            if key in ('seed', 'random_state', 'nthread', 'n_jobs'):
-                continue  # Don't add to `other_params` in order to avoid a collision in `get_params`
             self.other_params[key] = value
         return self
 
@@ -370,8 +335,11 @@ class LGBMModel(LGBMModelBase):
         evals_result = {}
         params = self.get_params()
         # sklearn interface has another naming convention
-        params['seed'] = params.pop('random_state')
-        params['nthread'] = params.pop('n_jobs')
+        params['seed'] = params.pop('seed', params.pop('random_state'))
+        params.pop('random_state', None)  # Avoid unknown parameter error from `train`
+        params['nthread'] = params.pop('nthread', params.pop('n_jobs'))
+        params.pop('n_jobs', None)
+        print(params)
         # user can set verbose with kwargs, it has higher priority
         if 'verbose' not in params and self.silent:
             params['verbose'] = -1
