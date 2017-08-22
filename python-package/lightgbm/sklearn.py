@@ -13,7 +13,9 @@ from .compat import (SKLEARN_INSTALLED, LGBMClassifierBase, LGBMDeprecated,
 from .engine import train
 
 
-warnings.simplefilter('always', DeprecationWarning)
+# DeprecationWarning is not shown by default, so let's create our own with higher level
+class LGBMDeprecationWarning(UserWarning):
+    pass
 
 
 def _objective_function_wrapper(func):
@@ -252,11 +254,11 @@ class LGBMModel(LGBMModelBase):
         params = super(LGBMModel, self).get_params(deep=deep)
         params.update(self.other_params)
         if 'seed' in params:
-            warnings.warn('The seed parameter is deprecated and will be removed in next version. '
-                          'Please use random_state instead.', DeprecationWarning)
+            warnings.warn('The `seed` parameter is deprecated and will be removed in next version. '
+                          'Please use `random_state` instead.', LGBMDeprecationWarning)
         if 'nthread' in params:
-            warnings.warn('The nthread parameter is deprecated and will be removed in next version. '
-                          'Please use n_jobs instead.', DeprecationWarning)
+            warnings.warn('The `nthread` parameter is deprecated and will be removed in next version. '
+                          'Please use `n_jobs` instead.', LGBMDeprecationWarning)
         return params
 
     # minor change to support `**kwargs`

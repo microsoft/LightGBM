@@ -3,6 +3,7 @@
 import math
 import os
 import unittest
+import warnings
 
 import lightgbm as lgb
 import numpy as np
@@ -158,3 +159,21 @@ class TestSklearn(unittest.TestCase):
         clf.fit(data.data, data.target)
         importances = clf.feature_importances_
         self.assertEqual(len(importances), 4)
+
+    def test_sklearn_backward_compatibility(self):
+        iris = load_iris()
+        X_train, X_test, y_train, y_test = train_test_split(iris.data, iris.target, test_size=0.2, random_state=42)
+
+        # Tests that `seed` is the same as `random_state`
+        clf_1 = lgb.sklearn.LGBMClassifier(seed=42, subsample=0.6, colsample_bytree=0.8)
+        clf_2 = lgb.sklearn.LGBMClassifier(random_state=42, subsample=0.6, colsample_bytree=0.8)
+        y_pred_1 = clf_1.fit(X_train, y_train).predict_proba(X_test)
+        y_pred_2 = clf_2.fit(X_train, y_train).predict_proba(X_test)
+        np.testing.assert_allclose(y_pred_1, y_pred_2)
+
+        # Tests that warnings were raised
+        with warnings.catch_warnings(record=True) as w:
+            clf_1.get_params()
+            clf_2.set_params(nthread=-1).fit(X_train, y_train)
+            self.assertEqual(len(w), 2)
+            self.assertTrue(issubclass(w[-1].category, Warning))
