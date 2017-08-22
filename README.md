@@ -37,11 +37,11 @@ News
 
 02/12/2017: LightGBM v1 stable release.
 
-01/08/2017 : Release [**R-package**](./R-package) beta version, welcome to have a try and provide feedback.
+01/08/2017 : Release [**R-package**](https://github.com/Microsoft/LightGBM/tree/master/R-package) beta version, welcome to have a try and provide feedback.
 
 12/05/2016 : **Categorical Features as input directly**(without one-hot coding). Experiment on [Expo data](http://stat-computing.org/dataexpo/2009/) shows about 8x speed-up with same accuracy compared with one-hot coding.
 
-12/02/2016 : Release [**python-package**](./python-package) beta version, welcome to have a try and provide feedback.
+12/02/2016 : Release [**python-package**](https://github.com/Microsoft/LightGBM/tree/master/python-package) beta version, welcome to have a try and provide feedback.
 
 
 External (unofficial) Repositories
@@ -93,7 +93,7 @@ LightGBM has been developed and used by many active community members. Your help
 - Contribute to the [tests](https://github.com/Microsoft/LightGBM/tree/master/tests) to make it more reliable. 
 - Contribute to the [documents](https://github.com/Microsoft/LightGBM/tree/master/docs) to make it clearer for everyone.
 - Contribute to the [examples](https://github.com/Microsoft/LightGBM/tree/master/examples) to share your experience with other users.
-- Check out [Development Guide](./docs/development.rst).
+- Check out [Development Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/development.rst).
 - Open issue if you met problems during development.
 
 Microsoft Open Source Code of Conduct
