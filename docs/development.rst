@@ -4,7 +4,7 @@ Development Guide
 Algorithms
 ----------
 
-Refer to `Features <https://github.com/Microsoft/LightGBM/wiki/Features>`__ to get important algorithms used in LightGBM.
+Refer to `Features <https://github.com/Microsoft/LightGBM/wiki/Features>`__ to understand important algorithms used in LightGBM.
 
 Classes and Code Structure
 --------------------------
@@ -78,7 +78,7 @@ Refere to the comments in `c\_api.h <https://github.com/Microsoft/LightGBM/blob/
 High Level Language Package
 ---------------------------
 
-Follow the implementation of `python-package <https://github.com/Microsoft/LightGBM/tree/master/python-package/lightgbm>`__.
+See the implementations at `python-package <https://github.com/Microsoft/LightGBM/tree/master/python-package/lightgbm>`__ and `python-package <https://github.com/Microsoft/LightGBM/tree/master/R-package>`__.
 
 Ask Questions
 -------------
