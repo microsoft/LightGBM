@@ -23,6 +23,8 @@ matrix:
       env: TASK=pylint
     - os: linux
       env: TASK=if-else
+    - os: linux
+      env: TASK=pred_contrib
     - os: osx
       env: TASK=regular
     - os: osx
