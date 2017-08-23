@@ -994,6 +994,8 @@ std::string GBDT::SaveModelToString(int num_iteration) const {
 
   ss << "feature_infos=" << Common::Join(feature_infos_, " ") << std::endl;
 
+  std::vector<size_t> feature_importances = FeatureImportance(num_iteration);
+
   ss << std::endl;
   int num_used_model = static_cast<int>(models_.size());
   if (num_iteration > 0) {
@@ -1006,7 +1008,19 @@ std::string GBDT::SaveModelToString(int num_iteration) const {
     ss << models_[i]->ToString() << std::endl;
   }
 
-  std::vector<std::pair<size_t, std::string>> pairs = FeatureImportance(num_used_model);
+  // store the importance first
+  std::vector<std::pair<size_t, std::string>> pairs;
+  for (size_t i = 0; i < feature_importances.size(); ++i) {
+    if (feature_importances[i] > 0) {
+      pairs.emplace_back(feature_importances[i], feature_names_[i]);
+    }
+  }
+  // sort the importance
+  std::sort(pairs.begin(), pairs.end(),
+            [] (const std::pair<size_t, std::string>& lhs,
+                const std::pair<size_t, std::string>& rhs) {
+    return lhs.first > rhs.first;
+  });
   ss << std::endl << "feature importances:" << std::endl;
   for (size_t i = 0; i < pairs.size(); ++i) {
     ss << pairs[i].second << "=" << std::to_string(pairs[i].first) << std::endl;
@@ -1130,30 +1144,23 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
   return true;
 }
 
-std::vector<std::pair<size_t, std::string>> GBDT::FeatureImportance(int num_used_model) const {
+std::vector<size_t> GBDT::FeatureImportance(int num_iteration) const {
+
+  int num_used_model = static_cast<int>(models_.size());
+  if (num_iteration > 0) {
+    num_iteration += boost_from_average_ ? 1 : 0;
+    num_used_model = std::min(num_iteration * num_tree_per_iteration_, num_used_model);
+  }
 
   std::vector<size_t> feature_importances(max_feature_idx_ + 1, 0);
-  for (int iter = 0; iter < num_used_model; ++iter) {
+  for (int iter = boost_from_average_ ? 1 : 0; iter < num_used_model; ++iter) {
     for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
       if (models_[iter]->split_gain(split_idx) > 0) {
         ++feature_importances[models_[iter]->split_feature(split_idx)];
       }
     }
   }
-  // store the importance first
-  std::vector<std::pair<size_t, std::string>> pairs;
-  for (size_t i = 0; i < feature_importances.size(); ++i) {
-    if (feature_importances[i] > 0) {
-      pairs.emplace_back(feature_importances[i], feature_names_[i]);
-    }
-  }
-  // sort the importance
-  std::sort(pairs.begin(), pairs.end(),
-            [] (const std::pair<size_t, std::string>& lhs,
-                const std::pair<size_t, std::string>& rhs) {
-    return lhs.first > rhs.first;
-  });
-  return pairs;
+  return feature_importances;
 }
 
 }  // namespace LightGBM

@@ -248,6 +248,10 @@ public:
     return boosting_->DumpModel(num_iteration);
   }
 
+  std::vector<size_t> FeatureImportance(int num_iteration) {
+    return boosting_->FeatureImportance(num_iteration);
+  }
+
   double GetLeafValue(int tree_idx, int leaf_idx) const {
     return dynamic_cast<GBDT*>(boosting_.get())->GetLeafValue(tree_idx, leaf_idx);
   }
@@ -1172,6 +1176,18 @@ int LGBM_BoosterSetLeafValue(BoosterHandle handle,
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->SetLeafValue(tree_idx, leaf_idx, val);
+  API_END();
+}
+
+int LGBM_BoosterFeatureImportance(BoosterHandle handle,
+                                  int num_iteration,
+                                  int* out_results) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  std::vector<size_t> pairs = ref_booster->FeatureImportance(num_iteration);
+  for (size_t i = 0; i < pairs.size(); ++i) {
+    (out_results)[i] = pairs[i];
+  }
   API_END();
 }
 

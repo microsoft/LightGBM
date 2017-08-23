@@ -202,6 +202,13 @@ public:
   bool LoadModelFromString(const std::string& model_str) override;
 
   /*!
+  * \brief Calculate feature importances
+  * \param num_iteration Number of model that want to use for feature importance, -1 means use all
+  * \return vector of feature_importance
+  */
+  std::vector<size_t> FeatureImportance(int num_iteration) const override;
+
+  /*!
   * \brief Get max feature index of this model
   * \return Max feature index of this model
   */
@@ -302,12 +309,6 @@ protected:
   * \return best_msg if met early_stopping
   */
   std::string OutputMetric(int iter);
-  /*!
-  * \brief Calculate feature importances
-  * \param num_used_model Number of model that want to use for feature importance, -1 means use all
-  * \return sorted pairs of (feature_importance, feature_name)
-  */
-  std::vector<std::pair<size_t, std::string>> FeatureImportance(int num_used_model) const;
 
   /*! \brief current iteration */
   int iter_;

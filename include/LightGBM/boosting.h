@@ -192,6 +192,13 @@ public:
   virtual bool LoadModelFromString(const std::string& model_str) = 0;
 
   /*!
+  * \brief Calculate feature importances
+  * \param num_iteration Number of model that want to use for feature importance, -1 means use all
+  * \return vector of feature_importance
+  */
+  virtual std::vector<size_t> FeatureImportance(int num_iteration) const = 0;
+
+  /*!
   * \brief Get max feature index of this model
   * \return Max feature index of this model
   */
