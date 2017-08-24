@@ -60,7 +60,7 @@ public:
   * \param real_feature Index of feature, the original index on data
   * \param threshold_bin Threshold(bin) of split, use bitset to represent
   * \param num_threshold_bin size of threshold_bin
-  * \param threshold 
+  * \param threshold
   * \param left_value Model Left child output
   * \param right_value Model Right child output
   * \param left_cnt Count of left child
@@ -112,9 +112,12 @@ public:
 
   inline void PredictContrib(const double* feature_values, int num_features, double* output) const;
 
-  inline double ExpectedValue(int node = 0) const;
+  inline double ExpectedValue() const;
 
   inline int MaxDepth() const;
+
+  // This is used fill in leaf_depth_ after reloading a model
+  inline void RecomputeLeafDepths(int node = 0, int depth = 0);
 
   /*!
   * \brief Used by TreeSHAP for data we keep about our decision path
@@ -514,7 +517,6 @@ inline void Tree::TreeSHAP(const double *feature_values, double *phi,
   if (unique_depth > 0) std::copy(parent_unique_path, parent_unique_path+unique_depth, unique_path);
   ExtendPath(unique_path, unique_depth, parent_zero_fraction,
              parent_one_fraction, parent_feature_index);
-  const int split_index = split_feature_[node];
 
   // leaf node
   if (node < 0) {
@@ -526,7 +528,7 @@ inline void Tree::TreeSHAP(const double *feature_values, double *phi,
 
   // internal node
   } else {
-    const int hot_index = Decision(feature_values[split_index], node);
+    const int hot_index = Decision(feature_values[split_feature_[node]], node);
     const int cold_index = (hot_index == left_child_[node] ? right_child_[node] : left_child_[node]);
     const double w = data_count(node);
     const double hot_zero_fraction = data_count(hot_index)/w;
@@ -538,7 +540,7 @@ inline void Tree::TreeSHAP(const double *feature_values, double *phi,
     // if so we undo that split so we can redo it for this node
     int path_index = 0;
     for (; path_index <= unique_depth; ++path_index) {
-      if (unique_path[path_index].feature_index == split_index) break;
+      if (unique_path[path_index].feature_index == split_feature_[node]) break;
     }
     if (path_index != unique_depth+1) {
       incoming_zero_fraction = unique_path[path_index].zero_fraction;
@@ -548,10 +550,10 @@ inline void Tree::TreeSHAP(const double *feature_values, double *phi,
     }
 
     TreeSHAP(feature_values, phi, hot_index, unique_depth+1, unique_path,
-             hot_zero_fraction*incoming_zero_fraction, incoming_one_fraction, split_index);
+             hot_zero_fraction*incoming_zero_fraction, incoming_one_fraction, split_feature_[node]);
 
     TreeSHAP(feature_values, phi, cold_index, unique_depth+1, unique_path,
-             cold_zero_fraction*incoming_zero_fraction, 0, split_index);
+             cold_zero_fraction*incoming_zero_fraction, 0, split_feature_[node]);
   }
 }
 
@@ -559,28 +561,41 @@ inline void Tree::PredictContrib(const double* feature_values, int num_features,
   output[num_features] += ExpectedValue();
 
   // Run the recursion with preallocated space for the unique path data
-  const int max_path_len = MaxDepth()+1;
-  PathElement *unique_path_data = new PathElement[(max_path_len*(max_path_len+1))/2];
-  TreeSHAP(feature_values, output, 0, 0, unique_path_data, 1, 1, -1);
-  delete[] unique_path_data;
-}
-
-inline double Tree::ExpectedValue(int node) const {
-  if (node >= 0) {
-    const int l = left_child_[node];
-    const int r = right_child_[node];
-    return (data_count(l)*ExpectedValue(l) + data_count(r)*ExpectedValue(r))/data_count(node);
-  } else {
-    return LeafOutput(~node);
+  if (num_leaves_ > 1) {
+    const int max_path_len = MaxDepth()+1;
+    PathElement *unique_path_data = new PathElement[(max_path_len*(max_path_len+1))/2];
+    TreeSHAP(feature_values, output, 0, 0, unique_path_data, 1, 1, -1);
+    delete[] unique_path_data;
   }
 }
 
+inline double Tree::ExpectedValue() const {
+  if (num_leaves_ == 1) return LeafOutput(0);
+  const double total_count = internal_count_[0];
+  double exp_value = 0.0;
+  for (int i = 0; i < num_leaves(); ++i) {
+    exp_value += (leaf_count_[i]/total_count)*LeafOutput(i);
+  }
+  return exp_value;
+}
+
 inline int Tree::MaxDepth() const {
+  if (num_leaves_ == 1) return 0;
   int max_depth = 0;
   for (int i = 0; i < num_leaves(); ++i) {
     if (max_depth < leaf_depth_[i]) max_depth = leaf_depth_[i];
   }
   return max_depth;
+}
+
+inline void Tree::RecomputeLeafDepths(int node, int depth) {
+  if (node == 0) leaf_depth_.resize(num_leaves());
+  if (node < 0) {
+    leaf_depth_[~node] = depth;
+  } else {
+    RecomputeLeafDepths(left_child_[node], depth+1);
+    RecomputeLeafDepths(right_child_[node], depth+1);
+  }
 }
 
 inline int Tree::GetLeaf(const double* feature_values) const {

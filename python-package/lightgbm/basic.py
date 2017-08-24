@@ -170,6 +170,7 @@ C_API_IS_ROW_MAJOR = 1
 C_API_PREDICT_NORMAL = 0
 C_API_PREDICT_RAW_SCORE = 1
 C_API_PREDICT_LEAF_INDEX = 2
+C_API_PREDICT_CONTRIB = 3
 
 """data type of data field"""
 FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
@@ -351,7 +352,7 @@ class _InnerPredictor(object):
         return this
 
     def predict(self, data, num_iteration=-1,
-                raw_score=False, pred_leaf=False, data_has_header=False,
+                raw_score=False, pred_leaf=False, pred_contrib=False, data_has_header=False,
                 is_reshape=True):
         """
         Predict logic
@@ -367,6 +368,8 @@ class _InnerPredictor(object):
             True for predict raw score
         pred_leaf : bool
             True for predict leaf index
+        pred_contrib : bool
+            True for predict feature contributions
         data_has_header : bool
             Used for txt data, True if txt data has header
         is_reshape : bool
@@ -384,6 +387,8 @@ class _InnerPredictor(object):
             predict_type = C_API_PREDICT_RAW_SCORE
         if pred_leaf:
             predict_type = C_API_PREDICT_LEAF_INDEX
+        if pred_contrib:
+            predict_type = C_API_PREDICT_CONTRIB
         int_data_has_header = 1 if data_has_header else 0
         if num_iteration > self.num_total_iteration:
             num_iteration = self.num_total_iteration
@@ -1633,8 +1638,8 @@ class Booster(object):
                 ptr_string_buffer))
         return json.loads(string_buffer.value.decode())
 
-    def predict(self, data, num_iteration=-1, raw_score=False, pred_leaf=False, data_has_header=False, is_reshape=True,
-                pred_parameter=None):
+    def predict(self, data, num_iteration=-1, raw_score=False, pred_leaf=False, pred_contrib=False,
+                data_has_header=False, is_reshape=True, pred_parameter=None):
         """
         Predict logic
 
@@ -1649,6 +1654,8 @@ class Booster(object):
             True for predict raw score
         pred_leaf : bool
             True for predict leaf index
+        pred_contrib : bool
+            True for predict feature contributions
         data_has_header : bool
             Used for txt data
         is_reshape : bool
@@ -1663,7 +1670,7 @@ class Booster(object):
         predictor = self._to_predictor(pred_parameter)
         if num_iteration <= 0:
             num_iteration = self.best_iteration
-        return predictor.predict(data, num_iteration, raw_score, pred_leaf, data_has_header, is_reshape)
+        return predictor.predict(data, num_iteration, raw_score, pred_leaf, pred_contrib, data_has_header, is_reshape)
 
     def get_leaf_output(self, tree_id, leaf_id):
         ret = ctypes.c_double(0)
