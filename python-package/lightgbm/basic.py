@@ -1726,13 +1726,23 @@ class Booster(object):
         result : array
             Array of feature importances.
         """
+        if importance_type == "split":
+            importance_type_int = 0
+        elif importance_type == "gain":
+            importance_type_int = 1
+        else:
+            importance_type_int = -1
         num_feature = self.num_feature()
-        result = np.array([0 for _ in range_(num_feature)], dtype=np.int32)
+        result = np.array([0 for _ in range_(num_feature)], dtype=np.float64)
         _safe_call(_LIB.LGBM_BoosterFeatureImportance(
             self.handle,
             ctypes.c_int(iteration),
-            result.ctypes.data_as(ctypes.POINTER(ctypes.c_int))))
-        return result
+            ctypes.c_int(importance_type_int),
+            result.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
+        if importance_type_int == 0:
+            return result.astype(int)
+        else:
+            return result
 
     def __inner_eval(self, data_name, data_idx, feval=None):
         """

@@ -726,12 +726,14 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSetLeafValue(BoosterHandle handle,
 * \brief get model feature importance
 * \param handle handle
 * \param num_iteration, <= 0 means use all
+* \param importance_type: 0 for split, 1 for gain
 * \param out_results output value array
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT int LGBM_BoosterFeatureImportance(BoosterHandle handle,
                                                     int num_iteration,
-                                                    int* out_results);
+                                                    int importance_type,
+                                                    double* out_results);
 
 #if defined(_MSC_VER)
 // exception handle and error msg

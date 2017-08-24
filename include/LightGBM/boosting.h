@@ -194,9 +194,10 @@ public:
   /*!
   * \brief Calculate feature importances
   * \param num_iteration Number of model that want to use for feature importance, -1 means use all
+  * \param importance_type: 0 for split, 1 for gain
   * \return vector of feature_importance
   */
-  virtual std::vector<size_t> FeatureImportance(int num_iteration) const = 0;
+  virtual std::vector<float> FeatureImportance(int num_iteration, int importance_type) const = 0;
 
   /*!
   * \brief Get max feature index of this model
