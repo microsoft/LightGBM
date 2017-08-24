@@ -121,7 +121,6 @@ single.tree.parse <- function(lgb_tree) {
       # Overwrite data.table - this should be switched to an envir in the future
       single_tree_dt <<- data.table::rbindlist(l = list(single_tree_dt,
                                                         tree_node_leaf[c("leaf_index",
-                                                                         "leaf_parent",
                                                                          "leaf_value",
                                                                          "leaf_count")]),
                                                use.names = TRUE,
