@@ -1680,6 +1680,14 @@ class Booster(object):
         predictor.pandas_categorical = self.pandas_categorical
         return predictor
 
+    def num_feature(self):
+        """Get num of features"""
+        out_num_feature = ctypes.c_int(0)
+        _safe_call(_LIB.LGBM_BoosterGetNumFeature(
+            self.handle,
+            ctypes.byref(out_num_feature)))
+        return out_num_feature.value
+
     def feature_name(self):
         """
         Get feature names.
@@ -1689,12 +1697,7 @@ class Booster(object):
         result : array
             Array of feature names.
         """
-        out_num_feature = ctypes.c_int(0)
-        """Get num of features"""
-        _safe_call(_LIB.LGBM_BoosterGetNumFeature(
-            self.handle,
-            ctypes.byref(out_num_feature)))
-        num_feature = out_num_feature.value
+        num_feature = self.num_feature()
         """Get name of features"""
         tmp_out_len = ctypes.c_int(0)
         string_buffers = [ctypes.create_string_buffer(255) for i in range_(num_feature)]
@@ -1707,7 +1710,7 @@ class Booster(object):
             raise ValueError("Length of feature names doesn't equal with num_feature")
         return [string_buffers[i].value.decode() for i in range_(num_feature)]
 
-    def feature_importance(self, importance_type='split'):
+    def feature_importance(self, importance_type='split', iteration=-1):
         """
         Get feature importances
 
@@ -1723,23 +1726,23 @@ class Booster(object):
         result : array
             Array of feature importances.
         """
-        if importance_type not in ["split", "gain"]:
-            raise KeyError("importance_type must be split or gain")
-        dump_model = self.dump_model()
-        ret = [0] * (dump_model["max_feature_idx"] + 1)
-
-        def dfs(root):
-            if "split_feature" in root:
-                if root['split_gain'] > 0:
-                    if importance_type == 'split':
-                        ret[root["split_feature"]] += 1
-                    elif importance_type == 'gain':
-                        ret[root["split_feature"]] += root["split_gain"]
-                dfs(root["left_child"])
-                dfs(root["right_child"])
-        for tree in dump_model["tree_info"]:
-            dfs(tree["tree_structure"])
-        return np.array(ret)
+        if importance_type == "split":
+            importance_type_int = 0
+        elif importance_type == "gain":
+            importance_type_int = 1
+        else:
+            importance_type_int = -1
+        num_feature = self.num_feature()
+        result = np.array([0 for _ in range_(num_feature)], dtype=np.float64)
+        _safe_call(_LIB.LGBM_BoosterFeatureImportance(
+            self.handle,
+            ctypes.c_int(iteration),
+            ctypes.c_int(importance_type_int),
+            result.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
+        if importance_type_int == 0:
+            return result.astype(int)
+        else:
+            return result
 
     def __inner_eval(self, data_name, data_idx, feval=None):
         """
