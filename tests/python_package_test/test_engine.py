@@ -290,7 +290,7 @@ class TestEngine(unittest.TestCase):
         self.assertIn(valid_set_name, gbm.best_score)
         self.assertIn('binary_logloss', gbm.best_score[valid_set_name])
 
-    def test_continue_train_and_dump_model(self):
+    def test_continue_train(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
@@ -317,9 +317,6 @@ class TestEngine(unittest.TestCase):
         self.assertAlmostEqual(evals_result['valid_0']['l1'][-1], ret, places=5)
         for l1, mae in zip(evals_result['valid_0']['l1'], evals_result['valid_0']['mae']):
             self.assertAlmostEqual(l1, mae, places=5)
-        # test dump model
-        self.assertIn('tree_info', gbm.dump_model())
-        self.assertIsInstance(gbm.feature_importance(), np.ndarray)
         os.remove(model_name)
 
     def test_continue_train_multiclass(self):
