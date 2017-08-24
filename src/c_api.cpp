@@ -248,7 +248,7 @@ public:
     return boosting_->DumpModel(num_iteration);
   }
 
-  std::vector<float> FeatureImportance(int num_iteration, int importance_type) {
+  std::vector<double> FeatureImportance(int num_iteration, int importance_type) {
     return boosting_->FeatureImportance(num_iteration, importance_type);
   }
 
@@ -1185,7 +1185,7 @@ int LGBM_BoosterFeatureImportance(BoosterHandle handle,
                                   double* out_results) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  std::vector<float> feature_importances = ref_booster->FeatureImportance(num_iteration, importance_type);
+  std::vector<double> feature_importances = ref_booster->FeatureImportance(num_iteration, importance_type);
   for (size_t i = 0; i < feature_importances.size(); ++i) {
     (out_results)[i] = feature_importances[i];
   }

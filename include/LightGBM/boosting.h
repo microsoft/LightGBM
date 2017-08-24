@@ -197,7 +197,7 @@ public:
   * \param importance_type: 0 for split, 1 for gain
   * \return vector of feature_importance
   */
-  virtual std::vector<float> FeatureImportance(int num_iteration, int importance_type) const = 0;
+  virtual std::vector<double> FeatureImportance(int num_iteration, int importance_type) const = 0;
 
   /*!
   * \brief Get max feature index of this model

@@ -207,7 +207,7 @@ public:
   * \param importance_type: 0 for split, 1 for gain
   * \return vector of feature_importance
   */
-  std::vector<float> FeatureImportance(int num_iteration, int importance_type) const override;
+  std::vector<double> FeatureImportance(int num_iteration, int importance_type) const override;
 
   /*!
   * \brief Get max feature index of this model

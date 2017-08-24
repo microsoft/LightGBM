@@ -994,7 +994,7 @@ std::string GBDT::SaveModelToString(int num_iteration) const {
 
   ss << "feature_infos=" << Common::Join(feature_infos_, " ") << std::endl;
 
-  std::vector<float> feature_importances = FeatureImportance(num_iteration, 0);
+  std::vector<double> feature_importances = FeatureImportance(num_iteration, 0);
 
   ss << std::endl;
   int num_used_model = static_cast<int>(models_.size());
@@ -1145,7 +1145,7 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
   return true;
 }
 
-std::vector<float> GBDT::FeatureImportance(int num_iteration, int importance_type) const {
+std::vector<double> GBDT::FeatureImportance(int num_iteration, int importance_type) const {
 
   int num_used_model = static_cast<int>(models_.size());
   if (num_iteration > 0) {
@@ -1153,12 +1153,12 @@ std::vector<float> GBDT::FeatureImportance(int num_iteration, int importance_typ
     num_used_model = std::min(num_iteration * num_tree_per_iteration_, num_used_model);
   }
 
-  std::vector<float> feature_importances(max_feature_idx_ + 1, 0.0f);
+  std::vector<double> feature_importances(max_feature_idx_ + 1, 0.0);
   if (importance_type == 0) {
     for (int iter = boost_from_average_ ? 1 : 0; iter < num_used_model; ++iter) {
       for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
         if (models_[iter]->split_gain(split_idx) > 0) {
-          feature_importances[models_[iter]->split_feature(split_idx)] += 1.0f;
+          feature_importances[models_[iter]->split_feature(split_idx)] += 1.0;
         }
       }
     }
