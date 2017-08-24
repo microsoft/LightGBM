@@ -1,6 +1,6 @@
 # Parameters
 
-This is a page contains all parameters in LightGBM.
+This is a page contains all parameters in LightGBM command line program.
 
 ***List of other Helpful Links***
 * [Python API Reference](./Python-API.md)
