@@ -1,6 +1,8 @@
 #ifndef LIGHTGBM_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_
 
+#include <LightGBM/meta.h>
+
 #include <LightGBM/objective_function.h>
 #include <LightGBM/utils/common.h>
 
@@ -314,21 +316,36 @@ public:
     weights_ = metadata.weights();
   }
 
+  /* Parametrize with unbounded internal score "f"; then
+   *  loss = exp(f) - label * f
+   *  grad = exp(f) - label
+   *  hess = exp(f)
+   *
+   * And the output is exp(f); so the associated metric get s=exp(f)
+   * so that its loss = s - label * log(s); a little awkward maybe.
+   *
+   */
   void GetGradients(const double* score, score_t* gradients,
                     score_t* hessians) const override {
     if (weights_ == nullptr) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        gradients[i] = static_cast<score_t>(score[i] - label_[i]);
-        hessians[i] = static_cast<score_t>(score[i] + max_delta_step_);
+        double ef = std::exp(score[i]);
+        gradients[i] = static_cast<score_t>(ef - label_[i]);
+        hessians[i] = static_cast<score_t>(ef);
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        gradients[i] = static_cast<score_t>((score[i] - label_[i]) * weights_[i]);
-        hessians[i] = static_cast<score_t>((score[i] + max_delta_step_) * weights_[i]);
+        double ef = std::exp(score[i]);
+        gradients[i] = static_cast<score_t>((ef - label_[i]) * weights_[i]);
+        hessians[i] = static_cast<score_t>(ef * weights_[i]);
       }
     }
+  }
+
+  void ConvertOutput(const double* input, double* output) const override {
+    output[0] = std::exp(input[0]);
   }
 
   const char* GetName() const override {
@@ -342,6 +359,25 @@ public:
   }
 
   bool BoostFromAverage() const override { return true; }
+
+  bool GetCustomAverage(double *initscore) const override {
+    if (initscore == nullptr) return false;
+    double sumw = 0.0f;
+    double sumy = 0.0f;
+    if (weights_ == nullptr) {
+      for (int i = 0; i < num_data_; i++) sumy += label_[i];
+      sumw = static_cast<double>(num_data_);
+    } else {
+      for (int i = 0; i < num_data_; i++) {
+        sumy += weights_[i] * label_[i];
+        sumw += weights_[i];
+      }
+    }
+    double yavg = sumy / sumw;
+    *initscore = std::log(yavg);
+    Log::Info("[%s:%s]: yavg=%f -> initscore=%f",  GetName(), __func__, yavg, *initscore);
+    return true;
+  }
 
 private:
   /*! \brief Number of data */
