@@ -388,7 +388,7 @@ protected:
   bool is_constant_hessian_;
   std::unique_ptr<ObjectiveFunction> loaded_objective_;
   bool average_output_;
-  bool need_re_bagging_ = false;
+  bool need_re_bagging_;
 };
 
 }  // namespace LightGBM

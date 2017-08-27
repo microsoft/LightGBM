@@ -41,7 +41,8 @@ GBDT::GBDT()
   num_iteration_for_pred_(0),
   shrinkage_rate_(0.1f),
   num_init_iteration_(0),
-  boost_from_average_(false) {
+  boost_from_average_(false),
+  need_re_bagging_(false) {
   #pragma omp parallel
   #pragma omp master
   {
@@ -259,15 +260,14 @@ void GBDT::ResetBaggingConfig(const BoostingConfig* config, bool is_change_datas
       is_use_subset_ = true;
       Log::Debug("use subset for bagging");
     }
+    if (is_change_dataset) {
+      need_re_bagging_ = true;
+    }
   } else {
     bag_data_cnt_ = num_data_;
     bag_data_indices_.clear();
     tmp_indices_.clear();
     is_use_subset_ = false;
-  }
-
-  if (is_change_dataset) {
-    need_re_bagging_ = true;
   }
 }
 
