@@ -270,7 +270,7 @@ public:
   virtual const char* SubModelName() const override { return "tree"; }
 
 protected:
-  void ResetBaggingConfig(const BoostingConfig* config);
+  void ResetBaggingConfig(const BoostingConfig* config, bool is_change_dataset);
   /*!
   * \brief Implement bagging logic
   * \param iter Current interation
@@ -388,6 +388,7 @@ protected:
   bool is_constant_hessian_;
   std::unique_ptr<ObjectiveFunction> loaded_objective_;
   bool average_output_;
+  bool need_re_bagging_ = false;
 };
 
 }  // namespace LightGBM
