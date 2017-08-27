@@ -11,6 +11,7 @@ PROJECT(lightgbm)
 OPTION(USE_MPI "MPI based parallel learning" OFF)
 OPTION(USE_OPENMP "Enable OpenMP" ON)
 OPTION(USE_GPU "Enable GPU-acclerated training (EXPERIMENTAL)" OFF)
+option(BUILD_TESTS "Build tests." ON)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.2")
@@ -150,3 +151,37 @@ install(TARGETS lightgbm _lightgbm
         ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
 install(DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+
+# Setup testing
+if(BUILD_TESTS)
+    set(PROJECT_TEST_NAME lightgbm_test)
+    enable_testing()
+    find_package(GTest)
+    if (GTEST_FOUND)
+        message(STATUS "Found GoogleTest headers at ${GTEST_INCLUDE_DIR}")
+        message(STATUS "Adding tests ...")
+        include_directories(${GTEST_INCLUDE_DIR} ${LightGBM_HEADER_DIR})
+
+        file(GLOB TEST_SOURCES 
+            tests/cpp_test/*.cpp
+        )
+        add_executable(lightgbm_test ${TEST_SOURCES})
+        add_dependencies(lightgbm_test lightgbm)
+
+        find_library(LIGHTGBM_LIBRARY
+            NAMES _lightgbm
+            HINTS
+                ${LIBRARY_OUTPUT_PATH}
+            PATH_SUFFIXES lib
+        )
+        # Link test executable against gtest & gtest_main
+        target_link_libraries(lightgbm_test ${GTEST_BOTH_LIBRARIES} ${LIGHTGBM_LIBRARY})
+
+        add_test(
+            NAME lightgbm_test
+            COMMAND lightgbm_test
+        )
+    else()
+        message(STATUS "Skipping tests as GTest (Google Test) was not found")
+    endif()
+endif()
