@@ -163,7 +163,7 @@ inline static const char* Atoi(const char* p, int* out) {
 inline static const char* Atof(const char* p, double* out) {
   int frac;
   double sign, value, scale;
-  *out = 0;
+  *out = NAN;
   // Skip leading white space, if any.
   while (*p == ' ') {
     ++p;
