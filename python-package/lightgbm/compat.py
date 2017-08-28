@@ -64,23 +64,38 @@ try:
     from sklearn.base import RegressorMixin, ClassifierMixin
     from sklearn.preprocessing import LabelEncoder
     from sklearn.utils import deprecated
+    from sklearn.utils.multiclass import check_classification_targets
+    from sklearn.utils.validation import check_X_y, check_array, _num_samples
     try:
         from sklearn.model_selection import StratifiedKFold, GroupKFold
+        from sklearn.exceptions import NotFittedError
     except ImportError:
         from sklearn.cross_validation import StratifiedKFold, GroupKFold
+        from sklearn.utils.validation import NotFittedError
     SKLEARN_INSTALLED = True
     LGBMModelBase = BaseEstimator
     LGBMRegressorBase = RegressorMixin
     LGBMClassifierBase = ClassifierMixin
     LGBMLabelEncoder = LabelEncoder
     LGBMDeprecated = deprecated
+    LGBMNotFittedError = NotFittedError
     LGBMStratifiedKFold = StratifiedKFold
     LGBMGroupKFold = GroupKFold
+    LGBMCheckXY = check_X_y
+    LGBMCheckArray = check_array
+    LGBMNumSamples = _num_samples
+    LGBMCheckClassificationTargets = check_classification_targets
 except ImportError:
     SKLEARN_INSTALLED = False
     LGBMModelBase = object
     LGBMClassifierBase = object
     LGBMRegressorBase = object
     LGBMLabelEncoder = None
+    LGBMDeprecated = None
+    LGBMNotFittedError = ValueError
     LGBMStratifiedKFold = None
     LGBMGroupKFold = None
+    LGBMCheckXY = None
+    LGBMCheckArray = None
+    LGBMNumSamples = None
+    LGBMCheckClassificationTargets = None
