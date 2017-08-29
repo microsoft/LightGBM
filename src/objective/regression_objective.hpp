@@ -330,14 +330,14 @@ public:
     if (weights_ == nullptr) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        double ef = std::exp(score[i]);
+        const double ef = std::exp(score[i]);
         gradients[i] = static_cast<score_t>(ef - label_[i]);
         hessians[i] = static_cast<score_t>(ef);
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        double ef = std::exp(score[i]);
+        const double ef = std::exp(score[i]);
         gradients[i] = static_cast<score_t>((ef - label_[i]) * weights_[i]);
         hessians[i] = static_cast<score_t>(ef * weights_[i]);
       }
@@ -365,15 +365,17 @@ public:
     double sumw = 0.0f;
     double sumy = 0.0f;
     if (weights_ == nullptr) {
-      for (int i = 0; i < num_data_; i++) sumy += label_[i];
+      for (data_size_t i = 0; i < num_data_; i++) {
+        sumy += label_[i];
+      }
       sumw = static_cast<double>(num_data_);
     } else {
-      for (int i = 0; i < num_data_; i++) {
+      for (data_size_t i = 0; i < num_data_; i++) {
         sumy += weights_[i] * label_[i];
         sumw += weights_[i];
       }
     }
-    double yavg = sumy / sumw;
+    const double yavg = sumy / sumw;
     *initscore = std::log(yavg);
     Log::Info("[%s:%s]: yavg=%f -> initscore=%f",  GetName(), __func__, yavg, *initscore);
     return true;
