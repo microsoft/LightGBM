@@ -102,7 +102,15 @@ for (data_size_t i = start; i < end; ++i) {\
 }\
 
 void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, double* score) const {
-  if (num_leaves_ <= 1) { return; }
+  if (num_leaves_ <= 1) {
+    if (leaf_value_[0] != 0.0f) {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data; ++i) {
+        score[i] += leaf_value_[0];
+      }
+    }
+    return;
+  }
   std::vector<uint32_t> default_bins(num_leaves_ - 1);
   std::vector<uint32_t> max_bins(num_leaves_ - 1);
   for (int i = 0; i < num_leaves_ - 1; ++i) {
@@ -141,7 +149,15 @@ void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, doubl
 void Tree::AddPredictionToScore(const Dataset* data,
   const data_size_t* used_data_indices,
   data_size_t num_data, double* score) const {
-  if (num_leaves_ <= 1) { return; }
+  if (num_leaves_ <= 1) { 
+    if (leaf_value_[0] != 0.0f) {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data; ++i) {
+        score[used_data_indices[i]] += leaf_value_[0];
+      }
+    }
+    return; 
+  }
   std::vector<uint32_t> default_bins(num_leaves_ - 1);
   std::vector<uint32_t> max_bins(num_leaves_ - 1);
   for (int i = 0; i < num_leaves_ - 1; ++i) {

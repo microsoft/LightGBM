@@ -22,7 +22,6 @@
 #include <functional>
 
 #include "./application/predictor.hpp"
-#include "./boosting/gbdt.h"
 
 namespace LightGBM {
 
@@ -158,12 +157,12 @@ public:
 
   bool TrainOneIter() {
     std::lock_guard<std::mutex> lock(mutex_);
-    return boosting_->TrainOneIter(nullptr, nullptr, false);
+    return boosting_->TrainOneIter(nullptr, nullptr);
   }
 
   bool TrainOneIter(const float* gradients, const float* hessians) {
     std::lock_guard<std::mutex> lock(mutex_);
-    return boosting_->TrainOneIter(gradients, hessians, false);
+    return boosting_->TrainOneIter(gradients, hessians);
   }
 
   void RollbackOneIter() {
@@ -253,12 +252,12 @@ public:
   }
 
   double GetLeafValue(int tree_idx, int leaf_idx) const {
-    return dynamic_cast<GBDT*>(boosting_.get())->GetLeafValue(tree_idx, leaf_idx);
+    return dynamic_cast<GBDTBase*>(boosting_.get())->GetLeafValue(tree_idx, leaf_idx);
   }
 
   void SetLeafValue(int tree_idx, int leaf_idx, double val) {
     std::lock_guard<std::mutex> lock(mutex_);
-    dynamic_cast<GBDT*>(boosting_.get())->SetLeafValue(tree_idx, leaf_idx, val);
+    dynamic_cast<GBDTBase*>(boosting_.get())->SetLeafValue(tree_idx, leaf_idx, val);
   }
 
   int GetEvalCounts() const {

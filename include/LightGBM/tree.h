@@ -167,6 +167,15 @@ public:
     shrinkage_ *= rate;
   }
 
+  inline void AddBias(double val) {
+    #pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
+    for (int i = 0; i < num_leaves_; ++i) {
+      leaf_value_[i] = val + leaf_value_[i];
+    }
+    // force to 1.0
+    shrinkage_ = 1.0f;
+  }
+
   inline void AsConstantTree(double val) {
     num_leaves_ = 1;
     shrinkage_ = 1.0f;
