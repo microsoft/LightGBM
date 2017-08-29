@@ -294,7 +294,7 @@ private:
   /*! \brief Serialize one node to if-else statement*/
   std::string NodeToIfElse(int index, bool is_predict_leaf_index) const;
 
-  double ExpectedValue(int node = 0) const;
+  double ExpectedValue(int node) const;
 
   int MaxDepth() const;
 
@@ -423,7 +423,7 @@ inline int Tree::PredictLeafIndex(const double* feature_values) const {
 }
 
 inline void Tree::PredictContrib(const double* feature_values, int num_features, double* output) const {
-  output[num_features] += ExpectedValue();
+  output[num_features] += ExpectedValue(0);
   // Run the recursion with preallocated space for the unique path data
   const int max_path_len = MaxDepth() + 1;
   std::vector<PathElement> unique_path_data((max_path_len*(max_path_len + 1)) / 2);
