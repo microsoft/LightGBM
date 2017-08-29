@@ -314,6 +314,17 @@ public:
     num_data_ = num_data;
     label_ = metadata.label();
     weights_ = metadata.weights();
+
+    // Safety check of labels
+    float miny;
+    double sumy;
+    Common::obtain_min_max_sum(label_, num_data_, &miny, nullptr, &sumy);
+    if (miny < 0.0f) {
+      Log::Fatal("[%s]: at least one target label is negative.", GetName());
+    }
+    if (sumy == 0.0f) {
+      Log::Fatal("[%s]: sum of labels is zero.", GetName());
+    }
   }
 
   /* Parametrize with unbounded internal score "f"; then
