@@ -192,7 +192,7 @@ class LGBMModel(LGBMModelBase):
         ----------
         n_features_ : int
             The number of features of fitted model.
-        classes_ : array of shape = [n_classes_]
+        classes_ : array of shape = [n_classes]
             The class label array (classification problem).
         n_classes_ : int
             The number of classes (classification problem).
@@ -590,7 +590,8 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
 
     base_doc = LGBMModel.fit.__doc__
     fit.__doc__ = base_doc[:base_doc.find("eval_metric :")] \
-                  + """eval_metric : string, list of strings, callable or None, optional (default="l2")""" + "\n" \
+                  + """eval_metric : string, list of strings, callable or None, optional (default="l2")""" \
+                  + "\n" \
                   + base_doc[base_doc.find("            If string, it should be a built-in evaluation metric to use."):]
 
 
@@ -645,7 +646,8 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
 
     base_doc = LGBMModel.fit.__doc__
     fit.__doc__ = base_doc[:base_doc.find("eval_metric :")] \
-                  + """eval_metric : string, list of strings, callable or None, optional (default="logloss")""" + "\n" \
+                  + """eval_metric : string, list of strings, callable or None, optional (default="logloss")""" \
+                  + "\n" \
                   + base_doc[base_doc.find("            If string, it should be a built-in evaluation metric to use."):]
 
     def predict(self, X, raw_score=False, num_iteration=0):
@@ -739,8 +741,11 @@ class LGBMRanker(LGBMModel):
 
     base_doc = LGBMModel.fit.__doc__
     fit.__doc__ = base_doc[:base_doc.find("eval_metric :")] \
-                  + """eval_metric : string, list of strings, callable or None, optional (default="ndcg")""" + "\n" \
+                  + """eval_metric : string, list of strings, callable or None, optional (default="ndcg")""" \
+                  + "\n" \
                   + base_doc[base_doc.find("            If string, it should be a built-in evaluation metric to use."):base_doc.find("early_stopping_rounds :")] \
-                  + """eval_at : int or list of int, optional (default=1)""" + "\n" \
-                  + """            The evaluation positions of NDCG.""" + "\n" \
+                  + """eval_at : int or list of int, optional (default=1)""" \
+                  + "\n" \
+                  + """            The evaluation positions of NDCG.""" \
+                  + "\n" \
                   + base_doc[base_doc.find("        early_stopping_rounds :"):]
