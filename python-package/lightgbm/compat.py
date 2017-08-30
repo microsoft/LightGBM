@@ -65,7 +65,7 @@ try:
     from sklearn.preprocessing import LabelEncoder
     from sklearn.utils import deprecated
     from sklearn.utils.multiclass import check_classification_targets
-    from sklearn.utils.validation import check_X_y, check_array, _num_samples
+    from sklearn.utils.validation import check_X_y, check_array, check_consistent_length
     try:
         from sklearn.model_selection import StratifiedKFold, GroupKFold
         from sklearn.exceptions import NotFittedError
@@ -83,7 +83,7 @@ try:
     LGBMGroupKFold = GroupKFold
     LGBMCheckXY = check_X_y
     LGBMCheckArray = check_array
-    LGBMNumSamples = _num_samples
+    LGBMCheckConsistentLength = check_consistent_length
     LGBMCheckClassificationTargets = check_classification_targets
 except ImportError:
     SKLEARN_INSTALLED = False
@@ -97,5 +97,5 @@ except ImportError:
     LGBMGroupKFold = None
     LGBMCheckXY = None
     LGBMCheckArray = None
-    LGBMNumSamples = None
+    LGBMCheckConsistentLength = None
     LGBMCheckClassificationTargets = None
