@@ -203,9 +203,9 @@ class LGBMModel(LGBMModelBase):
         n_features_ : int
             The number of features of fitted model.
         best_score_ : dictionary or None
-            The best score of fitted model.
+            The best score of fitted model if early_stopping_rounds has been specified.
         best_iteration_ : int or None
-            The best iteration of fitted model.
+            The best iteration of fitted model if early_stopping_rounds has been specified.
         objective_ : string or callable
             The concrete objective used while fitting this model.
         booster_ : Booster
@@ -452,7 +452,7 @@ class LGBMModel(LGBMModelBase):
 
         if early_stopping_rounds is not None:
             self._best_iteration = self._Booster.best_iteration
-        self._best_score = self._Booster.best_score
+            self._best_score = self._Booster.best_score
 
         # free dataset
         self.booster_.free_dataset()
