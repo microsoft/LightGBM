@@ -589,10 +589,9 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
         return self
 
     base_doc = LGBMModel.fit.__doc__
-    fit.__doc__ = base_doc[:base_doc.find("eval_metric :")] \
-                  + """eval_metric : string, list of strings, callable or None, optional (default="l2")""" \
-                  + "\n" \
-                  + base_doc[base_doc.find("            If string, it should be a built-in evaluation metric to use."):]
+    fit.__doc__ = (base_doc[:base_doc.find('eval_metric :')] +
+                   'eval_metric : string, list of strings, callable or None, optional (default="l2")\n' +
+                   base_doc[base_doc.find('            If string, it should be a built-in evaluation metric to use.'):])
 
 
 class LGBMClassifier(LGBMModel, LGBMClassifierBase):
@@ -645,10 +644,9 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
         return self
 
     base_doc = LGBMModel.fit.__doc__
-    fit.__doc__ = base_doc[:base_doc.find("eval_metric :")] \
-                  + """eval_metric : string, list of strings, callable or None, optional (default="logloss")""" \
-                  + "\n" \
-                  + base_doc[base_doc.find("            If string, it should be a built-in evaluation metric to use."):]
+    fit.__doc__ = (base_doc[:base_doc.find('eval_metric :')] +
+                   'eval_metric : string, list of strings, callable or None, optional (default="logloss")\n' +
+                   base_doc[base_doc.find('            If string, it should be a built-in evaluation metric to use.'):])
 
     def predict(self, X, raw_score=False, num_iteration=0):
         class_probs = self.predict_proba(X, raw_score, num_iteration)
@@ -709,7 +707,7 @@ class LGBMRanker(LGBMModel):
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_group=None, eval_metric='ndcg',
-            eval_at=1, early_stopping_rounds=None, verbose=True,
+            eval_at=[1], early_stopping_rounds=None, verbose=True,
             feature_name='auto', categorical_feature='auto', callbacks=None):
         # check group data
         if group is None:
@@ -740,12 +738,9 @@ class LGBMRanker(LGBMModel):
         return self
 
     base_doc = LGBMModel.fit.__doc__
-    fit.__doc__ = base_doc[:base_doc.find("eval_metric :")] \
-                  + """eval_metric : string, list of strings, callable or None, optional (default="ndcg")""" \
-                  + "\n" \
-                  + base_doc[base_doc.find("            If string, it should be a built-in evaluation metric to use."):base_doc.find("early_stopping_rounds :")] \
-                  + """eval_at : int or list of int, optional (default=1)""" \
-                  + "\n" \
-                  + """            The evaluation positions of NDCG.""" \
-                  + "\n" \
-                  + base_doc[base_doc.find("        early_stopping_rounds :"):]
+    fit.__doc__ = (base_doc[:base_doc.find('eval_metric :')] +
+                   'eval_metric : string, list of strings, callable or None, optional (default="ndcg")\n' +
+                   base_doc[base_doc.find('            If string, it should be a built-in evaluation metric to use.'):base_doc.find('early_stopping_rounds :')] +
+                   'eval_at : list of int, optional (default=[1])\n'
+                   '            The evaluation positions of NDCG.\n' +
+                   base_doc[base_doc.find('        early_stopping_rounds :'):])
