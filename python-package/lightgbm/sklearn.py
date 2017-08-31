@@ -193,9 +193,9 @@ class LGBMModel(LGBMModelBase):
         n_features_ : int
             The number of features of fitted model.
         classes_ : array of shape = [n_classes]
-            The class label array (classification problem).
+            The class label array (only for classification problem).
         n_classes_ : int
-            The number of classes (classification problem).
+            The number of classes (only for classification problem).
         best_score_ : dictionary or None
             The best score of fitted model if early_stopping_rounds has been specified.
         best_iteration_ : int or None
@@ -384,8 +384,8 @@ class LGBMModel(LGBMModelBase):
         params.pop('n_estimators', None)
         if self._n_classes is not None and self._n_classes > 2:
             params['num_class'] = self._n_classes
-        if hasattr(self, 'eval_at'):
-            params['ndcg_eval_at'] = self.eval_at
+        if hasattr(self, '_eval_at'):
+            params['ndcg_eval_at'] = self._eval_at
         params['objective'] = self._objective
         if self._fobj:
             params['objective'] = 'None'  # objective = nullptr for unknown objective
@@ -724,7 +724,7 @@ class LGBMRanker(LGBMModel):
                                  "if you use dict, the index should start from 0")
 
         if eval_at is not None:
-            self.eval_at = eval_at
+            self._eval_at = eval_at
         super(LGBMRanker, self).fit(X, y, sample_weight=sample_weight,
                                     init_score=init_score, group=group,
                                     eval_set=eval_set, eval_names=eval_names,
