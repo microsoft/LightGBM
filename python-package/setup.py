@@ -49,13 +49,14 @@ def copy_files(use_gpu=False):
 
 
 def clear_path(path):
-    contents = os.listdir(path)
-    for file in contents:
-        file_path = os.path.join(path, file)
-        if os.path.isfile(file_path):
-            os.remove(file_path)
-        else:
-            shutil.rmtree(file_path)
+    if os.path.isdir(path):
+        contents = os.listdir(path)
+        for file in contents:
+            file_path = os.path.join(path, file)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+            else:
+                shutil.rmtree(file_path)
 
 
 def silent_call(cmd):
