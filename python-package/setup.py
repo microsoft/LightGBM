@@ -89,6 +89,23 @@ def compile_cpp(use_mingw=False, use_gpu=False):
             if status != 0:
                 raise Exception('Please install CMake and MinGW first')
         else:
+            if not use_gpu:
+                logger.info("Starting to compile with MSBuild from existing solution file.")
+                platform_toolsets = ("v141", "v140", "v120")
+                for pt in platform_toolsets:
+                    status = silent_call(["MSBuild", "../lightgbm/windows/LightGBM.sln",
+                                          "/p:Configuration=DLL",
+                                          "/p:Platform=x64",
+                                          "/p:PlatformToolset={0}".format(pt)])
+                    if status == 0:
+                        break
+                    else:
+                        clear_path("../lightgbm/windows/x64")
+                if status != 0:
+                    logger.warning("Compilation with MSBuild from existing solution file failed.")
+                else:
+                    os.chdir("..")
+                    return
             vs_versions = ("Visual Studio 15 2017 Win64", "Visual Studio 14 2015 Win64", "Visual Studio 12 2013 Win64")
             for vs in vs_versions:
                 logger.info("Starting to compile with %s." % vs)
@@ -103,7 +120,7 @@ def compile_cpp(use_mingw=False, use_gpu=False):
             status = silent_call(["cmake", "--build", ".", "--target", "_lightgbm", "--config", "Release"])
             if status != 0:
                 raise Exception('Please install CMake first')
-    else:
+    else:  # Linux, Darwin (OS X), etc.
         logger.info("Starting to compile with CMake.")
         status = silent_call(cmake_cmd)
         status += silent_call(["make", "_lightgbm"])
