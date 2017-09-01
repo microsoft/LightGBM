@@ -4,9 +4,11 @@
 from __future__ import absolute_import
 
 import distutils
+import logging
 import os
 import shutil
 import struct
+import subprocess
 import sys
 
 from setuptools import find_packages, setup
@@ -22,7 +24,7 @@ def find_lib():
     exec(compile(open(libpath_py, "rb").read(), libpath_py, 'exec'), libpath, libpath)
 
     LIB_PATH = [os.path.relpath(path, CURRENT_DIR) for path in libpath['find_lib_path']()]
-    print("Install lib_lightgbm from: %s" % LIB_PATH)
+    logging.info("Installing lib_lightgbm from: %s" % LIB_PATH)
     return LIB_PATH
 
 
@@ -56,6 +58,15 @@ def clear_path(path):
             shutil.rmtree(file_path)
 
 
+def silent_call(cmd):
+    try:
+        with open(os.devnull, "w") as shut_up:
+            subprocess.check_output(cmd, stderr=shut_up)
+            return 0
+    except Exception:
+        return 1
+
+
 def compile_cpp(use_mingw=False, use_gpu=False):
 
     if os.path.exists("build_cpp"):
@@ -63,33 +74,39 @@ def compile_cpp(use_mingw=False, use_gpu=False):
     os.makedirs("build_cpp")
     os.chdir("build_cpp")
 
-    cmake_cmd = "cmake "
-    build_cmd = "make _lightgbm"
+    logger.info("Starting to compile the library.")
+
+    cmake_cmd = ["cmake", "../lightgbm/"]
     if use_gpu:
-        cmake_cmd += " -DUSE_GPU=ON "
+        cmake_cmd.append("-DUSE_GPU=ON")
     if os.name == "nt":
         if use_mingw:
-            cmake_cmd += " -G \"MinGW Makefiles\" "
-            os.system(cmake_cmd + " ../lightgbm/")
-            build_cmd = "mingw32-make.exe _lightgbm"
+            logger.info("Starting to compile with CMake and MinGW.")
+            status = silent_call(cmake_cmd + ["-G", "MinGW Makefiles"])
+            status += silent_call(["mingw32-make.exe", "_lightgbm"])
+            if status != 0:
+                raise Exception('Please install CMake and MinGW first')
         else:
-            vs_versions = ["Visual Studio 15 2017 Win64", "Visual Studio 14 2015 Win64", "Visual Studio 12 2013 Win64"]
-            try_vs = 1
+            vs_versions = ("Visual Studio 15 2017 Win64", "Visual Studio 14 2015 Win64", "Visual Studio 12 2013 Win64")
             for vs in vs_versions:
-                tmp_cmake_cmd = "%s -G \"%s\"" % (cmake_cmd, vs)
-                try_vs = os.system(tmp_cmake_cmd + " ../lightgbm/")
-                if try_vs == 0:
-                    cmake_cmd = tmp_cmake_cmd
+                logger.info("Starting to compile with %s." % vs)
+                status = silent_call(cmake_cmd + ["-G", vs])
+                if status == 0:
                     break
                 else:
                     clear_path("./")
-            if try_vs != 0:
+            if status != 0:
                 raise Exception('Please install Visual Studio or MS Build first')
 
-            build_cmd = "cmake --build . --target _lightgbm  --config Release"
-    print("Start to compile library.")
-    os.system(cmake_cmd + " ../lightgbm/")
-    os.system(build_cmd)
+            status = silent_call(["cmake", "--build", ".", "--target", "_lightgbm", "--config", "Release"])
+            if status != 0:
+                raise Exception('Please install CMake first')
+    else:
+        logger.info("Starting to compile with CMake.")
+        status = silent_call(cmake_cmd)
+        status += silent_call(["make", "_lightgbm"])
+        if status != 0:
+            raise Exception('Please install CMake first')
     os.chdir("..")
 
 
@@ -153,6 +170,9 @@ if __name__ == "__main__":
         version = open(os.path.join(dir_path, 'lightgbm', 'VERSION.txt')).read().strip()
 
     sys.path.insert(0, '.')
+
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger('LightGBM')
 
     setup(name='lightgbm',
           version=version,
