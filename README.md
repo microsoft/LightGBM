@@ -23,6 +23,7 @@ For more details, please refer to [Features](https://github.com/Microsoft/LightG
 
 News
 ----
+
 07/13/2017: [Gitter](https://gitter.im/Microsoft/LightGBM) is avaiable.
 
 06/20/2017: Python-package is on PyPI now.
@@ -52,8 +53,9 @@ Julia Package: https://github.com/Allardvm/LightGBM.jl
 JPMML: https://github.com/jpmml/jpmml-lightgbm
 
 
-Get Started And Documentation
--------------------------
+Get Started and Documentation
+-----------------------------
+
 Install by following the guide for the [command line program](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide), [Python package](https://github.com/Microsoft/LightGBM/tree/master/python-package) or [R-package](https://github.com/Microsoft/LightGBM/tree/master/R-package). Then please see the [Quick Start](https://github.com/Microsoft/LightGBM/wiki/Quick-Start) guide.
 
 Our primary documentation is at https://lightgbm.readthedocs.io/ and is generated from this repository.
@@ -90,5 +92,6 @@ LightGBM has been developed and used by many active community members. Your help
 - Open issue if you met problems during development.
 
 Microsoft Open Source Code of Conduct
-------------
+-------------------------------------
+
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
