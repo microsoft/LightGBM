@@ -91,17 +91,18 @@ def compile_cpp(use_mingw=False, use_gpu=False):
         else:
             if not use_gpu:
                 logger.info("Starting to compile with MSBuild from existing solution file.")
+                lib_path = "../lightgbm/windows/x64/DLL/lib_lightgbm.dll"
                 platform_toolsets = ("v141", "v140", "v120")
                 for pt in platform_toolsets:
                     status = silent_call(["MSBuild", "../lightgbm/windows/LightGBM.sln",
                                           "/p:Configuration=DLL",
                                           "/p:Platform=x64",
                                           "/p:PlatformToolset={0}".format(pt)])
-                    if status == 0:
+                    if status == 0 and os.path.exists(lib_path):
                         break
                     else:
                         clear_path("../lightgbm/windows/x64")
-                if status != 0:
+                if status != 0 or not os.path.exists(lib_path):
                     logger.warning("Compilation with MSBuild from existing solution file failed.")
                 else:
                     os.chdir("..")
