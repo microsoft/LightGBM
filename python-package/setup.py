@@ -42,6 +42,7 @@ def copy_files(use_gpu=False):
     if not os.path.isfile('./_IS_SOURCE_PACKAGE.txt'):
         copy_files_helper('include')
         copy_files_helper('src')
+        copy_files_helper('windows')
         if use_gpu:
             copy_files_helper('compute')
         distutils.file_util.copy_file("../CMakeLists.txt", "./lightgbm/")
