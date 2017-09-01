@@ -157,6 +157,7 @@ if __name__ == "__main__":
     setup(name='lightgbm',
           version=version,
           description='LightGBM Python Package',
+          long_description=open('README.rst').read(),
           install_requires=[
               'numpy',
               'scipy',
