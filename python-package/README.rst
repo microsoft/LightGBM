@@ -10,7 +10,7 @@ Installation
 Preparation
 '''''''''''
 
-`setuptools <https://pypi.python.org/pypi/setuptools>`_ is needed. 
+`setuptools <https://pypi.python.org/pypi/setuptools>`_ is needed.
 
 For Mac OS X users, gcc with OpenMP support must be installed first. Refer to `wiki <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#osx>`_ for installing gcc with OpenMP support.
 
@@ -19,7 +19,7 @@ Note: 32-bit python is not supported. Please install 64-bit version.
 Install from pip
 ''''''''''''''''
 
-Install `wheel <http://pythonwheels.com>`_ via ``pip install wheel`` first. For windows user, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if Visual Studio(2015 or 2017) is not installed.
+Install `wheel <http://pythonwheels.com>`_ via ``pip install wheel`` first. For Windows user, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if Visual Studio (2013, 2015 or 2017) is not installed.
 
 
 ``pip install lightgbm``
@@ -31,9 +31,9 @@ Install source package from pip
 ``pip install --no-binary :all: lightgbm``
 
 
-Note: Installation from source package require installing `cmake <https://cmake.org/>`_ first.
+Note: Installation from source package require installing `CMake <https://cmake.org/>`_ first.
 
-For Windows user, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed, and `cmake <https://cmake.org/>`_ must be version 3.8 or higher.
+For Windows user, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed, and `CMake <https://cmake.org/>`_ must be version 3.8 or higher.
 
 For OSX user, you need to run ```export CXX=g++-7 CC=gcc-7``` before running ```pip install ... ```.
 
@@ -50,9 +50,9 @@ Install with MinGW on Windows:
 Install from GitHub
 '''''''''''''''''''
 
-Installation from GitHub require installing `cmake <https://cmake.org/>`_ first. 
+Installation from GitHub require installing `CMake <https://cmake.org/>`_ first.
 
-For Windows user, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed, and `cmake <https://cmake.org/>`_ must be version 3.8 or higher.
+For Windows user, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed, and `CMake <https://cmake.org/>`_ must be version 3.8 or higher.
 
 .. code:: sh
 
@@ -70,13 +70,13 @@ Use ``python setup.py install --gpu`` to enable GPU support. Boost and OpenCL ar
 Examples
 --------
 
-Refer to the walk through examples in `python-guide folder <https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide>`_
+Refer to the walk through examples in `python-guide folder <https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide>`_.
 
 
 Troubleshooting
 ---------------
 
-Refer to `FAQ <https://github.com/Microsoft/LightGBM/tree/master/docs/FAQ.md>`_ 
+Refer to `FAQ <https://github.com/Microsoft/LightGBM/tree/master/docs/FAQ.md>`_.
 
 Developments
 ------------

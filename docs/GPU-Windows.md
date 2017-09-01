@@ -1,7 +1,7 @@
 GPU Windows Compilation
-=========================
+=======================
 
-This guide is for the MinGW build. 
+This guide is for the MinGW build.
 
 For the MSVC (Visual Studio) build with GPU, please refer to https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#windows-2 ( We recommend you to use this since it is much easier).
 
@@ -15,7 +15,7 @@ Installation steps (depends on what you are going to do):
 * Install MinGW
 * Install Boost
 * Install Git
-* Install cmake
+* Install CMake
 * Create LightGBM binaries
 * Debugging LightGBM in CLI (if GPU is crashing or any other crash reason)
 
@@ -190,16 +190,16 @@ Keep Git Bash open.
 
 ---
 
-## cmake Installation, Configuration, Generation
+## CMake Installation, Configuration, Generation
 
 **CLI / Python users only**
 
-Installing cmake requires one download first and then a lot of configuration for LightGBM:
+Installing CMake requires one download first and then a lot of configuration for LightGBM:
 
-![Downloading cmake](https://cloud.githubusercontent.com/assets/9083669/24919759/fe5f4d90-1ee4-11e7-992e-00f8d9bfe6dd.png)
+![Downloading CMake](https://cloud.githubusercontent.com/assets/9083669/24919759/fe5f4d90-1ee4-11e7-992e-00f8d9bfe6dd.png)
 
-* Download cmake 3.8.0 here: https://cmake.org/download/.
-* Install cmake.
+* Download CMake 3.8.0 here: https://cmake.org/download/.
+* Install CMake.
 * Run cmake-gui.
 * Select the folder where you put LightGBM for `Where is the source code`, default using our steps would be `C:/github_repos/LightGBM`.
 * Copy the folder name, and add `/build` for "Where to build the binaries", default using our steps would be `C:/github_repos/LightGBM/build`.
@@ -237,7 +237,7 @@ Configuring done
 Generating done
 ```
 
-This is straightforward, as cmake is providing a large help into locating the correct elements.
+This is straightforward, as CMake is providing a large help into locating the correct elements.
 
 ---
 
@@ -293,13 +293,13 @@ You will have to redo the compilation steps for LightGBM to add debugging mode. 
 
 ![Files to remove](https://cloud.githubusercontent.com/assets/9083669/25051307/3b7dd084-214c-11e7-9758-c338c8cacb1e.png)
 
-Once you removed the file, go into cmake, and follow the usual steps. Before clicking "Generate", click on "Add Entry":
+Once you removed the file, go into CMake, and follow the usual steps. Before clicking "Generate", click on "Add Entry":
 
-![Added manual entry in cmake](https://cloud.githubusercontent.com/assets/9083669/25051323/508969ca-214c-11e7-884a-20882cd3936a.png)
+![Added manual entry in CMake](https://cloud.githubusercontent.com/assets/9083669/25051323/508969ca-214c-11e7-884a-20882cd3936a.png)
 
 In addition, click on Configure and Generate:
 
-![Configured and Generated cmake](https://cloud.githubusercontent.com/assets/9083669/25051236/e71237ce-214b-11e7-8faa-d885d7826fe1.png)
+![Configured and Generated CMake](https://cloud.githubusercontent.com/assets/9083669/25051236/e71237ce-214b-11e7-8faa-d885d7826fe1.png)
 
 And then, follow the regular LightGBM CLI installation from there.
 
@@ -364,8 +364,7 @@ l-fast-relaxed-math") at C:/boost/boost-build/include/boost/compute/program.hpp:
 Right-click the command prompt, click "Mark", and select all the text from the first line (with the command prompt containing gdb) to the last line printed, containing all the log, such as:
 
 ```
-C:\LightGBM\examples\binary_classification>gdb --args "../../lightgbm.exe" config=train.conf data=binary.train valid=binary.test objective=binary device
-=gpu
+C:\LightGBM\examples\binary_classification>gdb --args "../../lightgbm.exe" config=train.conf data=binary.train valid=binary.test objective=binary device=gpu
 GNU gdb (GDB) 7.10.1
 Copyright (C) 2015 Free Software Foundation, Inc.
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>

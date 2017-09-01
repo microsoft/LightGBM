@@ -1,5 +1,5 @@
 LightGBM GPU Tutorial
-==================================
+=====================
 
 The purpose of this document is to give you a quick step-by-step tutorial on GPU training.
 
@@ -7,9 +7,8 @@ For Windows, please see [GPU Windows Tutorial](./GPU-Windows.md).
 
 We will use the GPU instance on [Microsoft Azure cloud computing platform](https://azure.microsoft.com/) for demonstration, but you can use any machine with modern AMD or NVIDIA GPUs.
 
-
 GPU Setup
--------------------------
+---------
 
 You need to launch a `NV` type instance on Azure (available in East US, North Central US, South Central US, West Europe and Southeast Asia zones) and select Ubuntu 16.04 LTS as the operating system.
 
@@ -34,9 +33,10 @@ After about 30 seconds, the server should be up again.
 If you are using a AMD GPU, you should download and install the [AMDGPU-Pro](http://support.amd.com/en-us/download/linux) driver and also install package `ocl-icd-libopencl1` and `ocl-icd-opencl-dev`.
 
 Build LightGBM
-----------------------------
+--------------
 
 Now install necessary building tools and dependencies:
+
 ```
 sudo apt-get install --no-install-recommends git cmake build-essential libboost-dev libboost-system-dev libboost-filesystem-dev
 ```
@@ -82,7 +82,7 @@ You need to set an additional parameter `"device" : "gpu"` (along with your othe
 You can read our [Python Guide](https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide) for more information on how to use the Python interface.
 
 Dataset Preparation
-----------------------------
+-------------------
 
 Using the following commands to prepare the Higgs dataset:
 
@@ -172,9 +172,8 @@ Further Reading
 [GPU Windows Tutorial](./GPU-Windows.md)
 
 Reference
----------------
+---------
 
 Please kindly cite the following article in your publications if you find the GPU acceleration useful:
 
 Huan Zhang, Si Si and Cho-Jui Hsieh. [GPU Acceleration for Large-scale Tree Boosting](https://arxiv.org/abs/1706.08359). arXiv:1706.08359, 2017.
-
