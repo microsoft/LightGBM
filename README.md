@@ -26,7 +26,7 @@ News
 
 07/13/2017: [Gitter](https://gitter.im/Microsoft/LightGBM) is avaiable.
 
-06/20/2017: Python-package is on PyPI now.
+06/20/2017: Python-package is on [PyPI](https://pypi.python.org/pypi/lightgbm) now.
 
 06/09/2017: [LightGBM Slack team](https://lightgbm.slack.com) is available.
 
