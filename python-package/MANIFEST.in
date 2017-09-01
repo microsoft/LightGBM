@@ -5,5 +5,6 @@ recursive-include lightgbm *.py *.txt *.so
 recursive-include lightgbm/Release *.dll
 recursive-include lightgbm/include *
 recursive-include lightgbm/src *
-recursive-include lightgbm/windows LightGBM.sln LightGBM.vcxproj(.filters)?
+recursive-include lightgbm/windows LightGBM.sln LightGBM.vcxproj LightGBM.vcxproj.filters
+recursive-include lightgbm/windows/x64/DLL *.dll
 global-exclude *.py[co]
