@@ -13,9 +13,6 @@ environment:
 
 clone_depth: 50
 
-init:
-  - "ECHO %PYTHON_VERSION% %MINICONDA%"
-
 install:
   - set PATH=%PATH:C:\Program Files\Git\usr\bin;=%  # Delete sh.exe from PATH (mingw32-make fix)
   - set PATH=C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1\mingw64\bin;%PATH%
@@ -23,10 +20,8 @@ install:
   - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  - conda info -a
-  - conda create -q -n test-environment python=%PYTHON_VERSION% numpy scipy scikit-learn pandas matplotlib
+  - conda create -q -n test-environment python=%PYTHON_VERSION% numpy scipy scikit-learn pandas matplotlib pep8 pytest
   - activate test-environment
-  - pip install pep8 pytest
 
 build_script:
   - mkdir build && cd build
