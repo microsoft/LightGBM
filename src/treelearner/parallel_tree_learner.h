@@ -181,9 +181,9 @@ private:
 };
 
 // To-do: reduce the communication cost by using bitset to communicate.
-inline void SyncUpGlobalBestSplit(char* input_buffer_, char* output_buffer_, SplitInfo* smaller_best_split, SplitInfo* larger_best_split) {
+inline void SyncUpGlobalBestSplit(char* input_buffer_, char* output_buffer_, SplitInfo* smaller_best_split, SplitInfo* larger_best_split, int max_cat_threshold) {
   // sync global best info
-  int size = SplitInfo::Size();
+  int size = SplitInfo::Size(max_cat_threshold);
   smaller_best_split->CopyTo(input_buffer_);
   larger_best_split->CopyTo(input_buffer_ + size);
   Network::Allreduce(input_buffer_, size * 2, size, output_buffer_, 

@@ -160,7 +160,8 @@ public:
 
   inline data_size_t Split(
     int sub_feature,
-    uint32_t threshold,
+    const uint32_t* threshold,
+    int num_threshold,
     bool default_left,
     data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const {
@@ -171,9 +172,9 @@ public:
     if (bin_mappers_[sub_feature]->bin_type() == BinType::NumericalBin) {
       auto missing_type = bin_mappers_[sub_feature]->missing_type();
       return bin_data_->Split(min_bin, max_bin, default_bin, missing_type, default_left,
-                              threshold, data_indices, num_data, lte_indices, gt_indices);
+                              *threshold, data_indices, num_data, lte_indices, gt_indices);
     } else {
-      return bin_data_->SplitCategorical(min_bin, max_bin, default_bin, threshold, data_indices, num_data, lte_indices, gt_indices);
+      return bin_data_->SplitCategorical(min_bin, max_bin, default_bin, threshold, num_threshold, data_indices, num_data, lte_indices, gt_indices);
     }
 
   }
