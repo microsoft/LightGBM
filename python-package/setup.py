@@ -52,8 +52,8 @@ def copy_files(use_gpu=False):
 def clear_path(path):
     if os.path.isdir(path):
         contents = os.listdir(path)
-        for file in contents:
-            file_path = os.path.join(path, file)
+        for file_name in contents:
+            file_path = os.path.join(path, file_name)
             if os.path.isfile(file_path):
                 os.remove(file_path)
             else:
