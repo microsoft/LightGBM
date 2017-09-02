@@ -158,7 +158,6 @@ class CustomInstall(install):
         if not self.precompile:
             copy_files(use_gpu=self.gpu)
             compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu)
-        self.distribution.data_files = [('lightgbm', find_lib())]
         install.run(self)
 
 
@@ -212,6 +211,5 @@ if __name__ == "__main__":
           },
           packages=find_packages(),
           include_package_data=True,
-          data_files=[],
           license='The MIT License (Microsoft)',
           url='https://github.com/Microsoft/LightGBM')
