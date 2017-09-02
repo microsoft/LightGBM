@@ -1,15 +1,29 @@
-
 version: 1.0.{build}
 environment:
+
+  PYTHON_VERSION: 3.6
+  MINICONDA: "C:/Miniconda36-x64"
+
   matrix:
-    - PYTHON: "C:/Python36-x64"
-      PYTHON_VERSION: 3.6
-      MINICONDA: "C:/Miniconda36-x64"
+    - COMPILER: "MSVC"
+    - COMPILER: "MINGW"
 
 clone_depth: 50
 
 init:
   - "ECHO %PYTHON_VERSION% %MINICONDA%"
+
+install:
+  - set PATH=%PATH:C:\Program Files\Git\usr\bin;=%  # Delete sh.exe from PATH (mingw32-make fix)
+  - set PATH=C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1\mingw64\bin;%PATH%
+  - set PATH=%MINICONDA%;%MINICONDA%/Scripts;%PATH%
+  - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - conda create -q -n test-environment python=%PYTHON_VERSION% numpy scipy scikit-learn pandas matplotlib
+  - activate test-environment
+  - pip install pep8 pytest
 
 build_script:
   - mkdir build && cd build
@@ -17,20 +31,18 @@ build_script:
   - cd ..
 
 test_script:
-  - "set PATH=%MINICONDA%;%MINICONDA%/Scripts;%PATH%"
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  - conda info -a
-  - conda install --yes numpy scipy scikit-learn pandas matplotlib
-  - pip install pep8 pytest
   - pytest tests/c_api_test/test_.py
-  - "set /p LGB_VER=< VERSION.txt"
   - cd python-package && python setup.py sdist --formats gztar
-  - cd dist 
-  - "pip install lightgbm-%LGB_VER%.tar.gz -v"
+  - cd dist
+  - IF "%COMPILER%"=="MINGW" (
+    pip install lightgbm-%LGB_VER%.tar.gz --install-option=--mingw -v)
+    ELSE (
+    pip install lightgbm-%LGB_VER%.tar.gz -v)
   - cd ../..
   - pytest tests/python_package_test
   - cd python-package && python setup.py bdist_wheel --plat-name=win-amd64 --universal
+
+after_test:
   - cd ../.nuget
   - python create_nuget.py
   - nuget.exe pack LightGBM.nuspec
