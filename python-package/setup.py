@@ -89,9 +89,10 @@ def compile_cpp(use_mingw=False, use_gpu=False):
             if status != 0:
                 raise Exception('Please install CMake and MinGW first')
         else:
+            status = 1
+            lib_path = "../lightgbm/windows/x64/DLL/lib_lightgbm.dll"
             if not use_gpu:
                 logger.info("Starting to compile with MSBuild from existing solution file.")
-                lib_path = "../lightgbm/windows/x64/DLL/lib_lightgbm.dll"
                 platform_toolsets = ("v141", "v140", "v120")
                 for pt in platform_toolsets:
                     status = silent_call(["MSBuild", "../lightgbm/windows/LightGBM.sln",
@@ -104,23 +105,21 @@ def compile_cpp(use_mingw=False, use_gpu=False):
                         clear_path("../lightgbm/windows/x64")
                 if status != 0 or not os.path.exists(lib_path):
                     logger.warning("Compilation with MSBuild from existing solution file failed.")
-                else:
-                    os.chdir("..")
-                    return
-            vs_versions = ("Visual Studio 15 2017 Win64", "Visual Studio 14 2015 Win64", "Visual Studio 12 2013 Win64")
-            for vs in vs_versions:
-                logger.info("Starting to compile with %s." % vs)
-                status = silent_call(cmake_cmd + ["-G", vs])
-                if status == 0:
-                    break
-                else:
-                    clear_path("./")
-            if status != 0:
-                raise Exception('Please install Visual Studio or MS Build first')
+            if status != 0 or not os.path.exists(lib_path):
+                vs_versions = ("Visual Studio 15 2017 Win64", "Visual Studio 14 2015 Win64", "Visual Studio 12 2013 Win64")
+                for vs in vs_versions:
+                    logger.info("Starting to compile with %s." % vs)
+                    status = silent_call(cmake_cmd + ["-G", vs])
+                    if status == 0:
+                        break
+                    else:
+                        clear_path("./")
+                if status != 0:
+                    raise Exception('Please install Visual Studio or MS Build first')
 
-            status = silent_call(["cmake", "--build", ".", "--target", "_lightgbm", "--config", "Release"])
-            if status != 0:
-                raise Exception('Please install CMake first')
+                status = silent_call(["cmake", "--build", ".", "--target", "_lightgbm", "--config", "Release"])
+                if status != 0:
+                    raise Exception('Please install CMake first')
     else:  # Linux, Darwin (OS X), etc.
         logger.info("Starting to compile with CMake.")
         status = silent_call(cmake_cmd)
