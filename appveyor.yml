@@ -1,12 +1,15 @@
 version: 1.0.{build}
+
 environment:
 
   PYTHON_VERSION: 3.6
-  MINICONDA: "C:/Miniconda36-x64"
+  MINICONDA: C:\Miniconda36-x64
 
   matrix:
-    - COMPILER: "MSVC"
-    - COMPILER: "MINGW"
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      COMPILER: MSVC
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      COMPILER: MINGW
 
 clone_depth: 50
 
@@ -16,7 +19,7 @@ init:
 install:
   - set PATH=%PATH:C:\Program Files\Git\usr\bin;=%  # Delete sh.exe from PATH (mingw32-make fix)
   - set PATH=C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1\mingw64\bin;%PATH%
-  - set PATH=%MINICONDA%;%MINICONDA%/Scripts;%PATH%
+  - set PATH=%MINICONDA%;%MINICONDA%\Scripts;%PATH%
   - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
