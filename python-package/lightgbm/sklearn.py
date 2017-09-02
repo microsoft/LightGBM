@@ -7,10 +7,10 @@ import numpy as np
 import warnings
 
 from .basic import Dataset, LightGBMError
-from .compat import (SKLEARN_INSTALLED, LGBMClassifierBase, LGBMDeprecated,
-                     LGBMNotFittedError, LGBMLabelEncoder, LGBMModelBase,
-                     LGBMRegressorBase, LGBMCheckXY, LGBMCheckArray, LGBMCheckConsistentLength,
-                     LGBMCheckClassificationTargets, argc_, range_)
+from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase, LGBMDeprecated,
+                     LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
+                     _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckConsistentLength,
+                     _LGBMCheckClassificationTargets, argc_, range_)
 from .engine import train
 
 
@@ -129,7 +129,7 @@ def _eval_function_wrapper(func):
     return inner
 
 
-class LGBMModel(LGBMModelBase):
+class LGBMModel(_LGBMModelBase):
     """Implementation of the scikit-learn API for LightGBM."""
 
     def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
@@ -163,7 +163,7 @@ class LGBMModel(LGBMModelBase):
         objective : string, callable or None, optional (default=None)
             Specify the learning task and the corresponding learning objective or
             a custom objective function to be used (see note below).
-            default: binary for LGBMClassifier, lambdarank for LGBMRanker.
+            default: 'binary' for LGBMClassifier, 'lambdarank' for LGBMRanker.
         min_split_gain : float, optional (default=0.)
             Minimum loss reduction required to make a further partition on a leaf node of the tree.
         min_child_weight : int, optional (default=5)
@@ -398,8 +398,8 @@ class LGBMModel(LGBMModelBase):
             feval = None
             params['metric'] = eval_metric
 
-        X, y = LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
-        LGBMCheckConsistentLength(X, y, sample_weight)
+        X, y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
+        _LGBMCheckConsistentLength(X, y, sample_weight)
         self._n_features = X.shape[1]
 
         def _construct_dataset(X, y, sample_weight, init_score, group, params):
@@ -472,7 +472,7 @@ class LGBMModel(LGBMModelBase):
         """
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
-        X = LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
+        X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
         n_features = X.shape[1]
         if self._n_features != n_features:
             raise ValueError("Number of features of the model must "
@@ -498,7 +498,7 @@ class LGBMModel(LGBMModelBase):
         """
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
-        X = LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
+        X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
         n_features = X.shape[1]
         if self._n_features != n_features:
             raise ValueError("Number of features of the model must "
@@ -569,7 +569,7 @@ class LGBMModel(LGBMModelBase):
         return self.feature_importances_
 
 
-class LGBMRegressor(LGBMModel, LGBMRegressorBase):
+class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
     """LightGBM regressor."""
 
     def fit(self, X, y,
@@ -596,7 +596,7 @@ class LGBMRegressor(LGBMModel, LGBMRegressorBase):
                    base_doc[base_doc.find('            If string, it should be a built-in evaluation metric to use.'):])
 
 
-class LGBMClassifier(LGBMModel, LGBMClassifierBase):
+class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
     """LightGBM classifier."""
 
     def fit(self, X, y,
@@ -605,8 +605,8 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
             eval_init_score=None, eval_metric="logloss",
             early_stopping_rounds=None, verbose=True,
             feature_name='auto', categorical_feature='auto', callbacks=None):
-        LGBMCheckClassificationTargets(y)
-        self._le = LGBMLabelEncoder().fit(y)
+        _LGBMCheckClassificationTargets(y)
+        self._le = _LGBMLabelEncoder().fit(y)
         _y = self._le.transform(y)
 
         self._classes = self._le.classes_
@@ -674,7 +674,7 @@ class LGBMClassifier(LGBMModel, LGBMClassifierBase):
         """
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
-        X = LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
+        X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
         n_features = X.shape[1]
         if self._n_features != n_features:
             raise ValueError("Number of features of the model must "
