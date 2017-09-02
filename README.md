@@ -3,11 +3,11 @@ LightGBM, Light Gradient Boosting Machine
 
 [![Join the chat at https://gitter.im/Microsoft/LightGBM](https://badges.gitter.im/Microsoft/LightGBM.svg)](https://gitter.im/Microsoft/LightGBM?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/Microsoft/LightGBM.svg?branch=master)](https://travis-ci.org/Microsoft/LightGBM)
-[![GitHub
-Issues](https://img.shields.io/github/issues/Microsoft/LightGBM.svg)](https://github.com/Microsoft/LightGBM/issues)
-[![Windows Build status](https://ci.appveyor.com/api/projects/status/1ys5ot401m0fep6l/branch/master?svg=true)](https://ci.appveyor.com/project/guolinke/lightgbm/branch/master)
+[![Windows Build Status](https://ci.appveyor.com/api/projects/status/1ys5ot401m0fep6l/branch/master?svg=true)](https://ci.appveyor.com/project/guolinke/lightgbm/branch/master)
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](https://lightgbm.readthedocs.io/)
-[![PyPI version](https://badge.fury.io/py/lightgbm.svg)](https://badge.fury.io/py/lightgbm)
+[![GitHub Issues](https://img.shields.io/github/issues/Microsoft/LightGBM.svg)](https://github.com/Microsoft/LightGBM/issues)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Microsoft/LightGBM/blob/master/LICENSE)
+[![PyPI Version](https://badge.fury.io/py/lightgbm.svg)](https://badge.fury.io/py/lightgbm)
 
 LightGBM is a gradient boosting framework that uses tree based learning algorithms. It is designed to be distributed and efficient with the following advantages:
 
@@ -26,7 +26,7 @@ News
 
 07/13/2017: [Gitter](https://gitter.im/Microsoft/LightGBM) is avaiable.
 
-06/20/2017: Python-package is on PyPI now.
+06/20/2017: Python-package is on [PyPI](https://pypi.python.org/pypi/lightgbm) now.
 
 06/09/2017: [LightGBM Slack team](https://lightgbm.slack.com) is available.
 
