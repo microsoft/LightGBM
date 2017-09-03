@@ -96,6 +96,27 @@ NULL
 #' rows and 126 variables
 NULL
 
+#' Bank Marketing Data Set
+#'
+#' This data set is originally from the Bank Marketing data set,
+#' UCI Machine Learning Repository.
+#'
+#' It contains only the following: bank.csv with 10% of the examples and 17 inputs,
+#' randomly selected from 3 (older version of this dataset with less inputs).
+#'
+#' @references
+#' http://archive.ics.uci.edu/ml/datasets/Bank+Marketing
+#' 
+#' S. Moro, P. Cortez and P. Rita. (2014)
+#' A Data-Driven Approach to Predict the Success of Bank Telemarketing. Decision Support Systems
+#'
+#' @docType data
+#' @keywords datasets
+#' @name bank
+#' @usage data(bank)
+#' @format A data.table with 4521 rows and 17 variables
+NULL
+
 # Various imports
 #' @import methods
 #' @importFrom R6 R6Class
