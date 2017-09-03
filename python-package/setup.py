@@ -85,9 +85,11 @@ def compile_cpp(use_mingw=False, use_gpu=False):
         if use_mingw:
             logger.info("Starting to compile with CMake and MinGW.")
             status = silent_call(cmake_cmd + ["-G", "MinGW Makefiles"])
-            status += silent_call(["mingw32-make.exe", "_lightgbm"])
             if status != 0:
-                raise Exception('Please install CMake and MinGW first')
+                raise Exception('Please install CMake first')
+            status = silent_call(["mingw32-make.exe", "_lightgbm"])
+            if status != 0:
+                raise Exception('Please install MinGW first')
         else:
             status = 1
             lib_path = "../lightgbm/windows/x64/DLL/lib_lightgbm.dll"
