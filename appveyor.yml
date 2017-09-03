@@ -1,7 +1,6 @@
-version: 1.0.{build}
+version: 2.0.5.{build}
 
 environment:
-
   PYTHON_VERSION: 3.6
   MINICONDA: C:\Miniconda36-x64
 
@@ -38,6 +37,7 @@ test_script:
     pip install lightgbm-%LGB_VER%.tar.gz -v)
   - cd ../..
   - pytest tests/python_package_test
+  - IF "%COMPILER%"=="MINGW" appveyor exit  # skip all further steps
   - cd python-package && python setup.py bdist_wheel --plat-name=win-amd64 --universal
 
 after_test:
