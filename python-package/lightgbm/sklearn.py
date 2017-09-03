@@ -725,8 +725,7 @@ class LGBMRanker(LGBMModel):
                 raise ValueError("Should set group for all eval datasets for ranking task; "
                                  "if you use dict, the index should start from 0")
 
-        if eval_at is not None:
-            self._eval_at = eval_at
+        self._eval_at = eval_at
         super(LGBMRanker, self).fit(X, y, sample_weight=sample_weight,
                                     init_score=init_score, group=group,
                                     eval_set=eval_set, eval_names=eval_names,
