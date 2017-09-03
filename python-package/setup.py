@@ -60,12 +60,14 @@ def clear_path(path):
                 shutil.rmtree(file_path)
 
 
-def silent_call(cmd):
+def silent_call(cmd, raise_error=False, error_msg=''):
     try:
         with open(os.devnull, "w") as shut_up:
             subprocess.check_output(cmd, stderr=shut_up)
             return 0
     except Exception:
+        if raise_error:
+            raise Exception(error_msg)
         return 1
 
 
@@ -84,12 +86,10 @@ def compile_cpp(use_mingw=False, use_gpu=False):
     if os.name == "nt":
         if use_mingw:
             logger.info("Starting to compile with CMake and MinGW.")
-            status = silent_call(cmake_cmd + ["-G", "MinGW Makefiles"])
-            if status != 0:
-                raise Exception('Please install CMake first')
-            status = silent_call(["mingw32-make.exe", "_lightgbm"])
-            if status != 0:
-                raise Exception('Please install MinGW first')
+            silent_call(cmake_cmd + ["-G", "MinGW Makefiles"], raise_error=True,
+                        error_msg='Please install CMake first')
+            silent_call(["mingw32-make.exe", "_lightgbm"], raise_error=True,
+                        error_msg='Please install MinGW first')
         else:
             status = 1
             lib_path = "../lightgbm/windows/x64/DLL/lib_lightgbm.dll"
@@ -118,16 +118,13 @@ def compile_cpp(use_mingw=False, use_gpu=False):
                         clear_path("./")
                 if status != 0:
                     raise Exception('Please install Visual Studio or MS Build first')
-
-                status = silent_call(["cmake", "--build", ".", "--target", "_lightgbm", "--config", "Release"])
-                if status != 0:
-                    raise Exception('Please install CMake first')
+                silent_call(["cmake", "--build", ".", "--target", "_lightgbm", "--config", "Release"], raise_error=True,
+                            error_msg='Please install CMake first')
     else:  # Linux, Darwin (OS X), etc.
         logger.info("Starting to compile with CMake.")
-        status = silent_call(cmake_cmd)
-        status += silent_call(["make", "_lightgbm"])
-        if status != 0:
-            raise Exception('Please install CMake first')
+        silent_call(cmake_cmd, raise_error=True, error_msg='Please install CMake first')
+        silent_call(["make", "_lightgbm"], raise_error=True,
+                    error_msg='An error has occurred while building lightgbm library file')
     os.chdir("..")
 
 
