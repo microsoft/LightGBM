@@ -92,7 +92,7 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
 * `feature_fraction_seed`, default=`2`, type=int
   * Random seed for feature fraction.
 * `bagging_fraction`, default=`1.0`, type=double, , `0.0 < bagging_fraction < 1.0`, alias=`sub_row`
-  * Like `feature_fraction`, but this will random select part of data
+  * Like `feature_fraction`, but this will random select part of data without resampling
   * Can use this to speed up training
   * Can use this to deal with over-fit
   * Note: To enable bagging, should set `bagging_freq` to a non zero value as well
