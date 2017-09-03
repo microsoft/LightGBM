@@ -5,6 +5,10 @@ dist: trusty
 compiler:
   - gcc
 
+env:
+  global:
+    - PYTHON_VERSION=3.6
+
 matrix:
   include:
     - os: linux
