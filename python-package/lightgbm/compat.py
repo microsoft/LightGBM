@@ -86,12 +86,12 @@ try:
     _LGBMCheckConsistentLength = check_consistent_length
     _LGBMCheckClassificationTargets = check_classification_targets
 except ImportError:
-    _SKLEARN_INSTALLED = False
+    SKLEARN_INSTALLED = False
     _LGBMModelBase = object
     _LGBMClassifierBase = object
     _LGBMRegressorBase = object
     _LGBMLabelEncoder = None
-    LGBMDeprecated = None
+#   LGBMDeprecated = None  Don't uncomment it because it causes error without installed sklearn
     LGBMNotFittedError = ValueError
     _LGBMStratifiedKFold = None
     _LGBMGroupKFold = None
