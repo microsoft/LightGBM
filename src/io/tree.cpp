@@ -39,6 +39,8 @@ Tree::Tree(int max_leaves)
   leaf_parent_[0] = -1;
   shrinkage_ = 1.0f;
   num_cat_ = 0;
+  cat_boundaries_.push_back(0);
+  cat_boundaries_inner_.push_back(0);
 }
 
 Tree::~Tree() {
@@ -66,8 +68,8 @@ int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
   return num_leaves_ - 1;
 }
 
-int Tree::SplitCategorical(int leaf, int feature, int real_feature, uint32_t threshold_bin,
-                           double threshold, double left_value, double right_value,
+int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin, int num_threshold_bin,
+                           const uint32_t* threshold, int num_threshold, double left_value, double right_value,
                            data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type) {
   Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain);
   int new_node_idx = num_leaves_ - 1;
@@ -80,9 +82,17 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, uint32_t thr
   } else if (missing_type == MissingType::NaN) {
     SetMissingType(&decision_type_[new_node_idx], 2);
   }
-  threshold_in_bin_[new_node_idx] = threshold_bin;
-  threshold_[new_node_idx] = threshold;
+  threshold_in_bin_[new_node_idx] = num_cat_;
+  threshold_[new_node_idx] = num_cat_;
   ++num_cat_;
+  cat_boundaries_.push_back(cat_boundaries_.back() + num_threshold);
+  for (int i = 0; i < num_threshold; ++i) {
+    cat_threshold_.push_back(threshold[i]);
+  }
+  cat_boundaries_inner_.push_back(cat_boundaries_inner_.back() + num_threshold_bin);
+  for (int i = 0; i < num_threshold_bin; ++i) {
+    cat_threshold_inner_.push_back(threshold_bin[i]);
+  }
   ++num_leaves_;
   return num_leaves_ - 1;
 }
@@ -219,6 +229,12 @@ std::string Tree::ToString() const {
     << Common::ArrayToString<double>(internal_value_, num_leaves_ - 1, ' ') << std::endl;
   str_buf << "internal_count="
     << Common::ArrayToString<data_size_t>(internal_count_, num_leaves_ - 1, ' ') << std::endl;
+  if (num_cat_ > 0) {
+    str_buf << "cat_boundaries="
+      << Common::ArrayToString<int>(cat_boundaries_, num_cat_ + 1, ' ') << std::endl;
+    str_buf << "cat_threshold="
+      << Common::ArrayToString<uint32_t>(cat_threshold_, cat_threshold_.size(), ' ') << std::endl;
+  }
   str_buf << "shrinkage=" << shrinkage_ << std::endl;
   str_buf << std::endl;
   return str_buf.str();
@@ -249,7 +265,18 @@ std::string Tree::NodeToJSON(int index) const {
     str_buf << "\"split_feature\":" << split_feature_[index] << "," << std::endl;
     str_buf << "\"split_gain\":" << split_gain_[index] << "," << std::endl;
     if (GetDecisionType(decision_type_[index], kCategoricalMask)) {
-      str_buf << "\"threshold\":" << static_cast<int>(threshold_[index]) << "," << std::endl;
+      int cat_idx = static_cast<int>(threshold_[index]);
+      std::vector<int> cats;
+      for (int i = cat_boundaries_[cat_idx]; i < cat_boundaries_[cat_idx + 1]; ++i) {
+        for (int j = 0; j < 32; ++j) {
+          int cat = (i - cat_boundaries_[cat_idx]) * 32 + j;
+          if (Common::FindInBitset(cat_threshold_.data() + cat_boundaries_[cat_idx],
+                                   cat_boundaries_[cat_idx + 1] - cat_boundaries_[cat_idx], cat)) {
+            cats.push_back(cat);
+          }
+        }
+      }
+      str_buf << "\"threshold\":\"" << Common::Join(cats, "||") << "\"," << std::endl;
       str_buf << "\"decision_type\":\"==\"," << std::endl;
     } else {
       str_buf << "\"threshold\":" << Common::AvoidInf(threshold_[index]) << "," << std::endl;
@@ -316,7 +343,11 @@ std::string Tree::CategoricalDecisionIfElse(int node) const {
   } else {
     str_buf << "if (std::isnan(fval)) { int_fval = 0; } else { int_fval = static_cast<int>(fval); }";
   }
-  str_buf << "if (int_fval >= 0 &&  int_fval == " << static_cast<int>(threshold_[node]) << ") {";
+  int cat_idx = int(threshold_[node]);
+  str_buf << "if (int_fval >= 0 && int_fval < 32 * (";
+  str_buf << cat_boundaries_[cat_idx + 1] - cat_boundaries_[cat_idx];
+  str_buf << ") && (((cat_threshold[" << cat_boundaries_[cat_idx];
+  str_buf << " + int_fval / 32] >> (int_fval & 31)) & 1))) {";
   return str_buf.str();
 }
 
@@ -330,6 +361,14 @@ std::string Tree::ToIfElse(int index, bool is_predict_leaf_index) const {
   if (num_leaves_ <= 1) {
     str_buf << "return " << leaf_value_[0] << ";";
   } else {
+    str_buf << "const std::vector<uint32_t> cat_threshold = {";
+    for (size_t i = 0; i < cat_threshold_.size(); ++i) {
+      if (i != 0) {
+        str_buf << ",";
+      }
+      str_buf << cat_threshold_[i];
+    }
+    str_buf << "};";
     // use this for the missing value conversion
     str_buf << "double fval = 0.0f; ";
     if (num_cat_ > 0) {
@@ -457,6 +496,20 @@ Tree::Tree(const std::string& str) {
     decision_type_ = Common::StringToArray<int8_t>(key_vals["decision_type"], ' ', num_leaves_ - 1);
   } else {
     decision_type_ = std::vector<int8_t>(num_leaves_ - 1, 0);
+  }
+
+  if (num_cat_ > 0) {
+    if (key_vals.count("cat_boundaries")) {
+      cat_boundaries_ = Common::StringToArray<int>(key_vals["cat_boundaries"], ' ', num_cat_ + 1);
+    } else {
+      Log::Fatal("Tree model should contain cat_boundaries field.");
+    }
+
+    if (key_vals.count("cat_threshold")) {
+      cat_threshold_ = Common::StringToArray<uint32_t>(key_vals["cat_threshold"], ' ', cat_boundaries_.back());
+    } else {
+      Log::Fatal("Tree model should contain cat_threshold field.");
+    }
   }
 
   if (key_vals.count("shrinkage")) {

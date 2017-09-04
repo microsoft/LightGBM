@@ -24,6 +24,7 @@ public:
   data_size_t left_count = 0;
   /*! \brief Right number of data after split */
   data_size_t right_count = 0;
+  int num_cat_threshold = 0;
   /*! \brief Left output after split */
   double left_output = 0.0;
   /*! \brief Right output after split */
@@ -38,11 +39,12 @@ public:
   double right_sum_gradient = 0;
   /*! \brief Right sum hessian after split */
   double right_sum_hessian = 0;
+  std::vector<uint32_t> cat_threshold;
   /*! \brief True if default split is left */
   bool default_left = true;
 
-  inline static int Size() {
-    return sizeof(int) + sizeof(uint32_t) + sizeof(bool) + sizeof(double) * 7 + sizeof(data_size_t) * 2;
+  inline static int Size(int max_cat_threshold) {
+    return 2 * sizeof(int) + sizeof(uint32_t) + sizeof(bool) + sizeof(double) * 7 + sizeof(data_size_t) * 2 + max_cat_threshold * sizeof(uint32_t);
   }
 
   inline void CopyTo(char* buffer) const {
@@ -70,6 +72,10 @@ public:
     buffer += sizeof(right_sum_hessian);
     std::memcpy(buffer, &default_left, sizeof(default_left));
     buffer += sizeof(default_left);
+    for (int i = 0; i < num_cat_threshold; ++i) {
+      std::memcpy(buffer, &cat_threshold[i], sizeof(uint32_t));
+      buffer += sizeof(uint32_t);
+    }
   }
 
   void CopyFrom(const char* buffer) {
@@ -97,6 +103,11 @@ public:
     buffer += sizeof(right_sum_hessian);
     std::memcpy(&default_left, buffer, sizeof(default_left));
     buffer += sizeof(default_left);
+    cat_threshold.resize(num_cat_threshold);
+    for (int i = 0; i < num_cat_threshold; ++i) {
+      std::memcpy(&cat_threshold[i], buffer, sizeof(uint32_t));
+      buffer += sizeof(uint32_t);
+    }
   }
 
   inline void Reset() {
