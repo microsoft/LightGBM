@@ -551,7 +551,8 @@ class Dataset(object):
                  weight=None, group=None, silent=False,
                  feature_name='auto', categorical_feature='auto', params=None,
                  free_raw_data=True):
-        """
+        """Constract Dataset.
+
         Parameters
         ----------
         data : string, numpy array or scipy.sparse
@@ -559,7 +560,7 @@ class Dataset(object):
             If string, it represents the path to txt file.
         label : list or numpy 1-D array, optional (default=None)
             Label of the data.
-        max_bin : int, required
+        max_bin : int, optional (default=255)
             Max number of discrete bins for features.
         reference : Dataset or None, optional (default=None)
             If this is Dataset for validation, training data should be used as reference.
@@ -567,7 +568,7 @@ class Dataset(object):
             Weight for each instance.
         group : list, numpy 1-D array or None, optional (default=None)
             Group/query size for Dataset.
-        silent : boolean, optional (default=False)
+        silent : bool, optional (default=False)
             Whether to print messages during construction.
         feature_name : list of strings or 'auto', optional (default="auto")
             Feature names.
@@ -579,7 +580,7 @@ class Dataset(object):
             If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
         params: dict or None, optional (default=None)
             Other parameters.
-        free_raw_data: boolean, optional (default=True)
+        free_raw_data: bool, optional (default=True)
             If True, raw data is freed after constructing inner Dataset.
         """
         self.handle = None
@@ -778,7 +779,13 @@ class Dataset(object):
             ctypes.byref(self.handle)))
 
     def construct(self):
-        """Lazy init."""
+        """Lazy init.
+
+        Returns
+        -------
+        self : Dataset
+            Returns self.
+        """
         if self.handle is None:
             if self.reference is not None:
                 if self.used_indices is None:
@@ -824,10 +831,15 @@ class Dataset(object):
             Weight for each instance.
         group : list, numpy 1-D array or None, optional (default=None)
             Group/query size for Dataset.
-        silent : boolean, optional (default=False)
+        silent : bool, optional (default=False)
             Whether to print messages during construction.
         params: dict or None, optional (default=None)
             Other parameters.
+
+        Returns
+        -------
+        self : Dataset
+            Returns self.
         """
         ret = Dataset(data, label=label, max_bin=self.max_bin, reference=self,
                       weight=weight, group=group, silent=silent, params=params,
@@ -845,6 +857,11 @@ class Dataset(object):
             Indices used to create the subset.
         params: dict or None, optional (default=None)
             Other parameters.
+
+        Returns
+        -------
+        subset : Dataset
+            Subset of the current Dataset.
         """
         if params is None:
             params = self.params
@@ -1206,19 +1223,18 @@ class Dataset(object):
 class Booster(object):
     """"Booster in LightGBM."""
     def __init__(self, params=None, train_set=None, model_file=None, silent=False):
-        """
-        Initialize the Booster.
+        """Initialize the Booster.
 
         Parameters
         ----------
-        params : dict
-            Parameters for boosters.
-        train_set : Dataset
-            Training dataset
-        model_file : string
+        params: dict or None, optional (default=None)
+            Parameters for Booster.
+        train_set : Dataset or None, optional (default=None)
+            Training dataset.
+        model_file : string or None, optional (default=None)
             Path to the model file.
-        silent : boolean, optional
-            Whether print messages during construction
+        silent : bool, optional (default=False)
+            Whether to print messages during construction.
         """
         self.handle = None
         self.__need_reload_eval_info = True
@@ -1318,6 +1334,7 @@ class Booster(object):
         self.__dict__.update(state)
 
     def free_dataset(self):
+        """Free Booster's Datasets."""
         self.__dict__.pop('train_set', None)
         self.__dict__.pop('valid_sets', None)
         self.__num_dataset = 0
@@ -1327,21 +1344,27 @@ class Booster(object):
         self.__is_predicted_cur_iter = []
 
     def set_train_data_name(self, name):
+        """Set the name to the training Dataset.
+
+        Parameters
+        ----------
+        name: string
+            Name for training Dataset.
+        """
         self.__train_data_name = name
 
     def add_valid(self, data, name):
-        """
-        Add an validation data
+        """Add validation data.
 
         Parameters
         ----------
         data : Dataset
-            Validation data
-        name : String
-            Name of validation data
+            Validation data.
+        name : string
+            Name of validation data.
         """
         if not isinstance(data, Dataset):
-            raise TypeError('valid data should be Dataset instance, met {}'.format(type(data).__name__))
+            raise TypeError('Validation data should be Dataset instance, met {}'.format(type(data).__name__))
         if data._predictor is not self.__init_predictor:
             raise LightGBMError("Add validation data failed, you should use same predictor for these data")
         _safe_call(_LIB.LGBM_BoosterAddValidData(
@@ -1354,15 +1377,12 @@ class Booster(object):
         self.__is_predicted_cur_iter.append(False)
 
     def reset_parameter(self, params):
-        """
-        Reset parameters for booster
+        """Reset parameters of Booster.
 
         Parameters
         ----------
         params : dict
-            New parameters for boosters
-        silent : boolean, optional
-            Whether print messages during construction
+            New parameters for Booster.
         """
         if 'metric' in params:
             self.__need_reload_eval_info = True
@@ -1373,22 +1393,24 @@ class Booster(object):
                 c_str(params_str)))
 
     def update(self, train_set=None, fobj=None):
-        """
-        Update for one iteration
-        Note: for multi-class task, the score is group by class_id first, then group by row_id
-              if you want to get i-th row score in j-th class, the access way is score[j*num_data+i]
-              and you should group grad and hess in this way as well
+        """Update for one iteration.
 
         Parameters
         ----------
-        train_set :
-            Training data, None means use last training data
-        fobj : function
+        train_set : Dataset or None, optional (default=None)
+            Training data.
+            If None, last training data is used.
+        fobj : callable or None, optional (default=None)
             Customized objective function.
+
+            For multi-class task, the score is group by class_id first, then group by row_id.
+            If you want to get i-th row score in j-th class, the access way is score[j * num_data + i]
+            and you should group grad and hess in this way as well.
 
         Returns
         -------
-        is_finished, bool
+        is_finished : bool
+            Whether the update was successfully finished.
         """
 
         """need reset training data"""
@@ -1445,14 +1467,19 @@ class Booster(object):
         return is_finished.value == 1
 
     def rollback_one_iter(self):
-        """
-        Rollback one iteration
-        """
+        """Rollback one iteration."""
         _safe_call(_LIB.LGBM_BoosterRollbackOneIter(
             self.handle))
         self.__is_predicted_cur_iter = [False for _ in range_(self.__num_dataset)]
 
     def current_iteration(self):
+        """Get the index of the current iteration.
+
+        Returns
+        -------
+        cur_iter : int
+            The index of the current iteration.
+        """
         out_cur_iter = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterGetCurrentIteration(
             self.handle,
@@ -1460,20 +1487,21 @@ class Booster(object):
         return out_cur_iter.value
 
     def eval(self, data, name, feval=None):
-        """
-        Evaluate for data
+        """Evaluate for data.
 
         Parameters
         ----------
-        data : Dataset object
-        name :
-            Name of data
-        feval : function
+        data : Dataset
+            Data for the evaluating.
+        name : string
+            Name of the data.
+        feval : callable or None, optional (default=None)
             Custom evaluation function.
+
         Returns
         -------
         result: list
-            Evaluation result list.
+            List with evaluation results.
         """
         if not isinstance(data, Dataset):
             raise TypeError("Can only eval for Dataset instance")
@@ -1493,48 +1521,46 @@ class Booster(object):
         return self.__inner_eval(name, data_idx, feval)
 
     def eval_train(self, feval=None):
-        """
-        Evaluate for training data
+        """Evaluate for training data.
 
         Parameters
         ----------
-        feval : function
+        feval : callable or None, optional (default=None)
             Custom evaluation function.
 
         Returns
         -------
-        result: str
-            Evaluation result list.
+        result: list
+            List with evaluation results.
         """
         return self.__inner_eval(self.__train_data_name, 0, feval)
 
     def eval_valid(self, feval=None):
-        """
-        Evaluate for validation data
+        """Evaluate for validation data.
 
         Parameters
         ----------
-        feval : function
+        feval : callable or None, optional (default=None)
             Custom evaluation function.
 
         Returns
         -------
-        result: str
-            Evaluation result list.
+        result: list
+            List with evaluation results.
         """
         return [item for i in range_(1, self.__num_dataset)
                 for item in self.__inner_eval(self.name_valid_sets[i - 1], i, feval)]
 
     def save_model(self, filename, num_iteration=-1):
-        """
-        Save model of booster to file
+        """Save Booster to file.
 
         Parameters
         ----------
-        filename : str
-            Filename to save
-        num_iteration: int
-            Number of iteration that want to save. < 0 means save the best iteration(if have)
+        filename : string
+            Filename to save Booster.
+        num_iteration: int, optional (default=-1)
+            Index of the iteration that should to saved.
+            If <0, the best iteration (if exists) is saved.
         """
         if num_iteration <= 0:
             num_iteration = self.best_iteration
@@ -1589,17 +1615,18 @@ class Booster(object):
         return string_buffer.value.decode()
 
     def dump_model(self, num_iteration=-1):
-        """
-        Dump model to json format
+        """Dump Booster to json format.
 
         Parameters
         ----------
-        num_iteration: int
-            Number of iteration that want to dump. < 0 means dump to best iteration(if have)
+        num_iteration: int, optional (default=-1)
+            Index of the iteration that should to dumped.
+            If <0, the best iteration (if exists) is dumped.
 
         Returns
         -------
-        Json format of model
+        json_repr : dict
+            Json format of Booster.
         """
         if num_iteration <= 0:
             num_iteration = self.best_iteration
@@ -1626,32 +1653,34 @@ class Booster(object):
                 ptr_string_buffer))
         return json.loads(string_buffer.value.decode())
 
-    def predict(self, data, num_iteration=-1, raw_score=False, pred_leaf=False, data_has_header=False, is_reshape=True,
-                pred_parameter=None):
-        """
-        Predict logic
+    def predict(self, data, num_iteration=-1, raw_score=False, pred_leaf=False,
+                data_has_header=False, is_reshape=True, pred_parameter=None):
+        """Make a prediction.
 
         Parameters
         ----------
-        data : string/numpy array/scipy.sparse
-            Data source for prediction
-            When data type is string, it represents the path of txt file
-        num_iteration : int
-            Used iteration for prediction, < 0 means predict for best iteration(if have)
-        raw_score : bool
-            True for predict raw score
-        pred_leaf : bool
-            True for predict leaf index
-        data_has_header : bool
-            Used for txt data
-        is_reshape : bool
-            Reshape to (nrow, ncol) if true
-        pred_parameter: dict
-            Other parameters for the prediction
+        data : string, numpy array or scipy.sparse
+            Data source for prediction.
+            If string, it represents the path to txt file.
+        num_iteration : int, optional (default=-1)
+            Iteration used for prediction.
+            If <0, the best iteration (if exists) is used for prediction.
+        raw_score : bool, optional (default=False)
+            Whether to predict raw scores.
+        pred_leaf : bool, optional (default=False)
+            Whether to predict leaf index.
+        data_has_header : bool, optional (default=False)
+            Whether the data has header.
+            Used only if data is string.
+        is_reshape : bool, optional (default=True)
+            If True, result is reshaped to [nrow, ncol].
+        pred_parameter: dict or None, optional (default=None)
+            Other parameters for the prediction.
 
         Returns
         -------
-        Prediction result
+        result : numpy array
+            Prediction result.
         """
         predictor = self._to_predictor(pred_parameter)
         if num_iteration <= 0:
@@ -1659,6 +1688,20 @@ class Booster(object):
         return predictor.predict(data, num_iteration, raw_score, pred_leaf, data_has_header, is_reshape)
 
     def get_leaf_output(self, tree_id, leaf_id):
+        """Get the output of a leaf.
+
+        Parameters
+        ----------
+        tree_id : int
+            The index of the tree.
+        leaf_id : int
+            The index of the leaf in the tree.
+
+        Returns
+        -------
+        result : float
+            The output of the leaf.
+        """
         ret = ctypes.c_double(0)
         _safe_call(_LIB.LGBM_BoosterGetLeafValue(
             self.handle,
@@ -1674,7 +1717,13 @@ class Booster(object):
         return predictor
 
     def num_feature(self):
-        """Get num of features"""
+        """Get number of features.
+
+        Returns
+        -------
+        num_feature : int
+            The number of features.
+        """
         out_num_feature = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterGetNumFeature(
             self.handle,
@@ -1682,13 +1731,12 @@ class Booster(object):
         return out_num_feature.value
 
     def feature_name(self):
-        """
-        Get feature names.
+        """Get names of features.
 
         Returns
         -------
-        result : array
-            Array of feature names.
+        result : list
+            List with names of features.
         """
         num_feature = self.num_feature()
         """Get name of features"""
@@ -1704,20 +1752,19 @@ class Booster(object):
         return [string_buffers[i].value.decode() for i in range_(num_feature)]
 
     def feature_importance(self, importance_type='split', iteration=-1):
-        """
-        Get feature importances
+        """Get feature importances.
 
         Parameters
         ----------
-        importance_type : str, default "split"
-            How the importance is calculated: "split" or "gain"
-            "split" is the number of times a feature is used in a model
-            "gain" is the total gain of splits which use the feature
+        importance_type : string, optional (default="split")
+            How the importance is calculated.
+            If "split", result contains numbers of times the feature is used in a model.
+            If "gain", result contains total gains of splits which use the feature.
 
         Returns
         -------
-        result : array
-            Array of feature importances.
+        result : numpy array
+            Array with feature importances.
         """
         if importance_type == "split":
             importance_type_int = 0
@@ -1827,29 +1874,29 @@ class Booster(object):
                     [name.startswith(('auc', 'ndcg', 'map')) for name in self.__name_inner_eval]
 
     def attr(self, key):
-        """
-        Get attribute string from the Booster.
+        """Get attribute string from the Booster.
 
         Parameters
         ----------
-        key : str
-            The key to get attribute from.
+        key : string
+            The name of the attribute.
 
         Returns
         -------
-        value : str
-            The attribute value of the key, returns None if attribute do not exist.
+        value : string or None
+            The attribute value.
+            Returns None if attribute do not exist.
         """
         return self.__attr.get(key, None)
 
     def set_attr(self, **kwargs):
-        """
-        Set the attribute of the Booster.
+        """Set the attribute of the Booster.
 
         Parameters
         ----------
         **kwargs
-            The attributes to set. Setting a value to None deletes an attribute.
+            The attributes to set.
+            Setting a value to None deletes an attribute.
         """
         for key, value in kwargs.items():
             if value is not None:
