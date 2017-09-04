@@ -183,8 +183,7 @@ if __name__ == "__main__":
         distutils.file_util.copy_file(
             os.path.join('..', 'VERSION.txt'),
             os.path.join('.', 'lightgbm'))
-    if os.path.isfile(os.path.join(dir_path, 'lightgbm', 'VERSION.txt')):
-        version = open(os.path.join(dir_path, 'lightgbm', 'VERSION.txt')).read().strip()
+    version = open(os.path.join(dir_path, 'lightgbm', 'VERSION.txt')).read().strip()
 
     sys.path.insert(0, '.')
 
