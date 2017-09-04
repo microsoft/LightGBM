@@ -554,33 +554,33 @@ class Dataset(object):
         """
         Parameters
         ----------
-        data : string/numpy array/scipy.sparse
+        data : string, numpy array or scipy.sparse
             Data source of Dataset.
-            When data type is string, it represents the path of txt file
-        label : list or numpy 1-D array, optional
-            Label of the data
+            If string, it represents the path to txt file.
+        label : list or numpy 1-D array, optional (default=None)
+            Label of the data.
         max_bin : int, required
-            Max number of discrete bin for features
-        reference : Other Dataset, optional
-            If this dataset validation, need to use training data as reference
-        weight : list or numpy 1-D array , optional
+            Max number of discrete bins for features.
+        reference : Dataset or None, optional (default=None)
+            If this is Dataset for validation, training data should be used as reference.
+        weight : list, numpy 1-D array or None, optional (default=None)
             Weight for each instance.
-        group : list or numpy 1-D array , optional
-            Group/query size for dataset
-        silent : boolean, optional
-            Whether print messages during construction
-        feature_name : list of str, or 'auto'
-            Feature names
-            If 'auto' and data is pandas DataFrame, use data columns name
-        categorical_feature : list of str or int, or 'auto'
-            Categorical features,
-            type int represents index,
-            type str represents feature names (need to specify feature_name as well)
-            If 'auto' and data is pandas DataFrame, use pandas categorical columns
-        params: dict, optional
-            Other parameters
-        free_raw_data: Bool
-            True if need to free raw data after construct inner dataset
+        group : list, numpy 1-D array or None, optional (default=None)
+            Group/query size for Dataset.
+        silent : boolean, optional (default=False)
+            Whether to print messages during construction.
+        feature_name : list of strings or 'auto', optional (default="auto")
+            Feature names.
+            If 'auto' and data is pandas DataFrame, data columns names are used.
+        categorical_feature : list of strings or int, or 'auto', optional (default="auto")
+            Categorical features.
+            If list of int, interpreted as indices.
+            If list of strings, interpreted as feature names (need to specify feature_name as well).
+            If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
+        params: dict or None, optional (default=None)
+            Other parameters.
+        free_raw_data: boolean, optional (default=True)
+            If True, raw data is freed after constructing inner Dataset.
         """
         self.handle = None
         self.data = data
@@ -778,7 +778,7 @@ class Dataset(object):
             ctypes.byref(self.handle)))
 
     def construct(self):
-        """Lazy init"""
+        """Lazy init."""
         if self.handle is None:
             if self.reference is not None:
                 if self.used_indices is None:
@@ -811,24 +811,23 @@ class Dataset(object):
 
     def create_valid(self, data, label=None, weight=None, group=None,
                      silent=False, params=None):
-        """
-        Create validation data align with current dataset
+        """Create validation data align with current Dataset.
 
         Parameters
         ----------
-        data : string/numpy array/scipy.sparse
+        data : string or numpy array or scipy.sparse
             Data source of Dataset.
-            When data type is string, it represents the path of txt file
-        label : list or numpy 1-D array, optional
+            If string, it represents the path to txt file.
+        label : list or numpy 1-D array, optional (default=None)
             Label of the training data.
-        weight : list or numpy 1-D array , optional
+        weight : list, numpy 1-D array or None, optional (default=None)
             Weight for each instance.
-        group : list or numpy 1-D array , optional
-            Group/query size for dataset
-        silent : boolean, optional
-            Whether print messages during construction
-        params: dict, optional
-            Other parameters
+        group : list, numpy 1-D array or None, optional (default=None)
+            Group/query size for Dataset.
+        silent : boolean, optional (default=False)
+            Whether to print messages during construction.
+        params: dict or None, optional (default=None)
+            Other parameters.
         """
         ret = Dataset(data, label=label, max_bin=self.max_bin, reference=self,
                       weight=weight, group=group, silent=silent, params=params,
@@ -838,15 +837,14 @@ class Dataset(object):
         return ret
 
     def subset(self, used_indices, params=None):
-        """
-        Get subset of current dataset
+        """Get subset of current Dataset.
 
         Parameters
         ----------
         used_indices : list of int
-            Used indices of this subset
-        params : dict
-            Other parameters
+            Indices used to create the subset.
+        params: dict or None, optional (default=None)
+            Other parameters.
         """
         if params is None:
             params = self.params
@@ -858,8 +856,7 @@ class Dataset(object):
         return ret
 
     def save_binary(self, filename):
-        """
-        Save Dataset to binary file
+        """Save Dataset to binary file.
 
         Parameters
         ----------
@@ -886,11 +883,10 @@ class Dataset(object):
 
         Parameters
         ----------
-        field_name: str
-            The field name of the information
-
-        data: numpy array or list or None
-            The array ofdata to be set
+        field_name: string
+            The field name of the information.
+        data: list, numpy array or None
+            The array of data to be set.
         """
         if self.handle is None:
             raise Exception("Cannot set %s before construct dataset" % field_name)
@@ -934,13 +930,13 @@ class Dataset(object):
 
         Parameters
         ----------
-        field_name: str
-            The field name of the information
+        field_name: string
+            The field name of the information.
 
         Returns
         -------
-        info : array
-            A numpy array of information of the data
+        info : numpy array
+            A numpy array with information from the Dataset.
         """
         if self.handle is None:
             raise Exception("Cannot get %s before construct dataset" % field_name)
@@ -967,14 +963,12 @@ class Dataset(object):
             raise TypeError("Unknown type")
 
     def set_categorical_feature(self, categorical_feature):
-        """
-        Set categorical features
+        """Set categorical features.
 
         Parameters
         ----------
-        categorical_feature : list of int or str
-            Name/index of categorical features
-
+        categorical_feature : list of int or strings
+            Names or indices of categorical features.
         """
         if self.categorical_feature == categorical_feature:
             return
@@ -1005,13 +999,12 @@ class Dataset(object):
             raise LightGBMError("Cannot set predictor after freed raw data, set free_raw_data=False when construct Dataset to avoid this.")
 
     def set_reference(self, reference):
-        """
-        Set reference dataset
+        """Set reference Dataset.
 
         Parameters
         ----------
         reference : Dataset
-            Will use reference as template to consturct current dataset
+            Reference that is used as a template to consturct the current Dataset.
         """
         self.set_categorical_feature(reference.categorical_feature)
         self.set_feature_name(reference.feature_name)
@@ -1026,13 +1019,12 @@ class Dataset(object):
             raise LightGBMError("Cannot set reference after freed raw data, set free_raw_data=False when construct Dataset to avoid this.")
 
     def set_feature_name(self, feature_name):
-        """
-        Set feature name
+        """Set feature name.
 
         Parameters
         ----------
-        feature_name : list of str
-            Feature names
+        feature_name : list of strings
+            Feature names.
         """
         if feature_name != 'auto':
             self.feature_name = feature_name
@@ -1046,13 +1038,12 @@ class Dataset(object):
                 ctypes.c_int(len(feature_name))))
 
     def set_label(self, label):
-        """
-        Set label of Dataset
+        """Set label of Dataset
 
         Parameters
         ----------
-        label: numpy array or list or None
-            The label information to be set into Dataset
+        label: list, numpy array or None
+            The label information to be set into Dataset.
         """
         self.label = label
         if self.handle is not None:
@@ -1060,13 +1051,12 @@ class Dataset(object):
             self.set_field('label', label)
 
     def set_weight(self, weight):
-        """
-        Set weight of each instance.
+        """Set weight of each instance.
 
         Parameters
         ----------
-        weight : numpy array or list or None
-            Weight for each data point
+        weight : list, numpy array or None
+            Weight to be set for each data point.
         """
         self.weight = weight
         if self.handle is not None and weight is not None:
@@ -1074,13 +1064,12 @@ class Dataset(object):
             self.set_field('weight', weight)
 
     def set_init_score(self, init_score):
-        """
-        Set init score of booster to start from.
+        """Set init score of Booster to start from.
 
         Parameters
         ----------
-        init_score: numpy array or list or None
-            Init score for booster
+        init_score : list, numpy array or None
+            Init score for Booster.
         """
         self.init_score = init_score
         if self.handle is not None and init_score is not None:
@@ -1088,13 +1077,12 @@ class Dataset(object):
             self.set_field('init_score', init_score)
 
     def set_group(self, group):
-        """
-        Set group size of Dataset (used for ranking).
+        """Set group size of Dataset (used for ranking).
 
         Parameters
         ----------
-        group : numpy array or list or None
-            Group size of each group
+        group : list, numpy array or None
+            Group size of each group.
         """
         self.group = group
         if self.handle is not None and group is not None:
@@ -1102,48 +1090,48 @@ class Dataset(object):
             self.set_field('group', group)
 
     def get_label(self):
-        """
-        Get the label of the Dataset.
+        """Get the label of the Dataset.
 
         Returns
         -------
-        label : array
+        label : numpy array
+            The label information from the Dataset.
         """
         if self.label is None and self.handle is not None:
             self.label = self.get_field('label')
         return self.label
 
     def get_weight(self):
-        """
-        Get the weight of the Dataset.
+        """Get the weight of the Dataset.
 
         Returns
         -------
-        weight : array
+        weight : numpy array
+            Weight for each data point from the Dataset.
         """
         if self.weight is None and self.handle is not None:
             self.weight = self.get_field('weight')
         return self.weight
 
     def get_init_score(self):
-        """
-        Get the initial score of the Dataset.
+        """Get the initial score of the Dataset.
 
         Returns
         -------
-        init_score : array
+        init_score : numpy array
+            Init score of Booster.
         """
         if self.init_score is None and self.handle is not None:
             self.init_score = self.get_field('init_score')
         return self.init_score
 
     def get_group(self):
-        """
-        Get the group of the Dataset.
+        """Get the group of the Dataset.
 
         Returns
         -------
-        init_score : array
+        init_score : numpy array
+            Group size of each group.
         """
         if self.group is None and self.handle is not None:
             self.group = self.get_field('group')
@@ -1156,12 +1144,12 @@ class Dataset(object):
         return self.group
 
     def num_data(self):
-        """
-        Get the number of rows in the Dataset.
+        """Get the number of rows in the Dataset.
 
         Returns
         -------
-        number of rows : int
+        number_of_rows : int
+            The number of rows in the Dataset.
         """
         if self.handle is not None:
             ret = ctypes.c_int()
@@ -1172,12 +1160,12 @@ class Dataset(object):
             raise LightGBMError("Cannot get num_data before construct dataset")
 
     def num_feature(self):
-        """
-        Get the number of columns (features) in the Dataset.
+        """Get the number of columns (features) in the Dataset.
 
         Returns
         -------
-        number of columns : int
+        number_of_columns : int
+            The number of columns (features) in the Dataset.
         """
         if self.handle is not None:
             ret = ctypes.c_int()
@@ -1188,14 +1176,19 @@ class Dataset(object):
             raise LightGBMError("Cannot get num_feature before construct dataset")
 
     def get_ref_chain(self, ref_limit=100):
-        '''
-        Gets a chain of Dataset objects, starting with r, then going to r.reference if exists,
-            then to r.reference.reference, etc. until we hit ref_limit or a reference loop
+        """Get a chain of Dataset objects, starting with r, then going to r.reference if exists,
+           then to r.reference.reference, etc. until we hit ``ref_limit`` or a reference loop.
+
+        Parameters
+        ----------
+        ref_limit : int, optional (default=100)
+            The limit number of references.
 
         Returns
         -------
-        chain of references of self : set of Dataset objects
-        '''
+        ref_chain : set of Dataset
+            Chain of references of the Dataset.
+        """
         head = self
         ref_chain = set()
         while len(ref_chain) < ref_limit:
