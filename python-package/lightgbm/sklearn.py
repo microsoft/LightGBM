@@ -184,7 +184,7 @@ class LGBMModel(_LGBMModelBase):
             Random number seed.
         n_jobs : int, optional (default=-1)
             Number of parallel threads.
-        silent : boolean, optional (default=True)
+        silent : bool, optional (default=True)
             Whether to print messages while running boosting.
         **kwargs : other parameters
             Check http://lightgbm.readthedocs.io/en/latest/Parameters.html for more parameters.
