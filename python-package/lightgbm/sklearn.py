@@ -198,7 +198,7 @@ class LGBMModel(_LGBMModelBase):
             The class label array (only for classification problem).
         n_classes_ : int
             The number of classes (only for classification problem).
-        best_score_ : dictionary or None
+        best_score_ : dict or None
             The best score of fitted model if early_stopping_rounds has been specified.
         best_iteration_ : int or None
             The best iteration of fitted model if early_stopping_rounds has been specified.
@@ -206,7 +206,7 @@ class LGBMModel(_LGBMModelBase):
             The concrete objective used while fitting this model.
         booster_ : Booster
             The underlying lightgbm Booster of this model.
-        evals_result_ : dictionary or None
+        evals_result_ : dict or None
             The evaluation results if early_stopping_rounds has been specified.
         feature_importances_ : array of shape = [n_features]
             The feature importances (the higher, the more important the feature).
