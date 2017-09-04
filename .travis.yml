@@ -7,14 +7,14 @@ compiler:
 
 env:
   global:
-    - PYTHON_VERSION=3.6
+    - PYTHON_VERSION=3.4
 
 matrix:
   include:
     - os: linux
       env: TASK=regular
     - os: linux
-      env: TASK=mpi
+      env: TASK=mpi PYTHON_VERSION=2.7
     - os: linux
       env: TASK=gpu METHOD=source
     - os: linux
@@ -30,7 +30,7 @@ matrix:
     - os: osx
       env: TASK=regular
     - os: osx
-      env: TASK=mpi
+      env: TASK=mpi PYTHON_VERSION=2.7
     - os: osx
       env: TASK=sdist
     - os: osx
