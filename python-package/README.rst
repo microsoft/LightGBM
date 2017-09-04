@@ -1,7 +1,9 @@
 LightGBM Python Package
 =======================
 
-|PyPI version|
+|License| |PyPI Version|
+
+.. # Uncomment after updating PyPI |Python Versions|
 
 Installation
 ------------
@@ -105,5 +107,9 @@ The code style of python package follows `pep8 <https://www.python.org/dev/peps/
 
 E501 can be ignored (line too long).
 
-.. |PyPI version| image:: https://badge.fury.io/py/lightgbm.svg
+.. |License| image:: https://img.shields.io/badge/license-MIT-blue.svg
+   :target: https://github.com/Microsoft/LightGBM/blob/master/LICENSE
+.. |Python Versions| image:: https://img.shields.io/pypi/pyversions/lightgbm.svg
+   :target: https://pypi.python.org/pypi/lightgbm
+.. |PyPI Version| image:: https://badge.fury.io/py/lightgbm.svg
     :target: https://badge.fury.io/py/lightgbm
