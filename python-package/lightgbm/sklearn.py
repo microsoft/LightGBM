@@ -334,6 +334,11 @@ class LGBMModel(_LGBMModelBase):
             List of callback functions that are applied at each iteration.
             See Callbacks in Python-API.md for more information.
 
+        Returns
+        -------
+        self : object
+            Returns self.
+
         Note
         ----
         Custom eval function expects a callable with following functions:
