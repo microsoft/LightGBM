@@ -13,8 +13,12 @@ from sklearn.externals import joblib
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.utils.estimator_checks import (_yield_all_checks, SkipTest,
-                                            check_parameters_default_constructible,
-                                            check_no_fit_attributes_set_in_init)
+                                            check_parameters_default_constructible)
+try:
+    from sklearn.utils.estimator_checks import check_no_fit_attributes_set_in_init
+    sklearn_at_least_019 = True
+except ImportError:
+    sklearn_at_least_019 = False
 
 
 def multi_error(y_true, y_pred):
@@ -174,17 +178,19 @@ class TestSklearn(unittest.TestCase):
         np.testing.assert_allclose(y_pred_1, y_pred_2)
 
     def test_sklearn_integration(self):
-        # we cannot use `check_estimator` directly since there is no skip test mechanism
-        for name, estimator in ((lgb.sklearn.LGBMClassifier.__name__, lgb.sklearn.LGBMClassifier),
-                                (lgb.sklearn.LGBMRegressor.__name__, lgb.sklearn.LGBMRegressor)):
-            check_parameters_default_constructible(name, estimator)
-            check_no_fit_attributes_set_in_init(name, estimator)
-            # we cannot leave default params (see https://github.com/Microsoft/LightGBM/issues/833)
-            estimator = estimator(min_data=1, min_data_in_bin=1)
-            for check in _yield_all_checks(name, estimator):
-                if check.__name__ == 'check_estimators_nan_inf':
-                    continue  # skip test because LightGBM deals with nan
-                try:
-                    check(name, estimator)
-                except SkipTest as message:
-                    warnings.warn(message, SkipTestWarning)
+        # sklearn <0.19 cannot accept instance, but many tests could be passed only with min_data=1 and min_data_in_bin=1
+        if sklearn_at_least_019:
+            # we cannot use `check_estimator` directly since there is no skip test mechanism
+            for name, estimator in ((lgb.sklearn.LGBMClassifier.__name__, lgb.sklearn.LGBMClassifier),
+                                    (lgb.sklearn.LGBMRegressor.__name__, lgb.sklearn.LGBMRegressor)):
+                check_parameters_default_constructible(name, estimator)
+                check_no_fit_attributes_set_in_init(name, estimator)
+                # we cannot leave default params (see https://github.com/Microsoft/LightGBM/issues/833)
+                estimator = estimator(min_data=1, min_data_in_bin=1)
+                for check in _yield_all_checks(name, estimator):
+                    if check.__name__ == 'check_estimators_nan_inf':
+                        continue  # skip test because LightGBM deals with nan
+                    try:
+                        check(name, estimator)
+                    except SkipTest as message:
+                        warnings.warn(message, SkipTestWarning)
