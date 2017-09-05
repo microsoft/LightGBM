@@ -2,9 +2,7 @@
 # pylint: skip-file
 import math
 import os
-import sys
 import unittest
-import warnings
 
 import lightgbm as lgb
 import numpy as np
@@ -14,18 +12,6 @@ from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
 from sklearn.externals import joblib
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, train_test_split
-
-
-# Original function from sklearn.utils.testing
-def clean_warning_registry():
-    """Safe way to reset warnings."""
-    warnings.resetwarnings()
-    reg = "__warningregistry__"
-    for mod_name, mod in list(sys.modules.items()):
-        if 'six.moves' in mod_name:
-            continue
-        if hasattr(mod, reg):
-            getattr(mod, reg).clear()
 
 
 def multi_error(y_true, y_pred):
@@ -183,12 +169,3 @@ class TestSklearn(unittest.TestCase):
         y_pred_1 = clf_1.fit(X_train, y_train).predict_proba(X_test)
         y_pred_2 = clf_2.fit(X_train, y_train).predict_proba(X_test)
         np.testing.assert_allclose(y_pred_1, y_pred_2)
-
-        # Tests that warnings were raised
-        clean_warning_registry()
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            clf_1.get_params()
-            clf_2.set_params(nthread=-1).fit(X_train, y_train)
-            self.assertEqual(len(w), 2)
-            self.assertTrue(issubclass(w[-1].category, Warning))
