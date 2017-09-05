@@ -19,7 +19,7 @@ install:
   - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  - conda create -q -n test-env python=%PYTHON_VERSION% numpy scipy scikit-learn pandas matplotlib pep8 pytest
+  - conda create -q -n test-env python=%PYTHON_VERSION% numpy nose scipy scikit-learn pandas matplotlib pep8 pytest
   - activate test-env
 
 build_script:

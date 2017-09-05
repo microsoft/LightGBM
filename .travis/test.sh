@@ -41,7 +41,7 @@ if [[ ${TASK} == "if-else" ]]; then
     exit 0
 fi
 
-conda create -q -n test-env python=$PYTHON_VERSION numpy scipy scikit-learn pandas matplotlib pytest
+conda create -q -n test-env python=$PYTHON_VERSION numpy nose scipy scikit-learn pandas matplotlib pytest
 source activate test-env
 
 if [[ ${TASK} == "sdist" ]]; then
