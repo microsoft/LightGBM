@@ -3,7 +3,6 @@
 import math
 import os
 import unittest
-import warnings
 
 import lightgbm as lgb
 import numpy as np
@@ -173,13 +172,6 @@ class TestSklearn(unittest.TestCase):
         y_pred_1 = clf_1.fit(X_train, y_train).predict_proba(X_test)
         y_pred_2 = clf_2.fit(X_train, y_train).predict_proba(X_test)
         np.testing.assert_allclose(y_pred_1, y_pred_2)
-
-        # Tests that warnings were raised
-        with warnings.catch_warnings(record=True) as w:
-            clf_1.get_params()
-            clf_2.set_params(nthread=-1).fit(X_train, y_train)
-            self.assertEqual(len(w), 2)
-            self.assertTrue(issubclass(w[-1].category, Warning))
 
     def test_sklearn_integration(self):
         # we cannot use `check_estimator` directly since there is no skip test mechanism
