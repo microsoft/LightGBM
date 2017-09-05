@@ -2,41 +2,35 @@ language: cpp
 sudo: required
 dist: trusty
 
-compiler:
-  - gcc
+compiler:  # A trick to construct a build matrix
+  - printf "%s" "3.4" >> ~/PYTHON_VERSION ; gcc
+  - printf "%s" "3.6" >> ~/PYTHON_VERSION ; gcc
+
+os:
+  - linux
+  - osx
 
 env:
-  global:
-    - PYTHON_VERSION=3.4
+  matrix:
+    - TASK=regular
+    - TASK=mpi PYTHON_VERSION=2.7
+    - TASK=pylint
+    - TASK=if-else
+    - TASK=sdist
+    - TASK=bdist
+    - TASK=gpu METHOD=source
+    - TASK=gpu METHOD=pip
 
 matrix:
-  include:
-    - os: linux
-      env: TASK=regular
-    - os: linux
-      env: TASK=mpi PYTHON_VERSION=2.7
-    - os: linux
+  exclude:
+    - os: osx
       env: TASK=gpu METHOD=source
-    - os: linux
-      env: TASK=sdist
-    - os: linux
+    - os: osx
       env: TASK=gpu METHOD=pip
-    - os: linux
-      env: TASK=bdist
-    - os: linux
-      env: TASK=pylint
-    - os: linux
-      env: TASK=if-else
-    - os: osx
-      env: TASK=regular
-    - os: osx
-      env: TASK=mpi PYTHON_VERSION=2.7
-    - os: osx
-      env: TASK=sdist
-    - os: osx
-      env: TASK=bdist
 
 before_install:
+- export DEFAULT_PYTHON=$(< ~/PYTHON_VERSION)
+- export PYTHON_VERSION=${PYTHON_VERSION:-$DEFAULT_PYTHON}
 - test -n $CC  && unset CC
 - test -n $CXX && unset CXX
 
