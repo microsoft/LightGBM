@@ -12,6 +12,9 @@ from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
 from sklearn.externals import joblib
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.utils.estimator_checks import (_yield_all_checks, SkipTest,
+                                            check_parameters_default_constructible,
+                                            check_no_fit_attributes_set_in_init)
 
 
 def multi_error(y_true, y_pred):
@@ -31,7 +34,7 @@ class TestSklearn(unittest.TestCase):
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
         ret = log_loss(y_test, gbm.predict_proba(X_test))
         self.assertLess(ret, 0.15)
-        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['binary_logloss'][gbm.best_iteration - 1], places=5)
+        self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['binary_logloss'][gbm.best_iteration_ - 1], places=5)
 
     def test_regreesion(self):
         X, y = load_boston(True)
@@ -40,7 +43,7 @@ class TestSklearn(unittest.TestCase):
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
         ret = mean_squared_error(y_test, gbm.predict(X_test))
         self.assertLess(ret, 16)
-        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['l2'][gbm.best_iteration - 1], places=5)
+        self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1], places=5)
 
     def test_multiclass(self):
         X, y = load_digits(10, True)
@@ -50,7 +53,7 @@ class TestSklearn(unittest.TestCase):
         ret = multi_error(y_test, gbm.predict(X_test))
         self.assertLess(ret, 0.2)
         ret = multi_logloss(y_test, gbm.predict_proba(X_test))
-        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['multi_logloss'][gbm.best_iteration - 1], places=5)
+        self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['multi_logloss'][gbm.best_iteration_ - 1], places=5)
 
     def test_lambdarank(self):
         X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.train'))
@@ -73,7 +76,7 @@ class TestSklearn(unittest.TestCase):
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
         ret = mean_squared_error(y_test, gbm.predict(X_test))
         self.assertLess(ret, 100)
-        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['l2'][gbm.best_iteration - 1], places=5)
+        self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1], places=5)
 
     def test_binary_classification_with_custom_objective(self):
         def logregobj(y_true, y_pred):
@@ -169,3 +172,19 @@ class TestSklearn(unittest.TestCase):
         y_pred_1 = clf_1.fit(X_train, y_train).predict_proba(X_test)
         y_pred_2 = clf_2.fit(X_train, y_train).predict_proba(X_test)
         np.testing.assert_allclose(y_pred_1, y_pred_2)
+
+    def test_sklearn_integration(self):
+        # we cannot use `check_estimator` directly since there is no skip test mechanism
+        for name, estimator in ((lgb.sklearn.LGBMClassifier.__name__, lgb.sklearn.LGBMClassifier),
+                                (lgb.sklearn.LGBMRegressor.__name__, lgb.sklearn.LGBMRegressor)):
+            check_parameters_default_constructible(name, estimator)
+            check_no_fit_attributes_set_in_init(name, estimator)
+            # we cannot leave default params (see https://github.com/Microsoft/LightGBM/issues/833)
+            estimator = estimator(min_data=1, min_data_in_bin=1)
+            for check in _yield_all_checks(name, estimator):
+                if check.__name__ == 'check_estimators_nan_inf':
+                    continue  # skip test because LightGBM deals with nan
+                try:
+                    check(name, estimator)
+                except SkipTest as message:
+                    warnings.warn(message, SkipTestWarning)

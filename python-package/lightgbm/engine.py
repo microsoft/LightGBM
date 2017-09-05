@@ -11,7 +11,7 @@ import numpy as np
 
 from . import callback
 from .basic import Booster, Dataset, LightGBMError, _InnerPredictor
-from .compat import (SKLEARN_INSTALLED, LGBMGroupKFold, LGBMStratifiedKFold,
+from .compat import (SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold,
                      integer_types, range_, string_type)
 
 
@@ -264,12 +264,12 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             # lambdarank task, split according to groups
             group_info = full_data.get_group().astype(int)
             flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
-            group_kfold = LGBMGroupKFold(n_splits=nfold)
+            group_kfold = _LGBMGroupKFold(n_splits=nfold)
             folds = group_kfold.split(X=np.zeros(num_data), groups=flatted_group)
         elif stratified:
             if not SKLEARN_INSTALLED:
                 raise LightGBMError('Scikit-learn is required for stratified cv.')
-            skf = LGBMStratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
+            skf = _LGBMStratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
             folds = skf.split(X=np.zeros(num_data), y=full_data.get_label())
         else:
             if shuffle:

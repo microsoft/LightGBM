@@ -21,7 +21,7 @@ test_script:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda install --yes numpy scipy scikit-learn pandas matplotlib
+  - conda install --yes numpy nose scipy scikit-learn pandas matplotlib
   - pip install pep8 pytest
   - pytest tests/c_api_test/test_.py
   - "set /p LGB_VER=< VERSION.txt"

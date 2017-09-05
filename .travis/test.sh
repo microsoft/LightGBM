@@ -40,7 +40,7 @@ if [[ ${TASK} == "if-else" ]]; then
     exit 0
 fi
 
-conda install --yes numpy scipy scikit-learn pandas matplotlib
+conda install --yes numpy nose scipy scikit-learn pandas matplotlib
 pip install pytest
 
 if [[ ${TASK} == "sdist" ]]; then
