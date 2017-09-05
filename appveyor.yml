@@ -1,9 +1,10 @@
 version: 2.0.5.{build}
 
-environment:
-  PYTHON_VERSION: 3.6
-  MINICONDA: C:\Miniconda36-x64
+configuration:  # A trick to construct a build matrix
+  - 3.5
+  - 3.6
 
+environment:
   matrix:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       COMPILER: MSVC
@@ -15,6 +16,15 @@ clone_depth: 50
 install:
   - set PATH=%PATH:C:\Program Files\Git\usr\bin;=%  # Delete sh.exe from PATH (mingw32-make fix)
   - set PATH=C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1\mingw64\bin;%PATH%
+  - set PYTHON_VERSION=%CONFIGURATION%
+  - ps: >-
+      switch ($env:PYTHON_VERSION) {
+          "2.7" {$env:MINICONDA = """C:\Miniconda-x64"""}
+          "3.4" {$env:MINICONDA = """C:\Miniconda3-x64"""}
+          "3.5" {$env:MINICONDA = """C:\Miniconda35-x64"""}
+          "3.6" {$env:MINICONDA = """C:\Miniconda36-x64"""}
+          default {$env:MINICONDA = """C:\Miniconda36-x64"""}
+      }
   - set PATH=%MINICONDA%;%MINICONDA%\Scripts;%PATH%
   - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
   - conda config --set always_yes yes --set changeps1 no
