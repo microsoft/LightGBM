@@ -199,15 +199,15 @@ class LGBMModel(_LGBMModelBase):
         n_classes_ : int
             The number of classes (only for classification problem).
         best_score_ : dict or None
-            The best score of fitted model if early_stopping_rounds has been specified.
+            The best score of fitted model if `early_stopping_rounds` has been specified.
         best_iteration_ : int or None
-            The best iteration of fitted model if early_stopping_rounds has been specified.
+            The best iteration of fitted model if `early_stopping_rounds` has been specified.
         objective_ : string or callable
             The concrete objective used while fitting this model.
         booster_ : Booster
-            The underlying lightgbm Booster of this model.
+            The underlying Booster of this model.
         evals_result_ : dict or None
-            The evaluation results if early_stopping_rounds has been specified.
+            The evaluation results if `early_stopping_rounds` has been specified.
         feature_importances_ : array of shape = [n_features]
             The feature importances (the higher, the more important the feature).
 
@@ -215,8 +215,8 @@ class LGBMModel(_LGBMModelBase):
         ----
         A custom objective function can be provided for the ``objective``
         parameter. In this case, it should have the signature
-        ``objective(y_true, y_pred) -> grad, hess``
-        or ``objective(y_true, y_pred, group) -> grad, hess``:
+        ``objective(y_true, y_pred) -> grad, hess`` or
+        ``objective(y_true, y_pred, group) -> grad, hess``:
 
             y_true: array-like of shape = [n_samples]
                 The target values.
@@ -305,7 +305,7 @@ class LGBMModel(_LGBMModelBase):
         group : array-like of shape = [n_samples] or None, optional (default=None)
             Group data of training data.
         eval_set : list or None, optional (default=None)
-            A list of (X, y) tuple pairs to use as a validation set for early-stopping.
+            A list of (X, y) tuple pairs to use as a validation sets for early-stopping.
         eval_names: list of strings or None, optional (default=None)
             Names of eval_set.
         eval_sample_weight : list of arrays or None, optional (default=None)
@@ -319,7 +319,8 @@ class LGBMModel(_LGBMModelBase):
             If callable, it should be a custom evaluation metric, see note for more details.
         early_stopping_rounds : int or None, optional (default=None)
             Activates early stopping. The model will train until the validation score stops improving.
-            Validation error needs to decrease at least every early_stopping_rounds to continue training.
+            Validation error needs to decrease at least every `early_stopping_rounds` round(s)
+            to continue training.
         verbose : bool, optional (default=True)
             If True and an evaluation set is used, writes the evaluation progress.
         feature_name : list of strings or 'auto', optional (default="auto")
@@ -342,10 +343,10 @@ class LGBMModel(_LGBMModelBase):
         Note
         ----
         Custom eval function expects a callable with following functions:
-            ``func(y_true, y_pred)``, ``func(y_true, y_pred, weight)``
-                or ``func(y_true, y_pred, weight, group)``.
-            return (eval_name, eval_result, is_bigger_better)
-                or list of (eval_name, eval_result, is_bigger_better)
+        ``func(y_true, y_pred)``, ``func(y_true, y_pred, weight)`` or
+        ``func(y_true, y_pred, weight, group)``.
+        Returns (eval_name, eval_result, is_bigger_better) or
+        list of (eval_name, eval_result, is_bigger_better)
 
             y_true: array-like of shape = [n_samples]
                 The target values.
@@ -559,7 +560,7 @@ class LGBMModel(_LGBMModelBase):
         """Get feature importances.
 
         Note: feature importance in sklearn interface used to normalize to 1,
-              it's deprecated after 2.0.4 and same as Booster.feature_importance() now.
+        it's deprecated after 2.0.4 and same as Booster.feature_importance() now.
         """
         if self._n_features is None:
             raise LGBMNotFittedError('No feature_importances found. Need to call fit beforehand.')
