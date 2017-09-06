@@ -199,7 +199,7 @@ class LGBMModel(_LGBMModelBase):
         n_classes_ : int
             The number of classes (only for classification problem).
         best_score_ : dict or None
-            The best score of fitted model if `early_stopping_rounds` has been specified.
+            The best score of fitted model.
         best_iteration_ : int or None
             The best iteration of fitted model if `early_stopping_rounds` has been specified.
         objective_ : string or callable
