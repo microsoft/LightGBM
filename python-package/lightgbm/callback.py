@@ -10,6 +10,7 @@ from .compat import range_
 
 class EarlyStopException(Exception):
     """Exception of early stopping.
+
     Parameters
     ----------
     best_iteration : int
@@ -46,20 +47,19 @@ def _format_eval_result(value, show_stdv=True):
 
 
 def print_evaluation(period=1, show_stdv=True):
-    """Create a callback that print evaluation result.
+    """Create a callback that prints the evaluation results.
 
     Parameters
     ----------
-    period : int
-        The period to log the evaluation results
-
-    show_stdv : bool, optional
-        Whether show stdv if provided
+    period : int, optional (default=1)
+        The period to print the evaluation results.
+    show_stdv : bool, optional (default=True)
+        Whether to show stdv (if provided).
 
     Returns
     -------
     callback : function
-        A callback that print evaluation every period iterations.
+        The callback that prints the evaluation results every `period` iteration(s).
     """
     def callback(env):
         """internal function"""
@@ -71,7 +71,7 @@ def print_evaluation(period=1, show_stdv=True):
 
 
 def record_evaluation(eval_result):
-    """Create a call back that records the evaluation history into eval_result.
+    """Create a callback that records the evaluation history into `eval_result`.
 
     Parameters
     ----------
@@ -81,7 +81,7 @@ def record_evaluation(eval_result):
     Returns
     -------
     callback : function
-        The requested callback function.
+        The callback that records the evaluation history into the passed dictionary.
     """
     if not isinstance(eval_result, dict):
         raise TypeError('Eval_result should be a dictionary')
@@ -103,22 +103,25 @@ def record_evaluation(eval_result):
 
 
 def reset_parameter(**kwargs):
-    """Reset parameter after first iteration
+    """Create a callback that resets the parameter after the first iteration.
 
-    NOTE: the initial parameter will still take in-effect on first iteration.
+    Note
+    ----
+    The initial parameter will still take in-effect on first iteration.
 
     Parameters
     ----------
     **kwargs: value should be list or function
         List of parameters for each boosting round
-        or a customized function that calculates learning_rate in terms of
-        current number of round (e.g. yields learning rate decay)
-        - list l: parameter = l[current_round]
-        - function f: parameter = f(current_round)
+        or a customized function that calculates the parameter in terms of
+        current number of round (e.g. yields learning rate decay).
+        If list lst, parameter = lst[current_round].
+        If function func, parameter = func(current_round).
+
     Returns
     -------
     callback : function
-        The requested callback function.
+        The callback that resets the parameter after the first iteration.
     """
     def callback(env):
         """internal function"""
@@ -144,22 +147,25 @@ def reset_parameter(**kwargs):
 
 def early_stopping(stopping_rounds, verbose=True):
     """Create a callback that activates early stopping.
+
+    Note
+    ----
     Activates early stopping.
-    Requires at least one validation data and one metric
-    If there's more than one, will check all of them
+    Requires at least one validation data and one metric.
+    If there's more than one, will check all of them.
 
     Parameters
     ----------
     stopping_rounds : int
-       The stopping rounds before the trend occur.
+       The possible number of rounds without the trend occurrence.
 
-    verbose : optional, bool
-        Whether to print message about early stopping information.
+    verbose : bool, optional (default=True)
+        Whether to print message with early stopping information.
 
     Returns
     -------
     callback : function
-        The requested callback function.
+        The callback that activates early stopping.
     """
     best_score = []
     best_iter = []

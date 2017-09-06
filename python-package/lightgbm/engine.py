@@ -438,7 +438,7 @@ def cv(params, train_set, num_boost_round=10,
         res = _agg_cv_result(cvfolds.eval_valid(feval))
         for _, key, mean, _, std in res:
             results[key + '-mean'].append(mean)
-            results[key + '-std'].append(std)
+            results[key + '-stdv'].append(std)
         try:
             for cb in callbacks_after_iter:
                 cb(callback.CallbackEnv(model=cvfolds,
