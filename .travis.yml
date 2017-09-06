@@ -2,8 +2,8 @@ language: cpp
 sudo: required
 dist: trusty
 
-compiler:  # A trick to construct a build matrix
-  - printf "%s" "3.6" >> ~/PYTHON_VERSION ; gcc
+compiler:
+  - gcc
 
 os:
   - linux
@@ -11,14 +11,14 @@ os:
 
 env:
   matrix:
-    - TASK=regular
-    - TASK=mpi
-    - TASK=pylint
-    - TASK=if-else
-    - TASK=sdist
-    - TASK=bdist
-    - TASK=gpu METHOD=source
-    - TASK=gpu METHOD=pip
+    - TASK=regular PYTHON_VERSION=3.6
+    - TASK=mpi PYTHON_VERSION=3.6
+    - TASK=pylint PYTHON_VERSION=3.6
+    - TASK=if-else PYTHON_VERSION=3.6
+    - TASK=sdist PYTHON_VERSION=3.6
+    - TASK=bdist PYTHON_VERSION=3.6
+    - TASK=gpu METHOD=source PYTHON_VERSION=3.6
+    - TASK=gpu METHOD=pip PYTHON_VERSION=3.6
     - TASK=regular PYTHON_VERSION=2.7
     - TASK=regular PYTHON_VERSION=3.4
     - TASK=regular PYTHON_VERSION=3.5
@@ -26,27 +26,25 @@ env:
 matrix:
   exclude:
     - os: osx
-      env: TASK=gpu METHOD=source
+      env: TASK=gpu METHOD=source PYTHON_VERSION=3.6
     - os: osx
-      env: TASK=gpu METHOD=pip
+      env: TASK=gpu METHOD=pip PYTHON_VERSION=3.6
     - os: osx
-      env: TASK=pylint
+      env: TASK=pylint PYTHON_VERSION=3.6
 
 before_install:
-- export DEFAULT_PYTHON=$(< ~/PYTHON_VERSION)
-- export PYTHON_VERSION=${PYTHON_VERSION:-$DEFAULT_PYTHON}
-- test -n $CC  && unset CC
-- test -n $CXX && unset CXX
+  - test -n $CC  && unset CC
+  - test -n $CXX && unset CXX
 
 install:
-- bash .travis/setup.sh
-- bash conda.sh -b -p $HOME/miniconda
-- export PATH="$HOME/miniconda/bin:$PATH"
-- conda config --set always_yes yes --set changeps1 no
-- conda update -q conda
+  - bash .travis/setup.sh
+  - bash conda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
 
 script:
-- bash .travis/test.sh
+  - bash .travis/test.sh
 
 notifications:
   email: false
