@@ -452,7 +452,8 @@ class LGBMModel(_LGBMModelBase):
 
         if early_stopping_rounds is not None:
             self._best_iteration = self._Booster.best_iteration
-            self._best_score = self._Booster.best_score
+
+        self._best_score = self._Booster.best_score
 
         # free dataset
         self.booster_.free_dataset()
