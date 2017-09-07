@@ -188,7 +188,10 @@ class LGBMModel(_LGBMModelBase):
             Whether to print messages while running boosting.
         **kwargs : other parameters
             Check http://lightgbm.readthedocs.io/en/latest/Parameters.html for more parameters.
-            Note: **kwargs is not supported in sklearn, it may cause unexpected issues.
+
+            Note
+            ----
+            **kwargs is not supported in sklearn, it may cause unexpected issues.
 
         Attributes
         ----------
@@ -201,13 +204,13 @@ class LGBMModel(_LGBMModelBase):
         best_score_ : dict or None
             The best score of fitted model.
         best_iteration_ : int or None
-            The best iteration of fitted model if `early_stopping_rounds` has been specified.
+            The best iteration of fitted model if ``early_stopping_rounds`` has been specified.
         objective_ : string or callable
             The concrete objective used while fitting this model.
         booster_ : Booster
             The underlying Booster of this model.
         evals_result_ : dict or None
-            The evaluation results if `early_stopping_rounds` has been specified.
+            The evaluation results if ``early_stopping_rounds`` has been specified.
         feature_importances_ : array of shape = [n_features]
             The feature importances (the higher, the more important the feature).
 
@@ -319,7 +322,7 @@ class LGBMModel(_LGBMModelBase):
             If callable, it should be a custom evaluation metric, see note for more details.
         early_stopping_rounds : int or None, optional (default=None)
             Activates early stopping. The model will train until the validation score stops improving.
-            Validation error needs to decrease at least every `early_stopping_rounds` round(s)
+            Validation error needs to decrease at least every ``early_stopping_rounds`` round(s)
             to continue training.
         verbose : bool, optional (default=True)
             If True and an evaluation set is used, writes the evaluation progress.
@@ -560,7 +563,9 @@ class LGBMModel(_LGBMModelBase):
     def feature_importances_(self):
         """Get feature importances.
 
-        Note: feature importance in sklearn interface used to normalize to 1,
+        Note
+        ----
+        Feature importance in sklearn interface used to normalize to 1,
         it's deprecated after 2.0.4 and same as Booster.feature_importance() now.
         """
         if self._n_features is None:

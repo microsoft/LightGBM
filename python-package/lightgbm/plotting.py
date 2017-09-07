@@ -24,45 +24,50 @@ def plot_importance(booster, ax=None, height=0.2,
                     xlabel='Feature importance', ylabel='Features',
                     importance_type='split', max_num_features=None,
                     ignore_zero=True, figsize=None, grid=True, **kwargs):
-    """Plot model feature importances.
+    """Plot model's feature importances.
 
     Parameters
     ----------
     booster : Booster or LGBMModel
-        Booster or LGBMModel instance
-    ax : matplotlib Axes
-        Target axes instance. If None, new figure and axes will be created.
-    height : float
-        Bar height, passed to ax.barh()
-    xlim : tuple of 2 elements
-        Tuple passed to axes.xlim()
-    ylim : tuple of 2 elements
-        Tuple passed to axes.ylim()
-    title : str
-        Axes title. Pass None to disable.
-    xlabel : str
-        X axis title label. Pass None to disable.
-    ylabel : str
-        Y axis title label. Pass None to disable.
-    importance_type : str
-        How the importance is calculated: "split" or "gain"
-        "split" is the number of times a feature is used in a model
-        "gain" is the total gain of splits which use the feature
-    max_num_features : int
+        Booster or LGBMModel instance which feature importance should be plotted.
+    ax : matplotlib.axes.Axes or None, optional (default=None)
+        Target axes instance.
+        If None, new figure and axes will be created.
+    height : float, optional (default=0.2)
+        Bar height, passed to ``ax.barh()``.
+    xlim : tuple of 2 elements or None, optional (default=None)
+        Tuple passed to ``ax.xlim()``.
+    ylim : tuple of 2 elements or None, optional (default=None)
+        Tuple passed to ``ax.ylim()``.
+    title : string or None, optional (default="Feature importance")
+        Axes title.
+        If None, title is disabled.
+    xlabel : string or None, optional (default="Feature importance")
+        X-axis title label.
+        If None, title is disabled.
+    ylabel : string or None, optional (default="Features")
+        Y-axis title label.
+        If None, title is disabled.
+    importance_type : string, optional (default="split")
+        How the importance is calculated.
+        If "split", result contains numbers of times the feature is used in a model.
+        If "gain", result contains total gains of splits which use the feature.
+    max_num_features : int or None, optional (default=None)
         Max number of top features displayed on plot.
-        If None or smaller than 1, all features will be displayed.
-    ignore_zero : bool
-        Ignore features with zero importance
-    figsize : tuple of 2 elements
-        Figure size
-    grid : bool
-        Whether add grid for axes
-    **kwargs :
-        Other keywords passed to ax.barh()
+        If None or <1, all features will be displayed.
+    ignore_zero : bool, optional (default=True)
+        Whether to ignore features with zero importance.
+    figsize : tuple of 2 elements or None, optional (default=None)
+        Figure size.
+    grid : bool, optional (default=True)
+        Whether to add a grid for axes.
+    **kwargs : other parameters
+        Other parameters passed to ``ax.barh()``.
 
     Returns
     -------
-    ax : matplotlib Axes
+    ax : matplotlib.axes.Axes
+        The plot with model's feature importances.
     """
     try:
         import matplotlib.pyplot as plt
@@ -133,34 +138,40 @@ def plot_metric(booster, metric=None, dataset_names=None,
     Parameters
     ----------
     booster : dict or LGBMModel
-        Evals_result recorded by lightgbm.train() or LGBMModel instance
-    metric : str or None
+        Dictionary returned from ``lightgbm.train()`` or LGBMModel instance.
+    metric : string or None, optional (default=None)
         The metric name to plot.
         Only one metric supported because different metrics have various scales.
-        Pass None to pick `first` one (according to dict hashcode).
-    dataset_names : None or list of str
-        List of the dataset names to plot.
-        Pass None to plot all datasets.
-    ax : matplotlib Axes
-        Target axes instance. If None, new figure and axes will be created.
-    xlim : tuple of 2 elements
-        Tuple passed to axes.xlim()
-    ylim : tuple of 2 elements
-        Tuple passed to axes.ylim()
-    title : str
-        Axes title. Pass None to disable.
-    xlabel : str
-        X axis title label. Pass None to disable.
-    ylabel : str
-        Y axis title label. Pass None to disable. Pass 'auto' to use `metric`.
-    figsize : tuple of 2 elements
-        Figure size
-    grid : bool
-        Whether add grid for axes
+        If None, first metric picked from dictionary (according to hashcode).
+    dataset_names : list of strings or None, optional (default=None)
+        List of the dataset names which are used to calculate metric to plot.
+        If None, all datasets are used.
+    ax : matplotlib.axes.Axes or None, optional (default=None)
+        Target axes instance.
+        If None, new figure and axes will be created.
+    xlim : tuple of 2 elements or None, optional (default=None)
+        Tuple passed to ``ax.xlim()``.
+    ylim : tuple of 2 elements or None, optional (default=None)
+        Tuple passed to ``ax.ylim()``.
+    title : string or None, optional (default="Metric during training")
+        Axes title.
+        If None, title is disabled.
+    xlabel : string or None, optional (default="Iterations")
+        X-axis title label.
+        If None, title is disabled.
+    ylabel : string or None, optional (default="auto")
+        Y-axis title label.
+        If 'auto', metric name is used.
+        If None, title is disabled.
+    figsize : tuple of 2 elements or None, optional (default=None)
+        Figure size.
+    grid : bool, optional (default=True)
+        Whether to add a grid for axes.
 
     Returns
     -------
-    ax : matplotlib Axes
+    ax : matplotlib.axes.Axes
+        The plot with metric's history over the training.
     """
     try:
         import matplotlib.pyplot as plt
@@ -298,48 +309,52 @@ def create_tree_digraph(booster, tree_index=0, show_info=None,
                         name=None, comment=None, filename=None, directory=None,
                         format=None, engine=None, encoding=None, graph_attr=None,
                         node_attr=None, edge_attr=None, body=None, strict=False):
-    """Create a digraph of specified tree.
+    """Create a digraph representation of specified tree.
 
-    See:
-      - http://graphviz.readthedocs.io/en/stable/api.html#digraph
+    Note
+    ----
+    For more information please visit
+    http://graphviz.readthedocs.io/en/stable/api.html#digraph.
 
     Parameters
     ----------
-    booster : Booster, LGBMModel
+    booster : Booster or LGBMModel
         Booster or LGBMModel instance.
-    tree_index : int, default 0
-        Specify tree index of target tree.
-    show_info : list
-        Information shows on nodes.
-        options: 'split_gain', 'internal_value', 'internal_count' or 'leaf_count'.
-    name : str
+    tree_index : int, optional (default=0)
+        The index of a target tree to convert.
+    show_info : list or None, optional (default=None)
+        What information should be showed on nodes.
+        Possible values of list items: 'split_gain', 'internal_value', 'internal_count', 'leaf_count'.
+    name : string or None, optional (default=None)
         Graph name used in the source code.
-    comment : str
+    comment : string or None, optional (default=None)
         Comment added to the first line of the source.
-    filename : str
-        Filename for saving the source (defaults to name + '.gv').
-    directory : str
+    filename : string or None, optional (default=None)
+        Filename for saving the source.
+        If None, ``name`` + '.gv' is used.
+    directory : string or None, optional (default=None)
         (Sub)directory for source saving and rendering.
-    format : str
+    format : string or None, optional (default=None)
         Rendering output format ('pdf', 'png', ...).
-    engine : str
+    engine : string or None, optional (default=None)
         Layout command used ('dot', 'neato', ...).
-    encoding : str
+    encoding : string or None, optional (default=None)
         Encoding for saving the source.
-    graph_attr : dict
-        Mapping of (attribute, value) pairs for the graph.
-    node_attr : dict
+    graph_attr : dict or None, optional (default=None)
+        Mapping of (attribute, value) pairs set for the graph.
+    node_attr : dict or None, optional (default=None)
         Mapping of (attribute, value) pairs set for all nodes.
-    edge_attr : dict
+    edge_attr : dict or None, optional (default=None)
         Mapping of (attribute, value) pairs set for all edges.
-    body : list of str
-        Iterable of lines to add to the graph body.
-    strict : bool
-        Iterable of lines to add to the graph body.
+    body : list of strings or None, optional (default=None)
+        Lines to add to the graph body.
+    strict : bool, optional (default=False)
+        Whether rendering should merge multi-edges.
 
     Returns
     -------
-    graph : graphviz Digraph
+    graph : graphviz.Digraph
+        The digraph representation of specified tree.
     """
     if isinstance(booster, LGBMModel):
         booster = booster.booster_
@@ -376,27 +391,29 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
 
     Parameters
     ----------
-    booster : Booster, LGBMModel
-        Booster or LGBMModel instance.
-    ax : matplotlib Axes
-        Target axes instance. If None, new figure and axes will be created.
-    tree_index : int, default 0
-        Specify tree index of target tree.
-    figsize : tuple of 2 elements
+    booster : Booster or LGBMModel
+        Booster or LGBMModel instance to be plotted.
+    ax : matplotlib.axes.Axes or None, optional (default=None)
+        Target axes instance.
+        If None, new figure and axes will be created.
+    tree_index : int, optional (default=0)
+        The index of a target tree to plot.
+    figsize : tuple of 2 elements or None, optional (default=None)
         Figure size.
-    graph_attr : dict
-        Mapping of (attribute, value) pairs for the graph.
-    node_attr : dict
+    graph_attr : dict or None, optional (default=None)
+        Mapping of (attribute, value) pairs set for the graph.
+    node_attr : dict or None, optional (default=None)
         Mapping of (attribute, value) pairs set for all nodes.
-    edge_attr : dict
+    edge_attr : dict or None, optional (default=None)
         Mapping of (attribute, value) pairs set for all edges.
-    show_info : list
-        Information shows on nodes.
-        options: 'split_gain', 'internal_value', 'internal_count' or 'leaf_count'.
+    show_info : list or None, optional (default=None)
+        What information should be showed on nodes.
+        Possible values of list items: 'split_gain', 'internal_value', 'internal_count', 'leaf_count'.
 
     Returns
     -------
-    ax : matplotlib Axes
+    ax : matplotlib.axes.Axes
+        The plot with single tree.
     """
     try:
         import matplotlib.pyplot as plt
