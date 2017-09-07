@@ -34,11 +34,11 @@ def plot_importance(booster, ax=None, height=0.2,
         Target axes instance.
         If None, new figure and axes will be created.
     height : float, optional (default=0.2)
-        Bar height, passed to `ax.barh()`.
+        Bar height, passed to ``ax.barh()``.
     xlim : tuple of 2 elements or None, optional (default=None)
-        Tuple passed to `ax.xlim()`.
+        Tuple passed to ``ax.xlim()``.
     ylim : tuple of 2 elements or None, optional (default=None)
-        Tuple passed to `ax.ylim()`.
+        Tuple passed to ``ax.ylim()``.
     title : string or None, optional (default="Feature importance")
         Axes title.
         If None, title is disabled.
@@ -62,7 +62,7 @@ def plot_importance(booster, ax=None, height=0.2,
     grid : bool, optional (default=True)
         Whether to add a grid for axes.
     **kwargs : other parameters
-        Other parameters passed to `ax.barh()`.
+        Other parameters passed to ``ax.barh()``.
 
     Returns
     -------
@@ -138,7 +138,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
     Parameters
     ----------
     booster : dict or LGBMModel
-        Dictionary returned from `lightgbm.train()` or LGBMModel instance.
+        Dictionary returned from ``lightgbm.train()`` or LGBMModel instance.
     metric : string or None, optional (default=None)
         The metric name to plot.
         Only one metric supported because different metrics have various scales.
@@ -150,9 +150,9 @@ def plot_metric(booster, metric=None, dataset_names=None,
         Target axes instance.
         If None, new figure and axes will be created.
     xlim : tuple of 2 elements or None, optional (default=None)
-        Tuple passed to `ax.xlim()`.
+        Tuple passed to ``ax.xlim()``.
     ylim : tuple of 2 elements or None, optional (default=None)
-        Tuple passed to `ax.ylim()`.
+        Tuple passed to ``ax.ylim()``.
     title : string or None, optional (default="Metric during training")
         Axes title.
         If None, title is disabled.
@@ -331,7 +331,7 @@ def create_tree_digraph(booster, tree_index=0, show_info=None,
         Comment added to the first line of the source.
     filename : string or None, optional (default=None)
         Filename for saving the source.
-        If None, `name` + '.gv' is used.
+        If None, ``name`` + '.gv' is used.
     directory : string or None, optional (default=None)
         (Sub)directory for source saving and rendering.
     format : string or None, optional (default=None)

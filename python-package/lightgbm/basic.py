@@ -576,7 +576,7 @@ class Dataset(object):
         categorical_feature : list of strings or int, or 'auto', optional (default="auto")
             Categorical features.
             If list of int, interpreted as indices.
-            If list of strings, interpreted as feature names (need to specify feature_name as well).
+            If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
             If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
         params: dict or None, optional (default=None)
             Other parameters.
@@ -822,7 +822,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        data : string or numpy array or scipy.sparse
+        data : string, numpy array or scipy.sparse
             Data source of Dataset.
             If string, it represents the path to txt file.
         label : list or numpy 1-D array, optional (default=None)
@@ -1194,7 +1194,7 @@ class Dataset(object):
 
     def get_ref_chain(self, ref_limit=100):
         """Get a chain of Dataset objects, starting with r, then going to r.reference if exists,
-           then to r.reference.reference, etc. until we hit ``ref_limit`` or a reference loop.
+        then to r.reference.reference, etc. until we hit ``ref_limit`` or a reference loop.
 
         Parameters
         ----------
@@ -1204,7 +1204,7 @@ class Dataset(object):
         Returns
         -------
         ref_chain : set of Dataset
-            Chain of references of the Dataset.
+            Chain of references of the Datasets.
         """
         head = self
         ref_chain = set()
@@ -1221,7 +1221,7 @@ class Dataset(object):
 
 
 class Booster(object):
-    """"Booster in LightGBM."""
+    """Booster in LightGBM."""
     def __init__(self, params=None, train_set=None, model_file=None, silent=False):
         """Initialize the Booster.
 

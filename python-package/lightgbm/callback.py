@@ -59,7 +59,7 @@ def print_evaluation(period=1, show_stdv=True):
     Returns
     -------
     callback : function
-        The callback that prints the evaluation results every `period` iteration(s).
+        The callback that prints the evaluation results every ``period`` iteration(s).
     """
     def callback(env):
         """internal function"""
@@ -71,7 +71,7 @@ def print_evaluation(period=1, show_stdv=True):
 
 
 def record_evaluation(eval_result):
-    """Create a callback that records the evaluation history into `eval_result`.
+    """Create a callback that records the evaluation history into ``eval_result``.
 
     Parameters
     ----------

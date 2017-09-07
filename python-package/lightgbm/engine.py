@@ -35,7 +35,7 @@ def train(params, train_set, num_boost_round=100,
     valid_sets: list of Datasets or None, optional (default=None)
         List of data to be evaluated during training.
     valid_names: list of string or None, optional (default=None)
-        Names of `valid_sets`.
+        Names of ``valid_sets``.
     fobj : callable or None, optional (default=None)
         Customized objective function.
     feval : callable or None, optional (default=None)
@@ -49,34 +49,40 @@ def train(params, train_set, num_boost_round=100,
     categorical_feature : list of strings or int, or 'auto', optional (default="auto")
         Categorical features.
         If list of int, interpreted as indices.
-        If list of strings, interpreted as feature names (need to specify `feature_name` as well).
+        If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
         If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
     early_stopping_rounds: int or None, optional (default=None)
         Activates early stopping. The model will train until the validation score stops improving.
         Requires at least one validation data and one metric. If there's more than one, will check all of them.
-        If early stopping occurs, the model will add `best_iteration` field.
+        If early stopping occurs, the model will add ``best_iteration`` field.
     evals_result: dict or None, optional (default=None)
-        This dictionary used to store all evaluation results of all the items in `valid_sets`.
-            Example: with a `valid_sets` containing [valid_set, train_set]
-                     and `valid_names` containing ['eval', 'train']
-                     and a `params` containing ('metric':'logloss')
-                     returns: {'train': {'logloss': ['0.48253', '0.35953', ...]},
-                               'eval': {'logloss': ['0.480385', '0.357756', ...]}}.
+        This dictionary used to store all evaluation results of all the items in ``valid_sets``.
+
+        Example
+        -------
+        With a ``valid_sets`` = [valid_set, train_set],
+        ``valid_names`` = ['eval', 'train']
+        and a ``params`` = ('metric':'logloss')
+        returns: {'train': {'logloss': ['0.48253', '0.35953', ...]},
+        'eval': {'logloss': ['0.480385', '0.357756', ...]}}.
     verbose_eval : bool or int, optional (default=True)
         Requires at least one validation data.
         If True, the eval metric on the valid set is printed at each boosting stage.
-        If int, the eval metric on the valid set is printed at every `verbose_eval` boosting stage.
-        The last boosting stage or the boosting stage found by using `early_stopping_rounds` is also printed.
-            Example: with `verbose_eval`=4 and at least one item in evals,
-                     an evaluation metric is printed every 4 (instead of 1) boosting stages.
+        If int, the eval metric on the valid set is printed at every ``verbose_eval`` boosting stage.
+        The last boosting stage or the boosting stage found by using ``early_stopping_rounds`` is also printed.
+
+        Example
+        -------
+        With ``verbose_eval`` = 4 and at least one item in evals,
+        an evaluation metric is printed every 4 (instead of 1) boosting stages.
     learning_rates: list, callable or None, optional (default=None)
         List of learning rates for each boosting round
-        or a customized function that calculates `learning_rate`
+        or a customized function that calculates ``learning_rate``
         in terms of current number of round (e.g. yields learning rate decay).
-    keep_training_booster : bool, optional (default=False) 
+    keep_training_booster : bool, optional (default=False)
         Whether the returned Booster will be used to keep training.
         If False, the returned value will be converted into _InnerPredictor before returning.
-        You can still use _InnerPredictor as `init_model` for future continue training.
+        You can still use _InnerPredictor as ``init_model`` for future continue training.
     callbacks : list of callables or None, optional (default=None)
         List of callback functions that are applied at each iteration.
         See Callbacks in Python-API.md for more information.
@@ -329,7 +335,7 @@ def cv(params, train_set, num_boost_round=10,
         Whether to shuffle before splitting data.
     metrics : string, list of strings or None, optional (default=None)
         Evaluation metrics to be monitored while CV.
-        If not None, the metric in `params` will be overridden.
+        If not None, the metric in ``params`` will be overridden.
     fobj : callable or None, optional (default=None)
         Custom objective function.
     feval : callable or None, optional (default=None)
@@ -342,11 +348,11 @@ def cv(params, train_set, num_boost_round=10,
     categorical_feature : list of strings or int, or 'auto', optional (default="auto")
         Categorical features.
         If list of int, interpreted as indices.
-        If list of strings, interpreted as feature names (need to specify `feature_name` as well).
+        If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
         If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
     early_stopping_rounds: int or None, optional (default=None)
         Activates early stopping. CV error needs to decrease at least
-        every `early_stopping_rounds` round(s) to continue.
+        every ``early_stopping_rounds`` round(s) to continue.
         Last entry in evaluation history is the one from best iteration.
     fpreproc : callable or None, optional (default=None)
         Preprocessing function that takes (dtrain, dtest, params)
@@ -355,7 +361,7 @@ def cv(params, train_set, num_boost_round=10,
         Whether to display the progress.
         If None, progress will be displayed when np.ndarray is returned.
         If True, progress will be displayed at every boosting stage.
-        If int, progress will be displayed at every given `verbose_eval` boosting stage.
+        If int, progress will be displayed at every given ``verbose_eval`` boosting stage.
     show_stdv : bool, optional (default=True)
         Whether to display the standard deviation in progress.
         Results are not affected by this parameter, and always contains std.
@@ -370,9 +376,9 @@ def cv(params, train_set, num_boost_round=10,
     eval_hist : dict
         Evaluation history.
         The dictionary has the following format:
-        {'metric1-mean': [values], 'metric1-std': [values],
-         'metric2-mean': [values], 'metric1-std': [values],
-         ...}.
+        {'metric1-mean': [values], 'metric1-stdv': [values],
+        'metric2-mean': [values], 'metric1-stdv': [values],
+        ...}.
     """
     if not isinstance(train_set, Dataset):
         raise TypeError("Traninig only accepts Dataset object")
