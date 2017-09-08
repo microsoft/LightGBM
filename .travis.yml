@@ -10,15 +10,17 @@ os:
   - osx
 
 env:
+  global:
+    - PYTHON_VERSION=3.6
   matrix:
-    - TASK=regular PYTHON_VERSION=3.6
-    - TASK=mpi PYTHON_VERSION=3.6
-    - TASK=pylint PYTHON_VERSION=3.6
-    - TASK=if-else PYTHON_VERSION=3.6
-    - TASK=sdist PYTHON_VERSION=3.6
-    - TASK=bdist PYTHON_VERSION=3.6
-    - TASK=gpu METHOD=source PYTHON_VERSION=3.6
-    - TASK=gpu METHOD=pip PYTHON_VERSION=3.6
+    - TASK=regular
+    - TASK=mpi
+    - TASK=pylint
+    - TASK=if-else
+    - TASK=sdist
+    - TASK=bdist
+    - TASK=gpu METHOD=source
+    - TASK=gpu METHOD=pip
     - TASK=regular PYTHON_VERSION=2.7
     - TASK=regular PYTHON_VERSION=3.4
     - TASK=regular PYTHON_VERSION=3.5
@@ -26,11 +28,11 @@ env:
 matrix:
   exclude:
     - os: osx
-      env: TASK=gpu METHOD=source PYTHON_VERSION=3.6
+      env: TASK=gpu METHOD=source
     - os: osx
-      env: TASK=gpu METHOD=pip PYTHON_VERSION=3.6
+      env: TASK=gpu METHOD=pip
     - os: osx
-      env: TASK=pylint PYTHON_VERSION=3.6
+      env: TASK=pylint
 
 before_install:
   - test -n $CC  && unset CC
