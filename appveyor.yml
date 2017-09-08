@@ -1,15 +1,36 @@
+version: 2.0.5.{build}
 
-version: 1.0.{build}
+configuration:  # A trick to construct a build matrix
+  - 3.5
+  - 3.6
+
 environment:
   matrix:
-    - PYTHON: "C:/Python36-x64"
-      PYTHON_VERSION: 3.6
-      MINICONDA: "C:/Miniconda36-x64"
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      COMPILER: MSVC
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      COMPILER: MINGW
 
 clone_depth: 50
 
-init:
-  - "ECHO %PYTHON_VERSION% %MINICONDA%"
+install:
+  - set PATH=%PATH:C:\Program Files\Git\usr\bin;=%  # Delete sh.exe from PATH (mingw32-make fix)
+  - set PATH=C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1\mingw64\bin;%PATH%
+  - set PYTHON_VERSION=%CONFIGURATION%
+  - ps: >-
+      switch ($env:PYTHON_VERSION) {
+          "2.7" {$env:MINICONDA = """C:\Miniconda-x64"""}
+          "3.4" {$env:MINICONDA = """C:\Miniconda3-x64"""}
+          "3.5" {$env:MINICONDA = """C:\Miniconda35-x64"""}
+          "3.6" {$env:MINICONDA = """C:\Miniconda36-x64"""}
+          default {$env:MINICONDA = """C:\Miniconda36-x64"""}
+      }
+  - set PATH=%MINICONDA%;%MINICONDA%\Scripts;%PATH%
+  - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda create -q -n test-env python=%PYTHON_VERSION% numpy nose scipy scikit-learn pandas matplotlib pep8 pytest
+  - activate test-env
 
 build_script:
   - mkdir build && cd build
@@ -17,20 +38,19 @@ build_script:
   - cd ..
 
 test_script:
-  - "set PATH=%MINICONDA%;%MINICONDA%/Scripts;%PATH%"
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  - conda info -a
-  - conda install --yes numpy nose scipy scikit-learn pandas matplotlib
-  - pip install pep8 pytest
   - pytest tests/c_api_test/test_.py
-  - "set /p LGB_VER=< VERSION.txt"
   - cd python-package && python setup.py sdist --formats gztar
-  - cd dist 
-  - "pip install lightgbm-%LGB_VER%.tar.gz -v"
+  - cd dist
+  - IF "%COMPILER%"=="MINGW" (
+    pip install lightgbm-%LGB_VER%.tar.gz --install-option=--mingw -v)
+    ELSE (
+    pip install lightgbm-%LGB_VER%.tar.gz -v)
   - cd ../..
   - pytest tests/python_package_test
+  - IF "%COMPILER%"=="MINGW" appveyor exit  # skip all further steps
   - cd python-package && python setup.py bdist_wheel --plat-name=win-amd64 --universal
+
+after_test:
   - cd ../.nuget
   - python create_nuget.py
   - nuget.exe pack LightGBM.nuspec

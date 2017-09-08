@@ -5,46 +5,46 @@ dist: trusty
 compiler:
   - gcc
 
+os:
+  - linux
+  - osx
+
+env:
+  matrix:
+    - TASK=regular PYTHON_VERSION=3.6
+    - TASK=mpi PYTHON_VERSION=3.6
+    - TASK=pylint PYTHON_VERSION=3.6
+    - TASK=if-else PYTHON_VERSION=3.6
+    - TASK=sdist PYTHON_VERSION=3.6
+    - TASK=bdist PYTHON_VERSION=3.6
+    - TASK=gpu METHOD=source PYTHON_VERSION=3.6
+    - TASK=gpu METHOD=pip PYTHON_VERSION=3.6
+    - TASK=regular PYTHON_VERSION=2.7
+    - TASK=regular PYTHON_VERSION=3.4
+    - TASK=regular PYTHON_VERSION=3.5
+
 matrix:
-  include:
-    - os: linux
-      env: TASK=regular
-    - os: linux
-      env: TASK=mpi
-    - os: linux
-      env: TASK=gpu METHOD=source
-    - os: linux
-      env: TASK=sdist
-    - os: linux
-      env: TASK=gpu METHOD=pip
-    - os: linux
-      env: TASK=bdist
-    - os: linux
-      env: TASK=pylint
-    - os: linux
-      env: TASK=if-else
+  exclude:
     - os: osx
-      env: TASK=regular
+      env: TASK=gpu METHOD=source PYTHON_VERSION=3.6
     - os: osx
-      env: TASK=mpi
+      env: TASK=gpu METHOD=pip PYTHON_VERSION=3.6
     - os: osx
-      env: TASK=sdist
-    - os: osx
-      env: TASK=bdist
+      env: TASK=pylint PYTHON_VERSION=3.6
 
 before_install:
-- test -n $CC  && unset CC
-- test -n $CXX && unset CXX
+  - test -n $CC  && unset CC
+  - test -n $CXX && unset CXX
 
 install:
-- bash .travis/setup.sh
-- bash conda.sh -b -p $HOME/miniconda
-- export PATH="$HOME/miniconda/bin:$PATH"
-- conda config --set always_yes yes --set changeps1 no
-- conda update -q conda
+  - bash .travis/setup.sh
+  - bash conda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
 
 script:
-- bash .travis/test.sh
+  - bash .travis/test.sh
 
 notifications:
   email: false

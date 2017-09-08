@@ -4,9 +4,11 @@
 from __future__ import absolute_import
 
 import distutils
+import logging
 import os
 import shutil
 import struct
+import subprocess
 import sys
 
 from setuptools import find_packages, setup
@@ -22,7 +24,7 @@ def find_lib():
     exec(compile(open(libpath_py, "rb").read(), libpath_py, 'exec'), libpath, libpath)
 
     LIB_PATH = [os.path.relpath(path, CURRENT_DIR) for path in libpath['find_lib_path']()]
-    print("Install lib_lightgbm from: %s" % LIB_PATH)
+    logging.info("Installing lib_lightgbm from: %s" % LIB_PATH)
     return LIB_PATH
 
 
@@ -40,6 +42,7 @@ def copy_files(use_gpu=False):
     if not os.path.isfile('./_IS_SOURCE_PACKAGE.txt'):
         copy_files_helper('include')
         copy_files_helper('src')
+        copy_files_helper('windows')
         if use_gpu:
             copy_files_helper('compute')
         distutils.file_util.copy_file("../CMakeLists.txt", "./lightgbm/")
@@ -47,13 +50,25 @@ def copy_files(use_gpu=False):
 
 
 def clear_path(path):
-    contents = os.listdir(path)
-    for file in contents:
-        file_path = os.path.join(path, file)
-        if os.path.isfile(file_path):
-            os.remove(file_path)
-        else:
-            shutil.rmtree(file_path)
+    if os.path.isdir(path):
+        contents = os.listdir(path)
+        for file_name in contents:
+            file_path = os.path.join(path, file_name)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+            else:
+                shutil.rmtree(file_path)
+
+
+def silent_call(cmd, raise_error=False, error_msg=''):
+    try:
+        with open(os.devnull, "w") as shut_up:
+            subprocess.check_output(cmd, stderr=shut_up)
+            return 0
+    except Exception:
+        if raise_error:
+            raise Exception(error_msg)
+        return 1
 
 
 def compile_cpp(use_mingw=False, use_gpu=False):
@@ -63,33 +78,53 @@ def compile_cpp(use_mingw=False, use_gpu=False):
     os.makedirs("build_cpp")
     os.chdir("build_cpp")
 
-    cmake_cmd = "cmake "
-    build_cmd = "make _lightgbm"
+    logger.info("Starting to compile the library.")
+
+    cmake_cmd = ["cmake", "../lightgbm/"]
     if use_gpu:
-        cmake_cmd += " -DUSE_GPU=ON "
+        cmake_cmd.append("-DUSE_GPU=ON")
     if os.name == "nt":
         if use_mingw:
-            cmake_cmd += " -G \"MinGW Makefiles\" "
-            os.system(cmake_cmd + " ../lightgbm/")
-            build_cmd = "mingw32-make.exe _lightgbm"
+            logger.info("Starting to compile with CMake and MinGW.")
+            silent_call(cmake_cmd + ["-G", "MinGW Makefiles"], raise_error=True,
+                        error_msg='Please install CMake first')
+            silent_call(["mingw32-make.exe", "_lightgbm"], raise_error=True,
+                        error_msg='Please install MinGW first')
         else:
-            vs_versions = ["Visual Studio 15 2017 Win64", "Visual Studio 14 2015 Win64", "Visual Studio 12 2013 Win64"]
-            try_vs = 1
-            for vs in vs_versions:
-                tmp_cmake_cmd = "%s -G \"%s\"" % (cmake_cmd, vs)
-                try_vs = os.system(tmp_cmake_cmd + " ../lightgbm/")
-                if try_vs == 0:
-                    cmake_cmd = tmp_cmake_cmd
-                    break
-                else:
-                    clear_path("./")
-            if try_vs != 0:
-                raise Exception('Please install Visual Studio or MS Build first')
-
-            build_cmd = "cmake --build . --target _lightgbm  --config Release"
-    print("Start to compile library.")
-    os.system(cmake_cmd + " ../lightgbm/")
-    os.system(build_cmd)
+            status = 1
+            lib_path = "../lightgbm/windows/x64/DLL/lib_lightgbm.dll"
+            if not use_gpu:
+                logger.info("Starting to compile with MSBuild from existing solution file.")
+                platform_toolsets = ("v141", "v140", "v120")
+                for pt in platform_toolsets:
+                    status = silent_call(["MSBuild", "../lightgbm/windows/LightGBM.sln",
+                                          "/p:Configuration=DLL",
+                                          "/p:Platform=x64",
+                                          "/p:PlatformToolset={0}".format(pt)])
+                    if status == 0 and os.path.exists(lib_path):
+                        break
+                    else:
+                        clear_path("../lightgbm/windows/x64")
+                if status != 0 or not os.path.exists(lib_path):
+                    logger.warning("Compilation with MSBuild from existing solution file failed.")
+            if status != 0 or not os.path.exists(lib_path):
+                vs_versions = ("Visual Studio 15 2017 Win64", "Visual Studio 14 2015 Win64", "Visual Studio 12 2013 Win64")
+                for vs in vs_versions:
+                    logger.info("Starting to compile with %s." % vs)
+                    status = silent_call(cmake_cmd + ["-G", vs])
+                    if status == 0:
+                        break
+                    else:
+                        clear_path("./")
+                if status != 0:
+                    raise Exception('Please install Visual Studio or MS Build first')
+                silent_call(["cmake", "--build", ".", "--target", "_lightgbm", "--config", "Release"], raise_error=True,
+                            error_msg='Please install CMake first')
+    else:  # Linux, Darwin (OS X), etc.
+        logger.info("Starting to compile with CMake.")
+        silent_call(cmake_cmd, raise_error=True, error_msg='Please install CMake first')
+        silent_call(["make", "_lightgbm"], raise_error=True,
+                    error_msg='An error has occurred while building lightgbm library file')
     os.chdir("..")
 
 
@@ -122,7 +157,6 @@ class CustomInstall(install):
         if not self.precompile:
             copy_files(use_gpu=self.gpu)
             compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu)
-        self.distribution.data_files = [('lightgbm', find_lib())]
         install.run(self)
 
 
@@ -149,10 +183,12 @@ if __name__ == "__main__":
         distutils.file_util.copy_file(
             os.path.join('..', 'VERSION.txt'),
             os.path.join('.', 'lightgbm'))
-    if os.path.isfile(os.path.join(dir_path, 'lightgbm', 'VERSION.txt')):
-        version = open(os.path.join(dir_path, 'lightgbm', 'VERSION.txt')).read().strip()
+    version = open(os.path.join(dir_path, 'lightgbm', 'VERSION.txt')).read().strip()
 
     sys.path.insert(0, '.')
+
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger('LightGBM')
 
     setup(name='lightgbm',
           version=version,
@@ -173,6 +209,20 @@ if __name__ == "__main__":
           },
           packages=find_packages(),
           include_package_data=True,
-          data_files=[],
           license='The MIT License (Microsoft)',
-          url='https://github.com/Microsoft/LightGBM')
+          url='https://github.com/Microsoft/LightGBM',
+          classifiers=['Development Status :: 5 - Production/Stable',
+                       'Intended Audience :: Science/Research',
+                       'License :: OSI Approved :: MIT License',
+                       'Natural Language :: English',
+                       'Operating System :: MacOS',
+                       'Operating System :: Microsoft :: Windows',
+                       'Operating System :: POSIX',
+                       'Operating System :: Unix',
+                       'Programming Language :: Python :: 2',
+                       'Programming Language :: Python :: 2.7',
+                       'Programming Language :: Python :: 3',
+                       'Programming Language :: Python :: 3.4',
+                       'Programming Language :: Python :: 3.5',
+                       'Programming Language :: Python :: 3.6',
+                       'Topic :: Scientific/Engineering :: Artificial Intelligence'])
