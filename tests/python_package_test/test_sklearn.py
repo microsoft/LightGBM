@@ -186,7 +186,7 @@ class TestSklearn(unittest.TestCase):
                 check_parameters_default_constructible(name, estimator)
                 check_no_fit_attributes_set_in_init(name, estimator)
                 # we cannot leave default params (see https://github.com/Microsoft/LightGBM/issues/833)
-                estimator = estimator(min_data=1, min_data_in_bin=1)
+                estimator = estimator(min_child_samples=1, min_data_in_bin=1)
                 for check in _yield_all_checks(name, estimator):
                     if check.__name__ == 'check_estimators_nan_inf':
                         continue  # skip test because LightGBM deals with nan
