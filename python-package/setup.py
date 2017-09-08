@@ -33,7 +33,7 @@ def copy_files(use_gpu=False):
     def copy_files_helper(folder_name):
         src = os.path.join('..', folder_name)
         if os.path.exists(src):
-            dst = os.path.join('./lightgbm', folder_name)
+            dst = os.path.join('./compile', folder_name)
             shutil.rmtree(dst, ignore_errors=True)
             distutils.dir_util.copy_tree(src, dst)
         else:
@@ -45,7 +45,7 @@ def copy_files(use_gpu=False):
         copy_files_helper('windows')
         if use_gpu:
             copy_files_helper('compute')
-        distutils.file_util.copy_file("../CMakeLists.txt", "./lightgbm/")
+        distutils.file_util.copy_file("../CMakeLists.txt", "./compile/")
         distutils.file_util.copy_file("../LICENSE", "./")
 
 
@@ -80,7 +80,7 @@ def compile_cpp(use_mingw=False, use_gpu=False):
 
     logger.info("Starting to compile the library.")
 
-    cmake_cmd = ["cmake", "../lightgbm/"]
+    cmake_cmd = ["cmake", "../compile/"]
     if use_gpu:
         cmake_cmd.append("-DUSE_GPU=ON")
     if os.name == "nt":
@@ -92,19 +92,19 @@ def compile_cpp(use_mingw=False, use_gpu=False):
                         error_msg='Please install MinGW first')
         else:
             status = 1
-            lib_path = "../lightgbm/windows/x64/DLL/lib_lightgbm.dll"
+            lib_path = "../compile/windows/x64/DLL/lib_lightgbm.dll"
             if not use_gpu:
                 logger.info("Starting to compile with MSBuild from existing solution file.")
                 platform_toolsets = ("v141", "v140", "v120")
                 for pt in platform_toolsets:
-                    status = silent_call(["MSBuild", "../lightgbm/windows/LightGBM.sln",
+                    status = silent_call(["MSBuild", "../compile/windows/LightGBM.sln",
                                           "/p:Configuration=DLL",
                                           "/p:Platform=x64",
                                           "/p:PlatformToolset={0}".format(pt)])
                     if status == 0 and os.path.exists(lib_path):
                         break
                     else:
-                        clear_path("../lightgbm/windows/x64")
+                        clear_path("../compile/windows/x64")
                 if status != 0 or not os.path.exists(lib_path):
                     logger.warning("Compilation with MSBuild from existing solution file failed.")
             if status != 0 or not os.path.exists(lib_path):
@@ -144,7 +144,7 @@ class CustomInstall(install):
     user_options = install.user_options + [
         ('mingw', 'm', 'compile with mingw'),
         ('gpu', 'g', 'compile gpu version'),
-        ('precompile', 'p', 'use precompile library')
+        ('precompile', 'p', 'use precompiled library')
     ]
 
     def initialize_options(self):
@@ -182,9 +182,8 @@ if __name__ == "__main__":
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
     if os.path.isfile(os.path.join('..', 'VERSION.txt')):
-        distutils.file_util.copy_file(
-            os.path.join('..', 'VERSION.txt'),
-            os.path.join('.', 'lightgbm'))
+        distutils.file_util.copy_file(os.path.join('..', 'VERSION.txt'),
+                                      os.path.join('.', 'lightgbm'))
     version = open(os.path.join(dir_path, 'lightgbm', 'VERSION.txt')).read().strip()
 
     sys.path.insert(0, '.')
