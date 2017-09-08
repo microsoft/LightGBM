@@ -323,7 +323,7 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
     rnd_idx <- sample(seq_len(nrows))
     
     # Request stratified folds
-    if (isTRUE(stratified) && length(label) == length(rnd_idx)) {
+    if (isTRUE(stratified) && params$objective %in% c("binary", "multiclass") && length(label) == length(rnd_idx)) {
       
       y <- label[rnd_idx]
       y <- factor(y)
@@ -400,6 +400,7 @@ lgb.stratified.folds <- function(y, k = 10) {
   }
   
   if (k < length(y)) {
+    
     ## Reset levels so that the possible levels and
     ## the levels in the vector are the same
     y <- factor(as.character(y))
