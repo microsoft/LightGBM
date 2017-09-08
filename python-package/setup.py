@@ -167,6 +167,8 @@ class CustomSdist(sdist):
         open("./_IS_SOURCE_PACKAGE.txt", 'w').close()
         if os.path.exists("./lightgbm/Release/"):
             shutil.rmtree('./lightgbm/Release/')
+        if os.path.exists("./lightgbm/windows/x64/"):
+            shutil.rmtree('./lightgbm/windows/x64/')
         if os.path.isfile('./lightgbm/lib_lightgbm.so'):
             os.remove('./lightgbm/lib_lightgbm.so')
         sdist.run(self)
