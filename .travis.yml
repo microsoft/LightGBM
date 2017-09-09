@@ -2,6 +2,9 @@ language: cpp
 sudo: required
 dist: trusty
 
+git:
+  submodules: true
+
 compiler:
   - gcc
 
