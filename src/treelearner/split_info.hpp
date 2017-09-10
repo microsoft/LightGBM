@@ -72,10 +72,9 @@ public:
     buffer += sizeof(right_sum_hessian);
     std::memcpy(buffer, &default_left, sizeof(default_left));
     buffer += sizeof(default_left);
-    for (int i = 0; i < num_cat_threshold; ++i) {
-      std::memcpy(buffer, &cat_threshold[i], sizeof(uint32_t));
-      buffer += sizeof(uint32_t);
-    }
+    std::memcpy(buffer, &num_cat_threshold, sizeof(num_cat_threshold));
+    buffer += sizeof(num_cat_threshold);
+    std::memcpy(buffer, cat_threshold.data(), sizeof(uint32_t) * num_cat_threshold);
   }
 
   void CopyFrom(const char* buffer) {
@@ -103,11 +102,10 @@ public:
     buffer += sizeof(right_sum_hessian);
     std::memcpy(&default_left, buffer, sizeof(default_left));
     buffer += sizeof(default_left);
+    std::memcpy(&num_cat_threshold, buffer, sizeof(num_cat_threshold));
+    buffer += sizeof(num_cat_threshold);
     cat_threshold.resize(num_cat_threshold);
-    for (int i = 0; i < num_cat_threshold; ++i) {
-      std::memcpy(&cat_threshold[i], buffer, sizeof(uint32_t));
-      buffer += sizeof(uint32_t);
-    }
+    std::memcpy(cat_threshold.data(), buffer, sizeof(uint32_t) * num_cat_threshold);
   }
 
   inline void Reset() {
