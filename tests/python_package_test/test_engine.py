@@ -78,7 +78,7 @@ class TestEngine(unittest.TestCase):
         self.assertLess(ret, 0.25)
         self.assertAlmostEqual(evals_result['valid_0']['binary_logloss'][-1], ret, places=5)
 
-    def test_regreesion(self):
+    def test_regression(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {

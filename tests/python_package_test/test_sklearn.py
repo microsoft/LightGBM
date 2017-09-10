@@ -19,6 +19,11 @@ try:
     sklearn_at_least_019 = True
 except ImportError:
     sklearn_at_least_019 = False
+try:
+    import pandas as pd
+    IS_PANDAS_INSTALLED = True
+except ImportError:
+    IS_PANDAS_INSTALLED = False
 
 
 def multi_error(y_true, y_pred):
@@ -40,7 +45,7 @@ class TestSklearn(unittest.TestCase):
         self.assertLess(ret, 0.15)
         self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['binary_logloss'][gbm.best_iteration_ - 1], places=5)
 
-    def test_regreesion(self):
+    def test_regression(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(n_estimators=50, silent=True)
@@ -194,3 +199,33 @@ class TestSklearn(unittest.TestCase):
                         check(name, estimator)
                     except SkipTest as message:
                         warnings.warn(message, SkipTestWarning)
+
+    @unittest.skipIf(not IS_PANDAS_INSTALLED, 'pandas not installed')
+    def test_pandas_categorical(self):
+        X = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 75),  # str
+                          "B": np.random.permutation([1, 2, 3] * 100),  # int
+                          "C": np.random.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
+                          "D": np.random.permutation([True, False] * 150)})  # bool
+        y = np.random.permutation([0, 1] * 150)
+        X_test = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'e'] * 20),
+                               "B": np.random.permutation([1, 3] * 30),
+                               "C": np.random.permutation([0.1, -0.1, 0.2, 0.2] * 15),
+                               "D": np.random.permutation([True, False] * 30)})
+        for col in ["A", "B", "C", "D"]:
+            X[col] = X[col].astype('category')
+            X_test[col] = X_test[col].astype('category')
+        gbm0 = lgb.sklearn.LGBMClassifier().fit(X, y)
+        pred0 = list(gbm0.predict(X_test))
+        gbm1 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=[0])
+        pred1 = list(gbm1.predict(X_test))
+        gbm2 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=['A'])
+        pred2 = list(gbm2.predict(X_test))
+        gbm3 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=['A', 'B', 'C', 'D'])
+        pred3 = list(gbm3.predict(X_test))
+        gbm3.booster_.save_model('categorical.model')
+        gbm4 = lgb.Booster(model_file='categorical.model')
+        pred4 = list(gbm4.predict(X_test))
+        np.testing.assert_almost_equal(pred0, pred1)
+        np.testing.assert_almost_equal(pred0, pred2)
+        np.testing.assert_almost_equal(pred0, pred3)
+        np.testing.assert_almost_equal(pred0, pred4)
