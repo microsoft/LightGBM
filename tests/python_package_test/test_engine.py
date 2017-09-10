@@ -444,7 +444,6 @@ class TestEngine(unittest.TestCase):
         gbm3 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
                          categorical_feature=['A', 'B', 'C', 'D'])
         pred3 = list(gbm3.predict(X_test))
-        lgb_train = lgb.Dataset(X, y)
         gbm3.save_model('categorical.model')
         gbm4 = lgb.Booster(model_file='categorical.model')
         pred4 = list(gbm4.predict(X_test))
