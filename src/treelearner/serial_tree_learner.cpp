@@ -187,7 +187,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
     const SplitInfo& best_leaf_SplitInfo = best_split_per_leaf_[best_leaf];
     // cannot split, quit
     if (best_leaf_SplitInfo.gain <= 0.0) {
-      Log::Info("No further splits with positive gain, best gain: %f", best_leaf_SplitInfo.gain);
+      Log::Warning("No further splits with positive gain, best gain: %f", best_leaf_SplitInfo.gain);
       break;
     }
     #ifdef TIMETAG
@@ -200,7 +200,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
     #endif
     cur_depth = std::max(cur_depth, tree->leaf_depth(left_leaf));
   }
-  Log::Info("Trained a tree with leaves=%d and max_depth=%d", tree->num_leaves(), cur_depth);
+  Log::Debug("Trained a tree with leaves=%d and max_depth=%d", tree->num_leaves(), cur_depth);
   return tree.release();
 }
 
