@@ -23,7 +23,6 @@ bool Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
     if (!boosting->LoadModelFromString(str_buf.str()))
       return false;
   }
-
   return true;
 }
 

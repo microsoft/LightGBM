@@ -38,7 +38,7 @@ public:
 
   /*!
   * \brief Merge model from other boosting object
-           Will insert to the front of current boosting object
+  Will insert to the front of current boosting object
   * \param other
   */
   virtual void MergeFrom(const Boosting* other) = 0;
@@ -54,18 +54,17 @@ public:
   * \param valid_metrics Metric for validation data
   */
   virtual void AddValidDataset(const Dataset* valid_data,
-    const std::vector<const Metric*>& valid_metrics) = 0;
+                               const std::vector<const Metric*>& valid_metrics) = 0;
 
   virtual void Train(int snapshot_freq, const std::string& model_output_path) = 0;
 
   /*!
   * \brief Training logic
-  * \param gradient nullptr for using default objective, otherwise use self-defined boosting
-  * \param hessian nullptr for using default objective, otherwise use self-defined boosting
-  * \param is_eval true if need evaluation or early stop
-  * \return True if meet early stopping or cannot boosting
+  * \param gradients nullptr for using default objective, otherwise use self-defined boosting
+  * \param hessians nullptr for using default objective, otherwise use self-defined boosting
+  * \return True if cannot train anymore
   */
-  virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) = 0;
+  virtual bool TrainOneIter(const score_t* gradients, const score_t* hessians) = 0;
 
   /*!
   * \brief Rollback one iteration
@@ -77,10 +76,6 @@ public:
   */
   virtual int GetCurrentIteration() const = 0;
 
-  /*!
-  * \brief Eval metrics and check is met early stopping or not
-  */
-  virtual bool EvalAndCheckEarlyStopping() = 0;
   /*!
   * \brief Get evaluation result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
@@ -101,6 +96,7 @@ public:
   * \return out_len length of returned score
   */
   virtual int64_t GetNumPredictAt(int data_idx) const = 0;
+
   /*!
   * \brief Get prediction result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
@@ -115,7 +111,7 @@ public:
   * \brief Prediction for one record, not sigmoid transform
   * \param feature_values Feature value on this record
   * \param output Prediction result for this record
-  * \param early_stop Early stopping instance. If nullptr, no early stopping is applied and all trees are evaluated.
+  * \param early_stop Early stopping instance. If nullptr, no early stopping is applied and all models are evaluated.
   */
   virtual void PredictRaw(const double* features, double* output,
                           const PredictionEarlyStopInstance* early_stop) const = 0;
@@ -124,7 +120,7 @@ public:
   * \brief Prediction for one record, sigmoid transformation will be used if needed
   * \param feature_values Feature value on this record
   * \param output Prediction result for this record
-  * \param early_stop Early stopping instance. If nullptr, no early stopping is applied and all trees are evaluated.
+  * \param early_stop Early stopping instance. If nullptr, no early stopping is applied and all models are evaluated.
   */
   virtual void Predict(const double* features, double* output,
                        const PredictionEarlyStopInstance* early_stop) const = 0;
@@ -137,14 +133,14 @@ public:
   virtual void PredictLeafIndex(
     const double* features, double* output) const = 0;
 
- /*!
+  /*!
   * \brief Feature contributions for the model's prediction of one record
   * \param feature_values Feature value on this record
   * \param output Prediction result for this record
-  * \param early_stop Early stopping instance. If nullptr, no early stopping is applied and all trees are evaluated.
+  * \param early_stop Early stopping instance. If nullptr, no early stopping is applied and all models are evaluated.
   */
   virtual void PredictContrib(const double* features, double* output,
-                       const PredictionEarlyStopInstance* early_stop) const = 0;
+                              const PredictionEarlyStopInstance* early_stop) const = 0;
 
   /*!
   * \brief Dump model to json format string
@@ -192,6 +188,14 @@ public:
   virtual bool LoadModelFromString(const std::string& model_str) = 0;
 
   /*!
+  * \brief Calculate feature importances
+  * \param num_iteration Number of model that want to use for feature importance, -1 means use all
+  * \param importance_type: 0 for split, 1 for gain
+  * \return vector of feature_importance
+  */
+  virtual std::vector<double> FeatureImportance(int num_iteration, int importance_type) const = 0;
+
+  /*!
   * \brief Get max feature index of this model
   * \return Max feature index of this model
   */
@@ -216,10 +220,10 @@ public:
   virtual int NumberOfTotalModel() const = 0;
 
   /*!
-  * \brief Get number of trees per iteration
-  * \return Number of trees per iteration
+  * \brief Get number of models per iteration
+  * \return Number of models per iteration
   */
-  virtual int NumTreePerIteration() const = 0;
+  virtual int NumModelPerIteration() const = 0;
 
   /*!
   * \brief Get number of classes
@@ -265,6 +269,12 @@ public:
   */
   static Boosting* CreateBoosting(const char* filename);
 
+};
+
+class GBDTBase : public Boosting {
+public:
+  virtual double GetLeafValue(int tree_idx, int leaf_idx) const = 0;
+  virtual void SetLeafValue(int tree_idx, int leaf_idx, double val) = 0;
 };
 
 }  // namespace LightGBM

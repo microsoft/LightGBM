@@ -22,7 +22,6 @@
 #include <functional>
 
 #include "./application/predictor.hpp"
-#include "./boosting/gbdt.h"
 
 namespace LightGBM {
 
@@ -158,12 +157,12 @@ public:
 
   bool TrainOneIter() {
     std::lock_guard<std::mutex> lock(mutex_);
-    return boosting_->TrainOneIter(nullptr, nullptr, false);
+    return boosting_->TrainOneIter(nullptr, nullptr);
   }
 
   bool TrainOneIter(const float* gradients, const float* hessians) {
     std::lock_guard<std::mutex> lock(mutex_);
-    return boosting_->TrainOneIter(gradients, hessians, false);
+    return boosting_->TrainOneIter(gradients, hessians);
   }
 
   void RollbackOneIter() {
@@ -248,13 +247,17 @@ public:
     return boosting_->DumpModel(num_iteration);
   }
 
+  std::vector<double> FeatureImportance(int num_iteration, int importance_type) {
+    return boosting_->FeatureImportance(num_iteration, importance_type);
+  }
+
   double GetLeafValue(int tree_idx, int leaf_idx) const {
-    return dynamic_cast<GBDT*>(boosting_.get())->GetLeafValue(tree_idx, leaf_idx);
+    return dynamic_cast<GBDTBase*>(boosting_.get())->GetLeafValue(tree_idx, leaf_idx);
   }
 
   void SetLeafValue(int tree_idx, int leaf_idx, double val) {
     std::lock_guard<std::mutex> lock(mutex_);
-    dynamic_cast<GBDT*>(boosting_.get())->SetLeafValue(tree_idx, leaf_idx, val);
+    dynamic_cast<GBDTBase*>(boosting_.get())->SetLeafValue(tree_idx, leaf_idx, val);
   }
 
   int GetEvalCounts() const {
@@ -1172,6 +1175,19 @@ int LGBM_BoosterSetLeafValue(BoosterHandle handle,
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->SetLeafValue(tree_idx, leaf_idx, val);
+  API_END();
+}
+
+int LGBM_BoosterFeatureImportance(BoosterHandle handle,
+                                  int num_iteration,
+                                  int importance_type,
+                                  double* out_results) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  std::vector<double> feature_importances = ref_booster->FeatureImportance(num_iteration, importance_type);
+  for (size_t i = 0; i < feature_importances.size(); ++i) {
+    (out_results)[i] = feature_importances[i];
+  }
   API_END();
 }
 

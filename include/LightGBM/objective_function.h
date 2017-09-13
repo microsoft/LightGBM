@@ -41,7 +41,7 @@ public:
 
   virtual bool SkipEmptyClass() const { return false; }
 
-  virtual int NumTreePerIteration() const { return 1; }
+  virtual int NumModelPerIteration() const { return 1; }
 
   virtual int NumPredictOneRow() const { return 1; }
 

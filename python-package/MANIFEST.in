@@ -2,8 +2,11 @@ prune build
 include LICENSE
 include *.rst *.txt
 recursive-include lightgbm *.py *.txt *.so
-recursive-include lightgbm/Release *.dll
-recursive-include lightgbm/include *
-recursive-include lightgbm/src *
-global-exclude *.pyo
-global-exclude *.pyc
+recursive-include compile *.txt *.so
+recursive-include compile/Release *.dll
+recursive-include compile/compute *
+recursive-include compile/include *
+recursive-include compile/src *
+recursive-include compile/windows LightGBM.sln LightGBM.vcxproj LightGBM.vcxproj.filters
+recursive-include compile/windows/x64/DLL *.dll
+global-exclude *.py[co]

@@ -1,4 +1,4 @@
-if [[ ${TASK} == "gpu" ]]; then 
+if [[ ${TASK} == "gpu" ]]; then
     bash .travis/amd_sdk.sh;
     tar -xjf AMD-SDK.tar.bz2;
     AMDAPPSDK=${HOME}/AMDAPPSDK;
@@ -9,9 +9,9 @@ if [[ ${TASK} == "gpu" ]]; then
     export LD_LIBRARY_PATH=${AMDAPPSDK}/lib/x86_64:${LD_LIBRARY_PATH};
     chmod +x ${AMDAPPSDK}/bin/x86_64/clinfo;
     ${AMDAPPSDK}/bin/x86_64/clinfo;
-    export LIBRARY_PATH="$HOME/miniconda/lib:$LIBRARY_PATH"
-    export LD_RUN_PATH="$HOME/miniconda/lib:$LD_RUN_PATH"
-    export CPLUS_INCLUDE_PATH="$HOME/miniconda/include:$AMDAPPSDK/include/:$CPLUS_INCLUDE_PATH"
+    export LIBRARY_PATH="$HOME/miniconda/envs/test-env/lib:$LIBRARY_PATH"
+    export LD_RUN_PATH="$HOME/miniconda/envs/test-env/lib:$LD_RUN_PATH"
+    export CPLUS_INCLUDE_PATH="$HOME/miniconda/envs/test-env/include:$AMDAPPSDK/include/:$CPLUS_INCLUDE_PATH"
 fi
 
 case ${TRAVIS_OS_NAME} in
@@ -32,7 +32,8 @@ if [[ ${TASK} == "pylint" ]]; then
 fi
 
 if [[ ${TASK} == "if-else" ]]; then
-    conda install --yes numpy
+    conda create -q -n test-env python=$PYTHON_VERSION numpy
+    source activate test-env
     mkdir build && cd build && cmake .. && make lightgbm || exit -1
     cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=train.conf && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
     cd $TRAVIS_BUILD_DIR/build && make lightgbm || exit -1
@@ -40,8 +41,8 @@ if [[ ${TASK} == "if-else" ]]; then
     exit 0
 fi
 
-conda install --yes numpy scipy scikit-learn pandas matplotlib
-pip install pytest
+conda create -q -n test-env python=$PYTHON_VERSION numpy nose scipy scikit-learn pandas matplotlib pytest
+source activate test-env
 
 if [[ ${TASK} == "sdist" ]]; then
     LGB_VER=$(head -n 1 VERSION.txt)
@@ -66,7 +67,7 @@ if [[ ${TASK} == "gpu" ]]; then
     conda install --yes -c conda-forge boost=1.63.0
     if [[ ${METHOD} == "pip" ]]; then
         export PATH="$AMDAPPSDK/include/:$PATH"
-        export BOOST_ROOT="$HOME/miniconda/"
+        export BOOST_ROOT="$HOME/miniconda/envs/test-env/"
         LGB_VER=$(head -n 1 VERSION.txt)
         sed -i 's/const std::string kDefaultDevice = "cpu";/const std::string kDefaultDevice = "gpu";/' ../include/LightGBM/config.h
         cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
@@ -81,7 +82,7 @@ mkdir build && cd build
 if [[ ${TASK} == "mpi" ]]; then
     cmake -DUSE_MPI=ON ..
 elif [[ ${TASK} == "gpu" ]]; then
-    cmake -DUSE_GPU=ON -DBOOST_ROOT="$HOME/miniconda/" -DOpenCL_INCLUDE_DIR=$AMDAPPSDK/include/ ..
+    cmake -DUSE_GPU=ON -DBOOST_ROOT="$HOME/miniconda/envs/test-env/" -DOpenCL_INCLUDE_DIR=$AMDAPPSDK/include/ ..
     sed -i 's/const std::string kDefaultDevice = "cpu";/const std::string kDefaultDevice = "gpu";/' ../include/LightGBM/config.h
 else
     cmake ..

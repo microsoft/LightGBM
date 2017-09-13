@@ -278,5 +278,8 @@
     <ClCompile Include="..\src\lightgbm_R.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\boosting\gbdt_model.cpp">
+      <Filter>src\boosting</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

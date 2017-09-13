@@ -86,33 +86,33 @@ public:
       GetGradients(tmp_score.data(), gradients_.data(), hessians_.data());
   }
 
-  bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override {
+  bool TrainOneIter(const score_t* gradients, const score_t* hessians) override {
     // bagging logic
     Bagging(iter_);
-    if (gradient == nullptr || hessian == nullptr) {
-      gradient = gradients_.data();
-      hessian = hessians_.data();
-    }
-    if (is_use_subset_ && bag_data_cnt_ < num_data_) {
-      // get sub gradients
-      for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-        size_t bias = static_cast<size_t>(cur_tree_id)* num_data_;
-        // cannot multi-threading here.
-        for (int i = 0; i < bag_data_cnt_; ++i) {
-          tmp_grad_[bias + i] = gradient[bias + bag_data_indices_[i]];
-          tmp_hess_[bias + i] = hessian[bias + bag_data_indices_[i]];
-        }
-      }
-      gradient = tmp_grad_.data();
-      hessian = tmp_hess_.data();
+    if (gradients == nullptr || hessians == nullptr) {
+      gradients = gradients_.data();
+      hessians = hessians_.data();
     }
 
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
       std::unique_ptr<Tree> new_tree(new Tree(2));
       if (class_need_train_[cur_tree_id]) {
         size_t bias = static_cast<size_t>(cur_tree_id)* num_data_;
-        new_tree.reset(
-          tree_learner_->Train(gradient + bias, hessian + bias, is_constant_hessian_));
+
+        auto grad = gradients + bias;
+        auto hess = hessians + bias;
+
+        // need to copy gradients for bagging subset.
+        if (is_use_subset_ && bag_data_cnt_ < num_data_) {
+          for (int i = 0; i < bag_data_cnt_; ++i) {
+            tmp_grad_[bias + i] = grad[bag_data_indices_[i]];
+            tmp_hess_[bias + i] = hess[bag_data_indices_[i]];
+          }
+          grad = tmp_grad_.data() + bias;
+          hess = tmp_hess_.data() + bias;
+        }
+
+        new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_));
       }
 
       if (new_tree->num_leaves() > 1) {
@@ -120,7 +120,6 @@ public:
         MultiplyScore(cur_tree_id, (iter_ + num_init_iteration_));
         ConvertTreeOutput(new_tree.get());
         UpdateScore(new_tree.get(), cur_tree_id);
-        UpdateScoreOutOfBag(new_tree.get(), cur_tree_id);
         MultiplyScore(cur_tree_id, 1.0 / (iter_ + num_init_iteration_ + 1));
       } else {
         // only add default score one-time
@@ -138,11 +137,7 @@ public:
       models_.push_back(std::move(new_tree));
     }
     ++iter_;
-    if (is_eval) {
-      return EvalAndCheckEarlyStopping();
-    } else {
-      return false;
-    }
+    return false;
   }
 
   void RollbackOneIter() override {

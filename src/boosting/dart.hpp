@@ -48,20 +48,19 @@ public:
   /*!
   * \brief one training iteration
   */
-  bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override {
+  bool TrainOneIter(const score_t* gradient, const score_t* hessian) override {
     is_update_score_cur_iter_ = false;
-    GBDT::TrainOneIter(gradient, hessian, false);
+    bool ret = GBDT::TrainOneIter(gradient, hessian);
+    if (ret) {
+      return ret;
+    }
     // normalize
     Normalize();
     if (!gbdt_config_->uniform_drop) {
       tree_weight_.push_back(shrinkage_rate_);
       sum_weight_ += shrinkage_rate_;
     }
-    if (is_eval) {
-      return EvalAndCheckEarlyStopping();
-    } else {
-      return false;
-    }
+    return false;
   }
 
   /*!

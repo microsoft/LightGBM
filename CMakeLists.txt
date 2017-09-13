@@ -70,6 +70,10 @@ if(UNIX OR MINGW OR CYGWIN)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -O3 -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas")
 endif()
 
+if(WIN32 AND MINGW)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++")
+endif()
+
 if(MSVC)
     if(MSVC_VERSION LESS 1800)
         message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a newer msvc.")

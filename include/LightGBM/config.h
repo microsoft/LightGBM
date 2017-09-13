@@ -224,6 +224,7 @@ public:
   int gpu_device_id = -1;
   /*! \brief Set to true to use double precision math on GPU (default using single precision) */
   bool gpu_use_dp = false;
+  int max_cat_threshold = 256;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -461,7 +462,8 @@ struct ParameterAlias {
       "feature_fraction_seed", "enable_bundle", "data_filename", "valid_data_filenames",
       "snapshot_freq", "verbosity", "sparse_threshold", "enable_load_from_binary_file",
       "max_conflict_rate", "poisson_max_delta_step", "gaussian_eta",
-      "histogram_pool_size", "output_freq", "is_provide_training_metric", "machine_list_filename", "zero_as_missing",
+      "histogram_pool_size", "output_freq", "is_provide_training_metric", "machine_list_filename",
+      "zero_as_missing", "max_cat_threshold",
       "init_score_file", "valid_init_score_file", "is_predict_contrib"
     });
     std::unordered_map<std::string, std::string> tmp_map;

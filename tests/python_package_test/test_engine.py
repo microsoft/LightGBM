@@ -290,7 +290,7 @@ class TestEngine(unittest.TestCase):
         self.assertIn(valid_set_name, gbm.best_score)
         self.assertIn('binary_logloss', gbm.best_score[valid_set_name])
 
-    def test_continue_train_and_dump_model(self):
+    def test_continue_train(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
@@ -317,9 +317,6 @@ class TestEngine(unittest.TestCase):
         self.assertAlmostEqual(evals_result['valid_0']['l1'][-1], ret, places=5)
         for l1, mae in zip(evals_result['valid_0']['l1'], evals_result['valid_0']['mae']):
             self.assertAlmostEqual(l1, mae, places=5)
-        # test dump model
-        self.assertIn('tree_info', gbm.dump_model())
-        self.assertIsInstance(gbm.feature_importance(), np.ndarray)
         os.remove(model_name)
 
     def test_continue_train_multiclass(self):
@@ -465,3 +462,23 @@ class TestEngine(unittest.TestCase):
         tmp_dat_val = tmp_dat.subset(np.arange(80, 100)).subset(np.arange(18))
         params = {'objective': 'regression_l2', 'metric': 'rmse'}
         gbm = lgb.train(params, tmp_dat_train, num_boost_round=20, valid_sets=[tmp_dat_train, tmp_dat_val])
+
+    def test_contribs(self):
+        X, y = load_breast_cancer(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {
+            'objective': 'binary',
+            'metric': 'binary_logloss',
+            'verbose': -1,
+            'num_iteration': 50  # test num_iteration in dict here
+        }
+        lgb_train = lgb.Dataset(X_train, y_train)
+        lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+        evals_result = {}
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=20,
+                        valid_sets=lgb_eval,
+                        verbose_eval=False,
+                        evals_result=evals_result)
+
+        self.assertLess(np.linalg.norm(gbm.predict(X_test, raw_score=True) - np.sum(gbm.predict(X_test, pred_contrib=True),axis=1)), 1e-4)

@@ -52,16 +52,7 @@ y_pred = gbm.predict(X_test, num_iteration=gbm.best_iteration)
 # eval
 print('The rmse of prediction is:', mean_squared_error(y_test, y_pred) ** 0.5)
 
-print('Dump model to JSON...')
-# dump model to json (and save to file)
-model_json = gbm.dump_model()
-
-with open('model.json', 'w+') as f:
-    json.dump(model_json, f, indent=4)
-
-
 print('Feature names:', gbm.feature_name())
 
-print('Calculate feature importances...')
 # feature importances
 print('Feature importances:', list(gbm.feature_importance()))
