@@ -481,4 +481,4 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=False,
                         evals_result=evals_result)
 
-        self.assertLess(np.linalg.norm(gbm.predict(X_test, raw_score=True) - np.sum(gbm.predict(X_test, pred_contrib=True),axis=1)), 1e-4)
+        self.assertLess(np.linalg.norm(gbm.predict(X_test, raw_score=True) - np.sum(gbm.predict(X_test, pred_contrib=True), axis=1)), 1e-4)
