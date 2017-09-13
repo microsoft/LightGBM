@@ -46,6 +46,10 @@ print('Save model...')
 # save model to file
 gbm.save_model('model.txt')
 
+# dump model to json format
+with open('model.json', 'w') as model:
+    model.write(gbm.dump_model(num_iteration=gbm.best_iteration))
+
 print('Start predicting...')
 # predict
 y_pred = gbm.predict(X_test, num_iteration=gbm.best_iteration)
