@@ -42,8 +42,8 @@ lgb.unloader <- function(restore = TRUE, wipe = FALSE, envir = .GlobalEnv) {
   
   # Should we wipe variables? (lgb.Booster, lgb.Dataset)
   if (wipe) {
-    rm(list = names(Filter(lgb.is.Booster, mget(ls(envir = envir), envir = envir))), envir = envir)
-    rm(list = names(Filter(lgb.is.Dataset, mget(ls(envir = envir), envir = envir))), envir = envir)
+    rm(list = names(Filter(function(x) inherits(x, "lgb.Booster"), mget(ls(envir = envir), envir = envir))), envir = envir)
+    rm(list = names(Filter(function(x) inherits(x, "lgb.Dataset"), mget(ls(envir = envir), envir = envir))), envir = envir)
     gc(verbose = FALSE)
   }
   
