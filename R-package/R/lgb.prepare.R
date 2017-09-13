@@ -69,7 +69,7 @@ lgb.prepare <- function(data) {
       list_classes <- vapply(data, class, character(1))
       
       # Convert characters to factors to numeric (integer is more efficient actually)
-      is_char <- which(list_classes == "charcter")
+      is_char <- which(list_classes == "character")
       if (length(is_char) > 0) {
         data[is_char] <- lapply(data[is_char], function(x) {as.numeric(as.factor(x))})
       }
