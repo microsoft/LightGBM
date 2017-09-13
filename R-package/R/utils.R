@@ -21,7 +21,7 @@ lgb.encode.char <- function(arr, len) {
 
 lgb.call <- function(fun_name, ret, ...) {
   # Set call state to a zero value
-  call_state <- as.integer(0L)
+  call_state <- 0L
   
   # Check for a ret call
   if (!is.null(ret)) {
@@ -51,7 +51,7 @@ lgb.call <- function(fun_name, ret, ...) {
     }
     
     # Return error
-    stop(paste0("api error: ", lgb.encode.char(err_msg, act_len)))
+    stop("api error: ", lgb.encode.char(err_msg, act_len))
 
   }
 
@@ -145,18 +145,8 @@ lgb.c_str <- function(x) {
 
 lgb.check.r6.class <- function(object, name) {
   
-  # Check for non-existence of R6 class
-  if (!("R6" %in% class(object))) {
-    return(FALSE)
-  }
-  
-  # Check for non-existance of a named class
-  if (!(name %in% class(object))) {
-    return(FALSE)
-  }
-  
-  # Return default value
-  return(TRUE)
+  # Check for non-existence of R6 class or named class
+  all(c("R6", name) %in% class(object))
   
 }
 

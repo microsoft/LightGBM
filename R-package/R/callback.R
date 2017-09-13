@@ -132,12 +132,7 @@ merge.eval.string <- function(env) {
   msg <- list(sprintf("[%d]:", env$iteration))
   
   # Set if evaluation error
-  is_eval_err <- FALSE
-  
-  # Check evaluation error list length
-  if (length(env$eval_err_list) > 0) {
-    is_eval_err <- TRUE
-  }
+  is_eval_error <- length(env$eval_err_list) > 0
   
   # Loop through evaluation list
   for (j in seq_along(env$eval_list)) {
@@ -170,14 +165,14 @@ cb.print.evaluation <- function(period = 1) {
       i <- env$iteration
       
       # Check if iteration matches moduo
-      if ((i - 1) %% period == 0 | i == env$begin_iteration | i == env$end_iteration ) {
+      if ((i - 1) %% period == 0 || is.element(i, c(env$begin_iteration, env$end_iteration ))) {
         
         # Merge evaluation string
         msg <- merge.eval.string(env)
         
         # Check if message is existing
         if (nchar(msg) > 0) {
-          cat(merge.eval.string(env), "\n")
+          message(merge.eval.string(env), "\n")
         }
         
       }
@@ -206,12 +201,7 @@ cb.record.evaluation <- function() {
     }
     
     # Set if evaluation error
-    is_eval_err <- FALSE
-    
-    # Check evaluation error list length
-    if (length(env$eval_err_list) > 0) {
-      is_eval_err <- TRUE
-    }
+    is_eval_err <- length(env$eval_err_list) > 0
     
     # Check length of recorded evaluation
     if (length(env$model$record_evals) == 0) {
@@ -291,13 +281,13 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
     
     # Check if verbose or not
     if (isTRUE(verbose)) {
-      cat("Will train until there is no improvement in ", stopping_rounds, " rounds.\n\n", sep = "")
+      message("Will train until there is no improvement in ", stopping_rounds, " rounds.\n\n", sep = "")
     }
     
     # Maximization or minimization task
-    factor_to_bigger_better <<- rep(1.0, eval_len)
-    best_iter <<- rep(-1, eval_len)
-    best_score <<- rep(-Inf, eval_len)
+    factor_to_bigger_better <<- rep.int(1.0, eval_len)
+    best_iter <<- rep.int(-1, eval_len)
+    best_score <<- rep.int(-Inf, eval_len)
     best_msg <<- list()
     
     # Loop through evaluation elements
@@ -358,8 +348,8 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
           # Print message if verbose
           if (isTRUE(verbose)) {
             
-            cat("Early stopping, best iteration is:", "\n")
-            cat(best_msg[[i]], "\n")
+            message("Early stopping, best iteration is:", "\n")
+            message(best_msg[[i]], "\n")
             
           }
           
