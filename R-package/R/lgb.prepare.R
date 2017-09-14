@@ -43,10 +43,10 @@
 lgb.prepare <- function(data) {
   
   # data.table not behaving like data.frame
-  if (inherits(data, "data.table")) {
+  if ("data.table" %in% class(data)) {
     
     # Get data classes
-    list_classes <- vapply(data, class, character(1))
+    list_classes <- sapply(data, class)
     
     # Convert characters to factors only (we can change them to numeric after)
     is_char <- which(list_classes == "character")
@@ -63,13 +63,13 @@ lgb.prepare <- function(data) {
   } else {
     
     # Default routine (data.frame)
-    if (inherits(data, "data.frame")) {
+    if ("data.frame" %in% class(data)) {
       
       # Get data classes
-      list_classes <- vapply(data, class, character(1))
+      list_classes <- sapply(data, class)
       
       # Convert characters to factors to numeric (integer is more efficient actually)
-      is_char <- which(list_classes == "charcter")
+      is_char <- which(list_classes == "character")
       if (length(is_char) > 0) {
         data[is_char] <- lapply(data[is_char], function(x) {as.numeric(as.factor(x))})
       }

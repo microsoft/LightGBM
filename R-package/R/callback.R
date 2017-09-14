@@ -172,7 +172,7 @@ cb.print.evaluation <- function(period = 1) {
         
         # Check if message is existing
         if (nchar(msg) > 0) {
-          message(merge.eval.string(env), "\n")
+          cat(merge.eval.string(env), "\n")
         }
         
       }
@@ -281,7 +281,7 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
     
     # Check if verbose or not
     if (isTRUE(verbose)) {
-      message("Will train until there is no improvement in ", stopping_rounds, " rounds.\n\n", sep = "")
+      cat("Will train until there is no improvement in ", stopping_rounds, " rounds.\n\n", sep = "")
     }
     
     # Maximization or minimization task
@@ -348,8 +348,8 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
           # Print message if verbose
           if (isTRUE(verbose)) {
             
-            message("Early stopping, best iteration is:", "\n")
-            message(best_msg[[i]], "\n")
+            cat("Early stopping, best iteration is:", "\n")
+            cat(best_msg[[i]], "\n")
             
           }
           
