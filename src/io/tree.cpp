@@ -517,8 +517,6 @@ Tree::Tree(const std::string& str) {
   } else {
     shrinkage_ = 1.0f;
   }
-
-  RecomputeLeafDepths();
 }
 
 void Tree::ExtendPath(PathElement *unique_path, int unique_depth,
@@ -641,7 +639,8 @@ double Tree::ExpectedValue() const {
   return exp_value;
 }
 
-int Tree::MaxDepth() const {
+int Tree::MaxDepth() {
+  if (leaf_depth_.size() == 0) RecomputeLeafDepths();
   if (num_leaves_ == 1) return 0;
   int max_depth = 0;
   for (int i = 0; i < num_leaves(); ++i) {

@@ -111,7 +111,7 @@ public:
 
   inline int PredictLeafIndex(const double* feature_values) const;
 
-  inline void PredictContrib(const double* feature_values, int num_features, double* output) const;
+  inline void PredictContrib(const double* feature_values, int num_features, double* output);
 
   /*! \brief Get Number of leaves*/
   inline int num_leaves() const { return num_leaves_; }
@@ -301,7 +301,7 @@ private:
 
   double ExpectedValue() const;
 
-  int MaxDepth() const;
+  int MaxDepth();
 
   /*! \brief This is used fill in leaf_depth_ after reloading a model*/
   inline void RecomputeLeafDepths(int node = 0, int depth = 0);
@@ -434,7 +434,7 @@ inline int Tree::PredictLeafIndex(const double* feature_values) const {
   }
 }
 
-inline void Tree::PredictContrib(const double* feature_values, int num_features, double* output) const {
+inline void Tree::PredictContrib(const double* feature_values, int num_features, double* output) {
   output[num_features] += ExpectedValue();
   // Run the recursion with preallocated space for the unique path data
   if (num_leaves_ > 1) {
