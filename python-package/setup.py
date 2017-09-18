@@ -42,7 +42,10 @@ def copy_files(use_gpu=False):
     if not os.path.isfile('./_IS_SOURCE_PACKAGE.txt'):
         copy_files_helper('include')
         copy_files_helper('src')
-        copy_files_helper('windows')
+        if not os.path.exists("./compile/windows/"):
+            os.makedirs("./compile/windows/")
+        distutils.file_util.copy_file("../windows/LightGBM.sln", "./compile/windows/LightGBM.sln")
+        distutils.file_util.copy_file("../windows/LightGBM.vcxproj", "./compile/windows/LightGBM.vcxproj")
         if use_gpu:
             copy_files_helper('compute')
         distutils.file_util.copy_file("../CMakeLists.txt", "./compile/")
