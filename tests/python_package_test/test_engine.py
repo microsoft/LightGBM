@@ -78,7 +78,7 @@ class TestEngine(unittest.TestCase):
         self.assertLess(ret, 0.25)
         self.assertAlmostEqual(evals_result['valid_0']['binary_logloss'][-1], ret, places=5)
 
-    def test_regreesion(self):
+    def test_regression(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
@@ -444,7 +444,6 @@ class TestEngine(unittest.TestCase):
         gbm3 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
                          categorical_feature=['A', 'B', 'C', 'D'])
         pred3 = list(gbm3.predict(X_test))
-        lgb_train = lgb.Dataset(X, y)
         gbm3.save_model('categorical.model')
         gbm4 = lgb.Booster(model_file='categorical.model')
         pred4 = list(gbm4.predict(X_test))

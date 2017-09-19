@@ -5,6 +5,11 @@ from __future__ import absolute_import
 
 import numpy as np
 import warnings
+try:
+    import pandas as pd
+    _IS_PANDAS_INSTALLED = True
+except ImportError:
+    _IS_PANDAS_INSTALLED = False
 
 from .basic import Dataset, LightGBMError
 from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase, LGBMDeprecated,
@@ -332,7 +337,7 @@ class LGBMModel(_LGBMModelBase):
         categorical_feature : list of strings or int, or 'auto', optional (default="auto")
             Categorical features.
             If list of int, interpreted as indices.
-            If list of strings, interpreted as feature names (need to specify feature_name as well).
+            If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
             If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
         callbacks : list of callback functions or None, optional (default=None)
             List of callback functions that are applied at each iteration.
@@ -407,8 +412,10 @@ class LGBMModel(_LGBMModelBase):
             feval = None
             params['metric'] = eval_metric
 
-        X, y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
-        _LGBMCheckConsistentLength(X, y, sample_weight)
+        if not _IS_PANDAS_INSTALLED or not isinstance(X, pd.DataFrame):
+            X, y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
+            _LGBMCheckConsistentLength(X, y, sample_weight)
+
         self._n_features = X.shape[1]
 
         def _construct_dataset(X, y, sample_weight, init_score, group, params):
@@ -482,7 +489,8 @@ class LGBMModel(_LGBMModelBase):
         """
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
-        X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
+        if not _IS_PANDAS_INSTALLED or not isinstance(X, pd.DataFrame):
+            X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
         n_features = X.shape[1]
         if self._n_features != n_features:
             raise ValueError("Number of features of the model must "
@@ -508,7 +516,8 @@ class LGBMModel(_LGBMModelBase):
         """
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
-        X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
+        if not _IS_PANDAS_INSTALLED or not isinstance(X, pd.DataFrame):
+            X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
         n_features = X.shape[1]
         if self._n_features != n_features:
             raise ValueError("Number of features of the model must "
@@ -686,7 +695,8 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         """
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
-        X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
+        if not _IS_PANDAS_INSTALLED or not isinstance(X, pd.DataFrame):
+            X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
         n_features = X.shape[1]
         if self._n_features != n_features:
             raise ValueError("Number of features of the model must "
