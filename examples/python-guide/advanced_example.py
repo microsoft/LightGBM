@@ -1,5 +1,6 @@
 # coding: utf-8
 # pylint: disable = invalid-name, C0111
+import json
 import lightgbm as lgb
 import pandas as pd
 import numpy as np
@@ -62,6 +63,19 @@ print('7th feature name is:', repr(lgb_train.feature_name[6]))
 
 # save model to file
 gbm.save_model('model.txt')
+
+# dump model to json (and save to file)
+print('Dump model to JSON...')
+model_json = gbm.dump_model()
+
+with open('model.json', 'w+') as f:
+    json.dump(model_json, f, indent=4)
+
+# feature names
+print('Feature names:', gbm.feature_name())
+
+# feature importances
+print('Feature importances:', list(gbm.feature_importance()))
 
 # load model to predict
 print('Load model to predict')
