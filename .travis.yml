@@ -17,16 +17,13 @@ env:
     - PYTHON_VERSION=3.6
   matrix:
     - TASK=regular
-    - TASK=mpi
+    - TASK=mpi PYTHON_VERSION=2.7
     - TASK=pylint
     - TASK=if-else
-    - TASK=sdist
-    - TASK=bdist
+    - TASK=sdist PYTHON_VERSION=3.4
+    - TASK=bdist PYTHON_VERSION=3.5
     - TASK=gpu METHOD=source
     - TASK=gpu METHOD=pip
-    - TASK=regular PYTHON_VERSION=2.7
-    - TASK=regular PYTHON_VERSION=3.4
-    - TASK=regular PYTHON_VERSION=3.5
 
 matrix:
   exclude:
@@ -34,6 +31,8 @@ matrix:
       env: TASK=gpu METHOD=source
     - os: osx
       env: TASK=gpu METHOD=pip
+    - os: osx
+      env: TASK=if-else
     - os: osx
       env: TASK=pylint
 
