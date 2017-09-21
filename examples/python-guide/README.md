@@ -27,14 +27,15 @@ Examples include:
     - Eval during training 
     - Early stopping
     - Save model to file
-    - Dump model to json format
-    - Feature importances
 - [sklearn_example.py](https://github.com/Microsoft/LightGBM/blob/master/examples/python-guide/sklearn_example.py)
     - Basic train and predict with sklearn interface
     - Feature importances with sklearn interface
 - [advanced_example.py](https://github.com/Microsoft/LightGBM/blob/master/examples/python-guide/advanced_example.py)
     - Set feature names
     - Directly use categorical features without one-hot encoding
+    - Dump model to json format
+    - Get feature importances
+    - Get feature names
     - Load model to predict
     - Dump and load model with pickle
     - Load model file to continue training
