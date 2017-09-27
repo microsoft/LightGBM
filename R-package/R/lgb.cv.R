@@ -322,7 +322,7 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
   if (is.null(group)) {
     
     # Shuffle
-    rnd_idx <- sample(seq_len(nrows))
+    rnd_idx <- sample.int(nrows)
     
     # Request stratified folds
     if (isTRUE(stratified) && params$objective %in% c("binary", "multiclass") && length(label) == length(rnd_idx)) {
@@ -438,6 +438,7 @@ lgb.stratified.folds <- function(y, k = 10) {
   # Return data
   out <- split(seq(along = y), foldVector)
   names(out) <- NULL
+  out
 }
 
 lgb.merge.cv.result <- function(msg, showsd = TRUE) {
