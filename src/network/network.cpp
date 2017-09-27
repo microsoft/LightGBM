@@ -128,14 +128,68 @@ void Network::Allgather(char* input, int all_size, const int* block_start, const
   std::reverse<char*>(output + block_start[rank_], output + all_size);
 }
 
-void Network::ReduceScatter(char* input, int, const int* block_start, const int* block_len, char* output, const ReduceFunction& reducer) {
-  if (recursive_halving_map_.need_pairwise) {
-    for (int i = 1; i < num_machines_; ++i) {
-      int out_rank = (rank_ + i) % num_machines_;
-      int in_rank = (rank_ - i + num_machines_) % num_machines_;
-      linkers_->SendRecv(out_rank, input + block_start[out_rank], block_len[out_rank], in_rank, output, block_len[rank_]);
-      reducer(output, input + block_start[rank_], block_len[rank_]);
-    }
+void Network::ReduceScatter(char* input, int block_size, const int* block_start,
+                            const int* block_len, char* output, const ReduceFunction& reducer) {
+  if (!recursive_halving_map_.is_prof2) {
+    int remain = recursive_halving_map_.num_remain;
+    std::vector<int> rcsv_block_start(1 << recursive_halving_map_.k);
+    std::vector<int> rcsv_block_len(1 << recursive_halving_map_.k);
+    std::vector<int> real_ranks;
+    int brush = 0;
+    // build block_start and block_len for remain powers of 2 workers
+    for (int i = 0; i < num_machines_; ++i) {
+      if ((i < 2 * remain) && (i % 2 != 0)) {
+        real_ranks.push_back(i);
+        rcsv_block_start[i - 1 - brush] = block_start[i - 1]; 
+        rcsv_block_len[i - 1 - brush] = block_len[i] + block_len[i - 1]; 
+        brush++;
+      }   
+      if (i >= 2 * remain) {
+        real_ranks.push_back(i);
+        rcsv_block_start[i - remain] = block_start[i];
+        rcsv_block_len[i - remain] = block_len[i];
+      }   
+    }   
+    // if local rank is remain, send local data to rank+1
+    if (rank_ < 2 * remain) {
+      if (rank_ % 2 == 0) {
+        linkers_->Send(rank_ + 1, input, block_size);
+      } else {
+        linkers_->Recv(rank_ - 1, output, block_size);
+        reducer(output, input, block_size);
+      }   
+    }   
+    // excute recursize halving algorithm for powers of 2 workers
+    if (recursive_halving_map_.virtual_rank != -1) {
+      for (int i = 0; i < recursive_halving_map_.k; ++i) {
+        int virtual_rank = recursive_halving_map_.ranks[i];
+        int target = real_ranks[virtual_rank];
+        int send_block_start = recursive_halving_map_.send_block_start[i];
+        int recv_block_start = recursive_halving_map_.recv_block_start[i];
+        // get send information
+        int send_size = 0;
+        for (int j = 0; j < recursive_halving_map_.send_block_len[i]; ++j) {
+          send_size += rcsv_block_len[send_block_start + j]; 
+        }   
+        // get recv information
+        int need_recv_cnt = 0;
+        for (int j = 0; j < recursive_halving_map_.recv_block_len[i]; ++j) {
+          need_recv_cnt += rcsv_block_len[recv_block_start + j]; 
+        }   
+        // send and recv at same time
+        linkers_->SendRecv(target, input + rcsv_block_start[send_block_start], send_size, target, output, need_recv_cnt);
+        // reduce
+        reducer(output, input + rcsv_block_start[recv_block_start], need_recv_cnt);
+      }   
+    }   
+    // send result back to remain workers
+    if (rank_ < 2 * remain) {
+      if (rank_ % 2 != 0) {
+        linkers_->Send(rank_ - 1, input + block_start[rank_ - 1], block_len[rank_ - 1]);
+      } else {
+        linkers_->Recv(rank_ + 1, input + block_start[rank_], block_len[rank_]);
+      }   
+    }   
   } else {
     for (int i = 0; i < recursive_halving_map_.k; ++i) {
       // get target
