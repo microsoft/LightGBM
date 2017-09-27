@@ -242,7 +242,7 @@ void OverallConfig::CheckParamConflict() {
     int full_num_leaves = static_cast<int>(std::pow(2, boosting_config.tree_config.max_depth));
     if (full_num_leaves > boosting_config.tree_config.num_leaves 
         && boosting_config.tree_config.num_leaves == kDefaultNumLeaves) {
-      Log::Warning("Accuracy may be bad since you didn't set num_leaves or max_depth² > num_leaves.");
+      Log::Warning("Accuracy may be bad since you didn't set num_leaves and max_depth² > num_leaves.");
     }
   }
 }
