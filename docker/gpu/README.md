@@ -16,7 +16,7 @@ Requires docker and [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) on 
 ```sh
 mkdir lightgbm-docker
 cd lightgbm-docker
-git clone --recursive https://github.com/nji-syd/lightgbm-docker
+wget https://github.com/Microsoft/LightGBM/blob/master/docker/gpu/dockerfile.gpu
 cd lightgbm-docker
 docker build -f dockerfile.gpu -t lightgbm-gpu .
 ```
