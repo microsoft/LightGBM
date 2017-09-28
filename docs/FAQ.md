@@ -1,12 +1,12 @@
 LightGBM FAQ
-=======================
+============
 
 ### Catalog
 
-- [Critical](FAQ.md#Critical)
-- [LightGBM](FAQ.md#LightGBM)
-- [R-package](FAQ.md#R-package)
-- [Python-package](FAQ.md#python-package)
+- [Critical](#Critical)
+- [LightGBM](#LightGBM)
+- [R-package](#R-package)
+- [Python-package](#Python-package)
 
 ---
 
@@ -14,7 +14,7 @@ LightGBM FAQ
 
 You encountered a critical issue when using LightGBM (crash, prediction error, non sense outputs...). Who should you contact?
 
-If your issue is not critical, just post an issue [Microsoft/LightGBM repository](https://github.com/Microsoft/LightGBM/issues).
+If your issue is not critical, just post an issue in [Microsoft/LightGBM repository](https://github.com/Microsoft/LightGBM/issues).
 
 If it is a critical issue, identify first what error you have:
 
@@ -40,7 +40,7 @@ Remember this is a free/open community support. We may not be available 24/7 to 
 
 - **Question 1**: Where do I find more details about LightGBM parameters?
 
-- **Solution 1**: Look at [Parameters.md](Parameters.md) and [Laurae++/Parameters](https://sites.google.com/view/lauraepp/parameters) website
+- **Solution 1**: Look at [Parameters.md](Parameters.md) and [Laurae++/Parameters](https://sites.google.com/view/lauraepp/parameters) website.
 
 ---
 
