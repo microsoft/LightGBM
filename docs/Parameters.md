@@ -29,7 +29,7 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
 * `task`, default=`train`, type=enum, options=`train`,`prediction`
   * `train` for training
   * `prediction` for prediction.
-  * `convert_model` for converting model file into if-else format, see more information in [Convert model parameters](Parameters.md#convert-model-parameters)
+  * `convert_model` for converting model file into if-else format, see more information in [Convert model parameters](#convert-model-parameters)
 * `application`, default=`regression`, type=enum, options=`regression`,`regression_l1`,`huber`,`fair`,`poisson`,`binary`,`lambdarank`,`multiclass`, alias=`objective`,`app`
   * `regression`, regression application
     * `regression_l2`, L2 loss, alias=`mean_squared_error`,`mse`
