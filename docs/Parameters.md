@@ -1,6 +1,6 @@
 # Parameters
 
-This is a page contains all parameters in LightGBM command line program.
+This is a page contains all parameters in LightGBM.
 
 ***List of other Helpful Links***
 * [Python API Reference](./Python-API.md)
@@ -125,6 +125,21 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
   * only used in `goss`,  the retain ratio of large gradient data
 * `other_rate`, default=`0.1`, type=int
   * only used in `goss`,  the retain ratio of small gradient data
+* `max_cat_group`, default=`64`, type=int
+  * use for the categorical features.
+  * When #catogory is large, finding the split point on it is easily over-fitting. So LightGBM merges them into `max_cat_group` groups, and finds the split points on the group boundaries.
+* `min_data_per_group`, default=`10`, type=int
+  * Min number of data per categorical group.
+* `max_cat_threshold`, default=`256`, type=int
+  * use for the categorical features. Limit the max threshold points in categorical features.
+* `min_cat_smooth`, default=`5`, type=double
+  * use for the categorical features. Refer to the descrption in paramater `cat_smooth_ratio`.
+* `max_cat_smooth`, default=`100`, type=double
+  * use for the categorical features. Refer to the descrption in paramater `cat_smooth_ratio`.
+* `cat_smooth_ratio`, default=`0.01`, type=double
+  * use for the categorical features. This can reduce the effect of noises in categorical features, especially for categories with few data.
+  * The smooth denominator is `a = min(max_cat_smooth, max(min_cat_smooth, num_data/num_category*cat_smooth_ratio))`.
+  * The smooth numerator  is `b = a * sum_gradient / sum_hessian`.
 
 
 ## IO parameters
@@ -181,7 +196,7 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
   * specific categorical features
   * Use number for index, e.g. `categorical_feature=0,1,2` means column_0, column_1 and column_2 are categorical features.
   * Add a prefix `name:` for column name, e.g. `categorical_feature=name:c1,c2,c3` means c1, c2 and c3 are categorical features.
-  * Note: Only support categorical with `int` type. Index start from `0`. And it doesn't count the label column.
+  * Note: Only support categorical with `int` type (Note: the negative values will be treated as Missing values). Index start from `0`. And it doesn't count the label column.
 * `predict_raw_score`, default=`false`, type=bool, alias=`raw_score`,`is_predict_raw_score`
   * only used in prediction task
   * Set to `true` will only predict the raw scores.
