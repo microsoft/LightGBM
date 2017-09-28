@@ -8,7 +8,7 @@ This is a page contains all parameters in LightGBM.
 
 ## Tune parameters for the leaf-wise(best-first) tree
 
-LightGBM uses the [leaf-wise](https://github.com/Microsoft/LightGBM/wiki/Features#optimization-in-accuracy) tree growth algorithm, while many other popular tools use depth-wise tree growth. Compared with depth-wise growth, the leaf-wise algorithm can convenge much faster. However, the leaf-wise growth may be over-fitting if not used with the appropriate parameters. 
+LightGBM uses the [leaf-wise](./Features.md) tree growth algorithm, while many other popular tools use depth-wise tree growth. Compared with depth-wise growth, the leaf-wise algorithm can convenge much faster. However, the leaf-wise growth may be over-fitting if not used with the appropriate parameters. 
 
 To get good results using a leaf-wise tree, these are some important parameters:
 

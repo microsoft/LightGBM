@@ -13,7 +13,7 @@ Welcome to LightGBM's documentation!
    Installation Guide <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide>
    Quick Start <Quick-Start>
    Python Quick Start <Python-intro>
-   Features <https://github.com/Microsoft/LightGBM/wiki/Features>
+   Features <Features>
    Experiments <https://github.com/Microsoft/LightGBM/wiki/Experiments>
    Parameters <Parameters>
    Advanced Topics <Advanced-Topic>

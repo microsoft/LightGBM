@@ -4,7 +4,7 @@ Development Guide
 Algorithms
 ----------
 
-Refer to `Features <https://github.com/Microsoft/LightGBM/wiki/Features>`__ to understand important algorithms used in LightGBM.
+Refer to `Features <./Features.md>`__ to understand important algorithms used in LightGBM.
 
 Classes and Code Structure
 --------------------------
