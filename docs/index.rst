@@ -16,10 +16,10 @@ Welcome to LightGBM's documentation!
    Features <Features>
    Experiments <https://github.com/Microsoft/LightGBM/wiki/Experiments>
    Parameters <Parameters>
-   Advanced Topics <Advanced-Topic>
    Parameters Tuning <Parameters-tuning>
    Python API <python/lightgbm>
    Parallel Learning Guide <https://github.com/Microsoft/LightGBM/wiki/Parallel-Learning-Guide>
+   Advanced Topics <Advanced-Topic>
    GPU Tutorial <GPU-Tutorial>
    FAQ <FAQ>
    Development Guide <development>
@@ -28,5 +28,3 @@ Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
