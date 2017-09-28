@@ -4,7 +4,7 @@ This is a page contains all parameters in LightGBM.
 
 ***List of other Helpful Links***
 * [Parameters](./Parameters.md)
-* [Python API Reference](./Python-API.md)
+* [Python API](./python/lightgbm.rst)
 
 ## Tune parameters for the leaf-wise(best-first) tree
 

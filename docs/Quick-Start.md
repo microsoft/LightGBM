@@ -8,7 +8,7 @@ Follow the [Installation Guide](./Installation-Guide.md) to install LightGBM fir
 * [Parameters](./Parameters.md)
 * [Parameters Tuning](./Parameters-tuning.md)
 * [Python Package quick start guide](./Python-intro.md)
-* [Python API Reference](./Python-API.md)
+* [Python API](./python/lightgbm.rst)
 
 ## Training data format 
 

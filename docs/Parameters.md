@@ -3,7 +3,7 @@
 This is a page contains all parameters in LightGBM.
 
 ***List of other Helpful Links***
-* [Python API Reference](./Python-API.md)
+* [Python API](./python/lightgbm.rst)
 * [Parameters Tuning](./Parameters-tuning.md)
 
 ***External Links***
