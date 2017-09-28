@@ -47,6 +47,8 @@ News
 
 12/02/2016 : Release [**python-package**](https://github.com/Microsoft/LightGBM/tree/master/python-package) beta version, welcome to have a try and provide feedback.
 
+More detailed update logs : [Key Events](https://github.com/Microsoft/LightGBM/blob/master/docs/Key-Events.md).
+
 
 External (unofficial) Repositories
 ----------------------------------
