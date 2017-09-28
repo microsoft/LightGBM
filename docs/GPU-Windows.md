@@ -61,7 +61,7 @@ Installing the appropriate OpenCL SDK requires you to download the correct vendo
 * For running on AMD, get [AMD APP SDK](http://developer.amd.com/amd-accelerated-parallel-processing-app-sdk/)
 * For running on NVIDIA, get [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads)
 
-Further reading and correspondnce table (especially if you intend to use cross-platform devices, like Intel CPU with AMD APP SDK): [GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.md).
+Further reading and correspondnce table (especially if you intend to use cross-platform devices, like Intel CPU with AMD APP SDK): [GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.rst).
 
 Warning: using Intel OpenCL is not recommended and may crash your machine due to being non compliant to OpenCL standards. If your objective is to use LightGBM + OpenCL on CPU, please use AMD APP SDK instead (it can run also on Intel CPUs without any issues).
 
@@ -277,7 +277,7 @@ cd C:/github_repos/LightGBM/examples/binary_classification
 
 Congratulations for reaching this stage!
 
-To learn how to target a correct CPU or GPU for training, please see: [GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.md).
+To learn how to target a correct CPU or GPU for training, please see: [GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.rst).
 
 ---
 

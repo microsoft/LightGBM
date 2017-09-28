@@ -35,7 +35,7 @@ News
 
 05/03/2017 : LightGBM v2 stable release.
 
-04/10/2017 : LightGBM supports GPU-accelerated tree learning now. Please read our [GPU Tutorial](./docs/GPU-Tutorial.md) and [Performance Comparison](./docs/GPU-Performance.md).
+04/10/2017 : LightGBM supports GPU-accelerated tree learning now. Please read our [GPU Tutorial](./docs/GPU-Tutorial.md) and [Performance Comparison](./docs/GPU-Performance.rst).
 
 02/20/2017 : Update to LightGBM v2.
 

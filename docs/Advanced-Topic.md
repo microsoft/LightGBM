@@ -27,7 +27,7 @@
 
 ## GPU Support
 
-* Refer to [GPU Tutorial](./GPU-Tutorial.md) and [GPU Targets](./GPU-Targets.md).
+* Refer to [GPU Tutorial](./GPU-Tutorial.md) and [GPU Targets](./GPU-Targets.rst).
 
 ## Parallel Learning
 
