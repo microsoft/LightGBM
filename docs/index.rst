@@ -14,7 +14,7 @@ Welcome to LightGBM's documentation!
    Quick Start <Quick-Start>
    Python Quick Start <Python-intro>
    Features <Features>
-   Experiments <https://github.com/Microsoft/LightGBM/wiki/Experiments>
+   Experiments <Experiments>
    Parameters <Parameters>
    Parameters Tuning <Parameters-tuning>
    Python API <python/lightgbm>
