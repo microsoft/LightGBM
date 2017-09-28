@@ -138,7 +138,7 @@ usually the following:
    your own risk!
 -  CPU: ``gpu_platform_id = 0``, ``gpu_device_id = 1``
 
-Example of GPU (gpu\_platform\_id = 0\ ``,``\ gpu\_device\_id = 0):
+Example of GPU (``gpu_platform_id = 0``, ``gpu_device_id = 0``):
 
 .. code:: r
 
@@ -173,7 +173,7 @@ Example of GPU (gpu\_platform\_id = 0\ ``,``\ gpu\_device\_id = 0):
     [LightGBM] [Info] Trained a tree with leaves=7 and max_depth=5
     [2]:    test's rmse:0
 
-Example of CPU (gpu\_platform\_id = 0\ ``,``\ gpu\_device\_id = 1):
+Example of CPU (``gpu_platform_id = 0``, ``gpu_device_id = 1``):
 
 .. code:: r
 

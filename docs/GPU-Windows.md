@@ -69,7 +69,7 @@ Warning: using Intel OpenCL is not recommended and may crash your machine due to
 
 ## MinGW correct compiler selection
 
-If you are expecting to use LightGBM without R, you need to install MinGW. Installing MinGW is straightforward, download [this](http://iweb.dl.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/mingw-w64-install.exe)
+If you are expecting to use LightGBM without R, you need to install MinGW. Installing MinGW is straightforward, download [this](http://iweb.dl.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/mingw-w64-install.exe).
 
 Make sure you are using the x86_64 architecture, and do not modify anything else. You may choose a version other than the most recent one if you need a previous MinGW version.
 
@@ -138,8 +138,10 @@ To build the Boost libraries, you have two choices for command prompt:
   ```
   b2 install --build_dir="C:\boost\boost-build" --prefix="C:\boost\boost-build" toolset=gcc --with=filesystem,system threading=multi --layout=system release
   ```
-* If you want to do a multithreaded library building (faster), add -j N by replacing N by the number of cores/threads you have. For instance, for 2 cores, you would do
-  ```b2 install --build_dir="C:\boost\boost-build" --prefix="C:\boost\boost-build" toolset=gcc --with=filesystem,system threading=multi --layout=system release -j 2```
+* If you want to do a multithreaded library building (faster), add `-j N` by replacing N by the number of cores/threads you have. For instance, for 2 cores, you would do
+  ```
+  b2 install --build_dir="C:\boost\boost-build" --prefix="C:\boost\boost-build" toolset=gcc --with=filesystem,system threading=multi --layout=system release -j 2
+  ```
 
 Ignore all the errors popping up, like Python, etc., they do not matter for us.
 
@@ -173,7 +175,7 @@ If you are getting an error:
 
 ## Git Installation
 
-Installing Git for Windows is straightforward, use the following [link](https://git-for-windows.github.io/)
+Installing Git for Windows is straightforward, use the following [link](https://git-for-windows.github.io/).
 
 ![git for Windows](https://cloud.githubusercontent.com/assets/9083669/24919716/e2612ea6-1ee4-11e7-9eca-d30997b911ff.png)
 
