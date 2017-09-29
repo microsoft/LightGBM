@@ -125,7 +125,7 @@ Dataset <- R6Class(
       if (!is.null(private$categorical_feature)) {
         
         # Check for character name
-        if (typeof(private$categorical_feature) == "character") {
+        if (is.character(private$categorical_feature)) {
           
             cate_indices <- as.list(match(private$categorical_feature, private$colnames) - 1)
             

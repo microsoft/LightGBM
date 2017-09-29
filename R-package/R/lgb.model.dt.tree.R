@@ -66,7 +66,7 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
   
   # Lookup sequence
   tree_dt[, split_feature := Lookup(split_feature,
-                                    seq(0, parsed_json_model$max_feature_idx, by = 1),
+                                    seq.int(from = 0, to = parsed_json_model$max_feature_idx),
                                     parsed_json_model$feature_names)]
   
   # Return tree

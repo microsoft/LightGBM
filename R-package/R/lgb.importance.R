@@ -38,7 +38,7 @@
 lgb.importance <- function(model, percentage = TRUE) {
   
   # Check if model is a lightgbm model
-  if (!any(class(model) == "lgb.Booster")) {
+  if (!inherits(model, "lgb.Booster")) {
     stop("'model' has to be an object of class lgb.Booster")
   }
   
@@ -48,7 +48,7 @@ lgb.importance <- function(model, percentage = TRUE) {
   # Extract elements
   tree_imp <- tree_dt %>%
     magrittr::extract(.,
-                      i = is.na(split_index) == FALSE,
+                      i = ! is.na(split_index),
                       j = .(Gain = sum(split_gain), Cover = sum(internal_count), Frequency = .N),
                       by = "split_feature") %T>%
     data.table::setnames(., old = "split_feature", new = "Feature") %>%

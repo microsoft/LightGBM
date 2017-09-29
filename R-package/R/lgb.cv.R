@@ -138,8 +138,9 @@ lgb.cv <- function(params = list(),
     begin_iteration <- predictor$current_iter() + 1
   }
   # Check for number of rounds passed as parameter - in case there are multiple ones, take only the first one
-  if (sum(names(params) %in% c("num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds")) > 0) {
-    end_iteration <- begin_iteration + params[[which(names(params) %in% c("num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds"))[1]]] - 1
+  n_trees <- c("num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds")
+  if (any(names(params) %in% n_trees)) {
+    end_iteration <- begin_iteration + params[[which(names(params) %in% n_trees)[1]]] - 1
   } else {
     end_iteration <- begin_iteration + nrounds - 1
   }
@@ -180,7 +181,7 @@ lgb.cv <- function(params = list(),
   if (!is.null(folds)) {
     
     # Check for list of folds or for single value
-    if (!is.list(folds) | length(folds) < 2) {
+    if (!is.list(folds) || length(folds) < 2) {
       stop(sQuote("folds"), " must be a list with 2 or more elements that are vectors of indices for each CV-fold")
     }
     
@@ -205,7 +206,7 @@ lgb.cv <- function(params = list(),
   }
   
   # Add printing log callback
-  if (verbose > 0 & eval_freq > 0) {
+  if (verbose > 0 && eval_freq > 0) {
     callbacks <- add.cb(callbacks, cb.print.evaluation(eval_freq))
   }
   
@@ -215,9 +216,10 @@ lgb.cv <- function(params = list(),
   }
   
   # Check for early stopping passed as parameter when adding early stopping callback
-  if (sum(names(params) %in% c("early_stopping_round", "early_stopping_rounds", "early_stopping")) > 0) {
-    if (params[[which(names(params) %in% c("early_stopping_round", "early_stopping_rounds", "early_stopping"))[1]]] > 0) {
-      callbacks <- add.cb(callbacks, cb.early.stop(params[[which(names(params) %in% c("early_stopping_round", "early_stopping_rounds", "early_stopping"))[1]]], verbose = verbose))
+  early_stop <- c("early_stopping_round", "early_stopping_rounds", "early_stopping")
+  if (any(names(params) %in% eary_stop)) {
+    if (params[[which(names(params) %in% early_stop)[1]]] > 0) {
+      callbacks <- add.cb(callbacks, cb.early.stop(params[[which(names(params) %in% early_stop)[1]]], verbose = verbose))
     }
   } else {
     if (!is.null(early_stopping_rounds)) {
@@ -246,7 +248,7 @@ lgb.cv <- function(params = list(),
   } else {
     bst_folds <- lapply(seq_along(folds), function(k) {
       dtest <- slice(data, folds[[k]]$fold)
-      dtrain <- slice(data, (1:nrow(data))[-folds[[k]]$fold])
+      dtrain <- slice(data, (seq_len(nrow(data)))[-folds[[k]]$fold])
       setinfo(dtrain, "weight", getinfo(data, "weight")[-folds[[k]]$fold])
       setinfo(dtrain, "init_score", getinfo(data, "init_score")[-folds[[k]]$fold])
       setinfo(dtrain, "group", getinfo(data, "group")[-folds[[k]]$group])
@@ -270,7 +272,7 @@ lgb.cv <- function(params = list(),
   env$end_iteration <- end_iteration
   
   # Start training model using number of iterations to start and end with
-  for (i in seq(from = begin_iteration, to = end_iteration)) {
+  for (i in seq.int(from = begin_iteration, to = end_iteration)) {
     
     # Overwrite iteration in environment
     env$iteration <- i
@@ -320,7 +322,7 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
   if (is.null(group)) {
     
     # Shuffle
-    rnd_idx <- sample(seq_len(nrows))
+    rnd_idx <- sample.int(nrows)
     
     # Request stratified folds
     if (isTRUE(stratified) && params$objective %in% c("binary", "multiclass") && length(label) == length(rnd_idx)) {
@@ -335,10 +337,10 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
       folds <- list()
       
       # Loop through each fold
-      for (i in 1:nfold) {
+      for (i in seq_len(nfold)) {
         kstep <- length(rnd_idx) %/% (nfold - i + 1)
         folds[[i]] <- rnd_idx[seq_len(kstep)]
-        rnd_idx <- rnd_idx[-(seq_len(kstep))]
+        rnd_idx <- rnd_idx[-seq_len(kstep)]
       }
       
     }
@@ -351,21 +353,20 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
     }
     
     # Degroup the groups
-    ungrouped <- inverse.rle(list(lengths = group, values = 1:length(group)))
+    ungrouped <- inverse.rle(list(lengths = group, values = seq_along(group)))
     
     # Can't stratify, shuffle
-    rnd_idx <- sample(seq_len(length(group)))
+    rnd_idx <- sample.int(length(group))
     
     # Make simple non-stratified folds
     folds <- list()
     
     # Loop through each fold
-    for (i in 1:nfold) {
+    for (i in seq_len(nfold)) {
       kstep <- length(rnd_idx) %/% (nfold - i + 1)
-      folds[[i]] <- list()
-      folds[[i]][["fold"]] <- which(ungrouped %in% rnd_idx[1:kstep])
-      folds[[i]][["group"]] <- rnd_idx[1:kstep]
-      rnd_idx <- rnd_idx[-(1:kstep)]
+      folds[[i]] <- list(fold = which(ungrouped %in% rnd_idx[seq_len(kstep)]),
+                         group = rnd_idx[seq_len(kstep)])
+      rnd_idx <- rnd_idx[-seq_len(kstep)]
     }
     
   }
@@ -390,11 +391,11 @@ lgb.stratified.folds <- function(y, k = 10) {
   ## is too small, we just do regular unstratified CV
   if (is.numeric(y)) {
     
-    cuts <- floor(length(y) / k)
+    cuts <- length(y) %/% k
     if (cuts < 2) { cuts <- 2 }
     if (cuts > 5) { cuts <- 5 }
     y <- cut(y,
-             unique(stats::quantile(y, probs = seq(0, 1, length = cuts))),
+             unique(stats::quantile(y, probs = seq.int(0, 1, length.out = cuts))),
              include.lowest = TRUE)
     
   }
@@ -420,7 +421,7 @@ lgb.stratified.folds <- function(y, k = 10) {
       
       ## Add enough random integers to get  length(seqVector) == numInClass[i]
       if (numInClass[i] %% k > 0) {
-        seqVector <- c(seqVector, sample(seq_len(k), numInClass[i] %% k))
+        seqVector <- c(seqVector, sample.int(k, numInClass[i] %% k))
       }
       
       ## Shuffle the integers for fold assignment and assign to this classes's data
@@ -436,7 +437,8 @@ lgb.stratified.folds <- function(y, k = 10) {
   
   # Return data
   out <- split(seq(along = y), foldVector)
-  `names<-`(out, NULL)
+  names(out) <- NULL
+  out
 }
 
 lgb.merge.cv.result <- function(msg, showsd = TRUE) {

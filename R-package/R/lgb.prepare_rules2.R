@@ -72,7 +72,7 @@
 lgb.prepare_rules2 <- function(data, rules = NULL) {
   
   # data.table not behaving like data.frame
-  if ("data.table" %in% class(data)) {
+  if (inherits(data, "data.table")) {
     
     # Must use existing rules
     if (!is.null(rules)) {
@@ -88,7 +88,7 @@ lgb.prepare_rules2 <- function(data, rules = NULL) {
     } else {
       
       # Get data classes
-      list_classes <- sapply(data, class)
+      list_classes <- vapply(data, class, character(1))
       
       # Map characters/factors
       is_fix <- which(list_classes %in% c("character", "factor"))
@@ -104,9 +104,9 @@ lgb.prepare_rules2 <- function(data, rules = NULL) {
           mini_data <- data[[i]]
           
           # Get unique values
-          if (class(mini_data) == "factor") {
+          if (is.factor(mini_data)) {
             mini_unique <- levels(mini_data) # Factor
-            mini_numeric <- 1:length(mini_unique) # Respect ordinal if needed
+            mini_numeric <- seq_along(mini_unique) # Respect ordinal if needed
           } else {
             mini_unique <- as.factor(unique(mini_data)) # Character
             mini_numeric <- as.integer(mini_unique) # No respect of ordinality
@@ -142,10 +142,10 @@ lgb.prepare_rules2 <- function(data, rules = NULL) {
     } else {
       
       # Default routine (data.frame)
-      if ("data.frame" %in% class(data)) {
+      if (inherits(data, "data.frame")) {
         
         # Get data classes
-        list_classes <- sapply(data, class)
+        list_classes <- vapply(data, class, character(1))
         
         # Map characters/factors
         is_fix <- which(list_classes %in% c("character", "factor"))
@@ -161,9 +161,9 @@ lgb.prepare_rules2 <- function(data, rules = NULL) {
             mini_data <- data[[i]]
             
             # Get unique values
-            if (class(mini_data) == "factor") {
+            if (is.factor(mini_data)) {
               mini_unique <- levels(mini_data) # Factor
-              mini_numeric <- 1:length(mini_unique) # Respect ordinal if needed
+              mini_numeric <- seq_along(mini_unique) # Respect ordinal if needed
             } else {
               mini_unique <- as.factor(unique(mini_data)) # Character
               mini_numeric <- as.integer(mini_unique) # No respect of ordinality
