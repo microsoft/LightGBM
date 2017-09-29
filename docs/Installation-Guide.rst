@@ -1,20 +1,20 @@
-**Installation Guide**
-======================
+Installation Guide
+==================
 
 Here is the guide for the build of CLI version.
 
 For the build of Python-package and R-package, please refer to `Python-package`_ and `R-package`_ folders respectively.
 
-**Windows**
-~~~~~~~~~~~
+Windows
+~~~~~~~
 
 LightGBM can use Visual Studio, MSBuild with CMake or MinGW to build in Windows.
 
-**Visual Studio (or MSBuild)**
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Visual Studio (or MSBuild)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**With GUI**
-************
+With GUI
+********
 
 1. Install `Visual Studio`_.
 
@@ -28,8 +28,8 @@ LightGBM can use Visual Studio, MSBuild with CMake or MinGW to build in Windows.
 
 The exe file will be in ``LightGBM-master/windows/x64/Release`` folder.
 
-**From Command Line**
-*********************
+From Command Line
+*****************
 
 1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (MSbuild is not needed if **Visual Studio** is installed).
 
@@ -46,8 +46,8 @@ The exe file will be in ``LightGBM-master/windows/x64/Release`` folder.
 
 The exe and dll files will be in ``LightGBM/Release`` folder.
 
-**MinGW64**
-^^^^^^^^^^^
+MinGW64
+^^^^^^^
 
 1. Install `Git for Windows`_, `CMake`_ and `MinGW-w64`_.
 
@@ -66,8 +66,8 @@ The exe and dll files will be in ``LightGBM/`` folder.
 
 **Note**: you may need to run the ``cmake -G "MinGW Makefiles" ..`` one more time if met ``sh.exe was found in your PATH`` error.
 
-**Linux**
-~~~~~~~~~
+Linux
+~~~~~
 
 LightGBM uses ``CMake`` to build. Run the following commands:
 
@@ -80,8 +80,8 @@ LightGBM uses ``CMake`` to build. Run the following commands:
 
 **Note**: glibc >= 2.14 is required.
 
-**OSX**
-~~~~~~~
+OSX
+~~~
 
 LightGBM depends on **OpenMP** for compiling, which isn't supported by Apple Clang.
 
@@ -102,24 +102,24 @@ Then install LightGBM:
   cmake ..
   make -j4
 
-**Docker**
-~~~~~~~~~~
+Docker
+~~~~~~
 
 Refer to `Docker folder <https://github.com/Microsoft/LightGBM/tree/master/docker>`__.
 
-**Build MPI Version**
-~~~~~~~~~~~~~~~~~~~~~
+Build MPI Version
+~~~~~~~~~~~~~~~~~
 
 The default build version of LightGBM is based on socket. LightGBM also supports `MPI`_.
 MPI is a high performance communication approach with `RDMA`_ support.
 
 If you need to run a parallel learning application with high performance communication, you can build the LightGBM with MPI support.
 
-**Windows**
-^^^^^^^^^^^
+Windows
+^^^^^^^
 
-**With GUI**
-************
+With GUI
+********
 
 1. You need to install `MS MPI`_ first. Both ``msmpisdk.msi`` and ``MSMpiSetup.exe`` are needed.
 
@@ -135,8 +135,8 @@ If you need to run a parallel learning application with high performance communi
 
 The exe file will be in ``LightGBM-master/windows/x64/Release_mpi`` folder.
 
-**From Command Line**
-*********************
+From Command Line
+*****************
 
 1. You need to install `MS MPI`_ first. Both ``msmpisdk.msi`` and ``MSMpiSetup.exe`` are needed.
 
@@ -157,8 +157,8 @@ The exe and dll files will be in ``LightGBM/Release`` folder.
 
 **Note**: Build MPI version by **MinGW** is not supported due to the miss of MPI library in it.
 
-**Linux**
-^^^^^^^^^
+Linux
+^^^^^
 
 You need to install `Open MPI`_ first.
 
@@ -173,8 +173,8 @@ Then run the following commands:
 
 **Note**: glibc >= 2.14 is required.
 
-**OSX**
-^^^^^^^
+OSX
+^^^
 
 Install **gcc** and **Open MPI** first:
 
@@ -194,11 +194,11 @@ Then run the following commands:
   cmake -DUSE_MPI=ON ..
   make -j4
 
-**Build GPU Version**
-~~~~~~~~~~~~~~~~~~~~
+Build GPU Version
+~~~~~~~~~~~~~~~~~
 
-**Linux**
-^^^^^^^^^
+Linux
+^^^^^
 
 The following dependencies should be installed before compilation:
 
@@ -223,8 +223,8 @@ To build LightGBM GPU version, run the following commands:
   cmake -DUSE_GPU=1 ..
   make -j4
 
-**Windows**
-^^^^^^^^^^^
+Windows
+^^^^^^^
 
 If you use **MinGW**, the build procedure are similar to the build in Linux. Refer to `GPU Windows Compilation <./GPU-Windows.md>`__ to get more details.
 
@@ -265,8 +265,8 @@ Following procedure is for the MSVC(Microsoft Visual C++) build.
 
    **Note**: ``C:\local\boost_1_64_0\`` and ``C:\local\boost_1_64_0\lib64-msvc-14.0`` are locations of your Boost binaries. You also can set them to the environment variable to avoid ``Set ...`` commands when build.
 
-**Docker**
-^^^^^^^^^^
+Docker
+^^^^^^
 
 Refer to `GPU Docker folder <https://github.com/Microsoft/LightGBM/tree/master/docker/gpu>`__.
 

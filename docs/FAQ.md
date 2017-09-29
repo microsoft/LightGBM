@@ -1,7 +1,7 @@
 LightGBM FAQ
 ============
 
-### Catalog
+### Contents
 
 - [Critical](#critical)
 - [LightGBM](#lightgbm)

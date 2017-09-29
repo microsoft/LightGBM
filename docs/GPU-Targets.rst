@@ -77,7 +77,7 @@ However, using a bad combination of ``gpu_platform_id`` and
 ``gpu_device_id`` will lead to a **crash** (you will lose your entire
 session content). Beware of it.
 
-CPU only architectures
+CPU Only Architectures
 ----------------------
 
 When you have a single device (one CPU), OpenCL usage is

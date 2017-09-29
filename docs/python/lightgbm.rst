@@ -1,6 +1,5 @@
-lightgbm package
-================
-
+Python API
+==========
 
 Data Structure API
 ------------------
@@ -64,4 +63,3 @@ Plotting
 .. autofunction:: lightgbm.plot_tree
 
 .. autofunction:: lightgbm.create_tree_digraph
-

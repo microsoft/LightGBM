@@ -74,7 +74,7 @@ params <- list(objective="regression", metric="l2")
 model <- lgb.cv(params, dtrain, 10, nfold=5, min_data=1, learning_rate=1, early_stopping_rounds=10)
 ```
 
-Installation with precompiled dll/lib from R using GitHub
+Installation with Precompiled dll/lib from R Using GitHub
 ---------------------------------------------------------
 
 You can install LightGBM R-package from GitHub with devtools thanks to a helper package for LightGBM.

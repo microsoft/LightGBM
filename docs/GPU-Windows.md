@@ -67,7 +67,7 @@ Warning: using Intel OpenCL is not recommended and may crash your machine due to
 
 ---
 
-## MinGW correct compiler selection
+## MinGW Correct Compiler Selection
 
 If you are expecting to use LightGBM without R, you need to install MinGW. Installing MinGW is straightforward, download [this](http://iweb.dl.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/mingw-w64-install.exe).
 
@@ -283,8 +283,7 @@ To learn how to target a correct CPU or GPU for training, please see: [GPU SDK C
 
 ---
 
-
-## Debugging LightGBM crashes in CLI
+## Debugging LightGBM Crashes in CLI
 
 Now that you compiled LightGBM, you try it... and you always see a segmentation fault or an undocumented crash with GPU support:
 

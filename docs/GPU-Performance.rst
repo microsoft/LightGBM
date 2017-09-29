@@ -1,7 +1,7 @@
 GPU Tuning Guide and Performance Comparison
 ===========================================
 
-How it works?
+How It Works?
 -------------
 
 In LightGBM, the main computation cost during training is building the feature histograms. We use an efficient algorithm on GPU to accelerate this process.

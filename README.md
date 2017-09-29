@@ -65,7 +65,7 @@ Install by following the [guide](https://github.com/Microsoft/LightGBM/blob/mast
 
 Our primary documentation is at https://lightgbm.readthedocs.io/ and is generated from this repository.
 
-Next you will want to read:
+Next you may want to read:
 
 * [**Examples**](https://github.com/Microsoft/LightGBM/tree/master/examples) showing command line usage of common tasks
 * [**Features**](https://github.com/Microsoft/LightGBM/blob/master/docs/Features.md) and algorithms supported by LightGBM
@@ -83,7 +83,7 @@ Support
 
 * Ask a question [on Stack Overflow with the `lightgbm` tag ](https://stackoverflow.com/questions/ask?tags=lightgbm), we monitor this for new questions.
 * Discuss on the [LightGBM Gitter](https://gitter.im/Microsoft/LightGBM).
-* Open **bug reports** and **feature requests** (not questions) on [Github issues](https://github.com/Microsoft/LightGBM/issues).
+* Open **bug reports** and **feature requests** (not questions) on [GitHub issues](https://github.com/Microsoft/LightGBM/issues).
 
 How to Contribute
 -----------------

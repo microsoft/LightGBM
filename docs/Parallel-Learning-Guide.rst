@@ -1,12 +1,12 @@
-**Parallel Learning Guide**
-===========================
+Parallel Learning Guide
+=======================
 
 This is a guide for parallel learning of LightGBM.
 
 Follow the `Quick Start`_ to know how to use LightGBM first.
 
-**Choose appropriate parallel algorithm**
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Choose Appropriate Parallel Algorithm
+-------------------------------------
 
 LightGBM provides 2 parallel learning algorithms now.
 
@@ -32,18 +32,18 @@ These algorithms are suited for different scenarios, which is listed in the foll
 
 More details about these parallel algorithms can be found in `optimization in parallel learning`_.
 
-**Build parallel version**
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+Build Parallel Version
+----------------------
 
 Default build version support parallel learning based on the socket.
 
 If you need to build parallel version with MPI support, please refer to `Installation Guide`_.
 
-**Preparation**
-~~~~~~~~~~~~~~~
+Preparation
+-----------
 
-**Socket version**
-^^^^^^^^^^^^^^^^^^
+Socket Version
+^^^^^^^^^^^^^^
 
 It needs to collect IP of all machines that want to run parallel learning in and allocate one TCP port (assume 12345 here) for all machines,
 and change firewall rules to allow income of this port (12345). Then write these IP and ports in one file (assume ``mlist.txt``), like following:
@@ -53,8 +53,8 @@ and change firewall rules to allow income of this port (12345). Then write these
     machine1_ip 12345
     machine2_ip 12345
 
-**MPI version**
-^^^^^^^^^^^^^^^
+MPI Version
+^^^^^^^^^^^
 
 It needs to collect IP (or hostname) of all machines that want to run parallel learning in.
 Then write these IP in one file (assume ``mlist.txt``) like following:
@@ -66,11 +66,11 @@ Then write these IP in one file (assume ``mlist.txt``) like following:
 
 Note: For Windows users, need to start "smpd" to start MPI service. More details can be found `here`_.
 
-**Run parallel learning**
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Run Parallel Learning
+---------------------
 
-**Socket version**
-^^^^^^^^^^^^^^^^^^
+Socket Version
+^^^^^^^^^^^^^^
 
 1. Edit following parameters in config file:
 
@@ -90,8 +90,8 @@ For Windows: ``lightgbm.exe config=your_config_file``
 
 For Linux: ``./lightgbm config=your_config_file``
 
-**MPI version**
-^^^^^^^^^^^^^^^
+MPI Version
+^^^^^^^^^^^
 
 1. Edit following parameters in config file:
 
@@ -107,8 +107,8 @@ For Windows: ``mpiexec.exe /machinefile mlist.txt lightgbm.exe config=your_confi
 
 For Linux: ``mpiexec –machinefile mlist.txt ./lightgbm config=your_config_file``
 
-**Example**
-^^^^^^^^^^^
+Example
+^^^^^^^
 
 -  `A simple parallel example`_.
 

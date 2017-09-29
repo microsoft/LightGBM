@@ -1,4 +1,4 @@
-# Table/List of key modifications of LightGBM
+# Table/List of Key Modifications of LightGBM
 
 The list includes the commits where the major feature added is considered working with the least amount of flaws. This is useful if you are trying to get a specific commit, such as the first properly working commit for categorical support.
 

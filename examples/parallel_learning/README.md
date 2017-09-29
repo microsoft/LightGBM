@@ -1,5 +1,6 @@
 Parallel Learning Example
 =========================
+
 Here is an example for LightGBM to perform parallel learning for 2 machines.
 
 1. Edit mlist.txt, write the ip of these 2 machines that you want to run application on.

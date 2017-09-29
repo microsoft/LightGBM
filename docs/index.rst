@@ -19,12 +19,12 @@ Welcome to LightGBM's documentation!
    Parameters Tuning <Parameters-tuning>
    Python API <python/lightgbm>
    Parallel Learning Guide <Parallel-Learning-Guide>
-   Advanced Topics <Advanced-Topic>
    GPU Tutorial <GPU-Tutorial>
+   Advanced Topics <Advanced-Topic>
    FAQ <FAQ>
    Development Guide <development>
 
-Indices and tables
+Indices and Tables
 ==================
 
 * :ref:`genindex`

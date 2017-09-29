@@ -15,7 +15,7 @@ For Mac OS X users, gcc with OpenMP support must be installed first. Refer to `I
 
 Note: 32-bit Python is not supported. Please install 64-bit version.
 
-Install from `PyPI <https://pypi.python.org/pypi/lightgbm>`_ using ``pip``
+Install from `PyPI <https://pypi.python.org/pypi/lightgbm>`_ Using ``pip``
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 For Windows users, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if Visual Studio (2013, 2015 or 2017) is not installed.
 
@@ -25,7 +25,7 @@ Install `wheel <http://pythonwheels.com>`_ via ``pip install wheel`` first. Afte
 
     pip install lightgbm
 
-Build from sources
+Build from Sources
 ******************
 
 .. code:: sh
@@ -38,7 +38,7 @@ For Mac OS X users, you need to specify compilers by runnig ``export CXX=g++-7 C
 
 For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed. If you get any errors during installation, you may need to install `CMake <https://cmake.org/>`_ (version 3.8 or higher).
 
-Build GPU version
+Build GPU Version
 ~~~~~~~~~~~~~~~~~
 
 .. code:: sh

@@ -1,10 +1,10 @@
-# **Features**
+# Features
 
 This is a short introduction for the features and algorithms used in LightGBM.
 
 This page doesn't contain detailed algorithms, please refer to cited papers or source code if you are interested.
 
-## Optimization in speed and memory usage
+## Optimization in Speed and Memory Usage
 
 Many boosting tools use pre-sorted based algorithms[1, 2](#references) (e.g. default algorithm in xgboost) for decision tree learning. It is a simple solution, but not easy to optimize.
 
@@ -22,13 +22,13 @@ LightGBM uses the histogram based algorithms[3, 4, 5](#references), which bucket
   - No need to store additional information for pre-sorting feature values
 - **Reduce communication cost for parallel learning**
 
-## **Sparse optimization**
+## Sparse Optimization
 
 - Only need ``O(2 * #non_zero_data)`` to construct histogram for sparse features
 
-## **Optimization in accuracy**
+## Optimization in Accuracy
 
-### **Leaf-wise (best-first) tree growth**
+### Leaf-wise (Best-first) Tree Growth
 
 Most decision tree learning algorithms grow tree by level(depth)-wise, like the following image:
 
@@ -40,7 +40,7 @@ Leaf-wise may cause over-fitting when ``#data`` is small. So, LightGBM can use a
 
 ![leaf_wise](https://user-images.githubusercontent.com/25141164/30991728-ea1c2f4c-a4ae-11e7-9f7c-ff8127b4321b.png)
 
-### **Optimal split for Categorical Features**
+### Optimal Split for Categorical Features
 
 We often convert the categorical features into one-hot coding. However, it is not a good solution in tree learner. The reason is, for the high cardinality categorical features, it will grow the very unbalance tree, and needs to grow very deep to achieve the good accuracy.
 
@@ -48,17 +48,17 @@ Actually, the optimal solution is partitioning the categorical feature into 2 su
 
 The basic idea is reordering the categories according to the relevance of training target. More specifically, reordering the histogram (of categorical feature) according to it's accumulate values (``sum_gradient / sum_hessian``), then find the best split on the sorted histogram.
 
-## **Optimization in network communication**
+## Optimization in Network Communication
 
 It only needs to use some collective communication algorithms, like "All reduce", "All gather" and "Reduce scatter", in parallel learning of LightGBM. LightGBM implement state-of-art algorithms[8](#references). These collective communication algorithms can provide much better performance than point-to-point communication.
 
-## **Optimization in parallel learning**
+## Optimization in Parallel Learning
 
 LightGBM provides following parallel learning algorithms.
 
-### **Feature Parallel**
+### Feature Parallel
 
-#### **Traditional algorithm**
+#### Traditional Algorithm
 
 Feature parallel aims to parallel the "Find Best Split" in the decision tree. The procedure of traditional feature parallel is:
 
@@ -73,7 +73,7 @@ The shortage of traditional feature parallel:
 - Has computation overhead, since it cannot speed up "split", whose time complexity is ``O(#data)``. Thus, feature parallel cannot speed up well when ``#data`` is large.
 - Need communication of split result, which cost about ``O(#data / 8)`` (one bit for one data).
 
-#### **Feature parallel in LightGBM**
+#### Feature Parallel in LightGBM
 
 Since feature parallel cannot speed up well when ``#data`` is large, we make a little change here: instead of partitioning data vertically, every worker holds the full data. Thus, LightGBM doesn't need to communicate for split result of data since every worker know how to split data. And ``#data`` won't be larger, so it is reasonable to hold full data in every machine.
 
@@ -85,9 +85,9 @@ The procedure of feature parallel in LightGBM:
 
 However, this feature parallel algorithm still suffers from computation overhead for "split" when ``#data`` is large. So it will be better to use data parallel when ``#data`` is large.
 
-### **Data Parallel**
+### Data Parallel
 
-#### **Traditional algorithm**
+#### Traditional Algorithm
 
 Data parallel aims to parallel the whole decision learning. The procedure of data parallel is:
 
@@ -100,7 +100,7 @@ The shortage of traditional data parallel:
 
 - High communication cost. If using point-to-point communication algorithm, communication cost for one machine is about ``O(#machine * #feature * #bin)``. If using collective communication algorithm (e.g. "All Reduce"), communication cost is about ``O(2 * #feature * #bin)`` (check cost of "All Reduce" in chapter 4.5 at [8](#references)).
 
-#### **Data parallel in LightGBM**
+#### Data Parallel in LightGBM
 
 We reduce communication cost of data parallel in LightGBM:
 
@@ -109,18 +109,18 @@ We reduce communication cost of data parallel in LightGBM:
 
 Above all, we reduce communication cost to ``O(0.5 * #feature * #bin)`` for data parallel in LightGBM.
 
-### **Voting parallel**
+### Voting Parallel
 
 Voting parallel further reduce the communication cost in [Data Parallel](#data-parallel) to constant cost. It uses two stage voting to reduce the communication cost of feature histograms[9](#references).
 
-## **GPU support**
+## GPU Support
 
 Thanks [@huanzhang12](https://github.com/huanzhang12) for contributing this feature. Please read[10](#references) to get more details.
 
 - [GPU Installation](./Installation-Guide.rst)
 - [GPU Tutorial](./GPU-Tutorial.md)
 
-## **Applications and metrics**
+## Applications and Metrics
 
 Support following application:
 
@@ -134,7 +134,7 @@ Support following metrics:
 - L1 loss
 - L2 loss
 - Log loss
-- Classification Error rate
+- Classification error rate
 - AUC
 - NDCG
 - Multi class log loss
@@ -142,7 +142,7 @@ Support following metrics:
 
 For more details, please refer to [Parameters](./Parameters.md).
 
-## **Other features**
+## Other Features
 
 - Limit ``max_depth`` of tree while grows tree leaf-wise
 - [DART](https://arxiv.org/abs/1505.01866)

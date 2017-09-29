@@ -1,13 +1,13 @@
-**Experiments**
-===============
+Experiments
+===========
 
-**Comparison Experiment**
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Comparison Experiment
+---------------------
 
 For the detailed experiment scripts and output logs, please refer to this `repo`_.
 
-**Data**
-^^^^^^^^
+Data
+^^^^
 
 We use 4 datasets to conduct our comparison experiments. Details of data are listed in the following table:
 
@@ -25,8 +25,8 @@ We use 4 datasets to conduct our comparison experiments. Details of data are lis
 | Allstate    | Binary classification   | `link <https://www.kaggle.com/c/ClaimPredictionChallenge>`__           | 13,184,290        | 4228           | use last 1,000,000 as test set              |
 +-------------+-------------------------+------------------------------------------------------------------------+-------------------+----------------+---------------------------------------------+
 
-**Environment**
-^^^^^^^^^^^^^^^
+Environment
+^^^^^^^^^^^
 
 We use one Linux server as experiment platform, details are listed in the following table:
 
@@ -36,15 +36,15 @@ We use one Linux server as experiment platform, details are listed in the follow
 | Ubuntu 14.04 LTS   | 2 \* E5-2670 v3   | DDR4 2133Mhz, 256GB   |
 +--------------------+-------------------+-----------------------+
 
-**Baseline**
-^^^^^^^^^^^^
+Baseline
+^^^^^^^^
 
 We use `xgboost`_ as a baseline.
 
 Both xgboost and LightGBM are built with OpenMP support.
 
-**Settings**
-^^^^^^^^^^^^
+Settings
+^^^^^^^^
 
 We set up total 3 settings for experiments, the parameters of these settings are:
 
@@ -90,11 +90,11 @@ So we cannot compare them in the exact same model setting. For the tradeoff, we 
 
 Other parameters are default values.
 
-**Result**
-^^^^^^^^^^
+Result
+^^^^^^
 
-**Speed**
-'''''''''
+Speed
+'''''
 
 For speed comparison, we only run the training task, which is without any test or metric output. And we don't count the time for IO.
 
@@ -116,8 +116,8 @@ The following table is the comparison of time cost:
 
 We found LightGBM is faster than xgboost on all experiment data sets.
 
-**Accuracy**
-''''''''''''
+Accuracy
+''''''''
 
 For accuracy comparison, we use the accuracy on test data set to have a fair comparison.
 
@@ -147,8 +147,8 @@ For accuracy comparison, we use the accuracy on test data set to have a fair com
 | Allstate    | AUC          | 0.607201      | 0.609042            | 0.609167       |
 +-------------+--------------+---------------+---------------------+----------------+
 
-**Memory consumption**
-''''''''''''''''''''''
+Memory Consumption
+''''''''''''''''''
 
 We monitor RES while running training task. And we set ``two_round=true`` (will increase data-loading time, but reduce peak memory usage, not affect training speed or accuracy) in LightGBM to reduce peak memory usage.
 
@@ -166,11 +166,11 @@ We monitor RES while running training task. And we set ``two_round=true`` (will 
 | Allstate    | 6.237GB       | 4.990GB             | **1.027GB**    |
 +-------------+---------------+---------------------+----------------+
 
-**Parallel Experiment**
-~~~~~~~~~~~~~~~~~~~~~~~
+Parallel Experiment
+-------------------
 
-**Data**
-^^^^^^^^
+Data
+^^^^
 
 We use a terabyte click log dataset to conduct parallel experiments. Details are listed in following table:
 
@@ -185,8 +185,8 @@ We statistic the CTR and count for these 26 category features from the first ten
 then use next ten days' data, which had been replaced the category features by the corresponding CTR and count, as training data.
 The processed training data hava total 1.7 billions records and 67 features.
 
-**Environment**
-^^^^^^^^^^^^^^^
+Environment
+^^^^^^^^^^^
 
 We use 16 Windows servers as experiment platform, details are listed in following table:
 
@@ -197,8 +197,8 @@ We use 16 Windows servers as experiment platform, details are listed in followin
 |                      |                 |                      | RDMA support                  |
 +----------------------+-----------------+----------------------+-------------------------------+
 
-**Settings**
-^^^^^^^^^^^^
+Settings
+^^^^^^^^
 
   .. code::
 
@@ -212,8 +212,8 @@ We use data parallel here, since this data is large in ``#data`` but small in ``
 
 Other parameters are default values.
 
-**Result**
-^^^^^^^^^^
+Result
+^^^^^^
 
 +----------------+---------------------+---------------------------------+
 | **#Machine**   | **Time per Tree**   | **Memory Usage(per Machine)**   |
@@ -231,8 +231,8 @@ Other parameters are default values.
 
 From the results, we find that LightGBM performs linear speed up in parallel learning.
 
-**GPU Experiments**
-~~~~~~~~~~~~~~~~~~~
+GPU Experiments
+---------------
 
 Refer to `GPU Performance <./GPU-Performance.rst>`__.
 

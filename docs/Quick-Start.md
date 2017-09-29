@@ -10,13 +10,13 @@ Follow the [Installation Guide](./Installation-Guide.md) to install LightGBM fir
 * [Python-package Quick Start](./Python-intro.md)
 * [Python API](./python/lightgbm.rst)
 
-## Training data format 
+## Training Data Format 
 
 LightGBM supports input data file with [CSV](https://en.wikipedia.org/wiki/Comma-separated_values), [TSV](https://en.wikipedia.org/wiki/Tab-separated_values) and [LibSVM](https://www.csie.ntu.edu.tw/~cjlin/libsvm/) formats.
 
 Label is the data of first column, and there is no header in the file.
 
-### Categorical feature support
+### Categorical Feature Support
 
 update 12/5/2016:
 
@@ -24,7 +24,8 @@ LightGBM can use categorical feature directly (without one-hot coding). The expe
 
 For the setting details, please refer to [Parameters](./Parameters.md).
 
-### Weight and query/group data
+### Weight and Query/Group Data
+
 LightGBM also support weighted training, it needs an additional [weight data](./Parameters.md). And it needs an additional [query data](./Parameters.md) for ranking task.
 
 update 11/3/2016:
@@ -35,7 +36,7 @@ update 11/3/2016:
 
 For the detailed usage, please refer to [Configuration](./Parameters.md).
 
-## Parameter quick look
+## Parameter Quick Look
 
 The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can be in both config file and command line.
 
@@ -93,7 +94,6 @@ Some important parameters:
 
 For all parameters, please refer to [Parameters](./Parameters.md).
 
-
 ## Run LightGBM
 
 For Windows:
@@ -101,7 +101,7 @@ For Windows:
 lightgbm.exe config=your_config_file other_args ...
 ```
 
-For unix:
+For Unix:
 ```
 ./lightgbm config=your_config_file other_args ...
 ```

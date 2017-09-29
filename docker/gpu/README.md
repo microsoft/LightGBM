@@ -1,4 +1,4 @@
-# Dockerfile for LightGBM supporting GPU with Python
+# Dockerfile for LightGBM GPU Version with Python
 
 A docker file with LightGBM utilizing nvidia-docker. The file is based on the nvidia/cuda:8.0 image. LightGBM can be utilized in GPU and CPU modes and via Python (2.7 & 3.5)
 
