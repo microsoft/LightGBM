@@ -74,9 +74,9 @@ Socket Version
 
 1. Edit following parameters in config file:
 
-``tree_learner=your_parallel_algorithm``, edit ``your_parallel_algorithm`` (e.g. feature/data) here.
+``tree_learner=your_parallel_algorithm``, edit ``your_parallel_algorithm`` (e.g. feature/data) here.
 
-``num_machines=your_num_machines``, edit ``your_num_machines`` (e.g. 4) here.
+``num_machines=your_num_machines``, edit ``your_num_machines`` (e.g. 4) here.
 
 ``machine_list_file=mlist.txt``, ``mlist.txt`` is created in `Preparation section <#preparation>`__.
 
@@ -95,9 +95,9 @@ MPI Version
 
 1. Edit following parameters in config file:
 
-``tree_learner=your_parallel_algorithm``, edit ``your_parallel_algorithm`` (e.g. feature/data) here.
+``tree_learner=your_parallel_algorithm``, edit ``your_parallel_algorithm`` (e.g. feature/data) here.
 
-``num_machines=your_num_machines``, edit ``your_num_machines`` (e.g. 4) here.
+``num_machines=your_num_machines``, edit ``your_num_machines`` (e.g. 4) here.
 
 2. Copy data file, executable file, config file and ``mlist.txt`` to all machines. Note: MPI needs to be run in the **same path on all machines**.
 
@@ -105,7 +105,7 @@ MPI Version
 
 For Windows: ``mpiexec.exe /machinefile mlist.txt lightgbm.exe config=your_config_file``
 
-For Linux: ``mpiexec –machinefile mlist.txt ./lightgbm config=your_config_file``
+For Linux: ``mpiexec --machinefile mlist.txt ./lightgbm config=your_config_file``
 
 Example
 ^^^^^^^

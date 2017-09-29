@@ -37,7 +37,7 @@ From Command Line
 
    .. code::
 
-     git clone –-recursive https://github.com/Microsoft/LightGBM
+     git clone --recursive https://github.com/Microsoft/LightGBM
      cd LightGBM
      mkdir build
      cd build
@@ -73,7 +73,7 @@ LightGBM uses ``CMake`` to build. Run the following commands:
 
 .. code::
 
-  git clone –recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+  git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
   mkdir build ; cd build
   cmake ..
   make -j4
@@ -90,7 +90,7 @@ Please install **gcc/g++** by using the following commands:
 .. code::
 
   brew install cmake
-  brew install gcc –without-multilib
+  brew install gcc --without-multilib
 
 Then install LightGBM:
 

@@ -17,7 +17,7 @@ Welcome to LightGBM's documentation!
    Experiments <Experiments>
    Parameters <Parameters>
    Parameters Tuning <Parameters-tuning>
-   Python API <python/lightgbm>
+   Python API <Python-API>
    Parallel Learning Guide <Parallel-Learning-Guide>
    GPU Tutorial <GPU-Tutorial>
    Advanced Topics <Advanced-Topic>
