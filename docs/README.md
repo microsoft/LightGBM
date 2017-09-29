@@ -12,7 +12,3 @@ You can build the documentation locally. Just run:
 pip install -r requirements.txt
 make html
 ```
-
-## Wiki
-
-In addition to our documentation hosted on Read the Docs, some additional topics are explained at https://github.com/Microsoft/LightGBM/wiki.

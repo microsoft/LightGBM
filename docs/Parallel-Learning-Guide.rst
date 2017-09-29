@@ -37,7 +37,7 @@ More details about these parallel algorithms can be found in `optimization in pa
 
 Default build version support parallel learning based on the socket.
 
-If you need to build parallel version with MPI support, please refer to `this`_.
+If you need to build parallel version with MPI support, please refer to `Installation Guide`_.
 
 **Preparation**
 ~~~~~~~~~~~~~~~
@@ -112,11 +112,11 @@ For Linux: ``mpiexec –machinefile mlist.txt ./lightgbm config=your_config_file``
 
 -  `A simple parallel example`_.
 
-.. _Quick Start: https://github.com/Microsoft/LightGBM/wiki/Quick-Start
+.. _Quick Start: ./Quick-Start.md
 
 .. _optimization in parallel learning: ./Features.md
 
-.. _this: https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#build-mpi-version
+.. _Installation Guide: ./Installation-Guide.rst
 
 .. _here: https://blogs.technet.microsoft.com/windowshpc/2015/02/02/how-to-compile-and-run-a-simple-ms-mpi-program/
 

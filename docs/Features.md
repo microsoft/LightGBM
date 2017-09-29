@@ -117,7 +117,7 @@ Voting parallel further reduce the communication cost in [Data Parallel](#data-p
 
 Thanks [@huanzhang12](https://github.com/huanzhang12) for contributing this feature. Please read[10](#references) to get more details.
 
-- [GPU Installation](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support)
+- [GPU Installation](./Installation-Guide.rst)
 - [GPU Tutorial](./GPU-Tutorial.md)
 
 ## **Applications and metrics**
