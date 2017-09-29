@@ -12,19 +12,19 @@ LightGBM uses the histogram based algorithms[3, 4, 5](#references), which bucket
 
 - **Reduce calculation cost of split gain**
   - Pre-sorted based algorithms need *O(#data)* times calculation
-  - Histogram based algorithms only need to calculate `O(#bins)` times, and `#bins` is far smaller than `#data`
-    - It still needs `O(#data)` times to construct histogram, which only contain sum-up operation
+  - Histogram based algorithms only need to calculate ``O(#bins)`` times, and ``#bins`` is far smaller than ``#data``
+    - It still needs ``O(#data)`` times to construct histogram, which only contain sum-up operation
 - **Use histogram subtraction for further speed-up**
   - To get one leaf's histograms in a binary tree, can use the histogram subtraction of its parent and its neighbor
-  - So it only need to construct histograms for one leaf (with smaller `#data` than its neighbor), then can get histograms of its neighbor by histogram subtraction with small cost(`O(#bins)`)
+  - So it only need to construct histograms for one leaf (with smaller ``#data`` than its neighbor), then can get histograms of its neighbor by histogram subtraction with small cost(``O(#bins)``)
 - **Reduce memory usage**
-  - Can replace continuous values to discrete bins. If `#bins` is small, can use small data type, e.g. uint8_t, to store training data
+  - Can replace continuous values to discrete bins. If ``#bins`` is small, can use small data type, e.g. uint8_t, to store training data
   - No need to store additional information for pre-sorting feature values
 - **Reduce communication cost for parallel learning**
 
 ## **Sparse optimization**
 
-- Only need `O(2 * #non_zero_data)` to construct histogram for sparse features
+- Only need ``O(2 * #non_zero_data)`` to construct histogram for sparse features
 
 ## **Optimization in accuracy**
 
@@ -34,9 +34,9 @@ Most decision tree learning algorithms grow tree by level(depth)-wise, like the 
 
 ![level_wise](https://user-images.githubusercontent.com/25141164/30991469-d919fb1c-a4ad-11e7-8d7a-680f86ef672b.png)
 
-LightGBM grows tree by leaf-wise(best-first)[6](#references). It will choose the leaf with max delta loss to grow. When growing same `#leaf`, leaf-wise algorithm can reduce more loss than level-wise algorithm.
+LightGBM grows tree by leaf-wise(best-first)[6](#references). It will choose the leaf with max delta loss to grow. When growing same ``#leaf``, leaf-wise algorithm can reduce more loss than level-wise algorithm.
 
-Leaf-wise may cause over-fitting when `#data` is small. So, LightGBM can use an additional parameter `max_depth` to limit depth of tree and avoid over-fitting (tree still grows by leaf-wise).
+Leaf-wise may cause over-fitting when ``#data`` is small. So, LightGBM can use an additional parameter ``max_depth`` to limit depth of tree and avoid over-fitting (tree still grows by leaf-wise).
 
 ![leaf_wise](https://user-images.githubusercontent.com/25141164/30991728-ea1c2f4c-a4ae-11e7-9f7c-ff8127b4321b.png)
 
@@ -44,9 +44,9 @@ Leaf-wise may cause over-fitting when `#data` is small. So, LightGBM can use an 
 
 We often convert the categorical features into one-hot coding. However, it is not a good solution in tree learner. The reason is, for the high cardinality categorical features, it will grow the very unbalance tree, and needs to grow very deep to achieve the good accuracy.
 
-Actually, the optimal solution is partitioning the categorical feature into 2 subsets, and there are `2^(k-1) - 1` possible partitions. But there is a efficient solution for regression tree[7](#references). It needs about `k * log(k)` to find the optimal partition.
+Actually, the optimal solution is partitioning the categorical feature into 2 subsets, and there are ``2^(k-1) - 1`` possible partitions. But there is a efficient solution for regression tree[7](#references). It needs about ``k * log(k)`` to find the optimal partition.
 
-The basic idea is reordering the categories according to the relevance of training target. More specifically, reordering the histogram (of categorical feature) according to it's accumulate values (`sum_gradient / sum_hessian`), then find the best split on the sorted histogram.
+The basic idea is reordering the categories according to the relevance of training target. More specifically, reordering the histogram (of categorical feature) according to it's accumulate values (``sum_gradient / sum_hessian``), then find the best split on the sorted histogram.
 
 ## **Optimization in network communication**
 
@@ -70,12 +70,12 @@ Feature parallel aims to parallel the "Find Best Split" in the decision tree. Th
 
 The shortage of traditional feature parallel:
 
-- Has computation overhead, since it cannot speed up "split", whose time complexity is `O(#data)`. Thus, feature parallel cannot speed up well when `#data` is large.
-- Need communication of split result, which cost about `O(#data / 8)` (one bit for one data).
+- Has computation overhead, since it cannot speed up "split", whose time complexity is ``O(#data)``. Thus, feature parallel cannot speed up well when ``#data`` is large.
+- Need communication of split result, which cost about ``O(#data / 8)`` (one bit for one data).
 
 #### **Feature parallel in LightGBM**
 
-Since feature parallel cannot speed up well when `#data` is large, we make a little change here: instead of partitioning data vertically, every worker holds the full data. Thus, LightGBM doesn't need to communicate for split result of data since every worker know how to split data. And `#data` won't be larger, so it is reasonable to hold full data in every machine.
+Since feature parallel cannot speed up well when ``#data`` is large, we make a little change here: instead of partitioning data vertically, every worker holds the full data. Thus, LightGBM doesn't need to communicate for split result of data since every worker know how to split data. And ``#data`` won't be larger, so it is reasonable to hold full data in every machine.
 
 The procedure of feature parallel in LightGBM:
 
@@ -83,7 +83,7 @@ The procedure of feature parallel in LightGBM:
 2. Communicate local best splits with each other and get the best one
 3. Perform best split
 
-However, this feature parallel algorithm still suffers from computation overhead for "split" when `#data` is large. So it will be better to use data parallel when `#data` is large.
+However, this feature parallel algorithm still suffers from computation overhead for "split" when ``#data`` is large. So it will be better to use data parallel when ``#data`` is large.
 
 ### **Data Parallel**
 
@@ -98,7 +98,7 @@ Data parallel aims to parallel the whole decision learning. The procedure of dat
 
 The shortage of traditional data parallel:
 
-- High communication cost. If using point-to-point communication algorithm, communication cost for one machine is about `O(#machine * #feature * #bin)`. If using collective communication algorithm (e.g. "All Reduce"), communication cost is about `O(2 * #feature * #bin)` (check cost of "All Reduce" in chapter 4.5 at [8](#references)).
+- High communication cost. If using point-to-point communication algorithm, communication cost for one machine is about ``O(#machine * #feature * #bin)``. If using collective communication algorithm (e.g. "All Reduce"), communication cost is about ``O(2 * #feature * #bin)`` (check cost of "All Reduce" in chapter 4.5 at [8](#references)).
 
 #### **Data parallel in LightGBM**
 
@@ -107,7 +107,7 @@ We reduce communication cost of data parallel in LightGBM:
 1. Instead of "Merge global histograms from all local histograms", LightGBM use "Reduce Scatter" to merge histograms of different(non-overlapping) features for different workers. Then workers find local best split on local merged histograms and sync up global best split.
 2. As aforementioned, LightGBM use histogram subtraction to speed up training. Based on this, we can communicate histograms only for one leaf, and get its neighbor's histograms by subtraction as well.
 
-Above all, we reduce communication cost to `O(0.5 * #feature * #bin)` for data parallel in LightGBM.
+Above all, we reduce communication cost to ``O(0.5 * #feature * #bin)`` for data parallel in LightGBM.
 
 ### **Voting parallel**
 
@@ -144,7 +144,7 @@ For more details, please refer to [Parameters](./Parameters.md).
 
 ## **Other features**
 
-- Limit `max_depth` of tree while grows tree leaf-wise
+- Limit ``max_depth`` of tree while grows tree leaf-wise
 - [DART](https://arxiv.org/abs/1505.01866)
 - L1/L2 regularization
 - Bagging

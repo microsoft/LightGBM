@@ -84,9 +84,9 @@ We set up total 3 settings for experiments, the parameters of these settings are
       min_data_in_leaf = 0
       min_sum_hessian_in_leaf = 100
 
-xgboost grows tree depth-wise and controls model complexity by `max_depth`.
-LightGBM uses leaf-wise algorithm instead and controls model complexity by `num_leaves`.
-So we cannot compare them in the exact same model setting. For the tradeoff, we use xgboost with `max_depth=8`, which will have max number leaves to 255, to compare with LightGBM with `num_leves=255`.
+xgboost grows tree depth-wise and controls model complexity by ``max_depth``.
+LightGBM uses leaf-wise algorithm instead and controls model complexity by ``num_leaves``.
+So we cannot compare them in the exact same model setting. For the tradeoff, we use xgboost with ``max_depth=8``, which will have max number leaves to 255, to compare with LightGBM with ``num_leves=255``.
 
 Other parameters are default values.
 
@@ -150,7 +150,7 @@ For accuracy comparison, we use the accuracy on test data set to have a fair com
 **Memory consumption**
 ''''''''''''''''''''''
 
-We monitor RES while running training task. And we set `two_round=true` (will increase data-loading time, but reduce peak memory usage, not affect training speed or accuracy) in LightGBM to reduce peak memory usage.
+We monitor RES while running training task. And we set ``two_round=true`` (will increase data-loading time, but reduce peak memory usage, not affect training speed or accuracy) in LightGBM to reduce peak memory usage.
 
 +-------------+---------------+---------------------+----------------+
 | **Data**    | **xgboost**   | **xgboost\_hist**   | **LightGBM**   |
@@ -208,7 +208,7 @@ We use 16 Windows servers as experiment platform, details are listed in followin
       num_thread = 16
       tree_learner = data
 
-We use data parallel here, since this data is large in `#data` but small in `#feature`.
+We use data parallel here, since this data is large in ``#data`` but small in ``#feature``.
 
 Other parameters are default values.
 
