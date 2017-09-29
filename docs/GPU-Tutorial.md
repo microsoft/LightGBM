@@ -107,7 +107,7 @@ num_iterations = 50
 learning_rate = 0.1
 tree_learner = serial
 task = train
-is_train_metric = false
+is_training_metric = false
 min_data_in_leaf = 1
 min_sum_hessian_in_leaf = 100
 ndcg_eval_at = 1,3,5,10
@@ -165,9 +165,9 @@ Also, you can compare the training speed with CPU:
 Further Reading
 ---------------
 
-[GPU Tuning Guide and Performance Comparison](./GPU-Performance.md)
+[GPU Tuning Guide and Performance Comparison](./GPU-Performance.rst)
 
-[GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.md).
+[GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.rst).
 
 [GPU Windows Tutorial](./GPU-Windows.md)
 

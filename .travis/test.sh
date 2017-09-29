@@ -92,3 +92,7 @@ make _lightgbm || exit -1
 
 cd $TRAVIS_BUILD_DIR/python-package && python setup.py install --precompile || exit -1
 cd $TRAVIS_BUILD_DIR && pytest . || exit -1
+
+if [[ ${TASK} == "regular" ]]; then
+    cd $TRAVIS_BUILD_DIR/examples/python-guide && python simple_example.py && python sklearn_example.py && python advanced_example.py || exit -1
+fi

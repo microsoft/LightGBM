@@ -111,7 +111,7 @@ public:
 
   inline int PredictLeafIndex(const double* feature_values) const;
 
-  inline void PredictContrib(const double* feature_values, int num_features, double* output) const;
+  inline void PredictContrib(const double* feature_values, int num_features, double* output);
 
   /*! \brief Get Number of leaves*/
   inline int num_leaves() const { return num_leaves_; }
@@ -299,9 +299,12 @@ private:
   /*! \brief Serialize one node to if-else statement*/
   std::string NodeToIfElse(int index, bool is_predict_leaf_index) const;
 
-  double ExpectedValue(int node) const;
+  double ExpectedValue() const;
 
-  int MaxDepth() const;
+  int MaxDepth();
+
+  /*! \brief This is used fill in leaf_depth_ after reloading a model*/
+  inline void RecomputeLeafDepths(int node = 0, int depth = 0);
 
   /*!
   * \brief Used by TreeSHAP for data we keep about our decision path
@@ -431,12 +434,25 @@ inline int Tree::PredictLeafIndex(const double* feature_values) const {
   }
 }
 
-inline void Tree::PredictContrib(const double* feature_values, int num_features, double* output) const {
-  output[num_features] += ExpectedValue(0);
+inline void Tree::PredictContrib(const double* feature_values, int num_features, double* output) {
+  output[num_features] += ExpectedValue();
   // Run the recursion with preallocated space for the unique path data
-  const int max_path_len = MaxDepth() + 1;
-  std::vector<PathElement> unique_path_data((max_path_len*(max_path_len + 1)) / 2);
-  TreeSHAP(feature_values, output, 0, 0, unique_path_data.data(), 1, 1, -1);
+  if (num_leaves_ > 1) {
+    const int max_path_len = MaxDepth()+1;
+    PathElement *unique_path_data = new PathElement[(max_path_len*(max_path_len+1))/2];
+    TreeSHAP(feature_values, output, 0, 0, unique_path_data, 1, 1, -1);
+    delete[] unique_path_data;
+  }
+}
+
+inline void Tree::RecomputeLeafDepths(int node, int depth) {
+  if (node == 0) leaf_depth_.resize(num_leaves());
+  if (node < 0) {
+    leaf_depth_[~node] = depth;
+  } else {
+    RecomputeLeafDepths(left_child_[node], depth+1);
+    RecomputeLeafDepths(right_child_[node], depth+1);
+  }
 }
 
 inline int Tree::GetLeaf(const double* feature_values) const {

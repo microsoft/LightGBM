@@ -78,7 +78,7 @@ class TestEngine(unittest.TestCase):
         self.assertLess(ret, 0.25)
         self.assertAlmostEqual(evals_result['valid_0']['binary_logloss'][-1], ret, places=5)
 
-    def test_regreesion(self):
+    def test_regression(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
@@ -132,7 +132,7 @@ class TestEngine(unittest.TestCase):
         lgb_eval = lgb.Dataset(X_train, y_train)
 
         params = {
-            'objective': 'binary',
+            'objective': 'regression',
             'metric': 'auc',
             'verbose': -1,
             'boost_from_average': False,
@@ -149,7 +149,7 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=True,
                         evals_result=evals_result)
         pred = gbm.predict(X_train)
-        self.assertAlmostEqual(pred[-1], pred[0], places=5)
+        np.testing.assert_almost_equal(pred, y)
 
     def test_missing_value_handle_zero(self):
         x = [0, 1, 2, 3, 4, 5, 6, 7, np.nan]
@@ -161,7 +161,7 @@ class TestEngine(unittest.TestCase):
         lgb_eval = lgb.Dataset(X_train, y_train)
 
         params = {
-            'objective': 'binary',
+            'objective': 'regression',
             'metric': 'auc',
             'verbose': -1,
             'boost_from_average': False,
@@ -178,8 +178,7 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=True,
                         evals_result=evals_result)
         pred = gbm.predict(X_train)
-        self.assertAlmostEqual(pred[-1], pred[-2], places=5)
-        self.assertAlmostEqual(pred[-1], pred[0], places=5)
+        np.testing.assert_almost_equal(pred, y)
 
     def test_missing_value_handle_none(self):
         x = [0, 1, 2, 3, 4, 5, 6, 7, np.nan]
@@ -191,7 +190,7 @@ class TestEngine(unittest.TestCase):
         lgb_eval = lgb.Dataset(X_train, y_train)
 
         params = {
-            'objective': 'binary',
+            'objective': 'regression',
             'metric': 'auc',
             'verbose': -1,
             'boost_from_average': False,
@@ -210,6 +209,37 @@ class TestEngine(unittest.TestCase):
         pred = gbm.predict(X_train)
         self.assertAlmostEqual(pred[0], pred[1], places=5)
         self.assertAlmostEqual(pred[-1], pred[0], places=5)
+
+    def test_categorical_handle(self):
+        x = [0, 1, 2, 3, 4, 5, 6, 7]
+        y = [0, 1, 0, 1, 0, 1, 0, 1]
+
+        X_train = np.array(x).reshape(len(x), 1)
+        y_train = np.array(y)
+        lgb_train = lgb.Dataset(X_train, y_train)
+        lgb_eval = lgb.Dataset(X_train, y_train)
+
+        params = {
+            'objective': 'regression',
+            'metric': 'auc',
+            'verbose': -1,
+            'boost_from_average': False,
+            'min_data': 1,
+            'num_leaves': 2,
+            'learning_rate': 1,
+            'min_data_in_bin': 1,
+            'min_data_per_group': 1,
+            'zero_as_missing': True,
+            'categorical_column': 0
+        }
+        evals_result = {}
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=1,
+                        valid_sets=lgb_eval,
+                        verbose_eval=True,
+                        evals_result=evals_result)
+        pred = gbm.predict(X_train)
+        np.testing.assert_almost_equal(pred, y)
 
     def test_multiclass(self):
         X, y = load_digits(10, True)
@@ -444,7 +474,6 @@ class TestEngine(unittest.TestCase):
         gbm3 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
                          categorical_feature=['A', 'B', 'C', 'D'])
         pred3 = list(gbm3.predict(X_test))
-        lgb_train = lgb.Dataset(X, y)
         gbm3.save_model('categorical.model')
         gbm4 = lgb.Booster(model_file='categorical.model')
         pred4 = list(gbm4.predict(X_test))
@@ -462,3 +491,23 @@ class TestEngine(unittest.TestCase):
         tmp_dat_val = tmp_dat.subset(np.arange(80, 100)).subset(np.arange(18))
         params = {'objective': 'regression_l2', 'metric': 'rmse'}
         gbm = lgb.train(params, tmp_dat_train, num_boost_round=20, valid_sets=[tmp_dat_train, tmp_dat_val])
+
+    def test_contribs(self):
+        X, y = load_breast_cancer(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {
+            'objective': 'binary',
+            'metric': 'binary_logloss',
+            'verbose': -1,
+            'num_iteration': 50  # test num_iteration in dict here
+        }
+        lgb_train = lgb.Dataset(X_train, y_train)
+        lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+        evals_result = {}
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=20,
+                        valid_sets=lgb_eval,
+                        verbose_eval=False,
+                        evals_result=evals_result)
+
+        self.assertLess(np.linalg.norm(gbm.predict(X_test, raw_score=True) - np.sum(gbm.predict(X_test, pred_contrib=True), axis=1)), 1e-4)
