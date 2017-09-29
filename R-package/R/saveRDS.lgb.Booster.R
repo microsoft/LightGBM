@@ -43,7 +43,7 @@ saveRDS.lgb.Booster <- function(object,
                                 raw = TRUE) {
   
   # Check if object has a raw value (and if the user wants to store the raw)
-  if (is.na(object$raw) & (raw)) {
+  if (is.na(object$raw) && raw) {
     
     # Save model
     object$save()

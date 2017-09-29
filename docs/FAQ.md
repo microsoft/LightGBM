@@ -1,12 +1,12 @@
 LightGBM FAQ
-=======================
+============
 
 ### Catalog
 
-- [Critical](FAQ.md#Critical)
-- [LightGBM](FAQ.md#LightGBM)
-- [R-package](FAQ.md#R-package)
-- [Python-package](FAQ.md#python-package)
+- [Critical](#critical)
+- [LightGBM](#lightgbm)
+- [R-package](#r-package)
+- [Python-package](#python-package)
 
 ---
 
@@ -14,7 +14,7 @@ LightGBM FAQ
 
 You encountered a critical issue when using LightGBM (crash, prediction error, non sense outputs...). Who should you contact?
 
-If your issue is not critical, just post an issue [Microsoft/LightGBM repository](https://github.com/Microsoft/LightGBM/issues).
+If your issue is not critical, just post an issue in [Microsoft/LightGBM repository](https://github.com/Microsoft/LightGBM/issues).
 
 If it is a critical issue, identify first what error you have:
 
@@ -40,7 +40,7 @@ Remember this is a free/open community support. We may not be available 24/7 to 
 
 - **Question 1**: Where do I find more details about LightGBM parameters?
 
-- **Solution 1**: Look at [Parameters.md](Parameters.md) and [Laurae++/Parameters](https://sites.google.com/view/lauraepp/parameters) website
+- **Solution 1**: Look at [Parameters](./Parameters.md) and [Laurae++/Parameters](https://sites.google.com/view/lauraepp/parameters) website.
 
 ---
 
@@ -52,7 +52,7 @@ Remember this is a free/open community support. We may not be available 24/7 to 
 
 - **Question 3**: When running LightGBM on a large dataset, my computer runs out of RAM.
 
-- **Solution 3**: Multiple solutions: set `histogram_pool_size` parameter to the MB you want to use for LightGBM (histogram_pool_size + dataset size = approximately RAM used), lower `num_leaves` or lower `max_bin` (see [issue #562](https://github.com/Microsoft/LightGBM/issues/562)).
+- **Solution 3**: Multiple solutions: set `histogram_pool_size` parameter to the MB you want to use for LightGBM (histogram_pool_size + dataset size = approximately RAM used), lower `num_leaves` or lower `max_bin` (see [Microsoft/LightGBM#562](https://github.com/Microsoft/LightGBM/issues/562)).
 
 ---
 
@@ -64,7 +64,7 @@ Remember this is a free/open community support. We may not be available 24/7 to 
 
 - **Question 5**: When using LightGBM GPU, I cannot reproduce results over several runs.
 
-- **Solution 5**: It is a normal issue, there is nothing we/you can do about, you may try to use `gpu_use_dp = true` for reproducibility (see [issue #560](https://github.com/Microsoft/LightGBM/pull/560#issuecomment-304561654)). You may also use CPU version.
+- **Solution 5**: It is a normal issue, there is nothing we/you can do about, you may try to use `gpu_use_dp = true` for reproducibility (see [Microsoft/LightGBM#560](https://github.com/Microsoft/LightGBM/pull/560#issuecomment-304561654)). You may also use CPU version.
 
 ---
 
@@ -115,7 +115,18 @@ Remember this is a free/open community support. We may not be available 24/7 to 
 
 ---
 
-- **Question 2**: I see error messages like `Cannot get/set label/weight/init_score/group/num_data/num_feature before construct dataset`, but I already construct dataset by some code like `train = lightgbm.Dataset(X_train, y_train)`, or error messages like `Cannot set predictor/reference/categorical feature after freed raw data, set free_raw_data=False when construct Dataset to avoid this.`.
+- **Question 2**: I see error messages like 
+    ```
+    Cannot get/set label/weight/init_score/group/num_data/num_feature before construct dataset
+    ```
+    but I already construct dataset by some code like
+    ```
+    train = lightgbm.Dataset(X_train, y_train)
+    ```
+    or error messages like
+    ```
+    Cannot set predictor/reference/categorical feature after freed raw data, set free_raw_data=False when construct Dataset to avoid this.
+    ```
 
 - **Solution 2**: Because LightGBM constructs bin mappers to build trees, and train and valid Datasets within one Booster share the same bin mappers, categorical features and feature names etc., the Dataset objects are constructed when construct a Booster. And if you set `free_raw_data=True` (default), the raw data (with Python data struct) will be freed. So, if you want to:
 

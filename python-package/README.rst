@@ -1,9 +1,7 @@
 LightGBM Python Package
 =======================
 
-|License| |PyPI Version|
-
-.. # Uncomment after updating PyPI |Python Versions|
+|License| |Python Versions| |PyPI Version|
 
 Installation
 ------------
@@ -112,4 +110,4 @@ E501 can be ignored (line too long).
 .. |Python Versions| image:: https://img.shields.io/pypi/pyversions/lightgbm.svg
    :target: https://pypi.python.org/pypi/lightgbm
 .. |PyPI Version| image:: https://badge.fury.io/py/lightgbm.svg
-    :target: https://badge.fury.io/py/lightgbm
+   :target: https://badge.fury.io/py/lightgbm

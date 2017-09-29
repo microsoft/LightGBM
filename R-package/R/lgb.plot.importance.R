@@ -46,7 +46,7 @@ lgb.plot.importance <- function(tree_imp,
   top_n <- min(top_n, nrow(tree_imp))
   
   # Parse importance
-  tree_imp <- tree_imp[order(abs(get(measure)), decreasing = TRUE),][1:top_n,]
+  tree_imp <- tree_imp[order(abs(get(measure)), decreasing = TRUE),][seq_len(top_n),]
   
   # Attempt to setup a correct cex
   if (is.null(cex)) {
