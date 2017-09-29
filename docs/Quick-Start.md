@@ -22,10 +22,10 @@ update 12/5/2016:
 
 LightGBM can use categorical feature directly (without one-hot coding). The experiment on [Expo data](http://stat-computing.org/dataexpo/2009/) shows about 8x speed-up compared with one-hot coding.
 
-For the setting details, please refer to [Parameters](./Parameters.md#io-parameters).
+For the setting details, please refer to [Parameters](./Parameters.md).
 
 ### Weight and query/group data
-LightGBM also support weighted training, it needs an additional [weight data](./Parameters.md#weight-data). And it needs an additional [query data](./Parameters.md#query-data) for ranking task.
+LightGBM also support weighted training, it needs an additional [weight data](./Parameters.md). And it needs an additional [query data](./Parameters.md) for ranking task.
 
 update 11/3/2016:
 
@@ -33,7 +33,7 @@ update 11/3/2016:
 2. can specific label column, weight column and query/group id column. Both index and column are supported
 3. can specific a list of ignored columns
 
-For the detailed usage, please refer to [Configuration](./Parameters.md#io-parameters).
+For the detailed usage, please refer to [Configuration](./Parameters.md).
 
 ## Parameter quick look
 
@@ -114,7 +114,7 @@ For example, following command line will keep 'num_trees=10' and ignore same par
 
 ## Examples
 
-* [Binary Classification](../examples/binary_classification)
-* [Regression](../examples/regression)
-* [Lambdarank](../examples/lambdarank)
-* [Parallel Learning](../examples/parallel_learning)
+* [Binary Classification](https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification)
+* [Regression](https://github.com/Microsoft/LightGBM/tree/master/examples/regression)
+* [Lambdarank](https://github.com/Microsoft/LightGBM/tree/master/examples/lambdarank)
+* [Parallel Learning](https://github.com/Microsoft/LightGBM/tree/master/examples/parallel_learning)
