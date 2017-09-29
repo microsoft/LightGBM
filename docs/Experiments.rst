@@ -6,8 +6,8 @@
 
 For the detailed experiment scripts and output logs, please refer to this `repo`_.
 
-**Experiment Data**
-^^^^^^^^^^^^^^^^^^^
+**Data**
+^^^^^^^^
 
 We use 4 datasets to conduct our comparison experiments. Details of data are listed in the following table:
 

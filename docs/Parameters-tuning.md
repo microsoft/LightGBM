@@ -25,7 +25,7 @@ To get good results using a leaf-wise tree, these are some important parameters:
 * Use feature sub-sampling by setting ```feature_fraction```
 * Use small ```max_bin```
 * Use ```save_binary``` to speed up data loading in future learning
-* Use parallel learning, refer to [parallel learning guide](./Parallel-Learning-Guide.md).
+* Use parallel learning, refer to [Parallel Learning Guide](./Parallel-Learning-Guide.rst).
 
 ## For better accuracy
 

@@ -78,7 +78,7 @@ Some important parameters:
   * ```serial```, single machine tree learner
   * ```feature```, feature parallel tree learner
   * ```data```, data parallel tree learner
-  * Refer to [Parallel Learning Guide](./Parallel-Learning-Guide.md) to get more details.
+  * Refer to [Parallel Learning Guide](./Parallel-Learning-Guide.rst) to get more details.
 * ```num_threads```, default=OpenMP_default, type=int, alias=```num_thread```,```nthread```
   * Number of threads for LightGBM. 
   * For the best speed, set this to the number of **real CPU cores**, not the number of threads (most CPU using [hyper-threading](https://en.wikipedia.org/wiki/Hyper-threading) to generate 2 threads per CPU core).
