@@ -341,7 +341,7 @@ class LGBMModel(_LGBMModelBase):
             If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
         callbacks : list of callback functions or None, optional (default=None)
             List of callback functions that are applied at each iteration.
-            See Callbacks in Python-API.md for more information.
+            See Callbacks in Python API for more information.
 
         Returns
         -------
