@@ -206,7 +206,7 @@ public:
 
   virtual data_size_t SplitCategorical(
     uint32_t min_bin, uint32_t max_bin, uint32_t default_bin,
-    uint32_t threshold, data_size_t* data_indices, data_size_t num_data,
+    const uint32_t* threshold, int num_threahold, data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const override {
     if (num_data <= 0) { return 0; }
     data_size_t lte_count = 0;
@@ -214,7 +214,7 @@ public:
     SparseBinIterator<VAL_T> iterator(this, data_indices[0]);
     data_size_t* default_indices = gt_indices;
     data_size_t* default_count = &gt_count;
-    if (default_bin == threshold) {
+    if (Common::FindInBitset(threshold, num_threahold, default_bin)) {
       default_indices = lte_indices;
       default_count = &lte_count;
     }
@@ -223,7 +223,7 @@ public:
       uint32_t bin = iterator.InnerRawGet(idx);
       if (bin < min_bin || bin > max_bin) {
         default_indices[(*default_count)++] = idx;
-      } else if (bin - min_bin == threshold) {
+      } else if (Common::FindInBitset(threshold, num_threahold, bin - min_bin)) {
         lte_indices[lte_count++] = idx;
       } else {
         gt_indices[gt_count++] = idx;

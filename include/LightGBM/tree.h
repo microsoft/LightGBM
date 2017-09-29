@@ -60,7 +60,8 @@ public:
   * \param real_feature Index of feature, the original index on data
   * \param threshold_bin Threshold(bin) of split, use bitset to represent
   * \param num_threshold_bin size of threshold_bin
-  * \param threshold 
+  * \param threshold Thresholds of real feature value, use bitset to represent
+  * \param num_threshold size of threshold
   * \param left_value Model Left child output
   * \param right_value Model Right child output
   * \param left_cnt Count of left child
@@ -68,8 +69,8 @@ public:
   * \param gain Split gain
   * \return The index of new leaf.
   */
-  int SplitCategorical(int leaf, int feature, int real_feature, uint32_t threshold_bin,
-                       double threshold, double left_value, double right_value,
+  int SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin, int num_threshold_bin,
+                       const uint32_t* threshold, int num_threshold, double left_value, double right_value,
                        data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type);
 
   /*! \brief Get the output of one leaf */
@@ -110,33 +111,7 @@ public:
 
   inline int PredictLeafIndex(const double* feature_values) const;
 
-  inline void PredictContrib(const double* feature_values, int num_features, double* output) const;
-
-  inline double ExpectedValue(int node = 0) const;
-
-  inline int MaxDepth() const;
-
-  /*!
-  * \brief Used by TreeSHAP for data we keep about our decision path
-  */
-  struct PathElement {
-    int feature_index;
-    double zero_fraction;
-    double one_fraction;
-
-    // note that pweight is included for convenience and is not tied with the other attributes,
-    // the pweight of the i'th path element is the permuation weight of paths with i-1 ones in them
-    double pweight;
-
-    PathElement() {}
-    PathElement(int i, double z, double o, double w) : feature_index(i), zero_fraction(z), one_fraction(o), pweight(w) {}
-  };
-
-  /*! \brief Polynomial time algorithm for SHAP values (https://arxiv.org/abs/1706.06060) */
-  inline void TreeSHAP(const double *feature_values, double *phi,
-                       int node, int unique_depth,
-                       PathElement *parent_unique_path, double parent_zero_fraction,
-                       double parent_one_fraction, int parent_feature_index) const;
+  inline void PredictContrib(const double* feature_values, int num_features, double* output);
 
   /*! \brief Get Number of leaves*/
   inline int num_leaves() const { return num_leaves_; }
@@ -150,7 +125,7 @@ public:
   inline double split_gain(int split_idx) const { return split_gain_[split_idx]; }
 
   /*! \brief Get the number of data points that fall at or below this node*/
-  inline int data_count(int node = 0) const { return node >= 0 ? internal_count_[node] : leaf_count_[~node]; }
+  inline int data_count(int node) const { return node >= 0 ? internal_count_[node] : leaf_count_[~node]; }
 
   /*!
   * \brief Shrinkage for the tree's output
@@ -161,10 +136,18 @@ public:
     #pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
     for (int i = 0; i < num_leaves_; ++i) {
       leaf_value_[i] *= rate;
-      if (leaf_value_[i] > kMaxTreeOutput) { leaf_value_[i] = kMaxTreeOutput; }
-      else if (leaf_value_[i] < -kMaxTreeOutput) { leaf_value_[i] = -kMaxTreeOutput; }
+      if (leaf_value_[i] > kMaxTreeOutput) { leaf_value_[i] = kMaxTreeOutput; } else if (leaf_value_[i] < -kMaxTreeOutput) { leaf_value_[i] = -kMaxTreeOutput; }
     }
     shrinkage_ *= rate;
+  }
+
+  inline void AddBias(double val) {
+    #pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
+    for (int i = 0; i < num_leaves_; ++i) {
+      leaf_value_[i] = val + leaf_value_[i];
+    }
+    // force to 1.0
+    shrinkage_ = 1.0f;
   }
 
   inline void AsConstantTree(double val) {
@@ -174,13 +157,13 @@ public:
   }
 
   /*! \brief Serialize this object to string*/
-  std::string ToString();
+  std::string ToString() const;
 
   /*! \brief Serialize this object to json*/
-  std::string ToJSON();
+  std::string ToJSON() const;
 
   /*! \brief Serialize this object to if-else statement*/
-  std::string ToIfElse(int index, bool is_predict_leaf_index);
+  std::string ToIfElse(int index, bool is_predict_leaf_index) const;
 
   inline static bool IsZero(double fval) {
     if (fval > -kZeroAsMissingValueRange && fval <= kZeroAsMissingValueRange) {
@@ -213,39 +196,9 @@ public:
 
 private:
 
-  inline std::string NumericalDecisionIfElse(int node) {
-    std::stringstream str_buf;
-    uint8_t missing_type = GetMissingType(decision_type_[node]);
-    bool default_left = GetDecisionType(decision_type_[node], kDefaultLeftMask);
-    if (missing_type == 0 || (missing_type == 1 && default_left && kZeroAsMissingValueRange < threshold_[node])) {
-      str_buf << "if (fval <= " << threshold_[node] << ") {";
-    } else if (missing_type == 1) {
-      if (default_left) {
-        str_buf << "if (fval <= " << threshold_[node] << " || Tree::IsZero(fval)" << " || std::isnan(fval)) {";
-      } else {
-        str_buf << "if (fval <= " << threshold_[node] << " && !Tree::IsZero(fval)" << " && !std::isnan(fval)) {";
-      }
-    } else {
-      if (default_left) {
-        str_buf << "if (fval <= " << threshold_[node] << " || std::isnan(fval)) {";
-      } else {
-        str_buf << "if (fval <= " << threshold_[node] << " && !std::isnan(fval)) {";
-      }
-    }
-    return str_buf.str();
-  }
+  std::string NumericalDecisionIfElse(int node) const;
 
-  inline std::string CategoricalDecisionIfElse(int node) const {
-    uint8_t missing_type = GetMissingType(decision_type_[node]);
-    std::stringstream str_buf;
-    if (missing_type == 2) {
-      str_buf << "if (std::isnan(fval)) { int_fval = -1; } else { int_fval = static_cast<int>(fval); }";
-    } else {
-      str_buf << "if (std::isnan(fval)) { int_fval = 0; } else { int_fval = static_cast<int>(fval); }";
-    }
-    str_buf << "if (int_fval >= 0 &&  int_fval == " << static_cast<int>(threshold_[node]) << ") {";
-    return str_buf.str();
-  }
+  std::string CategoricalDecisionIfElse(int node) const;
 
   inline int NumericalDecision(double fval, int node) const {
     uint8_t missing_type = GetMissingType(decision_type_[node]);
@@ -298,14 +251,18 @@ private:
       }
       int_fval = 0;
     }
-    if (int_fval == static_cast<int>(threshold_[node])) {
+    int cat_idx = int(threshold_[node]);
+    if (Common::FindInBitset(cat_threshold_.data() + cat_boundaries_[cat_idx],
+                             cat_boundaries_[cat_idx + 1] - cat_boundaries_[cat_idx], int_fval)) {
       return left_child_[node];
     }
     return right_child_[node];
   }
 
   inline int CategoricalDecisionInner(uint32_t fval, int node) const {
-    if (fval == threshold_in_bin_[node]) {
+    int cat_idx = int(threshold_in_bin_[node]);
+    if (Common::FindInBitset(cat_threshold_inner_.data() + cat_boundaries_inner_[cat_idx],
+                             cat_boundaries_inner_[cat_idx + 1] - cat_boundaries_inner_[cat_idx], fval)) {
       return left_child_[node];
     }
     return right_child_[node];
@@ -337,20 +294,49 @@ private:
   inline int GetLeaf(const double* feature_values) const;
 
   /*! \brief Serialize one node to json*/
-  inline std::string NodeToJSON(int index);
+  std::string NodeToJSON(int index) const;
 
   /*! \brief Serialize one node to if-else statement*/
-  inline std::string NodeToIfElse(int index, bool is_predict_leaf_index);
+  std::string NodeToIfElse(int index, bool is_predict_leaf_index) const;
+
+  double ExpectedValue() const;
+
+  int MaxDepth();
+
+  /*! \brief This is used fill in leaf_depth_ after reloading a model*/
+  inline void RecomputeLeafDepths(int node = 0, int depth = 0);
+
+  /*!
+  * \brief Used by TreeSHAP for data we keep about our decision path
+  */
+  struct PathElement {
+    int feature_index;
+    double zero_fraction;
+    double one_fraction;
+
+    // note that pweight is included for convenience and is not tied with the other attributes,
+    // the pweight of the i'th path element is the permuation weight of paths with i-1 ones in them
+    double pweight;
+
+    PathElement() {}
+    PathElement(int i, double z, double o, double w) : feature_index(i), zero_fraction(z), one_fraction(o), pweight(w) {}
+  };
+
+  /*! \brief Polynomial time algorithm for SHAP values (https://arxiv.org/abs/1706.06060) */
+  void TreeSHAP(const double *feature_values, double *phi,
+                int node, int unique_depth,
+                PathElement *parent_unique_path, double parent_zero_fraction,
+                double parent_one_fraction, int parent_feature_index) const;
 
   /*! \brief Extend our decision path with a fraction of one and zero extensions for TreeSHAP*/
-  inline static void ExtendPath(PathElement *unique_path, int unique_depth,
-                                double zero_fraction, double one_fraction, int feature_index);
+  static void ExtendPath(PathElement *unique_path, int unique_depth,
+                         double zero_fraction, double one_fraction, int feature_index);
 
   /*! \brief Undo a previous extension of the decision path for TreeSHAP*/
-  inline static void UnwindPath(PathElement *unique_path, int unique_depth, int path_index);
+  static void UnwindPath(PathElement *unique_path, int unique_depth, int path_index);
 
   /*! determine what the total permuation weight would be if we unwound a previous extension in the decision path*/
-  inline static double UnwoundPathSum(const PathElement *unique_path, int unique_depth, int path_index);
+  static double UnwoundPathSum(const PathElement *unique_path, int unique_depth, int path_index);
 
   /*! \brief Number of max leaves*/
   int max_leaves_;
@@ -370,6 +356,10 @@ private:
   /*! \brief A non-leaf node's split threshold in feature value */
   std::vector<double> threshold_;
   int num_cat_;
+  std::vector<int> cat_boundaries_inner_;
+  std::vector<uint32_t> cat_threshold_inner_;
+  std::vector<int> cat_boundaries_;
+  std::vector<uint32_t> cat_threshold_;
   /*! \brief Store the information for categorical feature handle and mising value handle. */
   std::vector<int8_t> decision_type_;
   /*! \brief A non-leaf node's split gain */
@@ -444,143 +434,25 @@ inline int Tree::PredictLeafIndex(const double* feature_values) const {
   }
 }
 
-inline void Tree::ExtendPath(PathElement *unique_path, int unique_depth,
-                                    double zero_fraction, double one_fraction, int feature_index) {
-  unique_path[unique_depth].feature_index = feature_index;
-  unique_path[unique_depth].zero_fraction = zero_fraction;
-  unique_path[unique_depth].one_fraction = one_fraction;
-  unique_path[unique_depth].pweight = (unique_depth == 0 ? 1 : 0);
-  for (int i = unique_depth-1; i >= 0; i--) {
-    unique_path[i+1].pweight += one_fraction*unique_path[i].pweight*(i+1)
-                                / static_cast<double>(unique_depth+1);
-    unique_path[i].pweight = zero_fraction*unique_path[i].pweight*(unique_depth-i)
-                             / static_cast<double>(unique_depth+1);
-  }
-}
-
-inline void Tree::UnwindPath(PathElement *unique_path, int unique_depth, int path_index) {
-  const double one_fraction = unique_path[path_index].one_fraction;
-  const double zero_fraction = unique_path[path_index].zero_fraction;
-  double next_one_portion = unique_path[unique_depth].pweight;
-
-  for (int i = unique_depth-1; i >= 0; --i) {
-    if (one_fraction != 0) {
-      const double tmp = unique_path[i].pweight;
-      unique_path[i].pweight = next_one_portion*(unique_depth+1)
-                               / static_cast<double>((i+1)*one_fraction);
-      next_one_portion = tmp - unique_path[i].pweight*zero_fraction*(unique_depth-i)
-                               / static_cast<double>(unique_depth+1);
-    } else {
-      unique_path[i].pweight = (unique_path[i].pweight*(unique_depth+1))
-                               / static_cast<double>(zero_fraction*(unique_depth-i));
-    }
-  }
-
-  for (int i = path_index; i < unique_depth; ++i) {
-    unique_path[i].feature_index = unique_path[i+1].feature_index;
-    unique_path[i].zero_fraction = unique_path[i+1].zero_fraction;
-    unique_path[i].one_fraction = unique_path[i+1].one_fraction;
-  }
-}
-
-inline double Tree::UnwoundPathSum(const PathElement *unique_path, int unique_depth, int path_index) {
-  const double one_fraction = unique_path[path_index].one_fraction;
-  const double zero_fraction = unique_path[path_index].zero_fraction;
-  double next_one_portion = unique_path[unique_depth].pweight;
-  double total = 0;
-  for (int i = unique_depth-1; i >= 0; --i) {
-    if (one_fraction != 0) {
-      const double tmp = next_one_portion*(unique_depth+1)
-                            / static_cast<double>((i+1)*one_fraction);
-      total += tmp;
-      next_one_portion = unique_path[i].pweight - tmp*zero_fraction*((unique_depth-i)
-                         / static_cast<double>(unique_depth+1));
-    } else {
-      total += (unique_path[i].pweight/zero_fraction)/((unique_depth-i)
-               / static_cast<double>(unique_depth+1));
-    }
-  }
-  return total;
-}
-
-// recursive computation of SHAP values for a decision tree
-inline void Tree::TreeSHAP(const double *feature_values, double *phi,
-                           int node, int unique_depth,
-                           PathElement *parent_unique_path, double parent_zero_fraction,
-                           double parent_one_fraction, int parent_feature_index) const {
-
-  // extend the unique path
-  PathElement *unique_path = parent_unique_path + unique_depth;
-  if (unique_depth > 0) std::copy(parent_unique_path, parent_unique_path+unique_depth, unique_path);
-  ExtendPath(unique_path, unique_depth, parent_zero_fraction,
-             parent_one_fraction, parent_feature_index);
-  const int split_index = split_feature_[node];
-
-  // leaf node
-  if (node < 0) {
-    for (int i = 1; i <= unique_depth; ++i) {
-      const double w = UnwoundPathSum(unique_path, unique_depth, i);
-      const PathElement &el = unique_path[i];
-      phi[el.feature_index] += w*(el.one_fraction-el.zero_fraction)*leaf_value_[~node];
-    }
-
-  // internal node
-  } else {
-    const int hot_index = Decision(feature_values[split_index], node);
-    const int cold_index = (hot_index == left_child_[node] ? right_child_[node] : left_child_[node]);
-    const double w = data_count(node);
-    const double hot_zero_fraction = data_count(hot_index)/w;
-    const double cold_zero_fraction = data_count(cold_index)/w;
-    double incoming_zero_fraction = 1;
-    double incoming_one_fraction = 1;
-
-    // see if we have already split on this feature,
-    // if so we undo that split so we can redo it for this node
-    int path_index = 0;
-    for (; path_index <= unique_depth; ++path_index) {
-      if (unique_path[path_index].feature_index == split_index) break;
-    }
-    if (path_index != unique_depth+1) {
-      incoming_zero_fraction = unique_path[path_index].zero_fraction;
-      incoming_one_fraction = unique_path[path_index].one_fraction;
-      UnwindPath(unique_path, unique_depth, path_index);
-      unique_depth -= 1;
-    }
-
-    TreeSHAP(feature_values, phi, hot_index, unique_depth+1, unique_path,
-             hot_zero_fraction*incoming_zero_fraction, incoming_one_fraction, split_index);
-
-    TreeSHAP(feature_values, phi, cold_index, unique_depth+1, unique_path,
-             cold_zero_fraction*incoming_zero_fraction, 0, split_index);
-  }
-}
-
-inline void Tree::PredictContrib(const double* feature_values, int num_features, double *output) const {
+inline void Tree::PredictContrib(const double* feature_values, int num_features, double* output) {
   output[num_features] += ExpectedValue();
-
   // Run the recursion with preallocated space for the unique path data
-  const int max_path_len = MaxDepth()+1;
-  PathElement *unique_path_data = new PathElement[(max_path_len*(max_path_len+1))/2];
-  TreeSHAP(feature_values, output, 0, 0, unique_path_data, 1, 1, -1);
-  delete[] unique_path_data;
+  if (num_leaves_ > 1) {
+    const int max_path_len = MaxDepth()+1;
+    PathElement *unique_path_data = new PathElement[(max_path_len*(max_path_len+1))/2];
+    TreeSHAP(feature_values, output, 0, 0, unique_path_data, 1, 1, -1);
+    delete[] unique_path_data;
+  }
 }
 
-inline double Tree::ExpectedValue(int node) const {
-  if (node >= 0) {
-    const int l = left_child_[node];
-    const int r = right_child_[node];
-    return (data_count(l)*ExpectedValue(l) + data_count(r)*ExpectedValue(r))/data_count(node);
+inline void Tree::RecomputeLeafDepths(int node, int depth) {
+  if (node == 0) leaf_depth_.resize(num_leaves());
+  if (node < 0) {
+    leaf_depth_[~node] = depth;
   } else {
-    return LeafOutput(~node);
+    RecomputeLeafDepths(left_child_[node], depth+1);
+    RecomputeLeafDepths(right_child_[node], depth+1);
   }
-}
-
-inline int Tree::MaxDepth() const {
-  int max_depth = 0;
-  for (int i = 0; i < num_leaves(); ++i) {
-    if (max_depth < leaf_depth_[i]) max_depth = leaf_depth_[i];
-  }
-  return max_depth;
 }
 
 inline int Tree::GetLeaf(const double* feature_values) const {

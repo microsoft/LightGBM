@@ -1,8 +1,7 @@
 LightGBM Python Package
 =======================
 
-|PyPI version|
-
+|License| |Python Versions| |PyPI Version|
 
 Installation
 ------------
@@ -10,73 +9,86 @@ Installation
 Preparation
 '''''''''''
 
-`setuptools <https://pypi.python.org/pypi/setuptools>`_ is needed. 
+`setuptools <https://pypi.python.org/pypi/setuptools>`_ is needed.
 
 For Mac OS X users, gcc with OpenMP support must be installed first. Refer to `wiki <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#osx>`_ for installing gcc with OpenMP support.
 
 Note: 32-bit python is not supported. Please install 64-bit version.
 
-Install from pip
-''''''''''''''''
+Install from `PyPI <https://pypi.python.org/pypi/lightgbm>`_ using ``pip``
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+For Windows users, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if Visual Studio (2013, 2015 or 2017) is not installed.
 
-Install `wheel <http://pythonwheels.com>`_ via ``pip install wheel`` first. For windows user, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if Visual Studio(2015 or 2017) is not installed.
+Install `wheel <http://pythonwheels.com>`_ via ``pip install wheel`` first. After that download the wheel file and install from it:
 
+.. code:: sh
 
-``pip install lightgbm``
+    pip install lightgbm
 
+Build from sources
+******************
 
-Install source package from pip
-*******************************
+.. code:: sh
 
-``pip install --no-binary :all: lightgbm``
+    pip install --no-binary :all: lightgbm
 
+For Linux and Mac OS X users, installation from sources requires installed `CMake <https://cmake.org/>`_.
 
-Note: Installation from source package require installing `cmake <https://cmake.org/>`_ first.
+For Mac OS X users, you need to specify compilers by runnig ``export CXX=g++-7 CC=gcc-7`` first.
 
-For Windows user, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed, and `cmake <https://cmake.org/>`_ must be version 3.8 or higher.
+For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed. If you get any errors during installation, you may need to install `CMake <https://cmake.org/>`_ (version 3.8 or higher).
 
-For OSX user, you need to run ```export CXX=g++-7 CC=gcc-7``` before running ```pip install ... ```.
+Build GPU version
+~~~~~~~~~~~~~~~~~
 
-Install GPU version:
+.. code:: sh
 
-``pip install lightgbm --install-option=--gpu``
+    pip install lightgbm --install-option=--gpu
 
-Note: Boost and OpenCL are needed: details for installation can be found in `gpu-support <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support>`_. Need to add OpenCL_INCLUDE_DIR to PATH and export BOOST_ROOT before installation.
+For Windows users, `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case.
 
-Install with MinGW on Windows:
+Note: Boost and OpenCL are needed: details for installation can be found in `gpu-support <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support>`_. You need to add ``OpenCL_INCLUDE_DIR`` to the environmental variable **'PATH'** and export ``BOOST_ROOT`` before installation.
 
-``pip install lightgbm --install-option=--mingw``
+Build with MinGW-w64 on Windows
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code:: sh
+
+    pip install lightgbm --install-option=--mingw
+
+Note: `CMake <https://cmake.org/>`_ and `MinGW-w64 <https://mingw-w64.org/>`_ should be installed first.
 
 Install from GitHub
 '''''''''''''''''''
 
-Installation from GitHub require installing `cmake <https://cmake.org/>`_ first. 
+For Linux and Mac OS X users, installation from GitHub requires installed `CMake <https://cmake.org/>`_.
 
-For Windows user, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed, and `cmake <https://cmake.org/>`_ must be version 3.8 or higher.
+For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed. If you get any errors during installation and there is the warning ``WARNING:LightGBM:Compilation with MSBuild from existing solution file failed.`` in the log, you should install `CMake <https://cmake.org/>`_ (version 3.8 or higher).
 
 .. code:: sh
 
-    git clone --recursive https://github.com/Microsoft/LightGBM
+    git clone --recursive https://github.com/Microsoft/LightGBM.git
     cd LightGBM/python-package
-    # export CXX=g++-7 CC=gcc-7 # for OSX
+    # export CXX=g++-7 CC=gcc-7  # for Mac OS X users only
     python setup.py install
 
-``sudo`` (or administrator rights in Windows) may is needed to perform ``python setup.py install``.
+Note: ``sudo`` (or administrator rights in Windows) may be needed to perform the command.
 
-Use ``python setup.py install --mingw`` to use MinGW in Windows.
+Run ``python setup.py install --mingw`` if you want to use MinGW-w64 on Windows instead of Visual Studio. `CMake <https://cmake.org/>`_ and `MinGW-w64 <https://mingw-w64.org/>`_ should be installed first.
 
-Use ``python setup.py install --gpu`` to enable GPU support. Boost and OpenCL are needed: details for installation can be found in `gpu-support <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support>`_.
+Run ``python setup.py install --gpu`` to enable GPU support. For Windows users, `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case. Boost and OpenCL are needed: details for installation can be found in `gpu-support <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support>`_.
+
+If you get any errors during installation or due to any other reason, you may want to build dynamic library from sources by any method you prefer (see `Installation-Guide <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide>`_) and then run ``python setup.py install --precompile``.
 
 Examples
 --------
 
-Refer to the walk through examples in `python-guide folder <https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide>`_
-
+Refer to the walk through examples in `python-guide folder <https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide>`_.
 
 Troubleshooting
 ---------------
 
-Refer to `FAQ <https://github.com/Microsoft/LightGBM/tree/master/docs/FAQ.md>`_ 
+Refer to `FAQ <https://github.com/Microsoft/LightGBM/tree/master/docs/FAQ.md>`_.
 
 Developments
 ------------
@@ -93,5 +105,9 @@ The code style of python package follows `pep8 <https://www.python.org/dev/peps/
 
 E501 can be ignored (line too long).
 
-.. |PyPI version| image:: https://badge.fury.io/py/lightgbm.svg
-    :target: https://badge.fury.io/py/lightgbm
+.. |License| image:: https://img.shields.io/badge/license-MIT-blue.svg
+   :target: https://github.com/Microsoft/LightGBM/blob/master/LICENSE
+.. |Python Versions| image:: https://img.shields.io/pypi/pyversions/lightgbm.svg
+   :target: https://pypi.python.org/pypi/lightgbm
+.. |PyPI Version| image:: https://badge.fury.io/py/lightgbm.svg
+   :target: https://badge.fury.io/py/lightgbm

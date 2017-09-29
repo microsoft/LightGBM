@@ -54,7 +54,7 @@ public:
     int num_tree_per_iteration = num_class_;
     int num_pred_per_row = num_class_;
     if (objective != nullptr) {
-      num_tree_per_iteration = objective->NumTreePerIteration();
+      num_tree_per_iteration = objective->NumModelPerIteration();
       num_pred_per_row = objective->NumPredictOneRow();
     }
     if (objective != nullptr) {

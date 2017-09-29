@@ -114,7 +114,7 @@ public:
 
   bool SkipEmptyClass() const override { return true; }
 
-  int NumTreePerIteration() const override { return num_class_; }
+  int NumModelPerIteration() const override { return num_class_; }
 
   int NumPredictOneRow() const override { return num_class_; }
 
@@ -206,7 +206,7 @@ public:
 
   bool SkipEmptyClass() const override { return true; }
 
-  int NumTreePerIteration() const override { return num_class_; }
+  int NumModelPerIteration() const override { return num_class_; }
 
   int NumPredictOneRow() const override { return num_class_; }
 

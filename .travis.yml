@@ -2,49 +2,53 @@ language: cpp
 sudo: required
 dist: trusty
 
+git:
+  submodules: true
+
 compiler:
   - gcc
 
+os:
+  - linux
+  - osx
+
+env:
+  global:
+    - PYTHON_VERSION=3.6
+  matrix:
+    - TASK=regular
+    - TASK=mpi PYTHON_VERSION=2.7
+    - TASK=pylint
+    - TASK=if-else
+    - TASK=sdist PYTHON_VERSION=3.4
+    - TASK=bdist PYTHON_VERSION=3.5
+    - TASK=gpu METHOD=source
+    - TASK=gpu METHOD=pip
+
 matrix:
-  include:
-    - os: linux
-      env: TASK=regular
-    - os: linux
-      env: TASK=mpi
-    - os: linux
+  exclude:
+    - os: osx
       env: TASK=gpu METHOD=source
-    - os: linux
-      env: TASK=sdist
-    - os: linux
+    - os: osx
       env: TASK=gpu METHOD=pip
-    - os: linux
-      env: TASK=bdist
-    - os: linux
-      env: TASK=pylint
-    - os: linux
+    - os: osx
       env: TASK=if-else
     - os: osx
-      env: TASK=regular
-    - os: osx
-      env: TASK=mpi
-    - os: osx
-      env: TASK=sdist
-    - os: osx
-      env: TASK=bdist
+      env: TASK=pylint
 
 before_install:
-- test -n $CC  && unset CC
-- test -n $CXX && unset CXX
+  - test -n $CC  && unset CC
+  - test -n $CXX && unset CXX
 
 install:
-- bash .travis/setup.sh
-- bash conda.sh -b -p $HOME/miniconda
-- export PATH="$HOME/miniconda/bin:$PATH"
-- conda config --set always_yes yes --set changeps1 no
-- conda update -q conda
+  - bash .travis/setup.sh
+  - bash conda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
 
 script:
-- bash .travis/test.sh
+  - bash .travis/test.sh
 
 notifications:
   email: false

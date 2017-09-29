@@ -72,6 +72,7 @@ namespace LightGBM {
   std::vector<double> GreedyFindBin(const double* distinct_values, const int* counts,
     int num_distinct_values, int max_bin, size_t total_cnt, int min_data_in_bin) {
     std::vector<double> bin_upper_bound;
+    CHECK(max_bin > 0);
     if (num_distinct_values <= max_bin) {
       bin_upper_bound.clear();
       int cur_cnt_inbin = 0;
@@ -170,6 +171,7 @@ namespace LightGBM {
 
     if (left_cnt > 0) {
       int left_max_bin = static_cast<int>(static_cast<double>(left_cnt_data) / (total_sample_cnt - cnt_zero) * (max_bin - 1));
+      left_max_bin = std::max(1, left_max_bin);
       bin_upper_bound = GreedyFindBin(distinct_values, counts, left_cnt, left_max_bin, left_cnt_data, min_data_in_bin);
       bin_upper_bound.back() = -kZeroAsMissingValueRange;
     }
@@ -184,6 +186,7 @@ namespace LightGBM {
 
     if (right_start >= 0) {
       int right_max_bin = max_bin - 1 - static_cast<int>(bin_upper_bound.size());
+      CHECK(right_max_bin > 0);
       auto right_bounds = GreedyFindBin(distinct_values + right_start, counts + right_start,
         num_distinct_values - right_start, right_max_bin, right_cnt_data, min_data_in_bin);
       bin_upper_bound.push_back(kZeroAsMissingValueRange);

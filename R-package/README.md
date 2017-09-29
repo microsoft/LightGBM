@@ -6,7 +6,7 @@ Installation
 
 ### Preparation
 
-You need to install git and [cmake](https://cmake.org/) first.
+You need to install git and [CMake](https://cmake.org/) first.
 
 Note: 32-bit R/Rtools is not supported.
 
@@ -14,7 +14,7 @@ Note: 32-bit R/Rtools is not supported.
 
 Installing [Rtools](https://cran.r-project.org/bin/windows/Rtools/) is mandatory, and only support the 64-bit version. It requires to add to PATH the Rtools MinGW64 folder, if it was not done automatically during installation.
 
-The default compiler is Visual Studio (or [MS Build](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017)) in Windows, with an automatic fallback to Rtools or any [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) available (this means if you have only Rtools and cmake, it will compile fine).
+The default compiler is Visual Studio (or [MS Build](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017)) in Windows, with an automatic fallback to Rtools or any [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) available (this means if you have only Rtools and CMake, it will compile fine).
 
 To force the usage of Rtools / MinGW, you can set `use_mingw` to `TRUE` in `R-package/src/install.libs.R`.
 
@@ -75,7 +75,7 @@ model <- lgb.cv(params, dtrain, 10, nfold=5, min_data=1, learning_rate=1, early_
 ```
 
 Installation with precompiled dll/lib from R using GitHub
-------------
+---------------------------------------------------------
 
 You can install LightGBM R-package from GitHub with devtools thanks to a helper package for LightGBM.
 
@@ -86,7 +86,7 @@ You will need:
 * Precompiled LightGBM dll/lib
 * MinGW / Visual Studio / gcc (depending on your OS and your needs) with make in PATH environment variable
 * git in PATH environment variable
-* [cmake](https://cmake.org/) in PATH environment variable
+* [CMake](https://cmake.org/) in PATH environment variable
 * [lgbdl](https://github.com/Laurae2/lgbdl/) R-package, which can be installed using `devtools::install_github("Laurae2/lgbdl")`
 * [Rtools](https://cran.r-project.org/bin/windows/Rtools/) if using Windows
 
@@ -125,7 +125,7 @@ lgb.dl(commit = "master",
 For more details about options, please check [Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/) R-package.
 
 Examples
-------------
+--------
 
 Please visit [demo](demo):
 

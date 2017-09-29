@@ -586,7 +586,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
                                   bool is_constant_hessian,
                                   HistogramBinEntry* hist_data) const {
 
-  if (leaf_idx < 0 || num_data <= 0 || hist_data == nullptr) {
+  if (leaf_idx < 0 || num_data < 0 || hist_data == nullptr) {
     return;
   }
 

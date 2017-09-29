@@ -3,7 +3,6 @@
 import math
 import os
 import unittest
-import warnings
 
 import lightgbm as lgb
 import numpy as np
@@ -13,6 +12,18 @@ from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
 from sklearn.externals import joblib
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.utils.estimator_checks import (_yield_all_checks, SkipTest,
+                                            check_parameters_default_constructible)
+try:
+    from sklearn.utils.estimator_checks import check_no_fit_attributes_set_in_init
+    sklearn_at_least_019 = True
+except ImportError:
+    sklearn_at_least_019 = False
+try:
+    import pandas as pd
+    IS_PANDAS_INSTALLED = True
+except ImportError:
+    IS_PANDAS_INSTALLED = False
 
 
 def multi_error(y_true, y_pred):
@@ -32,16 +43,16 @@ class TestSklearn(unittest.TestCase):
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
         ret = log_loss(y_test, gbm.predict_proba(X_test))
         self.assertLess(ret, 0.15)
-        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['binary_logloss'][gbm.best_iteration - 1], places=5)
+        self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['binary_logloss'][gbm.best_iteration_ - 1], places=5)
 
-    def test_regreesion(self):
+    def test_regression(self):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(n_estimators=50, silent=True)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
         ret = mean_squared_error(y_test, gbm.predict(X_test))
         self.assertLess(ret, 16)
-        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['l2'][gbm.best_iteration - 1], places=5)
+        self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1], places=5)
 
     def test_multiclass(self):
         X, y = load_digits(10, True)
@@ -51,7 +62,7 @@ class TestSklearn(unittest.TestCase):
         ret = multi_error(y_test, gbm.predict(X_test))
         self.assertLess(ret, 0.2)
         ret = multi_logloss(y_test, gbm.predict_proba(X_test))
-        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['multi_logloss'][gbm.best_iteration - 1], places=5)
+        self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['multi_logloss'][gbm.best_iteration_ - 1], places=5)
 
     def test_lambdarank(self):
         X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.train'))
@@ -74,7 +85,7 @@ class TestSklearn(unittest.TestCase):
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
         ret = mean_squared_error(y_test, gbm.predict(X_test))
         self.assertLess(ret, 100)
-        self.assertAlmostEqual(ret, gbm.evals_result['valid_0']['l2'][gbm.best_iteration - 1], places=5)
+        self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1], places=5)
 
     def test_binary_classification_with_custom_objective(self):
         def logregobj(y_true, y_pred):
@@ -171,9 +182,51 @@ class TestSklearn(unittest.TestCase):
         y_pred_2 = clf_2.fit(X_train, y_train).predict_proba(X_test)
         np.testing.assert_allclose(y_pred_1, y_pred_2)
 
-        # Tests that warnings were raised
-        with warnings.catch_warnings(record=True) as w:
-            clf_1.get_params()
-            clf_2.set_params(nthread=-1).fit(X_train, y_train)
-            self.assertEqual(len(w), 2)
-            self.assertTrue(issubclass(w[-1].category, Warning))
+    def test_sklearn_integration(self):
+        # sklearn <0.19 cannot accept instance, but many tests could be passed only with min_data=1 and min_data_in_bin=1
+        if sklearn_at_least_019:
+            # we cannot use `check_estimator` directly since there is no skip test mechanism
+            for name, estimator in ((lgb.sklearn.LGBMClassifier.__name__, lgb.sklearn.LGBMClassifier),
+                                    (lgb.sklearn.LGBMRegressor.__name__, lgb.sklearn.LGBMRegressor)):
+                check_parameters_default_constructible(name, estimator)
+                check_no_fit_attributes_set_in_init(name, estimator)
+                # we cannot leave default params (see https://github.com/Microsoft/LightGBM/issues/833)
+                estimator = estimator(min_child_samples=1, min_data_in_bin=1)
+                for check in _yield_all_checks(name, estimator):
+                    if check.__name__ == 'check_estimators_nan_inf':
+                        continue  # skip test because LightGBM deals with nan
+                    try:
+                        check(name, estimator)
+                    except SkipTest as message:
+                        warnings.warn(message, SkipTestWarning)
+
+    @unittest.skipIf(not IS_PANDAS_INSTALLED, 'pandas not installed')
+    def test_pandas_categorical(self):
+        X = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 75),  # str
+                          "B": np.random.permutation([1, 2, 3] * 100),  # int
+                          "C": np.random.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
+                          "D": np.random.permutation([True, False] * 150)})  # bool
+        y = np.random.permutation([0, 1] * 150)
+        X_test = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'e'] * 20),
+                               "B": np.random.permutation([1, 3] * 30),
+                               "C": np.random.permutation([0.1, -0.1, 0.2, 0.2] * 15),
+                               "D": np.random.permutation([True, False] * 30)})
+        for col in ["A", "B", "C", "D"]:
+            X[col] = X[col].astype('category')
+            X_test[col] = X_test[col].astype('category')
+        gbm0 = lgb.sklearn.LGBMClassifier().fit(X, y)
+        pred0 = list(gbm0.predict(X_test))
+        gbm1 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=[0])
+        pred1 = list(gbm1.predict(X_test))
+        gbm2 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=['A'])
+        pred2 = list(gbm2.predict(X_test))
+        gbm3 = lgb.sklearn.LGBMClassifier().fit(X, y, categorical_feature=['A', 'B', 'C', 'D'])
+        pred3 = list(gbm3.predict(X_test))
+        gbm3.booster_.save_model('categorical.model')
+        gbm4 = lgb.Booster(model_file='categorical.model')
+        pred4 = list(gbm4.predict(X_test))
+        pred_prob = list(gbm0.predict_proba(X_test)[:, 1])
+        np.testing.assert_almost_equal(pred0, pred1)
+        np.testing.assert_almost_equal(pred0, pred2)
+        np.testing.assert_almost_equal(pred0, pred3)
+        np.testing.assert_almost_equal(pred_prob, pred4)
