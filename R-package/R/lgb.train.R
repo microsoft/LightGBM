@@ -113,8 +113,9 @@ lgb.train <- function(params = list(),
     begin_iteration <- predictor$current_iter() + 1
   }
   # Check for number of rounds passed as parameter - in case there are multiple ones, take only the first one
-  if (sum(names(params) %in% c("num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds")) > 0) {
-    end_iteration <- begin_iteration + params[[which(names(params) %in% c("num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds"))[1]]] - 1
+  n_rounds <- c("num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds")
+  if (any(names(params) %in% n_rounds)) {
+    end_iteration <- begin_iteration + params[[which(names(params) %in% n_rounds)[1]]] - 1
   } else {
     end_iteration <- begin_iteration + nrounds - 1
   }
@@ -131,7 +132,7 @@ lgb.train <- function(params = list(),
     # One or more validation dataset
     
     # Check for list as input and type correctness by object
-    if (!is.list(valids) || !all(sapply(valids, lgb.is.Dataset))) {
+    if (!is.list(valids) || !all(vapply(valids, lgb.is.Dataset, logical(1)))) {
       stop("lgb.train: valids must be a list of lgb.Dataset elements")
     }
     
@@ -192,19 +193,20 @@ lgb.train <- function(params = list(),
   }
   
   # Add printing log callback
-  if (verbose > 0 & eval_freq > 0) {
+  if (verbose > 0 && eval_freq > 0) {
     callbacks <- add.cb(callbacks, cb.print.evaluation(eval_freq))
   }
   
   # Add evaluation log callback
-  if (record & length(valids) > 0) {
+  if (record && length(valids) > 0) {
     callbacks <- add.cb(callbacks, cb.record.evaluation())
   }
   
   # Check for early stopping passed as parameter when adding early stopping callback
-  if (sum(names(params) %in% c("early_stopping_round", "early_stopping_rounds", "early_stopping")) > 0) {
-    if (params[[which(names(params) %in% c("early_stopping_round", "early_stopping_rounds", "early_stopping"))[1]]] > 0) {
-      callbacks <- add.cb(callbacks, cb.early.stop(params[[which(names(params) %in% c("early_stopping_round", "early_stopping_rounds", "early_stopping"))[1]]], verbose = verbose))
+  early_stop <- c("early_stopping_round", "early_stopping_rounds", "early_stopping")
+  if (any(names(params) %in% early_stop)) {
+    if (params[[which(names(params) %in% early_stop)[1]]] > 0) {
+      callbacks <- add.cb(callbacks, cb.early.stop(params[[which(names(params) %in% early_stop)[1]]], verbose = verbose))
     }
   } else {
     if (!is.null(early_stopping_rounds)) {
@@ -231,7 +233,7 @@ lgb.train <- function(params = list(),
   env$end_iteration <- end_iteration
   
   # Start training model using number of iterations to start and end with
-  for (i in seq(from = begin_iteration, to = end_iteration)) {
+  for (i in seq.int(from = begin_iteration, to = end_iteration)) {
     
     # Overwrite iteration in environment
     env$iteration <- i
