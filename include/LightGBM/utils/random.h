@@ -81,7 +81,7 @@ public:
       }
     } else {
       std::set<int> sample_set;
-      while (sample_set.size() < K) {
+      while (static_cast<int>(sample_set.size()) < K) {
         int next = RandInt32() % N;
         if (sample_set.count(next) == 0) {
           sample_set.insert(next);
