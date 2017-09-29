@@ -78,7 +78,7 @@ Refere to the comments in `c\_api.h <https://github.com/Microsoft/LightGBM/blob/
 High Level Language Package
 ---------------------------
 
-See the implementations at `python-package <https://github.com/Microsoft/LightGBM/tree/master/python-package/lightgbm>`__ and `R-package <https://github.com/Microsoft/LightGBM/tree/master/R-package>`__.
+See the implementations at `Python-package <https://github.com/Microsoft/LightGBM/tree/master/python-package/lightgbm>`__ and `R-package <https://github.com/Microsoft/LightGBM/tree/master/R-package>`__.
 
 Ask Questions
 -------------

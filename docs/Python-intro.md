@@ -1,7 +1,7 @@
 Python Package Introduction
 ===========================
 
-This document gives a basic walkthrough of LightGBM python package.
+This document gives a basic walkthrough of LightGBM Python-package.
 
 ***List of other Helpful Links***
 * [Python Examples](../examples/python-guide/)
@@ -10,25 +10,28 @@ This document gives a basic walkthrough of LightGBM python package.
 
 Install
 -------
+
 * Install the library first, follow the wiki [here](./Installation-Guide.md).
-* Install python-package dependencies, `setuptools`, `numpy` and `scipy` is required, `scikit-learn` is required for sklearn interface and recommended. Run:
+* Install Python-package dependencies, `setuptools`, `numpy` and `scipy` is required, `scikit-learn` is required for sklearn interface and recommended. Run:
 ```
 pip install setuptools numpy scipy scikit-learn -U
 ```
 
-* In the  `python-package` directory, run
+* In the `python-package` directory, run
 ```
 python setup.py install
 ```
 
-* To verify your installation, try to `import lightgbm` in Python.
+* To verify your installation, try to `import lightgbm` in Python
 ```
 import lightgbm as lgb
 ```
 
 Data Interface
 --------------
-The LightGBM python module is able to load data from:
+
+The LightGBM Python module is able to load data from:
+
 - libsvm/tsv/csv txt format file
 - Numpy 2D array, pandas object
 - LightGBM binary file

@@ -45,7 +45,7 @@ News
 
 12/05/2016 : **Categorical Features as input directly** (without one-hot coding). 
 
-12/02/2016 : Release [**python-package**](https://github.com/Microsoft/LightGBM/tree/master/python-package) beta version, welcome to have a try and provide feedback.
+12/02/2016 : Release [**Python-package**](https://github.com/Microsoft/LightGBM/tree/master/python-package) beta version, welcome to have a try and provide feedback.
 
 
 External (unofficial) Repositories
@@ -59,7 +59,7 @@ JPMML: https://github.com/jpmml/jpmml-lightgbm
 Get Started and Documentation
 -----------------------------
 
-Install by following the guide for the [command line program](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide), [Python package](https://github.com/Microsoft/LightGBM/tree/master/python-package) or [R-package](https://github.com/Microsoft/LightGBM/tree/master/R-package). Then please see the [Quick Start](https://github.com/Microsoft/LightGBM/wiki/Quick-Start) guide.
+Install by following the guide for the [command line program](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide), [Python-package](https://github.com/Microsoft/LightGBM/tree/master/python-package) or [R-package](https://github.com/Microsoft/LightGBM/tree/master/R-package). Then please see the [Quick Start](https://github.com/Microsoft/LightGBM/wiki/Quick-Start) guide.
 
 Our primary documentation is at https://lightgbm.readthedocs.io/ and is generated from this repository.
 

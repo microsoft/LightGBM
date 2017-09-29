@@ -1,9 +1,9 @@
 Python Package Examples
 =======================
 
-Here is an example for LightGBM to use python package.
+Here is an example for LightGBM to use Python-package.
 
-***You should install lightgbm (both c++ and python verion) first.***
+***You should install lightgbm (both c++ and Python verion) first.***
 
 For the installation, check the wiki [here](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide).
 

@@ -15,7 +15,7 @@ Preparation
 
 For Mac OS X users, gcc with OpenMP support must be installed first. Refer to `wiki <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#osx>`_ for installing gcc with OpenMP support.
 
-Note: 32-bit python is not supported. Please install 64-bit version.
+Note: 32-bit Python is not supported. Please install 64-bit version.
 
 Install from `PyPI <https://pypi.python.org/pypi/lightgbm>`_ using ``pip``
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -85,7 +85,7 @@ If you get any errors during installation or due to any other reason, you may wa
 Examples
 --------
 
-Refer to the walk through examples in `python-guide folder <https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide>`_.
+Refer to the walk through examples in `Python guide folder <https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide>`_.
 
 Troubleshooting
 ---------------
@@ -95,7 +95,7 @@ Refer to `FAQ <https://github.com/Microsoft/LightGBM/tree/master/docs/FAQ.md>`_.
 Developments
 ------------
 
-The code style of python package follows `pep8 <https://www.python.org/dev/peps/pep-0008/>`_. If you would like to make a contribution and not familiar with pep-8, please check the pep8 style guide first. Otherwise, the check won't pass. You should be careful about:
+The code style of Python-package follows `pep8 <https://www.python.org/dev/peps/pep-0008/>`_. If you would like to make a contribution and not familiar with pep-8, please check the pep8 style guide first. Otherwise, the check won't pass. You should be careful about:
 
 - E1 Indentation (check pep8 link above)
 - E202 whitespace before and after brackets

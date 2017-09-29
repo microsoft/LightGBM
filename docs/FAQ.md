@@ -27,9 +27,9 @@ If it is a critical issue, identify first what error you have:
 
 Depending on the answers, while opening your issue, feel free to ping (just mention them with the arobase (@) symbol) appropriately so we can attempt to solve your problem faster:
 
-* [@guolinke](https://github.com/guolinke) (C++ code / R package / Python package)
-* [@Laurae2](https://github.com/Laurae2) (R package)
-* [@wxchan](https://github.com/wxchan) (Python package)
+* [@guolinke](https://github.com/guolinke) (C++ code / R-package / Python-package)
+* [@Laurae2](https://github.com/Laurae2) (R-package)
+* [@wxchan](https://github.com/wxchan) (Python-package)
 * [@huanzhang12](https://github.com/huanzhang12) (GPU support)
 
 Remember this is a free/open community support. We may not be available 24/7 to provide support.
@@ -111,13 +111,13 @@ Remember this is a free/open community support. We may not be available 24/7 to 
     setup.py directory, *never* absolute paths.
     ```
 
-- **Solution 1**: this error should be solved in latest version. If you still meet this error, try to remove lightgbm.egg-info folder in your python-package and reinstall, or check [this thread on stackoverflow](http://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path).
+- **Solution 1**: this error should be solved in latest version. If you still meet this error, try to remove lightgbm.egg-info folder in your Python-package and reinstall, or check [this thread on stackoverflow](http://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path).
 
 ---
 
 - **Question 2**: I see error messages like `Cannot get/set label/weight/init_score/group/num_data/num_feature before construct dataset`, but I already construct dataset by some code like `train = lightgbm.Dataset(X_train, y_train)`, or error messages like `Cannot set predictor/reference/categorical feature after freed raw data, set free_raw_data=False when construct Dataset to avoid this.`.
 
-- **Solution 2**: Because LightGBM constructs bin mappers to build trees, and train and valid Datasets within one Booster share the same bin mappers, categorical features and feature names etc., the Dataset objects are constructed when construct a Booster. And if you set `free_raw_data=True` (default), the raw data (with python data struct) will be freed. So, if you want to:
+- **Solution 2**: Because LightGBM constructs bin mappers to build trees, and train and valid Datasets within one Booster share the same bin mappers, categorical features and feature names etc., the Dataset objects are constructed when construct a Booster. And if you set `free_raw_data=True` (default), the raw data (with Python data struct) will be freed. So, if you want to:
 
   + get label(or weight/init_score/group) before construct dataset, it's same as get `self.label`
   + set label(or weight/init_score/group) before construct dataset, it's same as `self.label=some_label_array`
