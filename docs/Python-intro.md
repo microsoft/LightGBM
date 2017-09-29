@@ -17,7 +17,7 @@ Install Python-package dependencies, `setuptools`, `wheel`, `numpy` and `scipy` 
 pip install setuptools wheel numpy scipy scikit-learn -U
 ```
 
-Refer to [Python-package](https://github.com/Microsoft/LightGBM/tree/master/python-package) folder.
+Refer to [Python-package](https://github.com/Microsoft/LightGBM/tree/master/python-package) folder for the installation guide.
 
 To verify your installation, try to `import lightgbm` in Python:
 
