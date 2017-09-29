@@ -11,18 +11,16 @@ This document gives a basic walkthrough of LightGBM Python-package.
 Install
 -------
 
-* Install the library first, follow the wiki [here](./Installation-Guide.md).
-* Install Python-package dependencies, `setuptools`, `numpy` and `scipy` is required, `scikit-learn` is required for sklearn interface and recommended. Run:
+Install Python-package dependencies, `setuptools`, `wheel`, `numpy` and `scipy` are required, `scikit-learn` is required for sklearn interface and recommended:
+
 ```
-pip install setuptools numpy scipy scikit-learn -U
+pip install setuptools wheel numpy scipy scikit-learn -U
 ```
 
-* In the `python-package` directory, run
-```
-python setup.py install
-```
+Refer to [Python-package](https://github.com/Microsoft/LightGBM/tree/master/python-package) folder.
 
-* To verify your installation, try to `import lightgbm` in Python
+To verify your installation, try to `import lightgbm` in Python:
+
 ```
 import lightgbm as lgb
 ```

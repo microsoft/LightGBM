@@ -74,7 +74,7 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
   * For parallel learning, should not use full CPU cores since this will cause poor performance for the network.
 * `device`, default=`cpu`, options=`cpu`,`gpu`
   * Choose device for the tree learning, can use gpu to achieve the faster learning.
-  * Note: 1. Recommend use the smaller `max_bin`(e.g `63`) to get the better speed up. 2. For the faster speed, GPU use 32-bit float point to sum up by default, may affect the accuracy for some tasks. You can set `gpu_use_dp=true` to enable 64-bit float point, but it will slow down the training. 3. Refer to [Installation Guide](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support) to build with GPU .
+  * Note: 1. Recommend use the smaller `max_bin`(e.g `63`) to get the better speed up. 2. For the faster speed, GPU use 32-bit float point to sum up by default, may affect the accuracy for some tasks. You can set `gpu_use_dp=true` to enable 64-bit float point, but it will slow down the training. 3. Refer to [Installation Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version) to build with GPU .
 
 
 ## Learning control parameters

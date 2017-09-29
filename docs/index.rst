@@ -10,7 +10,7 @@ Welcome to LightGBM's documentation!
    :maxdepth: 1
    :caption: Contents:
 
-   Installation Guide <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide>
+   Installation Guide <Installation-Guide>
    Quick Start <Quick-Start>
    Python Quick Start <Python-intro>
    Features <Features>
