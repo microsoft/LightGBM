@@ -132,7 +132,7 @@ class TestEngine(unittest.TestCase):
         lgb_eval = lgb.Dataset(X_train, y_train)
 
         params = {
-            'objective': 'binary',
+            'objective': 'regression',
             'metric': 'auc',
             'verbose': -1,
             'boost_from_average': False,
@@ -149,7 +149,7 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=True,
                         evals_result=evals_result)
         pred = gbm.predict(X_train)
-        self.assertAlmostEqual(pred[-1], pred[0], places=5)
+        np.testing.assert_almost_equal(pred, y)
 
     def test_missing_value_handle_zero(self):
         x = [0, 1, 2, 3, 4, 5, 6, 7, np.nan]
@@ -161,7 +161,7 @@ class TestEngine(unittest.TestCase):
         lgb_eval = lgb.Dataset(X_train, y_train)
 
         params = {
-            'objective': 'binary',
+            'objective': 'regression',
             'metric': 'auc',
             'verbose': -1,
             'boost_from_average': False,
@@ -178,8 +178,7 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=True,
                         evals_result=evals_result)
         pred = gbm.predict(X_train)
-        self.assertAlmostEqual(pred[-1], pred[-2], places=5)
-        self.assertAlmostEqual(pred[-1], pred[0], places=5)
+        np.testing.assert_almost_equal(pred, y)
 
     def test_missing_value_handle_none(self):
         x = [0, 1, 2, 3, 4, 5, 6, 7, np.nan]
@@ -191,7 +190,7 @@ class TestEngine(unittest.TestCase):
         lgb_eval = lgb.Dataset(X_train, y_train)
 
         params = {
-            'objective': 'binary',
+            'objective': 'regression',
             'metric': 'auc',
             'verbose': -1,
             'boost_from_average': False,
@@ -210,6 +209,37 @@ class TestEngine(unittest.TestCase):
         pred = gbm.predict(X_train)
         self.assertAlmostEqual(pred[0], pred[1], places=5)
         self.assertAlmostEqual(pred[-1], pred[0], places=5)
+
+    def test_categorical_handle(self):
+        x = [0, 1, 2, 3, 4, 5, 6, 7]
+        y = [0, 1, 0, 1, 0, 1, 0, 1]
+
+        X_train = np.array(x).reshape(len(x), 1)
+        y_train = np.array(y)
+        lgb_train = lgb.Dataset(X_train, y_train)
+        lgb_eval = lgb.Dataset(X_train, y_train)
+
+        params = {
+            'objective': 'regression',
+            'metric': 'auc',
+            'verbose': -1,
+            'boost_from_average': False,
+            'min_data': 1,
+            'num_leaves': 2,
+            'learning_rate': 1,
+            'min_data_in_bin': 1,
+            'min_data_per_group': 1,
+            'zero_as_missing': True,
+            'categorical_column': 0
+        }
+        evals_result = {}
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=1,
+                        valid_sets=lgb_eval,
+                        verbose_eval=True,
+                        evals_result=evals_result)
+        pred = gbm.predict(X_train)
+        np.testing.assert_almost_equal(pred, y)
 
     def test_multiclass(self):
         X, y = load_digits(10, True)

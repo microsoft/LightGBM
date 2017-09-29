@@ -7,8 +7,8 @@ LightGBM, Light Gradient Boosting Machine
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](https://lightgbm.readthedocs.io/)
 [![GitHub Issues](https://img.shields.io/github/issues/Microsoft/LightGBM.svg)](https://github.com/Microsoft/LightGBM/issues)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Microsoft/LightGBM/blob/master/LICENSE)
+[![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg)](https://pypi.python.org/pypi/lightgbm)
 [![PyPI Version](https://badge.fury.io/py/lightgbm.svg)](https://badge.fury.io/py/lightgbm)
-<!--- # Uncomment after updating PyPI [![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg)](https://pypi.python.org/pypi/lightgbm) -->
 
 LightGBM is a gradient boosting framework that uses tree based learning algorithms. It is designed to be distributed and efficient with the following advantages:
 
@@ -25,15 +25,17 @@ For more details, please refer to [Features](https://github.com/Microsoft/LightG
 News
 ----
 
-07/13/2017: [Gitter](https://gitter.im/Microsoft/LightGBM) is avaiable.
+08/15/2017 : Optimal split for categorical features.
 
-06/20/2017: Python-package is on [PyPI](https://pypi.python.org/pypi/lightgbm) now.
+07/13/2017 : [Gitter](https://gitter.im/Microsoft/LightGBM) is avaiable.
 
-06/09/2017: [LightGBM Slack team](https://lightgbm.slack.com) is available.
+06/20/2017 : Python-package is on [PyPI](https://pypi.python.org/pypi/lightgbm) now.
 
-05/03/2017: LightGBM v2 stable release.
+06/09/2017 : [LightGBM Slack team](https://lightgbm.slack.com) is available.
 
-04/10/2017 : LightGBM supports GPU-accelerated tree learning now. Please read our [GPU Tutorial](./docs/GPU-Tutorial.md) and [Performance Comparison](./docs/GPU-Performance.md).
+05/03/2017 : LightGBM v2 stable release.
+
+04/10/2017 : LightGBM supports GPU-accelerated tree learning now. Please read our [GPU Tutorial](./docs/GPU-Tutorial.md) and [Performance Comparison](./docs/GPU-Performance.rst).
 
 02/20/2017 : Update to LightGBM v2.
 
@@ -41,9 +43,11 @@ News
 
 01/08/2017 : Release [**R-package**](https://github.com/Microsoft/LightGBM/tree/master/R-package) beta version, welcome to have a try and provide feedback.
 
-12/05/2016 : **Categorical Features as input directly** (without one-hot coding). Experiment on [Expo data](http://stat-computing.org/dataexpo/2009/) shows about 8x speed-up with same accuracy compared with one-hot coding.
+12/05/2016 : **Categorical Features as input directly** (without one-hot coding). 
 
 12/02/2016 : Release [**python-package**](https://github.com/Microsoft/LightGBM/tree/master/python-package) beta version, welcome to have a try and provide feedback.
+
+More detailed update logs : [Key Events](https://github.com/Microsoft/LightGBM/blob/master/docs/Key-Events.md).
 
 
 External (unofficial) Repositories

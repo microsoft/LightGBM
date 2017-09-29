@@ -106,58 +106,90 @@ public:
     output->default_left = false;
     double best_gain = kMinScore;
     data_size_t best_left_count = 0;
-    double best_sum_left_gradient = 0.0f;
-    double best_sum_left_hessian = 0.0f;
-    double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian,
-                                         meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2);
+    double best_sum_left_gradient = 0;
+    double best_sum_left_hessian = 0;
+    double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian, meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2);
 
     double min_gain_shift = gain_shift + meta_->tree_config->min_gain_to_split;
-    is_splittable_ = false;
-
-    uint32_t best_threshold = 0;
     bool is_full_categorical = meta_->missing_type == MissingType::None;
+    int used_bin = meta_->num_bin - 1;
 
-    int used_bin = meta_->num_bin - 1 + is_full_categorical;
+    if (is_full_categorical) ++used_bin;
 
-    // from right to left, and we don't need data in bin0
-    for (int t = 0; t < used_bin; ++t) {
-      // if data not enough, or sum hessian too small
-      if (data_[t].cnt < meta_->tree_config->min_data_in_leaf
-          || data_[t].sum_hessians < meta_->tree_config->min_sum_hessian_in_leaf) continue;
-      data_size_t other_count = num_data - data_[t].cnt;
-      // if data not enough
-      if (other_count < meta_->tree_config->min_data_in_leaf) continue;
+    std::vector<int> sorted_idx(used_bin);
+    for (int i = 0; i < used_bin; ++i) sorted_idx[i] = i;
 
-      double sum_other_hessian = sum_hessian - data_[t].sum_hessians - kEpsilon;
-      // if sum hessian too small
-      if (sum_other_hessian < meta_->tree_config->min_sum_hessian_in_leaf) continue;
+    double smooth_hess = meta_->tree_config->cat_smooth_ratio * num_data;
+    smooth_hess = std::min(meta_->tree_config->max_cat_smooth, std::max(smooth_hess, meta_->tree_config->min_cat_smooth));
+    const double smooth_grad = smooth_hess * sum_gradient / sum_hessian;
 
-      double sum_other_gradient = sum_gradient - data_[t].sum_gradients;
-      // current split gain
-      double current_gain = GetLeafSplitGain(sum_other_gradient, sum_other_hessian,
-                                             meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2)
-        + GetLeafSplitGain(data_[t].sum_gradients, data_[t].sum_hessians + kEpsilon,
-                           meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2);
-      // gain with split is worse than without split
-      if (current_gain <= min_gain_shift) continue;
+    auto ctr_fun = [&smooth_hess, &smooth_grad](double sum_grad, double sum_hess) {
+      return (sum_grad + smooth_grad) / (sum_hess + smooth_hess);
+    };
+    std::sort(sorted_idx.begin(), sorted_idx.end(),
+              [this, &ctr_fun](int i, int j) {
+      return ctr_fun(data_[i].sum_gradients, data_[i].sum_hessians) < ctr_fun(data_[j].sum_gradients, data_[j].sum_hessians);
+    });
 
-      // mark to is splittable
-      is_splittable_ = true;
-      // better split point
-      if (current_gain > best_gain) {
-        best_threshold = static_cast<uint32_t>(t);
-        best_sum_left_gradient = data_[t].sum_gradients;
-        best_sum_left_hessian = data_[t].sum_hessians + kEpsilon;
-        best_left_count = data_[t].cnt;
-        best_gain = current_gain;
+    std::vector<int> find_direction(1, 1);
+    std::vector<int> start_position(1, 0);
+    if (!is_full_categorical
+        || meta_->tree_config->max_cat_threshold * 2 < meta_->num_bin) {
+      find_direction.push_back(-1);
+      start_position.push_back(used_bin - 1);
+    }
+
+    is_splittable_ = false;
+    int best_threshold = -1;
+    int best_dir = 1;
+    for (size_t out_i = 0; out_i < find_direction.size(); ++out_i) {
+      auto dir = find_direction[out_i];
+      auto start_pos = start_position[out_i];
+      data_size_t rest_group = meta_->tree_config->max_cat_group;
+      data_size_t min_data_per_group = std::max(meta_->tree_config->min_data_per_group, num_data / rest_group);
+      data_size_t cnt_cur_group = 0;
+      double sum_left_gradient = 0.0f;
+      double sum_left_hessian = kEpsilon;
+      data_size_t left_count = 0;
+      for (int i = 0; i < used_bin && i < meta_->tree_config->max_cat_threshold; ++i) {
+        auto t = sorted_idx[start_pos];
+        start_pos += dir;
+
+        sum_left_gradient += data_[t].sum_gradients;
+        sum_left_hessian += data_[t].sum_hessians;
+        left_count += data_[t].cnt;
+        cnt_cur_group += data_[t].cnt;
+
+        if (left_count < meta_->tree_config->min_data_in_leaf
+            || sum_left_hessian < meta_->tree_config->min_sum_hessian_in_leaf) continue;
+        data_size_t right_count = num_data - left_count;
+        if (right_count < meta_->tree_config->min_data_in_leaf || right_count < min_data_per_group) break;
+
+        double sum_right_hessian = sum_hessian - sum_left_hessian;
+        if (sum_right_hessian < meta_->tree_config->min_sum_hessian_in_leaf) break;
+
+        if (cnt_cur_group < min_data_per_group) continue;
+
+        cnt_cur_group = 0;
+        if (--rest_group > 0) min_data_per_group = std::max(meta_->tree_config->min_data_per_group, right_count / rest_group);
+
+        double sum_right_gradient = sum_gradient - sum_left_gradient;
+        double current_gain = GetLeafSplitGain(sum_left_gradient, sum_left_hessian, meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2)
+          + GetLeafSplitGain(sum_right_gradient, sum_right_hessian, meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2);
+        if (current_gain <= min_gain_shift) continue;
+        is_splittable_ = true;
+        if (current_gain > best_gain) {
+          best_left_count = left_count;
+          best_sum_left_gradient = sum_left_gradient;
+          best_sum_left_hessian = sum_left_hessian;
+          best_threshold = i;
+          best_gain = current_gain;
+          best_dir = dir;
+        }
       }
     }
 
     if (is_splittable_) {
-      // update split information
-      output->num_cat_threshold = 1;
-      output->cat_threshold.resize(output->num_cat_threshold);
-      output->cat_threshold[0] = best_threshold;
       output->left_output = CalculateSplittedLeafOutput(best_sum_left_gradient, best_sum_left_hessian,
                                                         meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2);
       output->left_count = best_left_count;
@@ -170,6 +202,17 @@ public:
       output->right_sum_gradient = sum_gradient - best_sum_left_gradient;
       output->right_sum_hessian = sum_hessian - best_sum_left_hessian - kEpsilon;
       output->gain = best_gain - min_gain_shift;
+      output->num_cat_threshold = best_threshold + 1;
+      output->cat_threshold = std::vector<uint32_t>(output->num_cat_threshold);
+      if (best_dir == 1) {
+        for (int i = 0; i < output->num_cat_threshold; ++i) {
+          output->cat_threshold[i] = sorted_idx[i];
+        }
+      } else {
+        for (int i = 0; i < output->num_cat_threshold; ++i) {
+          output->cat_threshold[i] = sorted_idx[used_bin - 1 - i];
+        }
+      }
     }
   }
 
@@ -287,7 +330,7 @@ private:
           best_gain = current_gain;
         }
       }
-    } else{
+    } else {
       double sum_left_gradient = 0.0f;
       double sum_left_hessian = kEpsilon;
       data_size_t left_count = 0;

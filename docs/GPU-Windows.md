@@ -3,7 +3,7 @@ GPU Windows Compilation
 
 This guide is for the MinGW build.
 
-For the MSVC (Visual Studio) build with GPU, please refer to https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#windows-2 ( We recommend you to use this since it is much easier).
+For the MSVC (Visual Studio) build with GPU, please refer to [Installation Guide](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#windows-2). (We recommend you to use this since it is much easier).
 
 # Install LightGBM GPU version in Windows (CLI / R / Python), using MinGW/gcc
 
@@ -57,11 +57,11 @@ Does not apply to you if you do not use a third-party antivirus nor the default 
 
 Installing the appropriate OpenCL SDK requires you to download the correct vendor source SDK. You need to know on what you are going to use LightGBM!:
 
-* For running on Intel, get Intel SDK for OpenCL: https://software.intel.com/en-us/articles/opencl-drivers (NOT RECOMMENDED)
-* For running on AMD, get AMD APP SDK: http://developer.amd.com/amd-accelerated-parallel-processing-app-sdk/
-* For running on NVIDIA, get CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
+* For running on Intel, get [Intel SDK for OpenCL](https://software.intel.com/en-us/articles/opencl-drivers) (NOT RECOMMENDED)
+* For running on AMD, get [AMD APP SDK](http://developer.amd.com/amd-accelerated-parallel-processing-app-sdk/)
+* For running on NVIDIA, get [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads)
 
-Further reading and correspondnce table (especially if you intend to use cross-platform devices, like Intel CPU with AMD APP SDK): [GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.md).
+Further reading and correspondnce table (especially if you intend to use cross-platform devices, like Intel CPU with AMD APP SDK): [GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.rst).
 
 Warning: using Intel OpenCL is not recommended and may crash your machine due to being non compliant to OpenCL standards. If your objective is to use LightGBM + OpenCL on CPU, please use AMD APP SDK instead (it can run also on Intel CPUs without any issues).
 
@@ -69,7 +69,7 @@ Warning: using Intel OpenCL is not recommended and may crash your machine due to
 
 ## MinGW correct compiler selection
 
-If you are expecting to use LightGBM without R, you need to install MinGW. Installing MinGW is straightforward, download this: http://iweb.dl.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/mingw-w64-install.exe
+If you are expecting to use LightGBM without R, you need to install MinGW. Installing MinGW is straightforward, download [this](http://iweb.dl.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/mingw-w64-install.exe).
 
 Make sure you are using the x86_64 architecture, and do not modify anything else. You may choose a version other than the most recent one if you need a previous MinGW version.
 
@@ -134,8 +134,14 @@ We can now start downloading and compiling the required Boost libraries:
 
 To build the Boost libraries, you have two choices for command prompt:
 
-* If you have only one single core, you can use the default `b2 install --build_dir="C:\boost\boost-build" --prefix="C:\boost\boost-build" toolset=gcc --with=filesystem,system threading=multi --layout=system release`.
-* If you want to do a multithreaded library building (faster), add -j N by replacing N by the number of cores/threads you have. For instance, for 2 cores, you would do `b2 install --build_dir="C:\boost\boost-build" --prefix="C:\boost\boost-build" toolset=gcc --with=filesystem,system threading=multi --layout=system release -j 2`
+* If you have only one single core, you can use the default
+  ```
+  b2 install --build_dir="C:\boost\boost-build" --prefix="C:\boost\boost-build" toolset=gcc --with=filesystem,system threading=multi --layout=system release
+  ```
+* If you want to do a multithreaded library building (faster), add `-j N` by replacing N by the number of cores/threads you have. For instance, for 2 cores, you would do
+  ```
+  b2 install --build_dir="C:\boost\boost-build" --prefix="C:\boost\boost-build" toolset=gcc --with=filesystem,system threading=multi --layout=system release -j 2
+  ```
 
 Ignore all the errors popping up, like Python, etc., they do not matter for us.
 
@@ -169,7 +175,7 @@ If you are getting an error:
 
 ## Git Installation
 
-Installing Git for Windows is straightforward, use the following link: https://git-for-windows.github.io/
+Installing Git for Windows is straightforward, use the following [link](https://git-for-windows.github.io/).
 
 ![git for Windows](https://cloud.githubusercontent.com/assets/9083669/24919716/e2612ea6-1ee4-11e7-9eca-d30997b911ff.png)
 
@@ -273,7 +279,7 @@ cd C:/github_repos/LightGBM/examples/binary_classification
 
 Congratulations for reaching this stage!
 
-To learn how to target a correct CPU or GPU for training, please see: [GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.md).
+To learn how to target a correct CPU or GPU for training, please see: [GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.rst).
 
 ---
 
@@ -305,7 +311,9 @@ And then, follow the regular LightGBM CLI installation from there.
 
 Once you have installed LightGBM CLI, assuming your LightGBM is in `C:\github_repos\LightGBM`, open a command prompt and run the following:
 
-`gdb --args "../../lightgbm.exe" config=train.conf data=binary.train valid=binary.test objective=binary device=gpu`
+```
+gdb --args "../../lightgbm.exe" config=train.conf data=binary.train valid=binary.test objective=binary device=gpu
+```
 
 ![Debug run](https://cloud.githubusercontent.com/assets/9083669/25041067/8fdbee66-210d-11e7-8adb-79b688c051d5.png)
 
@@ -440,4 +448,4 @@ l-fast-relaxed-math") at C:/boost/boost-build/include/boost/compute/program.hpp:
 #14 main (argc=6, argv=0x1f21e90) at C:\LightGBM\src\main.cpp:7
 ```
 
-And open an issue in GitHub here with that log: https://github.com/Microsoft/LightGBM/issues
+And open an issue in GitHub [here](https://github.com/Microsoft/LightGBM/issues) with that log.
