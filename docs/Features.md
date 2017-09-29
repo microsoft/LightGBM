@@ -6,9 +6,9 @@ This page doesn't contain detailed algorithms, please refer to cited papers or s
 
 ## Optimization in speed and memory usage
 
-Many boosting tools use pre-sorted based algorithms[1](#references)[2](#references) (e.g. default algorithm in xgboost) for decision tree learning. It is a simple solution, but not easy to optimize.
+Many boosting tools use pre-sorted based algorithms[1, 2](#references) (e.g. default algorithm in xgboost) for decision tree learning. It is a simple solution, but not easy to optimize.
 
-LightGBM uses the histogram based algorithms[3](#references)[4](#references)[5](#references), which bucketing continuous feature(attribute) values into discrete bins, to speed up training procedure and reduce memory usage. Following are advantages for histogram based algorithms:
+LightGBM uses the histogram based algorithms[3, 4, 5](#references), which bucketing continuous feature(attribute) values into discrete bins, to speed up training procedure and reduce memory usage. Following are advantages for histogram based algorithms:
 
 - **Reduce calculation cost of split gain**
   - Pre-sorted based algorithms need *O(#data)* times calculation
