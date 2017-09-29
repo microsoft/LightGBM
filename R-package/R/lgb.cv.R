@@ -356,7 +356,7 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
     ungrouped <- inverse.rle(list(lengths = group, values = seq_along(group)))
     
     # Can't stratify, shuffle
-    rnd_idx <- sample(seq_along(group))
+    rnd_idx <- sample.int(length(group))
     
     # Make simple non-stratified folds
     folds <- list()
