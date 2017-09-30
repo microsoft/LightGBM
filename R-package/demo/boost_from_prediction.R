@@ -16,7 +16,6 @@ print("Start running example to start from a initial prediction")
 param <- list(num_leaves = 4,
               learning_rate = 1,
               nthread = 2,
-              silent = 1,
               objective = "binary")
 bst <- lgb.train(param, dtrain, 1, valids = valids)
 
