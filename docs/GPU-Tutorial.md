@@ -167,7 +167,7 @@ Further Reading
 
 [GPU Tuning Guide and Performance Comparison](./GPU-Performance.rst)
 
-[GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.rst).
+[GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.rst)
 
 [GPU Windows Tutorial](./GPU-Windows.md)
 

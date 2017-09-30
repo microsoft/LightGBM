@@ -2,7 +2,7 @@
 
 This is a quick start guide for LightGBM of cli version.
 
-Follow the [Installation Guide](./Installation-Guide.md) to install LightGBM first.
+Follow the [Installation Guide](./Installation-Guide.rst) to install LightGBM first.
 
 ***List of other Helpful Links***
 * [Parameters](./Parameters.md)
@@ -33,8 +33,6 @@ update 11/3/2016:
 1. support input with header now
 2. can specific label column, weight column and query/group id column. Both index and column are supported
 3. can specific a list of ignored columns
-
-For the detailed usage, please refer to [Configuration](./Parameters.md).
 
 ## Parameter Quick Look
 
