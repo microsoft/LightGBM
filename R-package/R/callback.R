@@ -132,7 +132,7 @@ merge.eval.string <- function(env) {
   msg <- list(sprintf("[%d]:", env$iteration))
   
   # Set if evaluation error
-  is_eval_error <- length(env$eval_err_list) > 0
+  is_eval_err <- length(env$eval_err_list) > 0
   
   # Loop through evaluation list
   for (j in seq_along(env$eval_list)) {

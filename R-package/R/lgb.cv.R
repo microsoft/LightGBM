@@ -217,7 +217,7 @@ lgb.cv <- function(params = list(),
   
   # Check for early stopping passed as parameter when adding early stopping callback
   early_stop <- c("early_stopping_round", "early_stopping_rounds", "early_stopping")
-  if (any(names(params) %in% eary_stop)) {
+  if (any(names(params) %in% early_stop)) {
     if (params[[which(names(params) %in% early_stop)[1]]] > 0) {
       callbacks <- add.cb(callbacks, cb.early.stop(params[[which(names(params) %in% early_stop)[1]]], verbose = verbose))
     }
