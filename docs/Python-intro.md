@@ -117,7 +117,7 @@ However, Numpy/Array/Pandas object is memory cost. If you concern about your mem
 Setting Parameters
 ------------------
 
-LightGBM can use either a list of pairs or a dictionary to set [parameters](./Parameters.md). For instance:
+LightGBM can use either a list of pairs or a dictionary to set [Parameters](./Parameters.md). For instance:
 
 * Booster parameters:
 

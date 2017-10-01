@@ -70,7 +70,7 @@ Documents API
 
 LightGBM support use `doxygen <http://www.stack.nl/~dimitri/doxygen/>`__ to generate documents for classes and functions.
 
-Refer to `README <./README.md>`__.
+Refer to `docs README <./README.md>`__.
 
 C API
 -----

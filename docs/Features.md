@@ -11,7 +11,7 @@ Many boosting tools use pre-sorted based algorithms[[1, 2]](#references) (e.g. d
 LightGBM uses the histogram based algorithms[[3, 4, 5]](#references), which bucketing continuous feature(attribute) values into discrete bins, to speed up training procedure and reduce memory usage. Following are advantages for histogram based algorithms:
 
 - **Reduce calculation cost of split gain**
-  - Pre-sorted based algorithms need *O(#data)* times calculation
+  - Pre-sorted based algorithms need ``O(#data)`` times calculation
   - Histogram based algorithms only need to calculate ``O(#bins)`` times, and ``#bins`` is far smaller than ``#data``
     - It still needs ``O(#data)`` times to construct histogram, which only contain sum-up operation
 - **Use histogram subtraction for further speed-up**
@@ -174,10 +174,10 @@ For more details, please refer to [Parameters](./Parameters.md).
 
 [6] Shi, Haijian. "Best-first decision tree learning." Diss. The University of Waikato, 2007.
 
-[7] Walter D. Fisher. "[On Grouping for Maximum Homogeneity.](http://www.jstor.org/stable/2281952)" Journal of the American Statistical Association. Vol. 53, No. 284 (Dec., 1958), pp. 789-798.
+[7] Walter D. Fisher. "[On Grouping for Maximum Homogeneity](http://www.jstor.org/stable/2281952)." Journal of the American Statistical Association. Vol. 53, No. 284 (Dec., 1958), pp. 789-798.
 
-[8] Thakur, Rajeev, Rolf Rabenseifner, and William Gropp. "[Optimization of collective communication operations in MPICH.](http://wwwi10.lrr.in.tum.de/~gerndt/home/Teaching/HPCSeminar/mpich_multi_coll.pdf)" International Journal of High Performance Computing Applications 19.1 (2005): 49-66.
+[8] Thakur, Rajeev, Rolf Rabenseifner, and William Gropp. "[Optimization of collective communication operations in MPICH](http://wwwi10.lrr.in.tum.de/~gerndt/home/Teaching/HPCSeminar/mpich_multi_coll.pdf)." International Journal of High Performance Computing Applications 19.1 (2005): 49-66.
 
-[9] Qi Meng, Guolin Ke, Taifeng Wang, Wei Chen, Qiwei Ye, Zhi-Ming Ma, Tieyan Liu. "[A Communication-Efficient Parallel Algorithm for Decision Tree.](http://papers.nips.cc/paper/6381-a-communication-efficient-parallel-algorithm-for-decision-tree)" Advances in Neural Information Processing Systems 29 (NIPS 2016).
+[9] Qi Meng, Guolin Ke, Taifeng Wang, Wei Chen, Qiwei Ye, Zhi-Ming Ma, Tieyan Liu. "[A Communication-Efficient Parallel Algorithm for Decision Tree](http://papers.nips.cc/paper/6381-a-communication-efficient-parallel-algorithm-for-decision-tree)." Advances in Neural Information Processing Systems 29 (NIPS 2016).
 
-[10] Huan Zhang, Si Si and Cho-Jui Hsieh. "GPU Acceleration for Large-scale Tree Boosting." arXiv:1706.08359, 2017.
+[10] Huan Zhang, Si Si and Cho-Jui Hsieh. "[GPU Acceleration for Large-scale Tree Boosting](https://arxiv.org/abs/1706.08359)." arXiv:1706.08359, 2017.
