@@ -33,15 +33,15 @@ At the end, you can restore your original PATH.
 
 To modify PATH, just follow the pictures after going to the `Control Panel`:
 
-![System](https://cloud.githubusercontent.com/assets/9083669/24928495/e3293b12-1f02-11e7-861d-37ec2d086dba.png)
+![System](./_static/images/screenshot-system.png)
 
 Then, go to `Advanced` > `Environment Variables...`:
 
-![Advanced System Settings](https://cloud.githubusercontent.com/assets/9083669/24928515/00b252ae-1f03-11e7-8ff6-fbf78c503754.png)
+![Advanced System Settings](./_static/images/screenshot-advanced-system-settings.png)
 
 Under `System variables`, the variable `Path`:
 
-![Environment Variables](https://cloud.githubusercontent.com/assets/9083669/24928517/00fd8008-1f03-11e7-84e2-7dc8fd50d6ce.png)
+![Environment Variables](./_static/images/screenshot-environment-variables.png)
 
 ---
 
@@ -73,7 +73,7 @@ If you are expecting to use LightGBM without R, you need to install MinGW. Insta
 
 Make sure you are using the x86_64 architecture, and do not modify anything else. You may choose a version other than the most recent one if you need a previous MinGW version.
 
-![MinGW installation](https://cloud.githubusercontent.com/assets/9083669/25063112/a7374ee2-21db-11e7-89f4-ae6f413a16f1.png)
+![MinGW installation](./_static/images/screenshot-mingw-installation.png)
 
 Then, add to your PATH the following (to adjust to your MinGW version):
 
@@ -87,7 +87,7 @@ C:\Program Files\mingw-w64\x86_64-5.3.0-posix-seh-rt_v4-rev0\mingw64\bin
 
 You can check which MinGW version you are using by running the following in a command prompt: `gcc -v`:
 
-![R MinGW used](https://cloud.githubusercontent.com/assets/9083669/24927803/80b83782-1f00-11e7-961a-068d58d82885.png)
+![R MinGW used](./_static/images/screenshot-r-mingw-used.png)
 
 To check whether you need 32-bit or 64-bit MinGW for R, install LightGBM as usual and check for the following:
 
@@ -162,7 +162,7 @@ Your folder should look like this at the end (not fully detailed):
 
 This is what you should (approximately) get at the end of Boost compilation:
 
-![Boost compiled](https://cloud.githubusercontent.com/assets/9083669/24918623/5152a3c0-1ee1-11e7-9d59-d75fb1193241.png)
+![Boost compiled](./_static/images/screenshot-boost-compiled.png)
 
 If you are getting an error:
 
@@ -177,7 +177,7 @@ If you are getting an error:
 
 Installing Git for Windows is straightforward, use the following [link](https://git-for-windows.github.io/).
 
-![git for Windows](https://cloud.githubusercontent.com/assets/9083669/24919716/e2612ea6-1ee4-11e7-9eca-d30997b911ff.png)
+![git for Windows](./_static/images/screenshot-git-for-windows.png)
 
 Then, click on the big Download button, you can't miss it.
 
@@ -202,7 +202,7 @@ Keep Git Bash open.
 
 Installing CMake requires one download first and then a lot of configuration for LightGBM:
 
-![Downloading CMake](https://cloud.githubusercontent.com/assets/9083669/24919759/fe5f4d90-1ee4-11e7-992e-00f8d9bfe6dd.png)
+![Downloading CMake](./_static/images/screenshot-downloading-cmake.png)
 
 * Download CMake 3.8.0 here: https://cmake.org/download/.
 * Install CMake.
@@ -211,19 +211,19 @@ Installing CMake requires one download first and then a lot of configuration for
 * Copy the folder name, and add `/build` for "Where to build the binaries", default using our steps would be `C:/github_repos/LightGBM/build`.
 * Click `Configure`.
 
-![Create directory](https://cloud.githubusercontent.com/assets/9083669/24921175/33feee92-1eea-11e7-8330-6d8e519a6177.png)
+![Create directory](./_static/images/screenshot-create-directory.png)
 
-![MinGW makefiles to use](https://cloud.githubusercontent.com/assets/9083669/24921193/404dd384-1eea-11e7-872e-6220e0f8b321.png)
+![MinGW makefiles to use](./_static/images/screenshot-mingw-makefiles-to-use.png)
 
 * Lookup for `USE_GPU` and check the checkbox
 
-![Use GPU](https://cloud.githubusercontent.com/assets/9083669/24921364/d7ccd426-1eea-11e7-8054-d4bd3a39af84.png)
+![Use GPU](./_static/images/screenshot-use-gpu.png)
 
 * Click `Configure`
 
 You should get (approximately) the following after clicking Configure:
 
-![Configured LightGBM](https://cloud.githubusercontent.com/assets/9083669/24919175/1301b42e-1ee3-11e7-9823-70a1d4c8c39e.png)
+![Configured LightGBM](./_static/images/screenshot-configured-lightgbm.png)
 
 ```
 Looking for CL_VERSION_2_0
@@ -262,7 +262,7 @@ You can do everything in the Git Bash console you left open:
 * Setup MinGW as make using `alias make='mingw32-make'` (otherwise, beware error and name clash!).
 * In Git Bash, run `make` and see LightGBM being installing!
 
-![LightGBM with GPU support compiled](https://cloud.githubusercontent.com/assets/9083669/24923499/0cb90572-1ef2-11e7-8842-371d038fb5e9.png)
+![LightGBM with GPU support compiled](./_static/images/screenshot-lightgbm-with-gpu-support-compiled.png)
 
 If everything was done correctly, you now compiled CLI LightGBM with GPU support!
 
@@ -275,7 +275,7 @@ cd C:/github_repos/LightGBM/examples/binary_classification
 "../../lightgbm.exe" config=train.conf data=binary.train valid=binary.test objective=binary device=gpu
 ```
 
-![LightGBM in CLI with GPU](https://cloud.githubusercontent.com/assets/9083669/24958722/98021e72-1f90-11e7-80a9-204d56ace395.png)
+![LightGBM in CLI with GPU](./_static/images/screenshot-lightgbm-in-cli-with-gpu.png)
 
 Congratulations for reaching this stage!
 
@@ -287,7 +287,7 @@ To learn how to target a correct CPU or GPU for training, please see: [GPU SDK C
 
 Now that you compiled LightGBM, you try it... and you always see a segmentation fault or an undocumented crash with GPU support:
 
-![Segmentation Fault](https://cloud.githubusercontent.com/assets/9083669/25015529/7326860a-207c-11e7-8fc3-320b2be619a6.png)
+![Segmentation Fault](./_static/images/screenshot-segmentation-fault.png)
 
 Please check you are using the right device and whether it works with the default `gpu_device_id = 0` and `gpu_platform_id = 0`. If it still does not work with the default values, then you should follow all the steps below.
 
@@ -296,15 +296,15 @@ You will have to redo the compilation steps for LightGBM to add debugging mode. 
 * Deleting `C:/github_repos/LightGBM/build` folder
 * Deleting `lightgbm.exe`, `lib_lightgbm.dll`, and `lib_lightgbm.dll.a` files
 
-![Files to remove](https://cloud.githubusercontent.com/assets/9083669/25051307/3b7dd084-214c-11e7-9758-c338c8cacb1e.png)
+![Files to remove](./_static/images/screenshot-files-to-remove.png)
 
 Once you removed the file, go into CMake, and follow the usual steps. Before clicking "Generate", click on "Add Entry":
 
-![Added manual entry in CMake](https://cloud.githubusercontent.com/assets/9083669/25051323/508969ca-214c-11e7-884a-20882cd3936a.png)
+![Added manual entry in CMake](./_static/images/screenshot-added-manual-entry-in-cmake.png)
 
 In addition, click on Configure and Generate:
 
-![Configured and Generated CMake](https://cloud.githubusercontent.com/assets/9083669/25051236/e71237ce-214b-11e7-8faa-d885d7826fe1.png)
+![Configured and Generated CMake](./_static/images/screenshot-configured-and-generated-cmake.png)
 
 And then, follow the regular LightGBM CLI installation from there.
 
@@ -314,7 +314,7 @@ Once you have installed LightGBM CLI, assuming your LightGBM is in `C:\github_re
 gdb --args "../../lightgbm.exe" config=train.conf data=binary.train valid=binary.test objective=binary device=gpu
 ```
 
-![Debug run](https://cloud.githubusercontent.com/assets/9083669/25041067/8fdbee66-210d-11e7-8adb-79b688c051d5.png)
+![Debug run](./_static/images/screenshot-debug-run.png)
 
 Type `run` and Enter key.
 

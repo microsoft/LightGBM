@@ -32,13 +32,13 @@ LightGBM uses the histogram based algorithms[[3, 4, 5]](#references), which buck
 
 Most decision tree learning algorithms grow tree by level(depth)-wise, like the following image:
 
-![level_wise](https://user-images.githubusercontent.com/25141164/30991469-d919fb1c-a4ad-11e7-8d7a-680f86ef672b.png)
+![level_wise](./_static/images/level-wise.png)
 
 LightGBM grows tree by leaf-wise(best-first)[[6]](#references). It will choose the leaf with max delta loss to grow. When growing same ``#leaf``, leaf-wise algorithm can reduce more loss than level-wise algorithm.
 
 Leaf-wise may cause over-fitting when ``#data`` is small. So, LightGBM can use an additional parameter ``max_depth`` to limit depth of tree and avoid over-fitting (tree still grows by leaf-wise).
 
-![leaf_wise](https://user-images.githubusercontent.com/25141164/30991728-ea1c2f4c-a4ae-11e7-9f7c-ff8127b4321b.png)
+![leaf_wise](./_static/images/leaf-wise.png)
 
 ### Optimal Split for Categorical Features
 
