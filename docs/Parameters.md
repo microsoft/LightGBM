@@ -267,7 +267,7 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
   * `fair`, [Fair loss](https://www.kaggle.com/c/allstate-claims-severity/discussion/24520)
   * `poisson`, [Poisson regression](https://en.wikipedia.org/wiki/Poisson_regression "Poisson regression")
   * `ndcg`, [NDCG](https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG)
-  * `map`, [MAP](https://www.kaggle.com/wiki/MeanAveragePrecision)
+  * `map`, [MAP](https://en.wikipedia.org/wiki/Information_retrieval#Mean_average_precision)
   * `auc`, [AUC](https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve)
   * `binary_logloss`, [log loss](https://www.kaggle.com/wiki/LogLoss)
   * `binary_error`. For one sample `0` for correct classification, `1` for error classification.
