@@ -28,10 +28,11 @@ cd $TRAVIS_BUILD_DIR
 if [[ ${TASK} == "check-docs" ]]; then
     cd docs
     sudo apt-get install linkchecker
-    pip install rstcheck
-    rstcheck --ignore-directives=autoclass,autofunction `find . -type f -name "*.rst"` || exit -1
+    pip install rstcheck  # html5validator
     pip install -r requirements.txt
+    rstcheck --ignore-directives=autoclass,autofunction `find . -type f -name "*.rst"` || exit -1
     make html || exit -1
+#    html5validator --root ./_build/html/ || exit -1  For future (Sphinx 1.6) usage
     linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
     exit 0
 fi
