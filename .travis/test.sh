@@ -29,7 +29,7 @@ if [[ ${TASK} == "check-docs" ]]; then
     cd docs
     sudo apt-get install linkchecker
     pip install rstcheck
-    rstcheck `find . -type f -name "*.rst"` || exit -1
+    rstcheck --ignore-directives=autoclass,autofunction `find . -type f -name "*.rst"` || exit -1
     pip install -r requirements.txt
     make html || exit -1
     linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
