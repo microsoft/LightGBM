@@ -122,7 +122,7 @@ lgb.dl(commit = "master",
        use_gpu = TRUE)
 ```
 
-For more details about options, please check [Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/) R-package.
+For more details about options, please check [Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/) R-package. You may also read [Microsoft/LightGBM#912](https://github.com/Microsoft/LightGBM/issues/912#issuecomment-329496254) for a visual example for LightGBM in Windows with Visual Studio.
 
 Examples
 --------
