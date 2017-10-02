@@ -25,6 +25,15 @@ esac
 
 cd $TRAVIS_BUILD_DIR
 
+if [[ ${TASK} == "check-docs" ]]; then
+    cd docs
+    sudo apt-get install linkchecker
+    pip install -r requirements.txt
+    make html || exit -1
+    linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
+    exit 0
+fi
+
 if [[ ${TASK} == "pylint" ]]; then
     pip install pep8
     pep8 --ignore=E501 --exclude=./compute,./docs . || exit -1
