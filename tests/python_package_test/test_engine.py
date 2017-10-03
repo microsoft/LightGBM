@@ -52,6 +52,7 @@ class TestEngine(unittest.TestCase):
         self.assertLess(ret, 0.15)
         self.assertEqual(len(evals_result['valid_0']['binary_logloss']), 50)
         self.assertAlmostEqual(evals_result['valid_0']['binary_logloss'][-1], ret, places=5)
+        self.assertIn('boosting_type', gbm.get_parameter())
 
     def test_rf(self):
         X, y = load_breast_cancer(True)

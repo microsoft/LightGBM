@@ -141,6 +141,13 @@ public:
 
   }
 
+  std::string GetConfig() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::unordered_map<std::string, std::string> params;
+    config_.Get(params);
+    return Common::MapToString(params);
+  }
+
   void AddValidData(const Dataset* valid_data) {
     std::lock_guard<std::mutex> lock(mutex_);
     valid_metrics_.emplace_back();
@@ -868,6 +875,21 @@ int LGBM_BoosterResetParameter(BoosterHandle handle, const char* parameters) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->ResetConfig(parameters);
+  API_END();
+}
+
+#pragma warning(disable : 4996)
+int LGBM_BoosterGetParameter(BoosterHandle handle,
+                              int buffer_len,
+                              int* out_len,
+                              char* out_str) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  std::string param_str = ref_booster->GetConfig();
+  *out_len = static_cast<int>(param_str.size()) + 1;
+  if (*out_len <= buffer_len) {
+    std::strcpy(out_str, param_str.c_str());
+  }
   API_END();
 }
 

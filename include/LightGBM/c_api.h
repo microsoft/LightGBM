@@ -388,6 +388,16 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterResetTrainingData(BoosterHandle handle,
 LIGHTGBM_C_EXPORT int LGBM_BoosterResetParameter(BoosterHandle handle, const char* parameters);
 
 /*!
+* \brief Get config for current booster
+* \param handle handle
+* \param buffer_len string buffer length, if buffer_len < out_len, re-allocate buffer
+* \param out_len actual output length
+* \param out_str string of model, need to pre-allocate memory before call this
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetParameter(BoosterHandle handle, int buffer_len, int* out_len, char* out_str);
+
+/*!
 * \brief Get number of class
 * \param handle handle
 * \param out_len number of class

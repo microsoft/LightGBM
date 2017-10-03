@@ -31,6 +31,13 @@ public:
   virtual ~ConfigBase() {}
 
   /*!
+  * \brief Get current config to params
+  * \param params Store the key and value for params
+  */
+  virtual void Get(
+    std::unordered_map<std::string, std::string>& params) = 0;
+
+  /*!
   * \brief Set current config object by params
   * \param params Store the key and value for params
   */
@@ -154,6 +161,7 @@ public:
   double pred_early_stop_margin = 10.0f;
   bool zero_as_missing = false;
   bool use_missing = true;
+  LIGHTGBM_EXPORT void Get(std::unordered_map<std::string, std::string>& params) override;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -177,6 +185,7 @@ public:
   int num_class = 1;
   // Balancing of positive and negative weights
   double scale_pos_weight = 1.0f;
+  LIGHTGBM_EXPORT void Get(std::unordered_map<std::string, std::string>& params) override;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -190,6 +199,7 @@ public:
   double fair_c = 1.0f;
   std::vector<double> label_gain;
   std::vector<int> eval_at;
+  LIGHTGBM_EXPORT void Get(std::unordered_map<std::string, std::string>& params) override;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -230,6 +240,7 @@ public:
   double cat_smooth_ratio = 0.01;
   double min_cat_smooth = 5;
   double max_cat_smooth = 100;
+  LIGHTGBM_EXPORT void Get(std::unordered_map<std::string, std::string>& params) override;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -260,6 +271,7 @@ public:
   std::string tree_learner_type = kDefaultTreeLearnerType;
   std::string device_type = kDefaultDevice;
   TreeConfig tree_config;
+  LIGHTGBM_EXPORT void Get(std::unordered_map<std::string, std::string>& params) override;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -270,6 +282,7 @@ public:
   int local_listen_port = 12400;
   int time_out = 120;  // in minutes
   std::string machine_list_filename = "";
+  LIGHTGBM_EXPORT void Get(std::unordered_map<std::string, std::string>& params) override;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -291,6 +304,7 @@ public:
   std::vector<std::string> metric_types;
   MetricConfig metric_config;
   std::string convert_model_language = "";
+  LIGHTGBM_EXPORT void Get(std::unordered_map<std::string, std::string>& params) override;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 
 private:
