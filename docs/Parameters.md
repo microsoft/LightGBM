@@ -38,7 +38,7 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
     * `fair`, [Fair loss](https://www.kaggle.com/c/allstate-claims-severity/discussion/24520)
     * `poisson`, [Poisson regression](https://en.wikipedia.org/wiki/Poisson_regression "Poisson regression")
   * `binary`, binary classification application
-  * `lambdarank`, [lambdarank](https://pdfs.semanticscholar.org/fc9a/e09f9ced555558fdf1e997c0a5411fb51f15.pdf) application
+  * `lambdarank`, [lambdarank](https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf) application
     * The label should be `int` type in lambdarank tasks, and larger number represent the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect).
     * `label_gain` can be used to set the gain(weight) of `int` label.
   * `multiclass`, multi-class classification application, should set `num_class` as well

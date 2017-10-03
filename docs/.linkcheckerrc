@@ -4,9 +4,6 @@ anchors=1
 sslverify=0
 
 [filtering]
-ignore=
-  # Fix SSL error
-  https://pdfs.semanticscholar.org/fc9a/e09f9ced555558fdf1e997c0a5411fb51f15.pdf
 ignorewarnings=http-robots-denied,https-certificate-error
 
 [output]
