@@ -240,4 +240,4 @@ Refer to `GPU Performance <./GPU-Performance.rst>`__.
 
 .. _xgboost: https://github.com/dmlc/xgboost
 
-.. _link: http://labs.criteo.com/downloads/download-terabyte-click-logs/
+.. _link: http://labs.criteo.com/2013/12/download-terabyte-click-logs/
