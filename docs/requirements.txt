@@ -1,4 +1,4 @@
-sphinx
+sphinx<=1.5.6
 sphinxcontrib-napoleon
 sphinx_rtd_theme
 recommonmark
