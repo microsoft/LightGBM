@@ -196,7 +196,7 @@ class LGBMModel(_LGBMModelBase):
 
             Note
             ----
-            **kwargs is not supported in sklearn, it may cause unexpected issues.
+            \*\*kwargs is not supported in sklearn, it may cause unexpected issues.
 
         Attributes
         ----------
