@@ -174,7 +174,7 @@ For more details, please refer to [Parameters](./Parameters.md).
 
 [6] Shi, Haijian. "Best-first decision tree learning." Diss. The University of Waikato, 2007.
 
-[7] Walter D. Fisher. "[On Grouping for Maximum Homogeneity](http://www.jstor.org/stable/2281952)." Journal of the American Statistical Association. Vol. 53, No. 284 (Dec., 1958), pp. 789-798.
+[7] Walter D. Fisher. "[On Grouping for Maximum Homogeneity](http://amstat.tandfonline.com/doi/abs/10.1080/01621459.1958.10501479)." Journal of the American Statistical Association. Vol. 53, No. 284 (Dec., 1958), pp. 789-798.
 
 [8] Thakur, Rajeev, Rolf Rabenseifner, and William Gropp. "[Optimization of collective communication operations in MPICH](http://wwwi10.lrr.in.tum.de/~gerndt/home/Teaching/HPCSeminar/mpich_multi_coll.pdf)." International Journal of High Performance Computing Applications 19.1 (2005): 49-66.
 
