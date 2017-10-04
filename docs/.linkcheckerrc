@@ -1,0 +1,13 @@
+[checking]
+recursionlevel=1
+anchors=1
+sslverify=0
+
+[filtering]
+ignorewarnings=http-robots-denied,https-certificate-error
+
+[output]
+# Set to 0 if you want see only warnings and errors
+verbose=1
+
+[AnchorCheck]
