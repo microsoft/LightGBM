@@ -296,7 +296,7 @@ Refer to `GPU Docker folder <https://github.com/Microsoft/LightGBM/tree/master/d
 
 .. _Intel SDK for OpenCL: https://software.intel.com/en-us/articles/opencl-drivers
 
-.. _AMD APP SDK: http://developer.amd.com/tools-and-sdks/opencl-zone/amd-accelerated-parallel-processing-app-sdk/
+.. _AMD APP SDK: http://developer.amd.com/amd-accelerated-parallel-processing-app-sdk/
 
 .. _CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 
