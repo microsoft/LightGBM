@@ -50,39 +50,39 @@ We set up total 3 settings for experiments, the parameters of these settings are
 
 1. xgboost:
 
-  .. code::
+   .. code::
 
-      eta = 0.1
-      max_depth = 8
-      num_round = 500
-      nthread = 16
-      tree_method = exact
-      min_child_weight = 100
+       eta = 0.1
+       max_depth = 8
+       num_round = 500
+       nthread = 16
+       tree_method = exact
+       min_child_weight = 100
 
 2. xgboost\_hist (using histogram based algorithm):
 
-  .. code::
+   .. code::
 
-      eta = 0.1
-      num_round = 500
-      nthread = 16
-      tree_method = approx
-      min_child_weight = 100
-      tree_method = hist
-      grow_policy = lossguide
-      max_depth = 0
-      max_leaves = 255
+       eta = 0.1
+       num_round = 500
+       nthread = 16
+       tree_method = approx
+       min_child_weight = 100
+       tree_method = hist
+       grow_policy = lossguide
+       max_depth = 0
+       max_leaves = 255
 
 3. LightGBM:
 
-  .. code::
+   .. code::
 
-      learning_rate = 0.1
-      num_leaves = 255
-      num_trees = 500
-      num_threads = 16
-      min_data_in_leaf = 0
-      min_sum_hessian_in_leaf = 100
+       learning_rate = 0.1
+       num_leaves = 255
+       num_trees = 500
+       num_threads = 16
+       min_data_in_leaf = 0
+       min_sum_hessian_in_leaf = 100
 
 xgboost grows tree depth-wise and controls model complexity by ``max_depth``.
 LightGBM uses leaf-wise algorithm instead and controls model complexity by ``num_leaves``.
