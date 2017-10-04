@@ -48,7 +48,7 @@ Socket Version
 It needs to collect IP of all machines that want to run parallel learning in and allocate one TCP port (assume 12345 here) for all machines,
 and change firewall rules to allow income of this port (12345). Then write these IP and ports in one file (assume ``mlist.txt``), like following:
 
-  .. code::
+.. code::
 
     machine1_ip 12345
     machine2_ip 12345
@@ -59,7 +59,7 @@ MPI Version
 It needs to collect IP (or hostname) of all machines that want to run parallel learning in.
 Then write these IP in one file (assume ``mlist.txt``) like following:
 
-  .. code::
+.. code::
 
     machine1_ip
     machine2_ip

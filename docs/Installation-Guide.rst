@@ -234,11 +234,11 @@ Following procedure is for the MSVC(Microsoft Visual C++) build.
 
 2. Install **OpenCL** for Windows. The installation depends on the brand (NVIDIA, AMD, Intel) of your GPU card.
 
-  -  For running on Intel, get `Intel SDK for OpenCL`_.
+   - For running on Intel, get `Intel SDK for OpenCL`_.
 
-  -  For running on AMD, get `AMD APP SDK`_.
+   - For running on AMD, get `AMD APP SDK`_.
 
-  -  For running on NVIDIA, get `CUDA Toolkit`_.
+   - For running on NVIDIA, get `CUDA Toolkit`_.
 
 3. Install `Boost Binary`_.
 

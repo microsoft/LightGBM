@@ -200,13 +200,13 @@ We use 16 Windows servers as experiment platform, details are listed in followin
 Settings
 ^^^^^^^^
 
-  .. code::
+.. code::
 
-      learning_rate = 0.1
-      num_leaves = 255
-      num_trees = 100
-      num_thread = 16
-      tree_learner = data
+    learning_rate = 0.1
+    num_leaves = 255
+    num_trees = 100
+    num_thread = 16
+    tree_learner = data
 
 We use data parallel here, since this data is large in ``#data`` but small in ``#feature``.
 
