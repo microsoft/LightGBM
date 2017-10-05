@@ -31,6 +31,7 @@ Depending on the answers, while opening your issue, feel free to ping (just ment
 * [@Laurae2](https://github.com/Laurae2) (R-package)
 * [@wxchan](https://github.com/wxchan) (Python-package)
 * [@huanzhang12](https://github.com/huanzhang12) (GPU support)
+* [@StrikerRUS](https://github.com/StrikerRUS) (Python-package)
 
 Remember this is a free/open community support. We may not be available 24/7 to provide support.
 
