@@ -131,23 +131,6 @@ void GetTreeLearnerType(const std::unordered_map<std::string, std::string>& para
   }
 }
 
-
-void OverallConfig::Get(std::unordered_map<std::string, std::string>& params) {
-  Common::PushToMap(params, "num_threads", num_threads);
-  Common::PushToMap(params, "convert_model_language", convert_model_language);
-  Common::PushToMap(params, "seed", seed);
-  Common::PushToMap(params, "task_type", task_type);
-  Common::PushToMap(params, "objective_type", objective_type);
-  Common::PushToMap(params, "boosting_type", boosting_type);
-  Common::PushToMap(params, "metric_types", Common::ArrayToString(metric_types, ','));
-  network_config.Get(params);
-  io_config.Get(params);
-  boosting_config.Get(params);
-  objective_config.Get(params);
-  metric_config.Get(params);
-}
-
-
 void OverallConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   // load main config types
   GetInt(params, "num_threads", &num_threads);
@@ -252,51 +235,6 @@ void OverallConfig::CheckParamConflict() {
   }
 }
 
-
-void IOConfig::Get(std::unordered_map<std::string, std::string>& params) {
-  Common::PushToMap(params, "max_bin", max_bin);
-  Common::PushToMap(params, "num_class", num_class);
-  Common::PushToMap(params, "data_random_seed", data_random_seed);
-  Common::PushToMap(params, "data", data_filename);
-  Common::PushToMap(params, "init_score_file", initscore_filename);
-  Common::PushToMap(params, "verbose", verbosity);
-  Common::PushToMap(params, "num_iteration_predict", num_iteration_predict);
-  Common::PushToMap(params, "bin_construct_sample_cnt", bin_construct_sample_cnt);
-  Common::PushToMap(params, "is_pre_partition", is_pre_partition);
-  Common::PushToMap(params, "is_enable_sparse", is_enable_sparse);
-  Common::PushToMap(params, "sparse_threshold", sparse_threshold);
-  Common::PushToMap(params, "use_two_round_loading", use_two_round_loading);
-  Common::PushToMap(params, "is_save_binary_file", is_save_binary_file);
-  Common::PushToMap(params, "enable_load_from_binary_file", enable_load_from_binary_file);
-  Common::PushToMap(params, "is_predict_raw_score", is_predict_raw_score);
-  Common::PushToMap(params, "is_predict_leaf_index", is_predict_leaf_index);
-  Common::PushToMap(params, "is_predict_contrib", is_predict_contrib);
-  Common::PushToMap(params, "snapshot_freq", snapshot_freq);
-  Common::PushToMap(params, "output_model", output_model);
-  Common::PushToMap(params, "input_model", input_model);
-  Common::PushToMap(params, "convert_model", convert_model);
-  Common::PushToMap(params, "output_result", output_result);
-  Common::PushToMap(params, "valid_data", Common::ArrayToString(valid_data_filenames, ','));
-  Common::PushToMap(params, "valid_data_initscores", Common::ArrayToString(valid_data_initscores, ','));
-  Common::PushToMap(params, "has_header", has_header);
-  Common::PushToMap(params, "label_column", label_column);
-  Common::PushToMap(params, "weight_column", weight_column);
-  Common::PushToMap(params, "group_column", group_column);
-  Common::PushToMap(params, "ignore_column", ignore_column);
-  Common::PushToMap(params, "categorical_column", categorical_column);
-  Common::PushToMap(params, "min_data_in_leaf", min_data_in_leaf);
-  Common::PushToMap(params, "min_data_in_bin", min_data_in_bin);
-  Common::PushToMap(params, "max_conflict_rate", max_conflict_rate);
-  Common::PushToMap(params, "enable_bundle", enable_bundle);
-  Common::PushToMap(params, "pred_early_stop", pred_early_stop);
-  Common::PushToMap(params, "pred_early_stop_freq", pred_early_stop_freq);
-  Common::PushToMap(params, "pred_early_stop_margin", pred_early_stop_margin);
-  Common::PushToMap(params, "use_missing", use_missing);
-  Common::PushToMap(params, "zero_as_missing", zero_as_missing);
-  Common::PushToMap(params, "device_type", device_type);
-}
-
-
 void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "max_bin", &max_bin);
   CHECK(max_bin > 0);
@@ -351,21 +289,6 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetDeviceType(params, &device_type);
 }
 
-
-void ObjectiveConfig::Get(std::unordered_map<std::string, std::string>& params) {
-  Common::PushToMap(params, "is_unbalance", is_unbalance);
-  Common::PushToMap(params, "sigmoid", sigmoid);
-  Common::PushToMap(params, "huber_delta", huber_delta);
-  Common::PushToMap(params, "fair_c", fair_c);
-  Common::PushToMap(params, "gaussian_eta", gaussian_eta);
-  Common::PushToMap(params, "poisson_max_delta_step", poisson_max_delta_step);
-  Common::PushToMap(params, "max_position", max_position);
-  Common::PushToMap(params, "num_class", num_class);
-  Common::PushToMap(params, "scale_pos_weight", scale_pos_weight);
-  Common::PushToMap(params, "label_gain", Common::ArrayToString(label_gain, ','));
-}
-
-
 void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetBool(params, "is_unbalance", &is_unbalance);
   GetDouble(params, "sigmoid", &sigmoid);
@@ -390,16 +313,6 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
     }
   }
   label_gain.shrink_to_fit();
-}
-
-
-void MetricConfig::Get(std::unordered_map<std::string, std::string>& params) {
-  Common::PushToMap(params, "sigmoid", sigmoid);
-  Common::PushToMap(params, "huber_delta", huber_delta);
-  Common::PushToMap(params, "fair_c", fair_c);
-  Common::PushToMap(params, "num_class", num_class);
-  Common::PushToMap(params, "label_gain", Common::ArrayToString(label_gain, ','));
-  Common::PushToMap(params, "ndcg_eval_at", Common::ArrayToString(eval_at, ','));
 }
 
 
@@ -433,30 +346,6 @@ void MetricConfig::Set(const std::unordered_map<std::string, std::string>& param
     }
   }
   eval_at.shrink_to_fit();
-}
-
-
-void TreeConfig::Get(std::unordered_map<std::string, std::string>& params) {
-  Common::PushToMap(params, "min_data_in_leaf", min_data_in_leaf);
-  Common::PushToMap(params, "min_sum_hessian_in_leaf", min_sum_hessian_in_leaf);
-  Common::PushToMap(params, "lambda_l1", lambda_l1);
-  Common::PushToMap(params, "lambda_l2", lambda_l2);
-  Common::PushToMap(params, "min_gain_to_split", min_gain_to_split);
-  Common::PushToMap(params, "num_leaves", num_leaves);
-  Common::PushToMap(params, "feature_fraction_seed", feature_fraction_seed);
-  Common::PushToMap(params, "feature_fraction", feature_fraction);
-  Common::PushToMap(params, "histogram_pool_size", histogram_pool_size);
-  Common::PushToMap(params, "max_depth", max_depth);
-  Common::PushToMap(params, "top_k", top_k);
-  Common::PushToMap(params, "gpu_platform_id", gpu_platform_id);
-  Common::PushToMap(params, "gpu_device_id", gpu_device_id);
-  Common::PushToMap(params, "gpu_use_dp", gpu_use_dp);
-  Common::PushToMap(params, "max_cat_group", max_cat_group);
-  Common::PushToMap(params, "max_cat_threshold", max_cat_threshold);
-  Common::PushToMap(params, "cat_smooth_ratio", cat_smooth_ratio);
-  Common::PushToMap(params, "min_cat_smooth", min_cat_smooth);
-  Common::PushToMap(params, "max_cat_smooth", max_cat_smooth);
-  Common::PushToMap(params, "min_data_per_group", min_data_per_group);
 }
 
 
@@ -495,33 +384,6 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   CHECK(min_data_per_group > 0);
 }
 
-
-void BoostingConfig::Get(std::unordered_map<std::string, std::string>& params) {
-  Common::PushToMap(params, "num_iterations", num_iterations);
-  Common::PushToMap(params, "sigmoid", sigmoid);
-  Common::PushToMap(params, "bagging_seed", bagging_seed);
-  Common::PushToMap(params, "bagging_freq", bagging_freq);
-  Common::PushToMap(params, "bagging_fraction", bagging_fraction);
-  Common::PushToMap(params, "learning_rate", learning_rate);
-  Common::PushToMap(params, "early_stopping_round", early_stopping_round);
-  Common::PushToMap(params, "metric_freq", output_freq);
-  Common::PushToMap(params, "is_training_metric", is_provide_training_metric);
-  Common::PushToMap(params, "num_class", num_class);
-  Common::PushToMap(params, "drop_seed", drop_seed);
-  Common::PushToMap(params, "drop_rate", drop_rate);
-  Common::PushToMap(params, "skip_drop", skip_drop);
-  Common::PushToMap(params, "max_drop", max_drop);
-  Common::PushToMap(params, "xgboost_dart_mode", xgboost_dart_mode);
-  Common::PushToMap(params, "uniform_drop", uniform_drop);
-  Common::PushToMap(params, "top_rate", top_rate);
-  Common::PushToMap(params, "other_rate", other_rate);
-  Common::PushToMap(params, "boost_from_average", boost_from_average);
-  Common::PushToMap(params, "device_type", device_type);
-  Common::PushToMap(params, "tree_learner_type", tree_learner_type);
-  tree_config.Get(params);
-}
-
-
 void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "num_iterations", &num_iterations);
   GetDouble(params, "sigmoid", &sigmoid);
@@ -554,15 +416,6 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   GetTreeLearnerType(params, &tree_learner_type);
   tree_config.Set(params);
 }
-
-
-void NetworkConfig::Get(std::unordered_map<std::string, std::string>& params) {
-  Common::PushToMap(params, "num_machines", num_machines);
-  Common::PushToMap(params, "local_listen_port", local_listen_port);
-  Common::PushToMap(params, "time_out", time_out);
-  Common::PushToMap(params, "machine_list_file", machine_list_filename);
-}
-
 
 void NetworkConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetInt(params, "num_machines", &num_machines);

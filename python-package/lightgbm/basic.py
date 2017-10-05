@@ -1397,50 +1397,6 @@ class Booster(object):
                 self.handle,
                 c_str(params_str)))
 
-    def get_parameter(self, is_output_raw=False):
-        """Get parameters of Booster.
-
-        Parameters
-        ----------
-        is_output_raw : bool
-            whether output raw string
-
-        Returns
-        -------
-        param : dict or string
-            dict: parameter dict with string key and string value
-            string: parameter string as concat of "key:value".
-        """
-        buffer_len = 2000  # about 100 parameters * average length 20
-        tmp_out_len = ctypes.c_int(0)
-        string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
-        _safe_call(_LIB.LGBM_BoosterGetParameter(
-            self.handle,
-            ctypes.c_int(buffer_len),
-            ctypes.byref(tmp_out_len),
-            ptr_string_buffer))
-        actual_len = tmp_out_len.value
-        '''if buffer length is not long enough, reallocate a buffer'''
-        if actual_len > buffer_len:
-            string_buffer = ctypes.create_string_buffer(actual_len)
-            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
-            _safe_call(_LIB.LGBM_BoosterGetParameter(
-                self.handle,
-                ctypes.c_int(actual_len),
-                ctypes.byref(tmp_out_len),
-                ptr_string_buffer))
-        param_str = string_buffer.value.decode()
-        if is_output_raw:
-            return param_str
-        else:
-            ret = {}
-            for token in param_str.split():
-                kv = token.split(':')
-                if len(kv) == 2:
-                    ret[kv[0]] = kv[1]
-            return ret
-
     def update(self, train_set=None, fobj=None):
         """Update for one iteration.
 

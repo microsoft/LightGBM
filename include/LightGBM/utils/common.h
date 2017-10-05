@@ -7,7 +7,6 @@
 #include <cstdio>
 #include <string>
 #include <vector>
-#include <unordered_map>
 #include <sstream>
 #include <cstdint>
 #include <algorithm>
@@ -627,24 +626,6 @@ inline bool FindInBitset(const uint32_t* bits, int n, T pos) {
   }
   int i2 = pos % 32;
   return (bits[i1] >> i2) & 1;
-}
-
-template<typename T>
-inline void PushToMap(std::unordered_map<std::string, std::string>& map, const std::string key, T val) {
-  std::ostringstream sout;
-  sout << val;
-  map.emplace(key, sout.str());
-}
-
-inline std::string MapToString(std::unordered_map<std::string, std::string>& map) {
-  std::ostringstream sout;
-  for (auto it = map.cbegin(); it != map.cend(); ++it) {
-    if (it != map.cbegin()) {
-      sout << ' ';
-    }
-    sout << it->first << ':' << it->second;
-  }
-  return sout.str();
 }
 
 }  // namespace Common
