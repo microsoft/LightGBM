@@ -1152,7 +1152,7 @@ class Dataset(object):
 
         Returns
         -------
-        init_score : numpy array
+        group : numpy array
             Group size of each group.
         """
         if self.group is None and self.handle is not None:
