@@ -370,6 +370,7 @@ class LGBMModel(_LGBMModelBase):
                 The eval result.
             is_bigger_better: bool
                 Is eval result bigger better, e.g. AUC is bigger_better.
+
         For multi-class task, the y_pred is group by class_id first, then group by row_id.
         If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
         """
