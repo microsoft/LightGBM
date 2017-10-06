@@ -12,21 +12,31 @@
 
 namespace LightGBM {
 
+void ConfigBase::KVIntoMap(std::unordered_map<std::string, std::string>& params, const char* kv) {
+  std::vector<std::string> tmp_strs = Common::Split(kv, '=');
+  if (tmp_strs.size() == 2) {
+    std::string key = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[0]));
+    std::string value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
+    if (key.size() > 0) {
+      auto value_search = params.find(key);
+      if (value_search == params.end()) { // not set
+        params.emplace(key, value);
+      } else {
+        Log::Warning("%s is set=%s, %s=%s will be ignored. Current value: %s=%s.",
+          key.c_str(), value_search->second.c_str(), key.c_str(), value.c_str(),
+          key.c_str(), value_search->second.c_str());
+      }
+    }
+  } else {
+    Log::Warning("Unknown parameter %s", kv);
+  }
+}
+
 std::unordered_map<std::string, std::string> ConfigBase::Str2Map(const char* parameters) {
   std::unordered_map<std::string, std::string> params;
   auto args = Common::Split(parameters, " \t\n\r");
   for (auto arg : args) {
-    std::vector<std::string> tmp_strs = Common::Split(arg.c_str(), '=');
-    if (tmp_strs.size() == 2) {
-      std::string key = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[0]));
-      std::string value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
-      if (key.size() <= 0) {
-        continue;
-      }
-      params[key] = value;
-    } else if (Common::Trim(arg).size() > 0) {
-      Log::Warning("Unknown parameter %s", arg.c_str());
-    }
+    KVIntoMap(params, Common::Trim(arg).c_str());
   }
   ParameterAlias::KeyAliasTransform(&params);
   return params;

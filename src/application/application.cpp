@@ -48,17 +48,7 @@ Application::~Application() {
 void Application::LoadParameters(int argc, char** argv) {
   std::unordered_map<std::string, std::string> params;
   for (int i = 1; i < argc; ++i) {
-    std::vector<std::string> tmp_strs = Common::Split(argv[i], '=');
-    if (tmp_strs.size() == 2) {
-      std::string key = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[0]));
-      std::string value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
-      if (key.size() <= 0) {
-        continue;
-      }
-      params[key] = value;
-    } else {
-      Log::Warning("Unknown parameter in command line: %s", argv[i]);
-    }
+    ConfigBase::KVIntoMap(params, argv[i]);
   }
   // check for alias
   ParameterAlias::KeyAliasTransform(&params);
@@ -76,20 +66,7 @@ void Application::LoadParameters(int argc, char** argv) {
         if (line.size() == 0) {
           continue;
         }
-        std::vector<std::string> tmp_strs = Common::Split(line.c_str(), '=');
-        if (tmp_strs.size() == 2) {
-          std::string key = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[0]));
-          std::string value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
-          if (key.size() <= 0) {
-            continue;
-          }
-          // Command-line has higher priority
-          if (params.count(key) == 0) {
-            params[key] = value;
-          }
-        } else {
-          Log::Warning("Unknown parameter in config file: %s", line.c_str());
-        }
+        ConfigBase::KVIntoMap(params, line.c_str());
       }
     } else {
       Log::Warning("Config file %s doesn't exist, will ignore",
