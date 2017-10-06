@@ -12,7 +12,7 @@
 
 namespace LightGBM {
 
-void ConfigBase::KVIntoMap(std::unordered_map<std::string, std::string>& params, const char* kv) {
+void ConfigBase::KV2Map(std::unordered_map<std::string, std::string>& params, const char* kv) {
   std::vector<std::string> tmp_strs = Common::Split(kv, '=');
   if (tmp_strs.size() == 2) {
     std::string key = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[0]));
@@ -36,7 +36,7 @@ std::unordered_map<std::string, std::string> ConfigBase::Str2Map(const char* par
   std::unordered_map<std::string, std::string> params;
   auto args = Common::Split(parameters, " \t\n\r");
   for (auto arg : args) {
-    KVIntoMap(params, Common::Trim(arg).c_str());
+    KV2Map(params, Common::Trim(arg).c_str());
   }
   ParameterAlias::KeyAliasTransform(&params);
   return params;

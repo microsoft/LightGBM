@@ -81,7 +81,7 @@ public:
     const std::unordered_map<std::string, std::string>& params,
     const std::string& name, bool* out);
 
-  static void KVIntoMap(std::unordered_map<std::string, std::string>& params, const char* kv);
+  static void KV2Map(std::unordered_map<std::string, std::string>& params, const char* kv);
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
 };
 

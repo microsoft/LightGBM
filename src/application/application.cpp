@@ -48,7 +48,7 @@ Application::~Application() {
 void Application::LoadParameters(int argc, char** argv) {
   std::unordered_map<std::string, std::string> params;
   for (int i = 1; i < argc; ++i) {
-    ConfigBase::KVIntoMap(params, argv[i]);
+    ConfigBase::KV2Map(params, argv[i]);
   }
   // check for alias
   ParameterAlias::KeyAliasTransform(&params);
@@ -66,7 +66,7 @@ void Application::LoadParameters(int argc, char** argv) {
         if (line.size() == 0) {
           continue;
         }
-        ConfigBase::KVIntoMap(params, line.c_str());
+        ConfigBase::KV2Map(params, line.c_str());
       }
     } else {
       Log::Warning("Config file %s doesn't exist, will ignore",
