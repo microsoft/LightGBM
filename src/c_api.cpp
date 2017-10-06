@@ -686,6 +686,9 @@ int LGBM_DatasetGetSubset(
   }
   auto full_dataset = reinterpret_cast<const Dataset*>(handle);
   CHECK(num_used_row_indices > 0);
+  const int32_t lower = 0;
+  const int32_t upper = full_dataset->num_data() - 1;
+  Common::check_int32_elements_interval_closed(used_row_indices, lower, upper, num_used_row_indices, "Used indices of subset");
   auto ret = std::unique_ptr<Dataset>(new Dataset(num_used_row_indices));
   ret->CopyFeatureMapperFrom(full_dataset);
   ret->CopySubset(full_dataset, used_row_indices, num_used_row_indices, true);
