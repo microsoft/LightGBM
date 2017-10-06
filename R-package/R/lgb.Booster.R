@@ -833,6 +833,27 @@ lgb.dump <- function(booster, num_iteration = NULL){
 #' 
 #' @return vector of evaluation result
 #' 
+#' @examples
+#' \dontrun{
+#' library(lightgbm)
+#' data(agaricus.train, package = "lightgbm")
+#' train <- agaricus.train
+#' dtrain <- lgb.Dataset(train$data, label = train$label)
+#' data(agaricus.test, package = "lightgbm")
+#' test <- agaricus.test
+#' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
+#' params <- list(objective = "regression", metric = "l2")
+#' valids <- list(test = dtest)
+#' model <- lgb.train(params,
+#'                    dtrain,
+#'                    100,
+#'                    valids,
+#'                    min_data = 1,
+#'                    learning_rate = 1,
+#'                    early_stopping_rounds = 10)
+#' lgb.get.eval.result(model, "test", "l2")
+#' }
+#' 
 #' @rdname lgb.get.eval.result
 #' @export
 lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_err = FALSE) {
