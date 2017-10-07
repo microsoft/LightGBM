@@ -1,10 +1,12 @@
 Regression Example
 ==================
+
 Here is an example for LightGBM to run regression task.
 
 ***You should copy executable file to this folder first.***
 
-#### Training
+Training
+--------
 
 For Windows, by running following command in this folder:
 
@@ -18,7 +20,8 @@ For Linux, by running following command in this folder:
 ./lightgbm config=train.conf
 ```
 
-#### Prediction
+Prediction
+----------
 
 You should finish training first.
 

@@ -1,7 +1,7 @@
 GPU Tuning Guide and Performance Comparison
 ===========================================
 
-How it works?
+How It Works?
 -------------
 
 In LightGBM, the main computation cost during training is building the feature histograms. We use an efficient algorithm on GPU to accelerate this process.
@@ -206,6 +206,6 @@ Huan Zhang, Si Si and Cho-Jui Hsieh. `GPU Acceleration for Large-scale Tree Boos
 
 .. _0bb4a82: https://github.com/Microsoft/LightGBM/commit/0bb4a82
 
-.. |Performance Comparison| image:: http://www.huan-zhang.com/images/upload/lightgbm-gpu/compare_0bb4a825.png
+.. |Performance Comparison| image:: ./_static/images/gpu-performance-comparison.png
 
 .. _GPU Acceleration for Large-scale Tree Boosting: https://arxiv.org/abs/1706.08359
