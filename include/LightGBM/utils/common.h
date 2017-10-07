@@ -580,19 +580,25 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred) {
 }
 
 // Check that all y[] are in interval [ymin, ymax] (end points included); throws error if not
-inline void CheckElementsIntervalClosed(const float *y, float ymin, float ymax, int ny, const char *callername) {
+template <typename T>
+inline void CheckElementsIntervalClosed(const T *y, T ymin, T ymax, int ny, const char *callername) {
   for (int i = 0; i < ny; ++i) {
     if (y[i] < ymin || y[i] > ymax) {
-      Log::Fatal("[%s]: does not tolerate element [#%i = %f] outside [%f, %f]", callername, i, y[i], ymin, ymax);
+      if (typeid(T) == typeid(float) || typeid(T) == typeid(double)) {
+        Log::Fatal("[%s]: does not tolerate element [#%i = %f] outside [%f, %f]", callername, i, y[i], ymin, ymax);
+      } else {
+        Log::Fatal("[%s]: does not tolerate element [#%i = %i] outside [%i, %i]", callername, i, y[i], ymin, ymax);
+      }
     }
   }
 }
 
 // One-pass scan over array w with nw elements: find min, max and sum of elements;
 // this is useful for checking weight requirements.
-inline void ObtainMinMaxSum(const float *w, int nw, float *mi, float *ma, double *su) {
-  float minw = w[0];
-  float maxw = w[0];
+template <typename T>
+inline void ObtainMinMaxSum(const T *w, int nw, T *mi, T *ma, double *su) {
+  T minw = w[0];
+  T maxw = w[0];
   double sumw = static_cast<double>(w[0]);
   for (int i = 1; i < nw; ++i) {
     sumw += w[i];
@@ -602,6 +608,11 @@ inline void ObtainMinMaxSum(const float *w, int nw, float *mi, float *ma, double
   if (mi != nullptr) *mi = minw;
   if (ma != nullptr) *ma = maxw;
   if (su != nullptr) *su = sumw;
+}
+
+template <typename T>
+inline void ObtainMinMaxSum(const T *w, int nw, T *mi, std::nullptr_t, double *su) {
+  ObtainMinMaxSum(w, nw, mi, (T*)nullptr, su);
 }
 
 template<class T>
