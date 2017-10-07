@@ -6,7 +6,7 @@ Follow the [Installation Guide](./Installation-Guide.rst) to install LightGBM fi
 
 ***List of other Helpful Links***
 * [Parameters](./Parameters.md)
-* [Parameters Tuning](./Parameters-Tuning.md)
+* [Parameters Tuning](./Parameters-Tuning.rst)
 * [Python-package Quick Start](./Python-Intro.md)
 * [Python API](./Python-API.rst)
 

@@ -4,7 +4,7 @@ This is a page contains all parameters in LightGBM.
 
 ***List of other Helpful Links***
 * [Python API](./Python-API.rst)
-* [Parameters Tuning](./Parameters-Tuning.md)
+* [Parameters Tuning](./Parameters-Tuning.rst)
 
 ***External Links***
 * [Laurae++ Interactive Documentation](https://sites.google.com/view/lauraepp/parameters)

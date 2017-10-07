@@ -41,7 +41,7 @@ LambdaRank
 Parameters Tuning
 -----------------
 
--  Refer to `Parameters Tuning <./Parameters-Tuning.md>`__.
+-  Refer to `Parameters Tuning <./Parameters-Tuning.rst>`__.
 
 Parallel Learning
 -----------------
