@@ -30,8 +30,9 @@ Depending on the answers, while opening your issue, feel free to ping (just ment
 * [@guolinke](https://github.com/guolinke) (C++ code / R-package / Python-package)
 * [@Laurae2](https://github.com/Laurae2) (R-package)
 * [@wxchan](https://github.com/wxchan) (Python-package)
-* [@huanzhang12](https://github.com/huanzhang12) (GPU support)
+* [@henry0312](https://github.com/henry0312) (Python-package)
 * [@StrikerRUS](https://github.com/StrikerRUS) (Python-package)
+* [@huanzhang12](https://github.com/huanzhang12) (GPU support)
 
 Remember this is a free/open community support. We may not be available 24/7 to provide support.
 
