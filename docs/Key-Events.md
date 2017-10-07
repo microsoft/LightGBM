@@ -6,6 +6,10 @@ The list includes the commits where the major feature added is considered workin
 
 | Date | Commit | Type | Description |
 | --- | --- | --- | --- |
+| 02/09/2017 | [574d780](https://github.com/Microsoft/LightGBM/pull/878) | Docs | Readme Badges (Pull Request 878) |
+| 14/08/2017 | [1b8910b](https://github.com/Microsoft/LightGBM/pull/825) | Feature | SHAP Feature Importance (Pull Request 825) |
+| 02/08/2017 | [f2bec2b](https://github.com/Microsoft/LightGBM/pull/762) | Feature | Improved categorical feature support (Pull Request 762) |
+| 30/07/2017 | [00cb04a](https://github.com/Microsoft/LightGBM/pull/747) | Feature | Better missing value handle (Pull Request 747) |
 | 13/07/2017 | [3421bc6](https://github.com/Microsoft/LightGBM/pull/664) | Feature | Automatic Compiler for R-package compilation (Pull Request 664) |
 | 10/07/2017 | [ce999b7](https://github.com/Microsoft/LightGBM/pull/678) | Feature | Random Forest mode (Pull Request 678) |
 | 22/06/2017 | [d862b3e](https://github.com/Microsoft/LightGBM/pull/642) | CIntegration | Travis OSX Support (Pull Request 642) |
@@ -62,6 +66,10 @@ The list includes the commits where the major feature added is considered workin
 
 ## Modification List
 
+* 02/09/2017 [Microsoft/LightGBM@574d780](https://github.com/Microsoft/LightGBM/pull/878): Docs: Readme Badges (Pull Request 878)
+* 14/08/2017 [Microsoft/LightGBM@1b8910b](https://github.com/Microsoft/LightGBM/pull/825): Feature: SHAP Feature Importance (Pull Request 825)
+* 02/08/2017 [Microsoft/LightGBM@f2bec2b](https://github.com/Microsoft/LightGBM/pull/762): Feature: Improved categorical feature support (Pull Request 762)
+* 30/07/2017 [Microsoft/LightGBM@00cb04a](https://github.com/Microsoft/LightGBM/pull/747): Feature: Better missing value handle (Pull Request 747)
 * 13/07/2017 [Microsoft/LightGBM@3421bc6](https://github.com/Microsoft/LightGBM/pull/664): Feature: Automatic Compiler for R-package compilation (Pull Request 664)
 * 10/07/2017 [Microsoft/LightGBM@ce999b7](https://github.com/Microsoft/LightGBM/pull/678): Feature: Random Forest mode (Pull Request 678)
 * 22/06/2017 [Microsoft/LightGBM@d862b3e](https://github.com/Microsoft/LightGBM/pull/642): CIntegration: Travis OSX Support (Pull Request 642)
