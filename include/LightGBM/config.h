@@ -81,6 +81,7 @@ public:
     const std::unordered_map<std::string, std::string>& params,
     const std::string& name, bool* out);
 
+  static void KV2Map(std::unordered_map<std::string, std::string>& params, const char* kv);
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
 };
 
@@ -473,15 +474,38 @@ struct ParameterAlias {
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
-      if (alias_table.count(pair.first) > 0) {
-        tmp_map[alias_table.at(pair.first)] = pair.second;
-      } else if (parameter_set.count(pair.first) == 0) {
-        Log::Fatal("Unknown parameter: %s", pair.first.c_str());
+      auto alias = alias_table.find(pair.first);
+      if (alias != alias_table.end()) { // found alias
+        auto alias_set = tmp_map.find(alias->second); 
+        if (alias_set != tmp_map.end()) { // alias already set
+          // set priority by length & alphabetically to ensure reproducible behavior
+          if (alias_set->second.size() < pair.first.size() ||
+            (alias_set->second.size() == pair.first.size() && alias_set->second < pair.first)) {
+            Log::Warning("%s is set with %s=%s, %s=%s will be ignored. Current value: %s=%s.",
+              alias->second.c_str(), alias_set->second.c_str(), params->at(alias_set->second).c_str(),
+              pair.first.c_str(), pair.second.c_str(), alias->second.c_str(), params->at(alias_set->second).c_str());
+          } else {
+            Log::Warning("%s is set with %s=%s, will be overrided by %s=%s. Current value: %s=%s.",
+              alias->second.c_str(), alias_set->second.c_str(), params->at(alias_set->second).c_str(),
+              pair.first.c_str(), pair.second.c_str(), alias->second.c_str(), pair.second.c_str());
+            tmp_map[alias->second] = pair.first;
+          }
+        } else { // alias not set
+          tmp_map.emplace(alias->second, pair.first);
+        }
+      } else if (parameter_set.find(pair.first) == parameter_set.end()) {
+        Log::Warning("Unknown parameter: %s", pair.first.c_str());
       }
     }
     for (const auto& pair : tmp_map) {
-      if (params->count(pair.first) == 0) {
-        params->insert(std::make_pair(pair.first, pair.second));
+      auto alias = params->find(pair.first);
+      if (alias == params->end()) { // not find
+        params->emplace(pair.first, params->at(pair.second));
+        params->erase(pair.second);
+      } else {
+        Log::Warning("%s is set=%s, %s=%s will be ignored. Current value: %s=%s.", 
+          pair.first.c_str(), alias->second.c_str(), pair.second.c_str(), params->at(pair.second).c_str(),
+          pair.first.c_str(), alias->second.c_str());
       }
     }
   }
