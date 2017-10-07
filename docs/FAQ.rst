@@ -17,7 +17,7 @@ Contents
 Critical
 ~~~~~~~~
 
-You encountered a critical issue when using LightGBM (crash, prediction error, non sense outputs…). Who should you contact?
+You encountered a critical issue when using LightGBM (crash, prediction error, non sense outputs...). Who should you contact?
 
 If your issue is not critical, just post an issue in `Microsoft/LightGBM repository <https://github.com/Microsoft/LightGBM/issues>`__.
 

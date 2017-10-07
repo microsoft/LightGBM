@@ -32,7 +32,7 @@ Categorical Feature Support
 LambdaRank
 ----------
 
--  The label should be ``int`` type, and larger numbers represent the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect).
+-  The label should be ``int`` type, and larger numbers represent the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect).
 
 -  Use ``label_gain`` to set the gain(weight) of ``int`` label.
 
