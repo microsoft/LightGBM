@@ -88,7 +88,7 @@ Refer to the walk through examples in `Python guide folder <https://github.com/M
 Troubleshooting
 ---------------
 
-Refer to `FAQ <https://github.com/Microsoft/LightGBM/tree/master/docs/FAQ.md>`_.
+Refer to `FAQ <https://github.com/Microsoft/LightGBM/tree/master/docs/FAQ.rst>`_.
 
 Developments
 ------------
