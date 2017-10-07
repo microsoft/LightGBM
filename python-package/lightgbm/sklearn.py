@@ -196,7 +196,7 @@ class LGBMModel(_LGBMModelBase):
 
             Note
             ----
-            **kwargs is not supported in sklearn, it may cause unexpected issues.
+            \*\*kwargs is not supported in sklearn, it may cause unexpected issues.
 
         Attributes
         ----------
@@ -341,7 +341,7 @@ class LGBMModel(_LGBMModelBase):
             If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
         callbacks : list of callback functions or None, optional (default=None)
             List of callback functions that are applied at each iteration.
-            See Callbacks in Python-API.md for more information.
+            See Callbacks in Python API for more information.
 
         Returns
         -------
@@ -370,6 +370,7 @@ class LGBMModel(_LGBMModelBase):
                 The eval result.
             is_bigger_better: bool
                 Is eval result bigger better, e.g. AUC is bigger_better.
+
         For multi-class task, the y_pred is group by class_id first, then group by row_id.
         If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
         """

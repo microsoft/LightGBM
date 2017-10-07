@@ -180,10 +180,11 @@ texinfo_documents = [
 
 
 # https://recommonmark.readthedocs.io/en/latest/
-github_doc_root = 'https://github.com/Microsoft/LightGBM/tree/master/docs'
+github_doc_root = 'https://github.com/Microsoft/LightGBM/tree/master/docs/'
 def setup(app):
     app.add_config_value('recommonmark_config', {
             'url_resolver': lambda url: github_doc_root + url,
             'auto_toc_tree_section': 'Contents',
             }, True)
     app.add_transform(AutoStructify)
+    app.add_javascript("js/rst_links_fix.js")

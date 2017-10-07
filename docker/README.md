@@ -8,14 +8,14 @@ Follow the general installation instructions
 [on the Docker site](https://docs.docker.com/installation/):
 
 * [OSX](https://docs.docker.com/installation/mac/): [docker toolbox](https://www.docker.com/toolbox)
-* [ubuntu](https://docs.docker.com/installation/ubuntulinux/)
+* [Ubuntu](https://docs.docker.com/installation/ubuntulinux/)
 
-## Running the container
+## Running the Container
 
-Build the container, for python users: 
+Build the container, for python users:
 
-    $ docker build -t lightgbm -f dockerfile-python .
+    docker build -t lightgbm -f dockerfile-python .
 
 After build finished, run the container:
 
-    $ docker run --rm -it lightgbm
+    docker run --rm -it lightgbm

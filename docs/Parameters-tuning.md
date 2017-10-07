@@ -4,11 +4,11 @@ This is a page contains all parameters in LightGBM.
 
 ***List of other Helpful Links***
 * [Parameters](./Parameters.md)
-* [Python API Reference](./Python-API.md)
+* [Python API](./Python-API.rst)
 
-## Tune parameters for the leaf-wise(best-first) tree
+## Tune Parameters for the Leaf-wise (Best-first) Tree
 
-LightGBM uses the [leaf-wise](https://github.com/Microsoft/LightGBM/wiki/Features#optimization-in-accuracy) tree growth algorithm, while many other popular tools use depth-wise tree growth. Compared with depth-wise growth, the leaf-wise algorithm can convenge much faster. However, the leaf-wise growth may be over-fitting if not used with the appropriate parameters. 
+LightGBM uses the [leaf-wise](./Features.md) tree growth algorithm, while many other popular tools use depth-wise tree growth. Compared with depth-wise growth, the leaf-wise algorithm can convenge much faster. However, the leaf-wise growth may be over-fitting if not used with the appropriate parameters. 
 
 To get good results using a leaf-wise tree, these are some important parameters:
 
@@ -19,15 +19,15 @@ To get good results using a leaf-wise tree, these are some important parameters:
 3. ```max_depth```. You also can use ```max_depth``` to limit the tree depth explicitly. 
 
 
-## For faster speed
+## For Faster Speed
 
 * Use bagging by setting ```bagging_fraction``` and ```bagging_freq``` 
 * Use feature sub-sampling by setting ```feature_fraction```
 * Use small ```max_bin```
 * Use ```save_binary``` to speed up data loading in future learning
-* Use parallel learning, refer to [parallel learning guide](./Parallel-Learning-Guide.md).
+* Use parallel learning, refer to [Parallel Learning Guide](./Parallel-Learning-Guide.rst).
 
-## For better accuracy
+## For Better Accuracy
 
 * Use large ```max_bin``` (may be slower)
 * Use small ```learning_rate``` with large ```num_iterations```
@@ -35,7 +35,7 @@ To get good results using a leaf-wise tree, these are some important parameters:
 * Use bigger training data
 * Try ```dart```
 
-## Deal with over-fitting
+## Deal with Over-fitting
 
 * Use small ```max_bin```
 * Use small ```num_leaves```
