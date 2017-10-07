@@ -25,10 +25,14 @@
 
 * Refer to [Parameters Tuning](./Parameters-tuning.md).
 
+## Parallel Learning
+
+* Refer to [Parallel Learning Guide](./Parallel-Learning-Guide.rst).
+
 ## GPU Support
 
 * Refer to [GPU Tutorial](./GPU-Tutorial.md) and [GPU Targets](./GPU-Targets.rst).
 
-## Parallel Learning
+## Recommendations for gcc Users (MinGW, *nix)
 
-* Refer to [Parallel Learning Guide](./Parallel-Learning-Guide.rst).
+* Refer to [gcc Tips](./gcc-tips.rst).
