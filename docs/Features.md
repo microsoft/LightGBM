@@ -34,7 +34,7 @@ Most decision tree learning algorithms grow tree by level(depth)-wise, like the 
 
 ![level_wise](./_static/images/level-wise.png)
 
-LightGBM grows tree by leaf-wise(best-first)[[6]](#references). It will choose the leaf with max delta loss to grow. When growing same ``#leaf``, leaf-wise algorithm can reduce more loss than level-wise algorithm.
+LightGBM grows tree by leaf-wise (best-first)[[6]](#references). It will choose the leaf with max delta loss to grow. When growing same ``#leaf``, leaf-wise algorithm can reduce more loss than level-wise algorithm.
 
 Leaf-wise may cause over-fitting when ``#data`` is small. So, LightGBM can use an additional parameter ``max_depth`` to limit depth of tree and avoid over-fitting (tree still grows by leaf-wise).
 
@@ -115,7 +115,7 @@ Voting parallel further reduce the communication cost in [Data Parallel](#data-p
 
 ## GPU Support
 
-Thanks [@huanzhang12](https://github.com/huanzhang12) for contributing this feature. Please read[[10]](#references) to get more details.
+Thanks [@huanzhang12](https://github.com/huanzhang12) for contributing this feature. Please read [[10]](#references) to get more details.
 
 - [GPU Installation](./Installation-Guide.rst)
 - [GPU Tutorial](./GPU-Tutorial.md)

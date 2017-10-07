@@ -102,7 +102,7 @@ Remember this is a free/open community support. We may not be available 24/7 to 
 
 ### Python-package
 
-- **Question 1**: I see error messages like this when install from github using `python setup.py install`.
+- **Question 1**: I see error messages like this when install from GitHub using `python setup.py install`.
 
     ```
     error: Error: setup script specifies an absolute path:
@@ -113,7 +113,7 @@ Remember this is a free/open community support. We may not be available 24/7 to 
     setup.py directory, *never* absolute paths.
     ```
 
-- **Solution 1**: this error should be solved in latest version. If you still meet this error, try to remove lightgbm.egg-info folder in your Python-package and reinstall, or check [this thread on stackoverflow](http://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path).
+- **Solution 1**: This error should be solved in latest version. If you still meet this error, try to remove `lightgbm.egg-info` folder in your Python-package and reinstall, or check [this thread on stackoverflow](http://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path).
 
 ---
 

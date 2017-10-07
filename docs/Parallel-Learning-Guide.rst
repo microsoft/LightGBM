@@ -64,7 +64,7 @@ Then write these IP in one file (assume ``mlist.txt``) like following:
     machine1_ip
     machine2_ip
 
-Note: For Windows users, need to start "smpd" to start MPI service. More details can be found `here`_.
+**Note**: For Windows users, need to start "smpd" to start MPI service. More details can be found `here`_.
 
 Run Parallel Learning
 ---------------------
@@ -74,38 +74,40 @@ Socket Version
 
 1. Edit following parameters in config file:
 
-``tree_learner=your_parallel_algorithm``, edit ``your_parallel_algorithm`` (e.g. feature/data) here.
+   ``tree_learner=your_parallel_algorithm``, edit ``your_parallel_algorithm`` (e.g. feature/data) here.
 
-``num_machines=your_num_machines``, edit ``your_num_machines`` (e.g. 4) here.
+   ``num_machines=your_num_machines``, edit ``your_num_machines`` (e.g. 4) here.
 
-``machine_list_file=mlist.txt``, ``mlist.txt`` is created in `Preparation section <#preparation>`__.
+   ``machine_list_file=mlist.txt``, ``mlist.txt`` is created in `Preparation section <#preparation>`__.
 
-``local_listen_port=12345``, ``12345`` is allocated in `Preparation section <#preparation>`__.
+   ``local_listen_port=12345``, ``12345`` is allocated in `Preparation section <#preparation>`__.
 
 2. Copy data file, executable file, config file and ``mlist.txt`` to all machines.
 
 3. Run following command on all machines, you need to change ``your_config_file`` to real config file.
 
-For Windows: ``lightgbm.exe config=your_config_file``
+   For Windows: ``lightgbm.exe config=your_config_file``
 
-For Linux: ``./lightgbm config=your_config_file``
+   For Linux: ``./lightgbm config=your_config_file``
 
 MPI Version
 ^^^^^^^^^^^
 
 1. Edit following parameters in config file:
 
-``tree_learner=your_parallel_algorithm``, edit ``your_parallel_algorithm`` (e.g. feature/data) here.
+   ``tree_learner=your_parallel_algorithm``, edit ``your_parallel_algorithm`` (e.g. feature/data) here.
 
-``num_machines=your_num_machines``, edit ``your_num_machines`` (e.g. 4) here.
+   ``num_machines=your_num_machines``, edit ``your_num_machines`` (e.g. 4) here.
 
-2. Copy data file, executable file, config file and ``mlist.txt`` to all machines. Note: MPI needs to be run in the **same path on all machines**.
+2. Copy data file, executable file, config file and ``mlist.txt`` to all machines.
+
+   **Note**: MPI needs to be run in the **same path on all machines**.
 
 3. Run following command on one machine (not need to run on all machines), need to change ``your_config_file`` to real config file.
 
-For Windows: ``mpiexec.exe /machinefile mlist.txt lightgbm.exe config=your_config_file``
+   For Windows: ``mpiexec.exe /machinefile mlist.txt lightgbm.exe config=your_config_file``
 
-For Linux: ``mpiexec --machinefile mlist.txt ./lightgbm config=your_config_file``
+   For Linux: ``mpiexec --machinefile mlist.txt ./lightgbm config=your_config_file``
 
 Example
 ^^^^^^^

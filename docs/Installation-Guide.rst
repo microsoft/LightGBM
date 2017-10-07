@@ -31,7 +31,7 @@ The exe file will be in ``LightGBM-master/windows/x64/Release`` folder.
 From Command Line
 *****************
 
-1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (MSbuild is not needed if **Visual Studio** is installed).
+1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (**MSBuild** is not needed if **Visual Studio** is installed).
 
 2. Run the following commands:
 
@@ -69,7 +69,7 @@ The exe and dll files will be in ``LightGBM/`` folder.
 Linux
 ~~~~~
 
-LightGBM uses ``CMake`` to build. Run the following commands:
+LightGBM uses **CMake** to build. Run the following commands:
 
 .. code::
 
@@ -129,7 +129,7 @@ With GUI
 
 4. Go to ``LightGBM-master/windows`` folder.
 
-4. Open ``LightGBM.sln`` file with Visual Studio, choose ``Release_mpi`` configuration and click ``BUILD-> Build Solution (Ctrl+Shift+B)``.
+5. Open ``LightGBM.sln`` file with Visual Studio, choose ``Release_mpi`` configuration and click ``BUILD-> Build Solution (Ctrl+Shift+B)``.
 
    If you have errors about **Platform Toolset**, go to ``PROJECT-> Properties-> Configuration Properties-> General`` and select the toolset installed on your machine.
 
@@ -140,7 +140,7 @@ From Command Line
 
 1. You need to install `MS MPI`_ first. Both ``msmpisdk.msi`` and ``MSMpiSetup.exe`` are needed.
 
-2. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (MSbuild is not needed if **Visual Studio** is installed).
+2. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (MSBuild is not needed if **Visual Studio** is installed).
 
 3. Run the following commands:
 
@@ -228,9 +228,9 @@ Windows
 
 If you use **MinGW**, the build procedure are similar to the build in Linux. Refer to `GPU Windows Compilation <./GPU-Windows.md>`__ to get more details.
 
-Following procedure is for the MSVC(Microsoft Visual C++) build.
+Following procedure is for the MSVC (Microsoft Visual C++) build.
 
-1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (MSbuild is not needed if **Visual Studio** is installed).
+1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (MSBuild is not needed if **Visual Studio** is installed).
 
 2. Install **OpenCL** for Windows. The installation depends on the brand (NVIDIA, AMD, Intel) of your GPU card.
 
