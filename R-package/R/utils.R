@@ -110,7 +110,7 @@ lgb.params2str <- function(params, ...) {
   for (key in names(params)) {
     
     # Join multi value first
-    val <- paste0(params[[key]], collapse = ",")
+    val <- paste0(format(params[[key]], scientific = FALSE), collapse = ",")
     if (nchar(val) <= 0) next # Skip join
     
     # Join key value
