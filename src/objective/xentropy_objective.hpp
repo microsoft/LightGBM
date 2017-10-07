@@ -15,7 +15,7 @@
  * Target y is anything in interval [0, 1].
  *
  * (1) CrossEntropy; "xentropy";
- * 
+ *
  * loss(y, p, w) = { -(1-y)*log(1-p)-y*log(p) }*w,
  * with probability p = 1/(1+exp(-f)), where f is being boosted
  *
@@ -23,7 +23,7 @@
  *
  * (2) CrossEntropyLambda; "xentlambda"
  *
- * loss(y, p, w) = -(1-y)*log(1-p)-y*log(p), 
+ * loss(y, p, w) = -(1-y)*log(1-p)-y*log(p),
  * with p = 1-exp(-lambda*w), lambda = log(1+exp(f)), f being boosted, and w > 0
  *
  * ConvertToOutput: f -> lambda
@@ -52,13 +52,13 @@ public:
     weights_ = metadata.weights();
 
     CHECK_NOTNULL(label_);
-    Common::check_elements_interval_closed(label_, 0.0f, 1.0f, num_data_, GetName());
+    Common::CheckElementsIntervalClosed(label_, 0.0f, 1.0f, num_data_, GetName());
     Log::Info("[%s:%s]: (objective) labels passed interval [0, 1] check",  GetName(), __func__);
 
     if (weights_ != nullptr) {
       float minw;
       double sumw;
-      Common::obtain_min_max_sum(weights_, num_data_, &minw, nullptr, &sumw);
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, nullptr, &sumw);
       if (minw < 0.0f) {
         Log::Fatal("[%s]: at least one weight is negative.", GetName());
       }
@@ -66,7 +66,7 @@ public:
         Log::Fatal("[%s]: sum of weights is zero.", GetName());
       }
     }
-    
+
   }
 
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
@@ -158,24 +158,24 @@ public:
     weights_ = metadata.weights();
 
     CHECK_NOTNULL(label_);
-    Common::check_elements_interval_closed(label_, 0.0f, 1.0f, num_data_, GetName());
+    Common::CheckElementsIntervalClosed(label_, 0.0f, 1.0f, num_data_, GetName());
     Log::Info("[%s:%s]: (objective) labels passed interval [0, 1] check",  GetName(), __func__);
 
     if (weights_ != nullptr) {
 
-      Common::obtain_min_max_sum(weights_, num_data_, &min_weight_, &max_weight_, nullptr);
+      Common::ObtainMinMaxSum(weights_, num_data_, &min_weight_, &max_weight_, nullptr);
       if (min_weight_ <= 0.0f) {
         Log::Fatal("[%s]: at least one weight is non-positive.", GetName());
       }
 
       // Issue an info statement about this ratio
       double weight_ratio = max_weight_ / min_weight_;
-      Log::Info("[%s:%s]: min, max weights = %f, %f; ratio = %f", 
+      Log::Info("[%s:%s]: min, max weights = %f, %f; ratio = %f",
                 GetName(), __func__,
                 min_weight_, max_weight_,
                 weight_ratio);
     } else {
-      // all weights are implied to be unity; no need to do anything 
+      // all weights are implied to be unity; no need to do anything
     }
   }
 

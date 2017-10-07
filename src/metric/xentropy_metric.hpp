@@ -12,7 +12,7 @@
 #include <vector>
 #include <sstream>
 
-/* 
+/*
  * Implements three related metrics:
  *
  * (1) standard cross-entropy that can be used for continuous labels in [0, 1]
@@ -79,7 +79,7 @@ public:
     CHECK_NOTNULL(label_);
 
     // ensure that labels are in interval [0, 1], interval ends included
-    Common::check_elements_interval_closed(label_, 0.0f, 1.0f, num_data_, GetName()[0].c_str());
+    Common::CheckElementsIntervalClosed(label_, 0.0f, 1.0f, num_data_, GetName()[0].c_str());
     Log::Info("[%s:%s]: (metric) labels passed interval [0, 1] check",  GetName()[0].c_str(), __func__);
 
     // check that weights are non-negative and sum is positive
@@ -87,7 +87,7 @@ public:
       sum_weights_ = static_cast<double>(num_data_);
     } else {
       float minw;
-      Common::obtain_min_max_sum(weights_, num_data_, &minw, nullptr, &sum_weights_);
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, nullptr, &sum_weights_);
       if (minw < 0.0f) {
         Log::Fatal("[%s:%s]: (metric) weights not allowed to be negative", GetName()[0].c_str(), __func__);
       }
@@ -172,18 +172,18 @@ public:
     weights_ = metadata.weights();
 
     CHECK_NOTNULL(label_);
-    Common::check_elements_interval_closed(label_, 0.0f, 1.0f, num_data_, GetName()[0].c_str());
+    Common::CheckElementsIntervalClosed(label_, 0.0f, 1.0f, num_data_, GetName()[0].c_str());
     Log::Info("[%s:%s]: (metric) labels passed interval [0, 1] check",  GetName()[0].c_str(), __func__);
 
     // check all weights are strictly positive; throw error if not
     if (weights_ != nullptr) {
       float minw;
-      Common::obtain_min_max_sum(weights_, num_data_, &minw, nullptr, nullptr);
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, nullptr, nullptr);
       if (minw <= 0.0f) {
         Log::Fatal("[%s:%s]: (metric) all weights must be positive", GetName()[0].c_str(), __func__);
       }
     }
-    
+
   }
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
@@ -256,14 +256,14 @@ public:
     weights_ = metadata.weights();
 
     CHECK_NOTNULL(label_);
-    Common::check_elements_interval_closed(label_, 0.0f, 1.0f, num_data_, GetName()[0].c_str());
+    Common::CheckElementsIntervalClosed(label_, 0.0f, 1.0f, num_data_, GetName()[0].c_str());
     Log::Info("[%s:%s]: (metric) labels passed interval [0, 1] check",  GetName()[0].c_str(), __func__);
 
     if (weights_ == nullptr) {
       sum_weights_ = static_cast<double>(num_data_);
     } else {
       float minw;
-      Common::obtain_min_max_sum(weights_, num_data_, &minw, nullptr, &sum_weights_);
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, nullptr, &sum_weights_);
       if (minw < 0.0f) {
         Log::Fatal("[%s:%s]: (metric) at least one weight is negative", GetName()[0].c_str(), __func__);
       }
