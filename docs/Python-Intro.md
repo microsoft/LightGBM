@@ -6,7 +6,7 @@ This document gives a basic walkthrough of LightGBM Python-package.
 ***List of other Helpful Links***
 * [Python Examples](https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide)
 * [Python API](./Python-API.rst)
-* [Parameters Tuning](./Parameters-tuning.md)
+* [Parameters Tuning](./Parameters-Tuning.md)
 
 Install
 -------

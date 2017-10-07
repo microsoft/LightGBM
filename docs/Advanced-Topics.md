@@ -23,7 +23,7 @@
 
 ## Parameters Tuning
 
-* Refer to [Parameters Tuning](./Parameters-tuning.md).
+* Refer to [Parameters Tuning](./Parameters-Tuning.md).
 
 ## Parallel Learning
 
@@ -35,4 +35,4 @@
 
 ## Recommendations for gcc Users (MinGW, *nix)
 
-* Refer to [gcc Tips](./gcc-tips.rst).
+* Refer to [gcc Tips](./gcc-Tips.rst).
