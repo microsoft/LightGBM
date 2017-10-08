@@ -173,7 +173,7 @@ Thanks `@huanzhang12 <https://github.com/huanzhang12>`__ for contributing this f
 
 - `GPU Installation <./Installation-Guide.rst>`__
 
-- `GPU Tutorial <./GPU-Tutorial.md>`__
+- `GPU Tutorial <./GPU-Tutorial.rst>`__
 
 Applications and Metrics
 ------------------------

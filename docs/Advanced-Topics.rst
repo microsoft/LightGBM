@@ -51,7 +51,7 @@ Parallel Learning
 GPU Support
 -----------
 
--  Refer to `GPU Tutorial <./GPU-Tutorial.md>`__ and `GPU Targets <./GPU-Targets.rst>`__.
+-  Refer to `GPU Tutorial <./GPU-Tutorial.rst>`__ and `GPU Targets <./GPU-Targets.rst>`__.
 
 Recommendations for gcc Users (MinGW, \*nix)
 --------------------------------------------
