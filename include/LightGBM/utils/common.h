@@ -595,11 +595,11 @@ inline void CheckElementsIntervalClosed(const T *y, T ymin, T ymax, int ny, cons
 
 // One-pass scan over array w with nw elements: find min, max and sum of elements;
 // this is useful for checking weight requirements.
-template <typename T>
-inline void ObtainMinMaxSum(const T *w, int nw, T *mi, T *ma, double *su) {
-  T minw = w[0];
-  T maxw = w[0];
-  double sumw = static_cast<double>(w[0]);
+template <typename T1, typename T2>
+inline void ObtainMinMaxSum(const T1 *w, int nw, T1 *mi, T1 *ma, T2 *su) {
+  T1 minw = w[0];
+  T1 maxw = w[0];
+  T2 sumw = static_cast<T2>(w[0]);
   for (int i = 1; i < nw; ++i) {
     sumw += w[i];
     if (w[i] < minw) minw = w[i];
@@ -608,11 +608,6 @@ inline void ObtainMinMaxSum(const T *w, int nw, T *mi, T *ma, double *su) {
   if (mi != nullptr) *mi = minw;
   if (ma != nullptr) *ma = maxw;
   if (su != nullptr) *su = sumw;
-}
-
-template <typename T>
-inline void ObtainMinMaxSum(const T *w, int nw, T *mi, std::nullptr_t, double *su) {
-  ObtainMinMaxSum(w, nw, mi, (T*)nullptr, su);
 }
 
 template<class T>
