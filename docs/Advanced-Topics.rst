@@ -19,7 +19,7 @@ Categorical Feature Support
    Such an optimal split can provide the much better accuracy than one-hot coding solution.
 
 -  Use ``categorical_feature`` to specify the categorical features.
-   Refer to the parameter ``categorical_feature`` in `Parameters <./Parameters.md>`__.
+   Refer to the parameter ``categorical_feature`` in `Parameters <./Parameters.rst>`__.
 
 -  Converting to ``int`` type is needed first, and there is support for non-negative numbers only.
    It is better to convert into continues ranges.

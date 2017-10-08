@@ -53,7 +53,7 @@ LightGBM
 
 -  **Question 1**: Where do I find more details about LightGBM parameters?
 
--  **Solution 1**: Take a look at `Parameters <./Parameters.md>`__ and `Laurae++/Parameters <https://sites.google.com/view/lauraepp/parameters>`__ website.
+-  **Solution 1**: Take a look at `Parameters <./Parameters.rst>`__ and `Laurae++/Parameters <https://sites.google.com/view/lauraepp/parameters>`__ website.
 
 --------------
 

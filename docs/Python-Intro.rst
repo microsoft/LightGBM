@@ -127,7 +127,7 @@ If you concern about your memory consumption. You can save memory accroding to f
 Setting Parameters
 ------------------
 
-LightGBM can use either a list of pairs or a dictionary to set `Parameters <./Parameters.md>`__.
+LightGBM can use either a list of pairs or a dictionary to set `Parameters <./Parameters.rst>`__.
 For instance:
 
 -  Booster parameters:

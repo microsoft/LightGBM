@@ -7,7 +7,7 @@ Follow the `Installation Guide <./Installation-Guide.rst>`__ to install LightGBM
 
 **List of other helpful links**
 
--  `Parameters <./Parameters.md>`__
+-  `Parameters <./Parameters.rst>`__
 
 -  `Parameters Tuning <./Parameters-Tuning.rst>`__
 
@@ -30,13 +30,13 @@ update 12/5/2016:
 LightGBM can use categorical feature directly (without one-hot coding).
 The experiment on `Expo data`_ shows about 8x speed-up compared with one-hot coding.
 
-For the setting details, please refer to `Parameters <./Parameters.md>`__.
+For the setting details, please refer to `Parameters <./Parameters.rst>`__.
 
 Weight and Query/Group Data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-LightGBM also support weighted training, it needs an additional `weight data <./Parameters.md>`__.
-And it needs an additional `query data <./Parameters.md>`_ for ranking task.
+LightGBM also support weighted training, it needs an additional `weight data <./Parameters.rst>`__.
+And it needs an additional `query data <./Parameters.rst>`_ for ranking task.
 
 update 11/3/2016:
 
@@ -163,7 +163,7 @@ Some important parameters:
 
   - minimal sum hessian in one leaf. Like ``min_data_in_leaf``, can be used to deal with over-fitting
 
-For all parameters, please refer to `Parameters <./Parameters.md>`__.
+For all parameters, please refer to `Parameters <./Parameters.rst>`__.
 
 Run LightGBM
 ------------

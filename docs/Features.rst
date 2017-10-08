@@ -206,7 +206,7 @@ Support following metrics:
 
 -  Multi class error rate
 
-For more details, please refer to `Parameters <./Parameters.md>`__.
+For more details, please refer to `Parameters <./Parameters.rst>`__.
 
 Other Features
 --------------
@@ -237,7 +237,7 @@ Other Features
 
 -  Prediction for leaf index
 
-For more details, please refer to `Parameters <./Parameters.md>`__.
+For more details, please refer to `Parameters <./Parameters.rst>`__.
 
 References
 ----------
