@@ -232,7 +232,7 @@ To build LightGBM GPU version, run the following commands:
 Windows
 ^^^^^^^
 
-If you use **MinGW**, the build procedure are similar to the build in Linux. Refer to `GPU Windows Compilation <./GPU-Windows.md>`__ to get more details.
+If you use **MinGW**, the build procedure are similar to the build in Linux. Refer to `GPU Windows Compilation <./GPU-Windows.rst>`__ to get more details.
 
 Following procedure is for the MSVC (Microsoft Visual C++) build.
 

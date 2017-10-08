@@ -3,7 +3,7 @@ LightGBM GPU Tutorial
 
 The purpose of this document is to give you a quick step-by-step tutorial on GPU training.
 
-For Windows, please see `GPU Windows Tutorial <./GPU-Windows.md>`__.
+For Windows, please see `GPU Windows Tutorial <./GPU-Windows.rst>`__.
 
 We will use the GPU instance on `Microsoft Azure cloud computing platform`_ for demonstration,
 but you can use any machine with modern AMD or NVIDIA GPUs.
@@ -178,7 +178,7 @@ Further Reading
 
 - `GPU SDK Correspondence and Device Targeting Table <./GPU-Targets.rst>`__
 
-- `GPU Windows Tutorial <./GPU-Windows.md>`__
+- `GPU Windows Tutorial <./GPU-Windows.rst>`__
 
 Reference
 ---------
