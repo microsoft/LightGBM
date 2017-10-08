@@ -59,21 +59,21 @@ Some important parameters:
 
   - path to config file
 
-- ``task``, default=\ ``train``, type=enum, options=\ ``train``,\ ``prediction``
+- ``task``, default=\ ``train``, type=enum, options=\ ``train``, ``prediction``
 
   - ``train`` for training
 
   - ``prediction`` for prediction
 
 - ``application``, default=\ ``regression``, type=enum,
-  options=\ ``regression``,\ ``regression_l2``,\ ``regression_l1``,\ ``huber``,\ ``fair``,\ ``poisson``,\ ``binary``,\ ``lambdarank``,\ ``multiclass``,
-  alias=\ ``objective``,\ ``app``
+  options=\ ``regression``, ``regression_l2``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``binary``, ``lambdarank``, ``multiclass``,
+  alias=\ ``objective``, ``app``
 
   - ``regression``, regression application
 
-    - ``regression_l2``, L2 loss, alias=\ ``mean_squared_error``,\ ``mse``
+    - ``regression_l2``, L2 loss, alias=\ ``mean_squared_error``, ``mse``
 
-    - ``regression_l1``, L1 loss, alias=\ ``mean_absolute_error``,\ ``mae``
+    - ``regression_l1``, L1 loss, alias=\ ``mean_absolute_error``, ``mae``
 
     - ``huber``, `Huber loss`_
 
@@ -93,8 +93,8 @@ Some important parameters:
   - ``multiclass``, multi-class classification application, ``num_class`` should be set as well
 
 - ``boosting``, default=\ ``gbdt``, type=enum,
-  options=\ ``gbdt``,\ ``rf``,\ ``dart``,\ ``goss``,
-  alias=\ ``boost``,\ ``boosting_type``
+  options=\ ``gbdt``, ``rf``, ``dart``, ``goss``,
+  alias=\ ``boost``, ``boosting_type``
 
   - ``gbdt``, traditional Gradient Boosting Decision Tree
 
@@ -104,18 +104,18 @@ Some important parameters:
 
   - ``goss``, Gradient-based One-Side Sampling
 
-- ``data``, default=\ ``""``, type=string, alias=\ ``train``,\ ``train_data``
+- ``data``, default=\ ``""``, type=string, alias=\ ``train``, ``train_data``
 
   - training data, LightGBM will train from this data
 
-- ``valid``, default=\ ``""``, type=multi-string, alias=\ ``test``,\ ``valid_data``,\ ``test_data``
+- ``valid``, default=\ ``""``, type=multi-string, alias=\ ``test``, ``valid_data``, ``test_data``
 
   - validation/test data, LightGBM will output metrics for these data
 
   - support multi validation data, separate by ``,``
 
 - ``num_iterations``, default=\ ``100``, type=int,
-  alias=\ ``num_iteration``,\ ``num_tree``,\ ``num_trees``,\ ``num_round``,\ ``num_rounds``
+  alias=\ ``num_iteration``, ``num_tree``, ``num_trees``, ``num_round``, ``num_rounds``
 
   - number of boosting iterations/trees
 
@@ -127,7 +127,7 @@ Some important parameters:
 
   - number of leaves in one tree
 
-- ``tree_learner``, default=\ ``serial``, type=enum, options=\ ``serial``,\ ``feature``,\ ``data``
+- ``tree_learner``, default=\ ``serial``, type=enum, options=\ ``serial``, ``feature``, ``data``
 
   - ``serial``, single machine tree learner
 
@@ -137,7 +137,7 @@ Some important parameters:
 
   - refer to `Parallel Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
 
-- ``num_threads``, default=\ ``OpenMP_default``, type=int, alias=\ ``num_thread``,\ ``nthread``
+- ``num_threads``, default=\ ``OpenMP_default``, type=int, alias=\ ``num_thread``, ``nthread``
 
   - number of threads for LightGBM
 
@@ -154,12 +154,12 @@ Some important parameters:
 
   - ``< 0`` means no limit
 
-- ``min_data_in_leaf``, default=\ ``20``, type=int, alias=\ ``min_data_per_leaf`` ,\ ``min_data``
+- ``min_data_in_leaf``, default=\ ``20``, type=int, alias=\ ``min_data_per_leaf`` , ``min_data``
 
   - minimal number of data in one leaf. Can use this to deal with over-fitting
 
 - ``min_sum_hessian_in_leaf``, default=\ ``1e-3``, type=double,
-  alias=\ ``min_sum_hessian_per_leaf``,\ ``min_sum_hessian``,\ ``min_hessian``
+  alias=\ ``min_sum_hessian_per_leaf``, ``min_sum_hessian``, ``min_hessian``
 
   - minimal sum hessian in one leaf. Like ``min_data_in_leaf``, can be used to deal with over-fitting
 

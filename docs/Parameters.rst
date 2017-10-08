@@ -179,7 +179,7 @@ Learning Control Parameters
 
    -  random seed for ``feature_fraction``
 
--  ``bagging_fraction``, default=\ ``1.0``, type=double, , ``0.0 < bagging_fraction < 1.0``, alias=\ ``sub_row``
+-  ``bagging_fraction``, default=\ ``1.0``, type=double, ``0.0 < bagging_fraction < 1.0``, alias=\ ``sub_row``
 
    -  like ``feature_fraction``, but this will randomly select part of data without resampling
 
@@ -231,11 +231,11 @@ Learning Control Parameters
 
 -  ``uniform_drop``, default=\ ``false``, type=bool
 
-   -  only used in ``dart``, true if want to use uniform drop
+   -  only used in ``dart``, set this to ``true`` if want to use uniform drop
 
 -  ``xgboost_dart_mode``, default=\ ``false``, type=bool
 
-   -  only used in ``dart``, true if want to use xgboost dart mode
+   -  only used in ``dart``, set this to ``true`` if want to use xgboost dart mode
 
 -  ``drop_seed``, default=\ ``4``, type=int
 
@@ -486,7 +486,7 @@ Objective Parameters
 
 -  ``huber_delta``, default=\ ``1.0``, type=double
 
-   -  parameter for `Huber loss`_. Will be used in ``regression` task
+   -  parameter for `Huber loss`_. Will be used in ``regression`` task
 
 -  ``fair_c``, default=\ ``1.0``, type=double
 

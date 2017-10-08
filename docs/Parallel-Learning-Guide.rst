@@ -105,14 +105,22 @@ MPI Version
 
 3. Run following command on one machine (not need to run on all machines), need to change ``your_config_file`` to real config file.
 
-   For Windows: ``mpiexec.exe /machinefile mlist.txt lightgbm.exe config=your_config_file``
+   For Windows:
+   
+   .. code::
 
-   For Linux: ``mpiexec --machinefile mlist.txt ./lightgbm config=your_config_file``
+       mpiexec.exe /machinefile mlist.txt lightgbm.exe config=your_config_file
+
+   For Linux:
+
+   .. code::
+
+       mpiexec --machinefile mlist.txt ./lightgbm config=your_config_file
 
 Example
 ^^^^^^^
 
--  `A simple parallel example`_.
+-  `A simple parallel example`_
 
 .. _Quick Start: ./Quick-Start.rst
 

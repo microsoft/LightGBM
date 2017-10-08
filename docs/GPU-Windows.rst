@@ -152,7 +152,7 @@ There is one mandatory step to check the compiler:
 -  CLI / Python installation must have MinGW (not Rtools) in PATH
 
 In addition, assuming you are going to use ``C:\boost`` for the folder path,
-you should add now already the following to PATH: ``C:\boost\boost-build\bin;C:\boost\boost-build\include\boost``.
+you should add now already the following to PATH: ``C:\boost\boost-build\bin``, ``C:\boost\boost-build\include\boost``.
 Adjust ``C:\boost`` if you install it elsewhere.
 
 We can now start downloading and compiling the required Boost libraries:
@@ -161,21 +161,29 @@ We can now start downloading and compiling the required Boost libraries:
 
 -  Extract the archive to ``C:\boost``
 
--  Open a command prompt, and run ``cd C:\boost\boost_1_63_0\tools\build``
+-  Open a command prompt, and run
 
--  In command prompt, run ``bootstrap.bat gcc``
+   .. code::
 
--  In command prompt, run ``b2 install --prefix="C:\boost\boost-build" toolset=gcc``
-
--  In command prompt, run ``cd C:\boost\boost_1_63_0``
+       cd C:\boost\boost_1_63_0\tools\build
+       bootstrap.bat gcc
+       b2 install --prefix="C:\boost\boost-build" toolset=gcc
+       cd C:\boost\boost_1_63_0
 
 To build the Boost libraries, you have two choices for command prompt:
 
 -  If you have only one single core, you can use the default
-   ``b2 install --build_dir="C:\boost\boost-build" --prefix="C:\boost\boost-build" toolset=gcc --with=filesystem,system threading=multi --layout=system release``
+
+   .. code::
+
+       b2 install --build_dir="C:\boost\boost-build" --prefix="C:\boost\boost-build" toolset=gcc --with=filesystem,system threading=multi --layout=system release
 
 -  If you want to do a multithreaded library building (faster), add ``-j N`` by replacing N by the number of cores/threads you have.
-   For instance, for 2 cores, you would do ``b2 install --build_dir="C:\boost\boost-build" --prefix="C:\boost\boost-build" toolset=gcc --with=filesystem,system threading=multi --layout=system release -j 2``
+   For instance, for 2 cores, you would do
+
+   .. code::
+
+       b2 install --build_dir="C:\boost\boost-build" --prefix="C:\boost\boost-build" toolset=gcc --with=filesystem,system threading=multi --layout=system release -j 2
 
 Ignore all the errors popping up, like Python, etc., they do not matter for us.
 
@@ -205,7 +213,7 @@ If you are getting an error:
 -  Close the command prompt
 
 -  Make sure you added
-   ``C:\boost\boost-build\bin;C:\boost\boost-build\include\boost`` to
+   ``C:\boost\boost-build\bin``, ``C:\boost\boost-build\include\boost`` to
    your PATH (adjust accordingly if you use another folder)
 
 -  Do the boost compilation steps again (extract => command prompt => ``cd`` => ``bootstrap`` => ``b2`` => ``cd`` => ``b2``
@@ -308,11 +316,25 @@ Creating LightGBM libraries is very simple as all the important and hard steps w
 
 You can do everything in the Git Bash console you left open:
 
--  If you closed Git Bash console previously, run this to get back to the build folder: ``cd C:/github_repos/LightGBM/build``
+-  If you closed Git Bash console previously, run this to get back to the build folder:
 
--  If you did not close the Git Bash console previously, run this to get to the build folder: ``cd LightGBM/build``
+   ::
 
--  Setup MinGW as make using ``alias make='mingw32-make'`` (otherwise, beware error and name clash!)
+       cd C:/github_repos/LightGBM/build
+
+-  If you did not close the Git Bash console previously, run this to get to the build folder:
+
+   ::
+
+       cd LightGBM/build
+
+-  Setup MinGW as ``make`` using
+
+   ::
+
+       alias make='mingw32-make'
+
+   otherwise, beware error and name clash!
 
 -  In Git Bash, run ``make`` and see LightGBM being installing!
 
