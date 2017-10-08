@@ -591,15 +591,6 @@ inline void CheckElementsIntervalClosed(const T *y, T ymin, T ymax, int ny, cons
   }
 }
 
-// Check that all y[] are in interval [ymin, ymax] (end points included); throws error if not
-inline void check_int32_elements_interval_closed(const int32_t *y, int32_t ymin, int32_t ymax, int32_t ny, const char *callername) {
-  for (int32_t i = 0; i < ny; ++i) {
-    if (y[i] < ymin || y[i] > ymax) {
-      Log::Fatal("[%s]: does not tolerate element [#%i = %i] outside [%i, %i]", callername, i, y[i], ymin, ymax);
-    }
-  }
-}
-
 // One-pass scan over array w with nw elements: find min, max and sum of elements;
 // this is useful for checking weight requirements.
 template <typename T1, typename T2>
