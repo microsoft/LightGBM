@@ -11,7 +11,7 @@ Follow the `Installation Guide <./Installation-Guide.rst>`__ to install LightGBM
 
 -  `Parameters Tuning <./Parameters-Tuning.rst>`__
 
--  `Python-package Quick Start <./Python-Intro.md>`__
+-  `Python-package Quick Start <./Python-Intro.rst>`__
 
 -  `Python API <./Python-API.rst>`__
 
