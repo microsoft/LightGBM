@@ -114,7 +114,7 @@ Example
 
 -  `A simple parallel example`_.
 
-.. _Quick Start: ./Quick-Start.md
+.. _Quick Start: ./Quick-Start.rst
 
 .. _optimization in parallel learning: ./Features.rst
 
