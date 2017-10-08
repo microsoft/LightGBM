@@ -341,7 +341,7 @@ To learn how to target a correct CPU or GPU for training, please see: `GPU SDK C
 Debugging LightGBM Crashes in CLI
 ---------------------------------
 
-Now that you compiled LightGBM, you try it… and you always see a segmentation fault or an undocumented crash with GPU support:
+Now that you compiled LightGBM, you try it... and you always see a segmentation fault or an undocumented crash with GPU support:
 
 .. image:: ./_static/images/screenshot-segmentation-fault.png
 
