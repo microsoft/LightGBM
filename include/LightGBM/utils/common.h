@@ -584,11 +584,9 @@ template <typename T>
 inline void CheckElementsIntervalClosed(const T *y, T ymin, T ymax, int ny, const char *callername) {
   for (int i = 0; i < ny; ++i) {
     if (y[i] < ymin || y[i] > ymax) {
-      if (typeid(T) == typeid(float) || typeid(T) == typeid(double)) {
-        Log::Fatal("[%s]: does not tolerate element [#%i = %f] outside [%f, %f]", callername, i, y[i], ymin, ymax);
-      } else {
-        Log::Fatal("[%s]: does not tolerate element [#%i = %i] outside [%i, %i]", callername, i, y[i], ymin, ymax);
-      }
+      std::ostringstream os;
+      os << "[%s]: does not tolerate element [#%i = " << y[i] << "] outside [" << ymin << ", " << ymax << "]";
+      Log::Fatal(os.str().c_str(), callername, i);
     }
   }
 }
