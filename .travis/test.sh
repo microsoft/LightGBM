@@ -33,8 +33,8 @@ if [[ ${TASK} == "check-docs" ]]; then
     rstcheck --report warning --ignore-directives=autoclass,autofunction `find . -type f -name "*.rst"` || exit -1
     make html || exit -1
     find ./_build/html/ -type f -name '*.html' -exec \
-    sed -i -e 's;\(\.\/[^.]*\.\)rst\([^:space:]*\);\1html\2;g' {} \;  # Emulate js function
-#    html5validator --root ./_build/html/ || exit -1  For future (Sphinx 1.6) usage
+    sed -i -e 's;\(\.\/[^.]*\.\)rst\([^[:space:]]*\);\1html\2;g' {} \;  # Emulate js function
+#    html5validator --root ./_build/html/ || exit -1
     linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
     exit 0
 fi
