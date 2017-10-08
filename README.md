@@ -18,7 +18,7 @@ LightGBM is a gradient boosting framework that uses tree based learning algorith
 - Parallel and GPU learning supported
 - Capable of handling large-scale data
 
-For more details, please refer to [Features](https://github.com/Microsoft/LightGBM/blob/master/docs/Features.md).
+For more details, please refer to [Features](https://github.com/Microsoft/LightGBM/blob/master/docs/Features.rst).
 
 [Comparison experiments](https://github.com/Microsoft/LightGBM/blob/master/docs/Experiments.rst#comparison-experiment) on public datasets show that LightGBM can outperform existing boosting frameworks on both efficiency and accuracy, with significantly lower memory consumption. What's more, the [parallel experiments](https://github.com/Microsoft/LightGBM/blob/master/docs/Experiments.rst#parallel-experiment) show that LightGBM can achieve a linear speed-up by using multiple machines for training in specific settings.
 
@@ -68,7 +68,7 @@ Our primary documentation is at https://lightgbm.readthedocs.io/ and is generate
 Next you may want to read:
 
 * [**Examples**](https://github.com/Microsoft/LightGBM/tree/master/examples) showing command line usage of common tasks
-* [**Features**](https://github.com/Microsoft/LightGBM/blob/master/docs/Features.md) and algorithms supported by LightGBM
+* [**Features**](https://github.com/Microsoft/LightGBM/blob/master/docs/Features.rst) and algorithms supported by LightGBM
 * [**Parameters**](https://github.com/Microsoft/LightGBM/blob/master/docs/Parameters.md) is an exhaustive list of customization you can make
 * [**Parallel Learning**](https://github.com/Microsoft/LightGBM/blob/master/docs/Parallel-Learning-Guide.rst) and [**GPU Learning**](https://github.com/Microsoft/LightGBM/blob/master/docs/GPU-Tutorial.md) can speed up computation
 * [**Laurae++ interactive documentation**](https://sites.google.com/view/lauraepp/parameters) is a detailed guide for hyperparameters

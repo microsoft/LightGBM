@@ -116,7 +116,7 @@ Example
 
 .. _Quick Start: ./Quick-Start.md
 
-.. _optimization in parallel learning: ./Features.md
+.. _optimization in parallel learning: ./Features.rst
 
 .. _Installation Guide: ./Installation-Guide.rst
 
