@@ -171,7 +171,7 @@ GPU Support
 
 Thanks `@huanzhang12 <https://github.com/huanzhang12>`__ for contributing this feature. Please read `[10] <#references>`__ to get more details.
 
-- `GPU Installation <./Installation-Guide.rst>`__
+- `GPU Installation <./Installation-Guide.rst#build-gpu-version>`__
 
 - `GPU Tutorial <./GPU-Tutorial.rst>`__
 
@@ -206,7 +206,7 @@ Support following metrics:
 
 -  Multi class error rate
 
-For more details, please refer to `Parameters <./Parameters.rst>`__.
+For more details, please refer to `Parameters <./Parameters.rst#metric-parameters>`__.
 
 Other Features
 --------------

@@ -1,9 +1,9 @@
 Documentation
 =============
 
-Documentation for LightGBM is generated using `Sphinx <http://www.sphinx-doc.org/>`__ and `recommonmark <https://recommonmark.readthedocs.io/>`__.
+Documentation for LightGBM is generated using `Sphinx <http://www.sphinx-doc.org/>`__.
 
-After each commit on ``master``, documentation is updated and published to https://lightgbm.readthedocs.io/.
+After each commit on ``master``, documentation is updated and published to `Read the Docs <https://lightgbm.readthedocs.io/>`__.
 
 Build
 -----

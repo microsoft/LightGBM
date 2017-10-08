@@ -3,7 +3,7 @@ GPU Windows Compilation
 
 This guide is for the MinGW build.
 
-For the MSVC (Visual Studio) build with GPU, please refer to `Installation Guide <./Installation-Guide.rst>`__.
+For the MSVC (Visual Studio) build with GPU, please refer to `Installation Guide <./Installation-Guide.rst#build-gpu-version>`__.
 (We recommend you to use this since it is much easier).
 
 Install LightGBM GPU version in Windows (CLI / R / Python), using MinGW/gcc
