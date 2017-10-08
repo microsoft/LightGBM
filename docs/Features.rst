@@ -3,12 +3,12 @@ Features
 
 This is a short introduction for the features and algorithms used in LightGBM.
 
-This page doesn’t contain detailed algorithms, please refer to cited papers or source code if you are interested.
+This page doesn't contain detailed algorithms, please refer to cited papers or source code if you are interested.
 
 Optimization in Speed and Memory Usage
 --------------------------------------
 
-Many boosting tools use pre-sorted based algorithms\ `[1, 2] <#references>`__ (e.g. default algorithm in xgboost) for decision tree learning. It is a simple solution, but not easy to optimize.
+Many boosting tools use pre-sorted based algorithms\ `[1, 2] <#references>`__ (e.g. default algorithm in xgboost) for decision tree learning. It is a simple solution, but not easy to optimize.
 
 LightGBM uses the histogram based algorithms\ `[3, 4, 5] <#references>`__, which bucketing continuous feature(attribute) values into discrete bins, to speed up training procedure and reduce memory usage.
 Following are advantages for histogram based algorithms:
@@ -23,12 +23,12 @@ Following are advantages for histogram based algorithms:
 
 -  **Use histogram subtraction for further speed-up**
 
-   -  To get one leaf’s histograms in a binary tree, can use the histogram subtraction of its parent and its neighbor
+   -  To get one leaf's histograms in a binary tree, can use the histogram subtraction of its parent and its neighbor
 
    -  So it only need to construct histograms for one leaf (with smaller ``#data`` than its neighbor), then can get histograms of its neighbor by histogram subtraction with small cost(``O(#bins)``)
 -  **Reduce memory usage**
 
-   -  Can replace continuous values to discrete bins. If ``#bins`` is small, can use small data type, e.g. uint8\_t, to store training data
+   -  Can replace continuous values to discrete bins. If ``#bins`` is small, can use small data type, e.g. uint8\_t, to store training data
 
    -  No need to store additional information for pre-sorting feature values
 
@@ -68,7 +68,7 @@ Actually, the optimal solution is partitioning the categorical feature into 2 su
 But there is a efficient solution for regression tree\ `[7] <#references>`__. It needs about ``k * log(k)`` to find the optimal partition.
 
 The basic idea is reordering the categories according to the relevance of training target.
-More specifically, reordering the histogram (of categorical feature) according to it’s accumulate values (``sum_gradient / sum_hessian``), then find the best split on the sorted histogram.
+More specifically, reordering the histogram (of categorical feature) according to it's accumulate values (``sum_gradient / sum_hessian``), then find the best split on the sorted histogram.
 
 Optimization in Network Communication
 -------------------------------------
@@ -156,7 +156,7 @@ We reduce communication cost of data parallel in LightGBM:
    Then workers find local best split on local merged histograms and sync up global best split.
 
 2. As aforementioned, LightGBM use histogram subtraction to speed up training.
-   Based on this, we can communicate histograms only for one leaf, and get its neighbor’s histograms by subtraction as well.
+   Based on this, we can communicate histograms only for one leaf, and get its neighbor's histograms by subtraction as well.
 
 Above all, we reduce communication cost to ``O(0.5 * #feature * #bin)`` for data parallel in LightGBM.
 
@@ -254,7 +254,7 @@ References
 
 [6] Shi, Haijian. "Best-first decision tree learning." Diss. The University of Waikato, 2007.
 
-[7] Walter D. Fisher. "`On Grouping for Maximum Homogeneity`_." Journal of the American Statistical Association. Vol. 53, No. 284 (Dec., 1958), pp. 789-798.
+[7] Walter D. Fisher. "`On Grouping for Maximum Homogeneity`_." Journal of the American Statistical Association. Vol. 53, No. 284 (Dec., 1958), pp. 789-798.
 
 [8] Thakur, Rajeev, Rolf Rabenseifner, and William Gropp. "`Optimization of collective communication operations in MPICH`_." International Journal of High Performance Computing Applications 19.1 (2005): 49-66.
 
