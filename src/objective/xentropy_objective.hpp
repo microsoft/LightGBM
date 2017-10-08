@@ -58,7 +58,7 @@ public:
     if (weights_ != nullptr) {
       float minw;
       double sumw;
-      Common::ObtainMinMaxSum(weights_, num_data_, &minw, nullptr, &sumw);
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, (float*)nullptr, &sumw);
       if (minw < 0.0f) {
         Log::Fatal("[%s]: at least one weight is negative.", GetName());
       }
@@ -163,7 +163,7 @@ public:
 
     if (weights_ != nullptr) {
 
-      Common::ObtainMinMaxSum(weights_, num_data_, &min_weight_, &max_weight_, nullptr);
+      Common::ObtainMinMaxSum(weights_, num_data_, &min_weight_, &max_weight_, (float*)nullptr);
       if (min_weight_ <= 0.0f) {
         Log::Fatal("[%s]: at least one weight is non-positive.", GetName());
       }
