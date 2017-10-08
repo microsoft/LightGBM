@@ -4,7 +4,7 @@ Development Guide
 Algorithms
 ----------
 
-Refer to `Features <https://github.com/Microsoft/LightGBM/wiki/Features>`__ to understand important algorithms used in LightGBM.
+Refer to `Features <./Features.md>`__ to understand important algorithms used in LightGBM.
 
 Classes and Code Structure
 --------------------------
@@ -13,7 +13,7 @@ Important Classes
 ~~~~~~~~~~~~~~~~~
 
 +-------------------------+--------------------------------------------------------------------------------------+
-| Class                   | description                                                                          |
+| Class                   | Description                                                                          |
 +=========================+======================================================================================+
 | ``Application``         | The entrance of application, including training and prediction logic                 |
 +-------------------------+--------------------------------------------------------------------------------------+
@@ -44,7 +44,7 @@ Code Structure
 ~~~~~~~~~~~~~~
 
 +---------------------+------------------------------------------------------------------------------------------------------------------------------------+
-| Path                | description                                                                                                                        |
+| Path                | Description                                                                                                                        |
 +=====================+====================================================================================================================================+
 | ./include           | Header files                                                                                                                       |
 +---------------------+------------------------------------------------------------------------------------------------------------------------------------+
@@ -65,10 +65,12 @@ Code Structure
 | ./src/treelearner   | Implementations of tree learners                                                                                                   |
 +---------------------+------------------------------------------------------------------------------------------------------------------------------------+
 
-API Documents
+Documents API
 ~~~~~~~~~~~~~
 
 LightGBM support use `doxygen <http://www.stack.nl/~dimitri/doxygen/>`__ to generate documents for classes and functions.
+
+Refer to `docs README <./README.md>`__.
 
 C API
 -----
@@ -78,9 +80,11 @@ Refere to the comments in `c\_api.h <https://github.com/Microsoft/LightGBM/blob/
 High Level Language Package
 ---------------------------
 
-See the implementations at `python-package <https://github.com/Microsoft/LightGBM/tree/master/python-package>`__ and `R-package <https://github.com/Microsoft/LightGBM/tree/master/R-package>`__.
+See the implementations at `Python-package <https://github.com/Microsoft/LightGBM/tree/master/python-package>`__ and `R-package <https://github.com/Microsoft/LightGBM/tree/master/R-package>`__.
 
-Ask Questions
--------------
+Questions
+---------
 
-Feel free to open `issues <https://github.com/Microsoft/LightGBM/issues>`__ if you met problems.
+Refer to `FAQ <./FAQ.md>`__.
+
+Also feel free to open `issues <https://github.com/Microsoft/LightGBM/issues>`__ if you met problems.

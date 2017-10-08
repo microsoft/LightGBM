@@ -85,7 +85,7 @@ def train(params, train_set, num_boost_round=100,
         You can still use _InnerPredictor as ``init_model`` for future continue training.
     callbacks : list of callables or None, optional (default=None)
         List of callback functions that are applied at each iteration.
-        See Callbacks in Python-API.md for more information.
+        See Callbacks in Python API for more information.
 
     Returns
     -------
@@ -369,7 +369,7 @@ def cv(params, train_set, num_boost_round=10,
         Seed used to generate the folds (passed to numpy.random.seed).
     callbacks : list of callables or None, optional (default=None)
         List of callback functions that are applied at each iteration.
-        See Callbacks in Python-API.md for more information.
+        See Callbacks in Python API for more information.
 
     Returns
     -------

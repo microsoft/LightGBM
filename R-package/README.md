@@ -24,7 +24,7 @@ For users who wants to install online with GPU or want to choose a specific comp
 
 #### Mac OS X Preparation
 
-gcc with OpenMP support must be installed first. Refer to [wiki](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#osx) for installing gcc with OpenMP support.
+gcc with OpenMP support must be installed first. Refer to [Installation-Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#osx) for installing gcc with OpenMP support.
 
 ### Install
 
@@ -51,7 +51,7 @@ Note: for the build with Visual Studio/MSBuild in Windows, you should use the Wi
 
 Windows users may need to run with administrator rights (either R or the command prompt, depending on the way you are installing this package). Linux users might require the appropriate user write permissions for packages.
 
-Set `use_gpu` to `TRUE` in `R-package/src/install.libs.R` to enable the build with GPU support. You will need to install Boost and OpenCL first: details for installation can be found in [gpu-support](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support).
+Set `use_gpu` to `TRUE` in `R-package/src/install.libs.R` to enable the build with GPU support. You will need to install Boost and OpenCL first: details for installation can be found in [Installation-Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version).
 
 You can also install directly from R using the repository with `devtools`:
 
@@ -74,7 +74,7 @@ params <- list(objective="regression", metric="l2")
 model <- lgb.cv(params, dtrain, 10, nfold=5, min_data=1, learning_rate=1, early_stopping_rounds=10)
 ```
 
-Installation with precompiled dll/lib from R using GitHub
+Installation with Precompiled dll/lib from R Using GitHub
 ---------------------------------------------------------
 
 You can install LightGBM R-package from GitHub with devtools thanks to a helper package for LightGBM.
@@ -122,7 +122,9 @@ lgb.dl(commit = "master",
        use_gpu = TRUE)
 ```
 
-For more details about options, please check [Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/) R-package. You may also read [Microsoft/LightGBM#912](https://github.com/Microsoft/LightGBM/issues/912#issuecomment-329496254) for a visual example for LightGBM in Windows with Visual Studio.
+For more details about options, please check [Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/) R-package.
+
+You may also read [Microsoft/LightGBM#912](https://github.com/Microsoft/LightGBM/issues/912#issuecomment-329496254) for a visual example for LightGBM installation in Windows with Visual Studio.
 
 Examples
 --------
