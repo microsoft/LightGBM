@@ -1,7 +1,6 @@
 LightGBM, Light Gradient Boosting Machine
 =========================================
 
-[![Join the chat at https://gitter.im/Microsoft/LightGBM](https://badges.gitter.im/Microsoft/LightGBM.svg)](https://gitter.im/Microsoft/LightGBM?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/Microsoft/LightGBM.svg?branch=master)](https://travis-ci.org/Microsoft/LightGBM)
 [![Windows Build Status](https://ci.appveyor.com/api/projects/status/1ys5ot401m0fep6l/branch/master?svg=true)](https://ci.appveyor.com/project/guolinke/lightgbm/branch/master)
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](https://lightgbm.readthedocs.io/)
@@ -9,6 +8,8 @@ LightGBM, Light Gradient Boosting Machine
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Microsoft/LightGBM/blob/master/LICENSE)
 [![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg)](https://pypi.python.org/pypi/lightgbm)
 [![PyPI Version](https://badge.fury.io/py/lightgbm.svg)](https://badge.fury.io/py/lightgbm)
+[![Join the chat at https://gitter.im/Microsoft/LightGBM](https://badges.gitter.im/Microsoft/LightGBM.svg)](https://gitter.im/Microsoft/LightGBM?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Slack](https://lightgbm-slack-autojoin.herokuapp.com/badge.svg)](https://lightgbm-slack-autojoin.herokuapp.com/)
 
 LightGBM is a gradient boosting framework that uses tree based learning algorithms. It is designed to be distributed and efficient with the following advantages:
 
@@ -83,6 +84,8 @@ Support
 
 * Ask a question [on Stack Overflow with the `lightgbm` tag ](https://stackoverflow.com/questions/ask?tags=lightgbm), we monitor this for new questions.
 * Discuss on the [LightGBM Gitter](https://gitter.im/Microsoft/LightGBM).
+* Discuss on the [LightGBM Slack team](https://lightgbm.slack.com).
+  * Use [this invite link](https://lightgbm-slack-autojoin.herokuapp.com/) to join the team.
 * Open **bug reports** and **feature requests** (not questions) on [GitHub issues](https://github.com/Microsoft/LightGBM/issues).
 
 How to Contribute
