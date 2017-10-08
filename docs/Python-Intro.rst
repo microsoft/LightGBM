@@ -42,13 +42,13 @@ The LightGBM Python module is able to load data from:
 
 The data is stored in a ``Dataset`` object.
 
-**To load a libsvm text file or a LightGBM binary file into ``Dataset``:**
+**To load a libsvm text file or a LightGBM binary file into Dataset:**
 
 .. code:: python
 
     train_data = lgb.Dataset('train.svm.bin')
 
-**To load a numpy array into ``Dataset``:**
+**To load a numpy array into Dataset:**
 
 .. code:: python
 
@@ -56,14 +56,14 @@ The data is stored in a ``Dataset`` object.
     label = np.random.randint(2, size=500)  # binary target
     train_data = lgb.Dataset(data, label=label)
 
-**To load a scpiy.sparse.csr\_matrix array into ``Dataset``:**
+**To load a scpiy.sparse.csr\_matrix array into Dataset:**
 
 .. code:: python
 
     csr = scipy.sparse.csr_matrix((dat, (row, col)))
     train_data = lgb.Dataset(csr)
 
-**Saving ``Dataset`` into a LightGBM binary file will make loading faster:**
+**Saving Dataset into a LightGBM binary file will make loading faster:**
 
 .. code:: python
 
