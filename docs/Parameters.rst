@@ -124,7 +124,7 @@ Core Parameters
 
    -  refer to `Parallel Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
 
--  ``num_threads``, default=``OpenMP_default``, type=int, alias=\ ``num_thread``, ``nthread``
+-  ``num_threads``, default=\ ``OpenMP_default``, type=int, alias=\ ``num_thread``, ``nthread``
 
    -  number of threads for LightGBM
 
