@@ -3,7 +3,7 @@ Parallel Learning Guide
 
 This is a guide for parallel learning of LightGBM.
 
-Follow the `Quick Start`_ to know how to use LightGBM first.
+Follow the `Quick Start <./Quick-Start.rst>`__ to know how to use LightGBM first.
 
 Choose Appropriate Parallel Algorithm
 -------------------------------------
@@ -30,14 +30,14 @@ These algorithms are suited for different scenarios, which is listed in the foll
 | **#feature is large**   | Feature Parallel     | Voting Parallel      |
 +-------------------------+----------------------+----------------------+
 
-More details about these parallel algorithms can be found in `optimization in parallel learning`_.
+More details about these parallel algorithms can be found in `optimization in parallel learning <./Features.rst#optimization-in-parallel-learning>`__.
 
 Build Parallel Version
 ----------------------
 
 Default build version support parallel learning based on the socket.
 
-If you need to build parallel version with MPI support, please refer to `Installation Guide`_.
+If you need to build parallel version with MPI support, please refer to `Installation Guide <./Installation-Guide.rst#build-mpi-version>`__.
 
 Preparation
 -----------
@@ -121,12 +121,6 @@ Example
 ^^^^^^^
 
 -  `A simple parallel example`_
-
-.. _Quick Start: ./Quick-Start.rst
-
-.. _optimization in parallel learning: ./Features.rst
-
-.. _Installation Guide: ./Installation-Guide.rst
 
 .. _here: https://blogs.technet.microsoft.com/windowshpc/2015/02/02/how-to-compile-and-run-a-simple-ms-mpi-program/
 
