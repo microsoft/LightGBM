@@ -12,5 +12,5 @@ You can build the documentation locally. Just run in ``docs`` folder:
 
 .. code:: sh
 
-    pip install -r requirements.txt
+    pip install sphinx sphinx_rtd_theme
     make html
