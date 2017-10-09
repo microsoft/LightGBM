@@ -87,7 +87,7 @@ public:
       sum_weights_ = static_cast<double>(num_data_);
     } else {
       float minw;
-      Common::ObtainMinMaxSum(weights_, num_data_, &minw, nullptr, &sum_weights_);
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, (float*)nullptr, &sum_weights_);
       if (minw < 0.0f) {
         Log::Fatal("[%s:%s]: (metric) weights not allowed to be negative", GetName()[0].c_str(), __func__);
       }
@@ -178,7 +178,7 @@ public:
     // check all weights are strictly positive; throw error if not
     if (weights_ != nullptr) {
       float minw;
-      Common::ObtainMinMaxSum(weights_, num_data_, &minw, nullptr, nullptr);
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, (float*)nullptr, (float*)nullptr);
       if (minw <= 0.0f) {
         Log::Fatal("[%s:%s]: (metric) all weights must be positive", GetName()[0].c_str(), __func__);
       }
@@ -263,7 +263,7 @@ public:
       sum_weights_ = static_cast<double>(num_data_);
     } else {
       float minw;
-      Common::ObtainMinMaxSum(weights_, num_data_, &minw, nullptr, &sum_weights_);
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, (float*)nullptr, &sum_weights_);
       if (minw < 0.0f) {
         Log::Fatal("[%s:%s]: (metric) at least one weight is negative", GetName()[0].c_str(), __func__);
       }
