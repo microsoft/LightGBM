@@ -1,11 +1,9 @@
 Python Package Examples
 =======================
 
-Here is an example for LightGBM to use python package.
+Here is an example for LightGBM to use Python-package.
 
-***You should install lightgbm (both c++ and python verion) first.***
-
-For the installation, check the wiki [here](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide).
+You should install LightGBM [Python-package](https://github.com/Microsoft/LightGBM/tree/master/python-package) first.
 
 You also need scikit-learn, pandas and matplotlib (only for plot example) to run the examples, but they are not required for the package itself. You can install them with pip:
 

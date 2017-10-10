@@ -3,7 +3,7 @@
 This is a page contains all parameters in LightGBM.
 
 ***List of other Helpful Links***
-* [Python API Reference](./Python-API.md)
+* [Python API](./Python-API.rst)
 * [Parameters Tuning](./Parameters-tuning.md)
 
 ***External Links***
@@ -18,7 +18,7 @@ Default values for the following parameters have changed:
 * num_leaves = 127 => 31
 * num_iterations = 10 => 100
 
-## Parameter format
+## Parameter Format
 
 The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be set both in config file and command line. By using command line, parameters should not have spaces before and after `=`. By using config files, one line can only contain one parameter. you can use `#` to comment. If one parameter appears in both command line and config file, LightGBM will use the parameter in command line.
 
@@ -29,7 +29,7 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
 * `task`, default=`train`, type=enum, options=`train`,`prediction`
   * `train` for training
   * `prediction` for prediction.
-  * `convert_model` for converting model file into if-else format, see more information in [Convert model parameters](Parameters.md#convert-model-parameters)
+  * `convert_model` for converting model file into if-else format, see more information in [Convert model parameters](#convert-model-parameters)
 * `application`, default=`regression`, type=enum, options=`regression`,`regression_l1`,`huber`,`fair`,`poisson`,`binary`,`lambdarank`,`multiclass`, alias=`objective`,`app`
   * `regression`, regression application
     * `regression_l2`, L2 loss, alias=`mean_squared_error`,`mse`
@@ -38,7 +38,7 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
     * `fair`, [Fair loss](https://www.kaggle.com/c/allstate-claims-severity/discussion/24520)
     * `poisson`, [Poisson regression](https://en.wikipedia.org/wiki/Poisson_regression "Poisson regression")
   * `binary`, binary classification application
-  * `lambdarank`, [lambdarank](https://pdfs.semanticscholar.org/fc9a/e09f9ced555558fdf1e997c0a5411fb51f15.pdf) application
+  * `lambdarank`, [lambdarank](https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf) application
     * The label should be `int` type in lambdarank tasks, and larger number represent the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect).
     * `label_gain` can be used to set the gain(weight) of `int` label.
   * `multiclass`, multi-class classification application, should set `num_class` as well
@@ -65,7 +65,7 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
   * `serial`, single machine tree learner
   * `feature`, feature parallel tree learner
   * `data`, data parallel tree learner
-  * Refer to [Parallel Learning Guide](./Parallel-Learning-Guide.md) to get more details.
+  * Refer to [Parallel Learning Guide](./Parallel-Learning-Guide.rst) to get more details.
 * `num_threads`, default=OpenMP_default, type=int, alias=`num_thread`,`nthread`
   * Number of threads for LightGBM.
   * For the best speed, set this to the number of **real CPU cores**, not the number of threads (most CPU using [hyper-threading](https://en.wikipedia.org/wiki/Hyper-threading) to generate 2 threads per CPU core).
@@ -74,10 +74,11 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
   * For parallel learning, should not use full CPU cores since this will cause poor performance for the network.
 * `device`, default=`cpu`, options=`cpu`,`gpu`
   * Choose device for the tree learning, can use gpu to achieve the faster learning.
-  * Note: 1. Recommend use the smaller `max_bin`(e.g `63`) to get the better speed up. 2. For the faster speed, GPU use 32-bit float point to sum up by default, may affect the accuracy for some tasks. You can set `gpu_use_dp=true` to enable 64-bit float point, but it will slow down the training. 3. Refer to [Installation Guide](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support) to build with GPU .
+  * Note: 1. Recommend use the smaller `max_bin`(e.g `63`) to get the better speed up. 2. For the faster speed, GPU use 32-bit float point to sum up by default, may affect the accuracy for some tasks. You can set `gpu_use_dp=true` to enable 64-bit float point, but it will slow down the training. 3. Refer to [Installation Guide](./Installation-Guide.rst) to build with GPU .
 
 
-## Learning control parameters
+## Learning Control Parameters
+
 * `max_depth`, default=`-1`, type=int
   * Limit the max depth for tree model. This is used to deal with overfit when #data is small. Tree still grow by leaf-wise.
   * `< 0` means no limit
@@ -142,7 +143,7 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
   * The smooth numerator  is `b = a * sum_gradient / sum_hessian`.
 
 
-## IO parameters
+## IO Parameters
 
 * `max_bin`, default=`255`, type=int
   * max number of bin that feature values will bucket in. Small bin may reduce training accuracy but may increase general power (deal with over-fit).
@@ -231,7 +232,8 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
   * Path of validation initial score file, `""` will use `valid_data_file+".init"` (if exists).
   * separate by `,` for multi-validation data
 
-## Objective parameters
+
+## Objective Parameters
 
 * `sigmoid`, default=`1.0`, type=double
   * parameter for sigmoid function. Will be used in binary classification and lambdarank.
@@ -257,7 +259,8 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
 * `num_class`, default=`1`, type=int, alias=`num_classes`
   * only used in multi-class classification
 
-## Metric parameters
+
+## Metric Parameters
 
 * `metric`, default={`l2` for regression}, {`binary_logloss` for binary classification},{`ndcg` for lambdarank}, type=multi-enum, options=`l1`,`l2`,`ndcg`,`auc`,`binary_logloss`,`binary_error`...
   * `l1`, absolute loss, alias=`mean_absolute_error`, `mae`
@@ -267,7 +270,7 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
   * `fair`, [Fair loss](https://www.kaggle.com/c/allstate-claims-severity/discussion/24520)
   * `poisson`, [Poisson regression](https://en.wikipedia.org/wiki/Poisson_regression "Poisson regression")
   * `ndcg`, [NDCG](https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG)
-  * `map`, [MAP](https://www.kaggle.com/wiki/MeanAveragePrecision)
+  * `map`, [MAP](https://en.wikipedia.org/wiki/Information_retrieval#Mean_average_precision)
   * `auc`, [AUC](https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve)
   * `binary_logloss`, [log loss](https://www.kaggle.com/wiki/LogLoss)
   * `binary_error`. For one sample `0` for correct classification, `1` for error classification.
@@ -281,7 +284,8 @@ The parameter format is `key1=value1 key2=value2 ... ` . And parameters can be s
 * `ndcg_at`, default=`1,2,3,4,5`, type=multi-int, alias=`ndcg_eval_at`,`eval_at`
   * NDCG evaluation position, separate by `,`
 
-## Network parameters
+
+## Network Parameters
 
 Following parameters are used for parallel learning, and only used for base(socket) version.
 
@@ -297,7 +301,8 @@ Following parameters are used for parallel learning, and only used for base(sock
   * File that list machines for this parallel learning application
   * Each line contains one IP and one port for one machine. The format is `ip port`, separate by space.
 
-## GPU parameters
+
+## GPU Parameters
 
 * `gpu_platform_id`, default=`-1`, type=int
   * OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform.
@@ -308,7 +313,8 @@ Following parameters are used for parallel learning, and only used for base(sock
 * `gpu_use_dp`, default=`false`, type=bool
   * Set to true to use double precision math on GPU (default using single precision).
 
-## Convert model parameters
+
+## Convert Model Parameters
 
 This feature is only supported in command line version yet.
 
@@ -321,7 +327,8 @@ This feature is only supported in command line version yet.
 
 ## Others
 
-### Continued training with input score
+### Continued Training with Input Score
+
 LightGBM support continued train with initial score. It uses an additional file to store these initial score, like the following:
 
 ```
@@ -334,7 +341,8 @@ LightGBM support continued train with initial score. It uses an additional file 
 It means the initial score of first data is `0.5`, second is `-0.1`, and so on. The initial score file corresponds with data file line by line, and has per score per line. And if the name of data file is "train.txt", the initial score file should be named as "train.txt.init" and in the same folder as the data file. And LightGBM will auto load initial score file if it exists.
 
 
-### Weight data
+### Weight Data
+
 LightGBM support weighted training. It uses an additional file to store weight data, like the following:
 
 ```
@@ -349,7 +357,8 @@ It means the weight of first data is `1.0`, second is `0.5`, and so on. The weig
 update:
 You can specific weight column in data file now. Please refer to parameter `weight` in above.
 
-### Query data
+
+### Query Data
 
 For LambdaRank learning, it needs query information for training data. LightGBM use an additional file to store query data. Following is an example:
 

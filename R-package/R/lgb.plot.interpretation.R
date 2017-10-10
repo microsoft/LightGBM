@@ -66,7 +66,7 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
   } else {
     
     # More than one class, shape data first
-    layout_mat <- matrix(seq(1, cols * ceiling(num_class / cols)),
+    layout_mat <- matrix(seq.int(to = cols * ceiling(num_class / cols)),
                          ncol = cols, nrow = ceiling(num_class / cols))
     
     # Shape output
@@ -93,7 +93,7 @@ multiple.tree.plot.interpretation <- function(tree_interpretation,
                                               cex) {
   
   # Parse tree
-  tree_interpretation <- tree_interpretation[order(abs(Contribution), decreasing = TRUE),][1:min(top_n, .N),]
+  tree_interpretation <- tree_interpretation[order(abs(Contribution), decreasing = TRUE),][seq_len(min(top_n, .N)),]
   
   # Attempt to setup a correct cex
   if (is.null(cex)) {

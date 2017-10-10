@@ -318,7 +318,7 @@ public:
     // Safety check of labels
     float miny;
     double sumy;
-    Common::obtain_min_max_sum(label_, num_data_, &miny, nullptr, &sumy);
+    Common::ObtainMinMaxSum(label_, num_data_, &miny, (float*)nullptr, &sumy);
     if (miny < 0.0f) {
       Log::Fatal("[%s]: at least one target label is negative.", GetName());
     }

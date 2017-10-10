@@ -1,14 +1,15 @@
 LightGBM, Light Gradient Boosting Machine
 =========================================
 
-[![Join the chat at https://gitter.im/Microsoft/LightGBM](https://badges.gitter.im/Microsoft/LightGBM.svg)](https://gitter.im/Microsoft/LightGBM?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/Microsoft/LightGBM.svg?branch=master)](https://travis-ci.org/Microsoft/LightGBM)
 [![Windows Build Status](https://ci.appveyor.com/api/projects/status/1ys5ot401m0fep6l/branch/master?svg=true)](https://ci.appveyor.com/project/guolinke/lightgbm/branch/master)
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](https://lightgbm.readthedocs.io/)
 [![GitHub Issues](https://img.shields.io/github/issues/Microsoft/LightGBM.svg)](https://github.com/Microsoft/LightGBM/issues)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Microsoft/LightGBM/blob/master/LICENSE)
+[![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg)](https://pypi.python.org/pypi/lightgbm)
 [![PyPI Version](https://badge.fury.io/py/lightgbm.svg)](https://badge.fury.io/py/lightgbm)
-<!--- # Uncomment after updating PyPI [![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg)](https://pypi.python.org/pypi/lightgbm) -->
+[![Join the chat at https://gitter.im/Microsoft/LightGBM](https://badges.gitter.im/Microsoft/LightGBM.svg)](https://gitter.im/Microsoft/LightGBM?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Slack](https://lightgbm-slack-autojoin.herokuapp.com/badge.svg)](https://lightgbm-slack-autojoin.herokuapp.com/)
 
 LightGBM is a gradient boosting framework that uses tree based learning algorithms. It is designed to be distributed and efficient with the following advantages:
 
@@ -18,9 +19,9 @@ LightGBM is a gradient boosting framework that uses tree based learning algorith
 - Parallel and GPU learning supported
 - Capable of handling large-scale data
 
-For more details, please refer to [Features](https://github.com/Microsoft/LightGBM/wiki/Features).
+For more details, please refer to [Features](https://github.com/Microsoft/LightGBM/blob/master/docs/Features.md).
 
-[Experiments](https://github.com/Microsoft/LightGBM/wiki/Experiments#comparison-experiment) on public datasets show that LightGBM can outperform existing boosting frameworks on both efficiency and accuracy, with significantly lower memory consumption. What's more, the [experiments](https://github.com/Microsoft/LightGBM/wiki/Experiments#parallel-experiment) show that LightGBM can achieve a linear speed-up by using multiple machines for training in specific settings.
+[Comparison experiments](https://github.com/Microsoft/LightGBM/blob/master/docs/Experiments.rst#comparison-experiment) on public datasets show that LightGBM can outperform existing boosting frameworks on both efficiency and accuracy, with significantly lower memory consumption. What's more, the [parallel experiments](https://github.com/Microsoft/LightGBM/blob/master/docs/Experiments.rst#parallel-experiment) show that LightGBM can achieve a linear speed-up by using multiple machines for training in specific settings.
 
 News
 ----
@@ -35,7 +36,7 @@ News
 
 05/03/2017 : LightGBM v2 stable release.
 
-04/10/2017 : LightGBM supports GPU-accelerated tree learning now. Please read our [GPU Tutorial](./docs/GPU-Tutorial.md) and [Performance Comparison](./docs/GPU-Performance.md).
+04/10/2017 : LightGBM supports GPU-accelerated tree learning now. Please read our [GPU Tutorial](./docs/GPU-Tutorial.md) and [Performance Comparison](./docs/GPU-Performance.rst).
 
 02/20/2017 : Update to LightGBM v2.
 
@@ -45,7 +46,9 @@ News
 
 12/05/2016 : **Categorical Features as input directly** (without one-hot coding). 
 
-12/02/2016 : Release [**python-package**](https://github.com/Microsoft/LightGBM/tree/master/python-package) beta version, welcome to have a try and provide feedback.
+12/02/2016 : Release [**Python-package**](https://github.com/Microsoft/LightGBM/tree/master/python-package) beta version, welcome to have a try and provide feedback.
+
+More detailed update logs : [Key Events](https://github.com/Microsoft/LightGBM/blob/master/docs/Key-Events.md).
 
 
 External (unofficial) Repositories
@@ -59,16 +62,16 @@ JPMML: https://github.com/jpmml/jpmml-lightgbm
 Get Started and Documentation
 -----------------------------
 
-Install by following the guide for the [command line program](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide), [Python package](https://github.com/Microsoft/LightGBM/tree/master/python-package) or [R-package](https://github.com/Microsoft/LightGBM/tree/master/R-package). Then please see the [Quick Start](https://github.com/Microsoft/LightGBM/wiki/Quick-Start) guide.
+Install by following the [guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst) for the command line program, [Python-package](https://github.com/Microsoft/LightGBM/tree/master/python-package) or [R-package](https://github.com/Microsoft/LightGBM/tree/master/R-package). Then please see the [Quick Start](https://github.com/Microsoft/LightGBM/blob/master/docs/Quick-Start.md) guide.
 
 Our primary documentation is at https://lightgbm.readthedocs.io/ and is generated from this repository.
 
-Next you will want to read:
+Next you may want to read:
 
 * [**Examples**](https://github.com/Microsoft/LightGBM/tree/master/examples) showing command line usage of common tasks
-* [**Features**](https://github.com/Microsoft/LightGBM/wiki/Features) and algorithms supported by LightGBM
+* [**Features**](https://github.com/Microsoft/LightGBM/blob/master/docs/Features.md) and algorithms supported by LightGBM
 * [**Parameters**](https://github.com/Microsoft/LightGBM/blob/master/docs/Parameters.md) is an exhaustive list of customization you can make
-* [**Parallel Learning**](https://github.com/Microsoft/LightGBM/wiki/Parallel-Learning-Guide) and [**GPU Learning**](https://github.com/Microsoft/LightGBM/blob/master/docs/GPU-Tutorial.md) can speed up computation
+* [**Parallel Learning**](https://github.com/Microsoft/LightGBM/blob/master/docs/Parallel-Learning-Guide.rst) and [**GPU Learning**](https://github.com/Microsoft/LightGBM/blob/master/docs/GPU-Tutorial.md) can speed up computation
 * [**Laurae++ interactive documentation**](https://sites.google.com/view/lauraepp/parameters) is a detailed guide for hyperparameters
 
 Documentation for contributors:
@@ -81,7 +84,9 @@ Support
 
 * Ask a question [on Stack Overflow with the `lightgbm` tag ](https://stackoverflow.com/questions/ask?tags=lightgbm), we monitor this for new questions.
 * Discuss on the [LightGBM Gitter](https://gitter.im/Microsoft/LightGBM).
-* Open **bug reports** and **feature requests** (not questions) on [Github issues](https://github.com/Microsoft/LightGBM/issues).
+* Discuss on the [LightGBM Slack team](https://lightgbm.slack.com).
+  * Use [this invite link](https://lightgbm-slack-autojoin.herokuapp.com/) to join the team.
+* Open **bug reports** and **feature requests** (not questions) on [GitHub issues](https://github.com/Microsoft/LightGBM/issues).
 
 How to Contribute
 -----------------

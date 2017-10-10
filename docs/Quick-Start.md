@@ -2,30 +2,31 @@
 
 This is a quick start guide for LightGBM of cli version.
 
-Follow the [Installation Guide](./Installation-Guide.md) to install LightGBM first.
+Follow the [Installation Guide](./Installation-Guide.rst) to install LightGBM first.
 
 ***List of other Helpful Links***
 * [Parameters](./Parameters.md)
 * [Parameters Tuning](./Parameters-tuning.md)
-* [Python Package quick start guide](./Python-intro.md)
-* [Python API Reference](./Python-API.md)
+* [Python-package Quick Start](./Python-intro.md)
+* [Python API](./Python-API.rst)
 
-## Training data format 
+## Training Data Format 
 
 LightGBM supports input data file with [CSV](https://en.wikipedia.org/wiki/Comma-separated_values), [TSV](https://en.wikipedia.org/wiki/Tab-separated_values) and [LibSVM](https://www.csie.ntu.edu.tw/~cjlin/libsvm/) formats.
 
 Label is the data of first column, and there is no header in the file.
 
-### Categorical feature support
+### Categorical Feature Support
 
 update 12/5/2016:
 
 LightGBM can use categorical feature directly (without one-hot coding). The experiment on [Expo data](http://stat-computing.org/dataexpo/2009/) shows about 8x speed-up compared with one-hot coding.
 
-For the setting details, please refer to [Parameters](./Parameters.md#io-parameters).
+For the setting details, please refer to [Parameters](./Parameters.md).
 
-### Weight and query/group data
-LightGBM also support weighted training, it needs an additional [weight data](./Parameters.md#weight-data). And it needs an additional [query data](./Parameters.md#query-data) for ranking task.
+### Weight and Query/Group Data
+
+LightGBM also support weighted training, it needs an additional [weight data](./Parameters.md). And it needs an additional [query data](./Parameters.md) for ranking task.
 
 update 11/3/2016:
 
@@ -33,9 +34,7 @@ update 11/3/2016:
 2. can specific label column, weight column and query/group id column. Both index and column are supported
 3. can specific a list of ignored columns
 
-For the detailed usage, please refer to [Configuration](./Parameters.md#io-parameters).
-
-## Parameter quick look
+## Parameter Quick Look
 
 The parameter format is ```key1=value1 key2=value2 ... ``` . And parameters can be in both config file and command line.
 
@@ -54,7 +53,7 @@ Some important parameters:
     * `fair`, [Fair loss](https://www.kaggle.com/c/allstate-claims-severity/discussion/24520)
     * `poisson`, [Poisson regression](https://en.wikipedia.org/wiki/Poisson_regression "Poisson regression")
   * `binary`, binary classification application 
-  * `lambdarank`, [lambdarank](https://pdfs.semanticscholar.org/fc9a/e09f9ced555558fdf1e997c0a5411fb51f15.pdf) application
+  * `lambdarank`, [lambdarank](https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf) application
     * The label should be `int` type in lambdarank tasks, and larger number represent the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect).
     * `label_gain` can be used to set the gain(weight) of `int` label.
   * `multiclass`, multi-class classification application, should set `num_class` as well
@@ -78,7 +77,7 @@ Some important parameters:
   * ```serial```, single machine tree learner
   * ```feature```, feature parallel tree learner
   * ```data```, data parallel tree learner
-  * Refer to [Parallel Learning Guide](./Parallel-Learning-Guide.md) to get more details.
+  * Refer to [Parallel Learning Guide](./Parallel-Learning-Guide.rst) to get more details.
 * ```num_threads```, default=OpenMP_default, type=int, alias=```num_thread```,```nthread```
   * Number of threads for LightGBM. 
   * For the best speed, set this to the number of **real CPU cores**, not the number of threads (most CPU using [hyper-threading](https://en.wikipedia.org/wiki/Hyper-threading) to generate 2 threads per CPU core).
@@ -93,7 +92,6 @@ Some important parameters:
 
 For all parameters, please refer to [Parameters](./Parameters.md).
 
-
 ## Run LightGBM
 
 For Windows:
@@ -101,7 +99,7 @@ For Windows:
 lightgbm.exe config=your_config_file other_args ...
 ```
 
-For unix:
+For Unix:
 ```
 ./lightgbm config=your_config_file other_args ...
 ```
@@ -114,7 +112,7 @@ For example, following command line will keep 'num_trees=10' and ignore same par
 
 ## Examples
 
-* [Binary Classification](../examples/binary_classification)
-* [Regression](../examples/regression)
-* [Lambdarank](../examples/lambdarank)
-* [Parallel Learning](../examples/parallel_learning)
+* [Binary Classification](https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification)
+* [Regression](https://github.com/Microsoft/LightGBM/tree/master/examples/regression)
+* [Lambdarank](https://github.com/Microsoft/LightGBM/tree/master/examples/lambdarank)
+* [Parallel Learning](https://github.com/Microsoft/LightGBM/tree/master/examples/parallel_learning)

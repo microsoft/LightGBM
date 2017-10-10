@@ -224,7 +224,7 @@ Booster <- R6Class(
         gpair <- fobj(private$inner_predict(1), private$train_set)
         
         # Check for gradient and hessian as list
-        if(is.null(gpair$grad) | is.null(gpair$hess)){
+        if(is.null(gpair$grad) || is.null(gpair$hess)){
           stop("lgb.Booster.update: custom objective should 
             return a list with attributes (hess, grad)")
         }
@@ -510,16 +510,7 @@ Booster <- R6Class(
           # Parse and store privately names
           names <- strsplit(names, "\t")[[1]]
           private$eval_names <- names
-          private$higher_better_inner_eval <- rep(FALSE, length(names))
-          
-          # Loop through each name to pick up evaluation (and parse ndcg manually)
-          for (i in seq_along(names)) {
-            
-            if ((names[i] == "auc") | grepl("^ndcg", names[i])) {
-              private$higher_better_inner_eval[i] <- TRUE
-            }
-            
-          }
+          private$higher_better_inner_eval <- grepl("^ndcg|^auc$", names)
           
         }
         
@@ -589,7 +580,7 @@ Booster <- R6Class(
         res <- feval(private$inner_predict(data_idx), data)
         
         # Check for name correctness
-        if(is.null(res$name) | is.null(res$value) |  is.null(res$higher_better)) {
+        if(is.null(res$name) || is.null(res$value) ||  is.null(res$higher_better)) {
           stop("lgb.Booster.eval: custom eval function should return a 
             list with attribute (name, value, higher_better)");
         }
@@ -841,6 +832,27 @@ lgb.dump <- function(booster, num_iteration = NULL){
 #' @param is_err TRUE will return evaluation error instead
 #' 
 #' @return vector of evaluation result
+#' 
+#' @examples
+#' \dontrun{
+#' library(lightgbm)
+#' data(agaricus.train, package = "lightgbm")
+#' train <- agaricus.train
+#' dtrain <- lgb.Dataset(train$data, label = train$label)
+#' data(agaricus.test, package = "lightgbm")
+#' test <- agaricus.test
+#' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
+#' params <- list(objective = "regression", metric = "l2")
+#' valids <- list(test = dtest)
+#' model <- lgb.train(params,
+#'                    dtrain,
+#'                    100,
+#'                    valids,
+#'                    min_data = 1,
+#'                    learning_rate = 1,
+#'                    early_stopping_rounds = 10)
+#' lgb.get.eval.result(model, "test", "l2")
+#' }
 #' 
 #' @rdname lgb.get.eval.result
 #' @export

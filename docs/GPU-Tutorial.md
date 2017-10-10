@@ -67,7 +67,7 @@ If you are building on OSX, you probably need to remove macro `BOOST_COMPUTE_USE
 Install Python Interface (optional)
 -----------------------------------
 
-If you want to use the Python interface of LightGBM, you can install it now (along with some necessary Python package dependencies):
+If you want to use the Python interface of LightGBM, you can install it now (along with some necessary Python-package dependencies):
 
 ```
 sudo apt-get -y install python-pip
@@ -165,9 +165,9 @@ Also, you can compare the training speed with CPU:
 Further Reading
 ---------------
 
-[GPU Tuning Guide and Performance Comparison](./GPU-Performance.md)
+[GPU Tuning Guide and Performance Comparison](./GPU-Performance.rst)
 
-[GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.md).
+[GPU SDK Correspondence and Device Targeting Table](./GPU-Targets.rst)
 
 [GPU Windows Tutorial](./GPU-Windows.md)
 
