@@ -20,6 +20,7 @@
 #'  \item \code{split_gain}: Split gain of a node
 #'  \item \code{threshold}: Spliting threshold value of a node
 #'  \item \code{decision_type}: Decision type of a node
+#'  \item \code{default_left}: Determine how to handle NA value, TRUE -> Left, FALSE -> Right
 #'  \item \code{internal_value}: Node value
 #'  \item \code{internal_count}: The number of observation collected by a node
 #'  \item \code{leaf_value}: Leaf value
@@ -92,6 +93,7 @@ single.tree.parse <- function(lgb_tree) {
                                                    split_gain = numeric(0),
                                                    threshold = numeric(0),
                                                    decision_type = character(0),
+                                                   default_left = character(0),
                                                    internal_value = integer(0),
                                                    internal_count = integer(0),
                                                    leaf_value = integer(0),
@@ -110,6 +112,7 @@ single.tree.parse <- function(lgb_tree) {
                                                                                 "split_gain",
                                                                                 "threshold",
                                                                                 "decision_type",
+                                                                                "default_left",
                                                                                 "internal_value",
                                                                                 "internal_count")],
                                                                "depth" = current_depth,
