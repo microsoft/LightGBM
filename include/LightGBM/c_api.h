@@ -735,12 +735,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterFeatureImportance(BoosterHandle handle,
                                                     int importance_type,
                                                     double* out_results);
 
-#if defined(_MSC_VER)
 // exception handle and error msg
-static char* LastErrorMsg() { static __declspec(thread) char err_msg[512] = "Everything is fine"; return err_msg; }
-#else
-static char* LastErrorMsg() { static thread_local char err_msg[512] = "Everything is fine"; return err_msg; }
-#endif
+static char* LastErrorMsg() { static THREAD_LOCAL char err_msg[512] = "Everything is fine"; return err_msg; }
 
 #pragma warning(disable : 4996)
 inline void LGBM_SetLastError(const char* msg) {
