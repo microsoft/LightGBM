@@ -190,19 +190,19 @@ public:
 
     Predictor predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf, is_predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
-    int64_t num_preb_in_one_row = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf, is_predict_contrib);
+    int64_t num_pred_in_one_row = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf, is_predict_contrib);
     auto pred_fun = predictor.GetPredictFunction();
     OMP_INIT_EX();
     #pragma omp parallel for schedule(static)
     for (int i = 0; i < nrow; ++i) {
       OMP_LOOP_EX_BEGIN();
       auto one_row = get_row_fun(i);
-      auto pred_wrt_ptr = out_result + static_cast<size_t>(num_preb_in_one_row) * i;
+      auto pred_wrt_ptr = out_result + static_cast<size_t>(num_pred_in_one_row) * i;
       pred_fun(one_row, pred_wrt_ptr);
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
-    *out_len = nrow * num_preb_in_one_row;
+    *out_len = nrow * num_pred_in_one_row;
   }
 
   void Predict(int num_iteration, int predict_type, const char* data_filename,
