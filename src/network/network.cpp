@@ -10,15 +10,15 @@
 namespace LightGBM {
 
 // static member definition
-int Network::num_machines_;
-int Network::rank_;
-std::unique_ptr<Linkers> Network::linkers_;
-BruckMap Network::bruck_map_;
-RecursiveHalvingMap Network::recursive_halving_map_;
-std::vector<int> Network::block_start_;
-std::vector<int>  Network::block_len_;
-int Network::buffer_size_;
-std::vector<char> Network::buffer_;
+THREAD_LOCAL int Network::num_machines_;
+THREAD_LOCAL int Network::rank_;
+THREAD_LOCAL std::unique_ptr<Linkers> Network::linkers_;
+THREAD_LOCAL BruckMap Network::bruck_map_;
+THREAD_LOCAL RecursiveHalvingMap Network::recursive_halving_map_;
+THREAD_LOCAL std::vector<int> Network::block_start_;
+THREAD_LOCAL std::vector<int>  Network::block_len_;
+THREAD_LOCAL int Network::buffer_size_;
+THREAD_LOCAL std::vector<char> Network::buffer_;
 
 void Network::Init(NetworkConfig config) {
   linkers_.reset(new Linkers(config));
