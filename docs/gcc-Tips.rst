@@ -30,15 +30,22 @@ You can find more details on the experimentation below:
 Some explanatory pictures:
 
 .. image:: ./_static/images/gcc-table.png
+   :align: center
 
 .. image:: ./_static/images/gcc-bars.png
+   :align: center
 
 .. image:: ./_static/images/gcc-chart.png
+   :align: center
 
 .. image:: ./_static/images/gcc-comparison-1.png
+   :align: center
 
 .. image:: ./_static/images/gcc-comparison-2.png
+   :align: center
 
 .. image:: ./_static/images/gcc-meetup-1.png
+   :align: center
 
 .. image:: ./_static/images/gcc-meetup-2.png
+   :align: center

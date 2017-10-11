@@ -44,14 +44,17 @@ Modifying PATH (for newbies)
 To modify PATH, just follow the pictures after going to the ``Control Panel``:
 
 .. image:: ./_static/images/screenshot-system.png
+   :align: center
 
 Then, go to ``Advanced`` > ``Environment Variables...``:
 
 .. image:: ./_static/images/screenshot-advanced-system-settings.png
+   :align: center
 
 Under ``System variables``, the variable ``Path``:
 
 .. image:: ./_static/images/screenshot-environment-variables.png
+   :align: center
 
 --------------
 
@@ -95,6 +98,7 @@ Make sure you are using the x86\_64 architecture, and do not modify anything els
 You may choose a version other than the most recent one if you need a previous MinGW version.
 
 .. image:: ./_static/images/screenshot-mingw-installation.png
+   :align: center
 
 Then, add to your PATH the following (to adjust to your MinGW version):
 
@@ -111,6 +115,7 @@ get rid of MinGW from PATH (to keep: ``c:\Rtools\bin;c:\Rtools\mingw_32\bin`` fo
 You can check which MinGW version you are using by running the following in a command prompt: ``gcc -v``:
 
 .. image:: ./_static/images/screenshot-r-mingw-used.png
+   :align: center
 
 To check whether you need 32-bit or 64-bit MinGW for R, install LightGBM as usual and check for the following:
 
@@ -205,6 +210,7 @@ Your folder should look like this at the end (not fully detailed):
 This is what you should (approximately) get at the end of Boost compilation:
 
 .. image:: ./_static/images/screenshot-boost-compiled.png
+   :align: center
 
 If you are getting an error:
 
@@ -226,6 +232,7 @@ Git Installation
 Installing Git for Windows is straightforward, use the following `link`_.
 
 .. image:: ./_static/images/screenshot-git-for-windows.png
+   :align: center
 
 Then, click on the big Download button, you can't miss it.
 
@@ -253,6 +260,7 @@ CMake Installation, Configuration, Generation
 Installing CMake requires one download first and then a lot of configuration for LightGBM:
 
 .. image:: ./_static/images/screenshot-downloading-cmake.png
+   :align: center
 
 -  Download `CMake`_ 3.8.0
 
@@ -269,18 +277,22 @@ Installing CMake requires one download first and then a lot of configuration for
 -  Click ``Configure``
 
    .. image:: ./_static/images/screenshot-create-directory.png
+      :align: center
 
    .. image:: ./_static/images/screenshot-mingw-makefiles-to-use.png
+      :align: center
 
 -  Lookup for ``USE_GPU`` and check the checkbox
 
    .. image:: ./_static/images/screenshot-use-gpu.png
+      :align: center
 
 -  Click ``Configure``
 
    You should get (approximately) the following after clicking Configure:
 
    .. image:: ./_static/images/screenshot-configured-lightgbm.png
+      :align: center
 
    ::
 
@@ -339,6 +351,7 @@ You can do everything in the Git Bash console you left open:
 -  In Git Bash, run ``make`` and see LightGBM being installing!
 
 .. image:: ./_static/images/screenshot-lightgbm-with-gpu-support-compiled.png
+   :align: center
 
 If everything was done correctly, you now compiled CLI LightGBM with GPU support!
 
@@ -353,6 +366,7 @@ You can now test LightGBM directly in CLI in a **command prompt** (not Git Bash)
     "../../lightgbm.exe" config=train.conf data=binary.train valid=binary.test objective=binary device=gpu
 
 .. image:: ./_static/images/screenshot-lightgbm-in-cli-with-gpu.png
+   :align: center
 
 Congratulations for reaching this stage!
 
@@ -366,6 +380,7 @@ Debugging LightGBM Crashes in CLI
 Now that you compiled LightGBM, you try it... and you always see a segmentation fault or an undocumented crash with GPU support:
 
 .. image:: ./_static/images/screenshot-segmentation-fault.png
+   :align: center
 
 Please check you are using the right device and whether it works with the default ``gpu_device_id = 0`` and ``gpu_platform_id = 0``.
 If it still does not work with the default values, then you should follow all the steps below.
@@ -377,15 +392,18 @@ You will have to redo the compilation steps for LightGBM to add debugging mode. 
 -  Deleting ``lightgbm.exe``, ``lib_lightgbm.dll``, and ``lib_lightgbm.dll.a`` files
 
 .. image:: ./_static/images/screenshot-files-to-remove.png
+   :align: center
 
 Once you removed the file, go into CMake, and follow the usual steps.
 Before clicking "Generate", click on "Add Entry":
 
 .. image:: ./_static/images/screenshot-added-manual-entry-in-cmake.png
+   :align: center
 
 In addition, click on Configure and Generate:
 
 .. image:: ./_static/images/screenshot-configured-and-generated-cmake.png
+   :align: center
 
 And then, follow the regular LightGBM CLI installation from there.
 
@@ -397,6 +415,7 @@ open a command prompt and run the following:
     gdb --args "../../lightgbm.exe" config=train.conf data=binary.train valid=binary.test objective=binary device=gpu
 
 .. image:: ./_static/images/screenshot-debug-run.png
+   :align: center
 
 Type ``run`` and press the Enter key.
 

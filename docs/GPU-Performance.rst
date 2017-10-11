@@ -162,6 +162,7 @@ For most datasets, using 63 bins is sufficient.
 We record the wall clock time after 500 iterations, as shown in the figure below:
 
 .. image:: ./_static/images/gpu-performance-comparison.png
+   :align: center
 
 When using a GPU, it is advisable to use a bin size of 63 rather than 255, because it can speed up training significantly without noticeably affecting accuracy.
 On CPU, using a smaller bin size only marginally improves performance, sometimes even slows down training,
