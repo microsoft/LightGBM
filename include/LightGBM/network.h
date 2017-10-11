@@ -191,23 +191,24 @@ public:
 
 private:
   /*! \brief Number of all machines */
-  static int num_machines_;
+  static THREAD_LOCAL int num_machines_;
   /*! \brief Rank of local machine */
-  static int rank_;
+  static THREAD_LOCAL int rank_;
   /*! \brief The network interface, provide send/recv functions  */
-  static std::unique_ptr<Linkers> linkers_;
+  static THREAD_LOCAL std::unique_ptr<Linkers> linkers_;
   /*! \brief Bruck map for all gather algorithm*/
-  static BruckMap bruck_map_;
+  static THREAD_LOCAL BruckMap bruck_map_;
   /*! \brief Recursive halving map for reduce scatter */
-  static RecursiveHalvingMap recursive_halving_map_;
+  static THREAD_LOCAL RecursiveHalvingMap recursive_halving_map_;
   /*! \brief Buffer to store block start index */
-  static std::vector<int> block_start_;
+  static THREAD_LOCAL std::vector<int> block_start_;
   /*! \brief Buffer to store block size */
-  static std::vector<int> block_len_;
+  static THREAD_LOCAL std::vector<int> block_len_;
   /*! \brief Buffer  */
-  static std::vector<char> buffer_;
+  static THREAD_LOCAL std::vector<char> buffer_;
   /*! \brief Size of buffer_ */
-  static int buffer_size_;
+  static THREAD_LOCAL int buffer_size_;
+
 };
 
 inline int Network::rank() {
