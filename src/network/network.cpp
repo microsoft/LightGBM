@@ -10,8 +10,8 @@
 namespace LightGBM {
 
 // static member definition
-THREAD_LOCAL int Network::num_machines_;
-THREAD_LOCAL int Network::rank_;
+THREAD_LOCAL int Network::num_machines_ = 1;
+THREAD_LOCAL int Network::rank_ = 0;
 THREAD_LOCAL std::unique_ptr<Linkers> Network::linkers_;
 THREAD_LOCAL BruckMap Network::bruck_map_;
 THREAD_LOCAL RecursiveHalvingMap Network::recursive_halving_map_;
@@ -32,9 +32,6 @@ void Network::Init(NetworkConfig config) {
     buffer_size_ = 1024 * 1024;
     buffer_.resize(buffer_size_);
     Log::Info("Local rank: %d, total number of machines: %d", rank_, num_machines_);
-  } else {
-    rank_ = 0;
-    num_machines_ = 1;
   }
 }
 
