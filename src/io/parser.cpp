@@ -4,8 +4,13 @@
 #include <fstream>
 #include <functional>
 #include <memory>
+#include <vector>
+
 
 namespace LightGBM {
+
+std::unordered_map<int, int> Parser::feature_names_map_;
+
 
 void GetStatistic(const char* str, int* comma_cnt, int* tab_cnt, int* colon_cnt) {
   *comma_cnt = 0;

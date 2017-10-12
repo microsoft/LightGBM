@@ -104,12 +104,18 @@ public:
       Log::Fatal("Could not recognize the data format of data file %s", data_filename);
     }
 
+    if(has_header) {
+      parser->GetFeatureSeq(data_filename, boosting_->FeatureNames());
+    }
     // function for parse data
     std::function<void(const char*, std::vector<std::pair<int, double>>*)> parser_fun;
     double tmp_label;
-    parser_fun = [this, &parser, &tmp_label]
+    parser_fun = [this, &parser, &tmp_label, &has_header]
     (const char* buffer, std::vector<std::pair<int, double>>* feature) {
       parser->ParseOneLine(buffer, feature, &tmp_label);
+      if(has_header) {
+        parser->FixFeatureSeq(feature);
+      }
     };
 
     std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
