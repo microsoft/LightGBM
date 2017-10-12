@@ -31,7 +31,7 @@ The exe file will be in ``LightGBM-master/windows/x64/Release`` folder.
 From Command Line
 *****************
 
-1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (MSbuild is not needed if **Visual Studio** is installed).
+1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (**MSBuild** is not needed if **Visual Studio** is installed).
 
 2. Run the following commands:
 
@@ -66,10 +66,12 @@ The exe and dll files will be in ``LightGBM/`` folder.
 
 **Note**: you may need to run the ``cmake -G "MinGW Makefiles" ..`` one more time if met ``sh.exe was found in your PATH`` error.
 
+Also you may want to reed `gcc Tips <./gcc-Tips.rst>`__.
+
 Linux
 ~~~~~
 
-LightGBM uses ``CMake`` to build. Run the following commands:
+LightGBM uses **CMake** to build. Run the following commands:
 
 .. code::
 
@@ -79,6 +81,8 @@ LightGBM uses ``CMake`` to build. Run the following commands:
   make -j4
 
 **Note**: glibc >= 2.14 is required.
+
+Also you may want to reed `gcc Tips <./gcc-Tips.rst>`__.
 
 OSX
 ~~~
@@ -101,6 +105,8 @@ Then install LightGBM:
   mkdir build ; cd build
   cmake ..
   make -j4
+
+Also you may want to reed `gcc Tips <./gcc-Tips.rst>`__.
 
 Docker
 ~~~~~~
@@ -129,7 +135,7 @@ With GUI
 
 4. Go to ``LightGBM-master/windows`` folder.
 
-4. Open ``LightGBM.sln`` file with Visual Studio, choose ``Release_mpi`` configuration and click ``BUILD-> Build Solution (Ctrl+Shift+B)``.
+5. Open ``LightGBM.sln`` file with Visual Studio, choose ``Release_mpi`` configuration and click ``BUILD-> Build Solution (Ctrl+Shift+B)``.
 
    If you have errors about **Platform Toolset**, go to ``PROJECT-> Properties-> Configuration Properties-> General`` and select the toolset installed on your machine.
 
@@ -140,7 +146,7 @@ From Command Line
 
 1. You need to install `MS MPI`_ first. Both ``msmpisdk.msi`` and ``MSMpiSetup.exe`` are needed.
 
-2. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (MSbuild is not needed if **Visual Studio** is installed).
+2. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (MSBuild is not needed if **Visual Studio** is installed).
 
 3. Run the following commands:
 
@@ -226,11 +232,11 @@ To build LightGBM GPU version, run the following commands:
 Windows
 ^^^^^^^
 
-If you use **MinGW**, the build procedure are similar to the build in Linux. Refer to `GPU Windows Compilation <./GPU-Windows.md>`__ to get more details.
+If you use **MinGW**, the build procedure are similar to the build in Linux. Refer to `GPU Windows Compilation <./GPU-Windows.rst>`__ to get more details.
 
-Following procedure is for the MSVC(Microsoft Visual C++) build.
+Following procedure is for the MSVC (Microsoft Visual C++) build.
 
-1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (MSbuild is not needed if **Visual Studio** is installed).
+1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (MSBuild is not needed if **Visual Studio** is installed).
 
 2. Install **OpenCL** for Windows. The installation depends on the brand (NVIDIA, AMD, Intel) of your GPU card.
 

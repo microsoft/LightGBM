@@ -3,7 +3,7 @@ Parallel Learning Guide
 
 This is a guide for parallel learning of LightGBM.
 
-Follow the `Quick Start`_ to know how to use LightGBM first.
+Follow the `Quick Start <./Quick-Start.rst>`__ to know how to use LightGBM first.
 
 Choose Appropriate Parallel Algorithm
 -------------------------------------
@@ -30,14 +30,14 @@ These algorithms are suited for different scenarios, which is listed in the foll
 | **#feature is large**   | Feature Parallel     | Voting Parallel      |
 +-------------------------+----------------------+----------------------+
 
-More details about these parallel algorithms can be found in `optimization in parallel learning`_.
+More details about these parallel algorithms can be found in `optimization in parallel learning <./Features.rst#optimization-in-parallel-learning>`__.
 
 Build Parallel Version
 ----------------------
 
 Default build version support parallel learning based on the socket.
 
-If you need to build parallel version with MPI support, please refer to `Installation Guide`_.
+If you need to build parallel version with MPI support, please refer to `Installation Guide <./Installation-Guide.rst#build-mpi-version>`__.
 
 Preparation
 -----------
@@ -64,7 +64,7 @@ Then write these IP in one file (assume ``mlist.txt``) like following:
     machine1_ip
     machine2_ip
 
-Note: For Windows users, need to start "smpd" to start MPI service. More details can be found `here`_.
+**Note**: For Windows users, need to start "smpd" to start MPI service. More details can be found `here`_.
 
 Run Parallel Learning
 ---------------------
@@ -74,49 +74,53 @@ Socket Version
 
 1. Edit following parameters in config file:
 
-``tree_learner=your_parallel_algorithm``, edit ``your_parallel_algorithm`` (e.g. feature/data) here.
+   ``tree_learner=your_parallel_algorithm``, edit ``your_parallel_algorithm`` (e.g. feature/data) here.
 
-``num_machines=your_num_machines``, edit ``your_num_machines`` (e.g. 4) here.
+   ``num_machines=your_num_machines``, edit ``your_num_machines`` (e.g. 4) here.
 
-``machine_list_file=mlist.txt``, ``mlist.txt`` is created in `Preparation section <#preparation>`__.
+   ``machine_list_file=mlist.txt``, ``mlist.txt`` is created in `Preparation section <#preparation>`__.
 
-``local_listen_port=12345``, ``12345`` is allocated in `Preparation section <#preparation>`__.
+   ``local_listen_port=12345``, ``12345`` is allocated in `Preparation section <#preparation>`__.
 
 2. Copy data file, executable file, config file and ``mlist.txt`` to all machines.
 
 3. Run following command on all machines, you need to change ``your_config_file`` to real config file.
 
-For Windows: ``lightgbm.exe config=your_config_file``
+   For Windows: ``lightgbm.exe config=your_config_file``
 
-For Linux: ``./lightgbm config=your_config_file``
+   For Linux: ``./lightgbm config=your_config_file``
 
 MPI Version
 ^^^^^^^^^^^
 
 1. Edit following parameters in config file:
 
-``tree_learner=your_parallel_algorithm``, edit ``your_parallel_algorithm`` (e.g. feature/data) here.
+   ``tree_learner=your_parallel_algorithm``, edit ``your_parallel_algorithm`` (e.g. feature/data) here.
 
-``num_machines=your_num_machines``, edit ``your_num_machines`` (e.g. 4) here.
+   ``num_machines=your_num_machines``, edit ``your_num_machines`` (e.g. 4) here.
 
-2. Copy data file, executable file, config file and ``mlist.txt`` to all machines. Note: MPI needs to be run in the **same path on all machines**.
+2. Copy data file, executable file, config file and ``mlist.txt`` to all machines.
+
+   **Note**: MPI needs to be run in the **same path on all machines**.
 
 3. Run following command on one machine (not need to run on all machines), need to change ``your_config_file`` to real config file.
 
-For Windows: ``mpiexec.exe /machinefile mlist.txt lightgbm.exe config=your_config_file``
+   For Windows:
+   
+   .. code::
 
-For Linux: ``mpiexec --machinefile mlist.txt ./lightgbm config=your_config_file``
+       mpiexec.exe /machinefile mlist.txt lightgbm.exe config=your_config_file
+
+   For Linux:
+
+   .. code::
+
+       mpiexec --machinefile mlist.txt ./lightgbm config=your_config_file
 
 Example
 ^^^^^^^
 
--  `A simple parallel example`_.
-
-.. _Quick Start: ./Quick-Start.md
-
-.. _optimization in parallel learning: ./Features.md
-
-.. _Installation Guide: ./Installation-Guide.rst
+-  `A simple parallel example`_
 
 .. _here: https://blogs.technet.microsoft.com/windowshpc/2015/02/02/how-to-compile-and-run-a-simple-ms-mpi-program/
 

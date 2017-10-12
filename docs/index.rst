@@ -12,17 +12,17 @@ Welcome to LightGBM's documentation!
 
    Installation Guide <Installation-Guide>
    Quick Start <Quick-Start>
-   Python Quick Start <Python-intro>
+   Python Quick Start <Python-Intro>
    Features <Features>
    Experiments <Experiments>
    Parameters <Parameters>
-   Parameters Tuning <Parameters-tuning>
+   Parameters Tuning <Parameters-Tuning>
    Python API <Python-API>
    Parallel Learning Guide <Parallel-Learning-Guide>
    GPU Tutorial <GPU-Tutorial>
-   Advanced Topics <Advanced-Topic>
+   Advanced Topics <Advanced-Topics>
    FAQ <FAQ>
-   Development Guide <development>
+   Development Guide <Development-Guide>
 
 Indices and Tables
 ==================

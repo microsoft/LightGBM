@@ -4,7 +4,7 @@ Development Guide
 Algorithms
 ----------
 
-Refer to `Features <./Features.md>`__ to understand important algorithms used in LightGBM.
+Refer to `Features <./Features.rst>`__ to understand important algorithms used in LightGBM.
 
 Classes and Code Structure
 --------------------------
@@ -68,9 +68,7 @@ Code Structure
 Documents API
 ~~~~~~~~~~~~~
 
-LightGBM support use `doxygen <http://www.stack.nl/~dimitri/doxygen/>`__ to generate documents for classes and functions.
-
-Refer to `docs README <./README.md>`__.
+Refer to `docs README <./README.rst>`__.
 
 C API
 -----
@@ -85,6 +83,6 @@ See the implementations at `Python-package <https://github.com/Microsoft/LightGB
 Questions
 ---------
 
-Refer to `FAQ <./FAQ.md>`__.
+Refer to `FAQ <./FAQ.rst>`__.
 
 Also feel free to open `issues <https://github.com/Microsoft/LightGBM/issues>`__ if you met problems.

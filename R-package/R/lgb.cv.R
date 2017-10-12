@@ -57,7 +57,7 @@ CVBooster <- R6Class(
 #'        If early stopping occurs, the model will have 'best_iter' field
 #' @param callbacks list of callback functions
 #'        List of callback functions that are applied at each iteration.
-#' @param ... other parameters, see parameters.md for more informations
+#' @param ... other parameters, see Parameters.rst for more informations
 #' 
 #' @return a trained model \code{lgb.CVBooster}.
 #' 
