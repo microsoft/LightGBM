@@ -55,6 +55,13 @@ public:
     train_data_ = train_data;
     CreateObjectiveAndMetrics();
     // initialize the boosting
+    if (config_.boosting_config.tree_learner_type == std::string("feature")) {
+      Log::Fatal("Do not support feature parallel in c api.");
+    }
+    if (Network::num_machines() == 1) {
+      Log::Warning("Only find one worker, will switch to serial tree learner.");
+      config_.boosting_config.tree_learner_type = "serial";
+    }
     boosting_->Init(&config_.boosting_config, train_data_, objective_fun_.get(),
                     Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
 
@@ -362,7 +369,11 @@ int LGBM_DatasetCreateFromFile(const char* filename,
   }
   DatasetLoader loader(config.io_config,nullptr, 1, filename);
   if (reference == nullptr) {
-    *out = loader.LoadFromFile(filename, "");
+    if (Network::num_machines() == 1) {
+      *out = loader.LoadFromFile(filename, "");
+    } else {
+      *out = loader.LoadFromFile(filename, "", Network::rank(), Network::num_machines());
+    }
   } else {
     *out = loader.LoadFromFileAlignWithOtherDataset(filename, "",
                                                     reinterpret_cast<const Dataset*>(reference));

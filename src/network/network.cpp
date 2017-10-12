@@ -21,16 +21,21 @@ THREAD_LOCAL int Network::buffer_size_;
 THREAD_LOCAL std::vector<char> Network::buffer_;
 
 void Network::Init(NetworkConfig config) {
-  linkers_.reset(new Linkers(config));
-  rank_ = linkers_->rank();
-  num_machines_ = linkers_->num_machines();
-  bruck_map_ = linkers_->bruck_map();
-  recursive_halving_map_ = linkers_->recursive_halving_map();
-  block_start_ = std::vector<int>(num_machines_);
-  block_len_ = std::vector<int>(num_machines_);
-  buffer_size_ = 1024 * 1024;
-  buffer_.resize(buffer_size_);
-  Log::Info("Local rank: %d, total number of machines: %d", rank_, num_machines_);
+  if (config.num_machines > 1) {
+    linkers_.reset(new Linkers(config));
+    rank_ = linkers_->rank();
+    num_machines_ = linkers_->num_machines();
+    bruck_map_ = linkers_->bruck_map();
+    recursive_halving_map_ = linkers_->recursive_halving_map();
+    block_start_ = std::vector<int>(num_machines_);
+    block_len_ = std::vector<int>(num_machines_);
+    buffer_size_ = 1024 * 1024;
+    buffer_.resize(buffer_size_);
+    Log::Info("Local rank: %d, total number of machines: %d", rank_, num_machines_);
+  } else {
+    rank_ = 0;
+    num_machines_ = 1;
+  }
 }
 
 void Network::Dispose() {
@@ -40,6 +45,9 @@ void Network::Dispose() {
 }
 
 void Network::Allreduce(char* input, int input_size, int type_size, char* output, const ReduceFunction& reducer) {
+  if (num_machines_ <= 1) {
+    Log::Fatal("Please initilize the network interface first");
+  }
   int count = input_size / type_size;
   // if small package or small count , do it by all gather.(reduce the communication times.)
   if (count < num_machines_ || input_size < 4096) {
@@ -64,6 +72,9 @@ void Network::Allreduce(char* input, int input_size, int type_size, char* output
 }
 
 void Network::AllreduceByAllGather(char* input, int input_size, char* output, const ReduceFunction& reducer) {
+  if (num_machines_ <= 1) {
+    Log::Fatal("Please initilize the network interface first");
+  }
   // assign blocks
   int all_size = input_size * num_machines_;
   block_start_[0] = 0;
@@ -87,6 +98,10 @@ void Network::AllreduceByAllGather(char* input, int input_size, char* output, co
 }
 
 void Network::Allgather(char* input, int send_size, char* output) {
+  if (num_machines_ <= 1) {
+    Log::Fatal("Please initilize the network interface first");
+  }
+  if (num_machines_ <= 1) { return; }
   // assign blocks
   block_start_[0] = 0;
   block_len_[0] = send_size;
@@ -99,6 +114,9 @@ void Network::Allgather(char* input, int send_size, char* output) {
 }
 
 void Network::Allgather(char* input, int all_size, const int* block_start, const int* block_len, char* output) {
+  if (num_machines_ <= 1) {
+    Log::Fatal("Please initilize the network interface first");
+  }
   int write_pos = 0;
   // use output as receive buffer
   std::memcpy(output, input, block_len[rank_]);
@@ -131,6 +149,9 @@ void Network::Allgather(char* input, int all_size, const int* block_start, const
 }
 
 void Network::ReduceScatter(char* input, int, const int* block_start, const int* block_len, char* output, const ReduceFunction& reducer) {
+  if (num_machines_ <= 1) {
+    Log::Fatal("Please initilize the network interface first");
+  }
   if (recursive_halving_map_.need_pairwise) {
     for (int i = 1; i < num_machines_; ++i) {
       int out_rank = (rank_ + i) % num_machines_;
