@@ -80,7 +80,7 @@ void Linkers::ParseMachineList(const std::string& machines, const std::string& f
     TextReader<size_t> machine_list_reader(filename.c_str(), false);
     machine_list_reader.ReadAllLines();
     if (machine_list_reader.Lines().empty()) {
-      Log::Fatal("Machine list file %s doesn't exist", filename);
+      Log::Fatal("Machine list file %s doesn't exist", filename.c_str());
     }
     lines = machine_list_reader.Lines();
   } else {
