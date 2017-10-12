@@ -32,6 +32,9 @@ namespace LightGBM {
 */
 class Linkers {
 public:
+  Linkers() {
+    is_init_ = false;
+  }
   /*!
   * \brief Constructor
   * \param config Config of network settings
@@ -106,9 +109,10 @@ public:
   void Construct();
   /*!
   * \brief Parser machines information from file
+  * \param machines
   * \param filename
   */
-  void ParseMachineList(const char * filename);
+  void ParseMachineList(const std::string& machines, const std::string& filename);
   /*!
   * \brief Check one linker is connected or not
   * \param rank
@@ -134,6 +138,8 @@ private:
   RecursiveHalvingMap recursive_halving_map_;
 
   std::chrono::duration<double, std::milli> network_time_;
+
+  bool is_init_;
 
   #ifdef USE_SOCKET
   /*! \brief use to store client ips */

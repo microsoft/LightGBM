@@ -11,6 +11,7 @@
 #include <LightGBM/metric.h>
 #include <LightGBM/config.h>
 #include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/network.h>
 
 #include <cstdio>
 #include <vector>
@@ -54,6 +55,13 @@ public:
     train_data_ = train_data;
     CreateObjectiveAndMetrics();
     // initialize the boosting
+    if (config_.boosting_config.tree_learner_type == std::string("feature")) {
+      Log::Fatal("Do not support feature parallel in c api.");
+    }
+    if (Network::num_machines() == 1) {
+      Log::Warning("Only find one worker, will switch to serial tree learner.");
+      config_.boosting_config.tree_learner_type = "serial";
+    }
     boosting_->Init(&config_.boosting_config, train_data_, objective_fun_.get(),
                     Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
 
@@ -361,7 +369,11 @@ int LGBM_DatasetCreateFromFile(const char* filename,
   }
   DatasetLoader loader(config.io_config,nullptr, 1, filename);
   if (reference == nullptr) {
-    *out = loader.LoadFromFile(filename, "");
+    if (Network::num_machines() == 1) {
+      *out = loader.LoadFromFile(filename, "");
+    } else {
+      *out = loader.LoadFromFile(filename, "", Network::rank(), Network::num_machines());
+    }
   } else {
     *out = loader.LoadFromFileAlignWithOtherDataset(filename, "",
                                                     reinterpret_cast<const Dataset*>(reference));
@@ -1191,6 +1203,28 @@ int LGBM_BoosterFeatureImportance(BoosterHandle handle,
   for (size_t i = 0; i < feature_importances.size(); ++i) {
     (out_results)[i] = feature_importances[i];
   }
+  API_END();
+}
+
+int LGBM_NetworkInit(const char* machines,
+                     int local_listen_port,
+                     int listen_time_out,
+                     int num_machines) {
+  API_BEGIN();
+  NetworkConfig config;
+  config.machines = Common::RemoveQuotationSymbol(std::string(machines));
+  config.local_listen_port = local_listen_port;
+  config.num_machines = num_machines;
+  config.time_out = listen_time_out;
+  if (num_machines > 1) {
+    Network::Init(config);
+  }
+  API_END();
+}
+
+int LGBM_NetworkFree() {
+  API_BEGIN();
+  Network::Dispose();
   API_END();
 }
 
