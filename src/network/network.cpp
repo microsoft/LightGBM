@@ -34,7 +34,9 @@ void Network::Init(NetworkConfig config) {
 }
 
 void Network::Dispose() {
-
+  num_machines_ = 1;
+  rank_ = 0;
+  linkers_.reset(new Linkers());
 }
 
 void Network::Allreduce(char* input, int input_size, int type_size, char* output, const ReduceFunction& reducer) {

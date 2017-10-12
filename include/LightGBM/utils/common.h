@@ -27,7 +27,7 @@ inline char tolower(char in) {
   return in;
 }
 
-inline static std::string& Trim(std::string& str) {
+inline static std::string Trim(std::string str) {
   if (str.empty()) {
     return str;
   }
@@ -36,7 +36,7 @@ inline static std::string& Trim(std::string& str) {
   return str;
 }
 
-inline static std::string& RemoveQuotationSymbol(std::string& str) {
+inline static std::string RemoveQuotationSymbol(std::string str) {
   if (str.empty()) {
     return str;
   }

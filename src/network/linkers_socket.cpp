@@ -18,6 +18,7 @@
 namespace LightGBM {
 
 Linkers::Linkers(NetworkConfig config) {
+  is_init_ = false;
   // start up socket
   TcpSocket::Startup();
   network_time_ = std::chrono::duration<double, std::milli>(0);
@@ -26,7 +27,7 @@ Linkers::Linkers(NetworkConfig config) {
   socket_timeout_ = config.time_out;
   rank_ = -1;
   // parse clients from file
-  ParseMachineList(config.machine_list_filename.c_str());
+  ParseMachineList(config.machines, config.machine_list_filename);
 
   if (rank_ == -1) {
     // get ip list of local machine
@@ -58,35 +59,46 @@ Linkers::Linkers(NetworkConfig config) {
   Construct();
   // free listener
   listener_->Close();
+  is_init_ = true;
 }
 
 Linkers::~Linkers() {
-  for (size_t i = 0; i < linkers_.size(); ++i) {
-    if (linkers_[i] != nullptr) {
-      linkers_[i]->Close();
+  if (is_init_) {
+    for (size_t i = 0; i < linkers_.size(); ++i) {
+      if (linkers_[i] != nullptr) {
+        linkers_[i]->Close();
+      }
     }
+    TcpSocket::Finalize();
+    Log::Info("Finished linking network in %f seconds", network_time_ * 1e-3);
   }
-  TcpSocket::Finalize();
-  Log::Info("Finished linking network in %f seconds", network_time_ * 1e-3);
 }
 
-void Linkers::ParseMachineList(const char * filename) {
-  TextReader<size_t> machine_list_reader(filename, false);
-  machine_list_reader.ReadAllLines();
-  if (machine_list_reader.Lines().empty()) {
-    Log::Fatal("Machine list file %s doesn't exist", filename);
+void Linkers::ParseMachineList(const std::string& machines, const std::string& filename) {
+  std::vector<std::string> lines;
+  if (machines.empty()) {
+    TextReader<size_t> machine_list_reader(filename.c_str(), false);
+    machine_list_reader.ReadAllLines();
+    if (machine_list_reader.Lines().empty()) {
+      Log::Fatal("Machine list file %s doesn't exist", filename);
+    }
+    lines = machine_list_reader.Lines();
+  } else {
+    lines = Common::Split(machines.c_str(), ',');
   }
-
-  for (auto& line : machine_list_reader.Lines()) {
+  for (auto& line : lines) {
     line = Common::Trim(line);
     if (line.find_first_of("rank=") != std::string::npos) {
       std::vector<std::string> str_after_split = Common::Split(line.c_str(), '=');
       Common::Atoi(str_after_split[1].c_str(), &rank_);
       continue;
     }
-    std::vector<std::string> str_after_split = Common::Split(line.c_str() , ' ');
+    std::vector<std::string> str_after_split = Common::Split(line.c_str(), ' ');
     if (str_after_split.size() != 2) {
-      continue;
+      str_after_split = Common::Split(line.c_str(), ':');
+      if (str_after_split.size() != 2) {
+        continue;
+      }
     }
     if (client_ips_.size() >= static_cast<size_t>(num_machines_)) {
       Log::Warning("machine_list size is larger than the parameter num_machines, ignoring redundant entries");
@@ -98,8 +110,8 @@ void Linkers::ParseMachineList(const char * filename) {
     client_ports_.push_back(atoi(str_after_split[1].c_str()));
   }
   if (client_ips_.empty()) {
-    Log::Fatal("Machine list file doesn't contain any ip and port. \
-                Please check it again");
+    Log::Fatal("Cannot find any ip and port. \
+                Please check machine_list_filename or machines parameter.");
   }
   if (client_ips_.size() != static_cast<size_t>(num_machines_)) {
     Log::Warning("World size is larger than the machine_list size, change world size to %d", client_ips_.size());

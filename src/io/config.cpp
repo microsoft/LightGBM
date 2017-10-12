@@ -435,6 +435,7 @@ void NetworkConfig::Set(const std::unordered_map<std::string, std::string>& para
   GetInt(params, "time_out", &time_out);
   CHECK(time_out > 0);
   GetString(params, "machine_list_file", &machine_list_filename);
+  GetString(params, "machines", &machines);
 }
 
 }  // namespace LightGBM

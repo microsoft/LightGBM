@@ -11,6 +11,7 @@
 #include <LightGBM/metric.h>
 #include <LightGBM/config.h>
 #include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/network.h>
 
 #include <cstdio>
 #include <vector>
@@ -1191,6 +1192,28 @@ int LGBM_BoosterFeatureImportance(BoosterHandle handle,
   for (size_t i = 0; i < feature_importances.size(); ++i) {
     (out_results)[i] = feature_importances[i];
   }
+  API_END();
+}
+
+int LGBM_NetworkInit(const char* machines,
+                     int local_listen_port,
+                     int listen_time_out,
+                     int num_machines) {
+  API_BEGIN();
+  NetworkConfig config;
+  config.machines = Common::RemoveQuotationSymbol(std::string(machines));
+  config.local_listen_port = local_listen_port;
+  config.num_machines = num_machines;
+  config.time_out = listen_time_out;
+  if (num_machines > 1) {
+    Network::Init(config);
+  }
+  API_END();
+}
+
+int LGBM_NetworkFree() {
+  API_BEGIN();
+  Network::Dispose();
   API_END();
 }
 
