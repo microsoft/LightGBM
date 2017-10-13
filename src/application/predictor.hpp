@@ -8,6 +8,10 @@
 
 #include <LightGBM/utils/openmp_wrapper.h>
 
+
+#include <iostream>
+#include <fstream>
+#include <map>
 #include <cstring>
 #include <cstdio>
 #include <vector>
@@ -104,17 +108,44 @@ public:
       Log::Fatal("Could not recognize the data format of data file %s", data_filename);
     }
 
+    std::unordered_map<int, int> feature_names_map_;
     if(has_header) {
-      parser->GetFeatureSeq(data_filename, boosting_->FeatureNames(), boosting_->LabelIdx());
+      std::ifstream tmp_file;
+      tmp_file.open(data_filename);
+      if (!tmp_file.is_open()) {
+        Log::Fatal("Data file %s doesn't exist'", data_filename);
+      }
+      std::string line1;
+      if (!tmp_file.eof()) {
+        std::getline(tmp_file, line1);
+        std::vector<std::string> header = Common::Split(line1.c_str(), "\t");
+        header.erase(header.begin() + boosting_->LabelIdx());
+        for(int i = 0; i < static_cast<int>(header.size()); ++i) {
+          for(int j = 0; j < static_cast<int>(boosting_->FeatureNames().size()); ++j) {
+            if(header[i] == boosting_->FeatureNames()[j]) {
+              feature_names_map_[i] = j;
+              break;
+            }
+          }
+        }
+      }
     }
     // function for parse data
     std::function<void(const char*, std::vector<std::pair<int, double>>*)> parser_fun;
     double tmp_label;
-    parser_fun = [this, &parser, &tmp_label, &has_header]
+    parser_fun = [this, &parser, &tmp_label, &has_header, &feature_names_map_]
     (const char* buffer, std::vector<std::pair<int, double>>* feature) {
       parser->ParseOneLine(buffer, feature, &tmp_label);
       if(has_header) {
-        parser->FixFeatureSeq(feature);
+        for(int i = 0; i < static_cast<int>(feature->size()); ++i) {
+          if(feature_names_map_.find((*feature)[i].first) != feature_names_map_.end()) {
+            (*feature)[i].first = feature_names_map_[(*feature)[i].first];
+          }
+          else {
+            (*feature).erase((*feature).begin() + i);
+            --i;
+          }
+        }
       }
     };
 

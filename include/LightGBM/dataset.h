@@ -9,7 +9,6 @@
 #include <LightGBM/config.h>
 #include <LightGBM/feature_group.h>
 
-#include <map>
 #include <vector>
 #include <utility>
 #include <functional>
@@ -273,13 +272,6 @@ public:
   * \return Object of parser
   */
   static Parser* CreateParser(const char* filename, bool has_header, int num_features, int label_idx);
-
-  static void GetFeatureSeq(const char* filename, std::vector<std::string> feature_names, int label_idx);
-
-  static void FixFeatureSeq(std::vector<std::pair<int, double>>* features);
-
-private:
-  static std::unordered_map<int, int> feature_names_map_;
 
 };
 
