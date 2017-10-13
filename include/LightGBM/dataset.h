@@ -276,39 +276,9 @@ public:
   */
   static Parser* CreateParser(const char* filename, bool has_header, int num_features, int label_idx);
 
-  static void GetFeatureSeq(const char* filename, std::vector<std::string> feature_names) {
-    std::ifstream tmp_file;
-    tmp_file.open(filename);
-    if (!tmp_file.is_open()) {
-      Log::Fatal("Data file %s doesn't exist'", filename);
-    }
-    std::string line1;
-    if (!tmp_file.eof()) {
-      std::getline(tmp_file, line1);
-      std::vector<std::string> header = Common::Split(line1.c_str(), "\t");
-      header.erase(header.begin());
-      for(int i = 0; i < static_cast<int>(header.size()); ++i) {
-        for(int j = 0; j < static_cast<int>(feature_names.size()); ++j) {
-          if(header[i] == feature_names[j]) {
-            feature_names_map_[i] = j;
-            break;
-          }
-        }
-      }
-    }
-  }
+  static void GetFeatureSeq(const char* filename, std::vector<std::string> feature_names, int label_idx);
 
-  static void FixFeatureSeq(std::vector<std::pair<int, double>>* features) {
-    for(int i = 0; i < static_cast<int>(features->size()); ++i) {
-      if(feature_names_map_.find((*features)[i].first) != feature_names_map_.end()) {
-        (*features)[i].first = feature_names_map_[(*features)[i].first];
-      }
-      else {
-        (*features).erase((*features).begin() + i);
-        --i;
-      }
-    }
-  }
+  static void FixFeatureSeq(std::vector<std::pair<int, double>>* features);
 
 private:
   static std::unordered_map<int, int> feature_names_map_;

@@ -105,7 +105,7 @@ public:
     }
 
     if(has_header) {
-      parser->GetFeatureSeq(data_filename, boosting_->FeatureNames());
+      parser->GetFeatureSeq(data_filename, boosting_->FeatureNames(), boosting_->LabelIdx());
     }
     // function for parse data
     std::function<void(const char*, std::vector<std::pair<int, double>>*)> parser_fun;
