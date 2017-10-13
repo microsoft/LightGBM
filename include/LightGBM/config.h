@@ -105,6 +105,7 @@ public:
   std::string output_result = "LightGBM_predict_result.txt";
   std::string convert_model = "gbdt_prediction.cpp";
   std::string input_model = "";
+  std::string model_format = "text";
   int verbosity = 1;
   int num_iteration_predict = -1;
   bool is_pre_partition = false;
@@ -446,7 +447,7 @@ struct ParameterAlias {
     const std::unordered_set<std::string> parameter_set({
       "config", "config_file", "task", "device",
       "num_threads", "seed", "boosting_type", "objective", "data",
-      "output_model", "input_model", "output_result", "valid_data",
+      "output_model", "input_model", "output_result", "model_format", "valid_data",
       "is_enable_sparse", "is_pre_partition", "is_training_metric",
       "ndcg_eval_at", "min_data_in_leaf", "min_sum_hessian_in_leaf",
       "num_leaves", "feature_fraction", "num_iterations",
