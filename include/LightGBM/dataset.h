@@ -9,8 +9,6 @@
 #include <LightGBM/config.h>
 #include <LightGBM/feature_group.h>
 
-#include <iostream>
-#include <fstream>
 #include <map>
 #include <vector>
 #include <utility>

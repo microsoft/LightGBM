@@ -148,7 +148,6 @@ Parser* Parser::CreateParser(const char* filename, bool has_header, int num_feat
   return ret.release();
 }
 
-
 void Parser::GetFeatureSeq(const char* filename, std::vector<std::string> feature_names, int label_idx) {
     std::ifstream tmp_file;
     tmp_file.open(filename);
