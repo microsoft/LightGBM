@@ -4,8 +4,6 @@
 #include <fstream>
 #include <functional>
 #include <memory>
-#include <vector>
-
 
 namespace LightGBM {
 
