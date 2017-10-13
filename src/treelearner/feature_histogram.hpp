@@ -206,11 +206,17 @@ public:
       output->cat_threshold = std::vector<uint32_t>(output->num_cat_threshold);
       if (best_dir == 1) {
         for (int i = 0; i < output->num_cat_threshold; ++i) {
-          output->cat_threshold[i] = sorted_idx[i];
+          auto t = sorted_idx[i];
+          if (data_[t].cnt > 0) {
+            output->cat_threshold[i] = t;
+          }
         }
       } else {
         for (int i = 0; i < output->num_cat_threshold; ++i) {
-          output->cat_threshold[i] = sorted_idx[used_bin - 1 - i];
+          auto t = sorted_idx[used_bin - 1 - i];
+          if (data_[t].cnt > 0) {
+            output->cat_threshold[i] = t;
+          }
         }
       }
     }
