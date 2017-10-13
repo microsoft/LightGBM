@@ -306,10 +306,10 @@ namespace LightGBM {
       // sort by counts
       Common::SortForPair<int, int>(counts_int, distinct_values_int, 0, true);
       // avoid first bin is zero
-      if (distinct_values_int[0] == 0) {
+      if (distinct_values_int[0] == 0 || (counts_int.size() == 1 && na_cnt > 0)) {
         if (counts_int.size() == 1) {
           counts_int.push_back(0);
-          distinct_values_int.push_back(1);
+          distinct_values_int.push_back(distinct_values_int[0] + 1);
         }
         std::swap(counts_int[0], counts_int[1]);
         std::swap(distinct_values_int[0], distinct_values_int[1]);
