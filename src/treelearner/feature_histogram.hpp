@@ -128,6 +128,8 @@ public:
     }
     used_bin = static_cast<int>(sorted_idx.size());
 
+    const double l2 = meta_->tree_config->lambda_l2 + 1e3f * meta_->num_bin / num_data;
+
     auto ctr_fun = [&smooth_hess](double sum_grad, double sum_hess) {
       return (sum_grad) / (sum_hess + smooth_hess);
     };
@@ -175,8 +177,8 @@ public:
         cnt_cur_group = 0;
 
         double sum_right_gradient = sum_gradient - sum_left_gradient;
-        double current_gain = GetLeafSplitGain(sum_left_gradient, sum_left_hessian, meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2)
-          + GetLeafSplitGain(sum_right_gradient, sum_right_hessian, meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2);
+        double current_gain = GetLeafSplitGain(sum_left_gradient, sum_left_hessian, meta_->tree_config->lambda_l1, l2)
+          + GetLeafSplitGain(sum_right_gradient, sum_right_hessian, meta_->tree_config->lambda_l1, l2);
         if (current_gain <= min_gain_shift) continue;
         is_splittable_ = true;
         if (current_gain > best_gain) {
@@ -192,13 +194,13 @@ public:
 
     if (is_splittable_) {
       output->left_output = CalculateSplittedLeafOutput(best_sum_left_gradient, best_sum_left_hessian,
-                                                        meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2);
+                                                        meta_->tree_config->lambda_l1, l2);
       output->left_count = best_left_count;
       output->left_sum_gradient = best_sum_left_gradient;
       output->left_sum_hessian = best_sum_left_hessian - kEpsilon;
       output->right_output = CalculateSplittedLeafOutput(sum_gradient - best_sum_left_gradient,
                                                          sum_hessian - best_sum_left_hessian,
-                                                         meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2);
+                                                         meta_->tree_config->lambda_l1, l2);
       output->right_count = num_data - best_left_count;
       output->right_sum_gradient = sum_gradient - best_sum_left_gradient;
       output->right_sum_hessian = sum_hessian - best_sum_left_hessian - kEpsilon;
