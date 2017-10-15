@@ -109,35 +109,38 @@ public:
     double best_sum_left_gradient = 0;
     double best_sum_left_hessian = 0;
     double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian, meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2);
-
+    
     double min_gain_shift = gain_shift + meta_->tree_config->min_gain_to_split;
     bool is_full_categorical = meta_->missing_type == MissingType::None;
     int used_bin = meta_->num_bin - 1;
 
     if (is_full_categorical) ++used_bin;
 
-    std::vector<int> sorted_idx(used_bin);
-    for (int i = 0; i < used_bin; ++i) sorted_idx[i] = i;
+    const double smooth_hess = std::max(meta_->tree_config->min_cat_smooth,
+                                        std::min(meta_->tree_config->cat_smooth_ratio * num_data, meta_->tree_config->max_cat_smooth));
 
-    double smooth_hess = meta_->tree_config->cat_smooth_ratio * num_data;
-    smooth_hess = std::min(meta_->tree_config->max_cat_smooth, std::max(smooth_hess, meta_->tree_config->min_cat_smooth));
-    const double smooth_grad = smooth_hess * sum_gradient / sum_hessian;
+    const int min_data_per_cat = static_cast<int>(smooth_hess);
+    std::vector<int> sorted_idx;
+    for (int i = 0; i < used_bin; ++i) {
+      if (data_[i].cnt >= min_data_per_cat) {
+        sorted_idx.push_back(i);
+      }
+    }
+    used_bin = static_cast<int>(sorted_idx.size());
 
-    auto ctr_fun = [&smooth_hess, &smooth_grad](double sum_grad, double sum_hess) {
-      return (sum_grad + smooth_grad) / (sum_hess + smooth_hess);
+    auto ctr_fun = [&smooth_hess](double sum_grad, double sum_hess) {
+      return (sum_grad) / (sum_hess + smooth_hess);
     };
     std::sort(sorted_idx.begin(), sorted_idx.end(),
               [this, &ctr_fun](int i, int j) {
-      return ctr_fun(data_[i].sum_gradients, data_[i].sum_hessians) < ctr_fun(data_[j].sum_gradients, data_[j].sum_hessians);
+      return ctr_fun(data_[i].sum_gradients, data_[i].cnt) < ctr_fun(data_[j].sum_gradients, data_[j].cnt);
     });
 
     std::vector<int> find_direction(1, 1);
     std::vector<int> start_position(1, 0);
-    if (!is_full_categorical
-        || meta_->tree_config->max_cat_threshold * 2 < meta_->num_bin) {
-      find_direction.push_back(-1);
-      start_position.push_back(used_bin - 1);
-    }
+    find_direction.push_back(-1);
+    start_position.push_back(used_bin - 1);
+    const int max_num_cat = std::min(meta_->tree_config->max_cat_threshold, (used_bin + 1) / 2);
 
     is_splittable_ = false;
     int best_threshold = -1;
@@ -145,13 +148,12 @@ public:
     for (size_t out_i = 0; out_i < find_direction.size(); ++out_i) {
       auto dir = find_direction[out_i];
       auto start_pos = start_position[out_i];
-      data_size_t rest_group = meta_->tree_config->max_cat_group;
-      data_size_t min_data_per_group = std::max(meta_->tree_config->min_data_per_group, num_data / rest_group);
+      data_size_t min_data_per_group = meta_->tree_config->min_data_per_group;
       data_size_t cnt_cur_group = 0;
       double sum_left_gradient = 0.0f;
       double sum_left_hessian = kEpsilon;
       data_size_t left_count = 0;
-      for (int i = 0; i < used_bin && i < meta_->tree_config->max_cat_threshold; ++i) {
+      for (int i = 0; i < used_bin && i < max_num_cat; ++i) {
         auto t = sorted_idx[start_pos];
         start_pos += dir;
 
@@ -171,7 +173,6 @@ public:
         if (cnt_cur_group < min_data_per_group) continue;
 
         cnt_cur_group = 0;
-        if (--rest_group > 0) min_data_per_group = std::max(meta_->tree_config->min_data_per_group, right_count / rest_group);
 
         double sum_right_gradient = sum_gradient - sum_left_gradient;
         double current_gain = GetLeafSplitGain(sum_left_gradient, sum_left_hessian, meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2)
@@ -207,16 +208,12 @@ public:
       if (best_dir == 1) {
         for (int i = 0; i < output->num_cat_threshold; ++i) {
           auto t = sorted_idx[i];
-          if (data_[t].cnt > 0) {
-            output->cat_threshold[i] = t;
-          }
+          output->cat_threshold[i] = t;
         }
       } else {
         for (int i = 0; i < output->num_cat_threshold; ++i) {
           auto t = sorted_idx[used_bin - 1 - i];
-          if (data_[t].cnt > 0) {
-            output->cat_threshold[i] = t;
-          }
+          output->cat_threshold[i] = t;
         }
       }
     }

@@ -229,6 +229,7 @@ class TestEngine(unittest.TestCase):
             'learning_rate': 1,
             'min_data_in_bin': 1,
             'min_data_per_group': 1,
+            'min_cat_smooth': 1,
             'zero_as_missing': True,
             'categorical_column': 0
         }
@@ -260,6 +261,7 @@ class TestEngine(unittest.TestCase):
             'learning_rate': 1,
             'min_data_in_bin': 1,
             'min_data_per_group': 1,
+            'min_cat_smooth': 1,
             'zero_as_missing': False,
             'categorical_column': 0
         }
@@ -291,6 +293,7 @@ class TestEngine(unittest.TestCase):
             'learning_rate': 1,
             'min_data_in_bin': 1,
             'min_data_per_group': 1,
+            'min_cat_smooth': 1,
             'zero_as_missing': False,
             'categorical_column': 0
         }
