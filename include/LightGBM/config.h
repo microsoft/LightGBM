@@ -228,7 +228,7 @@ public:
   int min_data_per_group = 100;
   int max_cat_threshold = 128;
   double cat_smooth_ratio = 0.001;
-  double cat_l2 = 10;
+  double cat_l2 = 1;
   double min_cat_smooth = 5;
   double max_cat_smooth = 50;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;

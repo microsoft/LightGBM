@@ -279,7 +279,7 @@ Learning Control Parameters
 
    -  the smooth denominator is ``a = min(max_cat_smooth, max(min_cat_smooth, num_data / num_category * cat_smooth_ratio))``
 
--  ``cat_l2``, default=\ ``10``, type=double
+-  ``cat_l2``, default=\ ``1``, type=double
 
    -  L2 regularization in categorcial split
 
