@@ -8,9 +8,6 @@
 
 #include <LightGBM/utils/openmp_wrapper.h>
 
-
-#include <iostream>
-#include <fstream>
 #include <map>
 #include <cstring>
 #include <cstdio>
@@ -107,28 +104,21 @@ public:
     if (parser == nullptr) {
       Log::Fatal("Could not recognize the data format of data file %s", data_filename);
     }
-
+    
+    TextReader<data_size_t> predict_data_reader(data_filename, has_header);
     std::unordered_map<int, int> feature_names_map_;
     if(has_header) {
-      std::ifstream tmp_file;
-      tmp_file.open(data_filename);
-      if (!tmp_file.is_open()) {
-        Log::Fatal("Data file %s doesn't exist'", data_filename);
-      }
-      std::string line1;
-      if (!tmp_file.eof()) {
-        std::getline(tmp_file, line1);
-        std::vector<std::string> header = Common::Split(line1.c_str(), "\t");
-        header.erase(header.begin() + boosting_->LabelIdx());
-        for(int i = 0; i < static_cast<int>(header.size()); ++i) {
-          for(int j = 0; j < static_cast<int>(boosting_->FeatureNames().size()); ++j) {
-            if(header[i] == boosting_->FeatureNames()[j]) {
-              feature_names_map_[i] = j;
-              break;
-            }
+      std::string first_line = predict_data_reader.first_line();
+      std::vector<std::string> header = Common::Split(first_line.c_str(), "\t,");
+      header.erase(header.begin() + boosting_->LabelIdx());
+      for(int i = 0; i < static_cast<int>(header.size()); ++i) {
+        for(int j = 0; j < static_cast<int>(boosting_->FeatureNames().size()); ++j) {
+          if(header[i] == boosting_->FeatureNames()[j]) {
+            feature_names_map_[i] = j;
+            break;
           }
         }
-      }
+      }      
     }
     // function for parse data
     std::function<void(const char*, std::vector<std::pair<int, double>>*)> parser_fun;
@@ -164,7 +154,6 @@ public:
         fprintf(result_file, "%s\n", str_result.c_str());
       }
     };
-    TextReader<data_size_t> predict_data_reader(data_filename, has_header);
     predict_data_reader.ReadAllAndProcessParallel(process_fun);
     fclose(result_file);
   }
