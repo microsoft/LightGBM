@@ -128,7 +128,7 @@ public:
     }
     used_bin = static_cast<int>(sorted_idx.size());
 
-    const double l2 = meta_->tree_config->lambda_l2 + 1e3f * meta_->num_bin / num_data;
+    const double l2 = meta_->tree_config->lambda_l2 + meta_->tree_config->cat_l2;
 
     auto ctr_fun = [&smooth_hess](double sum_grad, double sum_hess) {
       return (sum_grad) / (sum_hess + smooth_hess);
