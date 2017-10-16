@@ -271,7 +271,7 @@ Learning Control Parameters
 
    -  refer to the descrption of the paramater ``cat_smooth_ratio``
 
--  ``cat_smooth_ratio``, default=\ ``0.001``, type=double
+-  ``cat_smooth_ratio``, default=\ ``0.01``, type=double
 
    -  use for the categorical features
 
