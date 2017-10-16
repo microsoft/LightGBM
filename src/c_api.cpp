@@ -58,7 +58,7 @@ public:
     if (config_.boosting_config.tree_learner_type == std::string("feature")) {
       Log::Fatal("Do not support feature parallel in c api.");
     }
-    if (Network::num_machines() == 1) {
+    if (Network::num_machines() == 1 && config_.boosting_config.tree_learner_type != std::string("serial")) {
       Log::Warning("Only find one worker, will switch to serial tree learner.");
       config_.boosting_config.tree_learner_type = "serial";
     }
