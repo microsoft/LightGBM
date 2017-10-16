@@ -293,20 +293,24 @@ namespace LightGBM {
       // convert to int type first
       std::vector<int> distinct_values_int;
       std::vector<int> counts_int;
-      distinct_values_int.push_back(static_cast<int>(distinct_values[0]));
-      counts_int.push_back(counts[0]);
-      for (size_t i = 1; i < distinct_values.size(); ++i) {
-        if (static_cast<int>(distinct_values[i]) != distinct_values_int.back()) {
-          distinct_values_int.push_back(static_cast<int>(distinct_values[i]));
-          counts_int.push_back(counts[i]);
+      for (size_t i = 0; i < distinct_values.size(); ++i) {
+        int val = static_cast<int>(distinct_values[i]);
+        if (val < 0) {
+          na_cnt += counts[i];
+          Log::Warning("Met negative value in categorical features, will convert it to NaN");
         } else {
-          counts_int.back() += counts[i];
+          if (distinct_values_int.empty() || val != distinct_values_int.back()) {
+            distinct_values_int.push_back(val);
+            counts_int.push_back(counts[i]);
+          } else {
+            counts_int.back() += counts[i];
+          }
         }
       }
       // sort by counts
       Common::SortForPair<int, int>(counts_int, distinct_values_int, 0, true);
       // avoid first bin is zero
-      if (distinct_values_int[0] == 0 || (counts_int.size() == 1 && na_cnt > 0)) {
+      if (distinct_values_int[0] == 0) {
         if (counts_int.size() == 1) {
           counts_int.push_back(0);
           distinct_values_int.push_back(distinct_values_int[0] + 1);
@@ -325,17 +329,11 @@ namespace LightGBM {
       cnt_in_bin.clear();
       while (cur_cat < distinct_values_int.size()
         && (used_cnt < cut_cnt || num_bin_ < max_bin)) {
-        if (distinct_values_int[cur_cat] < 0) {
-          na_cnt += counts_int[cur_cat];
-          cut_cnt -= counts_int[cur_cat];
-          Log::Warning("Met negative value in categorical features, will convert it to NaN");
-        } else {
-          bin_2_categorical_.push_back(distinct_values_int[cur_cat]);
-          categorical_2_bin_[distinct_values_int[cur_cat]] = static_cast<unsigned int>(num_bin_);
-          used_cnt += counts_int[cur_cat];
-          cnt_in_bin.push_back(counts_int[cur_cat]);
-          ++num_bin_;
-        }
+        bin_2_categorical_.push_back(distinct_values_int[cur_cat]);
+        categorical_2_bin_[distinct_values_int[cur_cat]] = static_cast<unsigned int>(num_bin_);
+        used_cnt += counts_int[cur_cat];
+        cnt_in_bin.push_back(counts_int[cur_cat]);
+        ++num_bin_;
         ++cur_cat;
       }
       // need an additional bin for NaN
