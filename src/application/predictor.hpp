@@ -107,6 +107,7 @@ public:
 
     TextReader<data_size_t> predict_data_reader(data_filename, has_header);
     std::unordered_map<int, int> feature_names_map_;
+    bool need_adjust = false;
     if(has_header) {
       std::string first_line = predict_data_reader.first_line();
       std::vector<std::string> header = Common::Split(first_line.c_str(), "\t,");
@@ -118,23 +119,32 @@ public:
             break;
           }
         }
-      }      
+      }
+      for(auto s:feature_names_map_) {
+        if(s.first != s.second) {
+          need_adjust = true;
+          break;
+        }
+      }
     }
     // function for parse data
     std::function<void(const char*, std::vector<std::pair<int, double>>*)> parser_fun;
     double tmp_label;
-    parser_fun = [this, &parser, &tmp_label, &has_header, &feature_names_map_]
+    parser_fun = [this, &parser, &tmp_label, &need_adjust, &feature_names_map_]
     (const char* buffer, std::vector<std::pair<int, double>>* feature) {
       parser->ParseOneLine(buffer, feature, &tmp_label);
-      if(has_header) {
+      if(need_adjust) {
         int j = 0;
-        for(int i = 0; i < static_cast<int>(feature->size()); ++i) {
+        for(int i = 0; i < static_cast<int>(feature_names_map_.size()); ++i) {
           if(feature_names_map_.find((*feature)[i].first) != feature_names_map_.end()) {
             (*feature)[i].first = feature_names_map_[(*feature)[i].first];
           }
           else {
-            (*feature)[i].first = feature_names_map_[static_cast<int>(feature_names_map_.size())+(j++)];
+            //move the non-used features to the end of the feature vector
+            std::swap((*feature)[i], (*feature)[static_cast<int>(feature_names_map_.size())+(j++)]);
+            --i;
           }
+          feature->resize(static_cast<int>(feature_names_map_.size()));
         }
       }
     };
