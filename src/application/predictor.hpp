@@ -104,7 +104,7 @@ public:
     if (parser == nullptr) {
       Log::Fatal("Could not recognize the data format of data file %s", data_filename);
     }
-    
+
     TextReader<data_size_t> predict_data_reader(data_filename, has_header);
     std::unordered_map<int, int> feature_names_map_;
     if(has_header) {
@@ -127,13 +127,13 @@ public:
     (const char* buffer, std::vector<std::pair<int, double>>* feature) {
       parser->ParseOneLine(buffer, feature, &tmp_label);
       if(has_header) {
+        int j = 0;
         for(int i = 0; i < static_cast<int>(feature->size()); ++i) {
           if(feature_names_map_.find((*feature)[i].first) != feature_names_map_.end()) {
             (*feature)[i].first = feature_names_map_[(*feature)[i].first];
           }
           else {
-            (*feature).erase((*feature).begin() + i);
-            --i;
+            (*feature)[i].first = feature_names_map_[static_cast<int>(feature_names_map_.size())+(j++)];
           }
         }
       }
