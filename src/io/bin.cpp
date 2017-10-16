@@ -329,6 +329,9 @@ namespace LightGBM {
       cnt_in_bin.clear();
       while (cur_cat < distinct_values_int.size()
         && (used_cnt < cut_cnt || num_bin_ < max_bin)) {
+        if (counts_int[cur_cat] < min_data_in_bin && cur_cat > 1) {
+          break;
+        }
         bin_2_categorical_.push_back(distinct_values_int[cur_cat]);
         categorical_2_bin_[distinct_values_int[cur_cat]] = static_cast<unsigned int>(num_bin_);
         used_cnt += counts_int[cur_cat];

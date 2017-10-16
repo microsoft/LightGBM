@@ -116,13 +116,9 @@ public:
 
     if (is_full_categorical) ++used_bin;
 
-    const double smooth_hess = std::max(meta_->tree_config->min_cat_smooth,
-                                        std::min(meta_->tree_config->cat_smooth_ratio * num_data, meta_->tree_config->max_cat_smooth));
-
-    const int min_data_per_cat = static_cast<int>(smooth_hess);
     std::vector<int> sorted_idx;
     for (int i = 0; i < used_bin; ++i) {
-      if (data_[i].cnt >= min_data_per_cat) {
+      if (data_[i].cnt >= meta_->tree_config->cat_smooth) {
         sorted_idx.push_back(i);
       }
     }
@@ -130,12 +126,12 @@ public:
 
     const double l2 = meta_->tree_config->lambda_l2 + meta_->tree_config->cat_l2;
 
-    auto ctr_fun = [&smooth_hess](double sum_grad, double sum_hess) {
-      return (sum_grad) / (sum_hess + smooth_hess);
+    auto ctr_fun = [this](double sum_grad, double sum_hess) {
+      return (sum_grad) / (sum_hess + meta_->tree_config->cat_smooth);
     };
     std::sort(sorted_idx.begin(), sorted_idx.end(),
               [this, &ctr_fun](int i, int j) {
-      return ctr_fun(data_[i].sum_gradients, data_[i].cnt) < ctr_fun(data_[j].sum_gradients, data_[j].cnt);
+      return ctr_fun(data_[i].sum_gradients, data_[i].sum_hessians) < ctr_fun(data_[j].sum_gradients, data_[j].sum_hessians);
     });
 
     std::vector<int> find_direction(1, 1);

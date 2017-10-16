@@ -253,33 +253,19 @@ Learning Control Parameters
 
    -  min number of data per categorical group
 
--  ``max_cat_threshold``, default=\ ``128``, type=int
+-  ``max_cat_threshold``, default=\ ``32``, type=int
 
    -  use for the categorical features
 
    -  limit the max threshold points in categorical features
 
--  ``min_cat_smooth``, default=\ ``5``, type=double
-
-   -  use for the categorical features
-
-   -  refer to the descrption of the paramater ``cat_smooth_ratio``
-
--  ``max_cat_smooth``, default=\ ``50``, type=double
-
-   -  use for the categorical features
-
-   -  refer to the descrption of the paramater ``cat_smooth_ratio``
-
--  ``cat_smooth_ratio``, default=\ ``0.01``, type=double
+-  ``cat_smooth``, default=\ ``10``, type=double
 
    -  use for the categorical features
 
    - this can reduce the effect of noises in categorical features, especially for categories with few data
 
-   -  the smooth denominator is ``a = min(max_cat_smooth, max(min_cat_smooth, num_data / num_category * cat_smooth_ratio))``
-
--  ``cat_l2``, default=\ ``1``, type=double
+-  ``cat_l2``, default=\ ``10``, type=double
 
    -  L2 regularization in categorcial split
 
@@ -294,7 +280,7 @@ IO Parameters
    -  LightGBM will auto compress memory according ``max_bin``.
       For example, LightGBM will use ``uint8_t`` for feature value if ``max_bin=255``
 
--  ``min_data_in_bin``, default=\ ``5``, type=int
+-  ``min_data_in_bin``, default=\ ``3``, type=int
 
    -  min number of data inside one bin, use this to avoid one-data-one-bin (may over-fitting)
 
