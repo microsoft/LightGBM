@@ -134,18 +134,18 @@ public:
     (const char* buffer, std::vector<std::pair<int, double>>* feature) {
       parser->ParseOneLine(buffer, feature, &tmp_label);
       if(need_adjust) {
-        int j = 0;
-        for(int i = 0; i < static_cast<int>(feature_names_map_.size()); ++i) {
+        int i = 0, j = static_cast<int>(feature->size());
+        while(i < j) {
           if(feature_names_map_.find((*feature)[i].first) != feature_names_map_.end()) {
             (*feature)[i].first = feature_names_map_[(*feature)[i].first];
+            ++i;
           }
           else {
             //move the non-used features to the end of the feature vector
-            std::swap((*feature)[i], (*feature)[static_cast<int>(feature_names_map_.size())+(j++)]);
-            --i;
+            std::swap((*feature)[i], (*feature)[--j]);
           }
-          feature->resize(static_cast<int>(feature_names_map_.size()));
         }
+        feature->resize(i);
       }
     };
 
