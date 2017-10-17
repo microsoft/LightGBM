@@ -27,7 +27,11 @@ libpath = os.path.join(curr_path, '../python-package/')
 sys.path.insert(0, libpath)
 
 # -- mock out modules
-from unittest.mock import Mock
+try:
+    from unittest.mock import Mock  # Python 3.x
+except Exception:
+    from mock import Mock  # Python 2.x
+
 MOCK_MODULES = [
     'numpy', 'scipy', 'scipy.sparse',
     'sklearn', 'matplotlib', 'pandas', 'graphviz',

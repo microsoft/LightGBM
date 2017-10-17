@@ -28,6 +28,9 @@ cd $TRAVIS_BUILD_DIR
 if [[ ${TASK} == "check-docs" ]]; then
     cd docs
     sudo apt-get install linkchecker
+    if [[ ${PYTHON_VERSION} == "2.7" ]]; then
+        pip install mock
+    fi
     pip install rstcheck sphinx sphinx_rtd_theme  # html5validator
     rstcheck --report warning --ignore-directives=autoclass,autofunction `find . -type f -name "*.rst"` || exit -1
     make html || exit -1
