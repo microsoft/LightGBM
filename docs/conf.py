@@ -29,7 +29,7 @@ sys.path.insert(0, libpath)
 # -- mock out modules
 try:
     from unittest.mock import Mock  # Python 3.x
-except Exception:
+except ImportError:
     from mock import Mock  # Python 2.x
 
 MOCK_MODULES = [
