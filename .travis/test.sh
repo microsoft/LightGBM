@@ -44,7 +44,8 @@ if [[ ${TASK} == "check-docs" ]]; then
 fi
 
 if [[ ${TASK} == "pylint" ]]; then
-    pip install pep8
+    conda create -q -n test-env python=$PYTHON_VERSION pep8
+    source activate test-env
     pep8 --ignore=E501 --exclude=./compute,./docs . || exit -1
     exit 0
 fi
