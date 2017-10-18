@@ -269,6 +269,10 @@ Learning Control Parameters
 
    -  L2 regularization in categorcial split
 
+-  ``max_cat_to_onehot``, default=\ ``4``, type=int
+
+   -  When number of categories of one feature smaller than or equal to ``max_cat_to_onehot``, will use one-vs-other split algorithm.
+
 IO Parameters
 -------------
 

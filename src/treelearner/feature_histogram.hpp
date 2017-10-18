@@ -112,78 +112,114 @@ public:
     
     double min_gain_shift = gain_shift + meta_->tree_config->min_gain_to_split;
     bool is_full_categorical = meta_->missing_type == MissingType::None;
-    int used_bin = meta_->num_bin - 1;
-
-    if (is_full_categorical) ++used_bin;
+    int used_bin = meta_->num_bin - 1 + is_full_categorical;
 
     std::vector<int> sorted_idx;
-    for (int i = 0; i < used_bin; ++i) {
-      if (data_[i].cnt >= meta_->tree_config->cat_smooth) {
-        sorted_idx.push_back(i);
-      }
-    }
-    used_bin = static_cast<int>(sorted_idx.size());
-
-    const double l2 = meta_->tree_config->lambda_l2 + meta_->tree_config->cat_l2;
-
-    auto ctr_fun = [this](double sum_grad, double sum_hess) {
-      return (sum_grad) / (sum_hess + meta_->tree_config->cat_smooth);
-    };
-    std::sort(sorted_idx.begin(), sorted_idx.end(),
-              [this, &ctr_fun](int i, int j) {
-      return ctr_fun(data_[i].sum_gradients, data_[i].sum_hessians) < ctr_fun(data_[j].sum_gradients, data_[j].sum_hessians);
-    });
-
-    std::vector<int> find_direction(1, 1);
-    std::vector<int> start_position(1, 0);
-    find_direction.push_back(-1);
-    start_position.push_back(used_bin - 1);
-    const int max_num_cat = std::min(meta_->tree_config->max_cat_threshold, (used_bin + 1) / 2);
-
-    is_splittable_ = false;
+    double l2 = meta_->tree_config->lambda_l2;
+    bool use_onehot = meta_->num_bin <= meta_->tree_config->max_cat_to_onehot;
     int best_threshold = -1;
     int best_dir = 1;
-    for (size_t out_i = 0; out_i < find_direction.size(); ++out_i) {
-      auto dir = find_direction[out_i];
-      auto start_pos = start_position[out_i];
-      data_size_t min_data_per_group = meta_->tree_config->min_data_per_group;
-      data_size_t cnt_cur_group = 0;
-      double sum_left_gradient = 0.0f;
-      double sum_left_hessian = kEpsilon;
-      data_size_t left_count = 0;
-      for (int i = 0; i < used_bin && i < max_num_cat; ++i) {
-        auto t = sorted_idx[start_pos];
-        start_pos += dir;
 
-        sum_left_gradient += data_[t].sum_gradients;
-        sum_left_hessian += data_[t].sum_hessians;
-        left_count += data_[t].cnt;
-        cnt_cur_group += data_[t].cnt;
+    if (use_onehot) {
+      for (int t = 0; t < used_bin; ++t) {
+        // if data not enough, or sum hessian too small
+        if (data_[t].cnt < meta_->tree_config->min_data_in_leaf
+            || data_[t].sum_hessians < meta_->tree_config->min_sum_hessian_in_leaf) continue;
+        data_size_t other_count = num_data - data_[t].cnt;
+        // if data not enough
+        if (other_count < meta_->tree_config->min_data_in_leaf) continue;
 
-        if (left_count < meta_->tree_config->min_data_in_leaf
-            || sum_left_hessian < meta_->tree_config->min_sum_hessian_in_leaf) continue;
-        data_size_t right_count = num_data - left_count;
-        if (right_count < meta_->tree_config->min_data_in_leaf || right_count < min_data_per_group) break;
+        double sum_other_hessian = sum_hessian - data_[t].sum_hessians - kEpsilon;
+        // if sum hessian too small
+        if (sum_other_hessian < meta_->tree_config->min_sum_hessian_in_leaf) continue;
 
-        double sum_right_hessian = sum_hessian - sum_left_hessian;
-        if (sum_right_hessian < meta_->tree_config->min_sum_hessian_in_leaf) break;
-
-        if (cnt_cur_group < min_data_per_group) continue;
-
-        cnt_cur_group = 0;
-
-        double sum_right_gradient = sum_gradient - sum_left_gradient;
-        double current_gain = GetLeafSplitGain(sum_left_gradient, sum_left_hessian, meta_->tree_config->lambda_l1, l2)
-          + GetLeafSplitGain(sum_right_gradient, sum_right_hessian, meta_->tree_config->lambda_l1, l2);
+        double sum_other_gradient = sum_gradient - data_[t].sum_gradients;
+        // current split gain
+        double current_gain = GetLeafSplitGain(sum_other_gradient, sum_other_hessian,
+                                               meta_->tree_config->lambda_l1, l2)
+          + GetLeafSplitGain(data_[t].sum_gradients, data_[t].sum_hessians + kEpsilon,
+                             meta_->tree_config->lambda_l1, l2);
+        // gain with split is worse than without split
         if (current_gain <= min_gain_shift) continue;
+
+        // mark to is splittable
         is_splittable_ = true;
+        // better split point
         if (current_gain > best_gain) {
-          best_left_count = left_count;
-          best_sum_left_gradient = sum_left_gradient;
-          best_sum_left_hessian = sum_left_hessian;
-          best_threshold = i;
+          best_threshold = t;
+          best_sum_left_gradient = data_[t].sum_gradients;
+          best_sum_left_hessian = data_[t].sum_hessians + kEpsilon;
+          best_left_count = data_[t].cnt;
           best_gain = current_gain;
-          best_dir = dir;
+        }
+      }
+    } else {
+      for (int i = 0; i < used_bin; ++i) {
+        if (data_[i].cnt >= meta_->tree_config->cat_smooth) {
+          sorted_idx.push_back(i);
+        }
+      }
+      used_bin = static_cast<int>(sorted_idx.size());
+
+      l2 += meta_->tree_config->cat_l2;
+
+      auto ctr_fun = [this](double sum_grad, double sum_hess) {
+        return (sum_grad) / (sum_hess + meta_->tree_config->cat_smooth);
+      };
+      std::sort(sorted_idx.begin(), sorted_idx.end(),
+                [this, &ctr_fun](int i, int j) {
+        return ctr_fun(data_[i].sum_gradients, data_[i].sum_hessians) < ctr_fun(data_[j].sum_gradients, data_[j].sum_hessians);
+      });
+
+      std::vector<int> find_direction(1, 1);
+      std::vector<int> start_position(1, 0);
+      find_direction.push_back(-1);
+      start_position.push_back(used_bin - 1);
+      const int max_num_cat = std::min(meta_->tree_config->max_cat_threshold, (used_bin + 1) / 2);
+
+      is_splittable_ = false;
+      for (size_t out_i = 0; out_i < find_direction.size(); ++out_i) {
+        auto dir = find_direction[out_i];
+        auto start_pos = start_position[out_i];
+        data_size_t min_data_per_group = meta_->tree_config->min_data_per_group;
+        data_size_t cnt_cur_group = 0;
+        double sum_left_gradient = 0.0f;
+        double sum_left_hessian = kEpsilon;
+        data_size_t left_count = 0;
+        for (int i = 0; i < used_bin && i < max_num_cat; ++i) {
+          auto t = sorted_idx[start_pos];
+          start_pos += dir;
+
+          sum_left_gradient += data_[t].sum_gradients;
+          sum_left_hessian += data_[t].sum_hessians;
+          left_count += data_[t].cnt;
+          cnt_cur_group += data_[t].cnt;
+
+          if (left_count < meta_->tree_config->min_data_in_leaf
+              || sum_left_hessian < meta_->tree_config->min_sum_hessian_in_leaf) continue;
+          data_size_t right_count = num_data - left_count;
+          if (right_count < meta_->tree_config->min_data_in_leaf || right_count < min_data_per_group) break;
+
+          double sum_right_hessian = sum_hessian - sum_left_hessian;
+          if (sum_right_hessian < meta_->tree_config->min_sum_hessian_in_leaf) break;
+
+          if (cnt_cur_group < min_data_per_group) continue;
+
+          cnt_cur_group = 0;
+
+          double sum_right_gradient = sum_gradient - sum_left_gradient;
+          double current_gain = GetLeafSplitGain(sum_left_gradient, sum_left_hessian, meta_->tree_config->lambda_l1, l2)
+            + GetLeafSplitGain(sum_right_gradient, sum_right_hessian, meta_->tree_config->lambda_l1, l2);
+          if (current_gain <= min_gain_shift) continue;
+          is_splittable_ = true;
+          if (current_gain > best_gain) {
+            best_left_count = left_count;
+            best_sum_left_gradient = sum_left_gradient;
+            best_sum_left_hessian = sum_left_hessian;
+            best_threshold = i;
+            best_gain = current_gain;
+            best_dir = dir;
+          }
         }
       }
     }
@@ -201,17 +237,22 @@ public:
       output->right_sum_gradient = sum_gradient - best_sum_left_gradient;
       output->right_sum_hessian = sum_hessian - best_sum_left_hessian - kEpsilon;
       output->gain = best_gain - min_gain_shift;
-      output->num_cat_threshold = best_threshold + 1;
-      output->cat_threshold = std::vector<uint32_t>(output->num_cat_threshold);
-      if (best_dir == 1) {
-        for (int i = 0; i < output->num_cat_threshold; ++i) {
-          auto t = sorted_idx[i];
-          output->cat_threshold[i] = t;
-        }
+      if (use_onehot) {
+        output->num_cat_threshold = 1;
+        output->cat_threshold = std::vector<uint32_t>(1, static_cast<uint32_t>(best_threshold));
       } else {
-        for (int i = 0; i < output->num_cat_threshold; ++i) {
-          auto t = sorted_idx[used_bin - 1 - i];
-          output->cat_threshold[i] = t;
+        output->num_cat_threshold = best_threshold + 1;
+        output->cat_threshold = std::vector<uint32_t>(output->num_cat_threshold);
+        if (best_dir == 1) {
+          for (int i = 0; i < output->num_cat_threshold; ++i) {
+            auto t = sorted_idx[i];
+            output->cat_threshold[i] = t;
+          }
+        } else {
+          for (int i = 0; i < output->num_cat_threshold; ++i) {
+            auto t = sorted_idx[used_bin - 1 - i];
+            output->cat_threshold[i] = t;
+          }
         }
       }
     }
