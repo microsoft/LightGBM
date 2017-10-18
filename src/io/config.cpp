@@ -384,10 +384,12 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   GetDouble(params, "cat_l2", &cat_l2);
   GetDouble(params, "cat_smooth", &cat_smooth);
   GetInt(params, "min_data_per_group", &min_data_per_group);
+  GetInt(params, "max_cat_to_onehot", &max_cat_to_onehot);
   CHECK(max_cat_threshold > 0);
   CHECK(cat_l2 >= 0.0f);
   CHECK(cat_smooth >= 1);
   CHECK(min_data_per_group > 0);
+  CHECK(max_cat_to_onehot > 0);
 }
 
 void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& params) {
