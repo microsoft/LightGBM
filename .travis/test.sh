@@ -19,14 +19,16 @@ if [[ $TRAVIS_OS_NAME == "osx" ]]; then
     export CC=gcc-7
 fi
 
+conda create -q -n test-env python=$PYTHON_VERSION
+source activate test-env
+
 cd $TRAVIS_BUILD_DIR
 
 if [[ ${TASK} == "check-docs" ]]; then
     if [[ $TRAVIS_OS_NAME != "osx" ]]; then
         sudo apt-get install linkchecker
     fi
-    conda create -q -n test-env python=$PYTHON_VERSION rstcheck sphinx sphinx_rtd_theme  # html5validator
-    source activate test-env
+    pip install rstcheck sphinx sphinx_rtd_theme  # html5validator
     cd python-package
     rstcheck --report warning `find . -type f -name "*.rst"` || exit -1
     cd ../docs
@@ -42,15 +44,13 @@ if [[ ${TASK} == "check-docs" ]]; then
 fi
 
 if [[ ${TASK} == "pylint" ]]; then
-    conda create -q -n test-env python=$PYTHON_VERSION pep8
-    source activate test-env
+    pip install pep8
     pep8 --ignore=E501 --exclude=./compute,./docs . || exit -1
     exit 0
 fi
 
 if [[ ${TASK} == "if-else" ]]; then
-    conda create -q -n test-env python=$PYTHON_VERSION numpy
-    source activate test-env
+    pip install numpy
     mkdir build && cd build && cmake .. && make lightgbm || exit -1
     cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
     cd $TRAVIS_BUILD_DIR/build && make lightgbm || exit -1
@@ -59,8 +59,7 @@ if [[ ${TASK} == "if-else" ]]; then
 fi
 
 if [[ ${TASK} == "proto" ]]; then
-    conda create -q -n test-env python=$PYTHON_VERSION numpy
-    source activate test-env
+    pip install numpy
     mkdir build && cd build && cmake .. && make lightgbm || exit -1
     cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=train.conf && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
     cd $TRAVIS_BUILD_DIR && git clone https://github.com/google/protobuf && cd protobuf && ./autogen.sh && ./configure && make && sudo make install && sudo ldconfig
@@ -70,8 +69,7 @@ if [[ ${TASK} == "proto" ]]; then
     exit 0
 fi
 
-conda create -q -n test-env python=$PYTHON_VERSION numpy nose scipy scikit-learn pandas matplotlib pytest
-source activate test-env
+pip install numpy nose scipy scikit-learn pandas matplotlib pytest
 
 if [[ ${TASK} == "sdist" ]]; then
     LGB_VER=$(head -n 1 VERSION.txt)
