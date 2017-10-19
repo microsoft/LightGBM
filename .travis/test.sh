@@ -28,6 +28,9 @@ if [[ ${TASK} == "check-docs" ]]; then
     if [[ $TRAVIS_OS_NAME != "osx" ]]; then
         sudo apt-get install linkchecker
     fi
+    if [[ ${PYTHON_VERSION} == "2.7" ]]; then
+        pip install mock
+    fi
     pip install rstcheck sphinx sphinx_rtd_theme  # html5validator
     cd python-package
     rstcheck --report warning `find . -type f -name "*.rst"` || exit -1
