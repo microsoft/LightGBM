@@ -14,14 +14,10 @@ if [[ ${TASK} == "gpu" ]]; then
     export CPLUS_INCLUDE_PATH="$HOME/miniconda/envs/test-env/include:$AMDAPPSDK/include/:$CPLUS_INCLUDE_PATH"
 fi
 
-case ${TRAVIS_OS_NAME} in
-    osx)
-        export CXX=g++-7
-        export CC=gcc-7
-        ;;
-    linux)
-        ;;
-esac
+if [[ $TRAVIS_OS_NAME == "osx" ]]; then
+    export CXX=g++-7
+    export CC=gcc-7
+fi
 
 cd $TRAVIS_BUILD_DIR
 
