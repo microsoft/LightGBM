@@ -26,7 +26,9 @@ esac
 cd $TRAVIS_BUILD_DIR
 
 if [[ ${TASK} == "check-docs" ]]; then
-    sudo apt-get install linkchecker
+    if [[ $TRAVIS_OS_NAME != "osx" ]]; then
+        sudo apt-get install linkchecker
+    fi
     if [[ ${PYTHON_VERSION} == "2.7" ]]; then
         pip install mock
     fi
@@ -39,7 +41,9 @@ if [[ ${TASK} == "check-docs" ]]; then
     find ./_build/html/ -type f -name '*.html' -exec \
     sed -i -e 's;\(\.\/[^.]*\.\)rst\([^[:space:]]*\);\1html\2;g' {} \;  # Emulate js function
 #    html5validator --root ./_build/html/ || exit -1
-    linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
+    if [[ $TRAVIS_OS_NAME != "osx" ]]; then
+        linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
+    fi
     exit 0
 fi
 
