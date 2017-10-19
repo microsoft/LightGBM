@@ -12,7 +12,7 @@ except ImportError:
     _IS_PANDAS_INSTALLED = False
 
 from .basic import Dataset, LightGBMError
-from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase, LGBMDeprecated,
+from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckConsistentLength,
                      _LGBMCheckClassificationTargets, argc_, range_)
@@ -582,12 +582,14 @@ class LGBMModel(_LGBMModelBase):
             raise LGBMNotFittedError('No feature_importances found. Need to call fit beforehand.')
         return self.booster_.feature_importance()
 
-    @LGBMDeprecated('Use attribute booster_ instead.')
     def booster(self):
+        warnings.warn('The `booster()` method is deprecated and will be removed in next version. '
+                      'Please use attribute `booster_` instead.', LGBMDeprecationWarning)
         return self.booster_
 
-    @LGBMDeprecated('Use attribute feature_importances_ instead.')
     def feature_importance(self):
+        warnings.warn('The `feature_importance()` method is deprecated and will be removed in next version. '
+                      'Please use attribute `feature_importances_` instead.', LGBMDeprecationWarning)
         return self.feature_importances_
 
 
