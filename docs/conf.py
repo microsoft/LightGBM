@@ -27,24 +27,17 @@ libpath = os.path.join(curr_path, '../python-package/')
 sys.path.insert(0, libpath)
 
 # -- mock out modules
-try:
-    from unittest.mock import Mock  # Python 3.x
-except ImportError:
-    from mock import Mock  # Python 2.x
-
-MOCK_MODULES = [
-    'numpy', 'scipy', 'scipy.sparse',
-    'sklearn', 'matplotlib', 'pandas', 'graphviz',
+autodoc_mock_imports = ['numpy', 'scipy', 'sklearn',
+                        'matplotlib', 'pandas', 'graphviz',
 ]
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = Mock()
+
 
 # -- General configuration ------------------------------------------------
 
 os.environ['LIGHTGBM_BUILD_DOC'] = '1'
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.3'  # Due to sphinx.ext.napoleon
+needs_sphinx = '1.3'  # Due to sphinx.ext.napoleon and autodoc_mock_imports
 if needs_sphinx > sphinx.__version__:
     message = 'This project needs at least Sphinx v%s' % needs_sphinx
     raise VersionRequirementError(message)
