@@ -31,21 +31,28 @@ Some explanatory pictures:
 
 .. image:: ./_static/images/gcc-table.png
    :align: center
+   :target: ./_static/images/gcc-table.png
 
 .. image:: ./_static/images/gcc-bars.png
    :align: center
+   :target: ./_static/images/gcc-bars.png
 
 .. image:: ./_static/images/gcc-chart.png
    :align: center
+   :target: ./_static/images/gcc-chart.png
 
 .. image:: ./_static/images/gcc-comparison-1.png
    :align: center
+   :target: ./_static/images/gcc-comparison-1.png
 
 .. image:: ./_static/images/gcc-comparison-2.png
    :align: center
+   :target: ./_static/images/gcc-comparison-2.png
 
 .. image:: ./_static/images/gcc-meetup-1.png
    :align: center
+   :target: ./_static/images/gcc-meetup-1.png
 
 .. image:: ./_static/images/gcc-meetup-2.png
    :align: center
+   :target: ./_static/images/gcc-meetup-2.png
