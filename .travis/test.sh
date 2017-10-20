@@ -29,9 +29,10 @@ if [[ ${TASK} == "check-docs" ]]; then
         sudo apt-get install linkchecker
     fi
     if [[ ${PYTHON_VERSION} == "2.7" ]]; then
-        pip install mock
+        conda install mock
     fi
-    pip install rstcheck sphinx sphinx_rtd_theme  # html5validator
+    conda install sphinx sphinx_rtd_theme  # html5validator
+    pip install rstcheck
     cd python-package
     rstcheck --report warning `find . -type f -name "*.rst"` || exit -1
     cd ../docs
@@ -47,13 +48,13 @@ if [[ ${TASK} == "check-docs" ]]; then
 fi
 
 if [[ ${TASK} == "pylint" ]]; then
-    pip install pep8
+    conda install pep8
     pep8 --ignore=E501 --exclude=./compute,./docs . || exit -1
     exit 0
 fi
 
 if [[ ${TASK} == "if-else" ]]; then
-    pip install numpy
+    conda install numpy
     mkdir build && cd build && cmake .. && make lightgbm || exit -1
     cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=train.conf && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
     cd $TRAVIS_BUILD_DIR/build && make lightgbm || exit -1
@@ -61,7 +62,7 @@ if [[ ${TASK} == "if-else" ]]; then
     exit 0
 fi
 
-pip install numpy nose scipy scikit-learn pandas matplotlib pytest
+conda install numpy nose scipy scikit-learn pandas matplotlib pytest
 
 if [[ ${TASK} == "sdist" ]]; then
     LGB_VER=$(head -n 1 VERSION.txt)
