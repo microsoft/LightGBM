@@ -237,20 +237,6 @@ public:
   bool LoadModelFromString(const std::string& model_str) override;
 
   /*!
-  * \brief Save model with protobuf
-  * \param num_iterations Number of model that want to save, -1 means save all
-  * \param filename Filename that want to save to
-  */
-  void SaveModelToProto(int num_iteration, const char* filename) const override;
-  
-  /*!
-  * \brief Restore from a serialized protobuf file
-  * \param filename Filename that want to restore from
-  * \return true if succeeded
-  */
-  bool LoadModelFromProto(const char* filename) override;
-
-  /*!
   * \brief Calculate feature importances
   * \param num_iteration Number of model that want to use for feature importance, -1 means use all
   * \param importance_type: 0 for split, 1 for gain
