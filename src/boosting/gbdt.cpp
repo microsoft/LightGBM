@@ -352,6 +352,7 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
       SaveModelToFile(-1, snapshot_out.c_str());
     }
   }
+  SaveModelToFile(-1, model_output_path.c_str());
 }
 
 double GBDT::BoostFromAverage() {
