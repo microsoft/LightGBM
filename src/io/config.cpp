@@ -380,18 +380,16 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   GetInt(params, "gpu_platform_id", &gpu_platform_id);
   GetInt(params, "gpu_device_id", &gpu_device_id);
   GetBool(params, "gpu_use_dp", &gpu_use_dp);
-  GetInt(params, "max_cat_group", &max_cat_group);
   GetInt(params, "max_cat_threshold", &max_cat_threshold);
-  GetDouble(params, "cat_smooth_ratio", &cat_smooth_ratio);
-  GetDouble(params, "min_cat_smooth", &min_cat_smooth);
-  GetDouble(params, "max_cat_smooth", &max_cat_smooth);
+  GetDouble(params, "cat_l2", &cat_l2);
+  GetDouble(params, "cat_smooth", &cat_smooth);
   GetInt(params, "min_data_per_group", &min_data_per_group);
-  CHECK(max_cat_group > 1);
+  GetInt(params, "max_cat_to_onehot", &max_cat_to_onehot);
   CHECK(max_cat_threshold > 0);
-  CHECK(cat_smooth_ratio >= 0);
-  CHECK(min_cat_smooth >= 1);
-  CHECK(max_cat_smooth > min_cat_smooth);
+  CHECK(cat_l2 >= 0.0f);
+  CHECK(cat_smooth >= 1);
   CHECK(min_data_per_group > 0);
+  CHECK(max_cat_to_onehot > 0);
 }
 
 void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& params) {
@@ -435,6 +433,7 @@ void NetworkConfig::Set(const std::unordered_map<std::string, std::string>& para
   GetInt(params, "time_out", &time_out);
   CHECK(time_out > 0);
   GetString(params, "machine_list_file", &machine_list_filename);
+  GetString(params, "machines", &machines);
 }
 
 }  // namespace LightGBM

@@ -11,6 +11,7 @@
 #include <LightGBM/metric.h>
 #include <LightGBM/config.h>
 #include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/network.h>
 
 #include <cstdio>
 #include <vector>
@@ -54,6 +55,13 @@ public:
     train_data_ = train_data;
     CreateObjectiveAndMetrics();
     // initialize the boosting
+    if (config_.boosting_config.tree_learner_type == std::string("feature")) {
+      Log::Fatal("Do not support feature parallel in c api.");
+    }
+    if (Network::num_machines() == 1 && config_.boosting_config.tree_learner_type != std::string("serial")) {
+      Log::Warning("Only find one worker, will switch to serial tree learner.");
+      config_.boosting_config.tree_learner_type = "serial";
+    }
     boosting_->Init(&config_.boosting_config, train_data_, objective_fun_.get(),
                     Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
 
@@ -190,19 +198,19 @@ public:
 
     Predictor predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf, is_predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
-    int64_t num_preb_in_one_row = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf, is_predict_contrib);
+    int64_t num_pred_in_one_row = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf, is_predict_contrib);
     auto pred_fun = predictor.GetPredictFunction();
     OMP_INIT_EX();
     #pragma omp parallel for schedule(static)
     for (int i = 0; i < nrow; ++i) {
       OMP_LOOP_EX_BEGIN();
       auto one_row = get_row_fun(i);
-      auto pred_wrt_ptr = out_result + static_cast<size_t>(num_preb_in_one_row) * i;
+      auto pred_wrt_ptr = out_result + static_cast<size_t>(num_pred_in_one_row) * i;
       pred_fun(one_row, pred_wrt_ptr);
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
-    *out_len = nrow * num_preb_in_one_row;
+    *out_len = nrow * num_pred_in_one_row;
   }
 
   void Predict(int num_iteration, int predict_type, const char* data_filename,
@@ -361,7 +369,11 @@ int LGBM_DatasetCreateFromFile(const char* filename,
   }
   DatasetLoader loader(config.io_config,nullptr, 1, filename);
   if (reference == nullptr) {
-    *out = loader.LoadFromFile(filename, "");
+    if (Network::num_machines() == 1) {
+      *out = loader.LoadFromFile(filename, "");
+    } else {
+      *out = loader.LoadFromFile(filename, "", Network::rank(), Network::num_machines());
+    }
   } else {
     *out = loader.LoadFromFileAlignWithOtherDataset(filename, "",
                                                     reinterpret_cast<const Dataset*>(reference));
@@ -686,6 +698,9 @@ int LGBM_DatasetGetSubset(
   }
   auto full_dataset = reinterpret_cast<const Dataset*>(handle);
   CHECK(num_used_row_indices > 0);
+  const int32_t lower = 0;
+  const int32_t upper = full_dataset->num_data() - 1;
+  Common::CheckElementsIntervalClosed(used_row_indices, lower, upper, num_used_row_indices, "Used indices of subset");
   auto ret = std::unique_ptr<Dataset>(new Dataset(num_used_row_indices));
   ret->CopyFeatureMapperFrom(full_dataset);
   ret->CopySubset(full_dataset, used_row_indices, num_used_row_indices, true);
@@ -1188,6 +1203,28 @@ int LGBM_BoosterFeatureImportance(BoosterHandle handle,
   for (size_t i = 0; i < feature_importances.size(); ++i) {
     (out_results)[i] = feature_importances[i];
   }
+  API_END();
+}
+
+int LGBM_NetworkInit(const char* machines,
+                     int local_listen_port,
+                     int listen_time_out,
+                     int num_machines) {
+  API_BEGIN();
+  NetworkConfig config;
+  config.machines = Common::RemoveQuotationSymbol(std::string(machines));
+  config.local_listen_port = local_listen_port;
+  config.num_machines = num_machines;
+  config.time_out = listen_time_out;
+  if (num_machines > 1) {
+    Network::Init(config);
+  }
+  API_END();
+}
+
+int LGBM_NetworkFree() {
+  API_BEGIN();
+  Network::Dispose();
   API_END();
 }
 

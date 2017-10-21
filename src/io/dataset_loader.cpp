@@ -494,24 +494,107 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
 
   const data_size_t filter_cnt = static_cast<data_size_t>(
     static_cast<double>(io_config_.min_data_in_leaf * total_sample_size) / num_data);
-  OMP_INIT_EX();
-  #pragma omp parallel for schedule(guided)
-  for (int i = 0; i < num_col; ++i) {
-    OMP_LOOP_EX_BEGIN();
-    if (ignore_features_.count(i) > 0) {
-      bin_mappers[i] = nullptr;
-      continue;
+  if (Network::num_machines() == 1) {
+    // if only one machine, find bin locally
+    OMP_INIT_EX();
+    #pragma omp parallel for schedule(guided)
+    for (int i = 0; i < num_col; ++i) {
+      OMP_LOOP_EX_BEGIN();
+      if (ignore_features_.count(i) > 0) {
+        bin_mappers[i] = nullptr;
+        continue;
+      }
+      BinType bin_type = BinType::NumericalBin;
+      if (categorical_features_.count(i)) {
+        bin_type = BinType::CategoricalBin;
+      }
+      bin_mappers[i].reset(new BinMapper());
+      bin_mappers[i]->FindBin(sample_values[i], num_per_col[i], total_sample_size,
+                              io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt, bin_type, io_config_.use_missing, io_config_.zero_as_missing);
+      OMP_LOOP_EX_END();
     }
-    BinType bin_type = BinType::NumericalBin;
-    if (categorical_features_.count(i)) {
-      bin_type = BinType::CategoricalBin;
+    OMP_THROW_EX();
+  } else {
+    // if have multi-machines, need to find bin distributed
+    // different machines will find bin for different features
+    int num_machines = Network::num_machines();
+    int rank = Network::rank();
+    int total_num_feature = num_col;
+    total_num_feature = Network::GlobalSyncUpByMin(total_num_feature);
+    // start and len will store the process feature indices for different machines
+    // machine i will find bins for features in [ start[i], start[i] + len[i] )
+    std::vector<int> start(num_machines);
+    std::vector<int> len(num_machines);
+    int step = (total_num_feature + num_machines - 1) / num_machines;
+    if (step < 1) { step = 1; }
+
+    start[0] = 0;
+    for (int i = 0; i < num_machines - 1; ++i) {
+      len[i] = std::min(step, total_num_feature - start[i]);
+      start[i + 1] = start[i] + len[i];
     }
-    bin_mappers[i].reset(new BinMapper());
-    bin_mappers[i]->FindBin(sample_values[i], num_per_col[i], total_sample_size,
-                            io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt, bin_type, io_config_.use_missing, io_config_.zero_as_missing);
-    OMP_LOOP_EX_END();
+    len[num_machines - 1] = total_num_feature - start[num_machines - 1];
+    OMP_INIT_EX();
+    #pragma omp parallel for schedule(guided)
+    for (int i = 0; i < len[rank]; ++i) {
+      OMP_LOOP_EX_BEGIN();
+      if (ignore_features_.count(start[rank] + i) > 0) {
+        continue;
+      }
+      BinType bin_type = BinType::NumericalBin;
+      if (categorical_features_.count(start[rank] + i)) {
+        bin_type = BinType::CategoricalBin;
+      }
+      bin_mappers[i].reset(new BinMapper());
+      bin_mappers[i]->FindBin(sample_values[start[rank] + i], num_per_col[start[rank] + i], total_sample_size,
+                              io_config_.max_bin, io_config_.min_data_in_bin, filter_cnt, bin_type, io_config_.use_missing, io_config_.zero_as_missing);
+      OMP_LOOP_EX_END();
+    }
+    OMP_THROW_EX();
+    int max_bin = 0;
+    for (int i = 0; i < len[rank]; ++i) {
+      if (bin_mappers[i] != nullptr) {
+        max_bin = std::max(max_bin, bin_mappers[i]->num_bin());
+      }
+    }
+    max_bin = Network::GlobalSyncUpByMax(max_bin);
+    // get size of bin mapper with max_bin size
+    int type_size = BinMapper::SizeForSpecificBin(max_bin);
+    // since sizes of different feature may not be same, we expand all bin mapper to type_size
+    int buffer_size = type_size * total_num_feature;
+    auto input_buffer = std::vector<char>(buffer_size);
+    auto output_buffer = std::vector<char>(buffer_size);
+
+    // find local feature bins and copy to buffer
+    #pragma omp parallel for schedule(guided)
+    for (int i = 0; i < len[rank]; ++i) {
+      OMP_LOOP_EX_BEGIN();
+      if (ignore_features_.count(start[rank] + i) > 0) {
+        continue;
+      }
+      bin_mappers[i]->CopyTo(input_buffer.data() + i * type_size);
+      // free
+      bin_mappers[i].reset(nullptr);
+      OMP_LOOP_EX_END();
+    }
+    OMP_THROW_EX();
+    // convert to binary size
+    for (int i = 0; i < num_machines; ++i) {
+      start[i] *= type_size;
+      len[i] *= type_size;
+    }
+    // gather global feature bin mappers
+    Network::Allgather(input_buffer.data(), buffer_size, start.data(), len.data(), output_buffer.data());
+    // restore features bins from buffer
+    for (int i = 0; i < total_num_feature; ++i) {
+      if (ignore_features_.count(i) > 0) {
+        bin_mappers[i] = nullptr;
+        continue;
+      }
+      bin_mappers[i].reset(new BinMapper());
+      bin_mappers[i]->CopyFrom(output_buffer.data() + i * type_size);
+    }
   }
-  OMP_THROW_EX();
   auto dataset = std::unique_ptr<Dataset>(new Dataset(num_data));
   dataset->Construct(bin_mappers, sample_indices, num_per_col, total_sample_size, io_config_);
   dataset->set_feature_names(feature_names_);
@@ -715,8 +798,8 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
 
   // start find bins
   if (num_machines == 1) {
-    OMP_INIT_EX();
     // if only one machine, find bin locally
+    OMP_INIT_EX();
     #pragma omp parallel for schedule(guided)
     for (int i = 0; i < static_cast<int>(sample_values.size()); ++i) {
       OMP_LOOP_EX_BEGIN();

@@ -735,12 +735,28 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterFeatureImportance(BoosterHandle handle,
                                                     int importance_type,
                                                     double* out_results);
 
-#if defined(_MSC_VER)
+/*!
+* \brief Initilize the network
+* \param machines represent the nodes, format: ip1:port1,ip2:port2
+* \param local_listen_port
+* \param listen_time_out
+* \param num_machines
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_NetworkInit(const char* machines,
+                                       int local_listen_port,
+                                       int listen_time_out,
+                                       int num_machines);
+
+/*!
+* \brief Finalize the network
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_NetworkFree();
+
+
 // exception handle and error msg
-static char* LastErrorMsg() { static __declspec(thread) char err_msg[512] = "Everything is fine"; return err_msg; }
-#else
-static char* LastErrorMsg() { static thread_local char err_msg[512] = "Everything is fine"; return err_msg; }
-#endif
+static char* LastErrorMsg() { static THREAD_LOCAL char err_msg[512] = "Everything is fine"; return err_msg; }
 
 #pragma warning(disable : 4996)
 inline void LGBM_SetLastError(const char* msg) {

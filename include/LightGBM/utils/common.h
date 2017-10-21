@@ -27,7 +27,7 @@ inline char tolower(char in) {
   return in;
 }
 
-inline static std::string& Trim(std::string& str) {
+inline static std::string Trim(std::string str) {
   if (str.empty()) {
     return str;
   }
@@ -36,7 +36,7 @@ inline static std::string& Trim(std::string& str) {
   return str;
 }
 
-inline static std::string& RemoveQuotationSymbol(std::string& str) {
+inline static std::string RemoveQuotationSymbol(std::string str) {
   if (str.empty()) {
     return str;
   }
@@ -580,20 +580,24 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred) {
 }
 
 // Check that all y[] are in interval [ymin, ymax] (end points included); throws error if not
-inline void check_elements_interval_closed(const float *y, float ymin, float ymax, int ny, const char *callername) {
+template <typename T>
+inline void CheckElementsIntervalClosed(const T *y, T ymin, T ymax, int ny, const char *callername) {
   for (int i = 0; i < ny; ++i) {
     if (y[i] < ymin || y[i] > ymax) {
-      Log::Fatal("[%s]: does not tolerate element [#%i = %f] outside [%f, %f]", callername, i, y[i], ymin, ymax);
+      std::ostringstream os;
+      os << "[%s]: does not tolerate element [#%i = " << y[i] << "] outside [" << ymin << ", " << ymax << "]";
+      Log::Fatal(os.str().c_str(), callername, i);
     }
   }
 }
 
 // One-pass scan over array w with nw elements: find min, max and sum of elements;
 // this is useful for checking weight requirements.
-inline void obtain_min_max_sum(const float *w, int nw, float *mi, float *ma, double *su) {
-  float minw = w[0];
-  float maxw = w[0];
-  double sumw = static_cast<double>(w[0]);
+template <typename T1, typename T2>
+inline void ObtainMinMaxSum(const T1 *w, int nw, T1 *mi, T1 *ma, T2 *su) {
+  T1 minw = w[0];
+  T1 maxw = w[0];
+  T2 sumw = static_cast<T2>(w[0]);
   for (int i = 1; i < nw; ++i) {
     sumw += w[i];
     if (w[i] < minw) minw = w[i];

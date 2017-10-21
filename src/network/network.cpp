@@ -10,34 +10,41 @@
 namespace LightGBM {
 
 // static member definition
-int Network::num_machines_;
-int Network::rank_;
-std::unique_ptr<Linkers> Network::linkers_;
-BruckMap Network::bruck_map_;
-RecursiveHalvingMap Network::recursive_halving_map_;
-std::vector<int> Network::block_start_;
-std::vector<int>  Network::block_len_;
-int Network::buffer_size_;
-std::vector<char> Network::buffer_;
+THREAD_LOCAL int Network::num_machines_ = 1;
+THREAD_LOCAL int Network::rank_ = 0;
+THREAD_LOCAL std::unique_ptr<Linkers> Network::linkers_;
+THREAD_LOCAL BruckMap Network::bruck_map_;
+THREAD_LOCAL RecursiveHalvingMap Network::recursive_halving_map_;
+THREAD_LOCAL std::vector<int> Network::block_start_;
+THREAD_LOCAL std::vector<int>  Network::block_len_;
+THREAD_LOCAL int Network::buffer_size_;
+THREAD_LOCAL std::vector<char> Network::buffer_;
 
 void Network::Init(NetworkConfig config) {
-  linkers_.reset(new Linkers(config));
-  rank_ = linkers_->rank();
-  num_machines_ = linkers_->num_machines();
-  bruck_map_ = linkers_->bruck_map();
-  recursive_halving_map_ = linkers_->recursive_halving_map();
-  block_start_ = std::vector<int>(num_machines_);
-  block_len_ = std::vector<int>(num_machines_);
-  buffer_size_ = 1024 * 1024;
-  buffer_.resize(buffer_size_);
-  Log::Info("Local rank: %d, total number of machines: %d", rank_, num_machines_);
+  if (config.num_machines > 1) {
+    linkers_.reset(new Linkers(config));
+    rank_ = linkers_->rank();
+    num_machines_ = linkers_->num_machines();
+    bruck_map_ = linkers_->bruck_map();
+    recursive_halving_map_ = linkers_->recursive_halving_map();
+    block_start_ = std::vector<int>(num_machines_);
+    block_len_ = std::vector<int>(num_machines_);
+    buffer_size_ = 1024 * 1024;
+    buffer_.resize(buffer_size_);
+    Log::Info("Local rank: %d, total number of machines: %d", rank_, num_machines_);
+  }
 }
 
 void Network::Dispose() {
-
+  num_machines_ = 1;
+  rank_ = 0;
+  linkers_.reset(new Linkers());
 }
 
 void Network::Allreduce(char* input, int input_size, int type_size, char* output, const ReduceFunction& reducer) {
+  if (num_machines_ <= 1) {
+    Log::Fatal("Please initilize the network interface first");
+  }
   int count = input_size / type_size;
   // if small package or small count , do it by all gather.(reduce the communication times.)
   if (count < num_machines_ || input_size < 4096) {
@@ -62,6 +69,9 @@ void Network::Allreduce(char* input, int input_size, int type_size, char* output
 }
 
 void Network::AllreduceByAllGather(char* input, int input_size, char* output, const ReduceFunction& reducer) {
+  if (num_machines_ <= 1) {
+    Log::Fatal("Please initilize the network interface first");
+  }
   // assign blocks
   int all_size = input_size * num_machines_;
   block_start_[0] = 0;
@@ -85,6 +95,10 @@ void Network::AllreduceByAllGather(char* input, int input_size, char* output, co
 }
 
 void Network::Allgather(char* input, int send_size, char* output) {
+  if (num_machines_ <= 1) {
+    Log::Fatal("Please initilize the network interface first");
+  }
+  if (num_machines_ <= 1) { return; }
   // assign blocks
   block_start_[0] = 0;
   block_len_[0] = send_size;
@@ -97,6 +111,9 @@ void Network::Allgather(char* input, int send_size, char* output) {
 }
 
 void Network::Allgather(char* input, int all_size, const int* block_start, const int* block_len, char* output) {
+  if (num_machines_ <= 1) {
+    Log::Fatal("Please initilize the network interface first");
+  }
   int write_pos = 0;
   // use output as receive buffer
   std::memcpy(output, input, block_len[rank_]);
@@ -129,6 +146,9 @@ void Network::Allgather(char* input, int all_size, const int* block_start, const
 }
 
 void Network::ReduceScatter(char* input, int, const int* block_start, const int* block_len, char* output, const ReduceFunction& reducer) {
+  if (num_machines_ <= 1) {
+    Log::Fatal("Please initilize the network interface first");
+  }
   if (recursive_halving_map_.need_pairwise) {
     for (int i = 1; i < num_machines_; ++i) {
       int out_rank = (rank_ + i) % num_machines_;

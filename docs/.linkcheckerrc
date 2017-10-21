@@ -7,7 +7,7 @@ sslverify=0
 ignorewarnings=http-robots-denied,https-certificate-error
 
 [output]
-# Set to 0 if you want see only warnings and errors
-verbose=1
+# Set to 1 if you want see the full output, not only warnings and errors
+verbose=0
 
 [AnchorCheck]

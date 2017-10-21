@@ -1,7 +1,7 @@
 GPU Tuning Guide and Performance Comparison
 ===========================================
 
-How it works?
+How It Works?
 -------------
 
 In LightGBM, the main computation cost during training is building the feature histograms. We use an efficient algorithm on GPU to accelerate this process.
@@ -161,7 +161,8 @@ For most datasets, using 63 bins is sufficient.
 
 We record the wall clock time after 500 iterations, as shown in the figure below:
 
-|Performance Comparison|
+.. image:: ./_static/images/gpu-performance-comparison.png
+   :align: center
 
 When using a GPU, it is advisable to use a bin size of 63 rather than 255, because it can speed up training significantly without noticeably affecting accuracy.
 On CPU, using a smaller bin size only marginally improves performance, sometimes even slows down training,
@@ -205,7 +206,5 @@ Huan Zhang, Si Si and Cho-Jui Hsieh. `GPU Acceleration for Large-scale Tree Boos
 .. _link6: http://stat-computing.org/dataexpo/2009/
 
 .. _0bb4a82: https://github.com/Microsoft/LightGBM/commit/0bb4a82
-
-.. |Performance Comparison| image:: http://www.huan-zhang.com/images/upload/lightgbm-gpu/compare_0bb4a825.png
 
 .. _GPU Acceleration for Large-scale Tree Boosting: https://arxiv.org/abs/1706.08359

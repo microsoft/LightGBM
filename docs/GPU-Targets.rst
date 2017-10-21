@@ -1,9 +1,8 @@
 GPU Targets Table
 =================
 
-When using OpenCL SDKs, targeting CPU and GPU at the same time is
-sometimes possible. This is especially true for Intel OpenCL SDK and AMD
-APP SDK.
+When using OpenCL SDKs, targeting CPU and GPU at the same time is sometimes possible.
+This is especially true for Intel OpenCL SDK and AMD APP SDK.
 
 You can find below a table of correspondence:
 
@@ -22,8 +21,7 @@ Legend:
 -  \* Not usable directly.
 -  \*\* Reported as unsupported in public forums.
 
-AMD GPUs using Intel SDK for OpenCL is not a typo, nor AMD APP SDK
-compatibility with CPUs.
+AMD GPUs using Intel SDK for OpenCL is not a typo, nor AMD APP SDK compatibility with CPUs.
 
 --------------
 
@@ -36,8 +34,7 @@ We present the following scenarii:
 -  Single CPU and GPU (even with integrated graphics)
 -  Multiple CPU/GPU
 
-We provide test R code below, but you can use the language of your
-choice with the examples of your choices:
+We provide test R code below, but you can use the language of your choice with the examples of your choices:
 
 .. code:: r
 
@@ -73,15 +70,13 @@ Using a bad ``gpu_device_id`` is not critical, as it will fallback to:
 -  ``gpu_device_id = 0`` if using ``gpu_platform_id = 0``
 -  ``gpu_device_id = 1`` if using ``gpu_platform_id = 1``
 
-However, using a bad combination of ``gpu_platform_id`` and
-``gpu_device_id`` will lead to a **crash** (you will lose your entire
-session content). Beware of it.
+However, using a bad combination of ``gpu_platform_id`` and ``gpu_device_id`` will lead to a **crash** (you will lose your entire session content).
+Beware of it.
 
-CPU only architectures
+CPU Only Architectures
 ----------------------
 
-When you have a single device (one CPU), OpenCL usage is
-straightforward: ``gpu_platform_id = 0``, ``gpu_device_id = 0``
+When you have a single device (one CPU), OpenCL usage is straightforward: ``gpu_platform_id = 0``, ``gpu_device_id = 0``
 
 This will use the CPU with OpenCL, even though it says it says GPU.
 
@@ -124,18 +119,15 @@ Example:
 Single CPU and GPU (even with integrated graphics)
 --------------------------------------------------
 
-If you have integrated graphics card (Intel HD Graphics) and a dedicated
-graphics card (AMD, NVIDIA), the dedicated graphics card will
-automatically override the integrated graphics card. The workaround is
-to disable your dedicated graphics card to be able to use your
-integrated graphics card.
+If you have integrated graphics card (Intel HD Graphics) and a dedicated graphics card (AMD, NVIDIA),
+the dedicated graphics card will automatically override the integrated graphics card.
+The workaround is to disable your dedicated graphics card to be able to use your integrated graphics card.
 
-When you have multiple devices (one CPU and one GPU), the order is
-usually the following:
+When you have multiple devices (one CPU and one GPU), the order is usually the following:
 
--  GPU: ``gpu_platform_id = 0``, ``gpu_device_id = 0``, sometimes it is
-   usable using ``gpu_platform_id = 1``, ``gpu_device_id = 1`` but at
-   your own risk!
+-  GPU: ``gpu_platform_id = 0``, ``gpu_device_id = 0``,
+   sometimes it is usable using ``gpu_platform_id = 1``, ``gpu_device_id = 1`` but at your own risk!
+
 -  CPU: ``gpu_platform_id = 0``, ``gpu_device_id = 1``
 
 Example of GPU (``gpu_platform_id = 0``, ``gpu_device_id = 0``):
@@ -209,8 +201,7 @@ Example of CPU (``gpu_platform_id = 0``, ``gpu_device_id = 1``):
     [LightGBM] [Info] Trained a tree with leaves=7 and max_depth=5
     [2]:    test's rmse:0
 
-When using a wrong ``gpu_device_id``, it will automatically fallback to
-``gpu_device_id = 0``:
+When using a wrong ``gpu_device_id``, it will automatically fallback to ``gpu_device_id = 0``:
 
 .. code:: r
 
@@ -245,8 +236,7 @@ When using a wrong ``gpu_device_id``, it will automatically fallback to
     [LightGBM] [Info] Trained a tree with leaves=7 and max_depth=5
     [2]:    test's rmse:0
 
-Do not ever run under the following scenario as it is known to crash
-even if it says it is using the CPU because it is NOT the case:
+Do not ever run under the following scenario as it is known to crash even if it says it is using the CPU because it is NOT the case:
 
 -  One CPU and one GPU
 -  ``gpu_platform_id = 1``, ``gpu_device_id = 0``
@@ -284,13 +274,12 @@ even if it says it is using the CPU because it is NOT the case:
 Multiple CPU and GPU
 --------------------
 
-If you have multiple devices (multiple CPUs and multiple GPUs), you will
-have to test different ``gpu_device_id`` and different
-``gpu_platform_id`` values to find out the values which suits the
-CPU/GPU you want to use. Keep in mind that using the integrated graphics
-card is not directly possible without disabling every dedicated graphics
-card.
+If you have multiple devices (multiple CPUs and multiple GPUs),
+you will have to test different ``gpu_device_id`` and different ``gpu_platform_id`` values to find out the values which suits the CPU/GPU you want to use.
+Keep in mind that using the integrated graphics card is not directly possible without disabling every dedicated graphics card.
 
 .. _Intel SDK for OpenCL: https://software.intel.com/en-us/articles/opencl-drivers
+
 .. _AMD APP SDK: http://developer.amd.com/amd-accelerated-parallel-processing-app-sdk/
+
 .. _NVIDIA CUDA Toolkit: https://developer.nvidia.com/cuda-downloads

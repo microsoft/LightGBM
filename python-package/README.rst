@@ -11,11 +11,11 @@ Preparation
 
 `setuptools <https://pypi.python.org/pypi/setuptools>`_ is needed.
 
-For Mac OS X users, gcc with OpenMP support must be installed first. Refer to `wiki <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#osx>`_ for installing gcc with OpenMP support.
+For Mac OS X users, gcc with OpenMP support must be installed first. Refer to `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#osx>`__ for installing gcc with OpenMP support.
 
-Note: 32-bit python is not supported. Please install 64-bit version.
+Note: 32-bit Python is not supported. Please install 64-bit version.
 
-Install from `PyPI <https://pypi.python.org/pypi/lightgbm>`_ using ``pip``
+Install from `PyPI <https://pypi.python.org/pypi/lightgbm>`_ Using ``pip``
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 For Windows users, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if Visual Studio (2013, 2015 or 2017) is not installed.
 
@@ -25,7 +25,7 @@ Install `wheel <http://pythonwheels.com>`_ via ``pip install wheel`` first. Afte
 
     pip install lightgbm
 
-Build from sources
+Build from Sources
 ******************
 
 .. code:: sh
@@ -38,7 +38,7 @@ For Mac OS X users, you need to specify compilers by runnig ``export CXX=g++-7 C
 
 For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed. If you get any errors during installation, you may need to install `CMake <https://cmake.org/>`_ (version 3.8 or higher).
 
-Build GPU version
+Build GPU Version
 ~~~~~~~~~~~~~~~~~
 
 .. code:: sh
@@ -47,7 +47,7 @@ Build GPU version
 
 For Windows users, `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case.
 
-Note: Boost and OpenCL are needed: details for installation can be found in `gpu-support <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support>`_. You need to add ``OpenCL_INCLUDE_DIR`` to the environmental variable **'PATH'** and export ``BOOST_ROOT`` before installation.
+Note: Boost and OpenCL are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version>`__. You need to add ``OpenCL_INCLUDE_DIR`` to the environmental variable **'PATH'** and export ``BOOST_ROOT`` before installation.
 
 Build with MinGW-w64 on Windows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -76,24 +76,24 @@ Note: ``sudo`` (or administrator rights in Windows) may be needed to perform the
 
 Run ``python setup.py install --mingw`` if you want to use MinGW-w64 on Windows instead of Visual Studio. `CMake <https://cmake.org/>`_ and `MinGW-w64 <https://mingw-w64.org/>`_ should be installed first.
 
-Run ``python setup.py install --gpu`` to enable GPU support. For Windows users, `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case. Boost and OpenCL are needed: details for installation can be found in `gpu-support <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide#with-gpu-support>`_.
+Run ``python setup.py install --gpu`` to enable GPU support. For Windows users, `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case. Boost and OpenCL are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version>`__.
 
-If you get any errors during installation or due to any other reason, you may want to build dynamic library from sources by any method you prefer (see `Installation-Guide <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide>`_) and then run ``python setup.py install --precompile``.
+If you get any errors during installation or due to any other reason, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then run ``python setup.py install --precompile``.
 
 Examples
 --------
 
-Refer to the walk through examples in `python-guide folder <https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide>`_.
+Refer to the walk through examples in `Python guide folder <https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide>`_.
 
 Troubleshooting
 ---------------
 
-Refer to `FAQ <https://github.com/Microsoft/LightGBM/tree/master/docs/FAQ.md>`_.
+Refer to `FAQ <https://github.com/Microsoft/LightGBM/tree/master/docs/FAQ.rst>`_.
 
 Developments
 ------------
 
-The code style of python package follows `pep8 <https://www.python.org/dev/peps/pep-0008/>`_. If you would like to make a contribution and not familiar with pep-8, please check the pep8 style guide first. Otherwise, the check won't pass. You should be careful about:
+The code style of Python-package follows `pep8 <https://www.python.org/dev/peps/pep-0008/>`_. If you would like to make a contribution and not familiar with pep-8, please check the pep8 style guide first. Otherwise, the check won't pass. You should be careful about:
 
 - E1 Indentation (check pep8 link above)
 - E202 whitespace before and after brackets

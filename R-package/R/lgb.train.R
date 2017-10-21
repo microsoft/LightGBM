@@ -30,7 +30,7 @@
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model into a predictor model which frees up memory and the original datasets
 #' @param callbacks list of callback functions
 #'        List of callback functions that are applied at each iteration.
-#' @param ... other parameters, see parameters.md for more informations
+#' @param ... other parameters, see Parameters.rst for more informations
 #' 
 #' @return a trained booster model \code{lgb.Booster}.
 #' 

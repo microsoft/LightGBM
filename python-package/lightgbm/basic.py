@@ -620,6 +620,9 @@ class Dataset(object):
         if data is None:
             self.handle = None
             return
+        if reference is not None:
+            self.pandas_categorical = reference.pandas_categorical
+            categorical_feature = reference.categorical_feature
         data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data, feature_name, categorical_feature, self.pandas_categorical)
         label = _label_from_pandas(label)
         self.data_has_header = False

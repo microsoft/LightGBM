@@ -122,7 +122,7 @@ public:
   bool is_predict_contrib = false;
   bool is_predict_raw_score = false;
   int min_data_in_leaf = 20;
-  int min_data_in_bin = 5;
+  int min_data_in_bin = 3;
   double max_conflict_rate = 0.0f;
   bool enable_bundle = true;
   bool has_header = false;
@@ -225,12 +225,11 @@ public:
   int gpu_device_id = -1;
   /*! \brief Set to true to use double precision math on GPU (default using single precision) */
   bool gpu_use_dp = false;
-  int max_cat_group = 64;
-  int min_data_per_group = 10;
-  int max_cat_threshold = 256;
-  double cat_smooth_ratio = 0.01;
-  double min_cat_smooth = 5;
-  double max_cat_smooth = 100;
+  int min_data_per_group = 100;
+  int max_cat_threshold = 32;
+  double cat_l2 = 10;
+  double cat_smooth = 10;
+  int max_cat_to_onehot = 4;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -271,6 +270,7 @@ public:
   int local_listen_port = 12400;
   int time_out = 120;  // in minutes
   std::string machine_list_filename = "";
+  std::string machines = "";
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -438,7 +438,9 @@ struct ParameterAlias {
       { "num_classes", "num_class" },
       { "unbalanced_sets", "is_unbalance" },
       { "bagging_fraction_seed", "bagging_seed" },
-      { "num_boost_round", "num_iterations" }
+      { "num_boost_round", "num_iterations" },
+      { "workers", "machines" },
+      { "nodes", "machines" },
     });
     const std::unordered_set<std::string> parameter_set({
       "config", "config_file", "task", "device",
@@ -468,9 +470,9 @@ struct ParameterAlias {
       "feature_fraction_seed", "enable_bundle", "data_filename", "valid_data_filenames",
       "snapshot_freq", "verbosity", "sparse_threshold", "enable_load_from_binary_file",
       "max_conflict_rate", "poisson_max_delta_step", "gaussian_eta",
-      "histogram_pool_size", "output_freq", "is_provide_training_metric", "machine_list_filename",
+      "histogram_pool_size", "output_freq", "is_provide_training_metric", "machine_list_filename", "machines",
       "zero_as_missing", "init_score_file", "valid_init_score_file", "is_predict_contrib",
-      "max_cat_threshold", "max_cat_group", "cat_smooth_ratio", "min_cat_smooth", "max_cat_smooth", "min_data_per_group"
+      "max_cat_threshold",  "cat_smooth", "min_data_per_group", "cat_l2", "max_cat_to_onehot"
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
