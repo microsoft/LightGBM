@@ -195,6 +195,9 @@
     <ClInclude Include="..\src\boosting\rf.hpp">
       <Filter>src\boosting</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\proto\not_implemented\model.pb.h">
+      <Filter>src\proto\not_implemented</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp">
@@ -281,8 +284,11 @@
     <ClCompile Include="..\src\boosting\gbdt_model_text.cpp">
       <Filter>src\boosting</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\boosting\gbdt_model_proto.cpp">
-      <Filter>src\boosting</Filter>
+    <ClCompile Include="..\src\proto\gbdt_model_proto.cpp">
+      <Filter>src\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\proto\not_implemented\gbdt_model_proto.cpp">
+      <Filter>src\proto\not_implemented</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
