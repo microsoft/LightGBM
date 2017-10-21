@@ -272,7 +272,7 @@ Following procedure is for the MSVC (Microsoft Visual C++) build.
    **Note**: ``C:\local\boost_1_64_0\`` and ``C:\local\boost_1_64_0\lib64-msvc-14.0`` are locations of your Boost binaries. You also can set them to the environment variable to avoid ``Set ...`` commands when build.
 
 Protobuf Support
-^^^^^^
+^^^^^^^^^^^^^^^^
 
 If you want to use protobuf to save and load models, install `protobuf c++ version <https://github.com/google/protobuf/blob/master/src/README.md>`__ first.
 
