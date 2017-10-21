@@ -19,6 +19,7 @@ env:
     - TASK=regular
     - TASK=mpi PYTHON_VERSION=2.7
     - TASK=pylint
+    - TASK=check-docs
     - TASK=if-else
     - TASK=sdist PYTHON_VERSION=3.4
     - TASK=bdist PYTHON_VERSION=3.5
@@ -35,6 +36,8 @@ matrix:
       env: TASK=if-else
     - os: osx
       env: TASK=pylint
+    - os: osx
+      env: TASK=check-docs
 
 before_install:
   - test -n $CC  && unset CC
