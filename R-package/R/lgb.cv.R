@@ -155,7 +155,7 @@ lgb.cv <- function(params = list(),
   
   # Check for weights
   if (!is.null(weight)) {
-    data$set_info("weight", weight)
+    data$setinfo("weight", weight)
   }
   
   # Update parameters with parsed parameters
