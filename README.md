@@ -82,7 +82,7 @@ Documentation for contributors:
 Support
 -------
 
-* Ask a question [on Stack Overflow with the `lightgbm` tag ](https://stackoverflow.com/questions/ask?tags=lightgbm), we monitor this for new questions.
+* Ask a question [on Stack Overflow with the `lightgbm` tag](https://stackoverflow.com/questions/ask?tags=lightgbm), we monitor this for new questions.
 * Discuss on the [LightGBM Gitter](https://gitter.im/Microsoft/LightGBM).
 * Discuss on the [LightGBM Slack team](https://lightgbm.slack.com).
   * Use [this invite link](https://lightgbm-slack-autojoin.herokuapp.com/) to join the team.
