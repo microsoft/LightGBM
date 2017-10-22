@@ -553,7 +553,7 @@ class _InnerPredictor(object):
 class Dataset(object):
     """Dataset in LightGBM."""
     def __init__(self, data, label=None, max_bin=255, reference=None,
-                 weight=None, group=None, silent=False,
+                 weight=None, group=None, init_score=None, silent=False,
                  feature_name='auto', categorical_feature='auto', params=None,
                  free_raw_data=True):
         """Constract Dataset.
@@ -573,6 +573,8 @@ class Dataset(object):
             Weight for each instance.
         group : list, numpy 1-D array or None, optional (default=None)
             Group/query size for Dataset.
+        init_score : list, numpy 1-D array or None, optional (default=None)
+            Init_score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
         feature_name : list of strings or 'auto', optional (default="auto")
@@ -595,6 +597,7 @@ class Dataset(object):
         self.reference = reference
         self.weight = weight
         self.group = group
+        self.init_score = init_score
         self.silent = silent
         self.feature_name = feature_name
         self.categorical_feature = categorical_feature
@@ -614,7 +617,7 @@ class Dataset(object):
             self.handle = None
 
     def _lazy_init(self, data, label=None, max_bin=255, reference=None,
-                   weight=None, group=None, predictor=None,
+                   weight=None, group=None, init_score=None, predictor=None,
                    silent=False, feature_name='auto',
                    categorical_feature='auto', params=None):
         if data is None:
@@ -694,7 +697,11 @@ class Dataset(object):
         if group is not None:
             self.set_group(group)
         # load init score
-        if isinstance(self.predictor, _InnerPredictor):
+        if init_score is not None:
+            self.set_init_score(init_score)
+            if self.predictor is not None:
+                warnings.warn("The prediction of init_model will be overrided by init_score.")
+        elif isinstance(self.predictor, _InnerPredictor):
             init_score = self.predictor.predict(data,
                                                 raw_score=True,
                                                 data_has_header=self.data_has_header,
@@ -799,7 +806,7 @@ class Dataset(object):
                 if self.used_indices is None:
                     """create valid"""
                     self._lazy_init(self.data, label=self.label, max_bin=self.max_bin, reference=self.reference,
-                                    weight=self.weight, group=self.group, predictor=self._predictor,
+                                    weight=self.weight, group=self.group, init_score=self.init_score, predictor=self._predictor,
                                     silent=self.silent, feature_name=self.feature_name, params=self.params)
                 else:
                     """construct subset"""
@@ -817,15 +824,15 @@ class Dataset(object):
             else:
                 """create train"""
                 self._lazy_init(self.data, label=self.label, max_bin=self.max_bin,
-                                weight=self.weight, group=self.group, predictor=self._predictor,
-                                silent=self.silent, feature_name=self.feature_name,
+                                weight=self.weight, group=self.group, init_score=self.init_score,
+                                predictor=self._predictor, silent=self.silent, feature_name=self.feature_name,
                                 categorical_feature=self.categorical_feature, params=self.params)
             if self.free_raw_data:
                 self.data = None
         return self
 
     def create_valid(self, data, label=None, weight=None, group=None,
-                     silent=False, params=None):
+                     init_score=None, silent=False, params=None):
         """Create validation data align with current Dataset.
 
         Parameters
@@ -839,6 +846,8 @@ class Dataset(object):
             Weight for each instance.
         group : list, numpy 1-D array or None, optional (default=None)
             Group/query size for Dataset.
+        init_score : list, numpy 1-D array or None, optional (default=None)
+            Init_score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
         params: dict or None, optional (default=None)
@@ -850,8 +859,8 @@ class Dataset(object):
             Returns self.
         """
         ret = Dataset(data, label=label, max_bin=self.max_bin, reference=self,
-                      weight=weight, group=group, silent=silent, params=params,
-                      free_raw_data=self.free_raw_data)
+                      weight=weight, group=group, init_score=init_score,
+                      silent=silent, params=params, free_raw_data=self.free_raw_data)
         ret._predictor = self._predictor
         ret.pandas_categorical = self.pandas_categorical
         return ret

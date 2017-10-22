@@ -103,7 +103,12 @@ else
     cmake ..
 fi
 
-make _lightgbm || exit -1
+make || exit -1
+
+cd $TRAVIS_BUILD_DIR/examples/binary_classification && ../../lightgbm config=train.conf && ../../lightgbm config=predict.conf || exit -1
+cd $TRAVIS_BUILD_DIR/examples/regression && ../../lightgbm config=train.conf && ../../lightgbm config=predict.conf || exit -1
+cd $TRAVIS_BUILD_DIR/examples/multiclass_classification && ../../lightgbm config=train.conf && ../../lightgbm config=predict.conf || exit -1
+cd $TRAVIS_BUILD_DIR/examples/lambdarank && ../../lightgbm config=train.conf && ../../lightgbm config=predict.conf || exit -1
 
 cd $TRAVIS_BUILD_DIR/python-package && python setup.py install --precompile || exit -1
 cd $TRAVIS_BUILD_DIR && pytest . || exit -1
