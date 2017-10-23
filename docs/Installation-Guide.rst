@@ -120,7 +120,7 @@ Choose the binaries version number based on your OS `(for more info) <http://hpc
    # to check the installation
    gcc -v
 
-Install *`CMake <https://cmake.org/overview/>`_*
+Install `CMake <https://cmake.org/overview/>`_
 
 .. code-block:: bash
 
@@ -226,7 +226,8 @@ Then run the following commands:
 
 macOS
 ^^^^^
-See instruction above to install **gcc** and **CMake**
+
+See instruction `above <#macos>`_ to install **gcc** and **CMake**
 
 .. code::
 
@@ -242,6 +243,7 @@ Then, run the following commands to install LightGBM:
    export CC=/usr/local/bin/gcc CXX=/usr/local/bin/g++ CXX1X=/usr/local/bin/g++
    mkdir build ; cd build
    cmake -DUSE_MPI=ON ../CMakeLists.txt
+   cd ..
    make -j4
 
 Build GPU Version
