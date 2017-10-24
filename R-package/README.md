@@ -33,7 +33,7 @@ Install LightGBM R-package with the following command:
 ```sh
 git clone --recursive https://github.com/Microsoft/LightGBM
 cd LightGBM/R-package
-# export CXX=g++-7 CC=gcc-7 # for OSX
+#  export CC=/usr/local/bin/gcc CXX=/usr/local/bin/g++ CXX1X=/usr/local/bin/g++ # for OSX
 R CMD INSTALL --build . --no-multiarch
 ```
 
