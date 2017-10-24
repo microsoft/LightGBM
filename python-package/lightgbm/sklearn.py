@@ -140,7 +140,7 @@ class LGBMModel(_LGBMModelBase):
     def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
                  learning_rate=0.1, n_estimators=10, max_bin=255,
                  subsample_for_bin=50000, objective=None,
-                 min_split_gain=0., min_child_weight=5, min_child_samples=10,
+                 min_split_gain=0., min_child_weight=1e-3, min_child_samples=20,
                  subsample=1., subsample_freq=1, colsample_bytree=1.,
                  reg_alpha=0., reg_lambda=0., random_state=0,
                  n_jobs=-1, silent=True, **kwargs):
@@ -171,9 +171,9 @@ class LGBMModel(_LGBMModelBase):
             default: 'binary' for LGBMClassifier, 'lambdarank' for LGBMRanker.
         min_split_gain : float, optional (default=0.)
             Minimum loss reduction required to make a further partition on a leaf node of the tree.
-        min_child_weight : int, optional (default=5)
+        min_child_weight : float, optional (default=1e-3)
             Minimum sum of instance weight(hessian) needed in a child(leaf).
-        min_child_samples : int, optional (default=10)
+        min_child_samples : int, optional (default=20)
             Minimum number of data need in a child(leaf).
         subsample : float, optional (default=1.)
             Subsample ratio of the training instance.
