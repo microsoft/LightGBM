@@ -416,7 +416,7 @@ class TestEngine(unittest.TestCase):
         lgb_train = lgb.Dataset(X_train, y_train)
         # shuffle = False, override metric in params
         params_with_metric = {'metric': 'l2', 'verbose': -1}
-        lgb.cv(params_with_metric, lgb_train, num_boost_round=10, nfold=3, shuffle=False,
+        lgb.cv(params_with_metric, lgb_train, num_boost_round=10, nfold=3, stratified=False, shuffle=False,
                metrics='l1', verbose_eval=False)
         # shuffle = True, callbacks
         lgb.cv(params, lgb_train, num_boost_round=10, nfold=3, shuffle=True,
