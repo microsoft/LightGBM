@@ -84,26 +84,71 @@ LightGBM uses **CMake** to build. Run the following commands:
 
 Also you may want to reed `gcc Tips <./gcc-Tips.rst>`__.
 
-OSX
-~~~
+macOS
+~~~~~
 
-LightGBM depends on **OpenMP** for compiling, which isn't supported by Apple Clang.
+LightGBM depends on **OpenMP** for compiling, which isn't supported by default Apple Clang.
 
-Please install **gcc/g++** by using the following commands:
-
-.. code::
-
-  brew install cmake
-  brew install gcc --without-multilib
-
-Then install LightGBM:
+Make sure you have Apple's **Command Line Tools** installed
 
 .. code::
 
-  git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
-  export CXX=g++-7 CC=gcc-7
-  mkdir build ; cd build
-  cmake ..
+   gcc
+   xcode-select --install
+
+Although the prompt message is a bit confusing, clicking **install** and
+following the instructions will install **Command Line Tools**, not *Xcode*
+
+
+Install GNU Compiler Collection, **gcc with OpenMP enabled**
+
+Choose the binaries version number based on your OS `(for more info) <http://hpc.sourceforge.net>`_.
+
+.. code::
+   
+   High Sierra, Sierra & El Capitan : gcc-7.1-bin.tar.gz
+   Yosemite: gcc-5.1-bin.tar.gz
+
+.. code::
+   
+   cd Downloads
+   wget http://prdownloads.sourceforge.net/hpc/gcc-7.1-bin.tar.gz
+   # This will install the compiler in `/usr/local/bin`
+   sudo tar -zxvf gcc-7.1-bin.tar.gz -C/
+   # to remove the package from your Downloads directory
+   sudo rm gcc-7.1-bin.tar.gz
+   # to check the installation
+   gcc -v
+
+Install `CMake <https://cmake.org/overview/>`_
+
+.. code-block:: bash
+
+   cd Downloads
+   wget https://cmake.org/files/v3.10/cmake-3.10.0-rc3-Darwin-x86_64.dmg
+   # double-click on the disk image and follow instructions
+   
+To add CMake to the PATH:
+
+.. code-block:: bash
+   
+    PATH="/Applications/CMake.app/Contents/bin":"$PATH"
+    # Or, to install symlinks to '/usr/local/bin', run:
+    sudo "/Applications/CMake.app/Contents/bin/cmake-gui" --install
+    # Or, to install symlinks to another directory, run:
+    sudo "/Applications/CMake.app/Contents/bin/cmake-gui" --install=/path/to/bin
+
+
+Then, run the following commands to install LightGBM:
+
+.. code::
+
+  cd Downloads
+  git clone --recursive https://github.com/Microsoft/LightGBM
+  cd LightGBM; mkdir build ; cd build
+  export CC=/usr/local/bin/gcc CXX=/usr/local/bin/g++ CXX1X=/usr/local/bin/g++ # with GCC
+  cmake ../CMakeLists.txt
+  cd ..
   make -j4
 
 Also you may want to reed `gcc Tips <./gcc-Tips.rst>`__.
@@ -179,26 +224,27 @@ Then run the following commands:
 
 **Note**: glibc >= 2.14 is required.
 
-OSX
-^^^
+macOS
+^^^^^
 
-Install **gcc** and **Open MPI** first:
-
-.. code::
-
-  brew install openmpi
-  brew install cmake
-  brew install gcc --without-multilib
-
-Then run the following commands:
+See instruction `above <#macos>`_ to install **gcc** and **CMake**
 
 .. code::
 
-  git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
-  export CXX=g++-7 CC=gcc-7
-  mkdir build ; cd build
-  cmake -DUSE_MPI=ON ..
-  make -j4
+   brew install openmpi
+   brew install cmake
+   brew install gcc --without-multilib
+
+Then, run the following commands to install LightGBM:
+
+.. code::
+
+   git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+   export CC=/usr/local/bin/gcc CXX=/usr/local/bin/g++ CXX1X=/usr/local/bin/g++
+   mkdir build ; cd build
+   cmake -DUSE_MPI=ON ../CMakeLists.txt
+   cd ..
+   make -j4
 
 Build GPU Version
 ~~~~~~~~~~~~~~~~~
