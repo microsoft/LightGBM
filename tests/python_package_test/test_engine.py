@@ -416,22 +416,22 @@ class TestEngine(unittest.TestCase):
         lgb_train = lgb.Dataset(X_train, y_train)
         # shuffle = False, override metric in params
         params_with_metric = {'metric': 'l2', 'verbose': -1}
-        lgb.cv(params_with_metric, lgb_train, num_boost_round=10, nfold=3, shuffle=False,
+        lgb.cv(params_with_metric, lgb_train, num_boost_round=10, nfold=3, stratified=False, shuffle=False,
                metrics='l1', verbose_eval=False)
         # shuffle = True, callbacks
-        lgb.cv(params, lgb_train, num_boost_round=10, nfold=3, shuffle=True,
+        lgb.cv(params, lgb_train, num_boost_round=10, nfold=3, stratified=False, shuffle=True,
                metrics='l1', verbose_eval=False,
                callbacks=[lgb.reset_parameter(learning_rate=lambda i: 0.1 - 0.001 * i)])
         # self defined folds
         tss = TimeSeriesSplit(3)
         folds = tss.split(X_train)
-        lgb.cv(params_with_metric, lgb_train, num_boost_round=10, folds=folds, verbose_eval=False)
+        lgb.cv(params_with_metric, lgb_train, num_boost_round=10, folds=folds, stratified=False, verbose_eval=False)
         # lambdarank
         X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.train'))
         q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.train.query'))
         params_lambdarank = {'objective': 'lambdarank', 'verbose': -1}
         lgb_train = lgb.Dataset(X_train, y_train, group=q_train)
-        lgb.cv(params_lambdarank, lgb_train, num_boost_round=10, nfold=3, metrics='l2', verbose_eval=False)
+        lgb.cv(params_lambdarank, lgb_train, num_boost_round=10, nfold=3, stratified=False, metrics='l2', verbose_eval=False)
 
     def test_feature_name(self):
         X, y = load_boston(True)
