@@ -215,7 +215,11 @@ void Application::Train() {
     if (model_format == std::string("text")) {
       boosting_->SaveModelToFile(-1, save_file_name.c_str());
     } else if (model_format == std::string("proto")) {
+      #ifdef USE_PROTO
       boosting_->SaveModelToProto(-1, save_file_name.c_str());
+      #else
+      Log::Fatal("Please cmake with -DUSE_PROTO=ON to use protobuf.");
+      #endif // USE_PROTO
     } else {
       Log::Fatal("Unknown model format during saving: %s", model_format.c_str());
     }

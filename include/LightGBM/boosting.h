@@ -3,7 +3,10 @@
 
 #include <LightGBM/meta.h>
 #include <LightGBM/config.h>
+
+#ifdef USE_PROTO
 #include "model.pb.h"
+#endif // USE_PROTO
 
 #include <vector>
 #include <string>
@@ -188,6 +191,7 @@ public:
   */
   virtual bool LoadModelFromString(const std::string& model_str) = 0;
 
+  #ifdef USE_PROTO
   /*!
   * \brief Save model with protobuf
   * \param num_iterations Number of model that want to save, -1 means save all
@@ -201,6 +205,7 @@ public:
   * \return true if succeeded
   */
   virtual bool LoadModelFromProto(const char* filename) = 0;
+  #endif // USE_PROTO
 
   /*!
   * \brief Calculate feature importances

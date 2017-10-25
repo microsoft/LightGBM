@@ -242,15 +242,12 @@
     <ClInclude Include="..\src\treelearner\parallel_tree_learner.h" />
     <ClInclude Include="..\src\treelearner\serial_tree_learner.h" />
     <ClInclude Include="..\src\treelearner\split_info.hpp" />
-    <ClInclude Include="..\src\proto\not_implemented\model.pb.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp" />
     <ClCompile Include="..\src\boosting\boosting.cpp" />
     <ClCompile Include="..\src\boosting\gbdt.cpp" />
     <ClCompile Include="..\src\boosting\gbdt_model_text.cpp" />
-    <ClCompile Include="..\src\proto\gbdt_model_proto.cpp" />
-    <ClCompile Include="..\src\proto\not_implemented\gbdt_model_proto.cpp" />
     <ClCompile Include="..\src\boosting\gbdt_prediction.cpp" />
     <ClCompile Include="..\src\boosting\prediction_early_stop.cpp" />
     <ClCompile Include="..\src\c_api.cpp" />

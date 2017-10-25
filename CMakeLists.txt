@@ -125,14 +125,15 @@ file(GLOB SOURCES
 )
 
 if (USE_PROTO)
+    if(MSVC)
+        message(FATAL_ERROR "Cannot use proto with MSVC.")
+    endif(MSVC)
     find_package(Protobuf REQUIRED)
     PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS proto/model.proto)
     include_directories(${PROTOBUF_INCLUDE_DIRS})
     include_directories(${CMAKE_CURRENT_BINARY_DIR})
+    ADD_DEFINITIONS(-DUSE_PROTO)
     SET(PROTO_FILES src/proto/gbdt_model_proto.cpp ${PROTO_HDRS} ${PROTO_SRCS})
-else()
-    include_directories(src/proto/not_implemented)
-    SET(PROTO_FILES src/proto/not_implemented/gbdt_model_proto.cpp)
 endif(USE_PROTO)
 
 add_executable(lightgbm src/main.cpp ${SOURCES} ${PROTO_FILES})

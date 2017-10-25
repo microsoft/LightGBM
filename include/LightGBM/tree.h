@@ -3,7 +3,9 @@
 
 #include <LightGBM/meta.h>
 #include <LightGBM/dataset.h>
+#ifdef USE_PROTO
 #include "model.pb.h"
+#endif // USE_PROTO
 
 #include <string>
 #include <vector>
@@ -31,12 +33,13 @@ public:
   * \param str Model string
   */
   explicit Tree(const std::string& str);
-
+  #ifdef USE_PROTO
   /*!
   * \brief Construtor, from a protobuf object
   * \param model_tree Model protobuf object
   */
-  explicit Tree(const LightGBM::Model_Tree& model_tree);
+  explicit Tree(const Model_Tree& model_tree);
+  #endif // USE_PROTO
 
   ~Tree();
 
@@ -172,8 +175,10 @@ public:
   /*! \brief Serialize this object to if-else statement*/
   std::string ToIfElse(int index, bool is_predict_leaf_index) const;
 
+  #ifdef USE_PROTO
   /*! \brief Serialize this object to protobuf object*/
   void ToProto(Model_Tree& model_tree) const;
+  #endif // USE_PROTO
 
   inline static bool IsZero(double fval) {
     if (fval > -kZeroAsMissingValueRange && fval <= kZeroAsMissingValueRange) {

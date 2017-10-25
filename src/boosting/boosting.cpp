@@ -25,9 +25,13 @@ bool Boosting::LoadFileToBoosting(Boosting* boosting, const std::string& format,
         return false;
       }
     } else if (format == std::string("proto")) {
+      #ifdef USE_PROTO
       if (!boosting->LoadModelFromProto(filename)) {
         return false;
       }
+      #else
+      Log::Fatal("Please cmake with -DUSE_PROTO=ON to use protobuf.");
+      #endif // USE_PROTO
     } else {
       Log::Fatal("Unknown model format during loading: %s", format.c_str());
     }
