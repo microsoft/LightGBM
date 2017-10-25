@@ -249,44 +249,29 @@ Learning Control Parameters
 
    -  only used in ``goss``, the retain ratio of small gradient data
 
--  ``max_cat_group``, default=\ ``64``, type=int
-
-   -  use for the categorical features
-
-   -  when ``#catogory`` is large, finding the split point on it is easily over-fitting.
-      So LightGBM merges them into ``max_cat_group`` groups, and finds the split points on the group boundaries
-
--  ``min_data_per_group``, default=\ ``10``, type=int
+-  ``min_data_per_group``, default=\ ``100``, type=int
 
    -  min number of data per categorical group
 
--  ``max_cat_threshold``, default=\ ``256``, type=int
+-  ``max_cat_threshold``, default=\ ``32``, type=int
 
    -  use for the categorical features
 
    -  limit the max threshold points in categorical features
 
--  ``min_cat_smooth``, default=\ ``5``, type=double
-
-   -  use for the categorical features
-
-   -  refer to the descrption of the paramater ``cat_smooth_ratio``
-
--  ``max_cat_smooth``, default=\ ``100``, type=double
-
-   -  use for the categorical features
-
-   -  refer to the descrption of the paramater ``cat_smooth_ratio``
-
--  ``cat_smooth_ratio``, default=\ ``0.01``, type=double
+-  ``cat_smooth``, default=\ ``10``, type=double
 
    -  use for the categorical features
 
    - this can reduce the effect of noises in categorical features, especially for categories with few data
 
-   -  the smooth denominator is ``a = min(max_cat_smooth, max(min_cat_smooth, num_data / num_category * cat_smooth_ratio))``
+-  ``cat_l2``, default=\ ``10``, type=double
 
-   -  the smooth numerator is ``b = a * sum_gradient / sum_hessian``
+   -  L2 regularization in categorcial split
+
+-  ``max_cat_to_onehot``, default=\ ``4``, type=int
+
+   -  When number of categories of one feature smaller than or equal to ``max_cat_to_onehot``, will use one-vs-other split algorithm.
 
 IO Parameters
 -------------
@@ -299,7 +284,7 @@ IO Parameters
    -  LightGBM will auto compress memory according ``max_bin``.
       For example, LightGBM will use ``uint8_t`` for feature value if ``max_bin=255``
 
--  ``min_data_in_bin``, default=\ ``5``, type=int
+-  ``min_data_in_bin``, default=\ ``3``, type=int
 
    -  min number of data inside one bin, use this to avoid one-data-one-bin (may over-fitting)
 

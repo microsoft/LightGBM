@@ -24,7 +24,7 @@ Categorical Feature Support
 -  Converting to ``int`` type is needed first, and there is support for non-negative numbers only.
    It is better to convert into continues ranges.
 
--  Use ``max_cat_group``, ``cat_smooth_ratio`` to deal with over-fitting
+-  Use ``min_data_per_group``, ``cat_smooth`` to deal with over-fitting
    (when ``#data`` is small or ``#category`` is large).
 
 -  For categorical features with high cardinality (``#category`` is large), it is better to convert it to numerical features.
