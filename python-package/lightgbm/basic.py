@@ -1370,18 +1370,18 @@ class Booster(object):
 
     def set_network(self, machines, local_listen_port=12400,
                     listen_time_out=120, num_machines=1):
-        """Set the name to the training Dataset.
+        """Set the network configuration.
 
         Parameters
         ----------
         machines: list, set or string
-            List of machine names.
-        local_listen_port: int
+            Names of machines.
+        local_listen_port: int, optional (default=12400)
             TCP listen port for local machines.
-        listen_time_out: int
+        listen_time_out: int, optional (default=120)
             Socket time-out in minutes.
-        num_machines: int
-            The number of machines for parallel learning application
+        num_machines: int, optional (default=1)
+            The number of machines for parallel learning application.
         """
         _safe_call(_LIB.LGBM_NetworkInit(c_str(machines),
                                          ctypes.c_int(local_listen_port),
