@@ -180,6 +180,7 @@ void Application::InitTrain() {
   // create boosting
   boosting_.reset(
     Boosting::CreateBoosting(config_.boosting_type,
+                             config_.io_config.model_format.c_str(),
                              config_.io_config.input_model.c_str()));
   // create objective function
   objective_fun_.reset(
@@ -203,6 +204,26 @@ void Application::InitTrain() {
 void Application::Train() {
   Log::Info("Started training...");
   boosting_->Train(config_.io_config.snapshot_freq, config_.io_config.output_model);
+  std::vector<std::string> model_formats = Common::Split(config_.io_config.model_format.c_str(), ',');
+  bool save_with_multiple_format = (model_formats.size() > 1);
+  for (auto model_format: model_formats) {
+    std::string save_file_name = config_.io_config.output_model;
+    if (save_with_multiple_format) {
+      // use suffix to distinguish different model format
+      save_file_name += "." + model_format;
+    }
+    if (model_format == std::string("text")) {
+      boosting_->SaveModelToFile(-1, save_file_name.c_str());
+    } else if (model_format == std::string("proto")) {
+      #ifdef USE_PROTO
+      boosting_->SaveModelToProto(-1, save_file_name.c_str());
+      #else
+      Log::Fatal("Please cmake with -DUSE_PROTO=ON to use protobuf.");
+      #endif // USE_PROTO
+    } else {
+      Log::Fatal("Unknown model format during saving: %s", model_format.c_str());
+    }
+  }
   // convert model to if-else statement code
   if (config_.convert_model_language == std::string("cpp")) {
     boosting_->SaveModelToIfElse(-1, config_.io_config.convert_model.c_str());
@@ -223,13 +244,15 @@ void Application::Predict() {
 
 void Application::InitPredict() {
   boosting_.reset(
-    Boosting::CreateBoosting(config_.io_config.input_model.c_str()));
+    Boosting::CreateBoosting("gbdt", config_.io_config.model_format.c_str(),
+                             config_.io_config.input_model.c_str()));
   Log::Info("Finished initializing prediction");
 }
 
 void Application::ConvertModel() {
   boosting_.reset(
     Boosting::CreateBoosting(config_.boosting_type,
+                             config_.io_config.model_format.c_str(),
                              config_.io_config.input_model.c_str()));
   boosting_->SaveModelToIfElse(-1, config_.io_config.convert_model.c_str());
 }

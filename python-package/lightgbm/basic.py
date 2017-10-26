@@ -277,12 +277,15 @@ def _label_from_pandas(label):
 
 def _save_pandas_categorical(file_name, pandas_categorical):
     with open(file_name, 'a') as f:
-        f.write('\npandas_categorical:' + json.dumps(pandas_categorical, default=json_default_with_numpy))
+        f.write('\npandas_categorical:' + json.dumps(pandas_categorical, default=json_default_with_numpy) + '\n')
 
 
 def _load_pandas_categorical(file_name):
     with open(file_name, 'r') as f:
-        last_line = f.readlines()[-1]
+        lines = f.readlines()
+        last_line = lines[-1]
+        if last_line.strip() == "":
+            last_line = lines[-2]
         if last_line.startswith('pandas_categorical:'):
             return json.loads(last_line[len('pandas_categorical:'):])
     return None
@@ -1245,6 +1248,7 @@ class Booster(object):
             Whether to print messages during construction.
         """
         self.handle = None
+        self.network = False
         self.__need_reload_eval_info = True
         self.__train_data_name = "training"
         self.__attr = {}
@@ -1288,6 +1292,20 @@ class Booster(object):
             self.__is_predicted_cur_iter = [False]
             self.__get_eval_info()
             self.pandas_categorical = train_set.pandas_categorical
+            """set network if necessary"""
+            if "machines" in params:
+                machines = params["machines"]
+                if isinstance(machines, string_type):
+                    num_machines = len(machines.split(','))
+                elif isinstance(machines, (list, set)):
+                    num_machines = len(machines)
+                    machines = ','.join(machines)
+                else:
+                    raise ValueError("Invalid machines in params.")
+                self.set_network(machines,
+                                 local_listen_port=params.get("local_listen_port", 12400),
+                                 listen_time_out=params.get("listen_time_out", 120),
+                                 num_machines=params.get("num_machines", num_machines))
         elif model_file is not None:
             """Prediction task"""
             out_num_iterations = ctypes.c_int(0)
@@ -1308,6 +1326,8 @@ class Booster(object):
             raise TypeError('Need at least one training dataset or model file to create booster instance')
 
     def __del__(self):
+        if self.network:
+            self.free_network()
         if self.handle is not None:
             _safe_call(_LIB.LGBM_BoosterFree(self.handle))
 
@@ -1350,6 +1370,32 @@ class Booster(object):
     def _free_buffer(self):
         self.__inner_predict_buffer = []
         self.__is_predicted_cur_iter = []
+
+    def set_network(self, machines, local_listen_port=12400,
+                    listen_time_out=120, num_machines=1):
+        """Set the network configuration.
+
+        Parameters
+        ----------
+        machines: list, set or string
+            Names of machines.
+        local_listen_port: int, optional (default=12400)
+            TCP listen port for local machines.
+        listen_time_out: int, optional (default=120)
+            Socket time-out in minutes.
+        num_machines: int, optional (default=1)
+            The number of machines for parallel learning application.
+        """
+        _safe_call(_LIB.LGBM_NetworkInit(c_str(machines),
+                                         ctypes.c_int(local_listen_port),
+                                         ctypes.c_int(listen_time_out),
+                                         ctypes.c_int(num_machines)))
+        self.network = True
+
+    def free_network(self):
+        """Free Network."""
+        _safe_call(_LIB.LGBM_NetworkFree())
+        self.network = False
 
     def set_train_data_name(self, name):
         """Set the name to the training Dataset.
