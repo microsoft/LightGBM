@@ -12,21 +12,34 @@ std::string GetBoostingTypeFromModelFile(const char* filename) {
   return type;
 }
 
-bool Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
+bool Boosting::LoadFileToBoosting(Boosting* boosting, const std::string& format, const char* filename) {
   if (boosting != nullptr) {
-    TextReader<size_t> model_reader(filename, true);
-    model_reader.ReadAllLines();
-    std::stringstream str_buf;
-    for (auto& line : model_reader.Lines()) {
-      str_buf << line << '\n';
+    if (format == std::string("text")) {
+      TextReader<size_t> model_reader(filename, true);
+      model_reader.ReadAllLines();
+      std::stringstream str_buf;
+      for (auto& line : model_reader.Lines()) {
+        str_buf << line << '\n';
+      }
+      if (!boosting->LoadModelFromString(str_buf.str())) {
+        return false;
+      }
+    } else if (format == std::string("proto")) {
+      #ifdef USE_PROTO
+      if (!boosting->LoadModelFromProto(filename)) {
+        return false;
+      }
+      #else
+      Log::Fatal("Please cmake with -DUSE_PROTO=ON to use protobuf.");
+      #endif // USE_PROTO
+    } else {
+      Log::Fatal("Unknown model format during loading: %s", format.c_str());
     }
-    if (!boosting->LoadModelFromString(str_buf.str()))
-      return false;
   }
   return true;
 }
 
-Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename) {
+Boosting* Boosting::CreateBoosting(const std::string& type, const std::string& format, const char* filename) {
   if (filename == nullptr || filename[0] == '\0') {
     if (type == std::string("gbdt")) {
       return new GBDT();
@@ -41,8 +54,7 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
     }
   } else {
     std::unique_ptr<Boosting> ret;
-    auto type_in_file = GetBoostingTypeFromModelFile(filename);
-    if (type_in_file == std::string("tree")) {
+    if (format == std::string("proto") || GetBoostingTypeFromModelFile(filename) == std::string("tree")) {
       if (type == std::string("gbdt")) {
         ret.reset(new GBDT());
       } else if (type == std::string("dart")) {
@@ -54,24 +66,12 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
       } else {
         Log::Fatal("unknown boosting type %s", type.c_str());
       }
-      LoadFileToBoosting(ret.get(), filename);
+      LoadFileToBoosting(ret.get(), format, filename);
     } else {
-      Log::Fatal("unknown submodel type in model file %s", filename);
+      Log::Fatal("unknown model format or submodel type in model file %s", filename);
     }
     return ret.release();
   }
-}
-
-Boosting* Boosting::CreateBoosting(const char* filename) {
-  auto type = GetBoostingTypeFromModelFile(filename);
-  std::unique_ptr<Boosting> ret;
-  if (type == std::string("tree")) {
-    ret.reset(new GBDT());
-  } else {
-    Log::Fatal("unknown submodel type in model file %s", filename);
-  }
-  LoadFileToBoosting(ret.get(), filename);
-  return ret.release();
 }
 
 }  // namespace LightGBM
