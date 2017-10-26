@@ -282,7 +282,10 @@ def _save_pandas_categorical(file_name, pandas_categorical):
 
 def _load_pandas_categorical(file_name):
     with open(file_name, 'r') as f:
-        last_line = f.readlines()[-1]
+        lines = f.readlines()
+        last_line = lines[-1]
+        if last_line.strip() == "":
+            last_line = lines[-2]
         if last_line.startswith('pandas_categorical:'):
             return json.loads(last_line[len('pandas_categorical:'):])
     return None
