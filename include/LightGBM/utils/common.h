@@ -161,11 +161,11 @@ inline static const char* Atoi(const char* p, int* out) {
 }
 
 template<class T>
-inline static T Pow(T base, int power) {
-  if (power == 0) {
+inline static double Pow(T base, int power) {
+  if (power < 0) {
+    return 1.0 / Pow(base, -power);
+  } else if (power == 0) {
     return 1;
-  } else if (power == 1) {
-    return base;
   } else if (power % 2 == 0) {
     return Pow(base*base, power / 2);
   } else if (power % 3 == 0) {
@@ -183,7 +183,6 @@ inline static const char* Atof(const char* p, double* out) {
   while (*p == ' ') {
     ++p;
   }
-
   // Get sign, if any.
   sign = 1.0;
   if (*p == '-') {
@@ -241,9 +240,9 @@ inline static const char* Atof(const char* p, double* out) {
   } else {
     size_t cnt = 0;
     while (*(p + cnt) != '\0' && *(p + cnt) != ' '
-      && *(p + cnt) != '\t' && *(p + cnt) != ','
-      && *(p + cnt) != '\n' && *(p + cnt) != '\r'
-      && *(p + cnt) != ':') {
+           && *(p + cnt) != '\t' && *(p + cnt) != ','
+           && *(p + cnt) != '\n' && *(p + cnt) != '\r'
+           && *(p + cnt) != ':') {
       ++cnt;
     }
     if (cnt > 0) {
@@ -266,8 +265,6 @@ inline static const char* Atof(const char* p, double* out) {
 
   return p;
 }
-
-
 
 inline bool AtoiAndCheck(const char* p, int* out) {
   const char* after = Atoi(p, out);
@@ -647,6 +644,15 @@ inline bool FindInBitset(const uint32_t* bits, int n, T pos) {
   }
   int i2 = pos % 32;
   return (bits[i1] >> i2) & 1;
+}
+
+inline static bool CheckDoubleEqualOrdered(double a, double b) {
+  double upper = std::nextafter(a, INFINITY);
+  return b <= upper;
+}
+
+inline static double GetDoubleUpperBound(double a) {
+  return std::nextafter(a, INFINITY);;
 }
 
 }  // namespace Common

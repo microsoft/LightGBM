@@ -277,7 +277,7 @@ def _label_from_pandas(label):
 
 def _save_pandas_categorical(file_name, pandas_categorical):
     with open(file_name, 'a') as f:
-        f.write('\npandas_categorical:' + json.dumps(pandas_categorical, default=json_default_with_numpy))
+        f.write('\npandas_categorical:' + json.dumps(pandas_categorical, default=json_default_with_numpy) + '\n')
 
 
 def _load_pandas_categorical(file_name):
@@ -552,7 +552,7 @@ class _InnerPredictor(object):
 
 class Dataset(object):
     """Dataset in LightGBM."""
-    def __init__(self, data, label=None, max_bin=255, reference=None,
+    def __init__(self, data, label=None, max_bin=None, reference=None,
                  weight=None, group=None, init_score=None, silent=False,
                  feature_name='auto', categorical_feature='auto', params=None,
                  free_raw_data=True):
@@ -565,7 +565,7 @@ class Dataset(object):
             If string, it represents the path to txt file.
         label : list or numpy 1-D array, optional (default=None)
             Label of the data.
-        max_bin : int, optional (default=255)
+        max_bin : int, optional (default=None)
             Max number of discrete bins for features.
         reference : Dataset or None, optional (default=None)
             If this is Dataset for validation, training data should be used as reference.
@@ -616,7 +616,7 @@ class Dataset(object):
             _safe_call(_LIB.LGBM_DatasetFree(self.handle))
             self.handle = None
 
-    def _lazy_init(self, data, label=None, max_bin=255, reference=None,
+    def _lazy_init(self, data, label=None, max_bin=None, reference=None,
                    weight=None, group=None, init_score=None, predictor=None,
                    silent=False, feature_name='auto',
                    categorical_feature='auto', params=None):
@@ -633,7 +633,8 @@ class Dataset(object):
         params = {} if params is None else params
         self.max_bin = max_bin
         self.predictor = predictor
-        params["max_bin"] = max_bin
+        if self.max_bin is not None:
+            params["max_bin"] = self.max_bin
         if "verbosity" in params:
             params.setdefault("verbose", params.pop("verbosity"))
         if silent:
@@ -655,6 +656,10 @@ class Dataset(object):
                     raise TypeError("Wrong type({}) or unknown name({}) in categorical_feature"
                                     .format(type(name).__name__, name))
             if categorical_indices:
+                if "categorical_feature" in params or "categorical_column" in params:
+                    warnings.warn('categorical_feature in param dict is overrided.')
+                    params.pop("categorical_feature", None)
+                    params.pop("categorical_column", None)
                 params['categorical_column'] = sorted(categorical_indices)
 
         params_str = param_dict_to_str(params)
@@ -1254,6 +1259,7 @@ class Booster(object):
             Whether to print messages during construction.
         """
         self.handle = None
+        self.network = False
         self.__need_reload_eval_info = True
         self.__train_data_name = "training"
         self.__attr = {}
@@ -1297,6 +1303,20 @@ class Booster(object):
             self.__is_predicted_cur_iter = [False]
             self.__get_eval_info()
             self.pandas_categorical = train_set.pandas_categorical
+            """set network if necessary"""
+            if "machines" in params:
+                machines = params["machines"]
+                if isinstance(machines, string_type):
+                    num_machines = len(machines.split(','))
+                elif isinstance(machines, (list, set)):
+                    num_machines = len(machines)
+                    machines = ','.join(machines)
+                else:
+                    raise ValueError("Invalid machines in params.")
+                self.set_network(machines,
+                                 local_listen_port=params.get("local_listen_port", 12400),
+                                 listen_time_out=params.get("listen_time_out", 120),
+                                 num_machines=params.get("num_machines", num_machines))
         elif model_file is not None:
             """Prediction task"""
             out_num_iterations = ctypes.c_int(0)
@@ -1317,6 +1337,8 @@ class Booster(object):
             raise TypeError('Need at least one training dataset or model file to create booster instance')
 
     def __del__(self):
+        if self.network:
+            self.free_network()
         if self.handle is not None:
             _safe_call(_LIB.LGBM_BoosterFree(self.handle))
 
@@ -1359,6 +1381,32 @@ class Booster(object):
     def _free_buffer(self):
         self.__inner_predict_buffer = []
         self.__is_predicted_cur_iter = []
+
+    def set_network(self, machines, local_listen_port=12400,
+                    listen_time_out=120, num_machines=1):
+        """Set the network configuration.
+
+        Parameters
+        ----------
+        machines: list, set or string
+            Names of machines.
+        local_listen_port: int, optional (default=12400)
+            TCP listen port for local machines.
+        listen_time_out: int, optional (default=120)
+            Socket time-out in minutes.
+        num_machines: int, optional (default=1)
+            The number of machines for parallel learning application.
+        """
+        _safe_call(_LIB.LGBM_NetworkInit(c_str(machines),
+                                         ctypes.c_int(local_listen_port),
+                                         ctypes.c_int(listen_time_out),
+                                         ctypes.c_int(num_machines)))
+        self.network = True
+
+    def free_network(self):
+        """Free Network."""
+        _safe_call(_LIB.LGBM_NetworkFree())
+        self.network = False
 
     def set_train_data_name(self, name):
         """Set the name to the training Dataset.

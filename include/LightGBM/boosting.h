@@ -4,6 +4,10 @@
 #include <LightGBM/meta.h>
 #include <LightGBM/config.h>
 
+#ifdef USE_PROTO
+#include "model.pb.h"
+#endif // USE_PROTO
+
 #include <vector>
 #include <string>
 
@@ -166,7 +170,7 @@ public:
 
   /*!
   * \brief Save model to file
-  * \param num_used_model Number of model that want to save, -1 means save all
+  * \param num_iterations Number of model that want to save, -1 means save all
   * \param is_finish Is training finished or not
   * \param filename Filename that want to save to
   * \return true if succeeded
@@ -175,7 +179,7 @@ public:
 
   /*!
   * \brief Save model to string
-  * \param num_used_model Number of model that want to save, -1 means save all
+  * \param num_iterations Number of model that want to save, -1 means save all
   * \return Non-empty string if succeeded
   */
   virtual std::string SaveModelToString(int num_iterations) const = 0;
@@ -186,6 +190,22 @@ public:
   * \return true if succeeded
   */
   virtual bool LoadModelFromString(const std::string& model_str) = 0;
+
+  #ifdef USE_PROTO
+  /*!
+  * \brief Save model with protobuf
+  * \param num_iterations Number of model that want to save, -1 means save all
+  * \param filename Filename that want to save to
+  */
+  virtual void SaveModelToProto(int num_iteration, const char* filename) const = 0;
+  
+  /*!
+  * \brief Restore from a serialized protobuf file
+  * \param filename Filename that want to restore from
+  * \return true if succeeded
+  */
+  virtual bool LoadModelFromProto(const char* filename) = 0;
+  #endif // USE_PROTO
 
   /*!
   * \brief Calculate feature importances
@@ -251,23 +271,17 @@ public:
   /*! \brief Disable copy */
   Boosting(const Boosting&) = delete;
 
-  static bool LoadFileToBoosting(Boosting* boosting, const char* filename);
+  static bool LoadFileToBoosting(Boosting* boosting, const std::string& format, const char* filename);
 
   /*!
   * \brief Create boosting object
   * \param type Type of boosting
+  * \param format Format of model
   * \param config config for boosting
   * \param filename name of model file, if existing will continue to train from this model
   * \return The boosting object
   */
-  static Boosting* CreateBoosting(const std::string& type, const char* filename);
-
-  /*!
-  * \brief Create boosting object from model file
-  * \param filename name of model file
-  * \return The boosting object
-  */
-  static Boosting* CreateBoosting(const char* filename);
+  static Boosting* CreateBoosting(const std::string& type, const std::string& format, const char* filename);
 
 };
 

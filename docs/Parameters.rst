@@ -309,6 +309,20 @@ IO Parameters
 
    -  file name of prediction result in ``prediction`` task
 
+-  ``model_format``, default=\ ``text``, type=string
+
+   -  format to save and load model.
+
+   -  ``text``, use text string.
+
+   -  ``proto``, use protocol buffer binary format.
+
+   -  save multiple formats by joining them with comma, like ``text,proto``, in this case, ``model_format`` will be add as suffix after ``output_model``.
+
+   -  not support loading with multiple formats.
+
+   -  Note: you need to cmake with -DUSE_PROTO=ON to use this parameter.
+
 -  ``is_pre_partition``, default=\ ``false``, type=bool
 
    -  used for parallel learning (not include feature parallel)
