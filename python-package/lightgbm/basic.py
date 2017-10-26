@@ -277,7 +277,7 @@ def _label_from_pandas(label):
 
 def _save_pandas_categorical(file_name, pandas_categorical):
     with open(file_name, 'a') as f:
-        f.write('\npandas_categorical:' + json.dumps(pandas_categorical, default=json_default_with_numpy))
+        f.write('\npandas_categorical:' + json.dumps(pandas_categorical, default=json_default_with_numpy) + '\n')
 
 
 def _load_pandas_categorical(file_name):
