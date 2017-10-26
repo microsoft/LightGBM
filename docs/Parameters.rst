@@ -99,6 +99,7 @@ Core Parameters
    alias=\ ``num_iteration``, ``num_tree``, ``num_trees``, ``num_round``, ``num_rounds``, ``num_boost_round``
 
    -  number of boosting iterations
+
    -  **Note**: for Python/R package, **this parameter is ignored**,
       use ``num_boost_round`` (Python) or ``nrounds`` (R) input arguments of ``train`` and ``cv`` methods instead
 
@@ -272,6 +273,12 @@ Learning Control Parameters
 -  ``max_cat_to_onehot``, default=\ ``4``, type=int
 
    -  when number of categories of one feature smaller than or equal to ``max_cat_to_onehot``, one-vs-other split algorithm will be used
+
+-  ``top_k``, default=\ ``20``, type=int, alias=\ ``topk``
+
+   -  used in `Voting parallel <./Parallel-Learning-Guide.rst#choose-appropriate-parallel-algorithm>`__
+
+   -  set this to larger value for more accurate result, but it will slow down the training speed
 
 IO Parameters
 -------------
