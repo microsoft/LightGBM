@@ -95,7 +95,7 @@ private:
         }
         for (int i = 0; i < iter_; ++i) {
           if (random_for_drop_.NextFloat() < drop_rate * tree_weight_[i] * inv_average_weight) {
-            drop_index_.push_back(i);
+            drop_index_.push_back(num_init_iteration_ + i);
           }
         }
       } else {
@@ -104,7 +104,7 @@ private:
         }
         for (int i = 0; i < iter_; ++i) {
           if (random_for_drop_.NextFloat() < drop_rate) {
-            drop_index_.push_back(i);
+            drop_index_.push_back(num_init_iteration_ + i);
           }
         }
       }
