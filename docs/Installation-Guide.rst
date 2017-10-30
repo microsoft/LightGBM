@@ -22,9 +22,9 @@ With GUI
 
 3. Go to ``LightGBM-master/windows`` folder.
 
-4. Open ``LightGBM.sln`` file with Visual Studio, choose ``Release`` configuration and click ``BUILD-> Build Solution (Ctrl+Shift+B)``.
+4. Open ``LightGBM.sln`` file with Visual Studio, choose ``Release`` configuration and click ``BUILD``->\ ``Build Solution (Ctrl+Shift+B)``.
 
-   If you have errors about **Platform Toolset**, go to ``PROJECT-> Properties-> Configuration Properties-> General`` and select the toolset installed on your machine.
+   If you have errors about **Platform Toolset**, go to ``PROJECT``->\ ``Properties``->\ ``Configuration Properties``->\ ``General`` and select the toolset installed on your machine.
 
 The exe file will be in ``LightGBM-master/windows/x64/Release`` folder.
 
@@ -135,9 +135,9 @@ With GUI
 
 4. Go to ``LightGBM-master/windows`` folder.
 
-5. Open ``LightGBM.sln`` file with Visual Studio, choose ``Release_mpi`` configuration and click ``BUILD-> Build Solution (Ctrl+Shift+B)``.
+5. Open ``LightGBM.sln`` file with Visual Studio, choose ``Release_mpi`` configuration and click ``BUILD``->\ ``Build Solution (Ctrl+Shift+B)``.
 
-   If you have errors about **Platform Toolset**, go to ``PROJECT-> Properties-> Configuration Properties-> General`` and select the toolset installed on your machine.
+   If you have errors about **Platform Toolset**, go to ``PROJECT``->\ ``Properties``->\ ``Configuration Properties``->\ ``General`` and select the toolset installed on your machine.
 
 The exe file will be in ``LightGBM-master/windows/x64/Release_mpi`` folder.
 

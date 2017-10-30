@@ -10,6 +10,7 @@ if "%SPHINXBUILD%" == "" (
 set SOURCEDIR=.
 set BUILDDIR=_build
 set SPHINXPROJ=LightGBM
+set SPHINXOPTS=-W
 
 if "%1" == "" goto help
 

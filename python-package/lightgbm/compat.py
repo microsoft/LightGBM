@@ -63,7 +63,6 @@ try:
     from sklearn.base import BaseEstimator
     from sklearn.base import RegressorMixin, ClassifierMixin
     from sklearn.preprocessing import LabelEncoder
-    from sklearn.utils import deprecated
     from sklearn.utils.multiclass import check_classification_targets
     from sklearn.utils.validation import check_X_y, check_array, check_consistent_length
     try:
@@ -77,7 +76,6 @@ try:
     _LGBMRegressorBase = RegressorMixin
     _LGBMClassifierBase = ClassifierMixin
     _LGBMLabelEncoder = LabelEncoder
-    LGBMDeprecated = deprecated
     LGBMNotFittedError = NotFittedError
     _LGBMStratifiedKFold = StratifiedKFold
     _LGBMGroupKFold = GroupKFold
@@ -91,7 +89,6 @@ except ImportError:
     _LGBMClassifierBase = object
     _LGBMRegressorBase = object
     _LGBMLabelEncoder = None
-#   LGBMDeprecated = None  Don't uncomment it because it causes error without installed sklearn
     LGBMNotFittedError = ValueError
     _LGBMStratifiedKFold = None
     _LGBMGroupKFold = None

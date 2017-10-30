@@ -24,6 +24,15 @@ Welcome to LightGBM's documentation!
    FAQ <FAQ>
    Development Guide <Development-Guide>
 
+.. toctree::
+   :hidden:
+
+   GPU-Performance
+   GPU-Targets
+   GPU-Windows
+   gcc-Tips
+   README
+
 Indices and Tables
 ==================
 
