@@ -855,6 +855,7 @@ dimnames.lgb.Dataset <- function(x) {
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
 #' 
 #' dsub <- lightgbm::slice(dtrain, 1:42)
+#' lightgbm::lgb.Dataset.construct(dsub)
 #' labels <- lightgbm::getinfo(dsub, "label")
 #' }
 #' 
