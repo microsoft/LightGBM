@@ -139,7 +139,7 @@ class LGBMModel(_LGBMModelBase):
 
     def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
                  learning_rate=0.1, n_estimators=10, max_bin=255,
-                 subsample_for_bin=50000, objective=None,
+                 subsample_for_bin=200000, objective=None,
                  min_split_gain=0., min_child_weight=1e-3, min_child_samples=20,
                  subsample=1., subsample_freq=1, colsample_bytree=1.,
                  reg_alpha=0., reg_lambda=0., random_state=0,

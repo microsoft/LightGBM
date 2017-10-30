@@ -436,7 +436,7 @@ IO Parameters
    -  set to ``true`` to estimate `SHAP values`_, which represent how each feature contributs to each prediction.
       Produces number of features + 1 values where the last value is the expected value of the model output over the training data
 
--  ``bin_construct_sample_cnt``, default=\ ``200000``, type=int
+-  ``bin_construct_sample_cnt``, default=\ ``200000``, type=int, alias=\ ``subsample_for_bin``
 
    -  number of data that sampled to construct histogram bins
 
