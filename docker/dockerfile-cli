@@ -4,7 +4,7 @@ RUN apt-get update && \
     apt-get install -y cmake build-essential gcc g++ git && \
     rm -rf /var/lib/apt/lists/*
 
-RUN git clone --recursive https://github.com/Microsoft/LightGBM && \
+RUN git clone --recursive --branch stable https://github.com/Microsoft/LightGBM && \
     mkdir LightGBM/build && \
     cd LightGBM/build && \
     cmake .. && \
