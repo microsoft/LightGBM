@@ -56,7 +56,7 @@ be passed if required.
 
 ## Running the Python-package Сontainer
 
-Build the container, for python users:
+Build the container, for Python users:
 
     ```
     mkdir lightgbm-docker
