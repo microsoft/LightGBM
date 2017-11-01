@@ -64,7 +64,7 @@ MinGW64
 
 The exe and dll files will be in ``LightGBM/`` folder.
 
-**Note**: you may need to run the ``cmake -G "MinGW Makefiles" ..`` one more time if met ``sh.exe was found in your PATH`` error.
+**Note**: You may need to run the ``cmake -G "MinGW Makefiles" ..`` one more time if met ``sh.exe was found in your PATH`` error.
 
 Also you may want to reed `gcc Tips <./gcc-Tips.rst>`__.
 
@@ -161,7 +161,7 @@ From Command Line
 
 The exe and dll files will be in ``LightGBM/Release`` folder.
 
-**Note**: Build MPI version by **MinGW** is not supported due to the miss of MPI library in it.
+**Note**: Building MPI version by **MinGW** is not supported due to the miss of MPI library in it.
 
 Linux
 ^^^^^
@@ -248,7 +248,7 @@ Following procedure is for the MSVC (Microsoft Visual C++) build.
 
 3. Install `Boost Binary`_.
 
-   **Note**: match your Visual C++ version:
+   **Note**: Match your Visual C++ version:
    
    Visual Studio 2015 -> ``msvc-14.0-64.exe``,
 
@@ -269,25 +269,53 @@ Following procedure is for the MSVC (Microsoft Visual C++) build.
 
    **Note**: ``C:\local\boost_1_64_0\`` and ``C:\local\boost_1_64_0\lib64-msvc-14.0`` are locations of your Boost binaries. You also can set them to the environment variable to avoid ``Set ...`` commands when build.
 
-Protobuf Support
-^^^^^^^^^^^^^^^^
-
-If you want to use protobuf to save and load models, install `protobuf c++ version <https://github.com/google/protobuf/blob/master/src/README.md>`__ first.
-
-Then run cmake with USE_PROTO on, for example:
-
-.. code::
-
-  cmake -DUSE_PROTO=ON ..
-
-You can then use ``model_format=proto`` in parameters when save and load models.
-
-**Note**: for windows user, it's only tested with mingw. 
-
 Docker
 ^^^^^^
 
 Refer to `GPU Docker folder <https://github.com/Microsoft/LightGBM/tree/master/docker/gpu>`__.
+
+Build Version with Protobuf Support
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you want to use protobuf to save and load models, you need to install `protobuf C++ version <https://github.com/google/protobuf/blob/master/src/README.md>`__ first.
+
+After that you will be able to use ``model_format=proto`` in `Parameters <./Parameters.rst#io-parameters>`__ for saving and loading models.
+
+Windows
+^^^^^^^
+
+1. Install `Git for Windows`_, `CMake`_ and `MinGW-w64`_.
+
+2. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/Microsoft/LightGBM
+     cd LightGBM
+     mkdir build
+     cd build
+     cmake -G "MinGW Makefiles" -DUSE_PROTO=ON ..
+     mingw32-make.exe -j4
+
+The exe and dll files will be in ``LightGBM/`` folder.
+
+**Note**: You may need to run the ``cmake -G "MinGW Makefiles" ..`` one more time if met ``sh.exe was found in your PATH`` error.
+
+**Note**: Building version with protobuf support by **Visual Studio** is not supported.
+
+Also you may want to reed `gcc Tips <./gcc-Tips.rst>`__.
+
+Linux
+^^^^^
+
+Run the following commands:
+
+.. code::
+
+  git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+  mkdir build ; cd build
+  cmake -DUSE_PROTO=ON ..
+  make -j4
 
 .. _Python-package: https://github.com/Microsoft/LightGBM/tree/master/python-package
 
