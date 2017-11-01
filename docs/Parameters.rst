@@ -96,9 +96,10 @@ Core Parameters
    -  support multi validation data, separate by ``,``
 
 -  ``num_iterations``, default=\ ``100``, type=int,
-   alias=\ ``num_iteration``, ``num_tree``, ``num_trees``, ``num_round``, ``num_rounds``
+   alias=\ ``num_iteration``, ``num_tree``, ``num_trees``, ``num_round``, ``num_rounds``, ``num_boost_round``
 
    -  number of boosting iterations
+
    -  **Note**: for Python/R package, **this parameter is ignored**,
       use ``num_boost_round`` (Python) or ``nrounds`` (R) input arguments of ``train`` and ``cv`` methods instead
 
@@ -114,7 +115,7 @@ Core Parameters
 
    -  number of leaves in one tree
 
--  ``tree_learner``, default=\ ``serial``, type=enum, options=\ ``serial``, ``feature``, ``data``
+-  ``tree_learner``, default=\ ``serial``, type=enum, options=\ ``serial``, ``feature``, ``data``, alias=\ ``tree``
 
    -  ``serial``, single machine tree learner
 
@@ -157,16 +158,16 @@ Learning Control Parameters
 
    -  ``< 0`` means no limit
 
--  ``min_data_in_leaf``, default=\ ``20``, type=int, alias=\ ``min_data_per_leaf`` , ``min_data``
+-  ``min_data_in_leaf``, default=\ ``20``, type=int, alias=\ ``min_data_per_leaf`` , ``min_data``, ``min_child_samples``
 
    -  minimal number of data in one leaf. Can be used to deal with over-fitting
 
 -  ``min_sum_hessian_in_leaf``, default=\ ``1e-3``, type=double,
-   alias=\ ``min_sum_hessian_per_leaf``, ``min_sum_hessian``, ``min_hessian``
+   alias=\ ``min_sum_hessian_per_leaf``, ``min_sum_hessian``, ``min_hessian``, ``min_child_weight``
 
    -  minimal sum hessian in one leaf. Like ``min_data_in_leaf``, it can be used to deal with over-fitting
 
--  ``feature_fraction``, default=\ ``1.0``, type=double, ``0.0 < feature_fraction < 1.0``, alias=\ ``sub_feature``
+-  ``feature_fraction``, default=\ ``1.0``, type=double, ``0.0 < feature_fraction < 1.0``, alias=\ ``sub_feature``, ``colsample_bytree``
 
    -  LightGBM will randomly select part of features on each iteration if ``feature_fraction`` smaller than ``1.0``.
       For example, if set to ``0.8``, will select 80% features before training each tree
@@ -179,7 +180,7 @@ Learning Control Parameters
 
    -  random seed for ``feature_fraction``
 
--  ``bagging_fraction``, default=\ ``1.0``, type=double, ``0.0 < bagging_fraction < 1.0``, alias=\ ``sub_row``
+-  ``bagging_fraction``, default=\ ``1.0``, type=double, ``0.0 < bagging_fraction < 1.0``, alias=\ ``sub_row``, ``subsample``
 
    -  like ``feature_fraction``, but this will randomly select part of data without resampling
 
@@ -189,13 +190,13 @@ Learning Control Parameters
 
    -  **Note**: To enable bagging, ``bagging_freq`` should be set to a non zero value as well
 
--  ``bagging_freq``, default=\ ``0``, type=int
+-  ``bagging_freq``, default=\ ``0``, type=int, alias=\ ``subsample_freq``
 
    -  frequency for bagging, ``0`` means disable bagging. ``k`` means will perform bagging at every ``k`` iteration
 
    -  **Note**: to enable bagging, ``bagging_fraction`` should be set as well
 
--  ``bagging_seed`` , default=\ ``3``, type=int
+-  ``bagging_seed`` , default=\ ``3``, type=int, alias=\ ``bagging_fraction_seed``
 
    -  random seed for bagging
 
@@ -203,15 +204,15 @@ Learning Control Parameters
 
    -  will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds
 
--  ``lambda_l1``, default=\ ``0``, type=double
+-  ``lambda_l1``, default=\ ``0``, type=double, alias=\ ``reg_alpha``
 
    -  L1 regularization
 
--  ``lambda_l2``, default=\ ``0``, type=double
+-  ``lambda_l2``, default=\ ``0``, type=double, alias=\ ``reg_lambda``
 
    -  L2 regularization
 
--  ``min_gain_to_split``, default=\ ``0``, type=double
+-  ``min_split_gain``, default=\ ``0``, type=double, alias=\ ``min_gain_to_split``
 
    -  the minimal gain to perform split
 
@@ -261,9 +262,9 @@ Learning Control Parameters
 
 -  ``cat_smooth``, default=\ ``10``, type=double
 
-   -  use for the categorical features
+   -  used for the categorical features
 
-   - this can reduce the effect of noises in categorical features, especially for categories with few data
+   -  this can reduce the effect of noises in categorical features, especially for categories with few data
 
 -  ``cat_l2``, default=\ ``10``, type=double
 
@@ -271,7 +272,13 @@ Learning Control Parameters
 
 -  ``max_cat_to_onehot``, default=\ ``4``, type=int
 
-   -  When number of categories of one feature smaller than or equal to ``max_cat_to_onehot``, will use one-vs-other split algorithm.
+   -  when number of categories of one feature smaller than or equal to ``max_cat_to_onehot``, one-vs-other split algorithm will be used
+
+-  ``top_k``, default=\ ``20``, type=int, alias=\ ``topk``
+
+   -  used in `Voting parallel <./Parallel-Learning-Guide.rst#choose-appropriate-parallel-algorithm>`__
+
+   -  set this to larger value for more accurate result, but it will slow down the training speed
 
 IO Parameters
 -------------
@@ -311,25 +318,25 @@ IO Parameters
 
 -  ``model_format``, default=\ ``text``, type=string
 
-   -  format to save and load model.
+   -  format to save and load model
 
-   -  ``text``, use text string.
+   -  if ``text``, text string will be used
 
-   -  ``proto``, use protocol buffer binary format.
+   -  if ``proto``, Protocol Buffer binary format will be used
 
-   -  save multiple formats by joining them with comma, like ``text,proto``, in this case, ``model_format`` will be add as suffix after ``output_model``.
+   -  you can save in multiple formats by joining them with comma, like ``text,proto``. In this case, ``model_format`` will be add as suffix after ``output_model``
 
-   -  not support loading with multiple formats.
+   -  **Note**: loading with multiple formats is not supported
 
-   -  Note: you need to cmake with -DUSE_PROTO=ON to use this parameter.
+   -  **Note**: to use this parameter you need to `build version with Protobuf Support <./Installation-Guide.rst#protobuf-support>`__
 
--  ``is_pre_partition``, default=\ ``false``, type=bool
+-  ``pre_partition``, default=\ ``false``, type=bool, alias=\ ``is_pre_partition``
 
    -  used for parallel learning (not include feature parallel)
 
    -  ``true`` if training data are pre-partitioned, and different machines use different partitions
 
--  ``is_sparse``, default=\ ``true``, type=bool, alias=\ ``is_enable_sparse``
+-  ``is_sparse``, default=\ ``true``, type=bool, alias=\ ``is_enable_sparse``, ``enable_sparse``
 
    -  used to enable/disable sparse optimization. Set to ``false`` to disable sparse optimization
 
@@ -429,7 +436,7 @@ IO Parameters
    -  set to ``true`` to estimate `SHAP values`_, which represent how each feature contributs to each prediction.
       Produces number of features + 1 values where the last value is the expected value of the model output over the training data
 
--  ``bin_construct_sample_cnt``, default=\ ``200000``, type=int
+-  ``bin_construct_sample_cnt``, default=\ ``200000``, type=int, alias=\ ``subsample_for_bin``
 
    -  number of data that sampled to construct histogram bins
 
@@ -509,7 +516,7 @@ Objective Parameters
 
    -  adjust initial score to the mean of labels for faster convergence
 
--  ``is_unbalance``, default=\ ``false``, type=bool
+-  ``is_unbalance``, default=\ ``false``, type=bool, alias=\ ``unbalanced_sets``
 
    -  used in ``binary`` classification
    
@@ -572,7 +579,7 @@ Metric Parameters
 
    -  frequency for metric output
 
--  ``is_training_metric``, default=\ ``false``, type=bool
+-  ``train_metric``, default=\ ``false``, type=bool, alias=\ ``training_metric``, ``is_training_metric``
 
    -  set this to ``true`` if you need to output metric result of training
 
@@ -601,7 +608,7 @@ Following parameters are used for parallel learning, and only used for base (soc
 
    -  socket time-out in minutes
 
--  ``machine_list_file``, default=\ ``""``, type=string
+-  ``machine_list_file``, default=\ ``""``, type=string, alias=\ ``mlist``
 
    -  file that lists machines for this parallel learning application
 
