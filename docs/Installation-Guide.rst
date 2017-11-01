@@ -16,7 +16,7 @@ Visual Studio (or MSBuild)
 With GUI
 ********
 
-1. Install `Visual Studio`_.
+1. Install `Visual Studio`_ (2015 or newer).
 
 2. Download `zip archive`_ and unzip it.
 
@@ -31,7 +31,7 @@ The exe file will be in ``LightGBM-master/windows/x64/Release`` folder.
 From Command Line
 *****************
 
-1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (**MSBuild** is not needed if **Visual Studio** is installed).
+1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (**MSBuild** is not needed if **Visual Studio** (2015 or newer) is installed).
 
 2. Run the following commands:
 
@@ -129,7 +129,7 @@ With GUI
 
 1. You need to install `MS MPI`_ first. Both ``msmpisdk.msi`` and ``MSMpiSetup.exe`` are needed.
 
-2. Install `Visual Studio`_.
+2. Install `Visual Studio`_ (2015 or newer).
 
 3. Download `zip archive`_ and unzip it.
 
@@ -146,7 +146,7 @@ From Command Line
 
 1. You need to install `MS MPI`_ first. Both ``msmpisdk.msi`` and ``MSMpiSetup.exe`` are needed.
 
-2. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (MSBuild is not needed if **Visual Studio** is installed).
+2. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (MSBuild is not needed if **Visual Studio** (2015 or newer) is installed).
 
 3. Run the following commands:
 
@@ -236,7 +236,7 @@ If you use **MinGW**, the build procedure are similar to the build in Linux. Ref
 
 Following procedure is for the MSVC (Microsoft Visual C++) build.
 
-1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (MSBuild is not needed if **Visual Studio** is installed).
+1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (MSBuild is not needed if **Visual Studio** (2015 or newer) is installed).
 
 2. Install **OpenCL** for Windows. The installation depends on the brand (NVIDIA, AMD, Intel) of your GPU card.
 
@@ -250,8 +250,6 @@ Following procedure is for the MSVC (Microsoft Visual C++) build.
 
    **Note**: match your Visual C++ version:
    
-   Visual Studio 2013 -> ``msvc-12.0-64.exe``,
-
    Visual Studio 2015 -> ``msvc-14.0-64.exe``,
 
    Visual Studio 2017 -> ``msvc-14.1-64.exe``.
