@@ -58,6 +58,21 @@ Build with MinGW-w64 on Windows
 
 Note: `CMake <https://cmake.org/>`_ and `MinGW-w64 <https://mingw-w64.org/>`_ should be installed first.
 
+Build Version with Protobuf Support
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code:: sh
+
+    pip install lightgbm --install-option=--proto
+
+For Windows users, compilation with MSVC is not supported, use `CMake <https://cmake.org/>`_ and `MinGW-w64 <https://mingw-w64.org/>`_ to compile in this case:
+
+.. code:: sh
+
+    pip install lightgbm --install-option=--proto --install-option=--mingw
+
+Note: Protobuf C++ version is needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-version-with-protobuf-support>`__.
+
 Install from GitHub
 '''''''''''''''''''
 
@@ -77,6 +92,8 @@ Note: ``sudo`` (or administrator rights in Windows) may be needed to perform the
 Run ``python setup.py install --mingw`` if you want to use MinGW-w64 on Windows instead of Visual Studio. `CMake <https://cmake.org/>`_ and `MinGW-w64 <https://mingw-w64.org/>`_ should be installed first.
 
 Run ``python setup.py install --gpu`` to enable GPU support. For Windows users, `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case. Boost and OpenCL are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version>`__.
+
+Run ``python setup.py install --proto`` to enable protobuf support. For Windows users, compilation with MSVC is not supported, use `CMake <https://cmake.org/>`_ and `MinGW-w64 <https://mingw-w64.org/>`_ to compile in this case: ``python setup.py install --proto --mingw``. Protobuf C++ version is needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-version-with-protobuf-support>`__.
 
 If you get any errors during installation or due to any other reason, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then run ``python setup.py install --precompile``.
 
