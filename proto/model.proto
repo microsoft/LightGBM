@@ -31,3 +31,8 @@ message Model {
     }
     repeated Tree trees = 10;
 }
+
+message PythonModel {
+    Model model = 1;
+    string pandas_category = 2; // json format of pandas_category
+}

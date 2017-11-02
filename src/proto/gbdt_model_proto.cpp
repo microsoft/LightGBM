@@ -8,9 +8,7 @@
 
 namespace LightGBM {
 
-void GBDT::SaveModelToProto(int num_iteration, const char* filename) const {
-    LightGBM::Model model;
-
+void GBDT::SaveModelToProto(int num_iteration, LightGBM::Model& model) const {
     model.set_name(SubModelName());
     model.set_num_class(num_class_);
     model.set_num_tree_per_iteration(num_tree_per_iteration_);
@@ -26,14 +24,19 @@ void GBDT::SaveModelToProto(int num_iteration, const char* filename) const {
     for(auto feature_info: feature_infos_) {
         model.add_feature_infos(feature_info);
     }
-  
+    
     int num_used_model = static_cast<int>(models_.size());
     if (num_iteration > 0) {
-      num_used_model = std::min(num_iteration * num_tree_per_iteration_, num_used_model);
+        num_used_model = std::min(num_iteration * num_tree_per_iteration_, num_used_model);
     }
     for (int i = 0; i < num_used_model; ++i) {
         models_[i]->ToProto(*model.add_trees());
     }
+}
+
+void GBDT::SaveModelToProto(int num_iteration, const char* filename) const {
+    LightGBM::Model model;
+    SaveModelToProto(num_iteration, model);
 
     std::filebuf fb;
     fb.open(filename, std::ios::out | std::ios::binary);
@@ -44,21 +47,25 @@ void GBDT::SaveModelToProto(int num_iteration, const char* filename) const {
     fb.close();
 }
 
-bool GBDT::LoadModelFromProto(const char* filename) {
-    models_.clear();
+void GBDT::SaveModelToPythonProto(int num_iteration, const char* filename, const char* pandas_category) const {
     LightGBM::Model model;
-    std::filebuf fb;
-    if (fb.open(filename, std::ios::in | std::ios::binary))
-    {
-        std::istream is(&fb);
-        if (!model.ParseFromIstream(&is)) {
-            Log::Fatal("Cannot parse model from binary file.");
-        }
-        fb.close();
-    } else {
-        Log::Fatal("Cannot open file: %s.", filename);
-    }
+    SaveModelToProto(num_iteration, model);
 
+    LightGBM::PythonModel python_model;
+    python_model.mutable_model()->CopyFrom(model);
+    python_model.set_pandas_category(pandas_category);
+
+    std::filebuf fb;
+    fb.open(filename, std::ios::out | std::ios::binary);
+    std::ostream os(&fb);
+    if (!python_model.SerializeToOstream(&os)) {
+        Log::Fatal("Cannot serialize python model to binary file.");
+    }
+    fb.close();
+}
+
+bool GBDT::LoadModelFromProto(const LightGBM::Model& model) {
+    models_.clear();
     num_class_ = model.num_class();
     num_tree_per_iteration_ = model.num_tree_per_iteration();
     label_idx_ = model.label_index();
@@ -82,8 +89,43 @@ bool GBDT::LoadModelFromProto(const char* filename) {
     num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
     num_init_iteration_ = num_iteration_for_pred_;
     iter_ = 0;
-
     return true;
+}
+
+bool GBDT::LoadModelFromProto(const char* filename) {
+    LightGBM::Model model;
+    std::filebuf fb;
+    if (fb.open(filename, std::ios::in | std::ios::binary))
+    {
+        std::istream is(&fb);
+        if (!model.ParseFromIstream(&is)) {
+            Log::Fatal("Cannot parse model from binary file.");
+        }
+        fb.close();
+    } else {
+        Log::Fatal("Cannot open file: %s.", filename);
+    }
+
+    return LoadModelFromProto(model);
+}
+
+bool GBDT::LoadModelFromPythonProto(const char* filename, std::string* pandas_category) {
+    LightGBM::PythonModel python_model;
+    std::filebuf fb;
+    if (fb.open(filename, std::ios::in | std::ios::binary))
+    {
+        std::istream is(&fb);
+        if (!python_model.ParseFromIstream(&is)) {
+            Log::Fatal("Cannot parse python model from binary file.");
+        }
+        fb.close();
+    } else {
+        Log::Fatal("Cannot open file: %s.", filename);
+    }
+
+    *pandas_category = python_model.pandas_category();
+
+    return LoadModelFromProto(python_model.model());
 }
 
 void Tree::ToProto(LightGBM::Model_Tree& model_tree) const {

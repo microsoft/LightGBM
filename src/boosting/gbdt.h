@@ -245,11 +245,42 @@ public:
   void SaveModelToProto(int num_iteration, const char* filename) const override;
   
   /*!
+  * \brief Save model with protobuf
+  * \param num_iterations Number of model that want to save, -1 means save all
+  * \param model Model that want to save to
+  */
+  void SaveModelToProto(int num_iteration, LightGBM::Model& model) const override;
+  
+  /*!
+  * \brief Save model with protobuf
+  * \param num_iterations Number of model that want to save, -1 means save all
+  * \param filename Filename that want to save to
+  * \param pandas_category json format of pandas category
+  */
+  void SaveModelToPythonProto(int num_iteration, const char* filename, const char* pandas_category) const override;
+  
+
+  /*!
   * \brief Restore from a serialized protobuf file
   * \param filename Filename that want to restore from
   * \return true if succeeded
   */
   bool LoadModelFromProto(const char* filename) override;
+
+  /*!
+  * \brief Restore from a serialized protobuf file
+  * \param model Model that want to restore from
+  * \return true if succeeded
+  */
+  bool LoadModelFromProto(const LightGBM::Model& model) override;
+
+  /*!
+  * \brief Restore from a serialized protobuf file
+  * \param filename Filename that want to restore from
+  * \param pandas_category Json format of pandas category
+  * \return true if succeeded
+  */
+  bool LoadModelFromPythonProto(const char* filename, std::string* pandas_category) override;
   #endif // USE_PROTO
 
   /*!

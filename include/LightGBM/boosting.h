@@ -200,11 +200,41 @@ public:
   virtual void SaveModelToProto(int num_iteration, const char* filename) const = 0;
   
   /*!
+  * \brief Save model with protobuf
+  * \param num_iterations Number of model that want to save, -1 means save all
+  * \param model Model that want to save to
+  */
+  virtual void SaveModelToProto(int num_iteration, LightGBM::Model& model) const = 0;
+  
+  /*!
+  * \brief Save model with protobuf
+  * \param num_iterations Number of model that want to save, -1 means save all
+  * \param filename Filename that want to save to
+  * \param pandas_category json format of pandas category
+  */
+  virtual void SaveModelToPythonProto(int num_iteration, const char* filename, const char* pandas_category) const = 0;
+  
+  /*!
   * \brief Restore from a serialized protobuf file
   * \param filename Filename that want to restore from
   * \return true if succeeded
   */
   virtual bool LoadModelFromProto(const char* filename) = 0;
+
+  /*!
+  * \brief Restore from a serialized protobuf file
+  * \param model Model that want to restore from
+  * \return true if succeeded
+  */
+  virtual bool LoadModelFromProto(const LightGBM::Model& model) = 0;
+
+  /*!
+  * \brief Restore from a serialized protobuf file
+  * \param filename Filename that want to restore from
+  * \param pandas_category Json format of pandas category
+  * \return true if succeeded
+  */
+  virtual bool LoadModelFromPythonProto(const char* filename, std::string* pandas_category) = 0;
   #endif // USE_PROTO
 
   /*!

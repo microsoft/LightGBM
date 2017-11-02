@@ -29,7 +29,7 @@ namespace LightGBM {
 class Booster {
 public:
   explicit Booster(const char* filename) {
-    boosting_.reset(Boosting::CreateBoosting("gbdt", "text", filename));
+    boosting_.reset(Boosting::CreateBoosting("gbdt", "", filename));
   }
 
   Booster(const Dataset* train_data,
@@ -251,6 +251,14 @@ public:
     return boosting_->DumpModel(num_iteration);
   }
 
+  void SaveModelToPythonProto(int num_iteration, const char* filename, const char* pandas_category) {
+    boosting_->SaveModelToPythonProto(num_iteration, filename, pandas_category);
+  }
+
+  void LoadModelFromPythonProto(const char* filename) {
+    boosting_->LoadModelFromPythonProto(filename, &pandas_category_);
+  }
+
   std::vector<double> FeatureImportance(int num_iteration, int importance_type) {
     return boosting_->FeatureImportance(num_iteration, importance_type);
   }
@@ -295,6 +303,9 @@ public:
   }
 
   const Boosting* GetBoosting() const { return boosting_.get(); }
+  
+  /*! \brief save pandas category info temporarily*/
+  std::string pandas_category_;
 
 private:
 
@@ -841,6 +852,31 @@ int LGBM_BoosterLoadModelFromString(
   API_END();
 }
 
+int LGBM_BoosterCreateForPythonProto(
+  const char* filename,
+  int* out_len,
+  int* out_num_iterations,
+  BoosterHandle* out) {
+  API_BEGIN();
+  auto ret = std::unique_ptr<Booster>(new Booster(nullptr));
+  ret->LoadModelFromPythonProto(filename);
+  *out_len = static_cast<int>(ret->pandas_category_.size()) + 1;
+  *out_num_iterations = ret->GetBoosting()->GetCurrentIteration();
+  *out = ret.release();
+  API_END();
+}
+
+int LGBM_BoosterLoadPythonCategory(BoosterHandle handle,
+                                   char* out_str) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  auto& pandas_category = ref_booster->pandas_category_;
+  std::strcpy(out_str, pandas_category.c_str());
+  pandas_category.clear();
+  pandas_category.shrink_to_fit();
+  API_END();
+}
+
 #pragma warning(disable : 4702)
 int LGBM_BoosterFree(BoosterHandle handle) {
   API_BEGIN();
@@ -1150,6 +1186,16 @@ int LGBM_BoosterSaveModelToString(BoosterHandle handle,
   if (*out_len <= buffer_len) {
     std::strcpy(out_str, model.c_str());
   }
+  API_END();
+}
+
+int LGBM_BoosterSavePythonProto(BoosterHandle handle,
+                                int num_iteration,
+                                const char* filename,
+                                const char* pandas_category) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  ref_booster->SaveModelToPythonProto(num_iteration, filename, pandas_category);
   API_END();
 }
 

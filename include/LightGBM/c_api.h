@@ -346,6 +346,31 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterLoadModelFromString(
   BoosterHandle* out);
 
 /*!
+* \brief load python protobuf file
+* \param handle handle
+* \param filename filename of proto
+* \param out_len length of python category
+* \param out_num_iterations number of iterations of this booster
+* \param out handle of created Booster
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_BoosterCreateForPythonProto(
+  const char* filename,
+  int* out_len,
+  int* out_num_iterations,
+  BoosterHandle* out);
+
+/*!
+* \brief load python category
+* \param handle handle
+* \param out_str json format string of pandas category
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_BoosterLoadPythonCategory(
+  BoosterHandle handle,
+  char* out_str);
+
+/*!
 * \brief free obj in handle
 * \param handle handle to be freed
 * \return 0 when succeed, -1 when failure happens
@@ -680,6 +705,18 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(BoosterHandle handle,
                                                     int buffer_len,
                                                     int* out_len,
                                                     char* out_str);
+/*!
+* \brief save model to protobuf python model
+* \param handle handle
+* \param num_iteration, <= 0 means save all
+* \param filename file name
+* \param pandas_category json format of pandas_category
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_BoosterSavePythonProto(BoosterHandle handle,
+                                                  int num_iteration,
+                                                  const char* filename,
+                                                  const char* pandas_category);
 
 /*!
 * \brief dump model to json
