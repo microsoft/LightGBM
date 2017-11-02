@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <map>
 
 namespace LightGBM {
 
@@ -118,8 +119,11 @@ public:
   * \return Prediction result
   */
   inline double Predict(const double* feature_values) const;
+  inline double PredictByMap(const std::unordered_map<int, double>& feature_values) const;
 
   inline int PredictLeafIndex(const double* feature_values) const;
+  inline int PredictLeafIndexByMap(const std::unordered_map<int, double>& feature_values) const;
+
 
   inline void PredictContrib(const double* feature_values, int num_features, double* output);
 
@@ -307,6 +311,7 @@ private:
   * \return Leaf index
   */
   inline int GetLeaf(const double* feature_values) const;
+  inline int GetLeafByMap(const std::unordered_map<int, double>& feature_values) const;
 
   /*! \brief Serialize one node to json*/
   std::string NodeToJSON(int index) const;
@@ -440,9 +445,27 @@ inline double Tree::Predict(const double* feature_values) const {
   }
 }
 
+inline double Tree::PredictByMap(const std::unordered_map<int, double>& feature_values) const {
+  if (num_leaves_ > 1) {
+    int leaf = GetLeafByMap(feature_values);
+    return LeafOutput(leaf);
+  } else {
+    return leaf_value_[0];
+  }
+}
+
 inline int Tree::PredictLeafIndex(const double* feature_values) const {
   if (num_leaves_ > 1) {
     int leaf = GetLeaf(feature_values);
+    return leaf;
+  } else {
+    return 0;
+  }
+}
+
+inline int Tree::PredictLeafIndexByMap(const std::unordered_map<int, double>& feature_values) const {
+  if (num_leaves_ > 1) {
+    int leaf = GetLeafByMap(feature_values);
     return leaf;
   } else {
     return 0;
@@ -483,6 +506,25 @@ inline int Tree::GetLeaf(const double* feature_values) const {
   }
   return ~node;
 }
+
+inline int Tree::GetLeafByMap(const std::unordered_map<int, double>& feature_values) const {
+  int node = 0;
+  if (num_cat_ > 0) {
+    while (node >= 0) {
+      node = Decision(feature_values.count(split_feature_[node]) > 0 ? feature_values[split_feature_[node]] : 0.0f, node);
+    }
+  } else {
+    while (node >= 0) {
+      if(feature_values.count(split_feature_[node]) > 0) {
+        node = NumericalDecision(feature_values[split_feature_[node]], node);
+      } else {
+        node = threshold_[node] >= 0 ? left_child_[node] : right_child_[node];
+      }
+    }
+  }
+  return ~node;
+}
+
 
 }  // namespace LightGBM
 
