@@ -38,6 +38,17 @@ For Mac OS X users, you need to specify compilers by runnig ``export CXX=g++-7 C
 
 For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed. If you get any errors during installation, you may need to install `CMake <https://cmake.org/>`_ (version 3.8 or higher).
 
+Build MPI Version
+~~~~~~~~~~~~~~~~~
+
+.. code:: sh
+
+    pip install lightgbm --install-option=--mpi
+
+For Windows users, compilation with MinGW-w64 is not supported and `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case.
+
+Note: MPI libraries are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-mpi-version>`__.
+
 Build GPU Version
 ~~~~~~~~~~~~~~~~~
 
@@ -88,6 +99,8 @@ For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/dow
     python setup.py install
 
 Note: ``sudo`` (or administrator rights in Windows) may be needed to perform the command.
+
+Run ``python setup.py install --mpi`` to enable MPI support. For Windows users, compilation with MinGW-w64 is not supported and `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case. MPI libraries are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-mpi-version>`__.
 
 Run ``python setup.py install --mingw`` if you want to use MinGW-w64 on Windows instead of Visual Studio. `CMake <https://cmake.org/>`_ and `MinGW-w64 <https://mingw-w64.org/>`_ should be installed first.
 

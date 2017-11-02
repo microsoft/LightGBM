@@ -76,7 +76,7 @@ def silent_call(cmd, raise_error=False, error_msg=''):
         return 1
 
 
-def compile_cpp(use_mingw=False, use_gpu=False, use_proto=False):
+def compile_cpp(use_mingw=False, use_gpu=False, use_proto=False, use_mpi=False):
 
     if os.path.exists("build_cpp"):
         shutil.rmtree("build_cpp")
@@ -90,8 +90,12 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_proto=False):
         cmake_cmd.append("-DUSE_GPU=ON")
     if use_proto:
         cmake_cmd.append("-DUSE_PROTO=ON")
+    if use_mpi:
+        cmake_cmd.append("-DUSE_MPI=ON")
     if os.name == "nt":
         if use_mingw:
+            if use_mpi:
+                raise Exception('MPI version cannot be compiled by MinGW due to the miss of MPI library in it')
             logger.info("Starting to compile with CMake and MinGW.")
             silent_call(cmake_cmd + ["-G", "MinGW Makefiles"], raise_error=True,
                         error_msg='Please install CMake first')
@@ -151,10 +155,11 @@ class CustomInstallLib(install_lib):
 class CustomInstall(install):
 
     user_options = install.user_options + [
-        ('mingw', 'm', 'compile with mingw'),
-        ('gpu', 'g', 'compile gpu version'),
-        ('proto', None, 'compile version with protobuf support'),
-        ('precompile', 'p', 'use precompiled library')
+        ('mingw', 'm', 'Compile with MinGW'),
+        ('gpu', 'g', 'Compile GPU version'),
+        ('proto', None, 'Compile version with protobuf support'),
+        ('mpi', None, 'Compile MPI version'),
+        ('precompile', 'p', 'Use precompiled library')
     ]
 
     def initialize_options(self):
@@ -162,12 +167,13 @@ class CustomInstall(install):
         self.mingw = 0
         self.gpu = 0
         self.proto = 0
+        self.mpi = 0
         self.precompile = 0
 
     def run(self):
         if not self.precompile:
             copy_files(use_gpu=self.gpu, use_proto=self.proto)
-            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_proto=self.proto)
+            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_proto=self.proto, use_mpi=self.mpi)
         install.run(self)
 
 
