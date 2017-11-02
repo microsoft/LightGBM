@@ -303,8 +303,6 @@ The exe and dll files will be in ``LightGBM/`` folder.
 
 **Note**: Building version with protobuf support by **Visual Studio** is not supported.
 
-Also you may want to reed `gcc Tips <./gcc-Tips.rst>`__.
-
 Linux
 ^^^^^
 
