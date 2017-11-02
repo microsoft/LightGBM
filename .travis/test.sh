@@ -66,7 +66,6 @@ fi
 
 if [[ ${TASK} == "proto" ]]; then
     conda install numpy scipy scikit-learn
-    source activate test-env
     mkdir build && cd build && cmake .. && make lightgbm || exit -1
     cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=train.conf && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
     cd $TRAVIS_BUILD_DIR && git clone https://github.com/google/protobuf && cd protobuf && ./autogen.sh && ./configure && make && sudo make install && sudo ldconfig
