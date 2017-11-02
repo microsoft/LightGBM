@@ -65,7 +65,7 @@ if [[ ${TASK} == "if-else" ]]; then
 fi
 
 if [[ ${TASK} == "proto" ]]; then
-    conda install numpy
+    conda install numpy scipy scikit-learn
     source activate test-env
     mkdir build && cd build && cmake .. && make lightgbm || exit -1
     cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=train.conf && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
@@ -74,7 +74,7 @@ if [[ ${TASK} == "proto" ]]; then
     cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=train.conf model_format=proto && ../../lightgbm config=predict.conf output_result=proto.pred model_format=proto || exit -1
     cd $TRAVIS_BUILD_DIR/tests/cpp_test && python test.py || exit -1
     cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
-    cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz --install-option=--proto -v || exit -1
+    cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v --install-option=--proto || exit -1
     exit 0
 fi
 
@@ -114,7 +114,7 @@ mkdir build && cd build
 
 if [[ ${TASK} == "mpi" ]]; then
     cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
-    cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz --install-option=--mpi -v || exit -1
+    cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v --install-option=--mpi || exit -1
     cd $TRAVIS_BUILD_DIR/build
     cmake -DUSE_MPI=ON ..
 elif [[ ${TASK} == "gpu" ]]; then
