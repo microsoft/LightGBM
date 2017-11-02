@@ -19,6 +19,8 @@ if [[ $TRAVIS_OS_NAME == "osx" ]]; then
     export CC=gcc-7
 fi
 
+LGB_VER=$(head -n 1 VERSION.txt)
+
 conda create -q -n test-env python=$PYTHON_VERSION
 source activate test-env
 
@@ -71,19 +73,19 @@ if [[ ${TASK} == "proto" ]]; then
     cd $TRAVIS_BUILD_DIR/build && rm -rf * && cmake -DUSE_PROTO=ON .. && make lightgbm || exit -1
     cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=train.conf model_format=proto && ../../lightgbm config=predict.conf output_result=proto.pred model_format=proto || exit -1
     cd $TRAVIS_BUILD_DIR/tests/cpp_test && python test.py || exit -1
+    cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
+    cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz --install-option=--proto -v || exit -1
     exit 0
 fi
 
 conda install numpy nose scipy scikit-learn pandas matplotlib pytest
 
 if [[ ${TASK} == "sdist" ]]; then
-    LGB_VER=$(head -n 1 VERSION.txt)
     cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
     cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v || exit -1
     cd $TRAVIS_BUILD_DIR && pytest tests/python_package_test || exit -1
     exit 0
 elif [[ ${TASK} == "bdist" ]]; then
-    LGB_VER=$(head -n 1 VERSION.txt)
     if [[ $TRAVIS_OS_NAME == "osx" ]]; then
         cd $TRAVIS_BUILD_DIR/python-package && python setup.py bdist_wheel --plat-name=macosx --universal || exit -1
         mv dist/lightgbm-${LGB_VER}-py2.py3-none-macosx.whl dist/lightgbm-${LGB_VER}-py2.py3-none-macosx_10_9_x86_64.macosx_10_10_x86_64.macosx_10_11_x86_64.macosx_10_12_x86_64.whl
@@ -100,7 +102,6 @@ if [[ ${TASK} == "gpu" ]]; then
     if [[ ${METHOD} == "pip" ]]; then
         export PATH="$AMDAPPSDK/include/:$PATH"
         export BOOST_ROOT="$HOME/miniconda/envs/test-env/"
-        LGB_VER=$(head -n 1 VERSION.txt)
         sed -i 's/const std::string kDefaultDevice = "cpu";/const std::string kDefaultDevice = "gpu";/' ../include/LightGBM/config.h
         cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
         cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu || exit -1
@@ -112,6 +113,9 @@ fi
 mkdir build && cd build
 
 if [[ ${TASK} == "mpi" ]]; then
+    cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
+    cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz --install-option=--mpi -v || exit -1
+    cd $TRAVIS_BUILD_DIR/build
     cmake -DUSE_MPI=ON ..
 elif [[ ${TASK} == "gpu" ]]; then
     cmake -DUSE_GPU=ON -DBOOST_ROOT="$HOME/miniconda/envs/test-env/" -DOpenCL_INCLUDE_DIR=$AMDAPPSDK/include/ ..
