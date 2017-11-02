@@ -1233,7 +1233,8 @@ class Dataset(object):
 
 class Booster(object):
     """Booster in LightGBM."""
-    def __init__(self, params=None, train_set=None, model_file=None, silent=False):
+    def __init__(self, params=None, train_set=None, model_file=None, 
+                 model_format="text", silent=False):
         """Initialize the Booster.
 
         Parameters
@@ -1244,6 +1245,8 @@ class Booster(object):
             Training dataset.
         model_file : string or None, optional (default=None)
             Path to the model file.
+        model_format : string, optional (default="text")
+            Format of model file: text or proto.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
         """
@@ -1307,19 +1310,39 @@ class Booster(object):
                                  listen_time_out=params.get("listen_time_out", 120),
                                  num_machines=params.get("num_machines", num_machines))
         elif model_file is not None:
-            """Prediction task"""
-            out_num_iterations = ctypes.c_int(0)
-            self.handle = ctypes.c_void_p()
-            _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
-                c_str(model_file),
-                ctypes.byref(out_num_iterations),
-                ctypes.byref(self.handle)))
-            out_num_class = ctypes.c_int(0)
-            _safe_call(_LIB.LGBM_BoosterGetNumClasses(
-                self.handle,
-                ctypes.byref(out_num_class)))
-            self.__num_class = out_num_class.value
-            self.pandas_categorical = _load_pandas_categorical(model_file)
+            if model_format == 'text':
+                out_num_iterations = ctypes.c_int(0)
+                self.handle = ctypes.c_void_p()
+                _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
+                    c_str(model_file),
+                    ctypes.byref(out_num_iterations),
+                    ctypes.byref(self.handle)))
+                out_num_class = ctypes.c_int(0)
+                _safe_call(_LIB.LGBM_BoosterGetNumClasses(
+                    self.handle,
+                    ctypes.byref(out_num_class)))
+                self.__num_class = out_num_class.value
+                self.pandas_categorical = _load_pandas_categorical(model_file)
+            elif model_format == 'proto':
+                out_num_iterations = ctypes.c_int(0)
+                out_len = ctypes.c_int(0)
+                self.handle = ctypes.c_void_p()
+                _safe_call(_LIB.LGBM_BoosterCreateForPythonProto(
+                    c_str(model_file),
+                    ctypes.byref(out_len),
+                    ctypes.byref(out_num_iterations),
+                    ctypes.byref(self.handle)))
+                out_num_class = ctypes.c_int(0)
+                _safe_call(_LIB.LGBM_BoosterGetNumClasses(
+                    self.handle,
+                    ctypes.byref(out_num_class)))
+                self.__num_class = out_num_class.value
+                string_buffer = ctypes.create_string_buffer(out_len.value)
+                ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+                _safe_call(_LIB.LGBM_BoosterLoadPythonCategory(
+                    self.handle,
+                    ptr_string_buffer))
+                self.pandas_categorical = json.loads(string_buffer.value.decode())
         elif 'model_str' in params:
             self._load_model_from_string(params['model_str'])
         else:
@@ -1623,6 +1646,25 @@ class Booster(object):
             ctypes.c_int(num_iteration),
             c_str(filename)))
         _save_pandas_categorical(filename, self.pandas_categorical)
+
+    def save_proto(self, filename, num_iteration=-1):
+        """Save Booster with protobuf format.
+
+        Parameters
+        ----------
+        filename : string
+            Filename to save Booster.
+        num_iteration: int, optional (default=-1)
+            Index of the iteration that should to saved.
+            If <0, the best iteration (if exists) is saved.
+        """
+        if num_iteration <= 0:
+            num_iteration = self.best_iteration
+        _safe_call(_LIB.LGBM_BoosterSavePythonProto(
+            self.handle,
+            ctypes.c_int(num_iteration),
+            c_str(filename),
+            c_str(json.dumps(self.pandas_categorical, default=json_default_with_numpy))))
 
     def _load_model_from_string(self, model_str):
         """[Private] Load model from string"""

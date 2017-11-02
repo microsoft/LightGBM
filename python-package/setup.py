@@ -28,7 +28,7 @@ def find_lib():
     return LIB_PATH
 
 
-def copy_files(use_gpu=False):
+def copy_files(use_gpu=False, use_proto=False):
 
     def copy_files_helper(folder_name):
         src = os.path.join('..', folder_name)
@@ -48,6 +48,8 @@ def copy_files(use_gpu=False):
         distutils.file_util.copy_file("../windows/LightGBM.vcxproj", "./compile/windows/LightGBM.vcxproj")
         if use_gpu:
             copy_files_helper('compute')
+        if use_proto:
+            copy_files_helper('proto')
         distutils.file_util.copy_file("../CMakeLists.txt", "./compile/")
         distutils.file_util.copy_file("../LICENSE", "./")
 
@@ -74,7 +76,7 @@ def silent_call(cmd, raise_error=False, error_msg=''):
         return 1
 
 
-def compile_cpp(use_mingw=False, use_gpu=False):
+def compile_cpp(use_mingw=False, use_gpu=False, use_proto=False):
 
     if os.path.exists("build_cpp"):
         shutil.rmtree("build_cpp")
@@ -86,6 +88,8 @@ def compile_cpp(use_mingw=False, use_gpu=False):
     cmake_cmd = ["cmake", "../compile/"]
     if use_gpu:
         cmake_cmd.append("-DUSE_GPU=ON")
+    if use_proto:
+        cmake_cmd.append("-DUSE_PROTO=ON")
     if os.name == "nt":
         if use_mingw:
             logger.info("Starting to compile with CMake and MinGW.")
@@ -93,6 +97,8 @@ def compile_cpp(use_mingw=False, use_gpu=False):
                         error_msg='Please install CMake first')
             silent_call(["mingw32-make.exe", "_lightgbm"], raise_error=True,
                         error_msg='Please install MinGW first')
+        elif use_proto:
+            raise Exception("Cannot use proto with MSVC.")
         else:
             status = 1
             lib_path = "../compile/windows/x64/DLL/lib_lightgbm.dll"
@@ -147,7 +153,8 @@ class CustomInstall(install):
     user_options = install.user_options + [
         ('mingw', 'm', 'compile with mingw'),
         ('gpu', 'g', 'compile gpu version'),
-        ('precompile', 'p', 'use precompiled library')
+        ('precompile', 'p', 'use precompiled library'),
+        ('proto', None, 'use protobuf to save and load model')
     ]
 
     def initialize_options(self):
@@ -155,11 +162,12 @@ class CustomInstall(install):
         self.mingw = 0
         self.gpu = 0
         self.precompile = 0
+        self.proto = 0
 
     def run(self):
         if not self.precompile:
-            copy_files(use_gpu=self.gpu)
-            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu)
+            copy_files(use_gpu=self.gpu, use_proto=self.proto)
+            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_proto=self.proto)
         install.run(self)
 
 
