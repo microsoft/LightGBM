@@ -153,7 +153,7 @@ class CustomInstall(install):
     user_options = install.user_options + [
         ('mingw', 'm', 'compile with mingw'),
         ('gpu', 'g', 'compile gpu version'),
-		('proto', None, 'compile version with protobuf support'),
+        ('proto', None, 'compile version with protobuf support'),
         ('precompile', 'p', 'use precompiled library')
     ]
 
