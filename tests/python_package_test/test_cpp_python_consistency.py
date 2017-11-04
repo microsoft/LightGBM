@@ -38,11 +38,12 @@ class FileLoader(object):
     def load_cpp_result(self, result_file='LightGBM_predict_result.txt'):
         return np.loadtxt(os.path.join(self.directory, result_file))
 
-    def train_predict_check(self, lgb_train, X_test, X_test_fn):
+    def train_predict_check(self, lgb_train, X_test, X_test_fn, sk_pred):
         gbm = lgb.train(self.params, lgb_train)
         y_pred = gbm.predict(X_test)
         cpp_pred = gbm.predict(X_test_fn)
         np.testing.assert_array_almost_equal(y_pred, cpp_pred, decimal=5)
+        np.testing.assert_array_almost_equal(y_pred, sk_pred, decimal=5)
 
 
 class TestEngine(unittest.TestCase):
@@ -53,14 +54,20 @@ class TestEngine(unittest.TestCase):
         X_test, _, X_test_fn = fd.load_dataset('.test')
         weight_train = fd.load_field('.train.weight')
         lgb_train = lgb.Dataset(X_train, y_train, params=fd.params, weight=weight_train)
-        fd.train_predict_check(lgb_train, X_test, X_test_fn)
+        gbm = lgb.LGBMClassifier(**fd.params)
+        gbm.fit(X_train, y_train, sample_weight=weight_train)
+        sk_pred = gbm.predict_proba(X_test)[:, 1]
+        fd.train_predict_check(lgb_train, X_test, X_test_fn, sk_pred)
 
     def test_multiclass(self):
         fd = FileLoader('../../examples/multiclass_classification', 'multiclass')
         X_train, y_train, _ = fd.load_dataset('.train')
         X_test, _, X_test_fn = fd.load_dataset('.test')
         lgb_train = lgb.Dataset(X_train, y_train)
-        fd.train_predict_check(lgb_train, X_test, X_test_fn)
+        gbm = lgb.LGBMClassifier(**fd.params)
+        gbm.fit(X_train, y_train)
+        sk_pred = gbm.predict_proba(X_test)
+        fd.train_predict_check(lgb_train, X_test, X_test_fn, sk_pred)
 
     def test_regression(self):
         fd = FileLoader('../../examples/regression', 'regression')
@@ -68,7 +75,10 @@ class TestEngine(unittest.TestCase):
         X_test, _, X_test_fn = fd.load_dataset('.test')
         init_score_train = fd.load_field('.train.init')
         lgb_train = lgb.Dataset(X_train, y_train, init_score=init_score_train)
-        fd.train_predict_check(lgb_train, X_test, X_test_fn)
+        gbm = lgb.LGBMRegressor(**fd.params)
+        gbm.fit(X_train, y_train, init_score=init_score_train)
+        sk_pred = gbm.predict(X_test)
+        fd.train_predict_check(lgb_train, X_test, X_test_fn, sk_pred)
 
     def test_lambdarank(self):
         fd = FileLoader('../../examples/lambdarank', 'rank')
@@ -76,4 +86,7 @@ class TestEngine(unittest.TestCase):
         X_test, _, X_test_fn = fd.load_dataset('.test', is_sparse=True)
         group_train = fd.load_field('.train.query')
         lgb_train = lgb.Dataset(X_train, y_train, group=group_train)
-        fd.train_predict_check(lgb_train, X_test, X_test_fn)
+        gbm = lgb.LGBMRanker(**fd.params)
+        gbm.fit(X_train, y_train, group=group_train)
+        sk_pred = gbm.predict(X_test)
+        fd.train_predict_check(lgb_train, X_test, X_test_fn, sk_pred)

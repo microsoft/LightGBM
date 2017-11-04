@@ -137,13 +137,13 @@ def _eval_function_wrapper(func):
 class LGBMModel(_LGBMModelBase):
     """Implementation of the scikit-learn API for LightGBM."""
 
-    def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
-                 learning_rate=0.1, n_estimators=10, max_bin=255,
-                 subsample_for_bin=50000, objective=None,
-                 min_split_gain=0., min_child_weight=5, min_child_samples=10,
-                 subsample=1., subsample_freq=1, colsample_bytree=1.,
-                 reg_alpha=0., reg_lambda=0., random_state=0,
-                 n_jobs=-1, silent=True, **kwargs):
+    def __init__(self, boosting_type="gbdt", num_leaves=None, max_depth=None,
+                 learning_rate=None, n_estimators=None, max_bin=None,
+                 subsample_for_bin=None, objective=None,
+                 min_split_gain=None, min_child_weight=None, min_child_samples=None,
+                 subsample=None, subsample_freq=None, colsample_bytree=None,
+                 reg_alpha=None, reg_lambda=None, random_state=None,
+                 n_jobs=None, silent=True, **kwargs):
         """Construct a gradient boosting model.
 
         Parameters
@@ -283,7 +283,7 @@ class LGBMModel(_LGBMModelBase):
         if 'nthread' in params:
             warnings.warn('The `nthread` parameter is deprecated and will be removed in next version. '
                           'Please use `n_jobs` instead.', LGBMDeprecationWarning)
-        return params
+        return {key: value for key, value in params.items() if value is not None}
 
     # minor change to support `**kwargs`
     def set_params(self, **params):
@@ -391,9 +391,6 @@ class LGBMModel(_LGBMModelBase):
             self._fobj = None
         evals_result = {}
         params = self.get_params()
-        # sklearn interface has another naming convention
-        params.setdefault('seed', params.pop('random_state'))
-        params.setdefault('nthread', params.pop('n_jobs'))
         # user can set verbose with kwargs, it has higher priority
         if 'verbose' not in params and self.silent:
             params['verbose'] = -1
