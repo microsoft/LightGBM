@@ -566,7 +566,7 @@ class Dataset(object):
         data : string, numpy array or scipy.sparse
             Data source of Dataset.
             If string, it represents the path to txt file.
-        label : list or numpy 1-D array, optional (default=None)
+        label : list, numpy 1-D array or None, optional (default=None)
             Label of the data.
         max_bin : int or None, optional (default=None)
             Max number of discrete bins for features.
