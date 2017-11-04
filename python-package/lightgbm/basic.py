@@ -577,7 +577,7 @@ class Dataset(object):
         group : list, numpy 1-D array or None, optional (default=None)
             Group/query size for Dataset.
         init_score : list, numpy 1-D array or None, optional (default=None)
-            Init_score for Dataset.
+            Init score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
         feature_name : list of strings or 'auto', optional (default="auto")
@@ -855,7 +855,7 @@ class Dataset(object):
         group : list, numpy 1-D array or None, optional (default=None)
             Group/query size for Dataset.
         init_score : list, numpy 1-D array or None, optional (default=None)
-            Init_score for Dataset.
+            Init score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
         params: dict or None, optional (default=None)
