@@ -328,7 +328,7 @@ IO Parameters
 
    -  **Note**: loading with multiple formats is not supported
 
-   -  **Note**: to use ``proto`` you need to `build version with protobuf support <./Installation-Guide.rst#build-version-with-protobuf-support>`__
+   -  **Note**: to use this parameter you need to `build version with Protobuf Support <./Installation-Guide.rst#protobuf-support>`__
 
 -  ``pre_partition``, default=\ ``false``, type=bool, alias=\ ``is_pre_partition``
 

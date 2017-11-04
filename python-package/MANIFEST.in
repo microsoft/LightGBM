@@ -6,7 +6,6 @@ recursive-include compile *.txt *.so
 recursive-include compile/Release *.dll
 recursive-include compile/compute *
 recursive-include compile/include *
-recursive-include compile/proto *
 recursive-include compile/src *
 recursive-include compile/windows LightGBM.sln LightGBM.vcxproj LightGBM.vcxproj.filters
 recursive-include compile/windows/x64/DLL *.dll
