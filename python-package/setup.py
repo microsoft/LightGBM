@@ -98,7 +98,7 @@ def compile_cpp(use_mingw=False, use_gpu=False):
             lib_path = "../compile/windows/x64/DLL/lib_lightgbm.dll"
             if not use_gpu:
                 logger.info("Starting to compile with MSBuild from existing solution file.")
-                platform_toolsets = ("v141", "v140", "v120")
+                platform_toolsets = ("v141", "v140")
                 for pt in platform_toolsets:
                     status = silent_call(["MSBuild", "../compile/windows/LightGBM.sln",
                                           "/p:Configuration=DLL",
@@ -111,7 +111,7 @@ def compile_cpp(use_mingw=False, use_gpu=False):
                 if status != 0 or not os.path.exists(lib_path):
                     logger.warning("Compilation with MSBuild from existing solution file failed.")
             if status != 0 or not os.path.exists(lib_path):
-                vs_versions = ("Visual Studio 15 2017 Win64", "Visual Studio 14 2015 Win64", "Visual Studio 12 2013 Win64")
+                vs_versions = ("Visual Studio 15 2017 Win64", "Visual Studio 14 2015 Win64")
                 for vs in vs_versions:
                     logger.info("Starting to compile with %s." % vs)
                     status = silent_call(cmake_cmd + ["-G", vs])

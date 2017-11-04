@@ -57,7 +57,7 @@ if (!use_precompile) {
     } else {
       try_vs <- 0
       local_vs_def <- ""
-      vs_versions <- c("Visual Studio 15 2017 Win64", "Visual Studio 14 2015 Win64", "Visual Studio 12 2013 Win64")
+      vs_versions <- c("Visual Studio 15 2017 Win64", "Visual Studio 14 2015 Win64")
       for(vs in vs_versions){
         vs_def <- paste0(" -G \"", vs, "\"")
         tmp_cmake_cmd <- paste0(cmake_cmd, vs_def)

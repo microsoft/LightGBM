@@ -27,14 +27,17 @@ libpath = os.path.join(curr_path, '../python-package/')
 sys.path.insert(0, libpath)
 
 # -- mock out modules
-from unittest.mock import Mock
-MOCK_MODULES = [
-    'numpy', 'scipy', 'scipy.sparse',
-    'sklearn', 'matplotlib', 'pandas', 'graphviz',
-    'lightgbm.compat.LGBMDeprecated'
+try:
+    from unittest.mock import Mock  # Python 3.x
+except ImportError:
+    from mock import Mock  # Python 2.x
+
+MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse',
+                'sklearn', 'matplotlib', 'pandas', 'graphviz',
 ]
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
+
 
 # -- General configuration ------------------------------------------------
 
@@ -124,57 +127,6 @@ html_static_path = ['_static']
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'LightGBMdoc'
-
-
-# -- Options for LaTeX output ---------------------------------------------
-
-latex_elements = {
-    # The paper size ('letterpaper' or 'a4paper').
-    #
-    # 'papersize': 'letterpaper',
-
-    # The font size ('10pt', '11pt' or '12pt').
-    #
-    # 'pointsize': '10pt',
-
-    # Additional stuff for the LaTeX preamble.
-    #
-    # 'preamble': '',
-
-    # Latex figure (float) alignment
-    #
-    # 'figure_align': 'htbp',
-}
-
-# Grouping the document tree into LaTeX files. List of tuples
-# (source start file, target name, title,
-#  author, documentclass [howto, manual, or own class]).
-# latex_documents = [
-#    (master_doc, 'LightGBM.tex', 'LightGBM Documentation',
-#     'Microsoft Corporation', 'manual'),
-# ]
-
-
-# -- Options for manual page output ---------------------------------------
-
-# One entry per manual page. List of tuples
-# (source start file, name, description, authors, manual section).
-# man_pages = [
-#     (master_doc, 'lightgbm', 'LightGBM Documentation',
-#      [author], 1)
-# ]
-
-
-# -- Options for Texinfo output -------------------------------------------
-
-# Grouping the document tree into Texinfo files. List of tuples
-# (source start file, target name, title, author,
-#  dir menu entry, description, category)
-# texinfo_documents = [
-#     (master_doc, 'LightGBM', 'LightGBM Documentation',
-#      author, 'LightGBM', 'One line description of project.',
-#      'Miscellaneous'),
-# ]
 
 
 def setup(app):

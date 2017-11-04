@@ -115,7 +115,7 @@ Some important parameters:
   - support multi validation data, separate by ``,``
 
 - ``num_iterations``, default=\ ``100``, type=int,
-  alias=\ ``num_iteration``, ``num_tree``, ``num_trees``, ``num_round``, ``num_rounds``
+  alias=\ ``num_iteration``, ``num_tree``, ``num_trees``, ``num_round``, ``num_rounds``, ``num_boost_round``
 
   - number of boosting iterations/trees
 
@@ -127,7 +127,7 @@ Some important parameters:
 
   - number of leaves in one tree
 
-- ``tree_learner``, default=\ ``serial``, type=enum, options=\ ``serial``, ``feature``, ``data``
+- ``tree_learner``, default=\ ``serial``, type=enum, options=\ ``serial``, ``feature``, ``data``, alias=\ ``tree``
 
   - ``serial``, single machine tree learner
 
@@ -154,12 +154,12 @@ Some important parameters:
 
   - ``< 0`` means no limit
 
-- ``min_data_in_leaf``, default=\ ``20``, type=int, alias=\ ``min_data_per_leaf`` , ``min_data``
+- ``min_data_in_leaf``, default=\ ``20``, type=int, alias=\ ``min_data_per_leaf`` , ``min_data``, ``min_child_samples``
 
   - minimal number of data in one leaf. Can use this to deal with over-fitting
 
 - ``min_sum_hessian_in_leaf``, default=\ ``1e-3``, type=double,
-  alias=\ ``min_sum_hessian_per_leaf``, ``min_sum_hessian``, ``min_hessian``
+  alias=\ ``min_sum_hessian_per_leaf``, ``min_sum_hessian``, ``min_hessian``, ``min_child_weight``
 
   - minimal sum hessian in one leaf. Like ``min_data_in_leaf``, can be used to deal with over-fitting
 

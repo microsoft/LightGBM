@@ -75,8 +75,8 @@ if(WIN32 AND MINGW)
 endif()
 
 if(MSVC)
-    if(MSVC_VERSION LESS 1800)
-        message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a newer msvc.")
+    if(MSVC_VERSION LESS 1900)
+        message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a newer MSVC.")
     endif()
 
     SET(variables

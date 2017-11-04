@@ -12,7 +12,7 @@ except ImportError:
     _IS_PANDAS_INSTALLED = False
 
 from .basic import Dataset, LightGBMError
-from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase, LGBMDeprecated,
+from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckConsistentLength,
                      _LGBMCheckClassificationTargets, argc_, range_)
@@ -137,13 +137,13 @@ def _eval_function_wrapper(func):
 class LGBMModel(_LGBMModelBase):
     """Implementation of the scikit-learn API for LightGBM."""
 
-    def __init__(self, boosting_type="gbdt", num_leaves=None, max_depth=None,
-                 learning_rate=None, n_estimators=None, max_bin=None,
-                 subsample_for_bin=None, objective=None,
-                 min_split_gain=None, min_child_weight=None, min_child_samples=None,
-                 subsample=None, subsample_freq=None, colsample_bytree=None,
-                 reg_alpha=None, reg_lambda=None, random_state=None,
-                 n_jobs=None, silent=True, **kwargs):
+    def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
+                 learning_rate=0.1, n_estimators=10, max_bin=255,
+                 subsample_for_bin=200000, objective=None,
+                 min_split_gain=0., min_child_weight=1e-3, min_child_samples=20,
+                 subsample=1., subsample_freq=1, colsample_bytree=1.,
+                 reg_alpha=0., reg_lambda=0., random_state=0,
+                 n_jobs=-1, silent=True, **kwargs):
         """Construct a gradient boosting model.
 
         Parameters
@@ -171,9 +171,9 @@ class LGBMModel(_LGBMModelBase):
             default: 'binary' for LGBMClassifier, 'lambdarank' for LGBMRanker.
         min_split_gain : float, optional (default=0.)
             Minimum loss reduction required to make a further partition on a leaf node of the tree.
-        min_child_weight : int, optional (default=5)
+        min_child_weight : float, optional (default=1e-3)
             Minimum sum of instance weight(hessian) needed in a child(leaf).
-        min_child_samples : int, optional (default=10)
+        min_child_samples : int, optional (default=20)
             Minimum number of data need in a child(leaf).
         subsample : float, optional (default=1.)
             Subsample ratio of the training instance.
@@ -579,12 +579,14 @@ class LGBMModel(_LGBMModelBase):
             raise LGBMNotFittedError('No feature_importances found. Need to call fit beforehand.')
         return self.booster_.feature_importance()
 
-    @LGBMDeprecated('Use attribute booster_ instead.')
     def booster(self):
+        warnings.warn('The `booster()` method is deprecated and will be removed in next version. '
+                      'Please use attribute `booster_` instead.', LGBMDeprecationWarning)
         return self.booster_
 
-    @LGBMDeprecated('Use attribute feature_importances_ instead.')
     def feature_importance(self):
+        warnings.warn('The `feature_importance()` method is deprecated and will be removed in next version. '
+                      'Please use attribute `feature_importances_` instead.', LGBMDeprecationWarning)
         return self.feature_importances_
 
 

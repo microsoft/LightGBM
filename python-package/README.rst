@@ -17,7 +17,7 @@ Note: 32-bit Python is not supported. Please install 64-bit version.
 
 Install from `PyPI <https://pypi.python.org/pypi/lightgbm>`_ Using ``pip``
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-For Windows users, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if Visual Studio (2013, 2015 or 2017) is not installed.
+For Windows users, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if Visual Studio (2015 or 2017) is not installed.
 
 Install `wheel <http://pythonwheels.com>`_ via ``pip install wheel`` first. After that download the wheel file and install from it:
 
