@@ -95,13 +95,13 @@ def train(params, train_set, num_boost_round=100,
     """create predictor first"""
     for alias in ["num_boost_round", "num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds"]:
         if alias in params:
-            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             num_boost_round = int(params.pop(alias))
+            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             break
     for alias in ["early_stopping_round", "early_stopping_rounds", "early_stopping"]:
-        if alias in params:
-            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+        if alias in params and params[alias] is not None:
             early_stopping_rounds = int(params.pop(alias))
+            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             break
 
     if isinstance(init_model, string_type):

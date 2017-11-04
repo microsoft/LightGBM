@@ -283,7 +283,7 @@ class LGBMModel(_LGBMModelBase):
         if 'nthread' in params:
             warnings.warn('The `nthread` parameter is deprecated and will be removed in next version. '
                           'Please use `n_jobs` instead.', LGBMDeprecationWarning)
-        return {key: value for key, value in params.items() if value is not None}
+        return params
 
     # minor change to support `**kwargs`
     def set_params(self, **params):
@@ -391,6 +391,9 @@ class LGBMModel(_LGBMModelBase):
             self._fobj = None
         evals_result = {}
         params = self.get_params()
+        # sklearn interface has another naming convention
+        params.setdefault('seed', params.pop('random_state'))
+        params.setdefault('nthread', params.pop('n_jobs'))
         # user can set verbose with kwargs, it has higher priority
         if 'verbose' not in params and self.silent:
             params['verbose'] = -1

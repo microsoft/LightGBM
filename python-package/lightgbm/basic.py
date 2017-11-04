@@ -568,7 +568,7 @@ class Dataset(object):
             If string, it represents the path to txt file.
         label : list or numpy 1-D array, optional (default=None)
             Label of the data.
-        max_bin : int, optional (default=None)
+        max_bin : int or None, optional (default=None)
             Max number of discrete bins for features.
         reference : Dataset or None, optional (default=None)
             If this is Dataset for validation, training data should be used as reference.
