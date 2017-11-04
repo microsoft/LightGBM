@@ -131,7 +131,7 @@ def param_dict_to_str(data):
             pairs.append(str(key) + '=' + ','.join(map(str, val)))
         elif isinstance(val, string_type) or isinstance(val, numeric_types) or is_numeric(val):
             pairs.append(str(key) + '=' + str(val))
-        else:
+        elif val is not None:
             raise TypeError('Unknown type of parameter:%s, got:%s'
                             % (key, type(val).__name__))
     return ' '.join(pairs)

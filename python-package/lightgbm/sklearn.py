@@ -142,7 +142,7 @@ class LGBMModel(_LGBMModelBase):
                  subsample_for_bin=200000, objective=None,
                  min_split_gain=0., min_child_weight=1e-3, min_child_samples=20,
                  subsample=1., subsample_freq=1, colsample_bytree=1.,
-                 reg_alpha=0., reg_lambda=0., random_state=0,
+                 reg_alpha=0., reg_lambda=0., random_state=None,
                  n_jobs=-1, silent=True, **kwargs):
         """Construct a gradient boosting model.
 
@@ -185,8 +185,9 @@ class LGBMModel(_LGBMModelBase):
             L1 regularization term on weights.
         reg_lambda : float, optional (default=0.)
             L2 regularization term on weights.
-        random_state : int, optional (default=0)
+        random_state : int or None, optional (default=None)
             Random number seed.
+            Will use default seeds in c++ code if set to None.
         n_jobs : int, optional (default=-1)
             Number of parallel threads.
         silent : bool, optional (default=True)
