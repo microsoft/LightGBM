@@ -14,7 +14,7 @@ class FileLoader(object):
         directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), directory)
         self.directory = directory
         self.prefix = prefix
-        self.params = {}
+        self.params = {'gpu_use_dp': True}
         with open(os.path.join(directory, config_file), 'r') as f:
             for line in f.readlines():
                 line = line.strip()
