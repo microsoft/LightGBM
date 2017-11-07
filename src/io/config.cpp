@@ -332,6 +332,7 @@ void MetricConfig::Set(const std::unordered_map<std::string, std::string>& param
   GetDouble(params, "huber_delta", &huber_delta);
   GetDouble(params, "fair_c", &fair_c);
   GetInt(params, "num_class", &num_class);
+  GetDouble(params, "quantile_alpha", &quantile_alpha);
   std::string tmp_str = "";
   if (GetString(params, "label_gain", &tmp_str)) {
     label_gain = Common::StringToArray<double>(tmp_str, ',');

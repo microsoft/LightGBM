@@ -190,6 +190,7 @@ public:
   double sigmoid = 1.0f;
   double huber_delta = 1.0f;
   double fair_c = 1.0f;
+  double quantile_alpha = 0.9f;
   std::vector<double> label_gain;
   std::vector<int> eval_at;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
@@ -474,7 +475,9 @@ struct ParameterAlias {
       "max_conflict_rate", "poisson_max_delta_step", "gaussian_eta",
       "histogram_pool_size", "output_freq", "is_provide_training_metric", "machine_list_filename", "machines",
       "zero_as_missing", "init_score_file", "valid_init_score_file", "is_predict_contrib",
-      "max_cat_threshold",  "cat_smooth", "min_data_per_group", "cat_l2", "max_cat_to_onehot"
+      "max_cat_threshold",  "cat_smooth", "min_data_per_group", "cat_l2", "max_cat_to_onehot",
+      "quantile_alpha"
+
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
