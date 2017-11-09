@@ -312,6 +312,7 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
   GetInt(params, "num_class", &num_class);
   CHECK(num_class >= 1);
   GetDouble(params, "scale_pos_weight", &scale_pos_weight);
+  GetDouble(params, "quantile_alpha", &quantile_alpha);
   std::string tmp_str = "";
   if (GetString(params, "label_gain", &tmp_str)) {
     label_gain = Common::StringToArray<double>(tmp_str, ',');

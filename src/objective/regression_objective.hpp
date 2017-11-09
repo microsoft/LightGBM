@@ -65,7 +65,7 @@ public:
 
   bool BoostFromAverage() const override { return true; }
 
-private:
+protected:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
@@ -143,6 +143,72 @@ private:
   const float* weights_;
   /*! \brief a parameter to control the width of Gaussian function to approximate hessian */
   double eta_;
+};
+
+/*!
+* \brief L1 regression loss
+*/
+class RegressionSqrtL1loss : public ObjectiveFunction {
+public:
+  explicit RegressionSqrtL1loss(const ObjectiveConfig&) {
+  }
+
+  explicit RegressionSqrtL1loss(const std::vector<std::string>&) {
+
+  }
+
+  ~RegressionSqrtL1loss() {}
+
+  void Init(const Metadata& metadata, data_size_t num_data) override {
+    num_data_ = num_data;
+    label_.resize(num_data_);
+    auto ori_label = metadata.label();
+    for (data_size_t i = 0; i < num_data; ++i) {
+      label_[i] = std::copysign(std::sqrt(std::fabs(ori_label[i])), ori_label[i]);
+    }
+    weights_ = metadata.weights();
+  }
+
+  void GetGradients(const double* score, score_t* gradients,
+                    score_t* hessians) const override {
+    if (weights_ == nullptr) {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        gradients[i] = static_cast<score_t>(score[i] - label_[i]);
+        hessians[i] = 1.0f;
+      }
+    } else {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        gradients[i] = static_cast<score_t>(score[i] - label_[i]) * weights_[i];
+        hessians[i] = weights_[i];
+      }
+    }
+  }
+
+  const char* GetName() const override {
+    return "sqrt_l1";
+  }
+
+  void ConvertOutput(const double* input, double* output) const override {
+    output[0] = std::copysign(input[0] * input[0], input[0]);
+  }
+
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName();
+    return str_buf.str();
+  }
+
+  bool BoostFromAverage() const override { return false; }
+
+protected:
+  /*! \brief Number of data */
+  data_size_t num_data_;
+  /*! \brief Pointer of label */
+  std::vector<float> label_;
+  /*! \brief Pointer of weights */
+  const float* weights_;
 };
 
 /*!
@@ -401,6 +467,106 @@ private:
   const float* weights_;
   /*! \brief used to safeguard optimization */
   double max_delta_step_;
+};
+
+class RegressionQuantileloss : public RegressionL2loss {
+public:
+  explicit RegressionQuantileloss(const ObjectiveConfig& config): RegressionL2loss(config) {
+    alpha_ = static_cast<score_t>(config.quantile_alpha);
+  }
+
+  explicit RegressionQuantileloss(const std::vector<std::string>& str): RegressionL2loss(str) {
+
+  }
+
+  ~RegressionQuantileloss() {}
+
+  void GetGradients(const double* score, score_t* gradients,
+                    score_t* hessians) const override {
+    if (weights_ == nullptr) {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        score_t delta = static_cast<score_t>(score[i] - label_[i]);
+        if (delta > 0) {
+          gradients[i] = (1.0f - alpha_);
+          hessians[i] = 1.0f;
+        } else {
+          gradients[i] = -alpha_;
+          hessians[i] = 1.0f;
+        }
+
+      }
+    } else {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        score_t delta = static_cast<score_t>(score[i] - label_[i]);
+        if (delta > 0) {
+          gradients[i] = (1.0f - alpha_) * weights_[i];
+          hessians[i] = weights_[i];
+        } else {
+          gradients[i] = -alpha_ * weights_[i];
+          hessians[i] = weights_[i];
+        }
+      }
+    }
+  }
+
+  const char* GetName() const override {
+    return "quantile";
+  }
+
+private:
+  score_t alpha_;
+};
+
+class RegressionSqrtQuantileloss : public RegressionSqrtL1loss {
+public:
+  explicit RegressionSqrtQuantileloss(const ObjectiveConfig& config) : RegressionSqrtL1loss(config) {
+    alpha_ = static_cast<score_t>(config.quantile_alpha);
+  }
+
+  explicit RegressionSqrtQuantileloss(const std::vector<std::string>& str) : RegressionSqrtL1loss(str) {
+
+  }
+
+  ~RegressionSqrtQuantileloss() {}
+
+  void GetGradients(const double* score, score_t* gradients,
+                    score_t* hessians) const override {
+    if (weights_ == nullptr) {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        score_t delta = static_cast<score_t>(score[i] - label_[i]);
+        if (delta > 0) {
+          gradients[i] = (1.0f - alpha_) * delta;
+          hessians[i] = (1.0f - alpha_);
+        } else {
+          gradients[i] = alpha_ * delta;
+          hessians[i] = alpha_;
+        }
+
+      }
+    } else {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        score_t delta = static_cast<score_t>(score[i] - label_[i]);
+        if (delta > 0) {
+          gradients[i] = (1.0f - alpha_) * delta * weights_[i];
+          hessians[i] = (1.0f - alpha_) * weights_[i];
+        } else {
+          gradients[i] = alpha_ * delta * weights_[i];
+          hessians[i] = alpha_ * weights_[i];
+        }
+      }
+    }
+  }
+
+  const char* GetName() const override {
+    return "sqrt_quantile";
+  }
+
+private:
+  score_t alpha_;
 };
 
 }  // namespace LightGBM
