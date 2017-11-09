@@ -46,6 +46,10 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new RegressionL2loss(strs);
   } else if (type == std::string("regression_l1")) {
     return new RegressionL1loss(strs);
+  } else if (type == std::string("quantile")) {
+    return new RegressionQuantileloss(strs);
+  } else if (type == std::string("quantile_l2")) {
+    return new RegressionQuantileL2loss(strs);
   } else if (type == std::string("huber")) {
     return new RegressionHuberLoss(strs);
   } else if (type == std::string("fair")) {

@@ -381,7 +381,7 @@ public:
     alpha_ = static_cast<score_t>(config.quantile_alpha);
   }
 
-  explicit RegressionQuantileloss(const std::vector<std::string>& str): RegressionL2loss(str) {
+  explicit RegressionQuantileloss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
 
   }
 
@@ -393,26 +393,23 @@ public:
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         score_t delta = static_cast<score_t>(score[i] - label_[i]);
-        if (delta > 0) {
+        if (delta >= 0) {
           gradients[i] = (1.0f - alpha_);
-          hessians[i] = 1.0f;
         } else {
           gradients[i] = -alpha_;
-          hessians[i] = 1.0f;
         }
-
+        hessians[i] = 1.0f;
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         score_t delta = static_cast<score_t>(score[i] - label_[i]);
-        if (delta > 0) {
+        if (delta >= 0) {
           gradients[i] = (1.0f - alpha_) * weights_[i];
-          hessians[i] = weights_[i];
         } else {
           gradients[i] = -alpha_ * weights_[i];
-          hessians[i] = weights_[i];
         }
+        hessians[i] = weights_[i];
       }
     }
   }
@@ -431,7 +428,7 @@ public:
     alpha_ = static_cast<score_t>(config.quantile_alpha);
   }
 
-  explicit RegressionQuantileL2loss(const std::vector<std::string>& str) : RegressionL2loss(str) {
+  explicit RegressionQuantileL2loss(const std::vector<std::string>& strs) : RegressionL2loss(strs) {
 
   }
 
