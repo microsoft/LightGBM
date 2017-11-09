@@ -15,7 +15,7 @@ import scipy.sparse
 
 from .compat import (DataFrame, Series, integer_types, json,
                      json_default_with_numpy, numeric_types, range_,
-                     string_type)
+                     string_type, LGBMDeprecationWarning)
 from .libpath import find_lib_path
 
 
@@ -570,6 +570,7 @@ class Dataset(object):
             Label of the data.
         max_bin : int or None, optional (default=None)
             Max number of discrete bins for features.
+            If None, default value from parameters of CLI-version will be used.
         reference : Dataset or None, optional (default=None)
             If this is Dataset for validation, training data should be used as reference.
         weight : list, numpy 1-D array or None, optional (default=None)
@@ -638,6 +639,8 @@ class Dataset(object):
         self.predictor = predictor
         if self.max_bin is not None:
             params["max_bin"] = self.max_bin
+            warnings.warn('The `max_bin` parameter is deprecated and will be removed in next version. '
+                          'Please use `params` to pass this parameter.', LGBMDeprecationWarning)
         if "verbosity" in params:
             params.setdefault("verbose", params.pop("verbosity"))
         if silent:

@@ -96,3 +96,8 @@ except ImportError:
     _LGBMCheckArray = None
     _LGBMCheckConsistentLength = None
     _LGBMCheckClassificationTargets = None
+
+
+# DeprecationWarning is not shown by default, so let's create our own with higher level
+class LGBMDeprecationWarning(UserWarning):
+    pass

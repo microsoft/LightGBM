@@ -15,13 +15,8 @@ from .basic import Dataset, LightGBMError
 from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckConsistentLength,
-                     _LGBMCheckClassificationTargets, argc_, range_)
+                     _LGBMCheckClassificationTargets, argc_, range_, LGBMDeprecationWarning)
 from .engine import train
-
-
-# DeprecationWarning is not shown by default, so let's create our own with higher level
-class LGBMDeprecationWarning(UserWarning):
-    pass
 
 
 def _objective_function_wrapper(func):
@@ -162,7 +157,7 @@ class LGBMModel(_LGBMModelBase):
         n_estimators : int, optional (default=10)
             Number of boosted trees to fit.
         max_bin : int, optional (default=255)
-            Number of bucketed bin for feature values.
+            Number of bucketed bins for feature values.
         subsample_for_bin : int, optional (default=50000)
             Number of samples for constructing bins.
         objective : string, callable or None, optional (default=None)
