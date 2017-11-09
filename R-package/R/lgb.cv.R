@@ -236,7 +236,7 @@ lgb.cv <- function(params = list(),
   if (!is.list(folds[[1]])) {
     bst_folds <- lapply(seq_along(folds), function(k) {
       dtest <- slice(data, folds[[k]])
-      dtrain <- slice(data, unlist(folds[-k]))
+      dtrain <- slice(data, seq_len(nrow(data))[-folds[[k]]])
       setinfo(dtrain, "weight", getinfo(data, "weight")[-folds[[k]]])
       setinfo(dtrain, "init_score", getinfo(data, "init_score")[-folds[[k]]])
       setinfo(dtest, "weight", getinfo(data, "weight")[folds[[k]]])
