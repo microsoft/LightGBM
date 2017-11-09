@@ -2,6 +2,7 @@
 #define LIGHTGBM_PREDICTOR_HPP_
 
 #define MAX_FEATURE 100
+#define SPARSITY 100
 
 #include <LightGBM/meta.h>
 #include <LightGBM/boosting.h>
@@ -63,7 +64,7 @@ public:
     if (is_predict_leaf_index) {
       predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
         int tid = omp_get_thread_num();
-        if(num_feature_ > MAX_FEATURE && num_feature_/static_cast<int>(features.size()) > 10) {
+        if(num_feature_ > MAX_FEATURE && num_feature_/static_cast<int>(features.size()) > SPARSITY) {
           CopyToPredictMap(tid, features);
           boosting_->PredictLeafIndexByMap(predict_buf_map_[tid], output);
           ClearPredictMap(tid);
@@ -86,7 +87,7 @@ public:
       if (is_raw_score) {
         predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
           int tid = omp_get_thread_num();
-          if(num_feature_ > MAX_FEATURE && num_feature_/static_cast<int>(features.size()) > 10) {
+          if(num_feature_ > MAX_FEATURE && num_feature_/static_cast<int>(features.size()) > SPARSITY) {
             CopyToPredictMap(tid, features);
             boosting_->PredictRawByMap(predict_buf_map_[tid], output, &early_stop_);
             ClearPredictMap(tid);
@@ -99,7 +100,7 @@ public:
       } else {
         predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
           int tid = omp_get_thread_num();
-          if(num_feature_ > MAX_FEATURE && num_feature_/static_cast<int>(features.size()) > 10) {
+          if(num_feature_ > MAX_FEATURE && num_feature_/static_cast<int>(features.size()) > SPARSITY) {
             CopyToPredictMap(tid, features);
             boosting_->PredictByMap(predict_buf_map_[tid], output, &early_stop_);
             ClearPredictMap(tid);

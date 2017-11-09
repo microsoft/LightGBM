@@ -26,7 +26,7 @@ void GBDT::PredictRaw(const double* features, double* output, const PredictionEa
   }
 }
 
-void GBDT::PredictRawByMap(const unordered_map<int, double>& features, double* output, const PredictionEarlyStopInstance* early_stop) const {
+void GBDT::PredictRawByMap(const std::unordered_map<int, double>& features, double* output, const PredictionEarlyStopInstance* early_stop) const {
   int early_stop_round_counter = 0;
   // set zero
   std::memset(output, 0, sizeof(double) * num_tree_per_iteration_);
