@@ -7,16 +7,23 @@
 #include <LightGBM/utils/common.h>
 
 namespace LightGBM {
+
 /*!
 * \brief Objective function for regression
 */
 class RegressionL2loss: public ObjectiveFunction {
 public:
-  explicit RegressionL2loss(const ObjectiveConfig&) {
+  explicit RegressionL2loss(const ObjectiveConfig& config) {
+    sqrt_ = config.reg_sqrt;
   }
 
-  explicit RegressionL2loss(const std::vector<std::string>&) {
-
+  explicit RegressionL2loss(const std::vector<std::string>& strs) {
+    sqrt_ = false;
+    for (auto str : strs) {
+      if (str == std::string("sqrt")) {
+        sqrt_ = true;
+      }
+    }
   }
 
   ~RegressionL2loss() {
@@ -25,6 +32,13 @@ public:
   void Init(const Metadata& metadata, data_size_t num_data) override {
     num_data_ = num_data;
     label_ = metadata.label();
+    if (sqrt_) {
+      trans_label_.resize(num_data_);
+      for (data_size_t i = 0; i < num_data; ++i) {
+        trans_label_[i] = std::copysign(std::sqrt(std::fabs(label_[i])), label_[i]);
+      }
+      label_ = trans_label_.data();
+    }
     weights_ = metadata.weights();
   }
 
@@ -49,9 +63,20 @@ public:
     return "regression";
   }
 
+  void ConvertOutput(const double* input, double* output) const override {
+    if (sqrt_) {
+      output[0] = std::copysign(input[0] * input[0], input[0]);
+    } else {
+      output[0] = input[0];
+    }
+  }
+
   std::string ToString() const override {
     std::stringstream str_buf;
     str_buf << GetName();
+    if (sqrt_) {
+      str_buf << " sqrt";
+    }
     return str_buf.str();
   }
 
@@ -63,37 +88,39 @@ public:
     }
   }
 
-  bool BoostFromAverage() const override { return true; }
+  bool BoostFromAverage() const override { 
+    if (sqrt_) {
+      return false;
+    } else {
+      return true;
+    }
+  }
 
 protected:
+  bool sqrt_;
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
   const float* label_;
   /*! \brief Pointer of weights */
   const float* weights_;
+  std::vector<float> trans_label_;
 };
 
 /*!
 * \brief L1 regression loss
 */
-class RegressionL1loss: public ObjectiveFunction {
+class RegressionL1loss: public RegressionL2loss {
 public:
-  explicit RegressionL1loss(const ObjectiveConfig& config) {
+  explicit RegressionL1loss(const ObjectiveConfig& config): RegressionL2loss(config) {
     eta_ = static_cast<double>(config.gaussian_eta);
   }
 
-  explicit RegressionL1loss(const std::vector<std::string>&) {
+  explicit RegressionL1loss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
 
   }
 
   ~RegressionL1loss() {}
-
-  void Init(const Metadata& metadata, data_size_t num_data) override {
-    num_data_ = num_data;
-    label_ = metadata.label();
-    weights_ = metadata.weights();
-  }
 
   void GetGradients(const double* score, score_t* gradients,
                     score_t* hessians) const override {
@@ -126,112 +153,29 @@ public:
     return "regression_l1";
   }
 
-  std::string ToString() const override {
-    std::stringstream str_buf;
-    str_buf << GetName();
-    return str_buf.str();
+  bool IsConstantHessian() const override {
+    return false;
   }
-
-  bool BoostFromAverage() const override { return true; }
 
 private:
-  /*! \brief Number of data */
-  data_size_t num_data_;
-  /*! \brief Pointer of label */
-  const float* label_;
-  /*! \brief Pointer of weights */
-  const float* weights_;
-  /*! \brief a parameter to control the width of Gaussian function to approximate hessian */
   double eta_;
-};
-
-/*!
-* \brief L1 regression loss
-*/
-class RegressionSqrtL1loss : public ObjectiveFunction {
-public:
-  explicit RegressionSqrtL1loss(const ObjectiveConfig&) {
-  }
-
-  explicit RegressionSqrtL1loss(const std::vector<std::string>&) {
-
-  }
-
-  ~RegressionSqrtL1loss() {}
-
-  void Init(const Metadata& metadata, data_size_t num_data) override {
-    num_data_ = num_data;
-    label_.resize(num_data_);
-    auto ori_label = metadata.label();
-    for (data_size_t i = 0; i < num_data; ++i) {
-      label_[i] = std::copysign(std::sqrt(std::fabs(ori_label[i])), ori_label[i]);
-    }
-    weights_ = metadata.weights();
-  }
-
-  void GetGradients(const double* score, score_t* gradients,
-                    score_t* hessians) const override {
-    if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static)
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        gradients[i] = static_cast<score_t>(score[i] - label_[i]);
-        hessians[i] = 1.0f;
-      }
-    } else {
-      #pragma omp parallel for schedule(static)
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        gradients[i] = static_cast<score_t>(score[i] - label_[i]) * weights_[i];
-        hessians[i] = weights_[i];
-      }
-    }
-  }
-
-  const char* GetName() const override {
-    return "sqrt_l1";
-  }
-
-  void ConvertOutput(const double* input, double* output) const override {
-    output[0] = std::copysign(input[0] * input[0], input[0]);
-  }
-
-  std::string ToString() const override {
-    std::stringstream str_buf;
-    str_buf << GetName();
-    return str_buf.str();
-  }
-
-  bool BoostFromAverage() const override { return false; }
-
-protected:
-  /*! \brief Number of data */
-  data_size_t num_data_;
-  /*! \brief Pointer of label */
-  std::vector<float> label_;
-  /*! \brief Pointer of weights */
-  const float* weights_;
 };
 
 /*!
 * \brief Huber regression loss
 */
-class RegressionHuberLoss: public ObjectiveFunction {
+class RegressionHuberLoss: public RegressionL2loss {
 public:
-  explicit RegressionHuberLoss(const ObjectiveConfig& config) {
+  explicit RegressionHuberLoss(const ObjectiveConfig& config): RegressionL2loss(config) {
     delta_ = static_cast<double>(config.huber_delta);
     eta_ = static_cast<double>(config.gaussian_eta);
   }
 
-  explicit RegressionHuberLoss(const std::vector<std::string>&) {
+  explicit RegressionHuberLoss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
 
   }
 
   ~RegressionHuberLoss() {
-  }
-
-  void Init(const Metadata& metadata, data_size_t num_data) override {
-    num_data_ = num_data;
-    label_ = metadata.label();
-    weights_ = metadata.weights();
   }
 
   void GetGradients(const double* score, score_t* gradients,
@@ -277,21 +221,11 @@ public:
     return "huber";
   }
 
-  std::string ToString() const override {
-    std::stringstream str_buf;
-    str_buf << GetName();
-    return str_buf.str();
+  bool IsConstantHessian() const override {
+    return false;
   }
 
-  bool BoostFromAverage() const override { return true; }
-
 private:
-  /*! \brief Number of data */
-  data_size_t num_data_;
-  /*! \brief Pointer of label */
-  const float* label_;
-  /*! \brief Pointer of weights */
-  const float* weights_;
   /*! \brief delta for Huber loss */
   double delta_;
   /*! \brief a parameter to control the width of Gaussian function to approximate hessian */
@@ -300,23 +234,17 @@ private:
 
 
 // http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
-class RegressionFairLoss: public ObjectiveFunction {
+class RegressionFairLoss: public RegressionL2loss {
 public:
-  explicit RegressionFairLoss(const ObjectiveConfig& config) {
+  explicit RegressionFairLoss(const ObjectiveConfig& config): RegressionL2loss(config) {
     c_ = static_cast<double>(config.fair_c);
   }
 
-  explicit RegressionFairLoss(const std::vector<std::string>&) {
+  explicit RegressionFairLoss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
 
   }
 
   ~RegressionFairLoss() {}
-
-  void Init(const Metadata& metadata, data_size_t num_data) override {
-    num_data_ = num_data;
-    label_ = metadata.label();
-    weights_ = metadata.weights();
-  }
 
   void GetGradients(const double* score, score_t* gradients,
                     score_t* hessians) const override {
@@ -341,21 +269,11 @@ public:
     return "fair";
   }
 
-  std::string ToString() const override {
-    std::stringstream str_buf;
-    str_buf << GetName();
-    return str_buf.str();
+  bool IsConstantHessian() const override {
+    return false;
   }
 
-  bool BoostFromAverage() const override { return true; }
-
 private:
-  /*! \brief Number of data */
-  data_size_t num_data_;
-  /*! \brief Pointer of label */
-  const float* label_;
-  /*! \brief Pointer of weights */
-  const float* weights_;
   /*! \brief c for Fair loss */
   double c_;
 };
@@ -364,23 +282,20 @@ private:
 /*!
 * \brief Objective function for Poisson regression
 */
-class RegressionPoissonLoss: public ObjectiveFunction {
+class RegressionPoissonLoss: public RegressionL2loss {
 public:
-  explicit RegressionPoissonLoss(const ObjectiveConfig& config) {
+  explicit RegressionPoissonLoss(const ObjectiveConfig& config): RegressionL2loss(config) {
     max_delta_step_ = static_cast<double>(config.poisson_max_delta_step);
   }
 
-  explicit RegressionPoissonLoss(const std::vector<std::string>&) {
+  explicit RegressionPoissonLoss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
 
   }
 
   ~RegressionPoissonLoss() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
-    num_data_ = num_data;
-    label_ = metadata.label();
-    weights_ = metadata.weights();
-
+    RegressionL2loss::Init(metadata, num_data);
     // Safety check of labels
     float miny;
     double sumy;
@@ -422,20 +337,13 @@ public:
   }
 
   void ConvertOutput(const double* input, double* output) const override {
+    RegressionL2loss::ConvertOutput(input, output);
     output[0] = std::exp(input[0]);
   }
 
   const char* GetName() const override {
     return "poisson";
   }
-
-  std::string ToString() const override {
-    std::stringstream str_buf;
-    str_buf << GetName();
-    return str_buf.str();
-  }
-
-  bool BoostFromAverage() const override { return true; }
 
   bool GetCustomAverage(double *initscore) const override {
     if (initscore == nullptr) return false;
@@ -458,13 +366,11 @@ public:
     return true;
   }
 
+  bool IsConstantHessian() const override {
+    return false;
+  }
+
 private:
-  /*! \brief Number of data */
-  data_size_t num_data_;
-  /*! \brief Pointer of label */
-  const float* label_;
-  /*! \brief Pointer of weights */
-  const float* weights_;
   /*! \brief used to safeguard optimization */
   double max_delta_step_;
 };
@@ -519,17 +425,17 @@ private:
   score_t alpha_;
 };
 
-class RegressionSqrtQuantileloss : public RegressionSqrtL1loss {
+class RegressionQuantileL2loss : public RegressionL2loss {
 public:
-  explicit RegressionSqrtQuantileloss(const ObjectiveConfig& config) : RegressionSqrtL1loss(config) {
+  explicit RegressionQuantileL2loss(const ObjectiveConfig& config) : RegressionL2loss(config) {
     alpha_ = static_cast<score_t>(config.quantile_alpha);
   }
 
-  explicit RegressionSqrtQuantileloss(const std::vector<std::string>& str) : RegressionSqrtL1loss(str) {
+  explicit RegressionQuantileL2loss(const std::vector<std::string>& str) : RegressionL2loss(str) {
 
   }
 
-  ~RegressionSqrtQuantileloss() {}
+  ~RegressionQuantileL2loss() {}
 
   void GetGradients(const double* score, score_t* gradients,
                     score_t* hessians) const override {
@@ -561,8 +467,12 @@ public:
     }
   }
 
+  bool IsConstantHessian() const override {
+    return false;
+  }
+
   const char* GetName() const override {
-    return "sqrt_quantile";
+    return "quantile_l2";
   }
 
 private:

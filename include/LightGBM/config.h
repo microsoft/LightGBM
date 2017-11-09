@@ -179,6 +179,8 @@ public:
   int num_class = 1;
   // Balancing of positive and negative weights
   double scale_pos_weight = 1.0f;
+  // True will sqrt fit the sqrt(label)
+  bool reg_sqrt = false;
   double quantile_alpha = 0.9f;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
@@ -477,8 +479,7 @@ struct ParameterAlias {
       "histogram_pool_size", "output_freq", "is_provide_training_metric", "machine_list_filename", "machines",
       "zero_as_missing", "init_score_file", "valid_init_score_file", "is_predict_contrib",
       "max_cat_threshold",  "cat_smooth", "min_data_per_group", "cat_l2", "max_cat_to_onehot",
-      "quantile_alpha"
-
+      "quantile_alpha", "reg_sqrt"
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
