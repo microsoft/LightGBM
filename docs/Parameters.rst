@@ -65,7 +65,7 @@ Core Parameters
 
 	  -  ``quantile``, `Quantile Regression`_
 
-	  -  ``quantile_l2``, `Like the ``quantile``, but use l2 loss instead. `_
+	  -  ``quantile_l2``, `Like the ``quantile``, but use l2 loss instead
 
    -  ``binary``, binary classification application
 
