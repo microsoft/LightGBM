@@ -1,7 +1,7 @@
 #ifndef LIGHTGBM_PREDICTOR_HPP_
 #define LIGHTGBM_PREDICTOR_HPP_
 
-#define MAX_FEATURE 100
+#define MAX_FEATURE 10000
 #define SPARSITY 100
 
 #include <LightGBM/meta.h>

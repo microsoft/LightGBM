@@ -515,11 +515,7 @@ inline int Tree::GetLeafByMap(const std::unordered_map<int, double>& feature_val
     }
   } else {
     while (node >= 0) {
-      if(feature_values.count(split_feature_[node]) > 0) {
-        node = NumericalDecision(feature_values.at(split_feature_[node]), node);
-      } else {
-        node = threshold_[node] >= 0 ? left_child_[node] : right_child_[node];
-      }
+      node = NumericalDecision(feature_values.count(split_feature_[node]) > 0 ? feature_values.at(split_feature_[node]) : 0.0f, node);
     }
   }
   return ~node;
