@@ -427,7 +427,7 @@ class LGBMModel(_LGBMModelBase):
             if isinstance(eval_set, tuple):
                 eval_set = [eval_set]
             for i, valid_data in enumerate(eval_set):
-                """reduce cost for prediction training data"""
+                # reduce cost for prediction training data
                 if valid_data[0] is X and valid_data[1] is y:
                     valid_set = train_set
                 else:

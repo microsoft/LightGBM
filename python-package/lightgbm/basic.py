@@ -633,7 +633,7 @@ class Dataset(object):
         data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data, feature_name, categorical_feature, self.pandas_categorical)
         label = _label_from_pandas(label)
         self.data_has_header = False
-        """process for args"""
+        # process for args
         params = {} if params is None else params
         self.max_bin = max_bin
         self.predictor = predictor
@@ -647,7 +647,7 @@ class Dataset(object):
             params["verbose"] = 0
         elif "verbose" not in params:
             params["verbose"] = 1
-        """get categorical features"""
+        # get categorical features
         if categorical_feature is not None:
             categorical_indices = set()
             feature_dict = {}
@@ -669,15 +669,15 @@ class Dataset(object):
                 params['categorical_column'] = sorted(categorical_indices)
 
         params_str = param_dict_to_str(params)
-        """process for reference dataset"""
+        # process for reference dataset
         ref_dataset = None
         if isinstance(reference, Dataset):
             ref_dataset = reference.construct().handle
         elif reference is not None:
             raise TypeError('Reference dataset should be None or dataset instance')
-        """start construct data"""
+        # start construct data
         if isinstance(data, string_type):
-            """check data has header or not"""
+            # check data has header or not
             if str(params.get("has_header", "")).lower() == "true" \
                     or str(params.get("header", "")).lower() == "true":
                 self.data_has_header = True
@@ -742,7 +742,7 @@ class Dataset(object):
         if mat.dtype == np.float32 or mat.dtype == np.float64:
             data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
         else:
-            """change non-float data to float data, need to copy"""
+            # change non-float data to float data, need to copy
             data = np.array(mat.reshape(mat.size), dtype=np.float32)
 
         ptr_data, type_ptr_data = c_float_array(data)
@@ -815,12 +815,12 @@ class Dataset(object):
         if self.handle is None:
             if self.reference is not None:
                 if self.used_indices is None:
-                    """create valid"""
+                    # create valid
                     self._lazy_init(self.data, label=self.label, max_bin=self.max_bin, reference=self.reference,
                                     weight=self.weight, group=self.group, init_score=self.init_score, predictor=self._predictor,
                                     silent=self.silent, feature_name=self.feature_name, params=self.params)
                 else:
-                    """construct subset"""
+                    # construct subset
                     used_indices = list_to_1d_numpy(self.used_indices, np.int32, name='used_indices')
                     self.handle = ctypes.c_void_p()
                     params_str = param_dict_to_str(self.params)
@@ -833,7 +833,7 @@ class Dataset(object):
                     if self.get_label() is None:
                         raise ValueError("Label should not be None.")
             else:
-                """create train"""
+                # create train
                 self._lazy_init(self.data, label=self.label, max_bin=self.max_bin,
                                 weight=self.weight, group=self.group, init_score=self.init_score,
                                 predictor=self._predictor, silent=self.silent, feature_name=self.feature_name,
@@ -936,7 +936,7 @@ class Dataset(object):
         if self.handle is None:
             raise Exception("Cannot set %s before construct dataset" % field_name)
         if data is None:
-            """set to None"""
+            # set to None
             _safe_call(_LIB.LGBM_DatasetSetField(
                 self.handle,
                 c_str(field_name),
@@ -1279,17 +1279,17 @@ class Booster(object):
         elif "verbose" not in params:
             params["verbose"] = 1
         if train_set is not None:
-            """Training task"""
+            # Training task
             if not isinstance(train_set, Dataset):
                 raise TypeError('Training data should be Dataset instance, met {}'.format(type(train_set).__name__))
             params_str = param_dict_to_str(params)
-            """construct booster object"""
+            # construct booster object
             self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_BoosterCreate(
                 train_set.construct().handle,
                 c_str(params_str),
                 ctypes.byref(self.handle)))
-            """save reference to data"""
+            # save reference to data
             self.train_set = train_set
             self.valid_sets = []
             self.name_valid_sets = []
@@ -1304,12 +1304,12 @@ class Booster(object):
                 self.handle,
                 ctypes.byref(out_num_class)))
             self.__num_class = out_num_class.value
-            """buffer for inner predict"""
+            # buffer for inner predict
             self.__inner_predict_buffer = [None]
             self.__is_predicted_cur_iter = [False]
             self.__get_eval_info()
             self.pandas_categorical = train_set.pandas_categorical
-            """set network if necessary"""
+            # set network if necessary
             if "machines" in params:
                 machines = params["machines"]
                 if isinstance(machines, string_type):
@@ -1324,7 +1324,7 @@ class Booster(object):
                                  listen_time_out=params.get("listen_time_out", 120),
                                  num_machines=params.get("num_machines", num_machines))
         elif model_file is not None:
-            """Prediction task"""
+            # Prediction task
             out_num_iterations = ctypes.c_int(0)
             self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
@@ -1484,7 +1484,7 @@ class Booster(object):
             Whether the update was successfully finished.
         """
 
-        """need reset training data"""
+        # need reset training data
         if train_set is not None and train_set is not self.train_set:
             if not isinstance(train_set, Dataset):
                 raise TypeError('Training data should be Dataset instance, met {}'.format(type(train_set).__name__))
@@ -1584,7 +1584,7 @@ class Booster(object):
                 if data is self.valid_sets[i]:
                     data_idx = i + 1
                     break
-        """need to push new valid data"""
+        # need to push new valid data
         if data_idx == -1:
             self.add_valid(data, name)
             data_idx = self.__num_dataset - 1
@@ -1812,7 +1812,7 @@ class Booster(object):
             List with names of features.
         """
         num_feature = self.num_feature()
-        """Get name of features"""
+        # Get name of features
         tmp_out_len = ctypes.c_int(0)
         string_buffers = [ctypes.create_string_buffer(255) for i in range_(num_feature)]
         ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
@@ -1904,7 +1904,7 @@ class Booster(object):
                 n_preds = self.valid_sets[data_idx - 1].num_data() * self.__num_class
             self.__inner_predict_buffer[data_idx] = \
                 np.array([0.0 for _ in range_(n_preds)], dtype=np.float64, copy=False)
-        """avoid to predict many time in one iteration"""
+        # avoid to predict many time in one iteration
         if not self.__is_predicted_cur_iter[data_idx]:
             tmp_out_len = ctypes.c_int64(0)
             data_ptr = self.__inner_predict_buffer[data_idx].ctypes.data_as(ctypes.POINTER(ctypes.c_double))
@@ -1925,13 +1925,13 @@ class Booster(object):
         if self.__need_reload_eval_info:
             self.__need_reload_eval_info = False
             out_num_eval = ctypes.c_int(0)
-            """Get num of inner evals"""
+            # Get num of inner evals
             _safe_call(_LIB.LGBM_BoosterGetEvalCounts(
                 self.handle,
                 ctypes.byref(out_num_eval)))
             self.__num_inner_eval = out_num_eval.value
             if self.__num_inner_eval > 0:
-                """Get name of evals"""
+                # Get name of evals
                 tmp_out_len = ctypes.c_int(0)
                 string_buffers = [ctypes.create_string_buffer(255) for i in range_(self.__num_inner_eval)]
                 ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))
