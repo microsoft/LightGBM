@@ -303,7 +303,6 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
 void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetBool(params, "is_unbalance", &is_unbalance);
   GetDouble(params, "sigmoid", &sigmoid);
-  GetDouble(params, "huber_delta", &huber_delta);
   GetDouble(params, "fair_c", &fair_c);
   GetDouble(params, "gaussian_eta", &gaussian_eta);
   GetDouble(params, "poisson_max_delta_step", &poisson_max_delta_step);
@@ -312,7 +311,7 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
   GetInt(params, "num_class", &num_class);
   CHECK(num_class >= 1);
   GetDouble(params, "scale_pos_weight", &scale_pos_weight);
-  GetDouble(params, "quantile_alpha", &quantile_alpha);
+  GetDouble(params, "alpha", &alpha);
   GetBool(params, "reg_sqrt", &reg_sqrt);
   std::string tmp_str = "";
   if (GetString(params, "label_gain", &tmp_str)) {
@@ -331,10 +330,9 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
 
 void MetricConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetDouble(params, "sigmoid", &sigmoid);
-  GetDouble(params, "huber_delta", &huber_delta);
   GetDouble(params, "fair_c", &fair_c);
   GetInt(params, "num_class", &num_class);
-  GetDouble(params, "quantile_alpha", &quantile_alpha);
+  GetDouble(params, "alpha", &alpha);
   std::string tmp_str = "";
   if (GetString(params, "label_gain", &tmp_str)) {
     label_gain = Common::StringToArray<double>(tmp_str, ',');

@@ -167,7 +167,7 @@ private:
 class RegressionHuberLoss: public RegressionL2loss {
 public:
   explicit RegressionHuberLoss(const ObjectiveConfig& config): RegressionL2loss(config) {
-    delta_ = static_cast<double>(config.huber_delta);
+    alpha_ = static_cast<double>(config.alpha);
     eta_ = static_cast<double>(config.gaussian_eta);
   }
 
@@ -185,14 +185,14 @@ public:
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
 
-        if (std::abs(diff) <= delta_) {
+        if (std::abs(diff) <= alpha_) {
           gradients[i] = static_cast<score_t>(diff);
           hessians[i] = 1.0f;
         } else {
           if (diff >= 0.0f) {
-            gradients[i] = static_cast<score_t>(delta_);
+            gradients[i] = static_cast<score_t>(alpha_);
           } else {
-            gradients[i] = static_cast<score_t>(-delta_);
+            gradients[i] = static_cast<score_t>(-alpha_);
           }
           hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], eta_));
         }
@@ -202,14 +202,14 @@ public:
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
 
-        if (std::abs(diff) <= delta_) {
+        if (std::abs(diff) <= alpha_) {
           gradients[i] = static_cast<score_t>(diff * weights_[i]);
           hessians[i] = weights_[i];
         } else {
           if (diff >= 0.0f) {
-            gradients[i] = static_cast<score_t>(delta_ * weights_[i]);
+            gradients[i] = static_cast<score_t>(alpha_ * weights_[i]);
           } else {
-            gradients[i] = static_cast<score_t>(-delta_ * weights_[i]);
+            gradients[i] = static_cast<score_t>(-alpha_ * weights_[i]);
           }
           hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], eta_, weights_[i]));
         }
@@ -227,7 +227,7 @@ public:
 
 private:
   /*! \brief delta for Huber loss */
-  double delta_;
+  double alpha_;
   /*! \brief a parameter to control the width of Gaussian function to approximate hessian */
   double eta_;
 };
@@ -378,7 +378,7 @@ private:
 class RegressionQuantileloss : public RegressionL2loss {
 public:
   explicit RegressionQuantileloss(const ObjectiveConfig& config): RegressionL2loss(config) {
-    alpha_ = static_cast<score_t>(config.quantile_alpha);
+    alpha_ = static_cast<score_t>(config.alpha);
   }
 
   explicit RegressionQuantileloss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
@@ -425,7 +425,7 @@ private:
 class RegressionQuantileL2loss : public RegressionL2loss {
 public:
   explicit RegressionQuantileL2loss(const ObjectiveConfig& config) : RegressionL2loss(config) {
-    alpha_ = static_cast<score_t>(config.quantile_alpha);
+    alpha_ = static_cast<score_t>(config.alpha);
   }
 
   explicit RegressionQuantileL2loss(const std::vector<std::string>& strs) : RegressionL2loss(strs) {

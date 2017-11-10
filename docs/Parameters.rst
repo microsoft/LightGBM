@@ -63,6 +63,10 @@ Core Parameters
 
       -  ``poisson``, `Poisson regression`_
 
+	  -  ``quantile``, `Quantile Regression`_
+
+	  -  ``quantile_l2``, `Like the ``quantile``, but use l2 loss instead. `_
+
    -  ``binary``, binary classification application
 
    -  ``lambdarank``, `lambdarank`_ application
@@ -490,9 +494,9 @@ Objective Parameters
 
    -  parameter for sigmoid function. Will be used in ``binary`` classification and ``lambdarank``
 
--  ``huber_delta``, default=\ ``1.0``, type=double
+-  ``alpha``, default=\ ``0.9``, type=double
 
-   -  parameter for `Huber loss`_. Will be used in ``regression`` task
+   -  parameter for `Huber loss`_ and `Quantile Regression`_. Will be used in ``regression`` task
 
 -  ``fair_c``, default=\ ``1.0``, type=double
 
@@ -540,6 +544,10 @@ Objective Parameters
 
    -  only used in ``multiclass`` classification
 
+-  ``reg_sqrt``, default=\ ``false``, type=bool
+
+   -  only used in Regression. Will fit ``sqrt(label)`` instead. And prediction result is also automatically converted to ``pow2(prediction)``
+
 Metric Parameters
 -----------------
 
@@ -551,6 +559,8 @@ Metric Parameters
    -  ``l2``, square loss, alias=\ ``mean_squared_error``, ``mse``
 
    -  ``l2_root``, root square loss, alias=\ ``root_mean_squared_error``, ``rmse``
+
+   -  ``quantile``, `Quantile Regression`_
 
    -  ``huber``, `Huber loss`_
 
@@ -714,6 +724,8 @@ You can specific query/group id in data file now. Please refer to parameter ``gr
 .. _Laurae++ Interactive Documentation: https://sites.google.com/view/lauraepp/parameters
 
 .. _Huber loss: https://en.wikipedia.org/wiki/Huber_loss
+
+.. _Quantile Regression: https://en.wikipedia.org/wiki/Quantile_regression
 
 .. _Fair loss: https://www.kaggle.com/c/allstate-claims-severity/discussion/24520
 

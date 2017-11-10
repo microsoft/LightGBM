@@ -146,9 +146,9 @@ public:
   inline static double LossOnPoint(float label, double score, const MetricConfig& config) {
     double delta = label - score;
     if (delta < 0) {
-      return (config.quantile_alpha - 1.0f) * delta;
+      return (config.alpha - 1.0f) * delta;
     } else {
-      return config.quantile_alpha * delta;
+      return config.alpha * delta;
     }
   }
 
@@ -179,10 +179,10 @@ public:
 
   inline static double LossOnPoint(float label, double score, const MetricConfig& config) {
     const double diff = score - label;
-    if (std::abs(diff) <= config.huber_delta) {
+    if (std::abs(diff) <= config.alpha) {
       return 0.5f * diff * diff;
     } else {
-      return config.huber_delta * (std::abs(diff) - 0.5f * config.huber_delta);
+      return config.alpha * (std::abs(diff) - 0.5f * config.alpha);
     }
   }
 

@@ -164,7 +164,6 @@ struct ObjectiveConfig: public ConfigBase {
 public:
   virtual ~ObjectiveConfig() {}
   double sigmoid = 1.0f;
-  double huber_delta = 1.0f;
   double fair_c = 1.0f;
   // for Approximate Hessian With Gaussian
   double gaussian_eta = 1.0f;
@@ -181,7 +180,7 @@ public:
   double scale_pos_weight = 1.0f;
   // True will sqrt fit the sqrt(label)
   bool reg_sqrt = false;
-  double quantile_alpha = 0.9f;
+  double alpha = 0.9f;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -191,9 +190,8 @@ public:
   virtual ~MetricConfig() {}
   int num_class = 1;
   double sigmoid = 1.0f;
-  double huber_delta = 1.0f;
   double fair_c = 1.0f;
-  double quantile_alpha = 0.9f;
+  double alpha = 0.9f;
   std::vector<double> label_gain;
   std::vector<int> eval_at;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
@@ -467,7 +465,7 @@ struct ParameterAlias {
       "xgboost_dart_mode", "drop_seed", "top_rate", "other_rate",
       "min_data_in_bin", "data_random_seed", "bin_construct_sample_cnt",
       "num_iteration_predict", "pred_early_stop", "pred_early_stop_freq",
-      "pred_early_stop_margin", "use_missing", "sigmoid", "huber_delta",
+      "pred_early_stop_margin", "use_missing", "sigmoid",
       "fair_c", "poission_max_delta_step", "scale_pos_weight",
       "boost_from_average", "max_position", "label_gain",
       "metric", "metric_freq", "time_out",
@@ -479,7 +477,7 @@ struct ParameterAlias {
       "histogram_pool_size", "output_freq", "is_provide_training_metric", "machine_list_filename", "machines",
       "zero_as_missing", "init_score_file", "valid_init_score_file", "is_predict_contrib",
       "max_cat_threshold",  "cat_smooth", "min_data_per_group", "cat_l2", "max_cat_to_onehot",
-      "quantile_alpha", "reg_sqrt"
+      "alpha", "reg_sqrt"
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
