@@ -61,6 +61,7 @@ public:
     num_pred_one_row_ = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf_index, is_predict_contrib);
     num_feature_ = boosting_->MaxFeatureIdx() + 1;
     predict_buf_ = std::vector<std::vector<double>>(num_threads_, std::vector<double>(num_feature_, 0.0f));
+    predict_buf_map_ = std::vector<std::unordered_map<int, double>>(num_threads_);
     if (is_predict_leaf_index) {
       predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
         int tid = omp_get_thread_num();
