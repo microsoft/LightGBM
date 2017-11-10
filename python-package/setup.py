@@ -28,7 +28,7 @@ def find_lib():
     return LIB_PATH
 
 
-def copy_files(use_gpu=False):
+def copy_files(use_gpu=False, use_proto=False):
 
     def copy_files_helper(folder_name):
         src = os.path.join('..', folder_name)
@@ -48,6 +48,8 @@ def copy_files(use_gpu=False):
         distutils.file_util.copy_file("../windows/LightGBM.vcxproj", "./compile/windows/LightGBM.vcxproj")
         if use_gpu:
             copy_files_helper('compute')
+        if use_proto:
+            copy_files_helper('proto')
         distutils.file_util.copy_file("../CMakeLists.txt", "./compile/")
         distutils.file_util.copy_file("../LICENSE", "./")
 
@@ -74,7 +76,7 @@ def silent_call(cmd, raise_error=False, error_msg=''):
         return 1
 
 
-def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False):
+def compile_cpp(use_mingw=False, use_gpu=False, use_proto=False, use_mpi=False):
 
     if os.path.exists("build_cpp"):
         shutil.rmtree("build_cpp")
@@ -86,6 +88,8 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False):
     cmake_cmd = ["cmake", "../compile/"]
     if use_gpu:
         cmake_cmd.append("-DUSE_GPU=ON")
+    if use_proto:
+        cmake_cmd.append("-DUSE_PROTO=ON")
     if use_mpi:
         cmake_cmd.append("-DUSE_MPI=ON")
     if os.name == "nt":
@@ -98,6 +102,8 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False):
             silent_call(["mingw32-make.exe", "_lightgbm"], raise_error=True,
                         error_msg='Please install MinGW first')
         else:
+            if use_proto:
+                raise Exception('Version with protobuf support cannot be compiled with MSVC. Please compile with MinGW (set option `mingw`)')
             status = 1
             lib_path = "../compile/windows/x64/DLL/lib_lightgbm.dll"
             if not use_gpu:
@@ -151,6 +157,7 @@ class CustomInstall(install):
     user_options = install.user_options + [
         ('mingw', 'm', 'Compile with MinGW'),
         ('gpu', 'g', 'Compile GPU version'),
+        ('proto', None, 'Compile version with protobuf support'),
         ('mpi', None, 'Compile MPI version'),
         ('precompile', 'p', 'Use precompiled library')
     ]
@@ -159,20 +166,21 @@ class CustomInstall(install):
         install.initialize_options(self)
         self.mingw = 0
         self.gpu = 0
+        self.proto = 0
         self.mpi = 0
         self.precompile = 0
 
     def run(self):
         if not self.precompile:
-            copy_files(use_gpu=self.gpu)
-            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_mpi=self.mpi)
+            copy_files(use_gpu=self.gpu, use_proto=self.proto)
+            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_proto=self.proto, use_mpi=self.mpi)
         install.run(self)
 
 
 class CustomSdist(sdist):
 
     def run(self):
-        copy_files(use_gpu=True)
+        copy_files(use_gpu=True, use_proto=True)
         open("./_IS_SOURCE_PACKAGE.txt", 'w').close()
         if os.path.exists("./lightgbm/Release/"):
             shutil.rmtree('./lightgbm/Release/')
@@ -187,7 +195,7 @@ class CustomSdist(sdist):
 
 if __name__ == "__main__":
     if (8 * struct.calcsize("P")) != 64:
-        raise Exception('Cannot install LightGBM in 32-bit Python, please use 64-bit Python instead.')
+        raise Exception('Cannot install LightGBM in 32-bit python, please use 64-bit python instead.')
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
     if os.path.isfile(os.path.join('..', 'VERSION.txt')):

@@ -274,6 +274,47 @@ Docker
 
 Refer to `GPU Docker folder <https://github.com/Microsoft/LightGBM/tree/master/docker/gpu>`__.
 
+Build Version with Protobuf Support
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you want to use protobuf to save and load models, you need to install `protobuf C++ version <https://github.com/google/protobuf/blob/master/src/README.md>`__ first.
+
+After that you will be able to use ``model_format=proto`` in `Parameters <./Parameters.rst#io-parameters>`__ for saving and loading models.
+
+Windows
+^^^^^^^
+
+1. Install `Git for Windows`_, `CMake`_ and `MinGW-w64`_.
+
+2. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/Microsoft/LightGBM
+     cd LightGBM
+     mkdir build
+     cd build
+     cmake -G "MinGW Makefiles" -DUSE_PROTO=ON ..
+     mingw32-make.exe -j4
+
+The exe and dll files will be in ``LightGBM/`` folder.
+
+**Note**: You may need to run the ``cmake -G "MinGW Makefiles" ..`` one more time if met ``sh.exe was found in your PATH`` error.
+
+**Note**: Building version with protobuf support by **Visual Studio** is not supported.
+
+Linux
+^^^^^
+
+Run the following commands:
+
+.. code::
+
+  git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+  mkdir build ; cd build
+  cmake -DUSE_PROTO=ON ..
+  make -j4
+
 .. _Python-package: https://github.com/Microsoft/LightGBM/tree/master/python-package
 
 .. _R-package: https://github.com/Microsoft/LightGBM/tree/master/R-package
