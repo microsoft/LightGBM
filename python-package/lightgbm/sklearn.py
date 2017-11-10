@@ -274,10 +274,10 @@ class LGBMModel(_LGBMModelBase):
         params = super(LGBMModel, self).get_params(deep=deep)
         params.update(self._other_params)
         if 'seed' in params:
-            warnings.warn('The `seed` parameter is deprecated and will be removed in next version. '
+            warnings.warn('The `seed` parameter is deprecated and will be removed in 2.0.12 version. '
                           'Please use `random_state` instead.', LGBMDeprecationWarning)
         if 'nthread' in params:
-            warnings.warn('The `nthread` parameter is deprecated and will be removed in next version. '
+            warnings.warn('The `nthread` parameter is deprecated and will be removed in 2.0.12 version. '
                           'Please use `n_jobs` instead.', LGBMDeprecationWarning)
         return params
 
@@ -579,12 +579,12 @@ class LGBMModel(_LGBMModelBase):
         return self.booster_.feature_importance()
 
     def booster(self):
-        warnings.warn('The `booster()` method is deprecated and will be removed in next version. '
+        warnings.warn('The `booster()` method is deprecated and will be removed in 2.0.12 version. '
                       'Please use attribute `booster_` instead.', LGBMDeprecationWarning)
         return self.booster_
 
     def feature_importance(self):
-        warnings.warn('The `feature_importance()` method is deprecated and will be removed in next version. '
+        warnings.warn('The `feature_importance()` method is deprecated and will be removed in 2.0.12 version. '
                       'Please use attribute `feature_importances_` instead.', LGBMDeprecationWarning)
         return self.feature_importances_
 

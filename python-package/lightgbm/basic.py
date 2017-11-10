@@ -639,7 +639,7 @@ class Dataset(object):
         self.predictor = predictor
         if self.max_bin is not None:
             params["max_bin"] = self.max_bin
-            warnings.warn('The `max_bin` parameter is deprecated and will be removed in next version. '
+            warnings.warn('The `max_bin` parameter is deprecated and will be removed in 2.0.12 version. '
                           'Please use `params` to pass this parameter.', LGBMDeprecationWarning)
         if "verbosity" in params:
             params.setdefault("verbose", params.pop("verbosity"))
