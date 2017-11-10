@@ -131,7 +131,7 @@ def param_dict_to_str(data):
             pairs.append(str(key) + '=' + ','.join(map(str, val)))
         elif isinstance(val, string_type) or isinstance(val, numeric_types) or is_numeric(val):
             pairs.append(str(key) + '=' + str(val))
-        else:
+        elif val is not None:
             raise TypeError('Unknown type of parameter:%s, got:%s'
                             % (key, type(val).__name__))
     return ' '.join(pairs)
@@ -555,8 +555,8 @@ class _InnerPredictor(object):
 
 class Dataset(object):
     """Dataset in LightGBM."""
-    def __init__(self, data, label=None, max_bin=255, reference=None,
-                 weight=None, group=None, silent=False,
+    def __init__(self, data, label=None, max_bin=None, reference=None,
+                 weight=None, group=None, init_score=None, silent=False,
                  feature_name='auto', categorical_feature='auto', params=None,
                  free_raw_data=True):
         """Constract Dataset.
@@ -566,9 +566,9 @@ class Dataset(object):
         data : string, numpy array or scipy.sparse
             Data source of Dataset.
             If string, it represents the path to txt file.
-        label : list or numpy 1-D array, optional (default=None)
+        label : list, numpy 1-D array or None, optional (default=None)
             Label of the data.
-        max_bin : int, optional (default=255)
+        max_bin : int or None, optional (default=None)
             Max number of discrete bins for features.
         reference : Dataset or None, optional (default=None)
             If this is Dataset for validation, training data should be used as reference.
@@ -576,6 +576,8 @@ class Dataset(object):
             Weight for each instance.
         group : list, numpy 1-D array or None, optional (default=None)
             Group/query size for Dataset.
+        init_score : list, numpy 1-D array or None, optional (default=None)
+            Init score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
         feature_name : list of strings or 'auto', optional (default="auto")
@@ -598,6 +600,7 @@ class Dataset(object):
         self.reference = reference
         self.weight = weight
         self.group = group
+        self.init_score = init_score
         self.silent = silent
         self.feature_name = feature_name
         self.categorical_feature = categorical_feature
@@ -616,8 +619,8 @@ class Dataset(object):
             _safe_call(_LIB.LGBM_DatasetFree(self.handle))
             self.handle = None
 
-    def _lazy_init(self, data, label=None, max_bin=255, reference=None,
-                   weight=None, group=None, predictor=None,
+    def _lazy_init(self, data, label=None, max_bin=None, reference=None,
+                   weight=None, group=None, init_score=None, predictor=None,
                    silent=False, feature_name='auto',
                    categorical_feature='auto', params=None):
         if data is None:
@@ -633,7 +636,8 @@ class Dataset(object):
         params = {} if params is None else params
         self.max_bin = max_bin
         self.predictor = predictor
-        params["max_bin"] = max_bin
+        if self.max_bin is not None:
+            params["max_bin"] = self.max_bin
         if "verbosity" in params:
             params.setdefault("verbose", params.pop("verbosity"))
         if silent:
@@ -655,6 +659,10 @@ class Dataset(object):
                     raise TypeError("Wrong type({}) or unknown name({}) in categorical_feature"
                                     .format(type(name).__name__, name))
             if categorical_indices:
+                if "categorical_feature" in params or "categorical_column" in params:
+                    warnings.warn('categorical_feature in param dict is overrided.')
+                    params.pop("categorical_feature", None)
+                    params.pop("categorical_column", None)
                 params['categorical_column'] = sorted(categorical_indices)
 
         params_str = param_dict_to_str(params)
@@ -697,7 +705,11 @@ class Dataset(object):
         if group is not None:
             self.set_group(group)
         # load init score
-        if isinstance(self.predictor, _InnerPredictor):
+        if init_score is not None:
+            self.set_init_score(init_score)
+            if self.predictor is not None:
+                warnings.warn("The prediction of init_model will be overrided by init_score.")
+        elif isinstance(self.predictor, _InnerPredictor):
             init_score = self.predictor.predict(data,
                                                 raw_score=True,
                                                 data_has_header=self.data_has_header,
@@ -802,7 +814,7 @@ class Dataset(object):
                 if self.used_indices is None:
                     """create valid"""
                     self._lazy_init(self.data, label=self.label, max_bin=self.max_bin, reference=self.reference,
-                                    weight=self.weight, group=self.group, predictor=self._predictor,
+                                    weight=self.weight, group=self.group, init_score=self.init_score, predictor=self._predictor,
                                     silent=self.silent, feature_name=self.feature_name, params=self.params)
                 else:
                     """construct subset"""
@@ -820,15 +832,15 @@ class Dataset(object):
             else:
                 """create train"""
                 self._lazy_init(self.data, label=self.label, max_bin=self.max_bin,
-                                weight=self.weight, group=self.group, predictor=self._predictor,
-                                silent=self.silent, feature_name=self.feature_name,
+                                weight=self.weight, group=self.group, init_score=self.init_score,
+                                predictor=self._predictor, silent=self.silent, feature_name=self.feature_name,
                                 categorical_feature=self.categorical_feature, params=self.params)
             if self.free_raw_data:
                 self.data = None
         return self
 
     def create_valid(self, data, label=None, weight=None, group=None,
-                     silent=False, params=None):
+                     init_score=None, silent=False, params=None):
         """Create validation data align with current Dataset.
 
         Parameters
@@ -842,6 +854,8 @@ class Dataset(object):
             Weight for each instance.
         group : list, numpy 1-D array or None, optional (default=None)
             Group/query size for Dataset.
+        init_score : list, numpy 1-D array or None, optional (default=None)
+            Init score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
         params: dict or None, optional (default=None)
@@ -853,8 +867,8 @@ class Dataset(object):
             Returns self.
         """
         ret = Dataset(data, label=label, max_bin=self.max_bin, reference=self,
-                      weight=weight, group=group, silent=silent, params=params,
-                      free_raw_data=self.free_raw_data)
+                      weight=weight, group=group, init_score=init_score,
+                      silent=silent, params=params, free_raw_data=self.free_raw_data)
         ret._predictor = self._predictor
         ret.pandas_categorical = self.pandas_categorical
         return ret

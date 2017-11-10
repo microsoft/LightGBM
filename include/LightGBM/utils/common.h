@@ -160,6 +160,21 @@ inline static const char* Atoi(const char* p, int* out) {
   return p;
 }
 
+template<class T>
+inline static double Pow(T base, int power) {
+  if (power < 0) {
+    return 1.0 / Pow(base, -power);
+  } else if (power == 0) {
+    return 1;
+  } else if (power % 2 == 0) {
+    return Pow(base*base, power / 2);
+  } else if (power % 3 == 0) {
+    return Pow(base*base*base, power / 3);
+  } else {
+    return base * Pow(base, power - 1);
+  }
+}
+
 inline static const char* Atof(const char* p, double* out) {
   int frac;
   double sign, value, scale;
@@ -168,7 +183,6 @@ inline static const char* Atof(const char* p, double* out) {
   while (*p == ' ') {
     ++p;
   }
-
   // Get sign, if any.
   sign = 1.0;
   if (*p == '-') {
@@ -187,13 +201,15 @@ inline static const char* Atof(const char* p, double* out) {
 
     // Get digits after decimal point, if any.
     if (*p == '.') {
-      double pow10 = 10.0;
+      double right = 0.0;
+      int nn = 0;
       ++p;
       while (*p >= '0' && *p <= '9') {
-        value += (*p - '0') / pow10;
-        pow10 *= 10.0;
+        right = (*p - '0') + right * 10.0;
+        ++nn;
         ++p;
       }
+      value += right / Pow(10.0, nn);
     }
 
     // Handle exponent, if any.
@@ -224,9 +240,9 @@ inline static const char* Atof(const char* p, double* out) {
   } else {
     size_t cnt = 0;
     while (*(p + cnt) != '\0' && *(p + cnt) != ' '
-      && *(p + cnt) != '\t' && *(p + cnt) != ','
-      && *(p + cnt) != '\n' && *(p + cnt) != '\r'
-      && *(p + cnt) != ':') {
+           && *(p + cnt) != '\t' && *(p + cnt) != ','
+           && *(p + cnt) != '\n' && *(p + cnt) != '\r'
+           && *(p + cnt) != ':') {
       ++cnt;
     }
     if (cnt > 0) {
@@ -249,8 +265,6 @@ inline static const char* Atof(const char* p, double* out) {
 
   return p;
 }
-
-
 
 inline bool AtoiAndCheck(const char* p, int* out) {
   const char* after = Atoi(p, out);
@@ -630,6 +644,15 @@ inline bool FindInBitset(const uint32_t* bits, int n, T pos) {
   }
   int i2 = pos % 32;
   return (bits[i1] >> i2) & 1;
+}
+
+inline static bool CheckDoubleEqualOrdered(double a, double b) {
+  double upper = std::nextafter(a, INFINITY);
+  return b <= upper;
+}
+
+inline static double GetDoubleUpperBound(double a) {
+  return std::nextafter(a, INFINITY);;
 }
 
 }  // namespace Common

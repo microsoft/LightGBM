@@ -61,6 +61,8 @@ Now we are ready to checkout LightGBM and compile it with GPU support:
     cd LightGBM
     mkdir build ; cd build
     cmake -DUSE_GPU=1 .. 
+    # if you have installed the NVIDIA OpenGL, please using following instead
+    # sudo cmake -DUSE_GPU=1 -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -OpenCL_INCLUDE_DIR=/usr/local/cuda/include/ ..
     make -j$(nproc)
     cd ..
 

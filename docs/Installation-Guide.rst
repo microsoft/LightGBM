@@ -227,6 +227,8 @@ To build LightGBM GPU version, run the following commands:
   git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
   mkdir build ; cd build
   cmake -DUSE_GPU=1 ..
+  # if you have installed the NVIDIA OpenGL, please using following instead
+  # sudo cmake -DUSE_GPU=1 -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -OpenCL_INCLUDE_DIR=/usr/local/cuda/include/ ..
   make -j4
 
 Windows

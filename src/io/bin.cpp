@@ -79,8 +79,11 @@ namespace LightGBM {
       for (int i = 0; i < num_distinct_values - 1; ++i) {
         cur_cnt_inbin += counts[i];
         if (cur_cnt_inbin >= min_data_in_bin) {
-          bin_upper_bound.push_back((distinct_values[i] + distinct_values[i + 1]) / 2);
-          cur_cnt_inbin = 0;
+          auto val = Common::GetDoubleUpperBound((distinct_values[i] + distinct_values[i + 1]) / 2.0);
+          if (bin_upper_bound.empty() || !Common::CheckDoubleEqualOrdered(bin_upper_bound.back(), val)) {
+            bin_upper_bound.push_back(val);
+            cur_cnt_inbin = 0;
+          }
         }
       }
       cur_cnt_inbin += counts[num_distinct_values - 1];
@@ -131,12 +134,15 @@ namespace LightGBM {
       }
       ++bin_cnt;
       // update bin upper bound
-      bin_upper_bound.resize(bin_cnt);
+      bin_upper_bound.clear();
       for (int i = 0; i < bin_cnt - 1; ++i) {
-        bin_upper_bound[i] = (upper_bounds[i] + lower_bounds[i + 1]) / 2.0f;
+        auto val = Common::GetDoubleUpperBound((upper_bounds[i] + lower_bounds[i + 1]) / 2.0);
+        if (bin_upper_bound.empty() || !Common::CheckDoubleEqualOrdered(bin_upper_bound.back(), val)) {
+          bin_upper_bound.push_back(val);
+        }
       }
       // last bin upper bound
-      bin_upper_bound[bin_cnt - 1] = std::numeric_limits<double>::infinity();
+      bin_upper_bound.push_back(std::numeric_limits<double>::infinity());
     }
     return bin_upper_bound;
   }
@@ -241,7 +247,7 @@ namespace LightGBM {
     }
 
     for (int i = 1; i < num_sample_values; ++i) {
-      if (values[i] != values[i - 1]) {
+      if (!Common::CheckDoubleEqualOrdered(values[i - 1], values[i])) {
         if (values[i - 1] < 0.0f && values[i] > 0.0f) {
           distinct_values.push_back(0.0f);
           counts.push_back(zero_cnt);
@@ -249,6 +255,8 @@ namespace LightGBM {
         distinct_values.push_back(values[i]);
         counts.push_back(1);
       } else {
+        // use the large value
+        distinct_values.back() = values[i];
         ++counts.back();
       }
     }
