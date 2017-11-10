@@ -635,6 +635,11 @@ class Dataset(object):
         self.data_has_header = False
         # process for args
         params = {} if params is None else params
+        args_names = getattr(self.__class__, '_lazy_init').__code__.co_varnames[:getattr(self.__class__, '_lazy_init').__code__.co_argcount]
+        for key, _ in params.items():
+            if key in args_names:
+                warnings.warn('{0} keyword has been found in `params` and will be ignored. '
+                              'Please use {0} argument of the Dataset constructor to pass this parameter.'.format(key))
         self.max_bin = max_bin
         self.predictor = predictor
         if self.max_bin is not None:
