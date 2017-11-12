@@ -38,6 +38,7 @@ If it is a critical issue, identify first what error you have:
 Depending on the answers, while opening your issue, feel free to ping (just mention them with the arobase (@) symbol) appropriately so we can attempt to solve your problem faster:
 
 -  `@guolinke <https://github.com/guolinke>`__ (C++ code / R-package / Python-package)
+-  `@chivee <https://github.com/chivee>`__ (C++ code / Python-package)
 -  `@Laurae2 <https://github.com/Laurae2>`__ (R-package)
 -  `@wxchan <https://github.com/wxchan>`__ (Python-package)
 -  `@henry0312 <https://github.com/henry0312>`__ (Python-package)
