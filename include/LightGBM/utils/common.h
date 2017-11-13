@@ -641,7 +641,7 @@ inline void ObtainMinMaxSum(const T1 *w, int nw, T1 *mi, T1 *ma, T2 *su) {
       minw = std::min(minw, w[i]);
       maxw = std::max(maxw, w[i - 1]);
     }
-    sumw = w[i - 1] + w[i];
+    sumw += w[i - 1] + w[i];
   }
   if (mi != nullptr) {
     *mi = minw;
