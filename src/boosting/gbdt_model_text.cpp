@@ -111,24 +111,24 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   }
   str_buf << " };" << std::endl << std::endl;
 
-  std::stringstream pred_str_buf;
+  std::stringstream pred_str_buf_map;
 
-  pred_str_buf << "\t" << "int early_stop_round_counter = 0;" << std::endl;
-  pred_str_buf << "\t" << "std::memset(output, 0, sizeof(double) * num_tree_per_iteration_);" << std::endl;
-  pred_str_buf << "\t" << "for (int i = 0; i < num_iteration_for_pred_; ++i) {" << std::endl;
-  pred_str_buf << "\t\t" << "for (int k = 0; k < num_tree_per_iteration_; ++k) {" << std::endl;
-  pred_str_buf << "\t\t\t" << "output[k] += (*PredictTreeByMapPtr[i * num_tree_per_iteration_ + k])(features);" << std::endl;
-  pred_str_buf << "\t\t" << "}" << std::endl;
-  pred_str_buf << "\t\t" << "++early_stop_round_counter;" << std::endl;
-  pred_str_buf << "\t\t" << "if (early_stop->round_period == early_stop_round_counter) {" << std::endl;
-  pred_str_buf << "\t\t\t" << "if (early_stop->callback_function(output, num_tree_per_iteration_))" << std::endl;
-  pred_str_buf << "\t\t\t\t" << "return;" << std::endl;
-  pred_str_buf << "\t\t\t" << "early_stop_round_counter = 0;" << std::endl;
-  pred_str_buf << "\t\t" << "}" << std::endl;
-  pred_str_buf << "\t" << "}" << std::endl;
+  pred_str_buf_map << "\t" << "int early_stop_round_counter = 0;" << std::endl;
+  pred_str_buf_map << "\t" << "std::memset(output, 0, sizeof(double) * num_tree_per_iteration_);" << std::endl;
+  pred_str_buf_map << "\t" << "for (int i = 0; i < num_iteration_for_pred_; ++i) {" << std::endl;
+  pred_str_buf_map << "\t\t" << "for (int k = 0; k < num_tree_per_iteration_; ++k) {" << std::endl;
+  pred_str_buf_map << "\t\t\t" << "output[k] += (*PredictTreeByMapPtr[i * num_tree_per_iteration_ + k])(features);" << std::endl;
+  pred_str_buf_map << "\t\t" << "}" << std::endl;
+  pred_str_buf_map << "\t\t" << "++early_stop_round_counter;" << std::endl;
+  pred_str_buf_map << "\t\t" << "if (early_stop->round_period == early_stop_round_counter) {" << std::endl;
+  pred_str_buf_map << "\t\t\t" << "if (early_stop->callback_function(output, num_tree_per_iteration_))" << std::endl;
+  pred_str_buf_map << "\t\t\t\t" << "return;" << std::endl;
+  pred_str_buf_map << "\t\t\t" << "early_stop_round_counter = 0;" << std::endl;
+  pred_str_buf_map << "\t\t" << "}" << std::endl;
+  pred_str_buf_map << "\t" << "}" << std::endl;
 
   str_buf << "void GBDT::PredictRawByMap(const std::unordered_map<int, double>& features, double* output, const PredictionEarlyStopInstance* early_stop) const {" << std::endl;
-  str_buf << pred_str_buf.str();
+  str_buf << pred_str_buf_map.str();
   str_buf << "}" << std::endl;
   str_buf << std::endl;
 
