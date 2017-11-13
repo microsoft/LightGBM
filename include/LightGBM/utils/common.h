@@ -582,7 +582,7 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred) {
 // Check that all y[] are in interval [ymin, ymax] (end points included); throws error if not
 template <typename T>
 inline void CheckElementsIntervalClosed(const T *y, T ymin, T ymax, int ny, const char *callername) {
-  auto fatal_msg = [&](int i) { 
+  auto fatal_msg = [&y, &ymin, &ymax, &callername](int i) { 
     std::ostringstream os;
     os << "[%s]: does not tolerate element [#%i = " << y[i] << "] outside [" << ymin << ", " << ymax << "]";
     Log::Fatal(os.str().c_str(), callername, i);
