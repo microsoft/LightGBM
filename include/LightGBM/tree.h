@@ -319,6 +319,8 @@ private:
   /*! \brief Serialize one node to if-else statement*/
   std::string NodeToIfElse(int index, bool is_predict_leaf_index) const;
 
+  std::string NodeToIfElseByMap(int index, bool is_predict_leaf_index) const;
+
   double ExpectedValue() const;
 
   int MaxDepth();

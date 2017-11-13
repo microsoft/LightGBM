@@ -101,6 +101,37 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   str_buf << "}" << std::endl;
   str_buf << std::endl;
 
+  // PredictRawByMap
+  str_buf << "double (*PredictTreeByMapPtr[])(const double*) = { ";
+  for (int i = 0; i < num_used_model; ++i) {
+	  if (i > 0) {
+		  str_buf << " , ";
+	  }
+	  str_buf << "PredictTree" << i << "ByMap";
+  }
+  str_buf << " };" << std::endl << std::endl;
+
+  std::stringstream pred_str_buf;
+
+  pred_str_buf << "\t" << "int early_stop_round_counter = 0;" << std::endl;
+  pred_str_buf << "\t" << "std::memset(output, 0, sizeof(double) * num_tree_per_iteration_);" << std::endl;
+  pred_str_buf << "\t" << "for (int i = 0; i < num_iteration_for_pred_; ++i) {" << std::endl;
+  pred_str_buf << "\t\t" << "for (int k = 0; k < num_tree_per_iteration_; ++k) {" << std::endl;
+  pred_str_buf << "\t\t\t" << "output[k] += (*PredictTreeByMapPtr[i * num_tree_per_iteration_ + k])(features);" << std::endl;
+  pred_str_buf << "\t\t" << "}" << std::endl;
+  pred_str_buf << "\t\t" << "++early_stop_round_counter;" << std::endl;
+  pred_str_buf << "\t\t" << "if (early_stop->round_period == early_stop_round_counter) {" << std::endl;
+  pred_str_buf << "\t\t\t" << "if (early_stop->callback_function(output, num_tree_per_iteration_))" << std::endl;
+  pred_str_buf << "\t\t\t\t" << "return;" << std::endl;
+  pred_str_buf << "\t\t\t" << "early_stop_round_counter = 0;" << std::endl;
+  pred_str_buf << "\t\t" << "}" << std::endl;
+  pred_str_buf << "\t" << "}" << std::endl;
+
+  str_buf << "void GBDT::PredictRawByMap(const std::unordered_map<int, double>& features, double* output, const PredictionEarlyStopInstance* early_stop) const {" << std::endl;
+  str_buf << pred_str_buf.str();
+  str_buf << "}" << std::endl;
+  str_buf << std::endl;
+
   // Predict
   str_buf << "void GBDT::Predict(const double* features, double *output, const PredictionEarlyStopInstance* early_stop) const {" << std::endl;
   str_buf << "\t" << "PredictRaw(features, output, early_stop);" << std::endl;
@@ -114,6 +145,21 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   str_buf << "\t" << "}" << std::endl;
   str_buf << "}" << std::endl;
   str_buf << std::endl;
+
+  // PredictByMap
+  str_buf << "void GBDT::PredictByMap(const std::unordered_map<int, double>& features, double* output, const PredictionEarlyStopInstance* early_stop) const {" << std::endl;
+  str_buf << "\t" << "PredictRawByMap(features, output, early_stop);" << std::endl;
+  str_buf << "\t" << "if (average_output_) {" << std::endl;
+  str_buf << "\t\t" << "for (int k = 0; k < num_tree_per_iteration_; ++k) {" << std::endl;
+  str_buf << "\t\t\t" << "output[k] /= num_iteration_for_pred_;" << std::endl;
+  str_buf << "\t\t" << "}" << std::endl;
+  str_buf << "\t" << "}" << std::endl;
+  str_buf << "\t" << "else if (objective_function_ != nullptr) {" << std::endl;
+  str_buf << "\t\t" << "objective_function_->ConvertOutput(output, output);" << std::endl;
+  str_buf << "\t" << "}" << std::endl;
+  str_buf << "}" << std::endl;
+  str_buf << std::endl;
+
 
   // PredictLeafIndex
   for (int i = 0; i < num_used_model; ++i) {
@@ -133,6 +179,23 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   str_buf << "\t" << "int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;" << std::endl;
   str_buf << "\t" << "for (int i = 0; i < total_tree; ++i) {" << std::endl;
   str_buf << "\t\t" << "output[i] = (*PredictTreeLeafPtr[i])(features);" << std::endl;
+  str_buf << "\t" << "}" << std::endl;
+  str_buf << "}" << std::endl;
+
+  //PredictLeafIndexByMap
+  str_buf << "double (*PredictTreeLeafByMapPtr[])(const double*) = { ";
+  for (int i = 0; i < num_used_model; ++i) {
+	  if (i > 0) {
+		  str_buf << " , ";
+	  }
+	  str_buf << "PredictTree" << i << "LeafByMap";
+  }
+  str_buf << " };" << std::endl << std::endl;
+
+  str_buf << "void GBDT::PredictLeafIndexByMap(const std::unordered_map<int, double>& features, double* output) const {" << std::endl;
+  str_buf << "\t" << "int total_tree = num_iteration_for_pred_ * num_tree_per_iteration_;" << std::endl;
+  str_buf << "\t" << "for (int i = 0; i < total_tree; ++i) {" << std::endl;
+  str_buf << "\t\t" << "output[i] = (*PredictTreeLeafByMapPtr[i])(features);" << std::endl;
   str_buf << "\t" << "}" << std::endl;
   str_buf << "}" << std::endl;
 

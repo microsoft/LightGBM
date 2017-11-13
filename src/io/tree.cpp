@@ -377,6 +377,37 @@ std::string Tree::ToIfElse(int index, bool is_predict_leaf_index) const {
     str_buf << NodeToIfElse(0, is_predict_leaf_index);
   }
   str_buf << " }" << std::endl;
+
+  //Predict func by Map to ifelse
+  str_buf << "double PredictTree" << index;
+  if (is_predict_leaf_index) {
+	  str_buf << "LeafByMap";
+  }
+  else {
+	  str_buf << "ByMap";
+  }
+  str_buf << "(const std::unordered_map<int, double>& arr) { ";
+  if (num_leaves_ <= 1) {
+	  str_buf << "return " << leaf_value_[0] << ";";
+  }
+  else {
+	  str_buf << "const std::vector<uint32_t> cat_threshold = {";
+	  for (size_t i = 0; i < cat_threshold_.size(); ++i) {
+		  if (i != 0) {
+			  str_buf << ",";
+		  }
+		  str_buf << cat_threshold_[i];
+	  }
+	  str_buf << "};";
+	  // use this for the missing value conversion
+	  str_buf << "double fval = 0.0f; ";
+	  if (num_cat_ > 0) {
+		  str_buf << "int int_fval = 0; ";
+	  }
+	  str_buf << NodeToIfElseByMap(0, is_predict_leaf_index);
+  }
+  str_buf << " }" << std::endl;
+
   return str_buf.str();
 }
 
@@ -409,6 +440,40 @@ std::string Tree::NodeToIfElse(int index, bool is_predict_leaf_index) const {
   }
 
   return str_buf.str();
+}
+
+std::string Tree::NodeToIfElseByMap(int index, bool is_predict_leaf_index) const {
+	std::stringstream str_buf;
+	str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
+	if (index >= 0) {
+		// non-leaf
+		str_buf << "fval = arr.count(" << split_feature_[index] << ") > 0 ? arr.at(" << split_feature_[index] << ") : 0.0f;";
+		if (GetDecisionType(decision_type_[index], kCategoricalMask) == 0) {
+			str_buf << NumericalDecisionIfElse(index);
+		}
+		else {
+			str_buf << CategoricalDecisionIfElse(index);
+		}
+		// left subtree
+		str_buf << NodeToIfElse(left_child_[index], is_predict_leaf_index);
+		str_buf << " } else { ";
+		// right subtree
+		str_buf << NodeToIfElse(right_child_[index], is_predict_leaf_index);
+		str_buf << " }";
+	}
+	else {
+		// leaf
+		str_buf << "return ";
+		if (is_predict_leaf_index) {
+			str_buf << ~index;
+		}
+		else {
+			str_buf << leaf_value_[~index];
+		}
+		str_buf << ";";
+	}
+
+	return str_buf.str();
 }
 
 Tree::Tree(const std::string& str) {
