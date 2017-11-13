@@ -76,8 +76,8 @@ Next you may want to read:
 
 Documentation for contributors:
 
-* [**How we Update readthedocs.io**](https://github.com/Microsoft/LightGBM/blob/master/docs/README.md)
-* Check out the [Development Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Development-Guide.rst).
+* [**How we update readthedocs.io**](https://github.com/Microsoft/LightGBM/blob/master/docs/README.rst)
+* Check out the [**Development Guide**](https://github.com/Microsoft/LightGBM/blob/master/docs/Development-Guide.rst).
 
 Support
 -------
