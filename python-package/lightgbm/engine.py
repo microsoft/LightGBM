@@ -92,7 +92,7 @@ def train(params, train_set, num_boost_round=100,
     booster : Booster
         The trained Booster model.
     """
-    """create predictor first"""
+    # create predictor first
     for alias in ["num_boost_round", "num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds"]:
         if alias in params:
             num_boost_round = int(params.pop(alias))
@@ -111,7 +111,7 @@ def train(params, train_set, num_boost_round=100,
     else:
         predictor = None
     init_iteration = predictor.num_total_iteration if predictor is not None else 0
-    """check dataset"""
+    # check dataset
     if not isinstance(train_set, Dataset):
         raise TypeError("Training only accepts Dataset object")
 
@@ -130,7 +130,7 @@ def train(params, train_set, num_boost_round=100,
         if isinstance(valid_names, string_type):
             valid_names = [valid_names]
         for i, valid_data in enumerate(valid_sets):
-            """reduce cost for prediction training data"""
+            # reduce cost for prediction training data
             if valid_data is train_set:
                 is_valid_contain_train = True
                 if valid_names is not None:
@@ -145,7 +145,7 @@ def train(params, train_set, num_boost_round=100,
                 name_valid_sets.append(valid_names[i])
             else:
                 name_valid_sets.append('valid_' + str(i))
-    """process callbacks"""
+    # process callbacks
     if callbacks is None:
         callbacks = set()
     else:
@@ -173,7 +173,7 @@ def train(params, train_set, num_boost_round=100,
     callbacks_before_iter = sorted(callbacks_before_iter, key=attrgetter('order'))
     callbacks_after_iter = sorted(callbacks_after_iter, key=attrgetter('order'))
 
-    """construct booster"""
+    # construct booster
     try:
         booster = Booster(params=params, train_set=train_set)
         if is_valid_contain_train:
@@ -186,7 +186,7 @@ def train(params, train_set, num_boost_round=100,
             valid_set._reverse_update_params()
     booster.best_iteration = 0
 
-    """start training"""
+    # start training
     for i in range_(init_iteration, init_iteration + num_boost_round):
         for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=booster,

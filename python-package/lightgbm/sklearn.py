@@ -15,13 +15,8 @@ from .basic import Dataset, LightGBMError
 from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckConsistentLength,
-                     _LGBMCheckClassificationTargets, argc_, range_)
+                     _LGBMCheckClassificationTargets, argc_, range_, LGBMDeprecationWarning)
 from .engine import train
-
-
-# DeprecationWarning is not shown by default, so let's create our own with higher level
-class LGBMDeprecationWarning(UserWarning):
-    pass
 
 
 def _objective_function_wrapper(func):
@@ -162,7 +157,7 @@ class LGBMModel(_LGBMModelBase):
         n_estimators : int, optional (default=10)
             Number of boosted trees to fit.
         max_bin : int, optional (default=255)
-            Number of bucketed bin for feature values.
+            Number of bucketed bins for feature values.
         subsample_for_bin : int, optional (default=50000)
             Number of samples for constructing bins.
         objective : string, callable or None, optional (default=None)
@@ -279,10 +274,10 @@ class LGBMModel(_LGBMModelBase):
         params = super(LGBMModel, self).get_params(deep=deep)
         params.update(self._other_params)
         if 'seed' in params:
-            warnings.warn('The `seed` parameter is deprecated and will be removed in next version. '
+            warnings.warn('The `seed` parameter is deprecated and will be removed in 2.0.12 version. '
                           'Please use `random_state` instead.', LGBMDeprecationWarning)
         if 'nthread' in params:
-            warnings.warn('The `nthread` parameter is deprecated and will be removed in next version. '
+            warnings.warn('The `nthread` parameter is deprecated and will be removed in 2.0.12 version. '
                           'Please use `n_jobs` instead.', LGBMDeprecationWarning)
         return params
 
@@ -432,7 +427,7 @@ class LGBMModel(_LGBMModelBase):
             if isinstance(eval_set, tuple):
                 eval_set = [eval_set]
             for i, valid_data in enumerate(eval_set):
-                """reduce cost for prediction training data"""
+                # reduce cost for prediction training data
                 if valid_data[0] is X and valid_data[1] is y:
                     valid_set = train_set
                 else:
@@ -584,12 +579,12 @@ class LGBMModel(_LGBMModelBase):
         return self.booster_.feature_importance()
 
     def booster(self):
-        warnings.warn('The `booster()` method is deprecated and will be removed in next version. '
+        warnings.warn('The `booster()` method is deprecated and will be removed in 2.0.12 version. '
                       'Please use attribute `booster_` instead.', LGBMDeprecationWarning)
         return self.booster_
 
     def feature_importance(self):
-        warnings.warn('The `feature_importance()` method is deprecated and will be removed in next version. '
+        warnings.warn('The `feature_importance()` method is deprecated and will be removed in 2.0.12 version. '
                       'Please use attribute `feature_importances_` instead.', LGBMDeprecationWarning)
         return self.feature_importances_
 

@@ -48,7 +48,8 @@ Core Parameters
    -  ``convert_model`` for converting model file into if-else format, see more information in `Convert model parameters <#convert-model-parameters>`__
 
 -  ``application``, default=\ ``regression``, type=enum,
-   options=\ ``regression``, ``regression_l2``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``binary``, ``lambdarank``, ``multiclass``,
+   options=\ ``regression``, ``regression_l2``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``quantile_l2``,
+   ``binary``, ``lambdarank``, ``multiclass``,
    alias=\ ``objective``, ``app``
 
    -  ``regression``, regression application
@@ -63,9 +64,9 @@ Core Parameters
 
       -  ``poisson``, `Poisson regression`_
 
-	  -  ``quantile``, `Quantile Regression`_
+      -  ``quantile``, `Quantile regression`_
 
-	  -  ``quantile_l2``, `Like the ``quantile``, but use l2 loss instead
+      -  ``quantile_l2``, like the ``quantile``, but L2 loss is used instead
 
    -  ``binary``, binary classification application
 
@@ -496,7 +497,7 @@ Objective Parameters
 
 -  ``alpha``, default=\ ``0.9``, type=double
 
-   -  parameter for `Huber loss`_ and `Quantile Regression`_. Will be used in ``regression`` task
+   -  parameter for `Huber loss`_ and `Quantile regression`_. Will be used in ``regression`` task
 
 -  ``fair_c``, default=\ ``1.0``, type=double
 
@@ -546,7 +547,9 @@ Objective Parameters
 
 -  ``reg_sqrt``, default=\ ``false``, type=bool
 
-   -  only used in Regression. Will fit ``sqrt(label)`` instead. And prediction result is also automatically converted to ``pow2(prediction)``
+   -  only used in ``regression``
+
+   -  will fit ``sqrt(label)`` instead and prediction result will be also automatically converted to ``pow2(prediction)``
 
 Metric Parameters
 -----------------
@@ -560,7 +563,7 @@ Metric Parameters
 
    -  ``l2_root``, root square loss, alias=\ ``root_mean_squared_error``, ``rmse``
 
-   -  ``quantile``, `Quantile Regression`_
+   -  ``quantile``, `Quantile regression`_
 
    -  ``huber``, `Huber loss`_
 
@@ -725,7 +728,7 @@ You can specific query/group id in data file now. Please refer to parameter ``gr
 
 .. _Huber loss: https://en.wikipedia.org/wiki/Huber_loss
 
-.. _Quantile Regression: https://en.wikipedia.org/wiki/Quantile_regression
+.. _Quantile regression: https://en.wikipedia.org/wiki/Quantile_regression
 
 .. _Fair loss: https://www.kaggle.com/c/allstate-claims-severity/discussion/24520
 
