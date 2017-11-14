@@ -455,10 +455,10 @@ std::string Tree::NodeToIfElseByMap(int index, bool is_predict_leaf_index) const
 			str_buf << CategoricalDecisionIfElse(index);
 		}
 		// left subtree
-		str_buf << NodeToIfElse(left_child_[index], is_predict_leaf_index);
+		str_buf << NodeToIfElseByMap(left_child_[index], is_predict_leaf_index);
 		str_buf << " } else { ";
 		// right subtree
-		str_buf << NodeToIfElse(right_child_[index], is_predict_leaf_index);
+		str_buf << NodeToIfElseByMap(right_child_[index], is_predict_leaf_index);
 		str_buf << " }";
 	}
 	else {
