@@ -102,7 +102,7 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   str_buf << std::endl;
 
   // PredictRawByMap
-  str_buf << "double (*PredictTreeByMapPtr[])(const double*) = { ";
+  str_buf << "double (*PredictTreeByMapPtr[])(const std::unordered_map<int, double>&) = { ";
   for (int i = 0; i < num_used_model; ++i) {
 	  if (i > 0) {
 		  str_buf << " , ";
@@ -183,7 +183,7 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   str_buf << "}" << std::endl;
 
   //PredictLeafIndexByMap
-  str_buf << "double (*PredictTreeLeafByMapPtr[])(const double*) = { ";
+  str_buf << "double (*PredictTreeLeafByMapPtr[])(const std::unordered_map<int, double>&) = { ";
   for (int i = 0; i < num_used_model; ++i) {
 	  if (i > 0) {
 		  str_buf << " , ";
