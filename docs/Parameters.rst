@@ -523,7 +523,7 @@ Objective Parameters
 
 -  ``poission_max_delta_step``, default=\ ``0.7``, type=double
 
-   -  parameter used to safeguard optimization
+   -  parameter for `Poisson regression`_ to safeguard optimization
 
 -  ``scale_pos_weight``, default=\ ``1.0``, type=double
 
