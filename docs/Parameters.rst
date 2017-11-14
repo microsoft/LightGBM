@@ -48,13 +48,13 @@ Core Parameters
    -  ``convert_model`` for converting model file into if-else format, see more information in `Convert model parameters <#convert-model-parameters>`__
 
 -  ``application``, default=\ ``regression``, type=enum,
-   options=\ ``regression``, ``regression_l2``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``quantile_l2``,
+   options=\ ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``quantile_l2``,
    ``binary``, ``lambdarank``, ``multiclass``,
    alias=\ ``objective``, ``app``
 
-   -  ``regression``, regression application
+   -  regression application
 
-      -  ``regression_l2``, L2 loss, alias=\ ``mean_squared_error``, ``mse``
+      -  ``regression_l2``, L2 loss, alias=\ ``regression``, ``mean_squared_error``, ``mse``
 
       -  ``regression_l1``, L1 loss, alias=\ ``mean_absolute_error``, ``mae``
 
@@ -68,15 +68,27 @@ Core Parameters
 
       -  ``quantile_l2``, like the ``quantile``, but L2 loss is used instead
 
-   -  ``binary``, binary classification application
+   -  ``binary``, binary classification application, `log loss`_
+
+   -  multi-class classification application
+
+      -  ``multiclass``, `softmax`_ objective function, ``num_class`` should be set as well
+
+      -  ``multiclassova``, `One-vs-All`_ binary objective function, ``num_class`` should be set as well
+
+   -  cross-entropy
+
+      -  ``xentropy``, objective function for cross-entropy (with optional linear weights), alias=\ ``cross_entropy``
+
+      -  ``xentlambda``, alternative parameterization of cross-entropy, alias=\ ``cross_entropy_lambda``
+
+      -  the label is anything in interval [0, 1]
 
    -  ``lambdarank``, `lambdarank`_ application
 
       -  the label should be ``int`` type in lambdarank tasks, and larger number represent the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
 
       -  ``label_gain`` can be used to set the gain(weight) of ``int`` label
-
-   -  ``multiclass``, multi-class classification application, ``num_class`` should be set as well
 
 -  ``boosting``, default=\ ``gbdt``, type=enum,
    options=\ ``gbdt``, ``rf``, ``dart``, ``goss``,
@@ -751,3 +763,7 @@ You can specific query/group id in data file now. Please refer to parameter ``gr
 .. _AUC: https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve
 
 .. _log loss: https://www.kaggle.com/wiki/LogLoss
+
+.. _softmax: https://en.wikipedia.org/wiki/Softmax_function
+
+.. _One-vs-All: https://en.wikipedia.org/wiki/Multiclass_classification#One-vs.-rest
