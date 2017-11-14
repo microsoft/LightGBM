@@ -593,12 +593,17 @@ Metric Parameters
 
    -  ``binary_logloss``, `log loss`_
 
-   -  ``binary_error``.
-      For one sample: ``0`` for correct classification, ``1`` for error classification
+   -  ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
 
    -  ``multi_logloss``, log loss for mulit-class classification
 
    -  ``multi_error``, error rate for mulit-class classification
+
+   -  ``xentropy``, cross-entropy (with optional linear weights), alias=\ ``cross_entropy``
+
+   -  ``xentlambda``, "intensity-weighted" cross-entropy, alias=\ ``cross_entropy_lambda``
+
+   -  ``kldiv``, `Kullback-Leibler divergence`_, alias=\ ``kullback_leibler``
 
    -  support multi metrics, separated by ``,``
 
@@ -767,3 +772,5 @@ You can specific query/group id in data file now. Please refer to parameter ``gr
 .. _softmax: https://en.wikipedia.org/wiki/Softmax_function
 
 .. _One-vs-All: https://en.wikipedia.org/wiki/Multiclass_classification#One-vs.-rest
+
+.. _Kullback-Leibler divergence: https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence
