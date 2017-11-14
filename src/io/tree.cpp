@@ -443,37 +443,34 @@ std::string Tree::NodeToIfElse(int index, bool is_predict_leaf_index) const {
 }
 
 std::string Tree::NodeToIfElseByMap(int index, bool is_predict_leaf_index) const {
-	std::stringstream str_buf;
-	str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
-	if (index >= 0) {
-		// non-leaf
-		str_buf << "fval = arr.count(" << split_feature_[index] << ") > 0 ? arr.at(" << split_feature_[index] << ") : 0.0f;";
-		if (GetDecisionType(decision_type_[index], kCategoricalMask) == 0) {
-			str_buf << NumericalDecisionIfElse(index);
-		}
-		else {
-			str_buf << CategoricalDecisionIfElse(index);
-		}
-		// left subtree
-		str_buf << NodeToIfElseByMap(left_child_[index], is_predict_leaf_index);
-		str_buf << " } else { ";
-		// right subtree
-		str_buf << NodeToIfElseByMap(right_child_[index], is_predict_leaf_index);
-		str_buf << " }";
-	}
-	else {
-		// leaf
-		str_buf << "return ";
-		if (is_predict_leaf_index) {
-			str_buf << ~index;
-		}
-		else {
-			str_buf << leaf_value_[~index];
-		}
-		str_buf << ";";
-	}
+  std::stringstream str_buf;
+  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
+  if (index >= 0) {
+    // non-leaf
+    str_buf << "fval = arr.count(" << split_feature_[index] << ") > 0 ? arr.at(" << split_feature_[index] << ") : 0.0f;";
+    if (GetDecisionType(decision_type_[index], kCategoricalMask) == 0) {
+      str_buf << NumericalDecisionIfElse(index);
+    } else {
+      str_buf << CategoricalDecisionIfElse(index);
+    }
+    // left subtree
+    str_buf << NodeToIfElseByMap(left_child_[index], is_predict_leaf_index);
+    str_buf << " } else { ";
+    // right subtree
+    str_buf << NodeToIfElseByMap(right_child_[index], is_predict_leaf_index);
+    str_buf << " }";
+  } else {
+    // leaf
+    str_buf << "return ";
+    if (is_predict_leaf_index) {
+      str_buf << ~index;
+    } else {
+      str_buf << leaf_value_[~index];
+    }
+    str_buf << ";";
+  }
 
-	return str_buf.str();
+  return str_buf.str();
 }
 
 Tree::Tree(const std::string& str) {
