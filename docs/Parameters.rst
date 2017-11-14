@@ -335,7 +335,7 @@ IO Parameters
 
    -  file name of prediction result in ``prediction`` task
 
--  ``model_format``, default=\ ``text``, type=string
+-  ``model_format``, default=\ ``text``, type=multi-enum, options=\ ``text``, ``proto``
 
    -  format to save and load model
 
@@ -521,7 +521,7 @@ Objective Parameters
 
    -  parameter to control the width of Gaussian function. Will be used in ``regression_l1`` and ``huber`` losses
 
--  ``poission_max_delta_step``, default=\ ``0.7``, type=double
+-  ``poisson_max_delta_step``, default=\ ``0.7``, type=double
 
    -  parameter for `Poisson regression`_ to safeguard optimization
 
