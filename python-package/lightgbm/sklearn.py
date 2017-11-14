@@ -241,7 +241,6 @@ class LGBMModel(_LGBMModelBase):
             raise LightGBMError('Scikit-learn is required for this module')
 
         self.boosting_type = boosting_type
-        self.objective = objective
         self.num_leaves = num_leaves
         self.max_depth = max_depth
         self.learning_rate = learning_rate
@@ -264,7 +263,7 @@ class LGBMModel(_LGBMModelBase):
         self._best_score = None
         self._best_iteration = None
         self._other_params = {}
-        self._objective = None
+        self._objective = objective
         self._n_features = None
         self._classes = None
         self._n_classes = None
@@ -370,8 +369,6 @@ class LGBMModel(_LGBMModelBase):
         For multi-class task, the y_pred is group by class_id first, then group by row_id.
         If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
         """
-        if self.objective is not None:
-            self._objective = self.objective
         if self._objective is None:
             if isinstance(self, LGBMRegressor):
                 self._objective = "regression"
@@ -445,7 +442,7 @@ class LGBMModel(_LGBMModelBase):
                     valid_group = get_meta_data(eval_group, i)
                     valid_set = _construct_dataset(valid_data[0], valid_data[1], valid_weight, valid_init_score, valid_group, params)
                 valid_sets.append(valid_set)
-        print(params)
+
         self._Booster = train(params, train_set,
                               self.n_estimators, valid_sets=valid_sets, valid_names=eval_names,
                               early_stopping_rounds=early_stopping_rounds,
