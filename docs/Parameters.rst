@@ -120,13 +120,15 @@ Core Parameters
 
    -  number of leaves in one tree
 
--  ``tree_learner``, default=\ ``serial``, type=enum, options=\ ``serial``, ``feature``, ``data``, alias=\ ``tree``
+-  ``tree_learner``, default=\ ``serial``, type=enum, options=\ ``serial``, ``feature``, ``data``, ``voting``, alias=\ ``tree``
 
    -  ``serial``, single machine tree learner
 
-   -  ``feature``, feature parallel tree learner
+   -  ``feature``, alias=\ ``feature_parallel``, feature parallel tree learner
 
-   -  ``data``, data parallel tree learner
+   -  ``data``, alias=\ ``data_parallel``, data parallel tree learner
+
+   -  ``voting``, alias=\ ``voting_parallel``, voting parallel tree learner
 
    -  refer to `Parallel Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
 
