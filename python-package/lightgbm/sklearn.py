@@ -163,7 +163,7 @@ class LGBMModel(_LGBMModelBase):
         objective : string, callable or None, optional (default=None)
             Specify the learning task and the corresponding learning objective or
             a custom objective function to be used (see note below).
-            default: 'binary' for LGBMClassifier, 'lambdarank' for LGBMRanker.
+            default: 'regression' for LGBMRegressor, 'binary' or 'multiclass' for LGBMClassifier, 'lambdarank' for LGBMRanker.
         min_split_gain : float, optional (default=0.)
             Minimum loss reduction required to make a further partition on a leaf node of the tree.
         min_child_weight : float, optional (default=1e-3)
@@ -264,7 +264,7 @@ class LGBMModel(_LGBMModelBase):
         self._best_score = None
         self._best_iteration = None
         self._other_params = {}
-        self._objective = None
+        self._objective = objective
         self._n_features = None
         self._classes = None
         self._n_classes = None
@@ -370,8 +370,6 @@ class LGBMModel(_LGBMModelBase):
         For multi-class task, the y_pred is group by class_id first, then group by row_id.
         If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
         """
-        if not hasattr(self, '_objective'):
-            self._objective = self.objective
         if self._objective is None:
             if isinstance(self, LGBMRegressor):
                 self._objective = "regression"
@@ -633,7 +631,8 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         self._n_classes = len(self._classes)
         if self._n_classes > 2:
             # Switch to using a multiclass objective in the underlying LGBM instance
-            self._objective = "multiclass"
+            if self._objective != "multiclassova" and not callable(self._objective):
+                self._objective = "multiclass"
             if eval_metric == 'logloss' or eval_metric == 'binary_logloss':
                 eval_metric = "multi_logloss"
             elif eval_metric == 'error' or eval_metric == 'binary_error':
