@@ -285,6 +285,8 @@ class LGBMModel(_LGBMModelBase):
     def set_params(self, **params):
         for key, value in params.items():
             setattr(self, key, value)
+            if hasattr(self, '_' + key):
+                setattr(self, '_' + key, value)
             self._other_params[key] = value
         return self
 
