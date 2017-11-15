@@ -49,7 +49,7 @@ Core Parameters
 
 -  ``application``, default=\ ``regression``, type=enum,
    options=\ ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``quantile_l2``,
-   ``binary``, ``lambdarank``, ``multiclass``,
+   ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``,
    alias=\ ``objective``, ``app``
 
    -  regression application
