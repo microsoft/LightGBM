@@ -121,8 +121,8 @@ public:
   virtual void PredictRaw(const double* features, double* output,
                           const PredictionEarlyStopInstance* early_stop) const = 0;
 
-  virtual void PredictRawByMap(const std::unordered_map<int, double>& features, double* output, 
-                  const PredictionEarlyStopInstance* early_stop) const = 0;
+  virtual void PredictRawByMap(const std::unordered_map<int, double>& features, double* output,
+                               const PredictionEarlyStopInstance* early_stop) const = 0;
 
 
   /*!
@@ -134,8 +134,8 @@ public:
   virtual void Predict(const double* features, double* output,
                        const PredictionEarlyStopInstance* early_stop) const = 0;
 
-  virtual void PredictByMap(const std::unordered_map<int, double>& features, double* output, 
-               const PredictionEarlyStopInstance* early_stop) const = 0;
+  virtual void PredictByMap(const std::unordered_map<int, double>& features, double* output,
+                            const PredictionEarlyStopInstance* early_stop) const = 0;
 
 
   /*!
@@ -210,7 +210,7 @@ public:
   * \param filename Filename that want to save to
   */
   virtual void SaveModelToProto(int num_iteration, const char* filename) const = 0;
-  
+
   /*!
   * \brief Restore from a serialized protobuf file
   * \param filename Filename that want to restore from

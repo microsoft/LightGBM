@@ -478,8 +478,8 @@ inline void Tree::PredictContrib(const double* feature_values, int num_features,
   output[num_features] += ExpectedValue();
   // Run the recursion with preallocated space for the unique path data
   if (num_leaves_ > 1) {
-    const int max_path_len = MaxDepth()+1;
-    PathElement *unique_path_data = new PathElement[(max_path_len*(max_path_len+1))/2];
+    const int max_path_len = MaxDepth() + 1;
+    PathElement *unique_path_data = new PathElement[(max_path_len*(max_path_len + 1)) / 2];
     TreeSHAP(feature_values, output, 0, 0, unique_path_data, 1, 1, -1);
     delete[] unique_path_data;
   }
@@ -490,8 +490,8 @@ inline void Tree::RecomputeLeafDepths(int node, int depth) {
   if (node < 0) {
     leaf_depth_[~node] = depth;
   } else {
-    RecomputeLeafDepths(left_child_[node], depth+1);
-    RecomputeLeafDepths(right_child_[node], depth+1);
+    RecomputeLeafDepths(left_child_[node], depth + 1);
+    RecomputeLeafDepths(right_child_[node], depth + 1);
   }
 }
 

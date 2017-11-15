@@ -20,7 +20,7 @@ namespace LightGBM {
 /*!
 * \brief GBDT algorithm implementation. including Training, prediction, bagging.
 */
-class GBDT: public GBDTBase {
+class GBDT : public GBDTBase {
 public:
 
   /*!
@@ -187,14 +187,14 @@ public:
   void PredictRaw(const double* features, double* output,
                   const PredictionEarlyStopInstance* earlyStop) const override;
 
-  void PredictRawByMap(const std::unordered_map<int, double>& features, double* output, 
-                  const PredictionEarlyStopInstance* early_stop) const override;
+  void PredictRawByMap(const std::unordered_map<int, double>& features, double* output,
+                       const PredictionEarlyStopInstance* early_stop) const override;
 
   void Predict(const double* features, double* output,
                const PredictionEarlyStopInstance* earlyStop) const override;
 
-  void PredictByMap(const std::unordered_map<int, double>& features, double* output, 
-               const PredictionEarlyStopInstance* early_stop) const override;
+  void PredictByMap(const std::unordered_map<int, double>& features, double* output,
+                    const PredictionEarlyStopInstance* early_stop) const override;
 
   void PredictLeafIndex(const double* features, double* output) const override;
 
@@ -252,7 +252,7 @@ public:
   * \param filename Filename that want to save to
   */
   void SaveModelToProto(int num_iteration, const char* filename) const override;
-  
+
   /*!
   * \brief Restore from a serialized protobuf file
   * \param filename Filename that want to restore from

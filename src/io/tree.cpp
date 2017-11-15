@@ -381,30 +381,28 @@ std::string Tree::ToIfElse(int index, bool is_predict_leaf_index) const {
   //Predict func by Map to ifelse
   str_buf << "double PredictTree" << index;
   if (is_predict_leaf_index) {
-	  str_buf << "LeafByMap";
-  }
-  else {
-	  str_buf << "ByMap";
+    str_buf << "LeafByMap";
+  } else {
+    str_buf << "ByMap";
   }
   str_buf << "(const std::unordered_map<int, double>& arr) { ";
   if (num_leaves_ <= 1) {
-	  str_buf << "return " << leaf_value_[0] << ";";
-  }
-  else {
-	  str_buf << "const std::vector<uint32_t> cat_threshold = {";
-	  for (size_t i = 0; i < cat_threshold_.size(); ++i) {
-		  if (i != 0) {
-			  str_buf << ",";
-		  }
-		  str_buf << cat_threshold_[i];
-	  }
-	  str_buf << "};";
-	  // use this for the missing value conversion
-	  str_buf << "double fval = 0.0f; ";
-	  if (num_cat_ > 0) {
-		  str_buf << "int int_fval = 0; ";
-	  }
-	  str_buf << NodeToIfElseByMap(0, is_predict_leaf_index);
+    str_buf << "return " << leaf_value_[0] << ";";
+  } else {
+    str_buf << "const std::vector<uint32_t> cat_threshold = {";
+    for (size_t i = 0; i < cat_threshold_.size(); ++i) {
+      if (i != 0) {
+        str_buf << ",";
+      }
+      str_buf << cat_threshold_[i];
+    }
+    str_buf << "};";
+    // use this for the missing value conversion
+    str_buf << "double fval = 0.0f; ";
+    if (num_cat_ > 0) {
+      str_buf << "int int_fval = 0; ";
+    }
+    str_buf << NodeToIfElseByMap(0, is_predict_leaf_index);
   }
   str_buf << " }" << std::endl;
 
@@ -696,7 +694,7 @@ double Tree::ExpectedValue() const {
   const double total_count = internal_count_[0];
   double exp_value = 0.0;
   for (int i = 0; i < num_leaves(); ++i) {
-    exp_value += (leaf_count_[i]/total_count)*LeafOutput(i);
+    exp_value += (leaf_count_[i] / total_count)*LeafOutput(i);
   }
   return exp_value;
 }
