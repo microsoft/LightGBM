@@ -13,6 +13,7 @@
 #include <fstream>
 #include <memory>
 #include <mutex>
+#include <map>
 
 namespace LightGBM {
 
@@ -186,10 +187,18 @@ public:
   void PredictRaw(const double* features, double* output,
                   const PredictionEarlyStopInstance* earlyStop) const override;
 
+  void PredictRawByMap(const std::unordered_map<int, double>& features, double* output, 
+                  const PredictionEarlyStopInstance* early_stop) const override;
+
   void Predict(const double* features, double* output,
                const PredictionEarlyStopInstance* earlyStop) const override;
 
+  void PredictByMap(const std::unordered_map<int, double>& features, double* output, 
+               const PredictionEarlyStopInstance* early_stop) const override;
+
   void PredictLeafIndex(const double* features, double* output) const override;
+
+  void PredictLeafIndexByMap(const std::unordered_map<int, double>& features, double* output) const override;
 
   void PredictContrib(const double* features, double* output,
                       const PredictionEarlyStopInstance* earlyStop) const override;
