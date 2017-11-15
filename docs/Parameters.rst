@@ -45,7 +45,7 @@ Core Parameters
 
    -  ``predict``, alias=\ ``prediction``, ``test``, for prediction.
 
-   -  ``convert_model`` for converting model file into if-else format, see more information in `Convert model parameters <#convert-model-parameters>`__
+   -  ``convert_model``, for converting model file into if-else format, see more information in `Convert model parameters <#convert-model-parameters>`__
 
 -  ``application``, default=\ ``regression``, type=enum,
    options=\ ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``quantile_l2``,
@@ -68,7 +68,7 @@ Core Parameters
 
       -  ``quantile_l2``, like the ``quantile``, but L2 loss is used instead
 
-   -  ``binary``, binary classification application, `log loss`_
+   -  ``binary``, binary `log loss`_ classification application
 
    -  multi-class classification application
 
@@ -76,7 +76,7 @@ Core Parameters
 
       -  ``multiclassova``, `One-vs-All`_ binary objective function, ``num_class`` should be set as well
 
-   -  cross-entropy
+   -  cross-entropy application
 
       -  ``xentropy``, objective function for cross-entropy (with optional linear weights), alias=\ ``cross_entropy``
 
