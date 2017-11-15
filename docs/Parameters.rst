@@ -420,6 +420,8 @@ IO Parameters
 
    -  add a prefix ``name:`` for column name, e.g. ``ignore_column=name:c1,c2,c3`` means c1, c2 and c3 will be ignored
 
+   -  **Note**: works only in CLI-version
+
    -  **Note**: index starts from ``0``. And it doesn't count the label column
 
 -  ``categorical_feature``, default=\ ``""``, type=string, alias=\ ``categorical_column``, ``cat_feature``, ``cat_column``
