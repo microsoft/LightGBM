@@ -2,9 +2,7 @@
 #define LIGHTGBM_C_API_H_
 
 #include <LightGBM/meta.h>
-#include <LightGBM/config.h>
 
-#include <functional>
 #include <cstdint>
 #include <exception>
 #include <stdexcept>
