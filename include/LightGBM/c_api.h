@@ -754,7 +754,8 @@ LIGHTGBM_C_EXPORT int LGBM_NetworkInit(const char* machines,
 */
 LIGHTGBM_C_EXPORT int LGBM_NetworkFree();
 
-LIGHTGBM_EXPORT int LGBM_GetFuncs();
+int LGBM_GetFuncs(AllreduceFunction Allreduce, ReduceScatterFunction ReduceScatter,
+                  AllgatherFunction Allgather, int num_machines, int rank);
 
 // exception handle and error msg
 static char* LastErrorMsg() { static THREAD_LOCAL char err_msg[512] = "Everything is fine"; return err_msg; }

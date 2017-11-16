@@ -1224,12 +1224,14 @@ int LGBM_NetworkFree() {
   API_END();
 }
 
-int LGBM_GetFuncs(void(*Allreduce)(char*, int, int, char*, const ReduceFunction&), void(*ReduceScatter)(char*, int, const int*, const int*, char*,
-  const ReduceFunction&), void(*Allgather)(char*, int, char*)) {
+int LGBM_GetFuncs(AllreduceFunction Allreduce, ReduceScatterFunction ReduceScatter, 
+                  AllgatherFunction Allgather, int num_machines, int rank) {
 	API_BEGIN();
-  Network::Allreduce1 = Allreduce;
-  Network::ReduceScatter1 = ReduceScatter;
-  Network::Allgather1 = Allgather;
+  Network::SetAllReduce(Allreduce);
+  Network::SetReduceScatter(ReduceScatter);
+  Network::SetAllgather(Allgather);
+  Network::SetNumMachines(num_machines);
+  Network::SetRank(rank);
 	API_END();
 }
 

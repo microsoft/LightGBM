@@ -26,6 +26,13 @@ using ReduceFunction = std::function<void(const char*, char*, int)>;
 using PredictFunction =
 std::function<void(const std::vector<std::pair<int, double>>&, double* output)>;
 
+using AllreduceFunction = std::function<void(char*, int, int, char*, const ReduceFunction&)>;
+
+using ReduceScatterFunction = std::function<void(char*, int, const int*, const int*, char*,
+  const ReduceFunction&)>;
+
+using AllgatherFunction = std::function<void)(char*, int, char*)>;
+
 #define NO_SPECIFIC (-1)
 
 #if (_MSC_VER <= 1800)
