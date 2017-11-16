@@ -1224,7 +1224,7 @@ int LGBM_NetworkFree() {
   API_END();
 }
 
-int LGBM_GetFuncs(AllreduceFunction Allreduce, ReduceScatterFunction ReduceScatter, 
+int LGBM_GetFuncions(AllreduceFunction Allreduce, ReduceScatterFunction ReduceScatter, 
                   AllgatherFunction Allgather, int num_machines, int rank) {
 	API_BEGIN();
   Network::SetAllReduce(Allreduce);

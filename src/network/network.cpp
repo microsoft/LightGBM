@@ -19,8 +19,9 @@ THREAD_LOCAL std::vector<int> Network::block_start_;
 THREAD_LOCAL std::vector<int>  Network::block_len_;
 THREAD_LOCAL int Network::buffer_size_;
 THREAD_LOCAL std::vector<char> Network::buffer_;
-THREAD_LOCAL AllreduceFunction Network::AllreducePtr_ ;
-
+THREAD_LOCAL AllreduceFunction Network::AllreducePtr_ = NULL;
+THREAD_LOCAL ReduceScatterFunction Network::ReduceScatterPtr_ = NULL;
+THREAD_LOCAL AllgatherFunction Network::AllgatherPtr_ = NULL;
 
 
 void Network::Init(NetworkConfig config) {

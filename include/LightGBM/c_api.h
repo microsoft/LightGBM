@@ -754,7 +754,7 @@ LIGHTGBM_C_EXPORT int LGBM_NetworkInit(const char* machines,
 */
 LIGHTGBM_C_EXPORT int LGBM_NetworkFree();
 
-int LGBM_GetFuncs(AllreduceFunction Allreduce, ReduceScatterFunction ReduceScatter,
+int LGBM_GetFuncions(AllreduceFunction Allreduce, ReduceScatterFunction ReduceScatter,
                   AllgatherFunction Allgather, int num_machines, int rank);
 
 // exception handle and error msg

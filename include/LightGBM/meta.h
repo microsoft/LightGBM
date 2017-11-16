@@ -31,7 +31,7 @@ using AllreduceFunction = std::function<void(char*, int, int, char*, const Reduc
 using ReduceScatterFunction = std::function<void(char*, int, const int*, const int*, char*,
   const ReduceFunction&)>;
 
-using AllgatherFunction = std::function<void)(char*, int, char*)>;
+using AllgatherFunction = std::function<void(char*, int, char*)>;
 
 #define NO_SPECIFIC (-1)
 
