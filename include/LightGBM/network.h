@@ -189,11 +189,11 @@ public:
     return global;
   }
   /*! \brief set variables and function ptrs */
-  static SetRank(int rank) { rank_ = rank;}
-  static SetNumMachines(int num_machines) { num_machines_ = num_machines; }
-  static SetAllReduce(AllreduceFunction AllreduceFuncPtr) { AllreduceFuncPtr_ = AllreduceFuncPtr;}
-  static SetReduceScatter(ReduceScatterFunction ReduceScatterFuncPtr) { ReduceScatterFuncPtr_ = ReduceScatterFuncPtr; }
-  static SetAllgather(AllgatherFunction AllgatherFuncPtr) { AllgatherFuncPtr_ = AllgatherFuncPtr; }
+  static void SetRank(int rank) { rank_ = rank;}
+  static void SetNumMachines(int num_machines) { num_machines_ = num_machines; }
+  static void SetAllReduce(AllreduceFunction AllreduceFuncPtr) { AllreduceFuncPtr_ = AllreduceFuncPtr;}
+  static void SetReduceScatter(ReduceScatterFunction ReduceScatterFuncPtr) { ReduceScatterFuncPtr_ = ReduceScatterFuncPtr; }
+  static void SetAllgather(AllgatherFunction AllgatherFuncPtr) { AllgatherFuncPtr_ = AllgatherFuncPtr; }
 
 private:
   /*! \brief Number of all machines */
