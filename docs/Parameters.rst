@@ -39,22 +39,22 @@ Core Parameters
 
    -  path of config file
 
--  ``task``, default=\ ``train``, type=enum, options=\ ``train``, ``prediction``
+-  ``task``, default=\ ``train``, type=enum, options=\ ``train``, ``predict``, ``convert_model``
 
-   -  ``train`` for training
+   -  ``train``, alias=\ ``training``, for training
 
-   -  ``prediction`` for prediction.
+   -  ``predict``, alias=\ ``prediction``, ``test``, for prediction.
 
-   -  ``convert_model`` for converting model file into if-else format, see more information in `Convert model parameters <#convert-model-parameters>`__
+   -  ``convert_model``, for converting model file into if-else format, see more information in `Convert model parameters <#convert-model-parameters>`__
 
 -  ``application``, default=\ ``regression``, type=enum,
-   options=\ ``regression``, ``regression_l2``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``quantile_l2``,
-   ``binary``, ``lambdarank``, ``multiclass``,
+   options=\ ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``quantile_l2``,
+   ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``,
    alias=\ ``objective``, ``app``
 
-   -  ``regression``, regression application
+   -  regression application
 
-      -  ``regression_l2``, L2 loss, alias=\ ``mean_squared_error``, ``mse``
+      -  ``regression_l2``, L2 loss, alias=\ ``regression``, ``mean_squared_error``, ``mse``
 
       -  ``regression_l1``, L1 loss, alias=\ ``mean_absolute_error``, ``mae``
 
@@ -68,15 +68,27 @@ Core Parameters
 
       -  ``quantile_l2``, like the ``quantile``, but L2 loss is used instead
 
-   -  ``binary``, binary classification application
+   -  ``binary``, binary `log loss`_ classification application
+
+   -  multi-class classification application
+
+      -  ``multiclass``, `softmax`_ objective function, ``num_class`` should be set as well
+
+      -  ``multiclassova``, `One-vs-All`_ binary objective function, ``num_class`` should be set as well
+
+   -  cross-entropy application
+
+      -  ``xentropy``, objective function for cross-entropy (with optional linear weights), alias=\ ``cross_entropy``
+
+      -  ``xentlambda``, alternative parameterization of cross-entropy, alias=\ ``cross_entropy_lambda``
+
+      -  the label is anything in interval [0, 1]
 
    -  ``lambdarank``, `lambdarank`_ application
 
       -  the label should be ``int`` type in lambdarank tasks, and larger number represent the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
 
       -  ``label_gain`` can be used to set the gain(weight) of ``int`` label
-
-   -  ``multiclass``, multi-class classification application, ``num_class`` should be set as well
 
 -  ``boosting``, default=\ ``gbdt``, type=enum,
    options=\ ``gbdt``, ``rf``, ``dart``, ``goss``,
@@ -120,13 +132,15 @@ Core Parameters
 
    -  number of leaves in one tree
 
--  ``tree_learner``, default=\ ``serial``, type=enum, options=\ ``serial``, ``feature``, ``data``, alias=\ ``tree``
+-  ``tree_learner``, default=\ ``serial``, type=enum, options=\ ``serial``, ``feature``, ``data``, ``voting``, alias=\ ``tree``
 
    -  ``serial``, single machine tree learner
 
-   -  ``feature``, feature parallel tree learner
+   -  ``feature``, alias=\ ``feature_parallel``, feature parallel tree learner
 
-   -  ``data``, data parallel tree learner
+   -  ``data``, alias=\ ``data_parallel``, data parallel tree learner
+
+   -  ``voting``, alias=\ ``voting_parallel``, voting parallel tree learner
 
    -  refer to `Parallel Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
 
@@ -321,7 +335,7 @@ IO Parameters
 
    -  file name of prediction result in ``prediction`` task
 
--  ``model_format``, default=\ ``text``, type=string
+-  ``model_format``, default=\ ``text``, type=multi-enum, options=\ ``text``, ``proto``
 
    -  format to save and load model
 
@@ -405,6 +419,8 @@ IO Parameters
    -  use number for index, e.g. ``ignore_column=0,1,2`` means column\_0, column\_1 and column\_2 will be ignored
 
    -  add a prefix ``name:`` for column name, e.g. ``ignore_column=name:c1,c2,c3`` means c1, c2 and c3 will be ignored
+
+   -  **Note**: works only in CLI-version
 
    -  **Note**: index starts from ``0``. And it doesn't count the label column
 
@@ -507,9 +523,9 @@ Objective Parameters
 
    -  parameter to control the width of Gaussian function. Will be used in ``regression_l1`` and ``huber`` losses
 
--  ``poission_max_delta_step``, default=\ ``0.7``, type=double
+-  ``poisson_max_delta_step``, default=\ ``0.7``, type=double
 
-   -  parameter used to safeguard optimization
+   -  parameter for `Poisson regression`_ to safeguard optimization
 
 -  ``scale_pos_weight``, default=\ ``1.0``, type=double
 
@@ -579,12 +595,17 @@ Metric Parameters
 
    -  ``binary_logloss``, `log loss`_
 
-   -  ``binary_error``.
-      For one sample: ``0`` for correct classification, ``1`` for error classification
+   -  ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
 
    -  ``multi_logloss``, log loss for mulit-class classification
 
    -  ``multi_error``, error rate for mulit-class classification
+
+   -  ``xentropy``, cross-entropy (with optional linear weights), alias=\ ``cross_entropy``
+
+   -  ``xentlambda``, "intensity-weighted" cross-entropy, alias=\ ``cross_entropy_lambda``
+
+   -  ``kldiv``, `Kullback-Leibler divergence`_, alias=\ ``kullback_leibler``
 
    -  support multi metrics, separated by ``,``
 
@@ -749,3 +770,9 @@ You can specific query/group id in data file now. Please refer to parameter ``gr
 .. _AUC: https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve
 
 .. _log loss: https://www.kaggle.com/wiki/LogLoss
+
+.. _softmax: https://en.wikipedia.org/wiki/Softmax_function
+
+.. _One-vs-All: https://en.wikipedia.org/wiki/Multiclass_classification#One-vs.-rest
+
+.. _Kullback-Leibler divergence: https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence

@@ -363,7 +363,7 @@ struct ParameterAlias {
     {
       { "config", "config_file" },
       { "nthread", "num_threads" },
-	  { "num_thread", "num_threads" },
+      { "num_thread", "num_threads" },
       { "random_seed", "seed" },
       { "boosting", "boosting_type" },
       { "boost", "boosting_type" },
@@ -402,7 +402,7 @@ struct ParameterAlias {
       { "num_round", "num_iterations" },
       { "num_trees", "num_iterations" },
       { "num_rounds", "num_iterations" },
-	  { "num_boost_round", "num_iterations" },
+      { "num_boost_round", "num_iterations" },
       { "sub_row", "bagging_fraction" },
       { "subsample", "bagging_fraction" },
       { "subsample_freq", "bagging_freq" },
@@ -432,7 +432,7 @@ struct ParameterAlias {
       { "predict_raw_score", "is_predict_raw_score" },
       { "raw_score", "is_predict_raw_score" },
       { "leaf_index", "is_predict_leaf_index" },
-	  { "predict_leaf_index", "is_predict_leaf_index" },
+      { "predict_leaf_index", "is_predict_leaf_index" },
       { "contrib", "is_predict_contrib" },
       { "predict_contrib", "is_predict_contrib" },
       { "min_split_gain", "min_gain_to_split" },
@@ -444,7 +444,7 @@ struct ParameterAlias {
       { "bagging_fraction_seed", "bagging_seed" },
       { "workers", "machines" },
       { "nodes", "machines" },
-	  { "subsample_for_bin", "bin_construct_sample_cnt" },
+      { "subsample_for_bin", "bin_construct_sample_cnt" },
     });
     const std::unordered_set<std::string> parameter_set({
       "config", "config_file", "task", "device",
