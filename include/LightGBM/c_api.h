@@ -1,5 +1,10 @@
 #ifndef LIGHTGBM_C_API_H_
 #define LIGHTGBM_C_API_H_
+
+#include <LightGBM/meta.h>
+#include <LightGBM/config.h>
+
+#include <functional>
 #include <cstdint>
 #include <exception>
 #include <stdexcept>
@@ -754,9 +759,9 @@ LIGHTGBM_C_EXPORT int LGBM_NetworkInit(const char* machines,
 */
 LIGHTGBM_C_EXPORT int LGBM_NetworkFree();
 
-LIGHTGBM_C_EXPORT int LGBM_GetFuncions(AllreduceFunction AllreduceFuncPtr,
-                      ReduceScatterFunction ReduceScatterFuncPtr, 
-                      AllgatherFunction AllgatherFuncPtr, 
+LIGHTGBM_C_EXPORT int LGBM_GetFuncions(const AllreduceFunction& AllreduceFuncPtr,
+                      const ReduceScatterFunction& ReduceScatterFuncPtr, 
+                      const AllgatherFunction& AllgatherFuncPtr, 
                       int num_machines, 
                       int rank);
 
