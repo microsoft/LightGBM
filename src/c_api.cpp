@@ -1224,6 +1224,15 @@ int LGBM_NetworkFree() {
   API_END();
 }
 
+int LGBM_GetFuncs(void(*Allreduce)(char*, int, int, char*, const ReduceFunction&), void(*ReduceScatter)(char*, int, const int*, const int*, char*,
+  const ReduceFunction&), void(*Allgather)(char*, int, char*)) {
+	API_BEGIN();
+  Network::Allreduce1 = Allreduce;
+  Network::ReduceScatter1 = ReduceScatter;
+  Network::Allgather1 = Allgather;
+	API_END();
+}
+
 // ---- start of some help functions
 
 std::function<std::vector<double>(int row_idx)>

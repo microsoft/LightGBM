@@ -189,6 +189,12 @@ public:
     return global;
   }
 
+  /*! \brief Funcs*/
+  static void(*Allreduce1)(char*, int, int, char*, const ReduceFunction&);
+  static void(*ReduceScatter1)(char*, int, const int*, const int*, char*,
+    const ReduceFunction&);
+  static void(*Allgather1)(char*, int, char*);
+
 private:
   /*! \brief Number of all machines */
   static THREAD_LOCAL int num_machines_;
