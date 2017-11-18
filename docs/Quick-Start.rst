@@ -59,38 +59,56 @@ Some important parameters:
 
   - path to config file
 
-- ``task``, default=\ ``train``, type=enum, options=\ ``train``, ``prediction``
+-  ``task``, default=\ ``train``, type=enum, options=\ ``train``, ``predict``, ``convert_model``
 
-  - ``train`` for training
+   -  ``train``, alias=\ ``training``, for training
 
-  - ``prediction`` for prediction
+   -  ``predict``, alias=\ ``prediction``, ``test``, for prediction.
 
-- ``application``, default=\ ``regression``, type=enum,
-  options=\ ``regression``, ``regression_l2``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``binary``, ``lambdarank``, ``multiclass``,
-  alias=\ ``objective``, ``app``
+   -  ``convert_model``, for converting model file into if-else format, see more information in `Convert model parameters <./Parameters.rst#convert-model-parameters>`__
 
-  - ``regression``, regression application
+-  ``application``, default=\ ``regression``, type=enum,
+   options=\ ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``quantile_l2``,
+   ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``,
+   alias=\ ``objective``, ``app``
 
-    - ``regression_l2``, L2 loss, alias=\ ``mean_squared_error``, ``mse``
+   -  regression application
 
-    - ``regression_l1``, L1 loss, alias=\ ``mean_absolute_error``, ``mae``
+      -  ``regression_l2``, L2 loss, alias=\ ``regression``, ``mean_squared_error``, ``mse``
 
-    - ``huber``, `Huber loss`_
+      -  ``regression_l1``, L1 loss, alias=\ ``mean_absolute_error``, ``mae``
 
-    - ``fair``, `Fair loss`_
+      -  ``huber``, `Huber loss`_
 
-    - ``poisson``, `Poisson regression`_
+      -  ``fair``, `Fair loss`_
 
-  - ``binary``, binary classification application
+      -  ``poisson``, `Poisson regression`_
 
-  - ``lambdarank``, `lambdarank`_ application
+      -  ``quantile``, `Quantile regression`_
 
-    - the label should be ``int`` type in lambdarank tasks,
-      and larger number represent the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
+      -  ``quantile_l2``, like the ``quantile``, but L2 loss is used instead
 
-    - ``label_gain`` can be used to set the gain(weight) of ``int`` label.
+   -  ``binary``, binary `log loss`_ classification application
 
-  - ``multiclass``, multi-class classification application, ``num_class`` should be set as well
+   -  multi-class classification application
+
+      -  ``multiclass``, `softmax`_ objective function, ``num_class`` should be set as well
+
+      -  ``multiclassova``, `One-vs-All`_ binary objective function, ``num_class`` should be set as well
+
+   -  cross-entropy application
+
+      -  ``xentropy``, objective function for cross-entropy (with optional linear weights), alias=\ ``cross_entropy``
+
+      -  ``xentlambda``, alternative parameterization of cross-entropy, alias=\ ``cross_entropy_lambda``
+
+      -  the label is anything in interval [0, 1]
+
+   -  ``lambdarank``, `lambdarank`_ application
+
+      -  the label should be ``int`` type in lambdarank tasks, and larger number represent the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
+
+      -  ``label_gain`` can be used to set the gain(weight) of ``int`` label
 
 - ``boosting``, default=\ ``gbdt``, type=enum,
   options=\ ``gbdt``, ``rf``, ``dart``, ``goss``,
@@ -127,15 +145,17 @@ Some important parameters:
 
   - number of leaves in one tree
 
-- ``tree_learner``, default=\ ``serial``, type=enum, options=\ ``serial``, ``feature``, ``data``, alias=\ ``tree``
+-  ``tree_learner``, default=\ ``serial``, type=enum, options=\ ``serial``, ``feature``, ``data``, ``voting``, alias=\ ``tree``
 
-  - ``serial``, single machine tree learner
+   -  ``serial``, single machine tree learner
 
-  - ``feature``, feature parallel tree learner
+   -  ``feature``, alias=\ ``feature_parallel``, feature parallel tree learner
 
-  - ``data``, data parallel tree learner
+   -  ``data``, alias=\ ``data_parallel``, data parallel tree learner
 
-  - refer to `Parallel Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
+   -  ``voting``, alias=\ ``voting_parallel``, voting parallel tree learner
+
+   -  refer to `Parallel Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
 
 - ``num_threads``, default=\ ``OpenMP_default``, type=int, alias=\ ``num_thread``, ``nthread``
 
@@ -161,7 +181,7 @@ Some important parameters:
 - ``min_sum_hessian_in_leaf``, default=\ ``1e-3``, type=double,
   alias=\ ``min_sum_hessian_per_leaf``, ``min_sum_hessian``, ``min_hessian``, ``min_child_weight``
 
-  - minimal sum hessian in one leaf. Like ``min_data_in_leaf``, can be used to deal with over-fitting
+  - minimal sum hessian in one leaf. Like ``min_data_in_leaf``, it can be used to deal with over-fitting
 
 For all parameters, please refer to `Parameters <./Parameters.rst>`__.
 
