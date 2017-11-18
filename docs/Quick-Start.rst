@@ -232,6 +232,14 @@ Examples
 
 .. _Poisson regression: https://en.wikipedia.org/wiki/Poisson_regression
 
+.. _Quantile regression: https://en.wikipedia.org/wiki/Quantile_regression
+
+.. _log loss: https://www.kaggle.com/wiki/LogLoss
+
+.. _softmax: https://en.wikipedia.org/wiki/Softmax_function
+
+.. _One-vs-All: https://en.wikipedia.org/wiki/Multiclass_classification#One-vs.-rest
+
 .. _lambdarank: https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf
 
 .. _Dropouts meet Multiple Additive Regression Trees: https://arxiv.org/abs/1505.01866
