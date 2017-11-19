@@ -1,6 +1,9 @@
 #ifndef LIGHTGBM_PREDICTOR_HPP_
 #define LIGHTGBM_PREDICTOR_HPP_
 
+#define MAX_FEATURE 10000
+#define SPARSITY 100
+
 #include <LightGBM/meta.h>
 #include <LightGBM/boosting.h>
 #include <LightGBM/utils/text_reader.h>
@@ -58,16 +61,21 @@ public:
     num_pred_one_row_ = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf_index, is_predict_contrib);
     num_feature_ = boosting_->MaxFeatureIdx() + 1;
     predict_buf_ = std::vector<std::vector<double>>(num_threads_, std::vector<double>(num_feature_, 0.0f));
-
+    predict_buf_map_ = std::vector<std::unordered_map<int, double>>(num_threads_);
     if (is_predict_leaf_index) {
       predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
         int tid = omp_get_thread_num();
-        CopyToPredictBuffer(predict_buf_[tid].data(), features);
-        // get result for leaf index
-        boosting_->PredictLeafIndex(predict_buf_[tid].data(), output);
-        ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
+        if (num_feature_ > MAX_FEATURE && num_feature_ / static_cast<int>(features.size()) > SPARSITY) {
+          CopyToPredictMap(tid, features);
+          boosting_->PredictLeafIndexByMap(predict_buf_map_[tid], output);
+          ClearPredictMap(tid);
+        } else {
+          CopyToPredictBuffer(predict_buf_[tid].data(), features);
+          // get result for leaf index
+          boosting_->PredictLeafIndex(predict_buf_[tid].data(), output);
+          ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
+        }
       };
-
     } else if (is_predict_contrib) {
       predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
         int tid = omp_get_thread_num();
@@ -76,21 +84,32 @@ public:
         boosting_->PredictContrib(predict_buf_[tid].data(), output, &early_stop_);
         ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
       };
-
     } else {
       if (is_raw_score) {
         predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
           int tid = omp_get_thread_num();
-          CopyToPredictBuffer(predict_buf_[tid].data(), features);
-          boosting_->PredictRaw(predict_buf_[tid].data(), output, &early_stop_);
-          ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
+          if (num_feature_ > MAX_FEATURE && num_feature_ / static_cast<int>(features.size()) > SPARSITY) {
+            CopyToPredictMap(tid, features);
+            boosting_->PredictRawByMap(predict_buf_map_[tid], output, &early_stop_);
+            ClearPredictMap(tid);
+          } else {
+            CopyToPredictBuffer(predict_buf_[tid].data(), features);
+            boosting_->PredictRaw(predict_buf_[tid].data(), output, &early_stop_);
+            ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
+          }
         };
       } else {
         predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
           int tid = omp_get_thread_num();
-          CopyToPredictBuffer(predict_buf_[tid].data(), features);
-          boosting_->Predict(predict_buf_[tid].data(), output, &early_stop_);
-          ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
+          if (num_feature_ > MAX_FEATURE && num_feature_ / static_cast<int>(features.size()) > SPARSITY) {
+            CopyToPredictMap(tid, features);
+            boosting_->PredictByMap(predict_buf_map_[tid], output, &early_stop_);
+            ClearPredictMap(tid);
+          } else {
+            CopyToPredictBuffer(predict_buf_[tid].data(), features);
+            boosting_->Predict(predict_buf_[tid].data(), output, &early_stop_);
+            ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
+          }
         };
       }
     }
@@ -132,20 +151,20 @@ public:
     TextReader<data_size_t> predict_data_reader(data_filename, has_header);
     std::unordered_map<int, int> feature_names_map_;
     bool need_adjust = false;
-    if(has_header) {
+    if (has_header) {
       std::string first_line = predict_data_reader.first_line();
       std::vector<std::string> header = Common::Split(first_line.c_str(), "\t,");
       header.erase(header.begin() + boosting_->LabelIdx());
-      for(int i = 0; i < static_cast<int>(header.size()); ++i) {
-        for(int j = 0; j < static_cast<int>(boosting_->FeatureNames().size()); ++j) {
-          if(header[i] == boosting_->FeatureNames()[j]) {
+      for (int i = 0; i < static_cast<int>(header.size()); ++i) {
+        for (int j = 0; j < static_cast<int>(boosting_->FeatureNames().size()); ++j) {
+          if (header[i] == boosting_->FeatureNames()[j]) {
             feature_names_map_[i] = j;
             break;
           }
         }
       }
-      for(auto s:feature_names_map_) {
-        if(s.first != s.second) {
+      for (auto s : feature_names_map_) {
+        if (s.first != s.second) {
           need_adjust = true;
           break;
         }
@@ -157,14 +176,13 @@ public:
     parser_fun = [this, &parser, &tmp_label, &need_adjust, &feature_names_map_]
     (const char* buffer, std::vector<std::pair<int, double>>* feature) {
       parser->ParseOneLine(buffer, feature, &tmp_label);
-      if(need_adjust) {
+      if (need_adjust) {
         int i = 0, j = static_cast<int>(feature->size());
-        while(i < j) {
-          if(feature_names_map_.find((*feature)[i].first) != feature_names_map_.end()) {
+        while (i < j) {
+          if (feature_names_map_.find((*feature)[i].first) != feature_names_map_.end()) {
             (*feature)[i].first = feature_names_map_[(*feature)[i].first];
             ++i;
-          }
-          else {
+          } else {
             //move the non-used features to the end of the feature vector
             std::swap((*feature)[i], (*feature)[--j]);
           }
@@ -225,6 +243,19 @@ private:
     }
   }
 
+  void CopyToPredictMap(int tid, const std::vector<std::pair<int, double>>& features) {
+    int loop_size = static_cast<int>(features.size());
+    for (int i = 0; i < loop_size; ++i) {
+      if (features[i].first < num_feature_) {
+        predict_buf_map_[tid][features[i].first] = features[i].second;
+      }
+    }
+  }
+
+  void ClearPredictMap(int tid) {
+    predict_buf_map_[tid].clear();
+  }
+
   /*! \brief Boosting model */
   const Boosting* boosting_;
   /*! \brief function for prediction */
@@ -234,6 +265,7 @@ private:
   int num_pred_one_row_;
   int num_threads_;
   std::vector<std::vector<double>> predict_buf_;
+  std::vector<std::unordered_map<int, double>> predict_buf_map_;
 };
 
 }  // namespace LightGBM

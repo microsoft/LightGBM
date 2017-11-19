@@ -164,7 +164,6 @@ struct ObjectiveConfig: public ConfigBase {
 public:
   virtual ~ObjectiveConfig() {}
   double sigmoid = 1.0f;
-  double huber_delta = 1.0f;
   double fair_c = 1.0f;
   // for Approximate Hessian With Gaussian
   double gaussian_eta = 1.0f;
@@ -179,6 +178,9 @@ public:
   int num_class = 1;
   // Balancing of positive and negative weights
   double scale_pos_weight = 1.0f;
+  // True will sqrt fit the sqrt(label)
+  bool reg_sqrt = false;
+  double alpha = 0.9f;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -188,8 +190,8 @@ public:
   virtual ~MetricConfig() {}
   int num_class = 1;
   double sigmoid = 1.0f;
-  double huber_delta = 1.0f;
   double fair_c = 1.0f;
+  double alpha = 0.9f;
   std::vector<double> label_gain;
   std::vector<int> eval_at;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
@@ -361,7 +363,7 @@ struct ParameterAlias {
     {
       { "config", "config_file" },
       { "nthread", "num_threads" },
-	  { "num_thread", "num_threads" },
+      { "num_thread", "num_threads" },
       { "random_seed", "seed" },
       { "boosting", "boosting_type" },
       { "boost", "boosting_type" },
@@ -400,7 +402,7 @@ struct ParameterAlias {
       { "num_round", "num_iterations" },
       { "num_trees", "num_iterations" },
       { "num_rounds", "num_iterations" },
-	  { "num_boost_round", "num_iterations" },
+      { "num_boost_round", "num_iterations" },
       { "sub_row", "bagging_fraction" },
       { "subsample", "bagging_fraction" },
       { "subsample_freq", "bagging_freq" },
@@ -430,7 +432,7 @@ struct ParameterAlias {
       { "predict_raw_score", "is_predict_raw_score" },
       { "raw_score", "is_predict_raw_score" },
       { "leaf_index", "is_predict_leaf_index" },
-	  { "predict_leaf_index", "is_predict_leaf_index" },
+      { "predict_leaf_index", "is_predict_leaf_index" },
       { "contrib", "is_predict_contrib" },
       { "predict_contrib", "is_predict_contrib" },
       { "min_split_gain", "min_gain_to_split" },
@@ -442,7 +444,7 @@ struct ParameterAlias {
       { "bagging_fraction_seed", "bagging_seed" },
       { "workers", "machines" },
       { "nodes", "machines" },
-	  { "subsample_for_bin", "bin_construct_sample_cnt" },
+      { "subsample_for_bin", "bin_construct_sample_cnt" },
     });
     const std::unordered_set<std::string> parameter_set({
       "config", "config_file", "task", "device",
@@ -463,7 +465,7 @@ struct ParameterAlias {
       "xgboost_dart_mode", "drop_seed", "top_rate", "other_rate",
       "min_data_in_bin", "data_random_seed", "bin_construct_sample_cnt",
       "num_iteration_predict", "pred_early_stop", "pred_early_stop_freq",
-      "pred_early_stop_margin", "use_missing", "sigmoid", "huber_delta",
+      "pred_early_stop_margin", "use_missing", "sigmoid",
       "fair_c", "poission_max_delta_step", "scale_pos_weight",
       "boost_from_average", "max_position", "label_gain",
       "metric", "metric_freq", "time_out",
@@ -474,7 +476,8 @@ struct ParameterAlias {
       "max_conflict_rate", "poisson_max_delta_step", "gaussian_eta",
       "histogram_pool_size", "output_freq", "is_provide_training_metric", "machine_list_filename", "machines",
       "zero_as_missing", "init_score_file", "valid_init_score_file", "is_predict_contrib",
-      "max_cat_threshold",  "cat_smooth", "min_data_per_group", "cat_l2", "max_cat_to_onehot"
+      "max_cat_threshold",  "cat_smooth", "min_data_per_group", "cat_l2", "max_cat_to_onehot",
+      "alpha", "reg_sqrt"
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {

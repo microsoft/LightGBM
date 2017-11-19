@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 
 namespace LightGBM {
 
@@ -120,6 +121,10 @@ public:
   virtual void PredictRaw(const double* features, double* output,
                           const PredictionEarlyStopInstance* early_stop) const = 0;
 
+  virtual void PredictRawByMap(const std::unordered_map<int, double>& features, double* output,
+                               const PredictionEarlyStopInstance* early_stop) const = 0;
+
+
   /*!
   * \brief Prediction for one record, sigmoid transformation will be used if needed
   * \param feature_values Feature value on this record
@@ -129,6 +134,10 @@ public:
   virtual void Predict(const double* features, double* output,
                        const PredictionEarlyStopInstance* early_stop) const = 0;
 
+  virtual void PredictByMap(const std::unordered_map<int, double>& features, double* output,
+                            const PredictionEarlyStopInstance* early_stop) const = 0;
+
+
   /*!
   * \brief Prediction for one record with leaf index
   * \param feature_values Feature value on this record
@@ -136,6 +145,9 @@ public:
   */
   virtual void PredictLeafIndex(
     const double* features, double* output) const = 0;
+
+  virtual void PredictLeafIndexByMap(
+    const std::unordered_map<int, double>& features, double* output) const = 0;
 
   /*!
   * \brief Feature contributions for the model's prediction of one record
@@ -198,7 +210,7 @@ public:
   * \param filename Filename that want to save to
   */
   virtual void SaveModelToProto(int num_iteration, const char* filename) const = 0;
-  
+
   /*!
   * \brief Restore from a serialized protobuf file
   * \param filename Filename that want to restore from

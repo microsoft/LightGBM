@@ -15,13 +15,8 @@ from .basic import Dataset, LightGBMError
 from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckConsistentLength,
-                     _LGBMCheckClassificationTargets, argc_, range_)
+                     _LGBMCheckClassificationTargets, argc_, range_, LGBMDeprecationWarning)
 from .engine import train
-
-
-# DeprecationWarning is not shown by default, so let's create our own with higher level
-class LGBMDeprecationWarning(UserWarning):
-    pass
 
 
 def _objective_function_wrapper(func):
@@ -162,13 +157,13 @@ class LGBMModel(_LGBMModelBase):
         n_estimators : int, optional (default=10)
             Number of boosted trees to fit.
         max_bin : int, optional (default=255)
-            Number of bucketed bin for feature values.
+            Number of bucketed bins for feature values.
         subsample_for_bin : int, optional (default=50000)
             Number of samples for constructing bins.
         objective : string, callable or None, optional (default=None)
             Specify the learning task and the corresponding learning objective or
             a custom objective function to be used (see note below).
-            default: 'binary' for LGBMClassifier, 'lambdarank' for LGBMRanker.
+            default: 'regression' for LGBMRegressor, 'binary' or 'multiclass' for LGBMClassifier, 'lambdarank' for LGBMRanker.
         min_split_gain : float, optional (default=0.)
             Minimum loss reduction required to make a further partition on a leaf node of the tree.
         min_child_weight : float, optional (default=1e-3)
@@ -269,7 +264,7 @@ class LGBMModel(_LGBMModelBase):
         self._best_score = None
         self._best_iteration = None
         self._other_params = {}
-        self._objective = None
+        self._objective = objective
         self._n_features = None
         self._classes = None
         self._n_classes = None
@@ -279,10 +274,10 @@ class LGBMModel(_LGBMModelBase):
         params = super(LGBMModel, self).get_params(deep=deep)
         params.update(self._other_params)
         if 'seed' in params:
-            warnings.warn('The `seed` parameter is deprecated and will be removed in next version. '
+            warnings.warn('The `seed` parameter is deprecated and will be removed in 2.0.12 version. '
                           'Please use `random_state` instead.', LGBMDeprecationWarning)
         if 'nthread' in params:
-            warnings.warn('The `nthread` parameter is deprecated and will be removed in next version. '
+            warnings.warn('The `nthread` parameter is deprecated and will be removed in 2.0.12 version. '
                           'Please use `n_jobs` instead.', LGBMDeprecationWarning)
         return params
 
@@ -290,6 +285,8 @@ class LGBMModel(_LGBMModelBase):
     def set_params(self, **params):
         for key, value in params.items():
             setattr(self, key, value)
+            if hasattr(self, '_' + key):
+                setattr(self, '_' + key, value)
             self._other_params[key] = value
         return self
 
@@ -375,8 +372,6 @@ class LGBMModel(_LGBMModelBase):
         For multi-class task, the y_pred is group by class_id first, then group by row_id.
         If you want to get i-th row y_pred in j-th class, the access way is y_pred[j * num_data + i].
         """
-        if not hasattr(self, '_objective'):
-            self._objective = self.objective
         if self._objective is None:
             if isinstance(self, LGBMRegressor):
                 self._objective = "regression"
@@ -432,7 +427,7 @@ class LGBMModel(_LGBMModelBase):
             if isinstance(eval_set, tuple):
                 eval_set = [eval_set]
             for i, valid_data in enumerate(eval_set):
-                """reduce cost for prediction training data"""
+                # reduce cost for prediction training data
                 if valid_data[0] is X and valid_data[1] is y:
                     valid_set = train_set
                 else:
@@ -584,12 +579,12 @@ class LGBMModel(_LGBMModelBase):
         return self.booster_.feature_importance()
 
     def booster(self):
-        warnings.warn('The `booster()` method is deprecated and will be removed in next version. '
+        warnings.warn('The `booster()` method is deprecated and will be removed in 2.0.12 version. '
                       'Please use attribute `booster_` instead.', LGBMDeprecationWarning)
         return self.booster_
 
     def feature_importance(self):
-        warnings.warn('The `feature_importance()` method is deprecated and will be removed in next version. '
+        warnings.warn('The `feature_importance()` method is deprecated and will be removed in 2.0.12 version. '
                       'Please use attribute `feature_importances_` instead.', LGBMDeprecationWarning)
         return self.feature_importances_
 
@@ -638,7 +633,8 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         self._n_classes = len(self._classes)
         if self._n_classes > 2:
             # Switch to using a multiclass objective in the underlying LGBM instance
-            self._objective = "multiclass"
+            if self._objective != "multiclassova" and not callable(self._objective):
+                self._objective = "multiclass"
             if eval_metric == 'logloss' or eval_metric == 'binary_logloss':
                 eval_metric = "multi_logloss"
             elif eval_metric == 'error' or eval_metric == 'binary_error':

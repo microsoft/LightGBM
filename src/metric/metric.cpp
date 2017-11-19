@@ -15,6 +15,8 @@ Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config
     return new RMSEMetric(config);
   } else if (type == std::string("l1") || type == std::string("mean_absolute_error") || type == std::string("mae")) {
     return new L1Metric(config);
+  } else if (type == std::string("quantile")) {
+    return new QuantileMetric(config);
   } else if (type == std::string("huber")) {
     return new HuberLossMetric(config);
   } else if (type == std::string("fair")) {
@@ -37,7 +39,7 @@ Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config
     return new MultiErrorMetric(config);
   } else if (type == std::string("xentropy") || type == std::string("cross_entropy")) {
     return new CrossEntropyMetric(config);
-  } else if (type == std::string("xentlambda")) {
+  } else if (type == std::string("xentlambda") || type == std::string("cross_entropy_lambda")) {
     return new CrossEntropyLambdaMetric(config);
   } else if (type == std::string("kldiv") || type == std::string("kullback_leibler")) {
     return new KullbackLeiblerDivergence(config);
