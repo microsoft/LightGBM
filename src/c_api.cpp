@@ -1230,9 +1230,9 @@ int LGBM_GetFuncions(void* AllreduceFuncPtr,
                      int num_machines,
                      int rank) {
   API_BEGIN();
-  Network::SetAllReduce(*reinterpret_cast<AllreduceFunction*>(AllreduceFuncPtr));
-  Network::SetReduceScatter(*reinterpret_cast<ReduceScatterFunction*>(ReduceScatterFuncPtr));
-  Network::SetAllgather(*reinterpret_cast<AllgatherFunction*>(AllgatherFuncPtr));
+  Network::SetAllReduce(reinterpret_cast<AllreduceFunction>(reinterpret_cast<long long>(AllreduceFuncPtr)));
+  Network::SetReduceScatter(reinterpret_cast<ReduceScatterFunction>(reinterpret_cast<long long>(ReduceScatterFuncPtr)));
+  Network::SetAllgather(reinterpret_cast<AllgatherFunction>(reinterpret_cast<long long>(AllgatherFuncPtr)));
   Network::SetNumMachines(num_machines);
   Network::SetRank(rank);
   API_END();
