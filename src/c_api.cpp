@@ -1247,6 +1247,7 @@ int LGBM_GetFuncions(void* AllreduceFuncPtr,
   Network::SetNumMachines(num_machines);
   Network::SetRank(rank);
   API_END();
+
 }
 // ---- start of some help functions
 
