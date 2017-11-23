@@ -23,14 +23,16 @@ const double kZeroAsMissingValueRange = 1e-20f;
 
 using ReduceFunction = std::function<void(const char*, char*, int)>;
 
+typedef void(*ReduceFunctionInC)(const char*, char*, int);
+
 using PredictFunction =
 std::function<void(const std::vector<std::pair<int, double>>&, double* output)>;
 
-typedef void(*AllreduceFunction)(char*, int, int, char*, const ReduceFunction&);
+using AllreduceFunction = std::function<void(char*, int, int, char*, const ReduceFunction&)>;
 
-typedef void(*ReduceScatterFunction)(char*, int, const int*, const int*, char*, const ReduceFunction&);
+using ReduceScatterFunction = std::function<void(char*, int, const int*, const int*, char*, const ReduceFunction&)>;
 
-typedef void(*AllgatherFunction)(char*, int, char*);
+using AllgatherFunction = std::function<void(char*, int, char*)>;
 
 #define NO_SPECIFIC (-1)
 
