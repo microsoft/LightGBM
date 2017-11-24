@@ -1230,22 +1230,23 @@ int LGBM_GetFuncions(void* AllreduceFuncPtr,
                      int num_machines,
                      int rank) {
   API_BEGIN();
-  auto func1 = [AllreduceFuncPtr](char* arg1, int arg2, int arg3, char* arg4, const ReduceFunction& func) {
-    auto ptr = *func.target<ReduceFunctionInC>();
-    auto tmp = (void(*)(char*, int, int, char*, const ReduceFunctionInC&))AllreduceFuncPtr;
-    return tmp(arg1, arg2, arg3, arg4, ptr);
-  };
-  Network::SetAllReduce(func1);
-
-  auto func2 = [ReduceScatterFuncPtr](char* arg1, int arg2, const int* arg3, const int* arg4, char* arg5, const ReduceFunction& func) {
-    auto ptr = *func.target<ReduceFunctionInC>();
-    auto tmp = (void(*)(char*, int, const int*, const int*, char*, const ReduceFunctionInC&))ReduceScatterFuncPtr;
-    return tmp(arg1, arg2, arg3, arg4, arg5, ptr);
-  };
-  Network::SetReduceScatter(func2);
-  Network::SetAllgather((void(*)(char*, int, char*))AllgatherFuncPtr);
-  Network::SetNumMachines(num_machines);
-  Network::SetRank(rank);
+  if(num_machines > 1) {
+    auto func1 = [AllreduceFuncPtr](char* arg1, int arg2, int arg3, char* arg4, const ReduceFunction& func) {
+      auto ptr = *func.target<ReduceFunctionInC>();
+      auto tmp = (void(*)(char*, int, int, char*, const ReduceFunctionInC&))AllreduceFuncPtr;
+      return tmp(arg1, arg2, arg3, arg4, ptr);
+    };
+    Network::SetAllReduce(func1);
+    auto func2 = [ReduceScatterFuncPtr](char* arg1, int arg2, const int* arg3, const int* arg4, char* arg5, const ReduceFunction& func) {
+      auto ptr = *func.target<ReduceFunctionInC>();
+      auto tmp = (void(*)(char*, int, const int*, const int*, char*, const ReduceFunctionInC&))ReduceScatterFuncPtr;
+      return tmp(arg1, arg2, arg3, arg4, arg5, ptr);
+    };
+    Network::SetReduceScatter(func2);
+    Network::SetAllgather((void(*)(char*, int, char*))AllgatherFuncPtr);
+    Network::SetNumMachines(num_machines);
+    Network::SetRank(rank);
+  }
   API_END();
 
 }
