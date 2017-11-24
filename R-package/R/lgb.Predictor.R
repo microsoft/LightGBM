@@ -127,7 +127,9 @@ Predictor <- R6Class(
                             private$params)
           
         } else if (is(data, "dgCMatrix")) {
-          
+          if (length(data@p) > 2147483647) {
+            stop("Cannot support large CSC matrix")
+          }
           # Check if data is a dgCMatrix (sparse matrix, column compressed format)
           preds <- lgb.call("LGBM_BoosterPredictForCSC_R",
                             ret = preds,

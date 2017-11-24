@@ -193,7 +193,9 @@ Dataset <- R6Class(
                              ref_handle)
           
         } else if (is(private$raw_data, "dgCMatrix")) {
-          
+          if (length(private$raw_data@p) > 2147483647) {
+            stop("Cannot support large CSC matrix")
+          }
           # Are we using a dgCMatrix (sparsed matrix column compressed)
           handle <- lgb.call("LGBM_DatasetCreateFromCSC_R",
                              ret = handle,
