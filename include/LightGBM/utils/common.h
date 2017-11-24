@@ -128,16 +128,6 @@ inline static std::vector<std::string> Split(const char* c_str, const char* deli
   return ret;
 }
 
-inline static std::string FindFromLines(const std::vector<std::string>& lines, const char* key_word) {
-  for (auto& line : lines) {
-    size_t find_pos = line.find(key_word);
-    if (find_pos != std::string::npos) {
-      return line;
-    }
-  }
-  return "";
-}
-
 inline static const char* Atoi(const char* p, int* out) {
   int sign, value;
   while (*p == ' ') {
@@ -710,6 +700,24 @@ inline static bool CheckDoubleEqualOrdered(double a, double b) {
 
 inline static double GetDoubleUpperBound(double a) {
   return std::nextafter(a, INFINITY);;
+}
+
+inline static size_t GetLine(const char* str) {
+  auto start = str;
+  while (*str != '\0' && *str != '\n' && *str != '\r') {
+    ++str;
+  }
+  return str - start;
+}
+
+inline static const char* SkipNewLine(const char* str) {
+  if (*str == '\r') {
+    ++str;
+  }
+  if (*str == '\n') {
+    ++str;
+  }
+  return str;
 }
 
 }  // namespace Common

@@ -15,12 +15,8 @@ std::string GetBoostingTypeFromModelFile(const char* filename) {
 bool Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
 	if (boosting != nullptr) {
 		TextReader<size_t> model_reader(filename, true);
-		model_reader.ReadAllLines();
-		std::stringstream str_buf;
-		for (auto& line : model_reader.Lines()) {
-			str_buf << line << '\n';
-		}
-		if (!boosting->LoadModelFromString(str_buf.str())) {
+    auto model_str = model_reader.ReadContent();
+		if (!boosting->LoadModelFromString(model_str)) {
 			return false;
 		}
 	}

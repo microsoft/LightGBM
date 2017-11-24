@@ -148,6 +148,15 @@ public:
     });
   }
 
+  std::string ReadContent() {
+    std::stringstream str_buf;
+    return ReadAllAndProcess(
+      [this, &str_buf](INDEX_T, const char* buffer, size_t size) {
+      str_buf << std::string(buffer, size) << std::endl;
+    });
+    return str_buf.str();
+  }
+
   INDEX_T SampleFromFile(Random& random, INDEX_T sample_cnt, std::vector<std::string>* out_sampled_data) {
     INDEX_T cur_sample_cnt = 0;
     return ReadAllAndProcess(

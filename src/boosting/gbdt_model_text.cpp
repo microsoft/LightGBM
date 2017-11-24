@@ -308,49 +308,68 @@ bool GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
 bool GBDT::LoadModelFromString(const std::string& model_str) {
   // use serialized string to restore this object
   models_.clear();
-  std::vector<std::string> lines = Common::SplitLines(model_str.c_str());
+  auto c_str = model_str.c_str();
+  auto p = c_str;
+  std::unordered_map<std::string, std::string> key_vals;
+  while (*p != '\0') {
+    auto line_len = Common::GetLine(p);
+    if (line_len > 0) {
+      std::string cur_line(p, line_len);
+      if (!Common::StartsWith(cur_line, "Tree=")) {
+        auto strs = Common::Split(cur_line.c_str(), '=');
+        if (strs.size() == 1) {
+          key_vals[strs[0]] = "";
+        } else if (strs.size() == 2) {
+          key_vals[strs[0]] = strs[1];
+        } else if (strs.size() > 2) {
+          Log::Fatal("Wrong line at model file: %s", cur_line.c_str());
+        }
+      } else {
+        break;
+      }
+      p += line_len;
+    }
+    p = Common::SkipNewLine(p);
+  }
 
   // get number of classes
-  auto line = Common::FindFromLines(lines, "num_class=");
-  if (line.size() > 0) {
-    Common::Atoi(Common::Split(line.c_str(), '=')[1].c_str(), &num_class_);
+  if (key_vals.count("num_class")) {
+    Common::Atoi(key_vals["num_class"].c_str(), &num_class_);
   } else {
     Log::Fatal("Model file doesn't specify the number of classes");
     return false;
   }
 
-  line = Common::FindFromLines(lines, "num_tree_per_iteration=");
-  if (line.size() > 0) {
-    Common::Atoi(Common::Split(line.c_str(), '=')[1].c_str(), &num_tree_per_iteration_);
+  if (key_vals.count("num_tree_per_iteration")) {
+    Common::Atoi(key_vals["num_tree_per_iteration"].c_str(), &num_tree_per_iteration_);
   } else {
     num_tree_per_iteration_ = num_class_;
   }
 
   // get index of label
-  line = Common::FindFromLines(lines, "label_index=");
-  if (line.size() > 0) {
-    Common::Atoi(Common::Split(line.c_str(), '=')[1].c_str(), &label_idx_);
+  if (key_vals.count("label_index")) {
+    Common::Atoi(key_vals["label_index"].c_str(), &label_idx_);
   } else {
     Log::Fatal("Model file doesn't specify the label index");
     return false;
   }
+
   // get max_feature_idx first
-  line = Common::FindFromLines(lines, "max_feature_idx=");
-  if (line.size() > 0) {
-    Common::Atoi(Common::Split(line.c_str(), '=')[1].c_str(), &max_feature_idx_);
+  if (key_vals.count("max_feature_idx")) {
+    Common::Atoi(key_vals["max_feature_idx"].c_str(), &max_feature_idx_);
   } else {
     Log::Fatal("Model file doesn't specify max_feature_idx");
     return false;
   }
+
   // get average_output
-  line = Common::FindFromLines(lines, "average_output");
-  if (line.size() > 0) {
+  if (key_vals.count("average_output")) {
     average_output_ = true;
   }
+
   // get feature names
-  line = Common::FindFromLines(lines, "feature_names=");
-  if (line.size() > 0) {
-    feature_names_ = Common::Split(line.substr(std::strlen("feature_names=")).c_str(), ' ');
+  if (key_vals.count("feature_names")) {
+    feature_names_ = Common::Split(key_vals["feature_names"].c_str(), ' ');
     if (feature_names_.size() != static_cast<size_t>(max_feature_idx_ + 1)) {
       Log::Fatal("Wrong size of feature_names");
       return false;
@@ -360,9 +379,8 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
     return false;
   }
 
-  line = Common::FindFromLines(lines, "feature_infos=");
-  if (line.size() > 0) {
-    feature_infos_ = Common::Split(line.substr(std::strlen("feature_infos=")).c_str(), ' ');
+  if (key_vals.count("feature_infos")) {
+    feature_infos_ = Common::Split(key_vals["feature_infos"].c_str(), ' ');
     if (feature_infos_.size() != static_cast<size_t>(max_feature_idx_ + 1)) {
       Log::Fatal("Wrong size of feature_infos");
       return false;
@@ -372,29 +390,29 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
     return false;
   }
 
-  line = Common::FindFromLines(lines, "objective=");
-
-  if (line.size() > 0) {
-    auto str = Common::Split(line.c_str(), '=')[1];
+  if (key_vals.count("objective")) {
+    auto str = key_vals["objective"];
     loaded_objective_.reset(ObjectiveFunction::CreateObjectiveFunction(str));
     objective_function_ = loaded_objective_.get();
   }
 
-  // get tree models
-  size_t i = 0;
-  while (i < lines.size()) {
-    size_t find_pos = lines[i].find("Tree=");
-    if (find_pos != std::string::npos) {
-      ++i;
-      int start = static_cast<int>(i);
-      while (i < lines.size() && lines[i].find("Tree=") == std::string::npos) { ++i; }
-      int end = static_cast<int>(i);
-      std::string tree_str = Common::Join<std::string>(lines, start, end, "\n");
-      models_.emplace_back(new Tree(tree_str));
-    } else {
-      ++i;
+  while (*p != '\0') {
+    auto line_len = Common::GetLine(p);
+    if (line_len > 0) {
+      std::string cur_line(p, line_len);
+      if (Common::StartsWith(cur_line, "Tree=")) {
+        p += line_len;
+        p = Common::SkipNewLine(p);
+        size_t used_len = 0;
+        models_.emplace_back(new Tree(p, &used_len));
+        p += used_len;
+      } else {
+        p += line_len;
+      }
     }
+    p = Common::SkipNewLine(p);
   }
+
   Log::Info("Finished loading %d models", models_.size());
   num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
   num_init_iteration_ = num_iteration_for_pred_;
