@@ -537,6 +537,16 @@ inline static double AvoidInf(double x) {
   }
 }
 
+inline static float AvoidInf(float x) {
+	if (x >= 1e38) {
+		return 1e38f;
+	} else if (x <= -1e38) {
+		return -1e38f;
+	} else {
+		return x;
+	}
+}
+
 template<class _Iter> inline
 static typename std::iterator_traits<_Iter>::value_type* IteratorValType(_Iter) {
   return (0);

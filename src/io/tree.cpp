@@ -49,7 +49,7 @@ Tree::~Tree() {
 
 int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
                 double threshold_double, double left_value, double right_value,
-                data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type, bool default_left) {
+                data_size_t left_cnt, data_size_t right_cnt, float gain, MissingType missing_type, bool default_left) {
   Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain);
   int new_node_idx = num_leaves_ - 1;
   decision_type_[new_node_idx] = 0;
@@ -70,7 +70,7 @@ int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
 
 int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin, int num_threshold_bin,
                            const uint32_t* threshold, int num_threshold, double left_value, double right_value,
-                           data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type) {
+                           data_size_t left_cnt, data_size_t right_cnt, float gain, MissingType missing_type) {
   Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain);
   int new_node_idx = num_leaves_ - 1;
   decision_type_[new_node_idx] = 0;

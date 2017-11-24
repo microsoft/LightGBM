@@ -52,7 +52,7 @@ public:
   */
   int Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
             double threshold_double, double left_value, double right_value,
-            data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type, bool default_left);
+            data_size_t left_cnt, data_size_t right_cnt, float gain, MissingType missing_type, bool default_left);
 
   /*!
   * \brief Performing a split on tree leaves, with categorical feature
@@ -72,7 +72,7 @@ public:
   */
   int SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin, int num_threshold_bin,
                        const uint32_t* threshold, int num_threshold, double left_value, double right_value,
-                       data_size_t left_cnt, data_size_t right_cnt, double gain, MissingType missing_type);
+                       data_size_t left_cnt, data_size_t right_cnt, float gain, MissingType missing_type);
 
   /*! \brief Get the output of one leaf */
   inline double LeafOutput(int leaf) const { return leaf_value_[leaf]; }
@@ -289,7 +289,7 @@ private:
   }
 
   inline void Split(int leaf, int feature, int real_feature,
-                    double left_value, double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain);
+                    double left_value, double right_value, data_size_t left_cnt, data_size_t right_cnt, float gain);
   /*!
   * \brief Find leaf index of which record belongs by features
   * \param feature_values Feature value of this record
@@ -388,7 +388,7 @@ private:
 };
 
 inline void Tree::Split(int leaf, int feature, int real_feature,
-                        double left_value, double right_value, data_size_t left_cnt, data_size_t right_cnt, double gain) {
+                        double left_value, double right_value, data_size_t left_cnt, data_size_t right_cnt, float gain) {
   int new_node_idx = num_leaves_ - 1;
   // update parent info
   int parent = leaf_parent_[leaf];
