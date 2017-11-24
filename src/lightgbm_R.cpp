@@ -601,14 +601,17 @@ LGBM_SE LGBM_BoosterSaveModelToString_R(LGBM_SE handle,
   LGBM_SE out_str,
   LGBM_SE call_state) {
   R_API_BEGIN();
-  int out_len = 0;
+  int64_t out_len = 0;
   std::vector<char> inner_char_buf(R_AS_INT(buffer_len));
   CHECK_CALL(LGBM_BoosterSaveModelToString(R_GET_PTR(handle), R_AS_INT(num_iteration), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
-  EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len);
   if (out_len < R_AS_INT(buffer_len)) {
     EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len);
   } else {
-    R_INT_PTR(actual_len)[0] = static_cast<int>(out_len);
+    if (out_len <= INT32_MAX) {
+      R_INT_PTR(actual_len)[0] = static_cast<int>(out_len);
+    } else {
+      Log::Fatal("Don't support large model in R package.");
+    }
   }
   R_API_END();
 }
@@ -620,14 +623,17 @@ LGBM_SE LGBM_BoosterDumpModel_R(LGBM_SE handle,
   LGBM_SE out_str,
   LGBM_SE call_state) {
   R_API_BEGIN();
-  int out_len = 0;
+  int64_t out_len = 0;
   std::vector<char> inner_char_buf(R_AS_INT(buffer_len));
   CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), R_AS_INT(num_iteration), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
-  EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len);
   if (out_len < R_AS_INT(buffer_len)) {
     EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len);
   } else {
-    R_INT_PTR(actual_len)[0] = static_cast<int>(out_len);
+    if (out_len <= INT32_MAX) {
+      R_INT_PTR(actual_len)[0] = static_cast<int>(out_len);
+    } else {
+      Log::Fatal("Don't support large model in R package.");
+    }
   }
   R_API_END();
 }
