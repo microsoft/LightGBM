@@ -1668,13 +1668,13 @@ class Booster(object):
         if num_iteration <= 0:
             num_iteration = self.best_iteration
         buffer_len = 1 << 20
-        tmp_out_len = ctypes.c_int(0)
+        tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
         ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
         _safe_call(_LIB.LGBM_BoosterSaveModelToString(
             self.handle,
             ctypes.c_int(num_iteration),
-            ctypes.c_int(buffer_len),
+            ctypes.c_int64(buffer_len),
             ctypes.byref(tmp_out_len),
             ptr_string_buffer))
         actual_len = tmp_out_len.value
@@ -1685,7 +1685,7 @@ class Booster(object):
             _safe_call(_LIB.LGBM_BoosterSaveModelToString(
                 self.handle,
                 ctypes.c_int(num_iteration),
-                ctypes.c_int(actual_len),
+                ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
         return string_buffer.value.decode()
@@ -1707,13 +1707,13 @@ class Booster(object):
         if num_iteration <= 0:
             num_iteration = self.best_iteration
         buffer_len = 1 << 20
-        tmp_out_len = ctypes.c_int(0)
+        tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
         ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
         _safe_call(_LIB.LGBM_BoosterDumpModel(
             self.handle,
             ctypes.c_int(num_iteration),
-            ctypes.c_int(buffer_len),
+            ctypes.c_int64(buffer_len),
             ctypes.byref(tmp_out_len),
             ptr_string_buffer))
         actual_len = tmp_out_len.value
@@ -1724,7 +1724,7 @@ class Booster(object):
             _safe_call(_LIB.LGBM_BoosterDumpModel(
                 self.handle,
                 ctypes.c_int(num_iteration),
-                ctypes.c_int(actual_len),
+                ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
         return json.loads(string_buffer.value.decode())

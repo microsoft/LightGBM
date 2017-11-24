@@ -677,8 +677,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel(BoosterHandle handle,
 */
 LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(BoosterHandle handle,
                                                     int num_iteration,
-                                                    int buffer_len,
-                                                    int* out_len,
+                                                    int64_t buffer_len,
+                                                    int64_t* out_len,
                                                     char* out_str);
 
 /*!
@@ -692,8 +692,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(BoosterHandle handle,
 */
 LIGHTGBM_C_EXPORT int LGBM_BoosterDumpModel(BoosterHandle handle,
                                             int num_iteration,
-                                            int buffer_len,
-                                            int* out_len,
+                                            int64_t buffer_len,
+                                            int64_t* out_len,
                                             char* out_str);
 
 /*!
