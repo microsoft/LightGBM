@@ -313,22 +313,20 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
   std::unordered_map<std::string, std::string> key_vals;
   while (*p != '\0') {
     auto line_len = Common::GetLine(p);
-    if (line_len > 0) {
-      std::string cur_line(p, line_len);
-      if (!Common::StartsWith(cur_line, "Tree=")) {
-        auto strs = Common::Split(cur_line.c_str(), '=');
-        if (strs.size() == 1) {
-          key_vals[strs[0]] = "";
-        } else if (strs.size() == 2) {
-          key_vals[strs[0]] = strs[1];
-        } else if (strs.size() > 2) {
-          Log::Fatal("Wrong line at model file: %s", cur_line.c_str());
-        }
-      } else {
-        break;
+    std::string cur_line(p, line_len);
+    if (!Common::StartsWith(cur_line, "Tree=")) {
+      auto strs = Common::Split(cur_line.c_str(), '=');
+      if (strs.size() == 1) {
+        key_vals[strs[0]] = "";
+      } else if (strs.size() == 2) {
+        key_vals[strs[0]] = strs[1];
+      } else if (strs.size() > 2) {
+        Log::Fatal("Wrong line at model file: %s", cur_line.c_str());
       }
-      p += line_len;
+    } else {
+      break;
     }
+    p += line_len;
     p = Common::SkipNewLine(p);
   }
 
@@ -398,17 +396,15 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
 
   while (*p != '\0') {
     auto line_len = Common::GetLine(p);
-    if (line_len > 0) {
-      std::string cur_line(p, line_len);
-      if (Common::StartsWith(cur_line, "Tree=")) {
-        p += line_len;
-        p = Common::SkipNewLine(p);
-        size_t used_len = 0;
-        models_.emplace_back(new Tree(p, &used_len));
-        p += used_len;
-      } else {
-        p += line_len;
-      }
+    std::string cur_line(p, line_len);
+    if (Common::StartsWith(cur_line, "Tree=")) {
+      p += line_len;
+      p = Common::SkipNewLine(p);
+      size_t used_len = 0;
+      models_.emplace_back(new Tree(p, &used_len));
+      p += used_len;
+    } else {
+      break;
     }
     p = Common::SkipNewLine(p);
   }

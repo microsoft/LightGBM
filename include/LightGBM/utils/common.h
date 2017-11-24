@@ -150,6 +150,24 @@ inline static const char* Atoi(const char* p, int* out) {
   return p;
 }
 
+inline static const char* Atoui(const char* p, uint32_t* out) {
+  uint32_t value;
+  while (*p == ' ') {
+    ++p;
+  }
+  if (*p == '+') {
+    ++p;
+  }
+  for (value = 0; *p >= '0' && *p <= '9'; ++p) {
+    value = value * 10 + (*p - '0');
+  }
+  *out = value;
+  while (*p == ' ') {
+    ++p;
+  }
+  return p;
+}
+
 template<class T>
 inline static double Pow(T base, int power) {
   if (power < 0) {
@@ -365,6 +383,70 @@ inline static std::vector<T> StringToArray(const std::string& str, char delimite
   __StringToTHelper<T, std::is_floating_point<T>::value> helper;
   for (const auto& s : strs) {
     ret.push_back(helper(s));
+  }
+  return ret;
+}
+
+inline static std::vector<int> StringToIntArray(const std::string& str, size_t n) {
+  if (n == 0) {
+    return std::vector<int>();
+  }
+  std::vector<int> ret(n);
+  auto p_str = str.c_str();
+  for (size_t i = 0; i < n; ++i) {
+    p_str = Atoi(p_str, &ret[i]);
+  }
+  return ret;
+}
+
+inline static std::vector<int8_t> StringToInt8Array(const std::string& str, size_t n) {
+  if (n == 0) {
+    return std::vector<int8_t>();
+  }
+  std::vector<int8_t> ret(n);
+  auto p_str = str.c_str();
+  for (size_t i = 0; i < n; ++i) {
+    int tmp = 0;
+    p_str = Atoi(p_str, &tmp);
+    ret[i] = static_cast<int8_t>(tmp);
+  }
+  return ret;
+}
+
+inline static std::vector<uint32_t> StringToUintArray(const std::string& str, size_t n) {
+  if (n == 0) {
+    return std::vector<uint32_t>();
+  }
+  std::vector<uint32_t> ret(n);
+  auto p_str = str.c_str();
+  for (size_t i = 0; i < n; ++i) {
+    p_str = Atoui(p_str, &ret[i]);
+  }
+  return ret;
+}
+
+inline static std::vector<double> StringToDoubleArray(const std::string& str, size_t n) {
+  if (n == 0) {
+    return std::vector<double>();
+  }
+  std::vector<double> ret(n);
+  auto p_str = str.c_str();
+  for (size_t i = 0; i < n; ++i) {
+    p_str = Atof(p_str, &ret[i]);
+  }
+  return ret;
+}
+
+inline static std::vector<float> StringToFloatArray(const std::string& str, size_t n) {
+  if (n == 0) {
+    return std::vector<float>();
+  }
+  std::vector<float> ret(n);
+  auto p_str = str.c_str();
+  for (size_t i = 0; i < n; ++i) {
+    double tmp = 0.0f;
+    p_str = Atof(p_str, &tmp);
+    ret[i] = static_cast<float>(tmp);
   }
   return ret;
 }
@@ -704,16 +786,13 @@ inline static double GetDoubleUpperBound(double a) {
 
 inline static size_t GetLine(const char* str) {
   auto start = str;
-  while (*str != '\0' && *str != '\n' && *str != '\r') {
+  while (*str != '\0' && *str != '\n') {
     ++str;
   }
   return str - start;
 }
 
 inline static const char* SkipNewLine(const char* str) {
-  if (*str == '\r') {
-    ++str;
-  }
   if (*str == '\n') {
     ++str;
   }

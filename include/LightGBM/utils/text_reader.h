@@ -152,7 +152,11 @@ public:
     std::stringstream str_buf;
     ReadAllAndProcess(
       [this, &str_buf](INDEX_T, const char* buffer, size_t size) {
-      str_buf << std::string(buffer, size) << std::endl;
+      // skip empty lines.
+      if (size > 0) {
+        // only use \n for new line.
+        str_buf << std::string(buffer, size) << '\n';
+      }
     });
     return str_buf.str();
   }

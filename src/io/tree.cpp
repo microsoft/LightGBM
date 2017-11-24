@@ -474,23 +474,22 @@ std::string Tree::NodeToIfElseByMap(int index, bool is_predict_leaf_index) const
 Tree::Tree(const char* str, size_t* used_len) {
   auto p = str;
   std::unordered_map<std::string, std::string> key_vals;
-  while (*p != '\0') {
-    auto line_len = Common::GetLine(p);
-    if (line_len > 0) {
-      std::string cur_line(p, line_len);
-      auto strs = Common::Split(cur_line.c_str(), '=');
-      if (strs.size() == 2) {
-        key_vals[strs[0]] = strs[1];
-      }
-      else {
-        Log::Fatal("Wrong line at model file: %s", cur_line.c_str());
-      }
-      p += line_len;
-    }
-    else {
+  const int max_num_line = 15;
+  int read_line = 0;
+  while (read_line < max_num_line) {
+    auto start = p;
+    while (*p != '=') ++p; 
+    std::string key(start, p - start);
+    if (key == std::string("Tree")) {
+      p = start;
       break;
     }
-    p = Common::SkipNewLine(p);
+    ++p;
+    start = p;
+    while (*p != '\n') ++p;
+    key_vals[key] = std::string(start, p - start);
+    ++read_line;
+    ++p;
   }
   *used_len = p - str;
 
@@ -507,7 +506,7 @@ Tree::Tree(const char* str, size_t* used_len) {
   Common::Atoi(key_vals["num_cat"].c_str(), &num_cat_);
 
   if (key_vals.count("leaf_value")) {
-    leaf_value_ = Common::StringToArray<double>(key_vals["leaf_value"], ' ', num_leaves_);
+    leaf_value_ = Common::StringToDoubleArray(key_vals["leaf_value"], num_leaves_);
   } else {
     Log::Fatal("Tree model string format error, should contain leaf_value field");
   }
@@ -515,31 +514,31 @@ Tree::Tree(const char* str, size_t* used_len) {
   if (num_leaves_ <= 1) { return; }
 
   if (key_vals.count("left_child")) {
-    left_child_ = Common::StringToArray<int>(key_vals["left_child"], ' ', num_leaves_ - 1);
+    left_child_ = Common::StringToIntArray(key_vals["left_child"], num_leaves_ - 1);
   } else {
     Log::Fatal("Tree model string format error, should contain left_child field");
   }
 
   if (key_vals.count("right_child")) {
-    right_child_ = Common::StringToArray<int>(key_vals["right_child"], ' ', num_leaves_ - 1);
+    right_child_ = Common::StringToIntArray(key_vals["right_child"], num_leaves_ - 1);
   } else {
     Log::Fatal("Tree model string format error, should contain right_child field");
   }
 
   if (key_vals.count("split_feature")) {
-    split_feature_ = Common::StringToArray<int>(key_vals["split_feature"], ' ', num_leaves_ - 1);
+    split_feature_ = Common::StringToIntArray(key_vals["split_feature"], num_leaves_ - 1);
   } else {
     Log::Fatal("Tree model string format error, should contain split_feature field");
   }
 
   if (key_vals.count("threshold")) {
-    threshold_ = Common::StringToArray<double>(key_vals["threshold"], ' ', num_leaves_ - 1);
+    threshold_ = Common::StringToDoubleArray(key_vals["threshold"], num_leaves_ - 1);
   } else {
     Log::Fatal("Tree model string format error, should contain threshold field");
   }
 
   if (key_vals.count("split_gain")) {
-    split_gain_ = Common::StringToArray<float>(key_vals["split_gain"], ' ', num_leaves_ - 1);
+    split_gain_ = Common::StringToFloatArray(key_vals["split_gain"], num_leaves_ - 1);
   } else {
     split_gain_.resize(num_leaves_ - 1);
   }
@@ -551,7 +550,7 @@ Tree::Tree(const char* str, size_t* used_len) {
   }
 
   if (key_vals.count("internal_value")) {
-    internal_value_ = Common::StringToArray<double>(key_vals["internal_value"], ' ', num_leaves_ - 1);
+    internal_value_ = Common::StringToDoubleArray(key_vals["internal_value"], num_leaves_ - 1);
   } else {
     internal_value_.resize(num_leaves_ - 1);
   }
@@ -563,20 +562,20 @@ Tree::Tree(const char* str, size_t* used_len) {
   }
 
   if (key_vals.count("decision_type")) {
-    decision_type_ = Common::StringToArray<int8_t>(key_vals["decision_type"], ' ', num_leaves_ - 1);
+    decision_type_ = Common::StringToInt8Array(key_vals["decision_type"], num_leaves_ - 1);
   } else {
     decision_type_ = std::vector<int8_t>(num_leaves_ - 1, 0);
   }
 
   if (num_cat_ > 0) {
     if (key_vals.count("cat_boundaries")) {
-      cat_boundaries_ = Common::StringToArray<int>(key_vals["cat_boundaries"], ' ', num_cat_ + 1);
+      cat_boundaries_ = Common::StringToIntArray(key_vals["cat_boundaries"], num_cat_ + 1);
     } else {
       Log::Fatal("Tree model should contain cat_boundaries field.");
     }
 
     if (key_vals.count("cat_threshold")) {
-      cat_threshold_ = Common::StringToArray<uint32_t>(key_vals["cat_threshold"], ' ', cat_boundaries_.back());
+      cat_threshold_ = Common::StringToUintArray(key_vals["cat_threshold"], cat_boundaries_.back());
     } else {
       Log::Fatal("Tree model should contain cat_threshold field.");
     }
