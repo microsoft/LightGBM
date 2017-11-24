@@ -4,10 +4,6 @@
 #include <LightGBM/meta.h>
 #include <LightGBM/config.h>
 
-#ifdef USE_PROTO
-#include "model.pb.h"
-#endif // USE_PROTO
-
 #include <vector>
 #include <string>
 #include <map>
@@ -203,22 +199,6 @@ public:
   */
   virtual bool LoadModelFromString(const std::string& model_str) = 0;
 
-  #ifdef USE_PROTO
-  /*!
-  * \brief Save model with protobuf
-  * \param num_iterations Number of model that want to save, -1 means save all
-  * \param filename Filename that want to save to
-  */
-  virtual void SaveModelToProto(int num_iteration, const char* filename) const = 0;
-
-  /*!
-  * \brief Restore from a serialized protobuf file
-  * \param filename Filename that want to restore from
-  * \return true if succeeded
-  */
-  virtual bool LoadModelFromProto(const char* filename) = 0;
-  #endif // USE_PROTO
-
   /*!
   * \brief Calculate feature importances
   * \param num_iteration Number of model that want to use for feature importance, -1 means use all
@@ -283,7 +263,7 @@ public:
   /*! \brief Disable copy */
   Boosting(const Boosting&) = delete;
 
-  static bool LoadFileToBoosting(Boosting* boosting, const std::string& format, const char* filename);
+  static bool LoadFileToBoosting(Boosting* boosting, const char* filename);
 
   /*!
   * \brief Create boosting object
@@ -293,7 +273,7 @@ public:
   * \param filename name of model file, if existing will continue to train from this model
   * \return The boosting object
   */
-  static Boosting* CreateBoosting(const std::string& type, const std::string& format, const char* filename);
+  static Boosting* CreateBoosting(const std::string& type, const char* filename);
 
 };
 
