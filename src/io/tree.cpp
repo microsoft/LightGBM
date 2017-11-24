@@ -472,18 +472,28 @@ std::string Tree::NodeToIfElseByMap(int index, bool is_predict_leaf_index) const
 }
 
 Tree::Tree(const char* str, size_t* used_len) {
-  std::vector<std::string> lines = Common::SplitLines(str.c_str());
+  auto p = str;
   std::unordered_map<std::string, std::string> key_vals;
-  for (const std::string& line : lines) {
-    std::vector<std::string> tmp_strs = Common::Split(line.c_str(), '=');
-    if (tmp_strs.size() == 2) {
-      std::string key = Common::Trim(tmp_strs[0]);
-      std::string val = Common::Trim(tmp_strs[1]);
-      if (key.size() > 0 && val.size() > 0) {
-        key_vals[key] = val;
+  while (*p != '\0') {
+    auto line_len = Common::GetLine(p);
+    if (line_len > 0) {
+      std::string cur_line(p, line_len);
+      auto strs = Common::Split(cur_line.c_str(), '=');
+      if (strs.size() == 2) {
+        key_vals[strs[0]] = strs[1];
       }
+      else {
+        Log::Fatal("Wrong line at model file: %s", cur_line.c_str());
+      }
+      p += line_len;
     }
+    else {
+      break;
+    }
+    p = Common::SkipNewLine(p);
   }
+  *used_len = p - str;
+
   if (key_vals.count("num_leaves") <= 0) {
     Log::Fatal("Tree model should contain num_leaves field.");
   }

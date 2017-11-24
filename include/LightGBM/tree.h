@@ -29,8 +29,9 @@ public:
   /*!
   * \brief Construtor, from a string
   * \param str Model string
+  * \param used_len used count of str
   */
-  explicit Tree(const std::string& str);
+  Tree(const char* str, size_t* used_len);
 
   ~Tree();
 

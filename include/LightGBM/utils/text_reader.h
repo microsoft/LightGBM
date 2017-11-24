@@ -150,7 +150,7 @@ public:
 
   std::string ReadContent() {
     std::stringstream str_buf;
-    return ReadAllAndProcess(
+    ReadAllAndProcess(
       [this, &str_buf](INDEX_T, const char* buffer, size_t size) {
       str_buf << std::string(buffer, size) << std::endl;
     });
