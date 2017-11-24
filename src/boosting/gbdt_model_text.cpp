@@ -10,11 +10,14 @@
 
 namespace LightGBM {
 
+const std::string kModelVersion = "v2";
+
 std::string GBDT::DumpModel(int num_iteration) const {
   std::stringstream str_buf;
 
   str_buf << "{";
   str_buf << "\"name\":\"" << SubModelName() << "\"," << std::endl;
+  str_buf << "\"version\":\"" << kModelVersion << "\"," << std::endl;
   str_buf << "\"num_class\":" << num_class_ << "," << std::endl;
   str_buf << "\"num_tree_per_iteration\":" << num_tree_per_iteration_ << "," << std::endl;
   str_buf << "\"label_index\":" << label_idx_ << "," << std::endl;
@@ -234,6 +237,7 @@ std::string GBDT::SaveModelToString(int num_iteration) const {
 
   // output model type
   ss << SubModelName() << std::endl;
+  ss << "version=" << kModelVersion << std::endl;
   // output number of class
   ss << "num_class=" << num_class_ << std::endl;
   ss << "num_tree_per_iteration=" << num_tree_per_iteration_ << std::endl;
