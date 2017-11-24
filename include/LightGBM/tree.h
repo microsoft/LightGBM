@@ -53,7 +53,7 @@ public:
   */
   int Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
             double threshold_double, double left_value, double right_value,
-            data_size_t left_cnt, data_size_t right_cnt, float gain, MissingType missing_type, bool default_left);
+            int left_cnt, int right_cnt, float gain, MissingType missing_type, bool default_left);
 
   /*!
   * \brief Performing a split on tree leaves, with categorical feature
@@ -73,7 +73,7 @@ public:
   */
   int SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin, int num_threshold_bin,
                        const uint32_t* threshold, int num_threshold, double left_value, double right_value,
-                       data_size_t left_cnt, data_size_t right_cnt, float gain, MissingType missing_type);
+                       int left_cnt, int right_cnt, float gain, MissingType missing_type);
 
   /*! \brief Get the output of one leaf */
   inline double LeafOutput(int leaf) const { return leaf_value_[leaf]; }
@@ -290,7 +290,7 @@ private:
   }
 
   inline void Split(int leaf, int feature, int real_feature,
-                    double left_value, double right_value, data_size_t left_cnt, data_size_t right_cnt, float gain);
+                    double left_value, double right_value, int left_cnt, int right_cnt, float gain);
   /*!
   * \brief Find leaf index of which record belongs by features
   * \param feature_values Feature value of this record
@@ -378,18 +378,18 @@ private:
   /*! \brief Output of leaves */
   std::vector<double> leaf_value_;
   /*! \brief DataCount of leaves */
-  std::vector<data_size_t> leaf_count_;
+  std::vector<int> leaf_count_;
   /*! \brief Output of non-leaf nodes */
   std::vector<double> internal_value_;
   /*! \brief DataCount of non-leaf nodes */
-  std::vector<data_size_t> internal_count_;
+  std::vector<int> internal_count_;
   /*! \brief Depth for leaves */
   std::vector<int> leaf_depth_;
   double shrinkage_;
 };
 
 inline void Tree::Split(int leaf, int feature, int real_feature,
-                        double left_value, double right_value, data_size_t left_cnt, data_size_t right_cnt, float gain) {
+                        double left_value, double right_value, int left_cnt, int right_cnt, float gain) {
   int new_node_idx = num_leaves_ - 1;
   // update parent info
   int parent = leaf_parent_[leaf];

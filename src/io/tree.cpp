@@ -49,7 +49,7 @@ Tree::~Tree() {
 
 int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
                 double threshold_double, double left_value, double right_value,
-                data_size_t left_cnt, data_size_t right_cnt, float gain, MissingType missing_type, bool default_left) {
+                int left_cnt, int right_cnt, float gain, MissingType missing_type, bool default_left) {
   Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, gain);
   int new_node_idx = num_leaves_ - 1;
   decision_type_[new_node_idx] = 0;
@@ -544,7 +544,7 @@ Tree::Tree(const char* str, size_t* used_len) {
   }
 
   if (key_vals.count("internal_count")) {
-    internal_count_ = Common::StringToArray<data_size_t>(key_vals["internal_count"], ' ', num_leaves_ - 1);
+    internal_count_ = Common::StringToIntArray(key_vals["internal_count"], num_leaves_ - 1);
   } else {
     internal_count_.resize(num_leaves_ - 1);
   }
@@ -556,7 +556,7 @@ Tree::Tree(const char* str, size_t* used_len) {
   }
 
   if (key_vals.count("leaf_count")) {
-    leaf_count_ = Common::StringToArray<data_size_t>(key_vals["leaf_count"], ' ', num_leaves_);
+    leaf_count_ = Common::StringToIntArray(key_vals["leaf_count"], num_leaves_);
   } else {
     leaf_count_.resize(num_leaves_);
   }
