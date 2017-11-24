@@ -212,7 +212,7 @@ std::string Tree::ToString() const {
   str_buf << "split_feature="
     << Common::ArrayToString<int>(split_feature_, num_leaves_ - 1, ' ') << std::endl;
   str_buf << "split_gain="
-    << Common::ArrayToString<double>(split_gain_, num_leaves_ - 1, ' ') << std::endl;
+    << Common::ArrayToString<float>(split_gain_, num_leaves_ - 1, ' ') << std::endl;
   str_buf << "threshold="
     << Common::ArrayToString<double>(threshold_, num_leaves_ - 1, ' ') << std::endl;
   str_buf << "decision_type="
@@ -529,7 +529,7 @@ Tree::Tree(const std::string& str) {
   }
 
   if (key_vals.count("split_gain")) {
-    split_gain_ = Common::StringToArray<double>(key_vals["split_gain"], ' ', num_leaves_ - 1);
+    split_gain_ = Common::StringToArray<float>(key_vals["split_gain"], ' ', num_leaves_ - 1);
   } else {
     split_gain_.resize(num_leaves_ - 1);
   }

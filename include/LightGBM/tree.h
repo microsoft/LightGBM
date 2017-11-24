@@ -370,7 +370,7 @@ private:
   /*! \brief Store the information for categorical feature handle and mising value handle. */
   std::vector<int8_t> decision_type_;
   /*! \brief A non-leaf node's split gain */
-  std::vector<double> split_gain_;
+  std::vector<float> split_gain_;
   // used for leaf node
   /*! \brief The parent of leaf */
   std::vector<int> leaf_parent_;
