@@ -830,7 +830,7 @@ class Dataset(object):
                         raise ValueError("Label should not be None.")
             else:
                 # create train
-                self._lazy_init(self.data, label=self.label, 
+                self._lazy_init(self.data, label=self.label,
                                 weight=self.weight, group=self.group, init_score=self.init_score,
                                 predictor=self._predictor, silent=self.silent, feature_name=self.feature_name,
                                 categorical_feature=self.categorical_feature, params=self.params)
