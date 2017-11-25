@@ -427,9 +427,8 @@ inline static std::string ArrayToString(const std::vector<int>& arr, size_t n) {
   Int32ToStr(arr[0], buffer.data());
   str_buf << buffer.data();
   for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
-    str_buf << ' ';
     Int32ToStr(arr[i], buffer.data());
-    str_buf << buffer.data();
+    str_buf << ' ' << buffer.data();
   }
   return str_buf.str();
 }
@@ -444,9 +443,8 @@ inline static std::string ArrayToString(const std::vector<uint32_t>& arr, size_t
   Uint32ToStr(arr[0], buffer.data());
   str_buf << buffer.data();
   for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
-    str_buf << ' ';
     Uint32ToStr(arr[i], buffer.data());
-    str_buf << buffer.data();
+    str_buf << ' ' << buffer.data();
   }
   return str_buf.str();
 }
@@ -462,7 +460,7 @@ inline static std::string ArrayToString(const std::vector<float>& arr, size_t n)
   str_buf << buffer.data();
   for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
     FloatToStr(arr[i], buffer.data(), buf_len);
-    str_buf << buffer.data();
+    str_buf << ' ' << buffer.data();
   }
   return str_buf.str();
 }
@@ -478,7 +476,7 @@ inline static std::string ArrayToStringFast(const std::vector<double>& arr, size
   str_buf << buffer.data();
   for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
     DoubleToStrFast(arr[i], buffer.data(), buf_len);
-    str_buf << buffer.data();
+    str_buf << ' ' <<buffer.data();
   }
   return str_buf.str();
 }
@@ -494,7 +492,7 @@ inline static std::string ArrayToString(const std::vector<double>& arr, size_t n
   str_buf << buffer.data();
   for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
     DoubleToStr(arr[i], buffer.data(), buf_len);
-    str_buf << buffer.data();
+    str_buf << ' ' << buffer.data();
   }
   return str_buf.str();
 }

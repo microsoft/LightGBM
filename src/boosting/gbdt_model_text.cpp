@@ -262,7 +262,7 @@ std::string GBDT::SaveModelToString(int num_iteration) const {
   if (num_iteration > 0) {
     num_used_model = std::min(num_iteration * num_tree_per_iteration_, num_used_model);
   }
-  auto start_time2 = std::chrono::steady_clock::now();
+
   std::vector<std::string> tree_strs(num_used_model);
   std::vector<size_t> tree_sizes(num_used_model);
   // output tree models
