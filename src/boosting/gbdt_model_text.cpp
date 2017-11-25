@@ -265,12 +265,19 @@ std::string GBDT::SaveModelToString(int num_iteration) const {
   if (num_iteration > 0) {
     num_used_model = std::min(num_iteration * num_tree_per_iteration_, num_used_model);
   }
+  std::vector<std::string> tree_strs(num_used_model);
   // output tree models
+  #pragma omp parallel for schedule(static)
   for (int i = 0; i < num_used_model; ++i) {
-    ss << "Tree=" << i << std::endl;
-    ss << models_[i]->ToString() << std::endl;
+    std::stringstream tmp_ss;
+    tmp_ss << "Tree=" << i << std::endl;
+    tmp_ss << models_[i]->ToString() << std::endl;
+    tree_strs[i] = tmp_ss.str();
   }
-
+  for (int i = 0; i < num_used_model; ++i) {
+    ss << tree_strs[i];
+    tree_strs[i].clear();
+  }
   // store the importance first
   std::vector<std::pair<size_t, std::string>> pairs;
   for (size_t i = 0; i < feature_importances.size(); ++i) {
