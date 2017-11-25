@@ -207,49 +207,49 @@ void Tree::AddPredictionToScore(const Dataset* data,
 
 std::string Tree::ToString() const {
   std::stringstream str_buf;
-  str_buf << "num_leaves=" << num_leaves_ << std::endl;
-  str_buf << "num_cat=" << num_cat_ << std::endl;
+  str_buf << "num_leaves=" << num_leaves_ << '\n';
+  str_buf << "num_cat=" << num_cat_ << '\n';
   str_buf << "split_feature="
-    << Common::ArrayToString<int>(split_feature_, num_leaves_ - 1, ' ') << std::endl;
+    << Common::ArrayToString(split_feature_, num_leaves_ - 1, ' ') << '\n';
   str_buf << "split_gain="
-    << Common::ArrayToString<float>(split_gain_, num_leaves_ - 1, ' ') << std::endl;
+    << Common::ArrayToString(split_gain_, num_leaves_ - 1, ' ') << '\n';
   str_buf << "threshold="
-    << Common::ArrayToString<double>(threshold_, num_leaves_ - 1, ' ') << std::endl;
+    << Common::ArrayToString(threshold_, num_leaves_ - 1, ' ') << '\n';
   str_buf << "decision_type="
-    << Common::ArrayToString<int>(Common::ArrayCast<int8_t, int>(decision_type_), num_leaves_ - 1, ' ') << std::endl;
+    << Common::ArrayToString(Common::ArrayCast<int8_t, int>(decision_type_), num_leaves_ - 1, ' ') << '\n';
   str_buf << "left_child="
-    << Common::ArrayToString<int>(left_child_, num_leaves_ - 1, ' ') << std::endl;
+    << Common::ArrayToString(left_child_, num_leaves_ - 1, ' ') << '\n';
   str_buf << "right_child="
-    << Common::ArrayToString<int>(right_child_, num_leaves_ - 1, ' ') << std::endl;
+    << Common::ArrayToString(right_child_, num_leaves_ - 1, ' ') << '\n';
   str_buf << "leaf_value="
-    << Common::ArrayToString<double>(leaf_value_, num_leaves_, ' ') << std::endl;
+    << Common::ArrayToString(leaf_value_, num_leaves_, ' ') << '\n';
   str_buf << "leaf_count="
-    << Common::ArrayToString<data_size_t>(leaf_count_, num_leaves_, ' ') << std::endl;
+    << Common::ArrayToString(leaf_count_, num_leaves_, ' ') << '\n';
   str_buf << "internal_value="
-    << Common::ArrayToString<double>(internal_value_, num_leaves_ - 1, ' ') << std::endl;
+    << Common::ArrayToStringFast(internal_value_, num_leaves_ - 1, ' ') << '\n';
   str_buf << "internal_count="
-    << Common::ArrayToString<data_size_t>(internal_count_, num_leaves_ - 1, ' ') << std::endl;
+    << Common::ArrayToString(internal_count_, num_leaves_ - 1, ' ') << '\n';
   if (num_cat_ > 0) {
     str_buf << "cat_boundaries="
-      << Common::ArrayToString<int>(cat_boundaries_, num_cat_ + 1, ' ') << std::endl;
+      << Common::ArrayToString(cat_boundaries_, num_cat_ + 1, ' ') << '\n';
     str_buf << "cat_threshold="
-      << Common::ArrayToString<uint32_t>(cat_threshold_, cat_threshold_.size(), ' ') << std::endl;
+      << Common::ArrayToString(cat_threshold_, cat_threshold_.size(), ' ') << '\n';
   }
-  str_buf << "shrinkage=" << shrinkage_ << std::endl;
-  str_buf << std::endl;
+  str_buf << "shrinkage=" << shrinkage_ << '\n';
+  str_buf << '\n';
   return str_buf.str();
 }
 
 std::string Tree::ToJSON() const {
   std::stringstream str_buf;
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
-  str_buf << "\"num_leaves\":" << num_leaves_ << "," << std::endl;
-  str_buf << "\"num_cat\":" << num_cat_ << "," << std::endl;
-  str_buf << "\"shrinkage\":" << shrinkage_ << "," << std::endl;
+  str_buf << "\"num_leaves\":" << num_leaves_ << "," << '\n';
+  str_buf << "\"num_cat\":" << num_cat_ << "," << '\n';
+  str_buf << "\"shrinkage\":" << shrinkage_ << "," << '\n';
   if (num_leaves_ == 1) {
-    str_buf << "\"tree_structure\":{" << "\"leaf_value\":" << leaf_value_[0] << "}" << std::endl;
+    str_buf << "\"tree_structure\":{" << "\"leaf_value\":" << leaf_value_[0] << "}" << '\n';
   } else {
-    str_buf << "\"tree_structure\":" << NodeToJSON(0) << std::endl;
+    str_buf << "\"tree_structure\":" << NodeToJSON(0) << '\n';
   }
 
   return str_buf.str();
@@ -260,10 +260,10 @@ std::string Tree::NodeToJSON(int index) const {
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   if (index >= 0) {
     // non-leaf
-    str_buf << "{" << std::endl;
-    str_buf << "\"split_index\":" << index << "," << std::endl;
-    str_buf << "\"split_feature\":" << split_feature_[index] << "," << std::endl;
-    str_buf << "\"split_gain\":" << split_gain_[index] << "," << std::endl;
+    str_buf << "{" << '\n';
+    str_buf << "\"split_index\":" << index << "," << '\n';
+    str_buf << "\"split_feature\":" << split_feature_[index] << "," << '\n';
+    str_buf << "\"split_gain\":" << split_gain_[index] << "," << '\n';
     if (GetDecisionType(decision_type_[index], kCategoricalMask)) {
       int cat_idx = static_cast<int>(threshold_[index]);
       std::vector<int> cats;
@@ -276,37 +276,37 @@ std::string Tree::NodeToJSON(int index) const {
           }
         }
       }
-      str_buf << "\"threshold\":\"" << Common::Join(cats, "||") << "\"," << std::endl;
-      str_buf << "\"decision_type\":\"==\"," << std::endl;
+      str_buf << "\"threshold\":\"" << Common::Join(cats, "||") << "\"," << '\n';
+      str_buf << "\"decision_type\":\"==\"," << '\n';
     } else {
-      str_buf << "\"threshold\":" << Common::AvoidInf(threshold_[index]) << "," << std::endl;
-      str_buf << "\"decision_type\":\"<=\"," << std::endl;
+      str_buf << "\"threshold\":" << Common::AvoidInf(threshold_[index]) << "," << '\n';
+      str_buf << "\"decision_type\":\"<=\"," << '\n';
     }
     if (GetDecisionType(decision_type_[index], kDefaultLeftMask)) {
-      str_buf << "\"default_left\":true," << std::endl;
+      str_buf << "\"default_left\":true," << '\n';
     } else {
-      str_buf << "\"default_left\":false," << std::endl;
+      str_buf << "\"default_left\":false," << '\n';
     }
     uint8_t missing_type = GetMissingType(decision_type_[index]);
     if (missing_type == 0) {
-      str_buf << "\"missing_type\":\"None\"," << std::endl;
+      str_buf << "\"missing_type\":\"None\"," << '\n';
     } else if (missing_type == 1) {
-      str_buf << "\"missing_type\":\"Zero\"," << std::endl;
+      str_buf << "\"missing_type\":\"Zero\"," << '\n';
     } else {
-      str_buf << "\"missing_type\":\"NaN\"," << std::endl;
+      str_buf << "\"missing_type\":\"NaN\"," << '\n';
     }
-    str_buf << "\"internal_value\":" << internal_value_[index] << "," << std::endl;
-    str_buf << "\"internal_count\":" << internal_count_[index] << "," << std::endl;
-    str_buf << "\"left_child\":" << NodeToJSON(left_child_[index]) << "," << std::endl;
-    str_buf << "\"right_child\":" << NodeToJSON(right_child_[index]) << std::endl;
+    str_buf << "\"internal_value\":" << internal_value_[index] << "," << '\n';
+    str_buf << "\"internal_count\":" << internal_count_[index] << "," << '\n';
+    str_buf << "\"left_child\":" << NodeToJSON(left_child_[index]) << "," << '\n';
+    str_buf << "\"right_child\":" << NodeToJSON(right_child_[index]) << '\n';
     str_buf << "}";
   } else {
     // leaf
     index = ~index;
-    str_buf << "{" << std::endl;
-    str_buf << "\"leaf_index\":" << index << "," << std::endl;
-    str_buf << "\"leaf_value\":" << leaf_value_[index] << "," << std::endl;
-    str_buf << "\"leaf_count\":" << leaf_count_[index] << std::endl;
+    str_buf << "{" << '\n';
+    str_buf << "\"leaf_index\":" << index << "," << '\n';
+    str_buf << "\"leaf_value\":" << leaf_value_[index] << "," << '\n';
+    str_buf << "\"leaf_count\":" << leaf_count_[index] << '\n';
     str_buf << "}";
   }
 
@@ -376,7 +376,7 @@ std::string Tree::ToIfElse(int index, bool is_predict_leaf_index) const {
     }
     str_buf << NodeToIfElse(0, is_predict_leaf_index);
   }
-  str_buf << " }" << std::endl;
+  str_buf << " }" << '\n';
 
   //Predict func by Map to ifelse
   str_buf << "double PredictTree" << index;
@@ -404,7 +404,7 @@ std::string Tree::ToIfElse(int index, bool is_predict_leaf_index) const {
     }
     str_buf << NodeToIfElseByMap(0, is_predict_leaf_index);
   }
-  str_buf << " }" << std::endl;
+  str_buf << " }" << '\n';
 
   return str_buf.str();
 }
