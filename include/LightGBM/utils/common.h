@@ -128,8 +128,10 @@ inline static std::vector<std::string> Split(const char* c_str, const char* deli
   return ret;
 }
 
-inline static const char* Atoi(const char* p, int* out) {
-  int sign, value;
+template<class T>
+inline static const char* Atoi(const char* p, T* out) {
+  int sign;
+  T value;
   while (*p == ' ') {
     ++p;
   }
@@ -143,25 +145,7 @@ inline static const char* Atoi(const char* p, int* out) {
   for (value = 0; *p >= '0' && *p <= '9'; ++p) {
     value = value * 10 + (*p - '0');
   }
-  *out = sign * value;
-  while (*p == ' ') {
-    ++p;
-  }
-  return p;
-}
-
-inline static const char* Atoui(const char* p, uint32_t* out) {
-  uint32_t value;
-  while (*p == ' ') {
-    ++p;
-  }
-  if (*p == '+') {
-    ++p;
-  }
-  for (value = 0; *p >= '0' && *p <= '9'; ++p) {
-    value = value * 10 + (*p - '0');
-  }
-  *out = value;
+  *out = static_cast<T>(sign * value);
   while (*p == ' ') {
     ++p;
   }
@@ -347,7 +331,9 @@ inline static std::string ArrayToString(const std::vector<T>& arr, size_t n, cha
 template<typename T, bool is_float>
 struct __StringToTHelper {
   T operator()(const std::string& str) const {
-    return static_cast<T>(std::stoll(str));
+    T ret = 0;
+    Atoi(str.c_str(), &ret);
+    return ret;
   }
 };
 
@@ -357,23 +343,6 @@ struct __StringToTHelper<T, true> {
     return static_cast<T>(std::stod(str));
   }
 };
-
-template<typename T>
-inline static std::vector<T> StringToArray(const std::string& str, char delimiter, size_t n) {
-  if (n == 0) {
-    return std::vector<T>();
-  }
-  std::vector<std::string> strs = Split(str.c_str(), delimiter);
-  if (strs.size() != n) {
-    Log::Fatal("StringToArray error, size doesn't match.");
-  }
-  std::vector<T> ret(n);
-  __StringToTHelper<T, std::is_floating_point<T>::value> helper;
-  for (size_t i = 0; i < n; ++i) {
-    ret[i] = helper(strs[i]);
-  }
-  return ret;
-}
 
 template<typename T>
 inline static std::vector<T> StringToArray(const std::string& str, char delimiter) {
@@ -387,45 +356,36 @@ inline static std::vector<T> StringToArray(const std::string& str, char delimite
   return ret;
 }
 
-inline static std::vector<int> StringToIntArray(const std::string& str, size_t n) {
+template<typename T>
+inline static std::vector<T> StringToIntArray(const std::string& str, size_t n) {
+  static_assert(std::is_integral<T>::value, "Integral required.");
   if (n == 0) {
-    return std::vector<int>();
+    return std::vector<T>();
   }
-  std::vector<int> ret(n);
   auto p_str = str.c_str();
+  std::vector<T> ret(n);
   for (size_t i = 0; i < n; ++i) {
     p_str = Atoi(p_str, &ret[i]);
   }
   return ret;
 }
 
-inline static std::vector<int8_t> StringToInt8Array(const std::string& str, size_t n) {
-  if (n == 0) {
-    return std::vector<int8_t>();
-  }
-  std::vector<int8_t> ret(n);
-  auto p_str = str.c_str();
-  for (size_t i = 0; i < n; ++i) {
-    int tmp = 0;
-    p_str = Atoi(p_str, &tmp);
-    ret[i] = static_cast<int8_t>(tmp);
-  }
-  return ret;
-}
-
-inline static std::vector<uint32_t> StringToUintArray(const std::string& str, size_t n) {
-  if (n == 0) {
-    return std::vector<uint32_t>();
-  }
-  std::vector<uint32_t> ret(n);
-  auto p_str = str.c_str();
-  for (size_t i = 0; i < n; ++i) {
-    p_str = Atoui(p_str, &ret[i]);
-  }
-  return ret;
-}
-
 inline static std::vector<double> StringToDoubleArray(const std::string& str, size_t n) {
+  if (n == 0) {
+    return std::vector<double>();
+  }
+  std::vector<std::string> strs = Split(str.c_str(), ' ');
+  if (strs.size() != n) {
+    Log::Fatal("StringToDoubleArray error, size doesn't match.");
+  }
+  std::vector<double> ret(n);
+  for (size_t i = 0; i < n; ++i) {
+    ret[i] = std::stod(strs[i]);
+  }
+  return ret;
+}
+
+inline static std::vector<double> StringToDoubleArrayFast(const std::string& str, size_t n) {
   if (n == 0) {
     return std::vector<double>();
   }
