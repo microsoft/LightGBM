@@ -358,7 +358,11 @@ inline static void Int32ToStr(int32_t value, char* buffer) {
   Uint32ToStr(u, buffer);
 }
 
-inline static void FloatToStr(float value, char* buffer, size_t buffer_len) {
+inline static void FloatToStr(float value, char* buffer, size_t
+                              #ifdef _MSC_VER
+                              buffer_len
+                              #endif
+) {
   #ifdef _MSC_VER
   sprintf_s(buffer, buffer_len, "%f", value);
   #else
@@ -366,7 +370,11 @@ inline static void FloatToStr(float value, char* buffer, size_t buffer_len) {
   #endif
 }
 
-inline static void DoubleToStr(double value, char* buffer, size_t buffer_len) {
+inline static void DoubleToStr(double value, char* buffer, size_t 
+                               #ifdef _MSC_VER
+                               buffer_len
+                               #endif
+) {
   #ifdef _MSC_VER
   sprintf_s(buffer, buffer_len, "%.17g", value);
   #else
@@ -374,7 +382,11 @@ inline static void DoubleToStr(double value, char* buffer, size_t buffer_len) {
   #endif
 }
 
-inline static void DoubleToStrFast(double value, char* buffer, size_t buffer_len) {
+inline static void DoubleToStrFast(double value, char* buffer, size_t
+                                   #ifdef _MSC_VER
+                                   buffer_len
+                                   #endif
+) {
   #ifdef _MSC_VER
   sprintf_s(buffer, buffer_len, "%g", value);
   #else

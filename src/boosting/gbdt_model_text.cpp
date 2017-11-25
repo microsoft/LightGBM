@@ -434,8 +434,10 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
       tree_boundries[i + 1] = tree_boundries[i] + tree_sizes[i];
       models_.emplace_back(nullptr);
     }
+    OMP_INIT_EX();
     #pragma omp parallel for schedule(static)
     for (int i = 0; i < num_trees; ++i) {
+      OMP_LOOP_EX_BEGIN();
       auto cur_p = p + tree_boundries[i];
       auto line_len = Common::GetLine(cur_p);
       std::string cur_line(cur_p, line_len);
@@ -445,9 +447,11 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
         size_t used_len = 0;
         models_[i].reset(new Tree(cur_p, &used_len));
       } else {
-        Log::Fatal("Model format error, expect a tree here.");
+        Log::Fatal("Model format error, expect a tree here. met %s", cur_line.c_str());
       }
+      OMP_LOOP_EX_END();
     }
+    OMP_THROW_EX();
   }
 
   Log::Info("Finished loading %d models", models_.size());
