@@ -132,7 +132,7 @@ inline static std::vector<std::string> Split(const char* c_str, const char* deli
   return ret;
 }
 
-template<class T>
+template<typename T>
 inline static const char* Atoi(const char* p, T* out) {
   int sign;
   T value;
@@ -156,7 +156,7 @@ inline static const char* Atoi(const char* p, T* out) {
   return p;
 }
 
-template<class T>
+template<typename T>
 inline static double Pow(T base, int power) {
   if (power < 0) {
     return 1.0 / Pow(base, -power);
@@ -422,7 +422,7 @@ struct __TToStringHelperFast<T, false, true> {
   }
 };
 
-template<class T>
+template<typename T>
 inline static std::string ArrayToStringFast(const std::vector<T>& arr, size_t n) {
   if (arr.empty() || n == 0) {
     return std::string("");
@@ -699,12 +699,12 @@ inline static float AvoidInf(float x) {
 	}
 }
 
-template<class _Iter> inline
+template<typename _Iter> inline
 static typename std::iterator_traits<_Iter>::value_type* IteratorValType(_Iter) {
   return (0);
 }
 
-template<class _RanIt, class _Pr, class _VTRanIt> inline
+template<typename _RanIt, typename _Pr, typename _VTRanIt> inline
 static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   size_t len = _Last - _First;
   const size_t kMinInnerLen = 1024;
@@ -751,7 +751,7 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   }
 }
 
-template<class _RanIt, class _Pr> inline
+template<typename _RanIt, typename _Pr> inline
 static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred) {
   return ParallelSort(_First, _Last, _Pred, IteratorValType(_First));
 }
@@ -831,7 +831,7 @@ inline static void ObtainMinMaxSum(const T1 *w, int nw, T1 *mi, T1 *ma, T2 *su) 
   }
 }
 
-template<class T>
+template<typename T>
 inline static std::vector<uint32_t> ConstructBitset(const T* vals, int n) {
   std::vector<uint32_t> ret;
   for (int i = 0; i < n; ++i) {
@@ -845,7 +845,7 @@ inline static std::vector<uint32_t> ConstructBitset(const T* vals, int n) {
   return ret;
 }
 
-template<class T>
+template<typename T>
 inline static bool FindInBitset(const uint32_t* bits, int n, T pos) {
   int i1 = pos / 32;
   if (i1 >= n) {
