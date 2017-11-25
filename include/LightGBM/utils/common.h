@@ -526,56 +526,48 @@ inline static std::vector<T> StringToArray(const std::string& str, char delimite
 }
 
 template<typename T>
-inline static std::vector<T> StringToIntArray(const std::string& str, size_t n) {
-  static_assert(std::is_integral<T>::value, "Integral required.");
+inline static std::vector<T> StringToArray(const std::string& str, int n) {
+  if (n == 0) {
+    return std::vector<T>();
+  }
+  std::vector<std::string> strs = Split(str.c_str(), ' ');
+  CHECK(strs.size() == static_cast<size_t>(n));
+  std::vector<T> ret;
+  ret.reserve(strs.size());
+  __StringToTHelper<T, std::is_floating_point<T>::value> helper;
+  for (const auto& s : strs) {
+    ret.push_back(helper(s));
+  }
+  return ret;
+}
+
+template<typename T, bool is_float>
+struct __StringToTHelperFast {
+  const char* operator()(const char*p, T* out) const {
+    return Atoi(p, out);
+  }
+};
+
+template<typename T>
+struct __StringToTHelperFast<T, true> {
+  const char* operator()(const char*p, T* out) const {
+    double tmp = 0.0f;
+    auto ret = Atof(p, &tmp);
+    *out= static_cast<T>(tmp);
+    return ret;
+  }
+};
+
+template<typename T>
+inline static std::vector<T> StringToArrayFast(const std::string& str, int n) {
   if (n == 0) {
     return std::vector<T>();
   }
   auto p_str = str.c_str();
+  __StringToTHelperFast<T, std::is_floating_point<T>::value> helper;
   std::vector<T> ret(n);
-  for (size_t i = 0; i < n; ++i) {
-    p_str = Atoi(p_str, &ret[i]);
-  }
-  return ret;
-}
-
-inline static std::vector<double> StringToDoubleArray(const std::string& str, size_t n) {
-  if (n == 0) {
-    return std::vector<double>();
-  }
-  std::vector<std::string> strs = Split(str.c_str(), ' ');
-  if (strs.size() != n) {
-    Log::Fatal("StringToDoubleArray error, size doesn't match.");
-  }
-  std::vector<double> ret(n);
-  for (size_t i = 0; i < n; ++i) {
-    ret[i] = std::stod(strs[i]);
-  }
-  return ret;
-}
-
-inline static std::vector<double> StringToDoubleArrayFast(const std::string& str, size_t n) {
-  if (n == 0) {
-    return std::vector<double>();
-  }
-  std::vector<double> ret(n);
-  auto p_str = str.c_str();
-  for (size_t i = 0; i < n; ++i) {
-    p_str = Atof(p_str, &ret[i]);
-  }
-  return ret;
-}
-
-inline static std::vector<float> StringToFloatArray(const std::string& str, size_t n) {
-  if (n == 0) {
-    return std::vector<float>();
-  }
-  std::vector<float> ret(n);
-  auto p_str = str.c_str();
-  for (size_t i = 0; i < n; ++i) {
-    double tmp = 0.0f;
-    p_str = Atof(p_str, &tmp);
-    ret[i] = static_cast<float>(tmp);
+  for (int i = 0; i < n; ++i) {
+    p_str = helper(p_str, &ret[i]);
   }
   return ret;
 }
