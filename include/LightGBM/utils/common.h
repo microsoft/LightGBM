@@ -25,7 +25,7 @@ namespace LightGBM {
 
 namespace Common {
 
-inline char tolower(char in) {
+inline static char tolower(char in) {
   if (in <= 'Z' && in >= 'A')
     return in - ('Z' - 'z');
   return in;
@@ -358,18 +358,6 @@ inline static void Int32ToStr(int32_t value, char* buffer) {
   Uint32ToStr(u, buffer);
 }
 
-inline static void FloatToStr(float value, char* buffer, size_t
-                              #ifdef _MSC_VER
-                              buffer_len
-                              #endif
-) {
-  #ifdef _MSC_VER
-  sprintf_s(buffer, buffer_len, "%f", value);
-  #else
-  sprintf(buffer, "%f", value);
-  #endif
-}
-
 inline static void DoubleToStr(double value, char* buffer, size_t 
                                #ifdef _MSC_VER
                                buffer_len
@@ -379,18 +367,6 @@ inline static void DoubleToStr(double value, char* buffer, size_t
   sprintf_s(buffer, buffer_len, "%.17g", value);
   #else
   sprintf(buffer, "%.17g", value);
-  #endif
-}
-
-inline static void DoubleToStrFast(double value, char* buffer, size_t
-                                   #ifdef _MSC_VER
-                                   buffer_len
-                                   #endif
-) {
-  #ifdef _MSC_VER
-  sprintf_s(buffer, buffer_len, "%g", value);
-  #else
-  sprintf(buffer, "%g", value);
   #endif
 }
 
@@ -417,66 +393,49 @@ inline static std::vector<T2> ArrayCast(const std::vector<T>& arr) {
   return ret;
 }
 
-inline static std::string ArrayToString(const std::vector<int>& arr, size_t n) {
-  if (arr.empty() || n == 0) {
-    return std::string("");
+template<typename T, bool is_float, bool is_unsign>
+struct __TToStringHelperFast {
+  void operator()(T value, char* buffer, size_t ) const {
+    Int32ToStr(value, buffer);
   }
-  const size_t buf_len = 16;
-  std::vector<char> buffer(buf_len);
-  std::stringstream str_buf;
-  Int32ToStr(arr[0], buffer.data());
-  str_buf << buffer.data();
-  for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
-    Int32ToStr(arr[i], buffer.data());
-    str_buf << ' ' << buffer.data();
-  }
-  return str_buf.str();
-}
+};
 
-inline static std::string ArrayToString(const std::vector<uint32_t>& arr, size_t n) {
-  if (arr.empty() || n == 0) {
-    return std::string("");
+template<typename T>
+struct __TToStringHelperFast<T, true, false> {
+  void operator()(T value, char* buffer, size_t 
+                  #ifdef _MSC_VER
+                  buf_len
+                  #endif
+                  ) const {
+    #ifdef _MSC_VER
+    sprintf_s(buffer, buf_len, "%g", value);
+    #else
+    sprintf(buffer, "%g", value);
+    #endif
   }
-  const size_t buf_len = 16;
-  std::vector<char> buffer(buf_len);
-  std::stringstream str_buf;
-  Uint32ToStr(arr[0], buffer.data());
-  str_buf << buffer.data();
-  for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
-    Uint32ToStr(arr[i], buffer.data());
-    str_buf << ' ' << buffer.data();
-  }
-  return str_buf.str();
-}
+};
 
-inline static std::string ArrayToString(const std::vector<float>& arr, size_t n) {
-  if (arr.empty() || n == 0) {
-    return std::string("");
+template<typename T>
+struct __TToStringHelperFast<T, false, true> {
+  void operator()(T value, char* buffer, size_t ) const {
+    Uint32ToStr(value, buffer);
   }
-  const size_t buf_len = 16;
-  std::vector<char> buffer(buf_len);
-  std::stringstream str_buf;
-  FloatToStr(arr[0], buffer.data(), buf_len);
-  str_buf << buffer.data();
-  for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
-    FloatToStr(arr[i], buffer.data(), buf_len);
-    str_buf << ' ' << buffer.data();
-  }
-  return str_buf.str();
-}
+};
 
-inline static std::string ArrayToStringFast(const std::vector<double>& arr, size_t n) {
+template<class T>
+inline static std::string ArrayToStringFast(const std::vector<T>& arr, size_t n) {
   if (arr.empty() || n == 0) {
     return std::string("");
   }
+  __TToStringHelperFast<T, std::is_floating_point<T>::value, std::is_unsigned<T>::value> helper;
   const size_t buf_len = 16;
   std::vector<char> buffer(buf_len);
   std::stringstream str_buf;
-  DoubleToStrFast(arr[0], buffer.data(), buf_len);
+  helper(arr[0], buffer.data(), buf_len);
   str_buf << buffer.data();
   for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
-    DoubleToStrFast(arr[i], buffer.data(), buf_len);
-    str_buf << ' ' <<buffer.data();
+    helper(arr[i], buffer.data(), buf_len);
+    str_buf << ' ' << buffer.data();
   }
   return str_buf.str();
 }
@@ -604,7 +563,7 @@ inline static std::string Join(const std::vector<T>& strs, size_t start, size_t 
   return str_buf.str();
 }
 
-static inline int64_t Pow2RoundUp(int64_t x) {
+inline static int64_t Pow2RoundUp(int64_t x) {
   int64_t t = 1;
   for (int i = 0; i < 64; ++i) {
     if (t >= x) {
@@ -619,7 +578,7 @@ static inline int64_t Pow2RoundUp(int64_t x) {
  * \brief Do inplace softmax transformaton on p_rec
  * \param p_rec The input/output vector of the values.
  */
-inline void Softmax(std::vector<double>* p_rec) {
+inline static void Softmax(std::vector<double>* p_rec) {
   std::vector<double> &rec = *p_rec;
   double wmax = rec[0];
   for (size_t i = 1; i < rec.size(); ++i) {
@@ -635,7 +594,7 @@ inline void Softmax(std::vector<double>* p_rec) {
   }
 }
 
-inline void Softmax(const double* input, double* output, int len) {
+inline static void Softmax(const double* input, double* output, int len) {
   double wmax = input[0];
   for (int i = 1; i < len; ++i) {
     wmax = std::max(input[i], wmax);
@@ -660,7 +619,7 @@ std::vector<const T*> ConstPtrInVectorWrapper(const std::vector<std::unique_ptr<
 }
 
 template<typename T1, typename T2>
-inline void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, size_t start, bool is_reverse = false) {
+inline static void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, size_t start, bool is_reverse = false) {
   std::vector<std::pair<T1, T2>> arr;
   for (size_t i = start; i < keys.size(); ++i) {
     arr.emplace_back(keys[i], values[i]);
@@ -799,7 +758,7 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred) {
 
 // Check that all y[] are in interval [ymin, ymax] (end points included); throws error if not
 template <typename T>
-inline void CheckElementsIntervalClosed(const T *y, T ymin, T ymax, int ny, const char *callername) {
+inline static void CheckElementsIntervalClosed(const T *y, T ymin, T ymax, int ny, const char *callername) {
   auto fatal_msg = [&y, &ymin, &ymax, &callername](int i) { 
     std::ostringstream os;
     os << "[%s]: does not tolerate element [#%i = " << y[i] << "] outside [" << ymin << ", " << ymax << "]";
@@ -830,7 +789,7 @@ inline void CheckElementsIntervalClosed(const T *y, T ymin, T ymax, int ny, cons
 // One-pass scan over array w with nw elements: find min, max and sum of elements;
 // this is useful for checking weight requirements.
 template <typename T1, typename T2>
-inline void ObtainMinMaxSum(const T1 *w, int nw, T1 *mi, T1 *ma, T2 *su) {
+inline static void ObtainMinMaxSum(const T1 *w, int nw, T1 *mi, T1 *ma, T2 *su) {
   T1 minw;
   T1 maxw;
   T1 sumw;
@@ -873,7 +832,7 @@ inline void ObtainMinMaxSum(const T1 *w, int nw, T1 *mi, T1 *ma, T2 *su) {
 }
 
 template<class T>
-inline std::vector<uint32_t> ConstructBitset(const T* vals, int n) {
+inline static std::vector<uint32_t> ConstructBitset(const T* vals, int n) {
   std::vector<uint32_t> ret;
   for (int i = 0; i < n; ++i) {
     int i1 = vals[i] / 32;
@@ -887,7 +846,7 @@ inline std::vector<uint32_t> ConstructBitset(const T* vals, int n) {
 }
 
 template<class T>
-inline bool FindInBitset(const uint32_t* bits, int n, T pos) {
+inline static bool FindInBitset(const uint32_t* bits, int n, T pos) {
   int i1 = pos / 32;
   if (i1 >= n) {
     return false;
