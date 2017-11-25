@@ -273,12 +273,6 @@ class LGBMModel(_LGBMModelBase):
     def get_params(self, deep=True):
         params = super(LGBMModel, self).get_params(deep=deep)
         params.update(self._other_params)
-        if 'seed' in params:
-            warnings.warn('The `seed` parameter is deprecated and will be removed in 2.0.12 version. '
-                          'Please use `random_state` instead.', LGBMDeprecationWarning)
-        if 'nthread' in params:
-            warnings.warn('The `nthread` parameter is deprecated and will be removed in 2.0.12 version. '
-                          'Please use `n_jobs` instead.', LGBMDeprecationWarning)
         return params
 
     # minor change to support `**kwargs`
@@ -577,16 +571,6 @@ class LGBMModel(_LGBMModelBase):
         if self._n_features is None:
             raise LGBMNotFittedError('No feature_importances found. Need to call fit beforehand.')
         return self.booster_.feature_importance()
-
-    def booster(self):
-        warnings.warn('The `booster()` method is deprecated and will be removed in 2.0.12 version. '
-                      'Please use attribute `booster_` instead.', LGBMDeprecationWarning)
-        return self.booster_
-
-    def feature_importance(self):
-        warnings.warn('The `feature_importance()` method is deprecated and will be removed in 2.0.12 version. '
-                      'Please use attribute `feature_importances_` instead.', LGBMDeprecationWarning)
-        return self.feature_importances_
 
 
 class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
