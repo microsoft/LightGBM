@@ -381,22 +381,7 @@ inline static std::vector<T2> ArrayCast(const std::vector<T>& arr) {
   return ret;
 }
 
-template<typename T>
-inline static std::string ArrayToString(const std::vector<T>& arr, char delimiter) {
-  if (arr.empty()) {
-    return std::string("");
-  }
-  std::stringstream str_buf;
-  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
-  str_buf << arr[0];
-  for (size_t i = 1; i < arr.size(); ++i) {
-    str_buf << delimiter;
-    str_buf << arr[i];
-  }
-  return str_buf.str();
-}
-
-inline static std::string ArrayToString(const std::vector<int>& arr, size_t n, char delimiter) {
+inline static std::string ArrayToString(const std::vector<int>& arr, size_t n) {
   if (arr.empty() || n == 0) {
     return std::string("");
   }
@@ -405,14 +390,14 @@ inline static std::string ArrayToString(const std::vector<int>& arr, size_t n, c
   Int32ToStr(arr[0], buffer.data());
   str_buf << buffer.data();
   for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
-    str_buf << delimiter;
+    str_buf << ' ';
     Int32ToStr(arr[i], buffer.data());
     str_buf << buffer.data();
   }
   return str_buf.str();
 }
 
-inline static std::string ArrayToString(const std::vector<uint32_t>& arr, size_t n, char delimiter) {
+inline static std::string ArrayToString(const std::vector<uint32_t>& arr, size_t n) {
   if (arr.empty() || n == 0) {
     return std::string("");
   }
@@ -421,14 +406,14 @@ inline static std::string ArrayToString(const std::vector<uint32_t>& arr, size_t
   Uint32ToStr(arr[0], buffer.data());
   str_buf << buffer.data();
   for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
-    str_buf << delimiter;
+    str_buf << ' ';
     Uint32ToStr(arr[i], buffer.data());
     str_buf << buffer.data();
   }
   return str_buf.str();
 }
 
-inline static std::string ArrayToString(const std::vector<float>& arr, size_t n, char delimiter) {
+inline static std::string ArrayToString(const std::vector<float>& arr, size_t n) {
   if (arr.empty() || n == 0) {
     return std::string("");
   }
@@ -437,14 +422,13 @@ inline static std::string ArrayToString(const std::vector<float>& arr, size_t n,
   sprintf(buffer.data(), "%f", arr[0]);
   str_buf << buffer.data();
   for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
-    str_buf << delimiter;
-    sprintf(buffer.data(), "%f", arr[i]);
+    sprintf(buffer.data(), " %f", arr[i]);
     str_buf << buffer.data();
   }
   return str_buf.str();
 }
 
-inline static std::string ArrayToStringFast(const std::vector<double>& arr, size_t n, char delimiter) {
+inline static std::string ArrayToStringFast(const std::vector<double>& arr, size_t n) {
   if (arr.empty() || n == 0) {
     return std::string("");
   }
@@ -453,14 +437,13 @@ inline static std::string ArrayToStringFast(const std::vector<double>& arr, size
   sprintf(buffer.data(), "%g", arr[0]);
   str_buf << buffer.data();
   for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
-    str_buf << delimiter;
-    sprintf(buffer.data(), "%g", arr[i]);
+    sprintf(buffer.data(), " %g", arr[i]);
     str_buf << buffer.data();
   }
   return str_buf.str();
 }
 
-inline static std::string ArrayToString(const std::vector<double>& arr, size_t n, char delimiter) {
+inline static std::string ArrayToString(const std::vector<double>& arr, size_t n) {
   if (arr.empty() || n == 0) {
     return std::string("");
   }
@@ -469,8 +452,7 @@ inline static std::string ArrayToString(const std::vector<double>& arr, size_t n
   sprintf(buffer.data(), "%.17g", arr[0]);
   str_buf << buffer.data();
   for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
-    str_buf << delimiter;
-    sprintf(buffer.data(), "%.17g", arr[i]);
+    sprintf(buffer.data(), " %.17g", arr[i]);
     str_buf << buffer.data();
   }
   return str_buf.str();

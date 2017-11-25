@@ -233,7 +233,6 @@ bool GBDT::SaveModelToIfElse(int num_iteration, const char* filename) const {
 }
 
 std::string GBDT::SaveModelToString(int num_iteration) const {
-  auto start_time = std::chrono::steady_clock::now();
   std::stringstream ss;
 
   // output model type
@@ -259,30 +258,30 @@ std::string GBDT::SaveModelToString(int num_iteration) const {
 
   ss << "feature_infos=" << Common::Join(feature_infos_, " ") << '\n';
 
-  std::vector<double> feature_importances = FeatureImportance(num_iteration, 0);
-
-  ss << '\n';
   int num_used_model = static_cast<int>(models_.size());
   if (num_iteration > 0) {
     num_used_model = std::min(num_iteration * num_tree_per_iteration_, num_used_model);
   }
   auto start_time2 = std::chrono::steady_clock::now();
   std::vector<std::string> tree_strs(num_used_model);
+  std::vector<size_t> tree_sizes(num_used_model);
   // output tree models
   #pragma omp parallel for schedule(static)
   for (int i = 0; i < num_used_model; ++i) {
-    tree_strs[i] = "Tree=" + std::to_string(i) + "\n";
-    tree_strs[i] += models_[i]->ToString() + "\n";
+    tree_strs[i] = "Tree=" + std::to_string(i) + '\n';
+    tree_strs[i] += models_[i]->ToString() + '\n';
+    tree_sizes[i] = tree_strs[i].size();
   }
-  std::chrono::duration<double, std::milli> delta = (std::chrono::steady_clock::now() - start_time2);
-  Log::Info("time for construct tree 1: %f seconds", 1e-3*delta);
-  start_time2 = std::chrono::steady_clock::now();
+
+  ss << "tree_sizes=" << Common::Join(tree_sizes, " ") << '\n';
+  ss << '\n';
+
   for (int i = 0; i < num_used_model; ++i) {
     ss << tree_strs[i];
     tree_strs[i].clear();
   }
-  delta = (std::chrono::steady_clock::now() - start_time2);
-  Log::Info("time for construct tree 2: %f seconds", 1e-3*delta);
+
+  std::vector<double> feature_importances = FeatureImportance(num_iteration, 0);
   // store the importance first
   std::vector<std::pair<size_t, std::string>> pairs;
   for (size_t i = 0; i < feature_importances.size(); ++i) {
@@ -301,18 +300,15 @@ std::string GBDT::SaveModelToString(int num_iteration) const {
   for (size_t i = 0; i < pairs.size(); ++i) {
     ss << pairs[i].second << "=" << std::to_string(pairs[i].first) << '\n';
   }
-  delta = (std::chrono::steady_clock::now() - start_time);
-  Log::Info("time for saving model: %f seconds", 1e-3*delta);
   return ss.str();
 }
 
 bool GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
   /*! \brief File to write models */
   std::ofstream output_file;
-  output_file.open(filename);
-
-  output_file << SaveModelToString(num_iteration);
-
+  output_file.open(filename, std::ios::out | std::ios::binary);
+  std::string str_to_write = SaveModelToString(num_iteration);
+  output_file.write(str_to_write.c_str(), str_to_write.size());
   output_file.close();
 
   return (bool)output_file;
@@ -412,23 +408,44 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
     loaded_objective_.reset(ObjectiveFunction::CreateObjectiveFunction(str));
     objective_function_ = loaded_objective_.get();
   }
-
-  while (p < end) {
-    auto line_len = Common::GetLine(p);
-    std::string cur_line(p, line_len);
-    if (line_len > 0) {
-      if (Common::StartsWith(cur_line, "Tree=")) {
-        p += line_len;
-        p = Common::SkipNewLine(p);
-        size_t used_len = 0;
-        models_.emplace_back(new Tree(p, &used_len));
-        p += used_len;
+  if (!key_vals.count("tree_sizes")) {
+    while (p < end) {
+      auto line_len = Common::GetLine(p);
+      std::string cur_line(p, line_len);
+      if (line_len > 0) {
+        if (Common::StartsWith(cur_line, "Tree=")) {
+          p += line_len;
+          p = Common::SkipNewLine(p);
+          size_t used_len = 0;
+          models_.emplace_back(new Tree(p, &used_len));
+          p += used_len;
+        }
+        else {
+          break;
+        }
       }
-      else {
-        break;
+      p = Common::SkipNewLine(p);
+    }
+  } else {
+    std::vector<size_t> tree_sizes = Common::StringToArray<size_t>(key_vals["tree_sizes"].c_str(), ' ');
+    std::vector<size_t> tree_boundries(tree_sizes.size() + 1, 0);
+    int num_trees = static_cast<int>(tree_sizes.size());
+    for (int i = 0; i < num_trees; ++i) {
+      tree_boundries[i + 1] = tree_boundries[i] + tree_sizes[i];
+      models_.emplace_back(nullptr);
+    }
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < num_trees; ++i) {
+      auto cur_p = p + tree_boundries[i];
+      auto line_len = Common::GetLine(cur_p);
+      std::string cur_line(cur_p, line_len);
+      if (Common::StartsWith(cur_line, "Tree=")) {
+        cur_p += line_len;
+        cur_p = Common::SkipNewLine(cur_p);
+        size_t used_len = 0;
+        models_[i].reset(new Tree(cur_p, &used_len));
       }
     }
-    p = Common::SkipNewLine(p);
   }
 
   Log::Info("Finished loading %d models", models_.size());

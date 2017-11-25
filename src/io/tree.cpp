@@ -210,30 +210,30 @@ std::string Tree::ToString() const {
   str_buf << "num_leaves=" << num_leaves_ << '\n';
   str_buf << "num_cat=" << num_cat_ << '\n';
   str_buf << "split_feature="
-    << Common::ArrayToString(split_feature_, num_leaves_ - 1, ' ') << '\n';
+    << Common::ArrayToString(split_feature_, num_leaves_ - 1) << '\n';
   str_buf << "split_gain="
-    << Common::ArrayToString(split_gain_, num_leaves_ - 1, ' ') << '\n';
+    << Common::ArrayToString(split_gain_, num_leaves_ - 1) << '\n';
   str_buf << "threshold="
-    << Common::ArrayToString(threshold_, num_leaves_ - 1, ' ') << '\n';
+    << Common::ArrayToString(threshold_, num_leaves_ - 1) << '\n';
   str_buf << "decision_type="
-    << Common::ArrayToString(Common::ArrayCast<int8_t, int>(decision_type_), num_leaves_ - 1, ' ') << '\n';
+    << Common::ArrayToString(Common::ArrayCast<int8_t, int>(decision_type_), num_leaves_ - 1) << '\n';
   str_buf << "left_child="
-    << Common::ArrayToString(left_child_, num_leaves_ - 1, ' ') << '\n';
+    << Common::ArrayToString(left_child_, num_leaves_ - 1) << '\n';
   str_buf << "right_child="
-    << Common::ArrayToString(right_child_, num_leaves_ - 1, ' ') << '\n';
+    << Common::ArrayToString(right_child_, num_leaves_ - 1) << '\n';
   str_buf << "leaf_value="
-    << Common::ArrayToString(leaf_value_, num_leaves_, ' ') << '\n';
+    << Common::ArrayToString(leaf_value_, num_leaves_) << '\n';
   str_buf << "leaf_count="
-    << Common::ArrayToString(leaf_count_, num_leaves_, ' ') << '\n';
+    << Common::ArrayToString(leaf_count_, num_leaves_) << '\n';
   str_buf << "internal_value="
-    << Common::ArrayToStringFast(internal_value_, num_leaves_ - 1, ' ') << '\n';
+    << Common::ArrayToStringFast(internal_value_, num_leaves_ - 1) << '\n';
   str_buf << "internal_count="
-    << Common::ArrayToString(internal_count_, num_leaves_ - 1, ' ') << '\n';
+    << Common::ArrayToString(internal_count_, num_leaves_ - 1) << '\n';
   if (num_cat_ > 0) {
     str_buf << "cat_boundaries="
-      << Common::ArrayToString(cat_boundaries_, num_cat_ + 1, ' ') << '\n';
+      << Common::ArrayToString(cat_boundaries_, num_cat_ + 1) << '\n';
     str_buf << "cat_threshold="
-      << Common::ArrayToString(cat_threshold_, cat_threshold_.size(), ' ') << '\n';
+      << Common::ArrayToString(cat_threshold_, cat_threshold_.size()) << '\n';
   }
   str_buf << "shrinkage=" << shrinkage_ << '\n';
   str_buf << '\n';
