@@ -746,13 +746,16 @@ inline static double GetDoubleUpperBound(double a) {
 
 inline static size_t GetLine(const char* str) {
   auto start = str;
-  while (*str != '\0' && *str != '\n') {
+  while (*str != '\0' && *str != '\n' && *str != '\r') {
     ++str;
   }
   return str - start;
 }
 
 inline static const char* SkipNewLine(const char* str) {
+  if (*str == '\r') {
+    ++str;
+  }
   if (*str == '\n') {
     ++str;
   }

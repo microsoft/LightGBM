@@ -305,26 +305,32 @@ bool GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
   return (bool)output_file;
 }
 
-bool GBDT::LoadModelFromString(const std::string& model_str) {
+bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
   // use serialized string to restore this object
   models_.clear();
-  auto c_str = model_str.c_str();
+  auto c_str = buffer;
   auto p = c_str;
+  auto end = p + len;
   std::unordered_map<std::string, std::string> key_vals;
-  while (*p != '\0') {
+  while (p < end) {
     auto line_len = Common::GetLine(p);
     std::string cur_line(p, line_len);
-    if (!Common::StartsWith(cur_line, "Tree=")) {
-      auto strs = Common::Split(cur_line.c_str(), '=');
-      if (strs.size() == 1) {
-        key_vals[strs[0]] = "";
-      } else if (strs.size() == 2) {
-        key_vals[strs[0]] = strs[1];
-      } else if (strs.size() > 2) {
-        Log::Fatal("Wrong line at model file: %s", cur_line.c_str());
+    if (line_len > 0) {
+      if (!Common::StartsWith(cur_line, "Tree=")) {
+        auto strs = Common::Split(cur_line.c_str(), '=');
+        if (strs.size() == 1) {
+          key_vals[strs[0]] = "";
+        }
+        else if (strs.size() == 2) {
+          key_vals[strs[0]] = strs[1];
+        }
+        else if (strs.size() > 2) {
+          Log::Fatal("Wrong line at model file: %s", cur_line.c_str());
+        }
       }
-    } else {
-      break;
+      else {
+        break;
+      }
     }
     p += line_len;
     p = Common::SkipNewLine(p);
@@ -394,17 +400,20 @@ bool GBDT::LoadModelFromString(const std::string& model_str) {
     objective_function_ = loaded_objective_.get();
   }
 
-  while (*p != '\0') {
+  while (p < end) {
     auto line_len = Common::GetLine(p);
     std::string cur_line(p, line_len);
-    if (Common::StartsWith(cur_line, "Tree=")) {
-      p += line_len;
-      p = Common::SkipNewLine(p);
-      size_t used_len = 0;
-      models_.emplace_back(new Tree(p, &used_len));
-      p += used_len;
-    } else {
-      break;
+    if (line_len > 0) {
+      if (Common::StartsWith(cur_line, "Tree=")) {
+        p += line_len;
+        p = Common::SkipNewLine(p);
+        size_t used_len = 0;
+        models_.emplace_back(new Tree(p, &used_len));
+        p += used_len;
+      }
+      else {
+        break;
+      }
     }
     p = Common::SkipNewLine(p);
   }

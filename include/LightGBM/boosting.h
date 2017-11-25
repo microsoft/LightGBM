@@ -194,10 +194,11 @@ public:
 
   /*!
   * \brief Restore from a serialized string
-  * \param model_str The string of model
+  * \param buffer The content of model
+  * \param len The length of buffer
   * \return true if succeeded
   */
-  virtual bool LoadModelFromString(const std::string& model_str) = 0;
+  virtual bool LoadModelFromString(const char* buffer, size_t len) = 0;
 
   /*!
   * \brief Calculate feature importances

@@ -16,8 +16,9 @@ bool Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
   auto start_time = std::chrono::steady_clock::now();
 	if (boosting != nullptr) {
 		TextReader<size_t> model_reader(filename, true);
-    auto model_str = model_reader.ReadContent();
-		if (!boosting->LoadModelFromString(model_str)) {
+    size_t buffer_len = 0;
+    auto buffer = model_reader.ReadContent(&buffer_len);
+		if (!boosting->LoadModelFromString(buffer.data(), buffer_len)) {
 			return false;
 		}
 	}

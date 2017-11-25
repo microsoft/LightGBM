@@ -241,9 +241,9 @@ public:
   virtual std::string SaveModelToString(int num_iterations) const override;
 
   /*!
-  * \brief Restore from a serialized string
+  * \brief Restore from a serialized buffer
   */
-  bool LoadModelFromString(const std::string& model_str) override;
+  bool LoadModelFromString(const char* buffer, size_t len) override;
 
   /*!
   * \brief Calculate feature importances

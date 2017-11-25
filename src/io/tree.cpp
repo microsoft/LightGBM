@@ -477,19 +477,17 @@ Tree::Tree(const char* str, size_t* used_len) {
   const int max_num_line = 15;
   int read_line = 0;
   while (read_line < max_num_line) {
+    if (*p == '\r' || *p == '\n') break;
     auto start = p;
     while (*p != '=') ++p; 
     std::string key(start, p - start);
-    if (key == std::string("Tree")) {
-      p = start;
-      break;
-    }
     ++p;
     start = p;
-    while (*p != '\n') ++p;
+    while (*p != '\r' && *p != '\n') ++p;
     key_vals[key] = std::string(start, p - start);
     ++read_line;
-    ++p;
+    if (*p == '\r') ++p;
+    if (*p == '\n') ++p;
   }
   *used_len = p - str;
 

@@ -240,7 +240,8 @@ public:
   }
 
   void LoadModelFromString(const char* model_str) {
-    boosting_->LoadModelFromString(model_str);
+    size_t len = std::strlen(model_str);
+    boosting_->LoadModelFromString(model_str, len);
   }
 
   std::string SaveModelToString(int num_iteration) {
