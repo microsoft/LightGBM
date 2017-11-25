@@ -358,6 +358,30 @@ inline static void Int32ToStr(int32_t value, char* buffer) {
   Uint32ToStr(u, buffer);
 }
 
+inline static void FloatToStr(float value, char* buffer, size_t buffer_len) {
+  #ifdef _MSC_VER
+  sprintf_s(buffer, buffer_len, "%f", value);
+  #else
+  sprintf(buffer, "%f", value);
+  #endif
+}
+
+inline static void DoubleToStr(double value, char* buffer, size_t buffer_len) {
+  #ifdef _MSC_VER
+  sprintf_s(buffer, buffer_len, "%.17g", value);
+  #else
+  sprintf(buffer, "%.17g", value);
+  #endif
+}
+
+inline static void DoubleToStrFast(double value, char* buffer, size_t buffer_len) {
+  #ifdef _MSC_VER
+  sprintf_s(buffer, buffer_len, "%g", value);
+  #else
+  sprintf(buffer, "%g", value);
+  #endif
+}
+
 inline static const char* SkipSpaceAndTab(const char* p) {
   while (*p == ' ' || *p == '\t') {
     ++p;
@@ -385,7 +409,8 @@ inline static std::string ArrayToString(const std::vector<int>& arr, size_t n) {
   if (arr.empty() || n == 0) {
     return std::string("");
   }
-  std::vector<char> buffer(16);
+  const size_t buf_len = 16;
+  std::vector<char> buffer(buf_len);
   std::stringstream str_buf;
   Int32ToStr(arr[0], buffer.data());
   str_buf << buffer.data();
@@ -401,7 +426,8 @@ inline static std::string ArrayToString(const std::vector<uint32_t>& arr, size_t
   if (arr.empty() || n == 0) {
     return std::string("");
   }
-  std::vector<char> buffer(16);
+  const size_t buf_len = 16;
+  std::vector<char> buffer(buf_len);
   std::stringstream str_buf;
   Uint32ToStr(arr[0], buffer.data());
   str_buf << buffer.data();
@@ -417,12 +443,13 @@ inline static std::string ArrayToString(const std::vector<float>& arr, size_t n)
   if (arr.empty() || n == 0) {
     return std::string("");
   }
-  std::vector<char> buffer(16);
+  const size_t buf_len = 16;
+  std::vector<char> buffer(buf_len);
   std::stringstream str_buf;
-  sprintf(buffer.data(), "%f", arr[0]);
+  FloatToStr(arr[0], buffer.data(), buf_len);
   str_buf << buffer.data();
   for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
-    sprintf(buffer.data(), " %f", arr[i]);
+    FloatToStr(arr[i], buffer.data(), buf_len);
     str_buf << buffer.data();
   }
   return str_buf.str();
@@ -432,12 +459,13 @@ inline static std::string ArrayToStringFast(const std::vector<double>& arr, size
   if (arr.empty() || n == 0) {
     return std::string("");
   }
-  std::vector<char> buffer(16);
+  const size_t buf_len = 16;
+  std::vector<char> buffer(buf_len);
   std::stringstream str_buf;
-  sprintf(buffer.data(), "%g", arr[0]);
+  DoubleToStrFast(arr[0], buffer.data(), buf_len);
   str_buf << buffer.data();
   for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
-    sprintf(buffer.data(), " %g", arr[i]);
+    DoubleToStrFast(arr[i], buffer.data(), buf_len);
     str_buf << buffer.data();
   }
   return str_buf.str();
@@ -447,12 +475,13 @@ inline static std::string ArrayToString(const std::vector<double>& arr, size_t n
   if (arr.empty() || n == 0) {
     return std::string("");
   }
-  std::vector<char> buffer(32);
+  const size_t buf_len = 32;
+  std::vector<char> buffer(buf_len);
   std::stringstream str_buf;
-  sprintf(buffer.data(), "%.17g", arr[0]);
+  DoubleToStr(arr[0], buffer.data(), buf_len);
   str_buf << buffer.data();
   for (size_t i = 1; i < std::min(n, arr.size()); ++i) {
-    sprintf(buffer.data(), " %.17g", arr[i]);
+    DoubleToStr(arr[i], buffer.data(), buf_len);
     str_buf << buffer.data();
   }
   return str_buf.str();

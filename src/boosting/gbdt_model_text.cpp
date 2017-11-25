@@ -444,6 +444,8 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
         cur_p = Common::SkipNewLine(cur_p);
         size_t used_len = 0;
         models_[i].reset(new Tree(cur_p, &used_len));
+      } else {
+        Log::Fatal("Model format error, expect a tree here.");
       }
     }
   }
