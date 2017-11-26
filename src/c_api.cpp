@@ -29,7 +29,7 @@ namespace LightGBM {
 class Booster {
 public:
   explicit Booster(const char* filename) {
-    boosting_.reset(Boosting::CreateBoosting("gbdt", "text", filename));
+    boosting_.reset(Boosting::CreateBoosting("gbdt", filename));
   }
 
   Booster(const Dataset* train_data,
@@ -46,7 +46,7 @@ public:
         please use continued train with input score");
     }
 
-    boosting_.reset(Boosting::CreateBoosting(config_.boosting_type, "text", nullptr));
+    boosting_.reset(Boosting::CreateBoosting(config_.boosting_type, nullptr));
 
     train_data_ = train_data;
     CreateObjectiveAndMetrics();
@@ -240,7 +240,8 @@ public:
   }
 
   void LoadModelFromString(const char* model_str) {
-    boosting_->LoadModelFromString(model_str);
+    size_t len = std::strlen(model_str);
+    boosting_->LoadModelFromString(model_str, len);
   }
 
   std::string SaveModelToString(int num_iteration) {

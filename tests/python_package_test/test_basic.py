@@ -15,7 +15,7 @@ class TestBasic(unittest.TestCase):
 
     def test(self):
         X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=2)
-        train_data = lgb.Dataset(X_train, max_bin=255, label=y_train)
+        train_data = lgb.Dataset(X_train, label=y_train)
         valid_data = train_data.create_valid(X_test, label=y_test)
 
         params = {
@@ -24,7 +24,8 @@ class TestBasic(unittest.TestCase):
             "min_data": 10,
             "num_leaves": 15,
             "verbose": -1,
-            "num_threads": 1
+            "num_threads": 1,
+            "max_bin": 255
         }
         bst = lgb.Booster(params, train_data)
         bst.add_valid(valid_data, "valid_1")
