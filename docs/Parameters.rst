@@ -335,20 +335,6 @@ IO Parameters
 
    -  file name of prediction result in ``prediction`` task
 
--  ``model_format``, default=\ ``text``, type=multi-enum, options=\ ``text``, ``proto``
-
-   -  format to save and load model
-
-   -  if ``text``, text string will be used
-
-   -  if ``proto``, Protocol Buffer binary format will be used
-
-   -  you can save in multiple formats by joining them with comma, like ``text,proto``. In this case, ``model_format`` will be add as suffix after ``output_model``
-
-   -  **Note**: loading with multiple formats is not supported
-
-   -  **Note**: to use this parameter you need to `build version with Protobuf Support <./Installation-Guide.rst#protobuf-support>`__
-
 -  ``pre_partition``, default=\ ``false``, type=bool, alias=\ ``is_pre_partition``
 
    -  used for parallel learning (not include feature parallel)

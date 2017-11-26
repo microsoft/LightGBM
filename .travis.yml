@@ -23,7 +23,6 @@ env:
     - TASK=if-else
     - TASK=sdist PYTHON_VERSION=3.4
     - TASK=bdist PYTHON_VERSION=3.5
-    - TASK=proto
     - TASK=gpu METHOD=source
     - TASK=gpu METHOD=pip
 
@@ -39,8 +38,6 @@ matrix:
       env: TASK=pylint
     - os: osx
       env: TASK=check-docs
-    - os: osx
-      env: TASK=proto
 
 before_install:
   - test -n $CC  && unset CC

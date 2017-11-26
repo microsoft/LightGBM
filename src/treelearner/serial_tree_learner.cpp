@@ -533,7 +533,7 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
                               static_cast<double>(best_split_info.right_output),
                               static_cast<data_size_t>(best_split_info.left_count),
                               static_cast<data_size_t>(best_split_info.right_count),
-                              static_cast<double>(best_split_info.gain),
+                              static_cast<float>(best_split_info.gain),
                               train_data_->FeatureBinMapper(inner_feature_index)->missing_type(),
                               best_split_info.default_left);
     data_partition_->Split(best_leaf, train_data_, inner_feature_index,
@@ -556,7 +556,7 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
                                          static_cast<double>(best_split_info.right_output),
                                          static_cast<data_size_t>(best_split_info.left_count),
                                          static_cast<data_size_t>(best_split_info.right_count),
-                                         static_cast<double>(best_split_info.gain),
+                                         static_cast<float>(best_split_info.gain),
                                          train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
     data_partition_->Split(best_leaf, train_data_, inner_feature_index,
                            cat_bitset_inner.data(), static_cast<int>(cat_bitset_inner.size()), best_split_info.default_left, *right_leaf);

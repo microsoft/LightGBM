@@ -241,25 +241,9 @@ public:
   virtual std::string SaveModelToString(int num_iterations) const override;
 
   /*!
-  * \brief Restore from a serialized string
+  * \brief Restore from a serialized buffer
   */
-  bool LoadModelFromString(const std::string& model_str) override;
-
-  #ifdef USE_PROTO
-  /*!
-  * \brief Save model with protobuf
-  * \param num_iterations Number of model that want to save, -1 means save all
-  * \param filename Filename that want to save to
-  */
-  void SaveModelToProto(int num_iteration, const char* filename) const override;
-
-  /*!
-  * \brief Restore from a serialized protobuf file
-  * \param filename Filename that want to restore from
-  * \return true if succeeded
-  */
-  bool LoadModelFromProto(const char* filename) override;
-  #endif // USE_PROTO
+  bool LoadModelFromString(const char* buffer, size_t len) override;
 
   /*!
   * \brief Calculate feature importances
