@@ -84,8 +84,8 @@ LightGBM uses **CMake** to build. Run the following commands:
 
 Also you may want to reed `gcc Tips <./gcc-Tips.rst>`__.
 
-OSX
-~~~
+macOS
+~~~~~
 
 LightGBM depends on **OpenMP** for compiling, which isn't supported by Apple Clang.
 
@@ -94,7 +94,7 @@ Please install **gcc/g++** by using the following commands:
 .. code::
 
   brew install cmake
-  brew install gcc --without-multilib
+  brew install gcc
 
 Then install LightGBM:
 
@@ -179,8 +179,8 @@ Then run the following commands:
 
 **Note**: glibc >= 2.14 is required.
 
-OSX
-^^^
+macOS
+^^^^^
 
 Install **gcc** and **Open MPI** first:
 
@@ -188,7 +188,7 @@ Install **gcc** and **Open MPI** first:
 
   brew install openmpi
   brew install cmake
-  brew install gcc --without-multilib
+  brew install gcc
 
 Then run the following commands:
 

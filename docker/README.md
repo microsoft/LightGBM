@@ -7,7 +7,7 @@ This directory contains `Dockerfile` to make it easy to build and run LightGBM v
 Follow the general installation instructions
 [on the Docker site](https://docs.docker.com/installation/):
 
-* [OSX](https://docs.docker.com/installation/mac/): [docker toolbox](https://www.docker.com/toolbox)
+* [macOS](https://docs.docker.com/installation/mac/): [docker toolbox](https://www.docker.com/toolbox)
 * [Ubuntu](https://docs.docker.com/installation/ubuntulinux/)
 
 ## Using CLI Version of LightGBM via Docker

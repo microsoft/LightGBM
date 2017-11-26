@@ -22,9 +22,9 @@ For users who wants to install online with GPU or want to choose a specific comp
 
 **Warning for Windows users**: it is recommended to use *Visual Studio* for its better multi-threading efficency in Windows for many core systems. For very simple systems (dual core computers or worse), MinGW64 is recommended for maximum performance. If you do not know what to choose, it is recommended to use [Visual Studio](https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017), the default compiler. **Do not try using MinGW in Windows on many core systems. It may result in 10x slower results than Visual Studio.**
 
-#### Mac OS X Preparation
+#### macOS Preparation
 
-gcc with OpenMP support must be installed first. Refer to [Installation-Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#osx) for installing gcc with OpenMP support.
+gcc with OpenMP support must be installed first. Refer to [Installation-Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#macos) for installing gcc with OpenMP support.
 
 ### Install
 
@@ -33,7 +33,7 @@ Install LightGBM R-package with the following command:
 ```sh
 git clone --recursive https://github.com/Microsoft/LightGBM
 cd LightGBM/R-package
-# export CXX=g++-7 CC=gcc-7 # for OSX
+# export CXX=g++-7 CC=gcc-7 # for macOS
 R CMD INSTALL --build . --no-multiarch
 ```
 
@@ -43,7 +43,7 @@ Or build a self-contained R package which can be installed afterwards:
 git clone --recursive https://github.com/Microsoft/LightGBM
 cd LightGBM/R-package
 Rscript build_package.R
-# export CXX=g++-7 CC=gcc-7 # for OSX
+# export CXX=g++-7 CC=gcc-7 # for macOS
 R CMD INSTALL lightgbm_2.0.4.tar.gz --no-multiarch
 ``` 
 
