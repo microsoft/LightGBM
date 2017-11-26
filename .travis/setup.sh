@@ -2,7 +2,7 @@
 
 if [[ $TRAVIS_OS_NAME == "osx" ]]; then
     if [[ ${TASK} == "mpi" ]]; then
-        brew install openmpi
+        brew install open-mpi
     else
         brew install gcc
     fi
