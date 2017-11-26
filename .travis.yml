@@ -1,6 +1,7 @@
 language: cpp
 sudo: required
 dist: trusty
+osx_image: xcode8.3
 
 git:
   submodules: true
