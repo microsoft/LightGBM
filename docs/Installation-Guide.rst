@@ -182,13 +182,12 @@ Then run the following commands:
 macOS
 ^^^^^
 
-Install **gcc** and **Open MPI** first:
+Install **Open MPI** first:
 
 .. code::
 
   brew install openmpi
   brew install cmake
-  brew install gcc
 
 Then run the following commands:
 
