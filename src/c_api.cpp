@@ -273,23 +273,21 @@ public:
     return ret;
   }
 
-  #pragma warning(disable : 4996)
   int GetEvalNames(char** out_strs) const {
     int idx = 0;
     for (const auto& metric : train_metric_) {
       for (const auto& name : metric->GetName()) {
-        std::strcpy(out_strs[idx], name.c_str());
+        std::memcpy(out_strs[idx], name.c_str(), name.size() + 1);
         ++idx;
       }
     }
     return idx;
   }
 
-  #pragma warning(disable : 4996)
   int GetFeatureNames(char** out_strs) const {
     int idx = 0;
     for (const auto& name : boosting_->FeatureNames()) {
-      std::strcpy(out_strs[idx], name.c_str());
+      std::memcpy(out_strs[idx], name.c_str(), name.size() + 1);
       ++idx;
     }
     return idx;
@@ -719,7 +717,6 @@ int LGBM_DatasetSetFeatureNames(
   API_END();
 }
 
-#pragma warning(disable : 4996)
 int LGBM_DatasetGetFeatureNames(
   DatasetHandle handle,
   char** feature_names,
@@ -729,7 +726,7 @@ int LGBM_DatasetGetFeatureNames(
   auto inside_feature_name = dataset->feature_names();
   *num_feature_names = static_cast<int>(inside_feature_name.size());
   for (int i = 0; i < *num_feature_names; ++i) {
-    std::strcpy(feature_names[i], inside_feature_name[i].c_str());
+    std::memcpy(feature_names[i], inside_feature_name[i].c_str(), inside_feature_name[i].size() + 1);
   }
   API_END();
 }
@@ -1138,7 +1135,6 @@ int LGBM_BoosterSaveModel(BoosterHandle handle,
   API_END();
 }
 
-#pragma warning(disable : 4996)
 int LGBM_BoosterSaveModelToString(BoosterHandle handle,
                                   int num_iteration,
                                   int64_t buffer_len, 
@@ -1149,12 +1145,11 @@ int LGBM_BoosterSaveModelToString(BoosterHandle handle,
   std::string model = ref_booster->SaveModelToString(num_iteration);
   *out_len = static_cast<int64_t>(model.size()) + 1;
   if (*out_len <= buffer_len) {
-    std::strcpy(out_str, model.c_str());
+    std::memcpy(out_str, model.c_str(), *out_len);
   }
   API_END();
 }
 
-#pragma warning(disable : 4996)
 int LGBM_BoosterDumpModel(BoosterHandle handle,
                           int num_iteration,
                           int64_t buffer_len,
@@ -1165,7 +1160,7 @@ int LGBM_BoosterDumpModel(BoosterHandle handle,
   std::string model = ref_booster->DumpModel(num_iteration);
   *out_len = static_cast<int64_t>(model.size()) + 1;
   if (*out_len <= buffer_len) {
-    std::strcpy(out_str, model.c_str());
+    std::memcpy(out_str, model.c_str(), *out_len);
   }
   API_END();
 }
