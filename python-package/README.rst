@@ -64,21 +64,21 @@ Also you may pass options to CMake via pip options, like
 
 .. code:: sh
 
-    pip install lightgbm --install-option=--gpu --install-option="--openclincludedir=/usr/local/cuda/include/" --install-option="--opencllibrary=/usr/local/cuda/lib64/libOpenCL.so"
+    pip install lightgbm --install-option=--gpu --install-option="--opencl-include-dir=/usr/local/cuda/include/" --install-option="--opencl-library=/usr/local/cuda/lib64/libOpenCL.so"
 
 All available options:
 
-- boostroot
+- boost-root
 
-- boostdir
+- boost-dir
 
-- boostincludedir
+- boost-include-dir
 
-- boostlibrarydir
+- boost-librarydir
 
-- openclincludedir
+- opencl-include-dir
 
-- opencllibrary
+- opencl-library
 
 For more details see `FindBoost <https://cmake.org/cmake/help/v3.8/module/FindBoost.html>`__ and `FindOpenCL <https://cmake.org/cmake/help/v3.8/module/FindOpenCL.html>`__.
 
@@ -111,7 +111,7 @@ Run ``python setup.py install --mpi`` to enable MPI support. For Windows users, 
 
 Run ``python setup.py install --mingw`` if you want to use MinGW-w64 on Windows instead of Visual Studio. `CMake <https://cmake.org/>`_ and `MinGW-w64 <https://mingw-w64.org/>`_ should be installed first.
 
-Run ``python setup.py install --gpu`` to enable GPU support. For Windows users, `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case. Boost and OpenCL are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version>`__. You can pass additional options to CMake: ``python setup.py install --gpu --openclincludedir=/usr/local/cuda/include/``, see `Build GPU Version <#build-gpu-version>`__ for complete list of them.
+Run ``python setup.py install --gpu`` to enable GPU support. For Windows users, `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case. Boost and OpenCL are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version>`__. You can pass additional options to CMake: ``python setup.py install --gpu --opencl-include-dir=/usr/local/cuda/include/``, see `Build GPU Version <#build-gpu-version>`__ for complete list of them.
 
 If you get any errors during installation or due to any other reason, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then run ``python setup.py install --precompile``.
 

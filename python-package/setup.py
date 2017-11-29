@@ -75,9 +75,9 @@ def silent_call(cmd, raise_error=False, error_msg=''):
 
 
 def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
-                boostroot=None, boostdir=None, boostincludedir=None,
-                boostlibrarydir=None, openclincludedir=None,
-                opencllibrary=None):
+                boost_root=None, boost_dir=None, boost_include_dir=None,
+                boost_librarydir=None, opencl_include_dir=None,
+                opencl_library=None):
 
     if os.path.exists("build_cpp"):
         shutil.rmtree("build_cpp")
@@ -89,18 +89,18 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
     cmake_cmd = ["cmake", "../compile/"]
     if use_gpu:
         cmake_cmd.append("-DUSE_GPU=ON")
-        if boostroot:
-            cmake_cmd.append("-DBOOST_ROOT={0}".format(boostroot))
-        if boostdir:
-            cmake_cmd.append("-DBoost_DIR={0}".format(boostdir))
-        if boostincludedir:
-            cmake_cmd.append("-DBoost_INCLUDE_DIR={0}".format(boostincludedir))
-        if boostlibrarydir:
-            cmake_cmd.append("-DBOOST_LIBRARYDIR={0}".format(boostlibrarydir))
-        if openclincludedir:
-            cmake_cmd.append("-DOpenCL_INCLUDE_DIR={0}".format(openclincludedir))
-        if opencllibrary:
-            cmake_cmd.append("-DOpenCL_LIBRARY={0}".format(opencllibrary))
+        if boost_root:
+            cmake_cmd.append("-DBOOST_ROOT={0}".format(boost_root))
+        if boost_dir:
+            cmake_cmd.append("-DBoost_DIR={0}".format(boost_dir))
+        if boost_include_dir:
+            cmake_cmd.append("-DBoost_INCLUDE_DIR={0}".format(boost_include_dir))
+        if boost_librarydir:
+            cmake_cmd.append("-DBOOST_LIBRARYDIR={0}".format(boost_librarydir))
+        if opencl_include_dir:
+            cmake_cmd.append("-DOpenCL_INCLUDE_DIR={0}".format(opencl_include_dir))
+        if opencl_library:
+            cmake_cmd.append("-DOpenCL_LIBRARY={0}".format(opencl_library))
     if use_mpi:
         cmake_cmd.append("-DUSE_MPI=ON")
     if os.name == "nt":
@@ -168,24 +168,24 @@ class CustomInstall(install):
         ('gpu', 'g', 'Compile GPU version'),
         ('mpi', None, 'Compile MPI version'),
         ('precompile', 'p', 'Use precompiled library'),
-        ('boostroot=', None, 'Boost preferred installation prefix'),
-        ('boostdir=', None, 'Directory with Boost package configuration file'),
-        ('boostincludedir=', None, 'Directory containing Boost headers'),
-        ('boostlibrarydir=', None, 'Preferred Boost library directory'),
-        ('openclincludedir=', None, 'OpenCL include directory'),
-        ('opencllibrary=', None, 'Path to OpenCL library')
+        ('boost-root=', None, 'Boost preferred installation prefix'),
+        ('boost-dir=', None, 'Directory with Boost package configuration file'),
+        ('boost-include-dir=', None, 'Directory containing Boost headers'),
+        ('boost-librarydir=', None, 'Preferred Boost library directory'),
+        ('opencl-include-dir=', None, 'OpenCL include directory'),
+        ('opencl-library=', None, 'Path to OpenCL library')
     ]
 
     def initialize_options(self):
         install.initialize_options(self)
         self.mingw = 0
         self.gpu = 0
-        self.boostroot = None
-        self.boostdir = None
-        self.boostincludedir = None
-        self.boostlibrarydir = None
-        self.openclincludedir = None
-        self.opencllibrary = None
+        self.boost_root = None
+        self.boost_dir = None
+        self.boost_include_dir = None
+        self.boost_librarydir = None
+        self.opencl_include_dir = None
+        self.opencl_library = None
         self.mpi = 0
         self.precompile = 0
 
@@ -193,9 +193,9 @@ class CustomInstall(install):
         if not self.precompile:
             copy_files(use_gpu=self.gpu)
             compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_mpi=self.mpi,
-                        boostroot=self.boostroot, boostdir=self.boostdir,
-                        boostincludedir=self.boostincludedir, boostlibrarydir=self.boostlibrarydir,
-                        openclincludedir=self.openclincludedir, opencllibrary=self.opencllibrary)
+                        boost_root=self.boost_root, boost_dir=self.boost_dir,
+                        boost_include_dir=self.boost_include_dir, boost_librarydir=self.boost_librarydir,
+                        opencl_include_dir=self.opencl_include_dir, opencl_library=self.opencl_library)
         install.run(self)
 
 
