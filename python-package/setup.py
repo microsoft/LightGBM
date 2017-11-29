@@ -74,7 +74,10 @@ def silent_call(cmd, raise_error=False, error_msg=''):
         return 1
 
 
-def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False):
+def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
+                boostroot=None, boostdir=None, boostincludedir=None,
+                boostlibrarydir=None, openclincludedir=None,
+                opencllibrary=None):
 
     if os.path.exists("build_cpp"):
         shutil.rmtree("build_cpp")
@@ -86,6 +89,18 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False):
     cmake_cmd = ["cmake", "../compile/"]
     if use_gpu:
         cmake_cmd.append("-DUSE_GPU=ON")
+        if boostroot:
+            cmake_cmd.append("-DBOOST_ROOT={0}".format(boostroot))
+        if boostdir:
+            cmake_cmd.append("-DBoost_DIR={0}".format(boostdir))
+        if boostincludedir:
+            cmake_cmd.append("-DBoost_INCLUDE_DIR={0}".format(boostincludedir))
+        if boostlibrarydir:
+            cmake_cmd.append("-DBOOST_LIBRARYDIR={0}".format(boostlibrarydir))
+        if openclincludedir:
+            cmake_cmd.append("-DOpenCL_INCLUDE_DIR={0}".format(openclincludedir))
+        if opencllibrary:
+            cmake_cmd.append("-DOpenCL_LIBRARY={0}".format(opencllibrary))
     if use_mpi:
         cmake_cmd.append("-DUSE_MPI=ON")
     if os.name == "nt":
@@ -152,20 +167,35 @@ class CustomInstall(install):
         ('mingw', 'm', 'Compile with MinGW'),
         ('gpu', 'g', 'Compile GPU version'),
         ('mpi', None, 'Compile MPI version'),
-        ('precompile', 'p', 'Use precompiled library')
+        ('precompile', 'p', 'Use precompiled library'),
+        ('boostroot=', None, 'Boost preferred installation prefix'),
+        ('boostdir=', None, 'Directory with Boost package configuration file'),
+        ('boostincludedir=', None, 'Directory containing Boost headers'),
+        ('boostlibrarydir=', None, 'Preferred Boost library directory'),
+        ('openclincludedir=', None, 'OpenCL include directory'),
+        ('opencllibrary=', None, 'Path to OpenCL library')
     ]
 
     def initialize_options(self):
         install.initialize_options(self)
         self.mingw = 0
         self.gpu = 0
+        self.boostroot = None
+        self.boostdir = None
+        self.boostincludedir = None
+        self.boostlibrarydir = None
+        self.openclincludedir = None
+        self.opencllibrary = None
         self.mpi = 0
         self.precompile = 0
 
     def run(self):
         if not self.precompile:
             copy_files(use_gpu=self.gpu)
-            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_mpi=self.mpi)
+            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_mpi=self.mpi,
+                        boostroot=self.boostroot, boostdir=self.boostdir,
+                        boostincludedir=self.boostincludedir, boostlibrarydir=self.boostlibrarydir,
+                        openclincludedir=self.openclincludedir, opencllibrary=self.opencllibrary)
         install.run(self)
 
 
