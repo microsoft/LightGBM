@@ -21,7 +21,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     message(FATAL_ERROR "Insufficient Clang version")
   endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    message(FATAL_ERROR "AppleClang wasn't supported. Please see https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#osx")
+    message(FATAL_ERROR "AppleClang wasn't supported. Please see https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#macos")
 endif()
 
 if(APPLE)

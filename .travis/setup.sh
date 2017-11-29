@@ -1,8 +1,12 @@
 #!/bin/bash
 
 if [[ $TRAVIS_OS_NAME == "osx" ]]; then
-    brew install gcc --without-multilib
-    brew install openmpi
+    if [[ ${TASK} == "mpi" ]]; then
+        brew install open-mpi
+    else
+        brew install gcc
+    fi
+    brew link --overwrite gcc
     wget -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
 else
     if [[ ${TASK} != "pylint" ]] && [[ ${TASK} != "check-docs" ]]; then
