@@ -1,5 +1,8 @@
 #ifndef LIGHTGBM_C_API_H_
 #define LIGHTGBM_C_API_H_
+
+#include <LightGBM/meta.h>
+
 #include <cstdint>
 #include <exception>
 #include <stdexcept>
@@ -754,6 +757,11 @@ LIGHTGBM_C_EXPORT int LGBM_NetworkInit(const char* machines,
 */
 LIGHTGBM_C_EXPORT int LGBM_NetworkFree();
 
+LIGHTGBM_C_EXPORT int LGBM_GetFuncions(void* AllreduceFuncPtr,
+                                       void* ReduceScatterFuncPtr, 
+                                       void* AllgatherFuncPtr, 
+                                       int num_machines, 
+                                       int rank);
 
 // exception handle and error msg
 static char* LastErrorMsg() { static THREAD_LOCAL char err_msg[512] = "Everything is fine"; return err_msg; }

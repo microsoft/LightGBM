@@ -11,7 +11,7 @@ Preparation
 
 `setuptools <https://pypi.python.org/pypi/setuptools>`_ is needed.
 
-For Mac OS X users, gcc with OpenMP support must be installed first. Refer to `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#osx>`__ for installing gcc with OpenMP support.
+For macOS users, gcc with OpenMP support must be installed first. Refer to `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#macos>`__ for installing gcc with OpenMP support.
 
 Note: 32-bit Python is not supported. Please install 64-bit version.
 
@@ -32,9 +32,9 @@ Build from Sources
 
     pip install --no-binary :all: lightgbm
 
-For Linux and Mac OS X users, installation from sources requires installed `CMake <https://cmake.org/>`_.
+For Linux and macOS users, installation from sources requires installed `CMake <https://cmake.org/>`_.
 
-For Mac OS X users, you need to specify compilers by runnig ``export CXX=g++-7 CC=gcc-7`` first.
+For macOS users, you need to specify compilers by runnig ``export CXX=g++-7 CC=gcc-7`` first.
 
 For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed. If you get any errors during installation, you may need to install `CMake <https://cmake.org/>`_ (version 3.8 or higher).
 
@@ -94,7 +94,7 @@ Note: `CMake <https://cmake.org/>`_ and `MinGW-w64 <https://mingw-w64.org/>`_ sh
 Install from GitHub
 '''''''''''''''''''
 
-For Linux and Mac OS X users, installation from GitHub requires installed `CMake <https://cmake.org/>`_.
+For Linux and macOS users, installation from GitHub requires installed `CMake <https://cmake.org/>`_.
 
 For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed. If you get any errors during installation and there is the warning ``WARNING:LightGBM:Compilation with MSBuild from existing solution file failed.`` in the log, you should install `CMake <https://cmake.org/>`_ (version 3.8 or higher).
 
@@ -102,7 +102,7 @@ For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/dow
 
     git clone --recursive https://github.com/Microsoft/LightGBM.git
     cd LightGBM/python-package
-    # export CXX=g++-7 CC=gcc-7  # for Mac OS X users only
+    # export CXX=g++-7 CC=gcc-7  # for macOS users only
     python setup.py install
 
 Note: ``sudo`` (or administrator rights in Windows) may be needed to perform the command.

@@ -38,7 +38,7 @@ LGBM_SE EncodeChar(LGBM_SE dest, const char* src, LGBM_SE buf_len, LGBM_SE actua
     Log::Fatal("Don't support large string in R-package.");
   }
   R_INT_PTR(actual_len)[0] = static_cast<int>(str_len);
-  if (R_AS_INT(buf_len) < str_len) { return dest; }
+  if (R_AS_INT(buf_len) < static_cast<int>(str_len)) { return dest; }
   auto ptr = R_CHAR_PTR(dest);
   std::memcpy(ptr, src, str_len);
   return dest;
