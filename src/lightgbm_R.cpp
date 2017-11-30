@@ -33,7 +33,8 @@
 using namespace LightGBM;
 
 LGBM_SE EncodeChar(LGBM_SE dest, const char* src, LGBM_SE buf_len, LGBM_SE actual_len) {
-  size_t str_len = std::strlen(src);
+  // +1 for '\0'
+  size_t str_len = std::strlen(src) + 1;
   if (str_len > INT32_MAX) {
     Log::Fatal("Don't support large string in R-package.");
   }
