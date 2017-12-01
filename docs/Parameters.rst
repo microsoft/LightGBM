@@ -88,7 +88,9 @@ Core Parameters
 
       -  the label should be ``int`` type in lambdarank tasks, and larger number represent the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
 
-      -  ``label_gain`` can be used to set the gain(weight) of ``int`` label
+      -  `label_gain <#objective-parameters>`__ can be used to set the gain(weight) of ``int`` label
+
+      -  all values in ``label`` must be smaller than number of elements in ``label_gain``
 
 -  ``boosting``, default=\ ``gbdt``, type=enum,
    options=\ ``gbdt``, ``rf``, ``dart``, ``goss``,
@@ -535,7 +537,7 @@ Objective Parameters
 
    -  will optimize `NDCG`_ at this position
 
--  ``label_gain``, default=\ ``0,1,3,7,15,31,63,...``, type=multi-double
+-  ``label_gain``, default=\ ``0,1,3,7,15,31,63,...,2^30-1``, type=multi-double
 
    -  used in ``lambdarank``
 
