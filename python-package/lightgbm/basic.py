@@ -346,8 +346,11 @@ class _InnerPredictor(object):
         self.pred_parameter = param_dict_to_str(pred_parameter)
 
     def __del__(self):
-        if self.__is_manage_handle:
-            _safe_call(_LIB.LGBM_BoosterFree(self.handle))
+        try:
+            if self.__is_manage_handle:
+                _safe_call(_LIB.LGBM_BoosterFree(self.handle))
+        except:
+            pass
 
     def __getstate__(self):
         this = self.__dict__.copy()
@@ -609,7 +612,10 @@ class Dataset(object):
         self.params_back_up = None
 
     def __del__(self):
-        self._free_handle()
+        try:
+            self._free_handle()
+        except:
+            pass
 
     def _free_handle(self):
         if self.handle is not None:
@@ -1339,10 +1345,16 @@ class Booster(object):
             raise TypeError('Need at least one training dataset or model file to create booster instance')
 
     def __del__(self):
-        if self.network:
-            self.free_network()
-        if self.handle is not None:
-            _safe_call(_LIB.LGBM_BoosterFree(self.handle))
+        try:
+            if self.network:
+                self.free_network()
+        except:
+            pass
+        try:
+            if self.handle is not None:
+                _safe_call(_LIB.LGBM_BoosterFree(self.handle))
+        except:
+            pass
 
     def __copy__(self):
         return self.__deepcopy__(None)
