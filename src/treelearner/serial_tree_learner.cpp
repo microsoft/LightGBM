@@ -119,7 +119,6 @@ void SerialTreeLearner::ResetTrainingData(const Dataset* train_data) {
     is_data_in_leaf_.resize(num_data_);
     std::fill(is_data_in_leaf_.begin(), is_data_in_leaf_.end(), static_cast<char>(0));
   }
-  valid_feature_indices_ = train_data_->ValidFeatureIndices();
 }
 
 void SerialTreeLearner::ResetConfig(const TreeConfig* tree_config) {
@@ -246,7 +245,7 @@ void SerialTreeLearner::BeforeTrain() {
     std::memset(is_feature_used_.data(), 0, sizeof(int8_t) * num_features_);
     // Get used feature at current tree
     auto sampled_indices = random_.Sample(valid_feature_indices_.size(), used_feature_cnt);
-    int omp_loop_size = static_cast<int>(valid_feature_indices_.size());
+    int omp_loop_size = static_cast<int>(sampled_indices.size());
     #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
     for (int i = 0; i < omp_loop_size; ++i) {
       int used_feature = valid_feature_indices_[sampled_indices[i]];

@@ -361,7 +361,7 @@ public:
   inline uint64_t NumTotalBin() const {
     return group_bin_boundaries_.back();
   }
-  inline std::vector<int> ValidFeatureIndices()const {
+  inline std::vector<int> ValidFeatureIndices() const {
     std::vector<int> ret;
     for (int i = 0; i < num_total_features_; ++i) {
       if (used_feature_map_[i] >= 0) {
