@@ -361,7 +361,15 @@ public:
   inline uint64_t NumTotalBin() const {
     return group_bin_boundaries_.back();
   }
-
+  inline std::vector<int> ValidFeatureIndices()const {
+    std::vector<int> ret;
+    for (int i = 0; i < num_total_features_; ++i) {
+      if (used_feature_map_[i] >= 0) {
+        ret.push_back(i);
+      }
+    }
+    return ret;
+  }
   void ReSize(data_size_t num_data);
 
   void CopySubset(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data);
