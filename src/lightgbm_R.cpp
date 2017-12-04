@@ -32,9 +32,7 @@
 
 using namespace LightGBM;
 
-LGBM_SE EncodeChar(LGBM_SE dest, const char* src, LGBM_SE buf_len, LGBM_SE actual_len) {
-  // +1 for '\0'
-  size_t str_len = std::strlen(src) + 1;
+LGBM_SE EncodeChar(LGBM_SE dest, const char* src, LGBM_SE buf_len, LGBM_SE actual_len, size_t str_len) {
   if (str_len > INT32_MAX) {
     Log::Fatal("Don't support large string in R-package.");
   }
@@ -46,7 +44,7 @@ LGBM_SE EncodeChar(LGBM_SE dest, const char* src, LGBM_SE buf_len, LGBM_SE actua
 }
 
 LGBM_SE LGBM_GetLastError_R(LGBM_SE buf_len, LGBM_SE actual_len, LGBM_SE err_msg) {
-  return EncodeChar(err_msg, LGBM_GetLastError(), buf_len, actual_len);
+  return EncodeChar(err_msg, LGBM_GetLastError(), buf_len, actual_len, std::strlen(LGBM_GetLastError()) + 1);
 }
 
 LGBM_SE LGBM_DatasetCreateFromFile_R(LGBM_SE filename,
@@ -166,7 +164,7 @@ LGBM_SE LGBM_DatasetGetFeatureNames_R(LGBM_SE handle,
     ptr_names.data(), &out_len));
   CHECK(len == out_len);
   auto merge_str = Common::Join<char*>(ptr_names, "\t");
-  EncodeChar(feature_names, merge_str.c_str(), buf_len, actual_len);
+  EncodeChar(feature_names, merge_str.c_str(), buf_len, actual_len, merge_str.size() + 1);
   R_API_END();
 }
 
@@ -441,7 +439,7 @@ LGBM_SE LGBM_BoosterGetEvalNames_R(LGBM_SE handle,
   CHECK_CALL(LGBM_BoosterGetEvalNames(R_GET_PTR(handle), &out_len, ptr_names.data()));
   CHECK(out_len == len);
   auto merge_names = Common::Join<char*>(ptr_names, "\t");
-  EncodeChar(eval_names, merge_names.c_str(), buf_len, actual_len);
+  EncodeChar(eval_names, merge_names.c_str(), buf_len, actual_len, merge_names.size() + 1);
   R_API_END();
 }
 
@@ -604,7 +602,7 @@ LGBM_SE LGBM_BoosterSaveModelToString_R(LGBM_SE handle,
   int64_t out_len = 0;
   std::vector<char> inner_char_buf(R_AS_INT(buffer_len));
   CHECK_CALL(LGBM_BoosterSaveModelToString(R_GET_PTR(handle), R_AS_INT(num_iteration), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
-  EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len);
+  EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
   R_API_END();
 }
 
@@ -618,6 +616,6 @@ LGBM_SE LGBM_BoosterDumpModel_R(LGBM_SE handle,
   int64_t out_len = 0;
   std::vector<char> inner_char_buf(R_AS_INT(buffer_len));
   CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), R_AS_INT(num_iteration), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
-  EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len);
+  EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
   R_API_END();
 }
