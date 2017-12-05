@@ -244,7 +244,7 @@ void SerialTreeLearner::BeforeTrain() {
     // initialize used features
     std::memset(is_feature_used_.data(), 0, sizeof(int8_t) * num_features_);
     // Get used feature at current tree
-    auto sampled_indices = random_.Sample(valid_feature_indices_.size(), used_feature_cnt);
+    auto sampled_indices = random_.Sample(static_cast<int>(valid_feature_indices_.size()), used_feature_cnt);
     int omp_loop_size = static_cast<int>(sampled_indices.size());
     #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
     for (int i = 0; i < omp_loop_size; ++i) {
