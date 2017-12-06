@@ -84,8 +84,8 @@ LightGBM uses **CMake** to build. Run the following commands:
 
 Also you may want to reed `gcc Tips <./gcc-Tips.rst>`__.
 
-OSX
-~~~
+macOS
+~~~~~
 
 LightGBM depends on **OpenMP** for compiling, which isn't supported by Apple Clang.
 
@@ -94,7 +94,7 @@ Please install **gcc/g++** by using the following commands:
 .. code::
 
   brew install cmake
-  brew install gcc --without-multilib
+  brew install gcc
 
 Then install LightGBM:
 
@@ -179,16 +179,15 @@ Then run the following commands:
 
 **Note**: glibc >= 2.14 is required.
 
-OSX
-^^^
+macOS
+^^^^^
 
-Install **gcc** and **Open MPI** first:
+Install **Open MPI** first:
 
 .. code::
 
-  brew install openmpi
+  brew install open-mpi
   brew install cmake
-  brew install gcc --without-multilib
 
 Then run the following commands:
 
@@ -227,7 +226,7 @@ To build LightGBM GPU version, run the following commands:
   git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
   mkdir build ; cd build
   cmake -DUSE_GPU=1 ..
-  # if you have installed the NVIDIA OpenGL, please using following instead
+  # if you have installed the NVIDIA OpenGL, please use following command instead
   # sudo cmake -DUSE_GPU=1 -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -OpenCL_INCLUDE_DIR=/usr/local/cuda/include/ ..
   make -j4
 
@@ -270,21 +269,6 @@ Following procedure is for the MSVC (Microsoft Visual C++) build.
      cmake --build . --target ALL_BUILD --config Release
 
    **Note**: ``C:\local\boost_1_64_0\`` and ``C:\local\boost_1_64_0\lib64-msvc-14.0`` are locations of your Boost binaries. You also can set them to the environment variable to avoid ``Set ...`` commands when build.
-
-Protobuf Support
-^^^^^^^^^^^^^^^^
-
-If you want to use protobuf to save and load models, install `protobuf c++ version <https://github.com/google/protobuf/blob/master/src/README.md>`__ first.
-
-Then run cmake with USE_PROTO on, for example:
-
-.. code::
-
-  cmake -DUSE_PROTO=ON ..
-
-You can then use ``model_format=proto`` in parameters when save and load models.
-
-**Note**: for windows user, it's only tested with mingw. 
 
 Docker
 ^^^^^^

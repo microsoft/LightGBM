@@ -21,7 +21,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     message(FATAL_ERROR "Insufficient Clang version")
   endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    message(FATAL_ERROR "AppleClang wasn't supported. Please see https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#osx")
+    message(FATAL_ERROR "AppleClang wasn't supported. Please see https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#macos")
 endif()
 
 if(APPLE)
@@ -124,25 +124,8 @@ file(GLOB SOURCES
     src/treelearner/*.cpp
 )
 
-if (USE_PROTO)
-    if(MSVC)
-        message(FATAL_ERROR "Cannot use proto with MSVC.")
-    endif(MSVC)
-    find_package(Protobuf REQUIRED)
-    PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS proto/model.proto)
-    include_directories(${PROTOBUF_INCLUDE_DIRS})
-    include_directories(${CMAKE_CURRENT_BINARY_DIR})
-    ADD_DEFINITIONS(-DUSE_PROTO)
-    SET(PROTO_FILES src/proto/gbdt_model_proto.cpp ${PROTO_HDRS} ${PROTO_SRCS})
-endif(USE_PROTO)
-
-add_executable(lightgbm src/main.cpp ${SOURCES} ${PROTO_FILES})
-add_library(_lightgbm SHARED src/c_api.cpp src/lightgbm_R.cpp ${SOURCES} ${PROTO_FILES})
-
-if (USE_PROTO)
-    TARGET_LINK_LIBRARIES(lightgbm ${PROTOBUF_LIBRARIES})
-    TARGET_LINK_LIBRARIES(_lightgbm ${PROTOBUF_LIBRARIES})
-endif(USE_PROTO)
+add_executable(lightgbm src/main.cpp ${SOURCES})
+add_library(_lightgbm SHARED src/c_api.cpp src/lightgbm_R.cpp ${SOURCES})
 
 if(MSVC)
     set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")

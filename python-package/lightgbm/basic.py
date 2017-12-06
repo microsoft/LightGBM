@@ -555,7 +555,7 @@ class _InnerPredictor(object):
 
 class Dataset(object):
     """Dataset in LightGBM."""
-    def __init__(self, data, label=None, max_bin=None, reference=None,
+    def __init__(self, data, label=None, reference=None,
                  weight=None, group=None, init_score=None, silent=False,
                  feature_name='auto', categorical_feature='auto', params=None,
                  free_raw_data=True):
@@ -568,9 +568,6 @@ class Dataset(object):
             If string, it represents the path to txt file.
         label : list, numpy 1-D array or None, optional (default=None)
             Label of the data.
-        max_bin : int or None, optional (default=None)
-            Max number of discrete bins for features.
-            If None, default value from parameters of CLI-version will be used.
         reference : Dataset or None, optional (default=None)
             If this is Dataset for validation, training data should be used as reference.
         weight : list, numpy 1-D array or None, optional (default=None)
@@ -597,7 +594,6 @@ class Dataset(object):
         self.handle = None
         self.data = data
         self.label = label
-        self.max_bin = max_bin
         self.reference = reference
         self.weight = weight
         self.group = group
@@ -620,7 +616,7 @@ class Dataset(object):
             _safe_call(_LIB.LGBM_DatasetFree(self.handle))
             self.handle = None
 
-    def _lazy_init(self, data, label=None, max_bin=None, reference=None,
+    def _lazy_init(self, data, label=None, reference=None,
                    weight=None, group=None, init_score=None, predictor=None,
                    silent=False, feature_name='auto',
                    categorical_feature='auto', params=None):
@@ -640,12 +636,7 @@ class Dataset(object):
             if key in args_names:
                 warnings.warn('{0} keyword has been found in `params` and will be ignored. '
                               'Please use {0} argument of the Dataset constructor to pass this parameter.'.format(key))
-        self.max_bin = max_bin
         self.predictor = predictor
-        if self.max_bin is not None:
-            params["max_bin"] = self.max_bin
-            warnings.warn('The `max_bin` parameter is deprecated and will be removed in 2.0.12 version. '
-                          'Please use `params` to pass this parameter.', LGBMDeprecationWarning)
         if "verbosity" in params:
             params.setdefault("verbose", params.pop("verbosity"))
         if silent:
@@ -821,7 +812,7 @@ class Dataset(object):
             if self.reference is not None:
                 if self.used_indices is None:
                     # create valid
-                    self._lazy_init(self.data, label=self.label, max_bin=self.max_bin, reference=self.reference,
+                    self._lazy_init(self.data, label=self.label, reference=self.reference,
                                     weight=self.weight, group=self.group, init_score=self.init_score, predictor=self._predictor,
                                     silent=self.silent, feature_name=self.feature_name, params=self.params)
                 else:
@@ -839,7 +830,7 @@ class Dataset(object):
                         raise ValueError("Label should not be None.")
             else:
                 # create train
-                self._lazy_init(self.data, label=self.label, max_bin=self.max_bin,
+                self._lazy_init(self.data, label=self.label,
                                 weight=self.weight, group=self.group, init_score=self.init_score,
                                 predictor=self._predictor, silent=self.silent, feature_name=self.feature_name,
                                 categorical_feature=self.categorical_feature, params=self.params)
@@ -874,7 +865,7 @@ class Dataset(object):
         self : Dataset
             Returns self.
         """
-        ret = Dataset(data, label=label, max_bin=self.max_bin, reference=self,
+        ret = Dataset(data, label=label, reference=self,
                       weight=weight, group=group, init_score=init_score,
                       silent=silent, params=params, free_raw_data=self.free_raw_data)
         ret._predictor = self._predictor
@@ -1668,13 +1659,13 @@ class Booster(object):
         if num_iteration <= 0:
             num_iteration = self.best_iteration
         buffer_len = 1 << 20
-        tmp_out_len = ctypes.c_int(0)
+        tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
         ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
         _safe_call(_LIB.LGBM_BoosterSaveModelToString(
             self.handle,
             ctypes.c_int(num_iteration),
-            ctypes.c_int(buffer_len),
+            ctypes.c_int64(buffer_len),
             ctypes.byref(tmp_out_len),
             ptr_string_buffer))
         actual_len = tmp_out_len.value
@@ -1685,7 +1676,7 @@ class Booster(object):
             _safe_call(_LIB.LGBM_BoosterSaveModelToString(
                 self.handle,
                 ctypes.c_int(num_iteration),
-                ctypes.c_int(actual_len),
+                ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
         return string_buffer.value.decode()
@@ -1707,13 +1698,13 @@ class Booster(object):
         if num_iteration <= 0:
             num_iteration = self.best_iteration
         buffer_len = 1 << 20
-        tmp_out_len = ctypes.c_int(0)
+        tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
         ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
         _safe_call(_LIB.LGBM_BoosterDumpModel(
             self.handle,
             ctypes.c_int(num_iteration),
-            ctypes.c_int(buffer_len),
+            ctypes.c_int64(buffer_len),
             ctypes.byref(tmp_out_len),
             ptr_string_buffer))
         actual_len = tmp_out_len.value
@@ -1724,7 +1715,7 @@ class Booster(object):
             _safe_call(_LIB.LGBM_BoosterDumpModel(
                 self.handle,
                 ctypes.c_int(num_iteration),
-                ctypes.c_int(actual_len),
+                ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
         return json.loads(string_buffer.value.decode())

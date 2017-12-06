@@ -148,6 +148,31 @@ public:
     });
   }
 
+  std::vector<char> ReadContent(size_t* out_len) {
+    std::vector<char> ret;
+    *out_len = 0;
+    FILE* file;
+#ifdef _MSC_VER
+    fopen_s(&file, filename_, "rb");
+#else
+    file = fopen(filename_, "rb");
+#endif
+    if (file == NULL) {
+      return ret;
+    }
+    const size_t buffer_size = 16 * 1024 * 1024;
+    auto buffer_read = std::vector<char>(buffer_size);
+    size_t read_cnt = 0;
+    do {
+      read_cnt = fread(buffer_read.data(), 1, buffer_size, file);
+      ret.insert(ret.end(), buffer_read.begin(), buffer_read.begin() + read_cnt);
+      *out_len += read_cnt;
+    } while (read_cnt > 0);
+    // close file
+    fclose(file);
+    return ret;
+  }
+
   INDEX_T SampleFromFile(Random& random, INDEX_T sample_cnt, std::vector<std::string>* out_sampled_data) {
     INDEX_T cur_sample_cnt = 0;
     return ReadAllAndProcess(

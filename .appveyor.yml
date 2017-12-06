@@ -1,4 +1,4 @@
-version: 2.0.10.{build}
+version: 2.0.11.{build}
 
 configuration:  # A trick to construct a build matrix
   - 3.5
@@ -21,7 +21,7 @@ install:
   - ps: >-
       switch ($env:PYTHON_VERSION) {
           "2.7" {$env:MINICONDA = """C:\Miniconda-x64"""}
-          "3.4" {$env:MINICONDA = """C:\Miniconda3-x64"""}
+          "3.4" {$env:MINICONDA = """C:\Miniconda34-x64"""}
           "3.5" {$env:MINICONDA = """C:\Miniconda35-x64"""}
           "3.6" {$env:MINICONDA = """C:\Miniconda36-x64"""}
           default {$env:MINICONDA = """C:\Miniconda36-x64"""}

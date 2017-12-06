@@ -68,7 +68,7 @@ Now we are ready to checkout LightGBM and compile it with GPU support:
 
 You will see two binaries are generated, ``lightgbm`` and ``lib_lightgbm.so``.
 
-If you are building on OSX, you probably need to remove macro ``BOOST_COMPUTE_USE_OFFLINE_CACHE`` in ``src/treelearner/gpu_tree_learner.h`` to avoid a known crash bug in Boost.Compute.
+If you are building on macOS, you probably need to remove macro ``BOOST_COMPUTE_USE_OFFLINE_CACHE`` in ``src/treelearner/gpu_tree_learner.h`` to avoid a known crash bug in Boost.Compute.
 
 Install Python Interface (optional)
 -----------------------------------

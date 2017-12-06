@@ -188,6 +188,12 @@ public:
     });
     return global;
   }
+  /*! \brief set variables and function ptrs */
+  static void SetRank(int rank) { rank_ = rank;}
+  static void SetNumMachines(int num_machines) { num_machines_ = num_machines; }
+  static void SetAllReduce(AllreduceFunction AllreduceFuncPtr) { AllreduceFuncPtr_ = AllreduceFuncPtr;}
+  static void SetReduceScatter(ReduceScatterFunction ReduceScatterFuncPtr) { ReduceScatterFuncPtr_ = ReduceScatterFuncPtr; }
+  static void SetAllgather(AllgatherFunction AllgatherFuncPtr) { AllgatherFuncPtr_ = AllgatherFuncPtr; }
 
 private:
   /*! \brief Number of all machines */
@@ -208,7 +214,10 @@ private:
   static THREAD_LOCAL std::vector<char> buffer_;
   /*! \brief Size of buffer_ */
   static THREAD_LOCAL int buffer_size_;
-
+  /*! \brief Funcs*/
+  static THREAD_LOCAL AllreduceFunction AllreduceFuncPtr_;
+  static THREAD_LOCAL ReduceScatterFunction ReduceScatterFuncPtr_;
+  static THREAD_LOCAL AllgatherFunction AllgatherFuncPtr_;
 };
 
 inline int Network::rank() {

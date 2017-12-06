@@ -29,7 +29,7 @@ namespace LightGBM {
 class Booster {
 public:
   explicit Booster(const char* filename) {
-    boosting_.reset(Boosting::CreateBoosting("gbdt", "text", filename));
+    boosting_.reset(Boosting::CreateBoosting("gbdt", filename));
   }
 
   Booster(const Dataset* train_data,
@@ -46,7 +46,7 @@ public:
         please use continued train with input score");
     }
 
-    boosting_.reset(Boosting::CreateBoosting(config_.boosting_type, "text", nullptr));
+    boosting_.reset(Boosting::CreateBoosting(config_.boosting_type, nullptr));
 
     train_data_ = train_data;
     CreateObjectiveAndMetrics();
@@ -240,7 +240,8 @@ public:
   }
 
   void LoadModelFromString(const char* model_str) {
-    boosting_->LoadModelFromString(model_str);
+    size_t len = std::strlen(model_str);
+    boosting_->LoadModelFromString(model_str, len);
   }
 
   std::string SaveModelToString(int num_iteration) {
@@ -272,23 +273,21 @@ public:
     return ret;
   }
 
-  #pragma warning(disable : 4996)
   int GetEvalNames(char** out_strs) const {
     int idx = 0;
     for (const auto& metric : train_metric_) {
       for (const auto& name : metric->GetName()) {
-        std::strcpy(out_strs[idx], name.c_str());
+        std::memcpy(out_strs[idx], name.c_str(), name.size() + 1);
         ++idx;
       }
     }
     return idx;
   }
 
-  #pragma warning(disable : 4996)
   int GetFeatureNames(char** out_strs) const {
     int idx = 0;
     for (const auto& name : boosting_->FeatureNames()) {
-      std::strcpy(out_strs[idx], name.c_str());
+      std::memcpy(out_strs[idx], name.c_str(), name.size() + 1);
       ++idx;
     }
     return idx;
@@ -718,7 +717,6 @@ int LGBM_DatasetSetFeatureNames(
   API_END();
 }
 
-#pragma warning(disable : 4996)
 int LGBM_DatasetGetFeatureNames(
   DatasetHandle handle,
   char** feature_names,
@@ -728,7 +726,7 @@ int LGBM_DatasetGetFeatureNames(
   auto inside_feature_name = dataset->feature_names();
   *num_feature_names = static_cast<int>(inside_feature_name.size());
   for (int i = 0; i < *num_feature_names; ++i) {
-    std::strcpy(feature_names[i], inside_feature_name[i].c_str());
+    std::memcpy(feature_names[i], inside_feature_name[i].c_str(), inside_feature_name[i].size() + 1);
   }
   API_END();
 }
@@ -1137,34 +1135,32 @@ int LGBM_BoosterSaveModel(BoosterHandle handle,
   API_END();
 }
 
-#pragma warning(disable : 4996)
 int LGBM_BoosterSaveModelToString(BoosterHandle handle,
                                   int num_iteration,
-                                  int buffer_len,
-                                  int* out_len,
+                                  int64_t buffer_len, 
+                                  int64_t* out_len,
                                   char* out_str) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   std::string model = ref_booster->SaveModelToString(num_iteration);
-  *out_len = static_cast<int>(model.size()) + 1;
+  *out_len = static_cast<int64_t>(model.size()) + 1;
   if (*out_len <= buffer_len) {
-    std::strcpy(out_str, model.c_str());
+    std::memcpy(out_str, model.c_str(), *out_len);
   }
   API_END();
 }
 
-#pragma warning(disable : 4996)
 int LGBM_BoosterDumpModel(BoosterHandle handle,
                           int num_iteration,
-                          int buffer_len,
-                          int* out_len,
+                          int64_t buffer_len,
+                          int64_t* out_len,
                           char* out_str) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   std::string model = ref_booster->DumpModel(num_iteration);
-  *out_len = static_cast<int>(model.size()) + 1;
+  *out_len = static_cast<int64_t>(model.size()) + 1;
   if (*out_len <= buffer_len) {
-    std::strcpy(out_str, model.c_str());
+    std::memcpy(out_str, model.c_str(), *out_len);
   }
   API_END();
 }
@@ -1224,6 +1220,32 @@ int LGBM_NetworkFree() {
   API_END();
 }
 
+int LGBM_GetFuncions(void* AllreduceFuncPtr,
+                     void* ReduceScatterFuncPtr,
+                     void* AllgatherFuncPtr,
+                     int num_machines,
+                     int rank) {
+  API_BEGIN();
+  if(num_machines > 1) {
+    auto func1 = [AllreduceFuncPtr](char* arg1, int arg2, int arg3, char* arg4, const ReduceFunction& func) {
+      auto ptr = *func.target<ReduceFunctionInC>();
+      auto tmp = (void(*)(char*, int, int, char*, const ReduceFunctionInC&))AllreduceFuncPtr;
+      return tmp(arg1, arg2, arg3, arg4, ptr);
+    };
+    Network::SetAllReduce(func1);
+    auto func2 = [ReduceScatterFuncPtr](char* arg1, int arg2, const int* arg3, const int* arg4, char* arg5, const ReduceFunction& func) {
+      auto ptr = *func.target<ReduceFunctionInC>();
+      auto tmp = (void(*)(char*, int, const int*, const int*, char*, const ReduceFunctionInC&))ReduceScatterFuncPtr;
+      return tmp(arg1, arg2, arg3, arg4, arg5, ptr);
+    };
+    Network::SetReduceScatter(func2);
+    Network::SetAllgather((void(*)(char*, int, char*))AllgatherFuncPtr);
+    Network::SetNumMachines(num_machines);
+    Network::SetRank(rank);
+  }
+  API_END();
+
+}
 // ---- start of some help functions
 
 std::function<std::vector<double>(int row_idx)>

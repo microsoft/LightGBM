@@ -19,6 +19,10 @@ THREAD_LOCAL std::vector<int> Network::block_start_;
 THREAD_LOCAL std::vector<int>  Network::block_len_;
 THREAD_LOCAL int Network::buffer_size_;
 THREAD_LOCAL std::vector<char> Network::buffer_;
+THREAD_LOCAL AllreduceFunction Network::AllreduceFuncPtr_ = NULL;
+THREAD_LOCAL ReduceScatterFunction Network::ReduceScatterFuncPtr_ = NULL;
+THREAD_LOCAL AllgatherFunction Network::AllgatherFuncPtr_ = NULL;
+
 
 void Network::Init(NetworkConfig config) {
   if (config.num_machines > 1) {
@@ -44,6 +48,9 @@ void Network::Dispose() {
 void Network::Allreduce(char* input, int input_size, int type_size, char* output, const ReduceFunction& reducer) {
   if (num_machines_ <= 1) {
     Log::Fatal("Please initilize the network interface first");
+  }
+  if (AllreduceFuncPtr_ != NULL) {
+    return AllreduceFuncPtr_(input, input_size, type_size, output, reducer);
   }
   int count = input_size / type_size;
   // if small package or small count , do it by all gather.(reduce the communication times.)
@@ -99,6 +106,9 @@ void Network::Allgather(char* input, int send_size, char* output) {
     Log::Fatal("Please initilize the network interface first");
   }
   if (num_machines_ <= 1) { return; }
+  if (AllgatherFuncPtr_ != NULL) {
+    return AllgatherFuncPtr_(input, send_size, output);
+  }
   // assign blocks
   block_start_[0] = 0;
   block_len_[0] = send_size;
@@ -145,9 +155,12 @@ void Network::Allgather(char* input, int all_size, const int* block_start, const
   std::reverse<char*>(output + block_start[rank_], output + all_size);
 }
 
-void Network::ReduceScatter(char* input, int, const int* block_start, const int* block_len, char* output, const ReduceFunction& reducer) {
+void Network::ReduceScatter(char* input, int input_size, const int* block_start, const int* block_len, char* output, const ReduceFunction& reducer) {
   if (num_machines_ <= 1) {
     Log::Fatal("Please initilize the network interface first");
+  }
+  if (ReduceScatterFuncPtr_ != NULL) {
+    return ReduceScatterFuncPtr_(input, input_size, block_start, block_len, output, reducer);
   }
   if (recursive_halving_map_.need_pairwise) {
     for (int i = 1; i < num_machines_; ++i) {

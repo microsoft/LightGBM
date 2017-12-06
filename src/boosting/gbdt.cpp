@@ -588,7 +588,7 @@ std::string GBDT::OutputMetric(int iter) {
           << " : " << scores[k];
         Log::Info(tmp_buf.str().c_str());
         if (early_stopping_round_ > 0) {
-          msg_buf << tmp_buf.str() << std::endl;
+          msg_buf << tmp_buf.str() << '\n';
         }
       }
     }
@@ -608,7 +608,7 @@ std::string GBDT::OutputMetric(int iter) {
             Log::Info(tmp_buf.str().c_str());
           }
           if (early_stopping_round_ > 0) {
-            msg_buf << tmp_buf.str() << std::endl;
+            msg_buf << tmp_buf.str() << '\n';
           }
         }
         if (ret.empty() && early_stopping_round_ > 0) {

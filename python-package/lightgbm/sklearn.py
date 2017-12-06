@@ -133,7 +133,7 @@ class LGBMModel(_LGBMModelBase):
     """Implementation of the scikit-learn API for LightGBM."""
 
     def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
-                 learning_rate=0.1, n_estimators=100, max_bin=255,
+                 learning_rate=0.1, n_estimators=100,
                  subsample_for_bin=200000, objective=None,
                  min_split_gain=0., min_child_weight=1e-3, min_child_samples=20,
                  subsample=1., subsample_freq=1, colsample_bytree=1.,
@@ -156,8 +156,6 @@ class LGBMModel(_LGBMModelBase):
             Boosting learning rate.
         n_estimators : int, optional (default=100)
             Number of boosted trees to fit.
-        max_bin : int, optional (default=255)
-            Number of bucketed bins for feature values.
         subsample_for_bin : int, optional (default=50000)
             Number of samples for constructing bins.
         objective : string, callable or None, optional (default=None)
@@ -246,7 +244,6 @@ class LGBMModel(_LGBMModelBase):
         self.max_depth = max_depth
         self.learning_rate = learning_rate
         self.n_estimators = n_estimators
-        self.max_bin = max_bin
         self.subsample_for_bin = subsample_for_bin
         self.min_split_gain = min_split_gain
         self.min_child_weight = min_child_weight
@@ -273,12 +270,6 @@ class LGBMModel(_LGBMModelBase):
     def get_params(self, deep=True):
         params = super(LGBMModel, self).get_params(deep=deep)
         params.update(self._other_params)
-        if 'seed' in params:
-            warnings.warn('The `seed` parameter is deprecated and will be removed in 2.0.12 version. '
-                          'Please use `random_state` instead.', LGBMDeprecationWarning)
-        if 'nthread' in params:
-            warnings.warn('The `nthread` parameter is deprecated and will be removed in 2.0.12 version. '
-                          'Please use `n_jobs` instead.', LGBMDeprecationWarning)
         return params
 
     # minor change to support `**kwargs`
@@ -416,7 +407,7 @@ class LGBMModel(_LGBMModelBase):
         self._n_features = X.shape[1]
 
         def _construct_dataset(X, y, sample_weight, init_score, group, params):
-            ret = Dataset(X, label=y, max_bin=self.max_bin, weight=sample_weight, group=group, params=params)
+            ret = Dataset(X, label=y, weight=sample_weight, group=group, params=params)
             ret.set_init_score(init_score)
             return ret
 
@@ -577,16 +568,6 @@ class LGBMModel(_LGBMModelBase):
         if self._n_features is None:
             raise LGBMNotFittedError('No feature_importances found. Need to call fit beforehand.')
         return self.booster_.feature_importance()
-
-    def booster(self):
-        warnings.warn('The `booster()` method is deprecated and will be removed in 2.0.12 version. '
-                      'Please use attribute `booster_` instead.', LGBMDeprecationWarning)
-        return self.booster_
-
-    def feature_importance(self):
-        warnings.warn('The `feature_importance()` method is deprecated and will be removed in 2.0.12 version. '
-                      'Please use attribute `feature_importances_` instead.', LGBMDeprecationWarning)
-        return self.feature_importances_
 
 
 class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
