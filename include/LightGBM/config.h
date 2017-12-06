@@ -402,6 +402,7 @@ struct ParameterAlias {
       { "num_trees", "num_iterations" },
       { "num_rounds", "num_iterations" },
       { "num_boost_round", "num_iterations" },
+      { "n_estimators", "num_iterations"},
       { "sub_row", "bagging_fraction" },
       { "subsample", "bagging_fraction" },
       { "subsample_freq", "bagging_freq" },

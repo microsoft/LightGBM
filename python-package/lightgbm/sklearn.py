@@ -133,7 +133,7 @@ class LGBMModel(_LGBMModelBase):
     """Implementation of the scikit-learn API for LightGBM."""
 
     def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
-                 learning_rate=0.1, n_estimators=10,
+                 learning_rate=0.1, n_estimators=100,
                  subsample_for_bin=200000, objective=None,
                  min_split_gain=0., min_child_weight=1e-3, min_child_samples=20,
                  subsample=1., subsample_freq=1, colsample_bytree=1.,
@@ -154,7 +154,7 @@ class LGBMModel(_LGBMModelBase):
             Maximum tree depth for base learners, -1 means no limit.
         learning_rate : float, optional (default=0.1)
             Boosting learning rate.
-        n_estimators : int, optional (default=10)
+        n_estimators : int, optional (default=100)
             Number of boosted trees to fit.
         subsample_for_bin : int, optional (default=50000)
             Number of samples for constructing bins.

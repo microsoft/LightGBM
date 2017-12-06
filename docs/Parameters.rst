@@ -115,7 +115,7 @@ Core Parameters
    -  support multi validation data, separate by ``,``
 
 -  ``num_iterations``, default=\ ``100``, type=int,
-   alias=\ ``num_iteration``, ``num_tree``, ``num_trees``, ``num_round``, ``num_rounds``, ``num_boost_round``
+   alias=\ ``num_iteration``, ``num_tree``, ``num_trees``, ``num_round``, ``num_rounds``, ``num_boost_round``, ``n_estimators``
 
    -  number of boosting iterations
 
