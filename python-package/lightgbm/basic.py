@@ -349,7 +349,7 @@ class _InnerPredictor(object):
         try:
             if self.__is_manage_handle:
                 _safe_call(_LIB.LGBM_BoosterFree(self.handle))
-        except:
+        except AttributeError:
             pass
 
     def __getstate__(self):
@@ -614,7 +614,7 @@ class Dataset(object):
     def __del__(self):
         try:
             self._free_handle()
-        except:
+        except AttributeError:
             pass
 
     def _free_handle(self):
@@ -1348,12 +1348,12 @@ class Booster(object):
         try:
             if self.network:
                 self.free_network()
-        except:
+        except AttributeError:
             pass
         try:
             if self.handle is not None:
                 _safe_call(_LIB.LGBM_BoosterFree(self.handle))
-        except:
+        except AttributeError:
             pass
 
     def __copy__(self):
