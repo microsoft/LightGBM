@@ -78,6 +78,7 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   // initialize data partition
   data_partition_.reset(new DataPartition(num_data_, tree_config_->num_leaves));
   is_feature_used_.resize(num_features_);
+  valid_feature_indices_ = train_data_->ValidFeatureIndices();
   // initialize ordered gradients and hessians
   ordered_gradients_.resize(num_data_);
   ordered_hessians_.resize(num_data_);
@@ -237,16 +238,19 @@ void SerialTreeLearner::BeforeTrain() {
   histogram_pool_.ResetMap();
 
   if (tree_config_->feature_fraction < 1) {
-    int used_feature_cnt = static_cast<int>(train_data_->num_total_features()*tree_config_->feature_fraction);
+    int used_feature_cnt = static_cast<int>(valid_feature_indices_.size()*tree_config_->feature_fraction);
+    // at least use one feature
+    used_feature_cnt = std::max(used_feature_cnt, 1);
     // initialize used features
     std::memset(is_feature_used_.data(), 0, sizeof(int8_t) * num_features_);
     // Get used feature at current tree
-    auto used_feature_indices = random_.Sample(train_data_->num_total_features(), used_feature_cnt);
-    int omp_loop_size = static_cast<int>(used_feature_indices.size());
+    auto sampled_indices = random_.Sample(static_cast<int>(valid_feature_indices_.size()), used_feature_cnt);
+    int omp_loop_size = static_cast<int>(sampled_indices.size());
     #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
     for (int i = 0; i < omp_loop_size; ++i) {
-      int inner_feature_index = train_data_->InnerFeatureIndex(used_feature_indices[i]);
-      if (inner_feature_index < 0) { continue; }
+      int used_feature = valid_feature_indices_[sampled_indices[i]];
+      int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
+      CHECK(inner_feature_index >= 0);
       is_feature_used_[inner_feature_index] = 1;
     }
   } else {

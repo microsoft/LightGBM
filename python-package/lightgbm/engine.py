@@ -93,7 +93,7 @@ def train(params, train_set, num_boost_round=100,
         The trained Booster model.
     """
     # create predictor first
-    for alias in ["num_boost_round", "num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds"]:
+    for alias in ["num_boost_round", "num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds", "n_estimators"]:
         if alias in params:
             num_boost_round = int(params.pop(alias))
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
@@ -307,7 +307,7 @@ def _agg_cv_result(raw_results):
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
 
 
-def cv(params, train_set, num_boost_round=10,
+def cv(params, train_set, num_boost_round=100,
        folds=None, nfold=5, stratified=True, shuffle=True,
        metrics=None, fobj=None, feval=None, init_model=None,
        feature_name='auto', categorical_feature='auto',
@@ -322,7 +322,7 @@ def cv(params, train_set, num_boost_round=10,
         Parameters for Booster.
     train_set : Dataset
         Data to be trained on.
-    num_boost_round : int, optional (default=10)
+    num_boost_round : int, optional (default=100)
         Number of boosting iterations.
     folds : a generator or iterator of (train_idx, test_idx) tuples or None, optional (default=None)
         The train and test indices for the each fold.
@@ -383,7 +383,7 @@ def cv(params, train_set, num_boost_round=10,
     if not isinstance(train_set, Dataset):
         raise TypeError("Traninig only accepts Dataset object")
 
-    for alias in ["num_boost_round", "num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds"]:
+    for alias in ["num_boost_round", "num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds", "n_estimators"]:
         if alias in params:
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             num_boost_round = params.pop(alias)
