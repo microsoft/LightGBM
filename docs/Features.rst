@@ -1,16 +1,16 @@
 Features
 ========
 
-This is a short introduction for the features and algorithms used in LightGBM.
+This is a short introduction for the features and algorithms used in LightGBM\ `[1] <#references>`__.
 
 This page doesn't contain detailed algorithms, please refer to cited papers or source code if you are interested.
 
 Optimization in Speed and Memory Usage
 --------------------------------------
 
-Many boosting tools use pre-sorted based algorithms\ `[1, 2] <#references>`__ (e.g. default algorithm in xgboost) for decision tree learning. It is a simple solution, but not easy to optimize.
+Many boosting tools use pre-sorted based algorithms\ `[2, 3] <#references>`__ (e.g. default algorithm in xgboost) for decision tree learning. It is a simple solution, but not easy to optimize.
 
-LightGBM uses the histogram based algorithms\ `[3, 4, 5] <#references>`__, which bucketing continuous feature(attribute) values into discrete bins, to speed up training procedure and reduce memory usage.
+LightGBM uses the histogram based algorithms\ `[4, 5, 6] <#references>`__, which bucketing continuous feature(attribute) values into discrete bins, to speed up training procedure and reduce memory usage.
 Following are advantages for histogram based algorithms:
 
 -  **Reduce calculation cost of split gain**
@@ -50,7 +50,7 @@ Most decision tree learning algorithms grow tree by level(depth)-wise, like the 
 .. image:: ./_static/images/level-wise.png
    :align: center
 
-LightGBM grows tree by leaf-wise (best-first)\ `[6] <#references>`__. It will choose the leaf with max delta loss to grow.
+LightGBM grows tree by leaf-wise (best-first)\ `[7] <#references>`__. It will choose the leaf with max delta loss to grow.
 When growing same ``#leaf``, leaf-wise algorithm can reduce more loss than level-wise algorithm.
 
 Leaf-wise may cause over-fitting when ``#data`` is small.
@@ -67,7 +67,7 @@ However, it is not a good solution in tree learner.
 The reason is, for the high cardinality categorical features, it will grow the very unbalance tree, and needs to grow very deep to achieve the good accuracy.
 
 Actually, the optimal solution is partitioning the categorical feature into 2 subsets, and there are ``2^(k-1) - 1`` possible partitions.
-But there is a efficient solution for regression tree\ `[7] <#references>`__. It needs about ``k * log(k)`` to find the optimal partition.
+But there is a efficient solution for regression tree\ `[8] <#references>`__. It needs about ``k * log(k)`` to find the optimal partition.
 
 The basic idea is reordering the categories according to the relevance of training target.
 More specifically, reordering the histogram (of categorical feature) according to it's accumulate values (``sum_gradient / sum_hessian``), then find the best split on the sorted histogram.
@@ -76,7 +76,7 @@ Optimization in Network Communication
 -------------------------------------
 
 It only needs to use some collective communication algorithms, like "All reduce", "All gather" and "Reduce scatter", in parallel learning of LightGBM.
-LightGBM implement state-of-art algorithms\ `[8] <#references>`__.
+LightGBM implement state-of-art algorithms\ `[9] <#references>`__.
 These collective communication algorithms can provide much better performance than point-to-point communication.
 
 Optimization in Parallel Learning
@@ -147,7 +147,7 @@ The shortage of traditional data parallel:
 
 -  High communication cost.
    If using point-to-point communication algorithm, communication cost for one machine is about ``O(#machine * #feature * #bin)``.
-   If using collective communication algorithm (e.g. "All Reduce"), communication cost is about ``O(2 * #feature * #bin)`` (check cost of "All Reduce" in chapter 4.5 at `[8] <#references>`__).
+   If using collective communication algorithm (e.g. "All Reduce"), communication cost is about ``O(2 * #feature * #bin)`` (check cost of "All Reduce" in chapter 4.5 at `[9] <#references>`__).
 
 Data Parallel in LightGBM
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -166,12 +166,12 @@ Voting Parallel
 ~~~~~~~~~~~~~~~
 
 Voting parallel further reduce the communication cost in `Data Parallel <#data-parallel>`__ to constant cost.
-It uses two stage voting to reduce the communication cost of feature histograms\ `[9] <#references>`__.
+It uses two stage voting to reduce the communication cost of feature histograms\ `[10] <#references>`__.
 
 GPU Support
 -----------
 
-Thanks `@huanzhang12 <https://github.com/huanzhang12>`__ for contributing this feature. Please read `[10] <#references>`__ to get more details.
+Thanks `@huanzhang12 <https://github.com/huanzhang12>`__ for contributing this feature. Please read `[11] <#references>`__ to get more details.
 
 - `GPU Installation <./Installation-Guide.rst#build-gpu-version>`__
 
@@ -244,25 +244,29 @@ For more details, please refer to `Parameters <./Parameters.rst>`__.
 References
 ----------
 
-[1] Mehta, Manish, Rakesh Agrawal, and Jorma Rissanen. "SLIQ: A fast scalable classifier for data mining." International Conference on Extending Database Technology. Springer Berlin Heidelberg, 1996.
+[1] Guolin Ke, Qi Meng, Thomas Finley, Taifeng Wang, Wei Chen, Weidong Ma, Qiwei Ye, and Tie-Yan Liu. "`LightGBM\: A Highly Efficient Gradient Boosting Decision Tree`_." In Advances in Neural Information Processing Systems (NIPS), pp. 3149-3157. 2017.
 
-[2] Shafer, John, Rakesh Agrawal, and Manish Mehta. "SPRINT: A scalable parallel classifier for data mining." Proc. 1996 Int. Conf. Very Large Data Bases. 1996.
+[2] Mehta, Manish, Rakesh Agrawal, and Jorma Rissanen. "SLIQ: A fast scalable classifier for data mining." International Conference on Extending Database Technology. Springer Berlin Heidelberg, 1996.
 
-[3] Ranka, Sanjay, and V. Singh. "CLOUDS: A decision tree classifier for large datasets." Proceedings of the 4th Knowledge Discovery and Data Mining Conference. 1998.
+[3] Shafer, John, Rakesh Agrawal, and Manish Mehta. "SPRINT: A scalable parallel classifier for data mining." Proc. 1996 Int. Conf. Very Large Data Bases. 1996.
 
-[4] Machado, F. P. "Communication and memory efficient parallel decision tree construction." (2003).
+[4] Ranka, Sanjay, and V. Singh. "CLOUDS: A decision tree classifier for large datasets." Proceedings of the 4th Knowledge Discovery and Data Mining Conference. 1998.
 
-[5] Li, Ping, Qiang Wu, and Christopher J. Burges. "Mcrank: Learning to rank using multiple classification and gradient boosting." Advances in neural information processing systems. 2007.
+[5] Machado, F. P. "Communication and memory efficient parallel decision tree construction." (2003).
 
-[6] Shi, Haijian. "Best-first decision tree learning." Diss. The University of Waikato, 2007.
+[6] Li, Ping, Qiang Wu, and Christopher J. Burges. "Mcrank: Learning to rank using multiple classification and gradient boosting." Advances in neural information processing systems. 2007.
 
-[7] Walter D. Fisher. "`On Grouping for Maximum Homogeneity`_." Journal of the American Statistical Association. Vol. 53, No. 284 (Dec., 1958), pp. 789-798.
+[7] Shi, Haijian. "Best-first decision tree learning." Diss. The University of Waikato, 2007.
 
-[8] Thakur, Rajeev, Rolf Rabenseifner, and William Gropp. "`Optimization of collective communication operations in MPICH`_." International Journal of High Performance Computing Applications 19.1 (2005): 49-66.
+[8] Walter D. Fisher. "`On Grouping for Maximum Homogeneity`_." Journal of the American Statistical Association. Vol. 53, No. 284 (Dec., 1958), pp. 789-798.
 
-[9] Qi Meng, Guolin Ke, Taifeng Wang, Wei Chen, Qiwei Ye, Zhi-Ming Ma, Tieyan Liu. "`A Communication-Efficient Parallel Algorithm for Decision Tree`_." Advances in Neural Information Processing Systems 29 (NIPS 2016).
+[9] Thakur, Rajeev, Rolf Rabenseifner, and William Gropp. "`Optimization of collective communication operations in MPICH`_." International Journal of High Performance Computing Applications 19.1 (2005): 49-66.
 
-[10] Huan Zhang, Si Si and Cho-Jui Hsieh. "`GPU Acceleration for Large-scale Tree Boosting`_." arXiv:1706.08359, 2017.
+[10] Qi Meng, Guolin Ke, Taifeng Wang, Wei Chen, Qiwei Ye, Zhi-Ming Ma, Tieyan Liu. "`A Communication-Efficient Parallel Algorithm for Decision Tree`_." Advances in Neural Information Processing Systems 29 (NIPS 2016).
+
+[11] Huan Zhang, Si Si and Cho-Jui Hsieh. "`GPU Acceleration for Large-scale Tree Boosting`_." arXiv:1706.08359, 2017.
+
+.. _LightGBM\: A Highly Efficient Gradient Boosting Decision Tree: https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision-tree.pdf
 
 .. _On Grouping for Maximum Homogeneity: http://amstat.tandfonline.com/doi/abs/10.1080/01621459.1958.10501479
 
