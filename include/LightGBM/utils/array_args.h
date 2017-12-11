@@ -136,7 +136,7 @@ public:
     if ((k > l && k < r) || l == 0 || r == end - 1) {
       return k;
     } else if (k <= l) {
-      return ArgMaxAtK(arr, start, l, k);
+      return ArgMaxAtK(arr, start, l + 1, k);
     } else {
       return ArgMaxAtK(arr, r, end, k);
     }
