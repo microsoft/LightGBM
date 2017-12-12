@@ -154,9 +154,9 @@ namespace LightGBM {
     int cnt_zero = 0;
     int right_cnt_data = 0;
     for (int i = 0; i < num_distinct_values; ++i) {
-      if (distinct_values[i] <= -kZeroAsMissingValueRange) {
+      if (distinct_values[i] <= -kZeroThreshold) {
         left_cnt_data += counts[i];
-      } else if (distinct_values[i] > kZeroAsMissingValueRange) {
+      } else if (distinct_values[i] > kZeroThreshold) {
         right_cnt_data += counts[i];
       } else {
         cnt_zero += counts[i];
@@ -165,7 +165,7 @@ namespace LightGBM {
 
     int left_cnt = -1;
     for (int i = 0; i < num_distinct_values; ++i) {
-      if (distinct_values[i] > -kZeroAsMissingValueRange) {
+      if (distinct_values[i] > -kZeroThreshold) {
         left_cnt = i;
         break;
       }
@@ -179,12 +179,12 @@ namespace LightGBM {
       int left_max_bin = static_cast<int>(static_cast<double>(left_cnt_data) / (total_sample_cnt - cnt_zero) * (max_bin - 1));
       left_max_bin = std::max(1, left_max_bin);
       bin_upper_bound = GreedyFindBin(distinct_values, counts, left_cnt, left_max_bin, left_cnt_data, min_data_in_bin);
-      bin_upper_bound.back() = -kZeroAsMissingValueRange;
+      bin_upper_bound.back() = -kZeroThreshold;
     }
 
     int right_start = -1;
     for (int i = left_cnt; i < num_distinct_values; ++i) {
-      if (distinct_values[i] > kZeroAsMissingValueRange) {
+      if (distinct_values[i] > kZeroThreshold) {
         right_start = i;
         break;
       }
@@ -195,7 +195,7 @@ namespace LightGBM {
       CHECK(right_max_bin > 0);
       auto right_bounds = GreedyFindBin(distinct_values + right_start, counts + right_start,
         num_distinct_values - right_start, right_max_bin, right_cnt_data, min_data_in_bin);
-      bin_upper_bound.push_back(kZeroAsMissingValueRange);
+      bin_upper_bound.push_back(kZeroThreshold);
       bin_upper_bound.insert(bin_upper_bound.end(), right_bounds.begin(), right_bounds.end());
     } else {
       bin_upper_bound.push_back(std::numeric_limits<double>::infinity());

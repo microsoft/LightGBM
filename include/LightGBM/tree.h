@@ -171,7 +171,7 @@ public:
   std::string ToIfElse(int index, bool is_predict_leaf_index) const;
 
   inline static bool IsZero(double fval) {
-    if (fval > -kZeroAsMissingValueRange && fval <= kZeroAsMissingValueRange) {
+    if (fval > -kZeroThreshold && fval <= kZeroThreshold) {
       return true;
     } else {
       return false;

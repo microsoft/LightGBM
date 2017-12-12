@@ -19,7 +19,7 @@ const score_t kMinScore = -std::numeric_limits<score_t>::infinity();
 
 const score_t kEpsilon = 1e-15f;
 
-const double kZeroAsMissingValueRange = 1e-20f;
+const double kZeroThreshold = 1e-35f;
 
 using ReduceFunction = std::function<void(const char*, char*, int)>;
 
