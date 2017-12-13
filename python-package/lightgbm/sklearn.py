@@ -15,7 +15,8 @@ from .basic import Dataset, LightGBMError
 from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckConsistentLength,
-                     _LGBMCheckClassificationTargets, argc_, range_, LGBMDeprecationWarning)
+                     _LGBMCheckClassificationTargets, _LGBMComputeSampleWeight,
+                     argc_, range_, LGBMDeprecationWarning)
 from .engine import train
 
 
@@ -134,7 +135,7 @@ class LGBMModel(_LGBMModelBase):
 
     def __init__(self, boosting_type="gbdt", num_leaves=31, max_depth=-1,
                  learning_rate=0.1, n_estimators=100,
-                 subsample_for_bin=200000, objective=None,
+                 subsample_for_bin=200000, objective=None, class_weight=None,
                  min_split_gain=0., min_child_weight=1e-3, min_child_samples=20,
                  subsample=1., subsample_freq=1, colsample_bytree=1.,
                  reg_alpha=0., reg_lambda=0., random_state=None,
@@ -162,6 +163,14 @@ class LGBMModel(_LGBMModelBase):
             Specify the learning task and the corresponding learning objective or
             a custom objective function to be used (see note below).
             default: 'regression' for LGBMRegressor, 'binary' or 'multiclass' for LGBMClassifier, 'lambdarank' for LGBMRanker.
+        class_weight : dict, 'balanced' or None, optional (default=None)
+            Weights associated with classes in the form ``{class_label: weight}``.
+            Used only for classification task.
+            The 'balanced' mode uses the values of y to automatically adjust weights
+            inversely proportional to class frequencies in the input data as ``n_samples / (n_classes * np.bincount(y))``.
+            If None, all classes are supposed to have weight one.
+            Note that these weights will be multiplied with ``sample_weight`` (passed through the fit method)
+            if ``sample_weight`` is specified.
         min_split_gain : float, optional (default=0.)
             Minimum loss reduction required to make a further partition on a leaf node of the tree.
         min_child_weight : float, optional (default=1e-3)
@@ -262,6 +271,7 @@ class LGBMModel(_LGBMModelBase):
         self._best_iteration = None
         self._other_params = {}
         self._objective = objective
+        self.class_weight = class_weight
         self._n_features = None
         self._classes = None
         self._n_classes = None
@@ -284,9 +294,9 @@ class LGBMModel(_LGBMModelBase):
     def fit(self, X, y,
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
-            eval_init_score=None, eval_group=None, eval_metric=None,
-            early_stopping_rounds=None, verbose=True, feature_name='auto',
-            categorical_feature='auto', callbacks=None):
+            eval_class_weight=None, eval_init_score=None, eval_group=None,
+            eval_metric=None, early_stopping_rounds=None, verbose=True,
+            feature_name='auto', categorical_feature='auto', callbacks=None):
         """Build a gradient boosting model from the training set (X, y).
 
         Parameters
@@ -303,10 +313,12 @@ class LGBMModel(_LGBMModelBase):
             Group data of training data.
         eval_set : list or None, optional (default=None)
             A list of (X, y) tuple pairs to use as a validation sets for early-stopping.
-        eval_names: list of strings or None, optional (default=None)
+        eval_names : list of strings or None, optional (default=None)
             Names of eval_set.
         eval_sample_weight : list of arrays or None, optional (default=None)
             Weights of eval data.
+        eval_class_weight : list or None, optional (default=None)
+            Class weights of eval data.
         eval_init_score : list of arrays or None, optional (default=None)
             Init score of eval data.
         eval_group : list of arrays or None, optional (default=None)
@@ -386,6 +398,7 @@ class LGBMModel(_LGBMModelBase):
             params['verbose'] = -1
         params.pop('silent', None)
         params.pop('n_estimators', None)
+        params.pop('class_weight', None)
         if self._n_classes is not None and self._n_classes > 2:
             params['num_class'] = self._n_classes
         if hasattr(self, '_eval_at'):
@@ -403,6 +416,12 @@ class LGBMModel(_LGBMModelBase):
         if not _IS_PANDAS_INSTALLED or not isinstance(X, pd.DataFrame):
             X, y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
             _LGBMCheckConsistentLength(X, y, sample_weight)
+
+        class_sample_weight = _LGBMComputeSampleWeight(self.class_weight, y)
+        if sample_weight is None:
+            sample_weight = class_sample_weight
+        else:
+            sample_weight = np.multiply(sample_weight, class_sample_weight)
 
         self._n_features = X.shape[1]
 
@@ -430,8 +449,13 @@ class LGBMModel(_LGBMModelBase):
                         elif isinstance(collection, dict):
                             return collection.get(i, None)
                         else:
-                            raise TypeError('eval_sample_weight, eval_init_score, and eval_group should be dict or list')
+                            raise TypeError('eval_sample_weight, eval_class_weight, eval_init_score, and eval_group should be dict or list')
                     valid_weight = get_meta_data(eval_sample_weight, i)
+                    valid_class_sample_weight = _LGBMComputeSampleWeight(get_meta_data(eval_class_weight, i), valid_data[1])
+                    if valid_weight is None:
+                        valid_weight = valid_class_sample_weight
+                    else:
+                        valid_weight = np.multiply(valid_weight, valid_class_sample_weight)
                     valid_init_score = get_meta_data(eval_init_score, i)
                     valid_group = get_meta_data(eval_group, i)
                     valid_set = _construct_dataset(valid_data[0], valid_data[1], valid_weight, valid_init_score, valid_group, params)
@@ -592,6 +616,9 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
         return self
 
     base_doc = LGBMModel.fit.__doc__
+    fit.__doc__ = (base_doc[:base_doc.find('eval_class_weight :')] +
+                   base_doc[base_doc.find('eval_init_score :'):])
+    base_doc = fit.__doc__
     fit.__doc__ = (base_doc[:base_doc.find('eval_metric :')] +
                    'eval_metric : string, list of strings, callable or None, optional (default="l2")\n' +
                    base_doc[base_doc.find('            If string, it should be a built-in evaluation metric to use.'):])
@@ -603,7 +630,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
     def fit(self, X, y,
             sample_weight=None, init_score=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
-            eval_init_score=None, eval_metric="logloss",
+            eval_class_weight=None, eval_init_score=None, eval_metric="logloss",
             early_stopping_rounds=None, verbose=True,
             feature_name='auto', categorical_feature='auto', callbacks=None):
         _LGBMCheckClassificationTargets(y)
@@ -639,6 +666,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
                                         init_score=init_score, eval_set=eval_set,
                                         eval_names=eval_names,
                                         eval_sample_weight=eval_sample_weight,
+                                        eval_class_weight=eval_class_weight,
                                         eval_init_score=eval_init_score,
                                         eval_metric=eval_metric,
                                         early_stopping_rounds=early_stopping_rounds,
@@ -742,6 +770,9 @@ class LGBMRanker(LGBMModel):
         return self
 
     base_doc = LGBMModel.fit.__doc__
+    fit.__doc__ = (base_doc[:base_doc.find('eval_class_weight :')] +
+                   base_doc[base_doc.find('eval_init_score :'):])
+    base_doc = fit.__doc__
     fit.__doc__ = (base_doc[:base_doc.find('eval_metric :')] +
                    'eval_metric : string, list of strings, callable or None, optional (default="ndcg")\n' +
                    base_doc[base_doc.find('            If string, it should be a built-in evaluation metric to use.'):base_doc.find('early_stopping_rounds :')] +
