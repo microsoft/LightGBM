@@ -21,16 +21,22 @@ const score_t kEpsilon = 1e-15f;
 
 const double kZeroThreshold = 1e-35f;
 
-using ReduceFunction = std::function<void(const char*, char*, int)>;
+
+typedef int32_t comm_size_t;
 
 using PredictFunction =
 std::function<void(const std::vector<std::pair<int, double>>&, double* output)>;
 
-using AllreduceFunction = std::function<void(char*, int, int, char*, const ReduceFunction&)>;
+typedef void(*ReduceFunction)(const char* input, char* output, int type_size, comm_size_t array_size);
 
-using ReduceScatterFunction = std::function<void(char*, int, const int*, const int*, char*, const ReduceFunction&)>;
 
-using AllgatherFunction = std::function<void(char*, int, const int*, const int*, char*)>;
+typedef void(*ReduceScatterFunction)(char* input, comm_size_t input_size, int type_size,
+                                     const comm_size_t* block_start, const comm_size_t* block_len, int num_block, char* output, comm_size_t output_size,
+                                     const ReduceFunction& reducer);
+
+typedef void(*AllgatherFunction)(char* input, comm_size_t input_size, const comm_size_t* block_start,
+                                 const comm_size_t* block_len, int num_block, char* output, comm_size_t output_size);
+
 
 #define NO_SPECIFIC (-1)
 
