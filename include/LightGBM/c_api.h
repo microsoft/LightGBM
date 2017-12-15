@@ -757,9 +757,9 @@ LIGHTGBM_C_EXPORT int LGBM_NetworkInit(const char* machines,
 */
 LIGHTGBM_C_EXPORT int LGBM_NetworkFree();
 
-LIGHTGBM_C_EXPORT int LGBM_NetworkInitWithFunctions(void* AllreduceFuncPtr,
-                                                    void* ReduceScatterFuncPtr,
-                                                    void* AllgatherFuncPtr,
+LIGHTGBM_C_EXPORT int LGBM_NetworkInitWithFunctions(void* allreduce_fun_ptr,
+                                                    void* reduce_scatter_fun_ptr,
+                                                    void* allgather_fun_ptr,
                                                     int num_machines,
                                                     int rank);
 

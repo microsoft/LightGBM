@@ -19,9 +19,9 @@ THREAD_LOCAL std::vector<int> Network::block_start_;
 THREAD_LOCAL std::vector<int>  Network::block_len_;
 THREAD_LOCAL int Network::buffer_size_;
 THREAD_LOCAL std::vector<char> Network::buffer_;
-THREAD_LOCAL AllreduceFunction Network::AllreduceFuncPtr_ = NULL;
-THREAD_LOCAL ReduceScatterFunction Network::ReduceScatterFuncPtr_ = NULL;
-THREAD_LOCAL AllgatherFunction Network::AllgatherFuncPtr_ = NULL;
+THREAD_LOCAL AllreduceFunction Network::allreduce_ext_fun_ = NULL;
+THREAD_LOCAL ReduceScatterFunction Network::reduce_scatter_ext_fun_ = NULL;
+THREAD_LOCAL AllgatherFunction Network::allgather_ext_fun_ = NULL;
 
 
 void Network::Init(NetworkConfig config) {
@@ -49,8 +49,8 @@ void Network::Allreduce(char* input, int input_size, int type_size, char* output
   if (num_machines_ <= 1) {
     Log::Fatal("Please initilize the network interface first");
   }
-  if (AllreduceFuncPtr_ != NULL) {
-    return AllreduceFuncPtr_(input, input_size, type_size, output, reducer);
+  if (allreduce_ext_fun_ != NULL) {
+    return allreduce_ext_fun_(input, input_size, type_size, output, reducer);
   }
   int count = input_size / type_size;
   // if small package or small count , do it by all gather.(reduce the communication times.)
@@ -106,9 +106,6 @@ void Network::Allgather(char* input, int send_size, char* output) {
     Log::Fatal("Please initilize the network interface first");
   }
   if (num_machines_ <= 1) { return; }
-  if (AllgatherFuncPtr_ != NULL) {
-    return AllgatherFuncPtr_(input, send_size, output);
-  }
   // assign blocks
   block_start_[0] = 0;
   block_len_[0] = send_size;
@@ -123,6 +120,9 @@ void Network::Allgather(char* input, int send_size, char* output) {
 void Network::Allgather(char* input, int all_size, const int* block_start, const int* block_len, char* output) {
   if (num_machines_ <= 1) {
     Log::Fatal("Please initilize the network interface first");
+  }
+  if (allgather_ext_fun_ != NULL) {
+    return allgather_ext_fun_(input, all_size, block_start, block_len, output);
   }
   int write_pos = 0;
   // use output as receive buffer
@@ -159,8 +159,8 @@ void Network::ReduceScatter(char* input, int input_size, const int* block_start,
   if (num_machines_ <= 1) {
     Log::Fatal("Please initilize the network interface first");
   }
-  if (ReduceScatterFuncPtr_ != NULL) {
-    return ReduceScatterFuncPtr_(input, input_size, block_start, block_len, output, reducer);
+  if (reduce_scatter_ext_fun_ != NULL) {
+    return reduce_scatter_ext_fun_(input, input_size, block_start, block_len, output, reducer);
   }
   if (recursive_halving_map_.need_pairwise) {
     for (int i = 1; i < num_machines_; ++i) {

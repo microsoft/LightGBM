@@ -23,8 +23,6 @@ const double kZeroThreshold = 1e-35f;
 
 using ReduceFunction = std::function<void(const char*, char*, int)>;
 
-typedef void(*ReduceFunctionInC)(const char*, char*, int);
-
 using PredictFunction =
 std::function<void(const std::vector<std::pair<int, double>>&, double* output)>;
 
@@ -32,7 +30,7 @@ using AllreduceFunction = std::function<void(char*, int, int, char*, const Reduc
 
 using ReduceScatterFunction = std::function<void(char*, int, const int*, const int*, char*, const ReduceFunction&)>;
 
-using AllgatherFunction = std::function<void(char*, int, char*)>;
+using AllgatherFunction = std::function<void(char*, int, const int*, const int*, char*)>;
 
 #define NO_SPECIFIC (-1)
 

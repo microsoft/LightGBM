@@ -191,9 +191,9 @@ public:
   /*! \brief set variables and function ptrs */
   static void SetRank(int rank) { rank_ = rank;}
   static void SetNumMachines(int num_machines) { num_machines_ = num_machines; }
-  static void SetAllReduceFunction(AllreduceFunction AllreduceFuncPtr) { AllreduceFuncPtr_ = AllreduceFuncPtr;}
-  static void SetReduceScatterFunction(ReduceScatterFunction ReduceScatterFuncPtr) { ReduceScatterFuncPtr_ = ReduceScatterFuncPtr; }
-  static void SetAllgatherFunction(AllgatherFunction AllgatherFuncPtr) { AllgatherFuncPtr_ = AllgatherFuncPtr; }
+  static void SetAllReduceFunction(AllreduceFunction allreduce_ext_fun) { allreduce_ext_fun_ = allreduce_ext_fun;}
+  static void SetReduceScatterFunction(ReduceScatterFunction reduce_scatter_ext_fun) { reduce_scatter_ext_fun_ = reduce_scatter_ext_fun; }
+  static void SetAllgatherFunction(AllgatherFunction allgather_ext_fun) { allgather_ext_fun_ = allgather_ext_fun; }
 
 private:
   /*! \brief Number of all machines */
@@ -215,9 +215,9 @@ private:
   /*! \brief Size of buffer_ */
   static THREAD_LOCAL int buffer_size_;
   /*! \brief Funcs*/
-  static THREAD_LOCAL AllreduceFunction AllreduceFuncPtr_;
-  static THREAD_LOCAL ReduceScatterFunction ReduceScatterFuncPtr_;
-  static THREAD_LOCAL AllgatherFunction AllgatherFuncPtr_;
+  static THREAD_LOCAL AllreduceFunction allreduce_ext_fun_;
+  static THREAD_LOCAL ReduceScatterFunction reduce_scatter_ext_fun_;
+  static THREAD_LOCAL AllgatherFunction allgather_ext_fun_;
 };
 
 inline int Network::rank() {
