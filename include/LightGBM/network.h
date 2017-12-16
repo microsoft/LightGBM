@@ -73,6 +73,10 @@ public:
   * \param config Config of network setting
   */
   static void Init(NetworkConfig config);
+  /*!
+  * \brief Initialize
+  */
+  static void Init(int num_machines, int rank, ReduceScatterFunction reduce_scatter_ext_fun, AllgatherFunction allgather_ext_fun);
   /*! \brief Free this static class */
   static void Dispose();
   /*! \brief Get rank of this machine */
@@ -188,11 +192,6 @@ public:
     });
     return global;
   }
-  /*! \brief set variables and function ptrs */
-  static void SetRank(int rank) { rank_ = rank;}
-  static void SetNumMachines(int num_machines) { num_machines_ = num_machines; }
-  static void SetReduceScatterFunction(ReduceScatterFunction reduce_scatter_ext_fun) { reduce_scatter_ext_fun_ = reduce_scatter_ext_fun; }
-  static void SetAllgatherFunction(AllgatherFunction allgather_ext_fun) { allgather_ext_fun_ = allgather_ext_fun; }
 
 private:
   /*! \brief Number of all machines */

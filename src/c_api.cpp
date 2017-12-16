@@ -1220,16 +1220,12 @@ int LGBM_NetworkFree() {
   API_END();
 }
 
-int LGBM_NetworkInitWithFunctions(void* reduce_scatter_fun_ptr,
-                                  void* allgather_fun_ptr,
-                                  int num_machines,
-                                  int rank) {
+int LGBM_NetworkInitWithFunctions(int num_machines, int rank,
+                                  void* reduce_scatter_ext_fun,
+                                  void* allgather_ext_fun) {
   API_BEGIN();
   if (num_machines > 1) {
-    Network::SetReduceScatterFunction((ReduceScatterFunction)reduce_scatter_fun_ptr);
-    Network::SetAllgatherFunction((AllgatherFunction)allgather_fun_ptr);
-    Network::SetNumMachines(num_machines);
-    Network::SetRank(rank);
+    Network::Init(num_machines, rank, (ReduceScatterFunction)reduce_scatter_ext_fun, (AllgatherFunction)allgather_ext_fun);
   }
   API_END();
 }
