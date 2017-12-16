@@ -314,9 +314,8 @@ double ObtainAutomaticInitialScore(const ObjectiveFunction* fobj, const float* l
     Network::Allreduce(reinterpret_cast<char*>(&init_score),
                        sizeof(init_score), sizeof(init_score),
                        reinterpret_cast<char*>(&global_init_score),
-                       [](const char* src, char* dst, int len) {
-      int used_size = 0;
-      const int type_size = sizeof(double);
+                       [](const char* src, char* dst, int type_size, comm_size_t len) {
+      comm_size_t used_size = 0;
       const double *p1;
       double *p2;
       while (used_size < len) {

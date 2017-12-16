@@ -287,7 +287,7 @@ Refer to `GPU Docker folder <https://github.com/Microsoft/LightGBM/tree/master/d
 
 .. _CMake: https://cmake.org/
 
-.. _MSBuild: https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017
+.. _MSBuild: https://www.visualstudio.com/downloads/
 
 .. _MinGW-w64: https://mingw-w64.org/doku.php/download
 

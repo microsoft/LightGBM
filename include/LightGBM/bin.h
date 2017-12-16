@@ -35,9 +35,8 @@ public:
   /*!
   * \brief Sum up (reducers) functions for histogram bin
   */
-  inline static void SumReducer(const char *src, char *dst, int len) {
-    const int type_size = sizeof(HistogramBinEntry);
-    int used_size = 0;
+  inline static void SumReducer(const char *src, char *dst, int type_size, comm_size_t len) {
+    comm_size_t used_size = 0;
     const HistogramBinEntry* p1;
     HistogramBinEntry* p2;
     while (used_size < len) {

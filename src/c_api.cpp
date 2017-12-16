@@ -496,7 +496,7 @@ int LGBM_DatasetCreateFromMat(const void* data,
       auto idx = sample_indices[i];
       auto row = get_row_fun(static_cast<int>(idx));
       for (size_t j = 0; j < row.size(); ++j) {
-        if (std::fabs(row[j]) > kEpsilon || std::isnan(row[j])) {
+        if (std::fabs(row[j]) > kZeroThreshold || std::isnan(row[j])) {
           sample_values[j].emplace_back(row[j]);
           sample_idx[j].emplace_back(static_cast<int>(i));
         }
@@ -565,7 +565,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
           sample_values.resize(inner_data.first + 1);
           sample_idx.resize(inner_data.first + 1);
         }
-        if (std::fabs(inner_data.second) > kEpsilon || std::isnan(inner_data.second)) {
+        if (std::fabs(inner_data.second) > kZeroThreshold || std::isnan(inner_data.second)) {
           sample_values[inner_data.first].emplace_back(inner_data.second);
           sample_idx[inner_data.first].emplace_back(static_cast<int>(i));
         }
@@ -633,7 +633,7 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
       CSC_RowIterator col_it(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, i);
       for (int j = 0; j < sample_cnt; j++) {
         auto val = col_it.Get(sample_indices[j]);
-        if (std::fabs(val) > kEpsilon || std::isnan(val)) {
+        if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
           sample_values[i].emplace_back(val);
           sample_idx[i].emplace_back(j);
         }
@@ -1090,7 +1090,7 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
     const int tid = omp_get_thread_num();
     for (int j = 0; j < ncol; ++j) {
       auto val = iterators[tid][j].Get(i);
-      if (std::fabs(val) > kEpsilon || std::isnan(val)) {
+      if (std::fabs(val) > kZeroThreshold || std::isnan(val)) {
         one_row.emplace_back(j, val);
       }
     }
@@ -1220,32 +1220,16 @@ int LGBM_NetworkFree() {
   API_END();
 }
 
-int LGBM_GetFuncions(void* AllreduceFuncPtr,
-                     void* ReduceScatterFuncPtr,
-                     void* AllgatherFuncPtr,
-                     int num_machines,
-                     int rank) {
+int LGBM_NetworkInitWithFunctions(int num_machines, int rank,
+                                  void* reduce_scatter_ext_fun,
+                                  void* allgather_ext_fun) {
   API_BEGIN();
-  if(num_machines > 1) {
-    auto func1 = [AllreduceFuncPtr](char* arg1, int arg2, int arg3, char* arg4, const ReduceFunction& func) {
-      auto ptr = *func.target<ReduceFunctionInC>();
-      auto tmp = (void(*)(char*, int, int, char*, const ReduceFunctionInC&))AllreduceFuncPtr;
-      return tmp(arg1, arg2, arg3, arg4, ptr);
-    };
-    Network::SetAllReduce(func1);
-    auto func2 = [ReduceScatterFuncPtr](char* arg1, int arg2, const int* arg3, const int* arg4, char* arg5, const ReduceFunction& func) {
-      auto ptr = *func.target<ReduceFunctionInC>();
-      auto tmp = (void(*)(char*, int, const int*, const int*, char*, const ReduceFunctionInC&))ReduceScatterFuncPtr;
-      return tmp(arg1, arg2, arg3, arg4, arg5, ptr);
-    };
-    Network::SetReduceScatter(func2);
-    Network::SetAllgather((void(*)(char*, int, char*))AllgatherFuncPtr);
-    Network::SetNumMachines(num_machines);
-    Network::SetRank(rank);
+  if (num_machines > 1) {
+    Network::Init(num_machines, rank, (ReduceScatterFunction)reduce_scatter_ext_fun, (AllgatherFunction)allgather_ext_fun);
   }
   API_END();
-
 }
+
 // ---- start of some help functions
 
 std::function<std::vector<double>(int row_idx)>
@@ -1302,7 +1286,7 @@ RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int d
       auto raw_values = inner_function(row_idx);
       std::vector<std::pair<int, double>> ret;
       for (int i = 0; i < static_cast<int>(raw_values.size()); ++i) {
-        if (std::fabs(raw_values[i]) > kEpsilon || std::isnan(raw_values[i])) {
+        if (std::fabs(raw_values[i]) > kZeroThreshold || std::isnan(raw_values[i])) {
           ret.emplace_back(i, raw_values[i]);
         }
       }
