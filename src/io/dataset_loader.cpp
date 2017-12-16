@@ -561,7 +561,7 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
     // get size of bin mapper with max_bin size
     int type_size = BinMapper::SizeForSpecificBin(max_bin);
     // since sizes of different feature may not be same, we expand all bin mapper to type_size
-    int buffer_size = type_size * total_num_feature;
+    comm_size_t buffer_size = type_size * total_num_feature;
     auto input_buffer = std::vector<char>(buffer_size);
     auto output_buffer = std::vector<char>(buffer_size);
 
@@ -578,13 +578,15 @@ Dataset* DatasetLoader::CostructFromSampleData(double** sample_values,
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
+    std::vector<comm_size_t> size_start(num_machines);
+    std::vector<comm_size_t> size_len(num_machines);
     // convert to binary size
     for (int i = 0; i < num_machines; ++i) {
-      start[i] *= type_size;
-      len[i] *= type_size;
+      size_start[i] = start[i] * static_cast<comm_size_t>(type_size);
+      size_len[i] = len[i] * static_cast<comm_size_t>(type_size);
     }
     // gather global feature bin mappers
-    Network::Allgather(input_buffer.data(), buffer_size, start.data(), len.data(), output_buffer.data());
+    Network::Allgather(input_buffer.data(), size_start.data(), size_len.data(), output_buffer.data(), buffer_size);
     // restore features bins from buffer
     for (int i = 0; i < total_num_feature; ++i) {
       if (ignore_features_.count(i) > 0) {
@@ -863,7 +865,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     // get size of bin mapper with max_bin size
     int type_size = BinMapper::SizeForSpecificBin(max_bin);
     // since sizes of different feature may not be same, we expand all bin mapper to type_size
-    int buffer_size = type_size * total_num_feature;
+    comm_size_t buffer_size = type_size * total_num_feature;
     auto input_buffer = std::vector<char>(buffer_size);
     auto output_buffer = std::vector<char>(buffer_size);
 
@@ -880,13 +882,15 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
+    std::vector<comm_size_t> size_start(num_machines);
+    std::vector<comm_size_t> size_len(num_machines);
     // convert to binary size
     for (int i = 0; i < num_machines; ++i) {
-      start[i] *= type_size;
-      len[i] *= type_size;
+      size_start[i] = start[i] * static_cast<comm_size_t>(type_size);
+      size_len[i] = len[i] * static_cast<comm_size_t>(type_size);
     }
     // gather global feature bin mappers
-    Network::Allgather(input_buffer.data(), buffer_size, start.data(), len.data(), output_buffer.data());
+    Network::Allgather(input_buffer.data(), size_start.data(), size_len.data(), output_buffer.data(), buffer_size);
     // restore features bins from buffer
     for (int i = 0; i < total_num_feature; ++i) {
       if (ignore_features_.count(i) > 0) {

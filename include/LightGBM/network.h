@@ -73,6 +73,10 @@ public:
   * \param config Config of network setting
   */
   static void Init(NetworkConfig config);
+  /*!
+  * \brief Initialize
+  */
+  static void Init(int num_machines, int rank, ReduceScatterFunction reduce_scatter_ext_fun, AllgatherFunction allgather_ext_fun);
   /*! \brief Free this static class */
   static void Dispose();
   /*! \brief Get rank of this machine */
@@ -89,18 +93,19 @@ public:
   * \param output Output result
   * \param reducer Reduce function
   */
-  static void Allreduce(char* input, int input_size, int type_size,
-    char* output, const ReduceFunction& reducer);
+  static void Allreduce(char* input, comm_size_t input_size, int type_size,
+                        char* output, const ReduceFunction& reducer);
 
   /*!
   * \brief Perform all_reduce by using all_gather. it can be use to reduce communication time when data is small
   * \param input Input data
   * \param input_size The size of input data
+  * \param type_size The size of one object in the reduce function
   * \param output Output result
   * \param reducer Reduce function
   */
-  static void AllreduceByAllGather(char* input, int input_size, char* output,
-    const ReduceFunction& reducer);
+  static void AllreduceByAllGather(char* input, comm_size_t input_size, int type_size, char* output,
+                                   const ReduceFunction& reducer);
 
   /*!
   * \brief Performing all_gather by using bruck algorithm. 
@@ -110,34 +115,35 @@ public:
   * \param send_size The size of input data
   * \param output Output result
   */
-  static void Allgather(char* input, int send_size, char* output);
+  static void Allgather(char* input, comm_size_t send_size, char* output);
 
   /*!
   * \brief Performing all_gather by using bruck algorithm. 
            Communication times is O(log(n)), and communication cost is O(all_size)
   *        It can be used when nodes have different input size.
   * \param input Input data
-  * \param all_size The size of input data
   * \param block_start The block start for different machines
   * \param block_len The block size for different machines
   * \param output Output result
+  * \param all_size The size of output data
   */
-  static void Allgather(char* input, int all_size, const int* block_start,
-    const int* block_len, char* output);
+  static void Allgather(char* input, const comm_size_t* block_start, const comm_size_t* block_len, char* output, comm_size_t all_size);
 
   /*!
   * \brief Perform reduce scatter by using recursive halving algorithm. 
            Communication times is O(log(n)), and communication cost is O(input_size)
   * \param input Input data
   * \param input_size The size of input data
+  * \param type_size The size of one object in the reduce function
   * \param block_start The block start for different machines
   * \param block_len The block size for different machines
   * \param output Output result
+  * \param output_size size of output data
   * \param reducer Reduce function
   */
-  static void ReduceScatter(char* input, int input_size,
-    const int* block_start, const int* block_len, char* output,
-    const ReduceFunction& reducer);
+  static void ReduceScatter(char* input, comm_size_t input_size, int type_size,
+                            const comm_size_t* block_start, const comm_size_t* block_len, char* output, comm_size_t output_size,
+                            const ReduceFunction& reducer);
 
   template<class T>
   static T GlobalSyncUpByMin(T& local) {
@@ -145,9 +151,8 @@ public:
     Allreduce(reinterpret_cast<char*>(&local),
               sizeof(local), sizeof(local),
               reinterpret_cast<char*>(&global),
-              [] (const char* src, char* dst, int len) {
-      int used_size = 0;
-      const int type_size = sizeof(T);
+              [] (const char* src, char* dst, int type_size, comm_size_t len) {
+      comm_size_t used_size = 0;
       const T *p1;
       T *p2;
       while (used_size < len) {
@@ -170,9 +175,8 @@ public:
     Allreduce(reinterpret_cast<char*>(&local),
               sizeof(local), sizeof(local),
               reinterpret_cast<char*>(&global),
-              [] (const char* src, char* dst, int len) {
-      int used_size = 0;
-      const int type_size = sizeof(T);
+              [] (const char* src, char* dst, int type_size, comm_size_t len) {
+      comm_size_t used_size = 0;
       const T *p1;
       T *p2;
       while (used_size < len) {
@@ -188,12 +192,6 @@ public:
     });
     return global;
   }
-  /*! \brief set variables and function ptrs */
-  static void SetRank(int rank) { rank_ = rank;}
-  static void SetNumMachines(int num_machines) { num_machines_ = num_machines; }
-  static void SetAllReduce(AllreduceFunction AllreduceFuncPtr) { AllreduceFuncPtr_ = AllreduceFuncPtr;}
-  static void SetReduceScatter(ReduceScatterFunction ReduceScatterFuncPtr) { ReduceScatterFuncPtr_ = ReduceScatterFuncPtr; }
-  static void SetAllgather(AllgatherFunction AllgatherFuncPtr) { AllgatherFuncPtr_ = AllgatherFuncPtr; }
 
 private:
   /*! \brief Number of all machines */
@@ -207,17 +205,16 @@ private:
   /*! \brief Recursive halving map for reduce scatter */
   static THREAD_LOCAL RecursiveHalvingMap recursive_halving_map_;
   /*! \brief Buffer to store block start index */
-  static THREAD_LOCAL std::vector<int> block_start_;
+  static THREAD_LOCAL std::vector<comm_size_t> block_start_;
   /*! \brief Buffer to store block size */
-  static THREAD_LOCAL std::vector<int> block_len_;
+  static THREAD_LOCAL std::vector<comm_size_t> block_len_;
   /*! \brief Buffer  */
   static THREAD_LOCAL std::vector<char> buffer_;
   /*! \brief Size of buffer_ */
-  static THREAD_LOCAL int buffer_size_;
+  static THREAD_LOCAL comm_size_t buffer_size_;
   /*! \brief Funcs*/
-  static THREAD_LOCAL AllreduceFunction AllreduceFuncPtr_;
-  static THREAD_LOCAL ReduceScatterFunction ReduceScatterFuncPtr_;
-  static THREAD_LOCAL AllgatherFunction AllgatherFuncPtr_;
+  static THREAD_LOCAL ReduceScatterFunction reduce_scatter_ext_fun_;
+  static THREAD_LOCAL AllgatherFunction allgather_ext_fun_;
 };
 
 inline int Network::rank() {

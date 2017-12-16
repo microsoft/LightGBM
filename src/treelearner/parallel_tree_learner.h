@@ -79,15 +79,15 @@ private:
        use this to mark local aggregate features*/
   std::vector<bool> is_feature_aggregated_;
   /*! \brief Block start index for reduce scatter */
-  std::vector<int> block_start_;
+  std::vector<comm_size_t> block_start_;
   /*! \brief Block size for reduce scatter */
-  std::vector<int> block_len_;
+  std::vector<comm_size_t> block_len_;
   /*! \brief Write positions for feature histograms */
-  std::vector<int> buffer_write_start_pos_;
+  std::vector<comm_size_t> buffer_write_start_pos_;
   /*! \brief Read positions for local feature histograms */
-  std::vector<int> buffer_read_start_pos_;
+  std::vector<comm_size_t> buffer_read_start_pos_;
   /*! \brief Size for reduce scatter */
-  int reduce_scatter_size_;
+  comm_size_t reduce_scatter_size_;
   /*! \brief Store global number of data in leaves  */
   std::vector<data_size_t> global_data_count_in_leaf_;
 };
@@ -155,15 +155,15 @@ private:
   use this to mark local aggregate features*/
   std::vector<bool> larger_is_feature_aggregated_;
   /*! \brief Block start index for reduce scatter */
-  std::vector<int> block_start_;
+  std::vector<comm_size_t> block_start_;
   /*! \brief Block size for reduce scatter */
-  std::vector<int> block_len_;
+  std::vector<comm_size_t> block_len_;
   /*! \brief Read positions for feature histgrams at smaller leaf */
-  std::vector<int> smaller_buffer_read_start_pos_;
+  std::vector<comm_size_t> smaller_buffer_read_start_pos_;
   /*! \brief Read positions for feature histgrams at larger leaf */
-  std::vector<int> larger_buffer_read_start_pos_;
+  std::vector<comm_size_t> larger_buffer_read_start_pos_;
   /*! \brief Size for reduce scatter */
-  int reduce_scatter_size_;
+  comm_size_t reduce_scatter_size_;
   /*! \brief Store global number of data in leaves  */
   std::vector<data_size_t> global_data_count_in_leaf_;
   /*! \brief Store global split information for smaller leaf  */
@@ -187,8 +187,8 @@ inline void SyncUpGlobalBestSplit(char* input_buffer_, char* output_buffer_, Spl
   smaller_best_split->CopyTo(input_buffer_);
   larger_best_split->CopyTo(input_buffer_ + size);
   Network::Allreduce(input_buffer_, size * 2, size, output_buffer_, 
-                     [&size] (const char* src, char* dst, int len) {
-    int used_size = 0;
+                     [] (const char* src, char* dst, int size, comm_size_t len) {
+    comm_size_t used_size = 0;
     LightSplitInfo p1, p2;
     while (used_size < len) {
       p1.CopyFrom(src);
