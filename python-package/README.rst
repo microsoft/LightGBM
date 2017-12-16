@@ -36,7 +36,7 @@ For Linux and macOS users, installation from sources requires installed `CMake <
 
 For macOS users, you need to specify compilers by runnig ``export CXX=g++-7 CC=gcc-7`` first.
 
-For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed. If you get any errors during installation, you may need to install `CMake <https://cmake.org/>`_ (version 3.8 or higher).
+For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/>`_) is needed. If you get any errors during installation, you may need to install `CMake <https://cmake.org/>`_ (version 3.8 or higher).
 
 Build GPU Version
 ~~~~~~~~~~~~~~~~~
@@ -63,7 +63,7 @@ Install from GitHub
 
 For Linux and macOS users, installation from GitHub requires installed `CMake <https://cmake.org/>`_.
 
-For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_) is needed. If you get any errors during installation and there is the warning ``WARNING:LightGBM:Compilation with MSBuild from existing solution file failed.`` in the log, you should install `CMake <https://cmake.org/>`_ (version 3.8 or higher).
+For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/>`_) is needed. If you get any errors during installation and there is the warning ``WARNING:LightGBM:Compilation with MSBuild from existing solution file failed.`` in the log, you should install `CMake <https://cmake.org/>`_ (version 3.8 or higher).
 
 .. code:: sh
 
