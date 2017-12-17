@@ -164,7 +164,7 @@ public:
     return boosting_->TrainOneIter(nullptr, nullptr);
   }
 
-  bool TrainOneIter(const float* gradients, const float* hessians) {
+  bool TrainOneIter(const score_t* gradients, const score_t* hessians) {
     std::lock_guard<std::mutex> lock(mutex_);
     return boosting_->TrainOneIter(gradients, hessians);
   }
@@ -904,11 +904,15 @@ int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
                                     int* is_finished) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  #ifdef SCORE_T_USE_DOUBLE
+  Log::Fatal("Don't support Custom loss function when enable SCORE_T_USE_DOUBLE.");
+  #else
   if (ref_booster->TrainOneIter(grad, hess)) {
     *is_finished = 1;
   } else {
     *is_finished = 0;
   }
+  #endif
   API_END();
 }
 

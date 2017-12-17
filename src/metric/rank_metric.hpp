@@ -146,7 +146,7 @@ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
-  const float* label_;
+  const label_t* label_;
   /*! \brief Name of test set */
   std::vector<std::string> name_;
   /*! \brief Query boundaries information */
@@ -154,7 +154,7 @@ private:
   /*! \brief Number of queries */
   data_size_t num_queries_;
   /*! \brief Weights of queries */
-  const float* query_weights_;
+  const label_t* query_weights_;
   /*! \brief Sum weights of queries */
   double sum_query_weights_;
   /*! \brief Evaluate position of NDCG */

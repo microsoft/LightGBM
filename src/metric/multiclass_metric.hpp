@@ -118,9 +118,9 @@ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
-  const float* label_;
+  const label_t* label_;
   /*! \brief Pointer of weighs */
-  const float* weights_;
+  const label_t* weights_;
   /*! \brief Sum weights */
   double sum_weights_;
   /*! \brief Name of this test set */
@@ -133,7 +133,7 @@ class MultiErrorMetric: public MulticlassMetric<MultiErrorMetric> {
 public:
   explicit MultiErrorMetric(const MetricConfig& config) :MulticlassMetric<MultiErrorMetric>(config) {}
 
-  inline static double LossOnPoint(float label, std::vector<double>& score) {
+  inline static double LossOnPoint(label_t label, std::vector<double>& score) {
     size_t k = static_cast<size_t>(label);
     for (size_t i = 0; i < score.size(); ++i) {
       if (i != k && score[i] >= score[k]) {
@@ -153,7 +153,7 @@ class MultiSoftmaxLoglossMetric: public MulticlassMetric<MultiSoftmaxLoglossMetr
 public:
   explicit MultiSoftmaxLoglossMetric(const MetricConfig& config) :MulticlassMetric<MultiSoftmaxLoglossMetric>(config) {}
 
-  inline static double LossOnPoint(float label, std::vector<double>& score) {
+  inline static double LossOnPoint(label_t label, std::vector<double>& score) {
     size_t k = static_cast<size_t>(label);
     if (score[k] > kEpsilon) {
       return static_cast<double>(-std::log(score[k]));

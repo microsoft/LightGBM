@@ -89,7 +89,7 @@ public:
     // get max DCG on current query
     const double inverse_max_dcg = inverse_max_dcgs_[query_id];
     // add pointers with offset
-    const float* label = label_ + start;
+    const label_t* label = label_ + start;
     score += start;
     lambdas += start;
     hessians += start;
@@ -164,8 +164,8 @@ public:
     // if need weights
     if (weights_ != nullptr) {
       for (data_size_t i = 0; i < cnt; ++i) {
-        lambdas[i] *= weights_[start + i];
-        hessians[i] *= weights_[start + i];
+        lambdas[i] = static_cast<score_t>(lambdas[i] * weights_[start + i]);
+        hessians[i] = static_cast<score_t>(hessians[i] * weights_[start + i]);
       }
     }
   }
@@ -224,9 +224,9 @@ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
-  const float* label_;
+  const label_t* label_;
   /*! \brief Pointer of weights */
-  const float* weights_;
+  const label_t* weights_;
   /*! \brief Query boundries */
   const data_size_t* query_boundaries_;
   /*! \brief Cache result for sigmoid transform to speed up */
