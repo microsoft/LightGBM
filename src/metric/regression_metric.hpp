@@ -94,9 +94,9 @@ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
-  const float* label_;
+  const label_t* label_;
   /*! \brief Pointer of weighs */
-  const float* weights_;
+  const label_t* weights_;
   /*! \brief Sum weights */
   double sum_weights_;
   /*! \brief Name of this test set */
@@ -109,7 +109,7 @@ class RMSEMetric: public RegressionMetric<RMSEMetric> {
 public:
   explicit RMSEMetric(const MetricConfig& config) :RegressionMetric<RMSEMetric>(config) {}
 
-  inline static double LossOnPoint(float label, double score, const MetricConfig&) {
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
     return (score - label)*(score - label);
   }
 
@@ -128,7 +128,7 @@ class L2Metric: public RegressionMetric<L2Metric> {
 public:
   explicit L2Metric(const MetricConfig& config) :RegressionMetric<L2Metric>(config) {}
 
-  inline static double LossOnPoint(float label, double score, const MetricConfig&) {
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
     return (score - label)*(score - label);
   }
 
@@ -143,7 +143,7 @@ public:
   explicit QuantileMetric(const MetricConfig& config) :RegressionMetric<QuantileMetric>(config) {
   }
 
-  inline static double LossOnPoint(float label, double score, const MetricConfig& config) {
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig& config) {
     double delta = label - score;
     if (delta < 0) {
       return (config.alpha - 1.0f) * delta;
@@ -163,7 +163,7 @@ class L1Metric: public RegressionMetric<L1Metric> {
 public:
   explicit L1Metric(const MetricConfig& config) :RegressionMetric<L1Metric>(config) {}
 
-  inline static double LossOnPoint(float label, double score, const MetricConfig&) {
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
     return std::fabs(score - label);
   }
   inline static const char* Name() {
@@ -177,7 +177,7 @@ public:
   explicit HuberLossMetric(const MetricConfig& config) :RegressionMetric<HuberLossMetric>(config) {
   }
 
-  inline static double LossOnPoint(float label, double score, const MetricConfig& config) {
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig& config) {
     const double diff = score - label;
     if (std::abs(diff) <= config.alpha) {
       return 0.5f * diff * diff;
@@ -198,7 +198,7 @@ public:
   explicit FairLossMetric(const MetricConfig& config) :RegressionMetric<FairLossMetric>(config) {
   }
 
-  inline static double LossOnPoint(float label, double score, const MetricConfig& config) {
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig& config) {
     const double x = std::fabs(score - label);
     const double c = config.fair_c;
     return c * x - c * c * std::log(1.0f + x / c);
@@ -215,7 +215,7 @@ public:
   explicit PoissonMetric(const MetricConfig& config) :RegressionMetric<PoissonMetric>(config) {
   }
 
-  inline static double LossOnPoint(float label, double score, const MetricConfig&) {
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
     const double eps = 1e-10f;
     if (score < eps) {
       score = eps;

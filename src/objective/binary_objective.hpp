@@ -12,7 +12,7 @@ namespace LightGBM {
 */
 class BinaryLogloss: public ObjectiveFunction {
 public:
-  explicit BinaryLogloss(const ObjectiveConfig& config, std::function<bool(float)> is_pos = nullptr) {
+  explicit BinaryLogloss(const ObjectiveConfig& config, std::function<bool(label_t)> is_pos = nullptr) {
     sigmoid_ = static_cast<double>(config.sigmoid);
     if (sigmoid_ <= 0.0) {
       Log::Fatal("Sigmoid parameter %f should be greater than zero", sigmoid_);
@@ -24,7 +24,7 @@ public:
     }
     is_pos_ = is_pos;
     if (is_pos_ == nullptr) {
-      is_pos_ = [](float label) {return label > 0; };
+      is_pos_ = [](label_t label) {return label > 0; };
     }
   }
 
@@ -138,7 +138,7 @@ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
-  const float* label_;
+  const label_t* label_;
   /*! \brief True if using unbalance training */
   bool is_unbalance_;
   /*! \brief Sigmoid parameter */
@@ -148,9 +148,9 @@ private:
   /*! \brief Weights for positive and negative labels */
   double label_weights_[2];
   /*! \brief Weights for data */
-  const float* weights_;
+  const label_t* weights_;
   double scale_pos_weight_;
-  std::function<bool(float)> is_pos_;
+  std::function<bool(label_t)> is_pos_;
 };
 
 }  // namespace LightGBM

@@ -295,7 +295,7 @@ void GBDT::Bagging(int iter) {
 * (i) and (ii) could be selected as say "auto_init_score" = 0 or 1 etc..
 *
 */
-double ObtainAutomaticInitialScore(const ObjectiveFunction* fobj, const float* label, data_size_t num_data) {
+double ObtainAutomaticInitialScore(const ObjectiveFunction* fobj, const label_t* label, data_size_t num_data) {
   double init_score = 0.0f;
   bool got_custom = false;
   if (fobj != nullptr) {

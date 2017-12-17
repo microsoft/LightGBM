@@ -70,7 +70,7 @@ public:
   * \param num_data Number of data
   * \return The DCG score
   */
-  static double CalDCGAtK(data_size_t k, const float* label,
+  static double CalDCGAtK(data_size_t k, const label_t* label,
     const double* score, data_size_t num_data);
 
   /*!
@@ -82,7 +82,7 @@ public:
   * \param out Output result
   */
   static void CalDCG(const std::vector<data_size_t>& ks,
-    const float* label, const double* score,
+    const label_t* label, const double* score,
     data_size_t num_data, std::vector<double>* out);
 
   /*!
@@ -93,14 +93,14 @@ public:
   * \return The max DCG score
   */
   static double CalMaxDCGAtK(data_size_t k,
-    const float* label, data_size_t num_data);
+    const label_t* label, data_size_t num_data);
 
   /*!
   * \brief Check the label range for NDCG and lambdarank
   * \param label Pointer of label
   * \param num_data Number of data
   */
-  static void CheckLabel(const float* label, data_size_t num_data);
+  static void CheckLabel(const label_t* label, data_size_t num_data);
 
   /*!
   * \brief Calculate the Max DCG score at multi position
@@ -110,7 +110,7 @@ public:
   * \param out Output result
   */
   static void CalMaxDCG(const std::vector<data_size_t>& ks,
-    const float* label, data_size_t num_data, std::vector<double>* out);
+    const label_t* label, data_size_t num_data, std::vector<double>* out);
 
   /*!
   * \brief Get discount score of position k

@@ -12,8 +12,26 @@ namespace LightGBM {
 
 /*! \brief Type of data size, it is better to use signed type*/
 typedef int32_t data_size_t;
+
+// Enable following marco to use double for score_t
+// #define SCORE_T_USE_DOUBLE
+
+// Enable following marco to use double for label_t
+// #define LABEL_T_USE_DOUBLE
+
 /*! \brief Type of score, and gradients */
+#ifdef SCORE_T_USE_DOUBLE
+typedef double score_t;
+#else
 typedef float score_t;
+#endif
+
+/*! \brief Type of metadata, include weight and label */
+#ifdef LABEL_T_USE_DOUBLE
+typedef double label_t;
+#else
+typedef float label_t;
+#endif
 
 const score_t kMinScore = -std::numeric_limits<score_t>::infinity();
 
