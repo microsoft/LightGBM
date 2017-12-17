@@ -165,7 +165,8 @@ class LGBMModel(_LGBMModelBase):
             default: 'regression' for LGBMRegressor, 'binary' or 'multiclass' for LGBMClassifier, 'lambdarank' for LGBMRanker.
         class_weight : dict, 'balanced' or None, optional (default=None)
             Weights associated with classes in the form ``{class_label: weight}``.
-            Used only for classification task.
+            Use this parameter only for multi-class classification task;
+            for binary classification task you may use ``is_unbalance`` or ``scale_pos_weight`` parameters.
             The 'balanced' mode uses the values of y to automatically adjust weights
             inversely proportional to class frequencies in the input data as ``n_samples / (n_classes * np.bincount(y))``.
             If None, all classes are supposed to have weight one.
@@ -418,7 +419,7 @@ class LGBMModel(_LGBMModelBase):
             _LGBMCheckConsistentLength(X, y, sample_weight)
 
         class_sample_weight = _LGBMComputeSampleWeight(self.class_weight, y)
-        if sample_weight is None:
+        if sample_weight is None or len(sample_weight) == 0:
             sample_weight = class_sample_weight
         else:
             sample_weight = np.multiply(sample_weight, class_sample_weight)
@@ -452,7 +453,7 @@ class LGBMModel(_LGBMModelBase):
                             raise TypeError('eval_sample_weight, eval_class_weight, eval_init_score, and eval_group should be dict or list')
                     valid_weight = get_meta_data(eval_sample_weight, i)
                     valid_class_sample_weight = _LGBMComputeSampleWeight(get_meta_data(eval_class_weight, i), valid_data[1])
-                    if valid_weight is None:
+                    if valid_weight is None or len(valid_weight) == 0:
                         valid_weight = valid_class_sample_weight
                     else:
                         valid_weight = np.multiply(valid_weight, valid_class_sample_weight)
