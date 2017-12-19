@@ -212,14 +212,31 @@ void Application::Train() {
 }
 
 void Application::Predict() {
-  // create predictor
-  Predictor predictor(boosting_.get(), config_.io_config.num_iteration_predict, config_.io_config.is_predict_raw_score,
-                      config_.io_config.is_predict_leaf_index, config_.io_config.is_predict_contrib,
-                      config_.io_config.pred_early_stop, config_.io_config.pred_early_stop_freq,
-                      config_.io_config.pred_early_stop_margin);
-  predictor.Predict(config_.io_config.data_filename.c_str(),
-                    config_.io_config.output_result.c_str(), config_.io_config.has_header);
-  Log::Info("Finished prediction");
+
+  if (config_.task_type == TaskType::KRefitTree) {
+    // create predictor
+    Predictor predictor(boosting_.get(), -1, false, true, false, false, 1, 1);
+    auto pred_res_str = predictor.Predict(config_.io_config.data_filename.c_str(), config_.io_config.has_header);
+    std::vector<std::vector<int>> pred_leaf(pred_res_str.size());
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < static_cast<int>(pred_res_str.size()); ++i) {
+      pred_leaf[i] = Common::StringToArray<int>(pred_res_str[i], '\t');
+      // Free memory
+      pred_res_str[i].clear();
+    }
+    boosting_->RefitTree(pred_leaf);
+    boosting_->SaveModelToFile(-1, config_.io_config.output_model.c_str());
+    Log::Info("Finished RefitTree");
+  } else {
+    // create predictor
+    Predictor predictor(boosting_.get(), config_.io_config.num_iteration_predict, config_.io_config.is_predict_raw_score,
+                        config_.io_config.is_predict_leaf_index, config_.io_config.is_predict_contrib,
+                        config_.io_config.pred_early_stop, config_.io_config.pred_early_stop_freq,
+                        config_.io_config.pred_early_stop_margin);
+    predictor.Predict(config_.io_config.data_filename.c_str(),
+                      config_.io_config.output_result.c_str(), config_.io_config.has_header);
+    Log::Info("Finished prediction");
+  }
 }
 
 void Application::InitPredict() {

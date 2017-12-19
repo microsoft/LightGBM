@@ -87,7 +87,7 @@ public:
 
 /*! \brief Types of tasks */
 enum TaskType {
-  kTrain, kPredict, kConvertModel
+  kTrain, kPredict, kConvertModel, KRefitTree
 };
 
 /*! \brief Config for input and output files */

@@ -96,6 +96,8 @@ public:
   */
   void Train(int snapshot_freq, const std::string& model_output_path) override;
 
+  void RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) override;
+
   /*!
   * \brief Training logic
   * \param gradients nullptr for using default objective, otherwise use self-defined boosting

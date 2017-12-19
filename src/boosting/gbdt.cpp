@@ -353,6 +353,15 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
   }
 }
 
+void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) {
+  int num_iterations = static_cast<int>(models_.size() / num_tree_per_iteration_);
+  for (int iter = 0; iter < num_iterations; ++iter) {
+    Boosting();
+    for (int tree_id = 0; tree_id < num_tree_per_iteration_; ++tree_id) {
+    }
+  }
+}
+
 double GBDT::BoostFromAverage() {
   // boosting from average label; or customized "average" if implemented for the current objective
   if (models_.empty()
