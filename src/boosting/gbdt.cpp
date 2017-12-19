@@ -353,6 +353,30 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
   }
 }
 
+void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) {
+  CHECK(tree_leaf_prediction.size() > 0);
+  CHECK(static_cast<size_t>(num_data_) == tree_leaf_prediction.size());
+  CHECK(static_cast<size_t>(models_.size()) == tree_leaf_prediction[0].size());
+  int num_iterations = static_cast<int>(models_.size() / num_tree_per_iteration_);
+  std::vector<int> leaf_pred(num_data_);
+  for (int iter = 0; iter < num_iterations; ++iter) {
+    Boosting();
+    for (int tree_id = 0; tree_id < num_tree_per_iteration_; ++tree_id) {
+      int model_index = iter * num_tree_per_iteration_ + tree_id;
+      #pragma omp parallel for schedule(static)
+      for (int i = 0; i < num_data_; ++i) {
+        leaf_pred[i] = tree_leaf_prediction[i][model_index];
+      }
+      size_t bias = static_cast<size_t>(tree_id) * num_data_;
+      auto grad = gradients_.data() + bias;
+      auto hess = hessians_.data() + bias;
+      auto new_tree = tree_learner_->FitByExistingTree(models_[model_index].get(), leaf_pred, grad, hess);
+      train_score_updater_->AddScore(tree_learner_.get(), new_tree, tree_id);
+      models_[model_index].reset(new_tree);
+    }
+  }
+}
+
 double GBDT::BoostFromAverage() {
   // boosting from average label; or customized "average" if implemented for the current objective
   if (models_.empty()

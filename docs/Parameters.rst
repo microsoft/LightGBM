@@ -39,13 +39,19 @@ Core Parameters
 
    -  path of config file
 
--  ``task``, default=\ ``train``, type=enum, options=\ ``train``, ``predict``, ``convert_model``
+   - **Note**: Only can be used in CLI version.
+
+-  ``task``, default=\ ``train``, type=enum, options=\ ``train``, ``predict``, ``convert_model``, ``refit``
 
    -  ``train``, alias=\ ``training``, for training
 
    -  ``predict``, alias=\ ``prediction``, ``test``, for prediction.
 
    -  ``convert_model``, for converting model file into if-else format, see more information in `Convert model parameters <#convert-model-parameters>`__
+
+   -  ``refit``, alias=\ ``refit_tree``, refit existing models with new data.
+
+   - **Note**: Only can be used in CLI version.
 
 -  ``application``, default=\ ``regression``, type=enum,
    options=\ ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``quantile_l2``,

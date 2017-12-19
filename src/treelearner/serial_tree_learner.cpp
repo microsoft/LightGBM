@@ -215,21 +215,24 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* 
     data_size_t cnt_leaf_data = 0;
     auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
     double sum_grad = 0.0f;
-    double sum_hess = 0.0f;
+    double sum_hess = kEpsilon;
     for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
       auto idx = tmp_idx[j];
       sum_grad += gradients[idx];
       sum_hess += hessians[idx];
     }
-    // avoid zero hessians.
-    if (sum_hess <= 0) sum_hess = kEpsilon;
     double output = FeatureHistogram::CalculateSplittedLeafOutput(sum_grad, sum_hess,
                                                                   tree_config_->lambda_l1, tree_config_->lambda_l2);
-    tree->SetLeafOutput(i, output);
+    tree->SetLeafOutput(i, output* tree->shrinkage());
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
   return tree.release();
+}
+
+Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred, const score_t* gradients, const score_t *hessians) {
+  data_partition_->ResetByLeafPred(leaf_pred, old_tree->num_leaves());
+  return FitByExistingTree(old_tree, gradients, hessians);
 }
 
 void SerialTreeLearner::BeforeTrain() {

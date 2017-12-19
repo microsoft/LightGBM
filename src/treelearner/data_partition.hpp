@@ -71,6 +71,21 @@ public:
     }
   }
 
+  void ResetByLeafPred(const std::vector<int>& leaf_pred, int num_leaves) {
+    ResetLeaves(num_leaves);
+    std::vector<std::vector<data_size_t>> indices_per_leaf(num_leaves_);
+    for (data_size_t i = 0; i < static_cast<data_size_t>(leaf_pred.size()); ++i) {
+      indices_per_leaf[leaf_pred[i]].push_back(i);
+    }
+    data_size_t offset = 0;
+    for (int i = 0; i < num_leaves_; ++i) {
+      leaf_begin_[i] = offset;
+      leaf_count_[i] = static_cast<data_size_t>(indices_per_leaf[i].size());
+      std::copy(indices_per_leaf[i].begin(), indices_per_leaf[i].end(), indices_.begin() + leaf_begin_[i]);
+      offset += leaf_count_[i];
+    }
+  }
+
   /*!
   * \brief Get the data indices of one leaf
   * \param leaf index of leaf
