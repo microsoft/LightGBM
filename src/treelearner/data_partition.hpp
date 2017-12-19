@@ -71,7 +71,7 @@ public:
     }
   }
 
-  void ResetByLeafPred(const std::vector<data_size_t>& leaf_pred, int num_leaves) {
+  void ResetByLeafPred(const std::vector<int>& leaf_pred, int num_leaves) {
     ResetLeaves(num_leaves);
     std::vector<std::vector<data_size_t>> indices_per_leaf(num_leaves_);
     for (data_size_t i = 0; i < static_cast<data_size_t>(leaf_pred.size()); ++i) {
