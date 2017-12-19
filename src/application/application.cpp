@@ -216,22 +216,23 @@ void Application::Predict() {
   if (config_.task_type == TaskType::KRefitTree) {
     // create predictor
     Predictor predictor(boosting_.get(), -1, false, true, false, false, 1, 1);
-    auto pred_res_str = predictor.Predict(config_.io_config.data_filename.c_str(), config_.io_config.has_header);
-    std::vector<std::vector<int>> pred_leaf(pred_res_str.size());
+    predictor.Predict(config_.io_config.data_filename.c_str(), config_.io_config.output_result.c_str(), config_.io_config.has_header);
+    TextReader<int> result_reader(config_.io_config.output_result.c_str(), false);
+    result_reader.ReadAllLines();
+    std::vector<std::vector<int>> pred_leaf(result_reader.Lines().size());
     #pragma omp parallel for schedule(static)
-    for (int i = 0; i < static_cast<int>(pred_res_str.size()); ++i) {
-      pred_leaf[i] = Common::StringToArray<int>(pred_res_str[i], '\t');
+    for (int i = 0; i < static_cast<int>(result_reader.Lines().size()); ++i) {
+      pred_leaf[i] = Common::StringToArray<int>(result_reader.Lines()[i], '\t');
       // Free memory
-      pred_res_str[i].clear();
+      result_reader.Lines()[i].clear();
     }
     DatasetLoader dataset_loader(config_.io_config, nullptr,
                                  config_.boosting_config.num_class, config_.io_config.data_filename.c_str());
     train_data_.reset(dataset_loader.LoadFromFile(config_.io_config.data_filename.c_str(), config_.io_config.initscore_filename.c_str(),
                                                   0, 1));
     train_metric_.clear();
-    objective_fun_.reset(
-      ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
-                                                 config_.objective_config));
+    objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
+                                                                    config_.objective_config));
     objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
     boosting_->Init(&config_.boosting_config, train_data_.get(), objective_fun_.get(),
                     Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
