@@ -87,7 +87,7 @@ void Application::LoadData() {
   PredictFunction predict_fun = nullptr;
   PredictionEarlyStopInstance pred_early_stop = CreatePredictionEarlyStopInstance("none", LightGBM::PredictionEarlyStopConfig());
   // need to continue training
-  if (boosting_->NumberOfTotalModel() > 0) {
+  if (boosting_->NumberOfTotalModel() > 0 || config_.task_type != TaskType::KRefitTree) {
     predictor.reset(new Predictor(boosting_.get(), -1, true, false, false, false, -1, -1));
     predict_fun = predictor->GetPredictFunction();
   }
@@ -224,6 +224,17 @@ void Application::Predict() {
       // Free memory
       pred_res_str[i].clear();
     }
+    DatasetLoader dataset_loader(config_.io_config, nullptr,
+                                 config_.boosting_config.num_class, config_.io_config.data_filename.c_str());
+    train_data_.reset(dataset_loader.LoadFromFile(config_.io_config.data_filename.c_str(), config_.io_config.initscore_filename.c_str(),
+                                                  0, 1));
+    train_metric_.clear();
+    objective_fun_.reset(
+      ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
+                                                 config_.objective_config));
+    objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
+    boosting_->Init(&config_.boosting_config, train_data_.get(), objective_fun_.get(),
+                    Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
     boosting_->RefitTree(pred_leaf);
     boosting_->SaveModelToFile(-1, config_.io_config.output_model.c_str());
     Log::Info("Finished RefitTree");

@@ -45,6 +45,9 @@ public:
 
   Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
 
+  Tree* FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
+                          const score_t* gradients, const score_t* hessians) override;
+
   void SetBaggingData(const data_size_t* used_indices, data_size_t num_data) override {
     data_partition_->SetUsedDataIndices(used_indices, num_data);
   }
