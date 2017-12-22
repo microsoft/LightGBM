@@ -87,7 +87,7 @@ void Application::LoadData() {
   PredictFunction predict_fun = nullptr;
   PredictionEarlyStopInstance pred_early_stop = CreatePredictionEarlyStopInstance("none", LightGBM::PredictionEarlyStopConfig());
   // need to continue training
-  if (boosting_->NumberOfTotalModel() > 0 || config_.task_type != TaskType::KRefitTree) {
+  if (boosting_->NumberOfTotalModel() > 0 && config_.task_type != TaskType::KRefitTree) {
     predictor.reset(new Predictor(boosting_.get(), -1, true, false, false, false, -1, -1));
     predict_fun = predictor->GetPredictFunction();
   }
