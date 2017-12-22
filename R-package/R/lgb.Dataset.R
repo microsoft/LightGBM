@@ -379,8 +379,10 @@ Dataset <- R6Class(
       }
       
       # Check for info name and handle
-      if (is.null(private$info[[name]]) && !lgb.is.null.handle(private$handle)) {
-        
+      if (is.null(private$info[[name]])) {
+        if (lgb.is.null.handle(private$handle)){
+          stop("Cannot perform getinfo before construct Dataset.")
+        }
         # Get field size of info
         info_len <- 0L
         info_len <- lgb.call("LGBM_DatasetGetFieldSize_R",
