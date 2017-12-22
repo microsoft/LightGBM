@@ -368,7 +368,7 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
         
         # Print message if verbose
         if (isTRUE(verbose)) {
-          cat("Did not met early stopping, best iteration is:", "\n")
+          cat("Did not meet early stopping, best iteration is:", "\n")
           cat(best_msg[[i]], "\n")
         }
         
@@ -377,7 +377,6 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
         env$met_early_stop <- TRUE
       }
     }
-    
   }
   
   # Set attributes

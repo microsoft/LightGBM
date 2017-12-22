@@ -208,7 +208,7 @@ def early_stopping(stopping_rounds, verbose=True):
                 raise EarlyStopException(best_iter[i], best_score_list[i])
             if env.iteration == env.end_iteration - 1:
                 if verbose:
-                    print('Did not met early stopping. Best iteration is:\n[%d]\t%s' % (
+                    print('Did not meet early stopping. Best iteration is:\n[%d]\t%s' % (
                         best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
                 raise EarlyStopException(best_iter[i], best_score_list[i])
     callback.order = 30
