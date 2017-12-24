@@ -921,7 +921,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
       // parser
       parser->ParseOneLine(text_data[i].c_str(), &oneline_features, &tmp_label);
       // set label
-      dataset->metadata_.SetLabelAt(i, static_cast<float>(tmp_label));
+      dataset->metadata_.SetLabelAt(i, static_cast<label_t>(tmp_label));
       // free processed line:
       text_data[i].clear();
       // shrink_to_fit will be very slow in linux, and seems not free memory, disable for now
@@ -937,7 +937,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
           dataset->feature_groups_[group]->PushData(tid, sub_feature, i, inner_data.second);
         } else {
           if (inner_data.first == weight_idx_) {
-            dataset->metadata_.SetWeightAt(i, static_cast<float>(inner_data.second));
+            dataset->metadata_.SetWeightAt(i, static_cast<label_t>(inner_data.second));
           } else if (inner_data.first == group_idx_) {
             dataset->metadata_.SetQueryAt(i, static_cast<data_size_t>(inner_data.second));
           }
@@ -964,7 +964,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
         init_score[k * dataset->num_data_ + i] = static_cast<double>(oneline_init_score[k]);
       }
       // set label
-      dataset->metadata_.SetLabelAt(i, static_cast<float>(tmp_label));
+      dataset->metadata_.SetLabelAt(i, static_cast<label_t>(tmp_label));
       // free processed line:
       text_data[i].clear();
       // shrink_to_fit will be very slow in linux, and seems not free memory, disable for now
@@ -980,7 +980,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>& text_dat
           dataset->feature_groups_[group]->PushData(tid, sub_feature, i, inner_data.second);
         } else {
           if (inner_data.first == weight_idx_) {
-            dataset->metadata_.SetWeightAt(i, static_cast<float>(inner_data.second));
+            dataset->metadata_.SetWeightAt(i, static_cast<label_t>(inner_data.second));
           } else if (inner_data.first == group_idx_) {
             dataset->metadata_.SetQueryAt(i, static_cast<data_size_t>(inner_data.second));
           }
@@ -1025,7 +1025,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
         }
       }
       // set label
-      dataset->metadata_.SetLabelAt(start_idx + i, static_cast<float>(tmp_label));
+      dataset->metadata_.SetLabelAt(start_idx + i, static_cast<label_t>(tmp_label));
       // push data
       for (auto& inner_data : oneline_features) {
         if (inner_data.first >= dataset->num_total_features_) { continue; }
@@ -1037,7 +1037,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
           dataset->feature_groups_[group]->PushData(tid, sub_feature, start_idx + i, inner_data.second);
         } else {
           if (inner_data.first == weight_idx_) {
-            dataset->metadata_.SetWeightAt(start_idx + i, static_cast<float>(inner_data.second));
+            dataset->metadata_.SetWeightAt(start_idx + i, static_cast<label_t>(inner_data.second));
           } else if (inner_data.first == group_idx_) {
             dataset->metadata_.SetQueryAt(start_idx + i, static_cast<data_size_t>(inner_data.second));
           }

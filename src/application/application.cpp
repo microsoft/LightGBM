@@ -87,7 +87,7 @@ void Application::LoadData() {
   PredictFunction predict_fun = nullptr;
   PredictionEarlyStopInstance pred_early_stop = CreatePredictionEarlyStopInstance("none", LightGBM::PredictionEarlyStopConfig());
   // need to continue training
-  if (boosting_->NumberOfTotalModel() > 0) {
+  if (boosting_->NumberOfTotalModel() > 0 && config_.task_type != TaskType::KRefitTree) {
     predictor.reset(new Predictor(boosting_.get(), -1, true, false, false, false, -1, -1));
     predict_fun = predictor->GetPredictFunction();
   }
@@ -212,14 +212,43 @@ void Application::Train() {
 }
 
 void Application::Predict() {
-  // create predictor
-  Predictor predictor(boosting_.get(), config_.io_config.num_iteration_predict, config_.io_config.is_predict_raw_score,
-                      config_.io_config.is_predict_leaf_index, config_.io_config.is_predict_contrib,
-                      config_.io_config.pred_early_stop, config_.io_config.pred_early_stop_freq,
-                      config_.io_config.pred_early_stop_margin);
-  predictor.Predict(config_.io_config.data_filename.c_str(),
-                    config_.io_config.output_result.c_str(), config_.io_config.has_header);
-  Log::Info("Finished prediction");
+
+  if (config_.task_type == TaskType::KRefitTree) {
+    // create predictor
+    Predictor predictor(boosting_.get(), -1, false, true, false, false, 1, 1);
+    predictor.Predict(config_.io_config.data_filename.c_str(), config_.io_config.output_result.c_str(), config_.io_config.has_header);
+    TextReader<int> result_reader(config_.io_config.output_result.c_str(), false);
+    result_reader.ReadAllLines();
+    std::vector<std::vector<int>> pred_leaf(result_reader.Lines().size());
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < static_cast<int>(result_reader.Lines().size()); ++i) {
+      pred_leaf[i] = Common::StringToArray<int>(result_reader.Lines()[i], '\t');
+      // Free memory
+      result_reader.Lines()[i].clear();
+    }
+    DatasetLoader dataset_loader(config_.io_config, nullptr,
+                                 config_.boosting_config.num_class, config_.io_config.data_filename.c_str());
+    train_data_.reset(dataset_loader.LoadFromFile(config_.io_config.data_filename.c_str(), config_.io_config.initscore_filename.c_str(),
+                                                  0, 1));
+    train_metric_.clear();
+    objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
+                                                                    config_.objective_config));
+    objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
+    boosting_->Init(&config_.boosting_config, train_data_.get(), objective_fun_.get(),
+                    Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
+    boosting_->RefitTree(pred_leaf);
+    boosting_->SaveModelToFile(-1, config_.io_config.output_model.c_str());
+    Log::Info("Finished RefitTree");
+  } else {
+    // create predictor
+    Predictor predictor(boosting_.get(), config_.io_config.num_iteration_predict, config_.io_config.is_predict_raw_score,
+                        config_.io_config.is_predict_leaf_index, config_.io_config.is_predict_contrib,
+                        config_.io_config.pred_early_stop, config_.io_config.pred_early_stop_freq,
+                        config_.io_config.pred_early_stop_margin);
+    predictor.Predict(config_.io_config.data_filename.c_str(),
+                      config_.io_config.output_result.c_str(), config_.io_config.has_header);
+    Log::Info("Finished prediction");
+  }
 }
 
 void Application::InitPredict() {

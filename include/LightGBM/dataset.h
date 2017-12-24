@@ -82,9 +82,9 @@ public:
   void CheckOrPartition(data_size_t num_all_data,
                         const std::vector<data_size_t>& used_data_indices);
 
-  void SetLabel(const float* label, data_size_t len);
+  void SetLabel(const label_t* label, data_size_t len);
 
-  void SetWeights(const float* weights, data_size_t len);
+  void SetWeights(const label_t* weights, data_size_t len);
 
   void SetQuery(const data_size_t* query, data_size_t len);
 
@@ -110,14 +110,14 @@ public:
   * \brief Get pointer of label
   * \return Pointer of label
   */
-  inline const float* label() const { return label_.data(); }
+  inline const label_t* label() const { return label_.data(); }
 
   /*!
   * \brief Set label for one record
   * \param idx Index of this record
   * \param value Label value of this record
   */
-  inline void SetLabelAt(data_size_t idx, float value)
+  inline void SetLabelAt(data_size_t idx, label_t value)
   {
     label_[idx] = value;
   }
@@ -127,7 +127,7 @@ public:
   * \param idx Index of this record
   * \param value Weight value of this record
   */
-  inline void SetWeightAt(data_size_t idx, float value)
+  inline void SetWeightAt(data_size_t idx, label_t value)
   {
     weights_[idx] = value;
   }
@@ -146,7 +146,7 @@ public:
   * \brief Get weights, if not exists, will return nullptr
   * \return Pointer of weights
   */
-  inline const float* weights() const {
+  inline const label_t* weights() const {
     if (!weights_.empty()) {
       return weights_.data();
     } else {
@@ -179,7 +179,7 @@ public:
   * \brief Get weights for queries, if not exists, will return nullptr
   * \return Pointer of weights for queries
   */
-  inline const float* query_weights() const {
+  inline const label_t* query_weights() const {
     if (!query_weights_.empty()) {
       return query_weights_.data();
     } else {
@@ -225,13 +225,13 @@ private:
   /*! \brief Number of weights, used to check correct weight file */
   data_size_t num_weights_;
   /*! \brief Label data */
-  std::vector<float> label_;
+  std::vector<label_t> label_;
   /*! \brief Weights data */
-  std::vector<float> weights_;
+  std::vector<label_t> weights_;
   /*! \brief Query boundaries */
   std::vector<data_size_t> query_boundaries_;
   /*! \brief Query weights */
-  std::vector<float> query_weights_;
+  std::vector<label_t> query_weights_;
   /*! \brief Number of querys */
   data_size_t num_queries_;
   /*! \brief Number of Initial score, used to check correct weight file */

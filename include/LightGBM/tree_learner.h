@@ -50,6 +50,9 @@ public:
   */
   virtual Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const = 0;
 
+  virtual Tree* FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
+                                  const score_t* gradients, const score_t* hessians) = 0;
+
   /*!
   * \brief Set bagging data
   * \param used_indices Used data indices

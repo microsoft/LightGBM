@@ -29,7 +29,7 @@ namespace LightGBM {
 
   // label should be in interval [0, 1];
   // prob should be in interval (0, 1); prob is clipped if needed
-  inline static double XentLoss(float label, double prob) {
+  inline static double XentLoss(label_t label, double prob) {
     const double log_arg_epsilon = 1.0e-12;
     double a = label;
     if (prob > log_arg_epsilon) {
@@ -47,7 +47,7 @@ namespace LightGBM {
   }
 
   // hhat >(=) 0 assumed; and weight > 0 required; but not checked here
-  inline static double XentLambdaLoss(float label, float weight, double hhat) {
+  inline static double XentLambdaLoss(label_t label, label_t weight, double hhat) {
     return XentLoss(label, 1.0f - std::exp(-weight * hhat));
   }
 
@@ -79,15 +79,15 @@ public:
     CHECK_NOTNULL(label_);
 
     // ensure that labels are in interval [0, 1], interval ends included
-    Common::CheckElementsIntervalClosed(label_, 0.0f, 1.0f, num_data_, GetName()[0].c_str());
+    Common::CheckElementsIntervalClosed<label_t>(label_, 0.0f, 1.0f, num_data_, GetName()[0].c_str());
     Log::Info("[%s:%s]: (metric) labels passed interval [0, 1] check",  GetName()[0].c_str(), __func__);
 
     // check that weights are non-negative and sum is positive
     if (weights_ == nullptr) {
       sum_weights_ = static_cast<double>(num_data_);
     } else {
-      float minw;
-      Common::ObtainMinMaxSum(weights_, num_data_, &minw, (float*)nullptr, &sum_weights_);
+      label_t minw;
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, (label_t*)nullptr, &sum_weights_);
       if (minw < 0.0f) {
         Log::Fatal("[%s:%s]: (metric) weights not allowed to be negative", GetName()[0].c_str(), __func__);
       }
@@ -147,9 +147,9 @@ private:
   /*! \brief Number of data points */
   data_size_t num_data_;
   /*! \brief Pointer to label */
-  const float* label_;
+  const label_t* label_;
   /*! \brief Pointer to weights */
-  const float* weights_;
+  const label_t* weights_;
   /*! \brief Sum of weights */
   double sum_weights_;
   /*! \brief Name of this metric */
@@ -172,13 +172,13 @@ public:
     weights_ = metadata.weights();
 
     CHECK_NOTNULL(label_);
-    Common::CheckElementsIntervalClosed(label_, 0.0f, 1.0f, num_data_, GetName()[0].c_str());
+    Common::CheckElementsIntervalClosed<label_t>(label_, 0.0f, 1.0f, num_data_, GetName()[0].c_str());
     Log::Info("[%s:%s]: (metric) labels passed interval [0, 1] check",  GetName()[0].c_str(), __func__);
 
     // check all weights are strictly positive; throw error if not
     if (weights_ != nullptr) {
-      float minw;
-      Common::ObtainMinMaxSum(weights_, num_data_, &minw, (float*)nullptr, (float*)nullptr);
+      label_t minw;
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, (label_t*)nullptr, (label_t*)nullptr);
       if (minw <= 0.0f) {
         Log::Fatal("[%s:%s]: (metric) all weights must be positive", GetName()[0].c_str(), __func__);
       }
@@ -234,9 +234,9 @@ private:
   /*! \brief Number of data points */
   data_size_t num_data_;
   /*! \brief Pointer to label */
-  const float* label_;
+  const label_t* label_;
   /*! \brief Pointer to weights */
-  const float* weights_;
+  const label_t* weights_;
   /*! \brief Name of this metric */
   std::vector<std::string> name_;
 };
@@ -256,14 +256,14 @@ public:
     weights_ = metadata.weights();
 
     CHECK_NOTNULL(label_);
-    Common::CheckElementsIntervalClosed(label_, 0.0f, 1.0f, num_data_, GetName()[0].c_str());
+    Common::CheckElementsIntervalClosed<label_t>(label_, 0.0f, 1.0f, num_data_, GetName()[0].c_str());
     Log::Info("[%s:%s]: (metric) labels passed interval [0, 1] check",  GetName()[0].c_str(), __func__);
 
     if (weights_ == nullptr) {
       sum_weights_ = static_cast<double>(num_data_);
     } else {
-      float minw;
-      Common::ObtainMinMaxSum(weights_, num_data_, &minw, (float*)nullptr, &sum_weights_);
+      label_t minw;
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, (label_t*)nullptr, &sum_weights_);
       if (minw < 0.0f) {
         Log::Fatal("[%s:%s]: (metric) at least one weight is negative", GetName()[0].c_str(), __func__);
       }
@@ -342,9 +342,9 @@ private:
   /*! \brief Number of data points */
   data_size_t num_data_;
   /*! \brief Pointer to label */
-  const float* label_;
+  const label_t* label_;
   /*! \brief Pointer to weights */
-  const float* weights_;
+  const label_t* weights_;
   /*! \brief Sum of weights */
   double sum_weights_;
   /*! \brief Offset term to cross-entropy; precomputed during init */

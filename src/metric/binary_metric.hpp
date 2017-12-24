@@ -98,9 +98,9 @@ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
-  const float* label_;
+  const label_t* label_;
   /*! \brief Pointer of weighs */
-  const float* weights_;
+  const label_t* weights_;
   /*! \brief Sum weights */
   double sum_weights_;
   /*! \brief Name of test set */
@@ -114,7 +114,7 @@ class BinaryLoglossMetric: public BinaryMetric<BinaryLoglossMetric> {
 public:
   explicit BinaryLoglossMetric(const MetricConfig& config) :BinaryMetric<BinaryLoglossMetric>(config) {}
 
-  inline static double LossOnPoint(float label, double prob) {
+  inline static double LossOnPoint(label_t label, double prob) {
     if (label <= 0) {
       if (1.0f - prob > kEpsilon) {
         return -std::log(1.0f - prob);
@@ -138,7 +138,7 @@ class BinaryErrorMetric: public BinaryMetric<BinaryErrorMetric> {
 public:
   explicit BinaryErrorMetric(const MetricConfig& config) :BinaryMetric<BinaryErrorMetric>(config) {}
 
-  inline static double LossOnPoint(float label, double prob) {
+  inline static double LossOnPoint(label_t label, double prob) {
     if (prob <= 0.5f) {
       return label > 0;
     } else {
@@ -208,7 +208,7 @@ public:
     double threshold = score[sorted_idx[0]];
     if (weights_ == nullptr) {  // no weights
       for (data_size_t i = 0; i < num_data_; ++i) {
-        const float cur_label = label_[sorted_idx[i]];
+        const label_t cur_label = label_[sorted_idx[i]];
         const double cur_score = score[sorted_idx[i]];
         // new threshold
         if (cur_score != threshold) {
@@ -224,9 +224,9 @@ public:
       }
     } else {  // has weights
       for (data_size_t i = 0; i < num_data_; ++i) {
-        const float cur_label = label_[sorted_idx[i]];
+        const label_t cur_label = label_[sorted_idx[i]];
         const double cur_score = score[sorted_idx[i]];
-        const float cur_weight = weights_[sorted_idx[i]];
+        const label_t cur_weight = weights_[sorted_idx[i]];
         // new threshold
         if (cur_score != threshold) {
           threshold = cur_score;
@@ -253,9 +253,9 @@ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
-  const float* label_;
+  const label_t* label_;
   /*! \brief Pointer of weighs */
-  const float* weights_;
+  const label_t* weights_;
   /*! \brief Sum weights */
   double sum_weights_;
   /*! \brief Name of test set */

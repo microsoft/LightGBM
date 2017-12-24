@@ -75,7 +75,7 @@ public:
     return 1.0f;
   }
 
-  void CalMapAtK(std::vector<int> ks, data_size_t npos, const float* label,
+  void CalMapAtK(std::vector<int> ks, data_size_t npos, const label_t* label,
                  const double* score, data_size_t num_data, std::vector<double>* out) const {
     // get sorted indices by score
     std::vector<data_size_t> sorted_idx;
@@ -149,13 +149,13 @@ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
-  const float* label_;
+  const label_t* label_;
   /*! \brief Query boundaries information */
   const data_size_t* query_boundaries_;
   /*! \brief Number of queries */
   data_size_t num_queries_;
   /*! \brief Weights of queries */
-  const float* query_weights_;
+  const label_t* query_weights_;
   /*! \brief Sum weights of queries */
   double sum_query_weights_;
   /*! \brief Evaluate position of Nmap */

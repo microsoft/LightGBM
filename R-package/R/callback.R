@@ -356,13 +356,27 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
           # Store best iteration and stop
           env$best_iter <- best_iter[i]
           env$met_early_stop <- TRUE
-          
         }
         
       }
-      
+      if (isFALSE(env$met_early_stop) && cur_iter == env$end_iteration) {
+        # Check if model is not null
+        if (!is.null(env$model)) {
+          env$model$best_score <- best_score[i]
+          env$model$best_iter <- best_iter[i]
+        }
+        
+        # Print message if verbose
+        if (isTRUE(verbose)) {
+          cat("Did not meet early stopping, best iteration is:", "\n")
+          cat(best_msg[[i]], "\n")
+        }
+        
+        # Store best iteration and stop
+        env$best_iter <- best_iter[i]
+        env$met_early_stop <- TRUE
+      }
     }
-    
   }
   
   # Set attributes

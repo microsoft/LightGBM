@@ -18,7 +18,9 @@ lightgbm <- function(data,
   
   # Set data to a temporary variable
   dtrain <- data
-  
+  if (nrounds <= 0) {
+    stop("nrounds should be greater than zero")
+  }
   # Check whether data is lgb.Dataset, if not then create lgb.Dataset manually
   if (!lgb.is.Dataset(dtrain)) {
     dtrain <- lgb.Dataset(data, label = label, weight = weight)

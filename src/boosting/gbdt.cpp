@@ -295,7 +295,7 @@ void GBDT::Bagging(int iter) {
 * (i) and (ii) could be selected as say "auto_init_score" = 0 or 1 etc..
 *
 */
-double ObtainAutomaticInitialScore(const ObjectiveFunction* fobj, const float* label, data_size_t num_data) {
+double ObtainAutomaticInitialScore(const ObjectiveFunction* fobj, const label_t* label, data_size_t num_data) {
   double init_score = 0.0f;
   bool got_custom = false;
   if (fobj != nullptr) {
@@ -349,6 +349,30 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
         && (iter + 1) % snapshot_freq == 0) {
       std::string snapshot_out = model_output_path + ".snapshot_iter_" + std::to_string(iter + 1);
       SaveModelToFile(-1, snapshot_out.c_str());
+    }
+  }
+}
+
+void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) {
+  CHECK(tree_leaf_prediction.size() > 0);
+  CHECK(static_cast<size_t>(num_data_) == tree_leaf_prediction.size());
+  CHECK(static_cast<size_t>(models_.size()) == tree_leaf_prediction[0].size());
+  int num_iterations = static_cast<int>(models_.size() / num_tree_per_iteration_);
+  std::vector<int> leaf_pred(num_data_);
+  for (int iter = 0; iter < num_iterations; ++iter) {
+    Boosting();
+    for (int tree_id = 0; tree_id < num_tree_per_iteration_; ++tree_id) {
+      int model_index = iter * num_tree_per_iteration_ + tree_id;
+      #pragma omp parallel for schedule(static)
+      for (int i = 0; i < num_data_; ++i) {
+        leaf_pred[i] = tree_leaf_prediction[i][model_index];
+      }
+      size_t bias = static_cast<size_t>(tree_id) * num_data_;
+      auto grad = gradients_.data() + bias;
+      auto hess = hessians_.data() + bias;
+      auto new_tree = tree_learner_->FitByExistingTree(models_[model_index].get(), leaf_pred, grad, hess);
+      train_score_updater_->AddScore(tree_learner_.get(), new_tree, tree_id);
+      models_[model_index].reset(new_tree);
     }
   }
 }
