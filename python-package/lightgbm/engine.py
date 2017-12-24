@@ -104,6 +104,8 @@ def train(params, train_set, num_boost_round=100,
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             break
 
+    if num_boost_round <= 0:
+        raise ValueError("num_boost_round should be greater than zero.")
     if isinstance(init_model, string_type):
         predictor = _InnerPredictor(model_file=init_model)
     elif isinstance(init_model, Booster):
@@ -394,6 +396,8 @@ def cv(params, train_set, num_boost_round=100,
             early_stopping_rounds = params.pop(alias)
             break
 
+    if num_boost_round <= 0:
+        raise ValueError("num_boost_round should be greater than zero.")
     if isinstance(init_model, string_type):
         predictor = _InnerPredictor(model_file=init_model)
     elif isinstance(init_model, Booster):
