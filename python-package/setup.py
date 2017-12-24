@@ -66,7 +66,7 @@ def clear_path(path):
 def silent_call(cmd, raise_error=False, error_msg=''):
     try:
         output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-        with open(path_log, "ab") as log:    
+        with open(path_log, "ab") as log:
             log.write(output)
         return 0
     except Exception as err:
