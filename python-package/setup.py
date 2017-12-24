@@ -65,12 +65,16 @@ def clear_path(path):
 
 def silent_call(cmd, raise_error=False, error_msg=''):
     try:
-        with open(os.devnull, "w") as shut_up:
-            subprocess.check_output(cmd, stderr=shut_up)
-            return 0
-    except Exception:
+        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+        with open(path_log, "ab") as log:    
+            log.write(output)
+        return 0
+    except Exception as err:
+        if isinstance(err, subprocess.CalledProcessError):
+            with open(path_log, "ab") as log:
+                log.write(err.output)
         if raise_error:
-            raise Exception(error_msg)
+            raise Exception("\n".join((error_msg, log_notice)))
         return 1
 
 
@@ -109,7 +113,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
                 raise Exception('MPI version cannot be compiled by MinGW due to the miss of MPI library in it')
             logger.info("Starting to compile with CMake and MinGW.")
             silent_call(cmake_cmd + ["-G", "MinGW Makefiles"], raise_error=True,
-                        error_msg='Please install CMake first')
+                        error_msg='Please install CMake and all required dependencies first')
             silent_call(["mingw32-make.exe", "_lightgbm"], raise_error=True,
                         error_msg='Please install MinGW first')
         else:
@@ -139,12 +143,13 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
                     else:
                         clear_path("./")
                 if status != 0:
-                    raise Exception('Please install Visual Studio or MS Build first')
+                    raise Exception("\n".join(('Please install Visual Studio or MS Build and all required dependencies first',
+                                    log_notice)))
                 silent_call(["cmake", "--build", ".", "--target", "_lightgbm", "--config", "Release"], raise_error=True,
                             error_msg='Please install CMake first')
     else:  # Linux, Darwin (OS X), etc.
         logger.info("Starting to compile with CMake.")
-        silent_call(cmake_cmd, raise_error=True, error_msg='Please install CMake first')
+        silent_call(cmake_cmd, raise_error=True, error_msg='Please install CMake and all required dependencies first')
         silent_call(["make", "_lightgbm"], raise_error=True,
                     error_msg='An error has occurred while building lightgbm library file')
     os.chdir("..")
@@ -190,6 +195,7 @@ class CustomInstall(install):
         self.precompile = 0
 
     def run(self):
+        open(path_log, 'wb').close()
         if not self.precompile:
             copy_files(use_gpu=self.gpu)
             compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_mpi=self.mpi,
@@ -197,6 +203,8 @@ class CustomInstall(install):
                         boost_include_dir=self.boost_include_dir, boost_librarydir=self.boost_librarydir,
                         opencl_include_dir=self.opencl_include_dir, opencl_library=self.opencl_library)
         install.run(self)
+        if os.path.isfile(path_log):
+            os.remove(path_log)
 
 
 class CustomSdist(sdist):
@@ -217,9 +225,11 @@ class CustomSdist(sdist):
 
 if __name__ == "__main__":
     if (8 * struct.calcsize("P")) != 64:
-        raise Exception('Cannot install LightGBM in 32-bit python, please use 64-bit python instead.')
+        raise Exception('Cannot install LightGBM in 32-bit Python, please use 64-bit python instead.')
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
+    path_log = os.path.join(os.path.expanduser('~'), 'LightGBM compilation.log')
+    log_notice = "The full version of error log was saved into {0}".format(path_log)
     if os.path.isfile(os.path.join('..', 'VERSION.txt')):
         distutils.file_util.copy_file(os.path.join('..', 'VERSION.txt'),
                                       os.path.join('.', 'lightgbm'))
