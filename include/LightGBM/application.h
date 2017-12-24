@@ -73,7 +73,7 @@ private:
 
 
 inline void Application::Run() {
-  if (config_.task_type == TaskType::kPredict) {
+  if (config_.task_type == TaskType::kPredict || config_.task_type == TaskType::KRefitTree) {
     InitPredict();
     Predict();
   } else if (config_.task_type == TaskType::kConvertModel) {

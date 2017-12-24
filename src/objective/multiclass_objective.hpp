@@ -126,11 +126,11 @@ private:
   /*! \brief Number of classes */
   int num_class_;
   /*! \brief Pointer of label */
-  const float* label_;
+  const label_t* label_;
   /*! \brief Corresponding integers of label_ */
   std::vector<int> label_int_;
   /*! \brief Weights for data */
-  const float* weights_;
+  const label_t* weights_;
 };
 
 /*!
@@ -142,7 +142,7 @@ public:
     num_class_ = config.num_class;
     for (int i = 0; i < num_class_; ++i) {
       binary_loss_.emplace_back(
-        new BinaryLogloss(config, [i](float label) { return static_cast<int>(label) == i; }));
+        new BinaryLogloss(config, [i](label_t label) { return static_cast<int>(label) == i; }));
     }
     sigmoid_ = config.sigmoid;
   }

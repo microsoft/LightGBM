@@ -83,6 +83,10 @@ lgb.train <- function(params = list(),
   fobj <- NULL
   feval <- NULL
   
+  if (nrounds <= 0) {
+    stop("nrounds should be greater than zero")
+  }
+
   # Check for objective (function or not)
   if (is.function(params$objective)) {
     fobj <- params$objective

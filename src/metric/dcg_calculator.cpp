@@ -25,7 +25,7 @@ void DCGCalculator::Init(std::vector<double> input_label_gain) {
   }
 }
 
-double DCGCalculator::CalMaxDCGAtK(data_size_t k, const float* label, data_size_t num_data) {
+double DCGCalculator::CalMaxDCGAtK(data_size_t k, const label_t* label, data_size_t num_data) {
   double ret = 0.0f;
   // counts for all labels
   std::vector<data_size_t> label_cnt(label_gain_.size(), 0);
@@ -50,7 +50,7 @@ double DCGCalculator::CalMaxDCGAtK(data_size_t k, const float* label, data_size_
 }
 
 void DCGCalculator::CalMaxDCG(const std::vector<data_size_t>& ks,
-                              const float* label,
+                              const label_t* label,
                               data_size_t num_data,
                               std::vector<double>* out) {
   std::vector<data_size_t> label_cnt(label_gain_.size(), 0);
@@ -81,7 +81,7 @@ void DCGCalculator::CalMaxDCG(const std::vector<data_size_t>& ks,
 }
 
 
-double DCGCalculator::CalDCGAtK(data_size_t k, const float* label,
+double DCGCalculator::CalDCGAtK(data_size_t k, const label_t* label,
                                 const double* score, data_size_t num_data) {
   // get sorted indices by score
   std::vector<data_size_t> sorted_idx(num_data);
@@ -101,7 +101,7 @@ double DCGCalculator::CalDCGAtK(data_size_t k, const float* label,
   return dcg;
 }
 
-void DCGCalculator::CalDCG(const std::vector<data_size_t>& ks, const float* label,
+void DCGCalculator::CalDCG(const std::vector<data_size_t>& ks, const label_t* label,
                            const double * score, data_size_t num_data, std::vector<double>* out) {
   // get sorted indices by score
   std::vector<data_size_t> sorted_idx(num_data);
@@ -126,9 +126,9 @@ void DCGCalculator::CalDCG(const std::vector<data_size_t>& ks, const float* labe
   }
 }
 
-void DCGCalculator::CheckLabel(const float* label, data_size_t num_data) {
+void DCGCalculator::CheckLabel(const label_t* label, data_size_t num_data) {
   for (data_size_t i = 0; i < num_data; ++i) {
-    float delta = std::fabs(label[i] - static_cast<int>(label[i]));
+    label_t delta = std::fabs(label[i] - static_cast<int>(label[i]));
     if (delta > kEpsilon) {
       Log::Fatal("label should be int type (met %f) for ranking task, \
                  for the gain of label, please set the label_gain parameter.", label[i]);

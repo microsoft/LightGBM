@@ -986,7 +986,7 @@ class Dataset(object):
             A numpy array with information from the Dataset.
         """
         if self.handle is None:
-            raise Exception("Cannot get %s before construct dataset" % field_name)
+            raise Exception("Cannot get %s before construct Dataset" % field_name)
         tmp_out_len = ctypes.c_int()
         out_type = ctypes.c_int()
         ret = ctypes.POINTER(ctypes.c_void_p)()
@@ -1144,7 +1144,7 @@ class Dataset(object):
         label : numpy array
             The label information from the Dataset.
         """
-        if self.label is None and self.handle is not None:
+        if self.label is None:
             self.label = self.get_field('label')
         return self.label
 
@@ -1156,7 +1156,7 @@ class Dataset(object):
         weight : numpy array
             Weight for each data point from the Dataset.
         """
-        if self.weight is None and self.handle is not None:
+        if self.weight is None:
             self.weight = self.get_field('weight')
         return self.weight
 
@@ -1168,7 +1168,7 @@ class Dataset(object):
         init_score : numpy array
             Init score of Booster.
         """
-        if self.init_score is None and self.handle is not None:
+        if self.init_score is None:
             self.init_score = self.get_field('init_score')
         return self.init_score
 
@@ -1180,7 +1180,7 @@ class Dataset(object):
         group : numpy array
             Group size of each group.
         """
-        if self.group is None and self.handle is not None:
+        if self.group is None:
             self.group = self.get_field('group')
             if self.group is not None:
                 # group data from LightGBM is boundaries data, need to convert to group size

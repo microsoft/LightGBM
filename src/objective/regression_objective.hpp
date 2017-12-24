@@ -53,8 +53,8 @@ public:
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        gradients[i] = static_cast<score_t>(score[i] - label_[i]) * weights_[i];
-        hessians[i] = weights_[i];
+        gradients[i] = static_cast<score_t>((score[i] - label_[i]) * weights_[i]);
+        hessians[i] = static_cast<score_t>(weights_[i]);
       }
     }
   }
@@ -101,10 +101,10 @@ protected:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
-  const float* label_;
+  const label_t* label_;
   /*! \brief Pointer of weights */
-  const float* weights_;
-  std::vector<float> trans_label_;
+  const label_t* weights_;
+  std::vector<label_t> trans_label_;
 };
 
 /*!
@@ -140,9 +140,9 @@ public:
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
         if (diff >= 0.0f) {
-          gradients[i] = weights_[i];
+          gradients[i] = static_cast<score_t>(weights_[i]);
         } else {
-          gradients[i] = -weights_[i];
+          gradients[i] = static_cast<score_t>(-weights_[i]);
         }
         hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], eta_, weights_[i]));
       }
@@ -204,7 +204,7 @@ public:
 
         if (std::abs(diff) <= alpha_) {
           gradients[i] = static_cast<score_t>(diff * weights_[i]);
-          hessians[i] = weights_[i];
+          hessians[i] = static_cast<score_t>(weights_[i]);
         } else {
           if (diff >= 0.0f) {
             gradients[i] = static_cast<score_t>(alpha_ * weights_[i]);
@@ -297,9 +297,9 @@ public:
   void Init(const Metadata& metadata, data_size_t num_data) override {
     RegressionL2loss::Init(metadata, num_data);
     // Safety check of labels
-    float miny;
+    label_t miny;
     double sumy;
-    Common::ObtainMinMaxSum(label_, num_data_, &miny, (float*)nullptr, &sumy);
+    Common::ObtainMinMaxSum(label_, num_data_, &miny, (label_t*)nullptr, &sumy);
     if (miny < 0.0f) {
       Log::Fatal("[%s]: at least one target label is negative.", GetName());
     }
@@ -405,11 +405,11 @@ public:
       for (data_size_t i = 0; i < num_data_; ++i) {
         score_t delta = static_cast<score_t>(score[i] - label_[i]);
         if (delta >= 0) {
-          gradients[i] = (1.0f - alpha_) * weights_[i];
+          gradients[i] = static_cast<score_t>((1.0f - alpha_) * weights_[i]);
         } else {
-          gradients[i] = -alpha_ * weights_[i];
+          gradients[i] = static_cast<score_t>(-alpha_ * weights_[i]);
         }
-        hessians[i] = weights_[i];
+        hessians[i] = static_cast<score_t>(weights_[i]);
       }
     }
   }
@@ -454,11 +454,11 @@ public:
       for (data_size_t i = 0; i < num_data_; ++i) {
         score_t delta = static_cast<score_t>(score[i] - label_[i]);
         if (delta > 0) {
-          gradients[i] = (1.0f - alpha_) * delta * weights_[i];
-          hessians[i] = (1.0f - alpha_) * weights_[i];
+          gradients[i] = static_cast<score_t>((1.0f - alpha_) * delta * weights_[i]);
+          hessians[i] = static_cast<score_t>((1.0f - alpha_) * weights_[i]);
         } else {
-          gradients[i] = alpha_ * delta * weights_[i];
-          hessians[i] = alpha_ * weights_[i];
+          gradients[i] = static_cast<score_t>(alpha_ * delta * weights_[i]);
+          hessians[i] = static_cast<score_t>(alpha_ * weights_[i]);
         }
       }
     }

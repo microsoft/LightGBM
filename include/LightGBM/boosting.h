@@ -49,6 +49,8 @@ public:
 
   virtual void ResetConfig(const BoostingConfig* config) = 0;
 
+
+
   /*!
   * \brief Add a validation data
   * \param valid_data Validation data
@@ -58,6 +60,11 @@ public:
                                const std::vector<const Metric*>& valid_metrics) = 0;
 
   virtual void Train(int snapshot_freq, const std::string& model_output_path) = 0;
+
+  /*!
+  * \brief Update the tree output by new training data
+  */
+  virtual void RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) = 0;
 
   /*!
   * \brief Training logic
