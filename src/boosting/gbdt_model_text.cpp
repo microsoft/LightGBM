@@ -334,7 +334,11 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
           key_vals[strs[0]] = strs[1];
         }
         else if (strs.size() > 2) {
-          Log::Fatal("Wrong line at model file: %s", cur_line.c_str());
+          if (strs[0] == "feature_name") {
+            key_vals[strs[0]] = cur_line.substr(std::strlen("feature_names=")).c_str();
+          } else {
+            Log::Fatal("Wrong line at model file: %s", cur_line.substr(0, 128).c_str());
+          }
         }
       }
       else {
