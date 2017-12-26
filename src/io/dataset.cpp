@@ -511,7 +511,7 @@ bool Dataset::GetIntField(const char* field_name, data_size_t* out_len, const in
 
 void Dataset::SaveBinaryFile(const char* bin_filename) {
   if (bin_filename != nullptr
-      && std::string(bin_filename) == std::string(data_filename_)) {
+      && std::string(bin_filename) == data_filename_) {
     Log::Warning("Bianry file %s already existed", bin_filename);
     return;
   }

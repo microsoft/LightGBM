@@ -564,8 +564,7 @@ Objective Parameters
 Metric Parameters
 -----------------
 
--  ``metric``, default={``l2`` for regression}, {``binary_logloss`` for binary classification}, {``ndcg`` for lambdarank}, type=multi-enum,
-   options=\ ``l1``, ``l2``, ``ndcg``, ``auc``, ``binary_logloss``, ``binary_error`` ...
+-  ``metric``, default={``l2`` for regression, ``binary_logloss`` for binary classification, ``ndcg`` for lambdarank}, type=multi-enum
 
    -  ``l1``, absolute loss, alias=\ ``mean_absolute_error``, ``mae``
 

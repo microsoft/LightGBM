@@ -219,7 +219,7 @@ private:
   /*! \brief Load query wights */
   void LoadQueryWeights();
   /*! \brief Filename of current data */
-  const char* data_filename_;
+  std::string data_filename_;
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Number of weights, used to check correct weight file */
@@ -546,7 +546,7 @@ public:
   Dataset(const Dataset&) = delete;
 
 private:
-  const char* data_filename_;
+  std::string data_filename_;
   /*! \brief Store used features */
   std::vector<std::unique_ptr<FeatureGroup>> feature_groups_;
   /*! \brief Mapper from real feature index to used index*/
