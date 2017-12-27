@@ -359,7 +359,7 @@ cb.early.stop <- function(stopping_rounds, verbose = TRUE) {
         }
         
       }
-      if (isFALSE(env$met_early_stop) && cur_iter == env$end_iteration) {
+      if (!isTRUE(env$met_early_stop) && cur_iter == env$end_iteration) {
         # Check if model is not null
         if (!is.null(env$model)) {
           env$model$best_score <- best_score[i]
