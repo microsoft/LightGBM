@@ -41,7 +41,7 @@ if (!use_precompile) {
   
   # Prepare installation steps
   cmake_cmd <- "cmake "
-  build_cmd <- "make _lightgbm -j1"
+  build_cmd <- "make _lightgbm"
   lib_folder <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
   
   if (use_gpu) {
@@ -52,7 +52,7 @@ if (!use_precompile) {
   if (WINDOWS) {
     if (use_mingw) {
       cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ")
-      build_cmd <- "mingw32-make.exe _lightgbm -j1"
+      build_cmd <- "mingw32-make.exe _lightgbm"
       system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
     } else {
       try_vs <- 0
@@ -72,7 +72,7 @@ if (!use_precompile) {
       if (try_vs == 1) {
         cmake_cmd <- paste0(cmake_cmd, " -G \"MinGW Makefiles\" ") # Switch to MinGW on failure, try build once
         system(paste0(cmake_cmd, " ..")) # Must build twice for Windows due sh.exe in Rtools
-        build_cmd <- "mingw32-make.exe _lightgbm -j1"
+        build_cmd <- "mingw32-make.exe _lightgbm"
       } else {
         cmake_cmd <- paste0(cmake_cmd, local_vs_def)
         build_cmd <- "cmake --build . --target _lightgbm  --config Release"
