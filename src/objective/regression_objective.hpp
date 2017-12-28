@@ -162,6 +162,73 @@ private:
 };
 
 /*!
+* \brief SMAPE regression loss
+*/
+class RegressionSMAPEloss: public RegressionL2loss {
+public:
+  explicit RegressionSMAPEloss(const ObjectiveConfig& config): RegressionL2loss(config) { }
+
+  explicit RegressionSMAPEloss(const std::vector<std::string>& strs): RegressionL2loss(strs) { }
+
+  ~RegressionSMAPEloss() {}
+
+  void GetGradients(const double* score, score_t* gradients,
+                    score_t* hessians) const override {
+    if (weights_ == nullptr) {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        const double diff = score[i] - label_[i];
+        const double sumabs = std::fabs(score[i]) + std::fabs(label_[i]);
+        if (diff == 0) {
+          gradients[i] = 0.0f;
+          hessians[i] = 2.0f / sumabs;
+        } else {
+          const double absdiff = std::fabs(diff);
+          const double sumabs2 = sumabs * sumabs;
+          const double sumabs3 = sumabs2 * sumabs;
+          const double t1 = (2.0f / sumabs3 - (2.0f * (score[i] == 0)) / (label_[i] * label_[i]));
+          const double t2 = 2.0f  * sgn(label_[i]) * sgn(diff) / sumabs2;
+          gradients[i] = (sgn(diff) * sumabs - sgn(score[i]) * absdiff) / sumabs2;
+          hessians[i] = absdiff * t1 - t2;
+        }
+      }
+    } else {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        const double diff = score[i] - label_[i];
+        const double sumabs = std::fabs(score[i]) + std::fabs(label_[i]);
+        if (diff == 0) {
+          gradients[i] = 0.0f;
+          hessians[i] = 2.0f * weights_[i] / sumabs;
+        } else {
+          const double absdiff = std::fabs(diff);
+          const double sumabs2 = sumabs * sumabs;
+          const double sumabs3 = sumabs2 * sumabs;
+          const double t1 = (2.0f / sumabs3 - (2.0f * (score[i] == 0)) / (label_[i] * label_[i]));
+          const double t2 = 2.0f  * sgn(label_[i]) * sgn(diff) / sumabs2;
+          gradients[i] = ((sgn(diff) * sumabs - sgn(score[i]) * absdiff)) * weights_[i] / sumabs2;
+          hessians[i] = (absdiff * t1 - t2) * weights_[i];
+        }
+      }
+    }
+  }
+
+  const char* GetName() const override {
+    return "smape";
+  }
+
+  bool IsConstantHessian() const override {
+    return false;
+  }
+
+private:
+  template <typename T>
+  int sgn(T x) const {
+    return (x > T(0)) - (x < T(0));
+  }
+};
+
+/*!
 * \brief Huber regression loss
 */
 class RegressionHuberLoss: public RegressionL2loss {
