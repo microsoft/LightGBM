@@ -553,7 +553,7 @@ Objective Parameters
 
 -  ``num_class``, default=\ ``1``, type=int, alias=\ ``num_classes``
 
-   -  only used in ``multiclass`` classification
+   -  only used in multi-class classification
 
 -  ``reg_sqrt``, default=\ ``false``, type=bool
 

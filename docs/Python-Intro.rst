@@ -116,7 +116,7 @@ And you can use ``Dataset.set_init_score()`` to set initial score, and ``Dataset
 
 The ``Dataset`` object in LightGBM is very memory-efficient, due to it only need to save discrete bins.
 However, Numpy/Array/Pandas object is memory cost.
-If you concern about your memory consumption. You can save memory accroding to following:
+If you concern about your memory consumption, you can save memory accroding to following:
 
 1. Let ``free_raw_data=True`` (default is ``True``) when constructing the ``Dataset``
 
@@ -165,7 +165,7 @@ The trained model can also be dumped to JSON format:
 
     json_model = bst.dump_model()
 
-A saved model can be loaded.
+A saved model can be loaded:
 
 .. code:: python
 
