@@ -157,9 +157,9 @@ protected:
   bool is_constant_hessian_;
 };
 
-inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leafIdx) const {
-  if (leafIdx >= 0) {
-    return data_partition_->leaf_count(leafIdx);
+inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leaf_idx) const {
+  if (leaf_idx >= 0) {
+    return data_partition_->leaf_count(leaf_idx);
   } else {
     return 0;
   }
