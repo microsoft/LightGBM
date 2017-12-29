@@ -1105,7 +1105,7 @@ class Dataset(object):
         weight : list, numpy array or None
             Weight to be set for each data point.
         """
-        if np.all(weight == 1):
+        if weight is not None and np.all(weight == 1):
             weight = None
         self.weight = weight
         if self.handle is not None and weight is not None:

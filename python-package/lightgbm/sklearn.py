@@ -417,7 +417,7 @@ class LGBMModel(_LGBMModelBase):
         if not _IS_PANDAS_INSTALLED or not isinstance(X, pd.DataFrame):
             X, y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
             _LGBMCheckConsistentLength(X, y, sample_weight)
-        
+
         if self.class_weight is not None:
             class_sample_weight = _LGBMComputeSampleWeight(self.class_weight, y)
             if sample_weight is None or len(sample_weight) == 0:
@@ -453,7 +453,7 @@ class LGBMModel(_LGBMModelBase):
                         else:
                             raise TypeError('eval_sample_weight, eval_class_weight, eval_init_score, and eval_group should be dict or list')
                     valid_weight = get_meta_data(eval_sample_weight, i)
-                    if self.class_weight is not None:
+                    if get_meta_data(eval_class_weight, i) is not None:
                         valid_class_sample_weight = _LGBMComputeSampleWeight(get_meta_data(eval_class_weight, i), valid_data[1])
                         if valid_weight is None or len(valid_weight) == 0:
                             valid_weight = valid_class_sample_weight
