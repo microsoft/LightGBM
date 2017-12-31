@@ -439,8 +439,8 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   GetDouble(params, "top_rate", &top_rate);
   GetDouble(params, "other_rate", &other_rate);
   CHECK(top_rate > 0);
-  CHECK(top_rate > 0);
-  CHECK(top_rate + top_rate <= 1.0);
+  CHECK(other_rate > 0);
+  CHECK(top_rate + other_rate <= 1.0);
   GetBool(params, "boost_from_average", &boost_from_average);
   GetDeviceType(params, &device_type);
   GetTreeLearnerType(params, &tree_learner_type);
