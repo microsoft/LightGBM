@@ -228,7 +228,7 @@ if __name__ == "__main__":
         raise Exception('Cannot install LightGBM in 32-bit Python, please use 64-bit python instead.')
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    path_log = os.path.join(os.path.expanduser('~'), 'LightGBM compilation.log')
+    path_log = os.path.join(os.path.expanduser('~'), 'LightGBM_compilation.log')
     log_notice = "The full version of error log was saved into {0}".format(path_log)
     if os.path.isfile(os.path.join('..', 'VERSION.txt')):
         distutils.file_util.copy_file(os.path.join('..', 'VERSION.txt'),
