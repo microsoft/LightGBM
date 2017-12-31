@@ -123,6 +123,8 @@ Refer to the walk through examples in `Python guide folder <https://github.com/M
 Troubleshooting
 ---------------
 
+In case you are facing any errors during the installation process, you can examine ``$HOME/LightGBM_compilation.log`` file, in which all operations are logged, to get more details about occurred problem. Also, please attach this file to the issue on GitHub to help faster indicate the cause of the error.
+
 Refer to `FAQ <https://github.com/Microsoft/LightGBM/tree/master/docs/FAQ.rst>`_.
 
 Developments
