@@ -396,7 +396,7 @@ class LGBMModel(_LGBMModelBase):
         params.setdefault('nthread', params.pop('n_jobs'))
         # user can set verbose with kwargs, it has higher priority
         if 'verbose' not in params and self.silent:
-            params['verbose'] = -1
+            params['verbose'] = 0
         params.pop('silent', None)
         params.pop('n_estimators', None)
         params.pop('class_weight', None)
