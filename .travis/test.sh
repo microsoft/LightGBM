@@ -86,10 +86,9 @@ fi
 if [[ ${TASK} == "gpu" ]]; then 
     conda install --yes -c conda-forge boost=1.63.0
     if [[ ${METHOD} == "pip" ]]; then
-        export PATH="$AMDAPPSDK/include/:$PATH"
         sed -i 's/const std::string kDefaultDevice = "cpu";/const std::string kDefaultDevice = "gpu";/' ../include/LightGBM/config.h
         cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
-        cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--boost-root=$HOME/miniconda/envs/test-env/" || exit -1
+        cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--boost-root=$HOME/miniconda/envs/test-env/" --install-option="--opencl-include-dir=$AMDAPPSDK/include/" || exit -1
         cd $TRAVIS_BUILD_DIR && pytest tests/python_package_test || exit -1
         exit 0
     fi
