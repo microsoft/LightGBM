@@ -1420,7 +1420,7 @@ class Booster(object):
         self.network = True
 
     def free_network(self):
-        """Free Network."""
+        """Free network."""
         _safe_call(_LIB.LGBM_NetworkFree())
         self.network = False
 

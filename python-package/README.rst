@@ -38,6 +38,17 @@ For macOS users, you need to specify compilers by runnig ``export CXX=g++-7 CC=g
 
 For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/>`_) is needed. If you get any errors during installation, you may need to install `CMake <https://cmake.org/>`_ (version 3.8 or higher).
 
+Build MPI Version
+~~~~~~~~~~~~~~~~~
+
+.. code:: sh
+
+    pip install lightgbm --install-option=--mpi
+
+For Windows users, compilation with MinGW-w64 is not supported and `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case.
+
+Note: MPI libraries are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-mpi-version>`__.
+
 Build GPU Version
 ~~~~~~~~~~~~~~~~~
 
@@ -48,6 +59,28 @@ Build GPU Version
 For Windows users, `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case.
 
 Note: Boost and OpenCL are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version>`__. You need to add ``OpenCL_INCLUDE_DIR`` to the environmental variable **'PATH'** and export ``BOOST_ROOT`` before installation.
+
+Also you may pass options to CMake via pip options, like
+
+.. code:: sh
+
+    pip install lightgbm --install-option=--gpu --install-option="--opencl-include-dir=/usr/local/cuda/include/" --install-option="--opencl-library=/usr/local/cuda/lib64/libOpenCL.so"
+
+All available options:
+
+- boost-root
+
+- boost-dir
+
+- boost-include-dir
+
+- boost-librarydir
+
+- opencl-include-dir
+
+- opencl-library
+
+For more details see `FindBoost <https://cmake.org/cmake/help/v3.8/module/FindBoost.html>`__ and `FindOpenCL <https://cmake.org/cmake/help/v3.8/module/FindOpenCL.html>`__.
 
 Build with MinGW-w64 on Windows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -74,9 +107,11 @@ For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/dow
 
 Note: ``sudo`` (or administrator rights in Windows) may be needed to perform the command.
 
+Run ``python setup.py install --mpi`` to enable MPI support. For Windows users, compilation with MinGW-w64 is not supported and `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case. MPI libraries are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-mpi-version>`__.
+
 Run ``python setup.py install --mingw`` if you want to use MinGW-w64 on Windows instead of Visual Studio. `CMake <https://cmake.org/>`_ and `MinGW-w64 <https://mingw-w64.org/>`_ should be installed first.
 
-Run ``python setup.py install --gpu`` to enable GPU support. For Windows users, `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case. Boost and OpenCL are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version>`__.
+Run ``python setup.py install --gpu`` to enable GPU support. For Windows users, `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case. Boost and OpenCL are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version>`__. You can pass additional options to CMake: ``python setup.py install --gpu --opencl-include-dir=/usr/local/cuda/include/``, see `Build GPU Version <#build-gpu-version>`__ for complete list of them.
 
 If you get any errors during installation or due to any other reason, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then run ``python setup.py install --precompile``.
 

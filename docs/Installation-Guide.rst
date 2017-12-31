@@ -64,7 +64,7 @@ MinGW64
 
 The exe and dll files will be in ``LightGBM/`` folder.
 
-**Note**: you may need to run the ``cmake -G "MinGW Makefiles" ..`` one more time if met ``sh.exe was found in your PATH`` error.
+**Note**: You may need to run the ``cmake -G "MinGW Makefiles" ..`` one more time if met ``sh.exe was found in your PATH`` error.
 
 Also you may want to reed `gcc Tips <./gcc-Tips.rst>`__.
 
@@ -161,7 +161,7 @@ From Command Line
 
 The exe and dll files will be in ``LightGBM/Release`` folder.
 
-**Note**: Build MPI version by **MinGW** is not supported due to the miss of MPI library in it.
+**Note**: Building MPI version by **MinGW** is not supported due to the miss of MPI library in it.
 
 Linux
 ^^^^^
@@ -226,8 +226,8 @@ To build LightGBM GPU version, run the following commands:
   git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
   mkdir build ; cd build
   cmake -DUSE_GPU=1 ..
-  # if you have installed the NVIDIA OpenGL, please use following command instead
-  # sudo cmake -DUSE_GPU=1 -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -OpenCL_INCLUDE_DIR=/usr/local/cuda/include/ ..
+  # if you have installed NVIDIA CUDA to a customized location, you should specify paths to OpenCL headers and library like the following:
+  # cmake -DUSE_GPU=1 -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=/usr/local/cuda/include/ ..
   make -j4
 
 Windows
@@ -249,7 +249,7 @@ Following procedure is for the MSVC (Microsoft Visual C++) build.
 
 3. Install `Boost Binary`_.
 
-   **Note**: match your Visual C++ version:
+   **Note**: Match your Visual C++ version:
    
    Visual Studio 2015 -> ``msvc-14.0-64.exe``,
 
