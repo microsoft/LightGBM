@@ -25,7 +25,8 @@ Following are advantages for histogram based algorithms:
 
    -  To get one leaf's histograms in a binary tree, can use the histogram subtraction of its parent and its neighbor
 
-   -  So it only need to construct histograms for one leaf (with smaller ``#data`` than its neighbor), then can get histograms of its neighbor by histogram subtraction with small cost(``O(#bins)``)
+   -  So it only need to construct histograms for one leaf (with smaller ``#data`` than its neighbor), then can get histograms of its neighbor by histogram subtraction with small cost (``O(#bins)``)
+   
 -  **Reduce memory usage**
 
    -  Can replace continuous values to discrete bins. If ``#bins`` is small, can use small data type, e.g. uint8\_t, to store training data
@@ -45,7 +46,7 @@ Optimization in Accuracy
 Leaf-wise (Best-first) Tree Growth
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Most decision tree learning algorithms grow tree by level(depth)-wise, like the following image:
+Most decision tree learning algorithms grow tree by level (depth)-wise, like the following image:
 
 .. image:: ./_static/images/level-wise.png
    :align: center
@@ -154,7 +155,7 @@ Data Parallel in LightGBM
 
 We reduce communication cost of data parallel in LightGBM:
 
-1. Instead of "Merge global histograms from all local histograms", LightGBM use "Reduce Scatter" to merge histograms of different(non-overlapping) features for different workers.
+1. Instead of "Merge global histograms from all local histograms", LightGBM use "Reduce Scatter" to merge histograms of different (non-overlapping) features for different workers.
    Then workers find local best split on local merged histograms and sync up global best split.
 
 2. As aforementioned, LightGBM use histogram subtraction to speed up training.
