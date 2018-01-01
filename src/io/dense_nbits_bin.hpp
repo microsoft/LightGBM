@@ -11,7 +11,7 @@ namespace LightGBM {
 
 class Dense4bitsBin;
 
-class Dense4bitsBinIterator: public BinIterator {
+class Dense4bitsBinIterator : public BinIterator {
 public:
   explicit Dense4bitsBinIterator(const Dense4bitsBin* bin_data, uint32_t min_bin, uint32_t max_bin, uint32_t default_bin)
     : bin_data_(bin_data), min_bin_(static_cast<uint8_t>(min_bin)),
@@ -25,7 +25,7 @@ public:
   }
   inline uint32_t RawGet(data_size_t idx) override;
   inline uint32_t Get(data_size_t idx) override;
-  inline void Reset(data_size_t) override { }
+  inline void Reset(data_size_t) override {}
 private:
   const Dense4bitsBin* bin_data_;
   uint8_t min_bin_;
@@ -34,7 +34,7 @@ private:
   uint8_t bias_;
 };
 
-class Dense4bitsBin: public Bin {
+class Dense4bitsBin : public Bin {
 public:
   friend Dense4bitsBinIterator;
   Dense4bitsBin(data_size_t num_data)
@@ -70,7 +70,7 @@ public:
   void ReSize(data_size_t num_data) override {
     if (num_data_ != num_data) {
       num_data_ = num_data;
-      int len = (num_data_ + 1) / 2;
+      const int len = (num_data_ + 1) / 2;
       data_.resize(len);
     }
   }
@@ -85,17 +85,17 @@ public:
     data_size_t i = 0;
     for (; i < num_data - rest; i += 4) {
 
-      data_size_t idx = data_indices[i];
-      const auto bin0 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      const data_size_t idx0 = data_indices[i];
+      const auto bin0 = (data_[idx0 >> 1] >> ((idx0 & 1) << 2)) & 0xf;
 
-      idx = data_indices[i + 1];
-      const auto bin1 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      const data_size_t idx1 = data_indices[i + 1];
+      const auto bin1 = (data_[idx1 >> 1] >> ((idx1 & 1) << 2)) & 0xf;
 
-      idx = data_indices[i + 2];
-      const auto bin2 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      const data_size_t idx2 = data_indices[i + 2];
+      const auto bin2 = (data_[idx2 >> 1] >> ((idx2 & 1) << 2)) & 0xf;
 
-      idx = data_indices[i + 3];
-      const auto bin3 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      const data_size_t idx3 = data_indices[i + 3];
+      const auto bin3 = (data_[idx3 >> 1] >> ((idx3 & 1) << 2)) & 0xf;
 
       out[bin0].sum_gradients += ordered_gradients[i];
       out[bin1].sum_gradients += ordered_gradients[i + 1];
@@ -129,12 +129,11 @@ public:
     const data_size_t rest = num_data & 0x3;
     data_size_t i = 0;
     for (; i < num_data - rest; i += 4) {
-      int j = i >> 1;
-      const auto bin0 = (data_[j]) & 0xf;
-      const auto bin1 = (data_[j] >> 4) & 0xf;
-      ++j;
-      const auto bin2 = (data_[j]) & 0xf;
-      const auto bin3 = (data_[j] >> 4) & 0xf;
+
+      const auto bin0 = (data_[i >> 1]) & 0xf;
+      const auto bin1 = (data_[i >> 1] >> 4) & 0xf;
+      const auto bin2 = (data_[(i >> 1) + 1]) & 0xf;
+      const auto bin3 = (data_[(i >> 1) + 1] >> 4) & 0xf;
 
       out[bin0].sum_gradients += ordered_gradients[i];
       out[bin1].sum_gradients += ordered_gradients[i + 1];
@@ -165,17 +164,17 @@ public:
     const data_size_t rest = num_data & 0x3;
     data_size_t i = 0;
     for (; i < num_data - rest; i += 4) {
-      data_size_t idx = data_indices[i];
-      const auto bin0 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      const data_size_t idx0 = data_indices[i];
+      const auto bin0 = (data_[idx0 >> 1] >> ((idx0 & 1) << 2)) & 0xf;
 
-      idx = data_indices[i + 1];
-      const auto bin1 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      const data_size_t idx1 = data_indices[i + 1];
+      const auto bin1 = (data_[idx1 >> 1] >> ((idx1 & 1) << 2)) & 0xf;
 
-      idx = data_indices[i + 2];
-      const auto bin2 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      const data_size_t idx2 = data_indices[i + 2];
+      const auto bin2 = (data_[idx2 >> 1] >> ((idx2 & 1) << 2)) & 0xf;
 
-      idx = data_indices[i + 3];
-      const auto bin3 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      const data_size_t idx3 = data_indices[i + 3];
+      const auto bin3 = (data_[idx3 >> 1] >> ((idx3 & 1) << 2)) & 0xf;
 
       out[bin0].sum_gradients += ordered_gradients[i];
       out[bin1].sum_gradients += ordered_gradients[i + 1];
@@ -202,12 +201,10 @@ public:
     const data_size_t rest = num_data & 0x3;
     data_size_t i = 0;
     for (; i < num_data - rest; i += 4) {
-      int j = i >> 1;
-      const auto bin0 = (data_[j]) & 0xf;
-      const auto bin1 = (data_[j] >> 4) & 0xf;
-      ++j;
-      const auto bin2 = (data_[j]) & 0xf;
-      const auto bin3 = (data_[j] >> 4) & 0xf;
+      const auto bin0 = (data_[i >> 1]) & 0xf;
+      const auto bin1 = (data_[i >> 1] >> 4) & 0xf;
+      const auto bin2 = (data_[(i >> 1) + 1]) & 0xf;
+      const auto bin3 = (data_[(i >> 1) + 1] >> 4) & 0xf;
 
       out[bin0].sum_gradients += ordered_gradients[i];
       out[bin1].sum_gradients += ordered_gradients[i + 1];
