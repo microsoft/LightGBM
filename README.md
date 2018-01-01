@@ -28,7 +28,7 @@ News
 
 08/15/2017 : Optimal split for categorical features.
 
-07/13/2017 : [Gitter](https://gitter.im/Microsoft/LightGBM) is avaiable.
+07/13/2017 : [Gitter](https://gitter.im/Microsoft/LightGBM) is available.
 
 06/20/2017 : Python-package is on [PyPI](https://pypi.python.org/pypi/lightgbm) now.
 
