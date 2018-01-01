@@ -422,7 +422,7 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   CHECK(learning_rate > 0.0f);
   GetInt(params, "early_stopping_round", &early_stopping_round);
   CHECK(early_stopping_round >= 0);
-  GetInt(params, "metric_freq", &output_freq);
+  GetInt(params, "output_freq", &output_freq);
   CHECK(output_freq >= 0);
   GetBool(params, "is_training_metric", &is_provide_training_metric);
   GetInt(params, "num_class", &num_class);

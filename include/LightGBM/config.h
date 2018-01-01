@@ -444,6 +444,7 @@ struct ParameterAlias {
       { "workers", "machines" },
       { "nodes", "machines" },
       { "subsample_for_bin", "bin_construct_sample_cnt" },
+      { "metric_freq", "output_freq" }
     });
     const std::unordered_set<std::string> parameter_set({
       "config", "config_file", "task", "device",
