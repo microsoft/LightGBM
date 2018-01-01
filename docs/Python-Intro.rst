@@ -34,7 +34,7 @@ Data Interface
 
 The LightGBM Python module is able to load data from:
 
--  libsvm/tsv/csv txt format file
+-  libsvm/tsv/csv/txt format file
 
 -  Numpy 2D array, pandas object
 
@@ -91,7 +91,7 @@ In LightGBM, the validation data should be aligned with training data.
     train_data = lgb.Dataset(data, label=label, feature_name=['c1', 'c2', 'c3'], categorical_feature=['c3'])
 
 LightGBM can use categorical features as input directly.
-It doesn't need to covert to one-hot coding, and is much faster than one-hot coding (about 8x speed-up).
+It doesn't need to convert to one-hot coding, and is much faster than one-hot coding (about 8x speed-up).
 
 **Note**: You should convert your categorical features to ``int`` type before you construct ``Dataset``.
 
@@ -116,7 +116,7 @@ And you can use ``Dataset.set_init_score()`` to set initial score, and ``Dataset
 
 The ``Dataset`` object in LightGBM is very memory-efficient, due to it only need to save discrete bins.
 However, Numpy/Array/Pandas object is memory cost.
-If you concern about your memory consumption, you can save memory accroding to following:
+If you concern about your memory consumption, you can save memory according to following:
 
 1. Let ``free_raw_data=True`` (default is ``True``) when constructing the ``Dataset``
 
