@@ -468,7 +468,7 @@ struct ParameterAlias {
       "pred_early_stop_margin", "use_missing", "sigmoid",
       "fair_c", "poission_max_delta_step", "scale_pos_weight",
       "boost_from_average", "max_position", "label_gain",
-      "metric", "metric_freq", "time_out",
+      "metric", "time_out",
       "gpu_platform_id", "gpu_device_id", "gpu_use_dp",
       "convert_model", "convert_model_language",
       "feature_fraction_seed", "enable_bundle", "data_filename", "valid_data_filenames",
