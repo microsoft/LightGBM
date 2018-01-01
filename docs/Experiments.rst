@@ -183,7 +183,7 @@ We use a terabyte click log dataset to conduct parallel experiments. Details are
 This data contains 13 integer features and 26 category features of 24 days click log.
 We statistic the CTR and count for these 26 category features from the first ten days,
 then use next ten days' data, which had been replaced the category features by the corresponding CTR and count, as training data.
-The processed training data hava total 1.7 billions records and 67 features.
+The processed training data have a total of 1.7 billions records and 67 features.
 
 Environment
 ^^^^^^^^^^^
