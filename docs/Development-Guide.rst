@@ -17,7 +17,7 @@ Important Classes
 +=========================+======================================================================================+
 | ``Application``         | The entrance of application, including training and prediction logic                 |
 +-------------------------+--------------------------------------------------------------------------------------+
-| ``Bin``                 | Data structure used for store feature discrete values(converted from float values)   |
+| ``Bin``                 | Data structure used for store feature discrete values (converted from float values)  |
 +-------------------------+--------------------------------------------------------------------------------------+
 | ``Boosting``            | Boosting interface, current implementation is GBDT and DART                          |
 +-------------------------+--------------------------------------------------------------------------------------+
