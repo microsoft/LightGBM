@@ -602,7 +602,7 @@ Metric Parameters
 
    -  support multi metrics, separated by ``,``
 
--  ``metric_freq``, default=\ ``1``, type=int
+-  ``metric_freq``, default=\ ``1``, type=int, alias=\ ``output_freq``
 
    -  frequency for metric output
 
