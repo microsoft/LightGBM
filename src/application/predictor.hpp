@@ -1,9 +1,6 @@
 #ifndef LIGHTGBM_PREDICTOR_HPP_
 #define LIGHTGBM_PREDICTOR_HPP_
 
-#define MAX_FEATURE 10000
-#define SPARSITY 100
-
 #include <LightGBM/meta.h>
 #include <LightGBM/boosting.h>
 #include <LightGBM/utils/text_reader.h>
@@ -63,14 +60,14 @@ public:
     num_pred_one_row_ = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf_index, is_predict_contrib);
     num_feature_ = boosting_->MaxFeatureIdx() + 1;
     predict_buf_ = std::vector<std::vector<double>>(num_threads_, std::vector<double>(num_feature_, 0.0f));
-    predict_buf_map_ = std::vector<std::unordered_map<int, double>>(num_threads_);
+    const int kFeatureThreshold = 20000;
+    const size_t KSparseThreshold = static_cast<size_t>(0.02 * num_feature_);
     if (is_predict_leaf_index) {
-      predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
+      predict_fun_ = [this, kFeatureThreshold, KSparseThreshold](const std::vector<std::pair<int, double>>& features, double* output) {
         int tid = omp_get_thread_num();
-        if (num_feature_ > MAX_FEATURE && num_feature_ / static_cast<int>(features.size()) > SPARSITY) {
-          CopyToPredictMap(tid, features);
-          boosting_->PredictLeafIndexByMap(predict_buf_map_[tid], output);
-          ClearPredictMap(tid);
+        if (num_feature_ > kFeatureThreshold && features.size() < KSparseThreshold) {
+          auto buf = CopyToPredictMap(features);
+          boosting_->PredictLeafIndexByMap(buf, output);
         } else {
           CopyToPredictBuffer(predict_buf_[tid].data(), features);
           // get result for leaf index
@@ -88,12 +85,11 @@ public:
       };
     } else {
       if (is_raw_score) {
-        predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
+        predict_fun_ = [this, kFeatureThreshold, KSparseThreshold](const std::vector<std::pair<int, double>>& features, double* output) {
           int tid = omp_get_thread_num();
-          if (num_feature_ > MAX_FEATURE && num_feature_ / static_cast<int>(features.size()) > SPARSITY) {
-            CopyToPredictMap(tid, features);
-            boosting_->PredictRawByMap(predict_buf_map_[tid], output, &early_stop_);
-            ClearPredictMap(tid);
+          if (num_feature_ > kFeatureThreshold && features.size() < KSparseThreshold) {
+            auto buf = CopyToPredictMap(features);
+            boosting_->PredictRawByMap(buf, output, &early_stop_);
           } else {
             CopyToPredictBuffer(predict_buf_[tid].data(), features);
             boosting_->PredictRaw(predict_buf_[tid].data(), output, &early_stop_);
@@ -101,12 +97,11 @@ public:
           }
         };
       } else {
-        predict_fun_ = [this](const std::vector<std::pair<int, double>>& features, double* output) {
+        predict_fun_ = [this, kFeatureThreshold, KSparseThreshold](const std::vector<std::pair<int, double>>& features, double* output) {
           int tid = omp_get_thread_num();
-          if (num_feature_ > MAX_FEATURE && num_feature_ / static_cast<int>(features.size()) > SPARSITY) {
-            CopyToPredictMap(tid, features);
-            boosting_->PredictByMap(predict_buf_map_[tid], output, &early_stop_);
-            ClearPredictMap(tid);
+          if (num_feature_ > kFeatureThreshold && features.size() < KSparseThreshold) {
+            auto buf = CopyToPredictMap(features);
+            boosting_->PredictByMap(buf, output, &early_stop_);
           } else {
             CopyToPredictBuffer(predict_buf_[tid].data(), features);
             boosting_->Predict(predict_buf_[tid].data(), output, &early_stop_);
@@ -245,17 +240,15 @@ private:
     }
   }
 
-  void CopyToPredictMap(int tid, const std::vector<std::pair<int, double>>& features) {
+  std::unordered_map<int, double> CopyToPredictMap(const std::vector<std::pair<int, double>>& features) {
+    std::unordered_map<int, double> buf;
     int loop_size = static_cast<int>(features.size());
     for (int i = 0; i < loop_size; ++i) {
       if (features[i].first < num_feature_) {
-        predict_buf_map_[tid][features[i].first] = features[i].second;
+        buf[features[i].first] = features[i].second;
       }
     }
-  }
-
-  void ClearPredictMap(int tid) {
-    predict_buf_map_[tid].clear();
+    return std::move(buf);
   }
 
   /*! \brief Boosting model */
@@ -267,7 +260,6 @@ private:
   int num_pred_one_row_;
   int num_threads_;
   std::vector<std::vector<double>> predict_buf_;
-  std::vector<std::unordered_map<int, double>> predict_buf_map_;
 };
 
 }  // namespace LightGBM
