@@ -216,7 +216,7 @@ void Network::AllgatherRing(char* input, const comm_size_t* block_start, const c
   int in_rank = (rank_ - 1 + num_machines_) % num_machines_;
   int out_place = rank_;
   int in_place = in_rank;
-  for (int i = 0; i < num_machines_; ++i) {
+  for (int i = 1; i < num_machines_; ++i) {
     // send and recv at same time
     linkers_->SendRecv(out_rank, output + block_start[out_place], block_len[out_place],
                        in_rank, output + block_start[in_place], block_len[in_place]);
