@@ -762,7 +762,7 @@ You can specific query/group id in data file now. Please refer to parameter ``gr
 
 .. _AUC: https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve
 
-.. _log loss: https://www.kaggle.com/wiki/LogLoss
+.. _log loss: https://en.wikipedia.org/wiki/Cross_entropy
 
 .. _softmax: https://en.wikipedia.org/wiki/Softmax_function
 
