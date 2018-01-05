@@ -235,7 +235,6 @@ void Network::ReduceScatter(char* input, comm_size_t input_size, int type_size,
     return reduce_scatter_ext_fun_(input, input_size, type_size, block_start, block_len, num_machines_, output, output_size, reducer);
   }
   const comm_size_t kRingThreshold = 10 * 1024 * 1024; // 10MB
-  const int kRingNodeThreshold = 64;
   if (recursive_halving_map_.is_power_of_2 || input_size < kRingThreshold) {
     ReduceScatterRecursiveHalving(input, input_size, type_size, block_start, block_len, output, output_size, reducer);
   } else {
