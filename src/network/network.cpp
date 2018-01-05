@@ -303,7 +303,7 @@ void Network::ReduceScatterRing(char* input, comm_size_t, int type_size,
   const int out_rank = (rank_ + 1) % num_machines_;
   const int in_rank = (rank_ - 1 + num_machines_) % num_machines_;
   int out_block = in_rank;
-  int in_block = (in_rank - 1 + num_machines_) % num_machines_;;
+  int in_block = (in_rank - 1 + num_machines_) % num_machines_;
   for (int i = 1; i < num_machines_; ++i) {
     linkers_->SendRecv(out_rank, input + block_start[out_block], block_len[out_block],
                        in_rank, output, block_len[in_block]);
