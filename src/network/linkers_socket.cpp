@@ -163,7 +163,7 @@ void Linkers::ListenThread(int incoming_cnt) {
 void Linkers::Construct() {
   // save ranks that need to connect with
   std::unordered_map<int, int> need_connect;
-  if (recursive_halving_map_.need_pairwise) {
+  if (!recursive_halving_map_.is_power_of_2) {
     for (int i = 0; i < num_machines_; ++i) {
       if (i != rank_) {
         need_connect[i] = 1;
