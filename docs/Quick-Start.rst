@@ -234,7 +234,7 @@ Examples
 
 .. _Quantile regression: https://en.wikipedia.org/wiki/Quantile_regression
 
-.. _log loss: https://www.kaggle.com/wiki/LogLoss
+.. _log loss: https://en.wikipedia.org/wiki/Cross_entropy
 
 .. _softmax: https://en.wikipedia.org/wiki/Softmax_function
 

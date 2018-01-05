@@ -35,17 +35,29 @@ public:
   static BruckMap Construct(int rank, int num_machines);
 };
 
+/*!
+* \brief node type on recursive halving algorithm
+*        When number of machines is not power of 2, need group machines into power of 2 group.
+*        And we can let each group has at most 2 machines.
+*        if the group only has 1 machine. this machine is the normal node
+*        if the group has 2 machines, this group will have two type of nodes, one is the leader.
+*        leader will represent this group and communication with others.
+*/
+enum RecursiveHalvingNodeType {
+  Normal,  // normal node, 1 group only have 1 machine
+  GroupLeader,  // leader of group when number of machines in this group is 2.
+  Other  // non-leader machines in group
+};
+
 /*! \brief Network structure for recursive halving algorithm */
 class RecursiveHalvingMap {
 public:
-  /*! \brief If number workers is powers of 2  */
-  bool is_prof2;
   /*! \brief Communication times for one recursize halving algorithm  */
   int k;
-  /*! \brief Number workers subtract powers of 2  */
-  int num_remain;
-  /*! \brief Virtual rank for recursize halving algorithm  */
-  int virtual_rank;
+  /*! \brief Node type */
+  RecursiveHalvingNodeType type;
+  bool is_power_of_2;
+  int neighbor;
   /*! \brief ranks[i] means the machines that will communicate with on i-th communication*/
   std::vector<int> ranks;
   /*! \brief  send_block_start[i] means send block start index at i-th communication*/
@@ -59,7 +71,7 @@ public:
 
   RecursiveHalvingMap();
 
-  RecursiveHalvingMap(int k, int num_remain, int virtual_rank, bool is_prof2);
+  RecursiveHalvingMap(int k, RecursiveHalvingNodeType _type, bool _is_power_of_2);
 
   /*!
   * \brief Create the object of recursive halving map
@@ -134,13 +146,6 @@ public:
   */
   static void Allgather(char* input, const comm_size_t* block_start, const comm_size_t* block_len, char* output, comm_size_t all_size);
 
-  static void AllgatherBruck(char* input, const comm_size_t* block_start, const comm_size_t* block_len, char* output, comm_size_t all_size);
-
-  static void AllgatherRecursiveDoubling(char* input, const comm_size_t* block_start, const comm_size_t* block_len, char* output, comm_size_t all_size);
-
-  static void AllgatherRing(char* input, const comm_size_t* block_start, const comm_size_t* block_len, char* output, comm_size_t all_size);
-
-
   /*!
   * \brief Perform reduce scatter by using recursive halving algorithm. 
            Communication times is O(log(n)), and communication cost is O(input_size)
@@ -206,6 +211,21 @@ public:
   }
 
 private:
+
+  static void AllgatherBruck(char* input, const comm_size_t* block_start, const comm_size_t* block_len, char* output, comm_size_t all_size);
+
+  static void AllgatherRecursiveDoubling(char* input, const comm_size_t* block_start, const comm_size_t* block_len, char* output, comm_size_t all_size);
+
+  static void AllgatherRing(char* input, const comm_size_t* block_start, const comm_size_t* block_len, char* output, comm_size_t all_size);
+
+  static void ReduceScatterRecursiveHalving(char* input, comm_size_t input_size, int type_size,
+                                            const comm_size_t* block_start, const comm_size_t* block_len, char* output, comm_size_t output_size,
+                                            const ReduceFunction& reducer);
+
+  static void ReduceScatterRing(char* input, comm_size_t input_size, int type_size,
+                                const comm_size_t* block_start, const comm_size_t* block_len, char* output, comm_size_t output_size,
+                                const ReduceFunction& reducer);
+
   /*! \brief Number of all machines */
   static THREAD_LOCAL int num_machines_;
   /*! \brief Rank of local machine */
