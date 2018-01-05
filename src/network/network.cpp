@@ -137,15 +137,16 @@ void Network::Allgather(char* input, const comm_size_t* block_start, const comm_
   if (allgather_ext_fun_ != nullptr) {
     return allgather_ext_fun_(input, block_len[rank_], block_start, block_len, num_machines_, output, all_size);
   }
-  const comm_size_t kRecursiveDoublingThreshold = 1024 * 1024; // 1MB
-  const comm_size_t kBruckThreshold = 512 * 1024; // 512KB
+  const comm_size_t kRingThreshold = 10 * 1024 * 1024; // 10MB
+  const int kRingNodeThreshold = 64;
   const bool is_power_of2 = (num_machines_ & (num_machines_ - 1)) == 0;
-  if (is_power_of2 && all_size < kRecursiveDoublingThreshold) {
-    AllgatherRecursiveDoubling(input, block_start, block_len, output, all_size);
-  } else if (all_size < kBruckThreshold) {
-    AllgatherBruck(input, block_start, block_len, output, all_size);
-  } else {
+  if (all_size > kRingThreshold && num_machines_ < kRingNodeThreshold) {
+    // when num_machines is small and data is large
     AllgatherRing(input, block_start, block_len, output, all_size);
+  } else if (is_power_of2) {
+    AllgatherRecursiveDoubling(input, block_start, block_len, output, all_size);
+  } else {
+    AllgatherBruck(input, block_start, block_len, output, all_size);
   }
 }
 
@@ -232,7 +233,10 @@ void Network::ReduceScatter(char* input, comm_size_t input_size, int type_size, 
   if (reduce_scatter_ext_fun_ != nullptr) {
     return reduce_scatter_ext_fun_(input, input_size, type_size, block_start, block_len, num_machines_, output, output_size, reducer);
   }
-  if (recursive_halving_map_.need_pairwise) {
+  const comm_size_t kRingThreshold = 10 * 1024 * 1024; // 10MB
+  const int kRingNodeThreshold = 64;
+  if (input_size > kRingThreshold && num_machines_ < kRingThreshold) {
+    // ring based solution
     for (int i = 1; i < num_machines_; ++i) {
       int out_rank = (rank_ + i) % num_machines_;
       int in_rank = (rank_ - i + num_machines_) % num_machines_;
@@ -240,29 +244,56 @@ void Network::ReduceScatter(char* input, comm_size_t input_size, int type_size, 
       reducer(output, input + block_start[rank_], type_size, block_len[rank_]);
     }
   } else {
-    for (int i = 0; i < recursive_halving_map_.k; ++i) {
-      // get target
-      int target = recursive_halving_map_.ranks[i];
-      comm_size_t send_block_start = recursive_halving_map_.send_block_start[i];
-      comm_size_t recv_block_start = recursive_halving_map_.recv_block_start[i];
-      // get send information
-      comm_size_t send_size = 0;
-      for (int j = 0; j < recursive_halving_map_.send_block_len[i]; ++j) {
-        send_size += block_len[send_block_start + j];
+    if (!recursive_halving_map_.is_power_of_2) {
+      if (recursive_halving_map_.type == RecursiveHalvingNodeType::Other) {
+        // send local data to neighbor first
+        linkers_->Send(recursive_halving_map_.neighbor, input, input_size);
+      } else if (recursive_halving_map_.type == RecursiveHalvingNodeType::GroupLeader) {
+        // receive neighbor data first
+        int need_recv_cnt = input_size;
+        linkers_->Recv(recursive_halving_map_.neighbor, output, need_recv_cnt);
+        // reduce
+        reducer(output, input, type_size, input_size);
       }
-      // get recv information
-      comm_size_t need_recv_cnt = 0;
-      for (int j = 0; j < recursive_halving_map_.recv_block_len[i]; ++j) {
-        need_recv_cnt += block_len[recv_block_start + j];
-      }
-      // send and recv at same time
-      linkers_->SendRecv(target, input + block_start[send_block_start], send_size, target, output, need_recv_cnt);
-      // reduce
-      reducer(output, input + block_start[recv_block_start], type_size, need_recv_cnt);
     }
+    if (recursive_halving_map_.type != RecursiveHalvingNodeType::Other) {
+      for (int i = 0; i < recursive_halving_map_.k; ++i) {
+        // get target
+        int target = recursive_halving_map_.ranks[i];
+        comm_size_t send_block_start = recursive_halving_map_.send_block_start[i];
+        comm_size_t recv_block_start = recursive_halving_map_.recv_block_start[i];
+        // get send information
+        comm_size_t send_size = 0;
+        for (int j = 0; j < recursive_halving_map_.send_block_len[i]; ++j) {
+          send_size += block_len[send_block_start + j];
+        }
+        // get recv information
+        comm_size_t need_recv_cnt = 0;
+        for (int j = 0; j < recursive_halving_map_.recv_block_len[i]; ++j) {
+          need_recv_cnt += block_len[recv_block_start + j];
+        }
+        // send and recv at same time
+        linkers_->SendRecv(target, input + block_start[send_block_start], send_size, target, output, need_recv_cnt);
+        // reduce
+        reducer(output, input + block_start[recv_block_start], type_size, need_recv_cnt);
+      }
+    }
+    if (!recursive_halving_map_.is_power_of_2) {
+      if (recursive_halving_map_.type == RecursiveHalvingNodeType::GroupLeader) {
+        // send result to neighbor
+        linkers_->Send(recursive_halving_map_.neighbor,
+                       input + block_start[recursive_halving_map_.neighbor],
+                       block_len[recursive_halving_map_.neighbor]);
+      } else if (recursive_halving_map_.type == RecursiveHalvingNodeType::Other) {
+        // receive result from neighbor
+        int need_recv_cnt = block_len[rank_];
+        linkers_->Recv(recursive_halving_map_.neighbor, output, need_recv_cnt);
+        return;
+      }
+    }
+    // copy result
+    std::memcpy(output, input + block_start[rank_], block_len[rank_]);
   }
-  // copy result
-  std::memcpy(output, input + block_start[rank_], block_len[rank_]);
 }
 
 }  // namespace LightGBM
