@@ -48,7 +48,7 @@ RecursiveHalvingMap::RecursiveHalvingMap() {
   num_remain = 0;
 }
 
-RecursiveHalvingMap::RecursiveHalvingMap(int in_k, bool in_need_pairwise) {
+RecursiveHalvingMap::RecursiveHalvingMap(int in_k, int in_remain, int in_rank, bool is_power_of2) {
   k = in_k;
   is_prof2 = is_power_of2;
   num_remain = in_remain;
