@@ -38,9 +38,14 @@ public:
 /*! \brief Network structure for recursive halving algorithm */
 class RecursiveHalvingMap {
 public:
-  bool need_pairwise;
+  /*! \brief If number workers is powers of 2  */
+  bool is_prof2;
   /*! \brief Communication times for one recursize halving algorithm  */
   int k;
+  /*! \brief Number workers subtract powers of 2  */
+  int num_remain;
+  /*! \brief Virtual rank for recursize halving algorithm  */
+  int virtual_rank;
   /*! \brief ranks[i] means the machines that will communicate with on i-th communication*/
   std::vector<int> ranks;
   /*! \brief  send_block_start[i] means send block start index at i-th communication*/
@@ -54,7 +59,7 @@ public:
 
   RecursiveHalvingMap();
 
-  RecursiveHalvingMap(int k, bool in_need_pairwise);
+  RecursiveHalvingMap(int k, int num_remain, int virtual_rank, bool is_prof2);
 
   /*!
   * \brief Create the object of recursive halving map
