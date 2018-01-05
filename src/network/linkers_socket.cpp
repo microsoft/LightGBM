@@ -163,22 +163,11 @@ void Linkers::ListenThread(int incoming_cnt) {
 void Linkers::Construct() {
   // save ranks that need to connect with
   std::unordered_map<int, int> need_connect;
-  if (!recursive_halving_map_.is_power_of_2) {
-    for (int i = 0; i < num_machines_; ++i) {
-      if (i != rank_) {
-        need_connect[i] = 1;
-      }
-    }
-  } else {
-    for (int i = 0; i < bruck_map_.k; ++i) {
-      need_connect[bruck_map_.out_ranks[i]] = 1;
-      need_connect[bruck_map_.in_ranks[i]] = 1;
-    }
-    for (int i = 0; i < recursive_halving_map_.k; ++i) {
-      need_connect[recursive_halving_map_.ranks[i]] = 1;
+  for (int i = 0; i < num_machines_; ++i) {
+    if (i != rank_) {
+      need_connect[i] = 1;
     }
   }
-
   int need_connect_cnt = 0;
   int incoming_cnt = 0;
   for (auto it = need_connect.begin(); it != need_connect.end(); ++it) {
