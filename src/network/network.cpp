@@ -139,11 +139,10 @@ void Network::Allgather(char* input, const comm_size_t* block_start, const comm_
   }
   const comm_size_t kRingThreshold = 10 * 1024 * 1024; // 10MB
   const int kRingNodeThreshold = 64;
-  const bool is_power_of2 = (num_machines_ & (num_machines_ - 1)) == 0;
   if (all_size > kRingThreshold && num_machines_ < kRingNodeThreshold) {
     // when num_machines is small and data is large
     AllgatherRing(input, block_start, block_len, output, all_size);
-  } else if (is_power_of2) {
+  } else if (recursive_halving_map_.is_power_of_2) {
     AllgatherRecursiveDoubling(input, block_start, block_len, output, all_size);
   } else {
     AllgatherBruck(input, block_start, block_len, output, all_size);
@@ -237,10 +236,10 @@ void Network::ReduceScatter(char* input, comm_size_t input_size, int type_size,
   }
   const comm_size_t kRingThreshold = 10 * 1024 * 1024; // 10MB
   const int kRingNodeThreshold = 64;
-  if (input_size > kRingThreshold) {
-    ReduceScatterRing(input, input_size, type_size, block_start, block_len, output, output_size, reducer);
-  } else {
+  if (recursive_halving_map_.is_power_of_2 || input_size < kRingThreshold) {
     ReduceScatterRecursiveHalving(input, input_size, type_size, block_start, block_len, output, output_size, reducer);
+  } else {
+    ReduceScatterRing(input, input_size, type_size, block_start, block_len, output, output_size, reducer);
   }
 }
 
