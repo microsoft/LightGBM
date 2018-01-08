@@ -397,8 +397,9 @@ Now that you compiled LightGBM, you try it... and you always see a segmentation 
    :align: center
    :target: ./_static/images/screenshot-segmentation-fault.png
 
-Please check you are using the right device and whether it works with the default ``gpu_device_id = 0`` and ``gpu_platform_id = 0``.
-If it still does not work with the default values, then you should follow all the steps below.
+Please check if you are using the right device (``Using GPU device: ...``). You can find a list of your OpenCL devices using `GPUCapsViewer`_, and make sure you are using a discrete (AMD/NVIDIA) GPU if you have both integrated (Intel) and discrete GPUs installed. 
+Also, try to set ``gpu_device_id = 0`` and ``gpu_platform_id = 0`` or ``gpu_device_id = -1`` and ``gpu_platform_id = -1`` to use the first platform and device or the default platform and device.
+If it still does not work, then you should follow all the steps below.
 
 You will have to redo the compilation steps for LightGBM to add debugging mode. This involves:
 
@@ -582,3 +583,6 @@ And open an issue in GitHub `here`_ with that log.
 .. _CMake: https://cmake.org/download/
 
 .. _here: https://github.com/Microsoft/LightGBM/issues
+
+.. _GPUCapsViewer: http://www.ozone3d.net/gpu_caps_viewer/
+
