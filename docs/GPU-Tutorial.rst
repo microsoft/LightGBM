@@ -126,7 +126,8 @@ Now we create a configuration file for LightGBM by running the following command
     echo "num_threads=$(nproc)" >> lightgbm_gpu.conf
 
 GPU is enabled in the configuration file we just created by setting ``device=gpu``.
-It will use the first GPU installed on the system by default (``gpu_platform_id=0`` and ``gpu_device_id=0``).
+In this configuration we use the first GPU installed on the system (``gpu_platform_id=0`` and ``gpu_device_id=0``). If ``gpu_platform_id`` or ``gpu_device_id`` is not set, the default platform and GPU will be selected.
+You might have multiple platforms (AMD/Intel/NVIDIA) or GPUs. You can use the `clinfo`_ utility to identify the GPUs on each platform. On Ubuntu, you can install ``clinfo`` by executing ``sudo apt-get install clinfo``. If you have a discrete GPU by AMD/NVIDIA and an integrated GPU by Intel, make sure to select the correct ``gpu_platform_id`` to use the discrete GPU.
 
 Run Your First Learning Task on GPU
 -----------------------------------
@@ -196,3 +197,5 @@ Huan Zhang, Si Si and Cho-Jui Hsieh. "`GPU Acceleration for Large-scale Tree Boo
 .. _Python Package Examples: https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide
 
 .. _GPU Acceleration for Large-scale Tree Boosting: https://arxiv.org/abs/1706.08359
+
+.. _clinfo: https://github.com/Oblomov/clinfo
