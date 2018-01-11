@@ -14,6 +14,7 @@
 #include <string>
 #include <fstream>
 #include <chrono>
+#include <algorithm>
 
 namespace LightGBM {
 
@@ -75,6 +76,7 @@ public:
     is_use_subset_ = false;
     if (gbdt_config_->top_rate + gbdt_config_->other_rate <= 0.5) {
       auto bag_data_cnt = static_cast<data_size_t>((gbdt_config_->top_rate + gbdt_config_->other_rate) * num_data_);
+      bag_data_cnt = std::max(1, bag_data_cnt);
       tmp_subset_.reset(new Dataset(bag_data_cnt));
       tmp_subset_->CopyFeatureMapperFrom(train_data_);
       is_use_subset_ = true;
