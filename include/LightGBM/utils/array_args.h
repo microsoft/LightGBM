@@ -133,7 +133,8 @@ public:
     int l = start;
     int r = end - 1;
     Partition(arr, start, end, &l, &r);
-    if ((k > l && k < r) || l == 0 || r == end - 1) {
+    // if find or all elements are the same.
+    if ((k > l && k < r) || (l == start - 1 && r == end - 1)) {
       return k;
     } else if (k <= l) {
       return ArgMaxAtK(arr, start, l + 1, k);
