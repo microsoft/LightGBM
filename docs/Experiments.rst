@@ -9,7 +9,7 @@ For the detailed experiment scripts and output logs, please refer to this `repo`
 Data
 ^^^^
 
-We use 4 datasets to conduct our comparison experiments. Details of data are listed in the following table:
+We use 5 datasets to conduct our comparison experiments. Details of data are listed in the following table:
 
 +-------------+-------------------------+------------------------------------------------------------------------+-------------------+----------------+---------------------------------------------+
 | **Data**    | **Task**                | **Link**                                                               | **#Train\_Set**   | **#Feature**   | **Comments**                                |
