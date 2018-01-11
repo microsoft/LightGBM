@@ -32,7 +32,6 @@ public:
   }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
-    std::stringstream str_buf;
     for (auto k : eval_at_) {
       name_.emplace_back(std::string("map@") + std::to_string(k));
     }
