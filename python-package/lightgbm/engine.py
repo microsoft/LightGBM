@@ -222,7 +222,7 @@ def train(params, train_set, num_boost_round=100,
     for dataset_name, eval_name, score, _ in evaluation_result_list:
         booster.best_score[dataset_name][eval_name] = score
     if not keep_training_booster:
-        booster._load_model_from_string(booster._save_model_to_string())
+        booster._load_model_from_string(booster._save_model_to_string(), False)
         booster.free_dataset()
     return booster
 

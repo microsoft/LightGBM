@@ -458,8 +458,6 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
     }
     OMP_THROW_EX();
   }
-
-  Log::Info("Finished loading %d models", models_.size());
   num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
   num_init_iteration_ = num_iteration_for_pred_;
   iter_ = 0;

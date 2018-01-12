@@ -1651,7 +1651,7 @@ class Booster(object):
             c_str(filename)))
         _save_pandas_categorical(filename, self.pandas_categorical)
 
-    def _load_model_from_string(self, model_str):
+    def _load_model_from_string(self, model_str, verbose=True):
         """[Private] Load model from string"""
         if self.handle is not None:
             _safe_call(_LIB.LGBM_BoosterFree(self.handle))
@@ -1666,6 +1666,8 @@ class Booster(object):
         _safe_call(_LIB.LGBM_BoosterGetNumClasses(
             self.handle,
             ctypes.byref(out_num_class)))
+        if verbose:
+            print('Finished loading model, total used %d iterations' % (int(out_num_iterations.value)))
         self.__num_class = out_num_class.value
 
     def _save_model_to_string(self, num_iteration=-1):
