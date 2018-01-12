@@ -195,6 +195,12 @@
     <ClInclude Include="..\src\boosting\rf.hpp">
       <Filter>src\boosting</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\objective\xentropy_objective.hpp">
+      <Filter>src\objective</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\metric\xentropy_metric.hpp">
+      <Filter>src\metric</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp">
