@@ -301,27 +301,9 @@ double ObtainAutomaticInitialScore(const ObjectiveFunction* fobj) {
     init_score = fobj->BoostFromScore();
   }
   if (Network::num_machines() > 1) {
-    double global_init_score = 0.0f;
-    Network::Allreduce(reinterpret_cast<char*>(&init_score),
-                       sizeof(init_score), sizeof(init_score),
-                       reinterpret_cast<char*>(&global_init_score),
-                       [](const char* src, char* dst, int type_size, comm_size_t len) {
-      comm_size_t used_size = 0;
-      const double *p1;
-      double *p2;
-      while (used_size < len) {
-        p1 = reinterpret_cast<const double *>(src);
-        p2 = reinterpret_cast<double *>(dst);
-        *p2 += *p1;
-        src += type_size;
-        dst += type_size;
-        used_size += type_size;
-      }
-    });
-    return global_init_score / Network::num_machines();
-  } else {
-    return init_score;
+    init_score = Network::GlobalSyncUpByMean(init_score);
   }
+  return init_score;
 }
 
 void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
