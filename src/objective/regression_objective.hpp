@@ -431,7 +431,7 @@ public:
   }
 
   double BoostFromScore() const override {
-    const int pos = std::max(1, static_cast<int>(alpha_ * num_data_));
+    const int pos = std::max(1, static_cast<int>((1.0f - alpha_) * num_data_));
     if (weights_ != nullptr) {
       // To-Do: Weighted CDF solution.
       std::vector<double> deltas(num_data_);
@@ -462,7 +462,7 @@ public:
         deltas[i] = delta;
       }
     }
-    const int pos = std::max(1, static_cast<int>(alpha_ * num_data_in_leaf));
+    const int pos = std::max(1, static_cast<int>((1.0f - alpha_) * num_data_in_leaf));
     ArrayArgs<double>::ArgMaxAtK(&deltas, 0, num_data_in_leaf, pos);
     return deltas[pos - 1];
   }
