@@ -5,6 +5,7 @@
 
 #include <LightGBM/objective_function.h>
 #include <LightGBM/utils/common.h>
+#include <LightGBM/utils/array_args.h>
 
 namespace LightGBM {
 
@@ -35,7 +36,7 @@ public:
     if (sqrt_) {
       trans_label_.resize(num_data_);
       for (data_size_t i = 0; i < num_data; ++i) {
-        trans_label_[i] = std::copysign(std::sqrt(std::fabs(label_[i])), label_[i]);
+        trans_label_[i] = Common::Sign(label_[i]) * std::sqrt(std::fabs(label_[i]));
       }
       label_ = trans_label_.data();
     }
@@ -65,7 +66,7 @@ public:
 
   void ConvertOutput(const double* input, double* output) const override {
     if (sqrt_) {
-      output[0] = std::copysign(input[0] * input[0], input[0]);
+      output[0] = Common::Sign(input[0]) * input[0] * input[0];
     } else {
       output[0] = input[0];
     }
@@ -88,12 +89,23 @@ public:
     }
   }
 
-  bool BoostFromAverage() const override { 
-    if (sqrt_) {
-      return false;
+  double BoostFromScore() const override {
+    double suml = 0.0f;
+    double sumw = 0.0f;
+    if (weights_ != nullptr) {
+      #pragma omp parallel for schedule(static) reduction(+:suml,sumw)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        suml += label_[i] * weights_[i];
+        sumw += weights_[i];
+      }
     } else {
-      return true;
+      sumw = static_cast<double>(num_data_);
+      #pragma omp parallel for schedule(static) reduction(+:suml)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        suml += label_[i];
+      }
     }
+    return suml / sumw;
   }
 
 protected:
@@ -128,25 +140,54 @@ public:
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
-        if (diff >= 0.0f) {
-          gradients[i] = 1.0f;
-        } else {
-          gradients[i] = -1.0f;
-        }
-        hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], eta_));
+        gradients[i] = static_cast<score_t>(Common::Sign(diff));
+        hessians[i] = 1.0f;
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
-        if (diff >= 0.0f) {
-          gradients[i] = static_cast<score_t>(weights_[i]);
-        } else {
-          gradients[i] = static_cast<score_t>(-weights_[i]);
-        }
-        hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], eta_, weights_[i]));
+        gradients[i] = static_cast<score_t>(Common::Sign(diff) * weights_[i]);
+        hessians[i] = weights_[i];
       }
     }
+  }
+
+  double BoostFromScore() const override {
+    const int pos = std::max(1, static_cast<int>(0.5 * num_data_));
+    if (weights_ != nullptr) {
+      // To-Do: Weighted CDF solution.
+      std::vector<double> deltas(num_data_);
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        deltas[i] = label_[i] * weights_[i];
+      }
+      ArrayArgs<double>::ArgMaxAtK(&deltas, 0, num_data_, pos);
+      return deltas[pos - 1];
+    } else {
+      std::vector<label_t> deltas(label_, label_ + num_data_);
+      ArrayArgs<label_t>::ArgMaxAtK(&deltas, 0, num_data_, pos);
+      return deltas[pos - 1];
+    }
+  }
+
+  bool IsRenewTreeOutput() const override { return true; }
+
+  double RenewTreeOutput(double, const double* pred,
+                         const std::function<data_size_t(data_size_t)>& index_mapper, data_size_t num_data_in_leaf) const override {
+    std::vector<double> deltas(num_data_in_leaf);
+    for (data_size_t i = 0; i < num_data_in_leaf; ++i) {
+      data_size_t idx = index_mapper(i);
+      const double delta = label_[idx] - pred[idx];
+      if (weights_ != nullptr) {
+        // To-Do: Weighted CDF solution.
+        deltas[i] = weights_[idx] * delta;
+      } else {
+        deltas[i] = delta;
+      }
+    }
+    const int pos = std::max(1, static_cast<int>(0.5 * num_data_in_leaf));
+    ArrayArgs<double>::ArgMaxAtK(&deltas, 0, num_data_in_leaf, pos);
+    return deltas[pos - 1];
   }
 
   const char* GetName() const override {
@@ -184,35 +225,23 @@ public:
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
-
         if (std::abs(diff) <= alpha_) {
           gradients[i] = static_cast<score_t>(diff);
-          hessians[i] = 1.0f;
         } else {
-          if (diff >= 0.0f) {
-            gradients[i] = static_cast<score_t>(alpha_);
-          } else {
-            gradients[i] = static_cast<score_t>(-alpha_);
-          }
-          hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], eta_));
+          gradients[i] = static_cast<score_t>(Common::Sign(diff) * alpha_);
         }
+        hessians[i] = 1.0f;
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
-
         if (std::abs(diff) <= alpha_) {
           gradients[i] = static_cast<score_t>(diff * weights_[i]);
-          hessians[i] = static_cast<score_t>(weights_[i]);
         } else {
-          if (diff >= 0.0f) {
-            gradients[i] = static_cast<score_t>(alpha_ * weights_[i]);
-          } else {
-            gradients[i] = static_cast<score_t>(-alpha_ * weights_[i]);
-          }
-          hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], eta_, weights_[i]));
+          gradients[i] = static_cast<score_t>(Common::Sign(diff) * weights_[i] * alpha_);
         }
+        hessians[i] = static_cast<score_t>(weights_[i]);
       }
     }
   }
@@ -345,25 +374,8 @@ public:
     return "poisson";
   }
 
-  bool GetCustomAverage(double *initscore) const override {
-    if (initscore == nullptr) return false;
-    double sumw = 0.0f;
-    double sumy = 0.0f;
-    if (weights_ == nullptr) {
-      for (data_size_t i = 0; i < num_data_; i++) {
-        sumy += label_[i];
-      }
-      sumw = static_cast<double>(num_data_);
-    } else {
-      for (data_size_t i = 0; i < num_data_; i++) {
-        sumy += weights_[i] * label_[i];
-        sumw += weights_[i];
-      }
-    }
-    const double yavg = sumy / sumw;
-    *initscore = std::log(yavg);
-    Log::Info("[%s:%s]: yavg=%f -> initscore=%f",  GetName(), __func__, yavg, *initscore);
-    return true;
+  double BoostFromScore() const override {
+    return std::log(RegressionL2loss::BoostFromScore());
   }
 
   bool IsConstantHessian() const override {
@@ -418,58 +430,41 @@ public:
     return "quantile";
   }
 
-private:
-  score_t alpha_;
-};
-
-class RegressionQuantileL2loss : public RegressionL2loss {
-public:
-  explicit RegressionQuantileL2loss(const ObjectiveConfig& config) : RegressionL2loss(config) {
-    alpha_ = static_cast<score_t>(config.alpha);
-  }
-
-  explicit RegressionQuantileL2loss(const std::vector<std::string>& strs) : RegressionL2loss(strs) {
-
-  }
-
-  ~RegressionQuantileL2loss() {}
-
-  void GetGradients(const double* score, score_t* gradients,
-                    score_t* hessians) const override {
-    if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static)
+  double BoostFromScore() const override {
+    const int pos = std::max(1, static_cast<int>(alpha_ * num_data_));
+    if (weights_ != nullptr) {
+      // To-Do: Weighted CDF solution.
+      std::vector<double> deltas(num_data_);
       for (data_size_t i = 0; i < num_data_; ++i) {
-        score_t delta = static_cast<score_t>(score[i] - label_[i]);
-        if (delta > 0) {
-          gradients[i] = (1.0f - alpha_) * delta;
-          hessians[i] = (1.0f - alpha_);
-        } else {
-          gradients[i] = alpha_ * delta;
-          hessians[i] = alpha_;
-        }
-
+        deltas[i] = label_[i] * weights_[i];
       }
+      ArrayArgs<double>::ArgMaxAtK(&deltas, 0, num_data_, pos);
+      return deltas[pos - 1];
     } else {
-      #pragma omp parallel for schedule(static)
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        score_t delta = static_cast<score_t>(score[i] - label_[i]);
-        if (delta > 0) {
-          gradients[i] = static_cast<score_t>((1.0f - alpha_) * delta * weights_[i]);
-          hessians[i] = static_cast<score_t>((1.0f - alpha_) * weights_[i]);
-        } else {
-          gradients[i] = static_cast<score_t>(alpha_ * delta * weights_[i]);
-          hessians[i] = static_cast<score_t>(alpha_ * weights_[i]);
-        }
-      }
+      std::vector<label_t> deltas(label_, label_ + num_data_);
+      ArrayArgs<label_t>::ArgMaxAtK(&deltas, 0, num_data_, pos);
+      return deltas[pos - 1];
     }
   }
 
-  bool IsConstantHessian() const override {
-    return false;
-  }
+  bool IsRenewTreeOutput() const override { return true; }
 
-  const char* GetName() const override {
-    return "quantile_l2";
+  double RenewTreeOutput(double, const double* pred,
+                         const std::function<data_size_t(data_size_t)>& index_mapper, data_size_t num_data_in_leaf) const override {
+    std::vector<double> deltas(num_data_in_leaf);
+    for (data_size_t i = 0; i < num_data_in_leaf; ++i) {
+      data_size_t idx = index_mapper(i);
+      const double delta = label_[idx] - pred[idx];
+      if (weights_ != nullptr) {
+        // To-Do: Weighted CDF solution.
+        deltas[i] = weights_[idx] * delta;
+      } else {
+        deltas[i] = delta;
+      }
+    }
+    const int pos = std::max(1, static_cast<int>(alpha_ * num_data_in_leaf));
+    ArrayArgs<double>::ArgMaxAtK(&deltas, 0, num_data_in_leaf, pos);
+    return deltas[pos - 1];
   }
 
 private:

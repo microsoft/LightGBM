@@ -205,9 +205,21 @@ Support following metrics:
 
 -  NDCG
 
+-  MAP
+
 -  Multi class log loss
 
 -  Multi class error rate
+
+-  Fair
+
+-  Huber
+
+-  Poisson
+
+-  Quantile
+
+-  kullback Leibler
 
 For more details, please refer to `Parameters <./Parameters.rst#metric-parameters>`__.
 

@@ -303,10 +303,8 @@ public:
   * \return leaf output
   */
   static double CalculateSplittedLeafOutput(double sum_gradients, double sum_hessians, double l1, double l2) {
-    double abs_sum_gradients = std::fabs(sum_gradients);
-    double reg_abs_sum_gradients = std::max(0.0, abs_sum_gradients - l1);
-    return -std::copysign(reg_abs_sum_gradients, sum_gradients)
-      / (sum_hessians + l2);
+    const double reg_abs_sum_gradients = std::max(0.0, std::fabs(sum_gradients) - l1);
+    return -(Common::Sign(sum_gradients) * reg_abs_sum_gradients) / (sum_hessians + l2);
   }
 
 private:
