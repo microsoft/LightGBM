@@ -7,8 +7,6 @@
 #include <LightGBM/tree_learner.h>
 #include <LightGBM/dataset.h>
 #include <LightGBM/tree.h>
-#include <LightGBM/network.h>
-#include <LightGBM/objective_function.h>
 
 #include "feature_histogram.hpp"
 #include "split_info.hpp"
@@ -69,68 +67,7 @@ public:
   }
 
   void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, const double* prediction,
-                       data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
-    if (obj != nullptr && obj->IsRenewTreeOutput()) {
-      CHECK(tree->num_leaves() <= data_partition_->num_leaves());
-      if (Network::num_machines() <= 1) {
-        // Didn't use subset
-        if (total_num_data == num_data_) {
-          #pragma omp parallel for schedule(static)
-          for (int i = 0; i < tree->num_leaves(); ++i) {
-            const double output = static_cast<double>(tree->LeafOutput(i));
-            data_size_t cnt_leaf_data = 0;
-            auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
-            if (cnt_leaf_data <= 0) { continue; }
-            auto get_delta_fun = [tmp_idx](data_size_t i) {
-              return tmp_idx[i];
-            };
-            const double new_output = obj->RenewTreeOutput(output, prediction, get_delta_fun, cnt_leaf_data);
-            tree->SetLeafOutput(i, new_output);
-          }
-        } else {
-          CHECK(bag_cnt == num_data_);
-          #pragma omp parallel for schedule(static)
-          for (int i = 0; i < tree->num_leaves(); ++i) {
-            const double output = static_cast<double>(tree->LeafOutput(i));
-            data_size_t cnt_leaf_data = 0;
-            auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
-            if (cnt_leaf_data <= 0) { continue; }
-            auto get_delta_fun = [tmp_idx, bag_indices](data_size_t i) {
-              return bag_indices[tmp_idx[i]];
-            };
-            const double new_output = obj->RenewTreeOutput(output, prediction, get_delta_fun, cnt_leaf_data);
-            tree->SetLeafOutput(i, new_output);
-          }
-        }
-      } else {
-        const bool use_subset = (total_num_data == num_data_);
-        if (use_subset) {
-          CHECK(bag_cnt == num_data_);
-        }
-        for (int i = 0; i < tree->num_leaves(); ++i) {
-          const double output = static_cast<double>(tree->LeafOutput(i));
-          data_size_t cnt_leaf_data = 0;
-          auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
-          CHECK(cnt_leaf_data > 0);
-          double new_output = output;
-          if (!use_subset) {
-            auto get_delta_fun = [tmp_idx](data_size_t i) {
-              return tmp_idx[i];
-            };
-            obj->RenewTreeOutput(output, prediction, get_delta_fun, cnt_leaf_data);
-          } else {
-            auto get_delta_fun = [tmp_idx, bag_indices](data_size_t i) {
-              return bag_indices[tmp_idx[i]];
-            };
-            obj->RenewTreeOutput(output, prediction, get_delta_fun, cnt_leaf_data);
-          }
-          // sync global mean
-          new_output = Network::GlobalSyncUpByMean(new_output);
-          tree->SetLeafOutput(i, new_output);
-        }
-      }
-    }
-  }
+                       data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
 
 protected:
   /*!
