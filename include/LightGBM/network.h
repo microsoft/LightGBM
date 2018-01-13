@@ -212,7 +212,7 @@ public:
 
   template<class T>
   static T GlobalSyncUpByMean(T& local) {
-    T global = local;
+    T global = (T)0;
     Allreduce(reinterpret_cast<char*>(&local),
               sizeof(local), sizeof(local),
               reinterpret_cast<char*>(&global),
