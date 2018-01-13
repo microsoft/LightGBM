@@ -601,9 +601,9 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
           const double output = static_cast<double>(tree->LeafOutput(i));
           data_size_t cnt_leaf_data = 0;
           auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
-          if (cnt_leaf_data <= 0) { continue; }
-          auto get_delta_fun = [tmp_idx](data_size_t i) {
-            return tmp_idx[i];
+          CHECK(cnt_leaf_data > 0);
+          auto get_delta_fun = [tmp_idx](data_size_t j) {
+            return tmp_idx[j];
           };
           const double new_output = obj->RenewTreeOutput(output, prediction, get_delta_fun, cnt_leaf_data);
           tree->SetLeafOutput(i, new_output);
@@ -615,16 +615,16 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
           const double output = static_cast<double>(tree->LeafOutput(i));
           data_size_t cnt_leaf_data = 0;
           auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
-          if (cnt_leaf_data <= 0) { continue; }
-          auto get_delta_fun = [tmp_idx, bag_indices](data_size_t i) {
-            return bag_indices[tmp_idx[i]];
+          CHECK(cnt_leaf_data > 0);
+          auto get_delta_fun = [tmp_idx, bag_indices](data_size_t j) {
+            return bag_indices[tmp_idx[j]];
           };
           const double new_output = obj->RenewTreeOutput(output, prediction, get_delta_fun, cnt_leaf_data);
           tree->SetLeafOutput(i, new_output);
         }
       }
     } else {
-      const bool use_subset = (total_num_data == num_data_);
+      const bool use_subset = (total_num_data != num_data_);
       if (use_subset) {
         CHECK(bag_cnt == num_data_);
       }
@@ -640,8 +640,8 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
           };
           obj->RenewTreeOutput(output, prediction, get_delta_fun, cnt_leaf_data);
         } else {
-          auto get_delta_fun = [tmp_idx, bag_indices](data_size_t i) {
-            return bag_indices[tmp_idx[i]];
+          auto get_delta_fun = [tmp_idx, bag_indices](data_size_t j) {
+            return bag_indices[tmp_idx[j]];
           };
           obj->RenewTreeOutput(output, prediction, get_delta_fun, cnt_leaf_data);
         }
