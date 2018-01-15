@@ -907,14 +907,14 @@ static T WeightedPercentile(const std::function<T(int)>& data, const std::functi
     weighted_cdf[i] = weighted_cdf[i - 1] + weight(sorted_idx[i]);
   }
   double threshold = weighted_cdf[data_size - 1] * alpha;
-  size_t pos = std::lower_bound(weighted_cdf.begin(), weighted_cdf.end(), threshold) - weighted_cdf.begin();
-  CHECK(threshold >= weighted_cdf[pos]);
-  if (pos == data_size - 1) {
-    return data(sorted_idx[data_size - 1]);
+  size_t pos = std::upper_bound(weighted_cdf.begin(), weighted_cdf.end(), threshold) - weighted_cdf.begin();
+  if (pos == 0) {
+    return data(sorted_idx[0]);
   }
-  CHECK(threshold < weighted_cdf[pos + 1]);
-  T v1 = data(sorted_idx[pos]);
-  T v2 = data(sorted_idx[pos + 1]);
+  CHECK(threshold >= weighted_cdf[pos - 1]);
+  CHECK(threshold < weighted_cdf[pos]);
+  T v1 = data(sorted_idx[pos - 1]);
+  T v2 = data(sorted_idx[pos]);
   return static_cast<T>((threshold - weighted_cdf[pos]) / (weighted_cdf[pos + 1] - weighted_cdf[pos]) * (v2 - v1) + v1);
 }
 
