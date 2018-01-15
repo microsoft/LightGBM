@@ -3,7 +3,6 @@
 
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
-#include <LightGBM/utils/array_args.h>
 
 #include <cstdio>
 #include <string>
@@ -865,61 +864,6 @@ inline static const char* SkipNewLine(const char* str) {
 template <typename T>
 static int Sign(T x) {
   return (x > T(0)) - (x < T(0));
-}
-
-template <typename T>
-static T Percentile(const std::function<T(int)>& data, int data_size, double alpha) {
-  // To-Do: speed up.
-  std::vector<T> ref_data(data_size);
-  for (int i = 0; i < data_size; ++i) {
-    ref_data[i] = data(i);
-  }
-  const double float_pos = (1.0f - alpha) * data_size;
-  const int pos = static_cast<int>(float_pos);
-  if (pos < 1) {
-    return ref_data[ArrayArgs<T>::ArgMax(ref_data)];
-  } else if (pos >= data_size) {
-    return ref_data[ArrayArgs<T>::ArgMin(ref_data)];
-  } else {
-    const double bias = float_pos - pos;
-    if (pos > data_size / 2) {
-      ArrayArgs<T>::ArgMaxAtK(&ref_data, 0, data_size, pos - 1);
-      T v1 = ref_data[pos - 1];
-      T v2 = ref_data[pos + ArrayArgs<T>::ArgMax(ref_data.data() + pos, data_size - pos)];
-      return static_cast<T>(v1 - (v1 - v2) * bias);
-    } else {
-      ArrayArgs<T>::ArgMaxAtK(&ref_data, 0, data_size, pos);
-      T v2 = ref_data[pos];
-      T v1 = ref_data[ArrayArgs<T>::ArgMin(ref_data.data(), pos)];
-      return static_cast<T>(v1 - (v1 - v2) * bias);
-    }
-  }
-}
-
-template <typename T, typename T2>
-static T WeightedPercentile(const std::function<T(int)>& data, const std::function<T2(int)>& weight,
-                            int data_size, double alpha) {
-  // To-Do: speed up.
-  std::vector<int> sorted_idx(data_size);
-  for (int i = 0; i < data_size; ++i) {
-    sorted_idx[i] = i;
-  }
-  std::sort(sorted_idx.begin(), sorted_idx.end(), [data](int a, int b) {return data(a) < data(b); });
-  std::vector<double> weighted_cdf(data_size);
-  weighted_cdf[0] = weight(sorted_idx[0]);
-  for (int i = 1; i < data_size; ++i) {
-    weighted_cdf[i] = weighted_cdf[i - 1] + weight(sorted_idx[i]);
-  }
-  double threshold = weighted_cdf[data_size - 1] * alpha;
-  size_t pos = std::upper_bound(weighted_cdf.begin(), weighted_cdf.end(), threshold) - weighted_cdf.begin();
-  if (pos == 0) {
-    return data(sorted_idx[0]);
-  }
-  CHECK(threshold >= weighted_cdf[pos - 1]);
-  CHECK(threshold < weighted_cdf[pos]);
-  T v1 = data(sorted_idx[pos - 1]);
-  T v2 = data(sorted_idx[pos]);
-  return static_cast<T>((threshold - weighted_cdf[pos]) / (weighted_cdf[pos + 1] - weighted_cdf[pos]) * (v2 - v1) + v1);
 }
 
 }  // namespace Common

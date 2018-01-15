@@ -38,7 +38,9 @@ public:
   virtual bool IsRenewTreeOutput() const { return false; }
 
   virtual double RenewTreeOutput(double ori_output, const double*,
-                                 const std::function<data_size_t(data_size_t)>&, data_size_t) const { return ori_output; }
+                                 const data_size_t*,
+                                 const data_size_t*,
+                                 data_size_t) const { return ori_output; }
 
   virtual double BoostFromScore() const { return 0.0f; }
 

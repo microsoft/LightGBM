@@ -232,6 +232,30 @@ public:
     return static_cast<T>(global / num_machines_);
   }
 
+  template<class T>
+  static void GlobalSum(std::vector<T>& local) {
+    std::vector<T> global;
+    Allreduce(reinterpret_cast<char*>(local.data()),
+              static_cast<comm_size_t>(sizeof(T) * local.size()), sizeof(T),
+              reinterpret_cast<char*>(global.data()),
+              [](const char* src, char* dst, int type_size, comm_size_t len) {
+      comm_size_t used_size = 0;
+      const T *p1;
+      T *p2;
+      while (used_size < len) {
+        p1 = reinterpret_cast<const T *>(src);
+        p2 = reinterpret_cast<T *>(dst);
+        *p2 += *p1;
+        src += type_size;
+        dst += type_size;
+        used_size += type_size;
+      }
+    });
+    for (size_t i = 0; i < local.size(); ++i) {
+      local[i] = global[i];
+    }
+  }
+
 private:
 
   static void AllgatherBruck(char* input, const comm_size_t* block_start, const comm_size_t* block_len, char* output, comm_size_t all_size);
