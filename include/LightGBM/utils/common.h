@@ -3,6 +3,7 @@
 
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/utils/array_args.h>
 
 #include <cstdio>
 #include <string>
@@ -864,6 +865,33 @@ inline static const char* SkipNewLine(const char* str) {
 template <typename T>
 static int Sign(T x) {
   return (x > T(0)) - (x < T(0));
+}
+
+
+template <typename T>
+static T Percentile(std::vector<T>* data, double alpha) {
+  std::vector<T>& ref_data = *data;
+  int data_size = static_cast<int>(ref_data.size());
+  const double float_pos = (1.0f - alpha) * data_size;
+  int pos = static_cast<int>(float_pos);
+  if (pos < 1) {
+    return ref_data[ArrayArgs<T>::ArgMax(ref_data)];
+  } else if (pos >= data_size) {
+    return ref_data[ArrayArgs<T>::ArgMin(ref_data)];
+  } else {
+    const double bias = float_pos - pos;
+    if (pos > data_size / 2) {
+      ArrayArgs<T>::ArgMaxAtK(&ref_data, 0, data_size, pos - 1);
+      T v1 = ref_data[pos - 1];
+      T v2 = ref_data[pos + ArrayArgs<T>::ArgMax(ref_data.data() + pos, data_size - pos)];
+      return static_cast<T>(v1 - (v1 - v2) * bias);
+    } else {
+      ArrayArgs<T>::ArgMaxAtK(&ref_data, 0, data_size, pos);
+      T v2 = ref_data[pos];
+      T v1 = ref_data[ArrayArgs<T>::ArgMin(ref_data.data(), pos)];
+      return static_cast<T>(v1 - (v1 - v2) * bias);
+    }
+  }
 }
 
 }  // namespace Common

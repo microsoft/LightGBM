@@ -5,7 +5,6 @@
 
 #include <LightGBM/objective_function.h>
 #include <LightGBM/utils/common.h>
-#include <LightGBM/utils/array_args.h>
 
 namespace LightGBM {
 
@@ -161,12 +160,10 @@ public:
       for (data_size_t i = 0; i < num_data_; ++i) {
         deltas[i] = label_[i] * weights_[i];
       }
-      ArrayArgs<double>::ArgMaxAtK(&deltas, 0, num_data_, pos - 1);
-      return deltas[pos - 1];
+      return Common::Percentile(&deltas, 0.5);
     } else {
       std::vector<label_t> deltas(label_, label_ + num_data_);
-      ArrayArgs<label_t>::ArgMaxAtK(&deltas, 0, num_data_, pos - 1);
-      return deltas[pos - 1];
+      return Common::Percentile(&deltas, 0.5);
     }
   }
 
@@ -185,9 +182,7 @@ public:
         deltas[i] = delta;
       }
     }
-    const int pos = std::max(1, static_cast<int>(0.5 * num_data_in_leaf));
-    ArrayArgs<double>::ArgMaxAtK(&deltas, 0, num_data_in_leaf, pos - 1);
-    return deltas[pos - 1];
+    return Common::Percentile(&deltas, 0.5);
   }
 
   const char* GetName() const override {
@@ -431,19 +426,16 @@ public:
   }
 
   double BoostFromScore() const override {
-    const int pos = std::max(1, static_cast<int>((1.0f - alpha_) * num_data_));
     if (weights_ != nullptr) {
       // To-Do: Weighted CDF solution.
       std::vector<double> deltas(num_data_);
       for (data_size_t i = 0; i < num_data_; ++i) {
         deltas[i] = label_[i] * weights_[i];
       }
-      ArrayArgs<double>::ArgMaxAtK(&deltas, 0, num_data_, pos - 1);
-      return deltas[pos - 1];
+      return Common::Percentile(&deltas, alpha_);
     } else {
       std::vector<label_t> deltas(label_, label_ + num_data_);
-      ArrayArgs<label_t>::ArgMaxAtK(&deltas, 0, num_data_, pos - 1);
-      return deltas[pos - 1];
+      return Common::Percentile(&deltas, alpha_);
     }
   }
 
@@ -462,9 +454,7 @@ public:
         deltas[i] = delta;
       }
     }
-    const int pos = std::max(1, static_cast<int>((1.0f - alpha_) * num_data_in_leaf));
-    ArrayArgs<double>::ArgMaxAtK(&deltas, 0, num_data_in_leaf, pos - 1);
-    return deltas[pos - 1];
+    return Common::Percentile(&deltas, alpha_);
   }
 
 private:
