@@ -352,23 +352,22 @@ void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) 
 
 double GBDT::BoostFromAverage() {
   // boosting from average label; or customized "average" if implemented for the current objective
-  if (models_.empty()) {
-    if (gbdt_config_->boost_from_average
-        && !train_score_updater_->has_init_score()
-        && num_class_ <= 1
-        && objective_function_ != nullptr) {
+  if (models_.empty() && !train_score_updater_->has_init_score()
+      && num_class_ <= 1
+      && objective_function_ != nullptr) {
+    if (gbdt_config_->boost_from_average) {
       double init_score = ObtainAutomaticInitialScore(objective_function_);
       if (std::fabs(init_score) > kEpsilon) {
         train_score_updater_->AddScore(init_score, 0);
         for (auto& score_updater : valid_score_updater_) {
           score_updater->AddScore(init_score, 0);
         }
-        Log::Warning("Start training from score %lf", init_score);
+        Log::Info("Start training from score %lf", init_score);
         return init_score;
       }
-    } else if (!gbdt_config_->boost_from_average && objective_function_ != nullptr &&
-                (std::string(objective_function_->GetName()) == std::string("regression_l1")
-                 || std::string(objective_function_->GetName()) == std::string("quantile"))) {
+    } else if (std::string(objective_function_->GetName()) == std::string("regression_l1")
+               || std::string(objective_function_->GetName()) == std::string("quantile")
+               || std::string(objective_function_->GetName()) == std::string("mape")) {
       Log::Warning("Disable boost_from_average in %s may cause the slow convergence.", objective_function_->GetName());
     }
   }
