@@ -868,9 +868,12 @@ static int Sign(T x) {
 }
 
 template <typename T>
-static T Percentile(std::vector<T>* data, double alpha) {
-  std::vector<T>& ref_data = *data;
-  const int data_size = static_cast<int>(ref_data.size());
+static T Percentile(const std::function<T(int)>& data, int data_size, double alpha) {
+  // To-Do: speed up.
+  std::vector<T> ref_data(data_size);
+  for (int i = 0; i < data_size; ++i) {
+    ref_data[i] = data(i);
+  }
   const double float_pos = (1.0f - alpha) * data_size;
   const int pos = static_cast<int>(float_pos);
   if (pos < 1) {
@@ -896,6 +899,7 @@ static T Percentile(std::vector<T>* data, double alpha) {
 template <typename T, typename T2>
 static T WeightedPercentile(const std::function<T(int)>& data, const std::function<T2(int)>& weight,
                             int data_size, double alpha) {
+  // To-Do: speed up.
   std::vector<int> sorted_idx(data_size);
   for (int i = 0; i < data_size; ++i) {
     sorted_idx[i] = i;

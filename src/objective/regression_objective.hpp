@@ -155,8 +155,7 @@ public:
     if (weights_ != nullptr) {
       return Common::WeightedPercentile<label_t, label_t>([this](int i) {return label_[i]; }, [this](int i) {return weights_[i]; }, num_data_, 0.5);
     } else {
-      std::vector<label_t> deltas(label_, label_ + num_data_);
-      return Common::Percentile(&deltas, 0.5);
+      return Common::Percentile<label_t>([this](int i) {return label_[i]; }, num_data_, 0.5);
     }
   }
 
@@ -165,12 +164,10 @@ public:
   double RenewTreeOutput(double, const double* pred,
                          const std::function<data_size_t(data_size_t)>& index_mapper, data_size_t num_data_in_leaf) const override {
     if (weights_ == nullptr) {
-      std::vector<double> deltas(num_data_in_leaf);
-      for (data_size_t i = 0; i < num_data_in_leaf; ++i) {
+      return Common::Percentile<double>([this, index_mapper, pred](int i) {
         const data_size_t idx = index_mapper(i);
-        deltas[i] = label_[idx] - pred[idx];
-      }
-      return Common::Percentile(&deltas, 0.5);
+        return label_[idx] - pred[idx];
+      }, num_data_in_leaf, 0.5);
     } else {
       return Common::WeightedPercentile<double, label_t>([this, index_mapper, pred](int i) {
         const data_size_t idx = index_mapper(i);
@@ -421,8 +418,7 @@ public:
     if (weights_ != nullptr) {
       return Common::WeightedPercentile<label_t, label_t>([this](int i) {return label_[i]; }, [this](int i) {return weights_[i]; }, num_data_, alpha_);
     } else {
-      std::vector<label_t> deltas(label_, label_ + num_data_);
-      return Common::Percentile(&deltas, alpha_);
+      return Common::Percentile<label_t>([this](int i) {return label_[i]; }, num_data_, alpha_);
     }
   }
 
@@ -431,12 +427,10 @@ public:
   double RenewTreeOutput(double, const double* pred,
                          const std::function<data_size_t(data_size_t)>& index_mapper, data_size_t num_data_in_leaf) const override {
     if (weights_ == nullptr) {
-      std::vector<double> deltas(num_data_in_leaf);
-      for (data_size_t i = 0; i < num_data_in_leaf; ++i) {
+      return Common::Percentile<double>([this, index_mapper, pred](int i) {
         const data_size_t idx = index_mapper(i);
-        deltas[i] = label_[idx] - pred[idx];
-      }
-      return Common::Percentile(&deltas, alpha_);
+        return label_[idx] - pred[idx];
+      }, num_data_in_leaf, alpha_);
     } else {
       return Common::WeightedPercentile<double, label_t>([this, index_mapper, pred](int i) {
         const data_size_t idx = index_mapper(i);
@@ -509,7 +503,9 @@ public:
   }
 
   double BoostFromScore() const override {
-    return Common::WeightedPercentile<label_t, label_t>([this](int i) {return label_[i]; }, [this](int i) {return label_weight_[i]; }, num_data_, 0.5);
+    return Common::WeightedPercentile<label_t, label_t>([this](int i) {return label_[i]; }, 
+                                                        [this](int i) {return label_weight_[i]; },
+                                                        num_data_, 0.5);
   }
 
   bool IsRenewTreeOutput() const override { return true; }
