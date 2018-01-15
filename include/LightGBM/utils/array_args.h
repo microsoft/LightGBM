@@ -126,6 +126,7 @@ public:
     *r = i;
   };
 
+  // Note: k refer to index here. e.g. k=0 means get max number.
   inline static int ArgMaxAtK(std::vector<VAL_T>* arr, int start, int end, int k) {
     if (start >= end - 1) {
       return start;

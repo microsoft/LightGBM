@@ -96,7 +96,7 @@ public:
     data_size_t top_k = static_cast<data_size_t>(cnt * gbdt_config_->top_rate);
     data_size_t other_k = static_cast<data_size_t>(cnt * gbdt_config_->other_rate);
     top_k = std::max(1, top_k);
-    ArrayArgs<score_t>::ArgMaxAtK(&tmp_gradients, 0, static_cast<int>(tmp_gradients.size()), top_k);
+    ArrayArgs<score_t>::ArgMaxAtK(&tmp_gradients, 0, static_cast<int>(tmp_gradients.size()), top_k - 1);
     score_t threshold = tmp_gradients[top_k - 1];
 
     score_t multiply = static_cast<score_t>(cnt - top_k) / other_k;
