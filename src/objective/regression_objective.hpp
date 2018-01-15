@@ -310,6 +310,10 @@ class RegressionPoissonLoss: public RegressionL2loss {
 public:
   explicit RegressionPoissonLoss(const ObjectiveConfig& config): RegressionL2loss(config) {
     max_delta_step_ = static_cast<double>(config.poisson_max_delta_step);
+    if (sqrt_) {
+      Log::Warning("cannot use sqrt transform in Poisson Regression, will auto disable it.");
+      sqrt_ = false;
+    }
   }
 
   explicit RegressionPoissonLoss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
@@ -319,6 +323,10 @@ public:
   ~RegressionPoissonLoss() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
+    if (sqrt_) {
+      Log::Warning("cannot use sqrt transform in Poisson Regression, will auto disable it.");
+      sqrt_ = false;
+    }
     RegressionL2loss::Init(metadata, num_data);
     // Safety check of labels
     label_t miny;
@@ -346,22 +354,19 @@ public:
     if (weights_ == nullptr) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        const double ef = std::exp(score[i]);
-        gradients[i] = static_cast<score_t>(ef - label_[i]);
-        hessians[i] = static_cast<score_t>(ef);
+        gradients[i] = static_cast<score_t>(std::exp(score[i]) - label_[i]);
+        hessians[i] = static_cast<score_t>(std::exp(score[i] + max_delta_step_));
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        const double ef = std::exp(score[i]);
-        gradients[i] = static_cast<score_t>((ef - label_[i]) * weights_[i]);
-        hessians[i] = static_cast<score_t>(ef * weights_[i]);
+        gradients[i] = static_cast<score_t>((std::exp(score[i]) - label_[i]) * weights_[i]);
+        hessians[i] = static_cast<score_t>(std::exp(score[i] + max_delta_step_) * weights_[i]);
       }
     }
   }
 
   void ConvertOutput(const double* input, double* output) const override {
-    RegressionL2loss::ConvertOutput(input, output);
     output[0] = std::exp(input[0]);
   }
 

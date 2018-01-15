@@ -871,9 +871,9 @@ static int Sign(T x) {
 template <typename T>
 static T Percentile(std::vector<T>* data, double alpha) {
   std::vector<T>& ref_data = *data;
-  int data_size = static_cast<int>(ref_data.size());
+  const int data_size = static_cast<int>(ref_data.size());
   const double float_pos = (1.0f - alpha) * data_size;
-  int pos = static_cast<int>(float_pos);
+  const int pos = static_cast<int>(float_pos);
   if (pos < 1) {
     return ref_data[ArrayArgs<T>::ArgMax(ref_data)];
   } else if (pos >= data_size) {
