@@ -219,6 +219,8 @@ Support following metrics:
 
 -  Quantile
 
+-  MAPE
+
 -  kullback Leibler
 
 For more details, please refer to `Parameters <./Parameters.rst#metric-parameters>`__.
