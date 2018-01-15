@@ -26,7 +26,7 @@ public:
       }
     }
   }
-
+  
   ~RegressionL2loss() {
   }
 
@@ -161,11 +161,11 @@ public:
       for (data_size_t i = 0; i < num_data_; ++i) {
         deltas[i] = label_[i] * weights_[i];
       }
-      ArrayArgs<double>::ArgMaxAtK(&deltas, 0, num_data_, pos);
+      ArrayArgs<double>::ArgMaxAtK(&deltas, 0, num_data_, pos - 1);
       return deltas[pos - 1];
     } else {
       std::vector<label_t> deltas(label_, label_ + num_data_);
-      ArrayArgs<label_t>::ArgMaxAtK(&deltas, 0, num_data_, pos);
+      ArrayArgs<label_t>::ArgMaxAtK(&deltas, 0, num_data_, pos - 1);
       return deltas[pos - 1];
     }
   }
@@ -186,7 +186,7 @@ public:
       }
     }
     const int pos = std::max(1, static_cast<int>(0.5 * num_data_in_leaf));
-    ArrayArgs<double>::ArgMaxAtK(&deltas, 0, num_data_in_leaf, pos);
+    ArrayArgs<double>::ArgMaxAtK(&deltas, 0, num_data_in_leaf, pos - 1);
     return deltas[pos - 1];
   }
 
@@ -438,11 +438,11 @@ public:
       for (data_size_t i = 0; i < num_data_; ++i) {
         deltas[i] = label_[i] * weights_[i];
       }
-      ArrayArgs<double>::ArgMaxAtK(&deltas, 0, num_data_, pos);
+      ArrayArgs<double>::ArgMaxAtK(&deltas, 0, num_data_, pos - 1);
       return deltas[pos - 1];
     } else {
       std::vector<label_t> deltas(label_, label_ + num_data_);
-      ArrayArgs<label_t>::ArgMaxAtK(&deltas, 0, num_data_, pos);
+      ArrayArgs<label_t>::ArgMaxAtK(&deltas, 0, num_data_, pos - 1);
       return deltas[pos - 1];
     }
   }
@@ -463,7 +463,7 @@ public:
       }
     }
     const int pos = std::max(1, static_cast<int>((1.0f - alpha_) * num_data_in_leaf));
-    ArrayArgs<double>::ArgMaxAtK(&deltas, 0, num_data_in_leaf, pos);
+    ArrayArgs<double>::ArgMaxAtK(&deltas, 0, num_data_in_leaf, pos - 1);
     return deltas[pos - 1];
   }
 
