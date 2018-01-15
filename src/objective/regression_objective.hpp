@@ -34,6 +34,7 @@ public:
     label_ = metadata.label();
     if (sqrt_) {
       trans_label_.resize(num_data_);
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data; ++i) {
         trans_label_[i] = Common::Sign(label_[i]) * std::sqrt(std::fabs(label_[i]));
       }
@@ -151,14 +152,8 @@ public:
   }
 
   double BoostFromScore() const override {
-    const int pos = std::max(1, static_cast<int>(0.5 * num_data_));
     if (weights_ != nullptr) {
-      // To-Do: Weighted CDF solution.
-      std::vector<double> deltas(num_data_);
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        deltas[i] = label_[i] * weights_[i];
-      }
-      return Common::Percentile(&deltas, 0.5);
+      return Common::WeightedPercentile<label_t, label_t>([this](int i) {return label_[i]; }, [this](int i) {return weights_[i]; }, num_data_, 0.5);
     } else {
       std::vector<label_t> deltas(label_, label_ + num_data_);
       return Common::Percentile(&deltas, 0.5);
@@ -169,18 +164,22 @@ public:
 
   double RenewTreeOutput(double, const double* pred,
                          const std::function<data_size_t(data_size_t)>& index_mapper, data_size_t num_data_in_leaf) const override {
-    std::vector<double> deltas(num_data_in_leaf);
-    for (data_size_t i = 0; i < num_data_in_leaf; ++i) {
-      data_size_t idx = index_mapper(i);
-      const double delta = label_[idx] - pred[idx];
-      if (weights_ != nullptr) {
-        // To-Do: Weighted CDF solution.
-        deltas[i] = weights_[idx] * delta;
-      } else {
-        deltas[i] = delta;
+    if (weights_ == nullptr) {
+      std::vector<double> deltas(num_data_in_leaf);
+      for (data_size_t i = 0; i < num_data_in_leaf; ++i) {
+        const data_size_t idx = index_mapper(i);
+        deltas[i] = label_[idx] - pred[idx];
       }
+      return Common::Percentile(&deltas, 0.5);
+    } else {
+      return Common::WeightedPercentile<double, label_t>([this, index_mapper, pred](int i) {
+        const data_size_t idx = index_mapper(i);
+        return label_[idx] - pred[idx];
+      }, [this, index_mapper](int i) {
+        const data_size_t idx = index_mapper(i);
+        return weights_[idx];
+      }, num_data_in_leaf, 0.5);
     }
-    return Common::Percentile(&deltas, 0.5);
   }
 
   const char* GetName() const override {
@@ -420,12 +419,7 @@ public:
 
   double BoostFromScore() const override {
     if (weights_ != nullptr) {
-      // To-Do: Weighted CDF solution.
-      std::vector<double> deltas(num_data_);
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        deltas[i] = label_[i] * weights_[i];
-      }
-      return Common::Percentile(&deltas, alpha_);
+      return Common::WeightedPercentile<label_t, label_t>([this](int i) {return label_[i]; }, [this](int i) {return weights_[i]; }, num_data_, alpha_);
     } else {
       std::vector<label_t> deltas(label_, label_ + num_data_);
       return Common::Percentile(&deltas, alpha_);
@@ -436,22 +430,127 @@ public:
 
   double RenewTreeOutput(double, const double* pred,
                          const std::function<data_size_t(data_size_t)>& index_mapper, data_size_t num_data_in_leaf) const override {
-    std::vector<double> deltas(num_data_in_leaf);
-    for (data_size_t i = 0; i < num_data_in_leaf; ++i) {
-      data_size_t idx = index_mapper(i);
-      const double delta = label_[idx] - pred[idx];
-      if (weights_ != nullptr) {
-        // To-Do: Weighted CDF solution.
-        deltas[i] = weights_[idx] * delta;
-      } else {
-        deltas[i] = delta;
+    if (weights_ == nullptr) {
+      std::vector<double> deltas(num_data_in_leaf);
+      for (data_size_t i = 0; i < num_data_in_leaf; ++i) {
+        const data_size_t idx = index_mapper(i);
+        deltas[i] = label_[idx] - pred[idx];
       }
+      return Common::Percentile(&deltas, alpha_);
+    } else {
+      return Common::WeightedPercentile<double, label_t>([this, index_mapper, pred](int i) {
+        const data_size_t idx = index_mapper(i);
+        return label_[idx] - pred[idx];
+      }, [this, index_mapper](int i) {
+        const data_size_t idx = index_mapper(i);
+        return weights_[idx];
+      }, num_data_in_leaf, alpha_);
     }
-    return Common::Percentile(&deltas, alpha_);
   }
 
 private:
   score_t alpha_;
+};
+
+
+/*!
+* \brief Mape Regression Loss
+*/
+class RegressionMAPELOSS : public RegressionL1loss {
+public:
+  explicit RegressionMAPELOSS(const ObjectiveConfig& config) : RegressionL1loss(config) {
+  }
+
+  explicit RegressionMAPELOSS(const std::vector<std::string>& strs) : RegressionL1loss(strs) {
+
+  }
+
+  ~RegressionMAPELOSS() {}
+
+  void Init(const Metadata& metadata, data_size_t num_data) override {
+    RegressionL2loss::Init(metadata, num_data);
+    for (data_size_t i = 0; i < num_data_; ++i) {
+      if (std::fabs(label_[i]) > kEpsilon && std::fabs(label_[i]) < 1) {
+        Log::Fatal("Cannot support label range (-1,0) and (0,1) in MAPE objective.");
+      }
+    }
+    label_weight_.resize(num_data);
+    if (weights_ == nullptr) {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        if (std::fabs(label_[i]) >= 1) {
+          label_weight_[i] = 1.0f / std::fabs(label_[i]);
+        } else {
+          label_weight_[i] = 1.0f;
+        }
+      }
+    } else {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        if (std::fabs(label_[i]) >= 1) {
+          label_weight_[i] = 1.0f / std::fabs(label_[i]) * weights_[i];
+        } else {
+          label_weight_[i] = weights_[i];
+        }
+      }
+    }
+  }
+
+  void GetGradients(const double* score, score_t* gradients,
+                    score_t* hessians) const override {
+    if (weights_ == nullptr) {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        const double diff = score[i] - label_[i];
+        if (std::fabs(label_[i]) <= 1) {
+          gradients[i] = static_cast<score_t>(Common::Sign(diff));
+        } else {
+          gradients[i] = static_cast<score_t>(Common::Sign(diff) / std::fabs(label_[i]));
+        }
+        hessians[i] = 1.0f;
+      }
+    } else {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        const double diff = score[i] - label_[i];
+        if (std::fabs(label_[i]) <= 1) {
+          gradients[i] = static_cast<score_t>(Common::Sign(diff) * weights_[i]);
+        } else {
+          gradients[i] = static_cast<score_t>(Common::Sign(diff) / std::fabs(label_[i]) * weights_[i]);
+        }
+        hessians[i] = weights_[i];
+      }
+    }
+  }
+
+  double BoostFromScore() const override {
+    return Common::WeightedPercentile<label_t, label_t>([this](int i) {return label_[i]; }, [this](int i) {return label_weight_[i]; }, num_data_, 0.5);
+  }
+
+  bool IsRenewTreeOutput() const override { return true; }
+
+  double RenewTreeOutput(double, const double* pred,
+                         const std::function<data_size_t(data_size_t)>& index_mapper, data_size_t num_data_in_leaf) const override {
+    return Common::WeightedPercentile<double, label_t>([this, index_mapper, pred](int i) {
+      const data_size_t idx = index_mapper(i);
+      return label_[idx] - pred[idx];
+    }, [this, index_mapper](int i) {
+      const data_size_t idx = index_mapper(i);
+      return label_weight_[idx];
+    }, num_data_in_leaf, 0.5);
+  }
+
+  const char* GetName() const override {
+    return "mape";
+  }
+
+  bool IsConstantHessian() const override {
+    return true;
+  }
+
+private:
+  std::vector<label_t> label_weight_;
+
 };
 
 }  // namespace LightGBM

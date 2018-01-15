@@ -227,5 +227,25 @@ public:
   }
 };
 
+
+/*! \brief Mape regression loss for regression task */
+class MAPEMetric : public RegressionMetric<MAPEMetric> {
+public:
+  explicit MAPEMetric(const MetricConfig& config) :RegressionMetric<MAPEMetric>(config) {
+  }
+
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
+    if (std::fabs(label) <= 1) {
+      // directly use score for zero label
+      return std::fabs(score);
+    } else {
+      return std::fabs((label - score) / label);
+    }
+  }
+  inline static const char* Name() {
+    return "mape";
+  }
+};
+
 }  // namespace LightGBM
 #endif   // LightGBM_METRIC_REGRESSION_METRIC_HPP_

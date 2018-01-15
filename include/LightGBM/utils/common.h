@@ -867,7 +867,6 @@ static int Sign(T x) {
   return (x > T(0)) - (x < T(0));
 }
 
-
 template <typename T>
 static T Percentile(std::vector<T>* data, double alpha) {
   std::vector<T>& ref_data = *data;
@@ -892,6 +891,31 @@ static T Percentile(std::vector<T>* data, double alpha) {
       return static_cast<T>(v1 - (v1 - v2) * bias);
     }
   }
+}
+
+template <typename T, typename T2>
+static T WeightedPercentile(const std::function<T(int)>& data, const std::function<T2(int)>& weight,
+                            int data_size, double alpha) {
+  std::vector<int> sorted_idx(data_size);
+  for (int i = 0; i < data_size; ++i) {
+    sorted_idx[i] = i;
+  }
+  std::sort(sorted_idx.begin(), sorted_idx.end(), [data](int a, int b) {return data(a) < data(b); });
+  std::vector<double> weighted_cdf(data_size);
+  weighted_cdf[0] = weight(sorted_idx[0]);
+  for (int i = 1; i < data_size; ++i) {
+    weighted_cdf[i] = weighted_cdf[i - 1] + weight(sorted_idx[i]);
+  }
+  double threshold = weighted_cdf[data_size - 1] * alpha;
+  size_t pos = std::lower_bound(weighted_cdf.begin(), weighted_cdf.end(), threshold) - weighted_cdf.begin();
+  CHECK(threshold >= weighted_cdf[pos]);
+  if (pos == data_size - 1) {
+    return data(sorted_idx[data_size - 1]);
+  }
+  CHECK(threshold < weighted_cdf[pos + 1]);
+  T v1 = data(sorted_idx[pos]);
+  T v2 = data(sorted_idx[pos + 1]);
+  return static_cast<T>((threshold - weighted_cdf[pos]) / (weighted_cdf[pos + 1] - weighted_cdf[pos]) * (v2 - v1) + v1);
 }
 
 }  // namespace Common
