@@ -310,8 +310,6 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
   CHECK(sigmoid > 0);
   GetDouble(params, "fair_c", &fair_c);
   CHECK(fair_c > 0);
-  GetDouble(params, "gaussian_eta", &gaussian_eta);
-  CHECK(gaussian_eta > 0);
   GetDouble(params, "poisson_max_delta_step", &poisson_max_delta_step);
   CHECK(poisson_max_delta_step > 0);
   GetInt(params, "max_position", &max_position);

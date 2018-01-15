@@ -124,11 +124,9 @@ protected:
 class RegressionL1loss: public RegressionL2loss {
 public:
   explicit RegressionL1loss(const ObjectiveConfig& config): RegressionL2loss(config) {
-    eta_ = static_cast<double>(config.gaussian_eta);
   }
 
   explicit RegressionL1loss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
-
   }
 
   ~RegressionL1loss() {}
@@ -188,13 +186,6 @@ public:
   const char* GetName() const override {
     return "regression_l1";
   }
-
-  bool IsConstantHessian() const override {
-    return false;
-  }
-
-private:
-  double eta_;
 };
 
 /*!
@@ -204,7 +195,6 @@ class RegressionHuberLoss: public RegressionL2loss {
 public:
   explicit RegressionHuberLoss(const ObjectiveConfig& config): RegressionL2loss(config) {
     alpha_ = static_cast<double>(config.alpha);
-    eta_ = static_cast<double>(config.gaussian_eta);
   }
 
   explicit RegressionHuberLoss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
@@ -252,8 +242,6 @@ public:
 private:
   /*! \brief delta for Huber loss */
   double alpha_;
-  /*! \brief a parameter to control the width of Gaussian function to approximate hessian */
-  double eta_;
 };
 
 
