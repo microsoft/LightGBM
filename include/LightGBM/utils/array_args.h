@@ -126,7 +126,7 @@ public:
     *r = i;
   };
 
-  // Note: k refer to index here. e.g. k=0 means get max number.
+  // Note: k refer to index here. e.g. k=0 means get the max number.
   inline static int ArgMaxAtK(std::vector<VAL_T>* arr, int start, int end, int k) {
     if (start >= end - 1) {
       return start;
@@ -144,6 +144,7 @@ public:
     }
   }
 
+  // Note: k is 1-based here. e.g. k=3 means get the top-3 numbers.
   inline static void MaxK(const std::vector<VAL_T>& array, int k, std::vector<VAL_T>* out) {
     out->clear();
     if (k <= 0) {
