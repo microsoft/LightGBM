@@ -235,12 +235,7 @@ public:
   }
 
   inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
-    if (std::fabs(label) <= 1) {
-      // directly use score for zero label
-      return std::fabs(score);
-    } else {
-      return std::fabs((label - score) / label);
-    }
+    return std::fabs((label - score)) / std::max(1.0f, std::fabs(label));
   }
   inline static const char* Name() {
     return "mape";

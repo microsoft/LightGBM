@@ -470,28 +470,21 @@ public:
   void Init(const Metadata& metadata, data_size_t num_data) override {
     RegressionL2loss::Init(metadata, num_data);
     for (data_size_t i = 0; i < num_data_; ++i) {
-      if (std::fabs(label_[i]) > kEpsilon && std::fabs(label_[i]) < 1) {
-        Log::Fatal("Cannot support label range (-1,0) and (0,1) in MAPE objective.");
+      if (std::fabs(label_[i]) < 1) {
+        Log::Warning("Met 'abs(label) < 1', will convert them to '1' in Mape objective and metric.");
+        break;
       }
     }
     label_weight_.resize(num_data);
     if (weights_ == nullptr) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        if (std::fabs(label_[i]) >= 1) {
-          label_weight_[i] = 1.0f / std::fabs(label_[i]);
-        } else {
-          label_weight_[i] = 1.0f;
-        }
+        label_weight_[i] = 1.0f / std::max(1.0f, std::fabs(label_[i]));
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        if (std::fabs(label_[i]) >= 1) {
-          label_weight_[i] = 1.0f / std::fabs(label_[i]) * weights_[i];
-        } else {
-          label_weight_[i] = weights_[i];
-        }
+        label_weight_[i] = 1.0f / std::max(1.0f, std::fabs(label_[i])) * weights_[i];
       }
     }
   }
@@ -502,22 +495,14 @@ public:
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
-        if (std::fabs(label_[i]) <= 1) {
-          gradients[i] = static_cast<score_t>(Common::Sign(diff));
-        } else {
-          gradients[i] = static_cast<score_t>(Common::Sign(diff) / std::fabs(label_[i]));
-        }
+        gradients[i] = static_cast<score_t>(Common::Sign(diff) * label_weight_[i]);
         hessians[i] = 1.0f;
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
-        if (std::fabs(label_[i]) <= 1) {
-          gradients[i] = static_cast<score_t>(Common::Sign(diff) * weights_[i]);
-        } else {
-          gradients[i] = static_cast<score_t>(Common::Sign(diff) / std::fabs(label_[i]) * weights_[i]);
-        }
+        gradients[i] = static_cast<score_t>(Common::Sign(diff) * label_weight_[i]);
         hessians[i] = weights_[i];
       }
     }
