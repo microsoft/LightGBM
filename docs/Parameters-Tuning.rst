@@ -12,7 +12,7 @@ Tune Parameters for the Leaf-wise (Best-first) Tree
 ---------------------------------------------------
 
 LightGBM uses the `leaf-wise <./Features.rst#leaf-wise-best-first-tree-growth>`__ tree growth algorithm, while many other popular tools use depth-wise tree growth.
-Compared with depth-wise growth, the leaf-wise algorithm can convenge much faster.
+Compared with depth-wise growth, the leaf-wise algorithm can converge much faster.
 However, the leaf-wise growth may be over-fitting if not used with the appropriate parameters.
 
 To get good results using a leaf-wise tree, these are some important parameters:
