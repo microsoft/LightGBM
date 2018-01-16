@@ -1956,7 +1956,7 @@ class Booster(object):
                 self.__name_inner_eval = \
                     [string_buffers[i].value.decode() for i in range_(self.__num_inner_eval)]
                 self.__higher_better_inner_eval = \
-                    [name.startswith(('auc', 'ndcg', 'map')) for name in self.__name_inner_eval]
+                    [name.startswith(('auc', 'ndcg@', 'map@')) for name in self.__name_inner_eval]
 
     def attr(self, key):
         """Get attribute string from the Booster.
