@@ -43,6 +43,8 @@ Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config
     return new CrossEntropyLambdaMetric(config);
   } else if (type == std::string("kldiv") || type == std::string("kullback_leibler")) {
     return new KullbackLeiblerDivergence(config);
+  } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
+    return new MAPEMetric(config);
   }
   return nullptr;
 }

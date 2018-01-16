@@ -295,42 +295,15 @@ void GBDT::Bagging(int iter) {
 * (i) and (ii) could be selected as say "auto_init_score" = 0 or 1 etc..
 *
 */
-double ObtainAutomaticInitialScore(const ObjectiveFunction* fobj, const label_t* label, data_size_t num_data) {
+double ObtainAutomaticInitialScore(const ObjectiveFunction* fobj) {
   double init_score = 0.0f;
-  bool got_custom = false;
   if (fobj != nullptr) {
-    got_custom = fobj->GetCustomAverage(&init_score);
-  }
-  if (!got_custom) {
-    double sum_label = 0.0f;
-    #pragma omp parallel for schedule(static) reduction(+:sum_label)
-    for (data_size_t i = 0; i < num_data; ++i) {
-      sum_label += label[i];
-    }
-    init_score = sum_label / num_data;
+    init_score = fobj->BoostFromScore();
   }
   if (Network::num_machines() > 1) {
-    double global_init_score = 0.0f;
-    Network::Allreduce(reinterpret_cast<char*>(&init_score),
-                       sizeof(init_score), sizeof(init_score),
-                       reinterpret_cast<char*>(&global_init_score),
-                       [](const char* src, char* dst, int type_size, comm_size_t len) {
-      comm_size_t used_size = 0;
-      const double *p1;
-      double *p2;
-      while (used_size < len) {
-        p1 = reinterpret_cast<const double *>(src);
-        p2 = reinterpret_cast<double *>(dst);
-        *p2 += *p1;
-        src += type_size;
-        dst += type_size;
-        used_size += type_size;
-      }
-    });
-    return global_init_score / Network::num_machines();
-  } else {
-    return init_score;
+    init_score = Network::GlobalSyncUpByMean(init_score);
   }
+  return init_score;
 }
 
 void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
@@ -379,21 +352,23 @@ void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) 
 
 double GBDT::BoostFromAverage() {
   // boosting from average label; or customized "average" if implemented for the current objective
-  if (models_.empty()
-      && gbdt_config_->boost_from_average
-      && !train_score_updater_->has_init_score()
+  if (models_.empty() && !train_score_updater_->has_init_score()
       && num_class_ <= 1
-      && objective_function_ != nullptr
-      && objective_function_->BoostFromAverage()) {
-
-    auto label = train_data_->metadata().label();
-    double init_score = ObtainAutomaticInitialScore(objective_function_, label, num_data_);
-    if (std::fabs(init_score) > kEpsilon) {
-      train_score_updater_->AddScore(init_score, 0);
-      for (auto& score_updater : valid_score_updater_) {
-        score_updater->AddScore(init_score, 0);
+      && objective_function_ != nullptr) {
+    if (gbdt_config_->boost_from_average) {
+      double init_score = ObtainAutomaticInitialScore(objective_function_);
+      if (std::fabs(init_score) > kEpsilon) {
+        train_score_updater_->AddScore(init_score, 0);
+        for (auto& score_updater : valid_score_updater_) {
+          score_updater->AddScore(init_score, 0);
+        }
+        Log::Info("Start training from score %lf", init_score);
+        return init_score;
       }
-      return init_score;
+    } else if (std::string(objective_function_->GetName()) == std::string("regression_l1")
+               || std::string(objective_function_->GetName()) == std::string("quantile")
+               || std::string(objective_function_->GetName()) == std::string("mape")) {
+      Log::Warning("Disable boost_from_average in %s may cause the slow convergence.", objective_function_->GetName());
     }
   }
   return 0.0f;
@@ -434,10 +409,9 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
     #ifdef TIMETAG
     start_time = std::chrono::steady_clock::now();
     #endif
-
+    const size_t bias = static_cast<size_t>(cur_tree_id) * num_data_;
     std::unique_ptr<Tree> new_tree(new Tree(2));
     if (class_need_train_[cur_tree_id]) {
-      size_t bias = static_cast<size_t>(cur_tree_id)* num_data_;
       auto grad = gradients + bias;
       auto hess = hessians + bias;
 
@@ -460,6 +434,8 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
 
     if (new_tree->num_leaves() > 1) {
       should_continue = true;
+      tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, train_score_updater_->score() + bias,
+                                     num_data_, bag_data_indices_.data(), bag_data_cnt_);
       // shrinkage by learning rate
       new_tree->Shrinkage(shrinkage_rate_);
       // update score

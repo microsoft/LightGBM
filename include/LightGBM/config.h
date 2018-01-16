@@ -164,8 +164,6 @@ public:
   virtual ~ObjectiveConfig() {}
   double sigmoid = 1.0f;
   double fair_c = 1.0f;
-  // for Approximate Hessian With Gaussian
-  double gaussian_eta = 1.0f;
   double poisson_max_delta_step = 0.7f;
   // for lambdarank
   std::vector<double> label_gain;
@@ -473,7 +471,7 @@ struct ParameterAlias {
       "convert_model", "convert_model_language",
       "feature_fraction_seed", "enable_bundle", "data_filename", "valid_data_filenames",
       "snapshot_freq", "verbosity", "sparse_threshold", "enable_load_from_binary_file",
-      "max_conflict_rate", "poisson_max_delta_step", "gaussian_eta",
+      "max_conflict_rate", "poisson_max_delta_step",
       "histogram_pool_size", "is_provide_training_metric", "machine_list_filename", "machines",
       "zero_as_missing", "init_score_file", "valid_init_score_file", "is_predict_contrib",
       "max_cat_threshold",  "cat_smooth", "min_data_per_group", "cat_l2", "max_cat_to_onehot",

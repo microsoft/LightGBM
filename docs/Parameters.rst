@@ -54,7 +54,7 @@ Core Parameters
    - **Note**: Only can be used in CLI version.
 
 -  ``application``, default=\ ``regression``, type=enum,
-   options=\ ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``quantile_l2``,
+   options=\ ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``,
    ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``,
    alias=\ ``objective``, ``app``
 
@@ -72,7 +72,7 @@ Core Parameters
 
       -  ``quantile``, `Quantile regression`_
 
-      -  ``quantile_l2``, like the ``quantile``, but L2 loss is used instead
+      -  ``mape``, `MAPE loss`_
 
    -  ``binary``, binary `log loss`_ classification application
 
@@ -513,10 +513,6 @@ Objective Parameters
 
    -  parameter for `Fair loss`_. Will be used in ``regression`` task
 
--  ``gaussian_eta``, default=\ ``1.0``, type=double
-
-   -  parameter to control the width of Gaussian function. Will be used in ``regression_l1`` and ``huber`` losses
-
 -  ``poisson_max_delta_step``, default=\ ``0.7``, type=double
 
    -  parameter for `Poisson regression`_ to safeguard optimization
@@ -573,6 +569,8 @@ Metric Parameters
    -  ``l2_root``, root square loss, alias=\ ``root_mean_squared_error``, ``rmse``
 
    -  ``quantile``, `Quantile regression`_
+   
+   -  ``mape``, `MAPE loss`_
 
    -  ``huber``, `Huber loss`_
 
@@ -743,6 +741,8 @@ You can specific query/group id in data file now. Please refer to parameter ``gr
 .. _Huber loss: https://en.wikipedia.org/wiki/Huber_loss
 
 .. _Quantile regression: https://en.wikipedia.org/wiki/Quantile_regression
+
+.. _MAPE loss: https://en.wikipedia.org/wiki/Mean_absolute_percentage_error
 
 .. _Fair loss: https://www.kaggle.com/c/allstate-claims-severity/discussion/24520
 

@@ -12,6 +12,7 @@ namespace LightGBM {
 /*! \brief forward declaration */
 class Tree;
 class Dataset;
+class ObjectiveFunction;
 
 /*!
 * \brief Interface for tree learner
@@ -66,6 +67,9 @@ public:
   * \param out_score output score
   */
   virtual void AddPredictionToScore(const Tree* tree, double* out_score) const = 0;
+
+  virtual void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, const double* prediction,
+                               data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const = 0;
 
   TreeLearner() = default;
   /*! \brief Disable copy */

@@ -4,9 +4,59 @@
 #include <LightGBM/meta.h>
 
 #include <LightGBM/objective_function.h>
-#include <LightGBM/utils/common.h>
+#include <LightGBM/utils/array_args.h>
 
 namespace LightGBM {
+
+#define PercentileFun(T, data_reader, cnt_data, alpha) {\
+  std::vector<T> ref_data(cnt_data);\
+  for (data_size_t i = 0; i < cnt_data; ++i) {\
+    ref_data[i] = data_reader(i);\
+  }\
+  const double float_pos = (1.0f - alpha) * cnt_data;\
+  const data_size_t pos = static_cast<data_size_t>(float_pos);\
+  if (pos < 1) {\
+    return ref_data[ArrayArgs<T>::ArgMax(ref_data)];\
+  } else if (pos >= cnt_data) {\
+    return ref_data[ArrayArgs<T>::ArgMin(ref_data)];\
+  } else {\
+    const double bias = float_pos - pos;\
+    if (pos > cnt_data / 2) {\
+      ArrayArgs<T>::ArgMaxAtK(&ref_data, 0, cnt_data, pos - 1);\
+      T v1 = ref_data[pos - 1];\
+      T v2 = ref_data[pos + ArrayArgs<T>::ArgMax(ref_data.data() + pos, cnt_data - pos)];\
+      return static_cast<T>(v1 - (v1 - v2) * bias);\
+    } else {\
+      ArrayArgs<T>::ArgMaxAtK(&ref_data, 0, cnt_data, pos);\
+      T v2 = ref_data[pos];\
+      T v1 = ref_data[ArrayArgs<T>::ArgMin(ref_data.data(), pos)];\
+      return static_cast<T>(v1 - (v1 - v2) * bias);\
+    }\
+  }\
+}\
+
+#define WeightedPercentileFun(T, data_reader, weight_reader, cnt_data, alpha) {\
+  std::vector<data_size_t> sorted_idx(cnt_data);\
+  for (data_size_t i = 0; i < cnt_data; ++i) {\
+    sorted_idx[i] = i;\
+  }\
+  std::sort(sorted_idx.begin(), sorted_idx.end(), [=](data_size_t a, data_size_t b) {return data_reader(a) < data_reader(b); });\
+  std::vector<double> weighted_cdf(cnt_data);\
+  weighted_cdf[0] = weight_reader(sorted_idx[0]);\
+  for (data_size_t i = 1; i < cnt_data; ++i) {\
+    weighted_cdf[i] = weighted_cdf[i - 1] + weight_reader(sorted_idx[i]);\
+  }\
+  double threshold = weighted_cdf[cnt_data - 1] * alpha;\
+  size_t pos = std::upper_bound(weighted_cdf.begin(), weighted_cdf.end(), threshold) - weighted_cdf.begin();\
+  if (pos == 0) {\
+    return data_reader(sorted_idx[0]);\
+  }\
+  CHECK(threshold >= weighted_cdf[pos - 1]);\
+  CHECK(threshold < weighted_cdf[pos]);\
+  T v1 = data_reader(sorted_idx[pos - 1]);\
+  T v2 = data_reader(sorted_idx[pos]);\
+  return static_cast<T>((threshold - weighted_cdf[pos]) / (weighted_cdf[pos + 1] - weighted_cdf[pos]) * (v2 - v1) + v1);\
+}\
 
 /*!
 * \brief Objective function for regression
@@ -25,7 +75,7 @@ public:
       }
     }
   }
-
+  
   ~RegressionL2loss() {
   }
 
@@ -34,8 +84,9 @@ public:
     label_ = metadata.label();
     if (sqrt_) {
       trans_label_.resize(num_data_);
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data; ++i) {
-        trans_label_[i] = std::copysign(std::sqrt(std::fabs(label_[i])), label_[i]);
+        trans_label_[i] = Common::Sign(label_[i]) * std::sqrt(std::fabs(label_[i]));
       }
       label_ = trans_label_.data();
     }
@@ -65,7 +116,7 @@ public:
 
   void ConvertOutput(const double* input, double* output) const override {
     if (sqrt_) {
-      output[0] = std::copysign(input[0] * input[0], input[0]);
+      output[0] = Common::Sign(input[0]) * input[0] * input[0];
     } else {
       output[0] = input[0];
     }
@@ -88,12 +139,23 @@ public:
     }
   }
 
-  bool BoostFromAverage() const override { 
-    if (sqrt_) {
-      return false;
+  double BoostFromScore() const override {
+    double suml = 0.0f;
+    double sumw = 0.0f;
+    if (weights_ != nullptr) {
+      #pragma omp parallel for schedule(static) reduction(+:suml,sumw)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        suml += label_[i] * weights_[i];
+        sumw += weights_[i];
+      }
     } else {
-      return true;
+      sumw = static_cast<double>(num_data_);
+      #pragma omp parallel for schedule(static) reduction(+:suml)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        suml += label_[i];
+      }
     }
+    return suml / sumw;
   }
 
 protected:
@@ -113,11 +175,9 @@ protected:
 class RegressionL1loss: public RegressionL2loss {
 public:
   explicit RegressionL1loss(const ObjectiveConfig& config): RegressionL2loss(config) {
-    eta_ = static_cast<double>(config.gaussian_eta);
   }
 
   explicit RegressionL1loss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
-
   }
 
   ~RegressionL1loss() {}
@@ -128,23 +188,64 @@ public:
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
-        if (diff >= 0.0f) {
-          gradients[i] = 1.0f;
-        } else {
-          gradients[i] = -1.0f;
-        }
-        hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], eta_));
+        gradients[i] = static_cast<score_t>(Common::Sign(diff));
+        hessians[i] = 1.0f;
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
-        if (diff >= 0.0f) {
-          gradients[i] = static_cast<score_t>(weights_[i]);
-        } else {
-          gradients[i] = static_cast<score_t>(-weights_[i]);
-        }
-        hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], eta_, weights_[i]));
+        gradients[i] = static_cast<score_t>(Common::Sign(diff) * weights_[i]);
+        hessians[i] = weights_[i];
+      }
+    }
+  }
+
+  double BoostFromScore() const override {
+    const double alpha = 0.5;
+    if (weights_ != nullptr) {
+      #define data_reader(i) (label_[i])
+      #define weight_reader(i) (weights_[i])
+      WeightedPercentileFun(label_t, data_reader, weight_reader, num_data_, alpha);
+      #undef data_reader
+      #undef weight_reader
+    } else {
+      #define data_reader(i) (label_[i])
+      PercentileFun(label_t, data_reader, num_data_, alpha);
+      #undef data_reader
+    }
+  }
+
+  bool IsRenewTreeOutput() const override { return true; }
+
+  double RenewTreeOutput(double, const double* pred, 
+                         const data_size_t* index_mapper,
+                         const data_size_t* bagging_mapper,
+                         data_size_t num_data_in_leaf) const override {
+    const double alpha = 0.5;
+    if (weights_ == nullptr) {
+      if (bagging_mapper == nullptr) {
+        #define data_reader(i) (label_[index_mapper[i]] - pred[index_mapper[i]])
+        PercentileFun(double, data_reader, num_data_in_leaf, alpha);
+        #undef data_reader
+      } else {
+        #define data_reader(i) (label_[bagging_mapper[index_mapper[i]]] - pred[bagging_mapper[index_mapper[i]]])
+        PercentileFun(double, data_reader, num_data_in_leaf, alpha);
+        #undef data_reader
+      }
+    } else {
+      if (bagging_mapper == nullptr) {
+        #define data_reader(i) (label_[index_mapper[i]] - pred[index_mapper[i]])
+        #define weight_reader(i) (weights_[index_mapper[i]])
+        WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha);
+        #undef data_reader
+        #undef weight_reader
+      } else {
+        #define data_reader(i) (label_[bagging_mapper[index_mapper[i]]] - pred[bagging_mapper[index_mapper[i]]])
+        #define weight_reader(i) (weights_[bagging_mapper[index_mapper[i]]])
+        WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha);
+        #undef data_reader
+        #undef weight_reader
       }
     }
   }
@@ -152,13 +253,6 @@ public:
   const char* GetName() const override {
     return "regression_l1";
   }
-
-  bool IsConstantHessian() const override {
-    return false;
-  }
-
-private:
-  double eta_;
 };
 
 /*!
@@ -168,7 +262,6 @@ class RegressionHuberLoss: public RegressionL2loss {
 public:
   explicit RegressionHuberLoss(const ObjectiveConfig& config): RegressionL2loss(config) {
     alpha_ = static_cast<double>(config.alpha);
-    eta_ = static_cast<double>(config.gaussian_eta);
   }
 
   explicit RegressionHuberLoss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
@@ -184,35 +277,23 @@ public:
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
-
         if (std::abs(diff) <= alpha_) {
           gradients[i] = static_cast<score_t>(diff);
-          hessians[i] = 1.0f;
         } else {
-          if (diff >= 0.0f) {
-            gradients[i] = static_cast<score_t>(alpha_);
-          } else {
-            gradients[i] = static_cast<score_t>(-alpha_);
-          }
-          hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], eta_));
+          gradients[i] = static_cast<score_t>(Common::Sign(diff) * alpha_);
         }
+        hessians[i] = 1.0f;
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
-
         if (std::abs(diff) <= alpha_) {
           gradients[i] = static_cast<score_t>(diff * weights_[i]);
-          hessians[i] = static_cast<score_t>(weights_[i]);
         } else {
-          if (diff >= 0.0f) {
-            gradients[i] = static_cast<score_t>(alpha_ * weights_[i]);
-          } else {
-            gradients[i] = static_cast<score_t>(-alpha_ * weights_[i]);
-          }
-          hessians[i] = static_cast<score_t>(Common::ApproximateHessianWithGaussian(score[i], label_[i], gradients[i], eta_, weights_[i]));
+          gradients[i] = static_cast<score_t>(Common::Sign(diff) * weights_[i] * alpha_);
         }
+        hessians[i] = static_cast<score_t>(weights_[i]);
       }
     }
   }
@@ -228,8 +309,6 @@ public:
 private:
   /*! \brief delta for Huber loss */
   double alpha_;
-  /*! \brief a parameter to control the width of Gaussian function to approximate hessian */
-  double eta_;
 };
 
 
@@ -286,6 +365,10 @@ class RegressionPoissonLoss: public RegressionL2loss {
 public:
   explicit RegressionPoissonLoss(const ObjectiveConfig& config): RegressionL2loss(config) {
     max_delta_step_ = static_cast<double>(config.poisson_max_delta_step);
+    if (sqrt_) {
+      Log::Warning("cannot use sqrt transform in Poisson Regression, will auto disable it.");
+      sqrt_ = false;
+    }
   }
 
   explicit RegressionPoissonLoss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
@@ -295,6 +378,10 @@ public:
   ~RegressionPoissonLoss() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
+    if (sqrt_) {
+      Log::Warning("cannot use sqrt transform in Poisson Regression, will auto disable it.");
+      sqrt_ = false;
+    }
     RegressionL2loss::Init(metadata, num_data);
     // Safety check of labels
     label_t miny;
@@ -322,22 +409,19 @@ public:
     if (weights_ == nullptr) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        const double ef = std::exp(score[i]);
-        gradients[i] = static_cast<score_t>(ef - label_[i]);
-        hessians[i] = static_cast<score_t>(ef);
+        gradients[i] = static_cast<score_t>(std::exp(score[i]) - label_[i]);
+        hessians[i] = static_cast<score_t>(std::exp(score[i] + max_delta_step_));
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        const double ef = std::exp(score[i]);
-        gradients[i] = static_cast<score_t>((ef - label_[i]) * weights_[i]);
-        hessians[i] = static_cast<score_t>(ef * weights_[i]);
+        gradients[i] = static_cast<score_t>((std::exp(score[i]) - label_[i]) * weights_[i]);
+        hessians[i] = static_cast<score_t>(std::exp(score[i] + max_delta_step_) * weights_[i]);
       }
     }
   }
 
   void ConvertOutput(const double* input, double* output) const override {
-    RegressionL2loss::ConvertOutput(input, output);
     output[0] = std::exp(input[0]);
   }
 
@@ -345,25 +429,8 @@ public:
     return "poisson";
   }
 
-  bool GetCustomAverage(double *initscore) const override {
-    if (initscore == nullptr) return false;
-    double sumw = 0.0f;
-    double sumy = 0.0f;
-    if (weights_ == nullptr) {
-      for (data_size_t i = 0; i < num_data_; i++) {
-        sumy += label_[i];
-      }
-      sumw = static_cast<double>(num_data_);
-    } else {
-      for (data_size_t i = 0; i < num_data_; i++) {
-        sumy += weights_[i] * label_[i];
-        sumw += weights_[i];
-      }
-    }
-    const double yavg = sumy / sumw;
-    *initscore = std::log(yavg);
-    Log::Info("[%s:%s]: yavg=%f -> initscore=%f",  GetName(), __func__, yavg, *initscore);
-    return true;
+  double BoostFromScore() const override {
+    return std::log(RegressionL2loss::BoostFromScore());
   }
 
   bool IsConstantHessian() const override {
@@ -418,63 +485,159 @@ public:
     return "quantile";
   }
 
+  double BoostFromScore() const override {
+    if (weights_ != nullptr) {
+      #define data_reader(i) (label_[i])
+      #define weight_reader(i) (weights_[i])
+      WeightedPercentileFun(label_t, data_reader, weight_reader, num_data_, alpha_);
+      #undef data_reader
+      #undef weight_reader
+    } else {
+      #define data_reader(i) (label_[i])
+      PercentileFun(label_t, data_reader, num_data_, alpha_);
+      #undef data_reader
+    }
+  }
+
+  bool IsRenewTreeOutput() const override { return true; }
+
+  double RenewTreeOutput(double, const double* pred,
+                         const data_size_t* index_mapper,
+                         const data_size_t* bagging_mapper,
+                         data_size_t num_data_in_leaf) const override {
+    if (weights_ == nullptr) {
+      if (bagging_mapper == nullptr) {
+        #define data_reader(i) (label_[index_mapper[i]] - pred[index_mapper[i]])
+        PercentileFun(double, data_reader, num_data_in_leaf, alpha_);
+        #undef data_reader
+      } else {
+        #define data_reader(i) (label_[bagging_mapper[index_mapper[i]]] - pred[bagging_mapper[index_mapper[i]]])
+        PercentileFun(double, data_reader, num_data_in_leaf, alpha_);
+        #undef data_reader
+      }
+    } else {
+      if (bagging_mapper == nullptr) {
+        #define data_reader(i) (label_[index_mapper[i]] - pred[index_mapper[i]])
+        #define weight_reader(i) (weights_[index_mapper[i]])
+        WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha_);
+        #undef data_reader
+        #undef weight_reader
+      } else {
+        #define data_reader(i) (label_[bagging_mapper[index_mapper[i]]] - pred[bagging_mapper[index_mapper[i]]])
+        #define weight_reader(i) (weights_[bagging_mapper[index_mapper[i]]])
+        WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha_);
+        #undef data_reader
+        #undef weight_reader
+      }
+    }
+  }
+
 private:
   score_t alpha_;
 };
 
-class RegressionQuantileL2loss : public RegressionL2loss {
+
+/*!
+* \brief Mape Regression Loss
+*/
+class RegressionMAPELOSS : public RegressionL1loss {
 public:
-  explicit RegressionQuantileL2loss(const ObjectiveConfig& config) : RegressionL2loss(config) {
-    alpha_ = static_cast<score_t>(config.alpha);
+  explicit RegressionMAPELOSS(const ObjectiveConfig& config) : RegressionL1loss(config) {
   }
 
-  explicit RegressionQuantileL2loss(const std::vector<std::string>& strs) : RegressionL2loss(strs) {
+  explicit RegressionMAPELOSS(const std::vector<std::string>& strs) : RegressionL1loss(strs) {
 
   }
 
-  ~RegressionQuantileL2loss() {}
+  ~RegressionMAPELOSS() {}
+
+  void Init(const Metadata& metadata, data_size_t num_data) override {
+    RegressionL2loss::Init(metadata, num_data);
+    for (data_size_t i = 0; i < num_data_; ++i) {
+      if (std::fabs(label_[i]) < 1) {
+        Log::Warning("Met 'abs(label) < 1', will convert them to '1' in Mape objective and metric.");
+        break;
+      }
+    }
+    label_weight_.resize(num_data);
+    if (weights_ == nullptr) {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        label_weight_[i] = 1.0f / std::max(1.0f, std::fabs(label_[i]));
+      }
+    } else {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        label_weight_[i] = 1.0f / std::max(1.0f, std::fabs(label_[i])) * weights_[i];
+      }
+    }
+  }
 
   void GetGradients(const double* score, score_t* gradients,
                     score_t* hessians) const override {
     if (weights_ == nullptr) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        score_t delta = static_cast<score_t>(score[i] - label_[i]);
-        if (delta > 0) {
-          gradients[i] = (1.0f - alpha_) * delta;
-          hessians[i] = (1.0f - alpha_);
-        } else {
-          gradients[i] = alpha_ * delta;
-          hessians[i] = alpha_;
-        }
-
+        const double diff = score[i] - label_[i];
+        gradients[i] = static_cast<score_t>(Common::Sign(diff) * label_weight_[i]);
+        hessians[i] = 1.0f;
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        score_t delta = static_cast<score_t>(score[i] - label_[i]);
-        if (delta > 0) {
-          gradients[i] = static_cast<score_t>((1.0f - alpha_) * delta * weights_[i]);
-          hessians[i] = static_cast<score_t>((1.0f - alpha_) * weights_[i]);
-        } else {
-          gradients[i] = static_cast<score_t>(alpha_ * delta * weights_[i]);
-          hessians[i] = static_cast<score_t>(alpha_ * weights_[i]);
-        }
+        const double diff = score[i] - label_[i];
+        gradients[i] = static_cast<score_t>(Common::Sign(diff) * label_weight_[i]);
+        hessians[i] = weights_[i];
       }
     }
   }
 
-  bool IsConstantHessian() const override {
-    return false;
+  double BoostFromScore() const override {
+    const double alpha = 0.5;
+    #define data_reader(i) (label_[i])
+    #define weight_reader(i) (label_weight_[i])
+    WeightedPercentileFun(label_t, data_reader, weight_reader, num_data_, alpha);
+    #undef data_reader
+    #undef weight_reader
+  }
+
+  bool IsRenewTreeOutput() const override { return true; }
+
+  double RenewTreeOutput(double, const double* pred,
+                         const data_size_t* index_mapper,
+                         const data_size_t* bagging_mapper,
+                         data_size_t num_data_in_leaf) const override {
+    const double alpha = 0.5;
+    if (bagging_mapper == nullptr) {
+      #define data_reader(i) (label_[index_mapper[i]] - pred[index_mapper[i]])
+      #define weight_reader(i) (label_weight_[index_mapper[i]])
+      WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha);
+      #undef data_reader
+      #undef weight_reader
+    } else {
+      #define data_reader(i) (label_[bagging_mapper[index_mapper[i]]] - pred[bagging_mapper[index_mapper[i]]])
+      #define weight_reader(i) (label_weight_[bagging_mapper[index_mapper[i]]])
+      WeightedPercentileFun(double, data_reader, weight_reader, num_data_in_leaf, alpha);
+      #undef data_reader
+      #undef weight_reader
+    }
   }
 
   const char* GetName() const override {
-    return "quantile_l2";
+    return "mape";
+  }
+
+  bool IsConstantHessian() const override {
+    return true;
   }
 
 private:
-  score_t alpha_;
+  std::vector<label_t> label_weight_;
+
 };
+
+#undef PercentileFun
+#undef WeightedPercentileFun
 
 }  // namespace LightGBM
 #endif   // LightGBM_OBJECTIVE_REGRESSION_OBJECTIVE_HPP_

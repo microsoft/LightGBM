@@ -35,9 +35,14 @@ public:
 
   virtual bool IsConstantHessian() const { return false; }
 
-  virtual bool BoostFromAverage() const { return false; }
+  virtual bool IsRenewTreeOutput() const { return false; }
 
-  virtual bool GetCustomAverage(double *) const { return false; }
+  virtual double RenewTreeOutput(double ori_output, const double*,
+                                 const data_size_t*,
+                                 const data_size_t*,
+                                 data_size_t) const { return ori_output; }
+
+  virtual double BoostFromScore() const { return 0.0f; }
 
   virtual bool SkipEmptyClass() const { return false; }
 

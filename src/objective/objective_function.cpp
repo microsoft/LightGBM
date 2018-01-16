@@ -15,8 +15,6 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new RegressionL1loss(config);
   } else if (type == std::string("quantile")) {
     return new RegressionQuantileloss(config);
-  } else if (type == std::string("quantile_l2")) {
-    return new RegressionQuantileL2loss(config);
   } else if (type == std::string("huber")) {
     return new RegressionHuberLoss(config);
   } else if (type == std::string("fair")) {
@@ -35,6 +33,8 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new CrossEntropy(config);
   } else if (type == std::string("xentlambda") || type == std::string("cross_entropy_lambda")) {
     return new CrossEntropyLambda(config);
+  } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
+    return new RegressionMAPELOSS(config);
   }
   return nullptr;
 }
@@ -48,8 +48,6 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new RegressionL1loss(strs);
   } else if (type == std::string("quantile")) {
     return new RegressionQuantileloss(strs);
-  } else if (type == std::string("quantile_l2")) {
-    return new RegressionQuantileL2loss(strs);
   } else if (type == std::string("huber")) {
     return new RegressionHuberLoss(strs);
   } else if (type == std::string("fair")) {

@@ -206,11 +206,6 @@ public:
     }
   }
 
-  /*!
-  * \brief Get Type name of this boosting object
-  */
-  const char* SubModelName() const override { return "tree"; }
-
 private:
   std::vector<data_size_t> tmp_indice_right_;
 };

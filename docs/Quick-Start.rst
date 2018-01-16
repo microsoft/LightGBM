@@ -68,7 +68,7 @@ Some important parameters:
    -  ``convert_model``, for converting model file into if-else format, see more information in `Convert model parameters <./Parameters.rst#convert-model-parameters>`__
 
 -  ``application``, default=\ ``regression``, type=enum,
-   options=\ ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``quantile_l2``,
+   options=\ ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``,
    ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``,
    alias=\ ``objective``, ``app``
 
@@ -86,7 +86,7 @@ Some important parameters:
 
       -  ``quantile``, `Quantile regression`_
 
-      -  ``quantile_l2``, like the ``quantile``, but L2 loss is used instead
+      -  ``mape``, `MAPE loss`_
 
    -  ``binary``, binary `log loss`_ classification application
 
@@ -233,6 +233,8 @@ Examples
 .. _Poisson regression: https://en.wikipedia.org/wiki/Poisson_regression
 
 .. _Quantile regression: https://en.wikipedia.org/wiki/Quantile_regression
+
+.. _MAPE loss: https://en.wikipedia.org/wiki/Mean_absolute_percentage_error
 
 .. _log loss: https://en.wikipedia.org/wiki/Cross_entropy
 

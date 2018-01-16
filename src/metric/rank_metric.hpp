@@ -57,9 +57,11 @@ public:
         sum_query_weights_ += query_weights_[i];
       }
     }
+    inverse_max_dcgs_.resize(num_queries_);
     // cache the inverse max DCG for all querys, used to calculate NDCG
+    #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_queries_; ++i) {
-      inverse_max_dcgs_.emplace_back(eval_at_.size(), 0.0f);
+      inverse_max_dcgs_[i].resize(eval_at_.size(), 0.0f);
       DCGCalculator::CalMaxDCG(eval_at_, label_ + query_boundaries_[i],
                                query_boundaries_[i + 1] - query_boundaries_[i],
                                &inverse_max_dcgs_[i]);
