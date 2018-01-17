@@ -31,7 +31,7 @@ Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config
     return new AUCMetric(config);
   } else if (type == std::string("ndcg")) {
     return new NDCGMetric(config);
-  } else if (type == std::string("map")) {
+  } else if (type == std::string("map") || type == std::string("mean_average_precision")) {
     return new MapMetric(config);
   } else if (type == std::string("multi_logloss")) {
     return new MultiSoftmaxLoglossMetric(config);

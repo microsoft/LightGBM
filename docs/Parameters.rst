@@ -72,7 +72,7 @@ Core Parameters
 
       -  ``quantile``, `Quantile regression`_
 
-      -  ``mape``, `MAPE loss`_
+      -  ``mape``, `MAPE loss`_, alias=\ ``mean_absolute_percentage_error``
 
    -  ``binary``, binary `log loss`_ classification application
 
@@ -570,7 +570,7 @@ Metric Parameters
 
    -  ``quantile``, `Quantile regression`_
    
-   -  ``mape``, `MAPE loss`_
+   -  ``mape``, `MAPE loss`_, alias=\ ``mean_absolute_percentage_error``
 
    -  ``huber``, `Huber loss`_
 
@@ -580,7 +580,7 @@ Metric Parameters
 
    -  ``ndcg``, `NDCG`_
 
-   -  ``map``, `MAP`_
+   -  ``map``, `MAP`_, alias=\ ``mean_average_precision``
 
    -  ``auc``, `AUC`_
 
