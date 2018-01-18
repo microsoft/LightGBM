@@ -189,6 +189,8 @@ Support following application:
 
 -  multi classification
 
+-  cross-entropy
+
 -  lambdarank, the objective function is lambdarank with NDCG
 
 Support following metrics:
@@ -221,7 +223,7 @@ Support following metrics:
 
 -  MAPE
 
--  kullback Leibler
+-  Kullback-Leibler
 
 For more details, please refer to `Parameters <./Parameters.rst#metric-parameters>`__.
 
