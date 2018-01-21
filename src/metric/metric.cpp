@@ -47,7 +47,7 @@ Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config
     return new MAPEMetric(config);
   } else if (type == std::string("gamma")) {
     return new GammaMetric(config);
-  } else if (type == std::string("gamma-deviance") || type == std::string("gamma_deviance")) {
+  } else if (type == std::string("gamma_deviance")) {
     return new GammaDevianceMetric(config);
   } else if (type == std::string("tweedie")) {
     return new TweedieMetric(config);

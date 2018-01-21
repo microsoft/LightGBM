@@ -596,7 +596,7 @@ Metric Parameters
 
    -  ``gamma``, negative log-likelihood for Gamma regression
 
-   -  ``gamma_deviance``, residual deviance for Gamma regression, alias=\ ``gamma-deviance``
+   -  ``gamma_deviance``, residual deviance for Gamma regression
 
    -  ``tweedie``, negative log-likelihood for Tweedie regression
 
