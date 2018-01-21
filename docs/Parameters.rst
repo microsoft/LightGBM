@@ -82,9 +82,11 @@ Core Parameters
 
    -  multi-class classification application
 
-      -  ``multiclass``, `softmax`_ objective function, ``num_class`` should be set as well
+      -  ``multiclass``, `softmax`_ objective function, alias=\ ``softmax``
 
-      -  ``multiclassova``, `One-vs-All`_ binary objective function, ``num_class`` should be set as well
+      -  ``multiclassova``, `One-vs-All`_ binary objective function, alias=\ ``multiclass_ova``, ``ova``, ``ovr``
+
+      -  ``num_class`` should be set as well
 
    -  cross-entropy application
 
@@ -610,7 +612,7 @@ Metric Parameters
 
    -  ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
 
-   -  ``multi_logloss``, log loss for mulit-class classification, alias=\ ``multiclass``, ``multiclass_ova``
+   -  ``multi_logloss``, log loss for mulit-class classification, alias=\ ``multiclass``, ``softmax``, ``multiclassova``, ``multiclass_ova``, ``ova``, ``ovr``
 
    -  ``multi_error``, error rate for mulit-class classification
 

@@ -33,7 +33,7 @@ Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config
     return new NDCGMetric(config);
   } else if (type == std::string("map") || type == std::string("mean_average_precision")) {
     return new MapMetric(config);
-  } else if (type == std::string("multi_logloss") || type == std::string("multiclass") || type == std::string("multiclass_ova")) {
+  } else if (type == std::string("multi_logloss") || type == std::string("multiclass") || type == std::string("softmax") || type == std::string("multiclassova") || type == std::string("multiclass_ova") || type == std::string("ova") || type == std::string("ovr")) {
     return new MultiSoftmaxLoglossMetric(config);
   } else if (type == std::string("multi_error")) {
     return new MultiErrorMetric(config);
