@@ -608,7 +608,7 @@ Metric Parameters
 
    -  ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
 
-   -  ``multi_logloss``, log loss for mulit-class classification
+   -  ``multi_logloss``, log loss for mulit-class classification, alias=\ ``multiclass``, ``multiclass_ova``
 
    -  ``multi_error``, error rate for mulit-class classification
 
