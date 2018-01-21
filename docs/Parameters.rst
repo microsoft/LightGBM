@@ -592,6 +592,12 @@ Metric Parameters
 
    -  ``poisson``, negative log-likelihood for Poisson regression
 
+   -  ``gamma``, negative log-likelihood for gamma regression
+
+   -  ``gamma_deviance``, residual deviance for gamma regression, alias=\ ``gamma-deviance``
+
+   -  ``tweedie``, negative log-likelihood for tweedie regression
+
    -  ``ndcg``, `NDCG`_
 
    -  ``map``, `MAP`_, alias=\ ``mean_average_precision``
@@ -611,12 +617,6 @@ Metric Parameters
    -  ``xentlambda``, "intensity-weighted" cross-entropy, alias=\ ``cross_entropy_lambda``
 
    -  ``kldiv``, `Kullback-Leibler divergence`_, alias=\ ``kullback_leibler``
-
-   -  ``gamma``, negative log-likelihood for gamma regression
-
-   -  ``gamma_deviance``, residual deviance for gamma regression, alias=\ ``gamma-deviance``
-
-   -  ``tweedie``, negative log-likelihood for tweedie regression
 
    -  support multi metrics, separated by ``,``
 
