@@ -592,13 +592,13 @@ Metric Parameters
 
    -  ``fair``, `Fair loss`_
 
-   -  ``poisson``, negative log-likelihood for Poisson regression
+   -  ``poisson``, negative log-likelihood for `Poisson regression`_
 
-   -  ``gamma``, negative log-likelihood for gamma regression
+   -  ``gamma``, negative log-likelihood for Gamma regression
 
-   -  ``gamma_deviance``, residual deviance for gamma regression, alias=\ ``gamma-deviance``
+   -  ``gamma_deviance``, residual deviance for Gamma regression, alias=\ ``gamma-deviance``
 
-   -  ``tweedie``, negative log-likelihood for tweedie regression
+   -  ``tweedie``, negative log-likelihood for Tweedie regression
 
    -  ``ndcg``, `NDCG`_
 
