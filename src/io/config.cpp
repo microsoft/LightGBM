@@ -90,6 +90,13 @@ void GetMetricType(const std::unordered_map<std::string, std::string>& params, s
     }
     metric_types->shrink_to_fit();
   }
+  // add names of objective function if not providing metric
+  if (metric_types->empty()) {
+    if (ConfigBase::GetString(params, "objective", &value)) {
+      std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
+      metric_types->push_back(value);
+    }
+  }
 }
 
 void GetTaskType(const std::unordered_map<std::string, std::string>& params, TaskType* task_type) {
