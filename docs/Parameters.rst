@@ -562,6 +562,7 @@ Objective Parameters
    -  will fit ``sqrt(label)`` instead and prediction result will be also automatically converted to ``pow2(prediction)``
 
 -  ``tweedie_variance_power``, default=\ ``1.5``, type=\ ``double``, range=\ ``[1,2)``
+
    - parameter that controls the variance of the tweedie distribution
    
    - set closer to 2 to shift towards a gamma distribution
