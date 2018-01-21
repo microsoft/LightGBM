@@ -1,3 +1,9 @@
+---
+title: "Efficiency for Many Model Trainings"
+output: html_document
+---
+
+```{r}
 # Efficient training means training without giving up too much RAM
 # In the case of many trainings (like 100+ models), RAM will be eaten very quickly
 # Therefore, it is essential to know a strategy to deal with such issue
@@ -37,3 +43,6 @@ for (i in 1:(ifelse(small, 100, 1000)) {
                         reset_data = TRUE)
   gc(verbose = FALSE)
 }
+
+```
+

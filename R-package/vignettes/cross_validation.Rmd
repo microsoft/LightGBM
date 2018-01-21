@@ -1,3 +1,9 @@
+---
+title: "Cross Validation"
+output: html_document
+---
+
+```{r}
 require(lightgbm)
 # load in the agaricus dataset
 data(agaricus.train, package = "lightgbm")
@@ -55,3 +61,6 @@ lgb.cv(params = param,
        obj = logregobj,
        eval = evalerror,
        nfold = 5)
+
+```
+

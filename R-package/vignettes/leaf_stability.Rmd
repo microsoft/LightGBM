@@ -1,3 +1,9 @@
+---
+title: "Leaf (in)Stability example"
+output: html_document
+---
+
+```{r}
 # We are going to look at how iterating too much might generate observation instability.
 # Obviously, we are in a controlled environment, without issues (real rules).
 # Do not do this in a real scenario.
@@ -128,3 +134,6 @@ ggplot(data = new_data3, mapping = aes(x = Y, y = ..count.., fill = binned)) + g
 
 # Compare with our second model, the difference is severe. This is smooth.
 ggplot(data = new_data2, mapping = aes(x = Y, y = ..count.., fill = binned)) + geom_density(position = "fill") + theme_bw() + labs(title = "Depth Density", x = "Prediction Probability", y = "Bin Density")
+
+```
+

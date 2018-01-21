@@ -1,3 +1,9 @@
+---
+title: "Categorical Feature Preparation"
+output: html_document
+---
+
+```{r}
 # Here we are going to try training a model with categorical features
 
 # Load libraries
@@ -79,3 +85,7 @@ model <- lgb.train(list(objective = "binary",
 # Try to find split_feature: 2
 # If you find it, it means it used a categorical feature in the first tree
 lgb.dump(model, num_iteration = 1)
+
+
+```
+

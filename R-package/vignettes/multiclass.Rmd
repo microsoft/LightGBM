@@ -1,3 +1,9 @@
+---
+title: "Multiclass training/prediction"
+output: html_document
+---
+
+```{r}
 require(lightgbm)
 
 # We load the default iris dataset shipped with R
@@ -66,3 +72,6 @@ my_preds <- predict(model, test[, 1:4], predleaf = TRUE)
 
 # Predict leaf index as matrix instead of vector
 my_preds <- predict(model, test[, 1:4], predleaf = TRUE, reshape = TRUE)
+
+```
+

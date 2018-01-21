@@ -1,3 +1,9 @@
+---
+title: "Boosting from existing prediction"
+output: html_document
+---
+
+```{r}
 require(lightgbm)
 require(methods)
 
@@ -34,3 +40,6 @@ bst <- lgb.train(params = param,
                  nrounds = 5,
                  nthread = 1,
                  valids = valids)
+
+```
+
