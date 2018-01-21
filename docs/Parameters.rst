@@ -54,13 +54,13 @@ Core Parameters
    - **Note**: Only can be used in CLI version.
 
 -  ``application``, default=\ ``regression``, type=enum,
-   options=\ ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``,
-   ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``, ``gammma``, ``tweedie``,
+   options=\ ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gammma``, ``tweedie``,
+   ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``,
    alias=\ ``objective``, ``app``
 
    -  regression application
 
-      -  ``regression_l2``, L2 loss, alias=\ ``regression``, ``mean_squared_error``, ``mse``
+      -  ``regression_l2``, L2 loss, alias=\ ``regression``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
 
       -  ``regression_l1``, L1 loss, alias=\ ``mean_absolute_error``, ``mae``
 
@@ -74,9 +74,9 @@ Core Parameters
 
       -  ``mape``, `MAPE loss`_, alias=\ ``mean_absolute_percentage_error``
 
-      -  ``gamma``, gamma regression with log-link. It might be useful, e.g., for modeling insurance claims severity, or for any target that might be `gamma-distributed`_
+      -  ``gamma``, Gamma regression with log-link. It might be useful, e.g., for modeling insurance claims severity, or for any target that might be `gamma-distributed`_
 
-      -  ``tweedie``, tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed`_.
+      -  ``tweedie``, Tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed`_
 
    -  ``binary``, binary `log loss`_ classification application
 
