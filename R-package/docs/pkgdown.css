@@ -1,0 +1,163 @@
+/* Sticker footer */
+body > .container {
+  display: flex;
+  padding-top: 60px;
+  min-height: calc(100vh);
+  flex-direction: column;
+}
+
+body > .container .row {
+  flex: 1;
+}
+
+footer {
+  margin-top: 45px;
+  padding: 35px 0 36px;
+  border-top: 1px solid #e5e5e5;
+  color: #666;
+  display: flex;
+}
+footer p {
+  margin-bottom: 0;
+}
+footer div {
+  flex: 1;
+}
+footer .pkgdown {
+  text-align: right;
+}
+footer p {
+  margin-bottom: 0;
+}
+
+img.icon {
+  float: right;
+}
+
+img {
+  max-width: 100%;
+}
+
+/* Section anchors ---------------------------------*/
+
+a.anchor {
+  margin-left: -30px;
+  display:inline-block;
+  width: 30px;
+  height: 30px;
+  visibility: hidden;
+
+  background-image: url(./link.svg);
+  background-repeat: no-repeat;
+  background-size: 20px 20px;
+  background-position: center center;
+}
+
+.hasAnchor:hover a.anchor {
+  visibility: visible;
+}
+
+@media (max-width: 767px) {
+  .hasAnchor:hover a.anchor {
+    visibility: hidden;
+  }
+}
+
+
+/* Fixes for fixed navbar --------------------------*/
+
+.contents h1, .contents h2, .contents h3, .contents h4 {
+  padding-top: 60px;
+  margin-top: -60px;
+}
+
+/* Static header placement on mobile devices */
+@media (max-width: 767px) {
+  .navbar-fixed-top {
+    position: absolute;
+  }
+  .navbar {
+    padding: 0;
+  }
+}
+
+
+/* Sidebar --------------------------*/
+
+#sidebar {
+  margin-top: 30px;
+}
+#sidebar h2 {
+  font-size: 1.5em;
+  margin-top: 1em;
+}
+
+#sidebar h2:first-child {
+  margin-top: 0;
+}
+
+#sidebar .list-unstyled li {
+  margin-bottom: 0.5em;
+}
+
+/* Reference index & topics ----------------------------------------------- */
+
+.ref-index th {font-weight: normal;}
+.ref-index h2 {font-size: 20px;}
+
+.ref-index td {vertical-align: top;}
+.ref-index .alias {width: 40%;}
+.ref-index .title {width: 60%;}
+
+.ref-index .alias {width: 40%;}
+.ref-index .title {width: 60%;}
+
+.ref-arguments th {text-align: right; padding-right: 10px;}
+.ref-arguments th, .ref-arguments td {vertical-align: top;}
+.ref-arguments .name {width: 20%;}
+.ref-arguments .desc {width: 80%;}
+
+/* Nice scrolling for wide elements --------------------------------------- */
+
+table {
+  display: block;
+  overflow: auto;
+}
+
+/* Syntax highlighting ---------------------------------------------------- */
+
+pre {
+  word-wrap: normal;
+  word-break: normal;
+  border: 1px solid #eee;
+}
+
+pre, code {
+  background-color: #f8f8f8;
+  color: #333;
+}
+
+pre .img {
+  margin: 5px 0;
+}
+
+pre .img img {
+  background-color: #fff;
+  display: block;
+  height: auto;
+}
+
+code a, pre a {
+  color: #375f84;
+}
+
+.fl      {color: #1514b5;}
+.fu      {color: #000000;} /* function */
+.ch,.st  {color: #036a07;} /* string */
+.kw      {color: #264D66;} /* keyword */
+.co      {color: #888888;} /* comment */
+
+.message { color: black;   font-weight: bolder;}
+.error   { color: orange;  font-weight: bolder;}
+.warning { color: #6A0366; font-weight: bolder;}
+

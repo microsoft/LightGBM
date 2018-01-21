@@ -3,13 +3,11 @@ Type: Package
 Title: Light Gradient Boosting Machine
 Version: 2.0.12
 Date: 2018-01-21
-Authors@R: c(person("Guolin", "Ke", , "guolin.ke@microsoft.com", role = c("aut", "cre")),
-			 person("Damien", "Soukhavong", , "damien.soukhavong@skema.edu", role = c("ctb")),
-			 person("Yachen", "Yan", , "to_be_added_later@mail.com", role = c("ctb")))
-Author: Guolin Ke [aut, cre],
-	Damien Soukhavong [ctb],
-	Yachen Yan [ctb]
-Maintainer: Guolin Ke <guolin.ke@microsoft.com>
+Authors@R: c(
+	person("Guolin", "Ke", email = "guolin.ke@microsoft.com", role = c("aut", "cre")),
+	person("Damien", "Soukhavong", email = "damien.soukhavong@skema.edu", role = c("ctb")),
+	person("Yachen", "Yan", role = c("ctb"))
+	)
 Description: LightGBM is a gradient boosting framework that uses tree based learning algorithms. 
     It is designed to be distributed and efficient with the following advantages:
         1. Faster training speed and higher efficiency.

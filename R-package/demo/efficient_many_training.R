@@ -8,7 +8,7 @@
 # Just doing reset=TRUE will already improve things: OS reports 4.6GB.
 # Doing reset=TRUE and calling gc() in the loop will have OS 1.3GB. Thanks for the latest tip."
 
-# 2017-12-25 example patch: use the "small" switch to make it bigger.
+# 2018-01-21 example patch: use the "small" switch to make it bigger.
 
 small <- TRUE
 
@@ -28,8 +28,8 @@ data$construct()
 # It MUST remain constant (if not increasing very slightly)
 gbm <- list()
 
-for (i in 1:(ifelse(small, 100, 1000)) {
-  print(i)
+for (i in 1:(ifelse(small, 100, 1000))) {
+  cat(format(Sys.time(), "%a %b %d %Y %X"), ": ", i, "\n", sep = "")
   gbm[[i]] <- lgb.train(params = list(objective = "regression",
 									  nthread = 1),
                         data = data,

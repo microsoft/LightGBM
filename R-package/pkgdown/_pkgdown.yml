@@ -1,0 +1,120 @@
+template:
+  params:
+    bootswatch: united
+
+authors:
+  Guolin Ke:
+    href: https://github.com/guolinke
+    html: <img src="https://avatars0.githubusercontent.com/u/16040950?s=400&v=4" height="48" /> Guolin Ke
+  Damien Soukhavong:
+    href: https://github.com/Laurae2
+    html: <img src="https://avatars1.githubusercontent.com/u/9083669?s=460&v=4" height="48" /> Damien Soukhavong
+  Yachen Yan:
+    href: https://github.com/yanyachen
+    html: <img src="https://avatars1.githubusercontent.com/u/6893682?s=460&v=4" height="48" /> Yachen Yan
+
+site:
+  root: ''
+  title: LightGBM, Light Gradient Boosting Machine
+
+reference:
+  - title: Dataset
+    desc: Datasets included with the R package
+    contents:
+    - '`agaricus.test`'
+    - '`agaricus.train`'
+    - '`bank`'
+  - title: Data Input / Output
+    desc: Data I/O required for LightGBM
+    contents:
+    - '`dim.lgb.Dataset`'
+    - '`dimnames.lgb.Dataset`'
+    - '`getinfo`'
+    - '`setinfo`'
+    - '`slice`'
+    - '`lgb.Dataset.construct`'
+    - '`lgb.Dataset.create.valid`'
+    - '`lgb.Dataset`'
+    - '`lgb.Dataset.save`'
+    - '`lgb.Dataset.set.categorical`'
+    - '`lgb.Dataset.set.reference`'
+  - title: Machine Learning
+    desc: Train models with LightGBM
+    contents:
+    - '`lgb.prepare`'
+    - '`lgb.prepare2`'
+    - '`lgb.prepare_rules`'
+    - '`lgb.prepare_rules2`'
+    - '`lgb.cv`'
+    - '`lgb.train`'
+  - title: Saving / Loading Models
+    desc: Save and Load LightGBM models
+    contents:
+    - '`lgb.dump`'
+    - '`lgb.load`'
+    - '`lgb.model.dt.tree`'
+    - '`lgb.save`'
+    - '`predict.lgb.Booster`'
+    - '`readRDS.lgb.Booster`'
+    - '`saveRDS.lgb.Booster`'
+  - title: Predictive Analysis
+    desc: Analyze your predictions
+    contents:
+    - '`lgb.get.eval.result`'
+    - '`lgb.importance`'
+    - '`lgb.interprete`'
+    - '`lgb.plot.importance`'
+    - '`lgb.plot.interpretation`'
+  - title: Miscellaneous
+    desc: Ungroupable functions to troubleshoot LightGBM
+    contents:
+    - '`lgb.unloader`'
+
+navbar:
+  title: LightGBM
+  type: default
+  left:
+  - icon: fa-home fa-lg
+    href: index.html
+  - text: Reference
+    href: reference/index.html
+  - text: Vignettes
+    menu:
+    - text: Basic Walkthrough
+      href: articles/basic_walkthrough.html
+    - text: Boosting from existing prediction
+      href: articles/boost_from_prediction.html
+    - text: Categorical Feature Preparation
+      href: articles/categorical_features_prepare.html
+    - text: Categorical Feature Preparation with Rule
+      href: articles/categorical_features_rules.html
+    - text: Cross Validation
+      href: articles/cross_validation.html
+    - text: Early Stop in training
+      href: articles/early_stopping.html
+    - text: Efficiency for Many Model Trainings
+      href: articles/efficient_many_training.html
+    - text: Leaf (in)Stability example
+      href: articles/leaf_stability.html
+    - text: Multiclass training/prediction
+      href: articles/multiclass.html
+    - text: Weight-Parameter adjustment relationship
+      href: articles/weight_param.html
+  right:
+  - icon: fa-github fa-lg
+    href: https://github.com/Microsoft/LightGBM
+
+articles:
+- title: Vignettes
+  desc: ~
+  contents:
+  - '`basic_walkthrough`'
+  - '`boost_from_prediction`'
+  - '`categorical_features_prepare`'
+  - '`categorical_features_rules`'
+  - '`cross_validation`'
+  - '`early_stopping`'
+  - '`efficient_many_training`'
+  - '`leaf_stability`'
+  - '`multiclass`'
+  - '`weight_param`'
