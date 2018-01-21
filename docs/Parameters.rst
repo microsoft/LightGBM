@@ -578,7 +578,7 @@ Metric Parameters
 
    -  ``l1``, absolute loss, alias=\ ``mean_absolute_error``, ``mae``
 
-   -  ``l2``, square loss, alias=\ ``mean_squared_error``, ``mse``
+   -  ``l2``, square loss, alias=\ ``mean_squared_error``, ``mse``, ``regression_l2``, ``regression``
 
    -  ``l2_root``, root square loss, alias=\ ``root_mean_squared_error``, ``rmse``
 
