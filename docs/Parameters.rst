@@ -576,6 +576,8 @@ Metric Parameters
 
 -  ``metric``, default=``None``, type=multi-enum
 
+   -  if ``None``, metric corresponding to specified application will be used
+
    -  ``l1``, absolute loss, alias=\ ``mean_absolute_error``, ``mae``, ``regression_l1``
 
    -  ``l2``, square loss, alias=\ ``mean_squared_error``, ``mse``, ``regression_l2``, ``regression``
