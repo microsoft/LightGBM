@@ -366,7 +366,7 @@ public:
   explicit RegressionPoissonLoss(const ObjectiveConfig& config): RegressionL2loss(config) {
     max_delta_step_ = static_cast<double>(config.poisson_max_delta_step);
     if (sqrt_) {
-      Log::Warning("cannot use sqrt transform in Poisson Regression, will auto disable it.");
+      Log::Warning("cannot use sqrt transform in %s Regression, will auto disable it.", GetName());
       sqrt_ = false;
     }
   }
@@ -379,7 +379,7 @@ public:
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
     if (sqrt_) {
-      Log::Warning("cannot use sqrt transform in Poisson Regression, will auto disable it.");
+      Log::Warning("cannot use sqrt transform in %s Regression, will auto disable it.", GetName());
       sqrt_ = false;
     }
     RegressionL2loss::Init(metadata, num_data);
@@ -634,6 +634,86 @@ public:
 private:
   std::vector<label_t> label_weight_;
 
+};
+
+
+
+/*!
+* \brief Objective function for Gamma regression
+*/
+class RegressionGammaLoss : public RegressionPoissonLoss {
+public:
+  explicit RegressionGammaLoss(const ObjectiveConfig& config) : RegressionPoissonLoss(config) {
+  }
+
+  explicit RegressionGammaLoss(const std::vector<std::string>& strs) : RegressionPoissonLoss(strs) {
+
+  }
+
+  ~RegressionGammaLoss() {}
+
+  void GetGradients(const double* score, score_t* gradients,
+                    score_t* hessians) const override {
+    if (weights_ == nullptr) {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        gradients[i] = static_cast<score_t>(1.0 - label_[i] / std::exp(score[i]));
+        hessians[i] = static_cast<score_t>(label_[i] / std::exp(score[i]));
+      }
+    } else {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        gradients[i] = static_cast<score_t>(1.0 - label_[i] / std::exp(score[i]) * weights_[i]);
+        hessians[i] = static_cast<score_t>(label_[i] / std::exp(score[i]) * weights_[i]);
+      }
+    }
+  }
+
+  const char* GetName() const override {
+    return "gamma";
+  }
+ 
+};
+
+/*!
+* \brief Objective function for Tweedie regression
+*/
+class RegressionTweedieLoss: public RegressionPoissonLoss {
+public:
+  explicit RegressionTweedieLoss(const ObjectiveConfig& config) : RegressionPoissonLoss(config) {
+    rho_ = config.tweedie_variance_power;
+  }
+
+  explicit RegressionTweedieLoss(const std::vector<std::string>& strs) : RegressionPoissonLoss(strs) {
+
+  }
+
+  ~RegressionTweedieLoss() {}
+
+  void GetGradients(const double* score, score_t* gradients,
+                    score_t* hessians) const override {
+    if (weights_ == nullptr) {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        gradients[i] = static_cast<score_t>(-label_[i] * std::exp((1 - rho_) * score[i]) + std::exp((2 - rho_) * score[i]));
+        hessians[i] = static_cast<score_t>(-label_[i] * (1 - rho_) * std::exp((1 - rho_) * score[i]) + 
+          (2 - rho_) * std::exp((2 - rho_) * score[i]));
+      }
+    } else {
+      #pragma omp parallel for schedule(static)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        gradients[i] = static_cast<score_t>((-label_[i] * std::exp((1 - rho_) * score[i]) + std::exp((2 - rho_) * score[i])) * weights_[i]);
+        hessians[i] = static_cast<score_t>((-label_[i] * (1 - rho_) * std::exp((1 - rho_) * score[i]) +
+          (2 - rho_) * std::exp((2 - rho_) * score[i])) * weights_[i]);
+      }
+    }
+  }
+
+  const char* GetName() const override {
+    return "tweedie";
+  }
+private:
+  double rho_;
 };
 
 #undef PercentileFun

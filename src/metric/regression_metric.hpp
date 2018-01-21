@@ -242,5 +242,59 @@ public:
   }
 };
 
+class GammaMetric : public RegressionMetric<GammaMetric> {
+public:
+  explicit GammaMetric(const MetricConfig& config) :RegressionMetric<GammaMetric>(config) {
+  }
+
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
+    const double psi = 1.0;
+    const double theta = -1.0 / score;
+    const double a = psi;
+    const double b = -std::log(-theta);
+    const double c = 1. / psi * std::log(label / psi) - std::log(label) - std::lgamma(1.0 / psi);
+    return -((label * theta - b) / a + c);
+  }
+  inline static const char* Name() {
+    return "gamma";
+  }
+};
+
+
+class GammaDevianceMetric : public RegressionMetric<GammaDevianceMetric> {
+public:
+  explicit GammaDevianceMetric(const MetricConfig& config) :RegressionMetric<GammaDevianceMetric>(config) {
+  }
+
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
+    const double epsilon = 1.0e-9;
+    const double tmp = label / (score + epsilon);
+    return tmp - std::log(tmp) - 1;
+  }
+  inline static const char* Name() {
+    return "gamma-deviance";
+  }
+  inline static double AverageLoss(double sum_loss, double sum_weights) {
+    return sum_loss * 2;
+  }
+};
+
+class TweedieMetric : public RegressionMetric<TweedieMetric> {
+public:
+  explicit TweedieMetric(const MetricConfig& config) :RegressionMetric<TweedieMetric>(config) {
+  }
+
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig& config) {
+    const double rho = config.tweedie_variance_power;
+    const double a = label * std::exp((1 - rho) * std::log(score)) / (1 - rho);
+    const double b = std::exp((2 - rho) * std::log(score)) / (2 - rho);
+    return -a + b;
+  }
+  inline static const char* Name() {
+    return "tweedie";
+  }
+};
+
+
 }  // namespace LightGBM
 #endif   // LightGBM_METRIC_REGRESSION_METRIC_HPP_

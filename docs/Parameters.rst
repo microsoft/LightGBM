@@ -55,7 +55,7 @@ Core Parameters
 
 -  ``application``, default=\ ``regression``, type=enum,
    options=\ ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``,
-   ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``,
+   ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``, ``gammma``, ``tweedie``,
    alias=\ ``objective``, ``app``
 
    -  regression application
@@ -73,6 +73,10 @@ Core Parameters
       -  ``quantile``, `Quantile regression`_
 
       -  ``mape``, `MAPE loss`_, alias=\ ``mean_absolute_percentage_error``
+
+      -  ``gamma``, gamma regression with log-link. It might be useful, e.g., for modeling insurance claims severity, or for any target that might be `gamma-distributed`_
+
+      -  ``tweedie``, tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed`_.
 
    -  ``binary``, binary `log loss`_ classification application
 
@@ -557,10 +561,17 @@ Objective Parameters
 
    -  will fit ``sqrt(label)`` instead and prediction result will be also automatically converted to ``pow2(prediction)``
 
+-  ``tweedie_variance_power``, default=\ ``1.5``, type=\ ``double``, range=\ ``[1,2)``
+   - parameter that controls the variance of the tweedie distribution
+   
+   - set closer to 2 to shift towards a gamma distribution
+   
+   - set closer to 1 to shift towards a poisson distribution
+
 Metric Parameters
 -----------------
 
--  ``metric``, default={``l2`` for regression, ``binary_logloss`` for binary classification, ``ndcg`` for lambdarank}, type=multi-enum
+-  ``metric``, default=``None``, type=multi-enum
 
    -  ``l1``, absolute loss, alias=\ ``mean_absolute_error``, ``mae``
 
@@ -576,7 +587,7 @@ Metric Parameters
 
    -  ``fair``, `Fair loss`_
 
-   -  ``poisson``, `Poisson regression`_
+   -  ``poisson``, negative log-likelihood for Poisson regression
 
    -  ``ndcg``, `NDCG`_
 
@@ -597,6 +608,12 @@ Metric Parameters
    -  ``xentlambda``, "intensity-weighted" cross-entropy, alias=\ ``cross_entropy_lambda``
 
    -  ``kldiv``, `Kullback-Leibler divergence`_, alias=\ ``kullback_leibler``
+
+   -  ``gamma``, negative log-likelihood for gamma regression
+
+   -  ``gamma_deviance``, residual deviance for gamma regression, alias=\ ``gamma-deviance``
+
+   -  ``tweedie``, negative log-likelihood for tweedie regression
 
    -  support multi metrics, separated by ``,``
 
@@ -769,3 +786,7 @@ You can specific query/group id in data file now. Please refer to parameter ``gr
 .. _One-vs-All: https://en.wikipedia.org/wiki/Multiclass_classification#One-vs.-rest
 
 .. _Kullback-Leibler divergence: https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence
+
+.. _gamma-distributed: https://en.wikipedia.org/wiki/Gamma_distribution#Applications
+
+.. _tweedie-distributed: https://en.wikipedia.org/wiki/Tweedie_distribution#Applications

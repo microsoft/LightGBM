@@ -225,6 +225,10 @@ Support following metrics:
 
 -  Kullback-Leibler
 
+-  Gamma
+
+-  Tweedie
+
 For more details, please refer to `Parameters <./Parameters.rst#metric-parameters>`__.
 
 Other Features
