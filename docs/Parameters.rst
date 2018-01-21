@@ -604,7 +604,7 @@ Metric Parameters
 
    -  ``auc``, `AUC`_
 
-   -  ``binary_logloss``, `log loss`_
+   -  ``binary_logloss``, `log loss`_, alias=\ ``binary``
 
    -  ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
 
