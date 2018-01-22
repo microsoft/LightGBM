@@ -181,7 +181,7 @@ FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
 
 def convert_from_sliced_object(data):
     """fix the memory of multi-dimensional sliced object"""
-    if data.base is not None and isinstance(data.base, nd.ndarray):
+    if data.base is not None and isinstance(data.base, np.ndarray):
         base_shape = data.base.shape
         if base_shape != data.shape and len(base_shape) > 1 and base_shape[1] > 1:
             return np.copy(data)
