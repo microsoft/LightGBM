@@ -566,8 +566,8 @@ class TestEngine(unittest.TestCase):
             predictions = lgbm_model.predict(features)
             return predictions
         num_samples = 100
-        features = np.random.rand(num_samples, 5)                                                                                                        
-        positive_samples = int(num_samples*0.25)
+        features = np.random.rand(num_samples, 5)
+        positive_samples = int(num_samples * 0.25)
         labels = np.append(
             np.ones(positive_samples, dtype=np.float32),
             np.zeros(num_samples - positive_samples, dtype=np.float32),
@@ -584,10 +584,10 @@ class TestEngine(unittest.TestCase):
         stacked_features = np.column_stack((stacked_features, np.ones(num_samples, dtype=np.float32)))
         stacked_features = np.column_stack((stacked_features, np.ones(num_samples, dtype=np.float32)))
         # append some rows
-        stacked_features = np.concatenate((np.ones(9, dtype=np.float32).reshape((1,9)), stacked_features), axis=0)
-        stacked_features = np.concatenate((np.ones(9, dtype=np.float32).reshape((1,9)), stacked_features), axis=0)
-        stacked_features = np.concatenate((stacked_features, np.ones(9, dtype=np.float32).reshape((1,9))), axis=0)
-        stacked_features = np.concatenate((stacked_features, np.ones(9, dtype=np.float32).reshape((1,9))), axis=0)
+        stacked_features = np.concatenate((np.ones(9, dtype=np.float32).reshape((1, 9)), stacked_features), axis=0)
+        stacked_features = np.concatenate((np.ones(9, dtype=np.float32).reshape((1, 9)), stacked_features), axis=0)
+        stacked_features = np.concatenate((stacked_features, np.ones(9, dtype=np.float32).reshape((1, 9))), axis=0)
+        stacked_features = np.concatenate((stacked_features, np.ones(9, dtype=np.float32).reshape((1, 9))), axis=0)
         # test sliced 2d matrix
         sliced_features = stacked_features[2:102, 2: 7]
         assert np.all(sliced_features == features)
