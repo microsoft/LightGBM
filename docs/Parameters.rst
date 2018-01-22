@@ -576,7 +576,7 @@ Objective Parameters
 Metric Parameters
 -----------------
 
--  ``metric``, default=``None``, type=multi-enum
+-  ``metric``, default=\ ``None``, type=multi-enum
 
    -  if ``None``, metric corresponding to specified application will be used
 
