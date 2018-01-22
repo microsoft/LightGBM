@@ -26,9 +26,9 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new BinaryLogloss(config);
   } else if (type == std::string("lambdarank")) {
     return new LambdarankNDCG(config);
-  } else if (type == std::string("multiclass")) {
+  } else if (type == std::string("multiclass") || type == std::string("softmax")) {
     return new MulticlassSoftmax(config);
-  } else if (type == std::string("multiclassova")) {
+  } else if (type == std::string("multiclassova") || type == std::string("multiclass_ova") || type == std::string("ova") || type == std::string("ovr")) {
     return new MulticlassOVA(config);
   } else if (type == std::string("xentropy") || type == std::string("cross_entropy")) {
     return new CrossEntropy(config);
