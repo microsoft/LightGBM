@@ -720,7 +720,7 @@ In this case LightGBM will auto load initial score file if it exists.
 Weight Data
 ~~~~~~~~~~~
 
-LightGBM supporta weighted training. It uses an additional file to store weight data, like the following:
+LightGBM support weighted training. It uses an additional file to store weight data, like the following:
 
 ::
 
