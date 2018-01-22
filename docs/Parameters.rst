@@ -720,7 +720,7 @@ In this case LightGBM will auto load initial score file if it exists.
 Weight Data
 ~~~~~~~~~~~
 
-LightGBM support weighted training. It uses an additional file to store weight data, like the following:
+LightGBM supports weighted training. It uses an additional file to store weight data, like the following:
 
 ::
 
@@ -741,7 +741,7 @@ Query Data
 ~~~~~~~~~~
 
 For LambdaRank learning, it needs query information for training data.
-LightGBM use an additional file to store query data, like the following:
+LightGBM uses an additional file to store query data, like the following:
 
 ::
 
