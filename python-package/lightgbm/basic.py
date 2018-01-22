@@ -178,12 +178,15 @@ FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
                      "init_score": C_API_DTYPE_FLOAT64,
                      "group": C_API_DTYPE_INT32}
 
+
 def convert_from_sliced_object(data):
     """fix the memory of multi-dimensional sliced object"""
     if data.base is not None:
-        if data.base.shape[1] > 1:
+        base_shape = data.base.shape
+        if base_shape != data.shape and len(base_shape) > 1 and base_shape[1] > 1:
             return np.copy(data)
     return data
+
 
 def c_float_array(data):
     """get pointer of float numpy array / list"""
