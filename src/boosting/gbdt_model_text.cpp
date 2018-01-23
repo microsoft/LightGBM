@@ -334,7 +334,7 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
           key_vals[strs[0]] = strs[1];
         }
         else if (strs.size() > 2) {
-          if (strs[0] == "feature_name") {
+          if (strs[0] == "feature_names") {
             key_vals[strs[0]] = cur_line.substr(std::strlen("feature_names="));
           } else {
             // Use first 128 chars to avoid exceed the message buffer.

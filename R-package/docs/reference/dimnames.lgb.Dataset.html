@@ -158,8 +158,7 @@ Since row names are irrelevant, it is recommended to use <code>colnames</code> d
 <span class='fu'>data</span>(<span class='no'>agaricus.train</span>, <span class='kw'>package</span> <span class='kw'>=</span> <span class='st'>"lightgbm"</span>)
 <span class='no'>train</span> <span class='kw'>&lt;-</span> <span class='no'>agaricus.train</span>
 <span class='no'>dtrain</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='lgb.Dataset.html'>lgb.Dataset</a></span>(<span class='no'>train</span>$<span class='no'>data</span>, <span class='kw'>label</span> <span class='kw'>=</span> <span class='no'>train</span>$<span class='no'>label</span>)
-<span class='fu'><a href='lgb.Dataset.construct.html'>lgb.Dataset.construct</a></span>(<span class='no'>dtrain</span>)
-<span class='fu'>dimnames</span>(<span class='no'>dtrain</span>)</div><div class='output co'>#&gt; [[1]]
+<span class='fu'><a href='lgb.Dataset.construct.html'>lgb.Dataset.construct</a></span>(<span class='no'>dtrain</span>)</div><div class='output co'>#&gt; <span class='error'>Error in .Call(fun_name, ..., ret, call_state, PACKAGE = "lib_lightgbm"): "LGBM_DatasetCreateFromCSC_R" not available for .Call() for package "lib_lightgbm"</span></div><div class='input'><span class='fu'>dimnames</span>(<span class='no'>dtrain</span>)</div><div class='output co'>#&gt; [[1]]
 #&gt; NULL
 #&gt; 
 #&gt; [[2]]
@@ -310,11 +309,11 @@ Since row names are irrelevant, it is recommended to use <code>colnames</code> d
 #&gt;     colnames: X1 X2 X3 X4 X5 X6 X7 X8 X9 X10 X11 X12 X13 X14 X15 X16 X ...
 #&gt;     free_raw_data: TRUE
 #&gt;     get_handle: function () 
-#&gt;     handle: 7.32442438646731e-318
+#&gt;     handle: NULL
 #&gt;     info: list
 #&gt;     params: list
 #&gt;     predictor: NULL
-#&gt;     raw_data: NULL
+#&gt;     raw_data: dgCMatrix
 #&gt;     reference: NULL
 #&gt;     set_predictor: function (predictor) 
 #&gt;     used_indices: NULL</div><div class='input'>

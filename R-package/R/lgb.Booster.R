@@ -625,9 +625,6 @@ Booster <- R6Class(
 #' 
 #' @examples
 #' \dontrun{
-#' # It crashes the documentation generation, skipping
-#' if (!(pkgdown::in_pkgdown())) {
-#' 
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -645,8 +642,6 @@ Booster <- R6Class(
 #'                    learning_rate = 1,
 #'                    early_stopping_rounds = 10)
 #' preds <- predict(model, test$data)
-#' }
-#' 
 #' }
 #' 
 #' @rdname predict.lgb.Booster
@@ -685,9 +680,6 @@ predict.lgb.Booster <- function(object, data,
 #' 
 #' @examples
 #' \dontrun{
-#' # It crashes the documentation generation, skipping
-#' if (!(pkgdown::in_pkgdown())) {
-#' 
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -708,8 +700,6 @@ predict.lgb.Booster <- function(object, data,
 #' load_booster <- lgb.load(filename = "model.txt")
 #' model_string <- model$save_model_to_string(NULL) # saves best iteration
 #' load_booster_from_str <- lgb.load(model_str = model_string)
-#' }
-#' 
 #' }
 #' 
 #' @rdname lgb.load
@@ -750,9 +740,6 @@ lgb.load <- function(filename = NULL, model_str = NULL){
 #' 
 #' @examples
 #' \dontrun{
-#' # It crashes the documentation generation, skipping
-#' if (!(pkgdown::in_pkgdown())) {
-#' 
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -770,8 +757,6 @@ lgb.load <- function(filename = NULL, model_str = NULL){
 #'                    learning_rate = 1,
 #'                    early_stopping_rounds = 10)
 #' lgb.save(model, "model.txt")
-#' }
-#' 
 #' }
 #' 
 #' @rdname lgb.save

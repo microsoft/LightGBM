@@ -93,17 +93,14 @@ print(paste("test-error=", err))
 
 #--------------------Save and load models-------------------------
 # Save model to binary local file
-# Crash temporary workaround for pkgdown
-if (!(pkgdown::in_pkgdown())) {
-  lgb.save(bst, "lightgbm.model")
-  
-  # Load binary model to R
-  bst2 <- lgb.load("lightgbm.model")
-  pred2 <- predict(bst2, test$data)
-  
-  # pred2 should be identical to pred
-  print(paste("sum(abs(pred2-pred))=", sum(abs(pred2 - pred))))
-}
+lgb.save(bst, "lightgbm.model")
+
+# Load binary model to R
+bst2 <- lgb.load("lightgbm.model")
+pred2 <- predict(bst2, test$data)
+
+# pred2 should be identical to pred
+print(paste("sum(abs(pred2-pred))=", sum(abs(pred2 - pred))))
 
 #--------------------Advanced features ---------------------------
 # To use advanced features, we need to put data in lgb.Dataset

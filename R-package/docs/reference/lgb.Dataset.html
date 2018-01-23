@@ -177,9 +177,8 @@ or local file (that was created previously by saving an <code>lgb.Dataset</code>
 <span class='fu'>data</span>(<span class='no'>agaricus.train</span>, <span class='kw'>package</span> <span class='kw'>=</span> <span class='st'>"lightgbm"</span>)
 <span class='no'>train</span> <span class='kw'>&lt;-</span> <span class='no'>agaricus.train</span>
 <span class='no'>dtrain</span> <span class='kw'>&lt;-</span> <span class='fu'>lgb.Dataset</span>(<span class='no'>train</span>$<span class='no'>data</span>, <span class='kw'>label</span> <span class='kw'>=</span> <span class='no'>train</span>$<span class='no'>label</span>)
-<span class='fu'><a href='lgb.Dataset.save.html'>lgb.Dataset.save</a></span>(<span class='no'>dtrain</span>, <span class='st'>"lgb.Dataset.data"</span>)
-<span class='no'>dtrain</span> <span class='kw'>&lt;-</span> <span class='fu'>lgb.Dataset</span>(<span class='st'>"lgb.Dataset.data"</span>)
-<span class='fu'><a href='lgb.Dataset.construct.html'>lgb.Dataset.construct</a></span>(<span class='no'>dtrain</span>)</div><div class='input'>
+<span class='fu'><a href='lgb.Dataset.save.html'>lgb.Dataset.save</a></span>(<span class='no'>dtrain</span>, <span class='st'>"lgb.Dataset.data"</span>)</div><div class='output co'>#&gt; <span class='error'>Error in .Call(fun_name, ..., ret, call_state, PACKAGE = "lib_lightgbm"): "LGBM_DatasetCreateFromCSC_R" not available for .Call() for package "lib_lightgbm"</span></div><div class='input'><span class='no'>dtrain</span> <span class='kw'>&lt;-</span> <span class='fu'>lgb.Dataset</span>(<span class='st'>"lgb.Dataset.data"</span>)
+<span class='fu'><a href='lgb.Dataset.construct.html'>lgb.Dataset.construct</a></span>(<span class='no'>dtrain</span>)</div><div class='output co'>#&gt; <span class='error'>Error in .Call(fun_name, ..., ret, call_state, PACKAGE = "lib_lightgbm"): "LGBM_DatasetCreateFromFile_R" not available for .Call() for package "lib_lightgbm"</span></div><div class='input'>
 </div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

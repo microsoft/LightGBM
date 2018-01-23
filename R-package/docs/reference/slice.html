@@ -161,7 +161,7 @@ orginal lgb.Dataset object</p>
 <span class='no'>dtrain</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='lgb.Dataset.html'>lgb.Dataset</a></span>(<span class='no'>train</span>$<span class='no'>data</span>, <span class='kw'>label</span> <span class='kw'>=</span> <span class='no'>train</span>$<span class='no'>label</span>)
 
 <span class='no'>dsub</span> <span class='kw'>&lt;-</span> <span class='kw pkg'>lightgbm</span><span class='kw ns'>::</span><span class='fu'><a href='http://www.rdocumentation.org/packages/lightgbm/topics/slice'>slice</a></span>(<span class='no'>dtrain</span>, <span class='fl'>1</span>:<span class='fl'>42</span>)
-<span class='no'>labels</span> <span class='kw'>&lt;-</span> <span class='kw pkg'>lightgbm</span><span class='kw ns'>::</span><span class='fu'><a href='http://www.rdocumentation.org/packages/lightgbm/topics/getinfo'>getinfo</a></span>(<span class='no'>dsub</span>, <span class='st'>"label"</span>)</div><div class='input'>
+<span class='no'>labels</span> <span class='kw'>&lt;-</span> <span class='kw pkg'>lightgbm</span><span class='kw ns'>::</span><span class='fu'><a href='http://www.rdocumentation.org/packages/lightgbm/topics/getinfo'>getinfo</a></span>(<span class='no'>dsub</span>, <span class='st'>"label"</span>)</div><div class='output co'>#&gt; <span class='error'>Error in dataset$getinfo(name): Cannot perform getinfo before construct Dataset.</span></div><div class='input'>
 </div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

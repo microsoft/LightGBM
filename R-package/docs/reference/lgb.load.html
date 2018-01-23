@@ -149,10 +149,7 @@ If both are provided, Load will default to loading from file</p>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='co'># It crashes the documentation generation, skipping</span>
-<span class='kw'>if</span> (!(<span class='kw pkg'>pkgdown</span><span class='kw ns'>::</span><span class='fu'><a href='http://pkgdown.r-lib.org/reference/in_pkgdown.html'>in_pkgdown</a></span>())) {
-
-<span class='fu'>library</span>(<span class='no'>lightgbm</span>)
+    <pre class="examples"><div class='input'><span class='fu'>library</span>(<span class='no'>lightgbm</span>)
 <span class='fu'>data</span>(<span class='no'>agaricus.train</span>, <span class='kw'>package</span> <span class='kw'>=</span> <span class='st'>"lightgbm"</span>)
 <span class='no'>train</span> <span class='kw'>&lt;-</span> <span class='no'>agaricus.train</span>
 <span class='no'>dtrain</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='lgb.Dataset.html'>lgb.Dataset</a></span>(<span class='no'>train</span>$<span class='no'>data</span>, <span class='kw'>label</span> <span class='kw'>=</span> <span class='no'>train</span>$<span class='no'>label</span>)
@@ -167,12 +164,7 @@ If both are provided, Load will default to loading from file</p>
                    <span class='no'>valids</span>,
                    <span class='kw'>min_data</span> <span class='kw'>=</span> <span class='fl'>1</span>,
                    <span class='kw'>learning_rate</span> <span class='kw'>=</span> <span class='fl'>1</span>,
-                   <span class='kw'>early_stopping_rounds</span> <span class='kw'>=</span> <span class='fl'>10</span>)
-<span class='fu'><a href='lgb.save.html'>lgb.save</a></span>(<span class='no'>model</span>, <span class='st'>"model.txt"</span>)
-<span class='no'>load_booster</span> <span class='kw'>&lt;-</span> <span class='fu'>lgb.load</span>(<span class='kw'>filename</span> <span class='kw'>=</span> <span class='st'>"model.txt"</span>)
-<span class='no'>model_string</span> <span class='kw'>&lt;-</span> <span class='no'>model</span>$<span class='fu'>save_model_to_string</span>(<span class='kw'>NULL</span>) <span class='co'># saves best iteration</span>
-<span class='no'>load_booster_from_str</span> <span class='kw'>&lt;-</span> <span class='fu'>lgb.load</span>(<span class='kw'>model_str</span> <span class='kw'>=</span> <span class='no'>model_string</span>)
-}</div><div class='input'>
+                   <span class='kw'>early_stopping_rounds</span> <span class='kw'>=</span> <span class='fl'>10</span>)</div><div class='output co'>#&gt; <span class='error'>Error in .Call(fun_name, ..., ret, call_state, PACKAGE = "lib_lightgbm"): "LGBM_DatasetCreateFromCSC_R" not available for .Call() for package "lib_lightgbm"</span></div><div class='input'><span class='fu'><a href='lgb.save.html'>lgb.save</a></span>(<span class='no'>model</span>, <span class='st'>"model.txt"</span>)</div><div class='output co'>#&gt; <span class='error'>Error in c("R6", name) %in% class(object): object 'model' not found</span></div><div class='input'><span class='no'>load_booster</span> <span class='kw'>&lt;-</span> <span class='fu'>lgb.load</span>(<span class='kw'>filename</span> <span class='kw'>=</span> <span class='st'>"model.txt"</span>)</div><div class='output co'>#&gt; <span class='error'>Error in lgb.load(filename = "model.txt"): lgb.load: file does not exist for supplied filename</span></div><div class='input'><span class='no'>model_string</span> <span class='kw'>&lt;-</span> <span class='no'>model</span>$<span class='fu'>save_model_to_string</span>(<span class='kw'>NULL</span>) <span class='co'># saves best iteration</span></div><div class='output co'>#&gt; <span class='error'>Error in eval(expr, envir, enclos): object 'model' not found</span></div><div class='input'><span class='no'>load_booster_from_str</span> <span class='kw'>&lt;-</span> <span class='fu'>lgb.load</span>(<span class='kw'>model_str</span> <span class='kw'>=</span> <span class='no'>model_string</span>)</div><div class='output co'>#&gt; <span class='error'>Error in lgb.load(model_str = model_string): object 'model_string' not found</span></div><div class='input'>
 </div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

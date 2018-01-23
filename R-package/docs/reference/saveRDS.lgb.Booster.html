@@ -168,10 +168,7 @@
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='co'># It crashes the documentation generation, skipping</span>
-<span class='kw'>if</span> (!(<span class='kw pkg'>pkgdown</span><span class='kw ns'>::</span><span class='fu'><a href='http://pkgdown.r-lib.org/reference/in_pkgdown.html'>in_pkgdown</a></span>())) {
-
-<span class='fu'>library</span>(<span class='no'>lightgbm</span>)
+    <pre class="examples"><div class='input'><span class='fu'>library</span>(<span class='no'>lightgbm</span>)
 <span class='fu'>data</span>(<span class='no'>agaricus.train</span>, <span class='kw'>package</span> <span class='kw'>=</span> <span class='st'>"lightgbm"</span>)
 <span class='no'>train</span> <span class='kw'>&lt;-</span> <span class='no'>agaricus.train</span>
 <span class='no'>dtrain</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='lgb.Dataset.html'>lgb.Dataset</a></span>(<span class='no'>train</span>$<span class='no'>data</span>, <span class='kw'>label</span> <span class='kw'>=</span> <span class='no'>train</span>$<span class='no'>label</span>)
@@ -186,9 +183,19 @@
                    <span class='no'>valids</span>,
                    <span class='kw'>min_data</span> <span class='kw'>=</span> <span class='fl'>1</span>,
                    <span class='kw'>learning_rate</span> <span class='kw'>=</span> <span class='fl'>1</span>,
-                   <span class='kw'>early_stopping_rounds</span> <span class='kw'>=</span> <span class='fl'>10</span>)
-<span class='fu'>saveRDS.lgb.Booster</span>(<span class='no'>model</span>, <span class='st'>"model.rds"</span>)
-}</div><div class='input'>
+                   <span class='kw'>early_stopping_rounds</span> <span class='kw'>=</span> <span class='fl'>10</span>)</div><div class='output co'>#&gt; [1]:	test's l2:6.44165e-17 
+#&gt; [2]:	test's l2:1.97215e-31 
+#&gt; [3]:	test's l2:0 
+#&gt; [4]:	test's l2:0 
+#&gt; [5]:	test's l2:0 
+#&gt; [6]:	test's l2:0 
+#&gt; [7]:	test's l2:0 
+#&gt; [8]:	test's l2:0 
+#&gt; [9]:	test's l2:0 
+#&gt; [10]:	test's l2:0 
+#&gt; [11]:	test's l2:0 
+#&gt; [12]:	test's l2:0 
+#&gt; [13]:	test's l2:0 </div><div class='input'><span class='fu'>saveRDS.lgb.Booster</span>(<span class='no'>model</span>, <span class='st'>"model.rds"</span>)</div><div class='input'>
 </div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

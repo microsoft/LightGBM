@@ -40,9 +40,6 @@ Predicted values based on class \code{lgb.Booster}
 }
 \examples{
 \dontrun{
-# It crashes the documentation generation, skipping
-if (!(pkgdown::in_pkgdown())) {
-
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
@@ -60,8 +57,6 @@ model <- lgb.train(params,
                    learning_rate = 1,
                    early_stopping_rounds = 10)
 preds <- predict(model, test$data)
-}
-
 }
 
 }

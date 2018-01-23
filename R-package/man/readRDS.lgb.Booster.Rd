@@ -19,9 +19,6 @@ Attemps to load a model using RDS.
 }
 \examples{
 \dontrun{
-# It crashes the documentation generation, skipping
-if (!(pkgdown::in_pkgdown())) {
-
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
@@ -40,8 +37,6 @@ model <- lgb.train(params,
                    early_stopping_rounds = 10)
 saveRDS.lgb.Booster(model, "model.rds")
 new_model <- readRDS.lgb.Booster("model.rds")
-}
-
 }
 
 }

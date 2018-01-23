@@ -30,9 +30,6 @@ Attemps to save a model using RDS. Has an additional parameter (\code{raw}) whic
 }
 \examples{
 \dontrun{
-# It crashes the documentation generation, skipping
-if (!(pkgdown::in_pkgdown())) {
-
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
@@ -50,8 +47,6 @@ model <- lgb.train(params,
                    learning_rate = 1,
                    early_stopping_rounds = 10)
 saveRDS.lgb.Booster(model, "model.rds")
-}
-
 }
 
 }

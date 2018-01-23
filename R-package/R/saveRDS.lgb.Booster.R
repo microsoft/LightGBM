@@ -14,9 +14,6 @@
 #' 
 #' @examples
 #' \dontrun{
-#' # It crashes the documentation generation, skipping
-#' if (!(pkgdown::in_pkgdown())) {
-#' 
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -34,8 +31,6 @@
 #'                    learning_rate = 1,
 #'                    early_stopping_rounds = 10)
 #' saveRDS.lgb.Booster(model, "model.rds")
-#' }
-#' 
 #' }
 #' 
 #' @export

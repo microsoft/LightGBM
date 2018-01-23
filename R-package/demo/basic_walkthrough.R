@@ -86,16 +86,11 @@ err <- mean(as.numeric(pred > 0.5) != test$label)
 print(paste("test-error=", err))
 
 #--------------------Save and load models-------------------------
+# Save model to binary local file
+lgb.save(bst, "lightgbm.model")
 
-if (!(pkgdown::in_pkgdown())) {
-	# Save model to binary local file
-	lgb.save(bst, "lightgbm.model")
-
-	# Load binary model to R
-	bst2 <- lgb.load("lightgbm.model")
-} else {
-	bst2 <- bst
-}
+# Load binary model to R
+bst2 <- lgb.load("lightgbm.model")
 pred2 <- predict(bst2, test$data)
 
 # pred2 should be identical to pred

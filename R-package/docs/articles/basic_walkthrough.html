@@ -209,19 +209,16 @@ err &lt;-<span class="st"> </span><span class="kw">mean</span>(<span class="kw">
 <pre><code>## [1] "test-error= 0.0217256362507759"</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#--------------------Save and load models-------------------------</span>
 <span class="co"># Save model to binary local file</span>
-<span class="co"># Crash temporary workaround for pkgdown</span>
-<span class="cf">if</span> (<span class="op">!</span>(pkgdown<span class="op">::</span><span class="kw"><a href="http://pkgdown.r-lib.org/reference/in_pkgdown.html">in_pkgdown</a></span>())) {
-  <span class="kw"><a href="../reference/lgb.save.html">lgb.save</a></span>(bst, <span class="st">"lightgbm.model"</span>)
-  
-  <span class="co"># Load binary model to R</span>
-  bst2 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/lgb.load.html">lgb.load</a></span>(<span class="st">"lightgbm.model"</span>)
-  pred2 &lt;-<span class="st"> </span><span class="kw">predict</span>(bst2, test<span class="op">$</span>data)
-  
-  <span class="co"># pred2 should be identical to pred</span>
-  <span class="kw">print</span>(<span class="kw">paste</span>(<span class="st">"sum(abs(pred2-pred))="</span>, <span class="kw">sum</span>(<span class="kw">abs</span>(pred2 <span class="op">-</span><span class="st"> </span>pred))))
-}
+<span class="kw"><a href="../reference/lgb.save.html">lgb.save</a></span>(bst, <span class="st">"lightgbm.model"</span>)
 
-<span class="co">#--------------------Advanced features ---------------------------</span>
+<span class="co"># Load binary model to R</span>
+bst2 &lt;-<span class="st"> </span><span class="kw"><a href="../reference/lgb.load.html">lgb.load</a></span>(<span class="st">"lightgbm.model"</span>)
+pred2 &lt;-<span class="st"> </span><span class="kw">predict</span>(bst2, test<span class="op">$</span>data)
+
+<span class="co"># pred2 should be identical to pred</span>
+<span class="kw">print</span>(<span class="kw">paste</span>(<span class="st">"sum(abs(pred2-pred))="</span>, <span class="kw">sum</span>(<span class="kw">abs</span>(pred2 <span class="op">-</span><span class="st"> </span>pred))))</code></pre></div>
+<pre><code>## [1] "sum(abs(pred2-pred))= 0"</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#--------------------Advanced features ---------------------------</span>
 <span class="co"># To use advanced features, we need to put data in lgb.Dataset</span>
 dtrain &lt;-<span class="st"> </span><span class="kw"><a href="../reference/lgb.Dataset.html">lgb.Dataset</a></span>(<span class="dt">data =</span> train<span class="op">$</span>data, <span class="dt">label =</span> train<span class="op">$</span>label, <span class="dt">free_raw_data =</span> <span class="ot">FALSE</span>)
 dtest &lt;-<span class="st"> </span><span class="kw"><a href="../reference/lgb.Dataset.html">lgb.Dataset</a></span>(<span class="dt">data =</span> test<span class="op">$</span>data, <span class="dt">label =</span> test<span class="op">$</span>label, <span class="dt">free_raw_data =</span> <span class="ot">FALSE</span>)
