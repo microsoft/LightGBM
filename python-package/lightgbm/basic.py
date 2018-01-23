@@ -181,9 +181,10 @@ FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
 
 def convert_from_sliced_object(data):
     """fix the memory of multi-dimensional sliced object"""
-    if data.base is not None and isinstance(data.base, np.ndarray):
+    if data.base is not None and isinstance(data, np.ndarray) and isinstance(data.base, np.ndarray):
         base_shape = data.base.shape
         if base_shape != data.shape and len(base_shape) > 1 and base_shape[1] > 1:
+            warnings.warn("Use subset(sliced data) of np.ndarray is not recommended due to it will double the peak memory cost in LightGBM.")
             return np.copy(data)
     return data
 
