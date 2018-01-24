@@ -203,6 +203,8 @@ public:
     (*decision_type) |= (input << 2);
   }
 
+  void RecomputeMaxDepth();
+
 private:
 
   std::string NumericalDecisionIfElse(int node) const;
@@ -313,8 +315,6 @@ private:
 
   double ExpectedValue() const;
 
-  int MaxDepth();
-
   /*! \brief This is used fill in leaf_depth_ after reloading a model*/
   inline void RecomputeLeafDepths(int node = 0, int depth = 0);
 
@@ -390,6 +390,7 @@ private:
   /*! \brief Depth for leaves */
   std::vector<int> leaf_depth_;
   double shrinkage_;
+  int max_depth_;
 };
 
 inline void Tree::Split(int leaf, int feature, int real_feature,
@@ -468,10 +469,10 @@ inline void Tree::PredictContrib(const double* feature_values, int num_features,
   output[num_features] += ExpectedValue();
   // Run the recursion with preallocated space for the unique path data
   if (num_leaves_ > 1) {
-    const int max_path_len = MaxDepth() + 1;
-    PathElement *unique_path_data = new PathElement[(max_path_len*(max_path_len + 1)) / 2];
-    TreeSHAP(feature_values, output, 0, 0, unique_path_data, 1, 1, -1);
-    delete[] unique_path_data;
+    CHECK(max_depth_ >= 0);
+    const int max_path_len = max_depth_ + 1;
+    std::vector<PathElement> unique_path_data(max_path_len*(max_path_len + 1) / 2);
+    TreeSHAP(feature_values, output, 0, 0, unique_path_data.data(), 1, 1, -1);
   }
 }
 

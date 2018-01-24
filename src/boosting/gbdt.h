@@ -291,10 +291,16 @@ public:
   */
   inline int NumberOfClasses() const override { return num_class_; }
 
-  inline void InitPredict(int num_iteration) override {
+  inline void InitPredict(int num_iteration, bool is_pred_contrib) override {
     num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
     if (num_iteration > 0) {
       num_iteration_for_pred_ = std::min(num_iteration, num_iteration_for_pred_);
+    }
+    if (is_pred_contrib) {
+      #pragma omp parallel for schedule(static)
+      for (int i = 0; i < static_cast<int>(models_.size()); ++i) {
+        models_[i]->RecomputeMaxDepth();
+      }
     }
   }
 
