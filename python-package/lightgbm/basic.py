@@ -182,8 +182,7 @@ FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
 def convert_from_sliced_object(data):
     """fix the memory of multi-dimensional sliced object"""
     if data.base is not None and isinstance(data, np.ndarray) and isinstance(data.base, np.ndarray):
-        base_shape = data.base.shape
-        if base_shape != data.shape and len(base_shape) > 1 and base_shape[1] > 1:
+        if not data.flags.c_contiguous:
             warnings.warn("Use subset(sliced data) of np.ndarray is not recommended due to it will double the peak memory cost in LightGBM.")
             return np.copy(data)
     return data
@@ -195,6 +194,7 @@ def c_float_array(data):
         data = np.array(data, copy=False)
     if is_numpy_1d_array(data):
         data = convert_from_sliced_object(data)
+        assert data.flags.c_contiguous
         if data.dtype == np.float32:
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
             type_data = C_API_DTYPE_FLOAT32
@@ -215,6 +215,7 @@ def c_int_array(data):
         data = np.array(data, copy=False)
     if is_numpy_1d_array(data):
         data = convert_from_sliced_object(data)
+        assert data.flags.c_contiguous
         if data.dtype == np.int32:
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_int32))
             type_data = C_API_DTYPE_INT32
@@ -479,7 +480,7 @@ class _InnerPredictor(object):
         if len(mat.shape) != 2:
             raise ValueError('Input numpy.ndarray or list must be 2 dimensional')
 
-        if mat.dtype == np.float32 or mat.dtype == np.float64:
+        if mat.flags.c_contiguous and (mat.dtype == np.float32 or mat.dtype == np.float64):
             data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
         else:
             """change non-float data to float data, need to copy"""
@@ -836,6 +837,7 @@ class Dataset(object):
                 else:
                     # construct subset
                     used_indices = list_to_1d_numpy(self.used_indices, np.int32, name='used_indices')
+                    assert used_indices.flags.c_contiguous
                     self.handle = ctypes.c_void_p()
                     params_str = param_dict_to_str(self.params)
                     _safe_call(_LIB.LGBM_DatasetGetSubset(
@@ -1543,6 +1545,8 @@ class Booster(object):
         """
         grad = list_to_1d_numpy(grad, name='gradient')
         hess = list_to_1d_numpy(hess, name='hessian')
+        assert grad.flags.c_contiguous
+        assert hess.flags.c_contiguous
         if len(grad) != len(hess):
             raise ValueError("Lengths of gradient({}) and hessian({}) don't match".format(len(grad), len(hess)))
         is_finished = ctypes.c_int(0)
