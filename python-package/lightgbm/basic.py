@@ -480,7 +480,7 @@ class _InnerPredictor(object):
         if len(mat.shape) != 2:
             raise ValueError('Input numpy.ndarray or list must be 2 dimensional')
 
-        if mat.flags.c_contiguous and (mat.dtype == np.float32 or mat.dtype == np.float64):
+        if mat.dtype == np.float32 or mat.dtype == np.float64:
             data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
         else:
             """change non-float data to float data, need to copy"""
