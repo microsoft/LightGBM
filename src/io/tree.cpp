@@ -41,6 +41,7 @@ Tree::Tree(int max_leaves)
   num_cat_ = 0;
   cat_boundaries_.push_back(0);
   cat_boundaries_inner_.push_back(0);
+  max_depth_ = -1;
 }
 
 Tree::~Tree() {
@@ -584,6 +585,7 @@ Tree::Tree(const char* str, size_t* used_len) {
   } else {
     shrinkage_ = 1.0f;
   }
+  max_depth_ = -1;
 }
 
 void Tree::ExtendPath(PathElement *unique_path, int unique_depth,
@@ -652,7 +654,7 @@ void Tree::TreeSHAP(const double *feature_values, double *phi,
                     double parent_one_fraction, int parent_feature_index) const {
 
   // extend the unique path
-  PathElement *unique_path = parent_unique_path + unique_depth;
+  PathElement* unique_path = parent_unique_path + unique_depth;
   if (unique_depth > 0) std::copy(parent_unique_path, parent_unique_path + unique_depth, unique_path);
   ExtendPath(unique_path, unique_depth, parent_zero_fraction,
              parent_one_fraction, parent_feature_index);
@@ -706,14 +708,18 @@ double Tree::ExpectedValue() const {
   return exp_value;
 }
 
-int Tree::MaxDepth() {
-  if (leaf_depth_.size() == 0) RecomputeLeafDepths();
-  if (num_leaves_ == 1) return 0;
-  int max_depth = 0;
-  for (int i = 0; i < num_leaves(); ++i) {
-    if (max_depth < leaf_depth_[i]) max_depth = leaf_depth_[i];
+void Tree::RecomputeMaxDepth() {
+  if (num_leaves_ == 1) {
+    max_depth_ = 0;
+  } else {
+    if (leaf_depth_.size() == 0) {
+      RecomputeLeafDepths(0, 0);
+    }
+    max_depth_ = leaf_depth_[0];
+    for (int i = 1; i < num_leaves(); ++i) {
+      if (max_depth_ < leaf_depth_[i]) max_depth_ = leaf_depth_[i];
+    }
   }
-  return max_depth;
 }
 
 }  // namespace LightGBM

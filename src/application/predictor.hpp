@@ -55,7 +55,7 @@ public:
     {
       num_threads_ = omp_get_num_threads();
     }
-    boosting->InitPredict(num_iteration);
+    boosting->InitPredict(num_iteration, is_predict_contrib);
     boosting_ = boosting;
     num_pred_one_row_ = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf_index, is_predict_contrib);
     num_feature_ = boosting_->MaxFeatureIdx() + 1;
