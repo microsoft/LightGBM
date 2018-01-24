@@ -485,7 +485,7 @@ class _InnerPredictor(object):
         else:
             """change non-float data to float data, need to copy"""
             data = np.array(mat.reshape(mat.size), dtype=np.float32)
-        ptr_data, type_ptr_data, new_data = c_float_array(data)
+        ptr_data, type_ptr_data, _ = c_float_array(data)
         n_preds = self.__get_num_preds(num_iteration, mat.shape[0],
                                        predict_type)
         preds = np.zeros(n_preds, dtype=np.float64)
@@ -516,7 +516,7 @@ class _InnerPredictor(object):
         out_num_preds = ctypes.c_int64(0)
 
         ptr_indptr, type_ptr_indptr, new_indptr = c_int_array(csr.indptr)
-        ptr_data, type_ptr_data, new_data = c_float_array(csr.data)
+        ptr_data, type_ptr_data, _ = c_float_array(csr.data)
 
         _safe_call(_LIB.LGBM_BoosterPredictForCSR(
             self.handle,
@@ -547,7 +547,7 @@ class _InnerPredictor(object):
         out_num_preds = ctypes.c_int64(0)
 
         ptr_indptr, type_ptr_indptr, new_indptr = c_int_array(csc.indptr)
-        ptr_data, type_ptr_data, new_data = c_float_array(csc.data)
+        ptr_data, type_ptr_data, _ = c_float_array(csc.data)
 
         _safe_call(_LIB.LGBM_BoosterPredictForCSC(
             self.handle,
@@ -760,7 +760,7 @@ class Dataset(object):
             # change non-float data to float data, need to copy
             data = np.array(mat.reshape(mat.size), dtype=np.float32)
 
-        ptr_data, type_ptr_data, new_data = c_float_array(data)
+        ptr_data, type_ptr_data, _ = c_float_array(data)
         _safe_call(_LIB.LGBM_DatasetCreateFromMat(
             ptr_data,
             ctypes.c_int(type_ptr_data),
@@ -780,7 +780,7 @@ class Dataset(object):
         self.handle = ctypes.c_void_p()
 
         ptr_indptr, type_ptr_indptr, new_indptr = c_int_array(csr.indptr)
-        ptr_data, type_ptr_data, new_data = c_float_array(csr.data)
+        ptr_data, type_ptr_data, _ = c_float_array(csr.data)
 
         _safe_call(_LIB.LGBM_DatasetCreateFromCSR(
             ptr_indptr,
@@ -804,7 +804,7 @@ class Dataset(object):
         self.handle = ctypes.c_void_p()
 
         ptr_indptr, type_ptr_indptr, new_indptr = c_int_array(csc.indptr)
-        ptr_data, type_ptr_data, new_data = c_float_array(csc.data)
+        ptr_data, type_ptr_data, _ = c_float_array(csc.data)
 
         _safe_call(_LIB.LGBM_DatasetCreateFromCSC(
             ptr_indptr,
@@ -967,9 +967,9 @@ class Dataset(object):
             dtype = np.float64
         data = list_to_1d_numpy(data, dtype, name=field_name)
         if data.dtype == np.float32 or data.dtype == np.float64:
-            ptr_data, type_data, new_data = c_float_array(data)
+            ptr_data, type_data, _ = c_float_array(data)
         elif data.dtype == np.int32:
-            ptr_data, type_data, new_data = c_int_array(data)
+            ptr_data, type_data, _ = c_int_array(data)
         else:
             raise TypeError("Excepted np.float32/64 or np.int32, meet type({})".format(data.dtype))
         if type_data != FIELD_TYPE_MAPPER[field_name]:
