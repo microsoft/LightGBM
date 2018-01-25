@@ -1,8 +1,8 @@
 Package: lightgbm
 Type: Package
 Title: Light Gradient Boosting Machine
-Version: 2.0.12
-Date: 2017-12-26
+Version: 2.1.0
+Date: 2018-01-25
 Author: Guolin Ke <guolin.ke@microsoft.com>
 Maintainer: Guolin Ke <guolin.ke@microsoft.com>
 Description: LightGBM is a gradient boosting framework that uses tree based learning algorithms. 
