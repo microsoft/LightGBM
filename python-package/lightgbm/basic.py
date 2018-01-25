@@ -183,7 +183,7 @@ def convert_from_sliced_object(data):
     """fix the memory of multi-dimensional sliced object"""
     if data.base is not None and isinstance(data, np.ndarray) and isinstance(data.base, np.ndarray):
         if not data.flags.c_contiguous:
-            warnings.warn("Use subset(sliced data) of np.ndarray is not recommended due to it will double the peak memory cost in LightGBM.")
+            warnings.warn("Usage subset(sliced data) of np.ndarray is not recommended due to it will double the peak memory cost in LightGBM.")
             return np.copy(data)
     return data
 
@@ -206,7 +206,7 @@ def c_float_array(data):
                             .format(data.dtype))
     else:
         raise TypeError("Unknown type({})".format(type(data).__name__))
-    return (ptr_data, type_data, data)
+    return (ptr_data, type_data, data)  # return `data` to avoid the temporary copy is freed
 
 
 def c_int_array(data):
@@ -227,7 +227,7 @@ def c_int_array(data):
                             .format(data.dtype))
     else:
         raise TypeError("Unknown type({})".format(type(data).__name__))
-    return (ptr_data, type_data, data)
+    return (ptr_data, type_data, data)  # return `data` to avoid the temporary copy is freed
 
 
 PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
