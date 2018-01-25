@@ -644,7 +644,8 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         self._n_classes = len(self._classes)
         if self._n_classes > 2:
             # Switch to using a multiclass objective in the underlying LGBM instance
-            if self._objective != "multiclassova" and not callable(self._objective):
+            ova_aliases = ("multiclassova", "multiclass_ova", "ova", "ovr")
+            if self._objective not in ova_aliases and not callable(self._objective):
                 self._objective = "multiclass"
             if eval_metric == 'logloss' or eval_metric == 'binary_logloss':
                 eval_metric = "multi_logloss"
