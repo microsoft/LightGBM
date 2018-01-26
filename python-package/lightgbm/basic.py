@@ -15,7 +15,7 @@ import scipy.sparse
 
 from .compat import (DataFrame, Series, integer_types, json,
                      json_default_with_numpy, numeric_types, range_,
-                     string_type, LGBMDeprecationWarning)
+                     string_type)
 from .libpath import find_lib_path
 
 
