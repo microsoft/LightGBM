@@ -33,7 +33,7 @@ Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config
     return new NDCGMetric(config);
   } else if (type == std::string("map") || type == std::string("mean_average_precision")) {
     return new MapMetric(config);
-  } else if (type == std::string("multi_logloss") || type == std::string("multiclass") || type == std::string("multiclass_ova")) {
+  } else if (type == std::string("multi_logloss") || type == std::string("multiclass") || type == std::string("softmax") || type == std::string("multiclassova") || type == std::string("multiclass_ova") || type == std::string("ova") || type == std::string("ovr")) {
     return new MultiSoftmaxLoglossMetric(config);
   } else if (type == std::string("multi_error")) {
     return new MultiErrorMetric(config);
@@ -47,7 +47,7 @@ Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config
     return new MAPEMetric(config);
   } else if (type == std::string("gamma")) {
     return new GammaMetric(config);
-  } else if (type == std::string("gamma-deviance") || type == std::string("gamma_deviance")) {
+  } else if (type == std::string("gamma_deviance")) {
     return new GammaDevianceMetric(config);
   } else if (type == std::string("tweedie")) {
     return new TweedieMetric(config);

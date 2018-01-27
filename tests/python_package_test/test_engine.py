@@ -12,6 +12,7 @@ from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
                               load_iris, load_svmlight_file)
 from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error
 from sklearn.model_selection import train_test_split, TimeSeriesSplit
+from scipy.sparse import csr_matrix
 
 try:
     import pandas as pd
@@ -548,3 +549,53 @@ class TestEngine(unittest.TestCase):
                         evals_result=evals_result)
 
         self.assertLess(np.linalg.norm(gbm.predict(X_test, raw_score=True) - np.sum(gbm.predict(X_test, pred_contrib=True), axis=1)), 1e-4)
+
+    def test_sliced_data(self):
+        def train_and_get_predictions(features, labels):
+            dataset = lgb.Dataset(features, label=labels)
+            lgb_params = {
+                'application': 'binary',
+                'verbose': -1,
+                'min_data': 5,
+            }
+            lgbm_model = lgb.train(
+                params=lgb_params,
+                train_set=dataset,
+                num_boost_round=10,
+            )
+            predictions = lgbm_model.predict(features)
+            return predictions
+        num_samples = 100
+        features = np.random.rand(num_samples, 5)
+        positive_samples = int(num_samples * 0.25)
+        labels = np.append(
+            np.ones(positive_samples, dtype=np.float32),
+            np.zeros(num_samples - positive_samples, dtype=np.float32),
+        )
+        # test sliced labels
+        origin_pred = train_and_get_predictions(features, labels)
+        stacked_labels = np.column_stack((labels, np.ones(num_samples, dtype=np.float32)))
+        sliced_labels = stacked_labels[:, 0]
+        sliced_pred = train_and_get_predictions(features, sliced_labels)
+        np.testing.assert_almost_equal(origin_pred, sliced_pred)
+        # append some columns
+        stacked_features = np.column_stack((np.ones(num_samples, dtype=np.float32), features))
+        stacked_features = np.column_stack((np.ones(num_samples, dtype=np.float32), stacked_features))
+        stacked_features = np.column_stack((stacked_features, np.ones(num_samples, dtype=np.float32)))
+        stacked_features = np.column_stack((stacked_features, np.ones(num_samples, dtype=np.float32)))
+        # append some rows
+        stacked_features = np.concatenate((np.ones(9, dtype=np.float32).reshape((1, 9)), stacked_features), axis=0)
+        stacked_features = np.concatenate((np.ones(9, dtype=np.float32).reshape((1, 9)), stacked_features), axis=0)
+        stacked_features = np.concatenate((stacked_features, np.ones(9, dtype=np.float32).reshape((1, 9))), axis=0)
+        stacked_features = np.concatenate((stacked_features, np.ones(9, dtype=np.float32).reshape((1, 9))), axis=0)
+        # test sliced 2d matrix
+        sliced_features = stacked_features[2:102, 2: 7]
+        assert np.all(sliced_features == features)
+        sliced_pred = train_and_get_predictions(sliced_features, sliced_labels)
+        np.testing.assert_almost_equal(origin_pred, sliced_pred)
+        # test sliced CSR
+        stacked_csr = csr_matrix(stacked_features)
+        sliced_csr = stacked_csr[2:102, 2: 7]
+        assert np.all(sliced_csr == features)
+        sliced_pred = train_and_get_predictions(sliced_csr, sliced_labels)
+        np.testing.assert_almost_equal(origin_pred, sliced_pred)

@@ -54,13 +54,13 @@ Core Parameters
    - **Note**: Only can be used in CLI version.
 
 -  ``application``, default=\ ``regression``, type=enum,
-   options=\ ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``,
-   ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``, ``gammma``, ``tweedie``,
+   options=\ ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gammma``, ``tweedie``,
+   ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``,
    alias=\ ``objective``, ``app``
 
    -  regression application
 
-      -  ``regression_l2``, L2 loss, alias=\ ``regression``, ``mean_squared_error``, ``mse``
+      -  ``regression_l2``, L2 loss, alias=\ ``regression``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
 
       -  ``regression_l1``, L1 loss, alias=\ ``mean_absolute_error``, ``mae``
 
@@ -74,17 +74,19 @@ Core Parameters
 
       -  ``mape``, `MAPE loss`_, alias=\ ``mean_absolute_percentage_error``
 
-      -  ``gamma``, gamma regression with log-link. It might be useful, e.g., for modeling insurance claims severity, or for any target that might be `gamma-distributed`_
+      -  ``gamma``, Gamma regression with log-link. It might be useful, e.g., for modeling insurance claims severity, or for any target that might be `gamma-distributed`_
 
-      -  ``tweedie``, tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed`_.
+      -  ``tweedie``, Tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed`_
 
    -  ``binary``, binary `log loss`_ classification application
 
    -  multi-class classification application
 
-      -  ``multiclass``, `softmax`_ objective function, ``num_class`` should be set as well
+      -  ``multiclass``, `softmax`_ objective function, alias=\ ``softmax``
 
-      -  ``multiclassova``, `One-vs-All`_ binary objective function, ``num_class`` should be set as well
+      -  ``multiclassova``, `One-vs-All`_ binary objective function, alias=\ ``multiclass_ova``, ``ova``, ``ovr``
+
+      -  ``num_class`` should be set as well
 
    -  cross-entropy application
 
@@ -562,7 +564,10 @@ Objective Parameters
    -  will fit ``sqrt(label)`` instead and prediction result will be also automatically converted to ``pow2(prediction)``
 
 -  ``tweedie_variance_power``, default=\ ``1.5``, type=\ ``double``, range=\ ``[1,2)``
-   - parameter that controls the variance of the tweedie distribution
+
+   - only used in ``tweedie`` regression
+
+   - controls the variance of the tweedie distribution
    
    - set closer to 2 to shift towards a gamma distribution
    
@@ -571,11 +576,13 @@ Objective Parameters
 Metric Parameters
 -----------------
 
--  ``metric``, default=``None``, type=multi-enum
+-  ``metric``, default=\ ``None``, type=multi-enum
 
-   -  ``l1``, absolute loss, alias=\ ``mean_absolute_error``, ``mae``
+   -  if ``None``, metric corresponding to specified application will be used
 
-   -  ``l2``, square loss, alias=\ ``mean_squared_error``, ``mse``
+   -  ``l1``, absolute loss, alias=\ ``mean_absolute_error``, ``mae``, ``regression_l1``
+
+   -  ``l2``, square loss, alias=\ ``mean_squared_error``, ``mse``, ``regression_l2``, ``regression``
 
    -  ``l2_root``, root square loss, alias=\ ``root_mean_squared_error``, ``rmse``
 
@@ -587,7 +594,13 @@ Metric Parameters
 
    -  ``fair``, `Fair loss`_
 
-   -  ``poisson``, negative log-likelihood for Poisson regression
+   -  ``poisson``, negative log-likelihood for `Poisson regression`_
+
+   -  ``gamma``, negative log-likelihood for Gamma regression
+
+   -  ``gamma_deviance``, residual deviance for Gamma regression
+
+   -  ``tweedie``, negative log-likelihood for Tweedie regression
 
    -  ``ndcg``, `NDCG`_
 
@@ -595,11 +608,11 @@ Metric Parameters
 
    -  ``auc``, `AUC`_
 
-   -  ``binary_logloss``, `log loss`_
+   -  ``binary_logloss``, `log loss`_, alias=\ ``binary``
 
    -  ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
 
-   -  ``multi_logloss``, log loss for mulit-class classification
+   -  ``multi_logloss``, log loss for mulit-class classification, alias=\ ``multiclass``, ``softmax``, ``multiclassova``, ``multiclass_ova``, ``ova``, ``ovr``
 
    -  ``multi_error``, error rate for mulit-class classification
 
@@ -608,12 +621,6 @@ Metric Parameters
    -  ``xentlambda``, "intensity-weighted" cross-entropy, alias=\ ``cross_entropy_lambda``
 
    -  ``kldiv``, `Kullback-Leibler divergence`_, alias=\ ``kullback_leibler``
-
-   -  ``gamma``, negative log-likelihood for gamma regression
-
-   -  ``gamma_deviance``, residual deviance for gamma regression, alias=\ ``gamma-deviance``
-
-   -  ``tweedie``, negative log-likelihood for tweedie regression
 
    -  support multi metrics, separated by ``,``
 
@@ -713,7 +720,7 @@ In this case LightGBM will auto load initial score file if it exists.
 Weight Data
 ~~~~~~~~~~~
 
-LightGBM supporta weighted training. It uses an additional file to store weight data, like the following:
+LightGBM supports weighted training. It uses an additional file to store weight data, like the following:
 
 ::
 
@@ -734,7 +741,7 @@ Query Data
 ~~~~~~~~~~
 
 For LambdaRank learning, it needs query information for training data.
-LightGBM use an additional file to store query data, like the following:
+LightGBM uses an additional file to store query data, like the following:
 
 ::
 

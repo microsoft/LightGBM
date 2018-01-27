@@ -274,7 +274,7 @@ public:
   inline static const char* Name() {
     return "gamma-deviance";
   }
-  inline static double AverageLoss(double sum_loss, double sum_weights) {
+  inline static double AverageLoss(double sum_loss, double) {
     return sum_loss * 2;
   }
 };

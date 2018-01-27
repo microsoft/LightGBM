@@ -257,8 +257,9 @@ public:
   /*!
   * \brief Initial work for the prediction
   * \param num_iteration number of used iteration
+  * \param is_pred_contrib
   */
-  virtual void InitPredict(int num_iteration) = 0;
+  virtual void InitPredict(int num_iteration, bool is_pred_contrib) = 0;
 
   /*!
   * \brief Name of submodel
