@@ -154,9 +154,9 @@ if(USE_SWIG)
   swig_add_module(_lightgbm_swig java swig/lightgbmlib.i)
   swig_link_libraries(_lightgbm_swig _lightgbm)
   add_custom_command(TARGET _lightgbm_swig POST_BUILD
-    COMMAND "${Java_JAVAC_EXECUTABLE}" -d com/microsoft/ml/lightgbm java/*.java
+    COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
     COMMAND cp "${PROJECT_SOURCE_DIR}/*.so" com/microsoft/ml/lightgbm/linux/x86_64
-    COMMAND "${Java_JAR_EXECUTABLE}" -cfM lightgbmlib.jar -C com .)
+    COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
 endif(USE_SWIG)
 
 if(MSVC)
