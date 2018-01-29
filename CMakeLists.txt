@@ -149,6 +149,8 @@ add_library(_lightgbm SHARED src/c_api.cpp src/lightgbm_R.cpp  ${SOURCES})
 
 if(USE_SWIG)
   set_property(SOURCE swig/lightgbmlib.i PROPERTY CPLUSPLUS ON)
+  LIST(APPEND swig_options -package com.microsoft.ml.lightgbm)
+  set_property(SOURCE swig/lightgbmlib.i PROPERTY SWIG_FLAGS "${swig_options}")
   swig_add_module(_lightgbm_swig java swig/lightgbmlib.i)
   swig_link_libraries(_lightgbm_swig _lightgbm)
   add_custom_command(TARGET _lightgbm_swig POST_BUILD
