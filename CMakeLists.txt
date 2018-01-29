@@ -11,7 +11,7 @@ PROJECT(lightgbm)
 OPTION(USE_MPI "MPI based parallel learning" OFF)
 OPTION(USE_OPENMP "Enable OpenMP" ON)
 OPTION(USE_GPU "Enable GPU-acclerated training (EXPERIMENTAL)" OFF)
-OPTION(USE_SWIG "Enable SWIG to generate Java API" ON)
+OPTION(USE_SWIG "Enable SWIG to generate Java API" OFF)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.2")
