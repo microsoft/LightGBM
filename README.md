@@ -40,7 +40,7 @@ News
 
 02/20/2017 : Update to LightGBM v2.
 
-02/12/2017: LightGBM v1 stable release.
+02/12/2017 : LightGBM v1 stable release.
 
 01/08/2017 : Release [**R-package**](https://github.com/Microsoft/LightGBM/tree/master/R-package) beta version, welcome to have a try and provide feedback.
 
