@@ -195,9 +195,10 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
 void OverallConfig::CheckParamConflict() {
   // check if objective_type, metric_type, and num_class match
   int num_class_check = boosting_config.num_class;
+  bool objective_custom = objective_type == std::string("none") || objective_type == std::string("null") || objective_type == std::string("custom");
   bool objective_type_multiclass = (objective_type == std::string("multiclass")
                                     || objective_type == std::string("multiclassova")
-                                    || (objective_type == std::string("none") && num_class_check > 1));
+                                    || (objective_custom && num_class_check > 1));
   
   if (objective_type_multiclass) {
     if (num_class_check <= 1) {
