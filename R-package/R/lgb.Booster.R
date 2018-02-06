@@ -209,7 +209,9 @@ Booster <- R6Class(
       
       # Check if objective is empty
       if (is.null(fobj)) {
-        
+        if (private$set_objective_to_none) {
+          stop("lgb.Booster.update: cannot update due to null objective function")
+        }
         # Boost iteration from known objective
         ret <- lgb.call("LGBM_BoosterUpdateOneIter_R", ret = NULL, private$handle)
         
@@ -219,7 +221,10 @@ Booster <- R6Class(
         if (!is.function(fobj)) {
           stop("lgb.Booster.update: fobj should be a function")
         }
-        
+        if (!private$set_objective_to_none) {
+          self$reset_parameter(objective="none")
+          private$set_objective_to_none = TRUE
+        }
         # Perform objective calculation
         gpair <- fobj(private$inner_predict(1), private$train_set)
         
@@ -449,7 +454,7 @@ Booster <- R6Class(
     init_predictor = NULL,
     eval_names = NULL,
     higher_better_inner_eval = NULL,
-    
+    set_objective_to_none = FALSE,
     # Predict data
     inner_predict = function(idx) {
       
