@@ -66,7 +66,7 @@ The exe and dll files will be in ``LightGBM/`` folder.
 
 **Note**: You may need to run the ``cmake -G "MinGW Makefiles" ..`` one more time if met ``sh.exe was found in your PATH`` error.
 
-Also you may want to reed `gcc Tips <./gcc-Tips.rst>`__.
+Also you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
 Linux
 ~~~~~
@@ -82,7 +82,7 @@ LightGBM uses **CMake** to build. Run the following commands:
 
 **Note**: glibc >= 2.14 is required.
 
-Also you may want to reed `gcc Tips <./gcc-Tips.rst>`__.
+Also you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
 macOS
 ~~~~~
@@ -106,7 +106,7 @@ Then install LightGBM:
   cmake ..
   make -j4
 
-Also you may want to reed `gcc Tips <./gcc-Tips.rst>`__.
+Also you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
 Docker
 ~~~~~~
