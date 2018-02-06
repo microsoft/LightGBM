@@ -1282,6 +1282,7 @@ class Booster(object):
         self.__need_reload_eval_info = True
         self.__train_data_name = "training"
         self.__attr = {}
+        self.__set_objective_to_none = False
         self.best_iteration = -1
         self.best_score = {}
         params = {} if params is None else params
@@ -1516,12 +1517,17 @@ class Booster(object):
             self.__inner_predict_buffer[0] = None
         is_finished = ctypes.c_int(0)
         if fobj is None:
+            if self.__set_objective_to_none:
+                raise ValueError('Cannot update due to null objective function.')
             _safe_call(_LIB.LGBM_BoosterUpdateOneIter(
                 self.handle,
                 ctypes.byref(is_finished)))
             self.__is_predicted_cur_iter = [False for _ in range_(self.__num_dataset)]
             return is_finished.value == 1
         else:
+            if not self.__set_objective_to_none:
+                self.reset_parameter({"objective": "none"})
+                self.__set_objective_to_none = True
             grad, hess = fobj(self.__inner_predict(0), self.train_set)
             return self.__boost(grad, hess)
 
