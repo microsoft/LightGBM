@@ -578,7 +578,7 @@ And open an issue in GitHub `here`_ with that log.
 
 .. _Boost: http://www.boost.org/users/history/version_1_63_0.html
 
-.. _link: https://git-for-windows.github.io/
+.. _link: https://git-scm.com/download/win
 
 .. _CMake: https://cmake.org/download/
 
