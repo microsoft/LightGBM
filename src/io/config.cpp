@@ -192,13 +192,20 @@ void OverallConfig::Set(const std::unordered_map<std::string, std::string>& para
   }
 }
 
+bool CheckMultiClassObjective(const std::string& objective_type) {
+  return (objective_type == std::string("multiclass")
+          || objective_type == std::string("multiclassova")
+          || objective_type == std::string("softmax")
+          || objective_type == std::string("multiclass_ova")
+          || objective_type == std::string("ova")
+          || objective_type == std::string("ovr"));
+}
+
 void OverallConfig::CheckParamConflict() {
   // check if objective_type, metric_type, and num_class match
   int num_class_check = boosting_config.num_class;
   bool objective_custom = objective_type == std::string("none") || objective_type == std::string("null") || objective_type == std::string("custom");
-  bool objective_type_multiclass = (objective_type == std::string("multiclass")
-                                    || objective_type == std::string("multiclassova")
-                                    || (objective_custom && num_class_check > 1));
+  bool objective_type_multiclass = CheckMultiClassObjective(objective_type) || (objective_custom && num_class_check > 1);
   
   if (objective_type_multiclass) {
     if (num_class_check <= 1) {
@@ -211,7 +218,8 @@ void OverallConfig::CheckParamConflict() {
   }
   if (boosting_config.is_provide_training_metric || !io_config.valid_data_filenames.empty()) {
     for (std::string metric_type : metric_types) {
-      bool metric_type_multiclass = (metric_type == std::string("multi_logloss")
+      bool metric_type_multiclass = (CheckMultiClassObjective(metric_type) 
+                                     || metric_type == std::string("multi_logloss")
                                      || metric_type == std::string("multi_error"));
       if ((objective_type_multiclass && !metric_type_multiclass)
         || (!objective_type_multiclass && metric_type_multiclass)) {
