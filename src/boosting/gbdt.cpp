@@ -375,10 +375,10 @@ double GBDT::BoostFromAverage() {
 }
 
 bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
-  auto init_score = BoostFromAverage();
+  double init_score = 0.0f;
   // boosting first
   if (gradients == nullptr || hessians == nullptr) {
-
+    init_score = BoostFromAverage();
     #ifdef TIMETAG
     auto start_time = std::chrono::steady_clock::now();
     #endif
