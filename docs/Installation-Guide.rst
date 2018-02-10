@@ -281,7 +281,7 @@ Build Java Wrapper
 Linux
 ^^^^^
 
-You need to install `SWIG`_, **Java** and **JNI** first.
+You need to install `SWIG`_ and **Java** first.
 
 Then run the following commands:
 
