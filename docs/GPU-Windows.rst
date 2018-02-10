@@ -241,8 +241,6 @@ Installing Git for Windows is straightforward, use the following `link`_.
    :align: center
    :target: ./_static/images/screenshot-git-for-windows.png
 
-Then, click on the big Download button, you can't miss it.
-
 Now, we can fetch LightGBM repository for GitHub. Run Git Bash and the following command:
 
 ::
