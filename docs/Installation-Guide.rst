@@ -275,6 +275,25 @@ Docker
 
 Refer to `GPU Docker folder <https://github.com/Microsoft/LightGBM/tree/master/docker/gpu>`__.
 
+Build Java Wrapper
+~~~~~~~~~~~~~~~~~~
+
+Linux
+^^^^^
+
+You need to install `SWIG`_, **Java** and **JNI** first.
+
+Then run the following commands:
+
+.. code::
+
+  git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+  mkdir build ; cd build
+  cmake -DUSE_SWIG=ON ..
+  make -j4
+
+This will generate a JAR file containing the LightGBM `C API <./Development-Guide.rst#c-api>`__ wrapped by SWIG.
+
 .. _Python-package: https://github.com/Microsoft/LightGBM/tree/master/python-package
 
 .. _R-package: https://github.com/Microsoft/LightGBM/tree/master/R-package
@@ -306,3 +325,5 @@ Refer to `GPU Docker folder <https://github.com/Microsoft/LightGBM/tree/master/d
 .. _CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 
 .. _Boost Binary: https://sourceforge.net/projects/boost/files/boost-binaries/1.64.0/
+
+.. _SWIG: http://www.swig.org/download.html
