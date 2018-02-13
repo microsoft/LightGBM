@@ -21,7 +21,7 @@ LightGBM is a gradient boosting framework that uses tree based learning algorith
 
 For more details, please refer to [Features](https://github.com/Microsoft/LightGBM/blob/master/docs/Features.rst).
 
-[Comparison experiments](https://github.com/Microsoft/LightGBM/blob/master/docs/Experiments.rst#comparison-experiment) on public datasets show that LightGBM can outperform existing boosting frameworks on both efficiency and accuracy, with significantly lower memory consumption. What's more, the [parallel experiments](https://github.com/Microsoft/LightGBM/blob/master/docs/Experiments.rst#parallel-experiment) show that LightGBM can achieve a linear speed-up by using multiple machines for training in specific settings.
+[Comparison experiments](https://github.com/Microsoft/LightGBM/blob/master/docs/Experiments.rst#comparison-experiment) on public datasets show that LightGBM can outperform existing boosting frameworks on both efficiency and accuracy, with significantly lower memory consumption. What's more, the [parallel experiments](https://github.com/Microsoft/LightGBM/blob/master/docs/Experiments.rst#parallel-experiment) show that LightGBM can achieve a linear speed-up by using multiple machines for training in specific settings. Benefit from these advantages, LightGBM is being widely-used in many [winning solutions](https://github.com/Microsoft/LightGBM/blob/master/examples/README.md#) of machine learning competitions.
 
 News
 ----
@@ -97,6 +97,7 @@ LightGBM has been developed and used by many active community members. Your help
 - Contribute to the [tests](https://github.com/Microsoft/LightGBM/tree/master/tests) to make it more reliable.
 - Contribute to the [documents](https://github.com/Microsoft/LightGBM/tree/master/docs) to make it clearer for everyone.
 - Contribute to the [examples](https://github.com/Microsoft/LightGBM/tree/master/examples) to share your experience with other users.
+- Add your stories and experience to [Awesome LightGBM](https://github.com/Microsoft/LightGBM/blob/master/examples/README.md).
 - Open issue if you met problems during development.
 
 Microsoft Open Source Code of Conduct
