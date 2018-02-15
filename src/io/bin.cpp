@@ -1,4 +1,5 @@
 #include <LightGBM/utils/common.h>
+#include <LightGBM/utils/file_io.h>
 #include <LightGBM/bin.h>
 
 #include "dense_bin.hpp"
@@ -455,19 +456,19 @@ namespace LightGBM {
     }
   }
 
-  void BinMapper::SaveBinaryToFile(FILE* file) const {
-    fwrite(&num_bin_, sizeof(num_bin_), 1, file);
-    fwrite(&missing_type_, sizeof(missing_type_), 1, file);
-    fwrite(&is_trival_, sizeof(is_trival_), 1, file);
-    fwrite(&sparse_rate_, sizeof(sparse_rate_), 1, file);
-    fwrite(&bin_type_, sizeof(bin_type_), 1, file);
-    fwrite(&min_val_, sizeof(min_val_), 1, file);
-    fwrite(&max_val_, sizeof(max_val_), 1, file);
-    fwrite(&default_bin_, sizeof(default_bin_), 1, file);
+  void BinMapper::SaveBinaryToFile(const VirtualFileWriter* writer) const {
+    writer->Write(&num_bin_, sizeof(num_bin_));
+    writer->Write(&missing_type_, sizeof(missing_type_));
+    writer->Write(&is_trival_, sizeof(is_trival_));
+    writer->Write(&sparse_rate_, sizeof(sparse_rate_));
+    writer->Write(&bin_type_, sizeof(bin_type_));
+    writer->Write(&min_val_, sizeof(min_val_));
+    writer->Write(&max_val_, sizeof(max_val_));
+    writer->Write(&default_bin_, sizeof(default_bin_));
     if (bin_type_ == BinType::NumericalBin) {
-      fwrite(bin_upper_bound_.data(), sizeof(double), num_bin_, file);
+      writer->Write(bin_upper_bound_.data(), sizeof(double) * num_bin_);
     } else {
-      fwrite(bin_2_categorical_.data(), sizeof(int), num_bin_, file);
+      writer->Write(bin_2_categorical_.data(), sizeof(int) * num_bin_);
     }
   }
 

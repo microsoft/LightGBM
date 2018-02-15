@@ -505,16 +505,16 @@ void Metadata::LoadFromMemory(const void* memory) {
   LoadQueryWeights();
 }
 
-void Metadata::SaveBinaryToFile(FILE* file) const {
-  fwrite(&num_data_, sizeof(num_data_), 1, file);
-  fwrite(&num_weights_, sizeof(num_weights_), 1, file);
-  fwrite(&num_queries_, sizeof(num_queries_), 1, file);
-  fwrite(label_.data(), sizeof(label_t), num_data_, file);
+void Metadata::SaveBinaryToFile(const VirtualFileWriter* writer) const {
+  writer->Write(&num_data_, sizeof(num_data_));
+  writer->Write(&num_weights_, sizeof(num_weights_));
+  writer->Write(&num_queries_, sizeof(num_queries_));
+  writer->Write(label_.data(), sizeof(label_t) * num_data_);
   if (!weights_.empty()) {
-    fwrite(weights_.data(), sizeof(label_t), num_weights_, file);
+    writer->Write(weights_.data(), sizeof(label_t) * num_weights_);
   }
   if (!query_boundaries_.empty()) {
-    fwrite(query_boundaries_.data(), sizeof(data_size_t), num_queries_ + 1, file);
+    writer->Write(query_boundaries_.data(), sizeof(data_size_t) * (num_queries_ + 1));
   }
 
 }

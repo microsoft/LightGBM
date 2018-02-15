@@ -28,36 +28,29 @@ public:
   TextReader(const char* filename, bool is_skip_first_line):
     filename_(filename), is_skip_first_line_(is_skip_first_line){
     if (is_skip_first_line_) {
-      FILE* file;
-#ifdef _MSC_VER
-      fopen_s(&file, filename, "r");
-#else
-      file = fopen(filename, "r");
-#endif
-      if (file == NULL) {
+      auto reader = VirtualFileReader::Make(filename);
+      if (!reader->Init()) {
         Log::Fatal("Could not open %s", filename);
       }
       std::stringstream str_buf;
-      int read_c = -1;
-      read_c = fgetc(file);
-      while (read_c != EOF) {
-        char tmp_ch = static_cast<char>(read_c);
-        if (tmp_ch == '\n' || tmp_ch == '\r') {
+      char read_c;
+      size_t nread = reader->Read(&read_c, 1);
+      while (nread == 1) {
+        if (read_c == '\n' || read_c == '\r') {
           break;
         }
-        str_buf << tmp_ch;
+        str_buf << read_c;
         ++skip_bytes_;
-        read_c = fgetc(file);
+        nread = reader->Read(&read_c, 1);
       }
-      if (static_cast<char>(read_c) == '\r') {
-        read_c = fgetc(file);
-        ++skip_bytes_;
-      }
-      if (static_cast<char>(read_c) == '\n') {
-        read_c = fgetc(file);
+      if (read_c == '\r') {
+        reader->Read(&read_c, 1);
         ++skip_bytes_;
       }
-      fclose(file);
+      if (read_c == '\n') {
+        reader->Read(&read_c, 1);
+        ++skip_bytes_;
+      }
       first_line_ = str_buf.str();
       Log::Debug("Skipped header \"%s\" in file %s", first_line_.c_str(), filename_);
     }
@@ -151,25 +144,18 @@ public:
   std::vector<char> ReadContent(size_t* out_len) {
     std::vector<char> ret;
     *out_len = 0;
-    FILE* file;
-#ifdef _MSC_VER
-    fopen_s(&file, filename_, "rb");
-#else
-    file = fopen(filename_, "rb");
-#endif
-    if (file == NULL) {
+    auto reader = VirtualFileReader::Make(filename_);
+    if (!reader->Init()) {
       return ret;
     }
     const size_t buffer_size = 16 * 1024 * 1024;
     auto buffer_read = std::vector<char>(buffer_size);
     size_t read_cnt = 0;
     do {
-      read_cnt = fread(buffer_read.data(), 1, buffer_size, file);
+      read_cnt = reader->Read(buffer_read.data(), buffer_size);
       ret.insert(ret.end(), buffer_read.begin(), buffer_read.begin() + read_cnt);
       *out_len += read_cnt;
     } while (read_cnt > 0);
-    // close file
-    fclose(file);
     return ret;
   }
 
