@@ -51,9 +51,9 @@ private:
 const std::string kHdfsProto = "hdfs://";
 
 #ifdef USE_HDFS
-struct HdfsFile : VirtualFileReader, VirtualFileWriter {
-  HdfsFile(const std::string& filename, int flags) : filename_(filename), flags_(flags) {}
-  ~HdfsFile() {
+struct HDFSFile : VirtualFileReader, VirtualFileWriter {
+  HDFSFile(const std::string& filename, int flags) : filename_(filename), flags_(flags) {}
+  ~HDFSFile() {
     if (file_ != NULL) {
       hdfsCloseFile(fs_, file_);
     }
@@ -62,7 +62,7 @@ struct HdfsFile : VirtualFileReader, VirtualFileWriter {
   bool Init() {
     if (file_ == NULL) {
       if (fs_ == NULL) {
-        fs_ = getHdfsFS(filename_);
+        fs_ = GetHDFSFileSystem(filename_);
       }
       if (fs_ != NULL && (flags_ == O_WRONLY || 0 == hdfsExists(fs_, filename_.c_str()))) {
         file_ = hdfsOpenFile(fs_, filename_.c_str(), flags_, 0, 0, 0);
@@ -73,7 +73,7 @@ struct HdfsFile : VirtualFileReader, VirtualFileWriter {
 
   bool Exists() const {
     if (fs_ == NULL) {
-      fs_ = getHdfsFS(filename_);
+      fs_ = GetHDFSFileSystem(filename_);
     }
     return fs_ != NULL && 0 == hdfsExists(fs_, filename_.c_str());
   }
@@ -110,7 +110,7 @@ private:
     return bytes - remain;
   }
 
-  static hdfsFS getHdfsFS(const std::string& uri) {
+  static hdfsFS GetHDFSFileSystem(const std::string& uri) {
     size_t end = uri.find("/", kHdfsProto.length());
     if (uri.find(kHdfsProto) != 0 || end == std::string::npos) {
       Log::Warning("Bad hdfs uri, no namenode found [%s]", uri.c_str());
@@ -118,12 +118,12 @@ private:
     }
     std::string hostport = uri.substr(kHdfsProto.length(), end - kHdfsProto.length());
     if (fs_cache_.count(hostport) == 0) {
-      fs_cache_[hostport] = makeHdfsFs(hostport);
+      fs_cache_[hostport] = MakeHDFSFileSystem(hostport);
     }
     return fs_cache_[hostport];
   }
 
-  static hdfsFS makeHdfsFs(const std::string& hostport) {
+  static hdfsFS MakeHDFSFileSystem(const std::string& hostport) {
     std::istringstream iss(hostport);
     std::string host;
     tPort port = 0;
@@ -143,7 +143,7 @@ private:
   static std::unordered_map<std::string, hdfsFS> fs_cache_;
 };
 
-std::unordered_map<std::string, hdfsFS> HdfsFile::fs_cache_ = std::unordered_map<std::string, hdfsFS>();
+std::unordered_map<std::string, hdfsFS> HDFSFile::fs_cache_ = std::unordered_map<std::string, hdfsFS>();
 
 #define WITH_HDFS(x) x
 #else
@@ -152,7 +152,7 @@ std::unordered_map<std::string, hdfsFS> HdfsFile::fs_cache_ = std::unordered_map
 
 std::unique_ptr<VirtualFileReader> VirtualFileReader::Make(const std::string& filename) {
   if (0 == filename.find(kHdfsProto)) {
-    WITH_HDFS(return std::unique_ptr<VirtualFileReader>(new HdfsFile(filename, O_RDONLY)));
+    WITH_HDFS(return std::unique_ptr<VirtualFileReader>(new HDFSFile(filename, O_RDONLY)));
   } else {
     return std::unique_ptr<VirtualFileReader>(new LocalFile(filename, "rb"));
   }
@@ -160,7 +160,7 @@ std::unique_ptr<VirtualFileReader> VirtualFileReader::Make(const std::string& fi
 
 std::unique_ptr<VirtualFileWriter> VirtualFileWriter::Make(const std::string& filename) {
   if (0 == filename.find(kHdfsProto)) {
-    WITH_HDFS(return std::unique_ptr<VirtualFileWriter>(new HdfsFile(filename, O_WRONLY)));
+    WITH_HDFS(return std::unique_ptr<VirtualFileWriter>(new HDFSFile(filename, O_WRONLY)));
   } else {
     return std::unique_ptr<VirtualFileWriter>(new LocalFile(filename, "wb"));
   }
@@ -168,7 +168,7 @@ std::unique_ptr<VirtualFileWriter> VirtualFileWriter::Make(const std::string& fi
 
 bool VirtualFileWriter::Exists(const std::string& filename) {
   if (0 == filename.find(kHdfsProto)) {
-    WITH_HDFS(HdfsFile file(filename, O_RDONLY); return file.Exists());
+    WITH_HDFS(HDFSFile file(filename, O_RDONLY); return file.Exists());
   } else {
       LocalFile file(filename, "rb");
       return file.Exists();
