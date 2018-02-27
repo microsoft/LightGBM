@@ -201,6 +201,9 @@
     <ClInclude Include="..\src\metric\xentropy_metric.hpp">
       <Filter>src\metric</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\file_io.h">
+      <Filter>include\LightGBM\utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp">
@@ -286,6 +289,9 @@
     </ClCompile>
     <ClCompile Include="..\src\boosting\gbdt_model_text.cpp">
       <Filter>src\boosting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\io\file_io.cpp">
+      <Filter>src\io</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
