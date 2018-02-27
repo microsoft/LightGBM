@@ -522,31 +522,20 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     bin_filename = bin_filename_str.c_str();
   }
   bool is_file_existed = false;
-  FILE* file;
-  #ifdef _MSC_VER
-  fopen_s(&file, bin_filename, "rb");
-  #else
-  file = fopen(bin_filename, "rb");
-  #endif
 
-  if (file != NULL) {
+  if (VirtualFileWriter::Exists(bin_filename)) {
     is_file_existed = true;
     Log::Warning("File %s existed, cannot save binary to it", bin_filename);
-    fclose(file);
   }
 
   if (!is_file_existed) {
-    #ifdef _MSC_VER
-    fopen_s(&file, bin_filename, "wb");
-    #else
-    file = fopen(bin_filename, "wb");
-    #endif
-    if (file == NULL) {
+    auto writer = VirtualFileWriter::Make(bin_filename);
+    if (!writer->Init()) {
       Log::Fatal("Cannot write binary data to %s ", bin_filename);
     }
     Log::Info("Saving data to binary file %s", bin_filename);
     size_t size_of_token = std::strlen(binary_file_token);
-    fwrite(binary_file_token, sizeof(char), size_of_token, file);
+    writer->Write(binary_file_token, size_of_token);
     // get size of header
     size_t size_of_header = sizeof(num_data_) + sizeof(num_features_) + sizeof(num_total_features_)
       + sizeof(int) * num_total_features_ + sizeof(label_idx_) + sizeof(num_groups_)
@@ -555,44 +544,43 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     for (int i = 0; i < num_total_features_; ++i) {
       size_of_header += feature_names_[i].size() + sizeof(int);
     }
-    fwrite(&size_of_header, sizeof(size_of_header), 1, file);
+    writer->Write(&size_of_header, sizeof(size_of_header));
     // write header
-    fwrite(&num_data_, sizeof(num_data_), 1, file);
-    fwrite(&num_features_, sizeof(num_features_), 1, file);
-    fwrite(&num_total_features_, sizeof(num_total_features_), 1, file);
-    fwrite(&label_idx_, sizeof(label_idx_), 1, file);
-    fwrite(used_feature_map_.data(), sizeof(int), num_total_features_, file);
-    fwrite(&num_groups_, sizeof(num_groups_), 1, file);
-    fwrite(real_feature_idx_.data(), sizeof(int), num_features_, file);
-    fwrite(feature2group_.data(), sizeof(int), num_features_, file);
-    fwrite(feature2subfeature_.data(), sizeof(int), num_features_, file);
-    fwrite(group_bin_boundaries_.data(), sizeof(uint64_t), num_groups_ + 1, file);
-    fwrite(group_feature_start_.data(), sizeof(int), num_groups_, file);
-    fwrite(group_feature_cnt_.data(), sizeof(int), num_groups_, file);
+    writer->Write(&num_data_, sizeof(num_data_));
+    writer->Write(&num_features_, sizeof(num_features_));
+    writer->Write(&num_total_features_, sizeof(num_total_features_));
+    writer->Write(&label_idx_, sizeof(label_idx_));
+    writer->Write(used_feature_map_.data(), sizeof(int) * num_total_features_);
+    writer->Write(&num_groups_, sizeof(num_groups_));
+    writer->Write(real_feature_idx_.data(), sizeof(int) * num_features_);
+    writer->Write(feature2group_.data(), sizeof(int) * num_features_);
+    writer->Write(feature2subfeature_.data(), sizeof(int) * num_features_);
+    writer->Write(group_bin_boundaries_.data(), sizeof(uint64_t) * (num_groups_ + 1));
+    writer->Write(group_feature_start_.data(), sizeof(int) * num_groups_);
+    writer->Write(group_feature_cnt_.data(), sizeof(int) * num_groups_);
 
     // write feature names
     for (int i = 0; i < num_total_features_; ++i) {
       int str_len = static_cast<int>(feature_names_[i].size());
-      fwrite(&str_len, sizeof(int), 1, file);
+      writer->Write(&str_len, sizeof(int));
       const char* c_str = feature_names_[i].c_str();
-      fwrite(c_str, sizeof(char), str_len, file);
+      writer->Write(c_str, sizeof(char) * str_len);
     }
 
     // get size of meta data
     size_t size_of_metadata = metadata_.SizesInByte();
-    fwrite(&size_of_metadata, sizeof(size_of_metadata), 1, file);
+    writer->Write(&size_of_metadata, sizeof(size_of_metadata));
     // write meta data
-    metadata_.SaveBinaryToFile(file);
+    metadata_.SaveBinaryToFile(writer.get());
 
     // write feature data
     for (int i = 0; i < num_groups_; ++i) {
       // get size of feature
       size_t size_of_feature = feature_groups_[i]->SizesInByte();
-      fwrite(&size_of_feature, sizeof(size_of_feature), 1, file);
+      writer->Write(&size_of_feature, sizeof(size_of_feature));
       // write feature
-      feature_groups_[i]->SaveBinaryToFile(file);
+      feature_groups_[i]->SaveBinaryToFile(writer.get());
     }
-    fclose(file);
   }
 }
 

@@ -98,7 +98,7 @@ public:
   * \brief Save binary data to file
   * \param file File want to write
   */
-  void SaveBinaryToFile(FILE* file) const;
+  void SaveBinaryToFile(const VirtualFileWriter* writer) const;
   /*!
   * \brief Mapping bin into feature value
   * \param bin
@@ -308,7 +308,7 @@ public:
   * \brief Save binary data to file
   * \param file File want to write
   */
-  virtual void SaveBinaryToFile(FILE* file) const = 0;
+  virtual void SaveBinaryToFile(const VirtualFileWriter* writer) const = 0;
 
   /*!
   * \brief Load from memory

@@ -367,8 +367,8 @@ public:
     }
   }
 
-  void SaveBinaryToFile(FILE* file) const override {
-    fwrite(data_.data(), sizeof(uint8_t), data_.size(), file);
+  void SaveBinaryToFile(const VirtualFileWriter* writer) const override {
+    writer->Write(data_.data(), sizeof(uint8_t) * data_.size());
   }
 
   size_t SizesInByte() const override {

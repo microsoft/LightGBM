@@ -9,6 +9,7 @@
 #include <thread>
 #include <memory>
 #include <algorithm>
+#include "file_io.h"
 
 namespace LightGBM{
 
@@ -23,14 +24,8 @@ public:
   * \process_fun Process function
   */
   static size_t Read(const char* filename, int skip_bytes, const std::function<size_t (const char*, size_t)>& process_fun) {
-    FILE* file;
-
-#ifdef _MSC_VER
-    fopen_s(&file, filename, "rb");
-#else
-    file = fopen(filename, "rb");
-#endif
-    if (file == NULL) {
+    auto reader = VirtualFileReader::Make(filename);
+    if (!reader->Init()) {
       return 0;
     }
     size_t cnt = 0;
@@ -42,16 +37,17 @@ public:
     size_t read_cnt = 0;
     if (skip_bytes > 0) {
       // skip first k bytes
-      read_cnt = fread(buffer_process.data(), 1, skip_bytes, file);
+      read_cnt = reader->Read(buffer_process.data(), skip_bytes);
     }
     // read first block
-    read_cnt = fread(buffer_process.data(), 1, buffer_size, file);
+    read_cnt = reader->Read(buffer_process.data(), buffer_size);
+
     size_t last_read_cnt = 0;
     while (read_cnt > 0) {
       // start read thread
       std::thread read_worker = std::thread(
-        [file, &buffer_read, buffer_size, &last_read_cnt] {
-        last_read_cnt = fread(buffer_read.data(), 1, buffer_size, file);
+        [&reader, &buffer_read, buffer_size, &last_read_cnt] {
+        last_read_cnt = reader->Read(buffer_read.data(), buffer_size);
       }
       );
       // start process
@@ -62,8 +58,6 @@ public:
       std::swap(buffer_process, buffer_read);
       read_cnt = last_read_cnt;
     }
-    // close file
-    fclose(file);
     return cnt;
   }
 

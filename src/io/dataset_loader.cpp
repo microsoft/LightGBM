@@ -264,14 +264,9 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
 
 Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices) {
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
-  FILE* file;
-  #ifdef _MSC_VER
-  fopen_s(&file, bin_filename, "rb");
-  #else
-  file = fopen(bin_filename, "rb");
-  #endif
+  auto reader = VirtualFileReader::Make(bin_filename);
   dataset->data_filename_ = data_filename;
-  if (file == NULL) {
+  if (!reader->Init()) {
     Log::Fatal("Could not read binary data from %s", bin_filename);
   }
 
@@ -281,8 +276,8 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
 
   // check token
   size_t size_of_token = std::strlen(Dataset::binary_file_token);
-  size_t read_cnt = fread(buffer.data(), sizeof(char), size_of_token, file);
-  if (read_cnt != size_of_token) {
+  size_t read_cnt = reader->Read(buffer.data(), sizeof(char) * size_of_token);
+  if (read_cnt != sizeof(char) * size_of_token) {
     Log::Fatal("Binary file error: token has the wrong size");
   }
   if (std::string(buffer.data()) != std::string(Dataset::binary_file_token)) {
@@ -290,9 +285,9 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   }
 
   // read size of header
-  read_cnt = fread(buffer.data(), sizeof(size_t), 1, file);
+  read_cnt = reader->Read(buffer.data(), sizeof(size_t));
 
-  if (read_cnt != 1) {
+  if (read_cnt != sizeof(size_t)) {
     Log::Fatal("Binary file error: header has the wrong size");
   }
 
@@ -304,7 +299,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     buffer.resize(buffer_size);
   }
   // read header
-  read_cnt = fread(buffer.data(), 1, size_of_head, file);
+  read_cnt = reader->Read(buffer.data(), size_of_head);
 
   if (read_cnt != size_of_head) {
     Log::Fatal("Binary file error: header is incorrect");
@@ -389,9 +384,9 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   }
 
   // read size of meta data
-  read_cnt = fread(buffer.data(), sizeof(size_t), 1, file);
+  read_cnt = reader->Read(buffer.data(), sizeof(size_t));
 
-  if (read_cnt != 1) {
+  if (read_cnt != sizeof(size_t)) {
     Log::Fatal("Binary file error: meta data has the wrong size");
   }
 
@@ -403,7 +398,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     buffer.resize(buffer_size);
   }
   //  read meta data
-  read_cnt = fread(buffer.data(), 1, size_of_metadata, file);
+  read_cnt = reader->Read(buffer.data(), size_of_metadata);
 
   if (read_cnt != size_of_metadata) {
     Log::Fatal("Binary file error: meta data is incorrect");
@@ -451,8 +446,8 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   // read feature data
   for (int i = 0; i < dataset->num_groups_; ++i) {
     // read feature size
-    read_cnt = fread(buffer.data(), sizeof(size_t), 1, file);
-    if (read_cnt != 1) {
+    read_cnt = reader->Read(buffer.data(), sizeof(size_t));
+    if (read_cnt != sizeof(size_t)) {
       Log::Fatal("Binary file error: feature %d has the wrong size", i);
     }
     size_t size_of_feature = *(reinterpret_cast<size_t*>(buffer.data()));
@@ -462,7 +457,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
       buffer.resize(buffer_size);
     }
 
-    read_cnt = fread(buffer.data(), 1, size_of_feature, file);
+    read_cnt = reader->Read(buffer.data(), size_of_feature);
 
     if (read_cnt != size_of_feature) {
       Log::Fatal("Binary file error: feature %d is incorrect, read count: %d", i, read_cnt);
@@ -474,7 +469,6 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
       ));
   }
   dataset->feature_groups_.shrink_to_fit();
-  fclose(file);
   dataset->is_finish_load_ = true;
   return dataset.release();
 }
@@ -1068,22 +1062,12 @@ std::string DatasetLoader::CheckCanLoadFromBin(const char* filename) {
   std::string bin_filename(filename);
   bin_filename.append(".bin");
 
-  FILE* file;
+  auto reader = VirtualFileReader::Make(bin_filename.c_str());
 
-  #ifdef _MSC_VER
-  fopen_s(&file, bin_filename.c_str(), "rb");
-  #else
-  file = fopen(bin_filename.c_str(), "rb");
-  #endif
-
-  if (file == NULL) {
+  if (!reader->Init()) {
     bin_filename = std::string(filename);
-    #ifdef _MSC_VER
-    fopen_s(&file, bin_filename.c_str(), "rb");
-    #else
-    file = fopen(bin_filename.c_str(), "rb");
-    #endif
-    if (file == NULL) {
+    reader = VirtualFileReader::Make(bin_filename.c_str());
+    if (!reader->Init()) {
       Log::Fatal("cannot open data file %s", bin_filename.c_str());
     }
   }
@@ -1092,8 +1076,7 @@ std::string DatasetLoader::CheckCanLoadFromBin(const char* filename) {
   auto buffer = std::vector<char>(buffer_size);
   // read size of token
   size_t size_of_token = std::strlen(Dataset::binary_file_token);
-  size_t read_cnt = fread(buffer.data(), sizeof(char), size_of_token, file);
-  fclose(file);
+  size_t read_cnt = reader->Read(buffer.data(), size_of_token);
   if (read_cnt == size_of_token
       && std::string(buffer.data()) == std::string(Dataset::binary_file_token)) {
     return bin_filename;
