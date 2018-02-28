@@ -167,7 +167,7 @@ Dataset <- R6Class(
       if (!is.null(private$reference)) {
         ref_handle <- private$reference$.__enclos_env__$private$get_handle()
       }
-      handle <- 0.0
+      handle <- NA_real_
       
       # Not subsetting
       if (is.null(private$used_indices)) {
