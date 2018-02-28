@@ -167,7 +167,7 @@ Booster <- R6Class(
       
       # Append parameters
       params <- append(params, list(...))
-      params_str <- algb.params2str(params)
+      params_str <- lgb.params2str(params)
       
       # Reset parameters
       lgb.call("LGBM_BoosterResetParameter_R",
@@ -222,7 +222,7 @@ Booster <- R6Class(
           stop("lgb.Booster.update: fobj should be a function")
         }
         if (!private$set_objective_to_none) {
-          self$reset_parameter(objective="none")
+          self$reset_parameter(params = list(objective = "none"))
           private$set_objective_to_none = TRUE
         }
         # Perform objective calculation
