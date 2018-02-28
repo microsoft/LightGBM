@@ -78,7 +78,7 @@ def silent_call(cmd, raise_error=False, error_msg=''):
         return 1
 
 
-def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
+def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, use_hdfs=False,
                 boost_root=None, boost_dir=None, boost_include_dir=None,
                 boost_librarydir=None, opencl_include_dir=None,
                 opencl_library=None):
@@ -107,6 +107,8 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
             cmake_cmd.append("-DOpenCL_LIBRARY={0}".format(opencl_library))
     if use_mpi:
         cmake_cmd.append("-DUSE_MPI=ON")
+    if use_hdfs:
+        cmake_cmd.append("-DUSE_HDFS=ON")
     if os.name == "nt":
         if use_mingw:
             if use_mpi:
@@ -119,7 +121,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
         else:
             status = 1
             lib_path = "../compile/windows/x64/DLL/lib_lightgbm.dll"
-            if not use_gpu:
+            if not use_gpu and not use_hdfs:
                 logger.info("Starting to compile with MSBuild from existing solution file.")
                 platform_toolsets = ("v141", "v140")
                 for pt in platform_toolsets:
@@ -147,7 +149,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False,
                                     log_notice)))
                 silent_call(["cmake", "--build", ".", "--target", "_lightgbm", "--config", "Release"], raise_error=True,
                             error_msg='Please install CMake first')
-    else:  # Linux, Darwin (OS X), etc.
+    else:  # Linux, Darwin (macOS), etc.
         logger.info("Starting to compile with CMake.")
         silent_call(cmake_cmd, raise_error=True, error_msg='Please install CMake and all required dependencies first')
         silent_call(["make", "_lightgbm"], raise_error=True,
@@ -172,6 +174,7 @@ class CustomInstall(install):
         ('mingw', 'm', 'Compile with MinGW'),
         ('gpu', 'g', 'Compile GPU version'),
         ('mpi', None, 'Compile MPI version'),
+        ('hdfs', 'h', 'Compile HDFS version'),
         ('precompile', 'p', 'Use precompiled library'),
         ('boost-root=', None, 'Boost preferred installation prefix'),
         ('boost-dir=', None, 'Directory with Boost package configuration file'),
@@ -192,13 +195,14 @@ class CustomInstall(install):
         self.opencl_include_dir = None
         self.opencl_library = None
         self.mpi = 0
+        self.hdfs = 0
         self.precompile = 0
 
     def run(self):
         open(path_log, 'wb').close()
         if not self.precompile:
             copy_files(use_gpu=self.gpu)
-            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_mpi=self.mpi,
+            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_mpi=self.mpi, use_hdfs=self.hdfs,
                         boost_root=self.boost_root, boost_dir=self.boost_dir,
                         boost_include_dir=self.boost_include_dir, boost_librarydir=self.boost_librarydir,
                         opencl_include_dir=self.opencl_include_dir, opencl_library=self.opencl_library)
