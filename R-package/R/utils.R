@@ -7,7 +7,7 @@ lgb.is.Dataset <- function(x) {
 }
 
 lgb.is.null.handle <- function(x) {
-  is.null(x) || x == 0.0
+  is.null(x) || is.na(x)
 }
 
 lgb.encode.char <- function(arr, len) {
