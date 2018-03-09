@@ -490,7 +490,6 @@ int GetPredictType(LGBM_SE is_rawscore, LGBM_SE is_leafidx, LGBM_SE is_predcontr
   if (R_AS_INT(is_predcontrib)) {
     pred_type = C_API_PREDICT_CONTRIB;
   }
-  Rprintf("PredType: %d", pred_type);
   return pred_type;
 }
 
