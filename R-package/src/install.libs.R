@@ -1,13 +1,11 @@
 # User options
 use_precompile <- FALSE
 use_gpu <- FALSE
-use_mingw <- TRUE
+use_mingw <- FALSE
 
 if (.Machine$sizeof.pointer != 8){
   stop("Only support 64-bit R, please check your the version of your R and Rtools.")
 }
-
-print(R_PACKAGE_SOURCE)
 
 # Check for precompilation
 if (!use_precompile) {
@@ -91,13 +89,11 @@ if (!use_precompile) {
 } else {
 
   # Has precompiled package
-  # lib_folder <- file.path(R_PACKAGE_SOURCE, "../", fsep = "/")
-  lib_folder <- R_PACKAGE_SOURCE
-
+  lib_folder <- file.path(R_PACKAGE_SOURCE, "../", fsep = "/")
   if (file.exists(file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/"))) {
     src <- file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/")
-  } else if (file.exists(file.path(lib_folder, paste0("src/Release/lib_lightgbm", SHLIB_EXT), fsep = "/"))) {
-    src <- file.path(lib_folder, paste0("src/Release/lib_lightgbm", SHLIB_EXT), fsep = "/") 
+  } else if (file.exists(file.path(lib_folder, paste0("Release/lib_lightgbm", SHLIB_EXT), fsep = "/"))) {
+    src <- file.path(lib_folder, paste0("Release/lib_lightgbm", SHLIB_EXT), fsep = "/") 
   } else {
     src <- file.path(lib_folder, paste0("/windows/x64/DLL/lib_lightgbm", SHLIB_EXT), fsep = "/") # Expected result: installation will fail if it is not here or any other
   }
