@@ -14,17 +14,17 @@ std::string GetBoostingTypeFromModelFile(const char* filename) {
 
 bool Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
   auto start_time = std::chrono::steady_clock::now();
-	if (boosting != nullptr) {
-		TextReader<size_t> model_reader(filename, true);
+  if (boosting != nullptr) {
+    TextReader<size_t> model_reader(filename, true);
     size_t buffer_len = 0;
     auto buffer = model_reader.ReadContent(&buffer_len);
-		if (!boosting->LoadModelFromString(buffer.data(), buffer_len)) {
-			return false;
-		}
-	}
+    if (!boosting->LoadModelFromString(buffer.data(), buffer_len)) {
+      return false;
+    }
+  }
   std::chrono::duration<double, std::milli> delta = (std::chrono::steady_clock::now() - start_time);
-  Log::Info("time for loading model: %f seconds", 1e-3*delta);
-	return true;
+  Log::Debug("time for loading model: %f seconds", 1e-3*delta);
+  return true;
 }
 
 Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename) {
