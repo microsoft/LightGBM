@@ -479,13 +479,16 @@ LGBM_SE LGBM_BoosterGetPredict_R(LGBM_SE handle,
   R_API_END();
 }
 
-int GetPredictType(LGBM_SE is_rawscore, LGBM_SE is_leafidx) {
+int GetPredictType(LGBM_SE is_rawscore, LGBM_SE is_leafidx, LGBM_SE is_predcontrib) {
   int pred_type = C_API_PREDICT_NORMAL;
   if (R_AS_INT(is_rawscore)) {
     pred_type = C_API_PREDICT_RAW_SCORE;
   }
   if (R_AS_INT(is_leafidx)) {
     pred_type = C_API_PREDICT_LEAF_INDEX;
+  }
+  if (R_AS_INT(is_predcontrib)) {
+    pred_type = C_API_PREDICT_CONTRIB;
   }
   return pred_type;
 }
@@ -495,12 +498,13 @@ LGBM_SE LGBM_BoosterPredictForFile_R(LGBM_SE handle,
   LGBM_SE data_has_header,
   LGBM_SE is_rawscore,
   LGBM_SE is_leafidx,
+  LGBM_SE is_predcontrib,
   LGBM_SE num_iteration,
   LGBM_SE parameter,
   LGBM_SE result_filename,
   LGBM_SE call_state) {
   R_API_BEGIN();
-  int pred_type = GetPredictType(is_rawscore, is_leafidx);
+  int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
   CHECK_CALL(LGBM_BoosterPredictForFile(R_GET_PTR(handle), R_CHAR_PTR(data_filename),
     R_AS_INT(data_has_header), pred_type, R_AS_INT(num_iteration), R_CHAR_PTR(parameter),
     R_CHAR_PTR(result_filename)));
@@ -511,11 +515,12 @@ LGBM_SE LGBM_BoosterCalcNumPredict_R(LGBM_SE handle,
   LGBM_SE num_row,
   LGBM_SE is_rawscore,
   LGBM_SE is_leafidx,
+  LGBM_SE is_predcontrib,
   LGBM_SE num_iteration,
   LGBM_SE out_len,
   LGBM_SE call_state) {
   R_API_BEGIN();
-  int pred_type = GetPredictType(is_rawscore, is_leafidx);
+  int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
   int64_t len = 0;
   CHECK_CALL(LGBM_BoosterCalcNumPredict(R_GET_PTR(handle), R_AS_INT(num_row),
     pred_type, R_AS_INT(num_iteration), &len));
@@ -532,13 +537,14 @@ LGBM_SE LGBM_BoosterPredictForCSC_R(LGBM_SE handle,
   LGBM_SE num_row,
   LGBM_SE is_rawscore,
   LGBM_SE is_leafidx,
+  LGBM_SE is_predcontrib,
   LGBM_SE num_iteration,
   LGBM_SE parameter,
   LGBM_SE out_result,
   LGBM_SE call_state) {
 
   R_API_BEGIN();
-  int pred_type = GetPredictType(is_rawscore, is_leafidx);
+  int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
 
   const int* p_indptr = R_INT_PTR(indptr);
   const int* p_indices = R_INT_PTR(indices);
@@ -562,13 +568,14 @@ LGBM_SE LGBM_BoosterPredictForMat_R(LGBM_SE handle,
   LGBM_SE num_col,
   LGBM_SE is_rawscore,
   LGBM_SE is_leafidx,
+  LGBM_SE is_predcontrib,
   LGBM_SE num_iteration,
   LGBM_SE parameter,
   LGBM_SE out_result,
   LGBM_SE call_state) {
 
   R_API_BEGIN();
-  int pred_type = GetPredictType(is_rawscore, is_leafidx);
+  int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
 
   int32_t nrow = R_AS_INT(num_row);
   int32_t ncol = R_AS_INT(num_col);

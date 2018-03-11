@@ -615,6 +615,7 @@ Booster <- R6Class(
 #'        sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE} for
 #'        logistic regression would result in predictions for log-odds instead of probabilities.
 #' @param predleaf whether predict leaf index instead.
+#' @param predcontrib return per-feature contributions for each record.
 #' @param header only used for prediction for text file. True if text file has header
 #' @param reshape whether to reshape the vector of predictions to a matrix form when there are several
 #'        prediction outputs per case.
@@ -655,6 +656,7 @@ predict.lgb.Booster <- function(object, data,
                         num_iteration = NULL,
                         rawscore = FALSE,
                         predleaf = FALSE,
+                        predcontrib = FALSE,
                         header = FALSE,
                         reshape = FALSE, ...) {
   
@@ -668,6 +670,7 @@ predict.lgb.Booster <- function(object, data,
                  num_iteration,
                  rawscore,
                  predleaf,
+                 predcontrib,
                  header,
                  reshape, ...)
 }
