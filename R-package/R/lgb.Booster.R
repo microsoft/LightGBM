@@ -619,7 +619,8 @@ Booster <- R6Class(
 #' @param header only used for prediction for text file. True if text file has header
 #' @param reshape whether to reshape the vector of predictions to a matrix form when there are several
 #'        prediction outputs per case.
-
+#' @param ... Additional named arguments passed to the \code{predict()} method of
+#'            the \code{lgb.Booster} object passed to \code{object}.
 #' @return
 #' For regression or binary classification, it returns a vector of length \code{nrows(data)}.
 #' For multiclass classification, either a \code{num_class * nrows(data)} vector or

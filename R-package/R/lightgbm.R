@@ -122,5 +122,28 @@ NULL
 # Various imports
 #' @import methods
 #' @importFrom R6 R6Class
-#' @useDynLib lightgbm
+#' @useDynLib lib_lightgbm
 NULL
+
+# Suppress false positive warnings from R CMD CHECK about
+# "unrecognized global variable"
+globalVariables(c(
+    "."
+    , ".N"
+    , ".SD"
+    , "Contribution"
+    , "Cover"
+    , "Feature"
+    , "Frequency"
+    , "Gain"
+    , "internal_count"
+    , "internal_value"
+    , "leaf_index"
+    , "leaf_parent"
+    , "leaf_value"
+    , "node_parent"
+    , "split_feature"
+    , "split_gain"
+    , "split_index"
+    , "tree_index"
+))

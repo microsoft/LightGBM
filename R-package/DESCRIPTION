@@ -5,7 +5,7 @@ Version: 2.1.0
 Date: 2018-01-25
 Author: Guolin Ke <guolin.ke@microsoft.com>
 Maintainer: Guolin Ke <guolin.ke@microsoft.com>
-Description: LightGBM is a gradient boosting framework that uses tree based learning algorithms. 
+Description: Tree based algorithms can be improved by introducing boosting frameworks. LightGBM is one such framework.
     It is designed to be distributed and efficient with the following advantages:
         1. Faster training speed and higher efficiency.
         2. Lower memory usage.
@@ -30,6 +30,7 @@ Depends:
     R (>= 3.0),
     R6 (>= 2.0)
 Imports:
+    graphics,
     methods,
     Matrix (>= 1.1-0),
     data.table (>= 1.9.6),

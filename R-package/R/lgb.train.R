@@ -1,5 +1,5 @@
-#' Main training logic for LightGBM
-#' 
+#' @title Main training logic for LightGBM
+#' @name lgb.train
 #' @param params List of parameters
 #' @param data a \code{lgb.Dataset} object, used for training
 #' @param nrounds number of training rounds

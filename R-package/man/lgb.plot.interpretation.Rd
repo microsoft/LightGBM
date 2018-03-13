@@ -49,5 +49,4 @@ model <- lgb.train(params, dtrain, 20)
 tree_interpretation <- lgb.interprete(model, test$data, 1:5)
 lgb.plot.interpretation(tree_interpretation[[1]], top_n = 10)
 }
-
 }
