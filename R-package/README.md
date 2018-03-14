@@ -128,12 +128,12 @@ You may also read [Microsoft/LightGBM#912](https://github.com/Microsoft/LightGBM
 Examples
 --------
 
-Please visit [demo](demo):
+Please visit [demo](https://github.com/Microsoft/LightGBM/tree/master/R-package/demo):
 
-* [Basic walkthrough of wrappers](demo/basic_walkthrough.R)
-* [Boosting from existing prediction](demo/boost_from_prediction.R)
-* [Early Stopping](demo/early_stopping.R)
-* [Cross Validation](demo/cross_validation.R)
-* [Multiclass Training/Prediction](demo/multiclass.R)
-* [Leaf (in)Stability](demo/leaf_stability.R)
-* [Weight-Parameter Adjustment Relationship](demo/weight_param.R)
+* [Basic walkthrough of wrappers](articles/basic_walkthrough.html)
+* [Boosting from existing prediction](articles/boost_from_prediction.html)
+* [Early Stopping](articles/early_stopping.html)
+* [Cross Validation](articles/cross_validation.html)
+* [Multiclass Training/Prediction](articles/multiclass.html)
+* [Leaf (in)Stability](articles/leaf_stability.html)
+* [Weight-Parameter Adjustment Relationship](articles/weight_param.html)

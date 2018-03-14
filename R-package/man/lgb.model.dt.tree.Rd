@@ -25,6 +25,7 @@ The columns of the \code{data.table} are:
  \item \code{split_gain}: Split gain of a node
  \item \code{threshold}: Spliting threshold value of a node
  \item \code{decision_type}: Decision type of a node
+ \item \code{default_left}: Determine how to handle NA value, TRUE -> Left, FALSE -> Right
  \item \code{internal_value}: Node value
  \item \code{internal_count}: The number of observation collected by a node
  \item \code{leaf_value}: Leaf value

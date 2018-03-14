@@ -25,7 +25,8 @@ model <- lgb.train(params,
                    learning_rate = 0.1,
                    bagging_fraction = 0.1,
                    bagging_freq = 1,
-                   bagging_seed = 1)
+                   bagging_seed = 1,
+                   nthread = 1)
 
 # We create a data.frame with the following structure:
 # X = average leaf of the observation throughout all trees
@@ -63,7 +64,8 @@ model2 <- lgb.train(params,
                     100,
                     valids,
                     min_data = 1,
-                    learning_rate = 1)
+                    learning_rate = 1,
+                    nthread = 1)
 
 # We create the data structure, but for model2
 new_data2 <- data.frame(X = rowMeans(predict(model2,
@@ -98,7 +100,8 @@ model3 <- lgb.train(params,
                     1000,
                     valids,
                     min_data = 1,
-                    learning_rate = 1)
+                    learning_rate = 1,
+                    nthread = 1)
 
 # We create the data structure, but for model3
 new_data3 <- data.frame(X = rowMeans(predict(model3,

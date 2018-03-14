@@ -12,7 +12,8 @@ dtest <- lgb.Dataset(agaricus.test$data, label = agaricus.test$label)
 # Note: what we are getting is margin value in prediction
 # You must know what you are doing
 param <- list(num_leaves = 4,
-              learning_rate = 1)
+              learning_rate = 1,
+              nthread = 1)
 valids <- list(eval = dtest)
 num_round <- 20
 
@@ -45,4 +46,5 @@ bst <- lgb.train(param,
                  valids,
                  objective = logregobj,
                  eval = evalerror,
-                 early_stopping_round = 3)
+                 early_stopping_round = 3,
+                 nthread = 1)

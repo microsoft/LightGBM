@@ -8,13 +8,17 @@
 # Just doing reset=TRUE will already improve things: OS reports 4.6GB.
 # Doing reset=TRUE and calling gc() in the loop will have OS 1.3GB. Thanks for the latest tip."
 
+# 2018-01-21 example patch: use the "small" switch to make it bigger.
+
+small <- TRUE
+
 # Load library
 library(lightgbm)
 
 # Generate fictive data of size 1M x 100
 set.seed(11111)
-x_data <- matrix(rnorm(n = 100000000, mean = 0, sd = 100), nrow = 1000000, ncol = 100)
-y_data <- rnorm(n = 1000000, mean = 0, sd = 5)
+x_data <- matrix(rnorm(n = ifelse(small, 1000000, 100000000), mean = 0, sd = 100), nrow = ifelse(small, 10000, 1000000), ncol = 100)
+y_data <- rnorm(n = ifelse(small, 10000, 1000000), mean = 0, sd = 5)
 
 # Create lgb.Dataset for training
 data <- lgb.Dataset(x_data, label = y_data)
@@ -24,9 +28,10 @@ data$construct()
 # It MUST remain constant (if not increasing very slightly)
 gbm <- list()
 
-for (i in 1:1000) {
-  print(i)
-  gbm[[i]] <- lgb.train(params = list(objective = "regression"),
+for (i in 1:(ifelse(small, 100, 1000))) {
+  cat(format(Sys.time(), "%a %b %d %Y %X"), ": ", i, "\n", sep = "")
+  gbm[[i]] <- lgb.train(params = list(objective = "regression",
+									  nthread = 1),
                         data = data,
                         1,
                         reset_data = TRUE)

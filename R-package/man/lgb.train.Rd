@@ -75,7 +75,7 @@ If early stopping occurs, the model will have 'best_iter' field}
 \item{callbacks}{list of callback functions
 List of callback functions that are applied at each iteration.}
 
-\item{...}{other parameters, see parameters.md for more informations}
+\item{...}{other parameters, see Parameters.rst for more informations}
 
 \item{valids}{a list of \code{lgb.Dataset} objects, used for validation}
 
@@ -135,7 +135,7 @@ If early stopping occurs, the model will have 'best_iter' field}
 \item{callbacks}{list of callback functions
 List of callback functions that are applied at each iteration.}
 
-\item{...}{other parameters, see parameters.md for more informations}
+\item{...}{other parameters, see Parameters.rst for more informations}
 }
 \value{
 a trained model \code{lgb.CVBooster}.

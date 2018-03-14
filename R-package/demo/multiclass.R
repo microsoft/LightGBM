@@ -25,7 +25,8 @@ model <- lgb.train(params,
                    valids,
                    min_data = 1,
                    learning_rate = 1,
-                   early_stopping_rounds = 10)
+                   early_stopping_rounds = 10,
+                   nthread = 1)
 
 # We can predict on test data, outputs a 90-length vector
 # Order: obs1 class1, obs1 class2, obs1 class3, obs2 class1, obs2 class2, obs2 class3...
@@ -41,7 +42,8 @@ model <- lgb.train(list(),
                    early_stopping_rounds = 10,
                    objective = "multiclass",
                    metric = "multi_error",
-                   num_class = 3)
+                   num_class = 3,
+                   nthread = 1)
 
 # We can predict on test data, identical
 my_preds <- predict(model, test[, 1:4])

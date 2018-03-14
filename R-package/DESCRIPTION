@@ -2,9 +2,12 @@ Package: lightgbm
 Type: Package
 Title: Light Gradient Boosting Machine
 Version: 2.1.0
-Date: 2018-01-25
-Author: Guolin Ke <guolin.ke@microsoft.com>
-Maintainer: Guolin Ke <guolin.ke@microsoft.com>
+Date: 2018-01-27
+Authors@R: c(
+	person("Guolin", "Ke", email = "guolin.ke@microsoft.com", role = c("aut", "cre")),
+	person("Damien", "Soukhavong", email = "damien.soukhavong@skema.edu", role = c("ctb")),
+	person("Yachen", "Yan", role = c("ctb"))
+	)
 Description: LightGBM is a gradient boosting framework that uses tree based learning algorithms. 
     It is designed to be distributed and efficient with the following advantages:
         1. Faster training speed and higher efficiency.
@@ -28,10 +31,10 @@ Suggests:
     stringi (>= 0.5.2)
 Depends:
     R (>= 3.0),
-    R6 (>= 2.0)
-Imports:
+    R6 (>= 2.0),
     methods,
-    Matrix (>= 1.1-0),
+    Matrix (>= 1.1-0)
+Imports:
     data.table (>= 1.9.6),
     magrittr (>= 1.5),
     jsonlite (>= 1.0)

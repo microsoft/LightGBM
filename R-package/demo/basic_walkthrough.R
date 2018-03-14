@@ -22,6 +22,7 @@ bst <- lightgbm(data = train$data,
                 num_leaves = 4,
                 learning_rate = 1,
                 nrounds = 2,
+                nthread = 1,
                 objective = "binary")
 
 # Alternatively, you can put in dense matrix, i.e. basic R-matrix
@@ -31,6 +32,7 @@ bst <- lightgbm(data = as.matrix(train$data),
                 num_leaves = 4,
                 learning_rate = 1,
                 nrounds = 2,
+                nthread = 1,
                 objective = "binary")
 
 # You can also put in lgb.Dataset object, which stores label, data and other meta datas needed for advanced features
@@ -41,6 +43,7 @@ bst <- lightgbm(data = dtrain,
                 num_leaves = 4,
                 learning_rate = 1,
                 nrounds = 2,
+                nthread = 1,
                 objective = "binary")
 
 # Verbose = 0,1,2
@@ -49,6 +52,7 @@ bst <- lightgbm(data = dtrain,
                 num_leaves = 4,
                 learning_rate = 1,
                 nrounds = 2,
+                nthread = 1,
                 objective = "binary",
                 verbose = 0)
 
@@ -57,7 +61,7 @@ bst <- lightgbm(data = dtrain,
                 num_leaves = 4,
                 learning_rate = 1,
                 nrounds = 2,
-                nthread = 2,
+                nthread = 1,
                 objective = "binary",
                 verbose = 1)
 
@@ -66,7 +70,7 @@ bst <- lightgbm(data = dtrain,
                 num_leaves = 4,
                 learning_rate = 1,
                 nrounds = 2,
-                nthread = 2,
+                nthread = 1,
                 objective = "binary",
                 verbose = 2)
 
@@ -109,7 +113,7 @@ bst <- lgb.train(data = dtrain,
                  learning_rate = 1,
                  nrounds = 2,
                  valids = valids,
-                 nthread = 2,
+                 nthread = 1,
                  objective = "binary")
 
 # We can change evaluation metrics, or use multiple evaluation metrics
@@ -120,7 +124,7 @@ bst <- lgb.train(data = dtrain,
                  nrounds = 2,
                  valids = valids,
                  eval = c("binary_error", "binary_logloss"),
-                 nthread = 2,
+                 nthread = 1,
                  objective = "binary")
 
 # lgb.Dataset can also be saved using lgb.Dataset.save
@@ -133,7 +137,7 @@ bst <- lgb.train(data = dtrain2,
                  learning_rate = 1,
                  nrounds = 2,
                  valids = valids,
-                 nthread = 2,
+                 nthread = 1,
                  objective = "binary")
 
 # information can be extracted from lgb.Dataset using getinfo

@@ -8,6 +8,7 @@ dtest <- lgb.Dataset(agaricus.test$data, label = agaricus.test$label)
 nrounds <- 2
 param <- list(num_leaves = 4,
               learning_rate = 1,
+              nthread = 1,
               objective = "binary")
 
 print("Running cross validation")
