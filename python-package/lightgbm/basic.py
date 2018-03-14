@@ -678,7 +678,7 @@ class Dataset(object):
                                     .format(type(name).__name__, name))
             if categorical_indices:
                 if "categorical_feature" in params or "categorical_column" in params:
-                    warnings.warn('categorical_feature in param dict is overrided.')
+                    warnings.warn('categorical_feature in param dict is overridden.')
                     params.pop("categorical_feature", None)
                     params.pop("categorical_column", None)
                 params['categorical_column'] = sorted(categorical_indices)
@@ -726,7 +726,7 @@ class Dataset(object):
         if init_score is not None:
             self.set_init_score(init_score)
             if self.predictor is not None:
-                warnings.warn("The prediction of init_model will be overrided by init_score.")
+                warnings.warn("The prediction of init_model will be overridden by init_score.")
         elif isinstance(self.predictor, _InnerPredictor):
             init_score = self.predictor.predict(data,
                                                 raw_score=True,
@@ -1035,7 +1035,7 @@ class Dataset(object):
             elif categorical_feature == 'auto':
                 warnings.warn('Using categorical_feature in Dataset.')
             else:
-                warnings.warn('categorical_feature in Dataset is overrided. New categorical_feature is {}'.format(sorted(list(categorical_feature))))
+                warnings.warn('categorical_feature in Dataset is overridden. New categorical_feature is {}'.format(sorted(list(categorical_feature))))
                 self.categorical_feature = categorical_feature
                 self._free_handle()
         else:
