@@ -5,13 +5,16 @@ Version: 2.1.0
 Date: 2018-01-25
 Author: Guolin Ke <guolin.ke@microsoft.com>
 Maintainer: Guolin Ke <guolin.ke@microsoft.com>
-Description: Tree based algorithms can be improved by introducing boosting frameworks. LightGBM is one such framework.
+Description: Tree based algorithms can be improved by introducing boosting frameworks. LightGBM is one such framework, and this package offers an R interface to work with it.
     It is designed to be distributed and efficient with the following advantages:
         1. Faster training speed and higher efficiency.
         2. Lower memory usage.
         3. Better accuracy.
         4. Parallel learning supported.
         5. Capable of handling large-scale data.
+    In recognition of these advantages, LightGBM has being widely-used in many winning solutions of machine learning competitions.
+
+    Comparison experiments on public datasets suggest that LightGBM can outperform existing boosting frameworks on both efficiency and accuracy, with significantly lower memory consumption. In addition, parallel experiments suggest that in certain circumstances, LightGBM can achieve a linear speed-up in training time by using multiple machines.
 License: MIT + file LICENSE
 URL: https://github.com/Microsoft/LightGBM
 BugReports: https://github.com/Microsoft/LightGBM/issues
