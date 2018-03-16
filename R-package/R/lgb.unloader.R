@@ -2,7 +2,7 @@
 #'
 #' Attempts to unload LightGBM packages so you can remove objects cleanly without having to restart R. This is useful for instance if an object becomes stuck for no apparent reason and you do not want to restart R to fix the lost object.
 #' 
-#' @param restart Whether to reload \code{LightGBM} immediately after detaching from R. Defaults to \code{TRUE} which means automatically reload \code{LightGBM} once unloading is performed.
+#' @param restore Whether to reload \code{LightGBM} immediately after detaching from R. Defaults to \code{TRUE} which means automatically reload \code{LightGBM} once unloading is performed.
 #' @param wipe Whether to wipe all \code{lgb.Dataset} and \code{lgb.Booster} from the global environment. Defaults to \code{FALSE} which means to not remove them.
 #' @param envir The environment to perform wiping on if \code{wipe == TRUE}. Defaults to \code{.GlobalEnv} which is the global environment.
 #' 

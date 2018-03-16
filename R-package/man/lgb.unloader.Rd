@@ -7,11 +7,11 @@
 lgb.unloader(restore = TRUE, wipe = FALSE, envir = .GlobalEnv)
 }
 \arguments{
+\item{restore}{Whether to reload \code{LightGBM} immediately after detaching from R. Defaults to \code{TRUE} which means automatically reload \code{LightGBM} once unloading is performed.}
+
 \item{wipe}{Whether to wipe all \code{lgb.Dataset} and \code{lgb.Booster} from the global environment. Defaults to \code{FALSE} which means to not remove them.}
 
 \item{envir}{The environment to perform wiping on if \code{wipe == TRUE}. Defaults to \code{.GlobalEnv} which is the global environment.}
-
-\item{restart}{Whether to reload \code{LightGBM} immediately after detaching from R. Defaults to \code{TRUE} which means automatically reload \code{LightGBM} once unloading is performed.}
 }
 \value{
 NULL invisibly.

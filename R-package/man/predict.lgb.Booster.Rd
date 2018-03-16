@@ -25,6 +25,9 @@ logistic regression would result in predictions for log-odds instead of probabil
 
 \item{reshape}{whether to reshape the vector of predictions to a matrix form when there are several
 prediction outputs per case.}
+
+\item{...}{Additional named arguments passed to the \code{predict()} method of
+the \code{lgb.Booster} object passed to \code{object}.}
 }
 \value{
 For regression or binary classification, it returns a vector of length \code{nrows(data)}.

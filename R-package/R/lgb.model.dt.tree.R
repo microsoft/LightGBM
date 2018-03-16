@@ -3,6 +3,8 @@
 #' Parse a LightGBM model json dump into a \code{data.table} structure.
 #' 
 #' @param model object of class \code{lgb.Booster}
+#' @param num_iteration number of iterations you want to predict with. NULL or 
+#'                      <= 0 means use best iteration
 #' 
 #' @return
 #' A \code{data.table} with detailed information about model trees' nodes and leafs.
