@@ -304,7 +304,7 @@ class LGBMModel(_LGBMModelBase):
             Weights of training data.
         init_score : array-like of shape = [n_samples] or None, optional (default=None)
             Init score of training data.
-        group : array-like of shape = [n_samples] or None, optional (default=None)
+        group : array-like or None, optional (default=None)
             Group data of training data.
         eval_set : list or None, optional (default=None)
             A list of (X, y) tuple pairs to use as a validation sets for early-stopping.
