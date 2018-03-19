@@ -782,7 +782,7 @@ You can specific query/group id in data file now. Please refer to parameter ``gr
 
 .. _NDCG: https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG
 
-.. _MAP: https://en.wikipedia.org/wiki/Information_retrieval#Mean_average_precision
+.. _MAP: https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/
 
 .. _AUC: https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve
 
