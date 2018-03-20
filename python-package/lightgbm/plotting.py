@@ -274,10 +274,10 @@ def _to_graphviz(tree_info, show_info, feature_names,
                 label = 'split_feature_name:' + str(feature_names[root['split_feature']])
             else:
                 label = 'split_feature_index:' + str(root['split_feature'])
-            label += '\nthreshold:' + str(root['threshold'])
+            label += r'\nthreshold:' + str(root['threshold'])
             for info in show_info:
                 if info in {'split_gain', 'internal_value', 'internal_count'}:
-                    label += '\n' + info + ':' + str(root[info])
+                    label += r'\n' + info + ':' + str(root[info])
             graph.node(name, label=label)
             if root['decision_type'] == '<=':
                 l_dec, r_dec = '<=', '>'
@@ -290,9 +290,9 @@ def _to_graphviz(tree_info, show_info, feature_names,
         else:  # leaf
             name = 'leaf' + str(root['leaf_index'])
             label = 'leaf_index:' + str(root['leaf_index'])
-            label += '\nleaf_value:' + str(root['leaf_value'])
+            label += r'\nleaf_value:' + str(root['leaf_value'])
             if 'leaf_count' in show_info:
-                label += '\nleaf_count:' + str(root['leaf_count'])
+                label += r'\nleaf_count:' + str(root['leaf_count'])
             graph.node(name, label=label)
         if parent is not None:
             graph.edge(parent, name, decision)
