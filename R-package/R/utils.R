@@ -211,33 +211,7 @@ lgb.check.eval <- function(params, eval) {
       
     }
     
-  }
-  
-  # Check if evaluation metric is not a function
-  if (!is.function(eval)) {
-    
-    # Check if there is no parameter
-    if (length(params$metric) == 0) {
-      
-      # Add default metric
-      params$metric <- switch(
-        params$objective,
-        regression = "l2", # MSE
-        regression_l1 = "l1", # MAE
-        regression_l2 = "l2", # MSE
-        huber = "l1", # Proxy for MAE
-        fair = "l1", # Proxy for MAE
-        poisson = "poisson", # Poisson
-        binary = "binary_logloss", # Logloss
-        multiclass = "multi_logloss", # Multiclass logloss
-        lambdarank = "ndcg", # Normalized discounted cumulative gain
-        stop("lgb.check.eval: No default metric available for objective ", sQuote(params$objective)) # Unknown objective parameter
-      )
-      
-    }
-    
-  }
-  
+  } 
   # Return parameters
   return(params)
 }
