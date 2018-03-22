@@ -160,7 +160,12 @@ lgb.check.params <- function(params) {
 lgb.check.obj <- function(params, obj) {
   
   # List known objectives in a vector
-  OBJECTIVES <- c("regression", "regression_l1", "regression_l2", "huber", "fair", "poisson", "binary", "lambdarank", "multiclass")
+  OBJECTIVES <- c("regression", "regression_l1", "regression_l2", "mean_squared_error", "mse", "l2_root", "root_mean_squared_error", "rmse",
+                  "mean_absolute_error", "mae", "quantile", 
+                  "huber", "fair", "poisson", "binary", "lambdarank", 
+                  "multiclass", "softmax", "multiclassova", "multiclass_ova", "ova", "ovr",
+                  "xentropy", "cross_entropy", "xentlambda", "cross_entropy_lambda", "mean_absolute_percentage_error", "mape",
+                  "gamma", "tweedie")
   
   # Check whether the objective is empty or not, and take it from params if needed
   if (!is.null(obj)) { params$objective <- obj }
