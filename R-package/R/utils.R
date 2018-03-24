@@ -7,7 +7,7 @@ lgb.is.Dataset <- function(x) {
 }
 
 lgb.is.null.handle <- function(x) {
-  is.null(x) || x == 0.0
+  is.null(x) || is.na(x)
 }
 
 lgb.encode.char <- function(arr, len) {
@@ -160,7 +160,12 @@ lgb.check.params <- function(params) {
 lgb.check.obj <- function(params, obj) {
   
   # List known objectives in a vector
-  OBJECTIVES <- c("regression", "regression_l1", "regression_l2", "huber", "fair", "poisson", "binary", "lambdarank", "multiclass")
+  OBJECTIVES <- c("regression", "regression_l1", "regression_l2", "mean_squared_error", "mse", "l2_root", "root_mean_squared_error", "rmse",
+                  "mean_absolute_error", "mae", "quantile", 
+                  "huber", "fair", "poisson", "binary", "lambdarank", 
+                  "multiclass", "softmax", "multiclassova", "multiclass_ova", "ova", "ovr",
+                  "xentropy", "cross_entropy", "xentlambda", "cross_entropy_lambda", "mean_absolute_percentage_error", "mape",
+                  "gamma", "tweedie")
   
   # Check whether the objective is empty or not, and take it from params if needed
   if (!is.null(obj)) { params$objective <- obj }
@@ -206,33 +211,7 @@ lgb.check.eval <- function(params, eval) {
       
     }
     
-  }
-  
-  # Check if evaluation metric is not a function
-  if (!is.function(eval)) {
-    
-    # Check if there is no parameter
-    if (length(params$metric) == 0) {
-      
-      # Add default metric
-      params$metric <- switch(
-        params$objective,
-        regression = "l2", # MSE
-        regression_l1 = "l1", # MAE
-        regression_l2 = "l2", # MSE
-        huber = "l1", # Proxy for MAE
-        fair = "l1", # Proxy for MAE
-        poisson = "poisson", # Poisson
-        binary = "binary_logloss", # Logloss
-        multiclass = "multi_logloss", # Multiclass logloss
-        lambdarank = "ndcg", # Normalized discounted cumulative gain
-        stop("lgb.check.eval: No default metric available for objective ", sQuote(params$objective)) # Unknown objective parameter
-      )
-      
-    }
-    
-  }
-  
+  } 
   # Return parameters
   return(params)
 }

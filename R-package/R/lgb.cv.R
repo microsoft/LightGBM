@@ -16,10 +16,8 @@ CVBooster <- R6Class(
   )
 )
 
-#' Main CV logic for LightGBM
-#'
-#' Main CV logic for LightGBM
-#'
+#' @title Main CV logic for LightGBM
+#' @name lgb.cv
 #' @param params List of parameters
 #' @param data a \code{lgb.Dataset} object, used for CV
 #' @param nrounds number of CV rounds

@@ -99,7 +99,7 @@ public:
   * \brief Save binary data to file
   * \param file File want to write
   */
-  void SaveBinaryToFile(FILE* file) const;
+  void SaveBinaryToFile(const VirtualFileWriter* writer) const;
 
   /*!
   * \brief Get sizes in byte of this object

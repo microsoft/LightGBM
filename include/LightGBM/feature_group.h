@@ -191,13 +191,13 @@ public:
   * \brief Save binary data to file
   * \param file File want to write
   */
-  void SaveBinaryToFile(FILE* file) const {
-    fwrite(&is_sparse_, sizeof(is_sparse_), 1, file);
-    fwrite(&num_feature_, sizeof(num_feature_), 1, file);
+  void SaveBinaryToFile(const VirtualFileWriter* writer) const {
+    writer->Write(&is_sparse_, sizeof(is_sparse_));
+    writer->Write(&num_feature_, sizeof(num_feature_));
     for (int i = 0; i < num_feature_; ++i) {
-      bin_mappers_[i]->SaveBinaryToFile(file);
+      bin_mappers_[i]->SaveBinaryToFile(writer);
     }
-    bin_data_->SaveBinaryToFile(file);
+    bin_data_->SaveBinaryToFile(writer);
   }
   /*!
   * \brief Get sizes in byte of this object

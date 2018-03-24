@@ -36,7 +36,7 @@
 #' tree_interpretation <- lgb.interprete(model, test$data, 1:5)
 #' lgb.plot.interpretation(tree_interpretation[[1]], top_n = 10)
 #' }
-#' 
+#' @importFrom graphics barplot par
 #' @export
 lgb.plot.interpretation <- function(tree_interpretation_dt,
                                     top_n = 10,
@@ -48,11 +48,11 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
   num_class <- ncol(tree_interpretation_dt) - 1
   
   # Refresh plot
-  op <- par(no.readonly = TRUE)
-  on.exit(par(op))
+  op <- graphics::par(no.readonly = TRUE)
+  on.exit(graphics::par(op))
   
   # Do some magic plotting
-  par(mar = op$mar %>% magrittr::inset(., 1:3, c(3, left_margin, 2)))
+  graphics::par(mar = op$mar %>% magrittr::inset(., 1:3, c(3, left_margin, 2)))
   
   # Check for number of classes
   if (num_class == 1) {
@@ -70,7 +70,7 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
                          ncol = cols, nrow = ceiling(num_class / cols))
     
     # Shape output
-    par(mfcol = c(nrow(layout_mat), ncol(layout_mat)))
+    graphics::par(mfcol = c(nrow(layout_mat), ncol(layout_mat)))
     
     # Loop throughout all classes
     for (i in seq_len(num_class)) {
@@ -102,14 +102,16 @@ multiple.tree.plot.interpretation <- function(tree_interpretation,
   
   # Do plot
   tree_interpretation[.N:1,
-                      barplot(height = Contribution,
-                              names.arg = Feature,
-                              horiz = TRUE,
-                              col = ifelse(Contribution > 0, "firebrick", "steelblue"),
-                              border = NA,
-                              main = title,
-                              cex.names = cex,
-                              las = 1)]
+                      graphics::barplot(
+                          height = Contribution,
+                          names.arg = Feature,
+                          horiz = TRUE,
+                          col = ifelse(Contribution > 0, "firebrick", "steelblue"),
+                          border = NA,
+                          main = title,
+                          cex.names = cex,
+                          las = 1
+                      )]
   
   # Return invisibly
   invisible(NULL)

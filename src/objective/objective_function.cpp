@@ -26,9 +26,9 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new BinaryLogloss(config);
   } else if (type == std::string("lambdarank")) {
     return new LambdarankNDCG(config);
-  } else if (type == std::string("multiclass")) {
+  } else if (type == std::string("multiclass") || type == std::string("softmax")) {
     return new MulticlassSoftmax(config);
-  } else if (type == std::string("multiclassova")) {
+  } else if (type == std::string("multiclassova") || type == std::string("multiclass_ova") || type == std::string("ova") || type == std::string("ovr")) {
     return new MulticlassOVA(config);
   } else if (type == std::string("xentropy") || type == std::string("cross_entropy")) {
     return new CrossEntropy(config);
@@ -40,8 +40,10 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new RegressionGammaLoss(config);
   } else if (type == std::string("tweedie")) {
     return new RegressionTweedieLoss(config);
+  } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom")) {
+    return nullptr;
   }
-  return nullptr;
+  Log::Fatal("Unknown objective type name: %s", type.c_str());
 }
 
 ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string& str) {
@@ -75,8 +77,10 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new RegressionGammaLoss(strs);
   } else if (type == std::string("tweedie")) {
     return new RegressionTweedieLoss(strs);
+  } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom")) {
+    return nullptr;
   }
-  return nullptr;
+  Log::Fatal("Unknown objective type name: %s", type.c_str());
 }
 
 }  // namespace LightGBM

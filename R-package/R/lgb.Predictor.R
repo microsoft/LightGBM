@@ -63,6 +63,7 @@ Predictor <- R6Class(
                        num_iteration = NULL,
                        rawscore = FALSE,
                        predleaf = FALSE,
+                       predcontrib = FALSE,
                        header = FALSE,
                        reshape = FALSE) {
       
@@ -86,6 +87,7 @@ Predictor <- R6Class(
           as.integer(header),
           as.integer(rawscore),
           as.integer(predleaf),
+          as.integer(predcontrib),
           as.integer(num_iteration),
           private$params,
           lgb.c_str(tmp_filename))
@@ -99,6 +101,7 @@ Predictor <- R6Class(
         
         # Not a file, we need to predict from R object
         num_row <- nrow(data)
+        
         npred <- 0L
         
         # Check number of predictions to do
@@ -108,6 +111,7 @@ Predictor <- R6Class(
                           as.integer(num_row),
                           as.integer(rawscore),
                           as.integer(predleaf),
+                          as.integer(predcontrib),
                           as.integer(num_iteration))
         
         # Pre-allocate empty vector
@@ -123,6 +127,7 @@ Predictor <- R6Class(
                             as.integer(ncol(data)),
                             as.integer(rawscore),
                             as.integer(predleaf),
+                            as.integer(predcontrib),
                             as.integer(num_iteration),
                             private$params)
           
@@ -142,6 +147,7 @@ Predictor <- R6Class(
                             nrow(data),
                             as.integer(rawscore),
                             as.integer(predleaf),
+                            as.integer(predcontrib),
                             as.integer(num_iteration),
                             private$params)
           
@@ -165,7 +171,7 @@ Predictor <- R6Class(
       
       # Data reshaping
       
-      if (predleaf) {
+      if (predleaf | predcontrib) {
         
         # Predict leaves only, reshaping is mandatory
         preds <- matrix(preds, ncol = npred_per_case, byrow = TRUE)

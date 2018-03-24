@@ -241,8 +241,6 @@ Installing Git for Windows is straightforward, use the following `link`_.
    :align: center
    :target: ./_static/images/screenshot-git-for-windows.png
 
-Then, click on the big Download button, you can't miss it.
-
 Now, we can fetch LightGBM repository for GitHub. Run Git Bash and the following command:
 
 ::
@@ -578,7 +576,7 @@ And open an issue in GitHub `here`_ with that log.
 
 .. _Boost: http://www.boost.org/users/history/version_1_63_0.html
 
-.. _link: https://git-for-windows.github.io/
+.. _link: https://git-scm.com/download/win
 
 .. _CMake: https://cmake.org/download/
 

@@ -492,7 +492,7 @@ struct ParameterAlias {
               alias->second.c_str(), alias_set->second.c_str(), params->at(alias_set->second).c_str(),
               pair.first.c_str(), pair.second.c_str(), alias->second.c_str(), params->at(alias_set->second).c_str());
           } else {
-            Log::Warning("%s is set with %s=%s, will be overrided by %s=%s. Current value: %s=%s.",
+            Log::Warning("%s is set with %s=%s, will be overridden by %s=%s. Current value: %s=%s.",
               alias->second.c_str(), alias_set->second.c_str(), params->at(alias_set->second).c_str(),
               pair.first.c_str(), pair.second.c_str(), alias->second.c_str(), pair.second.c_str());
             tmp_map[alias->second] = pair.first;

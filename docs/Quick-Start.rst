@@ -74,7 +74,7 @@ Some important parameters:
 
    -  regression application
 
-      -  ``regression_l2``, L2 loss, alias=\ ``regression``, ``mean_squared_error``, ``mse``
+      -  ``regression_l2``, L2 loss, alias=\ ``regression``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
 
       -  ``regression_l1``, L1 loss, alias=\ ``mean_absolute_error``, ``mae``
 
@@ -96,9 +96,11 @@ Some important parameters:
 
    -  multi-class classification application
 
-      -  ``multiclass``, `softmax`_ objective function, ``num_class`` should be set as well
+      -  ``multiclass``, `softmax`_ objective function, alias=\ ``softmax``
 
-      -  ``multiclassova``, `One-vs-All`_ binary objective function, ``num_class`` should be set as well
+      -  ``multiclassova``, `One-vs-All`_ binary objective function, alias=\ ``multiclass_ova``, ``ova``, ``ovr``
+
+      -  ``num_class`` should be set as well
 
    -  cross-entropy application
 
@@ -113,6 +115,8 @@ Some important parameters:
       -  the label should be ``int`` type in lambdarank tasks, and larger number represent the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
 
       -  ``label_gain`` can be used to set the gain(weight) of ``int`` label
+
+      -  all values in ``label`` must be smaller than number of elements in ``label_gain``
 
 - ``boosting``, default=\ ``gbdt``, type=enum,
   options=\ ``gbdt``, ``rf``, ``dart``, ``goss``,

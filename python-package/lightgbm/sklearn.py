@@ -4,19 +4,13 @@
 from __future__ import absolute_import
 
 import numpy as np
-import warnings
-try:
-    import pandas as pd
-    _IS_PANDAS_INSTALLED = True
-except ImportError:
-    _IS_PANDAS_INSTALLED = False
 
 from .basic import Dataset, LightGBMError
 from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckConsistentLength,
                      _LGBMCheckClassificationTargets, _LGBMComputeSampleWeight,
-                     argc_, range_, LGBMDeprecationWarning)
+                     argc_, range_, DataFrame)
 from .engine import train
 
 
@@ -310,7 +304,7 @@ class LGBMModel(_LGBMModelBase):
             Weights of training data.
         init_score : array-like of shape = [n_samples] or None, optional (default=None)
             Init score of training data.
-        group : array-like of shape = [n_samples] or None, optional (default=None)
+        group : array-like or None, optional (default=None)
             Group data of training data.
         eval_set : list or None, optional (default=None)
             A list of (X, y) tuple pairs to use as a validation sets for early-stopping.
@@ -414,7 +408,7 @@ class LGBMModel(_LGBMModelBase):
             feval = None
             params['metric'] = eval_metric
 
-        if not _IS_PANDAS_INSTALLED or not isinstance(X, pd.DataFrame):
+        if not isinstance(X, DataFrame):
             X, y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
             _LGBMCheckConsistentLength(X, y, sample_weight)
 
@@ -504,7 +498,7 @@ class LGBMModel(_LGBMModelBase):
         """
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
-        if not _IS_PANDAS_INSTALLED or not isinstance(X, pd.DataFrame):
+        if not isinstance(X, DataFrame):
             X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
         n_features = X.shape[1]
         if self._n_features != n_features:
@@ -531,7 +525,7 @@ class LGBMModel(_LGBMModelBase):
         """
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
-        if not _IS_PANDAS_INSTALLED or not isinstance(X, pd.DataFrame):
+        if not isinstance(X, DataFrame):
             X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
         n_features = X.shape[1]
         if self._n_features != n_features:
@@ -644,7 +638,8 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         self._n_classes = len(self._classes)
         if self._n_classes > 2:
             # Switch to using a multiclass objective in the underlying LGBM instance
-            if self._objective != "multiclassova" and not callable(self._objective):
+            ova_aliases = ("multiclassova", "multiclass_ova", "ova", "ovr")
+            if self._objective not in ova_aliases and not callable(self._objective):
                 self._objective = "multiclass"
             if eval_metric == 'logloss' or eval_metric == 'binary_logloss':
                 eval_metric = "multi_logloss"
@@ -707,7 +702,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         """
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
-        if not _IS_PANDAS_INSTALLED or not isinstance(X, pd.DataFrame):
+        if not isinstance(X, DataFrame):
             X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
         n_features = X.shape[1]
         if self._n_features != n_features:

@@ -318,10 +318,10 @@ public:
     fast_index_.shrink_to_fit();
   }
 
-  void SaveBinaryToFile(FILE* file) const override {
-    fwrite(&num_vals_, sizeof(num_vals_), 1, file);
-    fwrite(deltas_.data(), sizeof(uint8_t), num_vals_ + 1, file);
-    fwrite(vals_.data(), sizeof(VAL_T), num_vals_, file);
+  void SaveBinaryToFile(const VirtualFileWriter* writer) const override {
+    writer->Write(&num_vals_, sizeof(num_vals_));
+    writer->Write(deltas_.data(), sizeof(uint8_t) * (num_vals_ + 1));
+    writer->Write(vals_.data(), sizeof(VAL_T) * num_vals_);
   }
 
   size_t SizesInByte() const override {

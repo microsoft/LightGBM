@@ -66,7 +66,7 @@ The exe and dll files will be in ``LightGBM/`` folder.
 
 **Note**: You may need to run the ``cmake -G "MinGW Makefiles" ..`` one more time if met ``sh.exe was found in your PATH`` error.
 
-Also you may want to reed `gcc Tips <./gcc-Tips.rst>`__.
+Also you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
 Linux
 ~~~~~
@@ -82,7 +82,7 @@ LightGBM uses **CMake** to build. Run the following commands:
 
 **Note**: glibc >= 2.14 is required.
 
-Also you may want to reed `gcc Tips <./gcc-Tips.rst>`__.
+Also you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
 macOS
 ~~~~~
@@ -106,7 +106,7 @@ Then install LightGBM:
   cmake ..
   make -j4
 
-Also you may want to reed `gcc Tips <./gcc-Tips.rst>`__.
+Also you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
 Docker
 ~~~~~~
@@ -275,6 +275,97 @@ Docker
 
 Refer to `GPU Docker folder <https://github.com/Microsoft/LightGBM/tree/master/docker/gpu>`__.
 
+Build HDFS Version
+~~~~~~~~~~~~~~~~~~
+
+Windows
+^^^^^^^
+
+Visual Studio (or MSBuild)
+**************************
+
+1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (**MSBuild** is not needed if **Visual Studio** (2015 or newer) is installed).
+
+2. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/Microsoft/LightGBM
+     cd LightGBM
+     mkdir build
+     cd build
+     cmake -DCMAKE_GENERATOR_PLATFORM=x64 -DUSE_HDFS=ON ..
+     cmake --build . --target ALL_BUILD --config Release
+
+MinGW64
+*******
+
+1. Install `Git for Windows`_, `CMake`_ and `MinGW-w64`_.
+
+2. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/Microsoft/LightGBM
+     cd LightGBM
+     mkdir build
+     cd build
+     cmake -G "MinGW Makefiles" -DUSE_HDFS=ON ..
+     mingw32-make.exe -j4
+
+Linux
+^^^^^
+
+LightGBM uses **CMake** to build. Run the following commands:
+
+.. code::
+
+  git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+  mkdir build ; cd build
+  cmake -DUSE_HDFS=ON ..
+  make -j4
+
+macOS
+^^^^^
+
+LightGBM depends on **OpenMP** for compiling, which isn't supported by Apple Clang.
+
+Please install **gcc/g++** by using the following commands:
+
+.. code::
+
+  brew install cmake
+  brew install gcc
+
+Then install LightGBM:
+
+.. code::
+
+  git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+  export CXX=g++-7 CC=gcc-7
+  mkdir build ; cd build
+  cmake -DUSE_HDFS=ON ..
+  make -j4
+
+Build Java Wrapper
+~~~~~~~~~~~~~~~~~~
+
+Linux
+^^^^^
+
+You need to install `SWIG`_ and **Java** first.
+
+Then run the following commands:
+
+.. code::
+
+  git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+  mkdir build ; cd build
+  cmake -DUSE_SWIG=ON ..
+  make -j4
+
+This will generate a JAR file containing the LightGBM `C API <./Development-Guide.rst#c-api>`__ wrapped by SWIG.
+
 .. _Python-package: https://github.com/Microsoft/LightGBM/tree/master/python-package
 
 .. _R-package: https://github.com/Microsoft/LightGBM/tree/master/R-package
@@ -306,3 +397,5 @@ Refer to `GPU Docker folder <https://github.com/Microsoft/LightGBM/tree/master/d
 .. _CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 
 .. _Boost Binary: https://sourceforge.net/projects/boost/files/boost-binaries/1.64.0/
+
+.. _SWIG: http://www.swig.org/download.html

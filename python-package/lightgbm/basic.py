@@ -15,7 +15,7 @@ import scipy.sparse
 
 from .compat import (DataFrame, Series, integer_types, json,
                      json_default_with_numpy, numeric_types, range_,
-                     string_type, LGBMDeprecationWarning)
+                     string_type)
 from .libpath import find_lib_path
 
 
@@ -179,11 +179,22 @@ FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
                      "group": C_API_DTYPE_INT32}
 
 
+def convert_from_sliced_object(data):
+    """fix the memory of multi-dimensional sliced object"""
+    if data.base is not None and isinstance(data, np.ndarray) and isinstance(data.base, np.ndarray):
+        if not data.flags.c_contiguous:
+            warnings.warn("Usage subset(sliced data) of np.ndarray is not recommended due to it will double the peak memory cost in LightGBM.")
+            return np.copy(data)
+    return data
+
+
 def c_float_array(data):
     """get pointer of float numpy array / list"""
     if is_1d_list(data):
         data = np.array(data, copy=False)
     if is_numpy_1d_array(data):
+        data = convert_from_sliced_object(data)
+        assert data.flags.c_contiguous
         if data.dtype == np.float32:
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
             type_data = C_API_DTYPE_FLOAT32
@@ -195,7 +206,7 @@ def c_float_array(data):
                             .format(data.dtype))
     else:
         raise TypeError("Unknown type({})".format(type(data).__name__))
-    return (ptr_data, type_data)
+    return (ptr_data, type_data, data)  # return `data` to avoid the temporary copy is freed
 
 
 def c_int_array(data):
@@ -203,6 +214,8 @@ def c_int_array(data):
     if is_1d_list(data):
         data = np.array(data, copy=False)
     if is_numpy_1d_array(data):
+        data = convert_from_sliced_object(data)
+        assert data.flags.c_contiguous
         if data.dtype == np.int32:
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_int32))
             type_data = C_API_DTYPE_INT32
@@ -214,7 +227,7 @@ def c_int_array(data):
                             .format(data.dtype))
     else:
         raise TypeError("Unknown type({})".format(type(data).__name__))
-    return (ptr_data, type_data)
+    return (ptr_data, type_data, data)  # return `data` to avoid the temporary copy is freed
 
 
 PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
@@ -238,7 +251,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
                     data[col] = data[col].cat.set_categories(category)
         if len(cat_cols):  # cat_cols is pandas Index object
             data = data.copy()  # not alter origin DataFrame
-            data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes)
+            data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
         if categorical_feature is not None:
             if feature_name is None:
                 feature_name = list(data.columns)
@@ -472,7 +485,7 @@ class _InnerPredictor(object):
         else:
             """change non-float data to float data, need to copy"""
             data = np.array(mat.reshape(mat.size), dtype=np.float32)
-        ptr_data, type_ptr_data = c_float_array(data)
+        ptr_data, type_ptr_data, _ = c_float_array(data)
         n_preds = self.__get_num_preds(num_iteration, mat.shape[0],
                                        predict_type)
         preds = np.zeros(n_preds, dtype=np.float64)
@@ -502,8 +515,8 @@ class _InnerPredictor(object):
         preds = np.zeros(n_preds, dtype=np.float64)
         out_num_preds = ctypes.c_int64(0)
 
-        ptr_indptr, type_ptr_indptr = c_int_array(csr.indptr)
-        ptr_data, type_ptr_data = c_float_array(csr.data)
+        ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
+        ptr_data, type_ptr_data, _ = c_float_array(csr.data)
 
         _safe_call(_LIB.LGBM_BoosterPredictForCSR(
             self.handle,
@@ -533,8 +546,8 @@ class _InnerPredictor(object):
         preds = np.zeros(n_preds, dtype=np.float64)
         out_num_preds = ctypes.c_int64(0)
 
-        ptr_indptr, type_ptr_indptr = c_int_array(csc.indptr)
-        ptr_data, type_ptr_data = c_float_array(csc.data)
+        ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
+        ptr_data, type_ptr_data, _ = c_float_array(csc.data)
 
         _safe_call(_LIB.LGBM_BoosterPredictForCSC(
             self.handle,
@@ -665,7 +678,7 @@ class Dataset(object):
                                     .format(type(name).__name__, name))
             if categorical_indices:
                 if "categorical_feature" in params or "categorical_column" in params:
-                    warnings.warn('categorical_feature in param dict is overrided.')
+                    warnings.warn('categorical_feature in param dict is overridden.')
                     params.pop("categorical_feature", None)
                     params.pop("categorical_column", None)
                 params['categorical_column'] = sorted(categorical_indices)
@@ -713,7 +726,7 @@ class Dataset(object):
         if init_score is not None:
             self.set_init_score(init_score)
             if self.predictor is not None:
-                warnings.warn("The prediction of init_model will be overrided by init_score.")
+                warnings.warn("The prediction of init_model will be overridden by init_score.")
         elif isinstance(self.predictor, _InnerPredictor):
             init_score = self.predictor.predict(data,
                                                 raw_score=True,
@@ -747,7 +760,7 @@ class Dataset(object):
             # change non-float data to float data, need to copy
             data = np.array(mat.reshape(mat.size), dtype=np.float32)
 
-        ptr_data, type_ptr_data = c_float_array(data)
+        ptr_data, type_ptr_data, _ = c_float_array(data)
         _safe_call(_LIB.LGBM_DatasetCreateFromMat(
             ptr_data,
             ctypes.c_int(type_ptr_data),
@@ -766,8 +779,8 @@ class Dataset(object):
             raise ValueError('Length mismatch: {} vs {}'.format(len(csr.indices), len(csr.data)))
         self.handle = ctypes.c_void_p()
 
-        ptr_indptr, type_ptr_indptr = c_int_array(csr.indptr)
-        ptr_data, type_ptr_data = c_float_array(csr.data)
+        ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
+        ptr_data, type_ptr_data, _ = c_float_array(csr.data)
 
         _safe_call(_LIB.LGBM_DatasetCreateFromCSR(
             ptr_indptr,
@@ -790,8 +803,8 @@ class Dataset(object):
             raise ValueError('Length mismatch: {} vs {}'.format(len(csc.indices), len(csc.data)))
         self.handle = ctypes.c_void_p()
 
-        ptr_indptr, type_ptr_indptr = c_int_array(csc.indptr)
-        ptr_data, type_ptr_data = c_float_array(csc.data)
+        ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
+        ptr_data, type_ptr_data, _ = c_float_array(csc.data)
 
         _safe_call(_LIB.LGBM_DatasetCreateFromCSC(
             ptr_indptr,
@@ -824,6 +837,7 @@ class Dataset(object):
                 else:
                     # construct subset
                     used_indices = list_to_1d_numpy(self.used_indices, np.int32, name='used_indices')
+                    assert used_indices.flags.c_contiguous
                     self.handle = ctypes.c_void_p()
                     params_str = param_dict_to_str(self.params)
                     _safe_call(_LIB.LGBM_DatasetGetSubset(
@@ -952,15 +966,10 @@ class Dataset(object):
         elif field_name == 'init_score':
             dtype = np.float64
         data = list_to_1d_numpy(data, dtype, name=field_name)
-        if data.dtype == np.float32:
-            ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
-            type_data = C_API_DTYPE_FLOAT32
-        elif data.dtype == np.float64:
-            ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-            type_data = C_API_DTYPE_FLOAT64
+        if data.dtype == np.float32 or data.dtype == np.float64:
+            ptr_data, type_data, _ = c_float_array(data)
         elif data.dtype == np.int32:
-            ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_int32))
-            type_data = C_API_DTYPE_INT32
+            ptr_data, type_data, _ = c_int_array(data)
         else:
             raise TypeError("Excepted np.float32/64 or np.int32, meet type({})".format(data.dtype))
         if type_data != FIELD_TYPE_MAPPER[field_name]:
@@ -1026,7 +1035,7 @@ class Dataset(object):
             elif categorical_feature == 'auto':
                 warnings.warn('Using categorical_feature in Dataset.')
             else:
-                warnings.warn('categorical_feature in Dataset is overrided. New categorical_feature is {}'.format(sorted(list(categorical_feature))))
+                warnings.warn('categorical_feature in Dataset is overridden. New categorical_feature is {}'.format(sorted(list(categorical_feature))))
                 self.categorical_feature = categorical_feature
                 self._free_handle()
         else:
@@ -1273,6 +1282,7 @@ class Booster(object):
         self.__need_reload_eval_info = True
         self.__train_data_name = "training"
         self.__attr = {}
+        self.__set_objective_to_none = False
         self.best_iteration = -1
         self.best_score = {}
         params = {} if params is None else params
@@ -1507,12 +1517,17 @@ class Booster(object):
             self.__inner_predict_buffer[0] = None
         is_finished = ctypes.c_int(0)
         if fobj is None:
+            if self.__set_objective_to_none:
+                raise ValueError('Cannot update due to null objective function.')
             _safe_call(_LIB.LGBM_BoosterUpdateOneIter(
                 self.handle,
                 ctypes.byref(is_finished)))
             self.__is_predicted_cur_iter = [False for _ in range_(self.__num_dataset)]
             return is_finished.value == 1
         else:
+            if not self.__set_objective_to_none:
+                self.reset_parameter({"objective": "none"})
+                self.__set_objective_to_none = True
             grad, hess = fobj(self.__inner_predict(0), self.train_set)
             return self.__boost(grad, hess)
 
@@ -1536,6 +1551,8 @@ class Booster(object):
         """
         grad = list_to_1d_numpy(grad, name='gradient')
         hess = list_to_1d_numpy(hess, name='hessian')
+        assert grad.flags.c_contiguous
+        assert hess.flags.c_contiguous
         if len(grad) != len(hess):
             raise ValueError("Lengths of gradient({}) and hessian({}) don't match".format(len(grad), len(hess)))
         is_finished = ctypes.c_int(0)

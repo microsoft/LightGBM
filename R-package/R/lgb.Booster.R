@@ -167,7 +167,7 @@ Booster <- R6Class(
       
       # Append parameters
       params <- append(params, list(...))
-      params_str <- algb.params2str(params)
+      params_str <- lgb.params2str(params)
       
       # Reset parameters
       lgb.call("LGBM_BoosterResetParameter_R",
@@ -209,7 +209,9 @@ Booster <- R6Class(
       
       # Check if objective is empty
       if (is.null(fobj)) {
-        
+        if (private$set_objective_to_none) {
+          stop("lgb.Booster.update: cannot update due to null objective function")
+        }
         # Boost iteration from known objective
         ret <- lgb.call("LGBM_BoosterUpdateOneIter_R", ret = NULL, private$handle)
         
@@ -219,7 +221,10 @@ Booster <- R6Class(
         if (!is.function(fobj)) {
           stop("lgb.Booster.update: fobj should be a function")
         }
-        
+        if (!private$set_objective_to_none) {
+          self$reset_parameter(params = list(objective = "none"))
+          private$set_objective_to_none = TRUE
+        }
         # Perform objective calculation
         gpair <- fobj(private$inner_predict(1), private$train_set)
         
@@ -449,7 +454,7 @@ Booster <- R6Class(
     init_predictor = NULL,
     eval_names = NULL,
     higher_better_inner_eval = NULL,
-    
+    set_objective_to_none = FALSE,
     # Predict data
     inner_predict = function(idx) {
       
@@ -610,10 +615,12 @@ Booster <- R6Class(
 #'        sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE} for
 #'        logistic regression would result in predictions for log-odds instead of probabilities.
 #' @param predleaf whether predict leaf index instead.
+#' @param predcontrib return per-feature contributions for each record.
 #' @param header only used for prediction for text file. True if text file has header
 #' @param reshape whether to reshape the vector of predictions to a matrix form when there are several
 #'        prediction outputs per case.
-
+#' @param ... Additional named arguments passed to the \code{predict()} method of
+#'            the \code{lgb.Booster} object passed to \code{object}.
 #' @return
 #' For regression or binary classification, it returns a vector of length \code{nrows(data)}.
 #' For multiclass classification, either a \code{num_class * nrows(data)} vector or
@@ -650,6 +657,7 @@ predict.lgb.Booster <- function(object, data,
                         num_iteration = NULL,
                         rawscore = FALSE,
                         predleaf = FALSE,
+                        predcontrib = FALSE,
                         header = FALSE,
                         reshape = FALSE, ...) {
   
@@ -663,6 +671,7 @@ predict.lgb.Booster <- function(object, data,
                  num_iteration,
                  rawscore,
                  predleaf,
+                 predcontrib,
                  header,
                  reshape, ...)
 }

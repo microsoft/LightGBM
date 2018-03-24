@@ -55,7 +55,7 @@ public:
     {
       num_threads_ = omp_get_num_threads();
     }
-    boosting->InitPredict(num_iteration);
+    boosting->InitPredict(num_iteration, is_predict_contrib);
     boosting_ = boosting;
     num_pred_one_row_ = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf_index, is_predict_contrib);
     num_feature_ = boosting_->MaxFeatureIdx() + 1;
@@ -128,15 +128,8 @@ public:
   * \param result_filename Filename of output result
   */
   void Predict(const char* data_filename, const char* result_filename, bool has_header) {
-    FILE* result_file;
-
-    #ifdef _MSC_VER
-    fopen_s(&result_file, result_filename, "w");
-    #else
-    result_file = fopen(result_filename, "w");
-    #endif
-
-    if (result_file == NULL) {
+    auto writer = VirtualFileWriter::Make(result_filename);
+    if (!writer->Init()) {
       Log::Fatal("Prediction results file %s cannot be found.", result_filename);
     }
     auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, has_header, boosting_->MaxFeatureIdx() + 1, boosting_->LabelIdx()));
@@ -189,7 +182,7 @@ public:
     };
 
     std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
-      [this, &parser_fun, &result_file]
+      [this, &parser_fun, &writer]
     (data_size_t, const std::vector<std::string>& lines) {
       std::vector<std::pair<int, double>> oneline_features;
       std::vector<std::string> result_to_write(lines.size());
@@ -209,11 +202,11 @@ public:
       }
       OMP_THROW_EX();
       for (data_size_t i = 0; i < static_cast<data_size_t>(result_to_write.size()); ++i) {
-        fprintf(result_file, "%s\n", result_to_write[i].c_str());
+        writer->Write(result_to_write[i].c_str(), result_to_write[i].size());
+        writer->Write("\n", 1);
       }
     };
     predict_data_reader.ReadAllAndProcessParallel(process_fun);
-    fclose(result_file);
   }
 
 private:
