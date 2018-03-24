@@ -14,9 +14,9 @@ You can find below a table of correspondence:
 +===========================+=================+=================+=================+==============+
 | `Intel SDK for OpenCL`_   | Supported       | Supported \*    | Supported       | Untested     |
 +---------------------------+-----------------+-----------------+-----------------+--------------+
-| `AMD APP SDK`_            | Supported       | Untested \*     | Supported       | Untested     |
+| `AMD APP SDK`_            | Supported       | Untested \*     | Supported       | Fails        |
 +---------------------------+-----------------+-----------------+-----------------+--------------+
-| `NVIDIA CUDA Toolkit`_    | Untested \*\*   | Untested \*\*   | Untested \*\*   | Supported    |
+| `NVIDIA CUDA Toolkit`_    | Fails    \*\*   | Fails    \*\*   | Fails    \*\*   | Supported    |
 +---------------------------+-----------------+-----------------+-----------------+--------------+
 
 Legend:
