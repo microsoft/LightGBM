@@ -379,7 +379,7 @@ def cv(params, train_set, num_boost_round=100,
         Evaluation history.
         The dictionary has the following format:
         {'metric1-mean': [values], 'metric1-stdv': [values],
-        'metric2-mean': [values], 'metric1-stdv': [values],
+        'metric2-mean': [values], 'metric2-stdv': [values],
         ...}.
     """
     if not isinstance(train_set, Dataset):
