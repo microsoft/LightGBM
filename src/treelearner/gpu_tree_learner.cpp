@@ -751,7 +751,8 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   SetupKernelArguments();
 }
 
-Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian) {
+Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians,
+                            bool is_constant_hessian, Json& forced_split_json) {
   // check if we need to recompile the GPU kernel (is_constant_hessian changed)
   // this should rarely occur
   if (is_constant_hessian != is_constant_hessian_) {
@@ -760,7 +761,7 @@ Tree* GPUTreeLearner::Train(const score_t* gradients, const score_t *hessians, b
     BuildGPUKernels();
     SetupKernelArguments();
   }
-  return SerialTreeLearner::Train(gradients, hessians, is_constant_hessian);
+  return SerialTreeLearner::Train(gradients, hessians, is_constant_hessian, forced_split_json);
 }
 
 void GPUTreeLearner::ResetTrainingData(const Dataset* train_data) {

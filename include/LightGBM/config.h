@@ -105,6 +105,7 @@ public:
   std::string output_result = "LightGBM_predict_result.txt";
   std::string convert_model = "gbdt_prediction.cpp";
   std::string input_model = "";
+
   int verbosity = 1;
   int num_iteration_predict = -1;
   bool is_pre_partition = false;
@@ -264,6 +265,9 @@ public:
   std::string device_type = kDefaultDevice;
   TreeConfig tree_config;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
+
+  /* filename of forced splits */
+  std::string forcedsplits_filename = "";
 };
 
 /*! \brief Config for Network */
@@ -482,7 +486,8 @@ struct ParameterAlias {
       "histogram_pool_size", "is_provide_training_metric", "machine_list_filename", "machines",
       "zero_as_missing", "init_score_file", "valid_init_score_file", "is_predict_contrib",
       "max_cat_threshold",  "cat_smooth", "min_data_per_group", "cat_l2", "max_cat_to_onehot",
-      "alpha", "reg_sqrt", "tweedie_variance_power", "monotone_constraints", "max_delta_step"
+      "alpha", "reg_sqrt", "tweedie_variance_power", "monotone_constraints", "max_delta_step",
+      "forced_splits"
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {

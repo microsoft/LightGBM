@@ -112,7 +112,8 @@ public:
           hess = tmp_hess_.data() + bias;
         }
 
-        new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_));
+        new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_,
+                       forced_splits_json_));
       }
 
       if (new_tree->num_leaves() > 1) {

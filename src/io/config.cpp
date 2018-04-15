@@ -466,6 +466,7 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   GetBool(params, "boost_from_average", &boost_from_average);
   GetDeviceType(params, &device_type);
   GetTreeLearnerType(params, &tree_learner_type);
+  GetString(params, "forced_splits", &forcedsplits_filename);
   tree_config.Set(params);
 }
 
