@@ -81,8 +81,8 @@ inline int inet_pton(int af, const char *src, void *dst)
 #define FREE(x) HeapFree(GetProcessHeap(), 0, (x))
 
 namespace SocketConfig {
-const int kSocketBufferSize = 10 * 1024 * 1024;
-const int kMaxReceiveSize = 2 * 1024 * 1024;
+const int kSocketBufferSize = 100 * 1000;
+const int kMaxReceiveSize = 100 * 1000;
 const bool kNoDelay = true;
 }
 
@@ -119,9 +119,17 @@ public:
     if (sockfd_ == INVALID_SOCKET) {
       return;
     }
-    setsockopt(sockfd_, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<const char*>(&SocketConfig::kSocketBufferSize), sizeof(SocketConfig::kSocketBufferSize));
-    setsockopt(sockfd_, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<const char*>(&SocketConfig::kSocketBufferSize), sizeof(SocketConfig::kSocketBufferSize));
-    setsockopt(sockfd_, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char*>(&SocketConfig::kNoDelay), sizeof(SocketConfig::kNoDelay));
+    
+    if (setsockopt(sockfd_, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<const char*>(&SocketConfig::kSocketBufferSize), sizeof(SocketConfig::kSocketBufferSize)) != 0) {
+      Log::Warning("Set SO_RCVBUF failed, please increase your net.core.rmem_max to 100k at least.");
+    }
+    
+    if (setsockopt(sockfd_, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<const char*>(&SocketConfig::kSocketBufferSize), sizeof(SocketConfig::kSocketBufferSize)) != 0) {
+      Log::Warning("Set SO_SNDBUF failed, please increase your net.core.wmem_max to 100k at least.");
+    }
+    if (setsockopt(sockfd_, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char*>(&SocketConfig::kNoDelay), sizeof(SocketConfig::kNoDelay)) != 0) {
+      Log::Warning("Set TCP_NODELAY failed.");
+    }
   }
 
   inline static void Startup() {

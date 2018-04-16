@@ -22,7 +22,7 @@ public:
   explicit MulticlassSoftmax(const std::vector<std::string>& strs) {
     num_class_ = -1;
     for (auto str : strs) {
-      auto tokens = Common::Split(str.c_str(), ":");
+      auto tokens = Common::Split(str.c_str(), ':');
       if (tokens.size() == 2) {
         if (tokens[0] == std::string("num_class")) {
           Common::Atoi(tokens[1].c_str(), &num_class_);
@@ -114,9 +114,11 @@ public:
 
   bool SkipEmptyClass() const override { return true; }
 
-  int NumTreePerIteration() const override { return num_class_; }
+  int NumModelPerIteration() const override { return num_class_; }
 
   int NumPredictOneRow() const override { return num_class_; }
+
+  bool NeedAccuratePrediction() const override { return false; }
 
 private:
   /*! \brief Number of data */
@@ -124,11 +126,11 @@ private:
   /*! \brief Number of classes */
   int num_class_;
   /*! \brief Pointer of label */
-  const float* label_;
+  const label_t* label_;
   /*! \brief Corresponding integers of label_ */
   std::vector<int> label_int_;
   /*! \brief Weights for data */
-  const float* weights_;
+  const label_t* weights_;
 };
 
 /*!
@@ -140,7 +142,7 @@ public:
     num_class_ = config.num_class;
     for (int i = 0; i < num_class_; ++i) {
       binary_loss_.emplace_back(
-        new BinaryLogloss(config, [i](float label) { return static_cast<int>(label) == i; }));
+        new BinaryLogloss(config, [i](label_t label) { return static_cast<int>(label) == i; }));
     }
     sigmoid_ = config.sigmoid;
   }
@@ -149,7 +151,7 @@ public:
     num_class_ = -1;
     sigmoid_ = -1;
     for (auto str : strs) {
-      auto tokens = Common::Split(str.c_str(), ":");
+      auto tokens = Common::Split(str.c_str(), ':');
       if (tokens.size() == 2) {
         if (tokens[0] == std::string("num_class")) {
           Common::Atoi(tokens[1].c_str(), &num_class_);
@@ -204,9 +206,11 @@ public:
 
   bool SkipEmptyClass() const override { return true; }
 
-  int NumTreePerIteration() const override { return num_class_; }
+  int NumModelPerIteration() const override { return num_class_; }
 
   int NumPredictOneRow() const override { return num_class_; }
+
+  bool NeedAccuratePrediction() const override { return false; }
 
 private:
   /*! \brief Number of data */

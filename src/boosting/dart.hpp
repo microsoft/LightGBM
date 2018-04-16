@@ -39,27 +39,28 @@ public:
     sum_weight_ = 0.0f;
   }
 
-  void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
-                         const std::vector<const Metric*>& training_metrics) override {
-    GBDT::ResetTrainingData(config, train_data, objective_function, training_metrics);
+  void ResetConfig(const BoostingConfig* config) override {
+    GBDT::ResetConfig(config);
+    random_for_drop_ = Random(gbdt_config_->drop_seed);
+    sum_weight_ = 0.0f;
   }
+
   /*!
   * \brief one training iteration
   */
-  bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override {
+  bool TrainOneIter(const score_t* gradient, const score_t* hessian) override {
     is_update_score_cur_iter_ = false;
-    GBDT::TrainOneIter(gradient, hessian, false);
+    bool ret = GBDT::TrainOneIter(gradient, hessian);
+    if (ret) {
+      return ret;
+    }
     // normalize
     Normalize();
     if (!gbdt_config_->uniform_drop) {
       tree_weight_.push_back(shrinkage_rate_);
       sum_weight_ += shrinkage_rate_;
     }
-    if (is_eval) {
-      return EvalAndCheckEarlyStopping();
-    } else {
-      return false;
-    }
+    return false;
   }
 
   /*!
@@ -94,7 +95,10 @@ private:
         }
         for (int i = 0; i < iter_; ++i) {
           if (random_for_drop_.NextFloat() < drop_rate * tree_weight_[i] * inv_average_weight) {
-            drop_index_.push_back(i);
+            drop_index_.push_back(num_init_iteration_ + i);
+            if (drop_index_.size() >= static_cast<size_t>(gbdt_config_->max_drop)) {
+              break;
+            }
           }
         }
       } else {
@@ -103,7 +107,10 @@ private:
         }
         for (int i = 0; i < iter_; ++i) {
           if (random_for_drop_.NextFloat() < drop_rate) {
-            drop_index_.push_back(i);
+            drop_index_.push_back(num_init_iteration_ + i);
+            if (drop_index_.size() >= static_cast<size_t>(gbdt_config_->max_drop)) {
+              break;
+            }
           }
         }
       }

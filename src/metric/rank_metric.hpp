@@ -40,6 +40,7 @@ public:
     num_data_ = num_data;
     // get label
     label_ = metadata.label();
+    DCGCalculator::CheckLabel(label_, num_data_);
     // get query boundaries
     query_boundaries_ = metadata.query_boundaries();
     if (query_boundaries_ == nullptr) {
@@ -56,9 +57,11 @@ public:
         sum_query_weights_ += query_weights_[i];
       }
     }
+    inverse_max_dcgs_.resize(num_queries_);
     // cache the inverse max DCG for all querys, used to calculate NDCG
+    #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_queries_; ++i) {
-      inverse_max_dcgs_.emplace_back(eval_at_.size(), 0.0f);
+      inverse_max_dcgs_[i].resize(eval_at_.size(), 0.0f);
       DCGCalculator::CalMaxDCG(eval_at_, label_ + query_boundaries_[i],
                                query_boundaries_[i + 1] - query_boundaries_[i],
                                &inverse_max_dcgs_[i]);
@@ -145,7 +148,7 @@ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
-  const float* label_;
+  const label_t* label_;
   /*! \brief Name of test set */
   std::vector<std::string> name_;
   /*! \brief Query boundaries information */
@@ -153,7 +156,7 @@ private:
   /*! \brief Number of queries */
   data_size_t num_queries_;
   /*! \brief Weights of queries */
-  const float* query_weights_;
+  const label_t* query_weights_;
   /*! \brief Sum weights of queries */
   double sum_query_weights_;
   /*! \brief Evaluate position of NDCG */

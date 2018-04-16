@@ -11,7 +11,7 @@ namespace LightGBM {
 
 class Dense4bitsBin;
 
-class Dense4bitsBinIterator: public BinIterator {
+class Dense4bitsBinIterator : public BinIterator {
 public:
   explicit Dense4bitsBinIterator(const Dense4bitsBin* bin_data, uint32_t min_bin, uint32_t max_bin, uint32_t default_bin)
     : bin_data_(bin_data), min_bin_(static_cast<uint8_t>(min_bin)),
@@ -25,7 +25,7 @@ public:
   }
   inline uint32_t RawGet(data_size_t idx) override;
   inline uint32_t Get(data_size_t idx) override;
-  inline void Reset(data_size_t) override { }
+  inline void Reset(data_size_t) override {}
 private:
   const Dense4bitsBin* bin_data_;
   uint8_t min_bin_;
@@ -34,7 +34,7 @@ private:
   uint8_t bias_;
 };
 
-class Dense4bitsBin: public Bin {
+class Dense4bitsBin : public Bin {
 public:
   friend Dense4bitsBinIterator;
   Dense4bitsBin(data_size_t num_data)
@@ -70,7 +70,7 @@ public:
   void ReSize(data_size_t num_data) override {
     if (num_data_ != num_data) {
       num_data_ = num_data;
-      int len = (num_data_ + 1) / 2;
+      const int len = (num_data_ + 1) / 2;
       data_.resize(len);
     }
   }
@@ -85,17 +85,17 @@ public:
     data_size_t i = 0;
     for (; i < num_data - rest; i += 4) {
 
-      data_size_t idx = data_indices[i];
-      const auto bin0 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      const data_size_t idx0 = data_indices[i];
+      const auto bin0 = (data_[idx0 >> 1] >> ((idx0 & 1) << 2)) & 0xf;
 
-      idx = data_indices[i + 1];
-      const auto bin1 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      const data_size_t idx1 = data_indices[i + 1];
+      const auto bin1 = (data_[idx1 >> 1] >> ((idx1 & 1) << 2)) & 0xf;
 
-      idx = data_indices[i + 2];
-      const auto bin2 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      const data_size_t idx2 = data_indices[i + 2];
+      const auto bin2 = (data_[idx2 >> 1] >> ((idx2 & 1) << 2)) & 0xf;
 
-      idx = data_indices[i + 3];
-      const auto bin3 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      const data_size_t idx3 = data_indices[i + 3];
+      const auto bin3 = (data_[idx3 >> 1] >> ((idx3 & 1) << 2)) & 0xf;
 
       out[bin0].sum_gradients += ordered_gradients[i];
       out[bin1].sum_gradients += ordered_gradients[i + 1];
@@ -129,12 +129,11 @@ public:
     const data_size_t rest = num_data & 0x3;
     data_size_t i = 0;
     for (; i < num_data - rest; i += 4) {
-      int j = i >> 1;
-      const auto bin0 = (data_[j]) & 0xf;
-      const auto bin1 = (data_[j] >> 4) & 0xf;
-      ++j;
-      const auto bin2 = (data_[j]) & 0xf;
-      const auto bin3 = (data_[j] >> 4) & 0xf;
+
+      const auto bin0 = (data_[i >> 1]) & 0xf;
+      const auto bin1 = (data_[i >> 1] >> 4) & 0xf;
+      const auto bin2 = (data_[(i >> 1) + 1]) & 0xf;
+      const auto bin3 = (data_[(i >> 1) + 1] >> 4) & 0xf;
 
       out[bin0].sum_gradients += ordered_gradients[i];
       out[bin1].sum_gradients += ordered_gradients[i + 1];
@@ -165,17 +164,17 @@ public:
     const data_size_t rest = num_data & 0x3;
     data_size_t i = 0;
     for (; i < num_data - rest; i += 4) {
-      data_size_t idx = data_indices[i];
-      const auto bin0 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      const data_size_t idx0 = data_indices[i];
+      const auto bin0 = (data_[idx0 >> 1] >> ((idx0 & 1) << 2)) & 0xf;
 
-      idx = data_indices[i + 1];
-      const auto bin1 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      const data_size_t idx1 = data_indices[i + 1];
+      const auto bin1 = (data_[idx1 >> 1] >> ((idx1 & 1) << 2)) & 0xf;
 
-      idx = data_indices[i + 2];
-      const auto bin2 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      const data_size_t idx2 = data_indices[i + 2];
+      const auto bin2 = (data_[idx2 >> 1] >> ((idx2 & 1) << 2)) & 0xf;
 
-      idx = data_indices[i + 3];
-      const auto bin3 = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      const data_size_t idx3 = data_indices[i + 3];
+      const auto bin3 = (data_[idx3 >> 1] >> ((idx3 & 1) << 2)) & 0xf;
 
       out[bin0].sum_gradients += ordered_gradients[i];
       out[bin1].sum_gradients += ordered_gradients[i + 1];
@@ -202,12 +201,10 @@ public:
     const data_size_t rest = num_data & 0x3;
     data_size_t i = 0;
     for (; i < num_data - rest; i += 4) {
-      int j = i >> 1;
-      const auto bin0 = (data_[j]) & 0xf;
-      const auto bin1 = (data_[j] >> 4) & 0xf;
-      ++j;
-      const auto bin2 = (data_[j]) & 0xf;
-      const auto bin3 = (data_[j] >> 4) & 0xf;
+      const auto bin0 = (data_[i >> 1]) & 0xf;
+      const auto bin1 = (data_[i >> 1] >> 4) & 0xf;
+      const auto bin2 = (data_[(i >> 1) + 1]) & 0xf;
+      const auto bin3 = (data_[(i >> 1) + 1] >> 4) & 0xf;
 
       out[bin0].sum_gradients += ordered_gradients[i];
       out[bin1].sum_gradients += ordered_gradients[i + 1];
@@ -227,13 +224,13 @@ public:
   }
 
   virtual data_size_t Split(
-    uint32_t min_bin, uint32_t max_bin, uint32_t default_bin, uint32_t default_bin_for_zero,
+    uint32_t min_bin, uint32_t max_bin, uint32_t default_bin, MissingType missing_type, bool default_left,
     uint32_t threshold, data_size_t* data_indices, data_size_t num_data,
-    data_size_t* lte_indices, data_size_t* gt_indices, BinType bin_type) const override {
+    data_size_t* lte_indices, data_size_t* gt_indices) const override {
     if (num_data <= 0) { return 0; }
     uint8_t th = static_cast<uint8_t>(threshold + min_bin);
-    uint8_t minb = static_cast<uint8_t>(min_bin);
-    uint8_t maxb = static_cast<uint8_t>(max_bin);
+    const uint8_t minb = static_cast<uint8_t>(min_bin);
+    const uint8_t maxb = static_cast<uint8_t>(max_bin);
     uint8_t t_default_bin = static_cast<uint8_t>(min_bin + default_bin);
     if (default_bin == 0) {
       th -= 1;
@@ -243,14 +240,38 @@ public:
     data_size_t gt_count = 0;
     data_size_t* default_indices = gt_indices;
     data_size_t* default_count = &gt_count;
-    if (bin_type == BinType::NumericalBin) {
-      if (default_bin_for_zero <= threshold) {
+    if (missing_type == MissingType::NaN) {
+      if (default_bin <= threshold) {
+        default_indices = lte_indices;
+        default_count = &lte_count;
+      }
+      data_size_t* missing_default_indices = gt_indices;
+      data_size_t* missing_default_count = &gt_count;
+      if (default_left) {
+        missing_default_indices = lte_indices;
+        missing_default_count = &lte_count;
+      }
+      for (data_size_t i = 0; i < num_data; ++i) {
+        const data_size_t idx = data_indices[i];
+        const uint8_t bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+        if (bin < minb || bin > maxb || t_default_bin == bin) {
+          default_indices[(*default_count)++] = idx;
+        } else if (bin == maxb) {
+          missing_default_indices[(*missing_default_count)++] = idx;
+        } else if (bin > th) {
+          gt_indices[gt_count++] = idx;
+        } else {
+          lte_indices[lte_count++] = idx;
+        }
+      }
+    } else {
+      if ((default_left && missing_type == MissingType::Zero) || (default_bin <= threshold && missing_type != MissingType::Zero)) {
         default_indices = lte_indices;
         default_count = &lte_count;
       }
       for (data_size_t i = 0; i < num_data; ++i) {
         const data_size_t idx = data_indices[i];
-        const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+        const uint8_t bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
         if (bin < minb || bin > maxb || t_default_bin == bin) {
           default_indices[(*default_count)++] = idx;
         } else if (bin > th) {
@@ -259,25 +280,37 @@ public:
           lte_indices[lte_count++] = idx;
         }
       }
-    } else {
-      if (default_bin_for_zero == threshold) {
-        default_indices = lte_indices;
-        default_count = &lte_count;
-      }
-      for (data_size_t i = 0; i < num_data; ++i) {
-        const data_size_t idx = data_indices[i];
-        const auto bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
-        if (bin < minb || bin > maxb || t_default_bin == bin) {
-          default_indices[(*default_count)++] = idx;
-        } else if (bin != th) {
-          gt_indices[gt_count++] = idx;
-        } else {
-          lte_indices[lte_count++] = idx;
-        }
+    }
+    return lte_count;
+  }
+
+  virtual data_size_t SplitCategorical(
+    uint32_t min_bin, uint32_t max_bin, uint32_t default_bin,
+    const uint32_t* threshold, int num_threahold, data_size_t* data_indices, data_size_t num_data,
+    data_size_t* lte_indices, data_size_t* gt_indices) const override {
+    if (num_data <= 0) { return 0; }
+    data_size_t lte_count = 0;
+    data_size_t gt_count = 0;
+    data_size_t* default_indices = gt_indices;
+    data_size_t* default_count = &gt_count;
+    if (Common::FindInBitset(threshold, num_threahold, default_bin)) {
+      default_indices = lte_indices;
+      default_count = &lte_count;
+    }
+    for (data_size_t i = 0; i < num_data; ++i) {
+      const data_size_t idx = data_indices[i];
+      const uint32_t bin = (data_[idx >> 1] >> ((idx & 1) << 2)) & 0xf;
+      if (bin < min_bin || bin > max_bin) {
+        default_indices[(*default_count)++] = idx;
+      } else if (Common::FindInBitset(threshold, num_threahold, bin - min_bin)) {
+        lte_indices[lte_count++] = idx;
+      } else {
+        gt_indices[gt_count++] = idx;
       }
     }
     return lte_count;
   }
+
   data_size_t num_data() const override { return num_data_; }
 
   /*! \brief not ordered bin for dense feature */
@@ -334,8 +367,8 @@ public:
     }
   }
 
-  void SaveBinaryToFile(FILE* file) const override {
-    fwrite(data_.data(), sizeof(uint8_t), data_.size(), file);
+  void SaveBinaryToFile(const VirtualFileWriter* writer) const override {
+    writer->Write(data_.data(), sizeof(uint8_t) * data_.size());
   }
 
   size_t SizesInByte() const override {

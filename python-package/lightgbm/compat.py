@@ -63,24 +63,44 @@ try:
     from sklearn.base import BaseEstimator
     from sklearn.base import RegressorMixin, ClassifierMixin
     from sklearn.preprocessing import LabelEncoder
-    from sklearn.utils import deprecated
+    from sklearn.utils.class_weight import compute_sample_weight
+    from sklearn.utils.multiclass import check_classification_targets
+    from sklearn.utils.validation import check_X_y, check_array, check_consistent_length
     try:
         from sklearn.model_selection import StratifiedKFold, GroupKFold
+        from sklearn.exceptions import NotFittedError
     except ImportError:
         from sklearn.cross_validation import StratifiedKFold, GroupKFold
+        from sklearn.utils.validation import NotFittedError
     SKLEARN_INSTALLED = True
-    LGBMModelBase = BaseEstimator
-    LGBMRegressorBase = RegressorMixin
-    LGBMClassifierBase = ClassifierMixin
-    LGBMLabelEncoder = LabelEncoder
-    LGBMDeprecated = deprecated
-    LGBMStratifiedKFold = StratifiedKFold
-    LGBMGroupKFold = GroupKFold
+    _LGBMModelBase = BaseEstimator
+    _LGBMRegressorBase = RegressorMixin
+    _LGBMClassifierBase = ClassifierMixin
+    _LGBMLabelEncoder = LabelEncoder
+    LGBMNotFittedError = NotFittedError
+    _LGBMStratifiedKFold = StratifiedKFold
+    _LGBMGroupKFold = GroupKFold
+    _LGBMCheckXY = check_X_y
+    _LGBMCheckArray = check_array
+    _LGBMCheckConsistentLength = check_consistent_length
+    _LGBMCheckClassificationTargets = check_classification_targets
+    _LGBMComputeSampleWeight = compute_sample_weight
 except ImportError:
     SKLEARN_INSTALLED = False
-    LGBMModelBase = object
-    LGBMClassifierBase = object
-    LGBMRegressorBase = object
-    LGBMLabelEncoder = None
-    LGBMStratifiedKFold = None
-    LGBMGroupKFold = None
+    _LGBMModelBase = object
+    _LGBMClassifierBase = object
+    _LGBMRegressorBase = object
+    _LGBMLabelEncoder = None
+    LGBMNotFittedError = ValueError
+    _LGBMStratifiedKFold = None
+    _LGBMGroupKFold = None
+    _LGBMCheckXY = None
+    _LGBMCheckArray = None
+    _LGBMCheckConsistentLength = None
+    _LGBMCheckClassificationTargets = None
+    _LGBMComputeSampleWeight = None
+
+
+# DeprecationWarning is not shown by default, so let's create our own with higher level
+class LGBMDeprecationWarning(UserWarning):
+    pass

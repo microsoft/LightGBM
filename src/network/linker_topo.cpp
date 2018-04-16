@@ -42,15 +42,16 @@ BruckMap BruckMap::Construct(int rank, int num_machines) {
   return bruckMap;
 }
 
-
 RecursiveHalvingMap::RecursiveHalvingMap() {
   k = 0;
 }
-RecursiveHalvingMap::RecursiveHalvingMap(RecursiveHalvingNodeType _type, int n) {
+
+RecursiveHalvingMap::RecursiveHalvingMap(int in_k, RecursiveHalvingNodeType _type, bool _is_power_of_2) {
   type = _type;
-  k = n;
+  k = in_k;
+  is_power_of_2 = _is_power_of_2;
   if (type != RecursiveHalvingNodeType::Other) {
-    for (int i = 0; i < n; ++i) {
+    for (int i = 0; i < k; ++i) {
       // defalut set as -1
       ranks.push_back(-1);
       send_block_start.push_back(-1);
@@ -74,7 +75,7 @@ RecursiveHalvingMap RecursiveHalvingMap::Construct(int rank, int num_machines) {
   }
 
   if ((1 << k) == num_machines) {
-    RecursiveHalvingMap rec_map(RecursiveHalvingNodeType::Normal, k);
+    RecursiveHalvingMap rec_map(k, RecursiveHalvingNodeType::Normal, true);
     // if num_machines = 2^k, don't need to group machines
     for (int i = 0; i < k; ++i) {
       // communication direction, %2 == 0 is positive
@@ -99,9 +100,9 @@ RecursiveHalvingMap RecursiveHalvingMap::Construct(int rank, int num_machines) {
 
     int rest = num_machines - lower_power_of_2;
 
-    std::vector<RecursiveHalvingNodeType> node_type;
+    std::vector<RecursiveHalvingNodeType> node_type(num_machines);
     for (int i = 0; i < num_machines; ++i) {
-      node_type.push_back(RecursiveHalvingNodeType::Normal);
+      node_type[i] = RecursiveHalvingNodeType::Normal;
     }
     // group, two machine in one group, total "rest" groups will have 2 machines.
     for (int i = 0; i < rest; ++i) {
@@ -135,7 +136,7 @@ RecursiveHalvingMap RecursiveHalvingMap::Construct(int rank, int num_machines) {
       group_block_start[i] = group_block_start[i - 1] + group_block_len[i - 1];
     }
 
-    RecursiveHalvingMap rec_map(node_type[rank], k);
+    RecursiveHalvingMap rec_map(k, node_type[rank], false);
     if (node_type[rank] == RecursiveHalvingNodeType::Other) {
       rec_map.neighbor = rank - 1;
       // not need to construct

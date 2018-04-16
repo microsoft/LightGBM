@@ -28,7 +28,7 @@ public:
 
 protected:
   void BeforeTrain() override;
-  void FindBestSplitsForLeaves() override;
+  void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
 private:
   /*! \brief rank of local machine */
   int rank_;
@@ -54,8 +54,8 @@ public:
   void ResetConfig(const TreeConfig* tree_config) override;
 protected:
   void BeforeTrain() override;
-  void FindBestThresholds() override;
-  void FindBestSplitsForLeaves() override;
+  void FindBestSplits() override;
+  void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
   void Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) override;
 
   inline data_size_t GetGlobalDataCountInLeaf(int leaf_idx) const override {
@@ -79,15 +79,15 @@ private:
        use this to mark local aggregate features*/
   std::vector<bool> is_feature_aggregated_;
   /*! \brief Block start index for reduce scatter */
-  std::vector<int> block_start_;
+  std::vector<comm_size_t> block_start_;
   /*! \brief Block size for reduce scatter */
-  std::vector<int> block_len_;
+  std::vector<comm_size_t> block_len_;
   /*! \brief Write positions for feature histograms */
-  std::vector<int> buffer_write_start_pos_;
+  std::vector<comm_size_t> buffer_write_start_pos_;
   /*! \brief Read positions for local feature histograms */
-  std::vector<int> buffer_read_start_pos_;
+  std::vector<comm_size_t> buffer_read_start_pos_;
   /*! \brief Size for reduce scatter */
-  int reduce_scatter_size_;
+  comm_size_t reduce_scatter_size_;
   /*! \brief Store global number of data in leaves  */
   std::vector<data_size_t> global_data_count_in_leaf_;
 };
@@ -108,8 +108,8 @@ public:
 protected:
   void BeforeTrain() override;
   bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) override;
-  void FindBestThresholds() override;
-  void FindBestSplitsForLeaves() override;
+  void FindBestSplits() override;
+  void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
   void Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) override;
 
   inline data_size_t GetGlobalDataCountInLeaf(int leaf_idx) const override {
@@ -125,7 +125,7 @@ protected:
   * \param splits All splits from local voting
   * \param out Result of gobal voting, only store feature indices
   */
-  void GlobalVoting(int leaf_idx, const std::vector<SplitInfo>& splits,
+  void GlobalVoting(int leaf_idx, const std::vector<LightSplitInfo>& splits,
     std::vector<int>* out);
   /*!
   * \brief Copy local histgram to buffer
@@ -155,15 +155,15 @@ private:
   use this to mark local aggregate features*/
   std::vector<bool> larger_is_feature_aggregated_;
   /*! \brief Block start index for reduce scatter */
-  std::vector<int> block_start_;
+  std::vector<comm_size_t> block_start_;
   /*! \brief Block size for reduce scatter */
-  std::vector<int> block_len_;
+  std::vector<comm_size_t> block_len_;
   /*! \brief Read positions for feature histgrams at smaller leaf */
-  std::vector<int> smaller_buffer_read_start_pos_;
+  std::vector<comm_size_t> smaller_buffer_read_start_pos_;
   /*! \brief Read positions for feature histgrams at larger leaf */
-  std::vector<int> larger_buffer_read_start_pos_;
+  std::vector<comm_size_t> larger_buffer_read_start_pos_;
   /*! \brief Size for reduce scatter */
-  int reduce_scatter_size_;
+  comm_size_t reduce_scatter_size_;
   /*! \brief Store global number of data in leaves  */
   std::vector<data_size_t> global_data_count_in_leaf_;
   /*! \brief Store global split information for smaller leaf  */
@@ -179,6 +179,32 @@ private:
   std::vector<HistogramBinEntry> larger_leaf_histogram_data_;
   std::vector<FeatureMetainfo> feature_metas_;
 };
+
+// To-do: reduce the communication cost by using bitset to communicate.
+inline void SyncUpGlobalBestSplit(char* input_buffer_, char* output_buffer_, SplitInfo* smaller_best_split, SplitInfo* larger_best_split, int max_cat_threshold) {
+  // sync global best info
+  int size = SplitInfo::Size(max_cat_threshold);
+  smaller_best_split->CopyTo(input_buffer_);
+  larger_best_split->CopyTo(input_buffer_ + size);
+  Network::Allreduce(input_buffer_, size * 2, size, output_buffer_, 
+                     [] (const char* src, char* dst, int size, comm_size_t len) {
+    comm_size_t used_size = 0;
+    LightSplitInfo p1, p2;
+    while (used_size < len) {
+      p1.CopyFrom(src);
+      p2.CopyFrom(dst);
+      if (p1 > p2) {
+        std::memcpy(dst, src, size);
+      }
+      src += size;
+      dst += size;
+      used_size += size;
+    }
+  });
+  // copy back
+  smaller_best_split->CopyFrom(output_buffer_);
+  larger_best_split->CopyFrom(output_buffer_ + size);
+}
 
 }  // namespace LightGBM
 #endif   // LightGBM_TREELEARNER_PARALLEL_TREE_LEARNER_H_

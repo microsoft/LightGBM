@@ -3,13 +3,13 @@
 
 Contributors: https://github.com/Microsoft/LightGBM/graphs/contributors
 """
-
 from __future__ import absolute_import
 
 from .basic import Booster, Dataset
 from .callback import (early_stopping, print_evaluation, record_evaluation,
                        reset_parameter)
 from .engine import cv, train
+import os
 
 try:
     from .sklearn import LGBMModel, LGBMRegressor, LGBMClassifier, LGBMRanker
@@ -21,7 +21,10 @@ except ImportError:
     pass
 
 
-__version__ = 0.2
+dir_path = os.path.dirname(os.path.realpath(__file__))
+
+if os.path.isfile(os.path.join(dir_path, 'VERSION.txt')):
+    __version__ = open(os.path.join(dir_path, 'VERSION.txt')).read().strip()
 
 __all__ = ['Dataset', 'Booster',
            'train', 'cv',

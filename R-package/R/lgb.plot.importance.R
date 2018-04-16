@@ -31,7 +31,7 @@
 #' tree_imp <- lgb.importance(model, percentage = TRUE)
 #' lgb.plot.importance(tree_imp, top_n = 10, measure = "Gain")
 #' }
-#' 
+#' @importFrom graphics barplot par
 #' @export
 lgb.plot.importance <- function(tree_imp,
                                 top_n = 10,
@@ -46,7 +46,7 @@ lgb.plot.importance <- function(tree_imp,
   top_n <- min(top_n, nrow(tree_imp))
   
   # Parse importance
-  tree_imp <- tree_imp[order(abs(get(measure)), decreasing = TRUE),][1:top_n,]
+  tree_imp <- tree_imp[order(abs(get(measure)), decreasing = TRUE),][seq_len(top_n),]
   
   # Attempt to setup a correct cex
   if (is.null(cex)) {
@@ -54,22 +54,24 @@ lgb.plot.importance <- function(tree_imp,
   }
   
   # Refresh plot
-  op <- par(no.readonly = TRUE)
-  on.exit(par(op))
+  op <- graphics::par(no.readonly = TRUE)
+  on.exit(graphics::par(op))
   
   # Do some magic plotting
-  par(mar = op$mar %>% magrittr::inset(., 2, left_margin))
+  graphics::par(mar = op$mar %>% magrittr::inset(., 2, left_margin))
   
   # Do plot
   tree_imp[.N:1,
-           barplot(height = get(measure),
-                   names.arg = Feature,
-                   horiz = TRUE,
-                   border = NA,
-                   main = "Feature Importance",
-                   xlab = measure,
-                   cex.names = cex,
-                   las = 1)]
+           graphics::barplot(
+               height = get(measure),
+               names.arg = Feature,
+               horiz = TRUE,
+               border = NA,
+               main = "Feature Importance",
+               xlab = measure,
+               cex.names = cex,
+               las = 1
+           )]
   
   # Return invisibly
   invisible(tree_imp)

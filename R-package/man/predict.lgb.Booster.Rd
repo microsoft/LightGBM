@@ -5,7 +5,8 @@
 \title{Predict method for LightGBM model}
 \usage{
 \method{predict}{lgb.Booster}(object, data, num_iteration = NULL,
-  rawscore = FALSE, predleaf = FALSE, header = FALSE, reshape = FALSE)
+  rawscore = FALSE, predleaf = FALSE, header = FALSE, reshape = FALSE,
+  ...)
 }
 \arguments{
 \item{object}{Object of class \code{lgb.Booster}}
@@ -24,6 +25,9 @@ logistic regression would result in predictions for log-odds instead of probabil
 
 \item{reshape}{whether to reshape the vector of predictions to a matrix form when there are several
 prediction outputs per case.}
+
+\item{...}{Additional named arguments passed to the \code{predict()} method of
+the \code{lgb.Booster} object passed to \code{object}.}
 }
 \value{
 For regression or binary classification, it returns a vector of length \code{nrows(data)}.
@@ -59,4 +63,3 @@ preds <- predict(model, test$data)
 }
 
 }
-

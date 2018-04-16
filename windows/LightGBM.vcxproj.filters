@@ -126,6 +126,9 @@
     <ClInclude Include="..\include\LightGBM\objective_function.h">
       <Filter>include\LightGBM</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\LightGBM\prediction_early_stop.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\LightGBM\tree.h">
       <Filter>include\LightGBM</Filter>
     </ClInclude>
@@ -182,6 +185,24 @@
     </ClInclude>
     <ClInclude Include="..\src\metric\map_metric.hpp">
       <Filter>src\metric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\lightgbm_R.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\R_object_helper.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\boosting\rf.hpp">
+      <Filter>src\boosting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\objective\xentropy_objective.hpp">
+      <Filter>src\objective</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\metric\xentropy_metric.hpp">
+      <Filter>src\metric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\file_io.h">
+      <Filter>include\LightGBM\utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -259,6 +280,18 @@
     </ClCompile>
     <ClCompile Include="..\src\boosting\gbdt_prediction.cpp">
       <Filter>src\boosting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\boosting\prediction_early_stop.cpp">
+      <Filter>src\boosting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\lightgbm_R.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\boosting\gbdt_model_text.cpp">
+      <Filter>src\boosting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\io\file_io.cpp">
+      <Filter>src\io</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

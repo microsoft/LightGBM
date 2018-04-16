@@ -2,6 +2,9 @@
 #define LIGHTGBM_BOOSTING_GBDT_H_
 
 #include <LightGBM/boosting.h>
+#include <LightGBM/objective_function.h>
+#include <LightGBM/prediction_early_stop.h>
+
 #include "score_updater.hpp"
 
 #include <cstdio>
@@ -10,21 +13,26 @@
 #include <fstream>
 #include <memory>
 #include <mutex>
+#include <map>
 
 namespace LightGBM {
+
 /*!
 * \brief GBDT algorithm implementation. including Training, prediction, bagging.
 */
-class GBDT: public Boosting {
+class GBDT : public GBDTBase {
 public:
+
   /*!
   * \brief Constructor
   */
   GBDT();
+
   /*!
   * \brief Destructor
   */
   ~GBDT();
+
   /*!
   * \brief Initialization logic
   * \param gbdt_config Config for boosting
@@ -33,12 +41,10 @@ public:
   * \param training_metrics Training metrics
   */
   void Init(const BoostingConfig* gbdt_config, const Dataset* train_data, const ObjectiveFunction* objective_function,
-            const std::vector<const Metric*>& training_metrics)
-    override;
+            const std::vector<const Metric*>& training_metrics) override;
 
   /*!
-  * \brief Merge model from other boosting object
-  Will insert to the front of current boosting object
+  * \brief Merge model from other boosting object. Will insert to the front of current boosting object
   * \param other
   */
   void MergeFrom(const Boosting* other) override {
@@ -61,12 +67,19 @@ public:
   }
 
   /*!
-  * \brief Reset training data for current boosting
-  * \param train_data Training data
+  * \brief Reset the training data
+  * \param train_data New Training data
   * \param objective_function Training objective function
-  * \param training_metrics Training metric
+  * \param training_metrics Training metrics
   */
-  void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function, const std::vector<const Metric*>& training_metrics) override;
+  void ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* objective_function,
+                         const std::vector<const Metric*>& training_metrics) override;
+
+  /*!
+  * \brief Reset Boosting Config
+  * \param gbdt_config Config for boosting
+  */
+  void ResetConfig(const BoostingConfig* gbdt_config) override;
 
   /*!
   * \brief Adding a validation dataset
@@ -75,23 +88,45 @@ public:
   */
   void AddValidDataset(const Dataset* valid_data,
                        const std::vector<const Metric*>& valid_metrics) override;
+
+  /*!
+  * \brief Perform a full training procedure
+  * \param snapshot_freq frequence of snapshot
+  * \param model_output_path path of model file
+  */
+  void Train(int snapshot_freq, const std::string& model_output_path) override;
+
+  void RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) override;
+
   /*!
   * \brief Training logic
-  * \param gradient nullptr for using default objective, otherwise use self-defined boosting
-  * \param hessian nullptr for using default objective, otherwise use self-defined boosting
-  * \param is_eval true if need evaluation or early stop
-  * \return True if meet early stopping or cannot boosting
+  * \param gradients nullptr for using default objective, otherwise use self-defined boosting
+  * \param hessians nullptr for using default objective, otherwise use self-defined boosting
+  * \return True if cannot train any more
   */
-  virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override;
+  virtual bool TrainOneIter(const score_t* gradients, const score_t* hessians) override;
 
   /*!
   * \brief Rollback one iteration
   */
   void RollbackOneIter() override;
 
+  /*!
+  * \brief Get current iteration
+  */
   int GetCurrentIteration() const override { return static_cast<int>(models_.size()) / num_tree_per_iteration_; }
 
-  bool EvalAndCheckEarlyStopping() override;
+  /*!
+  * \brief Can use early stopping for prediction or not
+  * \return True if cannot use early stopping for prediction
+  */
+  bool NeedAccuratePrediction() const override {
+    if (objective_function_ == nullptr) {
+      return true;
+    } else {
+      return objective_function_->NeedAccuratePrediction();
+    }
+  }
 
   /*!
   * \brief Get evaluation result at data_idx data
@@ -107,6 +142,11 @@ public:
   */
   virtual const double* GetTrainingScore(int64_t* out_len) override;
 
+  /*!
+  * \brief Get size of prediction at data_idx data
+  * \param data_idx 0: training data, 1: 1st validation data
+  * \return The size of prediction
+  */
   virtual int64_t GetNumPredictAt(int data_idx) const override {
     CHECK(data_idx >= 0 && data_idx <= static_cast<int>(valid_score_updater_.size()));
     data_size_t num_data = train_data_->num_data();
@@ -115,6 +155,7 @@ public:
     }
     return num_data * num_class_;
   }
+
   /*!
   * \brief Get prediction result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
@@ -123,7 +164,14 @@ public:
   */
   void GetPredictAt(int data_idx, double* out_result, int64_t* out_len) override;
 
-  inline int NumPredictOneRow(int num_iteration, int is_pred_leaf) const override {
+  /*!
+  * \brief Get number of prediction for one data
+  * \param num_iteration number of used iterations
+  * \param is_pred_leaf True if predicting  leaf index
+  * \param is_pred_contrib True if predicting feature contribution
+  * \return number of prediction
+  */
+  inline int NumPredictOneRow(int num_iteration, bool is_pred_leaf, bool is_pred_contrib) const override {
     int num_preb_in_one_row = num_class_;
     if (is_pred_leaf) {
       int max_iteration = GetCurrentIteration();
@@ -132,15 +180,30 @@ public:
       } else {
         num_preb_in_one_row *= max_iteration;
       }
+    } else if (is_pred_contrib) {
+      num_preb_in_one_row = max_feature_idx_ + 2; // +1 for 0-based indexing, +1 for baseline
     }
     return num_preb_in_one_row;
   }
 
-  void PredictRaw(const double* features, double* output) const override;
+  void PredictRaw(const double* features, double* output,
+                  const PredictionEarlyStopInstance* earlyStop) const override;
 
-  void Predict(const double* features, double* output) const override;
+  void PredictRawByMap(const std::unordered_map<int, double>& features, double* output,
+                       const PredictionEarlyStopInstance* early_stop) const override;
+
+  void Predict(const double* features, double* output,
+               const PredictionEarlyStopInstance* earlyStop) const override;
+
+  void PredictByMap(const std::unordered_map<int, double>& features, double* output,
+                    const PredictionEarlyStopInstance* early_stop) const override;
 
   void PredictLeafIndex(const double* features, double* output) const override;
+
+  void PredictLeafIndexByMap(const std::unordered_map<int, double>& features, double* output) const override;
+
+  void PredictContrib(const double* features, double* output,
+                      const PredictionEarlyStopInstance* earlyStop) const override;
 
   /*!
   * \brief Dump model to json format string
@@ -166,7 +229,7 @@ public:
 
   /*!
   * \brief Save model to file
-  * \param num_used_model Number of model that want to save, -1 means save all
+  * \param num_iterations Number of model that want to save, -1 means save all
   * \param filename Filename that want to save to
   * \return is_finish Is training finished or not
   */
@@ -174,15 +237,23 @@ public:
 
   /*!
   * \brief Save model to string
-  * \param num_used_model Number of model that want to save, -1 means save all
+  * \param num_iterations Number of model that want to save, -1 means save all
   * \return Non-empty string if succeeded
   */
   virtual std::string SaveModelToString(int num_iterations) const override;
 
   /*!
-  * \brief Restore from a serialized string
+  * \brief Restore from a serialized buffer
   */
-  bool LoadModelFromString(const std::string& model_str) override;
+  bool LoadModelFromString(const char* buffer, size_t len) override;
+
+  /*!
+  * \brief Calculate feature importances
+  * \param num_iteration Number of model that want to use for feature importance, -1 means use all
+  * \param importance_type: 0 for split, 1 for gain
+  * \return vector of feature_importance
+  */
+  std::vector<double> FeatureImportance(int num_iteration, int importance_type) const override;
 
   /*!
   * \brief Get max feature index of this model
@@ -212,7 +283,7 @@ public:
   * \brief Get number of tree per iteration
   * \return number of tree per iteration
   */
-  inline int NumTreePerIteration() const override { return num_tree_per_iteration_; }
+  inline int NumModelPerIteration() const override { return num_tree_per_iteration_; }
 
   /*!
   * \brief Get number of classes
@@ -220,20 +291,26 @@ public:
   */
   inline int NumberOfClasses() const override { return num_class_; }
 
-  inline void InitPredict(int num_iteration) override {
+  inline void InitPredict(int num_iteration, bool is_pred_contrib) override {
     num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
     if (num_iteration > 0) {
-      num_iteration_for_pred_ = std::min(num_iteration + (boost_from_average_ ? 1 : 0), num_iteration_for_pred_);
+      num_iteration_for_pred_ = std::min(num_iteration, num_iteration_for_pred_);
+    }
+    if (is_pred_contrib) {
+      #pragma omp parallel for schedule(static)
+      for (int i = 0; i < static_cast<int>(models_.size()); ++i) {
+        models_[i]->RecomputeMaxDepth();
+      }
     }
   }
 
-  inline double GetLeafValue(int tree_idx, int leaf_idx) const {
+  inline double GetLeafValue(int tree_idx, int leaf_idx) const override {
     CHECK(tree_idx >= 0 && static_cast<size_t>(tree_idx) < models_.size());
     CHECK(leaf_idx >= 0 && leaf_idx < models_[tree_idx]->num_leaves());
     return models_[tree_idx]->LeafOutput(leaf_idx);
   }
 
-  inline void SetLeafValue(int tree_idx, int leaf_idx, double val) {
+  inline void SetLeafValue(int tree_idx, int leaf_idx, double val) override {
     CHECK(tree_idx >= 0 && static_cast<size_t>(tree_idx) < models_.size());
     CHECK(leaf_idx >= 0 && leaf_idx < models_[tree_idx]->num_leaves());
     models_[tree_idx]->SetLeafOutput(leaf_idx, val);
@@ -245,6 +322,17 @@ public:
   virtual const char* SubModelName() const override { return "tree"; }
 
 protected:
+
+  /*!
+  * \brief Print eval result and check early stopping
+  */
+  bool EvalAndCheckEarlyStopping();
+
+  /*!
+  * \brief reset config for bagging
+  */
+  void ResetBaggingConfig(const BoostingConfig* config, bool is_change_dataset);
+
   /*!
   * \brief Implement bagging logic
   * \param iter Current interation
@@ -259,33 +347,33 @@ protected:
   * \return count of left size
   */
   data_size_t BaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer);
-  /*!
-  * \brief updating score for out-of-bag data.
-  *        Data should be update since we may re-bagging data on training
-  * \param tree Trained tree of this iteration
-  * \param cur_tree_id Current tree for multiclass training
-  */
-  void UpdateScoreOutOfBag(const Tree* tree, const int cur_tree_id);
+
   /*!
   * \brief calculate the object function
   */
-  void Boosting();
+  virtual void Boosting();
+
   /*!
   * \brief updating score after tree was trained
   * \param tree Trained tree of this iteration
   * \param cur_tree_id Current tree for multiclass training
   */
   virtual void UpdateScore(const Tree* tree, const int cur_tree_id);
+
+  /*!
+  * \brief eval results for one metric
+
+  */
+  virtual std::vector<double> EvalOneMetric(const Metric* metric, const double* score) const;
+
   /*!
   * \brief Print metric result of current iteration
   * \param iter Current interation
   * \return best_msg if met early_stopping
   */
   std::string OutputMetric(int iter);
-  /*!
-  * \brief Calculate feature importances
-  */
-  std::vector<std::pair<size_t, std::string>> FeatureImportance() const;
+
+  double BoostFromAverage();
 
   /*! \brief current iteration */
   int iter_;
@@ -358,12 +446,12 @@ protected:
   std::vector<data_size_t> right_write_pos_buf_;
   std::unique_ptr<Dataset> tmp_subset_;
   bool is_use_subset_;
-  bool boost_from_average_;
   std::vector<bool> class_need_train_;
   std::vector<double> class_default_output_;
   bool is_constant_hessian_;
   std::unique_ptr<ObjectiveFunction> loaded_objective_;
-
+  bool average_output_;
+  bool need_re_bagging_;
 };
 
 }  // namespace LightGBM

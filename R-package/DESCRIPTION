@@ -1,18 +1,24 @@
 Package: lightgbm
 Type: Package
 Title: Light Gradient Boosting Machine
-Version: 0.1
-Date: 2016-12-29
-Author: Guolin Ke <guolin.ke@microsoft.com>
-Maintainer: Guolin Ke <guolin.ke@microsoft.com>
-Description: LightGBM is a gradient boosting framework that uses tree based learning algorithms. 
+Version: 2.1.0
+Date: 2018-03-24
+Authors@R: c(
+	person("Guolin", "Ke", email = "guolin.ke@microsoft.com", role = c("aut", "cre")),
+	person("Damien", "Soukhavong", email = "damien.soukhavong@skema.edu", role = c("ctb")),
+	person("Yachen", "Yan", role = c("ctb")),
+	person("James", "Lamb", role = c("ctb"))
+	)
+Description: Tree based algorithms can be improved by introducing boosting frameworks. LightGBM is one such framework, and this package offers an R interface to work with it.
     It is designed to be distributed and efficient with the following advantages:
-        1.Faster training speed and higher efficiency. 
-        2.Lower memory usage. 
-        3.Better accuracy. 
-        4.Parallel learning supported. 
-        5. Capable of handling large-scale data. 
-License: The MIT License (MIT) | file LICENSE
+        1. Faster training speed and higher efficiency.
+        2. Lower memory usage.
+        3. Better accuracy.
+        4. Parallel learning supported.
+        5. Capable of handling large-scale data.
+    In recognition of these advantages, LightGBM has being widely-used in many winning solutions of machine learning competitions.
+    Comparison experiments on public datasets suggest that LightGBM can outperform existing boosting frameworks on both efficiency and accuracy, with significantly lower memory consumption. In addition, parallel experiments suggest that in certain circumstances, LightGBM can achieve a linear speed-up in training time by using multiple machines.
+License: MIT + file LICENSE
 URL: https://github.com/Microsoft/LightGBM
 BugReports: https://github.com/Microsoft/LightGBM/issues
 VignetteBuilder: knitr
@@ -28,11 +34,12 @@ Suggests:
     stringi (>= 0.5.2)
 Depends:
     R (>= 3.0),
-    R6
+    R6 (>= 2.0)
 Imports:
+    graphics,
     methods,
     Matrix (>= 1.1-0),
     data.table (>= 1.9.6),
     magrittr (>= 1.5),
-    jsonlite
-RoxygenNote: 5.0.1
+    jsonlite (>= 1.0)
+RoxygenNote: 6.0.1

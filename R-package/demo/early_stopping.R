@@ -34,7 +34,7 @@ logregobj <- function(preds, dtrain) {
 # Take this in mind when you use the customization, and maybe you need write customized evaluation function
 evalerror <- function(preds, dtrain) {
   labels <- getinfo(dtrain, "label")
-  err <- as.numeric(sum(labels != (preds > 0))) / length(labels)
+  err <- as.numeric(sum(labels != (preds > 0.5))) / length(labels)
   return(list(name = "error", value = err, higher_better = FALSE))
 }
 print("Start training with early Stopping setting")

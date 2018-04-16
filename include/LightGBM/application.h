@@ -33,13 +33,6 @@ public:
   inline void Run();
 
 private:
-  /*! 
-  * \brief Global Sync by minimal, will return minimal T across nodes
-  * \param local Local data
-  * \return minimal values across nodes 
-  */
-  template<typename T>
-  T GlobalSyncUpByMin(T& local);
 
   /*! \brief Load parameters from command line and config file*/
   void LoadParameters(int argc, char** argv);
@@ -80,7 +73,7 @@ private:
 
 
 inline void Application::Run() {
-  if (config_.task_type == TaskType::kPredict) {
+  if (config_.task_type == TaskType::kPredict || config_.task_type == TaskType::KRefitTree) {
     InitPredict();
     Predict();
   } else if (config_.task_type == TaskType::kConvertModel) {

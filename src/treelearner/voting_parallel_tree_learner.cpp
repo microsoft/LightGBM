@@ -33,7 +33,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
     }
   }
   // calculate buffer size
-  size_t buffer_size = 2 * top_k_ * std::max(max_bin * sizeof(HistogramBinEntry), sizeof(SplitInfo) * num_machines_);
+  size_t buffer_size = 2 * top_k_ * std::max(max_bin * sizeof(HistogramBinEntry), sizeof(LightSplitInfo) * num_machines_);
   // left and right on same time, so need double size
   input_buffer_.resize(buffer_size);
   output_buffer_.resize(buffer_size);
@@ -68,6 +68,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
   for (int i = 0; i < train_data->num_features(); ++i) {
     feature_metas_[i].num_bin = train_data->FeatureNumBin(i);
     feature_metas_[i].default_bin = train_data->FeatureBinMapper(i)->GetDefaultBin();
+    feature_metas_[i].missing_type = train_data->FeatureBinMapper(i)->missing_type();
     if (train_data->FeatureBinMapper(i)->GetDefaultBin() == 0) {
       feature_metas_[i].bias = 1;
     } else {
@@ -112,9 +113,8 @@ void VotingParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
   int size = sizeof(std::tuple<data_size_t, double, double>);
   std::memcpy(input_buffer_.data(), &data, size);
 
-  Network::Allreduce(input_buffer_.data(), size, size, output_buffer_.data(), [](const char *src, char *dst, int len) {
-    int used_size = 0;
-    int type_size = sizeof(std::tuple<data_size_t, double, double>);
+  Network::Allreduce(input_buffer_.data(), size, sizeof(std::tuple<data_size_t, double, double>), output_buffer_.data(), [](const char *src, char *dst, int type_size, comm_size_t len) {
+    comm_size_t used_size = 0;
     const std::tuple<data_size_t, double, double> *p1;
     std::tuple<data_size_t, double, double> *p2;
     while (used_size < len) {
@@ -161,14 +161,14 @@ bool VotingParallelTreeLearner<TREELEARNER_T>::BeforeFindBestSplit(const Tree* t
 }
 
 template <typename TREELEARNER_T>
-void VotingParallelTreeLearner<TREELEARNER_T>::GlobalVoting(int leaf_idx, const std::vector<SplitInfo>& splits, std::vector<int>* out) {
+void VotingParallelTreeLearner<TREELEARNER_T>::GlobalVoting(int leaf_idx, const std::vector<LightSplitInfo>& splits, std::vector<int>* out) {
   out->clear();
   if (leaf_idx < 0) {
     return;
   }
   // get mean number on machines
   score_t mean_num_data = GetGlobalDataCountInLeaf(leaf_idx) / static_cast<score_t>(num_machines_);
-  std::vector<SplitInfo> feature_best_split(this->num_features_, SplitInfo());
+  std::vector<LightSplitInfo> feature_best_split(this->train_data_->num_total_features() , LightSplitInfo());
   for (auto & split : splits) {
     int fid = split.feature;
     if (fid < 0) {
@@ -182,8 +182,8 @@ void VotingParallelTreeLearner<TREELEARNER_T>::GlobalVoting(int leaf_idx, const 
     }
   }
   // get top k
-  std::vector<SplitInfo> top_k_splits;
-  ArrayArgs<SplitInfo>::MaxK(feature_best_split, top_k_, &top_k_splits);
+  std::vector<LightSplitInfo> top_k_splits;
+  ArrayArgs<LightSplitInfo>::MaxK(feature_best_split, top_k_, &top_k_splits);
   for (auto& split : top_k_splits) {
     if (split.gain == kMinScore || split.feature == -1) {
       continue;
@@ -252,7 +252,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::CopyLocalHistogram(const std::vec
 }
 
 template <typename TREELEARNER_T>
-void VotingParallelTreeLearner<TREELEARNER_T>::FindBestThresholds() {
+void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplits() {
   // use local data to find local best splits
   std::vector<int8_t> is_feature_used(this->num_features_, 0);
 #pragma omp parallel for schedule(static)
@@ -269,10 +269,11 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestThresholds() {
   if (this->parent_leaf_histogram_array_ == nullptr) {
     use_subtract = false;
   }
-  this->ConstructHistograms(is_feature_used, use_subtract);
+  TREELEARNER_T::ConstructHistograms(is_feature_used, use_subtract);
 
   std::vector<SplitInfo> smaller_bestsplit_per_features(this->num_features_);
   std::vector<SplitInfo> larger_bestsplit_per_features(this->num_features_);
+
   OMP_INIT_EX();
   // find splits
 #pragma omp parallel for schedule(static)
@@ -316,27 +317,35 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestThresholds() {
   // local voting
   ArrayArgs<SplitInfo>::MaxK(smaller_bestsplit_per_features, top_k_, &smaller_top_k_splits);
   ArrayArgs<SplitInfo>::MaxK(larger_bestsplit_per_features, top_k_, &larger_top_k_splits);
+
+  std::vector<LightSplitInfo> smaller_top_k_light_splits(top_k_);
+  std::vector<LightSplitInfo> larger_top_k_light_splits(top_k_);
+  for (int i = 0; i < top_k_; ++i) {
+    smaller_top_k_light_splits[i].CopyFrom(smaller_top_k_splits[i]);
+    larger_top_k_light_splits[i].CopyFrom(larger_top_k_splits[i]);
+  }
+
   // gather
   int offset = 0;
   for (int i = 0; i < top_k_; ++i) {
-    std::memcpy(input_buffer_.data() + offset, &smaller_top_k_splits[i], sizeof(SplitInfo));
-    offset += sizeof(SplitInfo);
-    std::memcpy(input_buffer_.data() + offset, &larger_top_k_splits[i], sizeof(SplitInfo));
-    offset += sizeof(SplitInfo);
+    std::memcpy(input_buffer_.data() + offset, &smaller_top_k_light_splits[i], sizeof(LightSplitInfo));
+    offset += sizeof(LightSplitInfo);
+    std::memcpy(input_buffer_.data() + offset, &larger_top_k_light_splits[i], sizeof(LightSplitInfo));
+    offset += sizeof(LightSplitInfo);
   }
   Network::Allgather(input_buffer_.data(), offset, output_buffer_.data());
   // get all top-k from all machines
-  std::vector<SplitInfo> smaller_top_k_splits_global;
-  std::vector<SplitInfo> larger_top_k_splits_global;
+  std::vector<LightSplitInfo> smaller_top_k_splits_global;
+  std::vector<LightSplitInfo> larger_top_k_splits_global;
   offset = 0;
   for (int i = 0; i < num_machines_; ++i) {
     for (int j = 0; j < top_k_; ++j) {
-      smaller_top_k_splits_global.push_back(SplitInfo());
-      std::memcpy(&smaller_top_k_splits_global.back(), output_buffer_.data() + offset, sizeof(SplitInfo));
-      offset += sizeof(SplitInfo);
-      larger_top_k_splits_global.push_back(SplitInfo());
-      std::memcpy(&larger_top_k_splits_global.back(), output_buffer_.data() + offset, sizeof(SplitInfo));
-      offset += sizeof(SplitInfo);
+      smaller_top_k_splits_global.push_back(LightSplitInfo());
+      std::memcpy(&smaller_top_k_splits_global.back(), output_buffer_.data() + offset, sizeof(LightSplitInfo));
+      offset += sizeof(LightSplitInfo);
+      larger_top_k_splits_global.push_back(LightSplitInfo());
+      std::memcpy(&larger_top_k_splits_global.back(), output_buffer_.data() + offset, sizeof(LightSplitInfo));
+      offset += sizeof(LightSplitInfo);
     }
   }
   // global voting
@@ -347,16 +356,25 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestThresholds() {
   CopyLocalHistogram(smaller_top_features, larger_top_features);
 
   // Reduce scatter for histogram
-  Network::ReduceScatter(input_buffer_.data(), reduce_scatter_size_, block_start_.data(), block_len_.data(),
-    output_buffer_.data(), &HistogramBinEntry::SumReducer);
+  Network::ReduceScatter(input_buffer_.data(), reduce_scatter_size_, sizeof(HistogramBinEntry), block_start_.data(), block_len_.data(),
+                         output_buffer_.data(), static_cast<comm_size_t>(output_buffer_.size()), &HistogramBinEntry::SumReducer);
 
-  std::vector<SplitInfo> smaller_best(this->num_threads_);
-  std::vector<SplitInfo> larger_best(this->num_threads_);
+  this->FindBestSplitsFromHistograms(is_feature_used, false);
+}
+
+template <typename TREELEARNER_T>
+void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const std::vector<int8_t>&, bool) {
+
+  std::vector<SplitInfo> smaller_bests_per_thread(this->num_threads_);
+  std::vector<SplitInfo> larger_best_per_thread(this->num_threads_);
   // find best split from local aggregated histograms
-#pragma omp parallel for schedule(static)
+
+  OMP_INIT_EX();
+  #pragma omp parallel for schedule(static)
   for (int feature_index = 0; feature_index < this->num_features_; ++feature_index) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
+    const int real_feature_index = this->train_data_->RealFeatureIndex(feature_index);
     if (smaller_is_feature_aggregated_[feature_index]) {
       SplitInfo smaller_split;
       // restore from buffer
@@ -364,9 +382,9 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestThresholds() {
         output_buffer_.data() + smaller_buffer_read_start_pos_[feature_index]);
 
       this->train_data_->FixHistogram(feature_index,
-        smaller_leaf_splits_global_->sum_gradients(), smaller_leaf_splits_global_->sum_hessians(),
-        GetGlobalDataCountInLeaf(smaller_leaf_splits_global_->LeafIndex()),
-        smaller_leaf_histogram_array_global_[feature_index].RawData());
+                                      smaller_leaf_splits_global_->sum_gradients(), smaller_leaf_splits_global_->sum_hessians(),
+                                      GetGlobalDataCountInLeaf(smaller_leaf_splits_global_->LeafIndex()),
+                                      smaller_leaf_histogram_array_global_[feature_index].RawData());
 
       // find best threshold
       smaller_leaf_histogram_array_global_[feature_index].FindBestThreshold(
@@ -374,9 +392,9 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestThresholds() {
         smaller_leaf_splits_global_->sum_hessians(),
         GetGlobalDataCountInLeaf(smaller_leaf_splits_global_->LeafIndex()),
         &smaller_split);
-      if (smaller_split.gain > smaller_best[tid].gain) {
-        smaller_best[tid] = smaller_split;
-        smaller_best[tid].feature = this->train_data_->RealFeatureIndex(feature_index);
+      smaller_split.feature = real_feature_index;
+      if (smaller_split > smaller_bests_per_thread[tid]) {
+        smaller_bests_per_thread[tid] = smaller_split;
       }
     }
 
@@ -386,9 +404,9 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestThresholds() {
       larger_leaf_histogram_array_global_[feature_index].FromMemory(output_buffer_.data() + larger_buffer_read_start_pos_[feature_index]);
 
       this->train_data_->FixHistogram(feature_index,
-        larger_leaf_splits_global_->sum_gradients(), larger_leaf_splits_global_->sum_hessians(),
-        GetGlobalDataCountInLeaf(larger_leaf_splits_global_->LeafIndex()),
-        larger_leaf_histogram_array_global_[feature_index].RawData());
+                                      larger_leaf_splits_global_->sum_gradients(), larger_leaf_splits_global_->sum_hessians(),
+                                      GetGlobalDataCountInLeaf(larger_leaf_splits_global_->LeafIndex()),
+                                      larger_leaf_histogram_array_global_[feature_index].RawData());
 
       // find best threshold
       larger_leaf_histogram_array_global_[feature_index].FindBestThreshold(
@@ -396,48 +414,39 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestThresholds() {
         larger_leaf_splits_global_->sum_hessians(),
         GetGlobalDataCountInLeaf(larger_leaf_splits_global_->LeafIndex()),
         &larger_split);
-      if (larger_split.gain > larger_best[tid].gain) {
-        larger_best[tid] = larger_split;
-        larger_best[tid].feature = this->train_data_->RealFeatureIndex(feature_index);
+      larger_split.feature = real_feature_index;
+      if (larger_split > larger_best_per_thread[tid]) {
+        larger_best_per_thread[tid] = larger_split;
       }
     }
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
-  auto smaller_best_idx = ArrayArgs<SplitInfo>::ArgMax(smaller_best);
+
+  auto smaller_best_idx = ArrayArgs<SplitInfo>::ArgMax(smaller_bests_per_thread);
   int leaf = this->smaller_leaf_splits_->LeafIndex();
-  this->best_split_per_leaf_[leaf] = smaller_best[smaller_best_idx];
+  this->best_split_per_leaf_[leaf] = smaller_bests_per_thread[smaller_best_idx];
 
   if (this->larger_leaf_splits_ != nullptr && this->larger_leaf_splits_->LeafIndex() >= 0) {
     leaf = this->larger_leaf_splits_->LeafIndex();
-    auto larger_best_idx = ArrayArgs<SplitInfo>::ArgMax(larger_best);
-    this->best_split_per_leaf_[leaf] = larger_best[larger_best_idx];
+    auto larger_best_idx = ArrayArgs<SplitInfo>::ArgMax(larger_best_per_thread);
+    this->best_split_per_leaf_[leaf] = larger_best_per_thread[larger_best_idx];
   }
 
-}
-
-template <typename TREELEARNER_T>
-void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsForLeaves() {
   // find local best
-  SplitInfo smaller_best, larger_best;
-  smaller_best = this->best_split_per_leaf_[this->smaller_leaf_splits_->LeafIndex()];
+  SplitInfo smaller_best_split, larger_best_split;
+  smaller_best_split = this->best_split_per_leaf_[this->smaller_leaf_splits_->LeafIndex()];
   // find local best split for larger leaf
   if (this->larger_leaf_splits_->LeafIndex() >= 0) {
-    larger_best = this->best_split_per_leaf_[this->larger_leaf_splits_->LeafIndex()];
+    larger_best_split = this->best_split_per_leaf_[this->larger_leaf_splits_->LeafIndex()];
   }
   // sync global best info
-  std::memcpy(input_buffer_.data(), &smaller_best, sizeof(SplitInfo));
-  std::memcpy(input_buffer_.data() + sizeof(SplitInfo), &larger_best, sizeof(SplitInfo));
-
-  Network::Allreduce(input_buffer_.data(), sizeof(SplitInfo) * 2, sizeof(SplitInfo), output_buffer_.data(), &SplitInfo::MaxReducer);
-
-  std::memcpy(&smaller_best, output_buffer_.data(), sizeof(SplitInfo));
-  std::memcpy(&larger_best, output_buffer_.data() + sizeof(SplitInfo), sizeof(SplitInfo));
+  SyncUpGlobalBestSplit(input_buffer_.data(), input_buffer_.data(), &smaller_best_split, &larger_best_split, this->tree_config_->max_cat_threshold);
 
   // copy back
-  this->best_split_per_leaf_[smaller_leaf_splits_global_->LeafIndex()] = smaller_best;
-  if (larger_best.feature >= 0 && larger_leaf_splits_global_->LeafIndex() >= 0) {
-    this->best_split_per_leaf_[larger_leaf_splits_global_->LeafIndex()] = larger_best;
+  this->best_split_per_leaf_[smaller_leaf_splits_global_->LeafIndex()] = smaller_best_split;
+  if (larger_best_split.feature >= 0 && larger_leaf_splits_global_->LeafIndex() >= 0) {
+    this->best_split_per_leaf_[larger_leaf_splits_global_->LeafIndex()] = larger_best_split;
   }
 }
 

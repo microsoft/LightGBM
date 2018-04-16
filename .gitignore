@@ -377,3 +377,7 @@ lightgbm.model
 
 # VSCode
 .vscode
+
+# duplicate version file
+python-package/lightgbm/VERSION.txt
+.Rproj.user

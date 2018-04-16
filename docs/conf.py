@@ -19,31 +19,35 @@
 #
 import os
 import sys
+import sphinx
+from sphinx.errors import VersionRequirementError
 
 curr_path = os.path.dirname(os.path.realpath(__file__))
 libpath = os.path.join(curr_path, '../python-package/')
 sys.path.insert(0, libpath)
 
-from recommonmark.parser import CommonMarkParser
-from recommonmark.transform import AutoStructify
-
 # -- mock out modules
-from unittest.mock import Mock
-MOCK_MODULES = [
-    'numpy', 'scipy', 'scipy.sparse',
-    'sklearn', 'matplotlib', 'pandas', 'graphviz',
-    'lightgbm.compat.LGBMDeprecated'
+try:
+    from unittest.mock import Mock  # Python 3.x
+except ImportError:
+    from mock import Mock  # Python 2.x
+
+MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse',
+                'sklearn', 'matplotlib', 'pandas', 'graphviz',
 ]
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
+
 
 # -- General configuration ------------------------------------------------
 
 os.environ['LIGHTGBM_BUILD_DOC'] = '1'
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#
-# needs_sphinx = '1.0'
+needs_sphinx = '1.3'  # Due to sphinx.ext.napoleon
+if needs_sphinx > sphinx.__version__:
+    message = 'This project needs at least Sphinx v%s' % needs_sphinx
+    raise VersionRequirementError(message)
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -60,10 +64,7 @@ templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
-source_parsers = {
-    '.md': CommonMarkParser,
-}
-source_suffix = ['.rst', '.md']
+# source_suffix = ['.rst', '.md']
 
 # The master toctree document.
 master_doc = 'index'
@@ -128,62 +129,5 @@ html_static_path = ['_static']
 htmlhelp_basename = 'LightGBMdoc'
 
 
-# -- Options for LaTeX output ---------------------------------------------
-
-latex_elements = {
-    # The paper size ('letterpaper' or 'a4paper').
-    #
-    # 'papersize': 'letterpaper',
-
-    # The font size ('10pt', '11pt' or '12pt').
-    #
-    # 'pointsize': '10pt',
-
-    # Additional stuff for the LaTeX preamble.
-    #
-    # 'preamble': '',
-
-    # Latex figure (float) alignment
-    #
-    # 'figure_align': 'htbp',
-}
-
-# Grouping the document tree into LaTeX files. List of tuples
-# (source start file, target name, title,
-#  author, documentclass [howto, manual, or own class]).
-latex_documents = [
-    (master_doc, 'LightGBM.tex', 'LightGBM Documentation',
-     'Microsoft Corporation', 'manual'),
-]
-
-
-# -- Options for manual page output ---------------------------------------
-
-# One entry per manual page. List of tuples
-# (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'lightgbm', 'LightGBM Documentation',
-     [author], 1)
-]
-
-
-# -- Options for Texinfo output -------------------------------------------
-
-# Grouping the document tree into Texinfo files. List of tuples
-# (source start file, target name, title, author,
-#  dir menu entry, description, category)
-texinfo_documents = [
-    (master_doc, 'LightGBM', 'LightGBM Documentation',
-     author, 'LightGBM', 'One line description of project.',
-     'Miscellaneous'),
-]
-
-
-# https://recommonmark.readthedocs.io/en/latest/
-github_doc_root = 'https://github.com/Microsoft/LightGBM/tree/master/docs'
 def setup(app):
-    app.add_config_value('recommonmark_config', {
-            'url_resolver': lambda url: github_doc_root + url,
-            'auto_toc_tree_section': 'Contents',
-            }, True)
-    app.add_transform(AutoStructify)
+    app.add_javascript("js/rst_links_fix.js")

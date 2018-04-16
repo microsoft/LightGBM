@@ -12,23 +12,26 @@ namespace LightGBM {
 */
 class BinaryLogloss: public ObjectiveFunction {
 public:
-  explicit BinaryLogloss(const ObjectiveConfig& config, std::function<bool(float)> is_pos = nullptr) {
-    is_unbalance_ = config.is_unbalance;
+  explicit BinaryLogloss(const ObjectiveConfig& config, std::function<bool(label_t)> is_pos = nullptr) {
     sigmoid_ = static_cast<double>(config.sigmoid);
     if (sigmoid_ <= 0.0) {
       Log::Fatal("Sigmoid parameter %f should be greater than zero", sigmoid_);
     }
+    is_unbalance_ = config.is_unbalance;
     scale_pos_weight_ = static_cast<double>(config.scale_pos_weight);
+    if(is_unbalance_ && std::fabs(scale_pos_weight_ - 1.0f) > 1e-6) {
+      Log::Fatal("Cannot set is_unbalance and scale_pos_weight at the same time.");
+    }
     is_pos_ = is_pos;
     if (is_pos_ == nullptr) {
-      is_pos_ = [](float label) {return label > 0; };
+      is_pos_ = [](label_t label) {return label > 0; };
     }
   }
 
   explicit BinaryLogloss(const std::vector<std::string>& strs) {
     sigmoid_ = -1;
     for (auto str : strs) {
-      auto tokens = Common::Split(str.c_str(), ":");
+      auto tokens = Common::Split(str.c_str(), ':');
       if (tokens.size() == 2) {
         if (tokens[0] == std::string("sigmoid")) {
           Common::Atof(tokens[1].c_str(), &sigmoid_);
@@ -129,11 +132,13 @@ public:
 
   bool SkipEmptyClass() const override { return true; }
 
+  bool NeedAccuratePrediction() const override { return false; }
+
 private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
-  const float* label_;
+  const label_t* label_;
   /*! \brief True if using unbalance training */
   bool is_unbalance_;
   /*! \brief Sigmoid parameter */
@@ -143,9 +148,9 @@ private:
   /*! \brief Weights for positive and negative labels */
   double label_weights_[2];
   /*! \brief Weights for data */
-  const float* weights_;
+  const label_t* weights_;
   double scale_pos_weight_;
-  std::function<bool(float)> is_pos_;
+  std::function<bool(label_t)> is_pos_;
 };
 
 }  // namespace LightGBM

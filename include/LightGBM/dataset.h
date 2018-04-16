@@ -44,7 +44,7 @@ public:
   * \param data_filename Filename of data
   * \param init_score_filename Filename of initial score
   */
-  void Init(const char* data_filename);
+  void Init(const char* data_filename, const char* initscore_file);
   /*!
   * \brief init as subset
   * \param metadata Filename of data
@@ -82,9 +82,9 @@ public:
   void CheckOrPartition(data_size_t num_all_data,
                         const std::vector<data_size_t>& used_data_indices);
 
-  void SetLabel(const float* label, data_size_t len);
+  void SetLabel(const label_t* label, data_size_t len);
 
-  void SetWeights(const float* weights, data_size_t len);
+  void SetWeights(const label_t* weights, data_size_t len);
 
   void SetQuery(const data_size_t* query, data_size_t len);
 
@@ -99,7 +99,7 @@ public:
   * \brief Save binary data to file
   * \param file File want to write
   */
-  void SaveBinaryToFile(FILE* file) const;
+  void SaveBinaryToFile(const VirtualFileWriter* writer) const;
 
   /*!
   * \brief Get sizes in byte of this object
@@ -110,14 +110,14 @@ public:
   * \brief Get pointer of label
   * \return Pointer of label
   */
-  inline const float* label() const { return label_.data(); }
+  inline const label_t* label() const { return label_.data(); }
 
   /*!
   * \brief Set label for one record
   * \param idx Index of this record
   * \param value Label value of this record
   */
-  inline void SetLabelAt(data_size_t idx, float value)
+  inline void SetLabelAt(data_size_t idx, label_t value)
   {
     label_[idx] = value;
   }
@@ -127,7 +127,7 @@ public:
   * \param idx Index of this record
   * \param value Weight value of this record
   */
-  inline void SetWeightAt(data_size_t idx, float value)
+  inline void SetWeightAt(data_size_t idx, label_t value)
   {
     weights_[idx] = value;
   }
@@ -146,7 +146,7 @@ public:
   * \brief Get weights, if not exists, will return nullptr
   * \return Pointer of weights
   */
-  inline const float* weights() const {
+  inline const label_t* weights() const {
     if (!weights_.empty()) {
       return weights_.data();
     } else {
@@ -179,7 +179,7 @@ public:
   * \brief Get weights for queries, if not exists, will return nullptr
   * \return Pointer of weights for queries
   */
-  inline const float* query_weights() const {
+  inline const label_t* query_weights() const {
     if (!query_weights_.empty()) {
       return query_weights_.data();
     } else {
@@ -211,7 +211,7 @@ public:
 
 private:
   /*! \brief Load initial scores from file */
-  void LoadInitialScore();
+  void LoadInitialScore(const char* initscore_file);
   /*! \brief Load wights from file */
   void LoadWeights();
   /*! \brief Load query boundaries from file */
@@ -219,19 +219,19 @@ private:
   /*! \brief Load query wights */
   void LoadQueryWeights();
   /*! \brief Filename of current data */
-  const char* data_filename_;
+  std::string data_filename_;
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Number of weights, used to check correct weight file */
   data_size_t num_weights_;
   /*! \brief Label data */
-  std::vector<float> label_;
+  std::vector<label_t> label_;
   /*! \brief Weights data */
-  std::vector<float> weights_;
+  std::vector<label_t> weights_;
   /*! \brief Query boundaries */
   std::vector<data_size_t> query_boundaries_;
   /*! \brief Query weights */
-  std::vector<float> query_weights_;
+  std::vector<label_t> query_weights_;
   /*! \brief Number of querys */
   data_size_t num_queries_;
   /*! \brief Number of Initial score, used to check correct weight file */
@@ -361,7 +361,15 @@ public:
   inline uint64_t NumTotalBin() const {
     return group_bin_boundaries_.back();
   }
-
+  inline std::vector<int> ValidFeatureIndices() const {
+    std::vector<int> ret;
+    for (int i = 0; i < num_total_features_; ++i) {
+      if (used_feature_map_[i] >= 0) {
+        ret.push_back(i);
+      }
+    }
+    return ret;
+  }
   void ReSize(data_size_t num_data);
 
   void CopySubset(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data);
@@ -402,12 +410,12 @@ public:
                     HistogramBinEntry* data) const;
 
   inline data_size_t Split(int feature,
-                           uint32_t threshold, uint32_t default_bin_for_zero,
+                           const uint32_t* threshold, int num_threshold,  bool default_left,
                            data_size_t* data_indices, data_size_t num_data,
                            data_size_t* lte_indices, data_size_t* gt_indices) const {
     const int group = feature2group_[feature];
     const int sub_feature = feature2subfeature_[feature];
-    return feature_groups_[group]->Split(sub_feature, threshold, default_bin_for_zero, data_indices, num_data, lte_indices, gt_indices);
+    return feature_groups_[group]->Split(sub_feature, threshold, num_threshold, default_left, data_indices, num_data, lte_indices, gt_indices);
   }
 
   inline int SubFeatureBinOffset(int i) const {
@@ -442,6 +450,10 @@ public:
   
   inline const Bin* FeatureGroupBin(int group) const {
     return feature_groups_[group]->bin_data_.get();
+  }
+
+  inline bool FeatureGroupIsSparse(int group) const {
+    return feature_groups_[group]->is_sparse_;
   }
 
   inline BinIterator* FeatureIterator(int i) const {
@@ -534,7 +546,7 @@ public:
   Dataset(const Dataset&) = delete;
 
 private:
-  const char* data_filename_;
+  std::string data_filename_;
   /*! \brief Store used features */
   std::vector<std::unique_ptr<FeatureGroup>> feature_groups_;
   /*! \brief Mapper from real feature index to used index*/

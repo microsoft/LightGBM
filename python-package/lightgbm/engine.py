@@ -4,14 +4,15 @@
 from __future__ import absolute_import
 
 import collections
+import warnings
 from operator import attrgetter
 
 import numpy as np
 
 from . import callback
 from .basic import Booster, Dataset, LightGBMError, _InnerPredictor
-from .compat import (SKLEARN_INSTALLED, LGBMStratifiedKFold, LGBMGroupKFold, integer_types,
-                     range_, string_type)
+from .compat import (SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold,
+                     integer_types, range_, string_type)
 
 
 def train(params, train_set, num_boost_round=100,
@@ -19,9 +20,9 @@ def train(params, train_set, num_boost_round=100,
           fobj=None, feval=None, init_model=None,
           feature_name='auto', categorical_feature='auto',
           early_stopping_rounds=None, evals_result=None,
-          verbose_eval=True, learning_rates=None, callbacks=None):
-    """
-    Train with given parameters.
+          verbose_eval=True, learning_rates=None,
+          keep_training_booster=False, callbacks=None):
+    """Perform the training with given parameters.
 
     Parameters
     ----------
@@ -29,66 +30,82 @@ def train(params, train_set, num_boost_round=100,
         Parameters for training.
     train_set : Dataset
         Data to be trained.
-    num_boost_round: int
+    num_boost_round: int, optional (default=100)
         Number of boosting iterations.
-    valid_sets: list of Datasets
-        List of data to be evaluated during training
-    valid_names: list of string
-        Names of valid_sets
-    fobj : function
+    valid_sets: list of Datasets or None, optional (default=None)
+        List of data to be evaluated during training.
+    valid_names: list of string or None, optional (default=None)
+        Names of ``valid_sets``.
+    fobj : callable or None, optional (default=None)
         Customized objective function.
-    feval : function
+    feval : callable or None, optional (default=None)
         Customized evaluation function.
-        Note: should return (eval_name, eval_result, is_higher_better) of list of this
-    init_model : file name of lightgbm model or 'Booster' instance
-        model used for continued train
-    feature_name : list of str, or 'auto'
-        Feature names
-        If 'auto' and data is pandas DataFrame, use data columns name
-    categorical_feature : list of str or int, or 'auto'
-        Categorical features,
-        type int represents index,
-        type str represents feature names (need to specify feature_name as well)
-        If 'auto' and data is pandas DataFrame, use pandas categorical columns
-    early_stopping_rounds: int
-        Activates early stopping.
-        Requires at least one validation data and one metric
-        If there's more than one, will check all of them
-        Returns the model with (best_iter + early_stopping_rounds)
-        If early stopping occurs, the model will add 'best_iteration' field
-    evals_result: dict or None
-        This dictionary used to store all evaluation results of all the items in valid_sets.
-        Example: with a valid_sets containing [valid_set, train_set]
-                 and valid_names containing ['eval', 'train']
-                 and a paramater containing ('metric':'logloss')
-        Returns: {'train': {'logloss': ['0.48253', '0.35953', ...]},
-                  'eval': {'logloss': ['0.480385', '0.357756', ...]}}
-        passed with None means no using this function
-    verbose_eval : bool or int
-        Requires at least one item in evals.
-        If `verbose_eval` is True,
-            the eval metric on the valid set is printed at each boosting stage.
-        If `verbose_eval` is int,
-            the eval metric on the valid set is printed at every `verbose_eval` boosting stage.
-        The last boosting stage
-            or the boosting stage found by using `early_stopping_rounds` is also printed.
-        Example: with verbose_eval=4 and at least one item in evals,
-            an evaluation metric is printed every 4 (instead of 1) boosting stages.
-    learning_rates: list or function
-        List of learning rate for each boosting round
-        or a customized function that calculates learning_rate
-        in terms of current number of round (e.g. yields learning rate decay)
-        - list l: learning_rate = l[current_round]
-        - function f: learning_rate = f(current_round)
-    callbacks : list of callback functions
+        Note: should return (eval_name, eval_result, is_higher_better) or list of such tuples.
+    init_model : string or None, optional (default=None)
+        Filename of LightGBM model or Booster instance used for continue training.
+    feature_name : list of strings or 'auto', optional (default="auto")
+        Feature names.
+        If 'auto' and data is pandas DataFrame, data columns names are used.
+    categorical_feature : list of strings or int, or 'auto', optional (default="auto")
+        Categorical features.
+        If list of int, interpreted as indices.
+        If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
+        If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
+    early_stopping_rounds: int or None, optional (default=None)
+        Activates early stopping. The model will train until the validation score stops improving.
+        Requires at least one validation data and one metric. If there's more than one, will check all of them.
+        If early stopping occurs, the model will add ``best_iteration`` field.
+    evals_result: dict or None, optional (default=None)
+        This dictionary used to store all evaluation results of all the items in ``valid_sets``.
+
+        Example
+        -------
+        With a ``valid_sets`` = [valid_set, train_set],
+        ``valid_names`` = ['eval', 'train']
+        and a ``params`` = ('metric':'logloss')
+        returns: {'train': {'logloss': ['0.48253', '0.35953', ...]},
+        'eval': {'logloss': ['0.480385', '0.357756', ...]}}.
+    verbose_eval : bool or int, optional (default=True)
+        Requires at least one validation data.
+        If True, the eval metric on the valid set is printed at each boosting stage.
+        If int, the eval metric on the valid set is printed at every ``verbose_eval`` boosting stage.
+        The last boosting stage or the boosting stage found by using ``early_stopping_rounds`` is also printed.
+
+        Example
+        -------
+        With ``verbose_eval`` = 4 and at least one item in evals,
+        an evaluation metric is printed every 4 (instead of 1) boosting stages.
+    learning_rates: list, callable or None, optional (default=None)
+        List of learning rates for each boosting round
+        or a customized function that calculates ``learning_rate``
+        in terms of current number of round (e.g. yields learning rate decay).
+    keep_training_booster : bool, optional (default=False)
+        Whether the returned Booster will be used to keep training.
+        If False, the returned value will be converted into _InnerPredictor before returning.
+        You can still use _InnerPredictor as ``init_model`` for future continue training.
+    callbacks : list of callables or None, optional (default=None)
         List of callback functions that are applied at each iteration.
-        See Callbacks in Python-API.md for more information.
+        See Callbacks in Python API for more information.
 
     Returns
     -------
-    booster : a trained booster model
+    booster : Booster
+        The trained Booster model.
     """
-    """create predictor first"""
+    # create predictor first
+    for alias in ["num_boost_round", "num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds", "n_estimators"]:
+        if alias in params:
+            num_boost_round = int(params.pop(alias))
+            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            break
+    for alias in ["early_stopping_round", "early_stopping_rounds", "early_stopping"]:
+        if alias in params and params[alias] is not None:
+            early_stopping_rounds = int(params.pop(alias))
+            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            break
+
+    if num_boost_round <= 0:
+        raise ValueError("num_boost_round should be greater than zero.")
     if isinstance(init_model, string_type):
         predictor = _InnerPredictor(model_file=init_model)
     elif isinstance(init_model, Booster):
@@ -96,7 +113,7 @@ def train(params, train_set, num_boost_round=100,
     else:
         predictor = None
     init_iteration = predictor.num_total_iteration if predictor is not None else 0
-    """check dataset"""
+    # check dataset
     if not isinstance(train_set, Dataset):
         raise TypeError("Training only accepts Dataset object")
 
@@ -115,7 +132,7 @@ def train(params, train_set, num_boost_round=100,
         if isinstance(valid_names, string_type):
             valid_names = [valid_names]
         for i, valid_data in enumerate(valid_sets):
-            """reduce cost for prediction training data"""
+            # reduce cost for prediction training data
             if valid_data is train_set:
                 is_valid_contain_train = True
                 if valid_names is not None:
@@ -123,15 +140,14 @@ def train(params, train_set, num_boost_round=100,
                 continue
             if not isinstance(valid_data, Dataset):
                 raise TypeError("Traninig only accepts Dataset object")
+            valid_data._update_params(params)
             valid_data.set_reference(train_set)
             reduced_valid_sets.append(valid_data)
             if valid_names is not None and len(valid_names) > i:
                 name_valid_sets.append(valid_names[i])
             else:
                 name_valid_sets.append('valid_' + str(i))
-        for valid_data in valid_sets:
-            valid_data._update_params(params)
-    """process callbacks"""
+    # process callbacks
     if callbacks is None:
         callbacks = set()
     else:
@@ -159,15 +175,20 @@ def train(params, train_set, num_boost_round=100,
     callbacks_before_iter = sorted(callbacks_before_iter, key=attrgetter('order'))
     callbacks_after_iter = sorted(callbacks_after_iter, key=attrgetter('order'))
 
-    """construct booster"""
-    booster = Booster(params=params, train_set=train_set)
-    if is_valid_contain_train:
-        booster.set_train_data_name(train_data_name)
-    for valid_set, name_valid_set in zip(reduced_valid_sets, name_valid_sets):
-        booster.add_valid(valid_set, name_valid_set)
+    # construct booster
+    try:
+        booster = Booster(params=params, train_set=train_set)
+        if is_valid_contain_train:
+            booster.set_train_data_name(train_data_name)
+        for valid_set, name_valid_set in zip(reduced_valid_sets, name_valid_sets):
+            booster.add_valid(valid_set, name_valid_set)
+    finally:
+        train_set._reverse_update_params()
+        for valid_set in reduced_valid_sets:
+            valid_set._reverse_update_params()
     booster.best_iteration = 0
 
-    """start training"""
+    # start training
     for i in range_(init_iteration, init_iteration + num_boost_round):
         for cb in callbacks_before_iter:
             cb(callback.CallbackEnv(model=booster,
@@ -200,6 +221,9 @@ def train(params, train_set, num_boost_round=100,
     booster.best_score = collections.defaultdict(dict)
     for dataset_name, eval_name, score, _ in evaluation_result_list:
         booster.best_score[dataset_name][eval_name] = score
+    if not keep_training_booster:
+        booster._load_model_from_string(booster._save_model_to_string(), False)
+        booster.free_dataset()
     return booster
 
 
@@ -224,7 +248,7 @@ class CVBooster(object):
         return handlerFunction
 
 
-def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratified=False, shuffle=True):
+def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratified=True, shuffle=True):
     """
     Make an n-fold list of Booster from random indices.
     """
@@ -240,12 +264,12 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             # lambdarank task, split according to groups
             group_info = full_data.get_group().astype(int)
             flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
-            group_kfold = LGBMGroupKFold(n_splits=nfold)
+            group_kfold = _LGBMGroupKFold(n_splits=nfold)
             folds = group_kfold.split(X=np.zeros(num_data), groups=flatted_group)
         elif stratified:
             if not SKLEARN_INSTALLED:
                 raise LightGBMError('Scikit-learn is required for stratified cv.')
-            skf = LGBMStratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
+            skf = _LGBMStratifiedKFold(n_splits=nfold, shuffle=shuffle, random_state=seed)
             folds = skf.split(X=np.zeros(num_data), y=full_data.get_label())
         else:
             if shuffle:
@@ -285,79 +309,95 @@ def _agg_cv_result(raw_results):
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
 
 
-def cv(params, train_set, num_boost_round=10,
-       folds=None, nfold=5, stratified=False, shuffle=True,
+def cv(params, train_set, num_boost_round=100,
+       folds=None, nfold=5, stratified=True, shuffle=True,
        metrics=None, fobj=None, feval=None, init_model=None,
        feature_name='auto', categorical_feature='auto',
        early_stopping_rounds=None, fpreproc=None,
        verbose_eval=None, show_stdv=True, seed=0,
        callbacks=None):
-    """
-    Cross-validation with given paramaters.
+    """Perform the cross-validation with given paramaters.
 
     Parameters
     ----------
     params : dict
-        Booster params.
+        Parameters for Booster.
     train_set : Dataset
-        Data to be trained.
-    num_boost_round : int
+        Data to be trained on.
+    num_boost_round : int, optional (default=100)
         Number of boosting iterations.
-    folds : a generator or iterator of (train_idx, test_idx) tuples
-        The train indices and test indices for each folds.
+    folds : a generator or iterator of (train_idx, test_idx) tuples or None, optional (default=None)
+        The train and test indices for the each fold.
         This argument has highest priority over other data split arguments.
-    nfold : int
+    nfold : int, optional (default=5)
         Number of folds in CV.
-    stratified : bool
-        Perform stratified sampling.
-    shuffle: bool
-        Whether shuffle before split data
-    metrics : string or list of strings
-        Evaluation metrics to be watched in CV.
-        If `metrics` is not None, the metric in `params` will be overridden.
-    fobj : function
+    stratified : bool, optional (default=True)
+        Whether to perform stratified sampling.
+    shuffle: bool, optional (default=True)
+        Whether to shuffle before splitting data.
+    metrics : string, list of strings or None, optional (default=None)
+        Evaluation metrics to be monitored while CV.
+        If not None, the metric in ``params`` will be overridden.
+    fobj : callable or None, optional (default=None)
         Custom objective function.
-    feval : function
+    feval : callable or None, optional (default=None)
         Custom evaluation function.
-    init_model : file name of lightgbm model or 'Booster' instance
-        model used for continued train
-    feature_name : list of str, or 'auto'
-        Feature names
-        If 'auto' and data is pandas DataFrame, use data columns name
-    categorical_feature : list of str or int, or 'auto'
-        Categorical features,
-        type int represents index,
-        type str represents feature names (need to specify feature_name as well)
-        If 'auto' and data is pandas DataFrame, use pandas categorical columns
-    early_stopping_rounds: int
+    init_model : string or None, optional (default=None)
+        Filename of LightGBM model or Booster instance used for continue training.
+    feature_name : list of strings or 'auto', optional (default="auto")
+        Feature names.
+        If 'auto' and data is pandas DataFrame, data columns names are used.
+    categorical_feature : list of strings or int, or 'auto', optional (default="auto")
+        Categorical features.
+        If list of int, interpreted as indices.
+        If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
+        If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
+    early_stopping_rounds: int or None, optional (default=None)
         Activates early stopping. CV error needs to decrease at least
-        every <early_stopping_rounds> round(s) to continue.
+        every ``early_stopping_rounds`` round(s) to continue.
         Last entry in evaluation history is the one from best iteration.
-    fpreproc : function
-        Preprocessing function that takes (dtrain, dtest, param)
+    fpreproc : callable or None, optional (default=None)
+        Preprocessing function that takes (dtrain, dtest, params)
         and returns transformed versions of those.
-    verbose_eval : bool, int, or None, default None
+    verbose_eval : bool, int, or None, optional (default=None)
         Whether to display the progress.
         If None, progress will be displayed when np.ndarray is returned.
-        If True, progress will be displayed at boosting stage.
-        If an integer is given,
-            progress will be displayed at every given `verbose_eval` boosting stage.
-    show_stdv : bool, default True
+        If True, progress will be displayed at every boosting stage.
+        If int, progress will be displayed at every given ``verbose_eval`` boosting stage.
+    show_stdv : bool, optional (default=True)
         Whether to display the standard deviation in progress.
-        Results are not affected, and always contains std.
-    seed : int
+        Results are not affected by this parameter, and always contains std.
+    seed : int, optional (default=0)
         Seed used to generate the folds (passed to numpy.random.seed).
-    callbacks : list of callback functions
+    callbacks : list of callables or None, optional (default=None)
         List of callback functions that are applied at each iteration.
-        See Callbacks in Python-API.md for more information.
+        See Callbacks in Python API for more information.
 
     Returns
     -------
-    evaluation history : list(string)
+    eval_hist : dict
+        Evaluation history.
+        The dictionary has the following format:
+        {'metric1-mean': [values], 'metric1-stdv': [values],
+        'metric2-mean': [values], 'metric2-stdv': [values],
+        ...}.
     """
     if not isinstance(train_set, Dataset):
         raise TypeError("Traninig only accepts Dataset object")
 
+    for alias in ["num_boost_round", "num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds", "n_estimators"]:
+        if alias in params:
+            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            num_boost_round = params.pop(alias)
+            break
+    for alias in ["early_stopping_round", "early_stopping_rounds", "early_stopping"]:
+        if alias in params:
+            warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
+            early_stopping_rounds = params.pop(alias)
+            break
+
+    if num_boost_round <= 0:
+        raise ValueError("num_boost_round should be greater than zero.")
     if isinstance(init_model, string_type):
         predictor = _InnerPredictor(model_file=init_model)
     elif isinstance(init_model, Booster):

@@ -1,5 +1,8 @@
 #ifndef LIGHTGBM_C_API_H_
 #define LIGHTGBM_C_API_H_
+
+#include <LightGBM/meta.h>
+
 #include <cstdint>
 #include <exception>
 #include <stdexcept>
@@ -27,6 +30,7 @@ typedef void* BoosterHandle;
 #define C_API_PREDICT_NORMAL     (0)
 #define C_API_PREDICT_RAW_SCORE  (1)
 #define C_API_PREDICT_LEAF_INDEX (2)
+#define C_API_PREDICT_CONTRIB    (3)
 
 /*!
 * \brief get string message of the last error
@@ -54,7 +58,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromFile(const char* filename,
 /*!
 * \brief create a empty dataset by sampling data.
 * \param sample_data sampled data, grouped by the column.
-* \param sample_indices indices of sampled data. 
+* \param sample_indices indices of sampled data.
 * \param ncol number columns
 * \param num_per_col Size of each sampling column
 * \param num_sample_row Number of sampled rows
@@ -513,6 +517,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetPredict(BoosterHandle handle,
 *          C_API_PREDICT_RAW_SCORE: raw score
 *          C_API_PREDICT_LEAF_INDEX: leaf index
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
+* \param parameter Other parameters for the parameters, e.g. early stopping for prediction.
 * \param result_filename filename of result file
 * \return 0 when succeed, -1 when failure happens
 */
@@ -521,6 +526,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForFile(BoosterHandle handle,
                                                  int data_has_header,
                                                  int predict_type,
                                                  int num_iteration,
+                                                 const char* parameter,
                                                  const char* result_filename);
 
 /*!
@@ -560,6 +566,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
 *          C_API_PREDICT_RAW_SCORE: raw score
 *          C_API_PREDICT_LEAF_INDEX: leaf index
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
+* \param parameter Other parameters for the parameters, e.g. early stopping for prediction.
 * \param out_len len of output result
 * \param out_result used to set a pointer to array, should allocate memory before call this function
 * \return 0 when succeed, -1 when failure happens
@@ -575,6 +582,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
                                                 int64_t num_col,
                                                 int predict_type,
                                                 int num_iteration,
+                                                const char* parameter,
                                                 int64_t* out_len,
                                                 double* out_result);
 
@@ -597,6 +605,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
 *          C_API_PREDICT_RAW_SCORE: raw score
 *          C_API_PREDICT_LEAF_INDEX: leaf index
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
+* \param parameter Other parameters for the parameters, e.g. early stopping for prediction.
 * \param out_len len of output result
 * \param out_result used to set a pointer to array, should allocate memory before call this function
 * \return 0 when succeed, -1 when failure happens
@@ -612,6 +621,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSC(BoosterHandle handle,
                                                 int64_t num_row,
                                                 int predict_type,
                                                 int num_iteration,
+                                                const char* parameter,
                                                 int64_t* out_len,
                                                 double* out_result);
 
@@ -631,6 +641,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSC(BoosterHandle handle,
 *          C_API_PREDICT_RAW_SCORE: raw score
 *          C_API_PREDICT_LEAF_INDEX: leaf index
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
+* \param parameter Other parameters for the parameters, e.g. early stopping for prediction.
 * \param out_len len of output result
 * \param out_result used to set a pointer to array, should allocate memory before call this function
 * \return 0 when succeed, -1 when failure happens
@@ -643,6 +654,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
                                                 int is_row_major,
                                                 int predict_type,
                                                 int num_iteration,
+                                                const char* parameter,
                                                 int64_t* out_len,
                                                 double* out_result);
 
@@ -668,8 +680,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel(BoosterHandle handle,
 */
 LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(BoosterHandle handle,
                                                     int num_iteration,
-                                                    int buffer_len,
-                                                    int* out_len,
+                                                    int64_t buffer_len,
+                                                    int64_t* out_len,
                                                     char* out_str);
 
 /*!
@@ -683,8 +695,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(BoosterHandle handle,
 */
 LIGHTGBM_C_EXPORT int LGBM_BoosterDumpModel(BoosterHandle handle,
                                             int num_iteration,
-                                            int buffer_len,
-                                            int* out_len,
+                                            int64_t buffer_len,
+                                            int64_t* out_len,
                                             char* out_str);
 
 /*!
@@ -713,13 +725,46 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSetLeafValue(BoosterHandle handle,
                                                int leaf_idx,
                                                double val);
 
-#if defined(_MSC_VER)
-// exception handle and error msg
-static char* LastErrorMsg() { static __declspec(thread) char err_msg[512] = "Everything is fine"; return err_msg; }
-#else
-static char* LastErrorMsg() { static thread_local char err_msg[512] = "Everything is fine"; return err_msg; }
-#endif
+/*!
+* \brief get model feature importance
+* \param handle handle
+* \param num_iteration, <= 0 means use all
+* \param importance_type: 0 for split, 1 for gain
+* \param out_results output value array
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_BoosterFeatureImportance(BoosterHandle handle,
+                                                    int num_iteration,
+                                                    int importance_type,
+                                                    double* out_results);
 
+/*!
+* \brief Initilize the network
+* \param machines represent the nodes, format: ip1:port1,ip2:port2
+* \param local_listen_port
+* \param listen_time_out
+* \param num_machines
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_NetworkInit(const char* machines,
+                                       int local_listen_port,
+                                       int listen_time_out,
+                                       int num_machines);
+
+/*!
+* \brief Finalize the network
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_NetworkFree();
+
+LIGHTGBM_C_EXPORT int LGBM_NetworkInitWithFunctions(int num_machines, int rank, 
+                                                    void* reduce_scatter_ext_fun, 
+                                                    void* allgather_ext_fun);
+
+// exception handle and error msg
+static char* LastErrorMsg() { static THREAD_LOCAL char err_msg[512] = "Everything is fine"; return err_msg; }
+
+#pragma warning(disable : 4996)
 inline void LGBM_SetLastError(const char* msg) {
   std::strcpy(LastErrorMsg(), msg);
 }

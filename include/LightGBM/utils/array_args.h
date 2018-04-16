@@ -126,6 +126,7 @@ public:
     *r = i;
   };
 
+  // Note: k refer to index here. e.g. k=0 means get the max number.
   inline static int ArgMaxAtK(std::vector<VAL_T>* arr, int start, int end, int k) {
     if (start >= end - 1) {
       return start;
@@ -133,15 +134,17 @@ public:
     int l = start;
     int r = end - 1;
     Partition(arr, start, end, &l, &r);
-    if ((k > l && k < r) || l == 0 || r == end - 1) {
+    // if find or all elements are the same.
+    if ((k > l && k < r) || (l == start - 1 && r == end - 1)) {
       return k;
     } else if (k <= l) {
-      return ArgMaxAtK(arr, start, l, k);
+      return ArgMaxAtK(arr, start, l + 1, k);
     } else {
       return ArgMaxAtK(arr, r, end, k);
     }
   }
 
+  // Note: k is 1-based here. e.g. k=3 means get the top-3 numbers.
   inline static void MaxK(const std::vector<VAL_T>& array, int k, std::vector<VAL_T>* out) {
     out->clear();
     if (k <= 0) {

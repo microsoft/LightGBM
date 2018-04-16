@@ -15,7 +15,7 @@ namespace LightGBM {
 template<typename PointWiseLossCalculator>
 class RegressionMetric: public Metric {
 public:
-  explicit RegressionMetric(const MetricConfig&) :huber_delta_(1.0f), fair_c_(1.0f) {
+  explicit RegressionMetric(const MetricConfig& config) :config_(config) {
   }
 
   virtual ~RegressionMetric() {
@@ -32,7 +32,6 @@ public:
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
     name_.emplace_back(PointWiseLossCalculator::Name());
-
     num_data_ = num_data;
     // get label
     label_ = metadata.label();
@@ -55,13 +54,13 @@ public:
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], huber_delta_, fair_c_);
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], config_);
         }
       } else {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], huber_delta_, fair_c_) * weights_[i];
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], config_) * weights_[i];
         }
       }
     } else {
@@ -71,7 +70,7 @@ public:
           // add loss
           double t = 0;
           objective->ConvertOutput(&score[i], &t);
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], t, huber_delta_, fair_c_);
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], t, config_);
         }
       } else {
         #pragma omp parallel for schedule(static) reduction(+:sum_loss)
@@ -79,7 +78,7 @@ public:
           // add loss
           double t = 0;
           objective->ConvertOutput(&score[i], &t);
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], t, huber_delta_, fair_c_) * weights_[i];
+          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], t, config_) * weights_[i];
         }
       }
     }
@@ -91,23 +90,17 @@ public:
   inline static double AverageLoss(double sum_loss, double sum_weights) {
     return sum_loss / sum_weights;
   }
-
-protected:
-  /*! \brief delta for Huber loss */
-  double huber_delta_;
-  /*! \brief c for Fair loss */
-  double fair_c_;
-
 private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
-  const float* label_;
+  const label_t* label_;
   /*! \brief Pointer of weighs */
-  const float* weights_;
+  const label_t* weights_;
   /*! \brief Sum weights */
   double sum_weights_;
   /*! \brief Name of this test set */
+  MetricConfig config_;
   std::vector<std::string> name_;
 };
 
@@ -116,7 +109,7 @@ class RMSEMetric: public RegressionMetric<RMSEMetric> {
 public:
   explicit RMSEMetric(const MetricConfig& config) :RegressionMetric<RMSEMetric>(config) {}
 
-  inline static double LossOnPoint(float label, double score, double, double) {
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
     return (score - label)*(score - label);
   }
 
@@ -135,13 +128,8 @@ class L2Metric: public RegressionMetric<L2Metric> {
 public:
   explicit L2Metric(const MetricConfig& config) :RegressionMetric<L2Metric>(config) {}
 
-  inline static double LossOnPoint(float label, double score, double, double) {
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
     return (score - label)*(score - label);
-  }
-
-  inline static double AverageLoss(double sum_loss, double sum_weights) {
-    // need mean of the result for L2 loss
-    return sum_loss / sum_weights;
   }
 
   inline static const char* Name() {
@@ -149,12 +137,33 @@ public:
   }
 };
 
+/*! \brief L2 loss for regression task */
+class QuantileMetric : public RegressionMetric<QuantileMetric> {
+public:
+  explicit QuantileMetric(const MetricConfig& config) :RegressionMetric<QuantileMetric>(config) {
+  }
+
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig& config) {
+    double delta = label - score;
+    if (delta < 0) {
+      return (config.alpha - 1.0f) * delta;
+    } else {
+      return config.alpha * delta;
+    }
+  }
+
+  inline static const char* Name() {
+    return "quantile";
+  }
+};
+
+
 /*! \brief L1 loss for regression task */
 class L1Metric: public RegressionMetric<L1Metric> {
 public:
   explicit L1Metric(const MetricConfig& config) :RegressionMetric<L1Metric>(config) {}
 
-  inline static double LossOnPoint(float label, double score, double, double) {
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
     return std::fabs(score - label);
   }
   inline static const char* Name() {
@@ -166,15 +175,14 @@ public:
 class HuberLossMetric: public RegressionMetric<HuberLossMetric> {
 public:
   explicit HuberLossMetric(const MetricConfig& config) :RegressionMetric<HuberLossMetric>(config) {
-    huber_delta_ = static_cast<double>(config.huber_delta);
   }
 
-  inline static double LossOnPoint(float label, double score, double delta, double) {
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig& config) {
     const double diff = score - label;
-    if (std::abs(diff) <= delta) {
+    if (std::abs(diff) <= config.alpha) {
       return 0.5f * diff * diff;
     } else {
-      return delta * (std::abs(diff) - 0.5f * delta);
+      return config.alpha * (std::abs(diff) - 0.5f * config.alpha);
     }
   }
 
@@ -188,11 +196,11 @@ public:
 class FairLossMetric: public RegressionMetric<FairLossMetric> {
 public:
   explicit FairLossMetric(const MetricConfig& config) :RegressionMetric<FairLossMetric>(config) {
-    fair_c_ = static_cast<double>(config.fair_c);
   }
 
-  inline static double LossOnPoint(float label, double score, double, double c) {
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig& config) {
     const double x = std::fabs(score - label);
+    const double c = config.fair_c;
     return c * x - c * c * std::log(1.0f + x / c);
   }
 
@@ -207,7 +215,7 @@ public:
   explicit PoissonMetric(const MetricConfig& config) :RegressionMetric<PoissonMetric>(config) {
   }
 
-  inline static double LossOnPoint(float label, double score, double, double) {
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
     const double eps = 1e-10f;
     if (score < eps) {
       score = eps;
@@ -218,6 +226,75 @@ public:
     return "poisson";
   }
 };
+
+
+/*! \brief Mape regression loss for regression task */
+class MAPEMetric : public RegressionMetric<MAPEMetric> {
+public:
+  explicit MAPEMetric(const MetricConfig& config) :RegressionMetric<MAPEMetric>(config) {
+  }
+
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
+    return std::fabs((label - score)) / std::max(1.0f, std::fabs(label));
+  }
+  inline static const char* Name() {
+    return "mape";
+  }
+};
+
+class GammaMetric : public RegressionMetric<GammaMetric> {
+public:
+  explicit GammaMetric(const MetricConfig& config) :RegressionMetric<GammaMetric>(config) {
+  }
+
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
+    const double psi = 1.0;
+    const double theta = -1.0 / score;
+    const double a = psi;
+    const double b = -std::log(-theta);
+    const double c = 1. / psi * std::log(label / psi) - std::log(label) - std::lgamma(1.0 / psi);
+    return -((label * theta - b) / a + c);
+  }
+  inline static const char* Name() {
+    return "gamma";
+  }
+};
+
+
+class GammaDevianceMetric : public RegressionMetric<GammaDevianceMetric> {
+public:
+  explicit GammaDevianceMetric(const MetricConfig& config) :RegressionMetric<GammaDevianceMetric>(config) {
+  }
+
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
+    const double epsilon = 1.0e-9;
+    const double tmp = label / (score + epsilon);
+    return tmp - std::log(tmp) - 1;
+  }
+  inline static const char* Name() {
+    return "gamma-deviance";
+  }
+  inline static double AverageLoss(double sum_loss, double) {
+    return sum_loss * 2;
+  }
+};
+
+class TweedieMetric : public RegressionMetric<TweedieMetric> {
+public:
+  explicit TweedieMetric(const MetricConfig& config) :RegressionMetric<TweedieMetric>(config) {
+  }
+
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig& config) {
+    const double rho = config.tweedie_variance_power;
+    const double a = label * std::exp((1 - rho) * std::log(score)) / (1 - rho);
+    const double b = std::exp((2 - rho) * std::log(score)) / (2 - rho);
+    return -a + b;
+  }
+  inline static const char* Name() {
+    return "tweedie";
+  }
+};
+
 
 }  // namespace LightGBM
 #endif   // LightGBM_METRIC_REGRESSION_METRIC_HPP_

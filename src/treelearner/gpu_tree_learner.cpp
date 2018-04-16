@@ -1071,8 +1071,8 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
   }
 }
 
-void GPUTreeLearner::FindBestThresholds() {
-  SerialTreeLearner::FindBestThresholds();
+void GPUTreeLearner::FindBestSplits() {
+  SerialTreeLearner::FindBestSplits();
 
 #if GPU_DEBUG >= 3
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {

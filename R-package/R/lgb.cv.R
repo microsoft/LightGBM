@@ -3,6 +3,7 @@ CVBooster <- R6Class(
   cloneable = FALSE,
   public = list(
     best_iter = -1,
+    best_score = -1,
     record_evals = list(),
     boosters = list(),
     initialize = function(x) {
@@ -15,10 +16,8 @@ CVBooster <- R6Class(
   )
 )
 
-#' Main CV logic for LightGBM
-#'
-#' Main CV logic for LightGBM
-#'
+#' @title Main CV logic for LightGBM
+#' @name lgb.cv
 #' @param params List of parameters
 #' @param data a \code{lgb.Dataset} object, used for CV
 #' @param nrounds number of CV rounds
@@ -56,7 +55,7 @@ CVBooster <- R6Class(
 #'        If early stopping occurs, the model will have 'best_iter' field
 #' @param callbacks list of callback functions
 #'        List of callback functions that are applied at each iteration.
-#' @param ... other parameters, see parameters.md for more informations
+#' @param ... other parameters, see Parameters.rst for more informations
 #' 
 #' @return a trained model \code{lgb.CVBooster}.
 #' 
@@ -106,6 +105,10 @@ lgb.cv <- function(params = list(),
   params <- lgb.check.eval(params, eval)
   fobj <- NULL
   feval <- NULL
+
+  if (nrounds <= 0) {
+    stop("nrounds should be greater than zero")
+  }
   
   # Check for objective (function or not)
   if (is.function(params$objective)) {
@@ -136,7 +139,13 @@ lgb.cv <- function(params = list(),
   if (!is.null(predictor)) {
     begin_iteration <- predictor$current_iter() + 1
   }
-  end_iteration <- begin_iteration + nrounds - 1
+  # Check for number of rounds passed as parameter - in case there are multiple ones, take only the first one
+  n_trees <- c("num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds")
+  if (any(names(params) %in% n_trees)) {
+    end_iteration <- begin_iteration + params[[which(names(params) %in% n_trees)[1]]] - 1
+  } else {
+    end_iteration <- begin_iteration + nrounds - 1
+  }
   
   # Check for training dataset type correctness
   if (!lgb.is.Dataset(data)) {
@@ -145,10 +154,10 @@ lgb.cv <- function(params = list(),
     }
     data <- lgb.Dataset(data, label = label)
   }
-
+  
   # Check for weights
   if (!is.null(weight)) {
-    data$set_info("weight", weight)
+    data$setinfo("weight", weight)
   }
   
   # Update parameters with parsed parameters
@@ -174,7 +183,7 @@ lgb.cv <- function(params = list(),
   if (!is.null(folds)) {
     
     # Check for list of folds or for single value
-    if (!is.list(folds) | length(folds) < 2) {
+    if (!is.list(folds) || length(folds) < 2) {
       stop(sQuote("folds"), " must be a list with 2 or more elements that are vectors of indices for each CV-fold")
     }
     
@@ -193,12 +202,13 @@ lgb.cv <- function(params = list(),
                                nrow(data),
                                stratified,
                                getinfo(data, "label"),
+                               getinfo(data, "group"),
                                params)
     
   }
   
   # Add printing log callback
-  if (verbose > 0 & eval_freq > 0) {
+  if (verbose > 0 && eval_freq > 0) {
     callbacks <- add.cb(callbacks, cb.print.evaluation(eval_freq))
   }
   
@@ -207,24 +217,52 @@ lgb.cv <- function(params = list(),
     callbacks <- add.cb(callbacks, cb.record.evaluation())
   }
   
-  # Add early stopping callback
-  if (!is.null(early_stopping_rounds)) {
-    if (early_stopping_rounds > 0) {
-      callbacks <- add.cb(callbacks, cb.early.stop(early_stopping_rounds, verbose = verbose))
+  # Check for early stopping passed as parameter when adding early stopping callback
+  early_stop <- c("early_stopping_round", "early_stopping_rounds", "early_stopping")
+  if (any(names(params) %in% early_stop)) {
+    if (params[[which(names(params) %in% early_stop)[1]]] > 0) {
+      callbacks <- add.cb(callbacks, cb.early.stop(params[[which(names(params) %in% early_stop)[1]]], verbose = verbose))
+    }
+  } else {
+    if (!is.null(early_stopping_rounds)) {
+      if (early_stopping_rounds > 0) {
+        callbacks <- add.cb(callbacks, cb.early.stop(early_stopping_rounds, verbose = verbose))
+      }
     }
   }
   
   # Categorize callbacks
   cb <- categorize.callbacks(callbacks)
   
-  # Construct booster using a list apply
-  bst_folds <- lapply(seq_along(folds), function(k) {
-    dtest <- slice(data, folds[[k]])
-    dtrain <- slice(data, unlist(folds[-k]))
-    booster <- Booster$new(params, dtrain)
-    booster$add_valid(dtest, "valid")
-    list(booster = booster)
-  })
+  # Construct booster using a list apply, check if requires group or not
+  if (!is.list(folds[[1]])) {
+    bst_folds <- lapply(seq_along(folds), function(k) {
+      dtest <- slice(data, folds[[k]])
+      dtrain <- slice(data, seq_len(nrow(data))[-folds[[k]]])
+      setinfo(dtrain, "weight", getinfo(data, "weight")[-folds[[k]]])
+      setinfo(dtrain, "init_score", getinfo(data, "init_score")[-folds[[k]]])
+      setinfo(dtest, "weight", getinfo(data, "weight")[folds[[k]]])
+      setinfo(dtest, "init_score", getinfo(data, "init_score")[folds[[k]]])
+      booster <- Booster$new(params, dtrain)
+      booster$add_valid(dtest, "valid")
+      list(booster = booster)
+    })
+  } else {
+    bst_folds <- lapply(seq_along(folds), function(k) {
+      dtest <- slice(data, folds[[k]]$fold)
+      dtrain <- slice(data, (seq_len(nrow(data)))[-folds[[k]]$fold])
+      setinfo(dtrain, "weight", getinfo(data, "weight")[-folds[[k]]$fold])
+      setinfo(dtrain, "init_score", getinfo(data, "init_score")[-folds[[k]]$fold])
+      setinfo(dtrain, "group", getinfo(data, "group")[-folds[[k]]$group])
+      setinfo(dtest, "weight", getinfo(data, "weight")[folds[[k]]$fold])
+      setinfo(dtest, "init_score", getinfo(data, "init_score")[folds[[k]]$fold])
+      setinfo(dtest, "group", getinfo(data, "group")[folds[[k]]$group])
+      booster <- Booster$new(params, dtrain)
+      booster$add_valid(dtest, "valid")
+      list(booster = booster)
+    })
+  }
+  
   
   # Create new booster
   cv_booster <- CVBooster$new(bst_folds)
@@ -236,7 +274,7 @@ lgb.cv <- function(params = list(),
   env$end_iteration <- end_iteration
   
   # Start training model using number of iterations to start and end with
-  for (i in seq(from = begin_iteration, to = end_iteration)) {
+  for (i in seq.int(from = begin_iteration, to = end_iteration)) {
     
     # Overwrite iteration in environment
     env$iteration <- i
@@ -280,35 +318,58 @@ lgb.cv <- function(params = list(),
 }
 
 # Generates random (stratified if needed) CV folds
-generate.cv.folds <- function(nfold, nrows, stratified, label, params) {
+generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
   
-  # Cannot do it for rank
-  if (exists('objective', where = params) && is.character(params$objective) && params$objective == "lambdarank") {
-    stop("\n\tAutomatic generation of CV-folds is not implemented for lambdarank!\n", "\tConsider providing pre-computed CV-folds through the 'folds=' parameter.\n")
-  }
-  
-  # Shuffle
-  rnd_idx <- sample(seq_len(nrows))
-  
-  # Request stratified folds
-  if (isTRUE(stratified) && length(label) == length(rnd_idx)) {
+  # Check for group existence
+  if (is.null(group)) {
     
-    y <- label[rnd_idx]
-    y <- factor(y)
-    folds <- lgb.stratified.folds(y, nfold)
+    # Shuffle
+    rnd_idx <- sample.int(nrows)
+    
+    # Request stratified folds
+    if (isTRUE(stratified) && params$objective %in% c("binary", "multiclass") && length(label) == length(rnd_idx)) {
+      
+      y <- label[rnd_idx]
+      y <- factor(y)
+      folds <- lgb.stratified.folds(y, nfold)
+      
+    } else {
+      
+      # Make simple non-stratified folds
+      folds <- list()
+      
+      # Loop through each fold
+      for (i in seq_len(nfold)) {
+        kstep <- length(rnd_idx) %/% (nfold - i + 1)
+        folds[[i]] <- rnd_idx[seq_len(kstep)]
+        rnd_idx <- rnd_idx[-seq_len(kstep)]
+      }
+      
+    }
     
   } else {
     
+    # When doing group, stratified is not possible (only random selection)
+    if (nfold > length(group)) {
+      stop("\n\tYou requested too many folds for the number of available groups.\n")
+    }
+    
+    # Degroup the groups
+    ungrouped <- inverse.rle(list(lengths = group, values = seq_along(group)))
+    
+    # Can't stratify, shuffle
+    rnd_idx <- sample.int(length(group))
+    
     # Make simple non-stratified folds
-    kstep <- length(rnd_idx) %/% nfold
     folds <- list()
     
     # Loop through each fold
-    for (i in seq_len(nfold - 1)) {
-      folds[[i]] <- rnd_idx[seq_len(kstep)]
-      rnd_idx <- rnd_idx[-(seq_len(kstep))]
+    for (i in seq_len(nfold)) {
+      kstep <- length(rnd_idx) %/% (nfold - i + 1)
+      folds[[i]] <- list(fold = which(ungrouped %in% rnd_idx[seq_len(kstep)]),
+                         group = rnd_idx[seq_len(kstep)])
+      rnd_idx <- rnd_idx[-seq_len(kstep)]
     }
-    folds[[nfold]] <- rnd_idx
     
   }
   
@@ -332,16 +393,17 @@ lgb.stratified.folds <- function(y, k = 10) {
   ## is too small, we just do regular unstratified CV
   if (is.numeric(y)) {
     
-    cuts <- floor(length(y) / k)
+    cuts <- length(y) %/% k
     if (cuts < 2) { cuts <- 2 }
     if (cuts > 5) { cuts <- 5 }
     y <- cut(y,
-             unique(stats::quantile(y, probs = seq(0, 1, length = cuts))),
+             unique(stats::quantile(y, probs = seq.int(0, 1, length.out = cuts))),
              include.lowest = TRUE)
     
   }
   
   if (k < length(y)) {
+    
     ## Reset levels so that the possible levels and
     ## the levels in the vector are the same
     y <- factor(as.character(y))
@@ -361,7 +423,7 @@ lgb.stratified.folds <- function(y, k = 10) {
       
       ## Add enough random integers to get  length(seqVector) == numInClass[i]
       if (numInClass[i] %% k > 0) {
-        seqVector <- c(seqVector, sample(seq_len(k), numInClass[i] %% k))
+        seqVector <- c(seqVector, sample.int(k, numInClass[i] %% k))
       }
       
       ## Shuffle the integers for fold assignment and assign to this classes's data
@@ -377,7 +439,8 @@ lgb.stratified.folds <- function(y, k = 10) {
   
   # Return data
   out <- split(seq(along = y), foldVector)
-  `names<-`(out, NULL)
+  names(out) <- NULL
+  out
 }
 
 lgb.merge.cv.result <- function(msg, showsd = TRUE) {

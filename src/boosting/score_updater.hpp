@@ -58,6 +58,14 @@ public:
       score_[offset + i] += val;
     }
   }
+
+  inline void MultiplyScore(double val, int cur_tree_id) {
+    int64_t offset = cur_tree_id * num_data_;
+    #pragma omp parallel for schedule(static)
+    for (int64_t i = 0; i < num_data_; ++i) {
+      score_[offset + i] *= val;
+    }
+  }
   /*!
   * \brief Using tree model to get prediction number, then adding to scores for all data
   *        Note: this function generally will be used on validation data too.
@@ -65,7 +73,8 @@ public:
   * \param cur_tree_id Current tree for multiclass training
   */
   inline void AddScore(const Tree* tree, int cur_tree_id) {
-    tree->AddPredictionToScore(data_, num_data_, score_.data() + cur_tree_id * num_data_);
+    const size_t offset = static_cast<size_t>(num_data_) * cur_tree_id;
+    tree->AddPredictionToScore(data_, num_data_, score_.data() + offset);
   }
   /*!
   * \brief Adding prediction score, only used for training data.
@@ -75,7 +84,8 @@ public:
   * \param cur_tree_id Current tree for multiclass training
   */
   inline void AddScore(const TreeLearner* tree_learner, const Tree* tree, int cur_tree_id) {
-    tree_learner->AddPredictionToScore(tree, score_.data() + cur_tree_id * num_data_);
+    const size_t offset = static_cast<size_t>(num_data_) * cur_tree_id;
+    tree_learner->AddPredictionToScore(tree, score_.data() + offset);
   }
   /*!
   * \brief Using tree model to get prediction number, then adding to scores for parts of data
@@ -87,10 +97,12 @@ public:
   */
   inline void AddScore(const Tree* tree, const data_size_t* data_indices,
                        data_size_t data_cnt, int cur_tree_id) {
-    tree->AddPredictionToScore(data_, data_indices, data_cnt, score_.data() + cur_tree_id * num_data_);
+    const size_t offset = static_cast<size_t>(num_data_) * cur_tree_id;
+    tree->AddPredictionToScore(data_, data_indices, data_cnt, score_.data() + offset);
   }
   /*! \brief Pointer of score */
   inline const double* score() const { return score_.data(); }
+
   inline data_size_t num_data() const { return num_data_; }
 
   /*! \brief Disable copy */

@@ -1,5 +1,5 @@
-#' Main training logic for LightGBM
-#' 
+#' @title Main training logic for LightGBM
+#' @name lgb.train
 #' @param params List of parameters
 #' @param data a \code{lgb.Dataset} object, used for training
 #' @param nrounds number of training rounds
@@ -27,9 +27,10 @@
 #'        If there's more than one, will check all of them
 #'        Returns the model with (best_iter + early_stopping_rounds)
 #'        If early stopping occurs, the model will have 'best_iter' field
+#' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model into a predictor model which frees up memory and the original datasets
 #' @param callbacks list of callback functions
 #'        List of callback functions that are applied at each iteration.
-#' @param ... other parameters, see parameters.md for more informations
+#' @param ... other parameters, see Parameters.rst for more informations
 #' 
 #' @return a trained booster model \code{lgb.Booster}.
 #' 
@@ -70,6 +71,7 @@ lgb.train <- function(params = list(),
                       categorical_feature = NULL,
                       early_stopping_rounds = NULL,
                       callbacks = list(),
+                      reset_data = FALSE,
                       ...) {
   
   # Setup temporary variables
@@ -81,6 +83,10 @@ lgb.train <- function(params = list(),
   fobj <- NULL
   feval <- NULL
   
+  if (nrounds <= 0) {
+    stop("nrounds should be greater than zero")
+  }
+
   # Check for objective (function or not)
   if (is.function(params$objective)) {
     fobj <- params$objective
@@ -110,7 +116,14 @@ lgb.train <- function(params = list(),
   if (!is.null(predictor)) {
     begin_iteration <- predictor$current_iter() + 1
   }
-  end_iteration <- begin_iteration + nrounds - 1
+  # Check for number of rounds passed as parameter - in case there are multiple ones, take only the first one
+  n_rounds <- c("num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds")
+  if (any(names(params) %in% n_rounds)) {
+    end_iteration <- begin_iteration + params[[which(names(params) %in% n_rounds)[1]]] - 1
+  } else {
+    end_iteration <- begin_iteration + nrounds - 1
+  }
+  
   
   # Check for training dataset type correctness
   if (!lgb.is.Dataset(data)) {
@@ -123,7 +136,7 @@ lgb.train <- function(params = list(),
     # One or more validation dataset
     
     # Check for list as input and type correctness by object
-    if (!is.list(valids) || !all(sapply(valids, lgb.is.Dataset))) {
+    if (!is.list(valids) || !all(vapply(valids, lgb.is.Dataset, logical(1)))) {
       stop("lgb.train: valids must be a list of lgb.Dataset elements")
     }
     
@@ -184,19 +197,26 @@ lgb.train <- function(params = list(),
   }
   
   # Add printing log callback
-  if (verbose > 0 & eval_freq > 0) {
+  if (verbose > 0 && eval_freq > 0) {
     callbacks <- add.cb(callbacks, cb.print.evaluation(eval_freq))
   }
   
   # Add evaluation log callback
-  if (record & length(valids) > 0) {
+  if (record && length(valids) > 0) {
     callbacks <- add.cb(callbacks, cb.record.evaluation())
   }
   
-  # Add early stopping callback
-  if (!is.null(early_stopping_rounds)) {
-    if (early_stopping_rounds > 0) {
-      callbacks <- add.cb(callbacks, cb.early.stop(early_stopping_rounds, verbose = verbose))
+  # Check for early stopping passed as parameter when adding early stopping callback
+  early_stop <- c("early_stopping_round", "early_stopping_rounds", "early_stopping")
+  if (any(names(params) %in% early_stop)) {
+    if (params[[which(names(params) %in% early_stop)[1]]] > 0) {
+      callbacks <- add.cb(callbacks, cb.early.stop(params[[which(names(params) %in% early_stop)[1]]], verbose = verbose))
+    }
+  } else {
+    if (!is.null(early_stopping_rounds)) {
+      if (early_stopping_rounds > 0) {
+        callbacks <- add.cb(callbacks, cb.early.stop(early_stopping_rounds, verbose = verbose))
+      }
     }
   }
   
@@ -215,9 +235,9 @@ lgb.train <- function(params = list(),
   env$model <- booster
   env$begin_iteration <- begin_iteration
   env$end_iteration <- end_iteration
-
+  
   # Start training model using number of iterations to start and end with
-  for (i in seq(from = begin_iteration, to = end_iteration)) {
+  for (i in seq.int(from = begin_iteration, to = end_iteration)) {
     
     # Overwrite iteration in environment
     env$iteration <- i
@@ -256,6 +276,22 @@ lgb.train <- function(params = list(),
     
     # Check for early stopping and break if needed
     if (env$met_early_stop) break
+    
+  }
+  
+  # Check for booster model conversion to predictor model
+  if (reset_data) {
+    
+    # Store temporarily model data elsewhere
+    booster_old <- list(best_iter = booster$best_iter,
+                        best_score = booster$best_score,
+                        record_evals = booster$record_evals)
+    
+    # Reload model
+    booster <- lgb.load(model_str = booster$save_model_to_string())
+    booster$best_iter <- booster_old$best_iter
+    booster$best_score <- booster_old$best_score
+    booster$record_evals <- booster_old$record_evals
     
   }
   

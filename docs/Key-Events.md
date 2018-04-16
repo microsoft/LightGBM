@@ -1,4 +1,4 @@
-# Table/List of key modifications of LightGBM
+# Table/List of Key Modifications of LightGBM
 
 The list includes the commits where the major feature added is considered working with the least amount of flaws. This is useful if you are trying to get a specific commit, such as the first properly working commit for categorical support.
 
@@ -6,6 +6,20 @@ The list includes the commits where the major feature added is considered workin
 
 | Date | Commit | Type | Description |
 | --- | --- | --- | --- |
+| 02/09/2017 | [574d780](https://github.com/Microsoft/LightGBM/pull/878) | Docs | Readme Badges (Pull Request 878) |
+| 14/08/2017 | [1b8910b](https://github.com/Microsoft/LightGBM/pull/825) | Feature | SHAP Feature Importance (Pull Request 825) |
+| 02/08/2017 | [f2bec2b](https://github.com/Microsoft/LightGBM/pull/762) | Feature | Improved categorical feature support (Pull Request 762) |
+| 30/07/2017 | [00cb04a](https://github.com/Microsoft/LightGBM/pull/747) | Feature | Better missing value handle (Pull Request 747) |
+| 13/07/2017 | [3421bc6](https://github.com/Microsoft/LightGBM/pull/664) | Feature | Automatic Compiler for R-package compilation (Pull Request 664) |
+| 10/07/2017 | [ce999b7](https://github.com/Microsoft/LightGBM/pull/678) | Feature | Random Forest mode (Pull Request 678) |
+| 22/06/2017 | [d862b3e](https://github.com/Microsoft/LightGBM/pull/642) | CIntegration | Travis OSX Support (Pull Request 642) |
+| 20/06/2017 | [80c641c](https://github.com/Microsoft/LightGBM/pull/635) | Release | Python pip package (Pull Request 635) |
+| 18/06/2017 | [4d2aa84](https://github.com/Microsoft/LightGBM/pull/634) | CIntegration | AppVeyor Support (Pull Request 634) |
+| 06/06/2017 | [2c9ce59](https://github.com/Microsoft/LightGBM/pull/592) | Release | R-package version 0.2 (Pull Request 592) |
+| 05/06/2017 | [f98d75f](https://github.com/Microsoft/LightGBM/pull/584) | Feature | Use custom compiler for R-package (Pull Request 584) |
+| 29/05/2017 | [993bbd5](https://github.com/Microsoft/LightGBM/pull/559) | Parameter | Early Stopping for predictions (Pull Request 559) |
+| 26/05/2017 | [3abff37](https://github.com/Microsoft/LightGBM/commit/3abff370bb353293e4a03e516111dd02785fbd97) | Feature | Parameter to disable missing values (Commit) |
+| 21/05/2017 | [4cf9376](https://github.com/Microsoft/LightGBM/commit/4cf9376d6652d3d7afa82e98dfb363af9275969d) | Feature | Limitation of threads for dataset construction (Commit) |
 | 15/05/2017 | [e984b0d](https://github.com/Microsoft/LightGBM/pull/516) | Feature | Support for missing values (Pull Request 516) |
 | 14/05/2017 | [358553d](https://github.com/Microsoft/LightGBM/pull/511) | Docs | Interactive External Website (Pull Request 511) |
 | 04/05/2017 | [ca30b8c](https://github.com/Microsoft/LightGBM/pull/489) | Docs | Read The Docs (Pull Request 489) |
@@ -52,6 +66,20 @@ The list includes the commits where the major feature added is considered workin
 
 ## Modification List
 
+* 02/09/2017 [Microsoft/LightGBM@574d780](https://github.com/Microsoft/LightGBM/pull/878): Docs: Readme Badges (Pull Request 878)
+* 14/08/2017 [Microsoft/LightGBM@1b8910b](https://github.com/Microsoft/LightGBM/pull/825): Feature: SHAP Feature Importance (Pull Request 825)
+* 02/08/2017 [Microsoft/LightGBM@f2bec2b](https://github.com/Microsoft/LightGBM/pull/762): Feature: Improved categorical feature support (Pull Request 762)
+* 30/07/2017 [Microsoft/LightGBM@00cb04a](https://github.com/Microsoft/LightGBM/pull/747): Feature: Better missing value handle (Pull Request 747)
+* 13/07/2017 [Microsoft/LightGBM@3421bc6](https://github.com/Microsoft/LightGBM/pull/664): Feature: Automatic Compiler for R-package compilation (Pull Request 664)
+* 10/07/2017 [Microsoft/LightGBM@ce999b7](https://github.com/Microsoft/LightGBM/pull/678): Feature: Random Forest mode (Pull Request 678)
+* 22/06/2017 [Microsoft/LightGBM@d862b3e](https://github.com/Microsoft/LightGBM/pull/642): CIntegration: Travis OSX Support (Pull Request 642)
+* 20/06/2017 [Microsoft/LightGBM@80c641c](https://github.com/Microsoft/LightGBM/pull/635): Release: Python pip package (Pull Request 635)
+* 18/06/2017 [Microsoft/LightGBM@4d2aa84](https://github.com/Microsoft/LightGBM/pull/634): CIntegration: AppVeyor Support (Pull Request 634)
+* 06/06/2017 [Microsoft/LightGBM@2c9ce59](https://github.com/Microsoft/LightGBM/pull/592): Release: R-package version 0.2 (Pull Request 592) 
+* 05/06/2017 [Microsoft/LightGBM@f98d75f](https://github.com/Microsoft/LightGBM/pull/584): Feature: Use custom compiler for R-package (Pull Request 584)
+* 29/05/2017 [Microsoft/LightGBM@993bbd5](https://github.com/Microsoft/LightGBM/pull/559): Parameter: Early Stopping for predictions (Pull Request 559)
+* 26/05/2017 [Microsoft/LightGBM@3abff37](https://github.com/Microsoft/LightGBM/commit/3abff370bb353293e4a03e516111dd02785fbd97): Feature: Parameter to disable missing values (Commit)
+* 21/05/2017 [Microsoft/LightGBM@4cf9376](https://github.com/Microsoft/LightGBM/commit/4cf9376d6652d3d7afa82e98dfb363af9275969d): Feature: Limitation of threads for dataset construction (Commit)
 * 15/05/2017 [Microsoft/LightGBM@e984b0d](https://github.com/Microsoft/LightGBM/pull/516): Feature: Support for missing values (Pull Request 516)
 * 14/05/2017 [Microsoft/LightGBM@358553d](https://github.com/Microsoft/LightGBM/pull/511): Docs: Interactive External Website (Pull Request 511)
 * 04/05/2017 [Microsoft/LightGBM@ca30b8c](https://github.com/Microsoft/LightGBM/pull/489): Docs: Read The Docs (Pull Request 489)

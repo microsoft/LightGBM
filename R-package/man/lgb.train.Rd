@@ -15,7 +15,8 @@ lgb.cv(params = list(), data, nrounds = 10, nfold = 3, label = NULL,
 lgb.train(params = list(), data, nrounds = 10, valids = list(),
   obj = NULL, eval = NULL, verbose = 1, record = TRUE, eval_freq = 1L,
   init_model = NULL, colnames = NULL, categorical_feature = NULL,
-  early_stopping_rounds = NULL, callbacks = list(), ...)
+  early_stopping_rounds = NULL, callbacks = list(), reset_data = FALSE,
+  ...)
 
 lightgbm(data, label = NULL, weight = NULL, params = list(),
   nrounds = 10, verbose = 1, eval_freq = 1L,
@@ -74,9 +75,11 @@ If early stopping occurs, the model will have 'best_iter' field}
 \item{callbacks}{list of callback functions
 List of callback functions that are applied at each iteration.}
 
-\item{...}{other parameters, see parameters.md for more informations}
+\item{...}{other parameters, see Parameters.rst for more informations}
 
 \item{valids}{a list of \code{lgb.Dataset} objects, used for validation}
+
+\item{reset_data}{Boolean, setting it to TRUE (not the default value) will transform the booster model into a predictor model which frees up memory and the original datasets}
 
 \item{boosting}{boosting type. \code{gbdt}, \code{dart}}
 
@@ -132,7 +135,7 @@ If early stopping occurs, the model will have 'best_iter' field}
 \item{callbacks}{list of callback functions
 List of callback functions that are applied at each iteration.}
 
-\item{...}{other parameters, see parameters.md for more informations}
+\item{...}{other parameters, see Parameters.rst for more informations}
 }
 \value{
 a trained model \code{lgb.CVBooster}.
@@ -140,10 +143,6 @@ a trained model \code{lgb.CVBooster}.
 a trained booster model \code{lgb.Booster}.
 }
 \description{
-Main CV logic for LightGBM
-
-Main training logic for LightGBM
-
 Simple interface for training an lightgbm model.
 Its documentation is combined with lgb.train.
 }
@@ -182,4 +181,3 @@ model <- lgb.train(params,
 }
 
 }
-

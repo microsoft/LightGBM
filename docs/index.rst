@@ -10,22 +10,30 @@ Welcome to LightGBM's documentation!
    :maxdepth: 1
    :caption: Contents:
 
-   Installation Guide <https://github.com/Microsoft/LightGBM/wiki/Installation-Guide>
+   Installation Guide <Installation-Guide>
    Quick Start <Quick-Start>
-   Python Quick Start <Python-intro>
-   Features <https://github.com/Microsoft/LightGBM/wiki/Features>
-   Experiments <https://github.com/Microsoft/LightGBM/wiki/Experiments>
+   Python Quick Start <Python-Intro>
+   Features <Features>
+   Experiments <Experiments>
    Parameters <Parameters>
-   Parameters Tuning <Parameters-tuning>
-   Python API Reference <python/lightgbm>
-   Parallel Learning Guide <https://github.com/Microsoft/LightGBM/wiki/Parallel-Learning-Guide>
+   Parameters Tuning <Parameters-Tuning>
+   Python API <Python-API>
+   Parallel Learning Guide <Parallel-Learning-Guide>
    GPU Tutorial <GPU-Tutorial>
+   Advanced Topics <Advanced-Topics>
    FAQ <FAQ>
-   Development Guide <development>
+   Development Guide <Development-Guide>
 
-Indices and tables
+.. toctree::
+   :hidden:
+
+   GPU-Performance
+   GPU-Targets
+   GPU-Windows
+   gcc-Tips
+   README
+
+Indices and Tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

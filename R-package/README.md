@@ -4,29 +4,64 @@ LightGBM R Package
 Installation
 ------------
 
-Windows users may need to run with administrator rights (either R or the command prompt, depending on the way you are installing this package). Rtools must be installed for Windows. Linux users might require the appropriate user write permissions for packages.
+### Preparation
 
-You can use a command prompt to install via command line:
+You need to install git and [CMake](https://cmake.org/) first.
 
+Note: 32-bit R/Rtools is not supported.
+
+#### Windows Preparation
+
+Installing [Rtools](https://cran.r-project.org/bin/windows/Rtools/) is mandatory, and only support the 64-bit version. It requires to add to PATH the Rtools MinGW64 folder, if it was not done automatically during installation.
+
+The default compiler is Visual Studio (or [MS Build](https://www.visualstudio.com/downloads/)) in Windows, with an automatic fallback to Rtools or any [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) available (this means if you have only Rtools and CMake, it will compile fine).
+
+To force the usage of Rtools / MinGW, you can set `use_mingw` to `TRUE` in `R-package/src/install.libs.R`.
+
+For users who wants to install online with GPU or want to choose a specific compiler, please check the end of this document for installation using a helper package ([Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/)).
+
+**Warning for Windows users**: it is recommended to use *Visual Studio* for its better multi-threading efficency in Windows for many core systems. For very simple systems (dual core computers or worse), MinGW64 is recommended for maximum performance. If you do not know what to choose, it is recommended to use [Visual Studio](https://www.visualstudio.com/downloads/), the default compiler. **Do not try using MinGW in Windows on many core systems. It may result in 10x slower results than Visual Studio.**
+
+#### macOS Preparation
+
+gcc with OpenMP support must be installed first. Refer to [Installation-Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#macos) for installing gcc with OpenMP support.
+
+### Install
+
+Install LightGBM R-package with the following command:
+
+```sh
+git clone --recursive https://github.com/Microsoft/LightGBM
+cd LightGBM/R-package
+# export CXX=g++-7 CC=gcc-7 # for macOS
+R CMD INSTALL --build . --no-multiarch
 ```
-cd R-package
-R CMD INSTALL --build  .
-```
+
+Or build a self-contained R package which can be installed afterwards:
+
+```sh
+git clone --recursive https://github.com/Microsoft/LightGBM
+cd LightGBM/R-package
+Rscript build_package.R
+# export CXX=g++-7 CC=gcc-7 # for macOS
+R CMD INSTALL lightgbm_2.1.0.tar.gz --no-multiarch
+``` 
+
+Note: for the build with Visual Studio/MSBuild in Windows, you should use the Windows CMD or Powershell.
+
+Windows users may need to run with administrator rights (either R or the command prompt, depending on the way you are installing this package). Linux users might require the appropriate user write permissions for packages.
+
+Set `use_gpu` to `TRUE` in `R-package/src/install.libs.R` to enable the build with GPU support. You will need to install Boost and OpenCL first: details for installation can be found in [Installation-Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version).
 
 You can also install directly from R using the repository with `devtools`:
 
 ```r
-devtools::install_github("Microsoft/LightGBM", subdir = "R-package")
+library(devtools)
+options(devtools.install.args = "--no-multiarch") # if you have 64-bit R only, you can skip this
+install_github("Microsoft/LightGBM", subdir = "R-package")
 ```
 
-For the `devtools` install scenario, you can safely ignore this message:
-
-```r
-Warning message:
-GitHub repo contains submodules, may not function as expected! 
-```
-
-If you want to build the self-contained R package, you can run ```unix_build_package.sh```(for UNIX) or ```win_build_package.cmd ```(for Windows). Then use ```R CMD INSTALL lightgbm_0.1.tar.gz``` to install.
+If you are using a precompiled dll/lib locally, you can move the dll/lib into LightGBM root folder, modify `LightGBM/R-package/src/install.libs.R`'s 2nd line (change `use_precompile <- FALSE` to `use_precompile <- TRUE`), and install R-package as usual.
 
 When your package installation is done, you can check quickly if your LightGBM R package is working by running the following:
 
@@ -38,53 +73,60 @@ dtrain <- lgb.Dataset(train$data, label=train$label)
 params <- list(objective="regression", metric="l2")
 model <- lgb.cv(params, dtrain, 10, nfold=5, min_data=1, learning_rate=1, early_stopping_rounds=10)
 ```
-### OSX installation 
 
-The default installation cannot successfully complete in OSX because clang doesn't support OpenMP.
+Installation with Precompiled dll/lib from R Using GitHub
+---------------------------------------------------------
 
-You can use the following script to change default compiler to gcc, then compile LightGBM R package:
+You can install LightGBM R-package from GitHub with devtools thanks to a helper package for LightGBM.
 
-```bash
-brew install gcc --without-multilib
-mkdir -p ~/.R
-touch ~/.R/Makevars
-cat <<EOF >>~/.R/Makevars
-C=gcc-6
-CXX=g++-6
-CXX1X=g++-6
-LDFLAGS=-L/usr/local/Cellar/gcc/6.3.0/lib
-CPPFLAGS=-I/usr/local/Cellar/gcc/6.3.0/include
-SHLIB_OPENMP_CFLAGS = -fopenmp
-SHLIB_OPENMP_CXXFLAGS = -fopenmp
-SHLIB_OPENMP_FCFLAGS = -fopenmp
-SHLIB_OPENMP_FFLAGS = -fopenmp
-EOF
+### Prerequisites
+
+You will need:
+
+* Precompiled LightGBM dll/lib
+* MinGW / Visual Studio / gcc (depending on your OS and your needs) with make in PATH environment variable
+* git in PATH environment variable
+* [CMake](https://cmake.org/) in PATH environment variable
+* [lgbdl](https://github.com/Laurae2/lgbdl/) R-package, which can be installed using `devtools::install_github("Laurae2/lgbdl")`
+* [Rtools](https://cran.r-project.org/bin/windows/Rtools/) if using Windows
+
+In addition, if you are using a Visual Studio precompiled DLL, assuming you do not have Visual Studio installed (if you have it installed, ignore the warnings below):
+
+* Visual Studio 2015/2017 precompiled DLL: download and install Visual Studio Runtime for [2015](https://www.microsoft.com/en-us/download/details.aspx?id=52685)/[2017](https://go.microsoft.com/fwlink/?LinkId=746572) (you will get an error about MSVCP140.dll missing otherwise)
+
+Once you have all this setup, you can use `lgb.dl` from `lgbdl` package to install LightGBM from repository.
+
+For instance, you can install the R package from LightGBM master commit of GitHub with Visual Studio using the following from R:
+
+```r
+lgb.dl(commit = "master",
+       compiler = "vs",
+       repo = "https://github.com/Microsoft/LightGBM")
 ```
 
-Note:
+You may also install using a precompiled dll/lib using the following from R:
 
-* For `LDFLAGS=-L/usr/local/Cellar/gcc/6.3.0/lib` and `CPPFLAGS=-I/usr/local/Cellar/gcc/6.3.0/include`, you may need to change `6.3.0` to your gcc version.
-* For `gcc-6` and `g++-6`, you may need to change to your gcc version (like `gcc-7` and `g++7` if using gcc with version 7).
-* For `CXX1X`, if you are using R 3.4 or a more recent version, you must change it to `CXX11`.
+```r
+lgb.dl(commit = "master",
+       libdll = "C:\\LightGBM\\windows\\x64\\DLL\\lib_lightgbm.dll", # YOUR PRECOMPILED DLL
+       repo = "https://github.com/Microsoft/LightGBM")
+```
 
-To check your LightGBM installation, the test is identical to Linux/Windows versions (check the test provided just before OSX Installation part)
+You may also install online using a LightGBM with proper GPU support using Visual Studio (as an example here) using the following from R:
 
-Performance note
-------------
+```r
+lgb.dl(commit = "master",
+       compiler = "vs", # Remove this for MinGW + GPU installation
+       repo = "https://github.com/Microsoft/LightGBM",
+       use_gpu = TRUE)
+```
 
-With `gcc`, it is recommended to use `-O3 -mtune=native` instead of the default `-O2 -mtune=core2` by modifying the appropriate file (`Makeconf` or `Makevars`) if you want to achieve maximum speed.
+For more details about options, please check [Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/) R-package.
 
-Benchmark example using Intel Ivy Bridge CPU on 1M x 1K dataset:
-
-| Compilation Flag | Performance Index |
-| --- | ---: |
-| `-O2 -mtune=core2` | 100.00% |
-| `-O2 -mtune=native` | 100.90% |
-| `-O3 -mtune=native` | 102.78% |
-| `-O3 -ffast-math -mtune=native` | 100.64% |
+You may also read [Microsoft/LightGBM#912](https://github.com/Microsoft/LightGBM/issues/912#issuecomment-329496254) for a visual example for LightGBM installation in Windows with Visual Studio.
 
 Examples
-------------
+--------
 
 Please visit [demo](demo):
 

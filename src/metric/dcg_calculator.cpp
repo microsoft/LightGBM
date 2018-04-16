@@ -25,7 +25,7 @@ void DCGCalculator::Init(std::vector<double> input_label_gain) {
   }
 }
 
-double DCGCalculator::CalMaxDCGAtK(data_size_t k, const float* label, data_size_t num_data) {
+double DCGCalculator::CalMaxDCGAtK(data_size_t k, const label_t* label, data_size_t num_data) {
   double ret = 0.0f;
   // counts for all labels
   std::vector<data_size_t> label_cnt(label_gain_.size(), 0);
@@ -50,13 +50,12 @@ double DCGCalculator::CalMaxDCGAtK(data_size_t k, const float* label, data_size_
 }
 
 void DCGCalculator::CalMaxDCG(const std::vector<data_size_t>& ks,
-                              const float* label,
+                              const label_t* label,
                               data_size_t num_data,
                               std::vector<double>* out) {
   std::vector<data_size_t> label_cnt(label_gain_.size(), 0);
   // counts for all labels
   for (data_size_t i = 0; i < num_data; ++i) {
-    if (static_cast<size_t>(label[i]) >= label_cnt.size()) { Log::Fatal("Label excel %d", label[i]); }
     ++label_cnt[static_cast<int>(label[i])];
   }
   double cur_result = 0.0f;
@@ -82,12 +81,12 @@ void DCGCalculator::CalMaxDCG(const std::vector<data_size_t>& ks,
 }
 
 
-double DCGCalculator::CalDCGAtK(data_size_t k, const float* label,
+double DCGCalculator::CalDCGAtK(data_size_t k, const label_t* label,
                                 const double* score, data_size_t num_data) {
   // get sorted indices by score
-  std::vector<data_size_t> sorted_idx;
+  std::vector<data_size_t> sorted_idx(num_data);
   for (data_size_t i = 0; i < num_data; ++i) {
-    sorted_idx.emplace_back(i);
+    sorted_idx[i] = i;
   }
   std::sort(sorted_idx.begin(), sorted_idx.end(),
            [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
@@ -102,12 +101,12 @@ double DCGCalculator::CalDCGAtK(data_size_t k, const float* label,
   return dcg;
 }
 
-void DCGCalculator::CalDCG(const std::vector<data_size_t>& ks, const float* label,
+void DCGCalculator::CalDCG(const std::vector<data_size_t>& ks, const label_t* label,
                            const double * score, data_size_t num_data, std::vector<double>* out) {
   // get sorted indices by score
-  std::vector<data_size_t> sorted_idx;
+  std::vector<data_size_t> sorted_idx(num_data);
   for (data_size_t i = 0; i < num_data; ++i) {
-    sorted_idx.emplace_back(i);
+    sorted_idx[i] = i;
   }
   std::sort(sorted_idx.begin(), sorted_idx.end(),
             [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
@@ -124,6 +123,19 @@ void DCGCalculator::CalDCG(const std::vector<data_size_t>& ks, const float* labe
     }
     (*out)[i] = cur_result;
     cur_left = cur_k;
+  }
+}
+
+void DCGCalculator::CheckLabel(const label_t* label, data_size_t num_data) {
+  for (data_size_t i = 0; i < num_data; ++i) {
+    label_t delta = std::fabs(label[i] - static_cast<int>(label[i]));
+    if (delta > kEpsilon) {
+      Log::Fatal("label should be int type (met %f) for ranking task, \
+                 for the gain of label, please set the label_gain parameter.", label[i]);
+    }
+    if (static_cast<size_t>(label[i]) >= label_gain_.size() || label[i] < 0) {
+      Log::Fatal("label (%d) excel the max range %d", label[i], label_gain_.size());
+    }
   }
 }
 

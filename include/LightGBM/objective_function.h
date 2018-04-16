@@ -35,13 +35,23 @@ public:
 
   virtual bool IsConstantHessian() const { return false; }
 
-  virtual bool BoostFromAverage() const { return false; }
+  virtual bool IsRenewTreeOutput() const { return false; }
+
+  virtual double RenewTreeOutput(double ori_output, const double*,
+                                 const data_size_t*,
+                                 const data_size_t*,
+                                 data_size_t) const { return ori_output; }
+
+  virtual double BoostFromScore() const { return 0.0f; }
 
   virtual bool SkipEmptyClass() const { return false; }
 
-  virtual int NumTreePerIteration() const { return 1; }
+  virtual int NumModelPerIteration() const { return 1; }
 
   virtual int NumPredictOneRow() const { return 1; }
+
+  /*! \brief The prediction should be accurate or not. True will disable early stopping for prediction. */
+  virtual bool NeedAccuratePrediction() const { return true; }
 
   virtual void ConvertOutput(const double* input, double* output) const {
     output[0] = input[0];

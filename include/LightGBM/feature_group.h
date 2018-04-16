@@ -160,16 +160,23 @@ public:
 
   inline data_size_t Split(
     int sub_feature,
-    uint32_t threshold,
-    uint32_t default_bin_for_zero,
+    const uint32_t* threshold,
+    int num_threshold,
+    bool default_left,
     data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const {
 
     uint32_t min_bin = bin_offsets_[sub_feature];
     uint32_t max_bin = bin_offsets_[sub_feature + 1] - 1;
     uint32_t default_bin = bin_mappers_[sub_feature]->GetDefaultBin();
-    return bin_data_->Split(min_bin, max_bin, default_bin, default_bin_for_zero,
-      threshold, data_indices, num_data, lte_indices, gt_indices, bin_mappers_[sub_feature]->bin_type());
+    if (bin_mappers_[sub_feature]->bin_type() == BinType::NumericalBin) {
+      auto missing_type = bin_mappers_[sub_feature]->missing_type();
+      return bin_data_->Split(min_bin, max_bin, default_bin, missing_type, default_left,
+                              *threshold, data_indices, num_data, lte_indices, gt_indices);
+    } else {
+      return bin_data_->SplitCategorical(min_bin, max_bin, default_bin, threshold, num_threshold, data_indices, num_data, lte_indices, gt_indices);
+    }
+
   }
   /*!
   * \brief From bin to feature value
@@ -184,13 +191,13 @@ public:
   * \brief Save binary data to file
   * \param file File want to write
   */
-  void SaveBinaryToFile(FILE* file) const {
-    fwrite(&is_sparse_, sizeof(is_sparse_), 1, file);
-    fwrite(&num_feature_, sizeof(num_feature_), 1, file);
+  void SaveBinaryToFile(const VirtualFileWriter* writer) const {
+    writer->Write(&is_sparse_, sizeof(is_sparse_));
+    writer->Write(&num_feature_, sizeof(num_feature_));
     for (int i = 0; i < num_feature_; ++i) {
-      bin_mappers_[i]->SaveBinaryToFile(file);
+      bin_mappers_[i]->SaveBinaryToFile(writer);
     }
-    bin_data_->SaveBinaryToFile(file);
+    bin_data_->SaveBinaryToFile(writer);
   }
   /*!
   * \brief Get sizes in byte of this object

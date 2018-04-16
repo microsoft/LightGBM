@@ -18,10 +18,11 @@ Predictor <- R6Class(
     },
     
     # Initialize will create a starter model
-    initialize = function(modelfile) {
-      
+    initialize = function(modelfile, ...) {
+      params <- list(...)
+      private$params <- lgb.params2str(params)
       # Create new lgb handle
-      handle <- lgb.new.handle()
+      handle <- 0.0
       
       # Check if handle is a character
       if (is.character(modelfile)) {
@@ -62,6 +63,7 @@ Predictor <- R6Class(
                        num_iteration = NULL,
                        rawscore = FALSE,
                        predleaf = FALSE,
+                       predcontrib = FALSE,
                        header = FALSE,
                        reshape = FALSE) {
       
@@ -85,7 +87,9 @@ Predictor <- R6Class(
           as.integer(header),
           as.integer(rawscore),
           as.integer(predleaf),
+          as.integer(predcontrib),
           as.integer(num_iteration),
+          private$params,
           lgb.c_str(tmp_filename))
         
         # Get predictions from file
@@ -97,6 +101,7 @@ Predictor <- R6Class(
         
         # Not a file, we need to predict from R object
         num_row <- nrow(data)
+        
         npred <- 0L
         
         # Check number of predictions to do
@@ -106,6 +111,7 @@ Predictor <- R6Class(
                           as.integer(num_row),
                           as.integer(rawscore),
                           as.integer(predleaf),
+                          as.integer(predcontrib),
                           as.integer(num_iteration))
         
         # Pre-allocate empty vector
@@ -121,10 +127,14 @@ Predictor <- R6Class(
                             as.integer(ncol(data)),
                             as.integer(rawscore),
                             as.integer(predleaf),
-                            as.integer(num_iteration))
+                            as.integer(predcontrib),
+                            as.integer(num_iteration),
+                            private$params)
           
         } else if (is(data, "dgCMatrix")) {
-          
+          if (length(data@p) > 2147483647) {
+            stop("Cannot support large CSC matrix")
+          }
           # Check if data is a dgCMatrix (sparse matrix, column compressed format)
           preds <- lgb.call("LGBM_BoosterPredictForCSC_R",
                             ret = preds,
@@ -137,7 +147,9 @@ Predictor <- R6Class(
                             nrow(data),
                             as.integer(rawscore),
                             as.integer(predleaf),
-                            as.integer(num_iteration))
+                            as.integer(predcontrib),
+                            as.integer(num_iteration),
+                            private$params)
           
         } else {
           
@@ -159,7 +171,7 @@ Predictor <- R6Class(
       
       # Data reshaping
       
-      if (predleaf) {
+      if (predleaf | predcontrib) {
         
         # Predict leaves only, reshaping is mandatory
         preds <- matrix(preds, ncol = npred_per_case, byrow = TRUE)
@@ -178,5 +190,6 @@ Predictor <- R6Class(
     
   ),
   private = list(handle = NULL,
-                 need_free_handle = FALSE)
+                 need_free_handle = FALSE,
+                 params = "")
 )

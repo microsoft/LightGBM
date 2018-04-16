@@ -6,13 +6,8 @@ lgb.is.Dataset <- function(x) {
   lgb.check.r6.class(x, "lgb.Dataset") # Checking if it is of class lgb.Dataset or not
 }
 
-# use 64bit data to store address
-lgb.new.handle <- function() {
-  0.0 # Return numeric type in R
-}
-
 lgb.is.null.handle <- function(x) {
-  is.null(x) || x == 0 # Is it null or zero?
+  is.null(x) || is.na(x)
 }
 
 lgb.encode.char <- function(arr, len) {
@@ -25,25 +20,24 @@ lgb.encode.char <- function(arr, len) {
 }
 
 lgb.call <- function(fun_name, ret, ...) {
-  
   # Set call state to a zero value
   call_state <- 0L
   
   # Check for a ret call
   if (!is.null(ret)) {
-    call_state <- .Call(fun_name, ..., ret, call_state, PACKAGE = "lightgbm") # Call with ret
+    call_state <- .Call(fun_name, ..., ret, call_state, PACKAGE = "lib_lightgbm") # Call with ret
   } else {
-    call_state <- .Call(fun_name, ..., call_state, PACKAGE = "lightgbm") # Call without ret
+    call_state <- .Call(fun_name, ..., call_state, PACKAGE = "lib_lightgbm") # Call without ret
   }
-  
+  call_state <- as.integer(call_state)
   # Check for call state value post call
   if (call_state != 0L) {
-    
+
     # Perform text error buffering
     buf_len <- 200L
     act_len <- 0L
     err_msg <- raw(buf_len)
-    err_msg <- .Call("LGBM_GetLastError_R", buf_len, act_len, err_msg, PACKAGE = "lightgbm")
+    err_msg <- .Call("LGBM_GetLastError_R", buf_len, act_len, err_msg, PACKAGE = "lib_lightgbm")
     
     # Check error buffer
     if (act_len > buf_len) {
@@ -53,14 +47,14 @@ lgb.call <- function(fun_name, ret, ...) {
                         buf_len,
                         act_len,
                         err_msg,
-                        PACKAGE = "lightgbm")
+                        PACKAGE = "lib_lightgbm")
     }
     
     # Return error
-    stop(paste0("api error: ", lgb.encode.char(err_msg, act_len)))
-    
+    stop("api error: ", lgb.encode.char(err_msg, act_len))
+
   }
-  
+
   return(ret)
   
 }
@@ -116,7 +110,7 @@ lgb.params2str <- function(params, ...) {
   for (key in names(params)) {
     
     # Join multi value first
-    val <- paste0(params[[key]], collapse = ",")
+    val <- paste0(format(params[[key]], scientific = FALSE), collapse = ",")
     if (nchar(val) <= 0) next # Skip join
     
     # Join key value
@@ -151,18 +145,8 @@ lgb.c_str <- function(x) {
 
 lgb.check.r6.class <- function(object, name) {
   
-  # Check for non-existence of R6 class
-  if (!("R6" %in% class(object))) {
-    return(FALSE)
-  }
-  
-  # Check for non-existance of a named class
-  if (!(name %in% class(object))) {
-    return(FALSE)
-  }
-  
-  # Return default value
-  return(TRUE)
+  # Check for non-existence of R6 class or named class
+  all(c("R6", name) %in% class(object))
   
 }
 
@@ -176,7 +160,12 @@ lgb.check.params <- function(params) {
 lgb.check.obj <- function(params, obj) {
   
   # List known objectives in a vector
-  OBJECTIVES <- c("regression", "regression_l1", "regression_l2", "huber", "fair", "poisson", "binary", "lambdarank", "multiclass")
+  OBJECTIVES <- c("regression", "regression_l1", "regression_l2", "mean_squared_error", "mse", "l2_root", "root_mean_squared_error", "rmse",
+                  "mean_absolute_error", "mae", "quantile", 
+                  "huber", "fair", "poisson", "binary", "lambdarank", 
+                  "multiclass", "softmax", "multiclassova", "multiclass_ova", "ova", "ovr",
+                  "xentropy", "cross_entropy", "xentlambda", "cross_entropy_lambda", "mean_absolute_percentage_error", "mape",
+                  "gamma", "tweedie")
   
   # Check whether the objective is empty or not, and take it from params if needed
   if (!is.null(obj)) { params$objective <- obj }
@@ -222,33 +211,7 @@ lgb.check.eval <- function(params, eval) {
       
     }
     
-  }
-  
-  # Check if evaluation metric is not a function
-  if (!is.function(eval)) {
-    
-    # Check if there is no parameter
-    if (length(params$metric) == 0) {
-      
-      # Add default metric
-      params$metric <- switch(
-        params$objective,
-        regression = "l2", # MSE
-        regression_l1 = "l1", # MAE
-        regression_l2 = "l2", # MSE
-        huber = "l1", # Proxy for MAE
-        fair = "l1", # Proxy for MAE
-        poisson = "poisson", # Poisson
-        binary = "binary_logloss", # Logloss
-        multiclass = "multi_logloss", # Multiclass logloss
-        lambdarank = "ndcg", # Normalized discounted cumulative gain
-        stop("lgb.check.eval: No default metric available for objective ", sQuote(params$objective)) # Unknown objective parameter
-      )
-      
-    }
-    
-  }
-  
+  } 
   # Return parameters
   return(params)
 }
