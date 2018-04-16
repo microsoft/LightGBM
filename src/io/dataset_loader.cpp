@@ -1,6 +1,7 @@
 #include <LightGBM/utils/openmp_wrapper.h>
-
 #include <LightGBM/utils/log.h>
+#include <LightGBM/utils/array_args.h>
+
 #include <LightGBM/dataset_loader.h>
 #include <LightGBM/network.h>
 
@@ -367,6 +368,17 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     dataset->group_feature_cnt_.push_back(tmp_ptr_group_feature_cnt[i]);
   }
   mem_ptr += sizeof(int) * (dataset->num_groups_);
+
+  const int8_t* tmp_ptr_monotone_type = reinterpret_cast<const int8_t*>(mem_ptr);
+  dataset->monotone_types_.clear();
+  for (int i = 0; i < dataset->num_features_; ++i) {
+    dataset->monotone_types_.push_back(tmp_ptr_monotone_type[i]);
+  }
+  mem_ptr += sizeof(int8_t) * (dataset->num_features_);
+
+  if (ArrayArgs<int8_t>::CheckAllZero(dataset->monotone_types_)) {
+    dataset->monotone_types_.clear();
+  }
 
   // get feature names
   dataset->feature_names_.clear();

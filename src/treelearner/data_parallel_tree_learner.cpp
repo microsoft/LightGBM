@@ -187,6 +187,8 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
       this->smaller_leaf_splits_->sum_gradients(),
       this->smaller_leaf_splits_->sum_hessians(),
       GetGlobalDataCountInLeaf(this->smaller_leaf_splits_->LeafIndex()),
+      this->smaller_leaf_splits_->min_constraint(),
+      this->smaller_leaf_splits_->max_constraint(),
       &smaller_split);
     smaller_split.feature = real_feature_index;
     if (smaller_split > smaller_bests_per_thread[tid]) {
@@ -205,6 +207,8 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
       this->larger_leaf_splits_->sum_gradients(),
       this->larger_leaf_splits_->sum_hessians(),
       GetGlobalDataCountInLeaf(this->larger_leaf_splits_->LeafIndex()),
+      this->larger_leaf_splits_->min_constraint(),
+      this->larger_leaf_splits_->max_constraint(),
       &larger_split);
     larger_split.feature = real_feature_index;
     if (larger_split > larger_bests_per_thread[tid]) {

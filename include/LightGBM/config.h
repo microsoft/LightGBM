@@ -126,6 +126,7 @@ public:
   double max_conflict_rate = 0.0f;
   bool enable_bundle = true;
   bool has_header = false;
+  std::vector<int8_t> monotone_constraints;
   /*! \brief Index or column name of label, default is the first column
    * And add an prefix "name:" while using column name */
   std::string label_column = "";
@@ -444,7 +445,8 @@ struct ParameterAlias {
       { "workers", "machines" },
       { "nodes", "machines" },
       { "subsample_for_bin", "bin_construct_sample_cnt" },
-      { "metric_freq", "output_freq" }
+      { "metric_freq", "output_freq" },
+      { "mc", "monotone_constraints" }
     });
     const std::unordered_set<std::string> parameter_set({
       "config", "config_file", "task", "device",
@@ -477,7 +479,7 @@ struct ParameterAlias {
       "histogram_pool_size", "is_provide_training_metric", "machine_list_filename", "machines",
       "zero_as_missing", "init_score_file", "valid_init_score_file", "is_predict_contrib",
       "max_cat_threshold",  "cat_smooth", "min_data_per_group", "cat_l2", "max_cat_to_onehot",
-      "alpha", "reg_sqrt", "tweedie_variance_power"
+      "alpha", "reg_sqrt", "tweedie_variance_power", "monotone_constraints"
     });
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {

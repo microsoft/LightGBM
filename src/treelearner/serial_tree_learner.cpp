@@ -480,6 +480,8 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
       smaller_leaf_splits_->sum_gradients(),
       smaller_leaf_splits_->sum_hessians(),
       smaller_leaf_splits_->num_data_in_leaf(),
+      smaller_leaf_splits_->min_constraint(),
+      smaller_leaf_splits_->max_constraint(),
       &smaller_split);
     smaller_split.feature = real_fidx;
     if (smaller_split > smaller_best[tid]) {
@@ -501,6 +503,8 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(const std::vector<int8_t>& 
       larger_leaf_splits_->sum_gradients(),
       larger_leaf_splits_->sum_hessians(),
       larger_leaf_splits_->num_data_in_leaf(),
+      larger_leaf_splits_->min_constraint(),
+      larger_leaf_splits_->max_constraint(),
       &larger_split);
     larger_split.feature = real_fidx;
     if (larger_split > larger_best[tid]) {
@@ -530,7 +534,8 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
   const int inner_feature_index = train_data_->InnerFeatureIndex(best_split_info.feature);
   // left = parent
   *left_leaf = best_leaf;
-  if (train_data_->FeatureBinMapper(inner_feature_index)->bin_type() == BinType::NumericalBin) {
+  bool is_numerical_split = train_data_->FeatureBinMapper(inner_feature_index)->bin_type() == BinType::NumericalBin;
+  if (is_numerical_split) {
     auto threshold_double = train_data_->RealThreshold(inner_feature_index, best_split_info.threshold);
     // split tree, will return right leaf
     *right_leaf = tree->Split(best_leaf,
@@ -574,18 +579,29 @@ void SerialTreeLearner::Split(Tree* tree, int best_leaf, int* left_leaf, int* ri
   #ifdef DEBUG
   CHECK(best_split_info.left_count == data_partition_->leaf_count(best_leaf));
   #endif
-
+  auto p_left = smaller_leaf_splits_.get();
+  auto p_right = larger_leaf_splits_.get();
   // init the leaves that used on next iteration
   if (best_split_info.left_count < best_split_info.right_count) {
-    smaller_leaf_splits_->Init(*left_leaf, data_partition_.get(),
-                               best_split_info.left_sum_gradient,
-                               best_split_info.left_sum_hessian);
-    larger_leaf_splits_->Init(*right_leaf, data_partition_.get(),
-                              best_split_info.right_sum_gradient,
-                              best_split_info.right_sum_hessian);
+    smaller_leaf_splits_->Init(*left_leaf, data_partition_.get(), best_split_info.left_sum_gradient, best_split_info.left_sum_hessian);
+    larger_leaf_splits_->Init(*right_leaf, data_partition_.get(), best_split_info.right_sum_gradient, best_split_info.right_sum_hessian);
   } else {
     smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(), best_split_info.right_sum_gradient, best_split_info.right_sum_hessian);
     larger_leaf_splits_->Init(*left_leaf, data_partition_.get(), best_split_info.left_sum_gradient, best_split_info.left_sum_hessian);
+    p_right = smaller_leaf_splits_.get();
+    p_left = larger_leaf_splits_.get();
+  }
+  p_left->SetValueConstraint(best_split_info.min_constraint, best_split_info.max_constraint);
+  p_right->SetValueConstraint(best_split_info.min_constraint, best_split_info.max_constraint);
+  if (is_numerical_split) {
+    double mid = (best_split_info.left_output + best_split_info.right_output) / 2.0f;
+    if (best_split_info.monotone_type < 0) {
+      p_left->SetValueConstraint(mid, best_split_info.max_constraint);
+      p_right->SetValueConstraint(best_split_info.min_constraint, mid);
+    } else if (best_split_info.monotone_type > 0) {
+      p_left->SetValueConstraint(best_split_info.min_constraint, mid);
+      p_right->SetValueConstraint(mid, best_split_info.max_constraint);
+    }
   }
 }
 
