@@ -157,5 +157,5 @@ E501 can be ignored (line too long).
    :target: https://github.com/Microsoft/LightGBM/blob/master/LICENSE
 .. |Python Versions| image:: https://img.shields.io/pypi/pyversions/lightgbm.svg
    :target: https://pypi.python.org/pypi/lightgbm
-.. |PyPI Version| image:: https://badge.fury.io/py/lightgbm.svg
-   :target: https://badge.fury.io/py/lightgbm
+.. |PyPI Version| image:: https://img.shields.io/pypi/v/lightgbm.svg
+   :target: https://pypi.python.org/pypi/lightgbm
