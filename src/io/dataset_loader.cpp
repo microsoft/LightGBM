@@ -767,8 +767,8 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
 
   if (feature_names_.empty()) {
     // -1 means doesn't use this feature
-    dataset->used_feature_map_ = std::vector<int>(sample_values.size(), -1);
-    dataset->num_total_features_ = static_cast<int>(sample_values.size());
+    dataset->num_total_features_ = std::max(static_cast<int>(sample_values.size()), parser->TotalColumns() - 1);
+    dataset->used_feature_map_ = std::vector<int>(dataset->num_total_features_, -1);
   } else {
     dataset->used_feature_map_ = std::vector<int>(feature_names_.size(), -1);
     dataset->num_total_features_ = static_cast<int>(feature_names_.size());

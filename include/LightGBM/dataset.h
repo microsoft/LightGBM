@@ -264,6 +264,8 @@ public:
   virtual void ParseOneLine(const char* str,
                             std::vector<std::pair<int, double>>* out_features, double* out_label) const = 0;
 
+  virtual int TotalColumns() const = 0;
+
   /*!
   * \brief Create a object of parser, will auto choose the format depend on file
   * \param filename One Filename of data

@@ -14,8 +14,8 @@ namespace LightGBM {
 
 class CSVParser: public Parser {
 public:
-  explicit CSVParser(int label_idx)
-    :label_idx_(label_idx) {
+  explicit CSVParser(int label_idx, int total_columns)
+    :label_idx_(label_idx), total_columns_(total_columns) {
   }
   inline void ParseOneLine(const char* str,
     std::vector<std::pair<int, double>>* out_features, double* out_label) const override {
@@ -40,14 +40,19 @@ public:
       }
     }
   }
+
+  inline int TotalColumns() const override {
+    return total_columns_;
+  }
 private:
   int label_idx_ = 0;
+  int total_columns_ = -1;
 };
 
 class TSVParser: public Parser {
 public:
-  explicit TSVParser(int label_idx)
-    :label_idx_(label_idx) {
+  explicit TSVParser(int label_idx, int total_columns)
+    :label_idx_(label_idx), total_columns_(total_columns) {
   }
   inline void ParseOneLine(const char* str,
     std::vector<std::pair<int, double>>* out_features, double* out_label) const override {
@@ -70,8 +75,13 @@ public:
       }
     }
   }
+
+  inline int TotalColumns() const override {
+    return total_columns_;
+  }
 private:
   int label_idx_ = 0;
+  int total_columns_ = -1;
 };
 
 class LibSVMParser: public Parser {
@@ -103,6 +113,10 @@ public:
       }
       str = Common::SkipSpaceAndTab(str);
     }
+  }
+
+  inline int TotalColumns() const override {
+    return -1;
   }
 private:
   int label_idx_ = 0;

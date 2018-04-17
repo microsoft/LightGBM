@@ -137,8 +137,10 @@ Parser* Parser::CreateParser(const char* filename, bool has_header, int num_feat
       type = DataType::LIBSVM;
     } else if (tab_cnt == tab_cnt2 && tab_cnt > 0) {
       type = DataType::TSV;
+      CHECK(tab_cnt == tab_cnt2);
     } else if (comma_cnt == comma_cnt2 && comma_cnt > 0) {
       type = DataType::CSV;
+      CHECK(comma_cnt == comma_cnt2);
     }
   }
   if (type == DataType::INVALID) {
@@ -151,11 +153,11 @@ Parser* Parser::CreateParser(const char* filename, bool has_header, int num_feat
   }
   else if (type == DataType::TSV) {
     label_idx = GetLabelIdxForTSV(line1, num_features, label_idx);
-    ret.reset(new TSVParser(label_idx));
+    ret.reset(new TSVParser(label_idx, tab_cnt + 1));
   }
   else if (type == DataType::CSV) {
     label_idx = GetLabelIdxForCSV(line1, num_features, label_idx);
-    ret.reset(new CSVParser(label_idx));
+    ret.reset(new CSVParser(label_idx, comma_cnt + 1));
   }
 
   if (label_idx < 0) {
