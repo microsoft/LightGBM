@@ -788,7 +788,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     }
   }
   dataset->set_feature_names(feature_names_);
-  std::vector<std::unique_ptr<BinMapper>> bin_mappers(sample_values.size());
+  std::vector<std::unique_ptr<BinMapper>> bin_mappers(dataset->num_total_features_);
   const data_size_t filter_cnt = static_cast<data_size_t>(
     static_cast<double>(io_config_.min_data_in_leaf* sample_data.size()) / dataset->num_data_);
 
@@ -817,21 +817,22 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     // if have multi-machines, need to find bin distributed
     // different machines will find bin for different features
 
-    int total_num_feature = static_cast<int>(sample_values.size());
-    total_num_feature = Network::GlobalSyncUpByMin(total_num_feature);
+    int num_total_features = dataset->num_total_features_;
+    num_total_features = Network::GlobalSyncUpByMin(num_total_features);
+    dataset->num_total_features_ = num_total_features;
     // start and len will store the process feature indices for different machines
     // machine i will find bins for features in [ start[i], start[i] + len[i] )
     std::vector<int> start(num_machines);
     std::vector<int> len(num_machines);
-    int step = (total_num_feature + num_machines - 1) / num_machines;
+    int step = (num_total_features + num_machines - 1) / num_machines;
     if (step < 1) { step = 1; }
 
     start[0] = 0;
     for (int i = 0; i < num_machines - 1; ++i) {
-      len[i] = std::min(step, total_num_feature - start[i]);
+      len[i] = std::min(step, num_total_features - start[i]);
       start[i + 1] = start[i] + len[i];
     }
-    len[num_machines - 1] = total_num_feature - start[num_machines - 1];
+    len[num_machines - 1] = num_total_features - start[num_machines - 1];
     OMP_INIT_EX();
     #pragma omp parallel for schedule(guided)
     for (int i = 0; i < len[rank]; ++i) {
@@ -859,7 +860,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     // get size of bin mapper with max_bin size
     int type_size = BinMapper::SizeForSpecificBin(max_bin);
     // since sizes of different feature may not be same, we expand all bin mapper to type_size
-    comm_size_t buffer_size = type_size * total_num_feature;
+    comm_size_t buffer_size = type_size * num_total_features;
     auto input_buffer = std::vector<char>(buffer_size);
     auto output_buffer = std::vector<char>(buffer_size);
 
@@ -886,7 +887,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, 
     // gather global feature bin mappers
     Network::Allgather(input_buffer.data(), size_start.data(), size_len.data(), output_buffer.data(), buffer_size);
     // restore features bins from buffer
-    for (int i = 0; i < total_num_feature; ++i) {
+    for (int i = 0; i < num_total_features; ++i) {
       if (ignore_features_.count(i) > 0) {
         bin_mappers[i] = nullptr;
         continue;
