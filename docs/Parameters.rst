@@ -576,9 +576,9 @@ Objective Parameters
 Metric Parameters
 -----------------
 
--  ``metric``, default=\ ``""``, type=multi-enum
+-  ``metric``, default=\ ``''``, type=multi-enum
 
-   -  if ``""``(empty string or not specific), metric corresponding to specified application will be used
+   -  if ``''``(empty string or not specific), metric corresponding to specified application will be used
 
    -  ``l1``, absolute loss, alias=\ ``mean_absolute_error``, ``mae``, ``regression_l1``
 
