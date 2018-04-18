@@ -298,14 +298,10 @@ public:
 
   static double CalculateSplittedLeafOutput(double sum_gradients, double sum_hessians, double l1, double l2, double max_delta_step) {
     double ret = -ThresholdL1(sum_gradients, l1) / (sum_hessians + l2);
-    if (max_delta_step <= 0.0f) {
+    if (max_delta_step <= 0.0f || std::fabs(ret) <= max_delta_step) {
       return ret;
     } else {
-      if (std::fabs(ret) > max_delta_step) {
-        return Common::Sign(ret) * max_delta_step;
-      } else {
-        return ret;
-      }
+      return Common::Sign(ret) * max_delta_step;
     }
   }
 
