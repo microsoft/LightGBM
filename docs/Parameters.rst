@@ -245,6 +245,14 @@ Learning Control Parameters
 
    -  L2 regularization
 
+-  ``max_delta_step``, default=\ ``0``, type=double, alias=\ ``max_tree_output``, ``max_leaf_output``
+
+   -  Used to limit the max output of tree leaves
+
+   -  when <= 0, there is not constraint
+
+   -  the final max output of leaves is ``learning_rate*max_delta_step``
+
 -  ``min_split_gain``, default=\ ``0``, type=double, alias=\ ``min_gain_to_split``
 
    -  the minimal gain to perform split

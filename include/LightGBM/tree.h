@@ -11,7 +11,6 @@
 
 namespace LightGBM {
 
-#define kMaxTreeOutput (100)
 #define kCategoricalMask (1)
 #define kDefaultLeftMask (2)
 
@@ -141,7 +140,6 @@ public:
     #pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
     for (int i = 0; i < num_leaves_; ++i) {
       leaf_value_[i] *= rate;
-      if (leaf_value_[i] > kMaxTreeOutput) { leaf_value_[i] = kMaxTreeOutput; } else if (leaf_value_[i] < -kMaxTreeOutput) { leaf_value_[i] = -kMaxTreeOutput; }
     }
     shrinkage_ *= rate;
   }
