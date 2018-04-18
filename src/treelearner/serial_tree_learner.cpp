@@ -224,7 +224,7 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* 
       sum_hess += hessians[idx];
     }
     double output = FeatureHistogram::CalculateSplittedLeafOutput(sum_grad, sum_hess,
-                                                                  tree_config_->lambda_l1, tree_config_->lambda_l2);
+                                                                  tree_config_->lambda_l1, tree_config_->lambda_l2, tree_config_->max_delta_step);
     tree->SetLeafOutput(i, output* tree->shrinkage());
     OMP_LOOP_EX_END();
   }

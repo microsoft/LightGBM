@@ -405,6 +405,7 @@ void TreeConfig::Set(const std::unordered_map<std::string, std::string>& params)
   CHECK(lambda_l1 >= 0.0f);
   GetDouble(params, "lambda_l2", &lambda_l2);
   CHECK(lambda_l2 >= 0.0f);
+  GetDouble(params, "max_delta_step", &max_delta_step);
   GetDouble(params, "min_gain_to_split", &min_gain_to_split);
   CHECK(min_gain_to_split >= 0.0f);
   GetInt(params, "num_leaves", &num_leaves);
