@@ -578,51 +578,56 @@ Metric Parameters
 
 -  ``metric``, default=\ ``''``, type=multi-enum
 
-   -  if \ ``''`` (empty string or not specific), metric corresponding to specified application will be used
+   - metric to be evaluated on the evaluation sets **in addition** to what is provided in the training arguments
 
-   -  ``l1``, absolute loss, alias=\ ``mean_absolute_error``, ``mae``, ``regression_l1``
+      -  ``''`` (empty string or not specific), metric corresponding to specified objective will be used
+         (this is possible only for pre-defined objective functions, otherwise no evaluation metric will be added)
 
-   -  ``l2``, square loss, alias=\ ``mean_squared_error``, ``mse``, ``regression_l2``, ``regression``
-
-   -  ``l2_root``, root square loss, alias=\ ``root_mean_squared_error``, ``rmse``
-
-   -  ``quantile``, `Quantile regression`_
+      - ``'None'`` (string **not** a ``None`` value), no metric registered, alias=\ ``na``
    
-   -  ``mape``, `MAPE loss`_, alias=\ ``mean_absolute_percentage_error``
+      -  ``l1``, absolute loss, alias=\ ``mean_absolute_error``, ``mae``, ``regression_l1``
+   
+      -  ``l2``, square loss, alias=\ ``mean_squared_error``, ``mse``, ``regression_l2``, ``regression``
+   
+      -  ``l2_root``, root square loss, alias=\ ``root_mean_squared_error``, ``rmse``
+   
+      -  ``quantile``, `Quantile regression`_
+      
+      -  ``mape``, `MAPE loss`_, alias=\ ``mean_absolute_percentage_error``
+   
+      -  ``huber``, `Huber loss`_
+   
+      -  ``fair``, `Fair loss`_
+   
+      -  ``poisson``, negative log-likelihood for `Poisson regression`_
+   
+      -  ``gamma``, negative log-likelihood for Gamma regression
+   
+      -  ``gamma_deviance``, residual deviance for Gamma regression
+   
+      -  ``tweedie``, negative log-likelihood for Tweedie regression
+   
+      -  ``ndcg``, `NDCG`_
+   
+      -  ``map``, `MAP`_, alias=\ ``mean_average_precision``
+   
+      -  ``auc``, `AUC`_
+   
+      -  ``binary_logloss``, `log loss`_, alias=\ ``binary``
+   
+      -  ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
+   
+      -  ``multi_logloss``, log loss for mulit-class classification, alias=\ ``multiclass``, ``softmax``, ``multiclassova``, ``multiclass_ova``, ``ova``, ``ovr``
+   
+      -  ``multi_error``, error rate for mulit-class classification
+   
+      -  ``xentropy``, cross-entropy (with optional linear weights), alias=\ ``cross_entropy``
+   
+      -  ``xentlambda``, "intensity-weighted" cross-entropy, alias=\ ``cross_entropy_lambda``
+   
+      -  ``kldiv``, `Kullback-Leibler divergence`_, alias=\ ``kullback_leibler``
 
-   -  ``huber``, `Huber loss`_
-
-   -  ``fair``, `Fair loss`_
-
-   -  ``poisson``, negative log-likelihood for `Poisson regression`_
-
-   -  ``gamma``, negative log-likelihood for Gamma regression
-
-   -  ``gamma_deviance``, residual deviance for Gamma regression
-
-   -  ``tweedie``, negative log-likelihood for Tweedie regression
-
-   -  ``ndcg``, `NDCG`_
-
-   -  ``map``, `MAP`_, alias=\ ``mean_average_precision``
-
-   -  ``auc``, `AUC`_
-
-   -  ``binary_logloss``, `log loss`_, alias=\ ``binary``
-
-   -  ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
-
-   -  ``multi_logloss``, log loss for mulit-class classification, alias=\ ``multiclass``, ``softmax``, ``multiclassova``, ``multiclass_ova``, ``ova``, ``ovr``
-
-   -  ``multi_error``, error rate for mulit-class classification
-
-   -  ``xentropy``, cross-entropy (with optional linear weights), alias=\ ``cross_entropy``
-
-   -  ``xentlambda``, "intensity-weighted" cross-entropy, alias=\ ``cross_entropy_lambda``
-
-   -  ``kldiv``, `Kullback-Leibler divergence`_, alias=\ ``kullback_leibler``
-
-   -  support multi metrics, separated by ``,``
+   -  support multiple metrics, separated by ``,``
 
 -  ``metric_freq``, default=\ ``1``, type=int, alias=\ ``output_freq``
 
