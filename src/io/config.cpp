@@ -340,7 +340,6 @@ void ObjectiveConfig::Set(const std::unordered_map<std::string, std::string>& pa
   GetDouble(params, "scale_pos_weight", &scale_pos_weight);
   CHECK(scale_pos_weight > 0);
   GetDouble(params, "alpha", &alpha);
-  CHECK(alpha > 0 && alpha < 1);
   GetBool(params, "reg_sqrt", &reg_sqrt);
   GetDouble(params, "tweedie_variance_power", &tweedie_variance_power);
   CHECK(tweedie_variance_power >= 1 && tweedie_variance_power < 2);
@@ -367,7 +366,6 @@ void MetricConfig::Set(const std::unordered_map<std::string, std::string>& param
   GetInt(params, "num_class", &num_class);
   CHECK(num_class > 0);
   GetDouble(params, "alpha", &alpha);
-  CHECK(alpha > 0 && alpha < 1);
   GetDouble(params, "tweedie_variance_power", &tweedie_variance_power);
   CHECK(tweedie_variance_power >= 1 && tweedie_variance_power < 2);
   std::string tmp_str = "";

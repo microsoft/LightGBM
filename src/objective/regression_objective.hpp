@@ -446,6 +446,7 @@ class RegressionQuantileloss : public RegressionL2loss {
 public:
   explicit RegressionQuantileloss(const ObjectiveConfig& config): RegressionL2loss(config) {
     alpha_ = static_cast<score_t>(config.alpha);
+    CHECK(alpha_ > 0 && alpha_ < 1);
   }
 
   explicit RegressionQuantileloss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
