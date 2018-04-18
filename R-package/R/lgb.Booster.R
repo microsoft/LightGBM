@@ -410,6 +410,7 @@ Booster <- R6Class(
                        num_iteration = NULL,
                        rawscore = FALSE,
                        predleaf = FALSE,
+                       predcontrib = FALSE,
                        header = FALSE,
                        reshape = FALSE, ...) {
       
