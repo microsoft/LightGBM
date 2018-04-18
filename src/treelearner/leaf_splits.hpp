@@ -1,6 +1,8 @@
 #ifndef LIGHTGBM_TREELEARNER_LEAF_SPLITS_HPP_
 #define LIGHTGBM_TREELEARNER_LEAF_SPLITS_HPP_
 
+#include <limits>
+
 #include <LightGBM/meta.h>
 #include "data_partition.hpp"
 
@@ -37,7 +39,15 @@ public:
     data_indices_ = data_partition->GetIndexOnLeaf(leaf, &num_data_in_leaf_);
     sum_gradients_ = sum_gradients;
     sum_hessians_ = sum_hessians;
+    min_val_ = -std::numeric_limits<double>::max();
+    max_val_ = std::numeric_limits<double>::max();
   }
+
+  void SetValueConstraint(double min, double max) {
+    min_val_ = min;
+    max_val_ = max;
+  }
+
 
   /*!
   * \brief Init splits on current leaf, it will traverse all data to sum up the results
@@ -57,6 +67,8 @@ public:
     }
     sum_gradients_ = tmp_sum_gradients;
     sum_hessians_ = tmp_sum_hessians;
+    min_val_ = -std::numeric_limits<double>::max();
+    max_val_ = std::numeric_limits<double>::max();
   }
 
   /*!
@@ -79,6 +91,8 @@ public:
     }
     sum_gradients_ = tmp_sum_gradients;
     sum_hessians_ = tmp_sum_hessians;
+    min_val_ = -std::numeric_limits<double>::max();
+    max_val_ = std::numeric_limits<double>::max();
   }
 
 
@@ -91,6 +105,8 @@ public:
     leaf_index_ = 0;
     sum_gradients_ = sum_gradients;
     sum_hessians_ = sum_hessians;
+    min_val_ = -std::numeric_limits<double>::max();
+    max_val_ = std::numeric_limits<double>::max();
   }
 
   /*!
@@ -100,6 +116,8 @@ public:
     leaf_index_ = -1;
     data_indices_ = nullptr;
     num_data_in_leaf_ = 0;
+    min_val_ = -std::numeric_limits<double>::max();
+    max_val_ = std::numeric_limits<double>::max();
   }
 
 
@@ -114,6 +132,10 @@ public:
   
   /*! \brief Get sum of hessians of current leaf */
   double sum_hessians() const { return sum_hessians_; }
+
+  double max_constraint() const { return max_val_; }
+
+  double min_constraint() const { return min_val_; }
 
   /*! \brief Get indices of data of current leaf */
   const data_size_t* data_indices() const { return data_indices_; }
@@ -132,6 +154,8 @@ private:
   double sum_hessians_;
   /*! \brief indices of data of current leaf */
   const data_size_t* data_indices_;
+  double min_val_;
+  double max_val_;
 };
 
 }  // namespace LightGBM

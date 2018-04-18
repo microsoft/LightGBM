@@ -434,6 +434,27 @@ public:
     const int sub_feature = feature2subfeature_[i];
     return feature_groups_[group]->bin_mappers_[sub_feature]->num_bin();
   }
+
+  inline int8_t FeatureMonotone(int i) const {
+    if (monotone_types_.empty()) {
+      return 0;
+    } else {
+      return monotone_types_[i];
+    }
+  }
+
+  bool HasMonotone() const {
+    if (monotone_types_.empty()) {
+      return false;
+    } else {
+      for (size_t i = 0; i < monotone_types_.size(); ++i) {
+        if (monotone_types_[i] != 0) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
   
   inline int FeatureGroupNumBin(int group) const {
     return feature_groups_[group]->num_total_bin_;
@@ -576,6 +597,7 @@ private:
   std::vector<uint64_t> group_bin_boundaries_;
   std::vector<int> group_feature_start_;
   std::vector<int> group_feature_cnt_;
+  std::vector<int8_t> monotone_types_;
   bool is_finish_load_;
 };
 

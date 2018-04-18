@@ -292,6 +292,9 @@ void IOConfig::Set(const std::unordered_map<std::string, std::string>& params) {
   GetString(params, "convert_model", &convert_model);
   GetString(params, "output_result", &output_result);
   std::string tmp_str = "";
+  if (GetString(params, "monotone_constraints", &tmp_str)) {
+    monotone_constraints = Common::StringToArray<int8_t>(tmp_str.c_str(), ',');
+  }
   if (GetString(params, "valid_data", &tmp_str)) {
     valid_data_filenames = Common::Split(tmp_str.c_str(), ',');
   }
