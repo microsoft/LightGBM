@@ -410,6 +410,7 @@ Booster <- R6Class(
                        num_iteration = NULL,
                        rawscore = FALSE,
                        predleaf = FALSE,
+                       predcontrib = FALSE,
                        header = FALSE,
                        reshape = FALSE, ...) {
       
@@ -420,7 +421,7 @@ Booster <- R6Class(
       
       # Predict on new data
       predictor <- Predictor$new(private$handle, ...)
-      predictor$predict(data, num_iteration, rawscore, predleaf, header, reshape)
+      predictor$predict(data, num_iteration, rawscore, predleaf, predcontrib, header, reshape)
       
     },
     
