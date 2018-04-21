@@ -321,8 +321,10 @@ class LGBMModel(_LGBMModelBase):
         eval_metric : string, list of strings, callable or None, optional (default=None)
             If string, it should be a built-in evaluation metric to use.
             If callable, it should be a custom evaluation metric, see note for more details.
+            In either case, the ``metric`` from the model parameters will be evaluated and used as well.
         early_stopping_rounds : int or None, optional (default=None)
             Activates early stopping. The model will train until the validation score stops improving.
+            If there's more than one, will check all of them.
             Validation error needs to decrease at least every ``early_stopping_rounds`` round(s)
             to continue training.
         verbose : bool, optional (default=True)
