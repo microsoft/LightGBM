@@ -32,7 +32,8 @@ public:
   * \param training_metrics Training metrics
   * \param output_model_filename Filename of output model
   */
-  void Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
+  void Init(const BoostingConfig* config, const Dataset* train_data,
+            const ObjectiveFunction* objective_function,
             const std::vector<const Metric*>& training_metrics) override {
     GBDT::Init(config, train_data, objective_function, training_metrics);
     random_for_drop_ = Random(gbdt_config_->drop_seed);

@@ -495,6 +495,13 @@ public:
     return feature_groups_[group]->bin_mappers_[sub_feature]->BinToValue(threshold);
   }
 
+  // given a real threshold, find the closest threshold bin
+  inline uint32_t BinThreshold(int i, double threshold_double) const {
+    const int group = feature2group_[i];
+    const int sub_feature = feature2subfeature_[i];
+    return feature_groups_[group]->bin_mappers_[sub_feature]->ValueToBin(threshold_double);
+  }
+
   inline void CreateOrderedBins(std::vector<std::unique_ptr<OrderedBin>>* ordered_bins) const {
     ordered_bins->resize(num_groups_);
     OMP_INIT_EX();

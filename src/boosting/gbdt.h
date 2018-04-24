@@ -4,6 +4,7 @@
 #include <LightGBM/boosting.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/json11.hpp>
 
 #include "score_updater.hpp"
 
@@ -14,6 +15,8 @@
 #include <memory>
 #include <mutex>
 #include <map>
+
+using namespace json11;
 
 namespace LightGBM {
 
@@ -40,7 +43,8 @@ public:
   * \param objective_function Training objective function
   * \param training_metrics Training metrics
   */
-  void Init(const BoostingConfig* gbdt_config, const Dataset* train_data, const ObjectiveFunction* objective_function,
+  void Init(const BoostingConfig* gbdt_config, const Dataset* train_data,
+            const ObjectiveFunction* objective_function,
             const std::vector<const Metric*>& training_metrics) override;
 
   /*!
@@ -452,6 +456,8 @@ protected:
   std::unique_ptr<ObjectiveFunction> loaded_objective_;
   bool average_output_;
   bool need_re_bagging_;
+
+  Json forced_splits_json_;
 };
 
 }  // namespace LightGBM

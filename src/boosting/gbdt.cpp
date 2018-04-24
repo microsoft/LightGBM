@@ -3,7 +3,6 @@
 #include <LightGBM/utils/openmp_wrapper.h>
 
 #include <LightGBM/utils/common.h>
-
 #include <LightGBM/objective_function.h>
 #include <LightGBM/metric.h>
 #include <LightGBM/prediction_early_stop.h>
@@ -74,6 +73,16 @@ void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const O
   gbdt_config_ = std::unique_ptr<BoostingConfig>(new BoostingConfig(*config));
   early_stopping_round_ = gbdt_config_->early_stopping_round;
   shrinkage_rate_ = gbdt_config_->learning_rate;
+
+  std::string forced_splits_path = config->forcedsplits_filename;
+  //load forced_splits file
+  if (forced_splits_path != "") {
+      std::ifstream forced_splits_file(forced_splits_path.c_str());
+      std::stringstream buffer;
+      buffer << forced_splits_file.rdbuf();
+      std::string err;
+      forced_splits_json_ = Json::parse(buffer.str(), err);
+  }
 
   objective_function_ = objective_function;
   num_tree_per_iteration_ = num_class_;
@@ -425,7 +434,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
         hess = hessians_.data() + bias;
       }
 
-      new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_));
+      new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_, forced_splits_json_));
     }
 
     #ifdef TIMETAG

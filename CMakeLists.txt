@@ -144,7 +144,7 @@ if(USE_MPI)
   include_directories(${MPI_CXX_INCLUDE_PATH})
 endif(USE_MPI)
 
-file(GLOB SOURCES 
+file(GLOB SOURCES
     src/application/*.cpp
     src/boosting/*.cpp
     src/io/*.cpp
