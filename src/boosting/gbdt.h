@@ -185,7 +185,7 @@ public:
         num_preb_in_one_row *= max_iteration;
       }
     } else if (is_pred_contrib) {
-      num_preb_in_one_row = max_feature_idx_ + 2; // +1 for 0-based indexing, +1 for baseline
+      num_preb_in_one_row = num_tree_per_iteration_ * (max_feature_idx_ + 2); // +1 for 0-based indexing, +1 for baseline
     }
     return num_preb_in_one_row;
   }
