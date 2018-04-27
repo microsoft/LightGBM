@@ -9,6 +9,36 @@
 #include <cstdint>
 
 #define TYPE_BITS 5
+// use .Internal(internalsID()) to uuid
+#define R_INTERNALS_UUID "2fdf6c18-697a-4ba7-b8ef-11c0d92f1327"
+
+
+#ifdef R_VER_ABOVE_35
+#define NAMED_BITS 16
+struct lgbm_sxpinfo {
+  unsigned int type : 5;
+  unsigned int scalar : 1;
+  unsigned int obj : 1;
+  unsigned int alt : 1;
+  unsigned int gp : 16;
+  unsigned int mark : 1;
+  unsigned int debug : 1;
+  unsigned int trace : 1;
+  unsigned int spare : 1;
+  unsigned int gcgen : 1;
+  unsigned int gccls : 3;
+  unsigned int named : NAMED_BITS;
+  unsigned int extra : 32 - NAMED_BITS;
+};
+
+// 64bit pointer
+#if INTPTR_MAX == INT64_MAX
+typedef ptrdiff_t R_xlen_t;
+#else
+typedef int R_xlen_t;
+#endif
+
+#else
 struct lgbm_sxpinfo {
   unsigned int type : 5;
   unsigned int obj : 1;
@@ -21,6 +51,9 @@ struct lgbm_sxpinfo {
   unsigned int gcgen : 1;
   unsigned int gccls : 3;
 };
+
+typedef int R_xlen_t;
+#endif
 
 struct lgbm_primsxp {
   int offset;
@@ -71,8 +104,8 @@ typedef struct LGBM_SER {
 } LGBM_SER, *LGBM_SE;
 
 struct lgbm_vecsxp {
-  int length;
-  int truelength;
+  R_xlen_t length;
+  R_xlen_t truelength;
 };
 
 typedef struct VECTOR_SER {
@@ -95,7 +128,6 @@ typedef union { VECTOR_SER s; double align; } SEXPREC_ALIGN;
 #define R_AS_INT(x) (*((int *) DATAPTR(x)))
 
 #define R_IS_NULL(x) ((*(LGBM_SE)(x)).sxpinfo.type == 0)
-
 
 // 64bit pointer
 #if INTPTR_MAX == INT64_MAX
