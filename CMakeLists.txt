@@ -13,6 +13,7 @@ OPTION(USE_OPENMP "Enable OpenMP" ON)
 OPTION(USE_GPU "Enable GPU-acclerated training (EXPERIMENTAL)" OFF)
 OPTION(USE_SWIG "Enable SWIG to generate Java API" OFF)
 OPTION(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
+OPTION(USE_R35 "Set to ON if your R version is not smaller than 3.5" OFF)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.2")
@@ -48,6 +49,10 @@ if(USE_SWIG)
   include_directories($ENV{JAVA_HOME}/include)
   include_directories($ENV{JAVA_HOME}/include/linux)
 endif(USE_SWIG)
+
+if(USE_R35)
+    ADD_DEFINITIONS(-DR_VER_ABOVE_35)
+endif()
 
 if(USE_MPI)
     find_package(MPI REQUIRED)
