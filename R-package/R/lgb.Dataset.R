@@ -67,6 +67,14 @@ Dataset <- R6Class(
         }
       }
       
+      # Check for matrix format
+      if (is.matrix(data)) {
+        # Check whether matrix is the correct type first ("double")
+        if (storage.mode(data) != "double") {
+          storage.mode(data) <- "double"
+        }
+      }
+      
       # Setup private attributes
       private$raw_data <- data
       private$params <- params
