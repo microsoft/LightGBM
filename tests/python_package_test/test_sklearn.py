@@ -241,7 +241,7 @@ class TestSklearn(unittest.TestCase):
                          'subsample_freq': 1,
                          'verbose': -1},
                         lgb.Dataset(X_train, y_train))
-        clf = lgb.LGBMClassifier().fit(X_train, y_train)
+        clf = lgb.LGBMClassifier(verbose=-1).fit(X_train, y_train)
 
         # Tests same probabilities
         res_engine = gbm.predict(X_test)
