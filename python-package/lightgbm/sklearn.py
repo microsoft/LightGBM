@@ -4,13 +4,14 @@
 from __future__ import absolute_import
 
 import numpy as np
+import warnings
 
 from .basic import Dataset, LightGBMError
 from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckConsistentLength,
                      _LGBMCheckClassificationTargets, _LGBMComputeSampleWeight,
-                     argc_, range_, DataFrame)
+                     argc_, range_, DataFrame, LGBMDeprecationWarning)
 from .engine import train
 
 
@@ -481,7 +482,8 @@ class LGBMModel(_LGBMModelBase):
         del train_set, valid_sets
         return self
 
-    def predict(self, X, raw_score=False, num_iteration=0):
+    def predict(self, X, raw_score=False, num_iteration=0,
+                pred_leaf=False, pred_contrib=False, other_params=None):
         """Return the predicted value for each sample.
 
         Parameters
@@ -492,11 +494,21 @@ class LGBMModel(_LGBMModelBase):
             Whether to predict raw scores.
         num_iteration : int, optional (default=0)
             Limit number of iterations in the prediction; defaults to 0 (use all trees).
+        pred_leaf : bool, optional (default=False)
+            Whether to predict leaf index.
+        pred_contrib : bool, optional (default=False)
+            Whether to predict feature contributions.
+        other_params : dict or None, optional (default=None)
+            Other parameters for the prediction.
 
         Returns
         -------
         predicted_result : array-like of shape = [n_samples] or shape = [n_samples, n_classes]
             The predicted values.
+        X_leaves : array-like of shape = [n_samples, n_trees] or shape [n_samples, n_trees * n_classes]
+            If ``pred_leaf=True``, the predicted leaf every tree for each sample.
+        X_SHAP_values : array-like of shape = [n_samples, n_features + 1] or shape [n_samples, (n_features + 1) * n_classes]
+            If ``pred_contrib=True``, the each feature contributions for each sample.
         """
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
@@ -508,7 +520,9 @@ class LGBMModel(_LGBMModelBase):
                              "match the input. Model n_features_ is %s and "
                              "input n_features is %s "
                              % (self._n_features, n_features))
-        return self.booster_.predict(X, raw_score=raw_score, num_iteration=num_iteration)
+        return self.booster_.predict(X, raw_score=raw_score, num_iteration=num_iteration,
+                                     pred_leaf=pred_leaf, pred_contrib=pred_contrib,
+                                     pred_parameter=other_params)
 
     def apply(self, X, num_iteration=0):
         """Return the predicted leaf every tree for each sample.
@@ -525,6 +539,9 @@ class LGBMModel(_LGBMModelBase):
         X_leaves : array-like of shape = [n_samples, n_trees]
             The predicted leaf every tree for each sample.
         """
+        warnings.warn('apply method is deprecated and will be removed in 2.2 version.\n'
+                      'Please use pred_leaf parameter of predict method instead.',
+                      LGBMDeprecationWarning)
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
         if not isinstance(X, DataFrame):
@@ -680,12 +697,18 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
                    'eval_metric : string, list of strings, callable or None, optional (default="logloss")\n' +
                    base_doc[base_doc.find('            If string, it should be a built-in evaluation metric to use.'):])
 
-    def predict(self, X, raw_score=False, num_iteration=0):
-        class_probs = self.predict_proba(X, raw_score, num_iteration)
-        class_index = np.argmax(class_probs, axis=1)
-        return self._le.inverse_transform(class_index)
+    def predict(self, X, raw_score=False, num_iteration=0,
+                pred_leaf=False, pred_contrib=False, other_params=None):
+        result = self.predict_proba(X, raw_score, num_iteration,
+                                    pred_leaf, pred_contrib, other_params)
+        if raw_score or pred_leaf or pred_contrib:
+            return result
+        else:
+            class_index = np.argmax(result, axis=1)
+            return self._le.inverse_transform(class_index)
 
-    def predict_proba(self, X, raw_score=False, num_iteration=0):
+    def predict_proba(self, X, raw_score=False, num_iteration=0,
+                      pred_leaf=False, pred_contrib=False, other_params=None):
         """Return the predicted probability for each class for each sample.
 
         Parameters
@@ -696,27 +719,28 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
             Whether to predict raw scores.
         num_iteration : int, optional (default=0)
             Limit number of iterations in the prediction; defaults to 0 (use all trees).
+        pred_leaf : bool, optional (default=False)
+            Whether to predict leaf index.
+        pred_contrib : bool, optional (default=False)
+            Whether to predict feature contributions.
+        other_params : dict or None, optional (default=None)
+            Other parameters for the prediction.
 
         Returns
         -------
         predicted_probability : array-like of shape = [n_samples, n_classes]
             The predicted probability for each class for each sample.
+        X_leaves : array-like of shape = [n_samples, n_trees * n_classes]
+            If ``pred_leaf=True``, the predicted leaf every tree for each sample.
+        X_SHAP_values : array-like of shape = [n_samples, (n_features + 1) * n_classes]
+            If ``pred_contrib=True``, the each feature contributions for each sample.
         """
-        if self._n_features is None:
-            raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
-        if not isinstance(X, DataFrame):
-            X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
-        n_features = X.shape[1]
-        if self._n_features != n_features:
-            raise ValueError("Number of features of the model must "
-                             "match the input. Model n_features_ is %s and "
-                             "input n_features is %s "
-                             % (self._n_features, n_features))
-        class_probs = self.booster_.predict(X, raw_score=raw_score, num_iteration=num_iteration)
-        if self._n_classes > 2:
-            return class_probs
+        result = super(LGBMClassifier, self).predict(X, raw_score, num_iteration,
+                                                     pred_leaf, pred_contrib, other_params)
+        if self._n_classes > 2 or pred_leaf or pred_contrib:
+            return result
         else:
-            return np.vstack((1. - class_probs, class_probs)).transpose()
+            return np.vstack((1. - result, result)).transpose()
 
     @property
     def classes_(self):
