@@ -255,15 +255,15 @@ class TestSklearn(unittest.TestCase):
 
         # Tests same raw scores
         res_engine = gbm.predict(X_test, raw_score=True)
-        res_sklearn = clf.predict_proba(X_test, raw_score=True)
+        res_sklearn = clf.predict(X_test, raw_score=True)
         np.testing.assert_allclose(res_engine, res_sklearn)
 
         # Tests same leaf indices
         res_engine = gbm.predict(X_test, pred_leaf=True)
-        res_sklearn = clf.predict_proba(X_test, pred_leaf=True)
+        res_sklearn = clf.predict(X_test, pred_leaf=True)
         np.testing.assert_equal(res_engine, res_sklearn)
 
         # Tests same feature contributions
         res_engine = gbm.predict(X_test, pred_contrib=True)
-        res_sklearn = clf.predict_proba(X_test, pred_contrib=True)
+        res_sklearn = clf.predict(X_test, pred_contrib=True)
         np.testing.assert_allclose(res_engine, res_sklearn)
