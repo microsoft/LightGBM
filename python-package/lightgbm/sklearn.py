@@ -143,6 +143,7 @@ class LGBMModel(_LGBMModelBase):
             'dart', Dropouts meet Multiple Additive Regression Trees.
             'goss', Gradient-based One-Side Sampling.
             'rf', Random Forest.
+            'rgf', Regularized Greedy Forest.
         num_leaves : int, optional (default=31)
             Maximum tree leaves for base learners.
         max_depth : int, optional (default=-1)

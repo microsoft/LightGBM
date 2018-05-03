@@ -54,6 +54,8 @@ void GetBoostingType(const std::unordered_map<std::string, std::string>& params,
       *boosting_type = "goss";
     } else if (value == std::string("rf") || value == std::string("randomforest")) {
       *boosting_type = "rf";
+    } else if (value == std::string("rgf")) {
+      *boosting_type = "rgf";
     } else {
       Log::Fatal("Unknown boosting type %s", value.c_str());
     }
@@ -206,7 +208,7 @@ void OverallConfig::CheckParamConflict() {
   int num_class_check = boosting_config.num_class;
   bool objective_custom = objective_type == std::string("none") || objective_type == std::string("null") || objective_type == std::string("custom");
   bool objective_type_multiclass = CheckMultiClassObjective(objective_type) || (objective_custom && num_class_check > 1);
-  
+
   if (objective_type_multiclass) {
     if (num_class_check <= 1) {
       Log::Fatal("Number of classes should be specified and greater than 1 for multiclass training");
@@ -218,7 +220,7 @@ void OverallConfig::CheckParamConflict() {
   }
   if (boosting_config.is_provide_training_metric || !io_config.valid_data_filenames.empty()) {
     for (std::string metric_type : metric_types) {
-      bool metric_type_multiclass = (CheckMultiClassObjective(metric_type) 
+      bool metric_type_multiclass = (CheckMultiClassObjective(metric_type)
                                      || metric_type == std::string("multi_logloss")
                                      || metric_type == std::string("multi_error"));
       if ((objective_type_multiclass && !metric_type_multiclass)
@@ -258,7 +260,7 @@ void OverallConfig::CheckParamConflict() {
   // Check max_depth and num_leaves
   if (boosting_config.tree_config.max_depth > 0) {
     int full_num_leaves = static_cast<int>(std::pow(2, boosting_config.tree_config.max_depth));
-    if (full_num_leaves > boosting_config.tree_config.num_leaves 
+    if (full_num_leaves > boosting_config.tree_config.num_leaves
         && boosting_config.tree_config.num_leaves == kDefaultNumLeaves) {
       Log::Warning("Accuracy may be bad since you didn't set num_leaves and 2^max_depth > num_leaves.");
     }

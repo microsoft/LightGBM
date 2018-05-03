@@ -41,6 +41,7 @@ public:
   void Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
             const std::vector<const Metric*>& training_metrics) override {
     GBDT::Init(config, train_data, objective_function, training_metrics);
+    Log::Info("Start RGF.");
   }
 
   void ResetConfig(const BoostingConfig* config) override {
@@ -51,7 +52,7 @@ public:
   * \brief one training iteration
   */
 
-  bool RGF::TrainOneIter(const score_t* gradients, const score_t* hessians) {
+  bool TrainOneIter(const score_t* gradients, const score_t* hessians) {
     double init_score = 0.0f;
     // boosting first
     if (gradients == nullptr || hessians == nullptr) {
@@ -96,8 +97,12 @@ public:
         tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, train_score_updater_->score() + bias,
                                        num_data_, bag_data_indices_.data(), bag_data_cnt_);
         // shrinkage by learning rate
-        // new_tree->Shrinkage(shrinkage_rate_);
-
+        new_tree->Shrinkage(shrinkage_rate_);
+        // update score
+        UpdateScore(new_tree.get(), cur_tree_id);
+        if (std::fabs(init_score) > kEpsilon) {
+          new_tree->AddBias(init_score);
+        }
       } else {
         // only add default score one-time
         if (!class_need_train_[cur_tree_id] && models_.size() < static_cast<size_t>(num_tree_per_iteration_)) {
@@ -116,7 +121,10 @@ public:
       // update score
       UpdateScore(new_tree.get(), cur_tree_id);
 
-      // TODO(fukatani): fully corrective update. 1 100times
+      if (iter_ != 0 && iter_ % 100 == 0) {
+        FullyCorrectiveUpdate();
+        Log::Info("Fully corrective updated.");
+      }
     }
 
     if (!should_continue) {
@@ -132,6 +140,24 @@ public:
   }
 
 private:
+  bool FullyCorrectiveUpdate () {
+    int64_t num_score = 0;
+    objective_function_->
+      GetGradients(GetTrainingScore(&num_score), gradients_.data(), hessians_.data());
+    auto gradients = gradients_.data();
+    auto hessians = hessians_.data();
+
+    for (size_t model_index = 0; model_index < models_.size(); model_index++) {
+      const size_t bias = static_cast<size_t>(model_index) * num_data_;
+
+      auto grad = gradients + bias;
+      auto hess = hessians + bias;
+
+      auto new_tree = tree_learner_->FitByExistingTree(models_[model_index].get(), grad, hess);
+      models_[model_index].reset(new_tree);
+    }
+    return true;
+  }
 };
 
 }  // namespace LightGBM
