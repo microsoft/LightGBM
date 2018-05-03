@@ -200,7 +200,7 @@ Learning Control Parameters
 
    -  minimal sum hessian in one leaf. Like ``min_data_in_leaf``, it can be used to deal with over-fitting
 
--  ``feature_fraction``, default=\ ``1.0``, type=double, ``0.0 < feature_fraction < 1.0``, alias=\ ``sub_feature``, ``colsample_bytree``
+-  ``feature_fraction``, default=\ ``1.0``, type=double, ``0.0 < feature_fraction <= 1.0``, alias=\ ``sub_feature``, ``colsample_bytree``
 
    -  LightGBM will randomly select part of features on each iteration if ``feature_fraction`` smaller than ``1.0``.
       For example, if set to ``0.8``, will select 80% features before training each tree
@@ -213,7 +213,7 @@ Learning Control Parameters
 
    -  random seed for ``feature_fraction``
 
--  ``bagging_fraction``, default=\ ``1.0``, type=double, ``0.0 < bagging_fraction < 1.0``, alias=\ ``sub_row``, ``subsample``
+-  ``bagging_fraction``, default=\ ``1.0``, type=double, ``0.0 < bagging_fraction <= 1.0``, alias=\ ``sub_row``, ``subsample``
 
    -  like ``feature_fraction``, but this will randomly select part of data without resampling
 
