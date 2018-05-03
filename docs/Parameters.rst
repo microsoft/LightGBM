@@ -257,11 +257,11 @@ Learning Control Parameters
 
    -  the minimal gain to perform split
 
--  ``drop_rate``, default=\ ``0.1``, type=double
+-  ``drop_rate``, default=\ ``0.1``, type=double, ``0.0 <= drop_rate <= 1.0``
 
    -  only used in ``dart``
 
--  ``skip_drop``, default=\ ``0.5``, type=double
+-  ``skip_drop``, default=\ ``0.5``, type=double, ``0.0 <= skip_drop <= 1.0``
 
    -  only used in ``dart``, probability of skipping drop
 
