@@ -238,7 +238,6 @@ class TestSklearn(unittest.TestCase):
 
         gbm = lgb.train({'objective': 'multiclass',
                          'num_class': 3,
-                         'subsample_freq': 1,
                          'verbose': -1},
                         lgb.Dataset(X_train, y_train))
         clf = lgb.LGBMClassifier(verbose=-1).fit(X_train, y_train)
