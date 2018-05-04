@@ -60,8 +60,8 @@ public:
     num_pred_one_row_ = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf_index, is_predict_contrib);
     num_feature_ = boosting_->MaxFeatureIdx() + 1;
     predict_buf_ = std::vector<std::vector<double>>(num_threads_, std::vector<double>(num_feature_, 0.0f));
-    const int kFeatureThreshold = 20000;
-    const size_t KSparseThreshold = static_cast<size_t>(0.02 * num_feature_);
+    const int kFeatureThreshold = 100000;
+    const size_t KSparseThreshold = static_cast<size_t>(0.01 * num_feature_);
     if (is_predict_leaf_index) {
       predict_fun_ = [this, kFeatureThreshold, KSparseThreshold](const std::vector<std::pair<int, double>>& features, double* output) {
         int tid = omp_get_thread_num();
