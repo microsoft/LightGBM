@@ -150,7 +150,7 @@ class LGBMModel(_LGBMModelBase):
         learning_rate : float, optional (default=0.1)
             Boosting learning rate.
             You can use ``callbacks`` parameter of ``fit`` method to shrink/adapt learning rate 
-            using ``reset_parameter`` callback. 
+            in training using ``reset_parameter`` callback. 
             Note, that this will ignore the ``learning_rate`` argument in training.
         n_estimators : int, optional (default=100)
             Number of boosted trees to fit.
