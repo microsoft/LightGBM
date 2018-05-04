@@ -50,8 +50,8 @@ if [[ ${TASK} == "check-docs" ]]; then
 fi
 
 if [[ ${TASK} == "pylint" ]]; then
-    conda install pep8
-    pep8 --ignore=E501 --exclude=./compute,./docs . || exit -1
+    conda install pycodestyle
+    pycodestyle --ignore=E501 --exclude=./compute,./docs . || exit -1
     exit 0
 fi
 
