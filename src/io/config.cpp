@@ -437,7 +437,6 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   CHECK(num_iterations >= 0);
   GetInt(params, "bagging_seed", &bagging_seed);
   GetInt(params, "bagging_freq", &bagging_freq);
-  CHECK(bagging_freq >= 0);
   GetDouble(params, "bagging_fraction", &bagging_fraction);
   CHECK(bagging_fraction > 0.0f && bagging_fraction <= 1.0f);
   GetDouble(params, "learning_rate", &learning_rate);
@@ -455,7 +454,6 @@ void BoostingConfig::Set(const std::unordered_map<std::string, std::string>& par
   CHECK(drop_rate <= 1.0 && drop_rate >= 0.0);
   CHECK(skip_drop <= 1.0 && skip_drop >= 0.0);
   GetInt(params, "max_drop", &max_drop);
-  CHECK(max_drop > 0);
   GetBool(params, "xgboost_dart_mode", &xgboost_dart_mode);
   GetBool(params, "uniform_drop", &uniform_drop);
   GetDouble(params, "top_rate", &top_rate);
