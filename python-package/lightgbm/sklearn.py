@@ -149,12 +149,9 @@ class LGBMModel(_LGBMModelBase):
             Maximum tree depth for base learners, -1 means no limit.
         learning_rate : float, optional (default=0.1)
             Boosting learning rate.
-            The user can set up shrinkage of the learning rate `a la` ``learning_rates`` argument of
-            the ``lightgbm.engine.train()`` API by registration of a dedicated callback function 
-            in the ``LGBMModel.fit()`` call:
-            ``model.fit(X, y,  callbacks = [lgb.reset_parameter(learning_rate=func(iter)])``,
-            where ``func(iter)`` is a custom function that defines dependence of the learning rate
-            on the iteration. Note, that this will ignore the ``learning_rate`` argument in training.
+            You can use ``callbacks`` parameter of ``fit`` method to shrink/adapt learning rate 
+            using ``reset_parameter`` callback. 
+            Note, that this will ignore the ``learning_rate`` argument in training.
         n_estimators : int, optional (default=100)
             Number of boosted trees to fit.
         subsample_for_bin : int, optional (default=50000)
