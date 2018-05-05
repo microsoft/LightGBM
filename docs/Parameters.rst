@@ -604,12 +604,12 @@ Metric Parameters
 
 -  ``metric``, default=\ ``''``, type=multi-enum
 
-   - metric to be evaluated on the evaluation sets **in addition** to what is provided in the training arguments
+   -  metric to be evaluated on the evaluation sets **in addition** to what is provided in the training arguments
 
       -  ``''`` (empty string or not specific), metric corresponding to specified objective will be used
          (this is possible only for pre-defined objective functions, otherwise no evaluation metric will be added)
 
-      - ``'None'`` (string **not** a ``None`` value), no metric registered, alias=\ ``na``
+      -  ``'None'`` (string, **not** a ``None`` value), no metric registered, alias=\ ``na``
    
       -  ``l1``, absolute loss, alias=\ ``mean_absolute_error``, ``mae``, ``regression_l1``
    
