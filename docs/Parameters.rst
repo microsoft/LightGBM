@@ -321,13 +321,13 @@ Learning Control Parameters
 
    -  set this to larger value for more accurate result, but it will slow down the training speed
 
-- ``monotone_constraint``, default=\ ``None``, type=multi-int, alias=\ ``mc``
+-  ``monotone_constraint``, default=\ ``None``, type=multi-int, alias=\ ``mc``
 
-   - used for constraints of monotonic features
+   -  used for constraints of monotonic features
 
-   - ``1`` means increasing, ``-1`` means decreasing, ``0`` means non-constraint
+   -  ``1`` means increasing, ``-1`` means decreasing, ``0`` means non-constraint
 
-   - you need to specify all features in order. For example, ``mc=-1,0,1`` means the decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
+   -  you need to specify all features in order. For example, ``mc=-1,0,1`` means the decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
 
 IO Parameters
 -------------
