@@ -51,7 +51,7 @@ fi
 
 if [[ ${TASK} == "pylint" ]]; then
     conda install pycodestyle
-    pycodestyle --ignore=E501 --exclude=./compute,./docs,./.nuget . || exit -1
+    pycodestyle --ignore=E501,W503 --exclude=./compute,./docs,./.nuget . || exit -1
     exit 0
 fi
 
