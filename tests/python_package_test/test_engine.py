@@ -626,13 +626,11 @@ class TestEngine(unittest.TestCase):
         x2_negatively_correlated_with_y = np.random.random(size=number_of_dpoints)
         x = np.column_stack((x1_positively_correlated_with_y, x2_negatively_correlated_with_y))
         zs = np.random.normal(loc=0.0, scale=0.01, size=number_of_dpoints)
-        y = (
-            5 * x1_positively_correlated_with_y +
-            np.sin(10 * np.pi * x1_positively_correlated_with_y) -
-            5 * x2_negatively_correlated_with_y -
-            np.cos(10 * np.pi * x2_negatively_correlated_with_y) +
-            zs
-        )
+        y = (5 * x1_positively_correlated_with_y
+             + np.sin(10 * np.pi * x1_positively_correlated_with_y)
+             - 5 * x2_negatively_correlated_with_y
+             - np.cos(10 * np.pi * x2_negatively_correlated_with_y)
+             + zs)
         trainset = lgb.Dataset(x, label=y)
         params = {
             'min_data': 20,

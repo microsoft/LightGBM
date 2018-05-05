@@ -615,12 +615,12 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
         return self
 
     base_doc = LGBMModel.fit.__doc__
-    fit.__doc__ = (base_doc[:base_doc.find('eval_class_weight :')] +
-                   base_doc[base_doc.find('eval_init_score :'):])
+    fit.__doc__ = (base_doc[:base_doc.find('eval_class_weight :')]
+                   + base_doc[base_doc.find('eval_init_score :'):])
     base_doc = fit.__doc__
-    fit.__doc__ = (base_doc[:base_doc.find('eval_metric :')] +
-                   'eval_metric : string, list of strings, callable or None, optional (default="l2")\n' +
-                   base_doc[base_doc.find('            If string, it should be a built-in evaluation metric to use.'):])
+    fit.__doc__ = (base_doc[:base_doc.find('eval_metric :')]
+                   + 'eval_metric : string, list of strings, callable or None, optional (default="l2")\n'
+                   + base_doc[base_doc.find('            If string, it should be a built-in evaluation metric to use.'):])
 
 
 class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
@@ -676,9 +676,9 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         return self
 
     base_doc = LGBMModel.fit.__doc__
-    fit.__doc__ = (base_doc[:base_doc.find('eval_metric :')] +
-                   'eval_metric : string, list of strings, callable or None, optional (default="logloss")\n' +
-                   base_doc[base_doc.find('            If string, it should be a built-in evaluation metric to use.'):])
+    fit.__doc__ = (base_doc[:base_doc.find('eval_metric :')]
+                   + 'eval_metric : string, list of strings, callable or None, optional (default="logloss")\n'
+                   + base_doc[base_doc.find('            If string, it should be a built-in evaluation metric to use.'):])
 
     def predict(self, X, raw_score=False, num_iteration=0):
         class_probs = self.predict_proba(X, raw_score, num_iteration)
@@ -770,12 +770,12 @@ class LGBMRanker(LGBMModel):
         return self
 
     base_doc = LGBMModel.fit.__doc__
-    fit.__doc__ = (base_doc[:base_doc.find('eval_class_weight :')] +
-                   base_doc[base_doc.find('eval_init_score :'):])
+    fit.__doc__ = (base_doc[:base_doc.find('eval_class_weight :')]
+                   + base_doc[base_doc.find('eval_init_score :'):])
     base_doc = fit.__doc__
-    fit.__doc__ = (base_doc[:base_doc.find('eval_metric :')] +
-                   'eval_metric : string, list of strings, callable or None, optional (default="ndcg")\n' +
-                   base_doc[base_doc.find('            If string, it should be a built-in evaluation metric to use.'):base_doc.find('early_stopping_rounds :')] +
-                   'eval_at : list of int, optional (default=[1])\n'
-                   '            The evaluation positions of NDCG.\n' +
-                   base_doc[base_doc.find('        early_stopping_rounds :'):])
+    fit.__doc__ = (base_doc[:base_doc.find('eval_metric :')]
+                   + 'eval_metric : string, list of strings, callable or None, optional (default="ndcg")\n'
+                   + base_doc[base_doc.find('            If string, it should be a built-in evaluation metric to use.'):base_doc.find('early_stopping_rounds :')]
+                   + 'eval_at : list of int, optional (default=[1])\n'
+                     '            The evaluation positions of NDCG.\n'
+                   + base_doc[base_doc.find('        early_stopping_rounds :'):])
