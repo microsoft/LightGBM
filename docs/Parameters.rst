@@ -524,11 +524,11 @@ IO Parameters
 
    -  path to a ``.json`` file that specifies splits to force at the top of every decision tree before best-first learning commences.
 
-   - ``.json`` file can be arbitrarily nested, and each split contains ``feature``, ``threshold`` fields, as well as ``left`` and ``right`` 
-     fields representing subsplits. Categorical splits are forced in a one-hot fashion, with ``left`` representing the split containing
-     the feature value and ``right`` representing other values.
+   -  ``.json`` file can be arbitrarily nested, and each split contains ``feature``, ``threshold`` fields, as well as ``left`` and ``right`` 
+      fields representing subsplits. Categorical splits are forced in a one-hot fashion, with ``left`` representing the split containing
+      the feature value and ``right`` representing other values.
 
-   -  see ``examples/binary_classification/forced_splits.json`` as an example.
+   -  see `this file <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example.
 
 Objective Parameters
 --------------------
