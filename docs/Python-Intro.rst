@@ -196,8 +196,7 @@ The model will train until the validation score stops improving.
 Validation error needs to improve at least every ``early_stopping_rounds`` to continue training.
 
 If early stopping occurs, the model will have an additional field: ``bst.best_iteration``.
-Note that ``train()`` will return a model from the last iteration, not the best one.
-And you can set ``num_iteration=bst.best_iteration`` when saving model.
+Note that ``train()`` will return a model from the best iteration.
 
 This works with both metrics to minimize (L2, log loss, etc.) and to maximize (NDCG, AUC).
 Note that if you specify more than one evaluation metric, all of them will be used for early stopping.
