@@ -15,8 +15,8 @@ if [[ ${TASK} == "gpu" ]]; then
 fi
 
 if [[ $TRAVIS_OS_NAME == "osx" ]]; then
-    export CXX=g++-7
-    export CC=gcc-7
+    export CXX=g++-8
+    export CC=gcc-8
 fi
 
 LGB_VER=$(head -n 1 VERSION.txt)
