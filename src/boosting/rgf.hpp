@@ -118,9 +118,6 @@ public:
       // add model
       models_.push_back(std::move(new_tree));
 
-      // update score
-      UpdateScore(new_tree.get(), cur_tree_id);
-
       if (iter_ != 0 && iter_ % 100 == 0) {
         FullyCorrectiveUpdate();
         Log::Info("Fully corrective updated.");
