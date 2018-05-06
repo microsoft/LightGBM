@@ -17,8 +17,7 @@ X_test = df_test.drop(0, axis=1).values
 
 print('Start training...')
 # train
-gbm = lgb.LGBMRegressor(boosting_type='rgf',
-                        objective='regression',
+gbm = lgb.LGBMRegressor(objective='regression',
                         num_leaves=31,
                         learning_rate=0.05,
                         n_estimators=20)
