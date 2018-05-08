@@ -8,7 +8,7 @@ from sklearn.metrics import mean_squared_error
 
 try:
     import cPickle as pickle
-except:
+except BaseException:
     import pickle
 
 # load or create your dataset
