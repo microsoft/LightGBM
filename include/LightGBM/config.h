@@ -124,7 +124,7 @@ public:
   bool is_predict_raw_score = false;
   int min_data_in_leaf = 20;
   int min_data_in_bin = 3;
-  double max_conflict_rate = 0.0f;
+  double max_conflict_rate = 0.0;
   bool enable_bundle = true;
   bool has_header = false;
   std::vector<int8_t> monotone_constraints;
@@ -154,7 +154,7 @@ public:
   /*! \brief Frequency of checking the pred_early_stop */
   int pred_early_stop_freq = 10;
   /*! \brief Threshold of margin of pred_early_stop */
-  double pred_early_stop_margin = 10.0f;
+  double pred_early_stop_margin = 10.0;
   bool zero_as_missing = false;
   bool use_missing = true;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
@@ -164,9 +164,9 @@ public:
 struct ObjectiveConfig: public ConfigBase {
 public:
   virtual ~ObjectiveConfig() {}
-  double sigmoid = 1.0f;
-  double fair_c = 1.0f;
-  double poisson_max_delta_step = 0.7f;
+  double sigmoid = 1.0;
+  double fair_c = 1.0;
+  double poisson_max_delta_step = 0.7;
   // for lambdarank
   std::vector<double> label_gain;
   // for lambdarank
@@ -176,11 +176,11 @@ public:
   // for multiclass
   int num_class = 1;
   // Balancing of positive and negative weights
-  double scale_pos_weight = 1.0f;
+  double scale_pos_weight = 1.0;
   // True will sqrt fit the sqrt(label)
   bool reg_sqrt = false;
-  double alpha = 0.9f;
-  double tweedie_variance_power = 1.5f;
+  double alpha = 0.9;
+  double tweedie_variance_power = 1.5;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
 };
 
@@ -189,10 +189,10 @@ struct MetricConfig: public ConfigBase {
 public:
   virtual ~MetricConfig() {}
   int num_class = 1;
-  double sigmoid = 1.0f;
-  double fair_c = 1.0f;
-  double alpha = 0.9f;
-  double tweedie_variance_power = 1.5f;
+  double sigmoid = 1.0;
+  double fair_c = 1.0;
+  double alpha = 0.9;
+  double tweedie_variance_power = 1.5;
   std::vector<double> label_gain;
   std::vector<int> eval_at;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params) override;
@@ -203,17 +203,17 @@ public:
 struct TreeConfig: public ConfigBase {
 public:
   int min_data_in_leaf = 20;
-  double min_sum_hessian_in_leaf = 1e-3f;
-  double max_delta_step = 0.0f;
-  double lambda_l1 = 0.0f;
-  double lambda_l2 = 0.0f;
-  double min_gain_to_split = 0.0f;
+  double min_sum_hessian_in_leaf = 1e-3;
+  double max_delta_step = 0.0;
+  double lambda_l1 = 0.0;
+  double lambda_l2 = 0.0;
+  double min_gain_to_split = 0.0;
   // should > 1
   int num_leaves = kDefaultNumLeaves;
   int feature_fraction_seed = 2;
-  double feature_fraction = 1.0f;
+  double feature_fraction = 1.0;
   // max cache size(unit:MB) for historical histogram. < 0 means no limit
-  double histogram_pool_size = -1.0f;
+  double histogram_pool_size = -1.0;
   // max depth of tree model.
   // Still grow tree by leaf-wise, but limit the max depth to avoid over-fitting
   // And the max leaves will be min(num_leaves, pow(2, max_depth))
@@ -245,8 +245,8 @@ public:
   int output_freq = 1;
   bool is_provide_training_metric = false;
   int num_iterations = 100;
-  double learning_rate = 0.1f;
-  double bagging_fraction = 1.0f;
+  double learning_rate = 0.1;
+  double bagging_fraction = 1.0;
   int bagging_seed = 3;
   int bagging_freq = 0;
   int early_stopping_round = 0;
@@ -257,8 +257,8 @@ public:
   bool xgboost_dart_mode = false;
   bool uniform_drop = false;
   int drop_seed = 4;
-  double top_rate = 0.2f;
-  double other_rate = 0.1f;
+  double top_rate = 0.2;
+  double other_rate = 0.1;
   // only used for the regression. Will boost from the average labels.
   bool boost_from_average = true;
   std::string tree_learner_type = kDefaultTreeLearnerType;

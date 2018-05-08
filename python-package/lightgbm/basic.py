@@ -438,7 +438,7 @@ class _InnerPredictor(object):
         elif isinstance(data, list):
             try:
                 data = np.array(data)
-            except:
+            except BaseException:
                 raise ValueError('Cannot convert data list to numpy array.')
             preds, nrow = self.__pred_for_np2d(data, num_iteration,
                                                predict_type)
@@ -446,7 +446,7 @@ class _InnerPredictor(object):
             try:
                 warnings.warn('Converting data to scipy sparse matrix.')
                 csr = scipy.sparse.csr_matrix(data)
-            except:
+            except BaseException:
                 raise TypeError('Cannot predict data for type {}'.format(type(data).__name__))
             preds, nrow = self.__pred_for_csr(csr, num_iteration,
                                               predict_type)
@@ -712,7 +712,7 @@ class Dataset(object):
             try:
                 csr = scipy.sparse.csr_matrix(data)
                 self.__init_from_csr(csr, params_str, ref_dataset)
-            except:
+            except BaseException:
                 raise TypeError('Cannot initialize Dataset from {}'.format(type(data).__name__))
         if label is not None:
             self.set_label(label)
