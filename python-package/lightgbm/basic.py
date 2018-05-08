@@ -13,9 +13,9 @@ from tempfile import NamedTemporaryFile
 import numpy as np
 import scipy.sparse
 
-from .compat import (DataFrame, Series, integer_types, json,
-                     json_default_with_numpy, numeric_types, range_,
-                     string_type)
+from .compat import (DataFrame, Series, decode_string, integer_types,
+                     json, json_default_with_numpy, numeric_types,
+                     range_, string_type)
 from .libpath import find_lib_path
 
 
@@ -45,7 +45,7 @@ def _safe_call(ret):
         return value from API calls
     """
     if ret != 0:
-        raise LightGBMError(_LIB.LGBM_GetLastError())
+        raise LightGBMError(decode_string(_LIB.LGBM_GetLastError()))
 
 
 def is_numeric(obj):
