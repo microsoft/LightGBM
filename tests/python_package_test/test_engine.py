@@ -537,7 +537,6 @@ class TestEngine(unittest.TestCase):
             'objective': 'binary',
             'metric': 'binary_logloss',
             'verbose': -1,
-            'num_iteration': 50  # test num_iteration in dict here
         }
         lgb_train = lgb.Dataset(X_train, y_train)
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
