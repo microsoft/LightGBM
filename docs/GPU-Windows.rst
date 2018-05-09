@@ -568,7 +568,7 @@ And open an issue in GitHub `here`_ with that log.
 
 .. _Intel SDK for OpenCL: https://software.intel.com/en-us/articles/opencl-drivers
 
-.. _AMD APP SDK: http://developer.amd.com/amd-accelerated-parallel-processing-app-sdk/
+.. _AMD APP SDK: http://developer.amd.com/  # amd-accelerated-parallel-processing-app-sdk/
 
 .. _CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 

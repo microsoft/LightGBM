@@ -286,7 +286,7 @@ Keep in mind that using the integrated graphics card is not directly possible wi
 
 .. _Intel SDK for OpenCL: https://software.intel.com/en-us/articles/opencl-drivers
 
-.. _AMD APP SDK: http://developer.amd.com/amd-accelerated-parallel-processing-app-sdk/
+.. _AMD APP SDK: http://developer.amd.com/  # amd-accelerated-parallel-processing-app-sdk/
 
 .. _NVIDIA CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 
