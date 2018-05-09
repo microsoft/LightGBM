@@ -171,7 +171,7 @@ void GBDT::Init(const BoostingConfig* config, const Dataset* train_data, const O
 void GBDT::AddValidDataset(const Dataset* valid_data,
                            const std::vector<const Metric*>& valid_metrics) {
   if (!train_data_->CheckAlign(*valid_data)) {
-    Log::Fatal("cannot add validation data, since it has different bin mappers with training data");
+    Log::Fatal("Cannot add validation data, since it has different bin mappers with training data");
   }
   // for a validation dataset, we need its score and metric
   auto new_score_updater = std::unique_ptr<ScoreUpdater>(new ScoreUpdater(valid_data, num_tree_per_iteration_));
@@ -377,7 +377,7 @@ double GBDT::BoostFromAverage() {
     } else if (std::string(objective_function_->GetName()) == std::string("regression_l1")
                || std::string(objective_function_->GetName()) == std::string("quantile")
                || std::string(objective_function_->GetName()) == std::string("mape")) {
-      Log::Warning("Disable boost_from_average in %s may cause the slow convergence.", objective_function_->GetName());
+      Log::Warning("Disable boost_from_average in %s may cause the slow convergence", objective_function_->GetName());
     }
   }
   return 0.0f;
@@ -469,7 +469,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   }
 
   if (!should_continue) {
-    Log::Warning("Stopped training because there are no more leaves that meet the split requirements.");
+    Log::Warning("Stopped training because there are no more leaves that meet the split requirements");
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
       models_.pop_back();
     }
@@ -730,7 +730,7 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
                              const std::vector<const Metric*>& training_metrics) {
 
   if (train_data != train_data_ && !train_data_->CheckAlign(*train_data)) {
-    Log::Fatal("cannot reset training data, since new training data has different bin mappers");
+    Log::Fatal("Cannot reset training data, since new training data has different bin mappers");
   }
 
   objective_function_ = objective_function;
@@ -825,7 +825,7 @@ void GBDT::ResetBaggingConfig(const BoostingConfig* config, bool is_change_datas
         tmp_subset_->CopyFeatureMapperFrom(train_data_);
       }
       is_use_subset_ = true;
-      Log::Debug("use subset for bagging");
+      Log::Debug("Use subset for bagging");
     }
 
     if (is_change_dataset) {

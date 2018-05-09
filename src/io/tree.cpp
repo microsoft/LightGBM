@@ -493,13 +493,13 @@ Tree::Tree(const char* str, size_t* used_len) {
   *used_len = p - str;
 
   if (key_vals.count("num_leaves") <= 0) {
-    Log::Fatal("Tree model should contain num_leaves field.");
+    Log::Fatal("Tree model should contain num_leaves field");
   }
 
   Common::Atoi(key_vals["num_leaves"].c_str(), &num_leaves_);
 
   if (key_vals.count("num_cat") <= 0) {
-    Log::Fatal("Tree model should contain num_cat field.");
+    Log::Fatal("Tree model should contain num_cat field");
   }
 
   Common::Atoi(key_vals["num_cat"].c_str(), &num_cat_);
@@ -576,7 +576,7 @@ Tree::Tree(const char* str, size_t* used_len) {
     if (key_vals.count("cat_threshold")) {
       cat_threshold_ = Common::StringToArrayFast<uint32_t>(key_vals["cat_threshold"], cat_boundaries_.back());
     } else {
-      Log::Fatal("Tree model should contain cat_threshold field.");
+      Log::Fatal("Tree model should contain cat_threshold field");
     }
   }
 

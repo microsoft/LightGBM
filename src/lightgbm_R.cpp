@@ -34,7 +34,7 @@ using namespace LightGBM;
 
 LGBM_SE EncodeChar(LGBM_SE dest, const char* src, LGBM_SE buf_len, LGBM_SE actual_len, size_t str_len) {
   if (str_len > INT32_MAX) {
-    Log::Fatal("Don't support large string in R-package.");
+    Log::Fatal("Don't support large string in R-package");
   }
   R_INT_PTR(actual_len)[0] = static_cast<int>(str_len);
   if (R_AS_INT(buf_len) < static_cast<int>(str_len)) { return dest; }

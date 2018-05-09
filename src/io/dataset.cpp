@@ -226,10 +226,10 @@ void Dataset::Construct(
     }
   }
   if (used_features.empty()) {
-    Log::Fatal("Cannot construct Dataset since there are not useful features. \
-                It should be at least two unique rows. \
-                If the num_row (num_data) is small, you can set min_data=1 and min_data_in_bin=1 to fix this. \
-                Otherwise please make sure you are using the right dataset.");
+    Log::Fatal("Cannot construct Dataset since there are not useful features.\n"
+               "It should be at least two unique rows.\n"
+               "If the num_row (num_data) is small, you can set min_data=1 and min_data_in_bin=1 to fix this.\n"
+               "Otherwise please make sure you are using the right dataset");
   }
   auto features_in_group = NoGroup(used_features);
 
@@ -440,13 +440,13 @@ bool Dataset::SetFloatField(const char* field_name, const float* field_data, dat
   name = Common::Trim(name);
   if (name == std::string("label") || name == std::string("target")) {
     #ifdef LABEL_T_USE_DOUBLE
-    Log::Fatal("Don't Support LABEL_T_USE_DOUBLE.");
+    Log::Fatal("Don't support LABEL_T_USE_DOUBLE");
     #else
     metadata_.SetLabel(field_data, num_element);
     #endif
   } else if (name == std::string("weight") || name == std::string("weights")) {
     #ifdef LABEL_T_USE_DOUBLE
-    Log::Fatal("Don't Support LABEL_T_USE_DOUBLE.");
+    Log::Fatal("Don't support LABEL_T_USE_DOUBLE");
     #else
     metadata_.SetWeights(field_data, num_element);
     #endif
@@ -483,14 +483,14 @@ bool Dataset::GetFloatField(const char* field_name, data_size_t* out_len, const 
   name = Common::Trim(name);
   if (name == std::string("label") || name == std::string("target")) {
     #ifdef LABEL_T_USE_DOUBLE
-    Log::Fatal("Don't Support LABEL_T_USE_DOUBLE.");
+    Log::Fatal("Don't support LABEL_T_USE_DOUBLE");
     #else
     *out_ptr = metadata_.label();
     *out_len = num_data_;
     #endif
   } else if (name == std::string("weight") || name == std::string("weights")) {
     #ifdef LABEL_T_USE_DOUBLE
-    Log::Fatal("Don't Support LABEL_T_USE_DOUBLE.");
+    Log::Fatal("Don't support LABEL_T_USE_DOUBLE");
     #else
     *out_ptr = metadata_.weights();
     *out_len = num_data_;
@@ -528,7 +528,7 @@ bool Dataset::GetIntField(const char* field_name, data_size_t* out_len, const in
 void Dataset::SaveBinaryFile(const char* bin_filename) {
   if (bin_filename != nullptr
       && std::string(bin_filename) == data_filename_) {
-    Log::Warning("Bianry file %s already existed", bin_filename);
+    Log::Warning("Bianry file %s already exists", bin_filename);
     return;
   }
   // if not pass a filename, just append ".bin" of original file
@@ -541,7 +541,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
 
   if (VirtualFileWriter::Exists(bin_filename)) {
     is_file_existed = true;
-    Log::Warning("File %s existed, cannot save binary to it", bin_filename);
+    Log::Warning("File %s exists, cannot save binary to it", bin_filename);
   }
 
   if (!is_file_existed) {

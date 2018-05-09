@@ -271,7 +271,8 @@ class GPUTreeLearner: public SerialTreeLearner {
 public:
   #pragma warning(disable : 4702)
   explicit GPUTreeLearner(const TreeConfig* tree_config) : SerialTreeLearner(tree_config) {
-    Log::Fatal("GPU Tree Learner was not enabled in this build. Recompile with CMake option -DUSE_GPU=1");
+    Log::Fatal("GPU Tree Learner was not enabled in this build.\n"
+               "Please recompile with CMake option -DUSE_GPU=1");
   }
 };
 

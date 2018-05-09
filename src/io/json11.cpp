@@ -388,7 +388,7 @@ struct JsonParser final {
       if (str[i] == '/') {
         i++;
         if (i == str.size())
-          return fail("unexpected end of input after start of comment", false);
+          return fail("Unexpected end of input after start of comment", false);
         if (str[i] == '/') { // inline comment
           i++;
           // advance until next line, or end of input
@@ -400,19 +400,18 @@ struct JsonParser final {
         else if (str[i] == '*') { // multiline comment
           i++;
           if (i > str.size()-2)
-            return fail("unexpected end of input inside multi-line comment", false);
+            return fail("Unexpected end of input inside multi-line comment", false);
           // advance until closing tokens
           while (!(str[i] == '*' && str[i+1] == '/')) {
             i++;
             if (i > str.size()-2)
-              return fail(
-                "unexpected end of input inside multi-line comment", false);
+              return fail("Unexpected end of input inside multi-line comment", false);
           }
           i += 2;
           comment_found = true;
         }
         else
-          return fail("malformed comment", false);
+          return fail("Malformed comment", false);
       }
       return comment_found;
     }
@@ -443,7 +442,7 @@ struct JsonParser final {
         consume_garbage();
         if (failed) return (char)0;
         if (i == str.size())
-            return fail("unexpected end of input", (char)0);
+            return fail("Unexpected end of input", (char)0);
 
         return str[i++];
     }
@@ -482,7 +481,7 @@ struct JsonParser final {
         long last_escaped_codepoint = -1;
         while (true) {
             if (i == str.size())
-                return fail("unexpected end of input in string", "");
+                return fail("Unexpected end of input in string", "");
 
             char ch = str[i++];
 
@@ -492,7 +491,7 @@ struct JsonParser final {
             }
 
             if (in_range(ch, 0, 0x1f))
-                return fail("unescaped " + esc(ch) + " in string", "");
+                return fail("Unescaped " + esc(ch) + " in string", "");
 
             // The usual case: non-escaped characters
             if (ch != '\\') {
@@ -504,7 +503,7 @@ struct JsonParser final {
 
             // Handle escapes
             if (i == str.size())
-                return fail("unexpected end of input in string", "");
+                return fail("Unexpected end of input in string", "");
 
             ch = str[i++];
 
@@ -515,12 +514,12 @@ struct JsonParser final {
                 // relies on std::string returning the terminating NUL when
                 // accessing str[length]. Checking here reduces brittleness.
                 if (esc.length() < 4) {
-                    return fail("bad \\u escape: " + esc, "");
+                    return fail("Bad \\u escape: " + esc, "");
                 }
                 for (size_t j = 0; j < 4; j++) {
                     if (!in_range(esc[j], 'a', 'f') && !in_range(esc[j], 'A', 'F')
                             && !in_range(esc[j], '0', '9'))
-                        return fail("bad \\u escape: " + esc, "");
+                        return fail("Bad \\u escape: " + esc, "");
                 }
 
                 long codepoint = strtol(esc.data(), nullptr, 16);
@@ -561,7 +560,7 @@ struct JsonParser final {
             } else if (ch == '"' || ch == '\\' || ch == '/') {
                 out += ch;
             } else {
-                return fail("invalid escape character " + esc(ch), "");
+                return fail("Invalid escape character " + esc(ch), "");
             }
         }
     }
@@ -580,13 +579,13 @@ struct JsonParser final {
         if (str[i] == '0') {
             i++;
             if (in_range(str[i], '0', '9'))
-                return fail("leading 0s not permitted in numbers");
+                return fail("Leading 0s not permitted in numbers");
         } else if (in_range(str[i], '1', '9')) {
             i++;
             while (in_range(str[i], '0', '9'))
                 i++;
         } else {
-            return fail("invalid " + esc(str[i]) + " in number");
+            return fail("Invalid " + esc(str[i]) + " in number");
         }
 
         if (str[i] != '.' && str[i] != 'e' && str[i] != 'E'
@@ -598,7 +597,7 @@ struct JsonParser final {
         if (str[i] == '.') {
             i++;
             if (!in_range(str[i], '0', '9'))
-                return fail("at least one digit required in fractional part");
+                return fail("At least one digit required in fractional part");
 
             while (in_range(str[i], '0', '9'))
                 i++;
@@ -612,7 +611,7 @@ struct JsonParser final {
                 i++;
 
             if (!in_range(str[i], '0', '9'))
-                return fail("at least one digit required in exponent");
+                return fail("At least one digit required in exponent");
 
             while (in_range(str[i], '0', '9'))
                 i++;
@@ -633,7 +632,7 @@ struct JsonParser final {
             i += expected.length();
             return res;
         } else {
-            return fail("parse error: expected " + expected + ", got " + str.substr(i, expected.length()));
+            return fail("Parse error: expected " + expected + ", got " + str.substr(i, expected.length()));
         }
     }
 
@@ -643,7 +642,7 @@ struct JsonParser final {
      */
     Json parse_json(int depth) {
         if (depth > max_depth) {
-            return fail("exceeded maximum nesting depth");
+            return fail("Exceeded maximum nesting depth");
         }
 
         char ch = get_next_token();
@@ -675,7 +674,7 @@ struct JsonParser final {
 
             while (1) {
                 if (ch != '"')
-                    return fail("expected '\"' in object, got " + esc(ch));
+                    return fail("Expected '\"' in object, got " + esc(ch));
 
                 string key = parse_string();
                 if (failed)
@@ -683,7 +682,7 @@ struct JsonParser final {
 
                 ch = get_next_token();
                 if (ch != ':')
-                    return fail("expected ':' in object, got " + esc(ch));
+                    return fail("Expected ':' in object, got " + esc(ch));
 
                 data[std::move(key)] = parse_json(depth + 1);
                 if (failed)
@@ -693,7 +692,7 @@ struct JsonParser final {
                 if (ch == '}')
                     break;
                 if (ch != ',')
-                    return fail("expected ',' in object, got " + esc(ch));
+                    return fail("Expected ',' in object, got " + esc(ch));
 
                 ch = get_next_token();
             }
@@ -716,7 +715,7 @@ struct JsonParser final {
                 if (ch == ']')
                     break;
                 if (ch != ',')
-                    return fail("expected ',' in list, got " + esc(ch));
+                    return fail("Expected ',' in list, got " + esc(ch));
 
                 ch = get_next_token();
                 (void)ch;
@@ -724,7 +723,7 @@ struct JsonParser final {
             return data;
         }
 
-        return fail("expected value, got " + esc(ch));
+        return fail("Expected value, got " + esc(ch));
     }
 };
 }//namespace {
@@ -738,7 +737,7 @@ Json Json::parse(const string &in, string &err, JsonParse strategy) {
     if (parser.failed)
         return Json();
     if (parser.i != in.size())
-        return parser.fail("unexpected trailing " + esc(in[parser.i]));
+        return parser.fail("Unexpected trailing " + esc(in[parser.i]));
 
     return result;
 }
@@ -771,13 +770,13 @@ vector<Json> Json::parse_multi(const string &in,
 
 bool Json::has_shape(const shape & types, string & err) const {
     if (!is_object()) {
-        err = "expected JSON object, got " + dump();
+        err = "Expected JSON object, got " + dump();
         return false;
     }
 
     for (auto & item : types) {
         if ((*this)[item.first].type() != item.second) {
-            err = "bad type for " + item.first + " in " + dump();
+            err = "Bad type for " + item.first + " in " + dump();
             return false;
         }
     }

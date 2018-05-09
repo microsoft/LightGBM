@@ -393,7 +393,7 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
       return false;
     }
   } else {
-    Log::Fatal("Model file doesn't contain feature names");
+    Log::Fatal("Model file doesn't contain feature_names");
     return false;
   }
 
@@ -404,7 +404,7 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
       return false;
     }
   } else {
-    Log::Fatal("Model file doesn't contain feature infos");
+    Log::Fatal("Model file doesn't contain feature_infos");
     return false;
   }
 
@@ -491,7 +491,7 @@ std::vector<double> GBDT::FeatureImportance(int num_iteration, int importance_ty
       }
     }
   } else {
-    Log::Fatal("Unknown importance type: only support split=0 and gain=1.");
+    Log::Fatal("Unknown importance type: only support split=0 and gain=1");
   }
   return feature_importances;
 }

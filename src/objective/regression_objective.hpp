@@ -366,7 +366,7 @@ public:
   explicit RegressionPoissonLoss(const ObjectiveConfig& config): RegressionL2loss(config) {
     max_delta_step_ = static_cast<double>(config.poisson_max_delta_step);
     if (sqrt_) {
-      Log::Warning("cannot use sqrt transform in %s Regression, will auto disable it.", GetName());
+      Log::Warning("Cannot use sqrt transform in %s Regression, will auto disable it", GetName());
       sqrt_ = false;
     }
   }
@@ -379,7 +379,7 @@ public:
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
     if (sqrt_) {
-      Log::Warning("cannot use sqrt transform in %s Regression, will auto disable it.", GetName());
+      Log::Warning("Cannot use sqrt transform in %s Regression, will auto disable it", GetName());
       sqrt_ = false;
     }
     RegressionL2loss::Init(metadata, num_data);
@@ -388,10 +388,10 @@ public:
     double sumy;
     Common::ObtainMinMaxSum(label_, num_data_, &miny, (label_t*)nullptr, &sumy);
     if (miny < 0.0f) {
-      Log::Fatal("[%s]: at least one target label is negative.", GetName());
+      Log::Fatal("[%s]: at least one target label is negative", GetName());
     }
     if (sumy == 0.0f) {
-      Log::Fatal("[%s]: sum of labels is zero.", GetName());
+      Log::Fatal("[%s]: sum of labels is zero", GetName());
     }
   }
 
@@ -556,7 +556,7 @@ public:
     RegressionL2loss::Init(metadata, num_data);
     for (data_size_t i = 0; i < num_data_; ++i) {
       if (std::fabs(label_[i]) < 1) {
-        Log::Warning("Met 'abs(label) < 1', will convert them to '1' in Mape objective and metric.");
+        Log::Warning("Met 'abs(label) < 1', will convert them to '1' in MAPE objective and metric");
         break;
       }
     }

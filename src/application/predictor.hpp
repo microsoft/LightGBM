@@ -130,12 +130,12 @@ public:
   void Predict(const char* data_filename, const char* result_filename, bool has_header) {
     auto writer = VirtualFileWriter::Make(result_filename);
     if (!writer->Init()) {
-      Log::Fatal("Prediction results file %s cannot be found.", result_filename);
+      Log::Fatal("Prediction results file %s cannot be found", result_filename);
     }
     auto parser = std::unique_ptr<Parser>(Parser::CreateParser(data_filename, has_header, boosting_->MaxFeatureIdx() + 1, boosting_->LabelIdx()));
 
     if (parser == nullptr) {
-      Log::Fatal("Could not recognize the data format of data file %s.", data_filename);
+      Log::Fatal("Could not recognize the data format of data file %s", data_filename);
     }
 
     TextReader<data_size_t> predict_data_reader(data_filename, has_header);

@@ -46,14 +46,14 @@ void DatasetLoader::SetHeader(const char* filename) {
         if (label_idx_ >= 0) {
           Log::Info("Using column %s as label", name.c_str());
         } else {
-          Log::Fatal("Could not find label column %s in data file \
-                      or data file doesn't contain header", name.c_str());
+          Log::Fatal("Could not find label column %s in data file \n"
+                     "or data file doesn't contain header", name.c_str());
         }
       } else {
         if (!Common::AtoiAndCheck(io_config_.label_column.c_str(), &label_idx_)) {
-          Log::Fatal("label_column is not a number, \
-                      if you want to use a column name, \
-                      please add the prefix \"name:\" to the column name");
+          Log::Fatal("label_column is not a number,\n"
+                     "if you want to use a column name,\n"
+                     "please add the prefix \"name:\" to the column name");
         }
         Log::Info("Using column number %d as label", label_idx_);
       }
@@ -83,9 +83,9 @@ void DatasetLoader::SetHeader(const char* filename) {
         for (auto token : Common::Split(io_config_.ignore_column.c_str(), ',')) {
           int tmp = 0;
           if (!Common::AtoiAndCheck(token.c_str(), &tmp)) {
-            Log::Fatal("ignore_column is not a number, \
-                        if you want to use a column name, \
-                        please add the prefix \"name:\" to the column name");
+            Log::Fatal("ignore_column is not a number,\n"
+                       "if you want to use a column name,\n"
+                       "please add the prefix \"name:\" to the column name");
           }
           ignore_features_.emplace(tmp);
         }
@@ -103,9 +103,9 @@ void DatasetLoader::SetHeader(const char* filename) {
         }
       } else {
         if (!Common::AtoiAndCheck(io_config_.weight_column.c_str(), &weight_idx_)) {
-          Log::Fatal("weight_column is not a number, \
-                      if you want to use a column name, \
-                      please add the prefix \"name:\" to the column name");
+          Log::Fatal("weight_column is not a number,\n"
+                     "if you want to use a column name,\n"
+                     "please add the prefix \"name:\" to the column name");
         }
         Log::Info("Using column number %d as weight", weight_idx_);
       }
@@ -123,9 +123,9 @@ void DatasetLoader::SetHeader(const char* filename) {
         }
       } else {
         if (!Common::AtoiAndCheck(io_config_.group_column.c_str(), &group_idx_)) {
-          Log::Fatal("group_column is not a number, \
-                      if you want to use a column name, \
-                      please add the prefix \"name:\" to the column name");
+          Log::Fatal("group_column is not a number,\n"
+                     "if you want to use a column name,\n"
+                     "please add the prefix \"name:\" to the column name");
         }
         Log::Info("Using column number %d as group/query id", group_idx_);
       }
@@ -147,9 +147,9 @@ void DatasetLoader::SetHeader(const char* filename) {
       for (auto token : Common::Split(io_config_.categorical_column.c_str(), ',')) {
         int tmp = 0;
         if (!Common::AtoiAndCheck(token.c_str(), &tmp)) {
-          Log::Fatal("categorical_column is not a number, \
-                        if you want to use a column name, \
-                        please add the prefix \"name:\" to the column name");
+          Log::Fatal("categorical_column is not a number,\n"
+                     "if you want to use a column name,\n"
+                     "please add the prefix \"name:\" to the column name");
         }
         categorical_features_.emplace(tmp);
       }
@@ -161,8 +161,8 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, const char* initscore
   // don't support query id in data file when training in parallel
   if (num_machines > 1 && !io_config_.is_pre_partition) {
     if (group_idx_ > 0) {
-      Log::Fatal("Using a query id without pre-partitioning the data file is not supported for parallel training. \
-                  Please use an additional query file or pre-partition the data");
+      Log::Fatal("Using a query id without pre-partitioning the data file is not supported for parallel training.\n"
+                 "Please use an additional query file or pre-partition the data");
     }
   }
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
@@ -282,7 +282,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     Log::Fatal("Binary file error: token has the wrong size");
   }
   if (std::string(buffer.data()) != std::string(Dataset::binary_file_token)) {
-    Log::Fatal("input file is not LightGBM binary file");
+    Log::Fatal("Input file is not LightGBM binary file");
   }
 
   // read size of header
@@ -437,7 +437,8 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
       bool is_query_used = false;
       for (data_size_t i = 0; i < dataset->num_data_; ++i) {
         if (qid >= num_queries) {
-          Log::Fatal("Current query exceeds the range of the query file, please ensure the query file is correct");
+          Log::Fatal("Current query exceeds the range of the query file,\n"
+                     "please ensure the query file is correct");
         }
         if (i >= query_boundaries[qid + 1]) {
           // if is new query
@@ -642,7 +643,7 @@ void DatasetLoader::CheckDataset(const Dataset* dataset) {
     last_sub_feature = sub_feature;
   }
   if (!is_feature_order_by_group) {
-    Log::Fatal("feature in dataset should order by group");
+    Log::Fatal("Features in dataset should be ordered by group");
   }
 }
 
@@ -676,7 +677,8 @@ std::vector<std::string> DatasetLoader::LoadTextDataToMemory(const char* filenam
         [this, rank, num_machines, &qid, &query_boundaries, &is_query_used, num_queries]
       (data_size_t line_idx) {
         if (qid >= num_queries) {
-          Log::Fatal("Current query exceeds the range of the query file, please ensure the query file is correct");
+          Log::Fatal("Current query exceeds the range of the query file,\n"
+                     "please ensure the query file is correct");
         }
         if (line_idx >= query_boundaries[qid + 1]) {
           // if is new query
@@ -1081,7 +1083,7 @@ std::string DatasetLoader::CheckCanLoadFromBin(const char* filename) {
     bin_filename = std::string(filename);
     reader = VirtualFileReader::Make(bin_filename.c_str());
     if (!reader->Init()) {
-      Log::Fatal("cannot open data file %s", bin_filename.c_str());
+      Log::Fatal("Cannot open data file %s", bin_filename.c_str());
     }
   }
 

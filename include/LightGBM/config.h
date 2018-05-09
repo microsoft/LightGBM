@@ -498,11 +498,11 @@ struct ParameterAlias {
           // set priority by length & alphabetically to ensure reproducible behavior
           if (alias_set->second.size() < pair.first.size() ||
             (alias_set->second.size() == pair.first.size() && alias_set->second < pair.first)) {
-            Log::Warning("%s is set with %s=%s, %s=%s will be ignored. Current value: %s=%s.",
+            Log::Warning("%s is set with %s=%s, %s=%s will be ignored. Current value: %s=%s",
               alias->second.c_str(), alias_set->second.c_str(), params->at(alias_set->second).c_str(),
               pair.first.c_str(), pair.second.c_str(), alias->second.c_str(), params->at(alias_set->second).c_str());
           } else {
-            Log::Warning("%s is set with %s=%s, will be overridden by %s=%s. Current value: %s=%s.",
+            Log::Warning("%s is set with %s=%s, will be overridden by %s=%s. Current value: %s=%s",
               alias->second.c_str(), alias_set->second.c_str(), params->at(alias_set->second).c_str(),
               pair.first.c_str(), pair.second.c_str(), alias->second.c_str(), pair.second.c_str());
             tmp_map[alias->second] = pair.first;
@@ -520,7 +520,7 @@ struct ParameterAlias {
         params->emplace(pair.first, params->at(pair.second));
         params->erase(pair.second);
       } else {
-        Log::Warning("%s is set=%s, %s=%s will be ignored. Current value: %s=%s.", 
+        Log::Warning("%s is set=%s, %s=%s will be ignored. Current value: %s=%s", 
           pair.first.c_str(), alias->second.c_str(), pair.second.c_str(), params->at(pair.second).c_str(),
           pair.first.c_str(), alias->second.c_str());
       }

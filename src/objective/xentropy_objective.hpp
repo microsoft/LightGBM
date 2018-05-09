@@ -60,10 +60,10 @@ public:
       double sumw;
       Common::ObtainMinMaxSum(weights_, num_data_, &minw, (label_t*)nullptr, &sumw);
       if (minw < 0.0f) {
-        Log::Fatal("[%s]: at least one weight is negative.", GetName());
+        Log::Fatal("[%s]: at least one weight is negative", GetName());
       }
       if (sumw == 0.0f) {
-        Log::Fatal("[%s]: sum of weights is zero.", GetName());
+        Log::Fatal("[%s]: sum of weights is zero", GetName());
       }
     }
 
@@ -123,7 +123,7 @@ public:
     }
     double pavg = suml / sumw;
     double initscore = std::log(pavg / (1.0f - pavg));
-    Log::Info("[%s:%s]: pavg=%f -> initscore=%f",  GetName(), __func__, pavg, initscore);
+    Log::Info("[%s:%s]: pavg = %f -> initscore = %f",  GetName(), __func__, pavg, initscore);
     return initscore;
   }
 
@@ -163,7 +163,7 @@ public:
 
       Common::ObtainMinMaxSum(weights_, num_data_, &min_weight_, &max_weight_, (label_t*)nullptr);
       if (min_weight_ <= 0.0f) {
-        Log::Fatal("[%s]: at least one weight is non-positive.", GetName());
+        Log::Fatal("[%s]: at least one weight is non-positive", GetName());
       }
 
       // Issue an info statement about this ratio
@@ -248,7 +248,7 @@ public:
     }
     double havg = suml / sumw;
     double initscore = std::log(std::exp(havg) - 1.0f);
-    Log::Info("[%s:%s]: havg=%f -> initscore=%f",  GetName(), __func__, havg, initscore);
+    Log::Info("[%s:%s]: havg = %f -> initscore = %f",  GetName(), __func__, havg, initscore);
     return initscore;
   }
 

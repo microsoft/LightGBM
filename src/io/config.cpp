@@ -22,7 +22,7 @@ void ConfigBase::KV2Map(std::unordered_map<std::string, std::string>& params, co
       if (value_search == params.end()) { // not set
         params.emplace(key, value);
       } else {
-        Log::Warning("%s is set=%s, %s=%s will be ignored. Current value: %s=%s.",
+        Log::Warning("%s is set=%s, %s=%s will be ignored. Current value: %s=%s",
           key.c_str(), value_search->second.c_str(), key.c_str(), value.c_str(),
           key.c_str(), value_search->second.c_str());
       }
@@ -249,8 +249,9 @@ void OverallConfig::CheckParamConflict() {
     is_parallel_find_bin = true;
     if (boosting_config.tree_config.histogram_pool_size >= 0
         && boosting_config.tree_learner_type == std::string("data")) {
-      Log::Warning("Histogram LRU queue was enabled (histogram_pool_size=%f). Will disable this to reduce communication costs"
-        , boosting_config.tree_config.histogram_pool_size);
+      Log::Warning("Histogram LRU queue was enabled (histogram_pool_size=%f).\n"
+                   "Will disable this to reduce communication costs",
+                   boosting_config.tree_config.histogram_pool_size);
       // Change pool size to -1 (no limit) when using data parallel to reduce communication costs
       boosting_config.tree_config.histogram_pool_size = -1;
     }
@@ -260,7 +261,7 @@ void OverallConfig::CheckParamConflict() {
     int full_num_leaves = static_cast<int>(std::pow(2, boosting_config.tree_config.max_depth));
     if (full_num_leaves > boosting_config.tree_config.num_leaves 
         && boosting_config.tree_config.num_leaves == kDefaultNumLeaves) {
-      Log::Warning("Accuracy may be bad since you didn't set num_leaves and 2^max_depth > num_leaves.");
+      Log::Warning("Accuracy may be bad since you didn't set num_leaves and 2^max_depth > num_leaves");
     }
   }
 }

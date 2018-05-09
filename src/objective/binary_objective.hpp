@@ -20,7 +20,7 @@ public:
     is_unbalance_ = config.is_unbalance;
     scale_pos_weight_ = static_cast<double>(config.scale_pos_weight);
     if(is_unbalance_ && std::fabs(scale_pos_weight_ - 1.0f) > 1e-6) {
-      Log::Fatal("Cannot set is_unbalance and scale_pos_weight at the same time.");
+      Log::Fatal("Cannot set is_unbalance and scale_pos_weight at the same time");
     }
     is_pos_ = is_pos;
     if (is_pos_ == nullptr) {
@@ -61,7 +61,7 @@ public:
       }
     }
     if (cnt_negative == 0 || cnt_positive == 0) {
-      Log::Warning("Only contain one class.");
+      Log::Warning("Contains only one class");
       // not need to boost.
       num_data_ = 0;
     }

@@ -308,7 +308,7 @@ void Metadata::SetLabel(const label_t* label, data_size_t len) {
     Log::Fatal("label cannot be nullptr");
   }
   if (num_data_ != len) {
-    Log::Fatal("len of label is not same with #data");
+    Log::Fatal("Length of label is not same with #data");
   }
   if (!label_.empty()) { label_.clear(); }
   label_ = std::vector<label_t>(num_data_);
@@ -327,7 +327,7 @@ void Metadata::SetWeights(const label_t* weights, data_size_t len) {
     return;
   }
   if (num_data_ != len) {
-    Log::Fatal("len of weights is not same with #data");
+    Log::Fatal("Length of weights is not same with #data");
   }
   if (!weights_.empty()) { weights_.clear(); }
   num_weights_ = num_data_;
@@ -354,7 +354,7 @@ void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
     sum += query[i];
   }
   if (num_data_ != sum) {
-    Log::Fatal("sum of query counts is not same with #data");
+    Log::Fatal("Sum of query counts is not same with #data");
   }
   if (!query_boundaries_.empty()) { query_boundaries_.clear(); }
   num_queries_ = len;
@@ -424,7 +424,7 @@ void Metadata::LoadInitialScore(const char* initscore_file) {
       double tmp = 0.0f;
       oneline_init_score = Common::Split(reader.Lines()[i].c_str(), '\t');
       if (static_cast<int>(oneline_init_score.size()) != num_class) {
-        Log::Fatal("Invalid initial score file. Redundant or insufficient columns.");
+        Log::Fatal("Invalid initial score file. Redundant or insufficient columns");
       }
       for (int k = 0; k < num_class; ++k) {
         Common::Atof(oneline_init_score[k].c_str(), &tmp);
