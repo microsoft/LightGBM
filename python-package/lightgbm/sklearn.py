@@ -486,7 +486,7 @@ class LGBMModel(_LGBMModelBase):
         return self
 
     def predict(self, X, raw_score=False, num_iteration=-1,
-                pred_leaf=False, pred_contrib=False, other_params=None):
+                pred_leaf=False, pred_contrib=False, **kwargs):
         """Return the predicted value for each sample.
 
         Parameters
@@ -502,8 +502,7 @@ class LGBMModel(_LGBMModelBase):
             Whether to predict leaf index.
         pred_contrib : bool, optional (default=False)
             Whether to predict feature contributions.
-        other_params : dict or None, optional (default=None)
-            Other parameters for the prediction.
+        **kwargs : other parameters for the prediction
 
         Returns
         -------
@@ -525,8 +524,7 @@ class LGBMModel(_LGBMModelBase):
                              "input n_features is %s "
                              % (self._n_features, n_features))
         return self.booster_.predict(X, raw_score=raw_score, num_iteration=num_iteration,
-                                     pred_leaf=pred_leaf, pred_contrib=pred_contrib,
-                                     pred_parameter=other_params)
+                                     pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
 
     def apply(self, X, num_iteration=0):
         """Return the predicted leaf every tree for each sample.
@@ -702,9 +700,9 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
                    + _base_doc[_base_doc.find('            If string, it should be a built-in evaluation metric to use.'):])
 
     def predict(self, X, raw_score=False, num_iteration=-1,
-                pred_leaf=False, pred_contrib=False, other_params=None):
+                pred_leaf=False, pred_contrib=False, **kwargs):
         result = self.predict_proba(X, raw_score, num_iteration,
-                                    pred_leaf, pred_contrib, other_params)
+                                    pred_leaf, pred_contrib, **kwargs)
         if raw_score or pred_leaf or pred_contrib:
             return result
         else:
@@ -712,7 +710,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
             return self._le.inverse_transform(class_index)
 
     def predict_proba(self, X, raw_score=False, num_iteration=-1,
-                      pred_leaf=False, pred_contrib=False, other_params=None):
+                      pred_leaf=False, pred_contrib=False, **kwargs):
         """Return the predicted probability for each class for each sample.
 
         Parameters
@@ -728,8 +726,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
             Whether to predict leaf index.
         pred_contrib : bool, optional (default=False)
             Whether to predict feature contributions.
-        other_params : dict or None, optional (default=None)
-            Other parameters for the prediction.
+        **kwargs : other parameters for the prediction
 
         Returns
         -------
@@ -741,7 +738,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
             If ``pred_contrib=True``, the each feature contributions for each sample.
         """
         result = super(LGBMClassifier, self).predict(X, raw_score, num_iteration,
-                                                     pred_leaf, pred_contrib, other_params)
+                                                     pred_leaf, pred_contrib, **kwargs)
         if self._n_classes > 2 or pred_leaf or pred_contrib:
             return result
         else:
