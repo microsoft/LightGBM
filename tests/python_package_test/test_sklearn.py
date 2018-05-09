@@ -266,3 +266,12 @@ class TestSklearn(unittest.TestCase):
         res_engine = gbm.predict(X_test, pred_contrib=True)
         res_sklearn = clf.predict(X_test, pred_contrib=True)
         np.testing.assert_allclose(res_engine, res_sklearn)
+
+        # Tests other parameters for the prediction works 
+        res_engine = gbm.predict(X_test)
+        res_sklearn_params = clf.predict_proba(X_test,
+                                               pred_early_stop=True,
+                                               pred_early_stop_margin=1.0)
+        self.assertRaises(AssertionError,
+                          np.testing.assert_allclose,
+                          res_engine, res_sklearn_params)
