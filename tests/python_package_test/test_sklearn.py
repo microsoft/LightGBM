@@ -230,3 +230,48 @@ class TestSklearn(unittest.TestCase):
         np.testing.assert_almost_equal(pred0, pred2)
         np.testing.assert_almost_equal(pred0, pred3)
         np.testing.assert_almost_equal(pred_prob, pred4)
+
+    def test_predict(self):
+        iris = load_iris()
+        X_train, X_test, y_train, y_test = train_test_split(iris.data, iris.target,
+                                                            test_size=0.2, random_state=42)
+
+        gbm = lgb.train({'objective': 'multiclass',
+                         'num_class': 3,
+                         'verbose': -1},
+                        lgb.Dataset(X_train, y_train))
+        clf = lgb.LGBMClassifier(verbose=-1).fit(X_train, y_train)
+
+        # Tests same probabilities
+        res_engine = gbm.predict(X_test)
+        res_sklearn = clf.predict_proba(X_test)
+        np.testing.assert_allclose(res_engine, res_sklearn)
+
+        # Tests same predictions
+        res_engine = np.argmax(gbm.predict(X_test), axis=1)
+        res_sklearn = clf.predict(X_test)
+        np.testing.assert_equal(res_engine, res_sklearn)
+
+        # Tests same raw scores
+        res_engine = gbm.predict(X_test, raw_score=True)
+        res_sklearn = clf.predict(X_test, raw_score=True)
+        np.testing.assert_allclose(res_engine, res_sklearn)
+
+        # Tests same leaf indices
+        res_engine = gbm.predict(X_test, pred_leaf=True)
+        res_sklearn = clf.predict(X_test, pred_leaf=True)
+        np.testing.assert_equal(res_engine, res_sklearn)
+
+        # Tests same feature contributions
+        res_engine = gbm.predict(X_test, pred_contrib=True)
+        res_sklearn = clf.predict(X_test, pred_contrib=True)
+        np.testing.assert_allclose(res_engine, res_sklearn)
+
+        # Tests other parameters for the prediction works
+        res_engine = gbm.predict(X_test)
+        res_sklearn_params = clf.predict_proba(X_test,
+                                               pred_early_stop=True,
+                                               pred_early_stop_margin=1.0)
+        self.assertRaises(AssertionError,
+                          np.testing.assert_allclose,
+                          res_engine, res_sklearn_params)

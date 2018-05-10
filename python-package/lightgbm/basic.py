@@ -13,9 +13,10 @@ from tempfile import NamedTemporaryFile
 import numpy as np
 import scipy.sparse
 
-from .compat import (DataFrame, Series, decode_string, integer_types,
-                     json, json_default_with_numpy, numeric_types,
-                     range_, string_type)
+from .compat import (DataFrame, LGBMDeprecationWarning, Series,
+                     decode_string, integer_types,
+                     json, json_default_with_numpy,
+                     numeric_types, range_, string_type)
 from .libpath import find_lib_path
 
 
@@ -1754,7 +1755,7 @@ class Booster(object):
         return json.loads(string_buffer.value.decode())
 
     def predict(self, data, num_iteration=-1, raw_score=False, pred_leaf=False, pred_contrib=False,
-                data_has_header=False, is_reshape=True, pred_parameter=None):
+                data_has_header=False, is_reshape=True, pred_parameter=None, **kwargs):
         """Make a prediction.
 
         Parameters
@@ -1776,14 +1777,22 @@ class Booster(object):
             Used only if data is string.
         is_reshape : bool, optional (default=True)
             If True, result is reshaped to [nrow, ncol].
-        pred_parameter: dict or None, optional (default=None)
+        pred_parameter : dict or None, optional (default=None)
+            Deprecated.
             Other parameters for the prediction.
+        **kwargs : other parameters for the prediction
 
         Returns
         -------
         result : numpy array
             Prediction result.
         """
+        if pred_parameter:
+            warnings.warn("pred_parameter is deprecated and will be removed in 2.2 version.\n"
+                          "Please use kwargs instead.", LGBMDeprecationWarning)
+            pred_parameter.update(kwargs)
+        else:
+            pred_parameter = kwargs
         predictor = self._to_predictor(pred_parameter)
         if num_iteration <= 0:
             num_iteration = self.best_iteration

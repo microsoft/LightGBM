@@ -392,7 +392,7 @@ This will generate a JAR file containing the LightGBM `C API <./Development-Guid
 
 .. _Intel SDK for OpenCL: https://software.intel.com/en-us/articles/opencl-drivers
 
-.. _AMD APP SDK: http://developer.amd.com/amd-accelerated-parallel-processing-app-sdk/
+.. _AMD APP SDK: http://developer.amd.com/  # amd-accelerated-parallel-processing-app-sdk/
 
 .. _CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 

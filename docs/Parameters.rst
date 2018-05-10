@@ -200,7 +200,7 @@ Learning Control Parameters
 
    -  minimal sum hessian in one leaf. Like ``min_data_in_leaf``, it can be used to deal with over-fitting
 
--  ``feature_fraction``, default=\ ``1.0``, type=double, ``0.0 < feature_fraction < 1.0``, alias=\ ``sub_feature``, ``colsample_bytree``
+-  ``feature_fraction``, default=\ ``1.0``, type=double, ``0.0 < feature_fraction <= 1.0``, alias=\ ``sub_feature``, ``colsample_bytree``
 
    -  LightGBM will randomly select part of features on each iteration if ``feature_fraction`` smaller than ``1.0``.
       For example, if set to ``0.8``, will select 80% features before training each tree
@@ -213,7 +213,7 @@ Learning Control Parameters
 
    -  random seed for ``feature_fraction``
 
--  ``bagging_fraction``, default=\ ``1.0``, type=double, ``0.0 < bagging_fraction < 1.0``, alias=\ ``sub_row``, ``subsample``
+-  ``bagging_fraction``, default=\ ``1.0``, type=double, ``0.0 < bagging_fraction <= 1.0``, alias=\ ``sub_row``, ``subsample``
 
    -  like ``feature_fraction``, but this will randomly select part of data without resampling
 
@@ -257,11 +257,11 @@ Learning Control Parameters
 
    -  the minimal gain to perform split
 
--  ``drop_rate``, default=\ ``0.1``, type=double
+-  ``drop_rate``, default=\ ``0.1``, type=double, ``0.0 <= drop_rate <= 1.0``
 
    -  only used in ``dart``
 
--  ``skip_drop``, default=\ ``0.5``, type=double
+-  ``skip_drop``, default=\ ``0.5``, type=double, ``0.0 <= skip_drop <= 1.0``
 
    -  only used in ``dart``, probability of skipping drop
 
@@ -321,13 +321,13 @@ Learning Control Parameters
 
    -  set this to larger value for more accurate result, but it will slow down the training speed
 
-- ``monotone_constraint``, default=``None``, type=multi-int, alias=\ ``mc``
+-  ``monotone_constraint``, default=\ ``None``, type=multi-int, alias=\ ``mc``
 
-   - used for constraints of monotonic features
+   -  used for constraints of monotonic features
 
-   - ``1`` means increasing, ``-1`` means decreasing, ``0`` means non-constraint
+   -  ``1`` means increasing, ``-1`` means decreasing, ``0`` means non-constraint
 
-   - need to specific all features in order. For example, ``mc=-1,0,1`` means the decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature.
+   -  you need to specify all features in order. For example, ``mc=-1,0,1`` means the decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
 
 IO Parameters
 -------------
@@ -524,11 +524,11 @@ IO Parameters
 
    -  path to a ``.json`` file that specifies splits to force at the top of every decision tree before best-first learning commences.
 
-   - ``.json`` file can be arbitrarily nested, and each split contains ``feature``, ``threshold`` fields, as well as ``left`` and ``right`` 
-     fields representing subsplits. Categorical splits are forced in a one-hot fashion, with ``left`` representing the split containing
-     the feature value and ``right`` representing other values.
+   -  ``.json`` file can be arbitrarily nested, and each split contains ``feature``, ``threshold`` fields, as well as ``left`` and ``right`` 
+      fields representing subsplits. Categorical splits are forced in a one-hot fashion, with ``left`` representing the split containing
+      the feature value and ``right`` representing other values.
 
-   -  see ``examples/binary_classification/forced_splits.json`` as an example.
+   -  see `this file <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example.
 
 Objective Parameters
 --------------------
@@ -604,12 +604,12 @@ Metric Parameters
 
 -  ``metric``, default=\ ``''``, type=multi-enum
 
-   - metric to be evaluated on the evaluation sets **in addition** to what is provided in the training arguments
+   -  metric to be evaluated on the evaluation sets **in addition** to what is provided in the training arguments
 
       -  ``''`` (empty string or not specific), metric corresponding to specified objective will be used
          (this is possible only for pre-defined objective functions, otherwise no evaluation metric will be added)
 
-      - ``'None'`` (string **not** a ``None`` value), no metric registered, alias=\ ``na``
+      -  ``'None'`` (string, **not** a ``None`` value), no metric registered, alias=\ ``na``
    
       -  ``l1``, absolute loss, alias=\ ``mean_absolute_error``, ``mae``, ``regression_l1``
    
