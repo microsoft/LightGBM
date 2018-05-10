@@ -319,12 +319,12 @@ class TestEngine(unittest.TestCase):
                         evals_result=evals_result)
 
         pred_parameter = {"pred_early_stop": True, "pred_early_stop_freq": 5, "pred_early_stop_margin": 1.5}
-        ret = multi_logloss(y_test, gbm.predict(X_test, pred_parameter=pred_parameter))
+        ret = multi_logloss(y_test, gbm.predict(X_test, **pred_parameter))
         self.assertLess(ret, 0.8)
         self.assertGreater(ret, 0.5)  # loss will be higher than when evaluating the full model
 
         pred_parameter = {"pred_early_stop": True, "pred_early_stop_freq": 5, "pred_early_stop_margin": 5.5}
-        ret = multi_logloss(y_test, gbm.predict(X_test, pred_parameter=pred_parameter))
+        ret = multi_logloss(y_test, gbm.predict(X_test, **pred_parameter))
         self.assertLess(ret, 0.2)
 
     def test_early_stopping(self):
@@ -537,7 +537,6 @@ class TestEngine(unittest.TestCase):
             'objective': 'binary',
             'metric': 'binary_logloss',
             'verbose': -1,
-            'num_iteration': 50  # test num_iteration in dict here
         }
         lgb_train = lgb.Dataset(X_train, y_train)
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
