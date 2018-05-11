@@ -35,7 +35,7 @@ public:
     if (init_score != nullptr) {
       if ((data->metadata().num_init_score() % num_data_) != 0
           || (data->metadata().num_init_score() / num_data_) != num_tree_per_iteration) {
-        Log::Fatal("number of class for initial score error");
+        Log::Fatal("Number of class for initial score error");
       }
       has_init_score_ = true;
       #pragma omp parallel for schedule(static)

@@ -110,8 +110,8 @@ void Linkers::ParseMachineList(const std::string& machines, const std::string& f
     client_ports_.push_back(atoi(str_after_split[1].c_str()));
   }
   if (client_ips_.empty()) {
-    Log::Fatal("Cannot find any ip and port. \
-                Please check machine_list_filename or machines parameter.");
+    Log::Fatal("Cannot find any ip and port.\n"
+               "Please check machine_list_filename or machines parameter");
   }
   if (client_ips_.size() != static_cast<size_t>(num_machines_)) {
     Log::Warning("World size is larger than the machine_list size, change world size to %d", client_ips_.size());

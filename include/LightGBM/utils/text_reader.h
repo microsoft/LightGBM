@@ -324,4 +324,3 @@ private:
 }  // namespace LightGBM
 
 #endif   // LightGBM_UTILS_TEXT_READER_H_
-

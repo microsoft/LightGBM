@@ -60,9 +60,9 @@ public:
     CHECK(gbdt_config_->top_rate + gbdt_config_->other_rate <= 1.0f);
     CHECK(gbdt_config_->top_rate > 0.0f && gbdt_config_->other_rate > 0.0f);
     if (gbdt_config_->bagging_freq > 0 && gbdt_config_->bagging_fraction != 1.0f) {
-      Log::Fatal("cannot use bagging in GOSS");
+      Log::Fatal("Cannot use bagging in GOSS");
     }
-    Log::Info("using GOSS");
+    Log::Info("Using GOSS");
 
     bag_data_indices_.resize(num_data_);
     tmp_indices_.resize(num_data_);

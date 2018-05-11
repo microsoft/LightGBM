@@ -208,4 +208,3 @@ inline void SyncUpGlobalBestSplit(char* input_buffer_, char* output_buffer_, Spl
 
 }  // namespace LightGBM
 #endif   // LightGBM_TREELEARNER_PARALLEL_TREE_LEARNER_H_
-

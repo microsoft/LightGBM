@@ -130,8 +130,8 @@ void DCGCalculator::CheckLabel(const label_t* label, data_size_t num_data) {
   for (data_size_t i = 0; i < num_data; ++i) {
     label_t delta = std::fabs(label[i] - static_cast<int>(label[i]));
     if (delta > kEpsilon) {
-      Log::Fatal("label should be int type (met %f) for ranking task, \
-                 for the gain of label, please set the label_gain parameter.", label[i]);
+      Log::Fatal("label should be int type (met %f) for ranking task,\n"
+                 "for the gain of label, please set the label_gain parameter", label[i]);
     }
     if (static_cast<size_t>(label[i]) >= label_gain_.size() || label[i] < 0) {
       Log::Fatal("label (%d) excel the max range %d", label[i], label_gain_.size());

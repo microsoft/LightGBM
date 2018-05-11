@@ -20,6 +20,9 @@ if is_py3:
     def argc_(func):
         """return number of arguments of a function"""
         return len(inspect.signature(func).parameters)
+
+    def decode_string(bytestring):
+        return bytestring.decode('utf-8')
 else:
     string_type = basestring
     numeric_types = (int, long, float, bool)
@@ -29,6 +32,9 @@ else:
     def argc_(func):
         """return number of arguments of a function"""
         return len(inspect.getargspec(func).args)
+
+    def decode_string(bytestring):
+        return bytestring
 
 """json"""
 try:

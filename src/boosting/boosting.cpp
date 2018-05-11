@@ -23,7 +23,7 @@ bool Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
     }
   }
   std::chrono::duration<double, std::milli> delta = (std::chrono::steady_clock::now() - start_time);
-  Log::Debug("time for loading model: %f seconds", 1e-3*delta);
+  Log::Debug("Time for loading model: %f seconds", 1e-3*delta);
   return true;
 }
 
@@ -52,11 +52,11 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
       } else if (type == std::string("rf")) {
         return new RF();
       } else {
-        Log::Fatal("unknown boosting type %s", type.c_str());
+        Log::Fatal("Unknown boosting type %s", type.c_str());
       }
       LoadFileToBoosting(ret.get(), filename);
     } else {
-      Log::Fatal("unknown model format or submodel type in model file %s", filename);
+      Log::Fatal("Unknown model format or submodel type in model file %s", filename);
     }
     return ret.release();
   }

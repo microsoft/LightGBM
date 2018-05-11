@@ -104,7 +104,7 @@ private:
       } else if (ret == 0) {
         break;
       } else if (errno != EINTR) {
-        Log::Fatal("Failed hdfs file operation [%s]", strerror(errno));
+        Log::Fatal("Failed HDFS file operation [%s]", strerror(errno));
       }
     }
     return bytes - remain;
@@ -113,7 +113,7 @@ private:
   static hdfsFS GetHDFSFileSystem(const std::string& uri) {
     size_t end = uri.find("/", kHdfsProto.length());
     if (uri.find(kHdfsProto) != 0 || end == std::string::npos) {
-      Log::Warning("Bad hdfs uri, no namenode found [%s]", uri.c_str());
+      Log::Warning("Bad HDFS uri, no namenode found [%s]", uri.c_str());
       return NULL;
     }
     std::string hostport = uri.substr(kHdfsProto.length(), end - kHdfsProto.length());
@@ -131,7 +131,7 @@ private:
     iss >> port;
     hdfsFS fs = iss.eof() ? hdfsConnect(host.c_str(), port) : NULL;
     if (fs == NULL) {
-      Log::Warning("Could not connect to hdfs namenode [%s]", hostport.c_str());
+      Log::Warning("Could not connect to HDFS namenode [%s]", hostport.c_str());
     }
     return fs;
   }
@@ -147,7 +147,7 @@ std::unordered_map<std::string, hdfsFS> HDFSFile::fs_cache_ = std::unordered_map
 
 #define WITH_HDFS(x) x
 #else
-#define WITH_HDFS(x) Log::Fatal("HDFS Support not enabled.")
+#define WITH_HDFS(x) Log::Fatal("HDFS support is not enabled")
 #endif // USE_HDFS
 
 std::unique_ptr<VirtualFileReader> VirtualFileReader::Make(const std::string& filename) {

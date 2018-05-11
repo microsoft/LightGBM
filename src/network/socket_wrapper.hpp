@@ -121,14 +121,14 @@ public:
     }
     
     if (setsockopt(sockfd_, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<const char*>(&SocketConfig::kSocketBufferSize), sizeof(SocketConfig::kSocketBufferSize)) != 0) {
-      Log::Warning("Set SO_RCVBUF failed, please increase your net.core.rmem_max to 100k at least.");
+      Log::Warning("Set SO_RCVBUF failed, please increase your net.core.rmem_max to 100k at least");
     }
     
     if (setsockopt(sockfd_, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<const char*>(&SocketConfig::kSocketBufferSize), sizeof(SocketConfig::kSocketBufferSize)) != 0) {
-      Log::Warning("Set SO_SNDBUF failed, please increase your net.core.wmem_max to 100k at least.");
+      Log::Warning("Set SO_SNDBUF failed, please increase your net.core.wmem_max to 100k at least");
     }
     if (setsockopt(sockfd_, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char*>(&SocketConfig::kNoDelay), sizeof(SocketConfig::kNoDelay)) != 0) {
-      Log::Warning("Set TCP_NODELAY failed.");
+      Log::Warning("Set TCP_NODELAY failed");
     }
   }
 

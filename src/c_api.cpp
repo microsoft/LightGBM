@@ -42,8 +42,8 @@ public:
     }
     // create boosting
     if (config_.io_config.input_model.size() > 0) {
-      Log::Warning("continued train from model is not support for c_api, \
-        please use continued train with input score");
+      Log::Warning("Continued train from model is not supported for c_api,\n"
+                   "please use continued train with input score");
     }
 
     boosting_.reset(Boosting::CreateBoosting(config_.boosting_type, nullptr));
@@ -52,10 +52,10 @@ public:
     CreateObjectiveAndMetrics();
     // initialize the boosting
     if (config_.boosting_config.tree_learner_type == std::string("feature")) {
-      Log::Fatal("Do not support feature parallel in c api.");
+      Log::Fatal("Do not support feature parallel in c api");
     }
     if (Network::num_machines() == 1 && config_.boosting_config.tree_learner_type != std::string("serial")) {
-      Log::Warning("Only find one worker, will switch to serial tree learner.");
+      Log::Warning("Only find one worker, will switch to serial tree learner");
       config_.boosting_config.tree_learner_type = "serial";
     }
     boosting_->Init(&config_.boosting_config, train_data_, objective_fun_.get(),
@@ -112,13 +112,13 @@ public:
     std::lock_guard<std::mutex> lock(mutex_);
     auto param = ConfigBase::Str2Map(parameters);
     if (param.count("num_class")) {
-      Log::Fatal("cannot change num class during training");
+      Log::Fatal("Cannot change num_class during training");
     }
     if (param.count("boosting_type")) {
-      Log::Fatal("cannot change boosting_type during training");
+      Log::Fatal("Cannot change boosting_type during training");
     }
     if (param.count("metric")) {
-      Log::Fatal("cannot change metric during training");
+      Log::Fatal("Cannot change metric during training");
     }
 
     config_.Set(param);
@@ -757,7 +757,7 @@ int LGBM_DatasetSetField(DatasetHandle handle,
   } else if (type == C_API_DTYPE_FLOAT64) {
     is_success = dataset->SetDoubleField(field_name, reinterpret_cast<const double*>(field_data), static_cast<int32_t>(num_element));
   }
-  if (!is_success) { throw std::runtime_error("Input data type erorr or field not found"); }
+  if (!is_success) { throw std::runtime_error("Input data type error or field not found"); }
   API_END();
 }
 
@@ -901,7 +901,7 @@ int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   #ifdef SCORE_T_USE_DOUBLE
-  Log::Fatal("Don't support Custom loss function when enable SCORE_T_USE_DOUBLE.");
+  Log::Fatal("Don't support custom loss function when SCORE_T_USE_DOUBLE is enabled");
   #else
   if (ref_booster->TrainOneIter(grad, hess)) {
     *is_finished = 1;
@@ -1275,7 +1275,7 @@ RowFunctionFromDenseMatric(const void* data, int num_row, int num_col, int data_
       };
     }
   }
-  throw std::runtime_error("unknown data type in RowFunctionFromDenseMatric");
+  throw std::runtime_error("Unknown data type in RowFunctionFromDenseMatric");
 }
 
 std::function<std::vector<std::pair<int, double>>(int row_idx)>
@@ -1349,7 +1349,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
       };
     }
   }
-  throw std::runtime_error("unknown data type in RowFunctionFromCSR");
+  throw std::runtime_error("Unknown data type in RowFunctionFromCSR");
 }
 
 std::function<std::pair<int, double>(int idx)>
@@ -1414,7 +1414,7 @@ IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* ind
       };
     }
   }
-  throw std::runtime_error("unknown data type in CSC matrix");
+  throw std::runtime_error("Unknown data type in CSC matrix");
 }
 
 CSC_RowIterator::CSC_RowIterator(const void* col_ptr, int col_ptr_type, const int32_t* indices,

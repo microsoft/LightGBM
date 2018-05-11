@@ -44,7 +44,7 @@ public:
       Log::Fatal("For MAP metric, there should be query information");
     }
     num_queries_ = metadata.num_queries();
-    Log::Info("total groups: %d , total data: %d", num_queries_, num_data_);
+    Log::Info("Total groups: %d, total data: %d", num_queries_, num_data_);
     // get query weights
     query_weights_ = metadata.query_weights();
     if (query_weights_ == nullptr) {
