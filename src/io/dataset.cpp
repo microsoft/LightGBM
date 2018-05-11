@@ -658,7 +658,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         // feature is not used
         auto data_ptr = hist_data + group_bin_boundaries_[group];
         const int num_bin = feature_groups_[group]->num_total_bin_;
-        std::memset(data_ptr + 1, 0, (num_bin - 1) * sizeof(HistogramBinEntry));
+        std::memset((void*)(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
         // construct histograms for smaller leaf
         if (ordered_bins[group] == nullptr) {
           // if not use ordered bin
@@ -687,7 +687,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         // feature is not used
         auto data_ptr = hist_data + group_bin_boundaries_[group];
         const int num_bin = feature_groups_[group]->num_total_bin_;
-        std::memset(data_ptr + 1, 0, (num_bin - 1) * sizeof(HistogramBinEntry));
+        std::memset((void*)(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
         // construct histograms for smaller leaf
         if (ordered_bins[group] == nullptr) {
           // if not use ordered bin
@@ -720,7 +720,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         // feature is not used
         auto data_ptr = hist_data + group_bin_boundaries_[group];
         const int num_bin = feature_groups_[group]->num_total_bin_;
-        std::memset(data_ptr + 1, 0, (num_bin - 1) * sizeof(HistogramBinEntry));
+        std::memset((void*)(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
         // construct histograms for smaller leaf
         if (ordered_bins[group] == nullptr) {
           // if not use ordered bin
@@ -748,7 +748,7 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
         // feature is not used
         auto data_ptr = hist_data + group_bin_boundaries_[group];
         const int num_bin = feature_groups_[group]->num_total_bin_;
-        std::memset(data_ptr + 1, 0, (num_bin - 1) * sizeof(HistogramBinEntry));
+        std::memset((void*)(data_ptr + 1), 0, (num_bin - 1) * sizeof(HistogramBinEntry));
         // construct histograms for smaller leaf
         if (ordered_bins[group] == nullptr) {
           // if not use ordered bin
