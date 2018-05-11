@@ -133,7 +133,7 @@ public:
       }
     }
     double pavg = suml / sumw;
-    double initscore = std::log(pavg / (1.0f - pavg));
+    double initscore = std::log(pavg / (1.0f - pavg)) / sigmoid_;
     Log::Info("[%s:%s]: pavg=%f -> initscore=%f",  GetName(), __func__, pavg, initscore);
     return initscore;
   }
