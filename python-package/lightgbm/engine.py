@@ -38,9 +38,11 @@ def train(params, train_set, num_boost_round=100,
         Names of ``valid_sets``.
     fobj : callable or None, optional (default=None)
         Customized objective function.
-    feval : callable or None, optional (default=None)
+    feval : callable, string or None, optional (default=None)
         Customized evaluation function.
+        Should accept two parameters: preds, train_data.
         Note: should return (eval_name, eval_result, is_higher_better) or list of such tuples.
+        To ignore the default metric in params, set it to the string ``"None"``
     init_model : string or None, optional (default=None)
         Filename of LightGBM model or Booster instance used for continue training.
     feature_name : list of strings or 'auto', optional (default="auto")
