@@ -158,6 +158,8 @@ class _temp_file(object):
             f.writelines(lines)
 
 
+MAX_INT32 = (1 << 31) - 1
+
 """marco definition of data type in c_api of LightGBM"""
 C_API_DTYPE_FLOAT32 = 0
 C_API_DTYPE_FLOAT64 = 1
@@ -664,6 +666,7 @@ class Dataset(object):
         elif "verbose" not in params:
             params["verbose"] = 1
         # get categorical features
+        categorical_indices = None
         if categorical_feature is not None:
             categorical_indices = set()
             feature_dict = {}
@@ -682,7 +685,8 @@ class Dataset(object):
                     warnings.warn('categorical_feature in param dict is overridden.')
                     params.pop("categorical_feature", None)
                     params.pop("categorical_column", None)
-                params['categorical_column'] = sorted(categorical_indices)
+                categorical_indices = sorted(categorical_indices)
+                params['categorical_column'] = categorical_indices
 
         params_str = param_dict_to_str(params)
         # process for reference dataset
@@ -704,15 +708,15 @@ class Dataset(object):
                 ref_dataset,
                 ctypes.byref(self.handle)))
         elif isinstance(data, scipy.sparse.csr_matrix):
-            self.__init_from_csr(data, params_str, ref_dataset)
+            self.__init_from_csr(data, params_str, ref_dataset, categorical_indices)
         elif isinstance(data, scipy.sparse.csc_matrix):
-            self.__init_from_csc(data, params_str, ref_dataset)
+            self.__init_from_csc(data, params_str, ref_dataset, categorical_indices)
         elif isinstance(data, np.ndarray):
-            self.__init_from_np2d(data, params_str, ref_dataset)
+            self.__init_from_np2d(data, params_str, ref_dataset, categorical_indices)
         else:
             try:
                 csr = scipy.sparse.csr_matrix(data)
-                self.__init_from_csr(csr, params_str, ref_dataset)
+                self.__init_from_csr(csr, params_str, ref_dataset, categorical_indices)
             except BaseException:
                 raise TypeError('Cannot initialize Dataset from {}'.format(type(data).__name__))
         if label is not None:
@@ -747,12 +751,14 @@ class Dataset(object):
         # set feature names
         self.set_feature_name(feature_name)
 
-    def __init_from_np2d(self, mat, params_str, ref_dataset):
+    def __init_from_np2d(self, mat, params_str, ref_dataset, categorical_indices=None):
         """
         Initialize data from a 2-D numpy matrix.
         """
         if len(mat.shape) != 2:
             raise ValueError('Input numpy.ndarray must be 2 dimensional')
+        if categorical_indices is not None and (mat[:, list(categorical_indices)] > MAX_INT32).any():
+            raise ValueError('Values of categorical features must be smaller than {0}'.format(MAX_INT32))
 
         self.handle = ctypes.c_void_p()
         if mat.dtype == np.float32 or mat.dtype == np.float64:
@@ -772,14 +778,16 @@ class Dataset(object):
             ref_dataset,
             ctypes.byref(self.handle)))
 
-    def __init_from_csr(self, csr, params_str, ref_dataset):
+    def __init_from_csr(self, csr, params_str, ref_dataset, categorical_indices=None):
         """
         Initialize data from a CSR matrix.
         """
         if len(csr.indices) != len(csr.data):
             raise ValueError('Length mismatch: {} vs {}'.format(len(csr.indices), len(csr.data)))
-        self.handle = ctypes.c_void_p()
+        if categorical_indices is not None and (csr[:, list(categorical_indices)] > MAX_INT32).nnz:
+            raise ValueError('Values of categorical features must be smaller than {0}'.format(MAX_INT32))
 
+        self.handle = ctypes.c_void_p()
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
         ptr_data, type_ptr_data, _ = c_float_array(csr.data)
 
@@ -796,14 +804,16 @@ class Dataset(object):
             ref_dataset,
             ctypes.byref(self.handle)))
 
-    def __init_from_csc(self, csc, params_str, ref_dataset):
+    def __init_from_csc(self, csc, params_str, ref_dataset, categorical_indices=None):
         """
         Initialize data from a csc matrix.
         """
         if len(csc.indices) != len(csc.data):
             raise ValueError('Length mismatch: {} vs {}'.format(len(csc.indices), len(csc.data)))
-        self.handle = ctypes.c_void_p()
+        if categorical_indices is not None and (csc[:, list(categorical_indices)] > MAX_INT32).nnz:
+            raise ValueError('Values of categorical features must be smaller than {0}'.format(MAX_INT32))
 
+        self.handle = ctypes.c_void_p()
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
         ptr_data, type_ptr_data, _ = c_float_array(csc.data)
 
