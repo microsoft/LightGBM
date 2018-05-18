@@ -33,7 +33,7 @@ if [[ ${TASK} == "check-docs" ]]; then
     if [[ ${PYTHON_VERSION} == "2.7" ]]; then
         conda install mock
     fi
-    conda install sphinx sphinx_rtd_theme  # html5validator
+    conda install sphinx "sphinx_rtd_theme>=0.3"  # html5validator
     pip install rstcheck
     cd python-package
     rstcheck --report warning `find . -type f -name "*.rst"` || exit -1
