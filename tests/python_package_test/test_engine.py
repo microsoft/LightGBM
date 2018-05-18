@@ -289,28 +289,23 @@ class TestEngine(unittest.TestCase):
 
         lgb_train = lgb.Dataset(data, y, free_raw_data=False)
         lgb.train(params, lgb_train)
-        params['categorical_feature'] = [2, 3]
         self.assertRaises(ValueError,
                           lgb.train,
-                          params, lgb_train)
+                          params, lgb_train, categorical_feature=[2, 3])
 
         csr = csr_matrix(data)
         lgb_train = lgb.Dataset(csr, y, free_raw_data=False)
-        params.pop('categorical_feature')
         lgb.train(params, lgb_train)
-        params['categorical_feature'] = [2, 3]
         self.assertRaises(ValueError,
                           lgb.train,
-                          params, lgb_train)
+                          params, lgb_train, categorical_feature=[2, 3])
 
         csc = csc_matrix(data)
         lgb_train = lgb.Dataset(csc, y, free_raw_data=False)
-        params.pop('categorical_feature')
         lgb.train(params, lgb_train)
-        params['categorical_feature'] = [2, 3]
         self.assertRaises(ValueError,
                           lgb.train,
-                          params, lgb_train)
+                          params, lgb_train, categorical_feature=[2, 3])
 
     @unittest.skipIf(not IS_PANDAS_INSTALLED, 'pandas not installed')
     def test_categorical_big_values_not_crash_pandas(self):
@@ -319,18 +314,16 @@ class TestEngine(unittest.TestCase):
         y = np.random.rand(20)
 
         params = {'objective': 'regression',
-                  'min_data': 1,
-                  'categorical_feature': [2, 3]}
+                  'min_data': 1}
 
         df = pd.DataFrame(data=data)
         lgb_train = lgb.Dataset(df, y)
         self.assertRaises(ValueError,
                           lgb.train,
-                          params, lgb_train)
+                          params, lgb_train, categorical_feature=[2, 3])
 
         df[2] = df[2].astype('category')
         lgb_train = lgb.Dataset(df, y)
-        params.pop('categorical_feature')
         lgb.train(params, lgb_train)
 
     def test_multiclass(self):
@@ -555,16 +548,16 @@ class TestEngine(unittest.TestCase):
         gbm0 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False)
         pred0 = list(gbm0.predict(X_test))
         lgb_train = lgb.Dataset(X, y)
-        params['categorical_feature'] = [0]
-        gbm1 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False)
+        gbm1 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
+                         categorical_feature=[0])
         pred1 = list(gbm1.predict(X_test))
         lgb_train = lgb.Dataset(X, y)
-        params['categorical_feature'] = ['A']
-        gbm2 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False)
+        gbm2 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
+                         categorical_feature=['A'])
         pred2 = list(gbm2.predict(X_test))
         lgb_train = lgb.Dataset(X, y)
-        params['categorical_feature'] = ['A', 'B', 'C', 'D']
-        gbm3 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False)
+        gbm3 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
+                         categorical_feature=['A', 'B', 'C', 'D'])
         pred3 = list(gbm3.predict(X_test))
         gbm3.save_model('categorical.model')
         gbm4 = lgb.Booster(model_file='categorical.model')
