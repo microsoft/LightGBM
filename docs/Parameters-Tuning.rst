@@ -1,7 +1,7 @@
 Parameters Tuning
 =================
 
-This is a page contains all parameters in LightGBM.
+This page contains parameters tuning guides for different scenarios.
 
 **List of other helpful links**
 

@@ -1,7 +1,7 @@
 Parameters
 ==========
 
-This page contains all parameters in LightGBM.
+This page contains descriptions of all parameters in LightGBM.
 
 **List of other helpful links**
 
@@ -13,20 +13,11 @@ This page contains all parameters in LightGBM.
 
 - `Laurae++ Interactive Documentation`_
 
-**Update of 08/04/2017**
-
-Default values for the following parameters have changed:
-
--  ``min_data_in_leaf`` = 100 => 20
--  ``min_sum_hessian_in_leaf`` = 10 => 1e-3
--  ``num_leaves`` = 127 => 31
--  ``num_iterations`` = 10 => 100
-
 Parameters Format
 -----------------
 
 The parameters format is ``key1=value1 key2=value2 ...``.
-And parameters can be set both in config file and command line.
+Parameters can be set both in config file and command line.
 By using command line, parameters should not have spaces before and after ``=``.
 By using config files, one line can only contain one parameter. You can use ``#`` to comment.
 
@@ -39,19 +30,19 @@ Core Parameters
 
    -  path of config file
 
-   - **Note**: Only can be used in CLI version.
+   -  **Note**: Only can be used in CLI version
 
 -  ``task``, default=\ ``train``, type=enum, options=\ ``train``, ``predict``, ``convert_model``, ``refit``
 
    -  ``train``, alias=\ ``training``, for training
 
-   -  ``predict``, alias=\ ``prediction``, ``test``, for prediction.
+   -  ``predict``, alias=\ ``prediction``, ``test``, for prediction
 
    -  ``convert_model``, for converting model file into if-else format, see more information in `Convert model parameters <#convert-model-parameters>`__
 
-   -  ``refit``, alias=\ ``refit_tree``, refit existing models with new data.
+   -  ``refit``, alias=\ ``refit_tree``, refit existing models with new data
 
-   - **Note**: Only can be used in CLI version.
+   -  **Note**: Only can be used in CLI version
 
 -  ``application``, default=\ ``regression``, type=enum,
    options=\ ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gammma``, ``tweedie``,
@@ -522,20 +513,20 @@ IO Parameters
 
 -  ``forced_splits``, default=\ ``""``, type=string
 
-   -  path to a ``.json`` file that specifies splits to force at the top of every decision tree before best-first learning commences.
+   -  path to a ``.json`` file that specifies splits to force at the top of every decision tree before best-first learning commences
 
    -  ``.json`` file can be arbitrarily nested, and each split contains ``feature``, ``threshold`` fields, as well as ``left`` and ``right`` 
       fields representing subsplits. Categorical splits are forced in a one-hot fashion, with ``left`` representing the split containing
-      the feature value and ``right`` representing other values.
+      the feature value and ``right`` representing other values
 
-   -  see `this file <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example.
+   -  see `this file <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
 
 Objective Parameters
 --------------------
 
 -  ``sigmoid``, default=\ ``1.0``, type=double
 
-   -  parameter for sigmoid function. Will be used in ``binary`` classification and ``lambdarank``
+   -  parameter for sigmoid function. Will be used in ``binary`` and ``multiclassova`` classification and in ``lambdarank``
 
 -  ``alpha``, default=\ ``0.9``, type=double
 
@@ -699,7 +690,7 @@ GPU Parameters
 
 -  ``gpu_platform_id``, default=\ ``-1``, type=int
 
-   -  OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform.
+   -  OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform
 
    -  default value is ``-1``, means the system-wide default platform
 
@@ -762,11 +753,10 @@ LightGBM supports weighted training. It uses an additional file to store weight 
 
 It means the weight of the first data row is ``1.0``, second is ``0.5``, and so on.
 The weight file corresponds with data file line by line, and has per weight per line.
-And if the name of data file is ``train.txt``, the weight file should be named as ``train.txt.weight`` and in the same folder as the data file.
-In this case LightGBM will auto load weight file if it exists.
+And if the name of data file is ``train.txt``, the weight file should be named as ``train.txt.weight`` and placed in the same folder as the data file.
+In this case LightGBM will load the weight file automatically if it exists.
 
-**update**:
-You can specific weight column in data file now. Please refer to parameter ``weight`` in above.
+Also, you can include weight column in your data file. Please refer to parameter ``weight`` in above.
 
 Query Data
 ~~~~~~~~~~
@@ -781,15 +771,14 @@ LightGBM uses an additional file to store query data, like the following:
     67
     ...
 
-It means first ``27`` lines samples belong one query and next ``18`` lines belong to another, and so on.
+It means first ``27`` lines samples belong to one query and next ``18`` lines belong to another, and so on.
 
 **Note**: data should be ordered by the query.
 
-If the name of data file is ``train.txt``, the query file should be named as ``train.txt.query`` and in same folder of training data.
+If the name of data file is ``train.txt``, the query file should be named as ``train.txt.query`` and placed in the same folder as the data file.
 In this case LightGBM will load the query file automatically if it exists.
 
-**update**:
-You can specific query/group id in data file now. Please refer to parameter ``group`` in above.
+Also, you can include query/group id column in your data file. Please refer to parameter ``group`` in above.
 
 .. _Laurae++ Interactive Documentation: https://sites.google.com/view/lauraepp/parameters
 

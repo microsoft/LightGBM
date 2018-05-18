@@ -293,5 +293,3 @@ Keep in mind that using the integrated graphics card is not directly possible wi
 .. _clinfo: https://github.com/Oblomov/clinfo
 
 .. _GPUCapsViewer: http://www.ozone3d.net/gpu_caps_viewer/
-
-

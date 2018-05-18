@@ -583,4 +583,3 @@ And open an issue in GitHub `here`_ with that log.
 .. _here: https://github.com/Microsoft/LightGBM/issues
 
 .. _GPUCapsViewer: http://www.ozone3d.net/gpu_caps_viewer/
-
