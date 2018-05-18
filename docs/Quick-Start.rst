@@ -119,7 +119,7 @@ Some important parameters:
       -  all values in ``label`` must be smaller than number of elements in ``label_gain``
 
 - ``boosting``, default=\ ``gbdt``, type=enum,
-  options=\ ``gbdt``, ``rf``, ``dart``, ``goss``,
+  options=\ ``gbdt``, ``rf``, ``dart``, ``goss``,  ``rgf``
   alias=\ ``boost``, ``boosting_type``
 
   - ``gbdt``, traditional Gradient Boosting Decision Tree
@@ -129,6 +129,8 @@ Some important parameters:
   - ``dart``, `Dropouts meet Multiple Additive Regression Trees`_
 
   - ``goss``, Gradient-based One-Side Sampling
+
+  - ``rgf``, Regularized Greedy Forest
 
 - ``data``, default=\ ``""``, type=string, alias=\ ``train``, ``train_data``
 
