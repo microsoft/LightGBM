@@ -107,11 +107,11 @@ Core Parameters
 
    -  ``goss``, Gradient-based One-Side Sampling
 
--  ``data``, default=\ ``""``, type=string, alias=\ ``train``, ``train_data``
+-  ``data``, default=\ ``""``, type=string, alias=\ ``train``, ``train_data``, ``data_filename``
 
    -  training data, LightGBM will train from this data
 
--  ``valid``, default=\ ``""``, type=multi-string, alias=\ ``test``, ``valid_data``, ``test_data``
+-  ``valid``, default=\ ``""``, type=multi-string, alias=\ ``test``, ``valid_data``, ``test_data``, ``valid_filenames``
 
    -  validation/test data, LightGBM will output metrics for these data
 
@@ -204,7 +204,7 @@ Learning Control Parameters
 
    -  random seed for ``feature_fraction``
 
--  ``bagging_fraction``, default=\ ``1.0``, type=double, ``0.0 < bagging_fraction <= 1.0``, alias=\ ``sub_row``, ``subsample``
+-  ``bagging_fraction``, default=\ ``1.0``, type=double, ``0.0 < bagging_fraction <= 1.0``, alias=\ ``sub_row``, ``subsample``, ``bagging``
 
    -  like ``feature_fraction``, but this will randomly select part of data without resampling
 
@@ -312,7 +312,7 @@ Learning Control Parameters
 
    -  set this to larger value for more accurate result, but it will slow down the training speed
 
--  ``monotone_constraint``, default=\ ``None``, type=multi-int, alias=\ ``mc``
+-  ``monotone_constraint``, default=\ ``None``, type=multi-int, alias=\ ``mc``, ``monotone_constraints``
 
    -  used for constraints of monotonic features
 
@@ -443,7 +443,7 @@ IO Parameters
 
    -  **Note**: the negative values will be treated as **missing values**
 
--  ``predict_raw_score``, default=\ ``false``, type=bool, alias=\ ``raw_score``, ``is_predict_raw_score``
+-  ``predict_raw_score``, default=\ ``false``, type=bool, alias=\ ``raw_score``, ``is_predict_raw_score``, ``predict_rawscore``
 
    -  only used in ``prediction`` task
 
@@ -650,7 +650,7 @@ Metric Parameters
 
    -  frequency for metric output
 
--  ``train_metric``, default=\ ``false``, type=bool, alias=\ ``training_metric``, ``is_training_metric``
+-  ``train_metric``, default=\ ``false``, type=bool, alias=\ ``training_metric``, ``is_training_metric``, ``is_provide_training_metric``
 
    -  set this to ``true`` if you need to output metric result of training
 

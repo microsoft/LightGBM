@@ -52,6 +52,7 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"min_split_gain", "min_gain_to_split"}, 
   {"topk", "top_k"}, 
   {"mc", "monotone_constraints"}, 
+  {"monotone_constraint", "monotone_constraints"}, 
   {"model_output", "output_model"}, 
   {"model_out", "output_model"}, 
   {"model_input", "input_model"}, 

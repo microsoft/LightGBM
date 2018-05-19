@@ -331,7 +331,7 @@ public:
   int top_k = 20;
 
   // type = multi-int
-  // alias = mc
+  // alias = mc,monotone_constraint
   // default=none
   // desc=used for constraints of monotonic features
   // desc=1 means increasing,-1 means decreasing,0 means non-constraint
