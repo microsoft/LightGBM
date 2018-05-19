@@ -15,11 +15,13 @@ We target AMD Graphics Core Next (GCN) architecture and NVIDIA Maxwell and Pasca
 Most AMD GPUs released after 2012 and NVIDIA GPUs released after 2014 should be supported. We have tested the GPU implementation on the following GPUs:
 
 -  AMD RX 480 with AMDGPU-pro driver 16.60 on Ubuntu 16.10
--  AMD R9 280X (aka Radeon HD 7970) with fglrx driver 15.302.2301 on
-   Ubuntu 16.10
+
+-  AMD R9 280X (aka Radeon HD 7970) with fglrx driver 15.302.2301 on Ubuntu 16.10
+
 -  NVIDIA GTX 1080 with driver 375.39 and CUDA 8.0 on Ubuntu 16.10
--  NVIDIA Titan X (Pascal) with driver 367.48 and CUDA 8.0 on Ubuntu
-   16.04
+
+-  NVIDIA Titan X (Pascal) with driver 367.48 and CUDA 8.0 on Ubuntu 16.04
+
 -  NVIDIA Tesla M40 with driver 375.39 and CUDA 7.5 on Ubuntu 16.04
 
 Using the following hardware is discouraged:
