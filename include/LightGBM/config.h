@@ -500,7 +500,6 @@ public:
   // desc=max cache size(unit:MB) for historical histogram. < 0 means no limit
   double histogram_pool_size = -1.0;
 
-  // check=>2
   // alias=num_classes
   // desc=need to specify this in multi-class classification
   int num_class = 1;

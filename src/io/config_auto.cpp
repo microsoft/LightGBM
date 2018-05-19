@@ -364,7 +364,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetDouble(params, "histogram_pool_size", &histogram_pool_size);
 
   GetInt(params, "num_class", &num_class);
-  CHECK(num_class >2);
 
   GetBool(params, "enable_load_from_binary_file", &enable_load_from_binary_file);
 

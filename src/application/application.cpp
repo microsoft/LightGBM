@@ -53,8 +53,8 @@ void Application::LoadParameters(int argc, char** argv) {
   // check for alias
   ParameterAlias::KeyAliasTransform(&params);
   // read parameters from config file
-  if (params.count("config_file") > 0) {
-    TextReader<size_t> config_reader(params["config_file"].c_str(), false);
+  if (params.count("config") > 0) {
+    TextReader<size_t> config_reader(params["config"].c_str(), false);
     config_reader.ReadAllLines();
     if (!config_reader.Lines().empty()) {
       for (auto& line : config_reader.Lines()) {
@@ -70,7 +70,7 @@ void Application::LoadParameters(int argc, char** argv) {
       }
     } else {
       Log::Warning("Config file %s doesn't exist, will ignore",
-                   params["config_file"].c_str());
+                   params["config"].c_str());
     }
   }
   // check for alias again
