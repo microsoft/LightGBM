@@ -111,7 +111,7 @@ def GenParameterCode(config_hpp="..\\include\\LightGBM\\config.h", config_out_cp
     str_to_write += "  std::string tmp_str = \"\";\n"
     for x in infos:
         for y in x:
-            if "[Doc-Only]" in y:
+            if "[doc-only]" in y:
                 continue
             type=y["inner_type"][0]
             name=y["name"][0]
@@ -126,7 +126,7 @@ def GenParameterCode(config_hpp="..\\include\\LightGBM\\config.h", config_out_cp
     str_to_write += "  std::stringstream str_buf;\n"
     for x in infos:
         for y in x:
-            if "[Doc-Only]" in y:
+            if "[doc-only]" in y:
                 continue
             type=y["inner_type"][0]
             name=y["name"][0]

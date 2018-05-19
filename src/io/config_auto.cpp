@@ -197,10 +197,6 @@ std::unordered_set<std::string> Config::parameter_set({
 
 void Config::GetMembersFromString(const std::unordered_map<std::string, std::string>& params) {
   std::string tmp_str = "";
-  GetString(params, "objective", &objective);
-
-  GetString(params, "boosting", &boosting);
-
   GetString(params, "data", &data);
 
   if (GetString(params, "valid", &tmp_str)) {
@@ -217,10 +213,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   CHECK(num_leaves >1);
 
   GetInt(params, "num_threads", &num_threads);
-
-  GetString(params, "device_type", &device_type);
-
-  GetInt(params, "seed", &seed);
 
   GetInt(params, "max_depth", &max_depth);
 
@@ -432,16 +424,12 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
 std::string Config::SaveMembersToString() const {
   std::stringstream str_buf;
-  str_buf << "objective=" << objective << "\n";
-  str_buf << "boosting=" << boosting << "\n";
   str_buf << "data=" << data << "\n";
   str_buf << "valid=" << Common::Join(valid,",") << "\n";
   str_buf << "num_iterations=" << num_iterations << "\n";
   str_buf << "learning_rate=" << learning_rate << "\n";
   str_buf << "num_leaves=" << num_leaves << "\n";
   str_buf << "num_threads=" << num_threads << "\n";
-  str_buf << "device_type=" << device_type << "\n";
-  str_buf << "seed=" << seed << "\n";
   str_buf << "max_depth=" << max_depth << "\n";
   str_buf << "min_data_in_leaf=" << min_data_in_leaf << "\n";
   str_buf << "min_sum_hessian_in_leaf=" << min_sum_hessian_in_leaf << "\n";

@@ -75,13 +75,13 @@ public:
   #pragma region Parameters
   #pragma region Core Parameters
 
-  // [Doc-Only]
+  // [doc-only]
   // alias=config_file
   // desc=path of config file
   // desc=**Note**: Only can be used in CLI version
   std::string config = "";
 
-  // [Doc-Only]
+  // [doc-only]
   // type=enum
   // default=train
   // options=train,predict,convert_model,refit
@@ -93,7 +93,7 @@ public:
   // desc=**Note**: Only can be used in CLI version
   TaskType task = TaskType::kTrain;
 
-  // [DOC-Only]
+  // [doc-only]
   // type=enum
   // options=regression,regression_l1,huber,fair,poisson,quantile,mape,gammma,tweedie,binary,multiclass,multiclassova,xentropy,xentlambda,lambdarank
   // alias=application,app,objective_type
@@ -123,7 +123,7 @@ public:
   std::string objective = "regression";
 
 
-  // [DOC-Only]
+  // [doc-only]
   // type=enum
   // alias=boosting_type,boost
   // options=gbdt,rf,dart,goss
@@ -161,7 +161,7 @@ public:
   // desc=max number of leaves in one tree
   int num_leaves = kDefaultNumLeaves;
 
-  // [Doc-Only]
+  // [doc-only]
   // type=enum
   // options=serial, feature, data, voting
   // alias = tree
@@ -182,7 +182,7 @@ public:
   // desc=for parallel learning,should not use full CPU cores since this will cause poor performance for the network
   int num_threads = 0;
 
-  // [DOC-Only]
+  // [doc-only]
   // options=cpu,gpu
   // desc = choose device for the tree learning, you can use GPU to achieve the faster learning
   // desc=**Note**: it is recommended to use the smaller max_bin (e.g. 63) to get the better speed up
@@ -191,7 +191,7 @@ public:
   // desc=**Note**: refer to `Installation Guide <./Installation-Guide.rst#build-gpu-version>`__ to build with GPU
   std::string device_type = "cpu";
 
-  // [DOC-Only]
+  // [doc-only]
   // desc=Use this seed to generate seeds for others, e.g. data_random_seed.
   // desc=Will be override if set other seeds as well
   // default=none
@@ -582,7 +582,7 @@ public:
 
   #pragma region Metric Parameters
   
-  // [Doc-Only]
+  // [doc-only]
   // alias=metric_types
   // default=''
   // type=multi-enum
