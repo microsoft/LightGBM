@@ -28,9 +28,9 @@ public:
     optimize_pos_at_ = config.max_position;
     sigmoid_table_.clear();
     inverse_max_dcgs_.clear();
-    if (sigmoid_ <= 0.0) {
-      Log::Fatal("Sigmoid param %f should be greater than zero", sigmoid_);
-    }
+    //if (sigmoid_ <= 0.0) {
+    //  Log::Fatal("Sigmoid param %f should be greater than zero", sigmoid_);
+    //}
   }
 
   explicit LambdarankNDCG(const std::vector<std::string>&) {
