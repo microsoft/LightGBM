@@ -48,7 +48,6 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"max_leaf_output", "max_delta_step"}, 
   {"reg_alpha", "lambda_l1"}, 
   {"reg_lambda", "lambda_l2"}, 
-  {"min_gain_to_split", "min_gain_to_split"}, 
   {"min_split_gain", "min_gain_to_split"}, 
   {"topk", "top_k"}, 
   {"mc", "monotone_constraints"}, 

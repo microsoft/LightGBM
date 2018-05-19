@@ -266,7 +266,7 @@ public:
   // desc = L2 regularization
   double lambda_l2 = 0.0;
 
-  // alias=min_gain_to_split,min_split_gain
+  // alias=min_split_gain
   // desc=the minimal gain to perform split
   double min_gain_to_split = 0.0;
 
