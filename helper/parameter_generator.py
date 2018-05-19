@@ -1,57 +1,59 @@
-def GetParameterInfos(config_hpp="..\\include\\LightGBM\\config.h"):
-    config_hpp_file = open("..\\include\\LightGBM\\config.h")
+import os
+
+
+def GetParameterInfos(config_hpp):
     is_inparameter = False
     parameter_group = None
     cur_key = None
     cur_info = {}
     keys = []
     member_infos = []
-    for line in config_hpp_file.readlines():
-        if "#pragma region Parameters" in line:
-            is_inparameter = True
-        elif "#pragma region" in line and "Parameters" in line:
-            cur_key = line.split("region")[1].strip()
-            keys.append(cur_key)
-            member_infos.append([])
-        elif '#pragma endregion' in line:
-            if cur_key is not None:
-                cur_key = None
-            elif is_inparameter:
-                is_inparameter = False
-        elif cur_key is not None:
-            line = line.strip()
-            if line.startswith("//"):
-                tokens = line.split("//")[1].split("=")
-                key = tokens[0].strip()
-                val = '='.join(tokens[1:]).strip()
-                if key not in cur_info:
-                    if key == "descl2":
-                        cur_info["desc"] = []
+    with open(config_hpp) as config_hpp_file:
+        for line in config_hpp_file:
+            if "#pragma region Parameters" in line:
+                is_inparameter = True
+            elif "#pragma region" in line and "Parameters" in line:
+                cur_key = line.split("region")[1].strip()
+                keys.append(cur_key)
+                member_infos.append([])
+            elif '#pragma endregion' in line:
+                if cur_key is not None:
+                    cur_key = None
+                elif is_inparameter:
+                    is_inparameter = False
+            elif cur_key is not None:
+                line = line.strip()
+                if line.startswith("//"):
+                    tokens = line.split("//")[1].split("=")
+                    key = tokens[0].strip()
+                    val = '='.join(tokens[1:]).strip()
+                    if key not in cur_info:
+                        if key == "descl2":
+                            cur_info["desc"] = []
+                        else:
+                            cur_info[key] = []
+                    if key == "desc":
+                        cur_info["desc"].append(["l1", val])
+                    elif key == "descl2":
+                        cur_info["desc"].append(["l2", val])
                     else:
-                        cur_info[key] = []
-                if key == "desc":
-                    cur_info["desc"].append(["l1", val])
-                elif key == "descl2":
-                    cur_info["desc"].append(["l2", val])
-                else:
-                    cur_info[key].append(val)
-            elif line:
-                has_eqsgn = False
-                tokens = line.split("=")
-                if len(tokens) == 2:
-                    if "default" not in cur_info:
-                        cur_info["default"] = [tokens[1][:-1].strip()]
-                    has_eqsgn = True
-                tokens = line.split()
-                cur_info["inner_type"] = [tokens[0].strip()]
-                if "name" not in cur_info:
-                    if has_eqsgn:
-                        cur_info["name"] = [tokens[1].strip()]
-                    else:
-                        cur_info["name"] = [tokens[1][:-1].strip()]
-                member_infos[-1].append(cur_info)
-                cur_info = {}
-    config_hpp_file.close()
+                        cur_info[key].append(val)
+                elif line:
+                    has_eqsgn = False
+                    tokens = line.split("=")
+                    if len(tokens) == 2:
+                        if "default" not in cur_info:
+                            cur_info["default"] = [tokens[1][:-1].strip()]
+                        has_eqsgn = True
+                    tokens = line.split()
+                    cur_info["inner_type"] = [tokens[0].strip()]
+                    if "name" not in cur_info:
+                        if has_eqsgn:
+                            cur_info["name"] = [tokens[1].strip()]
+                        else:
+                            cur_info["name"] = [tokens[1][:-1].strip()]
+                    member_infos[-1].append(cur_info)
+                    cur_info = {}
     return (keys, member_infos)
 
 
@@ -95,7 +97,7 @@ def SetOneVarFromString(name, type, checks):
     return ret
 
 
-def GenParameterCode(config_hpp="..\\include\\LightGBM\\config.h", config_out_cpp="..\\src\\io\\config_auto.cpp"):
+def GenParameterCode(config_hpp, config_out_cpp):
     keys, infos = GetParameterInfos(config_hpp)
     names = GetNames(infos)
     alias = GetAlias(infos)
@@ -149,4 +151,7 @@ def GenParameterCode(config_hpp="..\\include\\LightGBM\\config.h", config_out_cp
         config_out_cpp_file.write(str_to_write)
 
 
-GenParameterCode()
+if __name__ == "__main__":
+    config_hpp = os.path.join(os.path.pardir, 'include', 'LightGBM', 'config.h')
+    config_out_cpp = os.path.join(os.path.pardir, 'src', 'io', 'config_auto.cpp')
+    GenParameterCode(config_hpp, config_out_cpp)
