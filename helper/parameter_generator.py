@@ -88,7 +88,7 @@ def SetOneVarFromString(name, type, checks):
         ret += "  if (GetString(params, \"%s\", &tmp_str)) {\n" % (name)
         type2 = type.split("<")[1][:-1]
         if type2 == "std::string":
-            ret  += "    %s = Common::Split(tmp_str.c_str(), ',');\n" % (name)
+            ret += "    %s = Common::Split(tmp_str.c_str(), ',');\n" % (name)
         else:
             ret += "    %s = Common::StringToArray<%s>(tmp_str, ',');\n" % (name, type2)
         ret += "  }\n\n"
