@@ -34,6 +34,8 @@ install:
   - activate test-env
 
 build_script:
+  - cd helper && python parameter_generator.py
+  - cd ..
   - mkdir build && cd build
   - cmake -DCMAKE_GENERATOR_PLATFORM=x64 .. && cmake --build . --target ALL_BUILD --config Release
   - cd ..

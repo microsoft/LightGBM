@@ -55,6 +55,9 @@ if [[ ${TASK} == "pylint" ]]; then
     exit 0
 fi
 
+cd $TRAVIS_BUILD_DIR/helper && python parameter_generator.py || exit -1
+cd $TRAVIS_BUILD_DIR
+
 if [[ ${TASK} == "if-else" ]]; then
     conda install numpy
     mkdir build && cd build && cmake .. && make lightgbm || exit -1
