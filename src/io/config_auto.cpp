@@ -48,6 +48,7 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"reg_alpha", "lambda_l1"}, 
   {"reg_lambda", "lambda_l2"}, 
   {"min_gain_to_split", "min_gain_to_split"}, 
+  {"min_split_gain", "min_gain_to_split"}, 
   {"topk", "top_k"}, 
   {"mc", "monotone_constraints"}, 
   {"model_output", "output_model"}, 
@@ -272,7 +273,7 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   CHECK(other_rate <=1.0);
 
   GetInt(params, "min_data_per_group", &min_data_per_group);
-  CHECK(min_data_per_group >1);
+  CHECK(min_data_per_group >0);
 
   GetInt(params, "max_cat_threshold", &max_cat_threshold);
   CHECK(max_cat_threshold >0);
@@ -284,7 +285,7 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   CHECK(cat_smooth >=0);
 
   GetInt(params, "max_cat_to_onehot", &max_cat_to_onehot);
-  CHECK(max_cat_to_onehot >1);
+  CHECK(max_cat_to_onehot >0);
 
   GetInt(params, "top_k", &top_k);
 
@@ -456,7 +457,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "cat_smooth=" << cat_smooth << "\n";
   str_buf << "max_cat_to_onehot=" << max_cat_to_onehot << "\n";
   str_buf << "top_k=" << top_k << "\n";
-  str_buf << "monotone_constraints=" << Common::Join(monotone_constraints,",") << "\n";
+  str_buf << "monotone_constraints=" << Common::Join(Common::ArrayCast<int8_t, int>(monotone_constraints),",") << "\n";
   str_buf << "forcedsplits_filename=" << forcedsplits_filename << "\n";
   str_buf << "max_bin=" << max_bin << "\n";
   str_buf << "min_data_in_bin=" << min_data_in_bin << "\n";

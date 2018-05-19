@@ -266,7 +266,7 @@ public:
   // desc = L2 regularization
   double lambda_l2 = 0.0;
 
-  // alias=min_gain_to_split
+  // alias=min_gain_to_split,min_split_gain
   // desc=the minimal gain to perform split
   double min_gain_to_split = 0.0;
 
@@ -303,7 +303,7 @@ public:
   // desc=only used in goss,the retain ratio of small gradient data
   double other_rate = 0.1;
 
-  // check=>1
+  // check=>0
   // desc=min number of data per categorical group
   int min_data_per_group = 100;
 
@@ -321,7 +321,7 @@ public:
   // desc=this can reduce the effect of noises in categorical features,especially for categories with few data
   double cat_smooth = 10;
   
-  // check=>1
+  // check=>0
   // desc=when number of categories of one feature smaller than or equal to max_cat_to_onehot,one-vs-other split algorithm will be used
   int max_cat_to_onehot = 4;
 

@@ -135,7 +135,10 @@ def GenParameterCode(config_hpp="..\\include\\LightGBM\\config.h", config_out_cp
             type = y["inner_type"][0]
             name = y["name"][0]
             if "vector" in type:
-                str_to_write += "  str_buf << \"%s=\" << Common::Join(%s,\",\") << \"\\n\";\n" % (name, name)
+                if "int8" in type:
+                    str_to_write += "  str_buf << \"%s=\" << Common::Join(Common::ArrayCast<int8_t, int>(%s),\",\") << \"\\n\";\n" % (name, name)
+                else:
+                    str_to_write += "  str_buf << \"%s=\" << Common::Join(%s,\",\") << \"\\n\";\n" % (name, name)
             else:
                 str_to_write += "  str_buf << \"%s=\" << %s << \"\\n\";\n" % (name, name)
     # tails
