@@ -17,7 +17,10 @@ Note: 32-bit Python is not supported. Please install 64-bit version.
 
 Install from `PyPI <https://pypi.python.org/pypi/lightgbm>`_ Using ``pip``
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 For Windows users, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if Visual Studio (2015 or 2017) is not installed.
+
+For macOS users, latest versions of LightGBM are built with **g++-8** and cannot be launched on systems with **g++-7** and earlier. You should update your **g++** compiler if you don't want to build from sources or install LightGBM 2.1.1 which is the last version built with **g++-7**.
 
 Install `wheel <http://pythonwheels.com>`_ via ``pip install wheel`` first. After that download the wheel file and install from it:
 
