@@ -8,27 +8,27 @@ Follow the `Quick Start <./Quick-Start.rst>`__ to know how to use LightGBM first
 Choose Appropriate Parallel Algorithm
 -------------------------------------
 
-LightGBM provides 2 parallel learning algorithms now.
+LightGBM provides 3 parallel learning algorithms now.
 
-+--------------------------+---------------------------+
-| **Parallel Algorithm**   | **How to Use**            |
-+==========================+===========================+
-| Data parallel            | ``tree_learner=data``     |
-+--------------------------+---------------------------+
-| Feature parallel         | ``tree_learner=feature``  |
-+--------------------------+---------------------------+
-| Voting parallel          | ``tree_learner=voting``   |
-+--------------------------+---------------------------+
++--------------------+---------------------------+
+| Parallel Algorithm | How to Use                |
++====================+===========================+
+| Data parallel      | ``tree_learner=data``     |
++--------------------+---------------------------+
+| Feature parallel   | ``tree_learner=feature``  |
++--------------------+---------------------------+
+| Voting parallel    | ``tree_learner=voting``   |
++--------------------+---------------------------+
 
 These algorithms are suited for different scenarios, which is listed in the following table:
 
-+-------------------------+----------------------+----------------------+
-|                         | **#data is small**   | **#data is large**   |
-+=========================+======================+======================+
-| **#feature is small**   | Feature Parallel     | Data Parallel        |
-+-------------------------+----------------------+----------------------+
-| **#feature is large**   | Feature Parallel     | Voting Parallel      |
-+-------------------------+----------------------+----------------------+
++-------------------------+-------------------+-----------------+
+|                         | #data is small    | #data is large  |
++=========================+===================+=================+
+| **#feature is small**   | Feature Parallel  | Data Parallel   |
++-------------------------+-------------------+-----------------+
+| **#feature is large**   | Feature Parallel  | Voting Parallel |
++-------------------------+-------------------+-----------------+
 
 More details about these parallel algorithms can be found in `optimization in parallel learning <./Features.rst#optimization-in-parallel-learning>`__.
 

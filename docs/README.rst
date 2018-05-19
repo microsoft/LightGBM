@@ -14,7 +14,7 @@ for Python 3.x:
 
 .. code:: sh
 
-    pip install sphinx sphinx_rtd_theme
+    pip install sphinx "sphinx_rtd_theme>=0.3"
     make html
 
  
@@ -22,5 +22,5 @@ for Python 2.x:
 
 .. code:: sh
 
-    pip install mock sphinx sphinx_rtd_theme
+    pip install mock sphinx "sphinx_rtd_theme>=0.3"
     make html

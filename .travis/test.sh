@@ -33,7 +33,7 @@ if [[ ${TASK} == "check-docs" ]]; then
     if [[ ${PYTHON_VERSION} == "2.7" ]]; then
         conda install mock
     fi
-    conda install sphinx sphinx_rtd_theme  # html5validator
+    conda install sphinx "sphinx_rtd_theme>=0.3"  # html5validator
     pip install rstcheck
     cd python-package
     rstcheck --report warning `find . -type f -name "*.rst"` || exit -1
@@ -74,7 +74,7 @@ if [[ ${TASK} == "sdist" ]]; then
 elif [[ ${TASK} == "bdist" ]]; then
     if [[ $TRAVIS_OS_NAME == "osx" ]]; then
         cd $TRAVIS_BUILD_DIR/python-package && python setup.py bdist_wheel --plat-name=macosx --universal || exit -1
-        mv dist/lightgbm-${LGB_VER}-py2.py3-none-macosx.whl dist/lightgbm-${LGB_VER}-py2.py3-none-macosx_10_9_x86_64.macosx_10_10_x86_64.macosx_10_11_x86_64.macosx_10_12_x86_64.whl
+        mv dist/lightgbm-${LGB_VER}-py2.py3-none-macosx.whl dist/lightgbm-${LGB_VER}-py2.py3-none-macosx_10_9_x86_64.macosx_10_10_x86_64.macosx_10_11_x86_64.macosx_10_12_x86_64.macosx_10_13_x86_64.whl
     else
         cd $TRAVIS_BUILD_DIR/python-package && python setup.py bdist_wheel --plat-name=manylinux1_x86_64 --universal || exit -1
     fi
