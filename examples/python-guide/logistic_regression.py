@@ -1,3 +1,4 @@
+# pylint: disable = no-name-in-module
 '''
 BLUF: The `xentropy` objective does logistic regression and generalizes
 to the case where labels are probabilistic (i.e. numbers between 0 and 1).
@@ -7,11 +8,12 @@ by default. Possibly the only difference between them is that `binary` may achie
 speed improvement by assuming that the labels are binary instead of probabilistic.
 '''
 
+import time
+
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
 from scipy.special import expit
-import time
 
 ##################
 ## Simulate some binary data with a single categorical and single continuous predictor
@@ -19,60 +21,77 @@ np.random.seed(0)
 N = 1000
 X = pd.DataFrame({
     'continuous': range(N),
-    'categorical': np.repeat([0,1,2,3,4], N/5)
+    'categorical': np.repeat([0, 1, 2, 3, 4], N/5)
 })
-categorical_effects = [-1, -1, -2, -2, 2]
-linear_term = np.array([
+CATEGORICAL_EFFECTS = [-1, -1, -2, -2, 2]
+LINEAR_TERM = np.array([
     -0.5 + 0.01*X['continuous'][k]
-    + categorical_effects[X['categorical'][k]] for k in range(X.shape[0])
+    + CATEGORICAL_EFFECTS[X['categorical'][k]] for k in range(X.shape[0])
 ]) + np.random.normal(0, 1, X.shape[0])
-true_prob = expit(linear_term)
-y = np.random.binomial(1, true_prob, size = N)
-data_with_binary_labels = lgb.Dataset(X, y)
-data_with_probability_labels = lgb.Dataset(X, true_prob)
+TRUE_PROB = expit(LINEAR_TERM)
+Y = np.random.binomial(1, TRUE_PROB, size=N)
+DATA = {
+    'X': X,
+    'probability_labels': TRUE_PROB,
+    'binary_labels': Y,
+    'lgb_with_binary_labels': lgb.Dataset(X, Y),
+    'lgb_with_probability_labels': lgb.Dataset(X, TRUE_PROB),
+}
 
 ##################
 ## Set up a couple of utilities for our experiments
 def log_loss(preds, labels):
-    return -np.sum(labels*np.log(preds))/len(preds)
+    ''' logarithmic loss with non-necessarily-binary labels '''
+    log_likelihood = np.sum(labels*np.log(preds))/len(preds)
+    return -log_likelihood
 
-def make_params(objective):
-    return {
+def experiment(objective, label_type, data):
+    '''
+    Measure performance of an objective
+    :param objective: (str) 'binary' or 'xentropy'
+    :param label_type: (str) 'binary' or 'probability'
+    :param data: DATA
+    :return: dict with experiment summary stats
+    '''
+    np.random.seed(0)
+    nrounds = 5
+    lgb_data = data['lgb_with_' + label_type + '_labels']
+    params = {
         'objective': objective,
         'feature_fraction': 1,
         'bagging_fraction': 1,
         'verbose': -1
     }
-
-def experiment(objective, data, X, labels):
-    np.random.seed(0)
-    nrounds = 1
-    t0 = time.time()
-    gbm = lgb.train(make_params(objective), data, num_boost_round=nrounds)
-    y_fitted = gbm.predict(X)
-    t = time.time() - t0
+    time_zero = time.time()
+    gbm = lgb.train(params, lgb_data, num_boost_round=nrounds)
+    y_fitted = gbm.predict(data['X'])
+    y_true = data[label_type + '_labels']
+    duration = time.time() - time_zero
     return {
-        'time': t,
-        'correlation': np.corrcoef(y_fitted, labels)[0,1],
-        'logloss': log_loss(y_fitted, true_prob)
+        'time': duration,
+        'correlation': np.corrcoef(y_fitted, y_true)[0, 1],
+        'logloss': log_loss(y_fitted, y_true)
     }
 
 ##################
 ## Observe the behavior of `binary` and `xentropy` objectives
-# With binary labels
-print(experiment('binary',   data_with_binary_labels, X, y))
-print(experiment('xentropy', data_with_binary_labels, X, y))
-# With probabilistic labels:
-print(experiment('xentropy', data_with_probability_labels, X, true_prob))
+print('Performance of `binary` objective with binary labels:')
+print(experiment('binary', label_type='binary', data=DATA))
+
+print('Performance of `xentropy` objective with binary labels:')
+print(experiment('xentropy', label_type='binary', data=DATA))
+
+print('Performance of `xentropy` objective with probability labels:')
+print(experiment('xentropy', label_type='probability', data=DATA))
+
 # Trying this throws an error on non-binary values of y:
-#   experiment('binary', data_with_probability_labels, X)
+#   experiment('binary', label_type='probability', DATA)
 
 # The speed of `binary` is not drastically different than `xentropy`. `xentropy`
 #   runs faster than `binary` in many cases, although there are reasons to suspect
 #   that `binary` should run faster when the label is an integer instead of a float
-bt = min([experiment('binary',   data_with_binary_labels, X, y)['time']
-        for k in range(10)])
-print('Best `binary` time: ' + str(bt))
-xt = min([experiment('xentropy', data_with_binary_labels, X, y)['time']
-        for k in range(10)])
-print('Best `xentropy` time: ' + str(xt))
+K = 10
+A = [experiment('binary', label_type='binary', data=DATA)['time'] for k in range(K)]
+B = [experiment('xentropy', label_type='binary', data=DATA)['time'] for k in range(K)]
+print('Best `binary` time: ' + str(min(A)))
+print('Best `xentropy` time: ' + str(min(B)))
