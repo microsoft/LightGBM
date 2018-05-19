@@ -173,7 +173,7 @@ public:
   std::string tree_learner = "serial";
 
   // default=OpenMP_default
-  // alias = num_thread, nthread
+  // alias = num_thread, nthread, nthreads
   // desc = number of threads for LightGBM
   // desc=for the best speed,set this to the number of **real CPU cores**,
   // not the number of threads(most CPU using `hyper-threading`_ to generate 2 threads per CPU core)
