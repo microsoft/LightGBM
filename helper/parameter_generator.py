@@ -138,7 +138,7 @@ def GenParameterCode(config_hpp="..\\include\\LightGBM\\config.h", config_out_cp
     str_to_write += "  return str_buf.str();\n"
     str_to_write += "}\n\n"
     str_to_write += "}\n"
-    config_out_cpp_file=open(config_out_cpp, "w")
-    config_out_cpp_file.write(str_to_write)
+    with open(config_out_cpp, "w") as config_out_cpp_file:
+        config_out_cpp_file.write(str_to_write)
 
 GenParameterCode()
