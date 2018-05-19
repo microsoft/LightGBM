@@ -78,7 +78,7 @@ Core Parameters
 
       -  ``tweedie``, Tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed`_
 
-   -  ``binary``, binary `log loss`_ classification application
+   -  ``binary``, binary `log loss`_ classification (or logistic regression). Requires labels in {0,1}; see `xentropy`_ for general probability labels in [0, 1]
 
    -  multi-class classification application
 
