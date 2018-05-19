@@ -116,7 +116,7 @@ void Application::LoadData() {
   }
   // create training metric
   if (config_.is_provide_training_metric) {
-    for (auto metric_type : config_.metric_types) {
+    for (auto metric_type : config_.metric) {
       auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_));
       if (metric == nullptr) { continue; }
       metric->Init(train_data_->metadata(), train_data_->num_data());
@@ -126,7 +126,7 @@ void Application::LoadData() {
   train_metric_.shrink_to_fit();
 
 
-  if (!config_.metric_types.empty()) {
+  if (!config_.metric.empty()) {
     // only when have metrics then need to construct validation data
 
     // Add validation data, if it exists
@@ -146,7 +146,7 @@ void Application::LoadData() {
 
       // add metric for validation data
       valid_metrics_.emplace_back();
-      for (auto metric_type : config_.metric_types) {
+      for (auto metric_type : config_.metric) {
         auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_));
         if (metric == nullptr) { continue; }
         metric->Init(valid_datas_.back()->metadata(),

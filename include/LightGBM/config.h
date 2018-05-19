@@ -24,7 +24,7 @@ const int kDefaultNumLeaves = 31;
 
 struct Config {
 public:
-  void ToString() const;
+  std::string ToString() const;
   /*!
   * \brief Get string value by specific name of key
   * \param params Store the key and value for params
@@ -583,6 +583,7 @@ public:
   #pragma region Metric Parameters
   
   // [Doc-Only]
+  // alias=metric_types
   // default=''
   // type=multi-enum
   // desc=metric to be evaluated on the evaluation sets **in addition** to what is provided in the training arguments
@@ -610,7 +611,7 @@ public:
   // descl2=xentlambda,"intensity-weighted" cross-entropy,alias=cross_entropy_lambda
   // descl2=kldiv,`Kullback-Leibler divergence`_,alias=kullback_leibler
   // desc=support multiple metrics,separated by ,
-  std::vector<std::string> metric_types;
+  std::vector<std::string> metric;
 
   // check=>0
   // alias = output_freq
@@ -678,6 +679,7 @@ public:
 private:
   void CheckParamConflict();
   void GetMembersFromString(const std::unordered_map<std::string, std::string>& params);
+  std::string SaveMembersToString() const;
 };
 
 inline bool Config::GetString(

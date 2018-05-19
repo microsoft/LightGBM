@@ -68,33 +68,33 @@ void GetObjectiveType(const std::unordered_map<std::string, std::string>& params
   }
 }
 
-void GetMetricType(const std::unordered_map<std::string, std::string>& params, std::vector<std::string>* metric_types) {
+void GetMetricType(const std::unordered_map<std::string, std::string>& params, std::vector<std::string>* metric) {
   std::string value;
   if (Config::GetString(params, "metric", &value)) {
     // clear old metrics
-    metric_types->clear();
+    metric->clear();
     // to lower
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     // split
     std::vector<std::string> metrics = Common::Split(value.c_str(), ',');
     // remove duplicate
     std::unordered_set<std::string> metric_sets;
-    for (auto& metric : metrics) {
-      std::transform(metric.begin(), metric.end(), metric.begin(), Common::tolower);
-      if (metric_sets.count(metric) <= 0) {
-        metric_sets.insert(metric);
+    for (auto& met : metrics) {
+      std::transform(met.begin(), met.end(), met.begin(), Common::tolower);
+      if (metric_sets.count(met) <= 0) {
+        metric_sets.insert(met);
       }
     }
-    for (auto& metric : metric_sets) {
-      metric_types->push_back(metric);
+    for (auto& met : metric_sets) {
+      metric->push_back(met);
     }
-    metric_types->shrink_to_fit();
+    metric->shrink_to_fit();
   }
   // add names of objective function if not providing metric
-  if (metric_types->empty() && value.size() == 0) {
+  if (metric->empty() && value.size() == 0) {
     if (Config::GetString(params, "objective", &value)) {
       std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
-      metric_types->push_back(value);
+      metric->push_back(value);
     }
   }
 }
@@ -164,7 +164,7 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
 
   GetTaskType(params, &task);
   GetBoostingType(params, &boosting);
-  GetMetricType(params, &metric_types);
+  GetMetricType(params, &metric);
   GetObjectiveType(params, &objective);
   GetDeviceType(params, &device_type);
   GetTreeLearnerType(params, &tree_learner);
@@ -214,7 +214,7 @@ void Config::CheckParamConflict() {
     }
   }
   if (is_provide_training_metric || !valid.empty()) {
-    for (std::string metric_type : metric_types) {
+    for (std::string metric_type : metric) {
       bool metric_type_multiclass = (CheckMultiClassObjective(metric_type) 
                                      || metric_type == std::string("multi_logloss")
                                      || metric_type == std::string("multi_error"));
@@ -261,6 +261,17 @@ void Config::CheckParamConflict() {
       Log::Warning("Accuracy may be bad since you didn't set num_leaves and 2^max_depth > num_leaves");
     }
   }
+}
+
+std::string Config::ToString() const {
+  std::stringstream str_buf;
+  str_buf << "boosting=" << boosting << "\n";
+  str_buf << "objective=" << objective << "\n";
+  str_buf << "metric=" << Common::Join(metric, ",") << "\n";
+  str_buf << "tree_learner=" << tree_learner << "\n";
+  str_buf << "device_type=" << device_type << "\n";
+  str_buf << SaveMembersToString();
+  return str_buf.str();
 }
 
 }  // namespace LightGBM

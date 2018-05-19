@@ -86,7 +86,7 @@ public:
 
     // create training metric
     train_metric_.clear();
-    for (auto metric_type : config_.metric_types) {
+    for (auto metric_type : config_.metric) {
       auto metric = std::unique_ptr<Metric>(
         Metric::CreateMetric(metric_type, config_));
       if (metric == nullptr) { continue; }
@@ -148,7 +148,7 @@ public:
   void AddValidData(const Dataset* valid_data) {
     std::lock_guard<std::mutex> lock(mutex_);
     valid_metrics_.emplace_back();
-    for (auto metric_type : config_.metric_types) {
+    for (auto metric_type : config_.metric) {
       auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_));
       if (metric == nullptr) { continue; }
       metric->Init(valid_data->metadata(), valid_data->num_data());
