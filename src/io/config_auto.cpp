@@ -7,8 +7,8 @@ std::unordered_map<std::string, std::string> Config::alias_table(
   { "nthread", "num_threads" },
   { "num_thread", "num_threads" },
   { "random_seed", "seed" },
-  { "boosting", "boosting_type" },
-  { "boost", "boosting_type" },
+  { "boosting", "boosting" },
+  { "boost", "boosting" },
   { "application", "objective" },
   { "app", "objective" },
   { "train_data", "data" },
@@ -24,7 +24,7 @@ std::unordered_map<std::string, std::string> Config::alias_table(
   { "test", "valid_data" },
   { "is_sparse", "is_enable_sparse" },
   { "enable_sparse", "is_enable_sparse" },
-  { "pre_partition", "is_pre_partition" },
+  { "pre_partition", "pre_partition" },
   { "training_metric", "is_training_metric" },
   { "train_metric", "is_training_metric" },
   { "ndcg_at", "ndcg_eval_at" },
@@ -53,15 +53,15 @@ std::unordered_map<std::string, std::string> Config::alias_table(
   { "tree", "tree_learner" },
   { "num_machine", "num_machines" },
   { "local_port", "local_listen_port" },
-  { "two_round_loading", "use_two_round_loading" },
-  { "two_round", "use_two_round_loading" },
+  { "two_round_loading", "two_round" },
+  { "two_round", "two_round" },
   { "mlist", "machine_list_file" },
-  { "is_save_binary", "is_save_binary_file" },
-  { "save_binary", "is_save_binary_file" },
+  { "is_save_binary", "save_binary" },
+  { "save_binary", "save_binary" },
   { "early_stopping_rounds", "early_stopping_round" },
   { "early_stopping", "early_stopping_round" },
   { "verbosity", "verbose" },
-  { "header", "has_header" },
+  { "header", "header" },
   { "label", "label_column" },
   { "weight", "weight_column" },
   { "group", "group_column" },
@@ -69,15 +69,15 @@ std::unordered_map<std::string, std::string> Config::alias_table(
   { "query_column", "group_column" },
   { "ignore_feature", "ignore_column" },
   { "blacklist", "ignore_column" },
-  { "categorical_feature", "categorical_column" },
-  { "cat_column", "categorical_column" },
-  { "cat_feature", "categorical_column" },
-  { "predict_raw_score", "is_predict_raw_score" },
-  { "raw_score", "is_predict_raw_score" },
-  { "leaf_index", "is_predict_leaf_index" },
-  { "predict_leaf_index", "is_predict_leaf_index" },
-  { "contrib", "is_predict_contrib" },
-  { "predict_contrib", "is_predict_contrib" },
+  { "categorical_feature", "categorical_feature" },
+  { "cat_column", "categorical_feature" },
+  { "cat_feature", "categorical_feature" },
+  { "predict_raw_score", "predict_raw_score" },
+  { "raw_score", "predict_raw_score" },
+  { "leaf_index", "predict_leaf_index" },
+  { "predict_leaf_index", "predict_leaf_index" },
+  { "contrib", "predict_contrib" },
+  { "predict_contrib", "predict_contrib" },
   { "min_split_gain", "min_gain_to_split" },
   { "topk", "top_k" },
   { "reg_alpha", "lambda_l1" },
@@ -88,7 +88,7 @@ std::unordered_map<std::string, std::string> Config::alias_table(
   { "workers", "machines" },
   { "nodes", "machines" },
   { "subsample_for_bin", "bin_construct_sample_cnt" },
-  { "metric_freq", "output_freq" },
+  { "metric_freq", "metric_freq" },
   { "mc", "monotone_constraints" },
   { "max_tree_output", "max_delta_step" },
   { "max_leaf_output", "max_delta_step" }
@@ -96,17 +96,17 @@ std::unordered_map<std::string, std::string> Config::alias_table(
 
 std::unordered_set<std::string> Config::parameter_set({
   "config", "config_file", "task", "device",
-  "num_threads", "seed", "boosting_type", "objective", "data",
+  "num_threads", "seed", "boosting", "objective", "data",
   "output_model", "input_model", "output_result", "valid_data",
-  "is_enable_sparse", "is_pre_partition", "is_training_metric",
+  "is_enable_sparse", "pre_partition", "is_training_metric",
   "ndcg_eval_at", "min_data_in_leaf", "min_sum_hessian_in_leaf",
   "num_leaves", "feature_fraction", "num_iterations",
   "bagging_fraction", "bagging_freq", "learning_rate", "tree_learner",
-  "num_machines", "local_listen_port", "use_two_round_loading",
-  "machine_list_file", "is_save_binary_file", "early_stopping_round",
-  "verbose", "has_header", "label_column", "weight_column", "group_column",
-  "ignore_column", "categorical_column", "is_predict_raw_score",
-  "is_predict_leaf_index", "min_gain_to_split", "top_k",
+  "num_machines", "local_listen_port", "two_round",
+  "machine_list_file", "save_binary", "early_stopping_round",
+  "verbose", "header", "label_column", "weight_column", "group_column",
+  "ignore_column", "categorical_feature", "predict_raw_score",
+  "predict_leaf_index", "min_gain_to_split", "top_k",
   "lambda_l1", "lambda_l2", "num_class", "is_unbalance",
   "max_depth", "max_bin", "bagging_seed",
   "drop_rate", "skip_drop", "max_drop", "uniform_drop",
@@ -116,14 +116,14 @@ std::unordered_set<std::string> Config::parameter_set({
   "pred_early_stop_margin", "use_missing", "sigmoid",
   "fair_c", "poission_max_delta_step", "scale_pos_weight",
   "boost_from_average", "max_position", "label_gain",
-  "metric", "output_freq", "time_out",
+  "metric", "metric_freq", "time_out",
   "gpu_platform_id", "gpu_device_id", "gpu_use_dp",
   "convert_model", "convert_model_language",
-  "feature_fraction_seed", "enable_bundle", "data_filename", "valid_data_filenames",
+  "feature_fraction_seed", "enable_bundle", "data", "valid",
   "snapshot_freq", "verbosity", "sparse_threshold", "enable_load_from_binary_file",
   "max_conflict_rate", "poisson_max_delta_step",
   "histogram_pool_size", "is_provide_training_metric", "machine_list_filename", "machines",
-  "zero_as_missing", "init_score_file", "valid_init_score_file", "is_predict_contrib",
+  "zero_as_missing", "init_score_file", "valid_init_score_file", "predict_contrib",
   "max_cat_threshold",  "cat_smooth", "min_data_per_group", "cat_l2", "max_cat_to_onehot",
   "alpha", "reg_sqrt", "tweedie_variance_power", "monotone_constraints", "max_delta_step",
   "forced_splits" });
@@ -137,45 +137,35 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "num_class", &num_class);
   CHECK(num_class > 0);
   GetInt(params, "data_random_seed", &data_random_seed);
-  GetString(params, "data", &data_filename);
+  GetString(params, "data", &data);
   GetString(params, "init_score_file", &initscore_filename);
   GetInt(params, "verbose", &verbosity);
   GetInt(params, "num_iteration_predict", &num_iteration_predict);
   GetInt(params, "bin_construct_sample_cnt", &bin_construct_sample_cnt);
   CHECK(bin_construct_sample_cnt > 0);
-  GetBool(params, "is_pre_partition", &is_pre_partition);
+  GetBool(params, "pre_partition", &pre_partition);
   GetBool(params, "is_enable_sparse", &is_enable_sparse);
   GetDouble(params, "sparse_threshold", &sparse_threshold);
-  GetBool(params, "use_two_round_loading", &use_two_round_loading);
-  GetBool(params, "is_save_binary_file", &is_save_binary_file);
+  GetBool(params, "two_round", &two_round);
+  GetBool(params, "save_binary", &save_binary);
   GetBool(params, "enable_load_from_binary_file", &enable_load_from_binary_file);
-  GetBool(params, "is_predict_raw_score", &is_predict_raw_score);
-  GetBool(params, "is_predict_leaf_index", &is_predict_leaf_index);
-  GetBool(params, "is_predict_contrib", &is_predict_contrib);
+  GetBool(params, "predict_raw_score", &predict_raw_score);
+  GetBool(params, "predict_leaf_index", &predict_leaf_index);
+  GetBool(params, "predict_contrib", &predict_contrib);
   GetInt(params, "snapshot_freq", &snapshot_freq);
   GetString(params, "output_model", &output_model);
   GetString(params, "input_model", &input_model);
   GetString(params, "convert_model", &convert_model);
   GetString(params, "output_result", &output_result);
   std::string tmp_str = "";
-  if (GetString(params, "monotone_constraints", &tmp_str)) {
-    monotone_constraints = Common::StringToArray<int8_t>(tmp_str.c_str(), ',');
-  }
-  if (GetString(params, "valid_data", &tmp_str)) {
-    valid_data_filenames = Common::Split(tmp_str.c_str(), ',');
-  }
-  if (GetString(params, "valid_init_score_file", &tmp_str)) {
-    valid_data_initscores = Common::Split(tmp_str.c_str(), ',');
-  } else {
-    valid_data_initscores = std::vector<std::string>(valid_data_filenames.size(), "");
-  }
-  CHECK(valid_data_filenames.size() == valid_data_initscores.size());
-  GetBool(params, "has_header", &has_header);
+
+  CHECK(valid.size() == valid_data_initscores.size());
+  GetBool(params, "header", &header);
   GetString(params, "label_column", &label_column);
   GetString(params, "weight_column", &weight_column);
   GetString(params, "group_column", &group_column);
   GetString(params, "ignore_column", &ignore_column);
-  GetString(params, "categorical_column", &categorical_column);
+  GetString(params, "categorical_feature", &categorical_feature);
   GetInt(params, "min_data_in_leaf", &min_data_in_leaf);
   GetInt(params, "min_data_in_bin", &min_data_in_bin);
   CHECK(min_data_in_bin > 0);
@@ -207,17 +197,21 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetBool(params, "reg_sqrt", &reg_sqrt);
   GetDouble(params, "tweedie_variance_power", &tweedie_variance_power);
   CHECK(tweedie_variance_power >= 1 && tweedie_variance_power < 2);
+
+  if (GetString(params, "monotone_constraints", &tmp_str)) {
+    monotone_constraints = Common::StringToArray<int8_t>(tmp_str.c_str(), ',');
+  }
+  if (GetString(params, "valid_data", &tmp_str)) {
+    valid = Common::Split(tmp_str.c_str(), ',');
+  }
+  if (GetString(params, "valid_init_score_file", &tmp_str)) {
+    valid_data_initscores = Common::Split(tmp_str.c_str(), ',');
+  } 
+
   if (GetString(params, "label_gain", &tmp_str)) {
     label_gain = Common::StringToArray<double>(tmp_str, ',');
-  } else {
-    // label_gain = 2^i - 1, may overflow, so we use 31 here
-    const int max_label = 31;
-    label_gain.push_back(0.0f);
-    for (int i = 1; i < max_label; ++i) {
-      label_gain.push_back(static_cast<double>((1 << i) - 1));
-    }
+    label_gain.shrink_to_fit();
   }
-  label_gain.shrink_to_fit();
 
   // Metric parameters
   if (GetString(params, "ndcg_eval_at", &tmp_str)) {
@@ -226,13 +220,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
     for (size_t i = 0; i < eval_at.size(); ++i) {
       CHECK(eval_at[i] > 0);
     }
-  } else {
-    // default eval ndcg @[1-5]
-    for (int i = 1; i <= 5; ++i) {
-      eval_at.push_back(i);
-    }
+    eval_at.shrink_to_fit();
   }
-  eval_at.shrink_to_fit();
 
   // Tree parameters
   GetDouble(params, "min_sum_hessian_in_leaf", &min_sum_hessian_in_leaf);
@@ -278,8 +267,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   CHECK(learning_rate > 0.0f);
   GetInt(params, "early_stopping_round", &early_stopping_round);
   CHECK(early_stopping_round >= 0);
-  GetInt(params, "output_freq", &output_freq);
-  CHECK(output_freq >= 0);
+  GetInt(params, "metric_freq", &metric_freq);
+  CHECK(metric_freq >= 0);
   GetBool(params, "is_training_metric", &is_provide_training_metric);
   GetInt(params, "num_class", &num_class);
   CHECK(num_class > 0);

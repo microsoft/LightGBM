@@ -33,7 +33,7 @@ Application::Application(int argc, char** argv) {
   if (config_.num_threads > 0) {
     omp_set_num_threads(config_.num_threads);
   }
-  if (config_.data_filename.size() == 0 && config_.task_type != TaskType::kConvertModel) {
+  if (config_.data.size() == 0 && config_.task != TaskType::kConvertModel) {
     Log::Fatal("No training/prediction data, application quit");
   }
   omp_set_nested(0);
@@ -87,7 +87,7 @@ void Application::LoadData() {
   PredictFunction predict_fun = nullptr;
   PredictionEarlyStopInstance pred_early_stop = CreatePredictionEarlyStopInstance("none", LightGBM::PredictionEarlyStopConfig());
   // need to continue training
-  if (boosting_->NumberOfTotalModel() > 0 && config_.task_type != TaskType::KRefitTree) {
+  if (boosting_->NumberOfTotalModel() > 0 && config_.task != TaskType::KRefitTree) {
     predictor.reset(new Predictor(boosting_.get(), -1, true, false, false, false, -1, -1));
     predict_fun = predictor->GetPredictFunction();
   }
@@ -98,20 +98,20 @@ void Application::LoadData() {
   }
 
   DatasetLoader dataset_loader(config_, predict_fun,
-                               config_.num_class, config_.data_filename.c_str());
+                               config_.num_class, config_.data.c_str());
   // load Training data
   if (config_.is_parallel_find_bin) {
     // load data for parallel training
-    train_data_.reset(dataset_loader.LoadFromFile(config_.data_filename.c_str(),
+    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(),
                                                   config_.initscore_filename.c_str(),
                                                   Network::rank(), Network::num_machines()));
   } else {
     // load data for single machine
-    train_data_.reset(dataset_loader.LoadFromFile(config_.data_filename.c_str(), config_.initscore_filename.c_str(),
+    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), config_.initscore_filename.c_str(),
                                                   0, 1));
   }
   // need save binary file
-  if (config_.is_save_binary_file) {
+  if (config_.save_binary) {
     train_data_->SaveBinaryFile(nullptr);
   }
   // create training metric
@@ -130,17 +130,17 @@ void Application::LoadData() {
     // only when have metrics then need to construct validation data
 
     // Add validation data, if it exists
-    for (size_t i = 0; i < config_.valid_data_filenames.size(); ++i) {
+    for (size_t i = 0; i < config_.valid.size(); ++i) {
       // add
       auto new_dataset = std::unique_ptr<Dataset>(
         dataset_loader.LoadFromFileAlignWithOtherDataset(
-          config_.valid_data_filenames[i].c_str(),
+          config_.valid[i].c_str(),
           config_.valid_data_initscores[i].c_str(),
           train_data_.get())
         );
       valid_datas_.push_back(std::move(new_dataset));
       // need save binary file
-      if (config_.is_save_binary_file) {
+      if (config_.save_binary) {
         valid_datas_.back()->SaveBinaryFile(nullptr);
       }
 
@@ -179,11 +179,11 @@ void Application::InitTrain() {
 
   // create boosting
   boosting_.reset(
-    Boosting::CreateBoosting(config_.boosting_type,
+    Boosting::CreateBoosting(config_.boosting,
                              config_.input_model.c_str()));
   // create objective function
   objective_fun_.reset(
-    ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
+    ObjectiveFunction::CreateObjectiveFunction(config_.objective,
                                                config_));
   // load training data
   LoadData();
@@ -213,10 +213,10 @@ void Application::Train() {
 
 void Application::Predict() {
 
-  if (config_.task_type == TaskType::KRefitTree) {
+  if (config_.task == TaskType::KRefitTree) {
     // create predictor
     Predictor predictor(boosting_.get(), -1, false, true, false, false, 1, 1);
-    predictor.Predict(config_.data_filename.c_str(), config_.output_result.c_str(), config_.has_header);
+    predictor.Predict(config_.data.c_str(), config_.output_result.c_str(), config_.header);
     TextReader<int> result_reader(config_.output_result.c_str(), false);
     result_reader.ReadAllLines();
     std::vector<std::vector<int>> pred_leaf(result_reader.Lines().size());
@@ -227,11 +227,11 @@ void Application::Predict() {
       result_reader.Lines()[i].clear();
     }
     DatasetLoader dataset_loader(config_, nullptr,
-                                 config_.num_class, config_.data_filename.c_str());
-    train_data_.reset(dataset_loader.LoadFromFile(config_.data_filename.c_str(), config_.initscore_filename.c_str(),
+                                 config_.num_class, config_.data.c_str());
+    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), config_.initscore_filename.c_str(),
                                                   0, 1));
     train_metric_.clear();
-    objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
+    objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective,
                                                                     config_));
     objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
     boosting_->Init(&config_, train_data_.get(), objective_fun_.get(),
@@ -241,12 +241,12 @@ void Application::Predict() {
     Log::Info("Finished RefitTree");
   } else {
     // create predictor
-    Predictor predictor(boosting_.get(), config_.num_iteration_predict, config_.is_predict_raw_score,
-                        config_.is_predict_leaf_index, config_.is_predict_contrib,
+    Predictor predictor(boosting_.get(), config_.num_iteration_predict, config_.predict_raw_score,
+                        config_.predict_leaf_index, config_.predict_contrib,
                         config_.pred_early_stop, config_.pred_early_stop_freq,
                         config_.pred_early_stop_margin);
-    predictor.Predict(config_.data_filename.c_str(),
-                      config_.output_result.c_str(), config_.has_header);
+    predictor.Predict(config_.data.c_str(),
+                      config_.output_result.c_str(), config_.header);
     Log::Info("Finished prediction");
   }
 }
@@ -259,7 +259,7 @@ void Application::InitPredict() {
 
 void Application::ConvertModel() {
   boosting_.reset(
-    Boosting::CreateBoosting(config_.boosting_type, config_.input_model.c_str()));
+    Boosting::CreateBoosting(config_.boosting, config_.input_model.c_str()));
   boosting_->SaveModelToIfElse(-1, config_.convert_model.c_str());
 }
 

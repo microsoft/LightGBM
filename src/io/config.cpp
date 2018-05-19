@@ -42,29 +42,29 @@ std::unordered_map<std::string, std::string> Config::Str2Map(const char* paramet
   return params;
 }
 
-void GetBoostingType(const std::unordered_map<std::string, std::string>& params, std::string* boosting_type) {
+void GetBoostingType(const std::unordered_map<std::string, std::string>& params, std::string* boosting) {
   std::string value;
-  if (Config::GetString(params, "boosting_type", &value)) {
+  if (Config::GetString(params, "boosting", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("gbdt") || value == std::string("gbrt")) {
-      *boosting_type = "gbdt";
+      *boosting = "gbdt";
     } else if (value == std::string("dart")) {
-      *boosting_type = "dart";
+      *boosting = "dart";
     } else if (value == std::string("goss")) {
-      *boosting_type = "goss";
+      *boosting = "goss";
     } else if (value == std::string("rf") || value == std::string("randomforest")) {
-      *boosting_type = "rf";
+      *boosting = "rf";
     } else {
       Log::Fatal("Unknown boosting type %s", value.c_str());
     }
   }
 }
 
-void GetObjectiveType(const std::unordered_map<std::string, std::string>& params, std::string* objective_type) {
+void GetObjectiveType(const std::unordered_map<std::string, std::string>& params, std::string* objective) {
   std::string value;
   if (Config::GetString(params, "objective", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
-    *objective_type = value;
+    *objective = value;
   }
 }
 
@@ -99,19 +99,19 @@ void GetMetricType(const std::unordered_map<std::string, std::string>& params, s
   }
 }
 
-void GetTaskType(const std::unordered_map<std::string, std::string>& params, TaskType* task_type) {
+void GetTaskType(const std::unordered_map<std::string, std::string>& params, TaskType* task) {
   std::string value;
   if (Config::GetString(params, "task", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("train") || value == std::string("training")) {
-      *task_type = TaskType::kTrain;
+      *task = TaskType::kTrain;
     } else if (value == std::string("predict") || value == std::string("prediction")
                || value == std::string("test")) {
-      *task_type = TaskType::kPredict;
+      *task = TaskType::kPredict;
     } else if (value == std::string("convert_model")) {
-      *task_type = TaskType::kConvertModel;
+      *task = TaskType::kConvertModel;
     } else if (value == std::string("refit") || value == std::string("refit_tree")) {
-      *task_type = TaskType::KRefitTree;
+      *task = TaskType::KRefitTree;
     } else {
       Log::Fatal("Unknown task type %s", value.c_str());
     }
@@ -132,18 +132,18 @@ void GetDeviceType(const std::unordered_map<std::string, std::string>& params, s
   }
 }
 
-void GetTreeLearnerType(const std::unordered_map<std::string, std::string>& params, std::string* tree_learner_type) {
+void GetTreeLearnerType(const std::unordered_map<std::string, std::string>& params, std::string* tree_learner) {
   std::string value;
   if (Config::GetString(params, "tree_learner", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("serial")) {
-      *tree_learner_type = "serial";
+      *tree_learner = "serial";
     } else if (value == std::string("feature") || value == std::string("feature_parallel")) {
-      *tree_learner_type = "feature";
+      *tree_learner = "feature";
     } else if (value == std::string("data") || value == std::string("data_parallel")) {
-      *tree_learner_type = "data";
+      *tree_learner = "data";
     } else if (value == std::string("voting") || value == std::string("voting_parallel")) {
-      *tree_learner_type = "voting";
+      *tree_learner = "voting";
     } else {
       Log::Fatal("Unknown tree learner type %s", value.c_str());
     }
@@ -162,14 +162,18 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
     feature_fraction_seed = static_cast<int>(rand.NextShort(0, int_max));
   }
 
-  GetTaskType(params, &task_type);
-  GetBoostingType(params, &boosting_type);
+  GetTaskType(params, &task);
+  GetBoostingType(params, &boosting);
   GetMetricType(params, &metric_types);
-  GetObjectiveType(params, &objective_type);
+  GetObjectiveType(params, &objective);
   GetDeviceType(params, &device_type);
-  GetTreeLearnerType(params, &tree_learner_type);
+  GetTreeLearnerType(params, &tree_learner);
 
   GetMembersFromString(params);
+
+  if (valid_data_initscores.size() == 0 && valid.size() > 0) {
+    valid_data_initscores = std::vector<std::string>(valid.size(), "");
+  }
 
   // check for conflicts
   CheckParamConflict();
@@ -185,31 +189,31 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   }
 }
 
-bool CheckMultiClassObjective(const std::string& objective_type) {
-  return (objective_type == std::string("multiclass")
-          || objective_type == std::string("multiclassova")
-          || objective_type == std::string("softmax")
-          || objective_type == std::string("multiclass_ova")
-          || objective_type == std::string("ova")
-          || objective_type == std::string("ovr"));
+bool CheckMultiClassObjective(const std::string& objective) {
+  return (objective == std::string("multiclass")
+          || objective == std::string("multiclassova")
+          || objective == std::string("softmax")
+          || objective == std::string("multiclass_ova")
+          || objective == std::string("ova")
+          || objective == std::string("ovr"));
 }
 
 void Config::CheckParamConflict() {
   // check if objective_type, metric_type, and num_class match
   int num_class_check = num_class;
-  bool objective_custom = objective_type == std::string("none") || objective_type == std::string("null") || objective_type == std::string("custom");
-  bool objective_type_multiclass = CheckMultiClassObjective(objective_type) || (objective_custom && num_class_check > 1);
+  bool objective_custom = objective == std::string("none") || objective == std::string("null") || objective == std::string("custom");
+  bool objective_type_multiclass = CheckMultiClassObjective(objective) || (objective_custom && num_class_check > 1);
   
   if (objective_type_multiclass) {
     if (num_class_check <= 1) {
       Log::Fatal("Number of classes should be specified and greater than 1 for multiclass training");
     }
   } else {
-    if (task_type == TaskType::kTrain && num_class_check != 1) {
+    if (task == TaskType::kTrain && num_class_check != 1) {
       Log::Fatal("Number of classes must be 1 for non-multiclass training");
     }
   }
-  if (is_provide_training_metric || !valid_data_filenames.empty()) {
+  if (is_provide_training_metric || !valid.empty()) {
     for (std::string metric_type : metric_types) {
       bool metric_type_multiclass = (CheckMultiClassObjective(metric_type) 
                                      || metric_type == std::string("multi_logloss")
@@ -225,23 +229,23 @@ void Config::CheckParamConflict() {
     is_parallel = true;
   } else {
     is_parallel = false;
-    tree_learner_type = "serial";
+    tree_learner = "serial";
   }
 
-  bool is_single_tree_learner = tree_learner_type == std::string("serial");
+  bool is_single_tree_learner = tree_learner == std::string("serial");
 
   if (is_single_tree_learner) {
     is_parallel = false;
     num_machines = 1;
   }
 
-  if (is_single_tree_learner || tree_learner_type == std::string("feature")) {
+  if (is_single_tree_learner || tree_learner == std::string("feature")) {
     is_parallel_find_bin = false;
-  } else if (tree_learner_type == std::string("data")
-             || tree_learner_type == std::string("voting")) {
+  } else if (tree_learner == std::string("data")
+             || tree_learner == std::string("voting")) {
     is_parallel_find_bin = true;
     if (histogram_pool_size >= 0
-        && tree_learner_type == std::string("data")) {
+        && tree_learner == std::string("data")) {
       Log::Warning("Histogram LRU queue was enabled (histogram_pool_size=%f).\n"
                    "Will disable this to reduce communication costs",
                    histogram_pool_size);

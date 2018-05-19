@@ -273,7 +273,7 @@ public:
   * \param label_idx index of label column
   * \return Object of parser
   */
-  static Parser* CreateParser(const char* filename, bool has_header, int num_features, int label_idx);
+  static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx);
 };
 
 /*! \brief The main class of data set,

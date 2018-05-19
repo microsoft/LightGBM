@@ -14,7 +14,30 @@ std::vector<double> DCGCalculator::label_gain_;
 std::vector<double> DCGCalculator::discount_;
 const data_size_t DCGCalculator::kMaxPosition = 10000;
 
-void DCGCalculator::Init(std::vector<double> input_label_gain) {
+
+void DCGCalculator::DefaultEvalAt(std::vector<int>* eval_at) {
+  if (!eval_at->empty()) {
+    for (int i = 1; i <= 5; ++i) {
+      eval_at->push_back(i);
+    }
+  } else {
+    for (size_t i = 0; i < eval_at->size(); ++i) {
+      CHECK(eval_at->at(i) > 0);
+    }
+  }
+}
+
+void DCGCalculator::DefaultLabelGain(std::vector<double>* label_gain) {
+  if (!label_gain->empty()) { return; }
+  // label_gain = 2^i - 1, may overflow, so we use 31 here
+  const int max_label = 31;
+  label_gain->push_back(0.0f);
+  for (int i = 1; i < max_label; ++i) {
+    label_gain->push_back(static_cast<double>((1 << i) - 1));
+  }
+}
+
+void DCGCalculator::Init(const std::vector<double>& input_label_gain) {
   label_gain_.resize(input_label_gain.size());
   for(size_t i = 0;i < input_label_gain.size();++i){
     label_gain_[i] = static_cast<double>(input_label_gain[i]);

@@ -20,13 +20,10 @@ class LambdarankNDCG: public ObjectiveFunction {
 public:
   explicit LambdarankNDCG(const Config& config) {
     sigmoid_ = static_cast<double>(config.sigmoid);
+    label_gain_ = config.label_gain;
     // initialize DCG calculator
-    DCGCalculator::Init(config.label_gain);
-    // copy lable gain to local
-    for (auto gain : config.label_gain) {
-      label_gain_.push_back(static_cast<double>(gain));
-    }
-    label_gain_.shrink_to_fit();
+    DCGCalculator::DefaultLabelGain(&label_gain_);
+    DCGCalculator::Init(label_gain_);
     // will optimize NDCG@optimize_pos_at_
     optimize_pos_at_ = config.max_position;
     sigmoid_table_.clear();

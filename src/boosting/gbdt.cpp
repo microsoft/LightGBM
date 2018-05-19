@@ -93,7 +93,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
     is_constant_hessian_ = false;
   }
 
-  tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(config_->tree_learner_type, config_->device_type, config_.get()));
+  tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(config_->tree_learner, config_->device_type, config_.get()));
 
   // init tree learner
   tree_learner_->Init(train_data_, is_constant_hessian_);
@@ -580,7 +580,7 @@ std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* scor
 }
 
 std::string GBDT::OutputMetric(int iter) {
-  bool need_output = (iter % config_->output_freq) == 0;
+  bool need_output = (iter % config_->metric_freq) == 0;
   std::string ret = "";
   std::stringstream msg_buf;
   std::vector<std::pair<size_t, size_t>> meet_early_stopping_pairs;

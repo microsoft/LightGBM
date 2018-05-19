@@ -46,17 +46,17 @@ public:
                    "please use continued train with input score");
     }
 
-    boosting_.reset(Boosting::CreateBoosting(config_.boosting_type, nullptr));
+    boosting_.reset(Boosting::CreateBoosting(config_.boosting, nullptr));
 
     train_data_ = train_data;
     CreateObjectiveAndMetrics();
     // initialize the boosting
-    if (config_.tree_learner_type == std::string("feature")) {
+    if (config_.tree_learner == std::string("feature")) {
       Log::Fatal("Do not support feature parallel in c api");
     }
-    if (Network::num_machines() == 1 && config_.tree_learner_type != std::string("serial")) {
+    if (Network::num_machines() == 1 && config_.tree_learner != std::string("serial")) {
       Log::Warning("Only find one worker, will switch to serial tree learner");
-      config_.tree_learner_type = "serial";
+      config_.tree_learner = "serial";
     }
     boosting_->Init(&config_, train_data_, objective_fun_.get(),
                     Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
@@ -74,7 +74,7 @@ public:
 
   void CreateObjectiveAndMetrics() {
     // create objective function
-    objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
+    objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective,
                                                                     config_));
     if (objective_fun_ == nullptr) {
       Log::Warning("Using self-defined objective function");
@@ -114,8 +114,8 @@ public:
     if (param.count("num_class")) {
       Log::Fatal("Cannot change num_class during training");
     }
-    if (param.count("boosting_type")) {
-      Log::Fatal("Cannot change boosting_type during training");
+    if (param.count("boosting")) {
+      Log::Fatal("Cannot change boosting during training");
     }
     if (param.count("metric")) {
       Log::Fatal("Cannot change metric during training");
@@ -128,7 +128,7 @@ public:
 
     if (param.count("objective")) {
       // create objective function
-      objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
+      objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective,
                                                                       config_));
       if (objective_fun_ == nullptr) {
         Log::Warning("Using self-defined objective function");
@@ -181,20 +181,20 @@ public:
     std::lock_guard<std::mutex> lock(mutex_);
     bool is_predict_leaf = false;
     bool is_raw_score = false;
-    bool is_predict_contrib = false;
+    bool predict_contrib = false;
     if (predict_type == C_API_PREDICT_LEAF_INDEX) {
       is_predict_leaf = true;
     } else if (predict_type == C_API_PREDICT_RAW_SCORE) {
       is_raw_score = true;
     } else if (predict_type == C_API_PREDICT_CONTRIB) {
-      is_predict_contrib = true;
+      predict_contrib = true;
     } else {
       is_raw_score = false;
     }
 
-    Predictor predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf, is_predict_contrib,
+    Predictor predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
-    int64_t num_pred_in_one_row = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf, is_predict_contrib);
+    int64_t num_pred_in_one_row = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf, predict_contrib);
     auto pred_fun = predictor.GetPredictFunction();
     OMP_INIT_EX();
     #pragma omp parallel for schedule(static)
@@ -215,17 +215,17 @@ public:
     std::lock_guard<std::mutex> lock(mutex_);
     bool is_predict_leaf = false;
     bool is_raw_score = false;
-    bool is_predict_contrib = false;
+    bool predict_contrib = false;
     if (predict_type == C_API_PREDICT_LEAF_INDEX) {
       is_predict_leaf = true;
     } else if (predict_type == C_API_PREDICT_RAW_SCORE) {
       is_raw_score = true;
     } else if (predict_type == C_API_PREDICT_CONTRIB) {
-      is_predict_contrib = true;
+      predict_contrib = true;
     } else {
       is_raw_score = false;
     }
-    Predictor predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf, is_predict_contrib,
+    Predictor predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
     bool bool_data_has_header = data_has_header > 0 ? true : false;
     predictor.Predict(data_filename, result_filename, bool_data_has_header);
