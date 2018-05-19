@@ -53,6 +53,7 @@ def train(params, train_set, num_boost_round=100,
         If list of int, interpreted as indices.
         If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
         If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
+        All values should be less than int32 max value (2147483647).
     early_stopping_rounds: int or None, optional (default=None)
         Activates early stopping. The model will train until the validation score stops improving.
         Requires at least one validation data and one metric. If there's more than one, will check all of them.
@@ -354,6 +355,7 @@ def cv(params, train_set, num_boost_round=100,
         If list of int, interpreted as indices.
         If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
         If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
+        All values should be less than int32 max value (2147483647).
     early_stopping_rounds: int or None, optional (default=None)
         Activates early stopping. CV error needs to decrease at least
         every ``early_stopping_rounds`` round(s) to continue.

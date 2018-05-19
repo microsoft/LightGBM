@@ -441,6 +441,8 @@ IO Parameters
 
    -  **Note**: only supports categorical with ``int`` type. Index starts from ``0``. And it doesn't count the label column
 
+   -  **Note**: all values should be less than ``Int32.MaxValue`` (2147483647)
+
    -  **Note**: the negative values will be treated as **missing values**
 
 -  ``predict_raw_score``, default=\ ``false``, type=bool, alias=\ ``raw_score``, ``is_predict_raw_score``
