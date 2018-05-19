@@ -757,7 +757,7 @@ class Dataset(object):
         """
         if len(mat.shape) != 2:
             raise ValueError('Input numpy.ndarray must be 2 dimensional')
-        if categorical_indices is not None and (mat[:, list(categorical_indices)] > MAX_INT32).any():
+        if categorical_indices is not None and len(categorical_indices) != 0 and mat[:, list(categorical_indices)].max() > MAX_INT32:
             raise ValueError('Values of categorical features must be smaller than {0}'.format(MAX_INT32))
 
         self.handle = ctypes.c_void_p()
@@ -784,7 +784,7 @@ class Dataset(object):
         """
         if len(csr.indices) != len(csr.data):
             raise ValueError('Length mismatch: {} vs {}'.format(len(csr.indices), len(csr.data)))
-        if categorical_indices is not None and (csr[:, list(categorical_indices)] > MAX_INT32).nnz:
+        if categorical_indices is not None and len(categorical_indices) != 0 and csr[:, list(categorical_indices)].max() > MAX_INT32:
             raise ValueError('Values of categorical features must be smaller than {0}'.format(MAX_INT32))
 
         self.handle = ctypes.c_void_p()
@@ -810,7 +810,7 @@ class Dataset(object):
         """
         if len(csc.indices) != len(csc.data):
             raise ValueError('Length mismatch: {} vs {}'.format(len(csc.indices), len(csc.data)))
-        if categorical_indices is not None and (csc[:, list(categorical_indices)] > MAX_INT32).nnz:
+        if categorical_indices is not None and len(categorical_indices) != 0 and csc[:, list(categorical_indices)].max() > MAX_INT32:
             raise ValueError('Values of categorical features must be smaller than {0}'.format(MAX_INT32))
 
         self.handle = ctypes.c_void_p()
