@@ -38,7 +38,7 @@ namespace LightGBM {
 */
 class CrossEntropy: public ObjectiveFunction {
 public:
-  explicit CrossEntropy(const ObjectiveConfig&) {
+  explicit CrossEntropy(const Config&) {
   }
 
   explicit CrossEntropy(const std::vector<std::string>&) {
@@ -141,7 +141,7 @@ private:
 */
 class CrossEntropyLambda: public ObjectiveFunction {
 public:
-  explicit CrossEntropyLambda(const ObjectiveConfig&) {
+  explicit CrossEntropyLambda(const Config&) {
     min_weight_ = max_weight_ = 0.0f;
   }
 

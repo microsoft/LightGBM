@@ -214,7 +214,7 @@ void Dataset::Construct(
   int** sample_non_zero_indices,
   const int* num_per_col,
   size_t total_sample_cnt,
-  const IOConfig& io_config) {
+  const Config& io_config) {
 
   num_total_features_ = static_cast<int>(bin_mappers.size());
   sparse_threshold_ = io_config.sparse_threshold;

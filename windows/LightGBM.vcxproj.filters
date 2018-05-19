@@ -299,5 +299,8 @@
     <ClCompile Include="..\src\io\json11.cpp">
       <Filter>src\io</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\io\config_auto.cpp">
+      <Filter>src\io</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

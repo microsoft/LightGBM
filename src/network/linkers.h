@@ -40,7 +40,7 @@ public:
   * \brief Constructor
   * \param config Config of network settings
   */
-  explicit Linkers(NetworkConfig config);
+  explicit Linkers(Config config);
   /*!
   * \brief Destructor
   */

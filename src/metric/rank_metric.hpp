@@ -15,7 +15,7 @@ namespace LightGBM {
 
 class NDCGMetric:public Metric {
 public:
-  explicit NDCGMetric(const MetricConfig& config) {
+  explicit NDCGMetric(const Config& config) {
     // get eval position
     for (auto k : config.eval_at) {
       eval_at_.push_back(static_cast<data_size_t>(k));

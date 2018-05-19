@@ -56,7 +56,7 @@ private:
   void ConvertModel();
 
   /*! \brief All configs */
-  OverallConfig config_;
+  Config config_;
   /*! \brief Training data */
   std::unique_ptr<Dataset> train_data_;
   /*! \brief Validation data */

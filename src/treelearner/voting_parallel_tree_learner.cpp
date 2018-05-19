@@ -10,9 +10,9 @@
 namespace LightGBM {
 
 template <typename TREELEARNER_T>
-VotingParallelTreeLearner<TREELEARNER_T>::VotingParallelTreeLearner(const TreeConfig* tree_config)
-  :TREELEARNER_T(tree_config) {
-  top_k_ = this->tree_config_->top_k;
+VotingParallelTreeLearner<TREELEARNER_T>::VotingParallelTreeLearner(const Config* config)
+  :TREELEARNER_T(config) {
+  top_k_ = this->config_->top_k;
 }
 
 template <typename TREELEARNER_T>
@@ -46,16 +46,16 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
 
   smaller_buffer_read_start_pos_.resize(this->num_features_);
   larger_buffer_read_start_pos_.resize(this->num_features_);
-  global_data_count_in_leaf_.resize(this->tree_config_->num_leaves);
+  global_data_count_in_leaf_.resize(this->config_->num_leaves);
 
   smaller_leaf_splits_global_.reset(new LeafSplits(this->train_data_->num_data()));
   larger_leaf_splits_global_.reset(new LeafSplits(this->train_data_->num_data()));
 
-  local_tree_config_ = *this->tree_config_;
-  local_tree_config_.min_data_in_leaf /= num_machines_;
-  local_tree_config_.min_sum_hessian_in_leaf /= num_machines_;
+  local_config_ = *this->config_;
+  local_config_.min_data_in_leaf /= num_machines_;
+  local_config_.min_sum_hessian_in_leaf /= num_machines_;
 
-  this->histogram_pool_.ResetConfig(&local_tree_config_);
+  this->histogram_pool_.ResetConfig(&local_config_);
 
   // initialize histograms for global
   smaller_leaf_histogram_array_global_.reset(new FeatureHistogram[this->num_features_]);
@@ -75,7 +75,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
     } else {
       feature_metas_[i].bias = 0;
     }
-    feature_metas_[i].tree_config = this->tree_config_;
+    feature_metas_[i].config = this->config_;
     feature_metas_[i].bin_type = train_data->FeatureBinMapper(i)->bin_type();
   }
   uint64_t offset = 0;
@@ -92,18 +92,18 @@ void VotingParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, b
 }
 
 template <typename TREELEARNER_T>
-void VotingParallelTreeLearner<TREELEARNER_T>::ResetConfig(const TreeConfig* tree_config) {
-  TREELEARNER_T::ResetConfig(tree_config);
+void VotingParallelTreeLearner<TREELEARNER_T>::ResetConfig(const Config* config) {
+  TREELEARNER_T::ResetConfig(config);
 
-  local_tree_config_ = *this->tree_config_;
-  local_tree_config_.min_data_in_leaf /= num_machines_;
-  local_tree_config_.min_sum_hessian_in_leaf /= num_machines_;
+  local_config_ = *this->config_;
+  local_config_.min_data_in_leaf /= num_machines_;
+  local_config_.min_sum_hessian_in_leaf /= num_machines_;
 
-  this->histogram_pool_.ResetConfig(&local_tree_config_);
-  global_data_count_in_leaf_.resize(this->tree_config_->num_leaves);
+  this->histogram_pool_.ResetConfig(&local_config_);
+  global_data_count_in_leaf_.resize(this->config_->num_leaves);
 
   for (size_t i = 0; i < feature_metas_.size(); ++i) {
-    feature_metas_[i].tree_config = this->tree_config_;
+    feature_metas_[i].config = this->config_;
   }
 }
 
@@ -451,7 +451,7 @@ void VotingParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(cons
     larger_best_split = this->best_split_per_leaf_[this->larger_leaf_splits_->LeafIndex()];
   }
   // sync global best info
-  SyncUpGlobalBestSplit(input_buffer_.data(), input_buffer_.data(), &smaller_best_split, &larger_best_split, this->tree_config_->max_cat_threshold);
+  SyncUpGlobalBestSplit(input_buffer_.data(), input_buffer_.data(), &smaller_best_split, &larger_best_split, this->config_->max_cat_threshold);
 
   // copy back
   this->best_split_per_leaf_[smaller_leaf_splits_global_->LeafIndex()] = smaller_best_split;

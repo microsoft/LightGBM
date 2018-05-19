@@ -32,7 +32,7 @@ public:
   * \param training_metrics Training metric
   */
   virtual void Init(
-    const BoostingConfig* config,
+    const Config* config,
     const Dataset* train_data,
     const ObjectiveFunction* objective_function,
     const std::vector<const Metric*>& training_metrics) = 0;
@@ -47,7 +47,7 @@ public:
   virtual void ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* objective_function,
                                  const std::vector<const Metric*>& training_metrics) = 0;
 
-  virtual void ResetConfig(const BoostingConfig* config) = 0;
+  virtual void ResetConfig(const Config* config) = 0;
 
 
 

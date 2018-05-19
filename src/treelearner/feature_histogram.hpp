@@ -20,7 +20,7 @@ public:
   uint32_t default_bin;
   int8_t monotone_type;
   /*! \brief pointer of tree config */
-  const TreeConfig* tree_config;
+  const Config* config;
   BinType bin_type;
 };
 /*!
@@ -84,8 +84,8 @@ public:
 
     is_splittable_ = false;
     double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian,
-                                         meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2, meta_->tree_config->max_delta_step);
-    double min_gain_shift = gain_shift + meta_->tree_config->min_gain_to_split;
+                                         meta_->config->lambda_l1, meta_->config->lambda_l2, meta_->config->max_delta_step);
+    double min_gain_shift = gain_shift + meta_->config->min_gain_to_split;
     if (meta_->num_bin > 2 && meta_->missing_type != MissingType::None) {
       if (meta_->missing_type == MissingType::Zero) {
         FindBestThresholdSequence(sum_gradient, sum_hessian, num_data, min_constraint, max_constraint, min_gain_shift, output, -1, true, false);
@@ -115,35 +115,35 @@ public:
     data_size_t best_left_count = 0;
     double best_sum_left_gradient = 0;
     double best_sum_left_hessian = 0;
-    double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian, meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2, meta_->tree_config->max_delta_step);
+    double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian, meta_->config->lambda_l1, meta_->config->lambda_l2, meta_->config->max_delta_step);
     
-    double min_gain_shift = gain_shift + meta_->tree_config->min_gain_to_split;
+    double min_gain_shift = gain_shift + meta_->config->min_gain_to_split;
     bool is_full_categorical = meta_->missing_type == MissingType::None;
     int used_bin = meta_->num_bin - 1 + is_full_categorical;
 
     std::vector<int> sorted_idx;
-    double l2 = meta_->tree_config->lambda_l2;
-    bool use_onehot = meta_->num_bin <= meta_->tree_config->max_cat_to_onehot;
+    double l2 = meta_->config->lambda_l2;
+    bool use_onehot = meta_->num_bin <= meta_->config->max_cat_to_onehot;
     int best_threshold = -1;
     int best_dir = 1;
 
     if (use_onehot) {
       for (int t = 0; t < used_bin; ++t) {
         // if data not enough, or sum hessian too small
-        if (data_[t].cnt < meta_->tree_config->min_data_in_leaf
-            || data_[t].sum_hessians < meta_->tree_config->min_sum_hessian_in_leaf) continue;
+        if (data_[t].cnt < meta_->config->min_data_in_leaf
+            || data_[t].sum_hessians < meta_->config->min_sum_hessian_in_leaf) continue;
         data_size_t other_count = num_data - data_[t].cnt;
         // if data not enough
-        if (other_count < meta_->tree_config->min_data_in_leaf) continue;
+        if (other_count < meta_->config->min_data_in_leaf) continue;
 
         double sum_other_hessian = sum_hessian - data_[t].sum_hessians - kEpsilon;
         // if sum hessian too small
-        if (sum_other_hessian < meta_->tree_config->min_sum_hessian_in_leaf) continue;
+        if (sum_other_hessian < meta_->config->min_sum_hessian_in_leaf) continue;
 
         double sum_other_gradient = sum_gradient - data_[t].sum_gradients;
         // current split gain
         double current_gain = GetSplitGains(sum_other_gradient, sum_other_hessian, data_[t].sum_gradients, data_[t].sum_hessians + kEpsilon,
-                                            meta_->tree_config->lambda_l1, l2, meta_->tree_config->max_delta_step,
+                                            meta_->config->lambda_l1, l2, meta_->config->max_delta_step,
                                             min_constraint, max_constraint, 0);
         // gain with split is worse than without split
         if (current_gain <= min_gain_shift) continue;
@@ -161,16 +161,16 @@ public:
       }
     } else {
       for (int i = 0; i < used_bin; ++i) {
-        if (data_[i].cnt >= meta_->tree_config->cat_smooth) {
+        if (data_[i].cnt >= meta_->config->cat_smooth) {
           sorted_idx.push_back(i);
         }
       }
       used_bin = static_cast<int>(sorted_idx.size());
 
-      l2 += meta_->tree_config->cat_l2;
+      l2 += meta_->config->cat_l2;
 
       auto ctr_fun = [this](double sum_grad, double sum_hess) {
-        return (sum_grad) / (sum_hess + meta_->tree_config->cat_smooth);
+        return (sum_grad) / (sum_hess + meta_->config->cat_smooth);
       };
       std::sort(sorted_idx.begin(), sorted_idx.end(),
                 [this, &ctr_fun](int i, int j) {
@@ -181,13 +181,13 @@ public:
       std::vector<int> start_position(1, 0);
       find_direction.push_back(-1);
       start_position.push_back(used_bin - 1);
-      const int max_num_cat = std::min(meta_->tree_config->max_cat_threshold, (used_bin + 1) / 2);
+      const int max_num_cat = std::min(meta_->config->max_cat_threshold, (used_bin + 1) / 2);
 
       is_splittable_ = false;
       for (size_t out_i = 0; out_i < find_direction.size(); ++out_i) {
         auto dir = find_direction[out_i];
         auto start_pos = start_position[out_i];
-        data_size_t min_data_per_group = meta_->tree_config->min_data_per_group;
+        data_size_t min_data_per_group = meta_->config->min_data_per_group;
         data_size_t cnt_cur_group = 0;
         double sum_left_gradient = 0.0f;
         double sum_left_hessian = kEpsilon;
@@ -201,13 +201,13 @@ public:
           left_count += data_[t].cnt;
           cnt_cur_group += data_[t].cnt;
 
-          if (left_count < meta_->tree_config->min_data_in_leaf
-              || sum_left_hessian < meta_->tree_config->min_sum_hessian_in_leaf) continue;
+          if (left_count < meta_->config->min_data_in_leaf
+              || sum_left_hessian < meta_->config->min_sum_hessian_in_leaf) continue;
           data_size_t right_count = num_data - left_count;
-          if (right_count < meta_->tree_config->min_data_in_leaf || right_count < min_data_per_group) break;
+          if (right_count < meta_->config->min_data_in_leaf || right_count < min_data_per_group) break;
 
           double sum_right_hessian = sum_hessian - sum_left_hessian;
-          if (sum_right_hessian < meta_->tree_config->min_sum_hessian_in_leaf) break;
+          if (sum_right_hessian < meta_->config->min_sum_hessian_in_leaf) break;
 
           if (cnt_cur_group < min_data_per_group) continue;
 
@@ -215,7 +215,7 @@ public:
 
           double sum_right_gradient = sum_gradient - sum_left_gradient;
           double current_gain = GetSplitGains(sum_left_gradient, sum_left_hessian, sum_right_gradient, sum_right_hessian,
-                                              meta_->tree_config->lambda_l1, l2, meta_->tree_config->max_delta_step,
+                                              meta_->config->lambda_l1, l2, meta_->config->max_delta_step,
                                               min_constraint, max_constraint, 0);
           if (current_gain <= min_gain_shift) continue;
           is_splittable_ = true;
@@ -233,14 +233,14 @@ public:
 
     if (is_splittable_) {
       output->left_output = CalculateSplittedLeafOutput(best_sum_left_gradient, best_sum_left_hessian,
-                                                        meta_->tree_config->lambda_l1, l2, meta_->tree_config->max_delta_step,
+                                                        meta_->config->lambda_l1, l2, meta_->config->max_delta_step,
                                                         min_constraint, max_constraint);
       output->left_count = best_left_count;
       output->left_sum_gradient = best_sum_left_gradient;
       output->left_sum_hessian = best_sum_left_hessian - kEpsilon;
       output->right_output = CalculateSplittedLeafOutput(sum_gradient - best_sum_left_gradient,
                                                          sum_hessian - best_sum_left_hessian,
-                                                         meta_->tree_config->lambda_l1, l2, meta_->tree_config->max_delta_step,
+                                                         meta_->config->lambda_l1, l2, meta_->config->max_delta_step,
                                                          min_constraint, max_constraint);
       output->right_count = num_data - best_left_count;
       output->right_sum_gradient = sum_gradient - best_sum_left_gradient;
@@ -285,9 +285,9 @@ public:
                                        uint32_t threshold, data_size_t num_data,
                                        SplitInfo *output) {
     double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian,
-                                         meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2,
-                                         meta_->tree_config->max_delta_step);
-    double min_gain_shift = gain_shift + meta_->tree_config->min_gain_to_split;
+                                         meta_->config->lambda_l1, meta_->config->lambda_l2,
+                                         meta_->config->max_delta_step);
+    double min_gain_shift = gain_shift + meta_->config->min_gain_to_split;
 
     // do stuff here
     const int8_t bias = meta_->bias;
@@ -325,11 +325,11 @@ public:
     double sum_left_hessian = sum_hessian - sum_right_hessian;
     data_size_t left_count = num_data - right_count;
     double current_gain = GetLeafSplitGain(sum_left_gradient, sum_left_hessian,
-                                           meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2,
-                                           meta_->tree_config->max_delta_step)
+                                           meta_->config->lambda_l1, meta_->config->lambda_l2,
+                                           meta_->config->max_delta_step)
           + GetLeafSplitGain(sum_right_gradient, sum_right_hessian,
-                             meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2,
-                             meta_->tree_config->max_delta_step);
+                             meta_->config->lambda_l1, meta_->config->lambda_l2,
+                             meta_->config->max_delta_step);
 
     // gain with split is worse than without split
     if (std::isnan(current_gain) || current_gain <= min_gain_shift) {
@@ -341,15 +341,15 @@ public:
     // update split information
     output->threshold = threshold;
     output->left_output = CalculateSplittedLeafOutput(sum_left_gradient, sum_left_hessian,
-                                                      meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2,
-                                                      meta_->tree_config->max_delta_step);
+                                                      meta_->config->lambda_l1, meta_->config->lambda_l2,
+                                                      meta_->config->max_delta_step);
     output->left_count = left_count;
     output->left_sum_gradient = sum_left_gradient;
     output->left_sum_hessian = sum_left_hessian - kEpsilon;
     output->right_output = CalculateSplittedLeafOutput(sum_gradient - sum_left_gradient,
                                                        sum_hessian - sum_left_hessian,
-                                                       meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2,
-                                                       meta_->tree_config->max_delta_step);
+                                                       meta_->config->lambda_l1, meta_->config->lambda_l2,
+                                                       meta_->config->max_delta_step);
     output->right_count = num_data - left_count;
     output->right_sum_gradient = sum_gradient - sum_left_gradient;
     output->right_sum_hessian = sum_hessian - sum_left_hessian - kEpsilon;
@@ -364,9 +364,9 @@ public:
     output->default_left = false;
     double gain_shift = GetLeafSplitGain(
             sum_gradient, sum_hessian,
-            meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2,
-            meta_->tree_config->max_delta_step);
-    double min_gain_shift = gain_shift + meta_->tree_config->min_gain_to_split;
+            meta_->config->lambda_l1, meta_->config->lambda_l2,
+            meta_->config->max_delta_step);
+    double min_gain_shift = gain_shift + meta_->config->min_gain_to_split;
     bool is_full_categorical = meta_->missing_type == MissingType::None;
     int used_bin = meta_->num_bin - 1 + is_full_categorical;
     if (threshold >= static_cast<uint32_t>(used_bin)) {
@@ -375,7 +375,7 @@ public:
       return;
     }
 
-    double l2 = meta_->tree_config->lambda_l2;
+    double l2 = meta_->config->lambda_l2;
     data_size_t left_count = data_[threshold].cnt;
     data_size_t right_count = num_data - left_count;
     double sum_left_hessian = data_[threshold].sum_hessians + kEpsilon;
@@ -384,11 +384,11 @@ public:
     double sum_right_gradient = sum_gradient - sum_left_gradient;
     // current split gain
     double current_gain = GetLeafSplitGain(sum_right_gradient, sum_right_hessian,
-                                           meta_->tree_config->lambda_l1, l2,
-                                           meta_->tree_config->max_delta_step)
+                                           meta_->config->lambda_l1, l2,
+                                           meta_->config->max_delta_step)
         + GetLeafSplitGain(sum_left_gradient, sum_right_hessian,
-                           meta_->tree_config->lambda_l1, l2,
-                           meta_->tree_config->max_delta_step);
+                           meta_->config->lambda_l1, l2,
+                           meta_->config->max_delta_step);
     if (std::isnan(current_gain) || current_gain <= min_gain_shift) {
       output->gain = kMinScore;
       Log::Warning("Gain with forced split worse than without split");
@@ -396,14 +396,14 @@ public:
     }
 
     output->left_output = CalculateSplittedLeafOutput(sum_left_gradient, sum_left_hessian,
-                                                      meta_->tree_config->lambda_l1, l2,
-                                                      meta_->tree_config->max_delta_step);
+                                                      meta_->config->lambda_l1, l2,
+                                                      meta_->config->max_delta_step);
     output->left_count = left_count;
     output->left_sum_gradient = sum_left_gradient;
     output->left_sum_hessian = sum_left_hessian - kEpsilon;
     output->right_output = CalculateSplittedLeafOutput(sum_right_gradient, sum_right_hessian,
-                                                       meta_->tree_config->lambda_l1, l2,
-                                                       meta_->tree_config->max_delta_step);
+                                                       meta_->config->lambda_l1, l2,
+                                                       meta_->config->max_delta_step);
     output->right_count = right_count;
     output->right_sum_gradient = sum_gradient - sum_left_gradient;
     output->right_sum_hessian = sum_right_hessian - kEpsilon;
@@ -530,20 +530,20 @@ private:
         sum_right_hessian += data_[t].sum_hessians;
         right_count += data_[t].cnt;
         // if data not enough, or sum hessian too small
-        if (right_count < meta_->tree_config->min_data_in_leaf
-            || sum_right_hessian < meta_->tree_config->min_sum_hessian_in_leaf) continue;
+        if (right_count < meta_->config->min_data_in_leaf
+            || sum_right_hessian < meta_->config->min_sum_hessian_in_leaf) continue;
         data_size_t left_count = num_data - right_count;
         // if data not enough
-        if (left_count < meta_->tree_config->min_data_in_leaf) break;
+        if (left_count < meta_->config->min_data_in_leaf) break;
 
         double sum_left_hessian = sum_hessian - sum_right_hessian;
         // if sum hessian too small
-        if (sum_left_hessian < meta_->tree_config->min_sum_hessian_in_leaf) break;
+        if (sum_left_hessian < meta_->config->min_sum_hessian_in_leaf) break;
 
         double sum_left_gradient = sum_gradient - sum_right_gradient;
         // current split gain
         double current_gain = GetSplitGains(sum_left_gradient, sum_left_hessian, sum_right_gradient, sum_right_hessian,
-                                            meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2, meta_->tree_config->max_delta_step,
+                                            meta_->config->lambda_l1, meta_->config->lambda_l2, meta_->config->max_delta_step,
                                             min_constraint, max_constraint, meta_->monotone_type);
         // gain with split is worse than without split
         if (current_gain <= min_gain_shift) continue;
@@ -590,20 +590,20 @@ private:
           left_count += data_[t].cnt;
         }
         // if data not enough, or sum hessian too small
-        if (left_count < meta_->tree_config->min_data_in_leaf
-            || sum_left_hessian < meta_->tree_config->min_sum_hessian_in_leaf) continue;
+        if (left_count < meta_->config->min_data_in_leaf
+            || sum_left_hessian < meta_->config->min_sum_hessian_in_leaf) continue;
         data_size_t right_count = num_data - left_count;
         // if data not enough
-        if (right_count < meta_->tree_config->min_data_in_leaf) break;
+        if (right_count < meta_->config->min_data_in_leaf) break;
 
         double sum_right_hessian = sum_hessian - sum_left_hessian;
         // if sum hessian too small
-        if (sum_right_hessian < meta_->tree_config->min_sum_hessian_in_leaf) break;
+        if (sum_right_hessian < meta_->config->min_sum_hessian_in_leaf) break;
 
         double sum_right_gradient = sum_gradient - sum_left_gradient;
         // current split gain
         double current_gain = GetSplitGains(sum_left_gradient, sum_left_hessian, sum_right_gradient, sum_right_hessian,
-                                            meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2, meta_->tree_config->max_delta_step,
+                                            meta_->config->lambda_l1, meta_->config->lambda_l2, meta_->config->max_delta_step,
                                             min_constraint, max_constraint, meta_->monotone_type);
         // gain with split is worse than without split
         if (current_gain <= min_gain_shift) continue;
@@ -625,14 +625,14 @@ private:
       // update split information
       output->threshold = best_threshold;
       output->left_output = CalculateSplittedLeafOutput(best_sum_left_gradient, best_sum_left_hessian,
-                                                        meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2, meta_->tree_config->max_delta_step,
+                                                        meta_->config->lambda_l1, meta_->config->lambda_l2, meta_->config->max_delta_step,
                                                         min_constraint, max_constraint);
       output->left_count = best_left_count;
       output->left_sum_gradient = best_sum_left_gradient;
       output->left_sum_hessian = best_sum_left_hessian - kEpsilon;
       output->right_output = CalculateSplittedLeafOutput(sum_gradient - best_sum_left_gradient,
                                                          sum_hessian - best_sum_left_hessian,
-                                                         meta_->tree_config->lambda_l1, meta_->tree_config->lambda_l2, meta_->tree_config->max_delta_step,
+                                                         meta_->config->lambda_l1, meta_->config->lambda_l2, meta_->config->max_delta_step,
                                                          min_constraint, max_constraint);
       output->right_count = num_data - best_left_count;
       output->right_sum_gradient = sum_gradient - best_sum_left_gradient;
@@ -697,7 +697,7 @@ public:
     }
   }
 
-  void DynamicChangeSize(const Dataset* train_data, const TreeConfig* tree_config, int cache_size, int total_size) {
+  void DynamicChangeSize(const Dataset* train_data, const Config* config, int cache_size, int total_size) {
     if (feature_metas_.empty()) {
       int num_feature = train_data->num_features();
       feature_metas_.resize(num_feature);
@@ -712,7 +712,7 @@ public:
         } else {
           feature_metas_[i].bias = 0;
         }
-        feature_metas_[i].tree_config = tree_config;
+        feature_metas_[i].config = config;
         feature_metas_[i].bin_type = train_data->FeatureBinMapper(i)->bin_type();
       }
     }
@@ -748,11 +748,11 @@ public:
     OMP_THROW_EX();
   }
 
-  void ResetConfig(const TreeConfig* tree_config) {
+  void ResetConfig(const Config* config) {
     int size = static_cast<int>(feature_metas_.size());
     #pragma omp parallel for schedule(static, 512) if(size >= 1024)
     for (int i = 0; i < size; ++i) {
-      feature_metas_[i].tree_config = tree_config;
+      feature_metas_[i].config = config;
     }
   }
   /*!

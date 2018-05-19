@@ -18,7 +18,7 @@ namespace LightGBM {
 */
 class LambdarankNDCG: public ObjectiveFunction {
 public:
-  explicit LambdarankNDCG(const ObjectiveConfig& config) {
+  explicit LambdarankNDCG(const Config& config) {
     sigmoid_ = static_cast<double>(config.sigmoid);
     // initialize DCG calculator
     DCGCalculator::Init(config.label_gain);
