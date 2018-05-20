@@ -141,9 +141,9 @@ Refer to `FAQ <https://github.com/Microsoft/LightGBM/tree/master/docs/FAQ.rst>`_
 Developments
 ------------
 
-The code style of Python-package follows `pep8 <https://www.python.org/dev/peps/pep-0008/>`_. If you would like to make a contribution and not familiar with pep-8, please check the pep8 style guide first. Otherwise, the check won't pass. You should be careful about:
+The code style of Python-package follows `PEP 8 <https://www.python.org/dev/peps/pep-0008/>`_. If you would like to make a contribution and not familiar with PEP 8, please check the PEP 8 style guide first. Otherwise, the check won't pass. You should be careful about:
 
-- E1 Indentation (check pep8 link above)
+- E1 Indentation (check PEP 8 link above)
 - E202 whitespace before and after brackets
 - E225 missing whitespace around operator
 - E226 missing whitespace around arithmetic operator
@@ -151,7 +151,7 @@ The code style of Python-package follows `pep8 <https://www.python.org/dev/peps/
 - E301 expected 1 blank line in front of and at the end of a method
 - E302 expected 2 blank lines in front of and at the end of a function or a class
 
-E501 can be ignored (line too long).
+E501 (line too long) and W503 (line break occurred before a binary operator) can be ignored.
 
 .. |License| image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://github.com/Microsoft/LightGBM/blob/master/LICENSE
