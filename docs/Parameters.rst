@@ -32,7 +32,7 @@ Core Parameters
 
    -  **Note**: Only can be used in CLI version
 
--  ``task``, default=\ ``train``, type=enum, options=\ ``train``, ``predict``, ``convert_model``, ``refit``
+-  ``task``, default=\ ``train``, type=enum, options=\ ``train``, ``predict``, ``convert_model``, ``refit``, alias=\ ``task_type``
 
    -  ``train``, alias=\ ``training``, for training
 
@@ -47,7 +47,7 @@ Core Parameters
 -  ``application``, default=\ ``regression``, type=enum,
    options=\ ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gammma``, ``tweedie``,
    ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``,
-   alias=\ ``objective``, ``app``
+   alias=\ ``app``, ``objective``, ``objective_type``
 
    -  regression application
 
@@ -137,7 +137,7 @@ Core Parameters
 
    -  number of leaves in one tree
 
--  ``tree_learner``, default=\ ``serial``, type=enum, options=\ ``serial``, ``feature``, ``data``, ``voting``, alias=\ ``tree``
+-  ``tree_learner``, default=\ ``serial``, type=enum, options=\ ``serial``, ``feature``, ``data``, ``voting``, alias=\ ``tree``, ``tree_learner_type``
 
    -  ``serial``, single machine tree learner
 
@@ -505,7 +505,7 @@ IO Parameters
 
    -  path to training initial score file, ``""`` will use ``train_data_file`` + ``.init`` (if exists)
 
--  ``valid_init_score_file``, default=\ ``""``, type=multi-string
+-  ``valid_init_score_file``, default=\ ``""``, type=multi-string, alias=\ ``valid_data_initscores``
 
    -  path to validation initial score file, ``""`` will use ``valid_data_file`` + ``.init`` (if exists)
 
@@ -593,7 +593,7 @@ Objective Parameters
 Metric Parameters
 -----------------
 
--  ``metric``, default=\ ``''``, type=multi-enum
+-  ``metric``, default=\ ``''``, type=multi-enum, alias=\ ``metric_types``
 
    -  metric to be evaluated on the evaluation sets **in addition** to what is provided in the training arguments
 

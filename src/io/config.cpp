@@ -199,7 +199,7 @@ bool CheckMultiClassObjective(const std::string& objective) {
 }
 
 void Config::CheckParamConflict() {
-  // check if objective_type, metric_type, and num_class match
+  // check if objective, metric, and num_class match
   int num_class_check = num_class;
   bool objective_custom = objective == std::string("none") || objective == std::string("null") || objective == std::string("custom");
   bool objective_type_multiclass = CheckMultiClassObjective(objective) || (objective_custom && num_class_check > 1);

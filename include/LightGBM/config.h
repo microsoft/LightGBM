@@ -164,7 +164,7 @@ public:
   // [doc-only]
   // type=enum
   // options=serial, feature, data, voting
-  // alias = tree
+  // alias = tree, tree_learner_type
   // desc=serial,single machine tree learner
   // desc=feature,alias=feature_parallel,feature parallel tree learner
   // desc=data,alias=data_parallel,data parallel tree learner
@@ -492,7 +492,8 @@ public:
 
   // desc = path to training initial score file, "" will use train_data_file + .init(if exists)
   std::string initscore_filename = "";
-  
+
+  // alias=valid_init_score_file
   // desc=path to validation initial score file,"" will use valid_data_file + .init (if exists)
   // desc=separate by ,for multi-validation data
   std::vector<std::string> valid_data_initscores;

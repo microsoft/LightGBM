@@ -29,8 +29,8 @@ public:
   * \param boosting Input boosting model
   * \param num_iteration Number of boosting round
   * \param is_raw_score True if need to predict result with raw score
-  * \param is_predict_leaf_index True to output leaf index instead of prediction score
-  * \param is_predict_contrib True to output feature contributions instead of prediction score
+  * \param predict_leaf_index True to output leaf index instead of prediction score
+  * \param predict_contrib True to output feature contributions instead of prediction score
   */
   Predictor(Boosting* boosting, int num_iteration,
             bool is_raw_score, bool predict_leaf_index, bool predict_contrib,
