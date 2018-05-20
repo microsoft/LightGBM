@@ -12,7 +12,7 @@ from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
                               load_iris, load_svmlight_file)
 from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error
 from sklearn.model_selection import train_test_split, TimeSeriesSplit
-from scipy.sparse import csr_matrix, csc_matrix
+from scipy.sparse import csr_matrix
 
 try:
     import pandas as pd
@@ -278,53 +278,6 @@ class TestEngine(unittest.TestCase):
                         evals_result=evals_result)
         pred = gbm.predict(X_train)
         np.testing.assert_almost_equal(pred, y)
-
-    def test_categorical_big_values_not_crash(self):
-        data = np.random.rand(20, 5)
-        data[4][2] = 1 << 31
-        y = label=np.random.rand(20)
-
-        params = {'objective': 'regression',
-                  'min_data': 1}
-
-        lgb_train = lgb.Dataset(data, y, free_raw_data=False)
-        lgb.train(params, lgb_train)
-        self.assertRaises(ValueError,
-                          lgb.train,
-                          params, lgb_train, categorical_feature=[2, 3])
-
-        csr = csr_matrix(data)
-        lgb_train = lgb.Dataset(csr, y, free_raw_data=False)
-        lgb.train(params, lgb_train)
-        self.assertRaises(ValueError,
-                          lgb.train,
-                          params, lgb_train, categorical_feature=[2, 3])
-
-        csc = csc_matrix(data)
-        lgb_train = lgb.Dataset(csc, y, free_raw_data=False)
-        lgb.train(params, lgb_train)
-        self.assertRaises(ValueError,
-                          lgb.train,
-                          params, lgb_train, categorical_feature=[2, 3])
-
-    @unittest.skipIf(not IS_PANDAS_INSTALLED, 'pandas not installed')
-    def test_categorical_big_values_not_crash_pandas(self):
-        data = np.random.rand(20, 5)
-        data[4][2] = 1 << 31
-        y = label=np.random.rand(20)
-
-        params = {'objective': 'regression',
-                  'min_data': 1}
-
-        df = pd.DataFrame(data=data)
-        lgb_train = lgb.Dataset(df, y)
-        self.assertRaises(ValueError,
-                          lgb.train,
-                          params, lgb_train, categorical_feature=[2, 3])
-
-        df[2] = df[2].astype('category')
-        lgb_train = lgb.Dataset(df, y)
-        lgb.train(params, lgb_train)
 
     def test_multiclass(self):
         X, y = load_digits(10, True)
