@@ -186,13 +186,13 @@ std::unordered_set<std::string> Config::parameter_set({
   "initscore_filename", 
   "valid_data_initscores", 
   "histogram_pool_size", 
-  "num_class", 
   "enable_load_from_binary_file", 
   "enable_bundle", 
   "max_conflict_rate", 
   "snapshot_freq", 
   "convert_model_language", 
   "convert_model", 
+  "num_class", 
   "sigmoid", 
   "alpha", 
   "fair_c", 
@@ -386,14 +386,13 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetDouble(params, "histogram_pool_size", &histogram_pool_size);
 
-  GetInt(params, "num_class", &num_class);
-
   GetBool(params, "enable_load_from_binary_file", &enable_load_from_binary_file);
 
   GetBool(params, "enable_bundle", &enable_bundle);
 
   GetDouble(params, "max_conflict_rate", &max_conflict_rate);
   CHECK(max_conflict_rate >=0);
+  CHECK(max_conflict_rate <1);
 
   GetInt(params, "snapshot_freq", &snapshot_freq);
 
@@ -401,7 +400,10 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetString(params, "convert_model", &convert_model);
 
+  GetInt(params, "num_class", &num_class);
+
   GetDouble(params, "sigmoid", &sigmoid);
+  CHECK(sigmoid >0);
 
   GetDouble(params, "alpha", &alpha);
 
@@ -522,13 +524,13 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[initscore_filename: " << initscore_filename << "]\n";
   str_buf << "[valid_data_initscores: " << Common::Join(valid_data_initscores,",") << "]\n";
   str_buf << "[histogram_pool_size: " << histogram_pool_size << "]\n";
-  str_buf << "[num_class: " << num_class << "]\n";
   str_buf << "[enable_load_from_binary_file: " << enable_load_from_binary_file << "]\n";
   str_buf << "[enable_bundle: " << enable_bundle << "]\n";
   str_buf << "[max_conflict_rate: " << max_conflict_rate << "]\n";
   str_buf << "[snapshot_freq: " << snapshot_freq << "]\n";
   str_buf << "[convert_model_language: " << convert_model_language << "]\n";
   str_buf << "[convert_model: " << convert_model << "]\n";
+  str_buf << "[num_class: " << num_class << "]\n";
   str_buf << "[sigmoid: " << sigmoid << "]\n";
   str_buf << "[alpha: " << alpha << "]\n";
   str_buf << "[fair_c: " << fair_c << "]\n";

@@ -504,23 +504,24 @@ public:
   // desc=max cache size(unit:MB) for historical histogram. < 0 means no limit
   double histogram_pool_size = -1.0;
 
-  // alias=num_classes
-  // desc=need to specify this in multi-class classification
-  int num_class = 1;
-
   // desc=set to true to enable auto loading from previous saved binary datasets
   // desc=set to false will ignore the binary datasets
   bool enable_load_from_binary_file = true;
 
-  // desc=set to false to disable Exclusive Feature Bundling (EFB)
+  // desc=set to false to disable Exclusive Feature Bundling (EFB), which is described in LightGBM NIPS2017 paper
+  // desc=disable this may cause the slow training speed for sparse datasets
   bool enable_bundle = true;
   
   // check=>=0
-  // max conflict rate for bundles in EFB
+  // check=<1
+  // desc=max conflict rate for bundles in EFB
+  // desc=set to zero will diallow the conflict, and provide more accurace results
+  // desc=the speed may be faster if set it to a larger value
   double max_conflict_rate = 0.0;
 
-  // desc= frequency of saving model file snapshot
-  // desc= set to positive numbers will enable this function
+  // desc=frequency of saving model file snapshot
+  // desc=set to positive numbers will enable this function
+  // desc=for example, the model file will be snopshoted at each iteration if set it to 1 
   int snapshot_freq = -1;
 
   // desc=only cpp is supported yet
@@ -533,8 +534,12 @@ public:
 
 
   #pragma region Objective Parameters
+  
+  // alias=num_classes
+  // desc=need to specify this in multi-class classification
+  int num_class = 1;
 
-
+  // check=>0
   // desc=parameter for sigmoid function. Will be used in binary and multiclassova classification and in lambdarank
   double sigmoid = 1.0;
 
