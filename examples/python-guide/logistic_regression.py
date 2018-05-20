@@ -24,11 +24,11 @@ np.random.seed(0)
 N = 1000
 X = pd.DataFrame({
     'continuous': range(N),
-    'categorical': np.repeat([0, 1, 2, 3, 4], N/5)
+    'categorical': np.repeat([0, 1, 2, 3, 4], N / 5)
 })
 CATEGORICAL_EFFECTS = [-1, -1, -2, -2, 2]
 LINEAR_TERM = np.array([
-    -0.5 + 0.01*X['continuous'][k]
+    -0.5 + 0.01 * X['continuous'][k]
     + CATEGORICAL_EFFECTS[X['categorical'][k]] for k in range(X.shape[0])
 ]) + np.random.normal(0, 1, X.shape[0])
 TRUE_PROB = expit(LINEAR_TERM)
@@ -46,7 +46,7 @@ DATA = {
 # Set up a couple of utilities for our experiments
 def log_loss(preds, labels):
     ''' logarithmic loss with non-necessarily-binary labels '''
-    log_likelihood = np.sum(labels*np.log(preds))/len(preds)
+    log_likelihood = np.sum(labels * np.log(preds)) / len(preds)
     return -log_likelihood
 
 
