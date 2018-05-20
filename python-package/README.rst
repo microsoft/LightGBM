@@ -9,13 +9,13 @@ Installation
 Preparation
 '''''''''''
 
-`setuptools <https://pypi.python.org/pypi/setuptools>`_ is needed.
+`setuptools <https://pypi.org/project/setuptools>`_ is needed.
 
 For macOS users, gcc with OpenMP support must be installed first. Refer to `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#macos>`__ for installing gcc with OpenMP support.
 
 Note: 32-bit Python is not supported. Please install 64-bit version.
 
-Install from `PyPI <https://pypi.python.org/pypi/lightgbm>`_ Using ``pip``
+Install from `PyPI <https://pypi.org/project/lightgbm>`_ Using ``pip``
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 For Windows users, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if Visual Studio (2015 or 2017) is not installed.
 
@@ -156,6 +156,6 @@ E501 (line too long) and W503 (line break occurred before a binary operator) can
 .. |License| image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://github.com/Microsoft/LightGBM/blob/master/LICENSE
 .. |Python Versions| image:: https://img.shields.io/pypi/pyversions/lightgbm.svg
-   :target: https://pypi.python.org/pypi/lightgbm
+   :target: https://pypi.org/project/lightgbm
 .. |PyPI Version| image:: https://img.shields.io/pypi/v/lightgbm.svg
-   :target: https://pypi.python.org/pypi/lightgbm
+   :target: https://pypi.org/project/lightgbm
