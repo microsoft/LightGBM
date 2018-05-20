@@ -192,6 +192,7 @@ public:
   std::string device_type = "cpu";
 
   // [doc-only]
+  // alias=random_seed
   // desc=Use this seed to generate seeds for others, e.g. data_random_seed.
   // desc=Will be override if set other seeds as well
   // default=none
@@ -629,7 +630,7 @@ public:
 
   #pragma endregion
 
-  #pragma region Network Parameter
+  #pragma region Network Parameters
 
   // alias=num_machine
   // desc=used for parallel learning,the number of machines for parallel learning application
@@ -649,6 +650,7 @@ public:
   // desc=each line contains one IP and one port for one machine. The format is ip port,separate by space
   std::string machine_list_filename = "";
 
+  // alias=works,nodes
   // desc=list of machines, format: ip1:port1,ip2:port2
   std::string machines = "";
 
