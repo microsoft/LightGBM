@@ -35,30 +35,30 @@ public:
   Booster(const Dataset* train_data,
           const char* parameters) {
     CHECK(train_data->num_features() > 0);
-    auto param = ConfigBase::Str2Map(parameters);
+    auto param = Config::Str2Map(parameters);
     config_.Set(param);
     if (config_.num_threads > 0) {
       omp_set_num_threads(config_.num_threads);
     }
     // create boosting
-    if (config_.io_config.input_model.size() > 0) {
+    if (config_.input_model.size() > 0) {
       Log::Warning("Continued train from model is not supported for c_api,\n"
                    "please use continued train with input score");
     }
 
-    boosting_.reset(Boosting::CreateBoosting(config_.boosting_type, nullptr));
+    boosting_.reset(Boosting::CreateBoosting(config_.boosting, nullptr));
 
     train_data_ = train_data;
     CreateObjectiveAndMetrics();
     // initialize the boosting
-    if (config_.boosting_config.tree_learner_type == std::string("feature")) {
+    if (config_.tree_learner == std::string("feature")) {
       Log::Fatal("Do not support feature parallel in c api");
     }
-    if (Network::num_machines() == 1 && config_.boosting_config.tree_learner_type != std::string("serial")) {
+    if (Network::num_machines() == 1 && config_.tree_learner != std::string("serial")) {
       Log::Warning("Only find one worker, will switch to serial tree learner");
-      config_.boosting_config.tree_learner_type = "serial";
+      config_.tree_learner = "serial";
     }
-    boosting_->Init(&config_.boosting_config, train_data_, objective_fun_.get(),
+    boosting_->Init(&config_, train_data_, objective_fun_.get(),
                     Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
 
   }
@@ -74,8 +74,8 @@ public:
 
   void CreateObjectiveAndMetrics() {
     // create objective function
-    objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
-                                                                    config_.objective_config));
+    objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective,
+                                                                    config_));
     if (objective_fun_ == nullptr) {
       Log::Warning("Using self-defined objective function");
     }
@@ -86,9 +86,9 @@ public:
 
     // create training metric
     train_metric_.clear();
-    for (auto metric_type : config_.metric_types) {
+    for (auto metric_type : config_.metric) {
       auto metric = std::unique_ptr<Metric>(
-        Metric::CreateMetric(metric_type, config_.metric_config));
+        Metric::CreateMetric(metric_type, config_));
       if (metric == nullptr) { continue; }
       metric->Init(train_data_->metadata(), train_data_->num_data());
       train_metric_.push_back(std::move(metric));
@@ -110,12 +110,12 @@ public:
 
   void ResetConfig(const char* parameters) {
     std::lock_guard<std::mutex> lock(mutex_);
-    auto param = ConfigBase::Str2Map(parameters);
+    auto param = Config::Str2Map(parameters);
     if (param.count("num_class")) {
       Log::Fatal("Cannot change num_class during training");
     }
-    if (param.count("boosting_type")) {
-      Log::Fatal("Cannot change boosting_type during training");
+    if (param.count("boosting")) {
+      Log::Fatal("Cannot change boosting during training");
     }
     if (param.count("metric")) {
       Log::Fatal("Cannot change metric during training");
@@ -128,8 +128,8 @@ public:
 
     if (param.count("objective")) {
       // create objective function
-      objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective_type,
-                                                                      config_.objective_config));
+      objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective,
+                                                                      config_));
       if (objective_fun_ == nullptr) {
         Log::Warning("Using self-defined objective function");
       }
@@ -141,15 +141,15 @@ public:
                                    objective_fun_.get(), Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
     }
 
-    boosting_->ResetConfig(&config_.boosting_config);
+    boosting_->ResetConfig(&config_);
 
   }
 
   void AddValidData(const Dataset* valid_data) {
     std::lock_guard<std::mutex> lock(mutex_);
     valid_metrics_.emplace_back();
-    for (auto metric_type : config_.metric_types) {
-      auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_.metric_config));
+    for (auto metric_type : config_.metric) {
+      auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_));
       if (metric == nullptr) { continue; }
       metric->Init(valid_data->metadata(), valid_data->num_data());
       valid_metrics_.back().push_back(std::move(metric));
@@ -176,25 +176,25 @@ public:
 
   void Predict(int num_iteration, int predict_type, int nrow,
                std::function<std::vector<std::pair<int, double>>(int row_idx)> get_row_fun,
-               const IOConfig& config,
+               const Config& config,
                double* out_result, int64_t* out_len) {
     std::lock_guard<std::mutex> lock(mutex_);
     bool is_predict_leaf = false;
     bool is_raw_score = false;
-    bool is_predict_contrib = false;
+    bool predict_contrib = false;
     if (predict_type == C_API_PREDICT_LEAF_INDEX) {
       is_predict_leaf = true;
     } else if (predict_type == C_API_PREDICT_RAW_SCORE) {
       is_raw_score = true;
     } else if (predict_type == C_API_PREDICT_CONTRIB) {
-      is_predict_contrib = true;
+      predict_contrib = true;
     } else {
       is_raw_score = false;
     }
 
-    Predictor predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf, is_predict_contrib,
+    Predictor predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
-    int64_t num_pred_in_one_row = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf, is_predict_contrib);
+    int64_t num_pred_in_one_row = boosting_->NumPredictOneRow(num_iteration, is_predict_leaf, predict_contrib);
     auto pred_fun = predictor.GetPredictFunction();
     OMP_INIT_EX();
     #pragma omp parallel for schedule(static)
@@ -210,22 +210,22 @@ public:
   }
 
   void Predict(int num_iteration, int predict_type, const char* data_filename,
-               int data_has_header, const IOConfig& config,
+               int data_has_header, const Config& config,
                const char* result_filename) {
     std::lock_guard<std::mutex> lock(mutex_);
     bool is_predict_leaf = false;
     bool is_raw_score = false;
-    bool is_predict_contrib = false;
+    bool predict_contrib = false;
     if (predict_type == C_API_PREDICT_LEAF_INDEX) {
       is_predict_leaf = true;
     } else if (predict_type == C_API_PREDICT_RAW_SCORE) {
       is_raw_score = true;
     } else if (predict_type == C_API_PREDICT_CONTRIB) {
-      is_predict_contrib = true;
+      predict_contrib = true;
     } else {
       is_raw_score = false;
     }
-    Predictor predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf, is_predict_contrib,
+    Predictor predictor(boosting_.get(), num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
     bool bool_data_has_header = data_has_header > 0 ? true : false;
     predictor.Predict(data_filename, result_filename, bool_data_has_header);
@@ -300,7 +300,7 @@ private:
   const Dataset* train_data_;
   std::unique_ptr<Boosting> boosting_;
   /*! \brief All configs */
-  OverallConfig config_;
+  Config config_;
   /*! \brief Metric for training data */
   std::vector<std::unique_ptr<Metric>> train_metric_;
   /*! \brief Metrics for validation data */
@@ -356,13 +356,13 @@ int LGBM_DatasetCreateFromFile(const char* filename,
                                const DatasetHandle reference,
                                DatasetHandle* out) {
   API_BEGIN();
-  auto param = ConfigBase::Str2Map(parameters);
-  OverallConfig config;
+  auto param = Config::Str2Map(parameters);
+  Config config;
   config.Set(param);
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
   }
-  DatasetLoader loader(config.io_config,nullptr, 1, filename);
+  DatasetLoader loader(config,nullptr, 1, filename);
   if (reference == nullptr) {
     if (Network::num_machines() == 1) {
       *out = loader.LoadFromFile(filename, "");
@@ -386,13 +386,13 @@ int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
                                         const char* parameters,
                                         DatasetHandle* out) {
   API_BEGIN();
-  auto param = ConfigBase::Str2Map(parameters);
-  OverallConfig config;
+  auto param = Config::Str2Map(parameters);
+  Config config;
   config.Set(param);
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
   }
-  DatasetLoader loader(config.io_config, nullptr, 1, nullptr);
+  DatasetLoader loader(config, nullptr, 1, nullptr);
   *out = loader.CostructFromSampleData(sample_data, sample_indices, ncol, num_per_col,
                                        num_sample_row,
                                        static_cast<data_size_t>(num_total_row));
@@ -476,8 +476,8 @@ int LGBM_DatasetCreateFromMat(const void* data,
                               const DatasetHandle reference,
                               DatasetHandle* out) {
   API_BEGIN();
-  auto param = ConfigBase::Str2Map(parameters);
-  OverallConfig config;
+  auto param = Config::Str2Map(parameters);
+  Config config;
   config.Set(param);
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
@@ -486,8 +486,8 @@ int LGBM_DatasetCreateFromMat(const void* data,
   auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
   if (reference == nullptr) {
     // sample data first
-    Random rand(config.io_config.data_random_seed);
-    int sample_cnt = static_cast<int>(nrow < config.io_config.bin_construct_sample_cnt ? nrow : config.io_config.bin_construct_sample_cnt);
+    Random rand(config.data_random_seed);
+    int sample_cnt = static_cast<int>(nrow < config.bin_construct_sample_cnt ? nrow : config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
     sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values(ncol);
@@ -502,7 +502,7 @@ int LGBM_DatasetCreateFromMat(const void* data,
         }
       }
     }
-    DatasetLoader loader(config.io_config, nullptr, 1, nullptr);
+    DatasetLoader loader(config, nullptr, 1, nullptr);
     ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values).data(),
                                             Common::Vector2Ptr<int>(sample_idx).data(),
                                             static_cast<int>(sample_values.size()),
@@ -540,8 +540,8 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
                               const DatasetHandle reference,
                               DatasetHandle* out) {
   API_BEGIN();
-  auto param = ConfigBase::Str2Map(parameters);
-  OverallConfig config;
+  auto param = Config::Str2Map(parameters);
+  Config config;
   config.Set(param);
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
@@ -551,8 +551,8 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
   if (reference == nullptr) {
     // sample data first
-    Random rand(config.io_config.data_random_seed);
-    int sample_cnt = static_cast<int>(nrow < config.io_config.bin_construct_sample_cnt ? nrow : config.io_config.bin_construct_sample_cnt);
+    Random rand(config.data_random_seed);
+    int sample_cnt = static_cast<int>(nrow < config.bin_construct_sample_cnt ? nrow : config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
     sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values(num_col);
@@ -568,7 +568,7 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
         }
       }
     }
-    DatasetLoader loader(config.io_config, nullptr, 1, nullptr);
+    DatasetLoader loader(config, nullptr, 1, nullptr);
     ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values).data(),
                                             Common::Vector2Ptr<int>(sample_idx).data(),
                                             static_cast<int>(sample_values.size()),
@@ -606,8 +606,8 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
                               const DatasetHandle reference,
                               DatasetHandle* out) {
   API_BEGIN();
-  auto param = ConfigBase::Str2Map(parameters);
-  OverallConfig config;
+  auto param = Config::Str2Map(parameters);
+  Config config;
   config.Set(param);
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
@@ -616,8 +616,8 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   int32_t nrow = static_cast<int32_t>(num_row);
   if (reference == nullptr) {
     // sample data first
-    Random rand(config.io_config.data_random_seed);
-    int sample_cnt = static_cast<int>(nrow < config.io_config.bin_construct_sample_cnt ? nrow : config.io_config.bin_construct_sample_cnt);
+    Random rand(config.data_random_seed);
+    int sample_cnt = static_cast<int>(nrow < config.bin_construct_sample_cnt ? nrow : config.bin_construct_sample_cnt);
     auto sample_indices = rand.Sample(nrow, sample_cnt);
     sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values(ncol_ptr - 1);
@@ -637,7 +637,7 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
-    DatasetLoader loader(config.io_config, nullptr, 1, nullptr);
+    DatasetLoader loader(config, nullptr, 1, nullptr);
     ret.reset(loader.CostructFromSampleData(Common::Vector2Ptr<double>(sample_values).data(),
                                             Common::Vector2Ptr<int>(sample_idx).data(),
                                             static_cast<int>(sample_values.size()),
@@ -681,8 +681,8 @@ int LGBM_DatasetGetSubset(
   const char* parameters,
   DatasetHandle* out) {
   API_BEGIN();
-  auto param = ConfigBase::Str2Map(parameters);
-  OverallConfig config;
+  auto param = Config::Str2Map(parameters);
+  Config config;
   config.Set(param);
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
@@ -996,15 +996,15 @@ int LGBM_BoosterPredictForFile(BoosterHandle handle,
                                const char* parameter,
                                const char* result_filename) {
   API_BEGIN();
-  auto param = ConfigBase::Str2Map(parameter);
-  OverallConfig config;
+  auto param = Config::Str2Map(parameter);
+  Config config;
   config.Set(param);
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
   }
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->Predict(num_iteration, predict_type, data_filename, data_has_header,
-                       config.io_config, result_filename);
+                       config, result_filename);
   API_END();
 }
 
@@ -1035,8 +1035,8 @@ int LGBM_BoosterPredictForCSR(BoosterHandle handle,
                               int64_t* out_len,
                               double* out_result) {
   API_BEGIN();
-  auto param = ConfigBase::Str2Map(parameter);
-  OverallConfig config;
+  auto param = Config::Str2Map(parameter);
+  Config config;
   config.Set(param);
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
@@ -1045,7 +1045,7 @@ int LGBM_BoosterPredictForCSR(BoosterHandle handle,
   auto get_row_fun = RowFunctionFromCSR(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int nrow = static_cast<int>(nindptr - 1);
   ref_booster->Predict(num_iteration, predict_type, nrow, get_row_fun,
-                       config.io_config, out_result, out_len);
+                       config, out_result, out_len);
   API_END();
 }
 
@@ -1065,8 +1065,8 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
                               double* out_result) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  auto param = ConfigBase::Str2Map(parameter);
-  OverallConfig config;
+  auto param = Config::Str2Map(parameter);
+  Config config;
   config.Set(param);
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
@@ -1096,7 +1096,7 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
     }
     return one_row;
   };
-  ref_booster->Predict(num_iteration, predict_type, static_cast<int>(num_row), get_row_fun, config.io_config,
+  ref_booster->Predict(num_iteration, predict_type, static_cast<int>(num_row), get_row_fun, config,
                        out_result, out_len);
   API_END();
 }
@@ -1113,8 +1113,8 @@ int LGBM_BoosterPredictForMat(BoosterHandle handle,
                               int64_t* out_len,
                               double* out_result) {
   API_BEGIN();
-  auto param = ConfigBase::Str2Map(parameter);
-  OverallConfig config;
+  auto param = Config::Str2Map(parameter);
+  Config config;
   config.Set(param);
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
@@ -1122,7 +1122,7 @@ int LGBM_BoosterPredictForMat(BoosterHandle handle,
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   auto get_row_fun = RowPairFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
   ref_booster->Predict(num_iteration, predict_type, nrow, get_row_fun,
-                       config.io_config, out_result, out_len);
+                       config, out_result, out_len);
   API_END();
 }
 
@@ -1203,7 +1203,7 @@ int LGBM_NetworkInit(const char* machines,
                      int listen_time_out,
                      int num_machines) {
   API_BEGIN();
-  NetworkConfig config;
+  Config config;
   config.machines = Common::RemoveQuotationSymbol(std::string(machines));
   config.local_listen_port = local_listen_port;
   config.num_machines = num_machines;

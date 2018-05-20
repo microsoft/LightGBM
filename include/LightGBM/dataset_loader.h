@@ -8,7 +8,7 @@ namespace LightGBM {
 class DatasetLoader {
 public:
 
-  LIGHTGBM_EXPORT DatasetLoader(const IOConfig& io_config, const PredictFunction& predict_fun, int num_class, const char* filename);
+  LIGHTGBM_EXPORT DatasetLoader(const Config& io_config, const PredictFunction& predict_fun, int num_class, const char* filename);
 
   LIGHTGBM_EXPORT ~DatasetLoader();
 
@@ -54,7 +54,7 @@ private:
   /*! \brief Check can load from binary file */
   std::string CheckCanLoadFromBin(const char* filename);
 
-  const IOConfig& io_config_;
+  const Config& config_;
   /*! \brief Random generator*/
   Random random_;
   /*! \brief prediction function for initial model */

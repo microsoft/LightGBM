@@ -15,8 +15,8 @@
 
 namespace LightGBM {
 
-GPUTreeLearner::GPUTreeLearner(const TreeConfig* tree_config)
-  :SerialTreeLearner(tree_config) {
+GPUTreeLearner::GPUTreeLearner(const Config* config)
+  :SerialTreeLearner(config) {
   use_bagging_ = false;
   Log::Info("This is the GPU trainer!!");
 }
@@ -39,7 +39,7 @@ void GPUTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {
   // some additional variables needed for GPU trainer
   num_feature_groups_ = train_data_->num_feature_groups();
   // Initialize GPU buffers and kernels
-  InitGPU(tree_config_->gpu_platform_id, tree_config_->gpu_device_id);
+  InitGPU(config_->gpu_platform_id, config_->gpu_device_id);
 }
 
 // some functions used for debugging the GPU histogram construction
@@ -304,7 +304,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
   device_data_indices_ = std::unique_ptr<boost::compute::vector<data_size_t>>(new boost::compute::vector<data_size_t>(allocated_num_data_, ctx_));
   boost::compute::fill(device_data_indices_->begin(), device_data_indices_->end(), 0, queue_);
   // histogram bin entry size depends on the precision (single/double)
-  hist_bin_entry_sz_ = tree_config_->gpu_use_dp ? sizeof(HistogramBinEntry) : sizeof(GPUHistogramBinEntry);
+  hist_bin_entry_sz_ = config_->gpu_use_dp ? sizeof(HistogramBinEntry) : sizeof(GPUHistogramBinEntry);
   Log::Info("Size of histogram bin entry: %d", hist_bin_entry_sz_);
   // create output buffer, each feature has a histogram with device_bin_size_ bins,
   // each work group generates a sub-histogram of dword_features_ features.
@@ -598,7 +598,7 @@ void GPUTreeLearner::BuildGPUKernels() {
     std::ostringstream opts;
     // compile the GPU kernel depending if double precision is used, constant hessian is used, etc 
     opts << " -D POWER_FEATURE_WORKGROUPS=" << i
-         << " -D USE_CONSTANT_BUF=" << use_constants << " -D USE_DP_FLOAT=" << int(tree_config_->gpu_use_dp)
+         << " -D USE_CONSTANT_BUF=" << use_constants << " -D USE_DP_FLOAT=" << int(config_->gpu_use_dp)
          << " -D CONST_HESSIAN=" << int(is_constant_hessian_)
          << " -cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math";
     #if GPU_DEBUG >= 1
@@ -1006,7 +1006,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
     ptr_smaller_leaf_hist_data);
   // wait for GPU to finish, only if GPU is actually used
   if (is_gpu_used) {
-    if (tree_config_->gpu_use_dp) {
+    if (config_->gpu_use_dp) {
       // use double precision
       WaitAndGetHistograms<HistogramBinEntry>(ptr_smaller_leaf_hist_data);
     }
@@ -1060,7 +1060,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
       ptr_larger_leaf_hist_data);
     // wait for GPU to finish, only if GPU is actually used
     if (is_gpu_used) {
-      if (tree_config_->gpu_use_dp) {
+      if (config_->gpu_use_dp) {
         // use double precision
         WaitAndGetHistograms<HistogramBinEntry>(ptr_larger_leaf_hist_data);
       }

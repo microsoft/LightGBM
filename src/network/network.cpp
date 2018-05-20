@@ -23,7 +23,7 @@ THREAD_LOCAL ReduceScatterFunction Network::reduce_scatter_ext_fun_ = nullptr;
 THREAD_LOCAL AllgatherFunction Network::allgather_ext_fun_ = nullptr;
 
 
-void Network::Init(NetworkConfig config) {
+void Network::Init(Config config) {
   if (config.num_machines > 1) {
     linkers_.reset(new Linkers(config));
     rank_ = linkers_->rank();

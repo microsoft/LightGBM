@@ -39,7 +39,7 @@ public:
     #endif
   }
 
-  void Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
+  void Init(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
             const std::vector<const Metric*>& training_metrics) override {
     GBDT::Init(config, train_data, objective_function, training_metrics);
     ResetGoss();
@@ -51,15 +51,15 @@ public:
     ResetGoss();
   }
 
-  void ResetConfig(const BoostingConfig* config) override {
+  void ResetConfig(const Config* config) override {
     GBDT::ResetConfig(config);
     ResetGoss();
   }
 
   void ResetGoss() {
-    CHECK(gbdt_config_->top_rate + gbdt_config_->other_rate <= 1.0f);
-    CHECK(gbdt_config_->top_rate > 0.0f && gbdt_config_->other_rate > 0.0f);
-    if (gbdt_config_->bagging_freq > 0 && gbdt_config_->bagging_fraction != 1.0f) {
+    CHECK(config_->top_rate + config_->other_rate <= 1.0f);
+    CHECK(config_->top_rate > 0.0f && config_->other_rate > 0.0f);
+    if (config_->bagging_freq > 0 && config_->bagging_fraction != 1.0f) {
       Log::Fatal("Cannot use bagging in GOSS");
     }
     Log::Info("Using GOSS");
@@ -74,8 +74,8 @@ public:
     right_write_pos_buf_.resize(num_threads_);
 
     is_use_subset_ = false;
-    if (gbdt_config_->top_rate + gbdt_config_->other_rate <= 0.5) {
-      auto bag_data_cnt = static_cast<data_size_t>((gbdt_config_->top_rate + gbdt_config_->other_rate) * num_data_);
+    if (config_->top_rate + config_->other_rate <= 0.5) {
+      auto bag_data_cnt = static_cast<data_size_t>((config_->top_rate + config_->other_rate) * num_data_);
       bag_data_cnt = std::max(1, bag_data_cnt);
       tmp_subset_.reset(new Dataset(bag_data_cnt));
       tmp_subset_->CopyFeatureMapperFrom(train_data_);
@@ -93,8 +93,8 @@ public:
         tmp_gradients[i] += std::fabs(gradients_[idx] * hessians_[idx]);
       }
     }
-    data_size_t top_k = static_cast<data_size_t>(cnt * gbdt_config_->top_rate);
-    data_size_t other_k = static_cast<data_size_t>(cnt * gbdt_config_->other_rate);
+    data_size_t top_k = static_cast<data_size_t>(cnt * config_->top_rate);
+    data_size_t other_k = static_cast<data_size_t>(cnt * config_->other_rate);
     top_k = std::max(1, top_k);
     ArrayArgs<score_t>::ArgMaxAtK(&tmp_gradients, 0, static_cast<int>(tmp_gradients.size()), top_k - 1);
     score_t threshold = tmp_gradients[top_k - 1];
@@ -135,7 +135,7 @@ public:
   void Bagging(int iter) override {
     bag_data_cnt_ = num_data_;
     // not subsample for first iterations
-    if (iter < static_cast<int>(1.0f / gbdt_config_->learning_rate)) { return; }
+    if (iter < static_cast<int>(1.0f / config_->learning_rate)) { return; }
 
     const data_size_t min_inner_size = 100;
     data_size_t inner_size = (num_data_ + num_threads_ - 1) / num_threads_;
@@ -150,7 +150,7 @@ public:
       if (cur_start > num_data_) { continue; }
       data_size_t cur_cnt = inner_size;
       if (cur_start + cur_cnt > num_data_) { cur_cnt = num_data_ - cur_start; }
-      Random cur_rand(gbdt_config_->bagging_seed + iter * num_threads_ + i);
+      Random cur_rand(config_->bagging_seed + iter * num_threads_ + i);
       data_size_t cur_left_count = BaggingHelper(cur_rand, cur_start, cur_cnt,
                                                  tmp_indices_.data() + cur_start, tmp_indice_right_.data() + cur_start);
       offsets_buf_[i] = cur_start;

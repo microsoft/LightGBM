@@ -89,7 +89,7 @@ public:
   * \brief Initialize
   * \param config Config of network setting
   */
-  static void Init(NetworkConfig config);
+  static void Init(Config config);
   /*!
   * \brief Initialize
   */

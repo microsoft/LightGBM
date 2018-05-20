@@ -71,7 +71,7 @@ public:
   * \param config Config for objective function
   */
   LIGHTGBM_EXPORT static ObjectiveFunction* CreateObjectiveFunction(const std::string& type,
-    const ObjectiveConfig& config);
+    const Config& config);
 
   /*!
   * \brief Load objective function from string object

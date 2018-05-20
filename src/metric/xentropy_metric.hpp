@@ -67,7 +67,7 @@ namespace LightGBM {
 //
 class CrossEntropyMetric : public Metric {
 public:
-	explicit CrossEntropyMetric(const MetricConfig&) {}
+	explicit CrossEntropyMetric(const Config&) {}
   virtual ~CrossEntropyMetric() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
@@ -162,7 +162,7 @@ private:
 //
 class CrossEntropyLambdaMetric : public Metric {
 public:
-  explicit CrossEntropyLambdaMetric(const MetricConfig&) {}
+  explicit CrossEntropyLambdaMetric(const Config&) {}
   virtual ~CrossEntropyLambdaMetric() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
@@ -246,7 +246,7 @@ private:
 //
 class KullbackLeiblerDivergence : public Metric {
 public:
-  explicit KullbackLeiblerDivergence(const MetricConfig&) {}
+  explicit KullbackLeiblerDivergence(const Config&) {}
   virtual ~KullbackLeiblerDivergence() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {

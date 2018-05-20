@@ -19,7 +19,7 @@ namespace LightGBM {
 template<typename PointWiseLossCalculator>
 class BinaryMetric: public Metric {
 public:
-  explicit BinaryMetric(const MetricConfig&) {
+  explicit BinaryMetric(const Config&) {
 
   }
 
@@ -112,7 +112,7 @@ private:
 */
 class BinaryLoglossMetric: public BinaryMetric<BinaryLoglossMetric> {
 public:
-  explicit BinaryLoglossMetric(const MetricConfig& config) :BinaryMetric<BinaryLoglossMetric>(config) {}
+  explicit BinaryLoglossMetric(const Config& config) :BinaryMetric<BinaryLoglossMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, double prob) {
     if (label <= 0) {
@@ -136,7 +136,7 @@ public:
 */
 class BinaryErrorMetric: public BinaryMetric<BinaryErrorMetric> {
 public:
-  explicit BinaryErrorMetric(const MetricConfig& config) :BinaryMetric<BinaryErrorMetric>(config) {}
+  explicit BinaryErrorMetric(const Config& config) :BinaryMetric<BinaryErrorMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, double prob) {
     if (prob <= 0.5f) {
@@ -156,7 +156,7 @@ public:
 */
 class AUCMetric: public Metric {
 public:
-  explicit AUCMetric(const MetricConfig&) {
+  explicit AUCMetric(const Config&) {
 
   }
 
