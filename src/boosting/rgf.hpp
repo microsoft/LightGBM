@@ -41,7 +41,6 @@ public:
   void Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
             const std::vector<const Metric*>& training_metrics) override {
     GBDT::Init(config, train_data, objective_function, training_metrics);
-    Log::Info("Start RGF.");
   }
 
   void ResetConfig(const BoostingConfig* config) override {
@@ -138,19 +137,13 @@ public:
 
 private:
   bool FullyCorrectiveUpdate () {
-    int64_t num_score = 0;
-    objective_function_->
-      GetGradients(GetTrainingScore(&num_score), gradients_.data(), hessians_.data());
-    auto gradients = gradients_.data();
-    auto hessians = hessians_.data();
-
     for (size_t model_index = 0; model_index < models_.size(); model_index++) {
-      const size_t bias = static_cast<size_t>(model_index) * num_data_;
-
-      auto grad = gradients + bias;
-      auto hess = hessians + bias;
-
-      auto new_tree = tree_learner_->FitByExistingTree(models_[model_index].get(), grad, hess);
+      int64_t num_score = 0;
+      objective_function_->
+        GetGradients(GetTrainingScore(&num_score), gradients_.data(), hessians_.data());
+      auto gradients = gradients_.data();
+      auto hessians = hessians_.data();
+      auto new_tree = tree_learner_->FitByExistingTree(models_[model_index].get(), gradients, hessians);
       models_[model_index].reset(new_tree);
     }
     return true;
