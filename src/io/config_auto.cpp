@@ -29,6 +29,7 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"num_thread", "num_threads"}, 
   {"nthread", "num_threads"}, 
   {"nthreads", "num_threads"}, 
+  {"random_seed", "seed"}, 
   {"min_data_per_leaf", "min_data_in_leaf"}, 
   {"min_data", "min_data_in_leaf"}, 
   {"min_child_samples", "min_data_in_leaf"}, 
@@ -104,6 +105,11 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"train_metric", "is_provide_training_metric"}, 
   {"ndcg_eval_at", "eval_at"}, 
   {"ndcg_at", "eval_at"}, 
+  {"num_machine", "num_machines"}, 
+  {"local_port", "local_listen_port"}, 
+  {"mlist", "machine_list_filename"}, 
+  {"works", "machines"}, 
+  {"nodes", "machines"}, 
 });
 
 std::unordered_set<std::string> Config::parameter_set({
@@ -202,6 +208,11 @@ std::unordered_set<std::string> Config::parameter_set({
   "metric_freq", 
   "is_provide_training_metric", 
   "eval_at", 
+  "num_machines", 
+  "local_listen_port", 
+  "time_out", 
+  "machine_list_filename", 
+  "machines", 
   "gpu_platform_id", 
   "gpu_device_id", 
   "gpu_use_dp", 
@@ -425,6 +436,16 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
     eval_at = Common::StringToArray<int>(tmp_str, ',');
   }
 
+  GetInt(params, "num_machines", &num_machines);
+
+  GetInt(params, "local_listen_port", &local_listen_port);
+
+  GetInt(params, "time_out", &time_out);
+
+  GetString(params, "machine_list_filename", &machine_list_filename);
+
+  GetString(params, "machines", &machines);
+
   GetInt(params, "gpu_platform_id", &gpu_platform_id);
 
   GetInt(params, "gpu_device_id", &gpu_device_id);
@@ -522,6 +543,11 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[metric_freq: " << metric_freq << "]\n";
   str_buf << "[is_provide_training_metric: " << is_provide_training_metric << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at,",") << "]\n";
+  str_buf << "[num_machines: " << num_machines << "]\n";
+  str_buf << "[local_listen_port: " << local_listen_port << "]\n";
+  str_buf << "[time_out: " << time_out << "]\n";
+  str_buf << "[machine_list_filename: " << machine_list_filename << "]\n";
+  str_buf << "[machines: " << machines << "]\n";
   str_buf << "[gpu_platform_id: " << gpu_platform_id << "]\n";
   str_buf << "[gpu_device_id: " << gpu_device_id << "]\n";
   str_buf << "[gpu_use_dp: " << gpu_use_dp << "]\n";
