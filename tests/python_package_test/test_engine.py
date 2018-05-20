@@ -282,7 +282,7 @@ class TestEngine(unittest.TestCase):
     def test_categorical_big_values_not_crash(self):
         data = np.random.rand(20, 5)
         data[4][2] = 1 << 31
-        y = np.random.rand(20)
+        y = label=np.random.rand(20)
 
         params = {'objective': 'regression',
                   'min_data': 1}
@@ -311,7 +311,7 @@ class TestEngine(unittest.TestCase):
     def test_categorical_big_values_not_crash_pandas(self):
         data = np.random.rand(20, 5)
         data[4][2] = 1 << 31
-        y = np.random.rand(20)
+        y = label=np.random.rand(20)
 
         params = {'objective': 'regression',
                   'min_data': 1}
