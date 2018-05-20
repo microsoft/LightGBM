@@ -338,6 +338,7 @@ public:
   // desc=you need to specify all features in order. For example,mc=-1,0,1 means the decreasing for 1st feature,non-constraint for 2nd feature and increasing for the 3rd feature
   std::vector<int8_t> monotone_constraints;
   
+  // alias=forced_splits_filename,forced_splits_file,forced_splits
   // desc = path to a.json file that specifies splits to force at the top of every decision tree before best - first learning commences
   // desc=.json file can be arbitrarily nested,and each split contains feature,threshold fields,as well as left and right fields representing subsplits.Categorical splits are forced in a one - hot fashion, with left representing the split containing the feature value and right representing other values
   // desc=see `this file <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
@@ -490,10 +491,11 @@ public:
   // desc=set to false to use na to represent missing values
   bool zero_as_missing = false;
 
+  // alias=init_score_filename,init_score_file,init_score
   // desc = path to training initial score file, "" will use train_data_file + .init(if exists)
   std::string initscore_filename = "";
 
-  // alias=valid_init_score_file
+  // alias=valid_data_init_scores,valid_init_score_file,valid_init_score
   // desc=path to validation initial score file,"" will use valid_data_file + .init (if exists)
   // desc=separate by ,for multi-validation data
   std::vector<std::string> valid_data_initscores;

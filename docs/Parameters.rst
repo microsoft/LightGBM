@@ -501,17 +501,17 @@ IO Parameters
 
    -  set to ``false`` to use ``na`` to represent missing values
 
--  ``init_score_file``, default=\ ``""``, type=string
+-  ``init_score_file``, default=\ ``""``, type=string, alias=\ ``init_score_filename``, ``initscore_filename``, ``init_score``
 
    -  path to training initial score file, ``""`` will use ``train_data_file`` + ``.init`` (if exists)
 
--  ``valid_init_score_file``, default=\ ``""``, type=multi-string, alias=\ ``valid_data_initscores``
+-  ``valid_init_score_file``, default=\ ``""``, type=multi-string, alias=\ ``valid_data_initscores``, ``valid_data_init_scores``, ``valid_init_score``
 
    -  path to validation initial score file, ``""`` will use ``valid_data_file`` + ``.init`` (if exists)
 
    -  separate by ``,`` for multi-validation data
 
--  ``forced_splits``, default=\ ``""``, type=string
+-  ``forced_splits``, default=\ ``""``, type=string, alias=\ ``forced_splits_file``, ``forcedsplits_filename``, ``forced_splits_filename``
 
    -  path to a ``.json`` file that specifies splits to force at the top of every decision tree before best-first learning commences
 
