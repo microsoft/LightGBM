@@ -8,7 +8,7 @@
 
 namespace LightGBM {
 
-Metric* Metric::CreateMetric(const std::string& type, const MetricConfig& config) {
+Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
   if (type == std::string("regression") || type == std::string("regression_l2") || type == std::string("l2") || type == std::string("mean_squared_error") || type == std::string("mse")) {
     return new L2Metric(config);
   } else if (type == std::string("l2_root") || type == std::string("root_mean_squared_error") || type == std::string("rmse")) {

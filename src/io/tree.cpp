@@ -352,10 +352,10 @@ std::string Tree::CategoricalDecisionIfElse(int node) const {
   return str_buf.str();
 }
 
-std::string Tree::ToIfElse(int index, bool is_predict_leaf_index) const {
+std::string Tree::ToIfElse(int index, bool predict_leaf_index) const {
   std::stringstream str_buf;
   str_buf << "double PredictTree" << index;
-  if (is_predict_leaf_index) {
+  if (predict_leaf_index) {
     str_buf << "Leaf";
   }
   str_buf << "(const double* arr) { ";
@@ -375,13 +375,13 @@ std::string Tree::ToIfElse(int index, bool is_predict_leaf_index) const {
     if (num_cat_ > 0) {
       str_buf << "int int_fval = 0; ";
     }
-    str_buf << NodeToIfElse(0, is_predict_leaf_index);
+    str_buf << NodeToIfElse(0, predict_leaf_index);
   }
   str_buf << " }" << '\n';
 
   //Predict func by Map to ifelse
   str_buf << "double PredictTree" << index;
-  if (is_predict_leaf_index) {
+  if (predict_leaf_index) {
     str_buf << "LeafByMap";
   } else {
     str_buf << "ByMap";
@@ -403,14 +403,14 @@ std::string Tree::ToIfElse(int index, bool is_predict_leaf_index) const {
     if (num_cat_ > 0) {
       str_buf << "int int_fval = 0; ";
     }
-    str_buf << NodeToIfElseByMap(0, is_predict_leaf_index);
+    str_buf << NodeToIfElseByMap(0, predict_leaf_index);
   }
   str_buf << " }" << '\n';
 
   return str_buf.str();
 }
 
-std::string Tree::NodeToIfElse(int index, bool is_predict_leaf_index) const {
+std::string Tree::NodeToIfElse(int index, bool predict_leaf_index) const {
   std::stringstream str_buf;
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   if (index >= 0) {
@@ -422,15 +422,15 @@ std::string Tree::NodeToIfElse(int index, bool is_predict_leaf_index) const {
       str_buf << CategoricalDecisionIfElse(index);
     }
     // left subtree
-    str_buf << NodeToIfElse(left_child_[index], is_predict_leaf_index);
+    str_buf << NodeToIfElse(left_child_[index], predict_leaf_index);
     str_buf << " } else { ";
     // right subtree
-    str_buf << NodeToIfElse(right_child_[index], is_predict_leaf_index);
+    str_buf << NodeToIfElse(right_child_[index], predict_leaf_index);
     str_buf << " }";
   } else {
     // leaf
     str_buf << "return ";
-    if (is_predict_leaf_index) {
+    if (predict_leaf_index) {
       str_buf << ~index;
     } else {
       str_buf << leaf_value_[~index];
@@ -441,7 +441,7 @@ std::string Tree::NodeToIfElse(int index, bool is_predict_leaf_index) const {
   return str_buf.str();
 }
 
-std::string Tree::NodeToIfElseByMap(int index, bool is_predict_leaf_index) const {
+std::string Tree::NodeToIfElseByMap(int index, bool predict_leaf_index) const {
   std::stringstream str_buf;
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   if (index >= 0) {
@@ -453,15 +453,15 @@ std::string Tree::NodeToIfElseByMap(int index, bool is_predict_leaf_index) const
       str_buf << CategoricalDecisionIfElse(index);
     }
     // left subtree
-    str_buf << NodeToIfElseByMap(left_child_[index], is_predict_leaf_index);
+    str_buf << NodeToIfElseByMap(left_child_[index], predict_leaf_index);
     str_buf << " } else { ";
     // right subtree
-    str_buf << NodeToIfElseByMap(right_child_[index], is_predict_leaf_index);
+    str_buf << NodeToIfElseByMap(right_child_[index], predict_leaf_index);
     str_buf << " }";
   } else {
     // leaf
     str_buf << "return ";
-    if (is_predict_leaf_index) {
+    if (predict_leaf_index) {
       str_buf << ~index;
     } else {
       str_buf << leaf_value_[~index];

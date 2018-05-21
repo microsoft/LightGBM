@@ -47,7 +47,7 @@ public:
   * \param type Specific type of metric
   * \param config Config for metric
   */
-  LIGHTGBM_EXPORT static Metric* CreateMetric(const std::string& type, const MetricConfig& config);
+  LIGHTGBM_EXPORT static Metric* CreateMetric(const std::string& type, const Config& config);
 
 };
 
@@ -56,11 +56,14 @@ public:
 */
 class DCGCalculator {
 public:
+  
+  static void DefaultEvalAt(std::vector<int>* eval_at);
+  static void DefaultLabelGain(std::vector<double>* label_gain);
   /*!
   * \brief Initial logic
   * \param label_gain Gain for labels, default is 2^i - 1
   */
-  static void Init(std::vector<double> label_gain);
+  static void Init(const std::vector<double>& label_gain);
 
   /*!
   * \brief Calculate the DCG score at position k

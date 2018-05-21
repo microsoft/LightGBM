@@ -300,6 +300,10 @@ std::string GBDT::SaveModelToString(int num_iteration) const {
   for (size_t i = 0; i < pairs.size(); ++i) {
     ss << pairs[i].second << "=" << std::to_string(pairs[i].first) << '\n';
   }
+  if (config_ != nullptr) {
+    ss << "parameters:" << '\n';
+    ss << config_->ToString() << "\n";
+  }
   return ss.str();
 }
 

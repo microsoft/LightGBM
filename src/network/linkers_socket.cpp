@@ -17,7 +17,7 @@
 
 namespace LightGBM {
 
-Linkers::Linkers(NetworkConfig config) {
+Linkers::Linkers(Config config) {
   is_init_ = false;
   // start up socket
   TcpSocket::Startup();

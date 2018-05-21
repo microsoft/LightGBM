@@ -33,7 +33,7 @@ namespace LightGBM {
 */
 class SerialTreeLearner: public TreeLearner {
 public:
-  explicit SerialTreeLearner(const TreeConfig* tree_config);
+  explicit SerialTreeLearner(const Config* config);
 
   ~SerialTreeLearner();
 
@@ -41,7 +41,7 @@ public:
 
   void ResetTrainingData(const Dataset* train_data) override;
 
-  void ResetConfig(const TreeConfig* tree_config) override;
+  void ResetConfig(const Config* config) override;
 
   Tree* Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian,
               Json& forced_split_json) override;
@@ -163,7 +163,7 @@ protected:
   /*! \brief used to cache historical histogram to speed up*/
   HistogramPool histogram_pool_;
   /*! \brief config of tree learner*/
-  const TreeConfig* tree_config_;
+  const Config* config_;
   int num_threads_;
   std::vector<int> ordered_bin_indices_;
   bool is_constant_hessian_;

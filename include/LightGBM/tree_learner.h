@@ -36,9 +36,9 @@ public:
 
   /*!
   * \brief Reset tree configs
-  * \param tree_config config of tree
+  * \param config config of tree
   */
-  virtual void ResetConfig(const TreeConfig* tree_config) = 0;
+  virtual void ResetConfig(const Config* config) = 0;
 
   /*!
   * \brief training tree model on dataset 
@@ -85,11 +85,11 @@ public:
   * \brief Create object of tree learner
   * \param learner_type Type of tree learner
   * \param device_type Type of tree learner
-  * \param tree_config config of tree
+  * \param config config of tree
   */
   static TreeLearner* CreateTreeLearner(const std::string& learner_type,
     const std::string& device_type,
-    const TreeConfig* tree_config);
+    const Config* config);
 };
 
 }  // namespace LightGBM

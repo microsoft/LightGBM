@@ -43,7 +43,7 @@ public:
   * \param objective_function Training objective function
   * \param training_metrics Training metrics
   */
-  void Init(const BoostingConfig* gbdt_config, const Dataset* train_data,
+  void Init(const Config* gbdt_config, const Dataset* train_data,
             const ObjectiveFunction* objective_function,
             const std::vector<const Metric*>& training_metrics) override;
 
@@ -83,7 +83,7 @@ public:
   * \brief Reset Boosting Config
   * \param gbdt_config Config for boosting
   */
-  void ResetConfig(const BoostingConfig* gbdt_config) override;
+  void ResetConfig(const Config* gbdt_config) override;
 
   /*!
   * \brief Adding a validation dataset
@@ -335,7 +335,7 @@ protected:
   /*!
   * \brief reset config for bagging
   */
-  void ResetBaggingConfig(const BoostingConfig* config, bool is_change_dataset);
+  void ResetBaggingConfig(const Config* config, bool is_change_dataset);
 
   /*!
   * \brief Implement bagging logic
@@ -384,7 +384,7 @@ protected:
   /*! \brief Pointer to training data */
   const Dataset* train_data_;
   /*! \brief Config of gbdt */
-  std::unique_ptr<BoostingConfig> gbdt_config_;
+  std::unique_ptr<Config> config_;
   /*! \brief Tree learner, will use this class to learn trees */
   std::unique_ptr<TreeLearner> tree_learner_;
   /*! \brief Objective function */

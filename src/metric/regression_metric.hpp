@@ -15,7 +15,7 @@ namespace LightGBM {
 template<typename PointWiseLossCalculator>
 class RegressionMetric: public Metric {
 public:
-  explicit RegressionMetric(const MetricConfig& config) :config_(config) {
+  explicit RegressionMetric(const Config& config) :config_(config) {
   }
 
   virtual ~RegressionMetric() {
@@ -100,16 +100,16 @@ private:
   /*! \brief Sum weights */
   double sum_weights_;
   /*! \brief Name of this test set */
-  MetricConfig config_;
+  Config config_;
   std::vector<std::string> name_;
 };
 
 /*! \brief RMSE loss for regression task */
 class RMSEMetric: public RegressionMetric<RMSEMetric> {
 public:
-  explicit RMSEMetric(const MetricConfig& config) :RegressionMetric<RMSEMetric>(config) {}
+  explicit RMSEMetric(const Config& config) :RegressionMetric<RMSEMetric>(config) {}
 
-  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
+  inline static double LossOnPoint(label_t label, double score, const Config&) {
     return (score - label)*(score - label);
   }
 
@@ -126,9 +126,9 @@ public:
 /*! \brief L2 loss for regression task */
 class L2Metric: public RegressionMetric<L2Metric> {
 public:
-  explicit L2Metric(const MetricConfig& config) :RegressionMetric<L2Metric>(config) {}
+  explicit L2Metric(const Config& config) :RegressionMetric<L2Metric>(config) {}
 
-  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
+  inline static double LossOnPoint(label_t label, double score, const Config&) {
     return (score - label)*(score - label);
   }
 
@@ -140,10 +140,10 @@ public:
 /*! \brief L2 loss for regression task */
 class QuantileMetric : public RegressionMetric<QuantileMetric> {
 public:
-  explicit QuantileMetric(const MetricConfig& config) :RegressionMetric<QuantileMetric>(config) {
+  explicit QuantileMetric(const Config& config) :RegressionMetric<QuantileMetric>(config) {
   }
 
-  inline static double LossOnPoint(label_t label, double score, const MetricConfig& config) {
+  inline static double LossOnPoint(label_t label, double score, const Config& config) {
     double delta = label - score;
     if (delta < 0) {
       return (config.alpha - 1.0f) * delta;
@@ -161,9 +161,9 @@ public:
 /*! \brief L1 loss for regression task */
 class L1Metric: public RegressionMetric<L1Metric> {
 public:
-  explicit L1Metric(const MetricConfig& config) :RegressionMetric<L1Metric>(config) {}
+  explicit L1Metric(const Config& config) :RegressionMetric<L1Metric>(config) {}
 
-  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
+  inline static double LossOnPoint(label_t label, double score, const Config&) {
     return std::fabs(score - label);
   }
   inline static const char* Name() {
@@ -174,10 +174,10 @@ public:
 /*! \brief Huber loss for regression task */
 class HuberLossMetric: public RegressionMetric<HuberLossMetric> {
 public:
-  explicit HuberLossMetric(const MetricConfig& config) :RegressionMetric<HuberLossMetric>(config) {
+  explicit HuberLossMetric(const Config& config) :RegressionMetric<HuberLossMetric>(config) {
   }
 
-  inline static double LossOnPoint(label_t label, double score, const MetricConfig& config) {
+  inline static double LossOnPoint(label_t label, double score, const Config& config) {
     const double diff = score - label;
     if (std::abs(diff) <= config.alpha) {
       return 0.5f * diff * diff;
@@ -195,10 +195,10 @@ public:
 // http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
 class FairLossMetric: public RegressionMetric<FairLossMetric> {
 public:
-  explicit FairLossMetric(const MetricConfig& config) :RegressionMetric<FairLossMetric>(config) {
+  explicit FairLossMetric(const Config& config) :RegressionMetric<FairLossMetric>(config) {
   }
 
-  inline static double LossOnPoint(label_t label, double score, const MetricConfig& config) {
+  inline static double LossOnPoint(label_t label, double score, const Config& config) {
     const double x = std::fabs(score - label);
     const double c = config.fair_c;
     return c * x - c * c * std::log(1.0f + x / c);
@@ -212,10 +212,10 @@ public:
 /*! \brief Poisson regression loss for regression task */
 class PoissonMetric: public RegressionMetric<PoissonMetric> {
 public:
-  explicit PoissonMetric(const MetricConfig& config) :RegressionMetric<PoissonMetric>(config) {
+  explicit PoissonMetric(const Config& config) :RegressionMetric<PoissonMetric>(config) {
   }
 
-  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
+  inline static double LossOnPoint(label_t label, double score, const Config&) {
     const double eps = 1e-10f;
     if (score < eps) {
       score = eps;
@@ -231,10 +231,10 @@ public:
 /*! \brief Mape regression loss for regression task */
 class MAPEMetric : public RegressionMetric<MAPEMetric> {
 public:
-  explicit MAPEMetric(const MetricConfig& config) :RegressionMetric<MAPEMetric>(config) {
+  explicit MAPEMetric(const Config& config) :RegressionMetric<MAPEMetric>(config) {
   }
 
-  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
+  inline static double LossOnPoint(label_t label, double score, const Config&) {
     return std::fabs((label - score)) / std::max(1.0f, std::fabs(label));
   }
   inline static const char* Name() {
@@ -244,10 +244,10 @@ public:
 
 class GammaMetric : public RegressionMetric<GammaMetric> {
 public:
-  explicit GammaMetric(const MetricConfig& config) :RegressionMetric<GammaMetric>(config) {
+  explicit GammaMetric(const Config& config) :RegressionMetric<GammaMetric>(config) {
   }
 
-  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
+  inline static double LossOnPoint(label_t label, double score, const Config&) {
     const double psi = 1.0;
     const double theta = -1.0 / score;
     const double a = psi;
@@ -263,10 +263,10 @@ public:
 
 class GammaDevianceMetric : public RegressionMetric<GammaDevianceMetric> {
 public:
-  explicit GammaDevianceMetric(const MetricConfig& config) :RegressionMetric<GammaDevianceMetric>(config) {
+  explicit GammaDevianceMetric(const Config& config) :RegressionMetric<GammaDevianceMetric>(config) {
   }
 
-  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
+  inline static double LossOnPoint(label_t label, double score, const Config&) {
     const double epsilon = 1.0e-9;
     const double tmp = label / (score + epsilon);
     return tmp - std::log(tmp) - 1;
@@ -281,10 +281,10 @@ public:
 
 class TweedieMetric : public RegressionMetric<TweedieMetric> {
 public:
-  explicit TweedieMetric(const MetricConfig& config) :RegressionMetric<TweedieMetric>(config) {
+  explicit TweedieMetric(const Config& config) :RegressionMetric<TweedieMetric>(config) {
   }
 
-  inline static double LossOnPoint(label_t label, double score, const MetricConfig& config) {
+  inline static double LossOnPoint(label_t label, double score, const Config& config) {
     const double rho = config.tweedie_variance_power;
     const double a = label * std::exp((1 - rho) * std::log(score)) / (1 - rho);
     const double b = std::exp((2 - rho) * std::log(score)) / (2 - rho);

@@ -15,11 +15,10 @@ namespace LightGBM {
 
 class MapMetric:public Metric {
 public:
-  explicit MapMetric(const MetricConfig& config) {
+  explicit MapMetric(const Config& config) {
     // get eval position
-    for (auto k : config.eval_at) {
-      eval_at_.push_back(static_cast<data_size_t>(k));
-    }
+    eval_at_ = config.eval_at;
+    DCGCalculator::DefaultEvalAt(&eval_at_);
     // get number of threads
     #pragma omp parallel
     #pragma omp master

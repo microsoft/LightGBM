@@ -32,7 +32,7 @@ Core Parameters
 
    -  **Note**: Only can be used in CLI version
 
--  ``task``, default=\ ``train``, type=enum, options=\ ``train``, ``predict``, ``convert_model``, ``refit``
+-  ``task``, default=\ ``train``, type=enum, options=\ ``train``, ``predict``, ``convert_model``, ``refit``, alias=\ ``task_type``
 
    -  ``train``, alias=\ ``training``, for training
 
@@ -47,7 +47,7 @@ Core Parameters
 -  ``application``, default=\ ``regression``, type=enum,
    options=\ ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gammma``, ``tweedie``,
    ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``,
-   alias=\ ``objective``, ``app``
+   alias=\ ``app``, ``objective``, ``objective_type``
 
    -  regression application
 
@@ -107,11 +107,11 @@ Core Parameters
 
    -  ``goss``, Gradient-based One-Side Sampling
 
--  ``data``, default=\ ``""``, type=string, alias=\ ``train``, ``train_data``
+-  ``data``, default=\ ``""``, type=string, alias=\ ``train``, ``train_data``, ``data_filename``
 
    -  training data, LightGBM will train from this data
 
--  ``valid``, default=\ ``""``, type=multi-string, alias=\ ``test``, ``valid_data``, ``test_data``
+-  ``valid``, default=\ ``""``, type=multi-string, alias=\ ``test``, ``valid_data``, ``test_data``, ``valid_filenames``
 
    -  validation/test data, LightGBM will output metrics for these data
 
@@ -137,7 +137,7 @@ Core Parameters
 
    -  number of leaves in one tree
 
--  ``tree_learner``, default=\ ``serial``, type=enum, options=\ ``serial``, ``feature``, ``data``, ``voting``, alias=\ ``tree``
+-  ``tree_learner``, default=\ ``serial``, type=enum, options=\ ``serial``, ``feature``, ``data``, ``voting``, alias=\ ``tree``, ``tree_learner_type``
 
    -  ``serial``, single machine tree learner
 
@@ -149,7 +149,7 @@ Core Parameters
 
    -  refer to `Parallel Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
 
--  ``num_threads``, default=\ ``OpenMP_default``, type=int, alias=\ ``num_thread``, ``nthread``
+-  ``num_threads``, default=\ ``OpenMP_default``, type=int, alias=\ ``num_thread``, ``nthread``, ``nthreads``
 
    -  number of threads for LightGBM
 
@@ -204,7 +204,7 @@ Learning Control Parameters
 
    -  random seed for ``feature_fraction``
 
--  ``bagging_fraction``, default=\ ``1.0``, type=double, ``0.0 < bagging_fraction <= 1.0``, alias=\ ``sub_row``, ``subsample``
+-  ``bagging_fraction``, default=\ ``1.0``, type=double, ``0.0 < bagging_fraction <= 1.0``, alias=\ ``sub_row``, ``subsample``, ``bagging``
 
    -  like ``feature_fraction``, but this will randomly select part of data without resampling
 
@@ -312,7 +312,7 @@ Learning Control Parameters
 
    -  set this to larger value for more accurate result, but it will slow down the training speed
 
--  ``monotone_constraint``, default=\ ``None``, type=multi-int, alias=\ ``mc``
+-  ``monotone_constraint``, default=\ ``None``, type=multi-int, alias=\ ``mc``, ``monotone_constraints``
 
    -  used for constraints of monotonic features
 
@@ -441,9 +441,11 @@ IO Parameters
 
    -  **Note**: only supports categorical with ``int`` type. Index starts from ``0``. And it doesn't count the label column
 
+   -  **Note**: all values should be less than ``Int32.MaxValue`` (2147483647)
+
    -  **Note**: the negative values will be treated as **missing values**
 
--  ``predict_raw_score``, default=\ ``false``, type=bool, alias=\ ``raw_score``, ``is_predict_raw_score``
+-  ``predict_raw_score``, default=\ ``false``, type=bool, alias=\ ``raw_score``, ``is_predict_raw_score``, ``predict_rawscore``
 
    -  only used in ``prediction`` task
 
@@ -501,17 +503,17 @@ IO Parameters
 
    -  set to ``false`` to use ``na`` to represent missing values
 
--  ``init_score_file``, default=\ ``""``, type=string
+-  ``init_score_file``, default=\ ``""``, type=string, alias=\ ``init_score_filename``, ``initscore_filename``, ``init_score``
 
    -  path to training initial score file, ``""`` will use ``train_data_file`` + ``.init`` (if exists)
 
--  ``valid_init_score_file``, default=\ ``""``, type=multi-string
+-  ``valid_init_score_file``, default=\ ``""``, type=multi-string, alias=\ ``valid_data_initscores``, ``valid_data_init_scores``, ``valid_init_score``
 
    -  path to validation initial score file, ``""`` will use ``valid_data_file`` + ``.init`` (if exists)
 
    -  separate by ``,`` for multi-validation data
 
--  ``forced_splits``, default=\ ``""``, type=string
+-  ``forced_splits``, default=\ ``""``, type=string, alias=\ ``forced_splits_file``, ``forcedsplits_filename``, ``forced_splits_filename``
 
    -  path to a ``.json`` file that specifies splits to force at the top of every decision tree before best-first learning commences
 
@@ -593,7 +595,7 @@ Objective Parameters
 Metric Parameters
 -----------------
 
--  ``metric``, default=\ ``''``, type=multi-enum
+-  ``metric``, default=\ ``''``, type=multi-enum, alias=\ ``metric_types``
 
    -  metric to be evaluated on the evaluation sets **in addition** to what is provided in the training arguments
 
@@ -650,7 +652,7 @@ Metric Parameters
 
    -  frequency for metric output
 
--  ``train_metric``, default=\ ``false``, type=bool, alias=\ ``training_metric``, ``is_training_metric``
+-  ``train_metric``, default=\ ``false``, type=bool, alias=\ ``training_metric``, ``is_training_metric``, ``is_provide_training_metric``
 
    -  set this to ``true`` if you need to output metric result of training
 

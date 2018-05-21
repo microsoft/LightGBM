@@ -15,13 +15,13 @@ Missing Value Handle
 Categorical Feature Support
 ---------------------------
 
--  LightGBM can offer a good accuracy when using native categorical features. Not like simply one-hot coding, LightGBM can find the optimal split of categorical features.
-   Such an optimal split can provide the much better accuracy than one-hot coding solution.
+-  LightGBM can offer a good accuracy when using native categorical features. Not like simply one-hot encoding, LightGBM can find the optimal split of categorical features.
+   Such an optimal split can provide the much better accuracy than one-hot encoding solution.
 
 -  Use ``categorical_feature`` to specify the categorical features.
    Refer to the parameter ``categorical_feature`` in `Parameters <./Parameters.rst>`__.
 
--  Converting to ``int`` type is needed first, and there is support for non-negative numbers only.
+-  Converting to ``int`` type is needed first, and there is support for non-negative numbers only. Also, all values should be less than ``Int32.MaxValue`` (2147483647).
    It is better to convert into continues ranges.
 
 -  Use ``min_data_per_group``, ``cat_smooth`` to deal with over-fitting

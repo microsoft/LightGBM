@@ -12,7 +12,7 @@ namespace LightGBM {
 */
 class BinaryLogloss: public ObjectiveFunction {
 public:
-  explicit BinaryLogloss(const ObjectiveConfig& config, std::function<bool(label_t)> is_pos = nullptr) {
+  explicit BinaryLogloss(const Config& config, std::function<bool(label_t)> is_pos = nullptr) {
     sigmoid_ = static_cast<double>(config.sigmoid);
     if (sigmoid_ <= 0.0) {
       Log::Fatal("Sigmoid parameter %f should be greater than zero", sigmoid_);

@@ -273,7 +273,7 @@ public:
   * \param label_idx index of label column
   * \return Object of parser
   */
-  static Parser* CreateParser(const char* filename, bool has_header, int num_features, int label_idx);
+  static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx);
 };
 
 /*! \brief The main class of data set,
@@ -292,7 +292,7 @@ public:
     int** sample_non_zero_indices,
     const int* num_per_col,
     size_t total_sample_cnt,
-    const IOConfig& io_config);
+    const Config& io_config);
 
   /*! \brief Destructor */
   LIGHTGBM_EXPORT ~Dataset();

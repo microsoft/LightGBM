@@ -107,6 +107,14 @@ LightGBM
 
 --------------
 
+-  **Question 9**: When I'm trying to specify some column as categorical by using ``categorical_feature`` parameter, I get segmentation fault in LightGBM.
+
+-  **Solution 9**: Probably you're trying to pass via ``categorical_feature`` parameter a column with very large values. For instance, it can be some IDs.
+   In LightGBM categorical features are limited by int32 range, so you cannot pass values that are greater than ``Int32.MaxValue`` (2147483647) as categorical features
+   (see `Microsoft/LightGBM#1359 <https://github.com/Microsoft/LightGBM/issues/1359>`__.). You should convert them into integer range from zero to number of categories first.
+
+--------------
+
 R-package
 ~~~~~~~~~
 

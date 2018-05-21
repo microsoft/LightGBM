@@ -84,7 +84,7 @@ void getline(std::stringstream& ss, std::string& line, const VirtualFileReader* 
   }
 }
 
-Parser* Parser::CreateParser(const char* filename, bool has_header, int num_features, int label_idx) {
+Parser* Parser::CreateParser(const char* filename, bool header, int num_features, int label_idx) {
   auto reader = VirtualFileReader::Make(filename);
   if (!reader->Init()) {
     Log::Fatal("Data file %s doesn't exist", filename);
@@ -98,7 +98,7 @@ Parser* Parser::CreateParser(const char* filename, bool has_header, int num_feat
   }
 
   std::stringstream tmp_file(std::string(buffer.data(), read_len));
-  if (has_header) {
+  if (header) {
     if (!tmp_file.eof()) {
       getline(tmp_file, line1, reader.get(), buffer, buffer_size);
     }
