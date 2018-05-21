@@ -101,7 +101,7 @@ Then install LightGBM:
 .. code::
 
   git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
-  export CXX=g++-7 CC=gcc-7
+  export CXX=g++-7 CC=gcc-7  # replace 7 with version of gcc installed on your machine
   mkdir build ; cd build
   cmake ..
   make -j4
@@ -194,7 +194,7 @@ Then run the following commands:
 .. code::
 
   git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
-  export CXX=g++-7 CC=gcc-7
+  export CXX=g++-7 CC=gcc-7  # replace 7 with version of gcc installed on your machine
   mkdir build ; cd build
   cmake -DUSE_MPI=ON ..
   make -j4
@@ -342,7 +342,7 @@ Then install LightGBM:
 .. code::
 
   git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
-  export CXX=g++-7 CC=gcc-7
+  export CXX=g++-7 CC=gcc-7  # replace 7 with version of gcc installed on your machine
   mkdir build ; cd build
   cmake -DUSE_HDFS=ON ..
   make -j4

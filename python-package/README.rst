@@ -37,7 +37,7 @@ Build from Sources
 
 For Linux and macOS users, installation from sources requires installed `CMake <https://cmake.org/>`_.
 
-For macOS users, you need to specify compilers by runnig ``export CXX=g++-7 CC=gcc-7`` first.
+For macOS users, you need to specify compilers by runnig ``export CXX=g++-7 CC=gcc-7`` (replace 7 with version of gcc installed on your machine) first.
 
 For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/>`_) is needed. If you get any errors during installation, you may need to install `CMake <https://cmake.org/>`_ (version 3.8 or higher).
 
@@ -114,7 +114,7 @@ For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/dow
 
     git clone --recursive https://github.com/Microsoft/LightGBM.git
     cd LightGBM/python-package
-    # export CXX=g++-7 CC=gcc-7  # for macOS users only
+    # export CXX=g++-7 CC=gcc-7  # for macOS users only (replace 7 with version of gcc installed on your machine)
     python setup.py install
 
 Note: ``sudo`` (or administrator rights in Windows) may be needed to perform the command.
