@@ -33,7 +33,7 @@ struct lgbm_sxpinfo {
 
 // 64bit pointer
 #if INTPTR_MAX == INT64_MAX
-typedef ptrdiff_t R_xlen_t;
+typedef int64_t R_xlen_t;
 #else
 typedef int R_xlen_t;
 #endif
