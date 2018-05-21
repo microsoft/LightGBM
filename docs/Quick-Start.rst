@@ -29,7 +29,7 @@ Some columns could be ignored.
 Categorical Feature Support
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-LightGBM can use categorical features directly (without one-hot coding).
+LightGBM can use categorical features directly (without one-hot encoding).
 The experiment on `Expo data`_ shows about 8x speed-up compared with one-hot encoding.
 
 For the setting details, please refer to `Parameters <./Parameters.rst>`__.

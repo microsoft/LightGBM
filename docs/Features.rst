@@ -63,7 +63,7 @@ So, LightGBM can use an additional parameter ``max_depth`` to limit depth of tre
 Optimal Split for Categorical Features
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We often convert the categorical features into one-hot coding.
+We often convert the categorical features into one-hot encoding.
 However, it is not a good solution in tree learner.
 The reason is, for the high cardinality categorical features, it will grow the very unbalance tree, and needs to grow very deep to achieve the good accuracy.
 
