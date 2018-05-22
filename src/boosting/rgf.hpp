@@ -137,14 +137,19 @@ public:
 
 private:
   bool FullyCorrectiveUpdate () {
-    for (size_t model_index = 0; model_index < models_.size(); model_index++) {
-      int64_t num_score = 0;
-      objective_function_->
-        GetGradients(GetTrainingScore(&num_score), gradients_.data(), hessians_.data());
-      auto gradients = gradients_.data();
-      auto hessians = hessians_.data();
-      auto new_tree = tree_learner_->FitByExistingTree(models_[model_index].get(), gradients, hessians);
-      models_[model_index].reset(new_tree);
+    int num_iterations = static_cast<int>(models_.size() / num_tree_per_iteration_);
+    for (int iter = 0; iter < num_iterations; ++iter) {
+      for (int tree_id = 0; tree_id < num_tree_per_iteration_; ++tree_id) {
+        int model_index = iter * num_tree_per_iteration_ + tree_id;
+        int64_t num_score = 0;
+        objective_function_->
+          GetGradients(GetTrainingScore(&num_score), gradients_.data(), hessians_.data());
+        auto gradients = gradients_.data();
+        auto hessians = hessians_.data();
+        auto new_tree = tree_learner_->FitByExistingTree(models_[model_index].get(), gradients, hessians);
+        train_score_updater_->AddScore(tree_learner_.get(), new_tree, tree_id);
+        models_[model_index].reset(new_tree);
+      }
     }
     return true;
   }
