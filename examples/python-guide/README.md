@@ -5,10 +5,10 @@ Here is an example for LightGBM to use Python-package.
 
 You should install LightGBM [Python-package](https://github.com/Microsoft/LightGBM/tree/master/python-package) first.
 
-You also need scikit-learn, pandas and matplotlib (only for plot example) to run the examples, but they are not required for the package itself. You can install them with pip:
+You also need scikit-learn, pandas, matplotlib (only for plot example), and scipy (only for logistic regression example) to run the examples, but they are not required for the package itself. You can install them with pip:
 
 ```
-pip install scikit-learn pandas matplotlib -U
+pip install scikit-learn pandas matplotlib scipy -U
 ```
 
 Now you can run examples in this folder, for example:
@@ -41,3 +41,8 @@ Examples include:
     - Self-defined objective function
     - Self-defined eval metric
     - Callback function
+- [logistic_regression.py](https://github.com/Microsoft/LightGBM/blob/master/examples/python-guide/logistic_regression.py)
+    - Use objective `xentropy` or `binary`
+    - Use `xentropy` with binary labels or probability labels
+    - Use `binary` only with binary labels
+    - Compare speed of `xentropy` versus `binary`
