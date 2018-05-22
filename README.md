@@ -6,10 +6,10 @@ LightGBM, Light Gradient Boosting Machine
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](https://lightgbm.readthedocs.io/)
 [![GitHub Issues](https://img.shields.io/github/issues/Microsoft/LightGBM.svg)](https://github.com/Microsoft/LightGBM/issues)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Microsoft/LightGBM/blob/master/LICENSE)
-[![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg)](https://pypi.python.org/pypi/lightgbm)
-[![PyPI Version](https://img.shields.io/pypi/v/lightgbm.svg)](https://pypi.python.org/pypi/lightgbm)
+[![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg)](https://pypi.org/project/lightgbm)
+[![PyPI Version](https://img.shields.io/pypi/v/lightgbm.svg)](https://pypi.org/project/lightgbm)
 [![Join the chat at https://gitter.im/Microsoft/LightGBM](https://badges.gitter.im/Microsoft/LightGBM.svg)](https://gitter.im/Microsoft/LightGBM?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Slack](https://lightgbm-slack-autojoin.herokuapp.com/badge.svg)](https://lightgbm-slack-autojoin.herokuapp.com/)
+[![Slack](https://lightgbm-slack-autojoin.herokuapp.com/badge.svg)](https://lightgbm-slack-autojoin.herokuapp.com)
 
 LightGBM is a gradient boosting framework that uses tree based learning algorithms. It is designed to be distributed and efficient with the following advantages:
 
@@ -30,7 +30,7 @@ News
 
 07/13/2017 : [Gitter](https://gitter.im/Microsoft/LightGBM) is available.
 
-06/20/2017 : Python-package is on [PyPI](https://pypi.python.org/pypi/lightgbm) now.
+06/20/2017 : Python-package is on [PyPI](https://pypi.org/project/lightgbm) now.
 
 06/09/2017 : [LightGBM Slack team](https://lightgbm.slack.com) is available.
 
