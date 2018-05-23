@@ -152,7 +152,7 @@ def early_stopping(stopping_rounds, verbose=True):
     ----
     Activates early stopping.
     Requires at least one validation data and one metric.
-    If there's more than one, will check all of them.
+    If there's more than one, will check all of them except the training data.
 
     Parameters
     ----------

@@ -185,7 +185,7 @@ Early Stopping
 --------------
 
 If you have a validation set, you can use early stopping to find the optimal number of boosting rounds.
-Early stopping requires at least one set in ``valid_sets``. If there is more than one, it will use all of them:
+Early stopping requires at least one set in ``valid_sets``. If there is more than one, it will use all of them except the training data:
 
 .. code:: python
 
@@ -199,7 +199,7 @@ If early stopping occurs, the model will have an additional field: ``bst.best_it
 Note that ``train()`` will return a model from the best iteration.
 
 This works with both metrics to minimize (L2, log loss, etc.) and to maximize (NDCG, AUC).
-Note that if you specify more than one evaluation metric, all of them will be used for early stopping.
+Note that if you specify more than one evaluation metric, all of them except the training data will be used for early stopping.
 
 Prediction
 ----------
