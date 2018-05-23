@@ -9,6 +9,11 @@ Machine Learning Challenge Winning Solutions
 
 | Place         | Competition   | Solution  | Date |
 | ------------- |:------------- | --------- | -----|
+| 1st     | [TalkingData AdTracking Fraud Detection Challenge](https://www.kaggle.com/c/talkingdata-adtracking-fraud-detection) | [link](https://www.kaggle.com/c/talkingdata-adtracking-fraud-detection/discussion/56475)| 2018.5 |
+| 1st     | [DonorsChoose.org Application Screening](https://www.kaggle.com/c/donorschoose-application-screening)| [link](https://www.kaggle.com/shadowwarrior/1st-place-solution/notebook) | 2018.4 | 
+| 1st     | [Toxic Comment Classification Challenge](https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge)| [link](https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge/discussion/52557) | 2018.3 |
+| 1st     | [Mercari Price Suggestion Challenge](https://www.kaggle.com/c/mercari-price-suggestion-challenge) | [link](https://www.kaggle.com/c/mercari-price-suggestion-challenge/discussion/50256) | 2018.2 |
+| 1st     | [IEEE's Signal Processing Society, Camera Model Identification](https://www.kaggle.com/c/sp-society-camera-model-identification)| [link](https://www.kaggle.com/c/sp-society-camera-model-identification/discussion/49367) | 2018.2 | 
 | 1st     | [Recruit Restaurant Visitor Forecasting](https://www.kaggle.com/c/recruit-restaurant-visitor-forecasting) | [link](https://www.kaggle.com/pureheart/1st-place-lgb-model-public-0-470-private-0-502/comments) | 2018.2| 
 | 1st     | [WSDM CUP 2018 - KKBox's Music Recommendation Challenge](https://www.kaggle.com/c/kkbox-music-recommendation-challenge) | [link](https://www.kaggle.com/c/kkbox-music-recommendation-challenge/discussion/45942) | 2017.12 |
 | 1st     | [Porto Seguro’s Safe Driver Prediction](https://www.kaggle.com/c/porto-seguro-safe-driver-prediction) | [link](https://www.kaggle.com/c/porto-seguro-safe-driver-prediction/discussion/44629) |2017.11 |
