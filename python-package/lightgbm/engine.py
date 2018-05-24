@@ -56,7 +56,7 @@ def train(params, train_set, num_boost_round=100,
         All values should be less than int32 max value (2147483647).
     early_stopping_rounds: int or None, optional (default=None)
         Activates early stopping. The model will train until the validation score stops improving.
-        Requires at least one validation data and one metric. If there's more than one, will check all of them.
+        Requires at least one validation data and one metric. If there's more than one, will check all of them except the training data.
         If early stopping occurs, the model will add ``best_iteration`` field.
     evals_result: dict or None, optional (default=None)
         This dictionary used to store all evaluation results of all the items in ``valid_sets``.

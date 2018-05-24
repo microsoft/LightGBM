@@ -328,7 +328,7 @@ class LGBMModel(_LGBMModelBase):
             In either case, the ``metric`` from the model parameters will be evaluated and used as well.
         early_stopping_rounds : int or None, optional (default=None)
             Activates early stopping. The model will train until the validation score stops improving.
-            If there's more than one, will check all of them.
+            If there's more than one, will check all of them except the training data.
             Validation error needs to decrease at least every ``early_stopping_rounds`` round(s)
             to continue training.
         verbose : bool, optional (default=True)
