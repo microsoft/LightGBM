@@ -623,13 +623,17 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
   used_group.reserve(num_groups_);
   for (int group = 0; group < num_groups_; ++group) {
     const int f_cnt = group_feature_cnt_[group];
+    bool is_group_used = false;
     for (int j = 0; j < f_cnt; ++j) {
       const int fidx = group_feature_start_[group] + j;
       if (is_feature_used[fidx]) {
+        is_group_used = true;
         break;
       }
     }
-    used_group.push_back(group);
+    if (is_group_used) {
+      used_group.push_back(group);
+    }
   }
   int num_used_group = static_cast<int>(used_group.size());
   auto ptr_ordered_grad = gradients;
