@@ -22,7 +22,7 @@ To get good results using a leaf-wise tree, these are some important parameters:
    However, this simple conversion is not good in practice.
    The reason is, when number of leaves are the same, the leaf-wise tree is much deeper than depth-wise tree. As a result, it may be over-fitting.
    Thus, when trying to tune the ``num_leaves``, we should let it be smaller than ``2^(max_depth)``.
-   For example, when the ``max_depth=6`` the depth-wise tree can get good accuracy,
+   For example, when the ``max_depth=7`` the depth-wise tree can get good accuracy,
    but setting ``num_leaves`` to ``127`` may cause over-fitting, and setting it to ``70`` or ``80`` may get better accuracy than depth-wise.
    Actually, the concept ``depth`` can be forgotten in leaf-wise tree, since it doesn't have a correct mapping from ``leaves`` to ``depth``.
 
