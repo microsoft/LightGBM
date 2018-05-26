@@ -28,7 +28,7 @@ We used 5 datasets to conduct our comparison experiments. Details of data are li
 Environment
 ^^^^^^^^^^^
 
-We used one Linux server as experiment platform, details are listed in the following table:
+We ran all experiments on a single Linux server with the following specifications:
 
 +------------------+-----------------+---------------------+
 | OS               | CPU             | Memory              |
@@ -46,7 +46,7 @@ Both xgboost and LightGBM were built with OpenMP support.
 Settings
 ^^^^^^^^
 
-We set up total 3 settings for experiments, the parameters of these settings are:
+We set up total 3 settings for experiments. The parameters of these settings are:
 
 1. xgboost:
 
@@ -84,8 +84,8 @@ We set up total 3 settings for experiments, the parameters of these settings are
        min_data_in_leaf = 0
        min_sum_hessian_in_leaf = 100
 
-xgboost grows tree depth-wise and controls model complexity by ``max_depth``.
-LightGBM uses leaf-wise algorithm instead and controls model complexity by ``num_leaves``.
+xgboost grows trees depth-wise and controls model complexity by ``max_depth``.
+LightGBM uses a leaf-wise algorithm instead and controls model complexity by ``num_leaves``.
 So we cannot compare them in the exact same model setting. For the tradeoff, we use xgboost with ``max_depth=8``, which will have max number leaves to 255, to compare with LightGBM with ``num_leves=255``.
 
 Other parameters are default values.
@@ -96,7 +96,7 @@ Result
 Speed
 '''''
 
-For speed comparison, we only run the training task, which was without any test or metric output. And we didn't count the time for IO.
+We compared speed using only the training task without any test or metric output. We didn't count the time for IO.
 
 The following table is the comparison of time cost:
 
@@ -114,12 +114,12 @@ The following table is the comparison of time cost:
 | Allstate  | 2867.22 s | 1355.71 s     | **348.084475 s** |
 +-----------+-----------+---------------+------------------+
 
-We found LightGBM is faster than xgboost on all experiment data sets.
+LightGBM ran faster than xgboost on all experiment data sets.
 
 Accuracy
 ''''''''
 
-For accuracy comparison, we used the accuracy on test data set to have a fair comparison.
+We computed all accuracy metrics only on the test data set.
 
 +-----------+-----------------+----------+---------------+----------+
 | Data      | Metric          | xgboost  | xgboost\_hist | LightGBM |
@@ -150,8 +150,8 @@ For accuracy comparison, we used the accuracy on test data set to have a fair co
 Memory Consumption
 ''''''''''''''''''
 
-We monitored RES while running training task. And we set ``two_round=true`` (will increase data-loading time,
-but reduce peak memory usage, not affect training speed or accuracy) in LightGBM to reduce peak memory usage.
+We monitored RES while running training task. And we set ``two_round=true`` (this will increase data-loading time and
+reduce peak memory usage but not affect training speed or accuracy) in LightGBM to reduce peak memory usage.
 
 +-----------+---------+---------------+-------------+
 | Data      | xgboost | xgboost\_hist | LightGBM    |
@@ -181,15 +181,15 @@ We used a terabyte click log dataset to conduct parallel experiments. Details ar
 | Criteo | Binary classification | `link`_ | 1,700,000,000 | 67       |
 +--------+-----------------------+---------+---------------+----------+
 
-This data contains 13 integer features and 26 category features of 24 days click log.
-We statisticized the CTR and count for these 26 category features from the first ten days,
-then used next ten days' data, which had been replaced the category features by the corresponding CTR and count, as training data.
+This data contains 13 integer features and 26 categorical features for 24 days of click logs.
+We statisticized the clickthrough rate (CTR) and count for these 26 categorical features from the first ten days.
+Then we used next ten days' data, after replacing the categorical features by the corresponding CTR and count, as training data.
 The processed training data have a total of 1.7 billions records and 67 features.
 
 Environment
 ^^^^^^^^^^^
 
-We used 16 Windows servers as experiment platform, details are listed in following table:
+We ran our experiments on 16 Windows servers with the following specifications:
 
 +---------------------+-----------------+---------------------+-------------------------------------------+
 | OS                  | CPU             | Memory              | Network Adapter                           |
@@ -208,9 +208,7 @@ Settings
     num_thread = 16
     tree_learner = data
 
-We used data parallel here, since this data is large in ``#data`` but small in ``#feature``.
-
-Other parameters were default values.
+We used data parallel here because this data is large in ``#data`` but small in ``#feature``. Other parameters were default values.
 
 Results
 ^^^^^^^
@@ -229,7 +227,7 @@ Results
 | 16       | 42 s          | 11GB                      |
 +----------+---------------+---------------------------+
 
-From the results, we found that LightGBM performs linear speed up in parallel learning.
+The results show that LightGBM achieves a linear speedup with parallel learning.
 
 GPU Experiments
 ---------------

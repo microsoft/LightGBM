@@ -32,7 +32,7 @@ To verify your installation, try to ``import lightgbm`` in Python:
 Data Interface
 --------------
 
-The LightGBM Python module is able to load data from:
+The LightGBM Python module can load data from:
 
 -  libsvm/tsv/csv/txt format file
 

@@ -548,7 +548,7 @@ Objective Parameters
 
 -  ``boost_from_average``, default=\ ``true``, type=bool
 
-   -  only used in ``regression`` task
+   -  used only in ``regression``, ``binary``, and ``xentropy`` tasks (others may get added)
 
    -  adjust initial score to the mean of labels for faster convergence
 

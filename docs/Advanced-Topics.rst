@@ -4,35 +4,38 @@ Advanced Topics
 Missing Value Handle
 --------------------
 
--  LightGBM enables the missing value handle by default, you can disable it by set ``use_missing=false``.
+-  LightGBM enables the missing value handle by default. Disable it by setting ``use_missing=false``.
 
--  LightGBM uses NA (NaN) to represent the missing value by default, you can change it to use zero by set ``zero_as_missing=true``.
+-  LightGBM uses NA (NaN) to represent missing values by default. Change it to use zero by setting ``zero_as_missing=true``.
 
--  When ``zero_as_missing=false`` (default), the unshown value in sparse matrices (and LightSVM) is treated as zeros.
+-  When ``zero_as_missing=false`` (default), the unshown values in sparse matrices (and LightSVM) are treated as zeros.
 
--  When ``zero_as_missing=true``, NA and zeros (including unshown value in sparse matrices (and LightSVM)) are treated as missing.
+-  When ``zero_as_missing=true``, NA and zeros (including unshown values in sparse matrices (and LightSVM)) are treated as missing.
 
 Categorical Feature Support
 ---------------------------
 
--  LightGBM can offer a good accuracy when using native categorical features. Not like simply one-hot encoding, LightGBM can find the optimal split of categorical features.
-   Such an optimal split can provide the much better accuracy than one-hot encoding solution.
+-  LightGBM offers good accuracy with integer-encoded categorical features. LightGBM applies
+   `Fisher (1958) <http://www.csiss.org/SPACE/workshops/2004/SAC/files/fisher.pdf>`_
+   to find the optimal split over categories as
+   `described here <./Features.rst#optimal-split-for-categorical-features>`_. This often performs better than one-hot encoding.
 
 -  Use ``categorical_feature`` to specify the categorical features.
    Refer to the parameter ``categorical_feature`` in `Parameters <./Parameters.rst>`__.
 
--  Converting to ``int`` type is needed first, and there is support for non-negative numbers only. Also, all values should be less than ``Int32.MaxValue`` (2147483647).
-   It is better to convert into continues ranges.
+-  Categorical features must be encoded as non-negative integers (``int``) less than ``Int32.MaxValue`` (2147483647).
+   It is best to use a contiguous range of integers.
 
--  Use ``min_data_per_group``, ``cat_smooth`` to deal with over-fitting
-   (when ``#data`` is small or ``#category`` is large).
+-  Use ``min_data_per_group``, ``cat_smooth`` to deal with over-fitting (when ``#data`` is small or ``#category`` is large).
 
--  For categorical features with high cardinality (``#category`` is large), it is better to convert it to numerical features.
+-  For a categorical feature with high cardinality (``#category`` is large), it often works best to
+   treat the feature as numeric, either by simply ignoring the categorical interpretation of the integers or
+   by embedding the categories in a low-dimensional numeric space.
 
 LambdaRank
 ----------
 
--  The label should be ``int`` type, and larger numbers represent the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect).
+-  The label should be of type ``int``, such that larger numbers correspond to higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect).
 
 -  Use ``label_gain`` to set the gain(weight) of ``int`` label.
 
