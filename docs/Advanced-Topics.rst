@@ -18,8 +18,7 @@ Categorical Feature Support
 -  LightGBM offers good accuracy with integer-encoded categorical features. LightGBM applies
    `Fisher (1958) <http://www.csiss.org/SPACE/workshops/2004/SAC/files/fisher.pdf>`_
    to find the optimal split over categories as
-   `described here <http://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`_,
-   and can lead to much better accuracy than one-hot encoding.
+   `described here <./Features.rst#optimal-split-for-categorical-features>`_. This often performs better than one-hot encoding.
 
 -  Use ``categorical_feature`` to specify the categorical features.
    Refer to the parameter ``categorical_feature`` in `Parameters <./Parameters.rst>`__.
