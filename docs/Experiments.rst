@@ -46,7 +46,7 @@ Both xgboost and LightGBM were built with OpenMP support.
 Settings
 ^^^^^^^^
 
-We set up total 3 settings for experiments, the parameters of these settings are:
+We set up total 3 settings for experiments. The parameters of these settings are:
 
 1. xgboost:
 
@@ -84,8 +84,8 @@ We set up total 3 settings for experiments, the parameters of these settings are
        min_data_in_leaf = 0
        min_sum_hessian_in_leaf = 100
 
-xgboost grows tree depth-wise and controls model complexity by ``max_depth``.
-LightGBM uses leaf-wise algorithm instead and controls model complexity by ``num_leaves``.
+xgboost grows trees depth-wise and controls model complexity by ``max_depth``.
+LightGBM uses a leaf-wise algorithm instead and controls model complexity by ``num_leaves``.
 So we cannot compare them in the exact same model setting. For the tradeoff, we use xgboost with ``max_depth=8``, which will have max number leaves to 255, to compare with LightGBM with ``num_leves=255``.
 
 Other parameters are default values.
@@ -96,7 +96,7 @@ Result
 Speed
 '''''
 
-For speed comparison, we only run the training task, which was without any test or metric output. And we didn't count the time for IO.
+To compare speed, we run only the training task, which was without any test or metric output. And we didn't count the time for IO.
 
 The following table is the comparison of time cost:
 
@@ -150,8 +150,8 @@ For accuracy comparison, we used the accuracy on test data set to have a fair co
 Memory Consumption
 ''''''''''''''''''
 
-We monitored RES while running training task. And we set ``two_round=true`` (will increase data-loading time,
-but reduce peak memory usage, not affect training speed or accuracy) in LightGBM to reduce peak memory usage.
+We monitored RES while running training task. And we set ``two_round=true`` (this will increase data-loading time and
+reduce peak memory usage but not affect training speed or accuracy) in LightGBM to reduce peak memory usage.
 
 +-----------+---------+---------------+-------------+
 | Data      | xgboost | xgboost\_hist | LightGBM    |
@@ -181,9 +181,9 @@ We used a terabyte click log dataset to conduct parallel experiments. Details ar
 | Criteo | Binary classification | `link`_ | 1,700,000,000 | 67       |
 +--------+-----------------------+---------+---------------+----------+
 
-This data contains 13 integer features and 26 category features of 24 days click log.
-We statisticized the CTR and count for these 26 category features from the first ten days,
-then used next ten days' data, which had been replaced the category features by the corresponding CTR and count, as training data.
+This data contains 13 integer features and 26 categorical features of 24 days click log.
+We statisticized the clickthrough rate (CTR) and count for these 26 categorical features from the first ten days,
+then used next ten days' data, after replacing the categorical features by the corresponding CTR and count, as training data.
 The processed training data have a total of 1.7 billions records and 67 features.
 
 Environment
@@ -229,7 +229,7 @@ Results
 | 16       | 42 s          | 11GB                      |
 +----------+---------------+---------------------------+
 
-From the results, we found that LightGBM performs linear speed up in parallel learning.
+From the results, we found that LightGBM achieves a linear speedup with parallel learning.
 
 GPU Experiments
 ---------------
