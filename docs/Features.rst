@@ -1,35 +1,30 @@
 Features
 ========
 
-This is a short introduction for the features and algorithms used in LightGBM\ `[1] <#references>`__.
-
-This page doesn't contain detailed algorithms, please refer to cited papers or source code if you are interested.
+This is a conceptual overview of how LightGBM works\ `[1] <#references>`__. We assume familiarity with decision tree boosting algorithms to focus instead on aspects of LightGBM that may differ from other boosting packages. For detailed algorithms, please refer to the citations or source code.
 
 Optimization in Speed and Memory Usage
 --------------------------------------
 
-Many boosting tools use pre-sorted based algorithms\ `[2, 3] <#references>`__ (e.g. default algorithm in xgboost) for decision tree learning. It is a simple solution, but not easy to optimize.
+Many boosting tools use pre-sort-based algorithms\ `[2, 3] <#references>`__ (e.g. default algorithm in xgboost) for decision tree learning. It is a simple solution, but not easy to optimize.
 
-LightGBM uses the histogram based algorithms\ `[4, 5, 6] <#references>`__, which bucketing continuous feature(attribute) values into discrete bins, to speed up training procedure and reduce memory usage.
-Following are advantages for histogram based algorithms:
+LightGBM uses histogram-based algorithms\ `[4, 5, 6] <#references>`__, which bucket continuous feature (attribute) values into discrete bins. This speeds up training and reduces memory usage. Advantages of histogram based algorithms include the following:
 
--  **Reduce calculation cost of split gain**
+-  **Reduced cost of calculating the gain for each split**
 
-   -  Pre-sorted based algorithms need ``O(#data)`` times calculation
+   -  Pre-sort-based algorithms have time complexity ``O(#data)``
 
-   -  Histogram based algorithms only need to calculate ``O(#bins)`` times, and ``#bins`` is far smaller than ``#data``
+   -  Computing the histogram has time complexity ``O(#data)``, but this involves only a fast sum-up operation. Once the histogram is constructed, a histogram-based algorithm has time complexity ``O(#bins)``, and ``#bins`` is far smaller than ``#data``.
 
-      -  It still needs ``O(#data)`` times to construct histogram, which only contain sum-up operation
+-  **Use histogram subtraction for further speedup**
 
--  **Use histogram subtraction for further speed-up**
+   -  To get one leaf's histograms in a binary tree, use the histogram subtraction of its parent and its neighbor
 
-   -  To get one leaf's histograms in a binary tree, can use the histogram subtraction of its parent and its neighbor
-
-   -  So it only need to construct histograms for one leaf (with smaller ``#data`` than its neighbor), then can get histograms of its neighbor by histogram subtraction with small cost (``O(#bins)``)
+   -  So it needs to construct histograms for only one leaf (with smaller ``#data`` than its neighbor). It then can get histograms of its neighbor by histogram subtraction with small cost (``O(#bins)``)
    
 -  **Reduce memory usage**
 
-   -  Can replace continuous values to discrete bins. If ``#bins`` is small, can use small data type, e.g. uint8\_t, to store training data
+   -  Replaces continuous values with discrete bins. If ``#bins`` is small, can use small data type, e.g. uint8\_t, to store training data
 
    -  No need to store additional information for pre-sorting feature values
 
@@ -38,7 +33,7 @@ Following are advantages for histogram based algorithms:
 Sparse Optimization
 -------------------
 
--  Only need ``O(2 * #non_zero_data)`` to construct histogram for sparse features
+-  Need only ``O(2 * #non_zero_data)`` to construct histogram for sparse features
 
 Optimization in Accuracy
 ------------------------
@@ -46,16 +41,15 @@ Optimization in Accuracy
 Leaf-wise (Best-first) Tree Growth
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Most decision tree learning algorithms grow tree by level (depth)-wise, like the following image:
+Most decision tree learning algorithms grow trees by level (depth)-wise, like the following image:
 
 .. image:: ./_static/images/level-wise.png
    :align: center
 
-LightGBM grows tree by leaf-wise (best-first)\ `[7] <#references>`__. It will choose the leaf with max delta loss to grow.
-When growing same ``#leaf``, leaf-wise algorithm can reduce more loss than level-wise algorithm.
+LightGBM grows trees leaf-wise (best-first)\ `[7] <#references>`__. It will choose the leaf with max delta loss to grow.
+Holding ``#leaf`` fixed, leaf-wise algorithms tend to achieve lower loss than level-wise algorithms.
 
-Leaf-wise may cause over-fitting when ``#data`` is small.
-So, LightGBM can use an additional parameter ``max_depth`` to limit depth of tree and avoid over-fitting (tree still grows by leaf-wise).
+Leaf-wise may cause over-fitting when ``#data`` is small, so LightGBM includes the ``max_depth`` parameter to limit tree depth. However, trees still grow leaf-wise even when ``max_depth`` is specified.
 
 .. image:: ./_static/images/leaf-wise.png
    :align: center
@@ -63,15 +57,13 @@ So, LightGBM can use an additional parameter ``max_depth`` to limit depth of tre
 Optimal Split for Categorical Features
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We often convert the categorical features into one-hot encoding.
-However, it is not a good solution in tree learner.
-The reason is, for the high cardinality categorical features, it will grow the very unbalance tree, and needs to grow very deep to achieve the good accuracy.
+It is common to represent categorical features with one-hot encoding, but this approach is suboptimal for tree learners. Particularly for high-cardinality categorical features, a tree built on one-hot features tends to be unbalanced and needs to grow very deep to achieve good accuracy.
 
-Actually, the optimal solution is partitioning the categorical feature into 2 subsets, and there are ``2^(k-1) - 1`` possible partitions.
-But there is a efficient solution for regression tree\ `[8] <#references>`__. It needs about ``k * log(k)`` to find the optimal partition.
+Instead of one-hot encoding, the optimal solution is to split on a categorical feature by partitioning its categories into 2 subsets. If the feature has ``k`` categories, there are ``2^(k-1) - 1`` possible partitions.
+But there is an efficient solution for regression trees\ `[8] <#references>`__. It needs about ``O(k * log(k))`` to find the optimal partition.
 
-The basic idea is reordering the categories according to the relevance of training target.
-More specifically, reordering the histogram (of categorical feature) according to it's accumulate values (``sum_gradient / sum_hessian``), then find the best split on the sorted histogram.
+The basic idea is to sort the categories according to the training objective at each split.
+More specifically, LightGBM sorts the histogram (for a categorical feature) according to its accumulated values (``sum_gradient / sum_hessian``) and then finds the best split on the sorted histogram.
 
 Optimization in Network Communication
 -------------------------------------
@@ -83,7 +75,7 @@ These collective communication algorithms can provide much better performance th
 Optimization in Parallel Learning
 ---------------------------------
 
-LightGBM provides following parallel learning algorithms.
+LightGBM provides the following parallel learning algorithms.
 
 Feature Parallel
 ~~~~~~~~~~~~~~~~
@@ -91,7 +83,7 @@ Feature Parallel
 Traditional Algorithm
 ^^^^^^^^^^^^^^^^^^^^^
 
-Feature parallel aims to parallel the "Find Best Split" in the decision tree. The procedure of traditional feature parallel is:
+Feature parallel aims to parallelize the "Find Best Split" in the decision tree. The procedure of traditional feature parallel is:
 
 1. Partition data vertically (different machines have different feature set)
 
@@ -103,19 +95,19 @@ Feature parallel aims to parallel the "Find Best Split" in the decision tree. Th
 
 5. Other workers split data according received data
 
-The shortage of traditional feature parallel:
+The shortcomings of traditional feature parallel:
 
 -  Has computation overhead, since it cannot speed up "split", whose time complexity is ``O(#data)``.
    Thus, feature parallel cannot speed up well when ``#data`` is large.
 
--  Need communication of split result, which cost about ``O(#data / 8)`` (one bit for one data).
+-  Need communication of split result, which costs about ``O(#data / 8)`` (one bit for one data).
 
 Feature Parallel in LightGBM
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Since feature parallel cannot speed up well when ``#data`` is large, we make a little change here: instead of partitioning data vertically, every worker holds the full data.
-Thus, LightGBM doesn't need to communicate for split result of data since every worker know how to split data.
-And ``#data`` won't be larger, so it is reasonable to hold full data in every machine.
+Since feature parallel cannot speed up well when ``#data`` is large, we make a little change: instead of partitioning data vertically, every worker holds the full data.
+Thus, LightGBM doesn't need to communicate for split result of data since every worker knows how to split data.
+And ``#data`` won't be larger, so it is reasonable to hold the full data in every machine.
 
 The procedure of feature parallel in LightGBM:
 
@@ -134,7 +126,7 @@ Data Parallel
 Traditional Algorithm
 ^^^^^^^^^^^^^^^^^^^^^
 
-Data parallel aims to parallel the whole decision learning. The procedure of data parallel is:
+Data parallel aims to parallelize the whole decision learning. The procedure of data parallel is:
 
 1. Partition data horizontally
 
@@ -144,7 +136,7 @@ Data parallel aims to parallel the whole decision learning. The procedure of dat
 
 4. Find best split from merged global histograms, then perform splits
 
-The shortage of traditional data parallel:
+The shortcomings of traditional data parallel:
 
 -  High communication cost.
    If using point-to-point communication algorithm, communication cost for one machine is about ``O(#machine * #feature * #bin)``.
@@ -156,18 +148,18 @@ Data Parallel in LightGBM
 We reduce communication cost of data parallel in LightGBM:
 
 1. Instead of "Merge global histograms from all local histograms", LightGBM use "Reduce Scatter" to merge histograms of different (non-overlapping) features for different workers.
-   Then workers find local best split on local merged histograms and sync up global best split.
+   Then workers find the local best split on local merged histograms and sync up the global best split.
 
-2. As aforementioned, LightGBM use histogram subtraction to speed up training.
+2. As aforementioned, LightGBM uses histogram subtraction to speed up training.
    Based on this, we can communicate histograms only for one leaf, and get its neighbor's histograms by subtraction as well.
 
-Above all, we reduce communication cost to ``O(0.5 * #feature * #bin)`` for data parallel in LightGBM.
+All things considered, data parallel in LightGBM has time complexity ``O(0.5 * #feature * #bin)``.
 
 Voting Parallel
 ~~~~~~~~~~~~~~~
 
-Voting parallel further reduce the communication cost in `Data Parallel <#data-parallel>`__ to constant cost.
-It uses two stage voting to reduce the communication cost of feature histograms\ `[10] <#references>`__.
+Voting parallel further reduces the communication cost in `Data Parallel <#data-parallel>`__ to constant cost.
+It uses two-stage voting to reduce the communication cost of feature histograms\ `[10] <#references>`__.
 
 GPU Support
 -----------
@@ -181,7 +173,7 @@ Thanks `@huanzhang12 <https://github.com/huanzhang12>`__ for contributing this f
 Applications and Metrics
 ------------------------
 
-Support following application:
+LightGBM supports the following applications:
 
 -  regression, the objective function is L2 loss
 
@@ -189,11 +181,11 @@ Support following application:
 
 -  multi classification
 
--  cross-entropy
+-  cross-entropy, the objective function is logloss and supports training on non-binary labels
 
 -  lambdarank, the objective function is lambdarank with NDCG
 
-Support following metrics:
+LightGBM supports the following metrics:
 
 -  L1 loss
 
@@ -242,7 +234,7 @@ Other Features
 
 -  Bagging
 
--  Column(feature) sub-sample
+-  Column (feature) sub-sample
 
 -  Continued train with input GBDT model
 
