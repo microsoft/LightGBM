@@ -44,7 +44,7 @@ git clone --recursive https://github.com/Microsoft/LightGBM
 cd LightGBM/R-package
 Rscript build_package.R
 # export CXX=g++-7 CC=gcc-7  # for macOS (replace 7 with version of gcc installed on your machine)
-R CMD INSTALL lightgbm_2.1.0.tar.gz --no-multiarch
+R CMD INSTALL lightgbm_2.1.1.tar.gz --no-multiarch
 ``` 
 
 Note: for the build with Visual Studio/MSBuild in Windows, you should use the Windows CMD or Powershell.
