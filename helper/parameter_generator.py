@@ -98,6 +98,20 @@ def SetOneVarFromString(name, type, checks):
 
 
 def GenParameterDescription(sections, descriptions, params_rst):
+
+    def parse_check(check, reverse=False):
+        try:
+            idx = 1
+            float(check[idx:])
+        except ValueError:
+            idx = 2
+            float(check[idx:])
+        if reverse:
+            reversed_sign = {'<': '>', '>': '<', '<=': '>=', '>=': '<='}
+            return check[idx:], reversed_sign[check[:idx]]
+        else:
+            return check[idx:], check[:idx]
+
     params_to_write = []
     for section_name, section_params in zip(sections, descriptions):
         params_to_write.append('{0}\n{1}'.format(section_name, '-' * len(section_name)))
@@ -115,7 +129,18 @@ def GenParameterDescription(sections, descriptions, params_rst):
                 aliases_str = ', aliases: ``{0}``'.format('``, ``'.join([x.strip() for x in aliases[0].split(',')]))
             else:
                 aliases_str = ''
-            main_desc = '-  ``{0}``, default = ``{1}``, type = {2}{3}{4}'.format(name, default, param_type, options_str, aliases_str)
+            checks = sorted(param_desc.get('check', []))
+            checks_len = len(checks)
+            if checks_len > 1:
+                number1, sign1 = parse_check(checks[0])
+                number2, sign2 = parse_check(checks[1], reverse=True)
+                checks_str = ', ``{0} {1} {2} {3} {4}``'.format(number2, sign2, name, sign1, number1)
+            elif checks_len == 1:
+                number, sign = parse_check(checks[0])
+                checks_str = ', ``{0} {1} {2}``'.format(name, sign, number)
+            else:
+                checks_str = ''
+            main_desc = '-  ``{0}``, default = ``{1}``, type = {2}{3}{4}{5}'.format(name, default, param_type, options_str, aliases_str, checks_str)
             params_to_write.append(main_desc)
             params_to_write.extend([' ' * 3 * int(desc[0][-1]) + '-  ' + desc[1] for desc in param_desc['desc']])
 
