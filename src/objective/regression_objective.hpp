@@ -262,10 +262,17 @@ class RegressionHuberLoss: public RegressionL2loss {
 public:
   explicit RegressionHuberLoss(const Config& config): RegressionL2loss(config) {
     alpha_ = static_cast<double>(config.alpha);
+    if (sqrt_) {
+      Log::Warning("Cannot use sqrt transform in %s Regression, will auto disable it", GetName());
+      sqrt_ = false;
+    }
   }
 
   explicit RegressionHuberLoss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
-
+    if (sqrt_) {
+      Log::Warning("Cannot use sqrt transform in %s Regression, will auto disable it", GetName());
+      sqrt_ = false;
+    }
   }
 
   ~RegressionHuberLoss() {
