@@ -1,3 +1,5 @@
+/// desc and descl2 fields must be written in reStructuredText format
+
 #ifndef LIGHTGBM_CONFIG_H_
 #define LIGHTGBM_CONFIG_H_
 
@@ -138,6 +140,7 @@ public:
   std::string data = "";
 
   // alias=test,valid_data,test_data,valid_filenames
+  // default=""
   // desc=validation/test data, LightGBM will output metrics for these data
   // desc=support multi validation data, separate by ``,``
   std::vector<std::string> valid;
@@ -497,6 +500,7 @@ public:
   std::string initscore_filename = "";
 
   // alias=valid_data_init_scores,valid_init_score_file,valid_init_score
+  // default=""
   // desc=path to validation initial score file,"" will use valid_data_file + .init (if exists)
   // desc=separate by ,for multi-validation data
   std::vector<std::string> valid_data_initscores;
