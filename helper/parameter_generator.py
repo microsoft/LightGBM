@@ -115,7 +115,7 @@ def GenParameterDescription(sections, descriptions, params_rst):
                 aliases_str = ', aliases: ``{0}``'.format('``, ``'.join([x.strip() for x in aliases[0].split(',')]))
             else:
                 aliases_str = ''
-            main_desc = '-  ``{0}``, default=\ ``{1}``, type={2}{3}{4}'.format(name, default, param_type, options_str, aliases_str)
+            main_desc = '-  ``{0}``, default = ``{1}``, type = {2}{3}{4}'.format(name, default, param_type, options_str, aliases_str)
             params_to_write.append(main_desc)
             params_to_write.extend([' ' * 3 * int(desc[0][-1]) + '-  ' + desc[1] for desc in param_desc['desc']])
 
