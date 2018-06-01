@@ -119,7 +119,7 @@ def GenParameterDescription(sections, descriptions, params_rst):
             name = param_desc['name'][0]
             default_raw = param_desc['default'][0]
             default = default_raw.strip('"') if len(default_raw.strip('"')) > 0 else default_raw
-            param_type = param_desc.get('type', param_desc['inner_type'])[0].split(':')[-1]
+            param_type = param_desc.get('type', param_desc['inner_type'])[0].split(':')[-1].split('<')[-1].strip('>')
             options = param_desc.get('options', [])
             if len(options) > 0:
                 options_str = ', options: ``{0}``'.format('``, ``'.join([x.strip() for x in options[0].split(',')]))
