@@ -24,7 +24,7 @@ def GetParameterInfos(config_hpp):
             elif cur_key is not None:
                 line = line.strip()
                 if line.startswith("//"):
-                    tokens = line.split("//")[1].split("=")
+                    tokens = line[2:].split("=")
                     key = tokens[0].strip()
                     val = '='.join(tokens[1:]).strip()
                     if key not in cur_info:
