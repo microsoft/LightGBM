@@ -1,4 +1,4 @@
-LightGBM Python Package
+LightGBM Python-package
 =======================
 
 |License| |Python Versions| |PyPI Version|
