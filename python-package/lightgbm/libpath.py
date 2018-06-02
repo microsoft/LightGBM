@@ -4,6 +4,7 @@ import os
 
 from platform import system
 
+
 def find_lib_path():
     """Find the path to LightGBM library files.
     Returns
