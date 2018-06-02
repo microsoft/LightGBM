@@ -1,3 +1,5 @@
+/// desc and descl2 fields must be written in reStructuredText format
+
 #ifndef LIGHTGBM_CONFIG_H_
 #define LIGHTGBM_CONFIG_H_
 
@@ -76,126 +78,125 @@ public:
   #pragma region Core Parameters
 
   // [doc-only]
-  // alias=config_file
-  // desc=path of config file
-  // desc=**Note**: Only can be used in CLI version
+  // alias = config_file
+  // desc = path of config file
+  // desc = **Note**: only can be used in CLI version
   std::string config = "";
 
   // [doc-only]
-  // type=enum
-  // default=train
-  // options=train,predict,convert_model,refit
-  // alias=task_type
-  // desc=``train``, alias=\ ``training``, for training
-  // desc=``predict``, alias=\ ``prediction``, ``test``, for prediction
-  // desc=``convert_model``, for converting model file into if-else format, see more information in `Convert model parameters <#convert-model-parameters>`__
-  // desc=``refit``, alias = \ ``refit_tree``, refit existing models with new data
-  // desc=**Note**: Only can be used in CLI version
+  // type = enum
+  // default = train
+  // options = train, predict, convert_model, refit
+  // alias = task_type
+  // desc = ``train``, for training, aliases: ``training``
+  // desc = ``predict``, for prediction, aliases: ``prediction``, ``test``
+  // desc = ``convert_model``, for converting model file into if-else format, see more information in `IO Parameters <#io-parameters>`__
+  // desc = ``refit``, for refitting existing models with new data, aliases: ``refit_tree``
+  // desc = **Note**: only can be used in CLI version
   TaskType task = TaskType::kTrain;
 
   // [doc-only]
-  // type=enum
-  // options=regression,regression_l1,huber,fair,poisson,quantile,mape,gammma,tweedie,binary,multiclass,multiclassova,xentropy,xentlambda,lambdarank
-  // alias=application,app,objective_type
-  // desc=regression application
-  // descl2=``regression_l2``, L2 loss, alias=\ ``regression``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
-  // descl2=``regression_l1``, L1 loss, alias=\ ``mean_absolute_error``, ``mae``
-  // descl2=``huber``, `Huber loss`_
-  // descl2=``fair``, `Fair loss`_
-  // descl2=``poisson``, `Poisson regression`_
-  // descl2=``quantile``, `Quantile regression`_
-  // descl2=``mape``, `MAPE loss`_, alias=\ ``mean_absolute_percentage_error``
-  // descl2=``gamma``, Gamma regression with log-link. It might be useful, e.g., for modeling insurance claims severity, or for any target that might be `gamma-distributed`_
-  // descl2=``tweedie``, Tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed`_
-  // desc=``binary``, binary `log loss`_ classification application
-  // desc=multi-class classification application
-  // descl2=``multiclass``, `softmax`_ objective function, alias=\ ``softmax``
-  // descl2=``multiclassova``, `One-vs-All`_ binary objective function, alias=\ ``multiclass_ova``, ``ova``, ``ovr``
-  // descl2=``num_class`` should be set as well
-  // desc=cross-entropy application
-  // descl2=``xentropy``, objective function for cross-entropy (with optional linear weights), alias=\ ``cross_entropy``
-  // descl2=``xentlambda``, alternative parameterization of cross-entropy, alias=\ ``cross_entropy_lambda``
-  // descl2=the label is anything in interval [0, 1]
-  // desc=``lambdarank``, `lambdarank`_ application
-  // descl2=the label should be ``int`` type in lambdarank tasks, and larger number represent the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
-  // descl2=`label_gain <#objective-parameters>`__ can be used to set the gain(weight) of ``int`` label
-  // descl2=all values in ``label`` must be smaller than number of elements in ``label_gain``
+  // type = enum
+  // options = regression, regression_l1, huber, fair, poisson, quantile, mape, gammma, tweedie, binary, multiclass, multiclassova, xentropy, xentlambda, lambdarank
+  // alias = objective_type, app, application
+  // desc = regression application
+  // descl2 = ``regression_l2``, L2 loss, aliases: ``regression``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
+  // descl2 = ``regression_l1``, L1 loss, aliases: ``mean_absolute_error``, ``mae``
+  // descl2 = ``huber``, `Huber loss <https://en.wikipedia.org/wiki/Huber_loss>`__
+  // descl2 = ``fair``, `Fair loss <https://www.kaggle.com/c/allstate-claims-severity/discussion/24520>`__
+  // descl2 = ``poisson``, `Poisson regression <https://en.wikipedia.org/wiki/Poisson_regression>`__
+  // descl2 = ``quantile``, `Quantile regression <https://en.wikipedia.org/wiki/Quantile_regression>`__
+  // descl2 = ``mape``, `MAPE loss <https://en.wikipedia.org/wiki/Mean_absolute_percentage_error>`__, aliases: ``mean_absolute_percentage_error``
+  // descl2 = ``gamma``, Gamma regression with log-link. It might be useful, e.g., for modeling insurance claims severity, or for any target that might be `gamma-distributed <https://en.wikipedia.org/wiki/Gamma_distribution#Applications>`__
+  // descl2 = ``tweedie``, Tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed <https://en.wikipedia.org/wiki/Tweedie_distribution#Applications>`__
+  // desc = ``binary``, binary `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__ classification (or logistic regression). Requires labels in {0, 1}; see ``xentropy`` for general probability labels in [0, 1]
+  // desc = multi-class classification application
+  // descl2 = ``multiclass``, `softmax <https://en.wikipedia.org/wiki/Softmax_function>`__ objective function, aliases: ``softmax``
+  // descl2 = ``multiclassova``, `One-vs-All <https://en.wikipedia.org/wiki/Multiclass_classification#One-vs.-rest>`__ binary objective function, aliases: ``multiclass_ova``, ``ova``, ``ovr``
+  // descl2 = ``num_class`` should be set as well
+  // desc = cross-entropy application
+  // descl2 = ``xentropy``, objective function for cross-entropy (with optional linear weights), aliases: ``cross_entropy``
+  // descl2 = ``xentlambda``, alternative parameterization of cross-entropy, aliases: ``cross_entropy_lambda``
+  // descl2 = label is anything in interval [0, 1]
+  // desc = ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ application
+  // descl2 = label should be ``int`` type in lambdarank tasks, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
+  // descl2 = `label_gain <#objective-parameters>`__ can be used to set the gain (weight) of ``int`` label
+  // descl2 = all values in ``label`` must be smaller than number of elements in ``label_gain``
   std::string objective = "regression";
 
 
   // [doc-only]
-  // type=enum
-  // alias=boosting_type,boost
-  // options=gbdt,rf,dart,goss
-  // desc=``gbdt``, traditional Gradient Boosting Decision Tree
-  // desc=``rf``, Random Forest
-  // desc=``dart``, `Dropouts meet Multiple Additive Regression Trees`_
-  // desc=``goss``, Gradient - based One - Side Sampling
+  // type = enum
+  // alias = boosting_type, boost
+  // options = gbdt, rf, dart, goss
+  // desc = ``gbdt``, traditional Gradient Boosting Decision Tree
+  // desc = ``rf``, Random Forest
+  // desc = ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
+  // desc = ``goss``, Gradient-based One-Side Sampling
   std::string boosting = "gbdt";
 
-  // alias=train,train_data,data_filename
-  // desc=training data, LightGBM will train from this data
+  // alias = train, train_data, data_filename
+  // desc = training data, LightGBM will train from this data
   std::string data = "";
 
-  // alias=test,valid_data,test_data,valid_filenames
-  // desc=validation/test data, LightGBM will output metrics for these data
-  // desc=support multi validation data, separate by ``,``
+  // alias = test, valid_data, test_data, valid_filenames
+  // default = ""
+  // desc = validation/test data, LightGBM will output metrics for these data
+  // desc = support multiple validation data, separated by ``,``
   std::vector<std::string> valid;
 
-  // alias=num_iteration,num_tree,num_trees,num_round,num_rounds,num_boost_round,n_estimators
-  // check=>=0
-  // desc=number of boosting iterations
-  // desc=**Note**: for Python/R package,**this parameter is ignored**, use num_boost_round (Python) or nrounds (R) input arguments of train and cv methods instead
-  // desc=**Note**: internally,LightGBM constructs num_class * num_iterations trees for multiclass problems
+  // alias = num_iteration, num_tree, num_trees, num_round, num_rounds, num_boost_round, n_estimators
+  // check = >=0
+  // desc = number of boosting iterations
+  // desc = **Note**: for Python/R package, **this parameter is ignored**, use ``num_boost_round`` (Python) or ``nrounds`` (R) input arguments of ``train`` and ``cv`` methods instead
+  // desc = **Note**: internally, LightGBM constructs ``num_class * num_iterations`` trees for multi-class classification problems
   int num_iterations = 100;
 
-  // alias=shrinkage_rate
-  // check=>0
-  // desc=shrinkage rate
-  // desc=in dart,it also affects on normalization weights of dropped trees
+  // alias = shrinkage_rate
+  // check = >0
+  // desc = shrinkage rate
+  // desc = in ``dart``, it also affects on normalization weights of dropped trees
   double learning_rate = 0.1;
 
-  // default=31
+  // default = 31
   // alias = num_leaf
-  // check=>1
-  // desc=max number of leaves in one tree
+  // check = >1
+  // desc = max number of leaves in one tree
   int num_leaves = kDefaultNumLeaves;
 
   // [doc-only]
-  // type=enum
-  // options=serial, feature, data, voting
+  // type = enum
+  // options = serial, feature, data, voting
   // alias = tree, tree_learner_type
-  // desc=serial,single machine tree learner
-  // desc=feature,alias=feature_parallel,feature parallel tree learner
-  // desc=data,alias=data_parallel,data parallel tree learner
-  // desc=voting,alias=voting_parallel,voting parallel tree learner
-  // desc=refer to `Parallel Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
+  // desc = ``serial``, single machine tree learner
+  // desc = ``feature``, feature parallel tree learner, aliases: ``feature_parallel``
+  // desc = ``data``, data parallel tree learner, aliases: ``data_parallel``
+  // desc = ``voting``, voting parallel tree learner, aliases: ``voting_parallel``
+  // desc = refer to `Parallel Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
   std::string tree_learner = "serial";
 
-  // default=OpenMP_default
   // alias = num_thread, nthread, nthreads
   // desc = number of threads for LightGBM
-  // desc=for the best speed,set this to the number of **real CPU cores**,
-  // not the number of threads(most CPU using `hyper-threading`_ to generate 2 threads per CPU core)
-  // desc=do not set it too large if your dataset is small (do not use 64 threads for a dataset with 10,000 rows for instance)
-  // desc=be aware a task manager or any similar CPU monitoring tool might report cores not being fully utilized. **This is normal**
-  // desc=for parallel learning,should not use full CPU cores since this will cause poor performance for the network
+  // desc = ``0`` means default number of threads in OpenMP
+  // desc = for the best speed, set this to the number of **real CPU cores**, not the number of threads (most CPUs use `hyper-threading <https://en.wikipedia.org/wiki/Hyper-threading>`__ to generate 2 threads per CPU core)
+  // desc = do not set it too large if your dataset is small (for instance, do not use 64 threads for a dataset with 10,000 rows)
+  // desc = be aware a task manager or any similar CPU monitoring tool might report that cores not being fully utilized. **This is normal**
+  // desc = for parallel learning, do not use all CPU cores because this will cause poor performance for the network communication
   int num_threads = 0;
 
   // [doc-only]
-  // options=cpu,gpu
-  // desc = choose device for the tree learning, you can use GPU to achieve the faster learning
-  // desc=**Note**: it is recommended to use the smaller max_bin (e.g. 63) to get the better speed up
-  // desc=**Note**: for the faster speed,GPU use 32-bit float point to sum up by default,may affect the accuracy for some tasks.
-  // desc=You can set gpu_use_dp = true to enable 64 - bit float point, but it will slow down the training
-  // desc=**Note**: refer to `Installation Guide <./Installation-Guide.rst#build-gpu-version>`__ to build with GPU
+  // type = enum
+  // options = cpu, gpu
+  // desc = device for the tree learning, you can use GPU to achieve the faster learning
+  // desc = **Note**: it is recommended to use the smaller ``max_bin`` (e.g. 63) to get the better speed up
+  // desc = **Note**: for the faster speed, GPU uses 32-bit float point to sum up by default, so this may affect the accuracy for some tasks. You can set ``gpu_use_dp=true`` to enable 64-bit float point, but it will slow down the training
+  // desc = **Note**: refer to `Installation Guide <./Installation-Guide.rst#build-gpu-version>`__ to build LightGBM with GPU support
   std::string device_type = "cpu";
 
   // [doc-only]
-  // alias=random_seed
-  // desc=Use this seed to generate seeds for others, e.g. data_random_seed.
-  // desc=Will be override if set other seeds as well
-  // default=none
+  // alias = random_seed
+  // desc = this seed is used to generate other seeds, e.g. ``data_random_seed``, ``feature_fraction_seed``
+  // desc = will be overridden, if you set other seeds
   int seed = 0;
 
   #pragma endregion
@@ -497,6 +498,7 @@ public:
   std::string initscore_filename = "";
 
   // alias=valid_data_init_scores,valid_init_score_file,valid_init_score
+  // default=""
   // desc=path to validation initial score file,"" will use valid_data_file + .init (if exists)
   // desc=separate by ,for multi-validation data
   std::vector<std::string> valid_data_initscores;
