@@ -11,6 +11,7 @@ import struct
 import subprocess
 import sys
 
+from platform import system
 from setuptools import find_packages, setup
 from setuptools.command.install import install
 from setuptools.command.install_lib import install_lib
@@ -109,7 +110,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, use_hdfs=False,
         cmake_cmd.append("-DUSE_MPI=ON")
     if use_hdfs:
         cmake_cmd.append("-DUSE_HDFS=ON")
-    if os.name == "nt":
+    if system() in ('Windows', 'Microsoft'):
         if use_mingw:
             if use_mpi:
                 raise Exception('MPI version cannot be compiled by MinGW due to the miss of MPI library in it')
