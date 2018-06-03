@@ -399,7 +399,7 @@ public:
   // desc = filename of prediction result in ``prediction`` task
   std::string output_result = "LightGBM_predict_result.txt";
 
-  // alias = init_score_filename, init_score_file, init_score
+  // alias = init_score_filename, init_score_file, init_score, input_init_score
   // desc = path to file with training initial score
   // desc = if ``""``, will use ``train_data_file`` + ``.init`` (if exists)
   std::string initscore_filename = "";
