@@ -604,50 +604,52 @@ public:
   #pragma endregion
 
   #pragma region Metric Parameters
-  
+
   // [doc-only]
-  // alias=metric_types
-  // default=''
-  // type=multi-enum
-  // desc=metric to be evaluated on the evaluation sets **in addition** to what is provided in the training arguments
-  // descl2='' (empty string or not specific),metric corresponding to specified objective will be used (this is possible only for pre - defined objective functions, otherwise no evaluation metric will be added)
-  // descl2='None' (string,**not** a None value),no metric registered,alias=na
-  // descl2=l1,absolute loss,alias=mean_absolute_error,mae,regression_l1
-  // descl2=l2,square loss,alias=mean_squared_error,mse,regression_l2,regression
-  // descl2=l2_root,root square loss,alias=root_mean_squared_error,rmse
-  // descl2=quantile,`Quantile regression`_
-  // descl2=mape,`MAPE loss`_,alias=mean_absolute_percentage_error
-  // descl2=huber,`Huber loss`_
-  // descl2=fair,`Fair loss`_
-  // descl2=poisson,negative log-likelihood for `Poisson regression`_
-  // descl2=gamma,negative log-likelihood for Gamma regression
-  // descl2=gamma_deviance,residual deviance for Gamma regression
-  // descl2=tweedie,negative log-likelihood for Tweedie regression
-  // descl2=ndcg,`NDCG`_
-  // descl2=map,`MAP`_,alias=mean_average_precision
-  // descl2=auc,`AUC`_
-  // descl2=binary_logloss,`log loss`_,alias=binary
-  // descl2=binary_error,for one sample: 0 for correct classification,1 for error classification
-  // descl2=multi_logloss,log loss for mulit-class classification,alias=multiclass,softmax,multiclassova,multiclass_ova,ova,ovr
-  // descl2=multi_error,error rate for mulit-class classification
-  // descl2=xentropy,cross-entropy (with optional linear weights),alias=cross_entropy
-  // descl2=xentlambda,"intensity-weighted" cross-entropy,alias=cross_entropy_lambda
-  // descl2=kldiv,`Kullback-Leibler divergence`_,alias=kullback_leibler
-  // desc=support multiple metrics,separated by ,
+  // alias = metrics, metric_types
+  // default = ""
+  // type = multi-enum
+  // desc = metric(s) to be evaluated on the evaluation sets **in addition** to what is provided in the training arguments
+  // descl2 = ``""`` (empty string or not specific) means that metric corresponding to specified ``objective`` will be used (this is possible only for pre-defined objective functions, otherwise no evaluation metric will be added)
+  // descl2 = ``"None"`` (string, **not** a ``None`` value) means that no metric will be registered, aliases: ``na``
+  // descl2 = ``l1``, absolute loss, aliases: ``mean_absolute_error``, ``mae``, ``regression_l1``
+  // descl2 = ``l2``, square loss, aliases: ``mean_squared_error``, ``mse``, ``regression_l2``, ``regression``
+  // descl2 = ``l2_root``, root square loss, aliases: ``root_mean_squared_error``, ``rmse``
+  // descl2 = ``quantile``, `Quantile regression <https://en.wikipedia.org/wiki/Quantile_regression>`__
+  // descl2 = ``mape``, `MAPE loss <https://en.wikipedia.org/wiki/Mean_absolute_percentage_error>`__, aliases: ``mean_absolute_percentage_error``
+  // descl2 = ``huber``, `Huber loss <https://en.wikipedia.org/wiki/Huber_loss>`__
+  // descl2 = ``fair``, `Fair loss <https://www.kaggle.com/c/allstate-claims-severity/discussion/24520>`__
+  // descl2 = ``poisson``, negative log-likelihood for `Poisson regression <https://en.wikipedia.org/wiki/Poisson_regression>`__
+  // descl2 = ``gamma``, negative log-likelihood for **Gamma** regression
+  // descl2 = ``gamma_deviance``, residual deviance for **Gamma** regression
+  // descl2 = ``tweedie``, negative log-likelihood for **Tweedie** regression
+  // descl2 = ``ndcg``, `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__
+  // descl2 = ``map``, `MAP <https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/>`__, aliases: ``mean_average_precision``
+  // descl2 = ``auc``, `AUC <https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve>`__
+  // descl2 = ``binary_logloss``, `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__, aliases: ``binary``
+  // descl2 = ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
+  // descl2 = ``multi_logloss``, log loss for multi-class classification, aliases: ``multiclass``, ``softmax``, ``multiclassova``, ``multiclass_ova``, ``ova``, ``ovr``
+  // descl2 = ``multi_error``, error rate for multi-class classification
+  // descl2 = ``xentropy``, cross-entropy (with optional linear weights), aliases: ``cross_entropy``
+  // descl2 = ``xentlambda``, "intensity-weighted" cross-entropy, aliases: ``cross_entropy_lambda``
+  // descl2 = ``kldiv``, `Kullback-Leibler divergence <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence>`__, aliases: ``kullback_leibler``
+  // desc = support multiple metrics, separated by ``,``
   std::vector<std::string> metric;
 
-  // check=>0
+  // check = >0
   // alias = output_freq
   // desc = frequency for metric output
   int metric_freq = 1;
 
-  // alias=training_metric,is_training_metric,train_metric
-  // desc=set this to true if you need to output metric result over training dataset
+  // alias = training_metric, is_training_metric, train_metric
+  // desc = set this to ``true`` to output metric result over training dataset
   bool is_provide_training_metric = false;
 
-  // default=1,2,3,4,5
-  // alias=ndcg_eval_at,ndcg_at
-  // desc=`NDCG`_ evaluation positions,separated by ,
+  // type = multi-int
+  // default = 1,2,3,4,5
+  // alias = ndcg_eval_at, ndcg_at
+  // desc = used only with ``ndcg`` and ``map`` metrics
+  // desc = `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ evaluation positions, separated by ``,``
   std::vector<int> eval_at;
 
   #pragma endregion
