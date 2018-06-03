@@ -1,4 +1,4 @@
-Python Package Introduction
+Python-package Introduction
 ===========================
 
 This document gives a basic walkthrough of LightGBM Python-package.

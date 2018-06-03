@@ -1,3 +1,9 @@
+# coding: utf-8
+"""This script generates LightGBM/src/io/config_auto.cpp file
+with list of all parameters, aliases table and other routines
+along with parameters description in LightGBM/docs/Parameters.rst file
+from the information in LightGBM/include/LightGBM/config.h file.
+"""
 import os
 
 
