@@ -52,7 +52,7 @@ void GetBoostingType(const std::unordered_map<std::string, std::string>& params,
       *boosting = "dart";
     } else if (value == std::string("goss")) {
       *boosting = "goss";
-    } else if (value == std::string("rf") || value == std::string("randomforest")) {
+    } else if (value == std::string("rf") || value == std::string("random_forest")) {
       *boosting = "rf";
     } else {
       Log::Fatal("Unknown boosting type %s", value.c_str());
@@ -120,7 +120,7 @@ void GetTaskType(const std::unordered_map<std::string, std::string>& params, Tas
 
 void GetDeviceType(const std::unordered_map<std::string, std::string>& params, std::string* device_type) {
   std::string value;
-  if (Config::GetString(params, "device", &value)) {
+  if (Config::GetString(params, "device_type", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("cpu")) {
       *device_type = "cpu";

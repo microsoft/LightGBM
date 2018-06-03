@@ -128,9 +128,9 @@ public:
   // [doc-only]
   // type = enum
   // alias = boosting_type, boost
-  // options = gbdt, rf, dart, goss
-  // desc = ``gbdt``, traditional Gradient Boosting Decision Tree
-  // desc = ``rf``, Random Forest
+  // options = gbdt, gbrt, rf, random_forest, dart, goss
+  // desc = ``gbdt``, traditional Gradient Boosting Decision Tree, aliases: ``gbrt``
+  // desc = ``rf``, Random Forest, aliases: ``random_forest``
   // desc = ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
   // desc = ``goss``, Gradient-based One-Side Sampling
   std::string boosting = "gbdt";
@@ -187,6 +187,7 @@ public:
   // [doc-only]
   // type = enum
   // options = cpu, gpu
+  // alias = device
   // desc = device for the tree learning, you can use GPU to achieve the faster learning
   // desc = **Note**: it is recommended to use the smaller ``max_bin`` (e.g. 63) to get the better speed up
   // desc = **Note**: for the faster speed, GPU uses 32-bit float point to sum up by default, so this may affect the accuracy for some tasks. You can set ``gpu_use_dp=true`` to enable 64-bit float point, but it will slow down the training

@@ -30,6 +30,7 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"num_thread", "num_threads"}, 
   {"nthread", "num_threads"}, 
   {"nthreads", "num_threads"}, 
+  {"device", "device_type"},
   {"random_seed", "seed"}, 
   {"min_data_per_leaf", "min_data_in_leaf"}, 
   {"min_data", "min_data_in_leaf"}, 
