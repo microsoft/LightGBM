@@ -685,15 +685,15 @@ public:
 
   #pragma region GPU Parameters
 
-  // desc=OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform
-  // desc=default value is -1,means the system-wide default platform
+  // desc = OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform
+  // desc = ``-1`` means the system-wide default platform
   int gpu_platform_id = -1;
 
-  // desc=OpenCL device ID in the specified platform. Each GPU in the selected platform has a unique device ID
-  // desc=default value is -1,means the default device in the selected platform
+  // desc = OpenCL device ID in the specified platform. Each GPU in the selected platform has a unique device ID
+  // desc = ``-1`` means the default device in the selected platform
   int gpu_device_id = -1;
 
-  // desc=set to true to use double precision math on GPU (default using single precision)
+  // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used)
   bool gpu_use_dp = false;
 
   #pragma endregion
