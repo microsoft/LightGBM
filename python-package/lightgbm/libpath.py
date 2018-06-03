@@ -2,6 +2,8 @@
 """Find the path to lightgbm dynamic library files."""
 import os
 
+from platform import system
+
 
 def find_lib_path():
     """Find the path to LightGBM library files.
@@ -19,7 +21,7 @@ def find_lib_path():
                 os.path.join(curr_path, 'compile'),
                 os.path.join(curr_path, '../compile'),
                 os.path.join(curr_path, '../../lib/')]
-    if os.name == 'nt':
+    if system() in ('Windows', 'Microsoft'):
         dll_path.append(os.path.join(curr_path, '../compile/Release/'))
         dll_path.append(os.path.join(curr_path, '../compile/windows/x64/DLL/'))
         dll_path.append(os.path.join(curr_path, '../../Release/'))

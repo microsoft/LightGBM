@@ -1,4 +1,5 @@
-# pylint: disable = no-name-in-module
+# coding: utf-8
+# pylint: disable = invalid-name, C0111
 '''
 BLUF: The `xentropy` objective does logistic regression and generalizes
 to the case where labels are probabilistic (i.e. numbers between 0 and 1).
