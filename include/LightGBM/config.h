@@ -400,13 +400,13 @@ public:
   std::string output_result = "LightGBM_predict_result.txt";
 
   // alias = init_score_filename, init_score_file, init_score, input_init_score
-  // desc = path to file with training initial score
+  // desc = path of file with training initial score
   // desc = if ``""``, will use ``train_data_file`` + ``.init`` (if exists)
   std::string initscore_filename = "";
 
   // alias = valid_data_init_scores, valid_init_score_file, valid_init_score
   // default = ""
-  // desc = path to file with validation initial score
+  // desc = path(s) of file(s) with validation initial score(s)
   // desc = if ``""``, will use ``valid_data_file`` + ``.init`` (if exists)
   // desc = separate by ``,`` for multi-validation data
   std::vector<std::string> valid_data_initscores;
