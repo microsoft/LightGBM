@@ -75,12 +75,13 @@ public:
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
 
   #pragma region Parameters
+
   #pragma region Core Parameters
 
   // [doc-only]
   // alias = config_file
   // desc = path of config file
-  // desc = **Note**: only can be used in CLI version
+  // desc = **Note**: can be used only in CLI version
   std::string config = "";
 
   // [doc-only]
@@ -92,7 +93,7 @@ public:
   // desc = ``predict``, for prediction, aliases: ``prediction``, ``test``
   // desc = ``convert_model``, for converting model file into if-else format, see more information in `IO Parameters <#io-parameters>`__
   // desc = ``refit``, for refitting existing models with new data, aliases: ``refit_tree``
-  // desc = **Note**: only can be used in CLI version
+  // desc = **Note**: can be used only in CLI version
   TaskType task = TaskType::kTrain;
 
   // [doc-only]
@@ -124,13 +125,12 @@ public:
   // descl2 = all values in ``label`` must be smaller than number of elements in ``label_gain``
   std::string objective = "regression";
 
-
   // [doc-only]
   // type = enum
   // alias = boosting_type, boost
-  // options = gbdt, rf, dart, goss
-  // desc = ``gbdt``, traditional Gradient Boosting Decision Tree
-  // desc = ``rf``, Random Forest
+  // options = gbdt, gbrt, rf, random_forest, dart, goss
+  // desc = ``gbdt``, traditional Gradient Boosting Decision Tree, aliases: ``gbrt``
+  // desc = ``rf``, Random Forest, aliases: ``random_forest``
   // desc = ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
   // desc = ``goss``, Gradient-based One-Side Sampling
   std::string boosting = "gbdt";
@@ -153,7 +153,7 @@ public:
   int num_iterations = 100;
 
   // alias = shrinkage_rate
-  // check = >0
+  // check = >0.0
   // desc = shrinkage rate
   // desc = in ``dart``, it also affects on normalization weights of dropped trees
   double learning_rate = 0.1;
@@ -187,6 +187,7 @@ public:
   // [doc-only]
   // type = enum
   // options = cpu, gpu
+  // alias = device
   // desc = device for the tree learning, you can use GPU to achieve the faster learning
   // desc = **Note**: it is recommended to use the smaller ``max_bin`` (e.g. 63) to get the better speed up
   // desc = **Note**: for the faster speed, GPU uses 32-bit float point to sum up by default, so this may affect the accuracy for some tasks. You can set ``gpu_use_dp=true`` to enable 64-bit float point, but it will slow down the training
@@ -203,147 +204,159 @@ public:
 
   #pragma region Learning Control Parameters
 
-  // desc=limit the max depth for tree model. This is used to deal with over-fitting when #data is small. Tree still grows by leaf-wise
-  // desc=< 0 means no limit
+  // desc = limit the max depth for tree model. This is used to deal with over-fitting when ``#data`` is small. Tree still grows leaf-wise
+  // desc = ``< 0`` means no limit
   int max_depth = -1;
 
   // alias = min_data_per_leaf, min_data, min_child_samples
-  // check=>=0
-  // desc=minimal number of data in one leaf. Can be used to deal with over-fitting
+  // check = >=0
+  // desc = minimal number of data in one leaf. Can be used to deal with over-fitting
   int min_data_in_leaf = 20;
 
-  // alias=min_sum_hessian_per_leaf,min_sum_hessian,min_hessian,min_child_weight
-  // check >=0
-  // desc=minimal sum hessian in one leaf. Like min_data_in_leaf,it can be used to deal with over-fitting
+  // alias = min_sum_hessian_per_leaf, min_sum_hessian, min_hessian, min_child_weight
+  // check = >=0.0
+  // desc = minimal sum hessian in one leaf. Like ``min_data_in_leaf``, it can be used to deal with over-fitting
   double min_sum_hessian_in_leaf = 1e-3;
 
-  // alias=sub_row,subsample,bagging
-  // check=>0
-  // check=<=1.0
-  // desc = like feature_fraction, but this will randomly select part of data without resampling
-  // desc=can be used to speed up training
-  // desc=can be used to deal with over-fitting
-  // desc=**Note**: To enable bagging,bagging_freq should be set to a non zero value as well
+  // alias = sub_row, subsample, bagging
+  // check = >0.0
+  // check = <=1.0
+  // desc = like ``feature_fraction``, but this will randomly select part of data without resampling
+  // desc = can be used to speed up training
+  // desc = can be used to deal with over-fitting
+  // desc = **Note**: to enable bagging, ``bagging_freq`` should be set to a non zero value as well
   double bagging_fraction = 1.0;
 
-  // alias=subsample_freq
-  // desc=frequency for bagging,0 means disable bagging. k means will perform bagging at every k iteration
-  // desc=**Note**: to enable bagging,bagging_fraction should be set as well
+  // alias = subsample_freq
+  // desc = frequency for bagging
+  // desc = ``0`` means disable bagging; ``k`` means perform bagging at every ``k`` iteration
+  // desc = **Note**: to enable bagging, ``bagging_fraction`` should be set to value smaller than ``1.0`` as well
   int bagging_freq = 0;
 
   // alias = bagging_fraction_seed
   // desc = random seed for bagging
   int bagging_seed = 3;
 
-
   // alias = sub_feature, colsample_bytree
-  // check=>0
-  // check=<=1.0
-  // desc=LightGBM will randomly select part of features on each iteration if feature_fraction smaller than 1.0. For example, if set to 0.8, will select 80 % features before training each tree
-  // desc=can be used to speed up training
-  // desc=can be used to deal with over-fitting
+  // check = >0.0
+  // check = <=1.0
+  // desc = LightGBM will randomly select part of features on each iteration if ``feature_fraction`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
+  // desc = can be used to speed up training
+  // desc = can be used to deal with over-fitting
   double feature_fraction = 1.0;
 
-  // desc=random seed for feature_fraction
+  // desc = random seed for ``feature_fraction``
   int feature_fraction_seed = 2;
 
-  // alias=early_stopping_rounds,early_stopping
-  // desc=will stop training if one metric of one validation data doesn't improve in last early_stopping_round rounds
-  // desc=enable when greater than 0
+  // alias = early_stopping_rounds, early_stopping
+  // desc = will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds
+  // desc = ``<= 0`` means disable
   int early_stopping_round = 0;
 
-  // alias=max_tree_output,max_leaf_output
-  // desc=Used to limit the max output of tree leaves
-  // desc=when <= 0,there is not constraint
-  // desc=the final max output of leaves is learning_rate*max_delta_step
+  // alias = max_tree_output, max_leaf_output
+  // desc = used to limit the max output of tree leaves
+  // desc = ``<= 0`` means no constraint
+  // desc = the final max output of leaves is ``learning_rate * max_delta_step``
   double max_delta_step = 0.0;
 
-  // alias=reg_alpha
-  // check=>=0
-  // desc=L1 regularization
+  // alias = reg_alpha
+  // check = >=0.0
+  // desc = L1 regularization
   double lambda_l1 = 0.0;
 
   // alias = reg_lambda
-  // check=>=0
+  // check = >=0.0
   // desc = L2 regularization
   double lambda_l2 = 0.0;
 
-  // alias=min_split_gain
-  // desc=the minimal gain to perform split
+  // alias = min_split_gain
+  // check = >=0.0
+  // desc = the minimal gain to perform split
   double min_gain_to_split = 0.0;
 
-  // check=>=0
-  // check=<=1.0
-  // desc=only used in dart
+  // check = >=0.0
+  // check = <=1.0
+  // desc = used only in ``dart``
+  // desc = dropout rate
   double drop_rate = 0.1;
 
-  // desc=only used in dart,max number of dropped trees on one iteration
-  // desc=<=0 means no limit
+  // desc = used only in ``dart``
+  // desc = max number of dropped trees on one iteration
+  // desc = ``<=0`` means no limit
   int max_drop = 50;
 
-  // check=>=0
-  // check=<=1.0
-  // desc=only used in dart,probability of skipping drop
+  // check = >=0.0
+  // check = <=1.0
+  // desc = used only in ``dart``
+  // desc = probability of skipping drop
   double skip_drop = 0.5;
 
-  // desc=only used in dart,set this to true if want to use xgboost dart mode
+  // desc = used only in ``dart``
+  // desc = set this to ``true``, if you want to use xgboost dart mode
   bool xgboost_dart_mode = false;
 
-  // desc=only used in dart,set this to true if want to use uniform drop
+  // desc = used only in ``dart``
+  // desc = set this to ``true``, if you want to use uniform drop
   bool uniform_drop = false;
 
-  // desc=only used in dart,random seed to choose dropping models
+  // desc = used only in ``dart``
+  // desc = random seed to choose dropping models
   int drop_seed = 4;
 
-  // check=>=0
-  // check=<=1.0
-  // desc=only used in goss,the retain ratio of large gradient data
+  // check = >=0.0
+  // check = <=1.0
+  // desc = used only in ``goss``
+  // desc = the retain ratio of large gradient data
   double top_rate = 0.2;
 
-  // check=>=0
-  // check=<=1.0
-  // desc=only used in goss,the retain ratio of small gradient data
+  // check = >=0.0
+  // check = <=1.0
+  // desc = used only in ``goss``
+  // desc = the retain ratio of small gradient data
   double other_rate = 0.1;
 
-  // check=>0
-  // desc=min number of data per categorical group
+  // check = >0
+  // desc = minimal number of data per categorical group
   int min_data_per_group = 100;
 
-  // check=>0
-  // desc=use for the categorical features
-  // desc=limit the max threshold points in categorical features
+  // check = >0
+  // desc = used for the categorical features
+  // desc = limit the max threshold points in categorical features
   int max_cat_threshold = 32;
 
-  // check=>=0
-  // desc=L2 regularization in categorcial split
-  double cat_l2 = 10;
+  // check = >=0.0
+  // desc = used for the categorical features
+  // desc = L2 regularization in categorcial split
+  double cat_l2 = 10.0;
 
-  // check=>=0
-  // desc=used for the categorical features
-  // desc=this can reduce the effect of noises in categorical features,especially for categories with few data
-  double cat_smooth = 10;
+  // check = >=0.0
+  // desc = used for the categorical features
+  // desc = this can reduce the effect of noises in categorical features, especially for categories with few data
+  double cat_smooth = 10.0;
   
-  // check=>0
-  // desc=when number of categories of one feature smaller than or equal to max_cat_to_onehot,one-vs-other split algorithm will be used
+  // check = >0
+  // desc = when number of categories of one feature smaller than or equal to ``max_cat_to_onehot``, one-vs-other split algorithm will be used
   int max_cat_to_onehot = 4;
 
   // alias = topk
-  // desc=used in `Voting parallel <./Parallel-Learning-Guide.rst#choose-appropriate-parallel-algorithm>`__
-  // desc=set this to larger value for more accurate result,but it will slow down the training speed
+  // check = >0
+  // desc = used in `Voting parallel <./Parallel-Learning-Guide.rst#choose-appropriate-parallel-algorithm>`__
+  // desc = set this to larger value for more accurate result, but it will slow down the training speed
   int top_k = 20;
 
   // type = multi-int
-  // alias = mc,monotone_constraint
-  // default=none
-  // desc=used for constraints of monotonic features
-  // desc=1 means increasing,-1 means decreasing,0 means non-constraint
-  // desc=you need to specify all features in order. For example,mc=-1,0,1 means the decreasing for 1st feature,non-constraint for 2nd feature and increasing for the 3rd feature
+  // alias = mc, monotone_constraint
+  // default = None
+  // desc = used for constraints of monotonic features
+  // desc = ``1`` means increasing, ``-1`` means decreasing, ``0`` means non-constraint
+  // desc = you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
   std::vector<int8_t> monotone_constraints;
   
-  // alias=forced_splits_filename,forced_splits_file,forced_splits
-  // desc = path to a.json file that specifies splits to force at the top of every decision tree before best - first learning commences
-  // desc=.json file can be arbitrarily nested,and each split contains feature,threshold fields,as well as left and right fields representing subsplits.Categorical splits are forced in a one - hot fashion, with left representing the split containing the feature value and right representing other values
-  // desc=see `this file <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
+  // alias = fs, forced_splits_filename, forced_splits_file, forced_splits
+  // desc = path to a ``.json`` file that specifies splits to force at the top of every decision tree before best-first learning commences
+  // desc = ``.json`` file can be arbitrarily nested, and each split contains ``feature``, ``threshold`` fields, as well as ``left`` and ``right`` fields representing subsplits
+  // desc = categorical splits are forced in a one-hot fashion, with ``left`` representing the split containing the feature value and ``right`` representing other values
+  // desc = see `this file <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
   std::string forcedsplits_filename = "";
 
   #pragma endregion
