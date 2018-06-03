@@ -85,7 +85,7 @@ If you want to use the Python interface of LightGBM, you can install it now (alo
 
 You need to set an additional parameter ``"device" : "gpu"`` (along with your other options like ``learning_rate``, ``num_leaves``, etc) to use GPU in Python.
 
-You can read our `Python Package Examples`_ for more information on how to use the Python interface.
+You can read our `Python-package Examples`_ for more information on how to use the Python interface.
 
 Dataset Preparation
 -------------------
@@ -194,7 +194,7 @@ Huan Zhang, Si Si and Cho-Jui Hsieh. "`GPU Acceleration for Large-scale Tree Boo
 
 .. _AMDGPU-Pro: http://support.amd.com/en-us/download/linux
 
-.. _Python Package Examples: https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide
+.. _Python-package Examples: https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide
 
 .. _GPU Acceleration for Large-scale Tree Boosting: https://arxiv.org/abs/1706.08359
 

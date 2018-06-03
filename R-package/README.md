@@ -1,4 +1,4 @@
-LightGBM R Package
+LightGBM R-package
 ==================
 
 Installation
@@ -37,7 +37,7 @@ cd LightGBM/R-package
 R CMD INSTALL --build . --no-multiarch
 ```
 
-Or build a self-contained R package which can be installed afterwards:
+Or build a self-contained R-package which can be installed afterwards:
 
 ```sh
 git clone --recursive https://github.com/Microsoft/LightGBM
@@ -63,7 +63,7 @@ install_github("Microsoft/LightGBM", subdir = "R-package")
 
 If you are using a precompiled dll/lib locally, you can move the dll/lib into LightGBM root folder, modify `LightGBM/R-package/src/install.libs.R`'s 2nd line (change `use_precompile <- FALSE` to `use_precompile <- TRUE`), and install R-package as usual. **NOTE: If your R version is not smaller than 3.5.0, you should set `DUSE_R35=ON` in cmake options when build precompiled dll/lib**.
 
-When your package installation is done, you can check quickly if your LightGBM R package is working by running the following:
+When your package installation is done, you can check quickly if your LightGBM R-package is working by running the following:
 
 ```r
 library(lightgbm)
@@ -96,7 +96,7 @@ In addition, if you are using a Visual Studio precompiled DLL, assuming you do n
 
 Once you have all this setup, you can use `lgb.dl` from `lgbdl` package to install LightGBM from repository.
 
-For instance, you can install the R package from LightGBM master commit of GitHub with Visual Studio using the following from R:
+For instance, you can install the R-package from LightGBM master commit of GitHub with Visual Studio using the following from R:
 
 ```r
 lgb.dl(commit = "master",

@@ -3,7 +3,6 @@ Examples
 
 You can learn how to use LightGBM by these examples.
 
-
 Machine Learning Challenge Winning Solutions
 ============================================
 
@@ -25,4 +24,3 @@ Machine Learning Challenge Winning Solutions
 | 3rd     | [Dogs vs. Cats Redux: Kernels Edition](https://www.kaggle.com/c/dogs-vs-cats-redux-kernels-edition) | [link](http://blog.kaggle.com/2017/04/20/dogs-vs-cats-redux-playground-competition-3rd-place-interview-marco-lugo) | - |
 | 3rd     | [Bosch Production Line Performance](https://www.kaggle.com/c/bosch-production-line-performance) | [link](http://blog.kaggle.com/2016/12/15/bosch-production-line-performance-competition-winners-interview-3rd-place-team-data-property-avengers-darragh-marios-mathias-stanislav) | 2016.11 |
 | 1st     | [The 1st Di-Tech Competitions](http://research.xiaojukeji.com/competition/main.action?competitionId=DiTech2016) | - | 2016.7 |
-

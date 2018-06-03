@@ -54,7 +54,7 @@ More detailed update logs : [Key Events](https://github.com/Microsoft/LightGBM/b
 External (unofficial) Repositories
 ----------------------------------
 
-Julia Package: https://github.com/Allardvm/LightGBM.jl
+Julia-package: https://github.com/Allardvm/LightGBM.jl
 
 JPMML: https://github.com/jpmml/jpmml-lightgbm
 

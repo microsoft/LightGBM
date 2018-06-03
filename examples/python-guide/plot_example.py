@@ -42,7 +42,7 @@ gbm = lgb.train(params,
                 evals_result=evals_result,
                 verbose_eval=10)
 
-print('Plot metrics during training...')
+print('Plot metrics recorded during training...')
 ax = lgb.plot_metric(evals_result, metric='l1')
 plt.show()
 

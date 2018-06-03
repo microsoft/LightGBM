@@ -1,4 +1,4 @@
-Python Package Examples
+Python-package Examples
 =======================
 
 Here is an example for LightGBM to use Python-package.
@@ -26,8 +26,10 @@ Examples include:
     - Early stopping
     - Save model to file
 - [sklearn_example.py](https://github.com/Microsoft/LightGBM/blob/master/examples/python-guide/sklearn_example.py)
+    - Create data for learning with sklearn interface 
     - Basic train and predict with sklearn interface
     - Feature importances with sklearn interface
+    - Find best parameters for the model with sklearn's GridSearchCV
 - [advanced_example.py](https://github.com/Microsoft/LightGBM/blob/master/examples/python-guide/advanced_example.py)
     - Set feature names
     - Directly use categorical features without one-hot encoding
@@ -38,6 +40,7 @@ Examples include:
     - Dump and load model with pickle
     - Load model file to continue training
     - Change learning rates during training
+    - Change any parameters during training
     - Self-defined objective function
     - Self-defined eval metric
     - Callback function
@@ -46,3 +49,10 @@ Examples include:
     - Use `xentropy` with binary labels or probability labels
     - Use `binary` only with binary labels
     - Compare speed of `xentropy` versus `binary`
+- [plot_example.py](https://github.com/Microsoft/LightGBM/blob/master/examples/python-guide/plot_example.py)
+    - Construct Dataset
+    - Train and record eval results for further plotting
+    - Plot metrics recorded during training
+    - Plot feature importances
+    - Plot one specified tree
+    - Plot one specified tree with Graphviz
