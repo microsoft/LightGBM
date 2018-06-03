@@ -174,6 +174,7 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   if (valid_data_initscores.size() == 0 && valid.size() > 0) {
     valid_data_initscores = std::vector<std::string>(valid.size(), "");
   }
+  CHECK(valid.size() == valid_data_initscores.size());
 
   // check for conflicts
   CheckParamConflict();
