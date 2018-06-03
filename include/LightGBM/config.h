@@ -136,12 +136,12 @@ public:
   std::string boosting = "gbdt";
 
   // alias = train, train_data, data_filename
-  // desc = training data, LightGBM will train from this data
+  // desc = path of training data, LightGBM will train from this data
   std::string data = "";
 
   // alias = test, valid_data, test_data, valid_filenames
   // default = ""
-  // desc = validation/test data, LightGBM will output metrics for these data
+  // desc = path(s) of validation/test data, LightGBM will output metrics for these data
   // desc = support multiple validation data, separated by ``,``
   std::vector<std::string> valid;
 
@@ -656,26 +656,29 @@ public:
 
   #pragma region Network Parameters
 
-  // alias=num_machine
-  // desc=used for parallel learning,the number of machines for parallel learning application
-  // desc=need to set this in both socket and mpi versions
+  // check = >0
+  // alias = num_machine
+  // desc = the number of machines for parallel learning application
+  // desc = this parameter is needed to be set in both **socket** and **mpi** versions
   int num_machines = 1;
 
-  // alias = local_port
-  // desc=TCP listen port for local machines
-  // desc=you should allow this port in firewall settings before training
+  // check = >0
+  // alias = local_port, port
+  // desc = TCP listen port for local machines
+  // desc = **Note**: don't forget to allow this port in firewall settings before training
   int local_listen_port = 12400;
 
-  // desc=socket time-out in minutes
-  int time_out = 120;  // in minutes
+  // check = >0
+  // desc = socket time-out in minutes
+  int time_out = 120;
 
-  // alias=mlist
-  // desc=file that lists machines for this parallel learning application
-  // desc=each line contains one IP and one port for one machine. The format is ip port,separate by space
+  // alias = machine_list_file, machine_list, mlist
+  // desc = path of file that lists machines for this parallel learning application
+  // desc = each line contains one IP and one port for one machine. The format is ``ip port`` (space as a separator)
   std::string machine_list_filename = "";
 
-  // alias=works,nodes
-  // desc=list of machines, format: ip1:port1,ip2:port2
+  // alias = workers, nodes
+  // desc = list of machines in the following format: ``ip1:port1,ip2:port2``
   std::string machines = "";
 
   #pragma endregion
