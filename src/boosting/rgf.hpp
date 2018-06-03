@@ -142,11 +142,12 @@ private:
       for (int tree_id = 0; tree_id < num_tree_per_iteration_; ++tree_id) {
         int model_index = iter * num_tree_per_iteration_ + tree_id;
         int64_t num_score = 0;
+        size_t bias = static_cast<size_t>(tree_id) * num_data_;
+        auto gradients = gradients_.data() + bias;
+        auto hessians = hessians_.data() + bias;
+        auto new_tree = tree_learner_->FitByExistingTreeIncremental(models_[model_index].get(), gradients, hessians);
         objective_function_->
           GetGradients(GetTrainingScore(&num_score), gradients_.data(), hessians_.data());
-        auto gradients = gradients_.data();
-        auto hessians = hessians_.data();
-        auto new_tree = tree_learner_->FitByExistingTree(models_[model_index].get(), gradients, hessians);
         train_score_updater_->AddScore(tree_learner_.get(), new_tree, tree_id);
         models_[model_index].reset(new_tree);
       }

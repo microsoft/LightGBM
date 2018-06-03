@@ -38,7 +38,7 @@ public:
   virtual void ResetConfig(const TreeConfig* tree_config) = 0;
 
   /*!
-  * \brief training tree model on dataset 
+  * \brief training tree model on dataset
   * \param gradients The first order gradients
   * \param hessians The second order gradients
   * \param is_constant_hessian True if all hessians share the same value
@@ -53,6 +53,9 @@ public:
 
   virtual Tree* FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
                                   const score_t* gradients, const score_t* hessians) = 0;
+
+  virtual Tree* FitByExistingTreeIncremental(const Tree* old_tree, const score_t* gradients,
+                                  const score_t *hessians) const = 0;
 
   /*!
   * \brief Set bagging data

@@ -225,7 +225,32 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* 
     }
     double output = FeatureHistogram::CalculateSplittedLeafOutput(sum_grad, sum_hess,
                                                                   tree_config_->lambda_l1, tree_config_->lambda_l2);
-    tree->SetLeafOutput(i, output* tree->shrinkage());
+    tree->SetLeafOutput(i, output * tree->shrinkage());
+    OMP_LOOP_EX_END();
+  }
+  OMP_THROW_EX();
+  return tree.release();
+}
+
+Tree* SerialTreeLearner::FitByExistingTreeIncremental(const Tree* old_tree, const score_t* gradients, const score_t *hessians) const {
+  auto tree = std::unique_ptr<Tree>(new Tree(*old_tree));
+  CHECK(data_partition_->num_leaves() >= tree->num_leaves());
+  OMP_INIT_EX();
+  #pragma omp parallel for schedule(static)
+  for (int i = 0; i < tree->num_leaves(); ++i) {
+    OMP_LOOP_EX_BEGIN();
+    data_size_t cnt_leaf_data = 0;
+    auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
+    double sum_grad = 0.0f;
+    double sum_hess = kEpsilon;
+    for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
+      auto idx = tmp_idx[j];
+      sum_grad += gradients[idx];
+      sum_hess += hessians[idx];
+    }
+    double output = FeatureHistogram::CalculateSplittedLeafOutput(sum_grad, sum_hess,
+                                                                  tree_config_->lambda_l1, tree_config_->lambda_l2);
+    tree->SetLeafOutput(i, tree->LeafOutput(i) + output * tree->shrinkage());
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
@@ -617,7 +642,7 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
       for (int i = 0; i < tree->num_leaves(); ++i) {
         tree->SetLeafOutput(i, outputs[i] / Network::num_machines());
       }
-    } 
+    }
   }
 }
 
