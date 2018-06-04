@@ -30,9 +30,9 @@ def GetParameterInfos(config_hpp):
             elif cur_key is not None:
                 line = line.strip()
                 if line.startswith("//"):
-                    tokens = line[2:].split("=")
-                    key = tokens[0].strip()
-                    val = '='.join(tokens[1:]).strip()
+                    key, _, val = line[2:].partition("=")
+                    key = key.strip()
+                    val = val.strip()
                     if key not in cur_info:
                         if key == "descl2":
                             cur_info["desc"] = []
