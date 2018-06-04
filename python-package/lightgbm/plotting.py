@@ -322,7 +322,7 @@ def create_tree_digraph(booster, tree_index=0, show_info=None,
         Booster or LGBMModel instance.
     tree_index : int, optional (default=0)
         The index of a target tree to convert.
-    show_info : list or None, optional (default=None)
+    show_info : list of strings or None, optional (default=None)
         What information should be shown in nodes.
         Possible values of list items: 'split_gain', 'internal_value', 'internal_count', 'leaf_count'.
     name : string or None, optional (default=None)
@@ -340,11 +340,11 @@ def create_tree_digraph(booster, tree_index=0, show_info=None,
         Layout command used ('dot', 'neato', ...).
     encoding : string or None, optional (default=None)
         Encoding for saving the source.
-    graph_attr : dict or None, optional (default=None)
+    graph_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for the graph.
-    node_attr : dict or None, optional (default=None)
+    node_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for all nodes.
-    edge_attr : dict or None, optional (default=None)
+    edge_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for all edges.
     body : list of strings or None, optional (default=None)
         Lines to add to the graph body.
@@ -400,13 +400,13 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
         The index of a target tree to plot.
     figsize : tuple of 2 elements or None, optional (default=None)
         Figure size.
-    graph_attr : dict or None, optional (default=None)
+    graph_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for the graph.
-    node_attr : dict or None, optional (default=None)
+    node_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for all nodes.
-    edge_attr : dict or None, optional (default=None)
+    edge_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for all edges.
-    show_info : list or None, optional (default=None)
+    show_info : list of strings or None, optional (default=None)
         What information should be shown in nodes.
         Possible values of list items: 'split_gain', 'internal_value', 'internal_count', 'leaf_count'.
 
