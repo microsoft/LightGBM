@@ -60,7 +60,7 @@ Some important parameters:
 
    -  ``predict``, alias=\ ``prediction``, ``test``, for prediction
 
-   -  ``convert_model``, for converting model file into if-else format, see more information in `Convert model parameters <./Parameters.rst#convert-model-parameters>`__
+   -  ``convert_model``, for converting model file into if-else format, see more information in `IO Parameters <./Parameters.rst#io-parameters>`__
 
 -  ``application``, default=\ ``regression``, type=enum,
    options=\ ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gammma``, ``tweedie``,

@@ -139,7 +139,7 @@ public:
   // desc = training data, LightGBM will train from this data
   std::string data = "";
 
-  // alias = test, valid_data, test_data, valid_filenames
+  // alias = test, valid_data, valid_data_file, test_data, valid_filenames
   // default = ""
   // desc = validation/test data, LightGBM will output metrics for these data
   // desc = support multiple validation data, separated by ``,``
@@ -363,190 +363,207 @@ public:
 
   #pragma region IO Parameters
 
-  // check=>1
-  // desc=max number of bins that feature values will be bucketed in.
-  // desc=Small number of bins may reduce training accuracy but may increase general power(deal with over - fitting)
-  // desc=LightGBM will auto compress memory according max_bin.
-  // desc=For example, LightGBM will use uint8_t for feature value if max_bin = 255
+  // alias = verbose
+  // desc = controls the level of LightGBM's verbosity
+  // desc = ``< 0``: Fatal, ``= 0``: Error (Warn), ``> 0``: Info
+  int verbosity = 1;
+
+  // check = >1
+  // desc = max number of bins that feature values will be bucketed in
+  // desc = small number of bins may reduce training accuracy but may increase general power (deal with over-fitting)
+  // desc = LightGBM will auto compress memory according to ``max_bin``. For example, LightGBM will use ``uint8_t`` for feature value if ``max_bin=255``
   int max_bin = 255;
 
-  // check=>0
-  // desc=min number of data inside one bin,use this to avoid one-data-one-bin (may over-fitting)
+  // check = >0
+  // desc = minimal number of data inside one bin
+  // desc = use this to avoid one-data-one-bin (potential over-fitting)
   int min_data_in_bin = 3;
 
-  // desc=random seed for data partition in parallel learning (not include feature parallel)
+  // alias = subsample_for_bin
+  // check = >0
+  // desc = number of data that sampled to construct histogram bins
+  // desc = setting this to larger value will give better training result, but will increase data loading time
+  // desc = set this to larger value if data is very sparse
+  int bin_construct_sample_cnt = 200000;
+
+  // desc = max cache size in MB for historical histogram
+  // desc = ``< 0`` means no limit
+  double histogram_pool_size = -1.0;
+
+  // desc = random seed for data partition in parallel learning (excluding the ``feature_parallel`` mode)
   int data_random_seed = 1;
 
-  // alias=model_output,model_out
-  // desc=file name of output model in training
+  // alias = model_output, model_out
+  // desc = filename of output model in training
   std::string output_model = "LightGBM_model.txt";
 
+  // desc = frequency of saving model file snapshot
+  // desc = set this to positive value to enable this function. For example, the model file will be snapshotted at each iteration if ``snapshot_freq=1``
+  int snapshot_freq = -1;
+
   // alias = model_input, model_in
-  // desc=file name of input model
-  // desc=for prediction task,this model will be used for prediction data
-  // desc=for train task,training will be continued from this model
+  // desc = filename of input model
+  // desc = for ``prediction`` task, this model will be applied to prediction data
+  // desc = for ``train`` task, training will be continued from this model
+  // desc = **Note**: can be used only in CLI version
   std::string input_model = "";
 
-  // alias=predict_result,prediction_result
-  // desc=file name of prediction result in prediction task
+  // alias = predict_result, prediction_result
+  // desc = filename of prediction result in ``prediction`` task
   std::string output_result = "LightGBM_predict_result.txt";
 
+  // alias = init_score_filename, init_score_file, init_score, input_init_score
+  // desc = path of file with training initial score
+  // desc = if ``""``, will use ``train_data_file`` + ``.init`` (if exists)
+  std::string initscore_filename = "";
+
+  // alias = valid_data_init_scores, valid_init_score_file, valid_init_score
+  // default = ""
+  // desc = path(s) of file(s) with validation initial score(s)
+  // desc = if ``""``, will use ``valid_data_file`` + ``.init`` (if exists)
+  // desc = separate by ``,`` for multi-validation data
+  std::vector<std::string> valid_data_initscores;
+
   // alias = is_pre_partition
-  // desc=used for parallel learning (not include feature parallel)
-  // desc=true if training data are pre-partitioned,and different machines use different partitions
+  // desc = used for parallel learning (excluding the ``feature_parallel`` mode)
+  // desc = ``true`` if training data are pre-partitioned, and different machines use different partitions
   bool pre_partition = false;
 
-  // alias = is_sparse, enable_sparse
-  // desc = used to enable / disable sparse optimization.Set to false to disable sparse optimization
+  // alias = is_enable_bundle, bundle
+  // desc = set this to ``false`` to disable Exclusive Feature Bundling (EFB), which is described in `LightGBM: A Highly Efficient Gradient Boosting Decision Tree <https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision-tree>`__
+  // desc = **Note**: disabling this may cause the slow training speed for sparse datasets
+  bool enable_bundle = true;
+
+  // check = >=0.0
+  // check = <1.0
+  // desc = max conflict rate for bundles in EFB
+  // desc = set this to ``0.0`` to disallow the conflict and provide more accurate results
+  // desc = set this to a larger value to achieve faster speed
+  double max_conflict_rate = 0.0;
+
+  // alias = is_sparse, enable_sparse, sparse
+  // desc = used to enable/disable sparse optimization
   bool is_enable_sparse = true;
 
-  // check=>0
-  // check=<=1
-  // desc=the threshold of zero elements precentage for treating a feature as a sparse feature.
+  // check = >0.0
+  // check = <=1.0
+  // desc = the threshold of zero elements precentage for treating a feature as a sparse one
   double sparse_threshold = 0.8;
 
-  // alias=two_round_loading,use_two_round_loading
-  // desc = by default, LightGBM will map data file to memory and load features from memory.
-  // desc = This will provide faster data loading speed.But it may run out of memory when the data file is very big
-  // desc = set this to true if data file is too big to fit in memory
+  // desc = set this to ``false`` to disable the special handle of missing value
+  bool use_missing = true;
+
+  // desc = set this to ``true`` to treat all zero as missing values (including the unshown values in libsvm/sparse matrics)
+  // desc = set this to ``false`` to use ``na`` for representing missing values
+  bool zero_as_missing = false;
+
+  // alias = two_round_loading, use_two_round_loading
+  // desc = set this to ``true`` if data file is too big to fit in memory
+  // desc = by default, LightGBM will map data file to memory and load features from memory. This will provide faster data loading speed, but may cause run out of memory error when the data file is very big
   bool two_round = false;
 
   // alias = is_save_binary, is_save_binary_file
-  // desc = if true LightGBM will save the dataset(include validation data) to a binary file.
-  // desc = Speed up the data loading for the next time
+  // desc = if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
   bool save_binary = false;
 
-  // alias=verbose
-  // desc= <0 = Fatal, =0 = Error(Warn), >0 = Info
-  int verbosity = 1;
-
-  // alias = has_header
-  // desc=set this to true if input data has header
-  bool header = false;
-
-
-  // alias=label
-  // desc=specify the label column
-  // desc=use number for index,e.g. label=0 means column\_0 is the label
-  // desc=add a prefix name: for column name,e.g. label=name:is_click
-  std::string label_column = "";
-
-  // alias=weight
-  // desc=specify the weight column
-  // desc=use number for index,e.g. weight=0 means column\_0 is the weight
-  // desc=add a prefix name: for column name,e.g. weight=name:weight
-  // desc=**Note**: index starts from 0. And it doesn't count the label column when passing type is Index,e.g. when label is column\_0,and weight is column\_1,the correct parameter is weight=0
-  std::string weight_column = "";
-
-  // alias = query_column, group, query
-  // desc=specify the query/group id column
-  // desc=use number for index,e.g. query=0 means column\_0 is the query id
-  // desc=add a prefix name: for column name,e.g. query=name:query_id
-  // desc=**Note**: data should be grouped by query\_id. Index starts from 0. And it doesn't count the label column when passing type is Index,e.g. when label is column\_0 and query\_id is column\_1,the correct parameter is query=0
-  std::string group_column = "";
-
-  // alias = ignore_feature, blacklist
-  // desc=specify some ignoring columns in training
-  // desc=use number for index,e.g. ignore_column=0,1,2 means column\_0,column\_1 and column\_2 will be ignored
-  // desc=add a prefix name: for column name,e.g. ignore_column=name:c1,c2,c3 means c1,c2 and c3 will be ignored
-  // desc=**Note**: works only in case of loading data directly from file
-  // desc=**Note**: index starts from 0. And it doesn't count the label column
-  std::string ignore_column = "";
-
-  // alias=categorical_column,cat_feature,cat_column
-  // desc=specify categorical features
-  // desc=use number for index,e.g. categorical_feature=0,1,2 means column\_0,column\_1 and column\_2 are categorical features
-  // desc=add a prefix name: for column name,e.g. categorical_feature=name:c1,c2,c3 means c1,c2 and c3 are categorical features
-  // desc=**Note**: only supports categorical with int type. Index starts from 0. And it doesn't count the label column
-  // desc=**Note**: the negative values will be treated as **missing values**
-  std::string categorical_feature = "";
-
-  // alias=raw_score,is_predict_raw_score,predict_rawscore
-  // desc=only used in prediction task
-  // desc=set to true to predict only the raw scores
-  // desc=set to false to predict transformed scores
-  bool predict_raw_score = false;
-
-  // alias=leaf_index,is_predict_leaf_index
-  // desc=only used in prediction task
-  // desc=set to true to predict with leaf index of all trees
-  bool predict_leaf_index = false;
-
-  // alias=contrib,is_predict_contrib
-  // desc=only used in prediction task
-  // desc=set to true to estimate `SHAP values`_,which represent how each feature contributs to each prediction.
-  // desc=Produces number of features + 1 values where the last value is the expected value of the model output over the training data
-  bool predict_contrib = false;
-
-  // desc=only used in prediction task
-  // desc=use to specify how many trained iterations will be used in prediction
-  // desc=<= 0 means no limit
-  int num_iteration_predict = -1;
-
-  // desc=if true will use early-stopping to speed up the prediction. May affect the accuracy
-  bool pred_early_stop = false;
-  
-  // desc=the frequency of checking early-stopping prediction
-  int pred_early_stop_freq = 10;
-
-  // desc = the threshold of margin in early - stopping prediction
-  double pred_early_stop_margin = 10.0;
-
-  // alias=subsample_for_bin
-  // check=>0
-  // desc=number of data that sampled to construct histogram bins
-  // desc=will give better training result when set this larger,but will increase data loading time
-  // desc=set this to larger value if data is very sparse
-  int bin_construct_sample_cnt = 200000;
-
-  // desc=set to false to disable the special handle of missing value
-  bool use_missing = true;
-
-  // desc=set to true to treat all zero as missing values (including the unshown values in libsvm/sparse matrics)
-  // desc=set to false to use na to represent missing values
-  bool zero_as_missing = false;
-
-  // alias=init_score_filename,init_score_file,init_score
-  // desc = path to training initial score file, "" will use train_data_file + .init(if exists)
-  std::string initscore_filename = "";
-
-  // alias=valid_data_init_scores,valid_init_score_file,valid_init_score
-  // default=""
-  // desc=path to validation initial score file,"" will use valid_data_file + .init (if exists)
-  // desc=separate by ,for multi-validation data
-  std::vector<std::string> valid_data_initscores;
-  
-  // desc=max cache size(unit:MB) for historical histogram. < 0 means no limit
-  double histogram_pool_size = -1.0;
-
-  // desc=set to true to enable auto loading from previous saved binary datasets
-  // desc=set to false will ignore the binary datasets
+  // alias = load_from_binary_file, binary_load, load_binary
+  // desc = set this to ``true`` to enable autoloading from previous saved binary datasets
+  // desc = set this to ``false`` to ignore binary datasets
   bool enable_load_from_binary_file = true;
 
-  // desc=set to false to disable Exclusive Feature Bundling (EFB), which is described in LightGBM NIPS2017 paper
-  // desc=disable this may cause the slow training speed for sparse datasets
-  bool enable_bundle = true;
-  
-  // check=>=0
-  // check=<1
-  // desc=max conflict rate for bundles in EFB
-  // desc=set to zero will diallow the conflict, and provide more accurace results
-  // desc=the speed may be faster if set it to a larger value
-  double max_conflict_rate = 0.0;
+  // alias = has_header
+  // desc = set this to ``true`` if input data has header
+  bool header = false;
 
-  // desc=frequency of saving model file snapshot
-  // desc=set to positive numbers will enable this function
-  // desc=for example, the model file will be snopshoted at each iteration if set it to 1 
-  int snapshot_freq = -1;
+  // type = int or string
+  // alias = label
+  // desc = used to specify the label column
+  // desc = use number for index, e.g. ``label=0`` means column\_0 is the label
+  // desc = add a prefix ``name:`` for column name, e.g. ``label=name:is_click``
+  std::string label_column = "";
 
-  // desc=only cpp is supported yet
-  // desc=if convert_model_language is set when task is set to train,the model will also be converted
+  // type = int or string
+  // alias = weight
+  // desc = used to specify the weight column
+  // desc = use number for index, e.g. ``weight=0`` means column\_0 is the weight
+  // desc = add a prefix ``name:`` for column name, e.g. ``weight=name:weight``
+  // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0, and weight is column\_1, the correct parameter is ``weight=0``
+  std::string weight_column = "";
+
+  // type = int or string
+  // alias = group, group_id, query_column, query, query_id
+  // desc = used to specify the query/group id column
+  // desc = use number for index, e.g. ``query=0`` means column\_0 is the query id
+  // desc = add a prefix ``name:`` for column name, e.g. ``query=name:query_id``
+  // desc = **Note**: data should be grouped by query\_id
+  // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0 and query\_id is column\_1, the correct parameter is ``query=0``
+  std::string group_column = "";
+
+  // type = multi-int or string
+  // alias = ignore_feature, blacklist
+  // desc = used to specify some ignoring columns in training
+  // desc = use number for index, e.g. ``ignore_column=0,1,2`` means column\_0, column\_1 and column\_2 will be ignored
+  // desc = add a prefix ``name:`` for column name, e.g. ``ignore_column=name:c1,c2,c3`` means c1, c2 and c3 will be ignored
+  // desc = **Note**: works only in case of loading data directly from file
+  // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
+  std::string ignore_column = "";
+
+  // type = multi-int or string
+  // alias = cat_feature, categorical_column, cat_column
+  // desc = used to specify categorical features
+  // desc = use number for index, e.g. ``categorical_feature=0,1,2`` means column\_0, column\_1 and column\_2 are categorical features
+  // desc = add a prefix ``name:`` for column name, e.g. ``categorical_feature=name:c1,c2,c3`` means c1, c2 and c3 are categorical features
+  // desc = **Note**: only supports categorical with ``int`` type
+  // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
+  // desc = **Note**: all values should be less than ``Int32.MaxValue`` (2147483647)
+  // desc = **Note**: the negative values will be treated as **missing values**
+  std::string categorical_feature = "";
+
+  // alias = is_predict_raw_score, predict_rawscore, raw_score
+  // desc = used only in ``prediction`` task
+  // desc = set this to ``true`` to predict only the raw scores
+  // desc = set this to ``false`` to predict transformed scores
+  bool predict_raw_score = false;
+
+  // alias = is_predict_leaf_index, leaf_index
+  // desc = used only in ``prediction`` task
+  // desc = set this to ``true`` to predict with leaf index of all trees
+  bool predict_leaf_index = false;
+
+  // alias = is_predict_contrib, contrib
+  // desc = used only in ``prediction`` task
+  // desc = set this to ``true`` to estimate `SHAP values <https://arxiv.org/abs/1706.06060>`__, which represent how each feature contributs to each prediction
+  // desc = produces ``#features + 1`` values where the last value is the expected value of the model output over the training data
+  bool predict_contrib = false;
+
+  // desc = used only in ``prediction`` task
+  // desc = used to specify how many trained iterations will be used in prediction
+  // desc = ``<= 0`` means no limit
+  int num_iteration_predict = -1;
+
+  // desc = used only in ``prediction`` task
+  // desc = if ``true``, will use early-stopping to speed up the prediction. May affect the accuracy
+  bool pred_early_stop = false;
+
+  // desc = used only in ``prediction`` task
+  // desc = the frequency of checking early-stopping prediction
+  int pred_early_stop_freq = 10;
+
+  // desc = used only in ``prediction`` task
+  // desc = the threshold of margin in early-stopping prediction
+  double pred_early_stop_margin = 10.0;
+
+  // desc = used only in ``convert_model`` task
+  // desc = only ``cpp`` is supported yet
+  // desc = if ``convert_model_language`` is set and ``task=train``, the model will be also converted
   std::string convert_model_language = "";
 
-  // desc=output file name of converted model
+  // alias = convert_model_file
+  // desc = used only in ``convert_model`` task
+  // desc = output filename of converted model
   std::string convert_model = "gbdt_prediction.cpp";
-  #pragma endregion
 
+  #pragma endregion
 
   #pragma region Objective Parameters
   
