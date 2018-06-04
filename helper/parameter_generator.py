@@ -34,9 +34,9 @@ def GetParameterInfos(config_hpp):
                     key = key.strip()
                     val = val.strip()
                     if key not in cur_info:
-                        if key == "descl2":
+                        if key == "descl2" and "desc" not in cur_info:
                             cur_info["desc"] = []
-                        else:
+                        elif key != "descl2":
                             cur_info[key] = []
                     if key == "desc":
                         cur_info["desc"].append(("l1", val))
