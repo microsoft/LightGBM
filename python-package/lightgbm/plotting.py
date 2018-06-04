@@ -83,7 +83,7 @@ def plot_importance(booster, ax=None, height=0.2,
     feature_name = booster.feature_name()
 
     if not len(importance):
-        raise ValueError('Booster feature_importances are empty.')
+        raise ValueError("Booster's feature_importance is empty.")
 
     tuples = sorted(zip(feature_name, importance), key=lambda x: x[1])
     if ignore_zero:
@@ -323,7 +323,7 @@ def create_tree_digraph(booster, tree_index=0, show_info=None,
     tree_index : int, optional (default=0)
         The index of a target tree to convert.
     show_info : list or None, optional (default=None)
-        What information should be showed on nodes.
+        What information should be shown in nodes.
         Possible values of list items: 'split_gain', 'internal_value', 'internal_count', 'leaf_count'.
     name : string or None, optional (default=None)
         Graph name used in the source code.
@@ -407,7 +407,7 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
     edge_attr : dict or None, optional (default=None)
         Mapping of (attribute, value) pairs set for all edges.
     show_info : list or None, optional (default=None)
-        What information should be showed on nodes.
+        What information should be shown in nodes.
         Possible values of list items: 'split_gain', 'internal_value', 'internal_count', 'leaf_count'.
 
     Returns

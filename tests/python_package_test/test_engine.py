@@ -478,7 +478,7 @@ class TestEngine(unittest.TestCase):
         for ret in other_ret:
             self.assertAlmostEqual(ret_origin, ret, places=5)
 
-    @unittest.skipIf(not IS_PANDAS_INSTALLED, 'pandas not installed')
+    @unittest.skipIf(not IS_PANDAS_INSTALLED, 'pandas is not installed')
     def test_pandas_categorical(self):
         X = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 75),  # str
                           "B": np.random.permutation([1, 2, 3] * 100),  # int
