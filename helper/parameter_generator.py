@@ -39,9 +39,9 @@ def GetParameterInfos(config_hpp):
                         else:
                             cur_info[key] = []
                     if key == "desc":
-                        cur_info["desc"].append(["l1", val])
+                        cur_info["desc"].append(("l1", val))
                     elif key == "descl2":
-                        cur_info["desc"].append(["l2", val])
+                        cur_info["desc"].append(("l2", val))
                     else:
                         cur_info[key].append(val)
                 elif line:
@@ -79,7 +79,7 @@ def GetAlias(infos):
                 name = y["name"][0]
                 alias = y["alias"][0].split(',')
                 for name2 in alias:
-                    pairs.append([name2.strip(), name])
+                    pairs.append((name2.strip(), name))
     return pairs
 
 
