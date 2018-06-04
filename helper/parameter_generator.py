@@ -83,18 +83,18 @@ def GetAlias(infos):
     return pairs
 
 
-def SetOneVarFromString(name, type, checks):
+def SetOneVarFromString(name, param_type, checks):
     ret = ""
     univar_mapper = {"int": "GetInt", "double": "GetDouble", "bool": "GetBool", "std::string": "GetString"}
-    if "vector" not in type:
-        ret += "  %s(params, \"%s\", &%s);\n" % (univar_mapper[type], name, name)
+    if "vector" not in param_type:
+        ret += "  %s(params, \"%s\", &%s);\n" % (univar_mapper[param_type], name, name)
         if len(checks) > 0:
             for check in checks:
                 ret += "  CHECK(%s %s);\n" % (name, check)
         ret += "\n"
     else:
         ret += "  if (GetString(params, \"%s\", &tmp_str)) {\n" % (name)
-        type2 = type.split("<")[1][:-1]
+        type2 = param_type.split("<")[1][:-1]
         if type2 == "std::string":
             ret += "    %s = Common::Split(tmp_str.c_str(), ',');\n" % (name)
         else:
@@ -187,12 +187,12 @@ def GenParameterCode(config_hpp, config_out_cpp):
         for y in x:
             if "[doc-only]" in y:
                 continue
-            type = y["inner_type"][0]
+            param_type = y["inner_type"][0]
             name = y["name"][0]
             checks = []
             if "check" in y:
                 checks = y["check"]
-            tmp = SetOneVarFromString(name, type, checks)
+            tmp = SetOneVarFromString(name, param_type, checks)
             str_to_write += tmp
     # tails
     str_to_write += "}\n\n"
@@ -202,10 +202,10 @@ def GenParameterCode(config_hpp, config_out_cpp):
         for y in x:
             if "[doc-only]" in y:
                 continue
-            type = y["inner_type"][0]
+            param_type = y["inner_type"][0]
             name = y["name"][0]
-            if "vector" in type:
-                if "int8" in type:
+            if "vector" in param_type:
+                if "int8" in param_type:
                     str_to_write += "  str_buf << \"[%s: \" << Common::Join(Common::ArrayCast<int8_t, int>(%s),\",\") << \"]\\n\";\n" % (name, name)
                 else:
                     str_to_write += "  str_buf << \"[%s: \" << Common::Join(%s,\",\") << \"]\\n\";\n" % (name, name)
