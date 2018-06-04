@@ -50,6 +50,50 @@ Core Parameters
 
 -  ``objective``, default = ``regression``, type = enum, options: ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gammma``, ``tweedie``, ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``, aliases: ``objective_type``, ``app``, ``application``
 
+   -  regression application
+
+      -  ``regression_l2``, L2 loss, aliases: ``regression``, ``mean_squared_error``, ``mse``, ``l2_root``, ``root_mean_squared_error``, ``rmse``
+
+      -  ``regression_l1``, L1 loss, aliases: ``mean_absolute_error``, ``mae``
+
+      -  ``huber``, `Huber loss <https://en.wikipedia.org/wiki/Huber_loss>`__
+
+      -  ``fair``, `Fair loss <https://www.kaggle.com/c/allstate-claims-severity/discussion/24520>`__
+
+      -  ``poisson``, `Poisson regression <https://en.wikipedia.org/wiki/Poisson_regression>`__
+
+      -  ``quantile``, `Quantile regression <https://en.wikipedia.org/wiki/Quantile_regression>`__
+
+      -  ``mape``, `MAPE loss <https://en.wikipedia.org/wiki/Mean_absolute_percentage_error>`__, aliases: ``mean_absolute_percentage_error``
+
+      -  ``gamma``, Gamma regression with log-link. It might be useful, e.g., for modeling insurance claims severity, or for any target that might be `gamma-distributed <https://en.wikipedia.org/wiki/Gamma_distribution#Applications>`__
+
+      -  ``tweedie``, Tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed <https://en.wikipedia.org/wiki/Tweedie_distribution#Applications>`__
+
+   -  ``binary``, binary `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__ classification (or logistic regression). Requires labels in {0, 1}; see ``xentropy`` for general probability labels in [0, 1]
+
+   -  multi-class classification application
+
+      -  ``multiclass``, `softmax <https://en.wikipedia.org/wiki/Softmax_function>`__ objective function, aliases: ``softmax``
+
+      -  ``multiclassova``, `One-vs-All <https://en.wikipedia.org/wiki/Multiclass_classification#One-vs.-rest>`__ binary objective function, aliases: ``multiclass_ova``, ``ova``, ``ovr``
+
+      -  ``num_class`` should be set as well
+
+   -  cross-entropy application
+
+      -  ``xentropy``, objective function for cross-entropy (with optional linear weights), aliases: ``cross_entropy``
+
+      -  ``xentlambda``, alternative parameterization of cross-entropy, aliases: ``cross_entropy_lambda``
+
+      -  label is anything in interval [0, 1]
+
+   -  ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ application
+
+      -  label should be ``int`` type in lambdarank tasks, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
+
+      -  `label_gain <#objective-parameters>`__ can be used to set the gain (weight) of ``int`` label
+
       -  all values in ``label`` must be smaller than number of elements in ``label_gain``
 
 -  ``boosting``, default = ``gbdt``, type = enum, options: ``gbdt``, ``gbrt``, ``rf``, ``random_forest``, ``dart``, ``goss``, aliases: ``boosting_type``, ``boost``
@@ -655,6 +699,52 @@ Metric Parameters
 -----------------
 
 -  ``metric``, default = ``""``, type = multi-enum, aliases: ``metrics``, ``metric_types``
+
+   -  metric(s) to be evaluated on the evaluation sets **in addition** to what is provided in the training arguments
+
+      -  ``""`` (empty string or not specific) means that metric corresponding to specified ``objective`` will be used (this is possible only for pre-defined objective functions, otherwise no evaluation metric will be added)
+
+      -  ``"None"`` (string, **not** a ``None`` value) means that no metric will be registered, aliases: ``na``
+
+      -  ``l1``, absolute loss, aliases: ``mean_absolute_error``, ``mae``, ``regression_l1``
+
+      -  ``l2``, square loss, aliases: ``mean_squared_error``, ``mse``, ``regression_l2``, ``regression``
+
+      -  ``l2_root``, root square loss, aliases: ``root_mean_squared_error``, ``rmse``
+
+      -  ``quantile``, `Quantile regression <https://en.wikipedia.org/wiki/Quantile_regression>`__
+
+      -  ``mape``, `MAPE loss <https://en.wikipedia.org/wiki/Mean_absolute_percentage_error>`__, aliases: ``mean_absolute_percentage_error``
+
+      -  ``huber``, `Huber loss <https://en.wikipedia.org/wiki/Huber_loss>`__
+
+      -  ``fair``, `Fair loss <https://www.kaggle.com/c/allstate-claims-severity/discussion/24520>`__
+
+      -  ``poisson``, negative log-likelihood for `Poisson regression <https://en.wikipedia.org/wiki/Poisson_regression>`__
+
+      -  ``gamma``, negative log-likelihood for **Gamma** regression
+
+      -  ``gamma_deviance``, residual deviance for **Gamma** regression
+
+      -  ``tweedie``, negative log-likelihood for **Tweedie** regression
+
+      -  ``ndcg``, `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__
+
+      -  ``map``, `MAP <https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/>`__, aliases: ``mean_average_precision``
+
+      -  ``auc``, `AUC <https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve>`__
+
+      -  ``binary_logloss``, `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__, aliases: ``binary``
+
+      -  ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
+
+      -  ``multi_logloss``, log loss for multi-class classification, aliases: ``multiclass``, ``softmax``, ``multiclassova``, ``multiclass_ova``, ``ova``, ``ovr``
+
+      -  ``multi_error``, error rate for multi-class classification
+
+      -  ``xentropy``, cross-entropy (with optional linear weights), aliases: ``cross_entropy``
+
+      -  ``xentlambda``, "intensity-weighted" cross-entropy, aliases: ``cross_entropy_lambda``
 
       -  ``kldiv``, `Kullback-Leibler divergence <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence>`__, aliases: ``kullback_leibler``
 
