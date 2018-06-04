@@ -786,39 +786,3 @@ In this case LightGBM will load the query file automatically if it exists.
 Also, you can include query/group id column in your data file. Please refer to parameter ``group`` in above.
 
 .. _Laurae++ Interactive Documentation: https://sites.google.com/view/lauraepp/parameters
-
-.. _Huber loss: https://en.wikipedia.org/wiki/Huber_loss
-
-.. _Quantile regression: https://en.wikipedia.org/wiki/Quantile_regression
-
-.. _MAPE loss: https://en.wikipedia.org/wiki/Mean_absolute_percentage_error
-
-.. _Fair loss: https://www.kaggle.com/c/allstate-claims-severity/discussion/24520
-
-.. _Poisson regression: https://en.wikipedia.org/wiki/Poisson_regression
-
-.. _lambdarank: https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf
-
-.. _Dropouts meet Multiple Additive Regression Trees: https://arxiv.org/abs/1505.01866
-
-.. _hyper-threading: https://en.wikipedia.org/wiki/Hyper-threading
-
-.. _SHAP values: https://arxiv.org/abs/1706.06060
-
-.. _NDCG: https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG
-
-.. _MAP: https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/
-
-.. _AUC: https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve
-
-.. _log loss: https://en.wikipedia.org/wiki/Cross_entropy
-
-.. _softmax: https://en.wikipedia.org/wiki/Softmax_function
-
-.. _One-vs-All: https://en.wikipedia.org/wiki/Multiclass_classification#One-vs.-rest
-
-.. _Kullback-Leibler divergence: https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence
-
-.. _gamma-distributed: https://en.wikipedia.org/wiki/Gamma_distribution#Applications
-
-.. _tweedie-distributed: https://en.wikipedia.org/wiki/Tweedie_distribution#Applications
