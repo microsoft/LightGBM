@@ -116,7 +116,7 @@ Core Parameters
 
    -  support multiple validation data, separated by ``,``
 
--  ``num_iterations``, default = ``100``, type = int, aliases: ``num_iteration``, ``num_tree``, ``num_trees``, ``num_round``, ``num_rounds``, ``num_boost_round``, ``n_estimators``, ``num_iterations >= 0``
+-  ``num_iterations``, default = ``100``, type = int, aliases: ``num_iteration``, ``num_tree``, ``num_trees``, ``num_round``, ``num_rounds``, ``num_boost_round``, ``n_estimators``, constraints: ``num_iterations >= 0``
 
    -  number of boosting iterations
 
@@ -124,13 +124,13 @@ Core Parameters
 
    -  **Note**: internally, LightGBM constructs ``num_class * num_iterations`` trees for multi-class classification problems
 
--  ``learning_rate``, default = ``0.1``, type = double, aliases: ``shrinkage_rate``, ``learning_rate > 0.0``
+-  ``learning_rate``, default = ``0.1``, type = double, aliases: ``shrinkage_rate``, constraints: ``learning_rate > 0.0``
 
    -  shrinkage rate
 
    -  in ``dart``, it also affects on normalization weights of dropped trees
 
--  ``num_leaves``, default = ``31``, type = int, aliases: ``num_leaf``, ``num_leaves > 1``
+-  ``num_leaves``, default = ``31``, type = int, aliases: ``num_leaf``, constraints: ``num_leaves > 1``
 
    -  max number of leaves in one tree
 
@@ -185,15 +185,15 @@ Learning Control Parameters
 
    -  ``< 0`` means no limit
 
--  ``min_data_in_leaf``, default = ``20``, type = int, aliases: ``min_data_per_leaf``, ``min_data``, ``min_child_samples``, ``min_data_in_leaf >= 0``
+-  ``min_data_in_leaf``, default = ``20``, type = int, aliases: ``min_data_per_leaf``, ``min_data``, ``min_child_samples``, constraints: ``min_data_in_leaf >= 0``
 
    -  minimal number of data in one leaf. Can be used to deal with over-fitting
 
--  ``min_sum_hessian_in_leaf``, default = ``1e-3``, type = double, aliases: ``min_sum_hessian_per_leaf``, ``min_sum_hessian``, ``min_hessian``, ``min_child_weight``, ``min_sum_hessian_in_leaf >= 0.0``
+-  ``min_sum_hessian_in_leaf``, default = ``1e-3``, type = double, aliases: ``min_sum_hessian_per_leaf``, ``min_sum_hessian``, ``min_hessian``, ``min_child_weight``, constraints: ``min_sum_hessian_in_leaf >= 0.0``
 
    -  minimal sum hessian in one leaf. Like ``min_data_in_leaf``, it can be used to deal with over-fitting
 
--  ``bagging_fraction``, default = ``1.0``, type = double, aliases: ``sub_row``, ``subsample``, ``bagging``, ``0.0 < bagging_fraction <= 1.0``
+-  ``bagging_fraction``, default = ``1.0``, type = double, aliases: ``sub_row``, ``subsample``, ``bagging``, constraints: ``0.0 < bagging_fraction <= 1.0``
 
    -  like ``feature_fraction``, but this will randomly select part of data without resampling
 
@@ -215,7 +215,7 @@ Learning Control Parameters
 
    -  random seed for bagging
 
--  ``feature_fraction``, default = ``1.0``, type = double, aliases: ``sub_feature``, ``colsample_bytree``, ``0.0 < feature_fraction <= 1.0``
+-  ``feature_fraction``, default = ``1.0``, type = double, aliases: ``sub_feature``, ``colsample_bytree``, constraints: ``0.0 < feature_fraction <= 1.0``
 
    -  LightGBM will randomly select part of features on each iteration if ``feature_fraction`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
 
@@ -241,19 +241,19 @@ Learning Control Parameters
 
    -  the final max output of leaves is ``learning_rate * max_delta_step``
 
--  ``lambda_l1``, default = ``0.0``, type = double, aliases: ``reg_alpha``, ``lambda_l1 >= 0.0``
+-  ``lambda_l1``, default = ``0.0``, type = double, aliases: ``reg_alpha``, constraints: ``lambda_l1 >= 0.0``
 
    -  L1 regularization
 
--  ``lambda_l2``, default = ``0.0``, type = double, aliases: ``reg_lambda``, ``lambda_l2 >= 0.0``
+-  ``lambda_l2``, default = ``0.0``, type = double, aliases: ``reg_lambda``, constraints: ``lambda_l2 >= 0.0``
 
    -  L2 regularization
 
--  ``min_gain_to_split``, default = ``0.0``, type = double, aliases: ``min_split_gain``, ``min_gain_to_split >= 0.0``
+-  ``min_gain_to_split``, default = ``0.0``, type = double, aliases: ``min_split_gain``, constraints: ``min_gain_to_split >= 0.0``
 
    -  the minimal gain to perform split
 
--  ``drop_rate``, default = ``0.1``, type = double, ``0.0 <= drop_rate <= 1.0``
+-  ``drop_rate``, default = ``0.1``, type = double, constraints: ``0.0 <= drop_rate <= 1.0``
 
    -  used only in ``dart``
 
@@ -267,7 +267,7 @@ Learning Control Parameters
 
    -  ``<=0`` means no limit
 
--  ``skip_drop``, default = ``0.5``, type = double, ``0.0 <= skip_drop <= 1.0``
+-  ``skip_drop``, default = ``0.5``, type = double, constraints: ``0.0 <= skip_drop <= 1.0``
 
    -  used only in ``dart``
 
@@ -291,45 +291,45 @@ Learning Control Parameters
 
    -  random seed to choose dropping models
 
--  ``top_rate``, default = ``0.2``, type = double, ``0.0 <= top_rate <= 1.0``
+-  ``top_rate``, default = ``0.2``, type = double, constraints: ``0.0 <= top_rate <= 1.0``
 
    -  used only in ``goss``
 
    -  the retain ratio of large gradient data
 
--  ``other_rate``, default = ``0.1``, type = double, ``0.0 <= other_rate <= 1.0``
+-  ``other_rate``, default = ``0.1``, type = double, constraints: ``0.0 <= other_rate <= 1.0``
 
    -  used only in ``goss``
 
    -  the retain ratio of small gradient data
 
--  ``min_data_per_group``, default = ``100``, type = int, ``min_data_per_group > 0``
+-  ``min_data_per_group``, default = ``100``, type = int, constraints: ``min_data_per_group > 0``
 
    -  minimal number of data per categorical group
 
--  ``max_cat_threshold``, default = ``32``, type = int, ``max_cat_threshold > 0``
+-  ``max_cat_threshold``, default = ``32``, type = int, constraints: ``max_cat_threshold > 0``
 
    -  used for the categorical features
 
    -  limit the max threshold points in categorical features
 
--  ``cat_l2``, default = ``10.0``, type = double, ``cat_l2 >= 0.0``
+-  ``cat_l2``, default = ``10.0``, type = double, constraints: ``cat_l2 >= 0.0``
 
    -  used for the categorical features
 
    -  L2 regularization in categorcial split
 
--  ``cat_smooth``, default = ``10.0``, type = double, ``cat_smooth >= 0.0``
+-  ``cat_smooth``, default = ``10.0``, type = double, constraints: ``cat_smooth >= 0.0``
 
    -  used for the categorical features
 
    -  this can reduce the effect of noises in categorical features, especially for categories with few data
 
--  ``max_cat_to_onehot``, default = ``4``, type = int, ``max_cat_to_onehot > 0``
+-  ``max_cat_to_onehot``, default = ``4``, type = int, constraints: ``max_cat_to_onehot > 0``
 
    -  when number of categories of one feature smaller than or equal to ``max_cat_to_onehot``, one-vs-other split algorithm will be used
 
--  ``top_k``, default = ``20``, type = int, aliases: ``topk``, ``top_k > 0``
+-  ``top_k``, default = ``20``, type = int, aliases: ``topk``, constraints: ``top_k > 0``
 
    -  used in `Voting parallel <./Parallel-Learning-Guide.rst#choose-appropriate-parallel-algorithm>`__
 
@@ -362,7 +362,7 @@ IO Parameters
 
    -  ``< 0``: Fatal, ``= 0``: Error (Warn), ``> 0``: Info
 
--  ``max_bin``, default = ``255``, type = int, ``max_bin > 1``
+-  ``max_bin``, default = ``255``, type = int, constraints: ``max_bin > 1``
 
    -  max number of bins that feature values will be bucketed in
 
@@ -370,13 +370,13 @@ IO Parameters
 
    -  LightGBM will auto compress memory according to ``max_bin``. For example, LightGBM will use ``uint8_t`` for feature value if ``max_bin=255``
 
--  ``min_data_in_bin``, default = ``3``, type = int, ``min_data_in_bin > 0``
+-  ``min_data_in_bin``, default = ``3``, type = int, constraints: ``min_data_in_bin > 0``
 
    -  minimal number of data inside one bin
 
    -  use this to avoid one-data-one-bin (potential over-fitting)
 
--  ``bin_construct_sample_cnt``, default = ``200000``, type = int, aliases: ``subsample_for_bin``, ``bin_construct_sample_cnt > 0``
+-  ``bin_construct_sample_cnt``, default = ``200000``, type = int, aliases: ``subsample_for_bin``, constraints: ``bin_construct_sample_cnt > 0``
 
    -  number of data that sampled to construct histogram bins
 
@@ -444,7 +444,7 @@ IO Parameters
 
    -  **Note**: disabling this may cause the slow training speed for sparse datasets
 
--  ``max_conflict_rate``, default = ``0.0``, type = double, ``0.0 <= max_conflict_rate < 1.0``
+-  ``max_conflict_rate``, default = ``0.0``, type = double, constraints: ``0.0 <= max_conflict_rate < 1.0``
 
    -  max conflict rate for bundles in EFB
 
@@ -456,7 +456,7 @@ IO Parameters
 
    -  used to enable/disable sparse optimization
 
--  ``sparse_threshold``, default = ``0.8``, type = double, ``0.0 < sparse_threshold <= 1.0``
+-  ``sparse_threshold``, default = ``0.8``, type = double, constraints: ``0.0 < sparse_threshold <= 1.0``
 
    -  the threshold of zero elements precentage for treating a feature as a sparse one
 
@@ -613,7 +613,7 @@ IO Parameters
 Objective Parameters
 --------------------
 
--  ``num_class``, default = ``1``, type = int, aliases: ``num_classes``, ``num_class > 0``
+-  ``num_class``, default = ``1``, type = int, aliases: ``num_classes``, constraints: ``num_class > 0``
 
    -  used only in ``multi-class`` classification application
 
@@ -625,7 +625,7 @@ Objective Parameters
 
    -  **Note**: this parameter cannot be used at the same time with ``scale_pos_weight``, choose only **one** of them
 
--  ``scale_pos_weight``, default = ``1.0``, type = double, ``scale_pos_weight > 0.0``
+-  ``scale_pos_weight``, default = ``1.0``, type = double, constraints: ``scale_pos_weight > 0.0``
 
    -  used only in ``binary`` application
 
@@ -633,7 +633,7 @@ Objective Parameters
 
    -  **Note**: this parameter cannot be used at the same time with ``is_unbalance``, choose only **one** of them
 
--  ``sigmoid``, default = ``1.0``, type = double, ``sigmoid > 0.0``
+-  ``sigmoid``, default = ``1.0``, type = double, constraints: ``sigmoid > 0.0``
 
    -  used only in ``binary`` and ``multiclassova`` classification and in ``lambdarank`` applications
 
@@ -653,25 +653,25 @@ Objective Parameters
 
    -  might be useful in case of large-range labels
 
--  ``alpha``, default = ``0.9``, type = double, ``0.0 < alpha < 1.0``
+-  ``alpha``, default = ``0.9``, type = double, constraints: ``0.0 < alpha < 1.0``
 
    -  used only in ``huber`` and ``quantile`` ``regression`` applications
 
    -  parameter for `Huber loss <https://en.wikipedia.org/wiki/Huber_loss>`__ and `Quantile regression <https://en.wikipedia.org/wiki/Quantile_regression>`__
 
--  ``fair_c``, default = ``1.0``, type = double, ``fair_c > 0.0``
+-  ``fair_c``, default = ``1.0``, type = double, constraints: ``fair_c > 0.0``
 
    -  used only in ``fair`` ``regression`` application
 
    -  parameter for `Fair loss <https://www.kaggle.com/c/allstate-claims-severity/discussion/24520>`__
 
--  ``poisson_max_delta_step``, default = ``0.7``, type = double, ``poisson_max_delta_step > 0.0``
+-  ``poisson_max_delta_step``, default = ``0.7``, type = double, constraints: ``poisson_max_delta_step > 0.0``
 
    -  used only in ``poisson`` ``regression`` application
 
    -  parameter for `Poisson regression <https://en.wikipedia.org/wiki/Poisson_regression>`__ to safeguard optimization
 
--  ``tweedie_variance_power``, default = ``1.5``, type = double, ``1.0 <= tweedie_variance_power < 2.0``
+-  ``tweedie_variance_power``, default = ``1.5``, type = double, constraints: ``1.0 <= tweedie_variance_power < 2.0``
 
    -  used only in ``tweedie`` ``regression`` application
 
@@ -681,7 +681,7 @@ Objective Parameters
 
    -  set this closer to ``1`` to shift towards a **Poisson** distribution
 
--  ``max_position``, default = ``20``, type = int, ``max_position > 0``
+-  ``max_position``, default = ``20``, type = int, constraints: ``max_position > 0``
 
    -  used only in ``lambdarank`` application
 
@@ -750,7 +750,7 @@ Metric Parameters
 
    -  support multiple metrics, separated by ``,``
 
--  ``metric_freq``, default = ``1``, type = int, aliases: ``output_freq``, ``metric_freq > 0``
+-  ``metric_freq``, default = ``1``, type = int, aliases: ``output_freq``, constraints: ``metric_freq > 0``
 
    -  frequency for metric output
 
@@ -767,19 +767,19 @@ Metric Parameters
 Network Parameters
 ------------------
 
--  ``num_machines``, default = ``1``, type = int, aliases: ``num_machine``, ``num_machines > 0``
+-  ``num_machines``, default = ``1``, type = int, aliases: ``num_machine``, constraints: ``num_machines > 0``
 
    -  the number of machines for parallel learning application
 
    -  this parameter is needed to be set in both **socket** and **mpi** versions
 
--  ``local_listen_port``, default = ``12400``, type = int, aliases: ``local_port``, ``port``, ``local_listen_port > 0``
+-  ``local_listen_port``, default = ``12400``, type = int, aliases: ``local_port``, ``port``, constraints: ``local_listen_port > 0``
 
    -  TCP listen port for local machines
 
    -  **Note**: don't forget to allow this port in firewall settings before training
 
--  ``time_out``, default = ``120``, type = int, ``time_out > 0``
+-  ``time_out``, default = ``120``, type = int, constraints: ``time_out > 0``
 
    -  socket time-out in minutes
 

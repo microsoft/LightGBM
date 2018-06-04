@@ -141,10 +141,10 @@ def GenParameterDescription(sections, descriptions, params_rst):
             if checks_len > 1:
                 number1, sign1 = parse_check(checks[0])
                 number2, sign2 = parse_check(checks[1], reverse=True)
-                checks_str = ', ``{0} {1} {2} {3} {4}``'.format(number2, sign2, name, sign1, number1)
+                checks_str = ', constraints: ``{0} {1} {2} {3} {4}``'.format(number2, sign2, name, sign1, number1)
             elif checks_len == 1:
                 number, sign = parse_check(checks[0])
-                checks_str = ', ``{0} {1} {2}``'.format(name, sign, number)
+                checks_str = ', constraints: ``{0} {1} {2}``'.format(name, sign, number)
             else:
                 checks_str = ''
             main_desc = '-  ``{0}``, default = ``{1}``, type = {2}{3}{4}{5}'.format(name, default, param_type, options_str, aliases_str, checks_str)
