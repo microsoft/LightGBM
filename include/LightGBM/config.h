@@ -566,57 +566,73 @@ public:
   #pragma endregion
 
   #pragma region Objective Parameters
-  
-  // alias=num_classes
-  // desc=need to specify this in multi-class classification
+
+  // check = >0
+  // alias = num_classes
+  // desc = used only in ``multi-class`` classification application
   int num_class = 1;
 
-  // check=>0
-  // desc=parameter for sigmoid function. Will be used in binary and multiclassova classification and in lambdarank
-  double sigmoid = 1.0;
-
-  // desc=parameter for `Huber loss`_ and `Quantile regression`_. Will be used in regression task
-  double alpha = 0.9;
-
-  // desc=parameter for `Fair loss`_. Will be used in regression task
-  double fair_c = 1.0;
-
-  // desc=parameter for `Poisson regression`_ to safeguard optimization
-  double poisson_max_delta_step = 0.7;
-
-  // desc=only used in regression task
-  // desc=adjust initial score to the mean of labels for faster convergence
-  bool boost_from_average = true;
-
-  // alias=unbalanced_sets
-  // desc=used in binary classification
-  // desc=set this to true if training data are unbalance
+  // alias = unbalanced_sets
+  // desc = used only in ``binary`` application
+  // desc = set this to ``true`` if training data are unbalance
+  // desc = **Note**: this parameter cannot be used at the same time with ``scale_pos_weight``, choose only **one** of them
   bool is_unbalance = false;
 
-  // check=>0
-  // desc=weight of positive class in binary classification task
+  // check = >0.0
+  // desc = used only in ``binary`` application
+  // desc = weight of labels with positive class
+  // desc = **Note**: this parameter cannot be used at the same time with ``is_unbalance``, choose only **one** of them
   double scale_pos_weight = 1.0;
 
-  // desc=only used in regression, usually works better for the large-range of labels
-  // desc=will fit sqrt(label) instead and prediction result will be also automatically converted to pow2(prediction)
+  // check = >0.0
+  // desc = used only in ``binary`` and ``multiclassova`` classification and in ``lambdarank`` applications
+  // desc = parameter for the sigmoid function
+  double sigmoid = 1.0;
+
+  // desc = used only in ``regression``, ``binary`` and ``cross-entropy`` applications
+  // desc = adjusts initial score to the mean of labels for faster convergence
+  bool boost_from_average = true;
+
+  // desc = used only in ``regression`` application
+  // desc = used to fit ``sqrt(label)`` instead of original values and prediction result will be also automatically converted to ``prediction^2``
+  // desc = might be useful in case of large-range labels
   bool reg_sqrt = false;
 
-  // desc=only used in tweedie regression
-  // desc=controls the variance of the tweedie distribution
-  // desc=set closer to 2 to shift towards a gamma distribution
-  // desc=set closer to 1 to shift towards a poisson distribution
+  // check = >0.0
+  // check = <1.0
+  // desc = used only in ``huber`` and ``quantile`` ``regression`` applications
+  // desc = parameter for `Huber loss <https://en.wikipedia.org/wiki/Huber_loss>`__ and `Quantile regression <https://en.wikipedia.org/wiki/Quantile_regression>`__
+  double alpha = 0.9;
+
+  // check = >0.0
+  // desc = used only in ``fair`` ``regression`` application
+  // desc = parameter for `Fair loss <https://www.kaggle.com/c/allstate-claims-severity/discussion/24520>`__
+  double fair_c = 1.0;
+
+  // check = >0.0
+  // desc = used only in ``poisson`` ``regression`` application
+  // desc = parameter for `Poisson regression <https://en.wikipedia.org/wiki/Poisson_regression>`__ to safeguard optimization
+  double poisson_max_delta_step = 0.7;
+
+  // check = >=1.0
+  // check = <2.0
+  // desc = used only in ``tweedie`` ``regression`` application
+  // desc = used to control the variance of the tweedie distribution
+  // desc = set this closer to ``2`` to shift towards a **Gamma** distribution
+  // desc = set this closer to ``1`` to shift towards a **Poisson** distribution
   double tweedie_variance_power = 1.5;
 
-  // default = 0, 1, 3, 7, 15, 31, 63, ..., 2 ^ 30 - 1
-  // desc=used in lambdarank
-  // desc=relevant gain for labels. For example,the gain of label 2 is 3 if using default label gains
-  // desc=separate by ,
-  std::vector<double> label_gain;
-
-  // check=>0
-  // desc=used in lambdarank
-  // desc=will optimize `NDCG`_ at this position
+  // check = >0
+  // desc = used only in ``lambdarank`` application
+  // desc = optimizes `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ at this position
   int max_position = 20;
+
+  // type = multi-double
+  // default = 0,1,3,7,15,31,63,...,2^30-1
+  // desc = used only in ``lambdarank`` application
+  // desc = relevant gain for labels. For example, the gain of label ``2`` is ``3`` in case of default label gains
+  // desc = separate by ``,``
+  std::vector<double> label_gain;
 
   #pragma endregion
 

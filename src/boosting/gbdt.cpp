@@ -377,7 +377,7 @@ double GBDT::BoostFromAverage() {
     } else if (std::string(objective_function_->GetName()) == std::string("regression_l1")
                || std::string(objective_function_->GetName()) == std::string("quantile")
                || std::string(objective_function_->GetName()) == std::string("mape")) {
-      Log::Warning("Disable boost_from_average in %s may cause the slow convergence", objective_function_->GetName());
+      Log::Warning("Disabling boost_from_average in %s may cause the slow convergence", objective_function_->GetName());
     }
   }
   return 0.0f;
