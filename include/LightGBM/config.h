@@ -136,12 +136,12 @@ public:
   std::string boosting = "gbdt";
 
   // alias = train, train_data, data_filename
-  // desc = training data, LightGBM will train from this data
+  // desc = path of training data, LightGBM will train from this data
   std::string data = "";
 
   // alias = test, valid_data, valid_data_file, test_data, valid_filenames
   // default = ""
-  // desc = validation/test data, LightGBM will output metrics for these data
+  // desc = path(s) of validation/test data, LightGBM will output metrics for these data
   // desc = support multiple validation data, separated by ``,``
   std::vector<std::string> valid;
 
@@ -637,91 +637,96 @@ public:
   #pragma endregion
 
   #pragma region Metric Parameters
-  
+
   // [doc-only]
-  // alias=metric_types
-  // default=''
-  // type=multi-enum
-  // desc=metric to be evaluated on the evaluation sets **in addition** to what is provided in the training arguments
-  // descl2='' (empty string or not specific),metric corresponding to specified objective will be used (this is possible only for pre - defined objective functions, otherwise no evaluation metric will be added)
-  // descl2='None' (string,**not** a None value),no metric registered,alias=na
-  // descl2=l1,absolute loss,alias=mean_absolute_error,mae,regression_l1
-  // descl2=l2,square loss,alias=mean_squared_error,mse,regression_l2,regression
-  // descl2=l2_root,root square loss,alias=root_mean_squared_error,rmse
-  // descl2=quantile,`Quantile regression`_
-  // descl2=mape,`MAPE loss`_,alias=mean_absolute_percentage_error
-  // descl2=huber,`Huber loss`_
-  // descl2=fair,`Fair loss`_
-  // descl2=poisson,negative log-likelihood for `Poisson regression`_
-  // descl2=gamma,negative log-likelihood for Gamma regression
-  // descl2=gamma_deviance,residual deviance for Gamma regression
-  // descl2=tweedie,negative log-likelihood for Tweedie regression
-  // descl2=ndcg,`NDCG`_
-  // descl2=map,`MAP`_,alias=mean_average_precision
-  // descl2=auc,`AUC`_
-  // descl2=binary_logloss,`log loss`_,alias=binary
-  // descl2=binary_error,for one sample: 0 for correct classification,1 for error classification
-  // descl2=multi_logloss,log loss for mulit-class classification,alias=multiclass,softmax,multiclassova,multiclass_ova,ova,ovr
-  // descl2=multi_error,error rate for mulit-class classification
-  // descl2=xentropy,cross-entropy (with optional linear weights),alias=cross_entropy
-  // descl2=xentlambda,"intensity-weighted" cross-entropy,alias=cross_entropy_lambda
-  // descl2=kldiv,`Kullback-Leibler divergence`_,alias=kullback_leibler
-  // desc=support multiple metrics,separated by ,
+  // alias = metrics, metric_types
+  // default = ""
+  // type = multi-enum
+  // desc = metric(s) to be evaluated on the evaluation sets **in addition** to what is provided in the training arguments
+  // descl2 = ``""`` (empty string or not specific) means that metric corresponding to specified ``objective`` will be used (this is possible only for pre-defined objective functions, otherwise no evaluation metric will be added)
+  // descl2 = ``"None"`` (string, **not** a ``None`` value) means that no metric will be registered, aliases: ``na``
+  // descl2 = ``l1``, absolute loss, aliases: ``mean_absolute_error``, ``mae``, ``regression_l1``
+  // descl2 = ``l2``, square loss, aliases: ``mean_squared_error``, ``mse``, ``regression_l2``, ``regression``
+  // descl2 = ``l2_root``, root square loss, aliases: ``root_mean_squared_error``, ``rmse``
+  // descl2 = ``quantile``, `Quantile regression <https://en.wikipedia.org/wiki/Quantile_regression>`__
+  // descl2 = ``mape``, `MAPE loss <https://en.wikipedia.org/wiki/Mean_absolute_percentage_error>`__, aliases: ``mean_absolute_percentage_error``
+  // descl2 = ``huber``, `Huber loss <https://en.wikipedia.org/wiki/Huber_loss>`__
+  // descl2 = ``fair``, `Fair loss <https://www.kaggle.com/c/allstate-claims-severity/discussion/24520>`__
+  // descl2 = ``poisson``, negative log-likelihood for `Poisson regression <https://en.wikipedia.org/wiki/Poisson_regression>`__
+  // descl2 = ``gamma``, negative log-likelihood for **Gamma** regression
+  // descl2 = ``gamma_deviance``, residual deviance for **Gamma** regression
+  // descl2 = ``tweedie``, negative log-likelihood for **Tweedie** regression
+  // descl2 = ``ndcg``, `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__
+  // descl2 = ``map``, `MAP <https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/>`__, aliases: ``mean_average_precision``
+  // descl2 = ``auc``, `AUC <https://en.wikipedia.org/wiki/Receiver_operating_characteristic#Area_under_the_curve>`__
+  // descl2 = ``binary_logloss``, `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__, aliases: ``binary``
+  // descl2 = ``binary_error``, for one sample: ``0`` for correct classification, ``1`` for error classification
+  // descl2 = ``multi_logloss``, log loss for multi-class classification, aliases: ``multiclass``, ``softmax``, ``multiclassova``, ``multiclass_ova``, ``ova``, ``ovr``
+  // descl2 = ``multi_error``, error rate for multi-class classification
+  // descl2 = ``xentropy``, cross-entropy (with optional linear weights), aliases: ``cross_entropy``
+  // descl2 = ``xentlambda``, "intensity-weighted" cross-entropy, aliases: ``cross_entropy_lambda``
+  // descl2 = ``kldiv``, `Kullback-Leibler divergence <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence>`__, aliases: ``kullback_leibler``
+  // desc = support multiple metrics, separated by ``,``
   std::vector<std::string> metric;
 
-  // check=>0
+  // check = >0
   // alias = output_freq
   // desc = frequency for metric output
   int metric_freq = 1;
 
-  // alias=training_metric,is_training_metric,train_metric
-  // desc=set this to true if you need to output metric result over training dataset
+  // alias = training_metric, is_training_metric, train_metric
+  // desc = set this to ``true`` to output metric result over training dataset
   bool is_provide_training_metric = false;
 
-  // default=1,2,3,4,5
-  // alias=ndcg_eval_at,ndcg_at
-  // desc=`NDCG`_ evaluation positions,separated by ,
+  // type = multi-int
+  // default = 1,2,3,4,5
+  // alias = ndcg_eval_at, ndcg_at
+  // desc = used only with ``ndcg`` and ``map`` metrics
+  // desc = `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ evaluation positions, separated by ``,``
   std::vector<int> eval_at;
 
   #pragma endregion
 
   #pragma region Network Parameters
 
-  // alias=num_machine
-  // desc=used for parallel learning,the number of machines for parallel learning application
-  // desc=need to set this in both socket and mpi versions
+  // check = >0
+  // alias = num_machine
+  // desc = the number of machines for parallel learning application
+  // desc = this parameter is needed to be set in both **socket** and **mpi** versions
   int num_machines = 1;
 
-  // alias = local_port
-  // desc=TCP listen port for local machines
-  // desc=you should allow this port in firewall settings before training
+  // check = >0
+  // alias = local_port, port
+  // desc = TCP listen port for local machines
+  // desc = **Note**: don't forget to allow this port in firewall settings before training
   int local_listen_port = 12400;
 
-  // desc=socket time-out in minutes
-  int time_out = 120;  // in minutes
+  // check = >0
+  // desc = socket time-out in minutes
+  int time_out = 120;
 
-  // alias=mlist
-  // desc=file that lists machines for this parallel learning application
-  // desc=each line contains one IP and one port for one machine. The format is ip port,separate by space
+  // alias = machine_list_file, machine_list, mlist
+  // desc = path of file that lists machines for this parallel learning application
+  // desc = each line contains one IP and one port for one machine. The format is ``ip port`` (space as a separator)
   std::string machine_list_filename = "";
 
-  // alias=works,nodes
-  // desc=list of machines, format: ip1:port1,ip2:port2
+  // alias = workers, nodes
+  // desc = list of machines in the following format: ``ip1:port1,ip2:port2``
   std::string machines = "";
 
   #pragma endregion
 
   #pragma region GPU Parameters
 
-  // desc=OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform
-  // desc=default value is -1,means the system-wide default platform
+  // desc = OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform
+  // desc = ``-1`` means the system-wide default platform
   int gpu_platform_id = -1;
 
-  // desc=OpenCL device ID in the specified platform. Each GPU in the selected platform has a unique device ID
-  // desc=default value is -1,means the default device in the selected platform
+  // desc = OpenCL device ID in the specified platform. Each GPU in the selected platform has a unique device ID
+  // desc = ``-1`` means the default device in the selected platform
   int gpu_device_id = -1;
 
-  // desc=set to true to use double precision math on GPU (default using single precision)
+  // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used)
   bool gpu_use_dp = false;
 
   #pragma endregion
