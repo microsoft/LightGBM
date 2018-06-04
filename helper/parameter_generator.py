@@ -173,12 +173,12 @@ def GenParameterCode(config_hpp, config_out_cpp):
     # alias table
     str_to_write += "std::unordered_map<std::string, std::string> Config::alias_table({\n"
     for pair in alias:
-        str_to_write += "  {\"%s\", \"%s\"}, \n" % (pair[0], pair[1])
+        str_to_write += "  {\"%s\", \"%s\"},\n" % (pair[0], pair[1])
     str_to_write += "});\n\n"
     # names
     str_to_write += "std::unordered_set<std::string> Config::parameter_set({\n"
     for name in names:
-        str_to_write += "  \"%s\", \n" % (name)
+        str_to_write += "  \"%s\",\n" % (name)
     str_to_write += "});\n\n"
     # from strings
     str_to_write += "void Config::GetMembersFromString(const std::unordered_map<std::string, std::string>& params) {\n"
