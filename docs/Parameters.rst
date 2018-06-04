@@ -23,7 +23,7 @@ Parameters can be set both in config file and command line.
 By using command line, parameters should not have spaces before and after ``=``.
 By using config files, one line can only contain one parameter. You can use ``#`` to comment.
 
-If one parameter appears in both command line and config file, LightGBM will use the parameter in command line.
+If one parameter appears in both command line and config file, LightGBM will use the parameter from the command line.
 
 .. start params list
 
