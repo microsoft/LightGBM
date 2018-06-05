@@ -342,10 +342,13 @@ def create_tree_digraph(booster, tree_index=0, show_info=None,
         Encoding for saving the source.
     graph_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for the graph.
+        All attributes and values must be strings or bytes-like objects.
     node_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for all nodes.
+        All attributes and values must be strings or bytes-like objects.
     edge_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for all edges.
+        All attributes and values must be strings or bytes-like objects.
     body : list of strings or None, optional (default=None)
         Lines to add to the graph body.
     strict : bool, optional (default=False)
@@ -402,10 +405,13 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
         Figure size.
     graph_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for the graph.
+        All attributes and values must be strings or bytes-like objects.
     node_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for all nodes.
+        All attributes and values must be strings or bytes-like objects.
     edge_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for all edges.
+        All attributes and values must be strings or bytes-like objects.
     show_info : list of strings or None, optional (default=None)
         What information should be shown in nodes.
         Possible values of list items: 'split_gain', 'internal_value', 'internal_count', 'leaf_count'.
