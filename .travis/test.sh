@@ -1,5 +1,5 @@
 if [[ ${TASK} == "gpu" ]]; then
-    wget https://github.com/Microsoft/LightGBM/releases/download/untagged-919b0e3fd5cfcad24071/AMD-APP-SDKInstaller-v3.0.130.135-GA-linux64.tar.bz2;
+    wget "https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.135-GA-linux64.tar.bz2";
     tar -xjf AMD-APP-SDK*.tar.bz2;
     AMDAPPSDK=${HOME}/AMDAPPSDK;
     export OPENCL_VENDOR_PATH=${AMDAPPSDK}/etc/OpenCL/vendors;
