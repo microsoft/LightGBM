@@ -114,5 +114,11 @@ cd $TRAVIS_BUILD_DIR/python-package && python setup.py install --precompile || e
 cd $TRAVIS_BUILD_DIR && pytest . || exit -1
 
 if [[ ${TASK} == "regular" ]]; then
-    cd $TRAVIS_BUILD_DIR/examples/python-guide && python simple_example.py && python sklearn_example.py && python advanced_example.py || exit -1
+    conda install python-graphviz
+    cd $TRAVIS_BUILD_DIR/examples/python-guide
+    sed -i'.bak' '/import lightgbm as lgb/a\
+import matplotlib\
+matplotlib.use\(\"Agg\"\)\
+' plot_example.py  # prevent interactive window mode
+    for f in *.py; do python $f || exit -1; done  # run all examples
 fi
