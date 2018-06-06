@@ -1,6 +1,6 @@
 if [[ ${TASK} == "gpu" ]]; then
-    bash .travis/amd_sdk.sh;
-    tar -xjf AMD-SDK.tar.bz2;
+    wget http://s3.amazonaws.com/omnia-ci/AMD-APP-SDKInstaller-v3.0.130.135-GA-linux64.tar.bz2;
+    tar -xjf AMD-APP-SDK*.tar.bz2;
     AMDAPPSDK=${HOME}/AMDAPPSDK;
     export OPENCL_VENDOR_PATH=${AMDAPPSDK}/etc/OpenCL/vendors;
     mkdir -p ${OPENCL_VENDOR_PATH};
