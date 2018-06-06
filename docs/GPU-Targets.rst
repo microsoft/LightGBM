@@ -287,7 +287,7 @@ Keep in mind that using the integrated graphics card is not directly possible wi
 
 .. _Intel SDK for OpenCL: https://software.intel.com/en-us/articles/opencl-drivers
 
-.. _our GitHub repo: https://github.com/Microsoft/LightGBM/releases/download/untagged-919b0e3fd5cfcad24071/AMD-APP-SDKInstaller-v3.0.130.135-GA-linux64.tar.bz2
+.. _our GitHub repo: https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.135-GA-linux64.tar.bz2
 
 .. _NVIDIA CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 
