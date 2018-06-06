@@ -30,18 +30,18 @@ def GetParameterInfos(config_hpp):
             elif cur_key is not None:
                 line = line.strip()
                 if line.startswith("//"):
-                    tokens = line[2:].split("=")
-                    key = tokens[0].strip()
-                    val = '='.join(tokens[1:]).strip()
+                    key, _, val = line[2:].partition("=")
+                    key = key.strip()
+                    val = val.strip()
                     if key not in cur_info:
-                        if key == "descl2":
+                        if key == "descl2" and "desc" not in cur_info:
                             cur_info["desc"] = []
-                        else:
+                        elif key != "descl2":
                             cur_info[key] = []
                     if key == "desc":
-                        cur_info["desc"].append(["l1", val])
+                        cur_info["desc"].append(("l1", val))
                     elif key == "descl2":
-                        cur_info["desc"].append(["l2", val])
+                        cur_info["desc"].append(("l2", val))
                     else:
                         cur_info[key].append(val)
                 elif line:
@@ -79,22 +79,22 @@ def GetAlias(infos):
                 name = y["name"][0]
                 alias = y["alias"][0].split(',')
                 for name2 in alias:
-                    pairs.append([name2.strip(), name])
+                    pairs.append((name2.strip(), name))
     return pairs
 
 
-def SetOneVarFromString(name, type, checks):
+def SetOneVarFromString(name, param_type, checks):
     ret = ""
     univar_mapper = {"int": "GetInt", "double": "GetDouble", "bool": "GetBool", "std::string": "GetString"}
-    if "vector" not in type:
-        ret += "  %s(params, \"%s\", &%s);\n" % (univar_mapper[type], name, name)
+    if "vector" not in param_type:
+        ret += "  %s(params, \"%s\", &%s);\n" % (univar_mapper[param_type], name, name)
         if len(checks) > 0:
             for check in checks:
                 ret += "  CHECK(%s %s);\n" % (name, check)
         ret += "\n"
     else:
         ret += "  if (GetString(params, \"%s\", &tmp_str)) {\n" % (name)
-        type2 = type.split("<")[1][:-1]
+        type2 = param_type.split("<")[1][:-1]
         if type2 == "std::string":
             ret += "    %s = Common::Split(tmp_str.c_str(), ',');\n" % (name)
         else:
@@ -141,10 +141,10 @@ def GenParameterDescription(sections, descriptions, params_rst):
             if checks_len > 1:
                 number1, sign1 = parse_check(checks[0])
                 number2, sign2 = parse_check(checks[1], reverse=True)
-                checks_str = ', ``{0} {1} {2} {3} {4}``'.format(number2, sign2, name, sign1, number1)
+                checks_str = ', constraints: ``{0} {1} {2} {3} {4}``'.format(number2, sign2, name, sign1, number1)
             elif checks_len == 1:
                 number, sign = parse_check(checks[0])
-                checks_str = ', ``{0} {1} {2}``'.format(name, sign, number)
+                checks_str = ', constraints: ``{0} {1} {2}``'.format(name, sign, number)
             else:
                 checks_str = ''
             main_desc = '-  ``{0}``, default = ``{1}``, type = {2}{3}{4}{5}'.format(name, default, param_type, options_str, aliases_str, checks_str)
@@ -173,12 +173,12 @@ def GenParameterCode(config_hpp, config_out_cpp):
     # alias table
     str_to_write += "std::unordered_map<std::string, std::string> Config::alias_table({\n"
     for pair in alias:
-        str_to_write += "  {\"%s\", \"%s\"}, \n" % (pair[0], pair[1])
+        str_to_write += "  {\"%s\", \"%s\"},\n" % (pair[0], pair[1])
     str_to_write += "});\n\n"
     # names
     str_to_write += "std::unordered_set<std::string> Config::parameter_set({\n"
     for name in names:
-        str_to_write += "  \"%s\", \n" % (name)
+        str_to_write += "  \"%s\",\n" % (name)
     str_to_write += "});\n\n"
     # from strings
     str_to_write += "void Config::GetMembersFromString(const std::unordered_map<std::string, std::string>& params) {\n"
@@ -187,12 +187,12 @@ def GenParameterCode(config_hpp, config_out_cpp):
         for y in x:
             if "[doc-only]" in y:
                 continue
-            type = y["inner_type"][0]
+            param_type = y["inner_type"][0]
             name = y["name"][0]
             checks = []
             if "check" in y:
                 checks = y["check"]
-            tmp = SetOneVarFromString(name, type, checks)
+            tmp = SetOneVarFromString(name, param_type, checks)
             str_to_write += tmp
     # tails
     str_to_write += "}\n\n"
@@ -202,10 +202,10 @@ def GenParameterCode(config_hpp, config_out_cpp):
         for y in x:
             if "[doc-only]" in y:
                 continue
-            type = y["inner_type"][0]
+            param_type = y["inner_type"][0]
             name = y["name"][0]
-            if "vector" in type:
-                if "int8" in type:
+            if "vector" in param_type:
+                if "int8" in param_type:
                     str_to_write += "  str_buf << \"[%s: \" << Common::Join(Common::ArrayCast<int8_t, int>(%s),\",\") << \"]\\n\";\n" % (name, name)
                 else:
                     str_to_write += "  str_buf << \"[%s: \" << Common::Join(%s,\",\") << \"]\\n\";\n" % (name, name)
