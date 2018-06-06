@@ -14,7 +14,7 @@ You can find below a table of correspondence:
 +===========================+=================+=================+=================+==============+
 | `Intel SDK for OpenCL`_   | Supported       | Supported \*    | Supported       | Untested     |
 +---------------------------+-----------------+-----------------+-----------------+--------------+
-| `AMD APP SDK`_            | Supported       | Untested \*     | Supported       | Fails        |
+| AMD APP SDK \*\*\*        | Supported       | Untested \*     | Supported       | Fails        |
 +---------------------------+-----------------+-----------------+-----------------+--------------+
 | `NVIDIA CUDA Toolkit`_    | Fails    \*\*   | Fails    \*\*   | Fails    \*\*   | Supported    |
 +---------------------------+-----------------+-----------------+-----------------+--------------+
@@ -23,6 +23,7 @@ Legend:
 
 -  \* Not usable directly.
 -  \*\* Reported as unsupported in public forums.
+- \*\*\* AMD has decided to drop the support for APP SDK and deleted all links to installation packages. You can download the installation package for Linux from `our GitHub repo`_.
 
 AMD GPUs using Intel SDK for OpenCL is not a typo, nor AMD APP SDK compatibility with CPUs.
 
@@ -286,7 +287,7 @@ Keep in mind that using the integrated graphics card is not directly possible wi
 
 .. _Intel SDK for OpenCL: https://software.intel.com/en-us/articles/opencl-drivers
 
-.. _AMD APP SDK: http://developer.amd.com/  # amd-accelerated-parallel-processing-app-sdk/
+.. _our GitHub repo: https://github.com/Microsoft/LightGBM/releases/download/untagged-919b0e3fd5cfcad24071/AMD-APP-SDKInstaller-v3.0.130.135-GA-linux64.tar.bz2
 
 .. _NVIDIA CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 
