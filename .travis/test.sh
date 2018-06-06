@@ -6,12 +6,7 @@ if [[ ${TASK} == "gpu" ]]; then
     mkdir -p ${OPENCL_VENDOR_PATH};
     sh AMD-APP-SDK*.sh --tar -xf -C ${AMDAPPSDK};
     echo libamdocl64.so > ${OPENCL_VENDOR_PATH}/amdocl64.icd;
-    export LD_LIBRARY_PATH=${AMDAPPSDK}/lib/x86_64:${LD_LIBRARY_PATH};
-    chmod +x ${AMDAPPSDK}/bin/x86_64/clinfo;
-    ${AMDAPPSDK}/bin/x86_64/clinfo;
-    export LIBRARY_PATH="$HOME/miniconda/envs/test-env/lib:$LIBRARY_PATH"
-    export LD_RUN_PATH="$HOME/miniconda/envs/test-env/lib:$LD_RUN_PATH"
-    export CPLUS_INCLUDE_PATH="$HOME/miniconda/envs/test-env/include:$AMDAPPSDK/include/:$CPLUS_INCLUDE_PATH"
+    export LD_LIBRARY_PATH="$AMDAPPSDK/lib/x86_64:$LD_LIBRARY_PATH";
 fi
 
 if [[ $TRAVIS_OS_NAME == "osx" ]]; then
