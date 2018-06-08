@@ -3,7 +3,7 @@ Documentation
 
 Documentation for LightGBM is generated using `Sphinx <http://www.sphinx-doc.org/>`__.
 
-List of parameters and their descriptions in `Parameters.rst <https://github.com/Microsoft/LightGBM/blob/master/docs/Parameters.rst>`__
+List of parameters and their descriptions in `Parameters.rst <./Parameters.rst>`__
 is generated automatically from comments in `config file <https://github.com/Microsoft/LightGBM/blob/master/include/LightGBM/config.h>`__
 by `this script <https://github.com/Microsoft/LightGBM/blob/master/helper/parameter_generator.py>`__.
 
