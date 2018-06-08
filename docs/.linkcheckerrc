@@ -4,6 +4,7 @@ anchors=1
 sslverify=0
 
 [filtering]
+ignore=public.tableau.com
 ignorewarnings=http-robots-denied,https-certificate-error
 
 [output]
