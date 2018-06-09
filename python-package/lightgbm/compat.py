@@ -57,12 +57,28 @@ def json_default_with_numpy(obj):
 """pandas"""
 try:
     from pandas import Series, DataFrame
+    PANDAS_INSTALLED = True
 except ImportError:
+    PANDAS_INSTALLED = False
     class Series(object):
         pass
 
     class DataFrame(object):
         pass
+
+"""matplotlib"""
+try:
+    import matplotlib
+    MATPLOTLIB_INSTALLED = True
+except ImportError:
+    MATPLOTLIB_INSTALLED = False
+
+"""graphviz"""
+try:
+    import graphviz
+    GRAPHVIZ_INSTALLED = True
+except ImportError:
+    GRAPHVIZ_INSTALLED = False
 
 """sklearn"""
 try:
