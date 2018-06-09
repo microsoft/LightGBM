@@ -11,8 +11,11 @@ if [[ $TRAVIS_OS_NAME == "osx" ]]; then
 #    brew link --overwrite gcc  # Previous variant to deal with conflict link
     wget -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
 else
-    if [[ ${TASK} == "mpi" ]]; then
-        sudo apt-get install -y libopenmpi-dev openmpi-bin
+    if [[ ${TASK} != "pylint" ]] && [[ ${TASK} != "check-docs" ]]; then
+        sudo add-apt-repository ppa:george-edison55/cmake-3.x -y
+        sudo apt-get update -q
+        sudo apt-get install -y cmake
+        sudo apt-get install -y libopenmpi-dev openmpi-bin build-essential
     fi
     wget -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-Linux-x86_64.sh
 fi
