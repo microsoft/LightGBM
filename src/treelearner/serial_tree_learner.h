@@ -69,20 +69,6 @@ public:
     }
   }
 
-  void SubtractPredictionToScore(const Tree* tree, double* out_score) const override {
-    if (tree->num_leaves() <= 1) { return; }
-    CHECK(tree->num_leaves() <= data_partition_->num_leaves());
-    #pragma omp parallel for schedule(static)
-    for (int i = 0; i < tree->num_leaves(); ++i) {
-      double output = static_cast<double>(tree->LeafOutput(i));
-      data_size_t cnt_leaf_data = 0;
-      auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
-      for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
-        out_score[tmp_idx[j]] -= output;
-      }
-    }
-  }
-
   void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, const double* prediction,
                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
 

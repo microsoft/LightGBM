@@ -101,10 +101,6 @@ public:
     tree->AddPredictionToScore(data_, data_indices, data_cnt, score_.data() + offset);
   }
 
-  inline void SubtractScore(const TreeLearner* tree_learner, const Tree* tree, int cur_tree_id) {
-    const size_t offset = static_cast<size_t>(num_data_) * cur_tree_id;
-    tree_learner->SubtractPredictionToScore(tree, score_.data() + offset);
-  }
   /*! \brief Pointer of score */
   inline const double* score() const { return score_.data(); }
 
