@@ -16,7 +16,7 @@ except ImportError:
 
 class TestBasic(unittest.TestCase):
 
-    @unittest.skipIf(not matplotlib_installed, 'matplotlib not installed')
+    @unittest.skipIf(not matplotlib_installed, 'matplotlib is not installed')
     def test_plot_importance(self):
         X_train, _, y_train, _ = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=1)
         train_data = lgb.Dataset(X_train, y_train)
@@ -62,7 +62,7 @@ class TestBasic(unittest.TestCase):
     def test_plot_tree(self):
         pass
 
-    @unittest.skipIf(not matplotlib_installed, 'matplotlib not installed')
+    @unittest.skipIf(not matplotlib_installed, 'matplotlib is not installed')
     def test_plot_metrics(self):
         X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=1)
         train_data = lgb.Dataset(X_train, y_train)
