@@ -60,6 +60,7 @@ try:
     PANDAS_INSTALLED = True
 except ImportError:
     PANDAS_INSTALLED = False
+
     class Series(object):
         pass
 

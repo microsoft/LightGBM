@@ -3,9 +3,9 @@
 import lightgbm as lgb
 import pandas as pd
 
-try:
+if lgb.compat.MATPLOTLIB_INSTALLED:
     import matplotlib.pyplot as plt
-except ImportError:
+else:
     raise ImportError('You need to install matplotlib for plot_example.py.')
 
 # load or create your dataset

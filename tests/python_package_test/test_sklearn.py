@@ -19,11 +19,6 @@ try:
     sklearn_at_least_019 = True
 except ImportError:
     sklearn_at_least_019 = False
-try:
-    import pandas as pd
-    IS_PANDAS_INSTALLED = True
-except ImportError:
-    IS_PANDAS_INSTALLED = False
 
 
 def multi_error(y_true, y_pred):
@@ -182,26 +177,27 @@ class TestSklearn(unittest.TestCase):
         y_pred_2 = clf_2.fit(X_train, y_train).predict_proba(X_test)
         np.testing.assert_allclose(y_pred_1, y_pred_2)
 
+    # sklearn <0.19 cannot accept instance, but many tests could be passed only with min_data=1 and min_data_in_bin=1
+    @unittest.skipIf(not sklearn_at_least_019, 'scikit-learn version is less than 0.19')
     def test_sklearn_integration(self):
-        # sklearn <0.19 cannot accept instance, but many tests could be passed only with min_data=1 and min_data_in_bin=1
-        if sklearn_at_least_019:
-            # we cannot use `check_estimator` directly since there is no skip test mechanism
-            for name, estimator in ((lgb.sklearn.LGBMClassifier.__name__, lgb.sklearn.LGBMClassifier),
-                                    (lgb.sklearn.LGBMRegressor.__name__, lgb.sklearn.LGBMRegressor)):
-                check_parameters_default_constructible(name, estimator)
-                check_no_fit_attributes_set_in_init(name, estimator)
-                # we cannot leave default params (see https://github.com/Microsoft/LightGBM/issues/833)
-                estimator = estimator(min_child_samples=1, min_data_in_bin=1)
-                for check in _yield_all_checks(name, estimator):
-                    if check.__name__ == 'check_estimators_nan_inf':
-                        continue  # skip test because LightGBM deals with nan
-                    try:
-                        check(name, estimator)
-                    except SkipTest as message:
-                        warnings.warn(message, SkipTestWarning)
+        # we cannot use `check_estimator` directly since there is no skip test mechanism
+        for name, estimator in ((lgb.sklearn.LGBMClassifier.__name__, lgb.sklearn.LGBMClassifier),
+                                (lgb.sklearn.LGBMRegressor.__name__, lgb.sklearn.LGBMRegressor)):
+            check_parameters_default_constructible(name, estimator)
+            check_no_fit_attributes_set_in_init(name, estimator)
+            # we cannot leave default params (see https://github.com/Microsoft/LightGBM/issues/833)
+            estimator = estimator(min_child_samples=1, min_data_in_bin=1)
+            for check in _yield_all_checks(name, estimator):
+                if check.__name__ == 'check_estimators_nan_inf':
+                    continue  # skip test because LightGBM deals with nan
+                try:
+                    check(name, estimator)
+                except SkipTest as message:
+                    warnings.warn(message, SkipTestWarning)
 
-    @unittest.skipIf(not IS_PANDAS_INSTALLED, 'pandas is not installed')
+    @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_pandas_categorical(self):
+        import pandas as pd
         X = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 75),  # str
                           "B": np.random.permutation([1, 2, 3] * 100),  # int
                           "C": np.random.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
