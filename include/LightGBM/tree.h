@@ -204,6 +204,7 @@ public:
   }
 
   void RecomputeMaxDepth();
+  void InvertLeafValue();
 
 private:
 

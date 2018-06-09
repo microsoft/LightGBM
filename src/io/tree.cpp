@@ -480,7 +480,7 @@ Tree::Tree(const char* str, size_t* used_len) {
   while (read_line < max_num_line) {
     if (*p == '\r' || *p == '\n') break;
     auto start = p;
-    while (*p != '=') ++p; 
+    while (*p != '=') ++p;
     std::string key(start, p - start);
     ++p;
     start = p;
@@ -719,6 +719,12 @@ void Tree::RecomputeMaxDepth() {
     for (int i = 1; i < num_leaves(); ++i) {
       if (max_depth_ < leaf_depth_[i]) max_depth_ = leaf_depth_[i];
     }
+  }
+}
+
+void Tree::InvertLeafValue() {
+  for (int i = 0; i < num_leaves(); ++i) {
+    leaf_value_[i] *= -1;
   }
 }
 

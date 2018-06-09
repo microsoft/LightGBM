@@ -142,14 +142,18 @@ private:
       for (int tree_id = 0; tree_id < num_tree_per_iteration_; ++tree_id) {
         int model_index = iter * num_tree_per_iteration_ + tree_id;
         int64_t num_score = 0;
+        objective_function_->
+          GetGradients(GetTrainingScore(&num_score), gradients_.data(), hessians_.data());
         size_t bias = static_cast<size_t>(tree_id) * num_data_;
         auto gradients = gradients_.data() + bias;
         auto hessians = hessians_.data() + bias;
         auto new_tree = tree_learner_->FitByExistingTreeIncremental(models_[model_index].get(), gradients, hessians);
-        objective_function_->
-          GetGradients(GetTrainingScore(&num_score), gradients_.data(), hessians_.data());
-        train_score_updater_->AddScore(tree_learner_.get(), new_tree, tree_id);
+
+        auto inversed_tree = *models_[model_index].get();
+        inversed_tree.InvertLeafValue();
+        UpdateScore(&inversed_tree, tree_id);
         models_[model_index].reset(new_tree);
+        UpdateScore(new_tree, tree_id);
       }
     }
     return true;
