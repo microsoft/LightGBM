@@ -79,11 +79,11 @@ You need to know on what you are going to use LightGBM!:
 
 -  For running on Intel, get `Intel SDK for OpenCL`_ (NOT RECOMMENDED)
 
--  For running on AMD, get `AMD APP SDK`_
+-  For running on AMD, get AMD APP SDK
 
 -  For running on NVIDIA, get `CUDA Toolkit`_
 
-Further reading and correspondnce table (especially if you intend to use cross-platform devices,
+Further reading and correspondence table (especially if you intend to use cross-platform devices,
 like Intel CPU with AMD APP SDK): `GPU SDK Correspondence and Device Targeting Table <./GPU-Targets.rst>`__.
 
 **Warning**: using Intel OpenCL is not recommended and may crash your machine due to being non compliant to OpenCL standards.
@@ -567,8 +567,6 @@ Right-click the command prompt, click "Mark", and select all the text from the f
 And open an issue in GitHub `here`_ with that log.
 
 .. _Intel SDK for OpenCL: https://software.intel.com/en-us/articles/opencl-drivers
-
-.. _AMD APP SDK: http://developer.amd.com/  # amd-accelerated-parallel-processing-app-sdk/
 
 .. _CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 

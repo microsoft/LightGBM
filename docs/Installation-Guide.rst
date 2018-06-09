@@ -243,9 +243,11 @@ Following procedure is for the MSVC (Microsoft Visual C++) build.
 
    - For running on Intel, get `Intel SDK for OpenCL`_.
 
-   - For running on AMD, get `AMD APP SDK`_.
+   - For running on AMD, get AMD APP SDK.
 
    - For running on NVIDIA, get `CUDA Toolkit`_.
+
+   Further reading and correspondence table: `GPU SDK Correspondence and Device Targeting Table <./GPU-Targets.rst>`__.
 
 3. Install `Boost Binary`_.
 
@@ -391,8 +393,6 @@ This will generate a JAR file containing the LightGBM `C API <./Development-Guid
 .. _Open MPI: https://www.open-mpi.org/
 
 .. _Intel SDK for OpenCL: https://software.intel.com/en-us/articles/opencl-drivers
-
-.. _AMD APP SDK: http://developer.amd.com/  # amd-accelerated-parallel-processing-app-sdk/
 
 .. _CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 
