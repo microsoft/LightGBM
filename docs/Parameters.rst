@@ -110,11 +110,15 @@ Core Parameters
 
    -  path of training data, LightGBM will train from this data
 
+   -  **Note**: can be used only in CLI version
+
 -  ``valid``, default = ``""``, type = string, aliases: ``test``, ``valid_data``, ``valid_data_file``, ``test_data``, ``valid_filenames``
 
    -  path(s) of validation/test data, LightGBM will output metrics for these data
 
    -  support multiple validation data, separated by ``,``
+
+   -  **Note**: can be used only in CLI version
 
 -  ``num_iterations``, default = ``100``, type = int, aliases: ``num_iteration``, ``num_tree``, ``num_trees``, ``num_round``, ``num_rounds``, ``num_boost_round``, ``n_estimators``, constraints: ``num_iterations >= 0``
 
@@ -398,11 +402,15 @@ IO Parameters
 
    -  filename of output model in training
 
+   -  **Note**: can be used only in CLI version
+
 -  ``snapshot_freq``, default = ``-1``, type = int
 
    -  frequency of saving model file snapshot
 
    -  set this to positive value to enable this function. For example, the model file will be snapshotted at each iteration if ``snapshot_freq=1``
+
+   -  **Note**: can be used only in CLI version
 
 -  ``input_model``, default = ``""``, type = string, aliases: ``model_input``, ``model_in``
 
@@ -418,19 +426,25 @@ IO Parameters
 
    -  filename of prediction result in ``prediction`` task
 
+   -  **Note**: can be used only in CLI version
+
 -  ``initscore_filename``, default = ``""``, type = string, aliases: ``init_score_filename``, ``init_score_file``, ``init_score``, ``input_init_score``
 
-   -  path of file with training initial score
+   -  path of file with training initial scores
 
    -  if ``""``, will use ``train_data_file`` + ``.init`` (if exists)
 
+   -  **Note**: can be used only in CLI version
+
 -  ``valid_data_initscores``, default = ``""``, type = string, aliases: ``valid_data_init_scores``, ``valid_init_score_file``, ``valid_init_score``
 
-   -  path(s) of file(s) with validation initial score(s)
+   -  path(s) of file(s) with validation initial scores
 
    -  if ``""``, will use ``valid_data_file`` + ``.init`` (if exists)
 
    -  separate by ``,`` for multi-validation data
+
+   -  **Note**: can be used only in CLI version
 
 -  ``pre_partition``, default = ``false``, type = bool, aliases: ``is_pre_partition``
 
@@ -604,11 +618,15 @@ IO Parameters
 
    -  if ``convert_model_language`` is set and ``task=train``, the model will be also converted
 
+   -  **Note**: can be used only in CLI version
+
 -  ``convert_model``, default = ``gbdt_prediction.cpp``, type = string, aliases: ``convert_model_file``
 
    -  used only in ``convert_model`` task
 
    -  output filename of converted model
+
+   -  **Note**: can be used only in CLI version
 
 Objective Parameters
 --------------------
