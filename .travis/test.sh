@@ -1,27 +1,16 @@
-if [[ ${TASK} == "gpu" ]] && [[ $TRAVIS_OS_NAME == "linux" ]]; then
-    wget "https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.135-GA-linux64.tar.bz2";
-    tar -xjf AMD-APP-SDK*.tar.bz2;
-    AMDAPPSDK=${HOME}/AMDAPPSDK;
-    export OPENCL_VENDOR_PATH=${AMDAPPSDK}/etc/OpenCL/vendors;
-    mkdir -p ${OPENCL_VENDOR_PATH};
-    sh AMD-APP-SDK*.sh --tar -xf -C ${AMDAPPSDK};
-    echo libamdocl64.so > ${OPENCL_VENDOR_PATH}/amdocl64.icd;
-    export LD_LIBRARY_PATH="$AMDAPPSDK/lib/x86_64:$LD_LIBRARY_PATH";
-fi
+#!/bin/bash
 
 if [[ $TRAVIS_OS_NAME == "osx" ]]; then
     export CXX=g++-8
     export CC=gcc-8
 fi
 
-LGB_VER=$(head -n 1 VERSION.txt)
-
 conda create -q -n test-env python=$PYTHON_VERSION
 source activate test-env
 
 cd $TRAVIS_BUILD_DIR
 
-if [[ ${TASK} == "check-docs" ]]; then
+if [[ $TASK == "check-docs" ]]; then
     if [[ $TRAVIS_OS_NAME != "osx" ]]; then
         sudo apt-get install linkchecker
     fi
@@ -44,13 +33,13 @@ if [[ ${TASK} == "check-docs" ]]; then
     exit 0
 fi
 
-if [[ ${TASK} == "pylint" ]]; then
+if [[ $TASK == "pylint" ]]; then
     conda install pycodestyle
     pycodestyle --ignore=E501,W503 --exclude=./compute,./docs,./.nuget . || exit -1
     exit 0
 fi
 
-if [[ ${TASK} == "if-else" ]]; then
+if [[ $TASK == "if-else" ]]; then
     conda install numpy
     mkdir build && cd build && cmake .. && make lightgbm || exit -1
     cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
@@ -61,44 +50,43 @@ fi
 
 conda install numpy nose scipy scikit-learn pandas matplotlib pytest
 
-if [[ ${TASK} == "sdist" ]]; then
+if [[ $TASK == "sdist" ]]; then
     cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
     cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v || exit -1
-    cd $TRAVIS_BUILD_DIR && pytest tests/python_package_test || exit -1
+    pytest $TRAVIS_BUILD_DIR/tests/python_package_test || exit -1
     exit 0
-elif [[ ${TASK} == "bdist" ]]; then
+elif [[ $TASK == "bdist" ]]; then
     if [[ $TRAVIS_OS_NAME == "osx" ]]; then
         cd $TRAVIS_BUILD_DIR/python-package && python setup.py bdist_wheel --plat-name=macosx --universal || exit -1
-        mv dist/lightgbm-${LGB_VER}-py2.py3-none-macosx.whl dist/lightgbm-${LGB_VER}-py2.py3-none-macosx_10_9_x86_64.macosx_10_10_x86_64.macosx_10_11_x86_64.macosx_10_12_x86_64.macosx_10_13_x86_64.whl
+        mv dist/lightgbm-$LGB_VER-py2.py3-none-macosx.whl dist/lightgbm-$LGB_VER-py2.py3-none-macosx_10_9_x86_64.macosx_10_10_x86_64.macosx_10_11_x86_64.macosx_10_12_x86_64.macosx_10_13_x86_64.whl
     else
         cd $TRAVIS_BUILD_DIR/python-package && python setup.py bdist_wheel --plat-name=manylinux1_x86_64 --universal || exit -1
     fi
-    cd $TRAVIS_BUILD_DIR/python-package && pip install dist/*.whl || exit -1
-    cd $TRAVIS_BUILD_DIR && pytest tests/python_package_test || exit -1
+    pip install $TRAVIS_BUILD_DIR/python-package/dist/*.whl || exit -1
+    pytest $TRAVIS_BUILD_DIR/tests/python_package_test || exit -1
     exit 0
 fi
 
-if [[ ${TASK} == "gpu" ]]; then 
+if [[ $TASK == "gpu" ]]; then
     conda install --yes -c conda-forge boost
-    if [[ ${METHOD} == "pip" ]]; then
-        sed -i 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' ../include/LightGBM/config.h
+    sed -i 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $TRAVIS_BUILD_DIR/include/LightGBM/config.h
+    if [[ $METHOD == "pip" ]]; then
         cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
         cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--boost-root=$HOME/miniconda/envs/test-env/" --install-option="--opencl-include-dir=$AMDAPPSDK/include/" || exit -1
-        cd $TRAVIS_BUILD_DIR && pytest tests/python_package_test || exit -1
+        pytest $TRAVIS_BUILD_DIR/tests/python_package_test || exit -1
         exit 0
     fi
 fi
 
 mkdir build && cd build
 
-if [[ ${TASK} == "mpi" ]]; then
+if [[ $TASK == "mpi" ]]; then
     cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
     cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v --install-option=--mpi || exit -1
     cd $TRAVIS_BUILD_DIR/build
     cmake -DUSE_MPI=ON ..
-elif [[ ${TASK} == "gpu" ]]; then
-    cmake -DUSE_GPU=ON -DBOOST_ROOT="$HOME/miniconda/envs/test-env/" -DOpenCL_INCLUDE_DIR=$AMDAPPSDK/include/ ..
-    sed -i 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' ../include/LightGBM/config.h
+elif [[ $TASK == "gpu" ]]; then
+    cmake -DUSE_GPU=ON -DBOOST_ROOT=$HOME/miniconda/envs/test-env/ -DOpenCL_INCLUDE_DIR=$AMDAPPSDK/include/ ..
 else
     cmake ..
 fi
@@ -108,7 +96,7 @@ make _lightgbm || exit -1
 cd $TRAVIS_BUILD_DIR/python-package && python setup.py install --precompile || exit -1
 cd $TRAVIS_BUILD_DIR && pytest . || exit -1
 
-if [[ ${TASK} == "regular" ]]; then
+if [[ $TASK == "regular" ]]; then
     conda install python-graphviz
     cd $TRAVIS_BUILD_DIR/examples/python-guide
     sed -i'.bak' '/import lightgbm as lgb/a\

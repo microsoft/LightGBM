@@ -137,12 +137,14 @@ public:
 
   // alias = train, train_data, data_filename
   // desc = path of training data, LightGBM will train from this data
+  // desc = **Note**: can be used only in CLI version
   std::string data = "";
 
   // alias = test, valid_data, valid_data_file, test_data, valid_filenames
   // default = ""
   // desc = path(s) of validation/test data, LightGBM will output metrics for these data
   // desc = support multiple validation data, separated by ``,``
+  // desc = **Note**: can be used only in CLI version
   std::vector<std::string> valid;
 
   // alias = num_iteration, num_tree, num_trees, num_round, num_rounds, num_boost_round, n_estimators
@@ -395,10 +397,12 @@ public:
 
   // alias = model_output, model_out
   // desc = filename of output model in training
+  // desc = **Note**: can be used only in CLI version
   std::string output_model = "LightGBM_model.txt";
 
   // desc = frequency of saving model file snapshot
   // desc = set this to positive value to enable this function. For example, the model file will be snapshotted at each iteration if ``snapshot_freq=1``
+  // desc = **Note**: can be used only in CLI version
   int snapshot_freq = -1;
 
   // alias = model_input, model_in
@@ -410,18 +414,21 @@ public:
 
   // alias = predict_result, prediction_result
   // desc = filename of prediction result in ``prediction`` task
+  // desc = **Note**: can be used only in CLI version
   std::string output_result = "LightGBM_predict_result.txt";
 
   // alias = init_score_filename, init_score_file, init_score, input_init_score
-  // desc = path of file with training initial score
+  // desc = path of file with training initial scores
   // desc = if ``""``, will use ``train_data_file`` + ``.init`` (if exists)
+  // desc = **Note**: can be used only in CLI version
   std::string initscore_filename = "";
 
   // alias = valid_data_init_scores, valid_init_score_file, valid_init_score
   // default = ""
-  // desc = path(s) of file(s) with validation initial score(s)
+  // desc = path(s) of file(s) with validation initial scores
   // desc = if ``""``, will use ``valid_data_file`` + ``.init`` (if exists)
   // desc = separate by ``,`` for multi-validation data
+  // desc = **Note**: can be used only in CLI version
   std::vector<std::string> valid_data_initscores;
 
   // alias = is_pre_partition
@@ -556,11 +563,13 @@ public:
   // desc = used only in ``convert_model`` task
   // desc = only ``cpp`` is supported yet
   // desc = if ``convert_model_language`` is set and ``task=train``, the model will be also converted
+  // desc = **Note**: can be used only in CLI version
   std::string convert_model_language = "";
 
   // alias = convert_model_file
   // desc = used only in ``convert_model`` task
   // desc = output filename of converted model
+  // desc = **Note**: can be used only in CLI version
   std::string convert_model = "gbdt_prediction.cpp";
 
   #pragma endregion
