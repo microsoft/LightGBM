@@ -718,7 +718,6 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
   } else {
     #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_data; ++i) {
-      std::vector<double> tmp_result(num_tree_per_iteration_);
       for (int j = 0; j < num_tree_per_iteration_; ++j) {
         out_result[j * num_data + i] = static_cast<double>(raw_scores[j * num_data + i]);
       }
