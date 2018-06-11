@@ -25,7 +25,7 @@ if [[ $TASK == "check-docs" ]]; then
     rstcheck --report warning --ignore-directives=autoclass,autofunction `find . -type f -name "*.rst"` || exit -1
     make html || exit -1
     find ./_build/html/ -type f -name '*.html' -exec \
-    sed -i -e 's;\(\.\/[^.]*\.\)rst\([^[:space:]]*\);\1html\2;g' {} \;  # Emulate js function
+    sed -i -e 's;\(\.\/[^.]*\.\)rst\([^[:space:]]*\);\1html\2;g' {} \;  # emulate js function
 #    html5validator --root ./_build/html/ || exit -1
     if [[ $TRAVIS_OS_NAME != "osx" ]]; then
         linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
@@ -68,7 +68,7 @@ elif [[ $TASK == "bdist" ]]; then
 fi
 
 if [[ $TASK == "gpu" ]]; then
-    conda install --yes -c conda-forge boost=1.63.0
+    conda install --yes -c conda-forge boost
     sed -i 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $TRAVIS_BUILD_DIR/include/LightGBM/config.h
     if [[ $METHOD == "pip" ]]; then
         cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
