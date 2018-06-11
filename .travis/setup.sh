@@ -28,6 +28,6 @@ if [[ $TASK == "gpu" ]] && [[ $TRAVIS_OS_NAME == "linux" ]]; then
     wget https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
     tar -xjf AMD-APP-SDK*.tar.bz2 || exit -1
     mkdir -p $OPENCL_VENDOR_PATH
-    sh AMD-APP-SDK*.sh --tar -xf -C $AMDAPPSDK
-    echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
+    sh AMD-APP-SDK*.sh --tar -xf -C $AMDAPPSDK || exit -1
+    echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd || exit -1
 fi
