@@ -25,7 +25,7 @@ conda config --set always_yes yes --set changeps1 no
 conda update -q conda
 
 if [[ $TASK == "gpu" ]] && [[ $TRAVIS_OS_NAME == "linux" ]]; then
-    wget https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.135-GA-linux64.tar.bz2
+    wget https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
     tar -xjf AMD-APP-SDK*.tar.bz2
     mkdir -p $OPENCL_VENDOR_PATH
     sh AMD-APP-SDK*.sh --tar -xf -C $AMDAPPSDK
