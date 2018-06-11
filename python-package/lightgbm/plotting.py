@@ -400,6 +400,11 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
               show_info=None, precision=None):
     """Plot specified tree.
 
+    Note
+    ----
+    It is preferable to use ``create_tree_digraph()`` because of its lossless quality
+    and returned objects can be also rendered and displayed directly inside a Jupyter notebook.
+
     Parameters
     ----------
     booster : Booster or LGBMModel
