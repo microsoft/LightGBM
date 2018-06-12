@@ -19,9 +19,9 @@ if [[ $TASK == "check-docs" ]]; then
     fi
     conda install sphinx "sphinx_rtd_theme>=0.3"  # html5validator
     pip install rstcheck
-    cd python-package
+    cd $TRAVIS_BUILD_DIR/python-package
     rstcheck --report warning `find . -type f -name "*.rst"` || exit -1
-    cd ../docs
+    cd $TRAVIS_BUILD_DIR/docs
     rstcheck --report warning --ignore-directives=autoclass,autofunction `find . -type f -name "*.rst"` || exit -1
     make html || exit -1
     find ./_build/html/ -type f -name '*.html' -exec \
@@ -52,7 +52,7 @@ conda install numpy nose scipy scikit-learn pandas matplotlib pytest
 
 if [[ $TASK == "sdist" ]]; then
     cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
-    cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v || exit -1
+    pip install $TRAVIS_BUILD_DIR/python-package/dist/lightgbm-$LGB_VER.tar.gz -v || exit -1
     pytest $TRAVIS_BUILD_DIR/tests/python_package_test || exit -1
     exit 0
 elif [[ $TASK == "bdist" ]]; then
@@ -73,7 +73,7 @@ if [[ $TASK == "gpu" ]]; then
     grep -q 'std::string device_type = "gpu"' $TRAVIS_BUILD_DIR/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
         cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
-        cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--boost-root=$HOME/miniconda/envs/test-env/" --install-option="--opencl-include-dir=$AMDAPPSDK/include/" || exit -1
+        pip install $TRAVIS_BUILD_DIR/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--boost-root=$HOME/miniconda/envs/test-env/" --install-option="--opencl-include-dir=$AMDAPPSDK/include/" || exit -1
         pytest $TRAVIS_BUILD_DIR/tests/python_package_test || exit -1
         exit 0
     fi
@@ -83,7 +83,7 @@ mkdir build && cd build
 
 if [[ $TASK == "mpi" ]]; then
     cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
-    cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v --install-option=--mpi || exit -1
+    pip install $TRAVIS_BUILD_DIR/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--mpi || exit -1
     cd $TRAVIS_BUILD_DIR/build
     cmake -DUSE_MPI=ON ..
 elif [[ $TASK == "gpu" ]]; then
@@ -95,7 +95,7 @@ fi
 make _lightgbm || exit -1
 
 cd $TRAVIS_BUILD_DIR/python-package && python setup.py install --precompile || exit -1
-cd $TRAVIS_BUILD_DIR && pytest . || exit -1
+pytest $TRAVIS_BUILD_DIR || exit -1
 
 if [[ $TASK == "regular" ]]; then
     conda install python-graphviz
