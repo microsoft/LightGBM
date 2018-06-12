@@ -70,6 +70,7 @@ fi
 if [[ $TASK == "gpu" ]]; then
     conda install --yes -c conda-forge boost
     sed -i 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $TRAVIS_BUILD_DIR/include/LightGBM/config.h
+    grep -q 'std::string device_type = "gpu"' $TRAVIS_BUILD_DIR/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
         cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
         cd $TRAVIS_BUILD_DIR/python-package/dist && pip install lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--boost-root=$HOME/miniconda/envs/test-env/" --install-option="--opencl-include-dir=$AMDAPPSDK/include/" || exit -1
