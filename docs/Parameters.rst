@@ -347,6 +347,12 @@ Learning Control Parameters
 
    -  you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
 
+-  ``feature_contri``, default = ``None``, type = multi-double, aliases: ``fc``, ``fp``, ``feature_penalty``
+
+   -  used to control feature's split gain, will use ``gain[i] = max(0, feature_contri[i]) * gain[i]`` to update split gain of i-th feature.
+
+   -  you need to specify all features in order.
+
 -  ``forcedsplits_filename``, default = ``""``, type = string, aliases: ``fs``, ``forced_splits_filename``, ``forced_splits_file``, ``forced_splits``
 
    -  path to a ``.json`` file that specifies splits to force at the top of every decision tree before best-first learning commences

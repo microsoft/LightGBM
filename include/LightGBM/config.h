@@ -353,6 +353,13 @@ public:
   // desc = ``1`` means increasing, ``-1`` means decreasing, ``0`` means non-constraint
   // desc = you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
   std::vector<int8_t> monotone_constraints;
+
+  // type = multi-double
+  // alias = fc, fp, feature_penalty
+  // default = None
+  // desc = used to control feature's split gain, will use ``gain[i] = max(0, feature_contri[i]) * gain[i]`` to update split gain of i-th feature.
+  // desc = you need to specify all features in order.
+  std::vector<double> feature_contri;
   
   // alias = fs, forced_splits_filename, forced_splits_file, forced_splits
   // desc = path to a ``.json`` file that specifies splits to force at the top of every decision tree before best-first learning commences

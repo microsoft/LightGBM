@@ -176,6 +176,15 @@ public:
     return true;
   }
 
+  inline static bool CheckAll(const std::vector<VAL_T>& array, VAL_T t) {
+    for (size_t i = 0; i < array.size(); ++i) {
+      if (array[i] != t) {
+        return false;
+      }
+    }
+    return true;
+  }
+
 };
 
 }  // namespace LightGBM
