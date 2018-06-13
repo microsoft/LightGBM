@@ -349,9 +349,9 @@ Learning Control Parameters
 
 -  ``feature_contri``, default = ``None``, type = multi-double, aliases: ``fc``, ``fp``, ``feature_penalty``
 
-   -  used to control feature's split gain, will use ``gain[i] = max(0, feature_contri[i]) * gain[i]`` to update split gain of i-th feature.
+   -  used to control feature's split gain, will use ``gain[i] = max(0, feature_contri[i]) * gain[i]`` to replace the split gain of i-th feature
 
-   -  you need to specify all features in order.
+   -  you need to specify all features in order
 
 -  ``forcedsplits_filename``, default = ``""``, type = string, aliases: ``fs``, ``forced_splits_filename``, ``forced_splits_file``, ``forced_splits``
 

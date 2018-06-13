@@ -357,8 +357,8 @@ public:
   // type = multi-double
   // alias = fc, fp, feature_penalty
   // default = None
-  // desc = used to control feature's split gain, will use ``gain[i] = max(0, feature_contri[i]) * gain[i]`` to update split gain of i-th feature.
-  // desc = you need to specify all features in order.
+  // desc = used to control feature's split gain, will use ``gain[i] = max(0, feature_contri[i]) * gain[i]`` to replace the split gain of i-th feature
+  // desc = you need to specify all features in order
   std::vector<double> feature_contri;
   
   // alias = fs, forced_splits_filename, forced_splits_file, forced_splits
