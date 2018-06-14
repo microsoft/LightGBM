@@ -15,6 +15,8 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
     return new RMSEMetric(config);
   } else if (type == std::string("regression_l1") || type == std::string("l1") || type == std::string("mean_absolute_error") || type == std::string("mae")) {
     return new L1Metric(config);
+  } else if (type == std::string("symmetric_mean_absolute_percentage_error") || type == std::string("smape")) {
+    return new SMAPEMetric(config);
   } else if (type == std::string("quantile")) {
     return new QuantileMetric(config);
   } else if (type == std::string("huber")) {

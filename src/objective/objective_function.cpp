@@ -14,6 +14,8 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new RegressionL2loss(config);
   } else if (type == std::string("regression_l1") || type == std::string("mean_absolute_error")  || type == std::string("mae")) {
     return new RegressionL1loss(config);
+  } else if (type == std::string("symmetric_mean_absolute_percentage_error") || type == std::string("smape")) {
+    return new RegressionSMAPEloss(config);
   } else if (type == std::string("quantile")) {
     return new RegressionQuantileloss(config);
   } else if (type == std::string("huber")) {
@@ -53,6 +55,8 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new RegressionL2loss(strs);
   } else if (type == std::string("regression_l1")) {
     return new RegressionL1loss(strs);
+  } else if (type == std::string("smape")) {
+    return new RegressionSMAPEloss(strs);
   } else if (type == std::string("quantile")) {
     return new RegressionQuantileloss(strs);
   } else if (type == std::string("huber")) {

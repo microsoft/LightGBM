@@ -171,6 +171,19 @@ public:
   }
 };
 
+/*! \brief SMAPE loss for regression task */
+class SMAPEMetric: public RegressionMetric<SMAPEMetric> {
+public:
+  explicit SMAPEMetric(const MetricConfig& config) :RegressionMetric<SMAPEMetric>(config) {}
+
+  inline static double LossOnPoint(label_t label, double score, const MetricConfig&) {
+    return std::fabs(score - label) / (std::fabs(label) + std::fabs(score));
+  }
+  inline static const char* Name() {
+    return "smape";
+  }
+};
+
 /*! \brief Huber loss for regression task */
 class HuberLossMetric: public RegressionMetric<HuberLossMetric> {
 public:
