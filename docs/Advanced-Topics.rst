@@ -8,7 +8,7 @@ Missing Value Handle
 
 -  LightGBM uses NA (NaN) to represent missing values by default. Change it to use zero by setting ``zero_as_missing=true``.
 
--  When ``zero_as_missing=false`` (default), the unshown values in sparse matrices (and LightSVM) are treated as zeros.
+-  When ``zero_as_missing=false`` (default), the unshown values in sparse matrices (and LightSVM) are treated as missing.
 
 -  When ``zero_as_missing=true``, NA and zeros (including unshown values in sparse matrices (and LightSVM)) are treated as missing.
 
