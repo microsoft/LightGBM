@@ -380,6 +380,17 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     dataset->monotone_types_.clear();
   }
 
+  const double* tmp_ptr_feature_penalty = reinterpret_cast<const double*>(mem_ptr);
+  dataset->feature_penalty_.clear();
+  for (int i = 0; i < dataset->num_features_; ++i) {
+    dataset->feature_penalty_.push_back(tmp_ptr_feature_penalty[i]);
+  }
+  mem_ptr += sizeof(double) * (dataset->num_features_);
+
+  if (ArrayArgs<double>::CheckAll(dataset->feature_penalty_, 1)) {
+    dataset->feature_penalty_.clear();
+  }
+
   // get feature names
   dataset->feature_names_.clear();
   // write feature names

@@ -306,6 +306,19 @@ void Dataset::Construct(
       monotone_types_.clear();
     }
   }
+  if (!io_config.feature_contri.empty()) {
+    CHECK(static_cast<size_t>(num_total_features_) == io_config.feature_contri.size());
+    feature_penalty_.resize(num_features_);
+    for (int i = 0; i < num_total_features_; ++i) {
+      int inner_fidx = InnerFeatureIndex(i);
+      if (inner_fidx >= 0) {
+        feature_penalty_[inner_fidx] = std::max(0.0, io_config.feature_contri[i]);
+      }
+    }
+    if (ArrayArgs<double>::CheckAll(feature_penalty_, 1.0)) {
+      feature_penalty_.clear();
+    }
+  }
 }
 
 void Dataset::FinishLoad() {
@@ -350,6 +363,7 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   group_feature_start_ = dataset->group_feature_start_;
   group_feature_cnt_ = dataset->group_feature_cnt_;
   monotone_types_ = dataset->monotone_types_;
+  feature_penalty_ = dataset->feature_penalty_;
 }
 
 void Dataset::CreateValid(const Dataset* dataset) {
@@ -403,6 +417,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
     }
   }
   monotone_types_ = dataset->monotone_types_;
+  feature_penalty_ = dataset->feature_penalty_;
 }
 
 void Dataset::ReSize(data_size_t num_data) {
@@ -555,7 +570,8 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     // get size of header
     size_t size_of_header = sizeof(num_data_) + sizeof(num_features_) + sizeof(num_total_features_)
       + sizeof(int) * num_total_features_ + sizeof(label_idx_) + sizeof(num_groups_)
-      + 3 * sizeof(int) * num_features_ + sizeof(uint64_t) * (num_groups_ + 1) + 2 * sizeof(int) * num_groups_ + sizeof(int8_t) * num_features_;
+      + 3 * sizeof(int) * num_features_ + sizeof(uint64_t) * (num_groups_ + 1) + 2 * sizeof(int) * num_groups_ + sizeof(int8_t) * num_features_
+      + sizeof(double) * num_features_;
     // size of feature names
     for (int i = 0; i < num_total_features_; ++i) {
       size_of_header += feature_names_[i].size() + sizeof(int);
@@ -580,6 +596,13 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     writer->Write(monotone_types_.data(), sizeof(int8_t) * num_features_);
     if (ArrayArgs<int8_t>::CheckAllZero(monotone_types_)) {
       monotone_types_.clear();
+    }
+    if (feature_penalty_.empty()) {
+      ArrayArgs<double>::Assign(&feature_penalty_, 1.0, num_features_);
+    }
+    writer->Write(feature_penalty_.data(), sizeof(double) * num_features_);
+    if (ArrayArgs<double>::CheckAll(feature_penalty_, 1.0)) {
+      feature_penalty_.clear();
     }
     // write feature names
     for (int i = 0; i < num_total_features_; ++i) {

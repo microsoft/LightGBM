@@ -443,6 +443,14 @@ public:
     }
   }
 
+  inline double FeaturePenalte(int i) const {
+    if (feature_penalty_.empty()) {
+      return 1;
+    } else {
+      return feature_penalty_[i];
+    }
+  }
+
   bool HasMonotone() const {
     if (monotone_types_.empty()) {
       return false;
@@ -605,6 +613,7 @@ private:
   std::vector<int> group_feature_start_;
   std::vector<int> group_feature_cnt_;
   std::vector<int8_t> monotone_types_;
+  std::vector<double> feature_penalty_;
   bool is_finish_load_;
 };
 
