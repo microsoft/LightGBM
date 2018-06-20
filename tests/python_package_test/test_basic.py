@@ -1,7 +1,6 @@
 # coding: utf-8
 # pylint: skip-file
 import os
-import subprocess
 import tempfile
 import unittest
 

@@ -48,7 +48,7 @@ if [[ $TASK == "if-else" ]]; then
     exit 0
 fi
 
-conda install numpy nose scipy scikit-learn pandas matplotlib pytest
+conda install numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest
 
 if [[ $TASK == "sdist" ]]; then
     cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
@@ -98,7 +98,6 @@ cd $TRAVIS_BUILD_DIR/python-package && python setup.py install --precompile || e
 pytest $TRAVIS_BUILD_DIR || exit -1
 
 if [[ $TASK == "regular" ]]; then
-    conda install python-graphviz
     cd $TRAVIS_BUILD_DIR/examples/python-guide
     sed -i'.bak' '/import lightgbm as lgb/a\
 import matplotlib\

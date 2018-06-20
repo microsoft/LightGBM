@@ -15,12 +15,6 @@ from sklearn.model_selection import train_test_split, TimeSeriesSplit
 from scipy.sparse import csr_matrix
 
 try:
-    import pandas as pd
-    IS_PANDAS_INSTALLED = True
-except ImportError:
-    IS_PANDAS_INSTALLED = False
-
-try:
     import cPickle as pickle
 except ImportError:
     import pickle
@@ -478,8 +472,9 @@ class TestEngine(unittest.TestCase):
         for ret in other_ret:
             self.assertAlmostEqual(ret_origin, ret, places=5)
 
-    @unittest.skipIf(not IS_PANDAS_INSTALLED, 'pandas is not installed')
+    @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_pandas_categorical(self):
+        import pandas as pd
         X = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 75),  # str
                           "B": np.random.permutation([1, 2, 3] * 100),  # int
                           "C": np.random.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float

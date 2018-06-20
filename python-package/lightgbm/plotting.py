@@ -10,6 +10,7 @@ from io import BytesIO
 import numpy as np
 
 from .basic import Booster
+from .compat import MATPLOTLIB_INSTALLED, GRAPHVIZ_INSTALLED
 from .sklearn import LGBMModel
 
 
@@ -69,9 +70,9 @@ def plot_importance(booster, ax=None, height=0.2,
     ax : matplotlib.axes.Axes
         The plot with model's feature importances.
     """
-    try:
+    if MATPLOTLIB_INSTALLED:
         import matplotlib.pyplot as plt
-    except ImportError:
+    else:
         raise ImportError('You must install matplotlib to plot importance.')
 
     if isinstance(booster, LGBMModel):
@@ -173,9 +174,9 @@ def plot_metric(booster, metric=None, dataset_names=None,
     ax : matplotlib.axes.Axes
         The plot with metric's history over the training.
     """
-    try:
+    if MATPLOTLIB_INSTALLED:
         import matplotlib.pyplot as plt
-    except ImportError:
+    else:
         raise ImportError('You must install matplotlib to plot metric.')
 
     if isinstance(booster, LGBMModel):
@@ -261,9 +262,9 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None,
     See:
       - http://graphviz.readthedocs.io/en/stable/api.html#digraph
     """
-    try:
+    if GRAPHVIZ_INSTALLED:
         from graphviz import Digraph
-    except ImportError:
+    else:
         raise ImportError('You must install graphviz to plot tree.')
 
     def float2str(value, precision=None):
@@ -399,6 +400,11 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
               show_info=None, precision=None):
     """Plot specified tree.
 
+    Note
+    ----
+    It is preferable to use ``create_tree_digraph()`` because of its lossless quality
+    and returned objects can be also rendered and displayed directly inside a Jupyter notebook.
+
     Parameters
     ----------
     booster : Booster or LGBMModel
@@ -430,10 +436,10 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
     ax : matplotlib.axes.Axes
         The plot with single tree.
     """
-    try:
+    if MATPLOTLIB_INSTALLED:
         import matplotlib.pyplot as plt
         import matplotlib.image as image
-    except ImportError:
+    else:
         raise ImportError('You must install matplotlib to plot tree.')
 
     if ax is None:
