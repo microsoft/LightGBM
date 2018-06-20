@@ -374,13 +374,13 @@ This will generate a JAR file containing the LightGBM `C API <./Development-Guid
 
 .. _zip archive: https://github.com/Microsoft/LightGBM/archive/master.zip
 
-.. _Visual Studio: https://www.visualstudio.com/downloads/
+.. _Visual Studio: https://visualstudio.microsoft.com/downloads/
 
 .. _Git for Windows: https://git-scm.com/download/win
 
 .. _CMake: https://cmake.org/
 
-.. _MSBuild: https://www.visualstudio.com/downloads/
+.. _MSBuild: https://visualstudio.microsoft.com/downloads/
 
 .. _MinGW-w64: https://mingw-w64.org/doku.php/download
 

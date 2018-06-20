@@ -100,7 +100,7 @@ LightGBM
 
 -  **Question 8**: CPU usage is low (like 10%) in Windows when using LightGBM on very large datasets with many core systems.
 
--  **Solution 8**: Please use `Visual Studio <https://www.visualstudio.com/downloads/>`__
+-  **Solution 8**: Please use `Visual Studio <https://visualstudio.microsoft.com/downloads/>`__
    as it may be `10x faster than MinGW <https://github.com/Microsoft/LightGBM/issues/749>`__ especially for very large trees.
 
 --------------
