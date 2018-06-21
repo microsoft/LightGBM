@@ -133,7 +133,7 @@ class LGBMModel(_LGBMModelBase):
                  min_split_gain=0., min_child_weight=1e-3, min_child_samples=20,
                  subsample=1., subsample_freq=1, colsample_bytree=1.,
                  reg_alpha=0., reg_lambda=0., random_state=None,
-                 n_jobs=-1, silent=True, **kwargs):
+                 n_jobs=-1, silent=True, importance_type='split', **kwargs):
         """Construct a gradient boosting model.
 
         Parameters
@@ -189,6 +189,8 @@ class LGBMModel(_LGBMModelBase):
             Number of parallel threads.
         silent : bool, optional (default=True)
             Whether to print messages while running boosting.
+        importance_type : str, optional (default='split')
+            The type of feature importance to be filled into ``feature_importances_``.
         **kwargs : other parameters
             Check http://lightgbm.readthedocs.io/en/latest/Parameters.html for more parameters.
 
@@ -260,6 +262,7 @@ class LGBMModel(_LGBMModelBase):
         self.random_state = random_state
         self.n_jobs = n_jobs
         self.silent = silent
+        self.importance_type = importance_type
         self._Booster = None
         self._evals_result = None
         self._best_score = None
@@ -392,6 +395,7 @@ class LGBMModel(_LGBMModelBase):
         if 'verbose' not in params and self.silent:
             params['verbose'] = 0
         params.pop('silent', None)
+        params.pop('importance_type', None)
         params.pop('n_estimators', None)
         params.pop('class_weight', None)
         if self._n_classes is not None and self._n_classes > 2:
@@ -584,11 +588,13 @@ class LGBMModel(_LGBMModelBase):
         Note
         ----
         Feature importance in sklearn interface used to normalize to 1,
-        it's deprecated after 2.0.4 and same as Booster.feature_importance() now.
+        it's deprecated after 2.0.4 and is the same as Booster.feature_importance() now.
+        ``importance_type`` attribute is passed to the function to configure the 
+        type of importance values to be extracted.
         """
         if self._n_features is None:
             raise LGBMNotFittedError('No feature_importances found. Need to call fit beforehand.')
-        return self.booster_.feature_importance()
+        return self.booster_.feature_importance(importance_type=self.importance_type)
 
 
 class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
