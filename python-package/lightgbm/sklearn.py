@@ -195,8 +195,8 @@ class LGBMModel(_LGBMModelBase):
             Whether to print messages while running boosting.
         importance_type : str, optional (default='split')
             The type of feature importance to be filled into ``feature_importances_``.
-            Possible values: 'split', 'gain'.
-            See `lightgbm.Booster.feature_importance()` for more details.
+            If "split", result contains numbers of times the feature is used in a model.
+            If "gain", result contains total gains of splits which use the feature.
         **kwargs : other parameters
             Check http://lightgbm.readthedocs.io/en/latest/Parameters.html for more parameters.
 
