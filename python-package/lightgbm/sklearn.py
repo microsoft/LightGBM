@@ -195,6 +195,8 @@ class LGBMModel(_LGBMModelBase):
             Whether to print messages while running boosting.
         importance_type : str, optional (default='split')
             The type of feature importance to be filled into ``feature_importances_``.
+            Possible values: 'split', 'gain'. 
+            See `lightgbm.Booster.feature_importance()` for more details.
         **kwargs : other parameters
             Check http://lightgbm.readthedocs.io/en/latest/Parameters.html for more parameters.
 
@@ -611,8 +613,8 @@ class LGBMModel(_LGBMModelBase):
         ----
         Feature importance in sklearn interface used to normalize to 1,
         it's deprecated after 2.0.4 and is the same as Booster.feature_importance() now.
-        ``importance_type`` attribute is passed to the function to configure the 
-        type of importance values to be extracted.
+        ``importance_type`` attribute specified in the constructor is passed to the function 
+        to configure the type of importance values to be extracted.
         """
         if self._n_features is None:
             raise LGBMNotFittedError('No feature_importances found. Need to call fit beforehand.')
