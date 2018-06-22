@@ -24,6 +24,8 @@
 #include <boost/align/aligned_allocator.hpp>
 #endif
 
+using namespace json11;
+
 namespace LightGBM {
 
 /*!
@@ -31,7 +33,7 @@ namespace LightGBM {
 */
 class SerialTreeLearner: public TreeLearner {
 public:
-  explicit SerialTreeLearner(const TreeConfig* tree_config);
+  explicit SerialTreeLearner(const Config* config);
 
   ~SerialTreeLearner();
 
@@ -39,9 +41,10 @@ public:
 
   void ResetTrainingData(const Dataset* train_data) override;
 
-  void ResetConfig(const TreeConfig* tree_config) override;
+  void ResetConfig(const Config* config) override;
 
-  Tree* Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian) override;
+  Tree* Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian,
+              Json& forced_split_json) override;
 
   Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
 
@@ -94,6 +97,12 @@ protected:
   * \param right_leaf The index of right leaf after splitted.
   */
   virtual void Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf);
+
+  /* Force splits with forced_split_json dict and then return num splits forced.*/
+  virtual int32_t ForceSplits(Tree* tree, Json& forced_split_json, int* left_leaf,
+                              int* right_leaf, int* cur_depth, 
+                              bool *aborted_last_force_split);
+
 
   /*!
   * \brief Get the number of data in a leaf
@@ -154,7 +163,7 @@ protected:
   /*! \brief used to cache historical histogram to speed up*/
   HistogramPool histogram_pool_;
   /*! \brief config of tree learner*/
-  const TreeConfig* tree_config_;
+  const Config* config_;
   int num_threads_;
   std::vector<int> ordered_bin_indices_;
   bool is_constant_hessian_;

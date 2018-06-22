@@ -4,6 +4,7 @@
 #include <LightGBM/boosting.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/json11.hpp>
 
 #include "score_updater.hpp"
 
@@ -14,6 +15,8 @@
 #include <memory>
 #include <mutex>
 #include <map>
+
+using namespace json11;
 
 namespace LightGBM {
 
@@ -40,7 +43,8 @@ public:
   * \param objective_function Training objective function
   * \param training_metrics Training metrics
   */
-  void Init(const BoostingConfig* gbdt_config, const Dataset* train_data, const ObjectiveFunction* objective_function,
+  void Init(const Config* gbdt_config, const Dataset* train_data,
+            const ObjectiveFunction* objective_function,
             const std::vector<const Metric*>& training_metrics) override;
 
   /*!
@@ -79,7 +83,7 @@ public:
   * \brief Reset Boosting Config
   * \param gbdt_config Config for boosting
   */
-  void ResetConfig(const BoostingConfig* gbdt_config) override;
+  void ResetConfig(const Config* gbdt_config) override;
 
   /*!
   * \brief Adding a validation dataset
@@ -181,7 +185,7 @@ public:
         num_preb_in_one_row *= max_iteration;
       }
     } else if (is_pred_contrib) {
-      num_preb_in_one_row = max_feature_idx_ + 2; // +1 for 0-based indexing, +1 for baseline
+      num_preb_in_one_row = num_tree_per_iteration_ * (max_feature_idx_ + 2); // +1 for 0-based indexing, +1 for baseline
     }
     return num_preb_in_one_row;
   }
@@ -331,7 +335,7 @@ protected:
   /*!
   * \brief reset config for bagging
   */
-  void ResetBaggingConfig(const BoostingConfig* config, bool is_change_dataset);
+  void ResetBaggingConfig(const Config* config, bool is_change_dataset);
 
   /*!
   * \brief Implement bagging logic
@@ -380,7 +384,7 @@ protected:
   /*! \brief Pointer to training data */
   const Dataset* train_data_;
   /*! \brief Config of gbdt */
-  std::unique_ptr<BoostingConfig> gbdt_config_;
+  std::unique_ptr<Config> config_;
   /*! \brief Tree learner, will use this class to learn trees */
   std::unique_ptr<TreeLearner> tree_learner_;
   /*! \brief Objective function */
@@ -452,6 +456,8 @@ protected:
   std::unique_ptr<ObjectiveFunction> loaded_objective_;
   bool average_output_;
   bool need_re_bagging_;
+
+  Json forced_splits_json_;
 };
 
 }  // namespace LightGBM

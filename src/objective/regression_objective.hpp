@@ -63,7 +63,7 @@ namespace LightGBM {
 */
 class RegressionL2loss: public ObjectiveFunction {
 public:
-  explicit RegressionL2loss(const ObjectiveConfig& config) {
+  explicit RegressionL2loss(const Config& config) {
     sqrt_ = config.reg_sqrt;
   }
 
@@ -174,7 +174,7 @@ protected:
 */
 class RegressionL1loss: public RegressionL2loss {
 public:
-  explicit RegressionL1loss(const ObjectiveConfig& config): RegressionL2loss(config) {
+  explicit RegressionL1loss(const Config& config): RegressionL2loss(config) {
   }
 
   explicit RegressionL1loss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
@@ -260,12 +260,19 @@ public:
 */
 class RegressionHuberLoss: public RegressionL2loss {
 public:
-  explicit RegressionHuberLoss(const ObjectiveConfig& config): RegressionL2loss(config) {
+  explicit RegressionHuberLoss(const Config& config): RegressionL2loss(config) {
     alpha_ = static_cast<double>(config.alpha);
+    if (sqrt_) {
+      Log::Warning("Cannot use sqrt transform in %s Regression, will auto disable it", GetName());
+      sqrt_ = false;
+    }
   }
 
   explicit RegressionHuberLoss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
-
+    if (sqrt_) {
+      Log::Warning("Cannot use sqrt transform in %s Regression, will auto disable it", GetName());
+      sqrt_ = false;
+    }
   }
 
   ~RegressionHuberLoss() {
@@ -315,7 +322,7 @@ private:
 // http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
 class RegressionFairLoss: public RegressionL2loss {
 public:
-  explicit RegressionFairLoss(const ObjectiveConfig& config): RegressionL2loss(config) {
+  explicit RegressionFairLoss(const Config& config): RegressionL2loss(config) {
     c_ = static_cast<double>(config.fair_c);
   }
 
@@ -363,10 +370,10 @@ private:
 */
 class RegressionPoissonLoss: public RegressionL2loss {
 public:
-  explicit RegressionPoissonLoss(const ObjectiveConfig& config): RegressionL2loss(config) {
+  explicit RegressionPoissonLoss(const Config& config): RegressionL2loss(config) {
     max_delta_step_ = static_cast<double>(config.poisson_max_delta_step);
     if (sqrt_) {
-      Log::Warning("cannot use sqrt transform in %s Regression, will auto disable it.", GetName());
+      Log::Warning("Cannot use sqrt transform in %s Regression, will auto disable it", GetName());
       sqrt_ = false;
     }
   }
@@ -379,7 +386,7 @@ public:
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
     if (sqrt_) {
-      Log::Warning("cannot use sqrt transform in %s Regression, will auto disable it.", GetName());
+      Log::Warning("Cannot use sqrt transform in %s Regression, will auto disable it", GetName());
       sqrt_ = false;
     }
     RegressionL2loss::Init(metadata, num_data);
@@ -388,10 +395,10 @@ public:
     double sumy;
     Common::ObtainMinMaxSum(label_, num_data_, &miny, (label_t*)nullptr, &sumy);
     if (miny < 0.0f) {
-      Log::Fatal("[%s]: at least one target label is negative.", GetName());
+      Log::Fatal("[%s]: at least one target label is negative", GetName());
     }
     if (sumy == 0.0f) {
-      Log::Fatal("[%s]: sum of labels is zero.", GetName());
+      Log::Fatal("[%s]: sum of labels is zero", GetName());
     }
   }
 
@@ -444,8 +451,9 @@ private:
 
 class RegressionQuantileloss : public RegressionL2loss {
 public:
-  explicit RegressionQuantileloss(const ObjectiveConfig& config): RegressionL2loss(config) {
+  explicit RegressionQuantileloss(const Config& config): RegressionL2loss(config) {
     alpha_ = static_cast<score_t>(config.alpha);
+    CHECK(alpha_ > 0 && alpha_ < 1);
   }
 
   explicit RegressionQuantileloss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
@@ -542,7 +550,7 @@ private:
 */
 class RegressionMAPELOSS : public RegressionL1loss {
 public:
-  explicit RegressionMAPELOSS(const ObjectiveConfig& config) : RegressionL1loss(config) {
+  explicit RegressionMAPELOSS(const Config& config) : RegressionL1loss(config) {
   }
 
   explicit RegressionMAPELOSS(const std::vector<std::string>& strs) : RegressionL1loss(strs) {
@@ -555,7 +563,7 @@ public:
     RegressionL2loss::Init(metadata, num_data);
     for (data_size_t i = 0; i < num_data_; ++i) {
       if (std::fabs(label_[i]) < 1) {
-        Log::Warning("Met 'abs(label) < 1', will convert them to '1' in Mape objective and metric.");
+        Log::Warning("Met 'abs(label) < 1', will convert them to '1' in MAPE objective and metric");
         break;
       }
     }
@@ -643,7 +651,7 @@ private:
 */
 class RegressionGammaLoss : public RegressionPoissonLoss {
 public:
-  explicit RegressionGammaLoss(const ObjectiveConfig& config) : RegressionPoissonLoss(config) {
+  explicit RegressionGammaLoss(const Config& config) : RegressionPoissonLoss(config) {
   }
 
   explicit RegressionGammaLoss(const std::vector<std::string>& strs) : RegressionPoissonLoss(strs) {
@@ -680,7 +688,7 @@ public:
 */
 class RegressionTweedieLoss: public RegressionPoissonLoss {
 public:
-  explicit RegressionTweedieLoss(const ObjectiveConfig& config) : RegressionPoissonLoss(config) {
+  explicit RegressionTweedieLoss(const Config& config) : RegressionPoissonLoss(config) {
     rho_ = config.tweedie_variance_power;
   }
 

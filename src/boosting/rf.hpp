@@ -24,10 +24,10 @@ public:
 
   ~RF() {}
 
-  void Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
+  void Init(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
             const std::vector<const Metric*>& training_metrics) override {
     CHECK(config->bagging_freq > 0 && config->bagging_fraction < 1.0f && config->bagging_fraction > 0.0f);
-    CHECK(config->tree_config.feature_fraction < 1.0f && config->tree_config.feature_fraction > 0.0f);
+    CHECK(config->feature_fraction < 1.0f && config->feature_fraction > 0.0f);
     GBDT::Init(config, train_data, objective_function, training_metrics);
 
     if (num_init_iteration_ > 0) {
@@ -50,9 +50,9 @@ public:
     }
   }
 
-  void ResetConfig(const BoostingConfig* config) override {
+  void ResetConfig(const Config* config) override {
     CHECK(config->bagging_freq > 0 && config->bagging_fraction < 1.0f && config->bagging_fraction > 0.0f);
-    CHECK(config->tree_config.feature_fraction < 1.0f && config->tree_config.feature_fraction > 0.0f);
+    CHECK(config->feature_fraction < 1.0f && config->feature_fraction > 0.0f);
     GBDT::ResetConfig(config);
     // not shrinkage rate for the RF
     shrinkage_rate_ = 1.0f;
@@ -112,7 +112,8 @@ public:
           hess = tmp_hess_.data() + bias;
         }
 
-        new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_));
+        new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_,
+                       forced_splits_json_));
       }
 
       if (new_tree->num_leaves() > 1) {

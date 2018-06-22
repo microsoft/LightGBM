@@ -101,7 +101,7 @@ Then install LightGBM:
 .. code::
 
   git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
-  export CXX=g++-7 CC=gcc-7
+  export CXX=g++-7 CC=gcc-7  # replace 7 with version of gcc installed on your machine
   mkdir build ; cd build
   cmake ..
   make -j4
@@ -194,7 +194,7 @@ Then run the following commands:
 .. code::
 
   git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
-  export CXX=g++-7 CC=gcc-7
+  export CXX=g++-7 CC=gcc-7  # replace 7 with version of gcc installed on your machine
   mkdir build ; cd build
   cmake -DUSE_MPI=ON ..
   make -j4
@@ -243,9 +243,11 @@ Following procedure is for the MSVC (Microsoft Visual C++) build.
 
    - For running on Intel, get `Intel SDK for OpenCL`_.
 
-   - For running on AMD, get `AMD APP SDK`_.
+   - For running on AMD, get AMD APP SDK.
 
    - For running on NVIDIA, get `CUDA Toolkit`_.
+
+   Further reading and correspondence table: `GPU SDK Correspondence and Device Targeting Table <./GPU-Targets.rst>`__.
 
 3. Install `Boost Binary`_.
 
@@ -342,7 +344,7 @@ Then install LightGBM:
 .. code::
 
   git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
-  export CXX=g++-7 CC=gcc-7
+  export CXX=g++-7 CC=gcc-7  # replace 7 with version of gcc installed on your machine
   mkdir build ; cd build
   cmake -DUSE_HDFS=ON ..
   make -j4
@@ -372,13 +374,13 @@ This will generate a JAR file containing the LightGBM `C API <./Development-Guid
 
 .. _zip archive: https://github.com/Microsoft/LightGBM/archive/master.zip
 
-.. _Visual Studio: https://www.visualstudio.com/downloads/
+.. _Visual Studio: https://visualstudio.microsoft.com/downloads/
 
 .. _Git for Windows: https://git-scm.com/download/win
 
 .. _CMake: https://cmake.org/
 
-.. _MSBuild: https://www.visualstudio.com/downloads/
+.. _MSBuild: https://visualstudio.microsoft.com/downloads/
 
 .. _MinGW-w64: https://mingw-w64.org/doku.php/download
 
@@ -391,8 +393,6 @@ This will generate a JAR file containing the LightGBM `C API <./Development-Guid
 .. _Open MPI: https://www.open-mpi.org/
 
 .. _Intel SDK for OpenCL: https://software.intel.com/en-us/articles/opencl-drivers
-
-.. _AMD APP SDK: http://developer.amd.com/amd-accelerated-parallel-processing-app-sdk/
 
 .. _CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 

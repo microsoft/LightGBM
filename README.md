@@ -6,10 +6,10 @@ LightGBM, Light Gradient Boosting Machine
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](https://lightgbm.readthedocs.io/)
 [![GitHub Issues](https://img.shields.io/github/issues/Microsoft/LightGBM.svg)](https://github.com/Microsoft/LightGBM/issues)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Microsoft/LightGBM/blob/master/LICENSE)
-[![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg)](https://pypi.python.org/pypi/lightgbm)
-[![PyPI Version](https://img.shields.io/pypi/v/lightgbm.svg)](https://pypi.python.org/pypi/lightgbm)
+[![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg)](https://pypi.org/project/lightgbm)
+[![PyPI Version](https://img.shields.io/pypi/v/lightgbm.svg)](https://pypi.org/project/lightgbm)
 [![Join the chat at https://gitter.im/Microsoft/LightGBM](https://badges.gitter.im/Microsoft/LightGBM.svg)](https://gitter.im/Microsoft/LightGBM?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Slack](https://lightgbm-slack-autojoin.herokuapp.com/badge.svg)](https://lightgbm-slack-autojoin.herokuapp.com/)
+[![Slack](https://lightgbm-slack-autojoin.herokuapp.com/badge.svg)](https://lightgbm-slack-autojoin.herokuapp.com)
 
 LightGBM is a gradient boosting framework that uses tree based learning algorithms. It is designed to be distributed and efficient with the following advantages:
 
@@ -30,7 +30,7 @@ News
 
 07/13/2017 : [Gitter](https://gitter.im/Microsoft/LightGBM) is available.
 
-06/20/2017 : Python-package is on [PyPI](https://pypi.python.org/pypi/lightgbm) now.
+06/20/2017 : Python-package is on [PyPI](https://pypi.org/project/lightgbm) now.
 
 06/09/2017 : [LightGBM Slack team](https://lightgbm.slack.com) is available.
 
@@ -54,7 +54,7 @@ More detailed update logs : [Key Events](https://github.com/Microsoft/LightGBM/b
 External (unofficial) Repositories
 ----------------------------------
 
-Julia Package: https://github.com/Allardvm/LightGBM.jl
+Julia-package: https://github.com/Allardvm/LightGBM.jl
 
 JPMML: https://github.com/jpmml/jpmml-lightgbm
 
@@ -105,12 +105,11 @@ Microsoft Open Source Code of Conduct
 
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
 
-Reference Paper
----------------
+Reference Papers
+----------------
 
 Guolin Ke, Qi Meng, Thomas Finley, Taifeng Wang, Wei Chen, Weidong Ma, Qiwei Ye, and Tie-Yan Liu. "[LightGBM: A Highly Efficient Gradient Boosting Decision Tree](https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision-tree)". In Advances in Neural Information Processing Systems (NIPS), pp. 3149-3157. 2017.
 
 Qi Meng, Guolin Ke, Taifeng Wang, Wei Chen, Qiwei Ye, Zhi-Ming Ma, Tieyan Liu. "[A Communication-Efficient Parallel Algorithm for Decision Tree](http://papers.nips.cc/paper/6380-a-communication-efficient-parallel-algorithm-for-decision-tree)". Advances in Neural Information Processing Systems 29 (NIPS 2016).
 
 Huan Zhang, Si Si and Cho-Jui Hsieh. "[GPU Acceleration for Large-scale Tree Boosting](https://arxiv.org/abs/1706.08359)". arXiv:1706.08359, 2017.
-

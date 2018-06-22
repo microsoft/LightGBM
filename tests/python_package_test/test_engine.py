@@ -15,12 +15,6 @@ from sklearn.model_selection import train_test_split, TimeSeriesSplit
 from scipy.sparse import csr_matrix
 
 try:
-    import pandas as pd
-    IS_PANDAS_INSTALLED = True
-except ImportError:
-    IS_PANDAS_INSTALLED = False
-
-try:
     import cPickle as pickle
 except ImportError:
     import pickle
@@ -319,12 +313,12 @@ class TestEngine(unittest.TestCase):
                         evals_result=evals_result)
 
         pred_parameter = {"pred_early_stop": True, "pred_early_stop_freq": 5, "pred_early_stop_margin": 1.5}
-        ret = multi_logloss(y_test, gbm.predict(X_test, pred_parameter=pred_parameter))
+        ret = multi_logloss(y_test, gbm.predict(X_test, **pred_parameter))
         self.assertLess(ret, 0.8)
         self.assertGreater(ret, 0.5)  # loss will be higher than when evaluating the full model
 
         pred_parameter = {"pred_early_stop": True, "pred_early_stop_freq": 5, "pred_early_stop_margin": 5.5}
-        ret = multi_logloss(y_test, gbm.predict(X_test, pred_parameter=pred_parameter))
+        ret = multi_logloss(y_test, gbm.predict(X_test, **pred_parameter))
         self.assertLess(ret, 0.2)
 
     def test_early_stopping(self):
@@ -478,8 +472,9 @@ class TestEngine(unittest.TestCase):
         for ret in other_ret:
             self.assertAlmostEqual(ret_origin, ret, places=5)
 
-    @unittest.skipIf(not IS_PANDAS_INSTALLED, 'pandas not installed')
+    @unittest.skipIf(not lgb.compat.PANDAS_INSTALLED, 'pandas is not installed')
     def test_pandas_categorical(self):
+        import pandas as pd
         X = pd.DataFrame({"A": np.random.permutation(['a', 'b', 'c', 'd'] * 75),  # str
                           "B": np.random.permutation([1, 2, 3] * 100),  # int
                           "C": np.random.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
@@ -537,7 +532,6 @@ class TestEngine(unittest.TestCase):
             'objective': 'binary',
             'metric': 'binary_logloss',
             'verbose': -1,
-            'num_iteration': 50  # test num_iteration in dict here
         }
         lgb_train = lgb.Dataset(X_train, y_train)
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
@@ -599,3 +593,43 @@ class TestEngine(unittest.TestCase):
         assert np.all(sliced_csr == features)
         sliced_pred = train_and_get_predictions(sliced_csr, sliced_labels)
         np.testing.assert_almost_equal(origin_pred, sliced_pred)
+
+    def test_monotone_constraint(self):
+        def is_increasing(y):
+            return np.count_nonzero(np.diff(y) < 0.0) == 0
+
+        def is_decreasing(y):
+            return np.count_nonzero(np.diff(y) > 0.0) == 0
+
+        def is_correctly_constrained(learner):
+            n = 200
+            variable_x = np.linspace(0, 1, n).reshape((n, 1))
+            fixed_xs_values = np.linspace(0, 1, n)
+            for i in range(n):
+                fixed_x = fixed_xs_values[i] * np.ones((n, 1))
+                monotonically_increasing_x = np.column_stack((variable_x, fixed_x))
+                monotonically_increasing_y = learner.predict(monotonically_increasing_x)
+                monotonically_decreasing_x = np.column_stack((fixed_x, variable_x))
+                monotonically_decreasing_y = learner.predict(monotonically_decreasing_x)
+                if not (is_increasing(monotonically_increasing_y) and is_decreasing(monotonically_decreasing_y)):
+                    return False
+            return True
+
+        number_of_dpoints = 3000
+        x1_positively_correlated_with_y = np.random.random(size=number_of_dpoints)
+        x2_negatively_correlated_with_y = np.random.random(size=number_of_dpoints)
+        x = np.column_stack((x1_positively_correlated_with_y, x2_negatively_correlated_with_y))
+        zs = np.random.normal(loc=0.0, scale=0.01, size=number_of_dpoints)
+        y = (5 * x1_positively_correlated_with_y
+             + np.sin(10 * np.pi * x1_positively_correlated_with_y)
+             - 5 * x2_negatively_correlated_with_y
+             - np.cos(10 * np.pi * x2_negatively_correlated_with_y)
+             + zs)
+        trainset = lgb.Dataset(x, label=y)
+        params = {
+            'min_data': 20,
+            'num_leaves': 20,
+            'monotone_constraints': '1,-1'
+        }
+        constrained_model = lgb.train(params, trainset)
+        assert is_correctly_constrained(constrained_model)

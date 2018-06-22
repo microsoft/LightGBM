@@ -1,0 +1,12 @@
+{
+    "feature": 25,
+    "threshold": 1.30,
+    "left": {
+        "feature": 26,
+        "threshold": 0.85
+    },
+    "right": {
+        "feature": 26,
+        "threshold": 0.85
+    }
+}

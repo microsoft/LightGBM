@@ -669,13 +669,13 @@ inline static double AvoidInf(double x) {
 }
 
 inline static float AvoidInf(float x) {
-	if (x >= 1e38) {
-		return 1e38f;
-	} else if (x <= -1e38) {
-		return -1e38f;
-	} else {
-		return x;
-	}
+  if (x >= 1e38) {
+    return 1e38f;
+  } else if (x <= -1e38) {
+    return -1e38f;
+  } else {
+    return x;
+  }
 }
 
 template<typename _Iter> inline

@@ -13,6 +13,7 @@ OPTION(USE_OPENMP "Enable OpenMP" ON)
 OPTION(USE_GPU "Enable GPU-acclerated training (EXPERIMENTAL)" OFF)
 OPTION(USE_SWIG "Enable SWIG to generate Java API" OFF)
 OPTION(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
+OPTION(USE_R35 "Set to ON if your R version is not smaller than 3.5" OFF)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.2")
@@ -23,7 +24,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     message(FATAL_ERROR "Insufficient Clang version")
   endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    message(FATAL_ERROR "AppleClang wasn't supported. Please see https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#macos")
+    message(FATAL_ERROR "AppleClang isn't supported. Please see https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#macos")
 endif()
 
 if(APPLE)
@@ -48,6 +49,10 @@ if(USE_SWIG)
   include_directories($ENV{JAVA_HOME}/include)
   include_directories($ENV{JAVA_HOME}/include/linux)
 endif(USE_SWIG)
+
+if(USE_R35)
+    ADD_DEFINITIONS(-DR_VER_ABOVE_35)
+endif()
 
 if(USE_MPI)
     find_package(MPI REQUIRED)
@@ -97,7 +102,7 @@ if(USE_HDFS)
 endif(USE_HDFS)
 
 if(UNIX OR MINGW OR CYGWIN)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -O3 -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -O3 -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type")
 endif()
 
 if(WIN32 AND MINGW)
@@ -144,7 +149,7 @@ if(USE_MPI)
   include_directories(${MPI_CXX_INCLUDE_PATH})
 endif(USE_MPI)
 
-file(GLOB SOURCES 
+file(GLOB SOURCES
     src/application/*.cpp
     src/boosting/*.cpp
     src/io/*.cpp

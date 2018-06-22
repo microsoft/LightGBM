@@ -13,9 +13,10 @@ from tempfile import NamedTemporaryFile
 import numpy as np
 import scipy.sparse
 
-from .compat import (DataFrame, Series, integer_types, json,
-                     json_default_with_numpy, numeric_types, range_,
-                     string_type)
+from .compat import (DataFrame, LGBMDeprecationWarning, Series,
+                     decode_string, integer_types,
+                     json, json_default_with_numpy,
+                     numeric_types, range_, string_type)
 from .libpath import find_lib_path
 
 
@@ -45,7 +46,7 @@ def _safe_call(ret):
         return value from API calls
     """
     if ret != 0:
-        raise LightGBMError(_LIB.LGBM_GetLastError())
+        raise LightGBMError(decode_string(_LIB.LGBM_GetLastError()))
 
 
 def is_numeric(obj):
@@ -238,6 +239,8 @@ PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
 
 def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
     if isinstance(data, DataFrame):
+        if len(data.shape) != 2 or data.shape[0] < 1:
+            raise ValueError('Input data must be 2 dimensional and non empty.')
         if feature_name == 'auto' or feature_name is None:
             data = data.rename(columns=str)
         cat_cols = data.select_dtypes(include=['category']).columns
@@ -438,7 +441,7 @@ class _InnerPredictor(object):
         elif isinstance(data, list):
             try:
                 data = np.array(data)
-            except:
+            except BaseException:
                 raise ValueError('Cannot convert data list to numpy array.')
             preds, nrow = self.__pred_for_np2d(data, num_iteration,
                                                predict_type)
@@ -446,7 +449,7 @@ class _InnerPredictor(object):
             try:
                 warnings.warn('Converting data to scipy sparse matrix.')
                 csr = scipy.sparse.csr_matrix(data)
-            except:
+            except BaseException:
                 raise TypeError('Cannot predict data for type {}'.format(type(data).__name__))
             preds, nrow = self.__pred_for_csr(csr, num_iteration,
                                               predict_type)
@@ -602,6 +605,7 @@ class Dataset(object):
             If list of int, interpreted as indices.
             If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
             If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
+            All values should be less than int32 max value (2147483647).
         params: dict or None, optional (default=None)
             Other parameters.
         free_raw_data: bool, optional (default=True)
@@ -712,7 +716,7 @@ class Dataset(object):
             try:
                 csr = scipy.sparse.csr_matrix(data)
                 self.__init_from_csr(csr, params_str, ref_dataset)
-            except:
+            except BaseException:
                 raise TypeError('Cannot initialize Dataset from {}'.format(type(data).__name__))
         if label is not None:
             self.set_label(label)
@@ -1754,7 +1758,7 @@ class Booster(object):
         return json.loads(string_buffer.value.decode())
 
     def predict(self, data, num_iteration=-1, raw_score=False, pred_leaf=False, pred_contrib=False,
-                data_has_header=False, is_reshape=True, pred_parameter=None):
+                data_has_header=False, is_reshape=True, pred_parameter=None, **kwargs):
         """Make a prediction.
 
         Parameters
@@ -1776,14 +1780,22 @@ class Booster(object):
             Used only if data is string.
         is_reshape : bool, optional (default=True)
             If True, result is reshaped to [nrow, ncol].
-        pred_parameter: dict or None, optional (default=None)
+        pred_parameter : dict or None, optional (default=None)
+            Deprecated.
             Other parameters for the prediction.
+        **kwargs : other parameters for the prediction
 
         Returns
         -------
         result : numpy array
             Prediction result.
         """
+        if pred_parameter:
+            warnings.warn("pred_parameter is deprecated and will be removed in 2.2 version.\n"
+                          "Please use kwargs instead.", LGBMDeprecationWarning)
+            pred_parameter.update(kwargs)
+        else:
+            pred_parameter = kwargs
         predictor = self._to_predictor(pred_parameter)
         if num_iteration <= 0:
             num_iteration = self.best_iteration

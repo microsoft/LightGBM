@@ -10,6 +10,7 @@ from io import BytesIO
 import numpy as np
 
 from .basic import Booster
+from .compat import MATPLOTLIB_INSTALLED, GRAPHVIZ_INSTALLED
 from .sklearn import LGBMModel
 
 
@@ -69,9 +70,9 @@ def plot_importance(booster, ax=None, height=0.2,
     ax : matplotlib.axes.Axes
         The plot with model's feature importances.
     """
-    try:
+    if MATPLOTLIB_INSTALLED:
         import matplotlib.pyplot as plt
-    except ImportError:
+    else:
         raise ImportError('You must install matplotlib to plot importance.')
 
     if isinstance(booster, LGBMModel):
@@ -83,7 +84,7 @@ def plot_importance(booster, ax=None, height=0.2,
     feature_name = booster.feature_name()
 
     if not len(importance):
-        raise ValueError('Booster feature_importances are empty.')
+        raise ValueError("Booster's feature_importance is empty.")
 
     tuples = sorted(zip(feature_name, importance), key=lambda x: x[1])
     if ignore_zero:
@@ -173,9 +174,9 @@ def plot_metric(booster, metric=None, dataset_names=None,
     ax : matplotlib.axes.Axes
         The plot with metric's history over the training.
     """
-    try:
+    if MATPLOTLIB_INSTALLED:
         import matplotlib.pyplot as plt
-    except ImportError:
+    else:
         raise ImportError('You must install matplotlib to plot metric.')
 
     if isinstance(booster, LGBMModel):
@@ -252,7 +253,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
     return ax
 
 
-def _to_graphviz(tree_info, show_info, feature_names,
+def _to_graphviz(tree_info, show_info, feature_names, precision=None,
                  name=None, comment=None, filename=None, directory=None,
                  format=None, engine=None, encoding=None, graph_attr=None,
                  node_attr=None, edge_attr=None, body=None, strict=False):
@@ -261,23 +262,28 @@ def _to_graphviz(tree_info, show_info, feature_names,
     See:
       - http://graphviz.readthedocs.io/en/stable/api.html#digraph
     """
-    try:
+    if GRAPHVIZ_INSTALLED:
         from graphviz import Digraph
-    except ImportError:
+    else:
         raise ImportError('You must install graphviz to plot tree.')
+
+    def float2str(value, precision=None):
+        return "{0:.{1}f}".format(value, precision) if precision is not None else str(value)
 
     def add(root, parent=None, decision=None):
         """recursively add node or edge"""
         if 'split_index' in root:  # non-leaf
-            name = 'split' + str(root['split_index'])
+            name = 'split{0}'.format(root['split_index'])
             if feature_names is not None:
-                label = 'split_feature_name:' + str(feature_names[root['split_feature']])
+                label = 'split_feature_name: {0}'.format(feature_names[root['split_feature']])
             else:
-                label = 'split_feature_index:' + str(root['split_feature'])
-            label += r'\nthreshold:' + str(root['threshold'])
+                label = 'split_feature_index: {0}'.format(root['split_feature'])
+            label += r'\nthreshold: {0}'.format(float2str(root['threshold'], precision))
             for info in show_info:
-                if info in {'split_gain', 'internal_value', 'internal_count'}:
-                    label += r'\n' + info + ':' + str(root[info])
+                if info in {'split_gain', 'internal_value'}:
+                    label += r'\n{0}: {1}'.format(info, float2str(root[info], precision))
+                elif info == 'internal_count':
+                    label += r'\n{0}: {1}'.format(info, root[info])
             graph.node(name, label=label)
             if root['decision_type'] == '<=':
                 l_dec, r_dec = '<=', '>'
@@ -288,11 +294,11 @@ def _to_graphviz(tree_info, show_info, feature_names,
             add(root['left_child'], name, l_dec)
             add(root['right_child'], name, r_dec)
         else:  # leaf
-            name = 'leaf' + str(root['leaf_index'])
-            label = 'leaf_index:' + str(root['leaf_index'])
-            label += r'\nleaf_value:' + str(root['leaf_value'])
+            name = 'leaf{0}'.format(root['leaf_index'])
+            label = 'leaf_index: {0}'.format(root['leaf_index'])
+            label += r'\nleaf_value: {0}'.format(float2str(root['leaf_value'], precision))
             if 'leaf_count' in show_info:
-                label += r'\nleaf_count:' + str(root['leaf_count'])
+                label += r'\nleaf_count: {0}'.format(root['leaf_count'])
             graph.node(name, label=label)
         if parent is not None:
             graph.edge(parent, name, decision)
@@ -305,7 +311,7 @@ def _to_graphviz(tree_info, show_info, feature_names,
     return graph
 
 
-def create_tree_digraph(booster, tree_index=0, show_info=None,
+def create_tree_digraph(booster, tree_index=0, show_info=None, precision=None,
                         name=None, comment=None, filename=None, directory=None,
                         format=None, engine=None, encoding=None, graph_attr=None,
                         node_attr=None, edge_attr=None, body=None, strict=False):
@@ -322,9 +328,11 @@ def create_tree_digraph(booster, tree_index=0, show_info=None,
         Booster or LGBMModel instance.
     tree_index : int, optional (default=0)
         The index of a target tree to convert.
-    show_info : list or None, optional (default=None)
-        What information should be showed on nodes.
+    show_info : list of strings or None, optional (default=None)
+        What information should be shown in nodes.
         Possible values of list items: 'split_gain', 'internal_value', 'internal_count', 'leaf_count'.
+    precision : int or None, optional (default=None)
+        Used to restrict the display of floating point values to a certain precision.
     name : string or None, optional (default=None)
         Graph name used in the source code.
     comment : string or None, optional (default=None)
@@ -340,12 +348,15 @@ def create_tree_digraph(booster, tree_index=0, show_info=None,
         Layout command used ('dot', 'neato', ...).
     encoding : string or None, optional (default=None)
         Encoding for saving the source.
-    graph_attr : dict or None, optional (default=None)
+    graph_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for the graph.
-    node_attr : dict or None, optional (default=None)
+        All attributes and values must be strings or bytes-like objects.
+    node_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for all nodes.
-    edge_attr : dict or None, optional (default=None)
+        All attributes and values must be strings or bytes-like objects.
+    edge_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for all edges.
+        All attributes and values must be strings or bytes-like objects.
     body : list of strings or None, optional (default=None)
         Lines to add to the graph body.
     strict : bool, optional (default=False)
@@ -376,7 +387,7 @@ def create_tree_digraph(booster, tree_index=0, show_info=None,
     if show_info is None:
         show_info = []
 
-    graph = _to_graphviz(tree_info, show_info, feature_names,
+    graph = _to_graphviz(tree_info, show_info, feature_names, precision,
                          name=name, comment=comment, filename=filename, directory=directory,
                          format=format, engine=engine, encoding=encoding, graph_attr=graph_attr,
                          node_attr=node_attr, edge_attr=edge_attr, body=body, strict=strict)
@@ -386,8 +397,13 @@ def create_tree_digraph(booster, tree_index=0, show_info=None,
 
 def plot_tree(booster, ax=None, tree_index=0, figsize=None,
               graph_attr=None, node_attr=None, edge_attr=None,
-              show_info=None):
+              show_info=None, precision=None):
     """Plot specified tree.
+
+    Note
+    ----
+    It is preferable to use ``create_tree_digraph()`` because of its lossless quality
+    and returned objects can be also rendered and displayed directly inside a Jupyter notebook.
 
     Parameters
     ----------
@@ -400,25 +416,30 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
         The index of a target tree to plot.
     figsize : tuple of 2 elements or None, optional (default=None)
         Figure size.
-    graph_attr : dict or None, optional (default=None)
+    graph_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for the graph.
-    node_attr : dict or None, optional (default=None)
+        All attributes and values must be strings or bytes-like objects.
+    node_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for all nodes.
-    edge_attr : dict or None, optional (default=None)
+        All attributes and values must be strings or bytes-like objects.
+    edge_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for all edges.
-    show_info : list or None, optional (default=None)
-        What information should be showed on nodes.
+        All attributes and values must be strings or bytes-like objects.
+    show_info : list of strings or None, optional (default=None)
+        What information should be shown in nodes.
         Possible values of list items: 'split_gain', 'internal_value', 'internal_count', 'leaf_count'.
+    precision : int or None, optional (default=None)
+        Used to restrict the display of floating point values to a certain precision.
 
     Returns
     -------
     ax : matplotlib.axes.Axes
         The plot with single tree.
     """
-    try:
+    if MATPLOTLIB_INSTALLED:
         import matplotlib.pyplot as plt
         import matplotlib.image as image
-    except ImportError:
+    else:
         raise ImportError('You must install matplotlib to plot tree.')
 
     if ax is None:
@@ -429,10 +450,11 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
     graph = create_tree_digraph(
         booster=booster,
         tree_index=tree_index,
+        show_info=show_info,
+        precision=precision,
         graph_attr=graph_attr,
         node_attr=node_attr,
-        edge_attr=edge_attr,
-        show_info=show_info
+        edge_attr=edge_attr
     )
 
     s = BytesIO()

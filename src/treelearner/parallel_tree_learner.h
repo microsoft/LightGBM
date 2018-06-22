@@ -22,7 +22,7 @@ namespace LightGBM {
 template <typename TREELEARNER_T>
 class FeatureParallelTreeLearner: public TREELEARNER_T {
 public:
-  explicit FeatureParallelTreeLearner(const TreeConfig* tree_config);
+  explicit FeatureParallelTreeLearner(const Config* config);
   ~FeatureParallelTreeLearner();
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
@@ -48,10 +48,10 @@ private:
 template <typename TREELEARNER_T>
 class DataParallelTreeLearner: public TREELEARNER_T {
 public:
-  explicit DataParallelTreeLearner(const TreeConfig* tree_config);
+  explicit DataParallelTreeLearner(const Config* config);
   ~DataParallelTreeLearner();
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
-  void ResetConfig(const TreeConfig* tree_config) override;
+  void ResetConfig(const Config* config) override;
 protected:
   void BeforeTrain() override;
   void FindBestSplits() override;
@@ -101,10 +101,10 @@ private:
 template <typename TREELEARNER_T>
 class VotingParallelTreeLearner: public TREELEARNER_T {
 public:
-  explicit VotingParallelTreeLearner(const TreeConfig* tree_config);
+  explicit VotingParallelTreeLearner(const Config* config);
   ~VotingParallelTreeLearner() { }
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
-  void ResetConfig(const TreeConfig* tree_config) override;
+  void ResetConfig(const Config* config) override;
 protected:
   void BeforeTrain() override;
   bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) override;
@@ -137,7 +137,7 @@ protected:
 
 private:
   /*! \brief Tree config used in local mode */
-  TreeConfig local_tree_config_;
+  Config local_config_;
   /*! \brief Voting size */
   int top_k_;
   /*! \brief Rank of local machine*/
@@ -208,4 +208,3 @@ inline void SyncUpGlobalBestSplit(char* input_buffer_, char* output_buffer_, Spl
 
 }  // namespace LightGBM
 #endif   // LightGBM_TREELEARNER_PARALLEL_TREE_LEARNER_H_
-

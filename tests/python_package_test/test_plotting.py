@@ -3,30 +3,31 @@
 import unittest
 
 import lightgbm as lgb
+from lightgbm.compat import MATPLOTLIB_INSTALLED, GRAPHVIZ_INSTALLED
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 
-try:
+if MATPLOTLIB_INSTALLED:
     import matplotlib
     matplotlib.use('Agg')
-    matplotlib_installed = True
-except ImportError:
-    matplotlib_installed = False
+if GRAPHVIZ_INSTALLED:
+    import graphviz
 
 
 class TestBasic(unittest.TestCase):
 
-    @unittest.skipIf(not matplotlib_installed, 'matplotlib not installed')
-    def test_plot_importance(self):
-        X_train, _, y_train, _ = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=1)
-        train_data = lgb.Dataset(X_train, y_train)
-
-        params = {
+    def setUp(self):
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=1)
+        self.train_data = lgb.Dataset(self.X_train, self.y_train)
+        self.params = {
             "objective": "binary",
             "verbose": -1,
             "num_leaves": 3
         }
-        gbm0 = lgb.train(params, train_data, num_boost_round=10)
+
+    @unittest.skipIf(not MATPLOTLIB_INSTALLED, 'matplotlib is not installed')
+    def test_plot_importance(self):
+        gbm0 = lgb.train(self.params, self.train_data, num_boost_round=10)
         ax0 = lgb.plot_importance(gbm0)
         self.assertIsInstance(ax0, matplotlib.axes.Axes)
         self.assertEqual(ax0.get_title(), 'Feature importance')
@@ -35,7 +36,7 @@ class TestBasic(unittest.TestCase):
         self.assertLessEqual(len(ax0.patches), 30)
 
         gbm1 = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, silent=True)
-        gbm1.fit(X_train, y_train)
+        gbm1.fit(self.X_train, self.y_train)
 
         ax1 = lgb.plot_importance(gbm1, color='r', title='t', xlabel='x', ylabel='y')
         self.assertIsInstance(ax1, matplotlib.axes.Axes)
@@ -58,26 +59,55 @@ class TestBasic(unittest.TestCase):
         self.assertTupleEqual(ax2.patches[2].get_facecolor(), (0, .5, 0, 1.))  # g
         self.assertTupleEqual(ax2.patches[3].get_facecolor(), (0, 0, 1., 1.))  # b
 
-    @unittest.skip('Graphviz are not executables on Travis')
+    @unittest.skipIf(not MATPLOTLIB_INSTALLED or not GRAPHVIZ_INSTALLED, 'matplotlib or graphviz is not installed')
     def test_plot_tree(self):
-        pass
+        gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, silent=True)
+        gbm.fit(self.X_train, self.y_train, verbose=False)
 
-    @unittest.skipIf(not matplotlib_installed, 'matplotlib not installed')
+        self.assertRaises(IndexError, lgb.plot_tree, gbm, tree_index=83)
+
+        ax = lgb.plot_tree(gbm, tree_index=3, figsize=(15, 8), show_info=['split_gain'])
+        self.assertIsInstance(ax, matplotlib.axes.Axes)
+        w, h = ax.axes.get_figure().get_size_inches()
+        self.assertEqual(int(w), 15)
+        self.assertEqual(int(h), 8)
+
+    @unittest.skipIf(not GRAPHVIZ_INSTALLED, 'graphviz is not installed')
+    def test_create_tree_digraph(self):
+        gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, silent=True)
+        gbm.fit(self.X_train, self.y_train, verbose=False)
+
+        self.assertRaises(IndexError, lgb.create_tree_digraph, gbm, tree_index=83)
+
+        graph = lgb.create_tree_digraph(gbm, tree_index=3,
+                                        show_info=['split_gain', 'internal_value'],
+                                        name='Tree4', node_attr={'color': 'red'})
+        graph.render(view=False)
+        self.assertIsInstance(graph, graphviz.Digraph)
+        self.assertEqual(graph.name, 'Tree4')
+        self.assertEqual(graph.filename, 'Tree4.gv')
+        self.assertEqual(len(graph.node_attr), 1)
+        self.assertEqual(graph.node_attr['color'], 'red')
+        self.assertEqual(len(graph.graph_attr), 0)
+        self.assertEqual(len(graph.edge_attr), 0)
+        graph_body = ''.join(graph.body)
+        self.assertIn('threshold', graph_body)
+        self.assertIn('split_feature_name', graph_body)
+        self.assertNotIn('split_feature_index', graph_body)
+        self.assertIn('leaf_index', graph_body)
+        self.assertIn('split_gain', graph_body)
+        self.assertIn('internal_value', graph_body)
+        self.assertNotIn('internal_count', graph_body)
+        self.assertNotIn('leaf_count', graph_body)
+
+    @unittest.skipIf(not MATPLOTLIB_INSTALLED, 'matplotlib is not installed')
     def test_plot_metrics(self):
-        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=1)
-        train_data = lgb.Dataset(X_train, y_train)
-        test_data = lgb.Dataset(X_test, y_test, reference=train_data)
-
-        params = {
-            "objective": "binary",
-            "metric": {"binary_logloss", "binary_error"},
-            "verbose": -1,
-            "num_leaves": 3
-        }
+        test_data = lgb.Dataset(self.X_test, self.y_test, reference=self.train_data)
+        self.params.update({"metric": {"binary_logloss", "binary_error"}})
 
         evals_result0 = {}
-        gbm0 = lgb.train(params, train_data,
-                         valid_sets=[train_data, test_data],
+        gbm0 = lgb.train(self.params, self.train_data,
+                         valid_sets=[self.train_data, test_data],
                          valid_names=['v1', 'v2'],
                          num_boost_round=10,
                          evals_result=evals_result0,
@@ -91,14 +121,14 @@ class TestBasic(unittest.TestCase):
         ax0 = lgb.plot_metric(evals_result0, metric='binary_logloss', dataset_names=['v2'])
 
         evals_result1 = {}
-        gbm1 = lgb.train(params, train_data,
+        gbm1 = lgb.train(self.params, self.train_data,
                          num_boost_round=10,
                          evals_result=evals_result1,
                          verbose_eval=False)
         self.assertRaises(ValueError, lgb.plot_metric, evals_result1)
 
         gbm2 = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, silent=True)
-        gbm2.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+        gbm2.fit(self.X_train, self.y_train, eval_set=[(self.X_test, self.y_test)], verbose=False)
         ax2 = lgb.plot_metric(gbm2, title=None, xlabel=None, ylabel=None)
         self.assertIsInstance(ax2, matplotlib.axes.Axes)
         self.assertEqual(ax2.get_title(), '')

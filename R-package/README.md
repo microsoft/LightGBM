@@ -1,4 +1,4 @@
-LightGBM R Package
+LightGBM R-package
 ==================
 
 Installation
@@ -14,13 +14,13 @@ Note: 32-bit R/Rtools is not supported.
 
 Installing [Rtools](https://cran.r-project.org/bin/windows/Rtools/) is mandatory, and only support the 64-bit version. It requires to add to PATH the Rtools MinGW64 folder, if it was not done automatically during installation.
 
-The default compiler is Visual Studio (or [MS Build](https://www.visualstudio.com/downloads/)) in Windows, with an automatic fallback to Rtools or any [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) available (this means if you have only Rtools and CMake, it will compile fine).
+The default compiler is Visual Studio (or [MS Build](https://visualstudio.microsoft.com/downloads/)) in Windows, with an automatic fallback to Rtools or any [MinGW64](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/) (x86_64-posix-seh) available (this means if you have only Rtools and CMake, it will compile fine).
 
 To force the usage of Rtools / MinGW, you can set `use_mingw` to `TRUE` in `R-package/src/install.libs.R`.
 
 For users who wants to install online with GPU or want to choose a specific compiler, please check the end of this document for installation using a helper package ([Laurae2/lgbdl](https://github.com/Laurae2/lgbdl/)).
 
-**Warning for Windows users**: it is recommended to use *Visual Studio* for its better multi-threading efficency in Windows for many core systems. For very simple systems (dual core computers or worse), MinGW64 is recommended for maximum performance. If you do not know what to choose, it is recommended to use [Visual Studio](https://www.visualstudio.com/downloads/), the default compiler. **Do not try using MinGW in Windows on many core systems. It may result in 10x slower results than Visual Studio.**
+**Warning for Windows users**: it is recommended to use *Visual Studio* for its better multi-threading efficency in Windows for many core systems. For very simple systems (dual core computers or worse), MinGW64 is recommended for maximum performance. If you do not know what to choose, it is recommended to use [Visual Studio](https://visualstudio.microsoft.com/downloads/), the default compiler. **Do not try using MinGW in Windows on many core systems. It may result in 10x slower results than Visual Studio.**
 
 #### macOS Preparation
 
@@ -33,18 +33,18 @@ Install LightGBM R-package with the following command:
 ```sh
 git clone --recursive https://github.com/Microsoft/LightGBM
 cd LightGBM/R-package
-# export CXX=g++-7 CC=gcc-7 # for macOS
+# export CXX=g++-7 CC=gcc-7  # for macOS (replace 7 with version of gcc installed on your machine)
 R CMD INSTALL --build . --no-multiarch
 ```
 
-Or build a self-contained R package which can be installed afterwards:
+Or build a self-contained R-package which can be installed afterwards:
 
 ```sh
 git clone --recursive https://github.com/Microsoft/LightGBM
 cd LightGBM/R-package
 Rscript build_package.R
-# export CXX=g++-7 CC=gcc-7 # for macOS
-R CMD INSTALL lightgbm_2.1.0.tar.gz --no-multiarch
+# export CXX=g++-7 CC=gcc-7  # for macOS (replace 7 with version of gcc installed on your machine)
+R CMD INSTALL lightgbm_2.1.1.tar.gz --no-multiarch
 ``` 
 
 Note: for the build with Visual Studio/MSBuild in Windows, you should use the Windows CMD or Powershell.
@@ -61,9 +61,9 @@ options(devtools.install.args = "--no-multiarch") # if you have 64-bit R only, y
 install_github("Microsoft/LightGBM", subdir = "R-package")
 ```
 
-If you are using a precompiled dll/lib locally, you can move the dll/lib into LightGBM root folder, modify `LightGBM/R-package/src/install.libs.R`'s 2nd line (change `use_precompile <- FALSE` to `use_precompile <- TRUE`), and install R-package as usual.
+If you are using a precompiled dll/lib locally, you can move the dll/lib into LightGBM root folder, modify `LightGBM/R-package/src/install.libs.R`'s 2nd line (change `use_precompile <- FALSE` to `use_precompile <- TRUE`), and install R-package as usual. **NOTE: If your R version is not smaller than 3.5.0, you should set `DUSE_R35=ON` in cmake options when build precompiled dll/lib**.
 
-When your package installation is done, you can check quickly if your LightGBM R package is working by running the following:
+When your package installation is done, you can check quickly if your LightGBM R-package is working by running the following:
 
 ```r
 library(lightgbm)
@@ -96,7 +96,7 @@ In addition, if you are using a Visual Studio precompiled DLL, assuming you do n
 
 Once you have all this setup, you can use `lgb.dl` from `lgbdl` package to install LightGBM from repository.
 
-For instance, you can install the R package from LightGBM master commit of GitHub with Visual Studio using the following from R:
+For instance, you can install the R-package from LightGBM master commit of GitHub with Visual Studio using the following from R:
 
 ```r
 lgb.dl(commit = "master",

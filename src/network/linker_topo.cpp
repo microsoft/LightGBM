@@ -174,4 +174,3 @@ RecursiveHalvingMap RecursiveHalvingMap::Construct(int rank, int num_machines) {
 }
 
 }  // namespace LightGBM
-

@@ -23,7 +23,7 @@ Requires docker and [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) on 
 ```sh
 mkdir lightgbm-docker
 cd lightgbm-docker
-wget https://github.com/Microsoft/LightGBM/blob/master/docker/gpu/dockerfile.gpu
+wget https://raw.githubusercontent.com/Microsoft/LightGBM/master/docker/gpu/dockerfile.gpu
 docker build -f dockerfile.gpu -t lightgbm-gpu .
 ```
 

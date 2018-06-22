@@ -1,4 +1,4 @@
-LightGBM Python Package
+LightGBM Python-package
 =======================
 
 |License| |Python Versions| |PyPI Version|
@@ -9,15 +9,18 @@ Installation
 Preparation
 '''''''''''
 
-`setuptools <https://pypi.python.org/pypi/setuptools>`_ is needed.
+`setuptools <https://pypi.org/project/setuptools>`_ is needed.
 
 For macOS users, gcc with OpenMP support must be installed first. Refer to `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#macos>`__ for installing gcc with OpenMP support.
 
 Note: 32-bit Python is not supported. Please install 64-bit version.
 
-Install from `PyPI <https://pypi.python.org/pypi/lightgbm>`_ Using ``pip``
+Install from `PyPI <https://pypi.org/project/lightgbm>`_ Using ``pip``
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 For Windows users, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if Visual Studio (2015 or 2017) is not installed.
+
+For macOS users, latest versions of LightGBM are built with **g++-8** and cannot be launched on systems with **g++-7** and earlier. You should update your **g++** compiler if you don't want to build from sources or install LightGBM 2.1.1 which is the last version built with **g++-7**.
 
 Install `wheel <http://pythonwheels.com>`_ via ``pip install wheel`` first. After that download the wheel file and install from it:
 
@@ -34,9 +37,9 @@ Build from Sources
 
 For Linux and macOS users, installation from sources requires installed `CMake <https://cmake.org/>`_.
 
-For macOS users, you need to specify compilers by runnig ``export CXX=g++-7 CC=gcc-7`` first.
+For macOS users, you need to specify compilers by runnig ``export CXX=g++-7 CC=gcc-7`` (replace 7 with version of gcc installed on your machine) first.
 
-For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/>`_) is needed. If you get any errors during installation, you may need to install `CMake <https://cmake.org/>`_ (version 3.8 or higher).
+For Windows users, Visual Studio (or `MS Build <https://visualstudio.microsoft.com/downloads/>`_) is needed. If you get any errors during installation, you may need to install `CMake <https://cmake.org/>`_ (version 3.8 or higher).
 
 Build MPI Version
 ~~~~~~~~~~~~~~~~~
@@ -105,13 +108,13 @@ Install from GitHub
 
 For Linux and macOS users, installation from GitHub requires installed `CMake <https://cmake.org/>`_.
 
-For Windows users, Visual Studio (or `MS Build <https://www.visualstudio.com/downloads/>`_) is needed. If you get any errors during installation and there is the warning ``WARNING:LightGBM:Compilation with MSBuild from existing solution file failed.`` in the log, you should install `CMake <https://cmake.org/>`_ (version 3.8 or higher).
+For Windows users, Visual Studio (or `MS Build <https://visualstudio.microsoft.com/downloads/>`_) is needed. If you get any errors during installation and there is the warning ``WARNING:LightGBM:Compilation with MSBuild from existing solution file failed.`` in the log, you should install `CMake <https://cmake.org/>`_ (version 3.8 or higher).
 
 .. code:: sh
 
     git clone --recursive https://github.com/Microsoft/LightGBM.git
     cd LightGBM/python-package
-    # export CXX=g++-7 CC=gcc-7  # for macOS users only
+    # export CXX=g++-7 CC=gcc-7  # for macOS users only (replace 7 with version of gcc installed on your machine)
     python setup.py install
 
 Note: ``sudo`` (or administrator rights in Windows) may be needed to perform the command.
@@ -141,9 +144,9 @@ Refer to `FAQ <https://github.com/Microsoft/LightGBM/tree/master/docs/FAQ.rst>`_
 Developments
 ------------
 
-The code style of Python-package follows `pep8 <https://www.python.org/dev/peps/pep-0008/>`_. If you would like to make a contribution and not familiar with pep-8, please check the pep8 style guide first. Otherwise, the check won't pass. You should be careful about:
+The code style of Python-package follows `PEP 8 <https://www.python.org/dev/peps/pep-0008/>`_. If you would like to make a contribution and not familiar with PEP 8, please check the PEP 8 style guide first. Otherwise, the check won't pass. You should be careful about:
 
-- E1 Indentation (check pep8 link above)
+- E1 Indentation (check PEP 8 link above)
 - E202 whitespace before and after brackets
 - E225 missing whitespace around operator
 - E226 missing whitespace around arithmetic operator
@@ -151,11 +154,11 @@ The code style of Python-package follows `pep8 <https://www.python.org/dev/peps/
 - E301 expected 1 blank line in front of and at the end of a method
 - E302 expected 2 blank lines in front of and at the end of a function or a class
 
-E501 can be ignored (line too long).
+E501 (line too long) and W503 (line break occurred before a binary operator) can be ignored.
 
 .. |License| image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://github.com/Microsoft/LightGBM/blob/master/LICENSE
 .. |Python Versions| image:: https://img.shields.io/pypi/pyversions/lightgbm.svg
-   :target: https://pypi.python.org/pypi/lightgbm
+   :target: https://pypi.org/project/lightgbm
 .. |PyPI Version| image:: https://img.shields.io/pypi/v/lightgbm.svg
-   :target: https://pypi.python.org/pypi/lightgbm
+   :target: https://pypi.org/project/lightgbm

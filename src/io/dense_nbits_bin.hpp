@@ -41,6 +41,7 @@ public:
     : num_data_(num_data) {
     int len = (num_data_ + 1) / 2;
     data_ = std::vector<uint8_t>(len, static_cast<uint8_t>(0));
+    buf_ = std::vector<uint8_t>(len, static_cast<uint8_t>(0));
   }
 
   ~Dense4bitsBin() {
@@ -48,15 +49,6 @@ public:
   }
 
   void Push(int, data_size_t idx, uint32_t value) override {
-    if (buf_.empty()) {
-      #pragma omp critical
-      {
-        if (buf_.empty()) {
-          int len = (num_data_ + 1) / 2;
-          buf_ = std::vector<uint8_t>(len, static_cast<uint8_t>(0));
-        }
-      }
-    }
     const int i1 = idx >> 1;
     const int i2 = (idx & 1) << 2;
     const uint8_t val = static_cast<uint8_t>(value) << i2;

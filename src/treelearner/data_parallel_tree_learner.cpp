@@ -8,8 +8,8 @@
 namespace LightGBM {
 
 template <typename TREELEARNER_T>
-DataParallelTreeLearner<TREELEARNER_T>::DataParallelTreeLearner(const TreeConfig* tree_config)
-  :TREELEARNER_T(tree_config) {
+DataParallelTreeLearner<TREELEARNER_T>::DataParallelTreeLearner(const Config* config)
+  :TREELEARNER_T(config) {
 }
 
 template <typename TREELEARNER_T>
@@ -37,13 +37,13 @@ void DataParallelTreeLearner<TREELEARNER_T>::Init(const Dataset* train_data, boo
 
   buffer_write_start_pos_.resize(this->num_features_);
   buffer_read_start_pos_.resize(this->num_features_);
-  global_data_count_in_leaf_.resize(this->tree_config_->num_leaves);
+  global_data_count_in_leaf_.resize(this->config_->num_leaves);
 }
 
 template <typename TREELEARNER_T>
-void DataParallelTreeLearner<TREELEARNER_T>::ResetConfig(const TreeConfig* tree_config) {
-  TREELEARNER_T::ResetConfig(tree_config);
-  global_data_count_in_leaf_.resize(this->tree_config_->num_leaves);
+void DataParallelTreeLearner<TREELEARNER_T>::ResetConfig(const Config* config) {
+  TREELEARNER_T::ResetConfig(config);
+  global_data_count_in_leaf_.resize(this->config_->num_leaves);
 }
 
 template <typename TREELEARNER_T>
@@ -136,7 +136,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::BeforeTrain() {
     }
   });
   // copy back
-  std::memcpy(&data, output_buffer_.data(), size);
+  std::memcpy((void*)&data, output_buffer_.data(), size);
   // set global sumup info
   this->smaller_leaf_splits_->Init(std::get<1>(data), std::get<2>(data));
   // init global data count in leaf
@@ -187,6 +187,8 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
       this->smaller_leaf_splits_->sum_gradients(),
       this->smaller_leaf_splits_->sum_hessians(),
       GetGlobalDataCountInLeaf(this->smaller_leaf_splits_->LeafIndex()),
+      this->smaller_leaf_splits_->min_constraint(),
+      this->smaller_leaf_splits_->max_constraint(),
       &smaller_split);
     smaller_split.feature = real_feature_index;
     if (smaller_split > smaller_bests_per_thread[tid]) {
@@ -205,6 +207,8 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
       this->larger_leaf_splits_->sum_gradients(),
       this->larger_leaf_splits_->sum_hessians(),
       GetGlobalDataCountInLeaf(this->larger_leaf_splits_->LeafIndex()),
+      this->larger_leaf_splits_->min_constraint(),
+      this->larger_leaf_splits_->max_constraint(),
       &larger_split);
     larger_split.feature = real_feature_index;
     if (larger_split > larger_bests_per_thread[tid]) {
@@ -232,7 +236,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(const 
   }
 
   // sync global best info
-  SyncUpGlobalBestSplit(input_buffer_.data(), input_buffer_.data(), &smaller_best_split, &larger_best_split, this->tree_config_->max_cat_threshold);
+  SyncUpGlobalBestSplit(input_buffer_.data(), input_buffer_.data(), &smaller_best_split, &larger_best_split, this->config_->max_cat_threshold);
 
   // set best split
   this->best_split_per_leaf_[this->smaller_leaf_splits_->LeafIndex()] = smaller_best_split;

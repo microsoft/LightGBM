@@ -19,7 +19,7 @@ class Metric;
 * \brief The main entrance of LightGBM. this application has two tasks:
 *        Train and Predict.
 *        Train task will train a new model
-*        Predict task will predict the scores of test data using exsisting model,
+*        Predict task will predict the scores of test data using existing model,
 *        and save the score to disk.
 */
 class Application {
@@ -56,7 +56,7 @@ private:
   void ConvertModel();
 
   /*! \brief All configs */
-  OverallConfig config_;
+  Config config_;
   /*! \brief Training data */
   std::unique_ptr<Dataset> train_data_;
   /*! \brief Validation data */
@@ -73,10 +73,10 @@ private:
 
 
 inline void Application::Run() {
-  if (config_.task_type == TaskType::kPredict || config_.task_type == TaskType::KRefitTree) {
+  if (config_.task == TaskType::kPredict || config_.task == TaskType::KRefitTree) {
     InitPredict();
     Predict();
-  } else if (config_.task_type == TaskType::kConvertModel) {
+  } else if (config_.task == TaskType::kConvertModel) {
     ConvertModel();
   } else {
     InitTrain();

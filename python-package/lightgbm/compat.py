@@ -20,6 +20,9 @@ if is_py3:
     def argc_(func):
         """return number of arguments of a function"""
         return len(inspect.signature(func).parameters)
+
+    def decode_string(bytestring):
+        return bytestring.decode('utf-8')
 else:
     string_type = basestring
     numeric_types = (int, long, float, bool)
@@ -29,6 +32,9 @@ else:
     def argc_(func):
         """return number of arguments of a function"""
         return len(inspect.getargspec(func).args)
+
+    def decode_string(bytestring):
+        return bytestring
 
 """json"""
 try:
@@ -51,12 +57,29 @@ def json_default_with_numpy(obj):
 """pandas"""
 try:
     from pandas import Series, DataFrame
+    PANDAS_INSTALLED = True
 except ImportError:
+    PANDAS_INSTALLED = False
+
     class Series(object):
         pass
 
     class DataFrame(object):
         pass
+
+"""matplotlib"""
+try:
+    import matplotlib
+    MATPLOTLIB_INSTALLED = True
+except ImportError:
+    MATPLOTLIB_INSTALLED = False
+
+"""graphviz"""
+try:
+    import graphviz
+    GRAPHVIZ_INSTALLED = True
+except ImportError:
+    GRAPHVIZ_INSTALLED = False
 
 """sklearn"""
 try:

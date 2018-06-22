@@ -28,6 +28,7 @@
 #include <boost/compute/container/vector.hpp>
 #include <boost/align/aligned_allocator.hpp>
 
+using namespace json11;
 
 namespace LightGBM {
 
@@ -36,11 +37,12 @@ namespace LightGBM {
 */
 class GPUTreeLearner: public SerialTreeLearner {
 public:
-  explicit GPUTreeLearner(const TreeConfig* tree_config);
+  explicit GPUTreeLearner(const Config* tree_config);
   ~GPUTreeLearner();
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
   void ResetTrainingData(const Dataset* train_data) override;
-  Tree* Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian) override;
+  Tree* Train(const score_t* gradients, const score_t *hessians,
+              bool is_constant_hessian, Json& forced_split_json) override;
 
   void SetBaggingData(const data_size_t* used_indices, data_size_t num_data) override {
     SerialTreeLearner::SetBaggingData(used_indices, num_data);
@@ -268,8 +270,9 @@ namespace LightGBM {
 class GPUTreeLearner: public SerialTreeLearner {
 public:
   #pragma warning(disable : 4702)
-  explicit GPUTreeLearner(const TreeConfig* tree_config) : SerialTreeLearner(tree_config) {
-    Log::Fatal("GPU Tree Learner was not enabled in this build. Recompile with CMake option -DUSE_GPU=1");
+  explicit GPUTreeLearner(const Config* tree_config) : SerialTreeLearner(tree_config) {
+    Log::Fatal("GPU Tree Learner was not enabled in this build.\n"
+               "Please recompile with CMake option -DUSE_GPU=1");
   }
 };
 

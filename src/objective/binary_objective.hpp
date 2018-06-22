@@ -12,7 +12,7 @@ namespace LightGBM {
 */
 class BinaryLogloss: public ObjectiveFunction {
 public:
-  explicit BinaryLogloss(const ObjectiveConfig& config, std::function<bool(label_t)> is_pos = nullptr) {
+  explicit BinaryLogloss(const Config& config, std::function<bool(label_t)> is_pos = nullptr) {
     sigmoid_ = static_cast<double>(config.sigmoid);
     if (sigmoid_ <= 0.0) {
       Log::Fatal("Sigmoid parameter %f should be greater than zero", sigmoid_);
@@ -20,7 +20,7 @@ public:
     is_unbalance_ = config.is_unbalance;
     scale_pos_weight_ = static_cast<double>(config.scale_pos_weight);
     if(is_unbalance_ && std::fabs(scale_pos_weight_ - 1.0f) > 1e-6) {
-      Log::Fatal("Cannot set is_unbalance and scale_pos_weight at the same time.");
+      Log::Fatal("Cannot set is_unbalance and scale_pos_weight at the same time");
     }
     is_pos_ = is_pos;
     if (is_pos_ == nullptr) {
@@ -61,7 +61,7 @@ public:
       }
     }
     if (cnt_negative == 0 || cnt_positive == 0) {
-      Log::Warning("Only contain one class.");
+      Log::Warning("Contains only one class");
       // not need to boost.
       num_data_ = 0;
     }
@@ -113,6 +113,29 @@ public:
         hessians[i] = static_cast<score_t>(abs_response * (sigmoid_ - abs_response) * label_weight * weights_[i]);
       }
     }
+  }
+  
+  // implement custom average to boost from (if enabled among options)
+  double BoostFromScore() const override {
+    double suml = 0.0f;
+    double sumw = 0.0f;
+    if (weights_ != nullptr) {
+      #pragma omp parallel for schedule(static) reduction(+:suml,sumw)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        suml += label_[i] * weights_[i];
+        sumw += weights_[i];
+      }
+    } else {
+      sumw = static_cast<double>(num_data_);
+      #pragma omp parallel for schedule(static) reduction(+:suml)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        suml += label_[i];
+      }
+    }
+    double pavg = suml / sumw;
+    double initscore = std::log(pavg / (1.0f - pavg)) / sigmoid_;
+    Log::Info("[%s:%s]: pavg=%f -> initscore=%f",  GetName(), __func__, pavg, initscore);
+    return initscore;
   }
 
   const char* GetName() const override {

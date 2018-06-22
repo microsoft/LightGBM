@@ -1,4 +1,4 @@
-Python Package Introduction
+Python-package Introduction
 ===========================
 
 This document gives a basic walkthrough of LightGBM Python-package.
@@ -32,7 +32,7 @@ To verify your installation, try to ``import lightgbm`` in Python:
 Data Interface
 --------------
 
-The LightGBM Python module is able to load data from:
+The LightGBM Python module can load data from:
 
 -  libsvm/tsv/csv/txt format file
 
@@ -185,7 +185,7 @@ Early Stopping
 --------------
 
 If you have a validation set, you can use early stopping to find the optimal number of boosting rounds.
-Early stopping requires at least one set in ``valid_sets``. If there is more than one, it will use all of them:
+Early stopping requires at least one set in ``valid_sets``. If there is more than one, it will use all of them except the training data:
 
 .. code:: python
 
@@ -196,11 +196,10 @@ The model will train until the validation score stops improving.
 Validation error needs to improve at least every ``early_stopping_rounds`` to continue training.
 
 If early stopping occurs, the model will have an additional field: ``bst.best_iteration``.
-Note that ``train()`` will return a model from the last iteration, not the best one.
-And you can set ``num_iteration=bst.best_iteration`` when saving model.
+Note that ``train()`` will return a model from the best iteration.
 
 This works with both metrics to minimize (L2, log loss, etc.) and to maximize (NDCG, AUC).
-Note that if you specify more than one evaluation metric, all of them will be used for early stopping.
+Note that if you specify more than one evaluation metric, all of them except the training data will be used for early stopping.
 
 Prediction
 ----------

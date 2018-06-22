@@ -273,7 +273,7 @@ public:
   * \param label_idx index of label column
   * \return Object of parser
   */
-  static Parser* CreateParser(const char* filename, bool has_header, int num_features, int label_idx);
+  static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx);
 };
 
 /*! \brief The main class of data set,
@@ -292,7 +292,7 @@ public:
     int** sample_non_zero_indices,
     const int* num_per_col,
     size_t total_sample_cnt,
-    const IOConfig& io_config);
+    const Config& io_config);
 
   /*! \brief Destructor */
   LIGHTGBM_EXPORT ~Dataset();
@@ -434,6 +434,35 @@ public:
     const int sub_feature = feature2subfeature_[i];
     return feature_groups_[group]->bin_mappers_[sub_feature]->num_bin();
   }
+
+  inline int8_t FeatureMonotone(int i) const {
+    if (monotone_types_.empty()) {
+      return 0;
+    } else {
+      return monotone_types_[i];
+    }
+  }
+
+  inline double FeaturePenalte(int i) const {
+    if (feature_penalty_.empty()) {
+      return 1;
+    } else {
+      return feature_penalty_[i];
+    }
+  }
+
+  bool HasMonotone() const {
+    if (monotone_types_.empty()) {
+      return false;
+    } else {
+      for (size_t i = 0; i < monotone_types_.size(); ++i) {
+        if (monotone_types_[i] != 0) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
   
   inline int FeatureGroupNumBin(int group) const {
     return feature_groups_[group]->num_total_bin_;
@@ -472,6 +501,13 @@ public:
     const int group = feature2group_[i];
     const int sub_feature = feature2subfeature_[i];
     return feature_groups_[group]->bin_mappers_[sub_feature]->BinToValue(threshold);
+  }
+
+  // given a real threshold, find the closest threshold bin
+  inline uint32_t BinThreshold(int i, double threshold_double) const {
+    const int group = feature2group_[i];
+    const int sub_feature = feature2subfeature_[i];
+    return feature_groups_[group]->bin_mappers_[sub_feature]->ValueToBin(threshold_double);
   }
 
   inline void CreateOrderedBins(std::vector<std::unique_ptr<OrderedBin>>* ordered_bins) const {
@@ -576,6 +612,8 @@ private:
   std::vector<uint64_t> group_bin_boundaries_;
   std::vector<int> group_feature_start_;
   std::vector<int> group_feature_cnt_;
+  std::vector<int8_t> monotone_types_;
+  std::vector<double> feature_penalty_;
   bool is_finish_load_;
 };
 

@@ -38,9 +38,11 @@ def train(params, train_set, num_boost_round=100,
         Names of ``valid_sets``.
     fobj : callable or None, optional (default=None)
         Customized objective function.
-    feval : callable or None, optional (default=None)
+    feval : callable, string or None, optional (default=None)
         Customized evaluation function.
+        Should accept two parameters: preds, train_data.
         Note: should return (eval_name, eval_result, is_higher_better) or list of such tuples.
+        To ignore the default metric in params, set it to the string ``"None"``
     init_model : string or None, optional (default=None)
         Filename of LightGBM model or Booster instance used for continue training.
     feature_name : list of strings or 'auto', optional (default="auto")
@@ -51,9 +53,10 @@ def train(params, train_set, num_boost_round=100,
         If list of int, interpreted as indices.
         If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
         If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
+        All values should be less than int32 max value (2147483647).
     early_stopping_rounds: int or None, optional (default=None)
         Activates early stopping. The model will train until the validation score stops improving.
-        Requires at least one validation data and one metric. If there's more than one, will check all of them.
+        Requires at least one validation data and one metric. If there's more than one, will check all of them except the training data.
         If early stopping occurs, the model will add ``best_iteration`` field.
     evals_result: dict or None, optional (default=None)
         This dictionary used to store all evaluation results of all the items in ``valid_sets``.
@@ -352,6 +355,7 @@ def cv(params, train_set, num_boost_round=100,
         If list of int, interpreted as indices.
         If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
         If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
+        All values should be less than int32 max value (2147483647).
     early_stopping_rounds: int or None, optional (default=None)
         Activates early stopping. CV error needs to decrease at least
         every ``early_stopping_rounds`` round(s) to continue.

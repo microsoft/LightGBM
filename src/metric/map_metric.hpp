@@ -15,11 +15,10 @@ namespace LightGBM {
 
 class MapMetric:public Metric {
 public:
-  explicit MapMetric(const MetricConfig& config) {
+  explicit MapMetric(const Config& config) {
     // get eval position
-    for (auto k : config.eval_at) {
-      eval_at_.push_back(static_cast<data_size_t>(k));
-    }
+    eval_at_ = config.eval_at;
+    DCGCalculator::DefaultEvalAt(&eval_at_);
     // get number of threads
     #pragma omp parallel
     #pragma omp master
@@ -44,7 +43,7 @@ public:
       Log::Fatal("For MAP metric, there should be query information");
     }
     num_queries_ = metadata.num_queries();
-    Log::Info("total groups: %d , total data: %d", num_queries_, num_data_);
+    Log::Info("Total groups: %d, total data: %d", num_queries_, num_data_);
     // get query weights
     query_weights_ = metadata.query_weights();
     if (query_weights_ == nullptr) {

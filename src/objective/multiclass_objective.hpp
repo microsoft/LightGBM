@@ -15,7 +15,7 @@ namespace LightGBM {
 */
 class MulticlassSoftmax: public ObjectiveFunction {
 public:
-  explicit MulticlassSoftmax(const ObjectiveConfig& config) {
+  explicit MulticlassSoftmax(const Config& config) {
     num_class_ = config.num_class;
   }
 
@@ -30,7 +30,7 @@ public:
       }
     }
     if (num_class_ < 0) {
-      Log::Fatal("Objective should contains num_class field");
+      Log::Fatal("Objective should contain num_class field");
     }
   }
 
@@ -138,7 +138,7 @@ private:
 */
 class MulticlassOVA: public ObjectiveFunction {
 public:
-  explicit MulticlassOVA(const ObjectiveConfig& config) {
+  explicit MulticlassOVA(const Config& config) {
     num_class_ = config.num_class;
     for (int i = 0; i < num_class_; ++i) {
       binary_loss_.emplace_back(
@@ -161,7 +161,7 @@ public:
       }
     }
     if (num_class_ < 0) {
-      Log::Fatal("Objective should contains num_class field");
+      Log::Fatal("Objective should contain num_class field");
     }
     if (sigmoid_ <= 0.0) {
       Log::Fatal("Sigmoid parameter %f should be greater than zero", sigmoid_);

@@ -42,13 +42,14 @@ matrix:
 before_install:
   - test -n $CC  && unset CC
   - test -n $CXX && unset CXX
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - export LGB_VER=$(head -n 1 VERSION.txt)
+  - export AMDAPPSDK=$HOME/AMDAPPSDK
+  - export LD_LIBRARY_PATH="$AMDAPPSDK/lib/x86_64:$LD_LIBRARY_PATH"
+  - export OPENCL_VENDOR_PATH=$AMDAPPSDK/etc/OpenCL/vendors
 
 install:
   - bash .travis/setup.sh
-  - bash conda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
 
 script:
   - bash .travis/test.sh

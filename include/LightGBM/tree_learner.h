@@ -4,8 +4,11 @@
 
 #include <LightGBM/meta.h>
 #include <LightGBM/config.h>
+#include <LightGBM/json11.hpp>
 
 #include <vector>
+
+using namespace json11;
 
 namespace LightGBM {
 
@@ -33,9 +36,9 @@ public:
 
   /*!
   * \brief Reset tree configs
-  * \param tree_config config of tree
+  * \param config config of tree
   */
-  virtual void ResetConfig(const TreeConfig* tree_config) = 0;
+  virtual void ResetConfig(const Config* config) = 0;
 
   /*!
   * \brief training tree model on dataset 
@@ -44,7 +47,8 @@ public:
   * \param is_constant_hessian True if all hessians share the same value
   * \return A trained tree
   */
-  virtual Tree* Train(const score_t* gradients, const score_t* hessians, bool is_constant_hessian) = 0;
+  virtual Tree* Train(const score_t* gradients, const score_t* hessians, bool is_constant_hessian, 
+                      Json& forced_split_json) = 0;
 
   /*!
   * \brief use a existing tree to fit the new gradients and hessians.
@@ -81,11 +85,11 @@ public:
   * \brief Create object of tree learner
   * \param learner_type Type of tree learner
   * \param device_type Type of tree learner
-  * \param tree_config config of tree
+  * \param config config of tree
   */
   static TreeLearner* CreateTreeLearner(const std::string& learner_type,
     const std::string& device_type,
-    const TreeConfig* tree_config);
+    const Config* config);
 };
 
 }  // namespace LightGBM

@@ -3,7 +3,7 @@
 
 namespace LightGBM {
 
-Linkers::Linkers(NetworkConfig) {
+Linkers::Linkers(Config) {
   is_init_ = false;
   int argc = 0;
   char**argv = nullptr;
@@ -30,4 +30,3 @@ Linkers::~Linkers() {
 
 }  // namespace LightGBM
 #endif // USE_MPI
-

@@ -7,7 +7,7 @@
 
 namespace LightGBM {
 
-ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string& type, const ObjectiveConfig& config) {
+ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string& type, const Config& config) {
   if (type == std::string("regression") || type == std::string("regression_l2")
       || type == std::string("mean_squared_error") || type == std::string("mse") 
       || type == std::string("l2_root") || type == std::string("root_mean_squared_error") || type == std::string("rmse")) {
@@ -73,6 +73,8 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new CrossEntropy(strs);
   } else if (type == std::string("xentlambda") || type == std::string("cross_entropy_lambda")) {
     return new CrossEntropyLambda(strs);
+  } else if (type == std::string("mean_absolute_percentage_error") || type == std::string("mape")) {
+    return new RegressionMAPELOSS(strs);
   } else if (type == std::string("gamma")) {
     return new RegressionGammaLoss(strs);
   } else if (type == std::string("tweedie")) {

@@ -3,9 +3,9 @@
 import lightgbm as lgb
 import pandas as pd
 
-try:
+if lgb.compat.MATPLOTLIB_INSTALLED:
     import matplotlib.pyplot as plt
-except ImportError:
+else:
     raise ImportError('You need to install matplotlib for plot_example.py.')
 
 # load or create your dataset
@@ -42,7 +42,7 @@ gbm = lgb.train(params,
                 evals_result=evals_result,
                 verbose_eval=10)
 
-print('Plot metrics during training...')
+print('Plot metrics recorded during training...')
 ax = lgb.plot_metric(evals_result, metric='l1')
 plt.show()
 

@@ -11,7 +11,6 @@
 
 namespace LightGBM {
 
-#define kMaxTreeOutput (100)
 #define kCategoricalMask (1)
 #define kDefaultLeftMask (2)
 
@@ -141,7 +140,6 @@ public:
     #pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
     for (int i = 0; i < num_leaves_; ++i) {
       leaf_value_[i] *= rate;
-      if (leaf_value_[i] > kMaxTreeOutput) { leaf_value_[i] = kMaxTreeOutput; } else if (leaf_value_[i] < -kMaxTreeOutput) { leaf_value_[i] = -kMaxTreeOutput; }
     }
     shrinkage_ *= rate;
   }
@@ -172,7 +170,7 @@ public:
   std::string ToJSON() const;
 
   /*! \brief Serialize this object to if-else statement*/
-  std::string ToIfElse(int index, bool is_predict_leaf_index) const;
+  std::string ToIfElse(int index, bool predict_leaf_index) const;
 
   inline static bool IsZero(double fval) {
     if (fval > -kZeroThreshold && fval <= kZeroThreshold) {
@@ -309,9 +307,9 @@ private:
   std::string NodeToJSON(int index) const;
 
   /*! \brief Serialize one node to if-else statement*/
-  std::string NodeToIfElse(int index, bool is_predict_leaf_index) const;
+  std::string NodeToIfElse(int index, bool predict_leaf_index) const;
 
-  std::string NodeToIfElseByMap(int index, bool is_predict_leaf_index) const;
+  std::string NodeToIfElseByMap(int index, bool predict_leaf_index) const;
 
   double ExpectedValue() const;
 

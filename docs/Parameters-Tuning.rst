@@ -1,7 +1,7 @@
 Parameters Tuning
 =================
 
-This is a page contains all parameters in LightGBM.
+This page contains parameters tuning guides for different scenarios.
 
 **List of other helpful links**
 
@@ -18,16 +18,15 @@ However, the leaf-wise growth may be over-fitting if not used with the appropria
 To get good results using a leaf-wise tree, these are some important parameters:
 
 1. ``num_leaves``. This is the main parameter to control the complexity of the tree model.
-   Theoretically, we can set ``num_leaves = 2^(max_depth)`` to convert from depth-wise tree.
+   Theoretically, we can set ``num_leaves = 2^(max_depth)`` to obtain the same number of leaves as depth-wise tree.
    However, this simple conversion is not good in practice.
-   The reason is, when number of leaves are the same, the leaf-wise tree is much deeper than depth-wise tree. As a result, it may be over-fitting.
+   The reason is that a leaf-wise tree is typically much deeper than a depth-wise tree for a fixed number of leaves. Unconstrained depth can induce over-fitting.
    Thus, when trying to tune the ``num_leaves``, we should let it be smaller than ``2^(max_depth)``.
-   For example, when the ``max_depth=6`` the depth-wise tree can get good accuracy,
+   For example, when the ``max_depth=7`` the depth-wise tree can get good accuracy,
    but setting ``num_leaves`` to ``127`` may cause over-fitting, and setting it to ``70`` or ``80`` may get better accuracy than depth-wise.
-   Actually, the concept ``depth`` can be forgotten in leaf-wise tree, since it doesn't have a correct mapping from ``leaves`` to ``depth``.
 
-2. ``min_data_in_leaf``. This is a very important parameter to deal with over-fitting in leaf-wise tree.
-   Its value depends on the number of training data and ``num_leaves``.
+2. ``min_data_in_leaf``. This is a very important parameter to prevent over-fitting in a leaf-wise tree.
+   Its optimal value depends on the number of training samples and ``num_leaves``.
    Setting it to a large value can avoid growing too deep a tree, but may cause under-fitting.
    In practice, setting it to hundreds or thousands is enough for a large dataset.
 
