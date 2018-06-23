@@ -712,6 +712,8 @@ class Dataset(object):
             self.__init_from_csc(data, params_str, ref_dataset)
         elif isinstance(data, np.ndarray):
             self.__init_from_np2d(data, params_str, ref_dataset)
+        elif isinstance(data, list) and len(data) > 0 and all(isinstance(x, np.ndarray) for x in data):
+            self.__init_from_list_np2d(data, params_str, ref_dataset)
         else:
             try:
                 csr = scipy.sparse.csr_matrix(data)
@@ -774,6 +776,52 @@ class Dataset(object):
             c_str(params_str),
             ref_dataset,
             ctypes.byref(self.handle)))
+
+    def __init_from_list_np2d(self, mats, params_str, ref_dataset):
+        """
+        Initialize data from list of 2-D numpy matrices.
+        """
+        ncol = mats[0].shape[1]
+        nrow = np.zeros((len(mats),), np.int32)
+        ptr_data = (ctypes.POINTER(ctypes.c_double) * len(mats))()
+
+        holders = []
+        type_ptr_data = None
+        
+        for i, mat in enumerate(mats):
+            if len(mat.shape) != 2:
+                raise ValueError('Input numpy.ndarray must be 2 dimensional')
+
+            if mat.shape[1] != ncol:
+                raise ValueError('Input arrays must have same number of columns')
+
+            nrow[i] = mat.shape[0]
+
+            if mat.dtype == np.float32 or mat.dtype == np.float64:
+                mats[i] = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
+            else:
+                # change non-float data to float data, need to copy
+                mats[i] = np.array(mat.reshape(mat.size), dtype=np.float32)
+
+            chunk_ptr_data, chunk_type_ptr_data, holder = c_float_array(mats[i])
+            if type_ptr_data is not None and chunk_type_ptr_data != type_ptr_data:
+                raise ValueError('Input chunks must have same type')
+            ptr_data[i] = chunk_ptr_data
+            type_ptr_data = chunk_type_ptr_data
+            holders.append(holder)
+
+        self.handle = ctypes.c_void_p()
+        _safe_call(_LIB.LGBM_DatasetCreateFromMats(
+            ctypes.c_int(len(mats)),
+            ctypes.cast(ptr_data, ctypes.POINTER(ctypes.POINTER(ctypes.c_double))),
+            ctypes.c_int(type_ptr_data),
+            nrow.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+            ctypes.c_int(mat.shape[1]),
+            ctypes.c_int(C_API_IS_ROW_MAJOR),
+            c_str(params_str),
+            ref_dataset,
+            ctypes.byref(self.handle)))
+        
 
     def __init_from_csr(self, csr, params_str, ref_dataset):
         """
