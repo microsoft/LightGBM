@@ -551,17 +551,20 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
   }
-  OMP_INIT_EX();
-  #pragma omp parallel for schedule(static)
+  int start_row = 0;
   for (int j = 0; j < nmat; ++j) {
+    OMP_INIT_EX();
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < nrow[j]; ++i) {
       OMP_LOOP_EX_BEGIN();
       const int tid = omp_get_thread_num();
       auto one_row = get_row_fun[j](i);
-      ret->PushOneRow(tid, i, one_row);
+      ret->PushOneRow(tid, start_row + i, one_row);
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
+
+    start_row += nrow[j];
   }
   ret->FinishLoad();
   *out = ret.release();
