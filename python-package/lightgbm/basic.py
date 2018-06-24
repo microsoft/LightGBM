@@ -819,7 +819,7 @@ class Dataset(object):
             ctypes.cast(ptr_data, ctypes.POINTER(ctypes.POINTER(ctypes.c_double))),
             ctypes.c_int(type_ptr_data),
             nrow.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
-            ctypes.c_int(mat.shape[1]),
+            ctypes.c_int(ncol),
             ctypes.c_int(C_API_IS_ROW_MAJOR),
             c_str(params_str),
             ref_dataset,
