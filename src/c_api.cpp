@@ -536,7 +536,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
       for (size_t k = 0; k < row.size(); ++k) {
         if (std::fabs(row[k]) > kZeroThreshold || std::isnan(row[k])) {
           sample_values[k].emplace_back(row[k]);
-          sample_idx[k].emplace_back(static_cast<int>(k));
+          sample_idx[k].emplace_back(static_cast<int>(i));
         }
       }
     }
