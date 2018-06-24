@@ -790,7 +790,7 @@ class Dataset(object):
 
         holders = []
         type_ptr_data = None
-        
+
         for i, mat in enumerate(mats):
             if len(mat.shape) != 2:
                 raise ValueError('Input numpy.ndarray must be 2 dimensional')
@@ -824,7 +824,6 @@ class Dataset(object):
             c_str(params_str),
             ref_dataset,
             ctypes.byref(self.handle)))
-        
 
     def __init_from_csr(self, csr, params_str, ref_dataset):
         """
