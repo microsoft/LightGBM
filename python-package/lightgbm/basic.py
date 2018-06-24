@@ -783,7 +783,10 @@ class Dataset(object):
         """
         ncol = mats[0].shape[1]
         nrow = np.zeros((len(mats),), np.int32)
-        ptr_data = (ctypes.POINTER(ctypes.c_double) * len(mats))()
+        if mats[0].dtype == np.float64:
+            ptr_data = (ctypes.POINTER(ctypes.c_double) * len(mats))()
+        else:
+            ptr_data = (ctypes.POINTER(ctypes.c_float) * len(mats))()
 
         holders = []
         type_ptr_data = None
