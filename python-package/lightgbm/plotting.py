@@ -10,7 +10,7 @@ from io import BytesIO
 import numpy as np
 
 from .basic import Booster
-from .compat import MATPLOTLIB_INSTALLED, GRAPHVIZ_INSTALLED
+from .compat import MATPLOTLIB_INSTALLED, GRAPHVIZ_INSTALLED, string_type
 from .sklearn import LGBMModel
 
 
@@ -268,7 +268,8 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None,
         raise ImportError('You must install graphviz to plot tree.')
 
     def float2str(value, precision=None):
-        return "{0:.{1}f}".format(value, precision) if precision is not None else str(value)
+        return "{0:.{1}f}".format(value, precision) \
+            if precision is not None and not isinstance(value, string_type) else str(value)
 
     def add(root, parent=None, decision=None):
         """recursively add node or edge"""
