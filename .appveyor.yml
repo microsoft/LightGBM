@@ -1,4 +1,4 @@
-version: 2.1.1.{build}
+version: 2.1.2.{build}
 
 configuration:  # A trick to construct a build matrix
   - 3.5
@@ -50,7 +50,7 @@ test_script:
   - pytest tests/python_package_test
   - cd examples/python-guide
   - ps: >-
-      @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"  # prevent interactive window mode
+      @("import matplotlib", "matplotlib.use('Agg')") +Â (Get-Content "plot_example.py") | Set-ContentÂ "plot_example.py"  # prevent interactive window mode
   - ps: >-
       foreach ($file in @(Get-ChildItem *.py)) {
         python $file
