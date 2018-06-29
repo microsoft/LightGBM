@@ -1,1 +1,134 @@
+phases:
+- phase: Linux
+  variables:
+    PYTHON_VERSION: 3.6
+    AGENT_OS: linux
+    CONDA_ENV: test-env
+  queue:
+    name: 'Hosted Linux Preview'
+    parallel: 9
+    matrix:
+      regular:
+        TASK: regular
+      mpi:
+        TASK: mpi
+      pylint: 
+        TASK: pylint
+      doc:
+        TASK: check-docs
+      inference:
+        TASK: if-else
+      sdist:
+        TASK: sdist
+        PYTHON_VERSION: 2.7
+      bdist:
+        TASK: bdist
+        PYTHON_VERSION: 3.5
+      gpu_1:
+        TASK: gpu 
+        METHOD: source
+      gpu_2:
+        TASK: gpu 
+        METHOD: pip
+  steps:
+  - script: sudo apt-get update
+  - script: bash .vsts-ci/setup.sh
+  # - task: CondaEnvironment@0
+  #   inputs:
+  #     environmentName: $(CONDA_ENV)
+  #     packageSpecs: 'python=$(PYTHON_VERSION)' # Optional
+  #     createOptions: '-q'
+
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '$(PYTHON_VERSION)'
+      architecture: 'x64'
+  - script: python -m pip install --upgrade pip setuptools wheel
+  - script: bash .vsts-ci/test.sh
+
+- phase: MacOS
+  variables:
+    PYTHON_VERSION: 3.6
+    AGENT_OS: darwin
+    CONDA_ENV: test-env
+  queue:
+    name: 'Hosted macOS Preview'
+    parallel: 4
+    matrix:
+      regular:
+        TASK: regular
+      mpi:
+        TASK: mpi
+      sdist:
+        TASK: sdist
+        PYTHON_VERSION: 2.7
+      bdist:
+        TASK: bdist
+        PYTHON_VERSION: 3.5
+  steps:
+  - script: bash .vsts-ci/setup.sh
+  # - task: CondaEnvironment@0
+  #   inputs:
+  #     environmentName: $(CONDA_ENV)
+  #     packageSpecs: 'python=$(PYTHON_VERSION)' # Optional
+  #     createOptions: '-q'
+
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '$(PYTHON_VERSION)'
+      architecture: 'x64'
+  - script: python -m pip install --upgrade pip setuptools wheel
+  - script: bash .vsts-ci/test.sh
+
+- phase: Windows_1
+  variables:
+    PYTHON_VERSION: 3.6
+    AGENT_OS: windows
+  queue:
+    name: 'Hosted'
+    parallel: 4
+    matrix:
+      regular:
+        TASK: regular
+      mpi:
+        TASK: mpi
+      sdist:
+        TASK: sdist
+        PYTHON_VERSION: 2.7
+      bdist:
+        TASK: bdist
+        PYTHON_VERSION: 3.5
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '$(PYTHON_VERSION)'
+      architecture: 'x64'
+
+- phase: Windows_2
+  variables:
+    PYTHON_VERSION: 3.6
+    AGENT_OS: windows
+  queue:
+    name: 'Hosted VS2017'
+    parallel: 4
+    matrix:
+      regular:
+        TASK: regular
+      mpi:
+        TASK: mpi
+      sdist:
+        TASK: sdist
+        PYTHON_VERSION: 2.7
+      bdist:
+        TASK: bdist
+        PYTHON_VERSION: 3.5
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '$(PYTHON_VERSION)'
+      architecture: 'x64'
+  
+
+
+
 
