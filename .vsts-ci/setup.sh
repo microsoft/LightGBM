@@ -1,10 +1,4 @@
 #!/bin/bash
-test -n $CC  && unset CC
-test -n $CXX && unset CXX
-export LGB_VER=$(head -n 1 VERSION.txt)
-export AMDAPPSDK=$HOME/AMDAPPSDK
-export LD_LIBRARY_PATH="AMDAPPSDK/lib/x86_64:LD_LIBRARY_PATH"
-export OPENCL_VENDOR_PATH=$AMDAPPSDK/etc/OpenCL/vendors
 if [[ ${AGENT_OS} == "darwin" ]]; then
     rm '/usr/local/include/c++'
 #    brew cask uninstall oclint  #  reserve variant to deal with conflict link

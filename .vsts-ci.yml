@@ -31,7 +31,14 @@ phases:
         TASK: gpu 
         METHOD: pip
   steps:
-  - script: sudo apt-get update
+  - script: | 
+    sudo apt-get update
+    test -n $CC  && unset CC
+    test -n $CXX && unset CXX
+    export LGB_VER=$(head -n 1 VERSION.txt)
+    export AMDAPPSDK=$HOME/AMDAPPSDK
+    export LD_LIBRARY_PATH="AMDAPPSDK/lib/x86_64:LD_LIBRARY_PATH"
+    export OPENCL_VENDOR_PATH=$AMDAPPSDK/etc/OpenCL/vendors
   - script: bash .vsts-ci/setup.sh
   # - task: CondaEnvironment@0
   #   inputs:
@@ -66,6 +73,11 @@ phases:
         TASK: bdist
         PYTHON_VERSION: 3.5
   steps:
+  - script: | 
+    sudo apt-get update
+    test -n $CC  && unset CC
+    test -n $CXX && unset CXX
+    export LGB_VER=$(head -n 1 VERSION.txt)
   - script: bash .vsts-ci/setup.sh
   # - task: CondaEnvironment@0
   #   inputs:
