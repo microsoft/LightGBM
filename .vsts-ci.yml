@@ -32,25 +32,19 @@ phases:
         TASK: gpu 
         METHOD: pip
   steps:
+  - task: CondaEnvironment@0
+    inputs:
+      environmentName: $(CONDA_ENV)
+      packageSpecs: 'python=$(PYTHON_VERSION)' # Optional
+      createOptions: '-q'
   - script: | 
       sudo apt-get update
       export LGB_VER=$(head -n 1 VERSION.txt)
       export AMDAPPSDK=$HOME/AMDAPPSDK
       export LD_LIBRARY_PATH="AMDAPPSDK/lib/x86_64:LD_LIBRARY_PATH"
       export OPENCL_VENDOR_PATH=$AMDAPPSDK/etc/OpenCL/vendors
-  - script: bash .vsts-ci/setup.sh
-  - task: CondaEnvironment@0
-    inputs:
-      environmentName: $(CONDA_ENV)
-      packageSpecs: 'python=$(PYTHON_VERSION)' # Optional
-      createOptions: '-q'
-
-  # - task: UsePythonVersion@0
-  #   inputs:
-  #     versionSpec: '$(PYTHON_VERSION)'
-  #     architecture: 'x64'
-  # - script: python -m pip install --upgrade pip setuptools wheel
-  - script: bash .vsts-ci/test.sh
+      bash .vsts-ci/setup.sh
+      bash .vsts-ci/test.sh
 
 - phase: MacOS
   variables:
