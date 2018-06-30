@@ -15,7 +15,7 @@ if [[ $TASK == "check-docs" ]]; then
         conda install -y -n $CONDA_ENV mock
     fi
     conda install -y -n $CONDA_ENV sphinx "sphinx_rtd_theme>=0.3"  # html5validator
-    pip install -y rstcheck
+    pip install rstcheck
     cd ${BUILD_REPOSITORY_LOCALPATH}/python-package
     rstcheck --report warning `find . -type f -name "*.rst"` || exit -1
     cd ${BUILD_REPOSITORY_LOCALPATH}/docs
@@ -70,7 +70,7 @@ if [[ $TASK == "gpu" ]]; then
     grep -q 'std::string device_type = "gpu"' ${BUILD_REPOSITORY_LOCALPATH}/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
         cd ${BUILD_REPOSITORY_LOCALPATH}/python-package && python setup.py sdist || exit -1
-        pip install ${BUILD_REPOSITORY_LOCALPATH}/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu -DBOOST_ROOT=$HOME/miniconda/envs/$CONDA_ENV/ --install-option="--opencl-include-dir=$AMDAPPSDK/include/" || exit -1
+        pip install ${BUILD_REPOSITORY_LOCALPATH}/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--DBOOST_ROOT=/usr/share/miniconda/envs/$CONDA_ENV/" --install-option="--opencl-include-dir=$AMDAPPSDK/include/" || exit -1
         pytest ${BUILD_REPOSITORY_LOCALPATH}/tests/python_package_test || exit -1
         exit 0
     fi
@@ -84,7 +84,7 @@ if [[ $TASK == "mpi" ]]; then
     cd ${BUILD_REPOSITORY_LOCALPATH}/build
     cmake -DUSE_MPI=ON ..
 elif [[ $TASK == "gpu" ]]; then
-    cmake -DUSE_GPU=ON -DBOOST_ROOT=$HOME/miniconda/envs/$CONDA_ENV/ -DOpenCL_INCLUDE_DIR=$AMDAPPSDK/include/ ..
+    cmake -DUSE_GPU=ON -DBOOST_ROOT=/usr/share/miniconda/envs/$CONDA_ENV/ -DOpenCL_INCLUDE_DIR=$AMDAPPSDK/include/ ..
 else
     cmake ..
 fi
