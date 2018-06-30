@@ -13,12 +13,14 @@ else
         sudo apt-get install -y libopenmpi-dev openmpi-bin
     fi
     if [[ $TASK == "gpu" ]]; then
+        echo "start to install opencl"
         sudo apt-get install -y ocl-icd-opencl-dev
     fi
 fi
 
 
 if [[ $TASK == "gpu" ]] && [[ ${AGENT_OS} == "linux" ]]; then
+    echo "start to install amd-app-sdk"
     wget https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
     tar -xjf AMD-APP-SDK*.tar.bz2
     mkdir -p $OPENCL_VENDOR_PATH
