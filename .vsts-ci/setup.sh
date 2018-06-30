@@ -1,5 +1,5 @@
 #!/bin/bash
-if [[ ${AGENT_OS} == "darwin" ]]; then
+if [[ $AGENT_OS == "darwin" ]]; then
     rm '/usr/local/include/c++'
 #    brew cask uninstall oclint  #  reserve variant to deal with conflict link
     if [[ $TASK == "mpi" ]]; then
@@ -15,16 +15,12 @@ else
     if [[ $TASK == "gpu" ]]; then
         echo "start to install opencl"
         sudo apt-get install -y ocl-icd-opencl-dev
+        echo "start to install amd-app-sdk"
+        wget https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
+        tar -xjf AMD-APP-SDK*.tar.bz2
+        mkdir -p $OPENCL_VENDOR_PATH
+        sh AMD-APP-SDK*.sh --tar -xf -C $AMDAPPSDK
+        mv $AMDAPPSDK/lib/x86_64/sdk/* $AMDAPPSDK/lib/x86_64/
+        echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
-fi
-
-
-if [[ $TASK == "gpu" ]] && [[ ${AGENT_OS} == "linux" ]]; then
-    echo "start to install amd-app-sdk"
-    wget https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
-    tar -xjf AMD-APP-SDK*.tar.bz2
-    mkdir -p $OPENCL_VENDOR_PATH
-    sh AMD-APP-SDK*.sh --tar -xf -C $AMDAPPSDK
-    mv $AMDAPPSDK/lib/x86_64/sdk/* $AMDAPPSDK/lib/x86_64/
-    echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
 fi

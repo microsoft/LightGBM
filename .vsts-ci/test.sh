@@ -1,5 +1,5 @@
 #!/bin/bash
-if [[ ${AGENT_OS} == "darwin" ]]; then
+if [[ $AGENT_OS == "darwin" ]]; then
     export CXX=g++-8
     export CC=gcc-8
 fi
@@ -8,7 +8,7 @@ fi
 cd ${BUILD_REPOSITORY_LOCALPATH}
 
 if [[ $TASK == "check-docs" ]]; then
-    if [[ ${AGENT_OS} == "linux" ]]; then
+    if [[ $AGENT_OS == "linux" ]]; then
         sudo apt-get install linkchecker -y
     fi
     if [[ ${PYTHON_VERSION} == "2.7" ]]; then
@@ -24,7 +24,7 @@ if [[ $TASK == "check-docs" ]]; then
     find ./_build/html/ -type f -name '*.html' -exec \
     sed -i -e 's;\(\.\/[^.]*\.\)rst\([^[:space:]]*\);\1html\2;g' {} \;  # emulate js function
 #    html5validator --root ./_build/html/ || exit -1
-    if [[ ${AGENT_OS} == "linux" ]]; then
+    if [[ $AGENT_OS == "linux" ]]; then
         linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
     fi
     exit 0
@@ -53,7 +53,7 @@ if [[ $TASK == "sdist" ]]; then
     pytest ${BUILD_REPOSITORY_LOCALPATH}/tests/python_package_test || exit -1
     exit 0
 elif [[ $TASK == "bdist" ]]; then
-    if [[ ${AGENT_OS} == "darwin" ]]; then
+    if [[ $AGENT_OS == "darwin" ]]; then
         cd ${BUILD_REPOSITORY_LOCALPATH}/python-package && python setup.py bdist_wheel --plat-name=macdarwin --universal || exit -1
         mv dist/lightgbm-$LGB_VER-py2.py3-none-macdarwin.whl dist/lightgbm-$LGB_VER-py2.py3-none-macdarwin_10_9_x86_64.macdarwin_10_10_x86_64.macdarwin_10_11_x86_64.macdarwin_10_12_x86_64.macdarwin_10_13_x86_64.whl
     else
@@ -100,5 +100,6 @@ if [[ $TASK == "regular" ]]; then
 import matplotlib\
 matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
+    sed -i 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
     for f in *.py; do python $f || exit -1; done  # run all examples
 fi
