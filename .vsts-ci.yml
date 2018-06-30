@@ -12,6 +12,7 @@ phases:
         TASK: regular
       mpi:
         TASK: mpi
+        PYTHON_VERSION: 2.7
       pylint: 
         TASK: pylint
       doc:
@@ -20,7 +21,7 @@ phases:
         TASK: if-else
       sdist:
         TASK: sdist
-        PYTHON_VERSION: 2.7
+        PYTHON_VERSION: 3.4
       bdist:
         TASK: bdist
         PYTHON_VERSION: 3.5
@@ -32,23 +33,23 @@ phases:
         METHOD: pip
   steps:
   - script: | 
-    sudo apt-get update
-    export LGB_VER=$(head -n 1 VERSION.txt)
-    export AMDAPPSDK=$HOME/AMDAPPSDK
-    export LD_LIBRARY_PATH="AMDAPPSDK/lib/x86_64:LD_LIBRARY_PATH"
-    export OPENCL_VENDOR_PATH=$AMDAPPSDK/etc/OpenCL/vendors
+      sudo apt-get update
+      export LGB_VER=$(head -n 1 VERSION.txt)
+      export AMDAPPSDK=$HOME/AMDAPPSDK
+      export LD_LIBRARY_PATH="AMDAPPSDK/lib/x86_64:LD_LIBRARY_PATH"
+      export OPENCL_VENDOR_PATH=$AMDAPPSDK/etc/OpenCL/vendors
   - script: bash .vsts-ci/setup.sh
-  # - task: CondaEnvironment@0
-  #   inputs:
-  #     environmentName: $(CONDA_ENV)
-  #     packageSpecs: 'python=$(PYTHON_VERSION)' # Optional
-  #     createOptions: '-q'
-
-  - task: UsePythonVersion@0
+  - task: CondaEnvironment@0
     inputs:
-      versionSpec: '$(PYTHON_VERSION)'
-      architecture: 'x64'
-  - script: python -m pip install --upgrade pip setuptools wheel
+      environmentName: $(CONDA_ENV)
+      packageSpecs: 'python=$(PYTHON_VERSION)' # Optional
+      createOptions: '-q'
+
+  # - task: UsePythonVersion@0
+  #   inputs:
+  #     versionSpec: '$(PYTHON_VERSION)'
+  #     architecture: 'x64'
+  # - script: python -m pip install --upgrade pip setuptools wheel
   - script: bash .vsts-ci/test.sh
 
 - phase: MacOS
@@ -62,11 +63,12 @@ phases:
     matrix:
       regular:
         TASK: regular
+        PYTHON_VERSION: 2.7
       mpi:
         TASK: mpi
       sdist:
         TASK: sdist
-        PYTHON_VERSION: 2.7
+        PYTHON_VERSION: 3.4
       bdist:
         TASK: bdist
         PYTHON_VERSION: 3.5
