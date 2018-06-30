@@ -67,20 +67,15 @@ phases:
         TASK: bdist
         PYTHON_VERSION: 3.5
   steps:
-  - script: export LGB_VER=$(head -n 1 VERSION.txt)
-  - script: bash .vsts-ci/setup.sh
-  # - task: CondaEnvironment@0
-  #   inputs:
-  #     environmentName: $(CONDA_ENV)
-  #     packageSpecs: 'python=$(PYTHON_VERSION)' # Optional
-  #     createOptions: '-q'
-
-  - task: UsePythonVersion@0
+  - task: CondaEnvironment@0
     inputs:
-      versionSpec: '$(PYTHON_VERSION)'
-      architecture: 'x64'
-  - script: python -m pip install --upgrade pip setuptools wheel
-  - script: bash .vsts-ci/test.sh
+      environmentName: $(CONDA_ENV)
+      packageSpecs: 'python=$(PYTHON_VERSION)' # Optional
+      createOptions: '-q'
+  - script: |
+      export LGB_VER=$(head -n 1 VERSION.txt)
+      bash .vsts-ci/setup.sh
+      bash .vsts-ci/test.sh
 
 - phase: Windows_1
   variables:
@@ -101,10 +96,11 @@ phases:
         TASK: bdist
         PYTHON_VERSION: 3.5
   steps:
-  - task: UsePythonVersion@0
+  - task: CondaEnvironment@0
     inputs:
-      versionSpec: '$(PYTHON_VERSION)'
-      architecture: 'x64'
+      environmentName: $(CONDA_ENV)
+      packageSpecs: 'python=$(PYTHON_VERSION)' # Optional
+      createOptions: '-q'
 
 - phase: Windows_2
   variables:
@@ -125,10 +121,11 @@ phases:
         TASK: bdist
         PYTHON_VERSION: 3.5
   steps:
-  - task: UsePythonVersion@0
+  - task: CondaEnvironment@0
     inputs:
-      versionSpec: '$(PYTHON_VERSION)'
-      architecture: 'x64'
+      environmentName: $(CONDA_ENV)
+      packageSpecs: 'python=$(PYTHON_VERSION)' # Optional
+      createOptions: '-q'
   
 
 
