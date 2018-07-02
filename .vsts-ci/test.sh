@@ -45,7 +45,7 @@ if [[ $TASK == "if-else" ]]; then
     exit 0
 fi
 
-conda install -y -n $CONDA_ENV numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest
+conda install -q -y -n $CONDA_ENV numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest
 
 if [[ $TASK == "sdist" ]]; then
     cd ${BUILD_REPOSITORY_LOCALPATH}/python-package && python setup.py sdist || exit -1
@@ -65,12 +65,11 @@ elif [[ $TASK == "bdist" ]]; then
 fi
 
 if [[ $TASK == "gpu" ]]; then
-    conda install --yes -c conda-forge boost
     sed -i 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' ${BUILD_REPOSITORY_LOCALPATH}/include/LightGBM/config.h
     grep -q 'std::string device_type = "gpu"' ${BUILD_REPOSITORY_LOCALPATH}/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
         cd ${BUILD_REPOSITORY_LOCALPATH}/python-package && python setup.py sdist || exit -1
-        pip install ${BUILD_REPOSITORY_LOCALPATH}/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--boost-root=/usr/share/miniconda/envs/$CONDA_ENV/" --install-option="--opencl-include-dir=$AMDAPPSDK/include/" || exit -1
+        pip install ${BUILD_REPOSITORY_LOCALPATH}/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--opencl-include-dir=$AMDAPPSDK/include/" || exit -1
         pytest ${BUILD_REPOSITORY_LOCALPATH}/tests/python_package_test || exit -1
         exit 0
     fi
@@ -84,7 +83,7 @@ if [[ $TASK == "mpi" ]]; then
     cd ${BUILD_REPOSITORY_LOCALPATH}/build
     cmake -DUSE_MPI=ON ..
 elif [[ $TASK == "gpu" ]]; then
-    cmake -DUSE_GPU=ON -DBOOST_ROOT=/usr/share/miniconda/envs/$CONDA_ENV/ -DOpenCL_INCLUDE_DIR=$AMDAPPSDK/include/ ..
+    cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK/include/ ..
 else
     cmake ..
 fi

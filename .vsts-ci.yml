@@ -41,7 +41,7 @@ phases:
       sudo apt-get update
       export LGB_VER=$(head -n 1 VERSION.txt)
       export AMDAPPSDK=$HOME/AMDAPPSDK
-      export LD_LIBRARY_PATH="AMDAPPSDK/lib/x86_64:LD_LIBRARY_PATH"
+      export LD_LIBRARY_PATH="$AMDAPPSDK/lib/x86_64:$LD_LIBRARY_PATH"
       export OPENCL_VENDOR_PATH=$AMDAPPSDK/etc/OpenCL/vendors
       bash .vsts-ci/setup.sh
       bash .vsts-ci/test.sh
