@@ -70,7 +70,7 @@ if [[ $TASK == "gpu" ]]; then
     grep -q 'std::string device_type = "gpu"' ${BUILD_REPOSITORY_LOCALPATH}/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
         cd ${BUILD_REPOSITORY_LOCALPATH}/python-package && python setup.py sdist || exit -1
-        pip install ${BUILD_REPOSITORY_LOCALPATH}/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--boost_root=/usr/share/miniconda/envs/$CONDA_ENV/" --install-option="--opencl-include-dir=$AMDAPPSDK/include/" || exit -1
+        pip install ${BUILD_REPOSITORY_LOCALPATH}/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--boost-root=/usr/share/miniconda/envs/$CONDA_ENV/" --install-option="--opencl-include-dir=$AMDAPPSDK/include/" || exit -1
         pytest ${BUILD_REPOSITORY_LOCALPATH}/tests/python_package_test || exit -1
         exit 0
     fi
