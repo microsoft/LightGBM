@@ -1598,7 +1598,11 @@ class Booster(object):
         name : string
             Name of the data.
         feval : callable or None, optional (default=None)
-            Custom evaluation function.
+            Customized evaluation function.
+            Should accept two parameters: preds, train_data.
+            For multi-class task, the preds is group by class_id first, then group by row_id.
+            If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
+            Note: should return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
         Returns
         -------
@@ -1628,7 +1632,11 @@ class Booster(object):
         Parameters
         ----------
         feval : callable or None, optional (default=None)
-            Custom evaluation function.
+            Customized evaluation function.
+            Should accept two parameters: preds, train_data.
+            For multi-class task, the preds is group by class_id first, then group by row_id.
+            If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
+            Note: should return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
         Returns
         -------
@@ -1643,7 +1651,11 @@ class Booster(object):
         Parameters
         ----------
         feval : callable or None, optional (default=None)
-            Custom evaluation function.
+            Customized evaluation function.
+            Should accept two parameters: preds, train_data.
+            For multi-class task, the preds is group by class_id first, then group by row_id.
+            If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
+            Note: should return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
         Returns
         -------

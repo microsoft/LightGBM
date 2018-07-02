@@ -367,7 +367,7 @@ class LGBMModel(_LGBMModelBase):
                 The weight of samples.
             group: array-like
                 Group/query data, used for ranking task.
-            eval_name: str
+            eval_name: string
                 The name of evaluation.
             eval_result: float
                 The eval result.
