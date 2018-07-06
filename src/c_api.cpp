@@ -505,12 +505,12 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   }
   std::unique_ptr<Dataset> ret;
   int32_t total_nrow = 0;
-  for (int j = 0; j < nmat; j++) {
+  for (int j = 0; j < nmat; ++j) {
     total_nrow += nrow[j];
   }
 
   std::vector<std::function<std::vector<double>(int row_idx)>> get_row_fun;
-  for (int j = 0; j < nmat; j++) {
+  for (int j = 0; j < nmat; ++j) {
     get_row_fun.push_back(RowFunctionFromDenseMatric(data[j], nrow[j], ncol, data_type, is_row_major));
   }
   
@@ -529,7 +529,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
       auto idx = sample_indices[i];
       while ((idx - offset) >= nrow[j]) {
         offset += nrow[j];
-        j++;
+        ++j;
       }
       
       auto row = get_row_fun[j](static_cast<int>(idx - offset));
@@ -551,7 +551,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
     ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
   }
-  int start_row = 0;
+  int32_t start_row = 0;
   for (int j = 0; j < nmat; ++j) {
     OMP_INIT_EX();
     #pragma omp parallel for schedule(static)
