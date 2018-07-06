@@ -1,8 +1,9 @@
 phases:
+###########################################
 - phase: Linux
+###########################################
   variables:
     PYTHON_VERSION: 3.6
-    AGENT_OS: linux
     CONDA_ENV: test-env
   queue:
     name: 'Hosted Linux Preview'
@@ -12,6 +13,7 @@ phases:
         TASK: regular
       mpi:
         TASK: mpi
+        PYTHON_VERSION: 2.7
       pylint: 
         TASK: pylint
       doc:
@@ -20,7 +22,7 @@ phases:
         TASK: if-else
       sdist:
         TASK: sdist
-        PYTHON_VERSION: 2.7
+        PYTHON_VERSION: 3.4
       bdist:
         TASK: bdist
         PYTHON_VERSION: 3.5
@@ -31,91 +33,79 @@ phases:
         TASK: gpu 
         METHOD: pip
   steps:
-  - script: sudo apt-get update
-  - script: bash .vsts-ci/setup.sh
-  # - task: CondaEnvironment@0
-  #   inputs:
-  #     environmentName: $(CONDA_ENV)
-  #     packageSpecs: 'python=$(PYTHON_VERSION)' # Optional
-  #     createOptions: '-q'
-
-  - task: UsePythonVersion@0
+  - task: CondaEnvironment@0
     inputs:
-      versionSpec: '$(PYTHON_VERSION)'
-      architecture: 'x64'
-  - script: python -m pip install --upgrade pip setuptools wheel
-  - script: bash .vsts-ci/test.sh
+      environmentName: $(CONDA_ENV)
+      packageSpecs: 'python=$(PYTHON_VERSION)' # Optional
+      createOptions: '-q'
+  - script: | 
+      sudo apt-get update
+      export LGB_VER=$(head -n 1 VERSION.txt)
+      export AMDAPPSDK=$HOME/AMDAPPSDK
+      export LD_LIBRARY_PATH="$AMDAPPSDK/lib/x86_64:$LD_LIBRARY_PATH"
+      export OPENCL_VENDOR_PATH=$AMDAPPSDK/etc/OpenCL/vendors
+      if [[ $TASK == "mpi" ]]; then
+          sudo apt-get install -y libopenmpi-dev openmpi-bin
+      fi
+      if [[ $TASK == "gpu" ]]; then
+          sudo apt-get install --no-install-recommends -y ocl-icd-opencl-dev libboost-dev libboost-system-dev libboost-filesystem-dev
+          wget -q https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
+          tar -xjf AMD-APP-SDK*.tar.bz2
+          mkdir -p $OPENCL_VENDOR_PATH
+          sh AMD-APP-SDK*.sh --tar -xf -C $AMDAPPSDK
+          mv $AMDAPPSDK/lib/x86_64/sdk/* $AMDAPPSDK/lib/x86_64/
+          echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
+      fi
+      bash .vsts-ci/test.sh
 
+###########################################
 - phase: MacOS
+###########################################
   variables:
     PYTHON_VERSION: 3.6
-    AGENT_OS: darwin
     CONDA_ENV: test-env
   queue:
     name: 'Hosted macOS Preview'
-    parallel: 4
+    parallel: 3
     matrix:
       regular:
         TASK: regular
-      mpi:
-        TASK: mpi
+        PYTHON_VERSION: 2.7
       sdist:
         TASK: sdist
-        PYTHON_VERSION: 2.7
+        PYTHON_VERSION: 3.4
       bdist:
         TASK: bdist
         PYTHON_VERSION: 3.5
   steps:
-  - script: bash .vsts-ci/setup.sh
-  # - task: CondaEnvironment@0
-  #   inputs:
-  #     environmentName: $(CONDA_ENV)
-  #     packageSpecs: 'python=$(PYTHON_VERSION)' # Optional
-  #     createOptions: '-q'
+  - script: |
+      test -n $CC  && unset CC
+      test -n $CXX && unset CXX
+      rm '/usr/local/include/c++'
+      brew install gcc@8
+      export CXX=g++-8
+      export CC=gcc-8
+      wget -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
+      bash conda.sh -b -p $HOME/miniconda
+      export PATH=$HOME/miniconda/bin:$PATH
+      conda config --set always_yes yes --set changeps1 no
+      conda create -q -n $CONDA_ENV python=$PYTHON_VERSION
+      source activate $CONDA_ENV
+      export LGB_VER=$(head -n 1 VERSION.txt)
+      bash .vsts-ci/test.sh
 
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '$(PYTHON_VERSION)'
-      architecture: 'x64'
-  - script: python -m pip install --upgrade pip setuptools wheel
-  - script: bash .vsts-ci/test.sh
-
-- phase: Windows_1
+###########################################
+- phase: Windows
+###########################################
   variables:
     PYTHON_VERSION: 3.6
-    AGENT_OS: windows
-  queue:
-    name: 'Hosted'
-    parallel: 4
-    matrix:
-      regular:
-        TASK: regular
-      mpi:
-        TASK: mpi
-      sdist:
-        TASK: sdist
-        PYTHON_VERSION: 2.7
-      bdist:
-        TASK: bdist
-        PYTHON_VERSION: 3.5
-  steps:
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '$(PYTHON_VERSION)'
-      architecture: 'x64'
-
-- phase: Windows_2
-  variables:
-    PYTHON_VERSION: 3.6
-    AGENT_OS: windows
+    CONDA_ENV: test-env
   queue:
     name: 'Hosted VS2017'
-    parallel: 4
+    parallel: 3
     matrix:
       regular:
         TASK: regular
-      mpi:
-        TASK: mpi
       sdist:
         TASK: sdist
         PYTHON_VERSION: 2.7
@@ -123,12 +113,38 @@ phases:
         TASK: bdist
         PYTHON_VERSION: 3.5
   steps:
-  - task: UsePythonVersion@0
+  - task: CondaEnvironment@0
     inputs:
-      versionSpec: '$(PYTHON_VERSION)'
-      architecture: 'x64'
-  
-
-
-
+      environmentName: $(CONDA_ENV)
+      packageSpecs: 'python=$(PYTHON_VERSION)' # Optional
+      createOptions: '-q'
+  - powershell: |
+      $env:LGB_VER = (Get-Content VERSION.txt).trim()
+      conda install -q -y -n $env:CONDA_ENV numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest
+      if ("env:TASK" -eq "regular") {
+        mkdir build; cd build
+        cmake -DCMAKE_GENERATOR_PLATFORM=x64 .. ; cmake --build . --target ALL_BUILD --config Release
+        cd ../python-package; python setup.py install -p
+        cd ..
+        pytest tests/c_api_test/test_.py
+      } 
+      elseif ("env:TASK" -eq "sdist"){
+        cd python-package; python setup.py sdist --formats gztar
+        cd dist; pip install "lightgbm-$(env:LGB_VER).tar.gz" -v
+        cd ../..
+      }
+      else {
+        cd python-package
+        python setup.py bdist_wheel --plat-name=win-amd64 --universal
+        cd ..
+      }
+      pytest tests/python_package_test
+      cd examples/python-guide
+      @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"
+      (Get-Content "plot_example.py").replace('graph.render(view=True)', 'graph.render(view=False)') | Set-Content "plot_example.py"
+      cd ../../python-package
+      foreach ($file in @(Get-ChildItem *.py)) {
+        python $file
+        if ($LastExitCode -ne 0) { $host.SetShouldExit($LastExitCode) }
+      }  # run all examples
 
