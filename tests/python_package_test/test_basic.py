@@ -60,3 +60,16 @@ class TestBasic(unittest.TestCase):
         for preds in zip(pred_early_stopping, pred_from_matr):
             # scores likely to be different, but prediction should still be the same
             self.assertEqual(preds[0] > 0, preds[1] > 0)
+
+    def test_chunked_dataset(self):
+        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=2)
+
+        chunk_size = X_train.shape[0] // 10 + 1
+        X_train = [X_train[i * chunk_size:(i + 1) * chunk_size, :] for i in range(X_train.shape[0] // chunk_size + 1)]
+        X_test = [X_test[i * chunk_size:(i + 1) * chunk_size, :] for i in range(X_test.shape[0] // chunk_size + 1)]
+
+        train_data = lgb.Dataset(X_train, label=y_train, params={"bin_construct_sample_cnt": 100})
+        valid_data = train_data.create_valid(X_test, label=y_test, params={"bin_construct_sample_cnt": 100})
+
+        train_data.construct()
+        valid_data.construct()

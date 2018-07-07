@@ -205,6 +205,27 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
                                                 DatasetHandle* out);
 
 /*!
+* \brief create dataset from array of dense matrices
+* \param data pointer to the data space
+* \param data_type type of data pointer, can be C_API_DTYPE_FLOAT32 or C_API_DTYPE_FLOAT64
+* \param nrow number of rows
+* \param ncol number columns
+* \param parameters additional parameters
+* \param reference used to align bin mapper with other dataset, nullptr means don't used
+* \param out created dataset
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMats(int32_t nmat,
+                                                 const void** data,
+                                                 int data_type,
+                                                 int32_t* nrow,
+                                                 int32_t ncol,
+                                                 int is_row_major,
+                                                 const char* parameters,
+                                                 const DatasetHandle reference,
+                                                 DatasetHandle* out);
+
+/*!
 * \brief Create subset of a data
 * \param handle handle of full dataset
 * \param used_row_indices Indices used in subset
