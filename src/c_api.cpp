@@ -475,6 +475,27 @@ int LGBM_DatasetCreateFromMat(const void* data,
                               const char* parameters,
                               const DatasetHandle reference,
                               DatasetHandle* out) {
+  return LGBM_DatasetCreateFromMats(1,
+                                    &data,
+                                    data_type,
+                                    &nrow,
+                                    ncol,
+                                    is_row_major,
+                                    parameters,
+                                    reference,
+                                    out);
+}
+
+
+int LGBM_DatasetCreateFromMats(int32_t nmat,
+                               const void** data,
+                               int data_type,
+                               int32_t* nrow,
+                               int32_t ncol,
+                               int is_row_major,
+                               const char* parameters,
+                               const DatasetHandle reference,
+                               DatasetHandle* out) {
   API_BEGIN();
   auto param = Config::Str2Map(parameters);
   Config config;
@@ -483,22 +504,39 @@ int LGBM_DatasetCreateFromMat(const void* data,
     omp_set_num_threads(config.num_threads);
   }
   std::unique_ptr<Dataset> ret;
-  auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, is_row_major);
+  int32_t total_nrow = 0;
+  for (int j = 0; j < nmat; ++j) {
+    total_nrow += nrow[j];
+  }
+
+  std::vector<std::function<std::vector<double>(int row_idx)>> get_row_fun;
+  for (int j = 0; j < nmat; ++j) {
+    get_row_fun.push_back(RowFunctionFromDenseMatric(data[j], nrow[j], ncol, data_type, is_row_major));
+  }
+  
   if (reference == nullptr) {
     // sample data first
     Random rand(config.data_random_seed);
-    int sample_cnt = static_cast<int>(nrow < config.bin_construct_sample_cnt ? nrow : config.bin_construct_sample_cnt);
-    auto sample_indices = rand.Sample(nrow, sample_cnt);
+    int sample_cnt = static_cast<int>(total_nrow < config.bin_construct_sample_cnt ? total_nrow : config.bin_construct_sample_cnt);
+    auto sample_indices = rand.Sample(total_nrow, sample_cnt);
     sample_cnt = static_cast<int>(sample_indices.size());
     std::vector<std::vector<double>> sample_values(ncol);
     std::vector<std::vector<int>> sample_idx(ncol);
+
+    int offset = 0;
+    int j = 0;
     for (size_t i = 0; i < sample_indices.size(); ++i) {
       auto idx = sample_indices[i];
-      auto row = get_row_fun(static_cast<int>(idx));
-      for (size_t j = 0; j < row.size(); ++j) {
-        if (std::fabs(row[j]) > kZeroThreshold || std::isnan(row[j])) {
-          sample_values[j].emplace_back(row[j]);
-          sample_idx[j].emplace_back(static_cast<int>(i));
+      while ((idx - offset) >= nrow[j]) {
+        offset += nrow[j];
+        ++j;
+      }
+      
+      auto row = get_row_fun[j](static_cast<int>(idx - offset));
+      for (size_t k = 0; k < row.size(); ++k) {
+        if (std::fabs(row[k]) > kZeroThreshold || std::isnan(row[k])) {
+          sample_values[k].emplace_back(row[k]);
+          sample_idx[k].emplace_back(static_cast<int>(i));
         }
       }
     }
@@ -507,22 +545,27 @@ int LGBM_DatasetCreateFromMat(const void* data,
                                             Common::Vector2Ptr<int>(sample_idx).data(),
                                             static_cast<int>(sample_values.size()),
                                             Common::VectorSize<double>(sample_values).data(),
-                                            sample_cnt, nrow));
+                                            sample_cnt, total_nrow));
   } else {
-    ret.reset(new Dataset(nrow));
+    ret.reset(new Dataset(total_nrow));
     ret->CreateValid(
       reinterpret_cast<const Dataset*>(reference));
   }
-  OMP_INIT_EX();
-  #pragma omp parallel for schedule(static)
-  for (int i = 0; i < nrow; ++i) {
-    OMP_LOOP_EX_BEGIN();
-    const int tid = omp_get_thread_num();
-    auto one_row = get_row_fun(i);
-    ret->PushOneRow(tid, i, one_row);
-    OMP_LOOP_EX_END();
+  int32_t start_row = 0;
+  for (int j = 0; j < nmat; ++j) {
+    OMP_INIT_EX();
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < nrow[j]; ++i) {
+      OMP_LOOP_EX_BEGIN();
+      const int tid = omp_get_thread_num();
+      auto one_row = get_row_fun[j](i);
+      ret->PushOneRow(tid, start_row + i, one_row);
+      OMP_LOOP_EX_END();
+    }
+    OMP_THROW_EX();
+
+    start_row += nrow[j];
   }
-  OMP_THROW_EX();
   ret->FinishLoad();
   *out = ret.release();
   API_END();
