@@ -1,1 +1,3 @@
 ^build_package.R$
+^.*.o$
+^.*.so$
