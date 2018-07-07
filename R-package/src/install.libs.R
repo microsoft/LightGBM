@@ -14,6 +14,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     || R_int_UUID == "2fdf6c18-697a-4ba7-b8ef-11c0d92f1327")){
   print("Warning: unmatched R_INTERNALS_UUID, may cannot run normally.")   
 }
+
 # Check for precompilation
 if (!use_precompile) {
 

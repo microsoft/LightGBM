@@ -75,7 +75,6 @@ CVBooster <- R6Class(
 #'                 learning_rate = 1,
 #'                 early_stopping_rounds = 10)
 #' }
-#' @rdname lgb.train
 #' @export
 lgb.cv <- function(params = list(),
                    data,

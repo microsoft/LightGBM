@@ -1,7 +1,6 @@
 #' Simple interface for training an lightgbm model.
 #' Its documentation is combined with lgb.train.
 #'
-#' @rdname lgb.train
 #' @export
 lightgbm <- function(data,
                      label = NULL,

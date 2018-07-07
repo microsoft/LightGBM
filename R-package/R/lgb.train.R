@@ -56,8 +56,6 @@
 #'                    early_stopping_rounds = 10)
 #' }
 #' 
-#' @rdname lgb.train
-#' 
 #' @export
 lgb.train <- function(params = list(),
                       data,
