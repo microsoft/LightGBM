@@ -120,8 +120,8 @@ phases:
       bdist:
         TASK: bdist
         PYTHON_VERSION: 3.5
-      mingw:
-        TASK: mingw
+      # mingw:
+      #   TASK: mingw
   steps:
   - task: CondaEnvironment@0
     inputs:
@@ -143,11 +143,11 @@ phases:
         cd dist; pip install @(Get-ChildItem *.gz) -v 
         cd ../..
       }
-      elseif ("$env:TASK" -eq "mingw"){
-        cd python-package; python setup.py sdist --formats gztar
-        cd dist; pip install @(Get-ChildItem *.gz) --install-option=--mingw -v
-        cd ../..
-      }
+      # elseif ("$env:TASK" -eq "mingw"){
+      #   cd python-package; python setup.py sdist --formats gztar
+      #   cd dist; pip install @(Get-ChildItem *.gz) --install-option=--mingw -v
+      #   cd ../..
+      # }
       else {
         cd python-package
         python setup.py bdist_wheel --plat-name=win-amd64 --universal
