@@ -13,9 +13,9 @@
 #'        Tree still grow by leaf-wise.
 #' @param num_threads Number of threads for LightGBM. For the best speed, set this to the number of real CPU cores, not the number of threads (most CPU using hyper-threading to generate 2 threads per CPU core).
 #' @param eval evaluation function, can be (a list of) character or custom eval function
-#' @param verbose verbosity for output, if <= 0, also will disable the print of evalutaion during training
+#' @param verbose verbosity for output, if <= 0, also will disable the print of evaluation during training
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals} 
-#' @param eval_freq evalutaion output frequency, only effect when verbose > 0
+#' @param eval_freq evaluation output frequency, only effect when verbose > 0
 #' @param init_model path of model file of \code{lgb.Booster} object, will continue training from this model
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
 #' @param categorical_feature list of str or int

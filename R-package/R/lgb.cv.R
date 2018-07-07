@@ -33,9 +33,9 @@ CVBooster <- R6Class(
 #'        Tree still grow by leaf-wise.
 #' @param num_threads Number of threads for LightGBM. For the best speed, set this to the number of real CPU cores, not the number of threads (most CPU using hyper-threading to generate 2 threads per CPU core).
 #' @param eval evaluation function, can be (list of) character or custom eval function
-#' @param verbose verbosity for output, if <= 0, also will disable the print of evalutaion during training
+#' @param verbose verbosity for output, if <= 0, also will disable the print of evaluation during training
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals} 
-#' @param eval_freq evalutaion output frequence, only effect when verbose > 0
+#' @param eval_freq evaluation output frequence, only effect when verbose > 0
 #' @param showsd \code{boolean}, whether to show standard deviation of cross validation
 #' @param stratified a \code{boolean} indicating whether sampling of folds should be stratified
 #'        by the values of outcome labels.

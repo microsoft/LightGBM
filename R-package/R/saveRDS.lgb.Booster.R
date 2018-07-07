@@ -1,6 +1,6 @@
 #' saveRDS for lgb.Booster models
 #'
-#' Attemps to save a model using RDS. Has an additional parameter (\code{raw}) which decides whether to save the raw model or not.
+#' Attempts to save a model using RDS. Has an additional parameter (\code{raw}) which decides whether to save the raw model or not.
 #' 
 #' @param object R object to serialize.
 #' @param file a connection or the name of the file where the R object is saved to or read from.
