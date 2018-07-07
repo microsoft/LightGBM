@@ -1,10 +1,11 @@
 basic_walkthrough               Basic feature walkthrough
 boost_from_prediction           Boosting from existing prediction
-categorical_feature_prepare     Categorical Feature Preparation
-categorical_feature_rules       Categorical Feature Preparation with Rules
+categorical_features_prepare     Categorical Feature Preparation
+categorical_features_rules       Categorical Feature Preparation with Rules
 cross_validation                Cross Validation
 early_stopping                  Early Stop in training
 efficient_many_training         Efficiency for Many Model Trainings
 multiclass                      Multiclass training/prediction
+multiclass_custom_objective     Multiclass with Custom Objective Function
 leaf_stability                  Leaf (in)Stability example
 weight_param                    Weight-Parameter adjustment relationship

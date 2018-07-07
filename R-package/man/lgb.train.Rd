@@ -42,11 +42,11 @@ lightgbm(data, label = NULL, weight = NULL, params = list(),
 
 \item{eval}{evaluation function, can be (list of) character or custom eval function}
 
-\item{verbose}{verbosity for output, if <= 0, also will disable the print of evalutaion during training}
+\item{verbose}{verbosity for output, if <= 0, also will disable the print of evaluation during training}
 
 \item{record}{Boolean, TRUE will record iteration message to \code{booster$record_evals}}
 
-\item{eval_freq}{evalutaion output frequence, only effect when verbose > 0}
+\item{eval_freq}{evaluation output frequence, only effect when verbose > 0}
 
 \item{showsd}{\code{boolean}, whether to show standard deviation of cross validation}
 
@@ -112,11 +112,11 @@ Tree still grow by leaf-wise.}
 
 \item{eval}{evaluation function, can be (a list of) character or custom eval function}
 
-\item{verbose}{verbosity for output, if <= 0, also will disable the print of evalutaion during training}
+\item{verbose}{verbosity for output, if <= 0, also will disable the print of evaluation during training}
 
 \item{record}{Boolean, TRUE will record iteration message to \code{booster$record_evals}}
 
-\item{eval_freq}{evalutaion output frequency, only effect when verbose > 0}
+\item{eval_freq}{evaluation output frequency, only effect when verbose > 0}
 
 \item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
 

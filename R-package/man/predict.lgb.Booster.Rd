@@ -5,8 +5,8 @@
 \title{Predict method for LightGBM model}
 \usage{
 \method{predict}{lgb.Booster}(object, data, num_iteration = NULL,
-  rawscore = FALSE, predleaf = FALSE, header = FALSE, reshape = FALSE,
-  ...)
+  rawscore = FALSE, predleaf = FALSE, predcontrib = FALSE,
+  header = FALSE, reshape = FALSE, ...)
 }
 \arguments{
 \item{object}{Object of class \code{lgb.Booster}}
@@ -20,6 +20,8 @@ sum of predictions from boosting iterations' results. E.g., setting \code{rawsco
 logistic regression would result in predictions for log-odds instead of probabilities.}
 
 \item{predleaf}{whether predict leaf index instead.}
+
+\item{predcontrib}{return per-feature contributions for each record.}
 
 \item{header}{only used for prediction for text file. True if text file has header}
 

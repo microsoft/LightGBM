@@ -21,26 +21,6 @@ if (!use_precompile) {
   source_dir <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
   setwd(source_dir)
   
-  if (!file.exists("_IS_FULL_PACKAGE")) {
-    unlink("./include", recursive = TRUE)
-    unlink("./src", recursive = TRUE)
-    unlink("./compute", recursive = TRUE)
-    unlink("./build", recursive = TRUE)
-    if (!file.copy("./../../include", "./", overwrite = TRUE, recursive = TRUE)) {
-      stop("Cannot find folder LightGBM/include")
-    }
-    if (!file.copy("./../../src", "./", overwrite = TRUE, recursive = TRUE)) {
-      stop("Cannot find folder LightGBM/src")
-    }
-    if (!file.copy("./../../compute", "./", overwrite = TRUE, recursive = TRUE)) {
-      print("Cannot find folder LightGBM/compute, disabling GPU build.")
-      use_gpu <- FALSE
-    }
-    if (!file.copy("./../../CMakeLists.txt", "./", overwrite = TRUE, recursive = TRUE)) {
-      stop("Cannot find file LightGBM/CMakeLists.txt")
-    }
-  }
-  
   # Prepare building package
   build_dir <- file.path(source_dir, "build", fsep = "/")
   dir.create(build_dir, recursive = TRUE, showWarnings = FALSE)
