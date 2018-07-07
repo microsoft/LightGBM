@@ -44,18 +44,21 @@ conda install -q -y -n $CONDA_ENV numpy nose scipy scikit-learn pandas matplotli
 if [[ $TASK == "sdist" ]]; then
     cd ${BUILD_REPOSITORY_LOCALPATH}/python-package && python setup.py sdist || exit -1
     pip install ${BUILD_REPOSITORY_LOCALPATH}/python-package/dist/lightgbm-$LGB_VER.tar.gz -v || exit -1
+    cp ${BUILD_REPOSITORY_LOCALPATH}/python-package/dist/lightgbm-$LGB_VER.tar.gz ${BUILD_ARTIFACTSTAGINGDIRECTORY}/lightgbm-$LGB_VER.tar.gz
     pytest ${BUILD_REPOSITORY_LOCALPATH}/tests/python_package_test || exit -1
     exit 0
 elif [[ $TASK == "bdist" ]]; then
     if [[ $AGENT_OS == "Darwin" ]]; then
-        echo "macos"
         cd ${BUILD_REPOSITORY_LOCALPATH}/python-package && python setup.py bdist_wheel --plat-name=macdarwin --universal || exit -1
+        cp dist/lightgbm-$LGB_VER-py2.py3-none-macdarwin.whl ${BUILD_ARTIFACTSTAGINGDIRECTORY}/lightgbm-$LGB_VER-py2.py3-none-macosx-10.6-x86_64-macosx-10.7-x86_64-macosx-10.8-x86_64-macosx_10_9_x86_64.macosx_10_10_x86_64.macosx_10_11_x86_64.macosx_10_12_x86_64.macosx_10_13_x86_64.whl
         mv dist/lightgbm-$LGB_VER-py2.py3-none-macdarwin.whl dist/lightgbm-$LGB_VER-py2.py3-none-macosx-10.6-x86_64-macosx-10.7-x86_64-macosx-10.8-x86_64-macosx_10_9_x86_64.macosx_10_10_x86_64.macosx_10_11_x86_64.macosx_10_12_x86_64.macosx_10_13_x86_64.whl
     else
         cd ${BUILD_REPOSITORY_LOCALPATH}/python-package && python setup.py bdist_wheel --plat-name=manylinux1_x86_64 --universal || exit -1
+        cp dist/lightgbm-$LGB_VER-py2.py3-none-manylinux1_x86_64.whl ${BUILD_ARTIFACTSTAGINGDIRECTORY}/lightgbm-$LGB_VER-py2.py3-none-manylinux1_x86_64.whl
     fi
     pip install ${BUILD_REPOSITORY_LOCALPATH}/python-package/dist/*.whl || exit -1
     pytest ${BUILD_REPOSITORY_LOCALPATH}/tests/python_package_test || exit -1
+    
     exit 0
 fi
 
@@ -89,6 +92,11 @@ cd ${BUILD_REPOSITORY_LOCALPATH}/python-package && python setup.py install --pre
 pytest ${BUILD_REPOSITORY_LOCALPATH} || exit -1
 
 if [[ $TASK == "regular" ]]; then
+    if [[ $AGENT_OS == "Darwin" ]]; then
+        cp ${BUILD_REPOSITORY_LOCALPATH}/lib_lightgbm.so ${BUILD_ARTIFACTSTAGINGDIRECTORY}/lib_lightgbm.dylib
+    else
+        cp ${BUILD_REPOSITORY_LOCALPATH}/lib_lightgbm.so ${BUILD_ARTIFACTSTAGINGDIRECTORY}/lib_lightgbm.so
+    fi
     cd ${BUILD_REPOSITORY_LOCALPATH}/examples/python-guide
     sed -i'.bak' '/import lightgbm as lgb/a\
 import matplotlib\
