@@ -582,7 +582,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        data : string, numpy array or scipy.sparse
+        data : string, numpy array, scipy.sparse or list of numpy arrays
             Data source of Dataset.
             If string, it represents the path to txt file.
         label : list, numpy 1-D array or None, optional (default=None)
