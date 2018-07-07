@@ -51,7 +51,7 @@ elif [[ $TASK == "bdist" ]]; then
     if [[ $AGENT_OS == "Darwin" ]]; then
         cd ${BUILD_REPOSITORY_LOCALPATH}/python-package && python setup.py bdist_wheel --plat-name=macdarwin --universal || exit -1
         cp dist/lightgbm-$LGB_VER-py2.py3-none-macdarwin.whl ${BUILD_ARTIFACTSTAGINGDIRECTORY}/lightgbm-$LGB_VER-py2.py3-none-macosx-10.6-x86_64-macosx-10.7-x86_64-macosx-10.8-x86_64-macosx_10_9_x86_64.macosx_10_10_x86_64.macosx_10_11_x86_64.macosx_10_12_x86_64.macosx_10_13_x86_64.whl
-        mv dist/lightgbm-$LGB_VER-py2.py3-none-macdarwin.whl dist/lightgbm-$LGB_VER-py2.py3-none-macosx-10.6-x86_64-macosx-10.7-x86_64-macosx-10.8-x86_64-macosx_10_9_x86_64.macosx_10_10_x86_64.macosx_10_11_x86_64.macosx_10_12_x86_64.macosx_10_13_x86_64.whl
+        mv dist/lightgbm-$LGB_VER-py2.py3-none-macdarwin.whl dist/lightgbm-$LGB_VER-py2.py3-none-macosx_10.6_x86_64-macosx_10.7_x86_64-macosx_10.8_x86_64-macosx_10_9_x86_64.macosx_10_10_x86_64.macosx_10_11_x86_64.macosx_10_12_x86_64.macosx_10_13_x86_64.whl
     else
         cd ${BUILD_REPOSITORY_LOCALPATH}/python-package && python setup.py bdist_wheel --plat-name=manylinux1_x86_64 --universal || exit -1
         cp dist/lightgbm-$LGB_VER-py2.py3-none-manylinux1_x86_64.whl ${BUILD_ARTIFACTSTAGINGDIRECTORY}/lightgbm-$LGB_VER-py2.py3-none-manylinux1_x86_64.whl
