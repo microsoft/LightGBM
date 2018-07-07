@@ -456,8 +456,10 @@ protected:
   std::unique_ptr<ObjectiveFunction> loaded_objective_;
   bool average_output_;
   bool need_re_bagging_;
+  std::string loaded_parameter_;
 
   Json forced_splits_json_;
+
 };
 
 }  // namespace LightGBM
