@@ -62,7 +62,7 @@ test_that("lgb.Dataset: colnames", {
 
 test_that("lgb.Dataset: nrow is correct for a very sparse matrix", {
   nr <- 1000
-  x <- rsparsematrix(nr, 100, density=0.0005)
+  x <- Matrix::rsparsematrix(nr, 100, density=0.0005)
   # we want it very sparse, so that last rows are empty
   expect_lt(max(x@i), nr)
   dtest <- lgb.Dataset(x)

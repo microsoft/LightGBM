@@ -68,6 +68,7 @@
 #' 
 #' }
 #' 
+#' @importFrom data.table set
 #' @export
 lgb.prepare_rules <- function(data, rules = NULL) {
   
@@ -80,7 +81,7 @@ lgb.prepare_rules <- function(data, rules = NULL) {
       # Loop through rules
       for (i in names(rules)) {
         
-        set(data, j = i, value = unname(rules[[i]][data[[i]]]))
+        data.table::set(data, j = i, value = unname(rules[[i]][data[[i]]]))
         data[[i]][is.na(data[[i]])] <- 0 # Overwrite NAs by 0s
         
       }
@@ -119,7 +120,7 @@ lgb.prepare_rules <- function(data, rules = NULL) {
           names(rules[[indexed]]) <- mini_unique # Character equivalent
           
           # Apply to real data column
-          set(data, j = i, value = unname(rules[[indexed]][mini_data]))
+          data.table::set(data, j = i, value = unname(rules[[indexed]][mini_data]))
           
         }
         

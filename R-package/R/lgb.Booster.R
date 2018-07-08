@@ -1,4 +1,5 @@
-Booster <- R6Class(
+#' @importFrom R6 R6Class
+Booster <- R6::R6Class(
   classname = "lgb.Booster",
   cloneable = FALSE,
   public = list(

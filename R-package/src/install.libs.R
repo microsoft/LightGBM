@@ -15,6 +15,11 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
   print("Warning: unmatched R_INTERNALS_UUID, may cannot run normally.")   
 }
 
+# Move in CMakeLists.txt
+if (!file.copy("../inst/bin/CMakeLists.txt", "CMakeLists.txt", overwrite = TRUE)){
+  stop("Copying CMakeLists failed")
+}
+
 # Check for precompilation
 if (!use_precompile) {
 

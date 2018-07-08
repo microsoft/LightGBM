@@ -1,6 +1,8 @@
 
 #' @importFrom methods is
-Dataset <- R6Class(
+#' @importFrom R6 R6Class
+Dataset <- R6::R6Class(
+
   classname = "lgb.Dataset",
   cloneable = FALSE,
   public = list(

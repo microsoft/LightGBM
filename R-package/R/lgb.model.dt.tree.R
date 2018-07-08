@@ -47,7 +47,7 @@
 #' }
 #'
 #' @importFrom magrittr %>%
-#' @importFrom data.table := data.table
+#' @importFrom data.table := data.table rbindlist
 #' @importFrom jsonlite fromJSON
 #' @export
 lgb.model.dt.tree <- function(model, num_iteration = NULL) {
@@ -77,6 +77,7 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
   return(tree_dt)
 
 }
+
 
 #' @importFrom data.table data.table rbindlist
 single.tree.parse <- function(lgb_tree) {

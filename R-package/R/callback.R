@@ -1,4 +1,5 @@
-CB_ENV <- R6Class(
+#' @importFrom R6 R6Class
+CB_ENV <- R6::R6Class(
   "lgb.cb_env",
   cloneable = FALSE,
   public = list(

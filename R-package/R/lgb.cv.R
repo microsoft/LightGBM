@@ -1,4 +1,5 @@
-CVBooster <- R6Class(
+#' @importFrom R6 R6Class
+CVBooster <- R6::R6Class(
   classname = "lgb.CVBooster",
   cloneable = FALSE,
   public = list(
