@@ -382,3 +382,8 @@ lightgbm.model
 # duplicate version file
 python-package/lightgbm/VERSION.txt
 .Rproj.user
+
+# R build artefacts
+R-package/src/CMakeLists.txt
+R-package/src/lib_lightgbm.so.dSYM/
+R-package/src/src/
