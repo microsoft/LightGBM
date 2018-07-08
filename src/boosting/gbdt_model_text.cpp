@@ -280,6 +280,7 @@ std::string GBDT::SaveModelToString(int num_iteration) const {
     ss << tree_strs[i];
     tree_strs[i].clear();
   }
+  ss << "end of trees" << "\n";
 
   std::vector<double> feature_importances = FeatureImportance(num_iteration, 0);
   // store the importance first
@@ -301,8 +302,13 @@ std::string GBDT::SaveModelToString(int num_iteration) const {
     ss << pairs[i].second << "=" << std::to_string(pairs[i].first) << '\n';
   }
   if (config_ != nullptr) {
-    ss << "parameters:" << '\n';
+    ss << "\nparameters:" << '\n';
     ss << config_->ToString() << "\n";
+    ss << "end of parameters" << '\n';
+  } else if (!loaded_parameter_.empty()) {
+    ss << "\nparameters:" << '\n';
+    ss << loaded_parameter_ << "\n";
+    ss << "end of parameters" << '\n';
   }
   return ss.str();
 }
@@ -465,7 +471,26 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
   num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
   num_init_iteration_ = num_iteration_for_pred_;
   iter_ = 0;
-
+  bool is_inparameter = false;
+  std::stringstream ss;
+  while (p < end) {
+    auto line_len = Common::GetLine(p);
+    std::string cur_line(p, line_len);
+    if (line_len > 0) {
+      if (cur_line == std::string("parameters:")) {
+        is_inparameter = true;
+      } else if (cur_line == std::string("end of parameters")) {
+        break;
+      } else if (is_inparameter) {
+        ss << cur_line << "\n";
+      }
+    }
+    p += line_len;
+    p = Common::SkipNewLine(p);
+  }
+  if (!ss.str().empty()) {
+    loaded_parameter_ = ss.str();
+  }
   return true;
 }
 
