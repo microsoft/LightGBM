@@ -21,7 +21,6 @@ Description: Tree based algorithms can be improved by introducing boosting frame
 License: MIT + file LICENSE
 URL: https://github.com/Microsoft/LightGBM
 BugReports: https://github.com/Microsoft/LightGBM/issues
-VignetteBuilder: knitr
 Suggests:
     Ckmeans.1d.dp (>= 3.3.1),
     DiagrammeR (>= 0.8.1),

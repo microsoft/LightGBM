@@ -1,3 +1,8 @@
 ^build_package.R$
-#^.*.o$
-#^.*.so$
+\.o$
+\.so$
+\.dll$
+
+# Executables created by CMake
+\.out$
+\.bin$
