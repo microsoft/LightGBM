@@ -677,7 +677,7 @@ Objective Parameters
 
    -  might be useful in case of large-range labels
 
--  ``alpha``, default = ``0.9``, type = double, constraints: ``0.0 < alpha < 1.0``
+-  ``alpha``, default = ``0.9``, type = double, constraints: ``alpha > 0.0``
 
    -  used only in ``huber`` and ``quantile`` ``regression`` applications
 

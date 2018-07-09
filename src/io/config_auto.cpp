@@ -446,7 +446,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetDouble(params, "alpha", &alpha);
   CHECK(alpha >0.0);
-  CHECK(alpha <1.0);
 
   GetDouble(params, "fair_c", &fair_c);
   CHECK(fair_c >0.0);
