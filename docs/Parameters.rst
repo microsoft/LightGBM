@@ -33,13 +33,13 @@ If one parameter appears in both command line and config file, LightGBM will use
 Core Parameters
 ---------------
 
--  ``config``:raw-html:`<a id="config title="Permalink to this parameter" class="headerlink" href="#config">&#x1F517;</a>`, default = ``""``, type = string, aliases: ``config_file``
+-  ``config``:raw-html:`<a id="config" title="Permalink to this parameter" class="headerlink" href="#config">&#x1F517;</a>`, default = ``""``, type = string, aliases: ``config_file``
 
    -  path of config file
 
    -  **Note**: can be used only in CLI version
 
--  ``task``:raw-html:`<a id="task title="Permalink to this parameter" class="headerlink" href="#task">&#x1F517;</a>`, default = ``train``, type = enum, options: ``train``, ``predict``, ``convert_model``, ``refit``, aliases: ``task_type``
+-  ``task``:raw-html:`<a id="task" title="Permalink to this parameter" class="headerlink" href="#task">&#x1F517;</a>`, default = ``train``, type = enum, options: ``train``, ``predict``, ``convert_model``, ``refit``, aliases: ``task_type``
 
    -  ``train``, for training, aliases: ``training``
 
@@ -51,7 +51,7 @@ Core Parameters
 
    -  **Note**: can be used only in CLI version
 
--  ``objective``:raw-html:`<a id="objective title="Permalink to this parameter" class="headerlink" href="#objective">&#x1F517;</a>`, default = ``regression``, type = enum, options: ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gammma``, ``tweedie``, ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``, aliases: ``objective_type``, ``app``, ``application``
+-  ``objective``:raw-html:`<a id="objective" title="Permalink to this parameter" class="headerlink" href="#objective">&#x1F517;</a>`, default = ``regression``, type = enum, options: ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gammma``, ``tweedie``, ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``, aliases: ``objective_type``, ``app``, ``application``
 
    -  regression application
 
@@ -99,7 +99,7 @@ Core Parameters
 
       -  all values in ``label`` must be smaller than number of elements in ``label_gain``
 
--  ``boosting``:raw-html:`<a id="boosting title="Permalink to this parameter" class="headerlink" href="#boosting">&#x1F517;</a>`, default = ``gbdt``, type = enum, options: ``gbdt``, ``gbrt``, ``rf``, ``random_forest``, ``dart``, ``goss``, aliases: ``boosting_type``, ``boost``
+-  ``boosting``:raw-html:`<a id="boosting" title="Permalink to this parameter" class="headerlink" href="#boosting">&#x1F517;</a>`, default = ``gbdt``, type = enum, options: ``gbdt``, ``gbrt``, ``rf``, ``random_forest``, ``dart``, ``goss``, aliases: ``boosting_type``, ``boost``
 
    -  ``gbdt``, traditional Gradient Boosting Decision Tree, aliases: ``gbrt``
 
@@ -109,13 +109,13 @@ Core Parameters
 
    -  ``goss``, Gradient-based One-Side Sampling
 
--  ``data``:raw-html:`<a id="data title="Permalink to this parameter" class="headerlink" href="#data">&#x1F517;</a>`, default = ``""``, type = string, aliases: ``train``, ``train_data``, ``data_filename``
+-  ``data``:raw-html:`<a id="data" title="Permalink to this parameter" class="headerlink" href="#data">&#x1F517;</a>`, default = ``""``, type = string, aliases: ``train``, ``train_data``, ``data_filename``
 
    -  path of training data, LightGBM will train from this data
 
    -  **Note**: can be used only in CLI version
 
--  ``valid``:raw-html:`<a id="valid title="Permalink to this parameter" class="headerlink" href="#valid">&#x1F517;</a>`, default = ``""``, type = string, aliases: ``test``, ``valid_data``, ``valid_data_file``, ``test_data``, ``valid_filenames``
+-  ``valid``:raw-html:`<a id="valid" title="Permalink to this parameter" class="headerlink" href="#valid">&#x1F517;</a>`, default = ``""``, type = string, aliases: ``test``, ``valid_data``, ``valid_data_file``, ``test_data``, ``valid_filenames``
 
    -  path(s) of validation/test data, LightGBM will output metrics for these data
 
@@ -123,7 +123,7 @@ Core Parameters
 
    -  **Note**: can be used only in CLI version
 
--  ``num_iterations``:raw-html:`<a id="num_iterations title="Permalink to this parameter" class="headerlink" href="#num_iterations">&#x1F517;</a>`, default = ``100``, type = int, aliases: ``num_iteration``, ``num_tree``, ``num_trees``, ``num_round``, ``num_rounds``, ``num_boost_round``, ``n_estimators``, constraints: ``num_iterations >= 0``
+-  ``num_iterations``:raw-html:`<a id="num_iterations" title="Permalink to this parameter" class="headerlink" href="#num_iterations">&#x1F517;</a>`, default = ``100``, type = int, aliases: ``num_iteration``, ``num_tree``, ``num_trees``, ``num_round``, ``num_rounds``, ``num_boost_round``, ``n_estimators``, constraints: ``num_iterations >= 0``
 
    -  number of boosting iterations
 
@@ -131,17 +131,17 @@ Core Parameters
 
    -  **Note**: internally, LightGBM constructs ``num_class * num_iterations`` trees for multi-class classification problems
 
--  ``learning_rate``:raw-html:`<a id="learning_rate title="Permalink to this parameter" class="headerlink" href="#learning_rate">&#x1F517;</a>`, default = ``0.1``, type = double, aliases: ``shrinkage_rate``, constraints: ``learning_rate > 0.0``
+-  ``learning_rate``:raw-html:`<a id="learning_rate" title="Permalink to this parameter" class="headerlink" href="#learning_rate">&#x1F517;</a>`, default = ``0.1``, type = double, aliases: ``shrinkage_rate``, constraints: ``learning_rate > 0.0``
 
    -  shrinkage rate
 
    -  in ``dart``, it also affects on normalization weights of dropped trees
 
--  ``num_leaves``:raw-html:`<a id="num_leaves title="Permalink to this parameter" class="headerlink" href="#num_leaves">&#x1F517;</a>`, default = ``31``, type = int, aliases: ``num_leaf``, constraints: ``num_leaves > 1``
+-  ``num_leaves``:raw-html:`<a id="num_leaves" title="Permalink to this parameter" class="headerlink" href="#num_leaves">&#x1F517;</a>`, default = ``31``, type = int, aliases: ``num_leaf``, constraints: ``num_leaves > 1``
 
    -  max number of leaves in one tree
 
--  ``tree_learner``:raw-html:`<a id="tree_learner title="Permalink to this parameter" class="headerlink" href="#tree_learner">&#x1F517;</a>`, default = ``serial``, type = enum, options: ``serial``, ``feature``, ``data``, ``voting``, aliases: ``tree``, ``tree_learner_type``
+-  ``tree_learner``:raw-html:`<a id="tree_learner" title="Permalink to this parameter" class="headerlink" href="#tree_learner">&#x1F517;</a>`, default = ``serial``, type = enum, options: ``serial``, ``feature``, ``data``, ``voting``, aliases: ``tree``, ``tree_learner_type``
 
    -  ``serial``, single machine tree learner
 
@@ -153,7 +153,7 @@ Core Parameters
 
    -  refer to `Parallel Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
 
--  ``num_threads``:raw-html:`<a id="num_threads title="Permalink to this parameter" class="headerlink" href="#num_threads">&#x1F517;</a>`, default = ``0``, type = int, aliases: ``num_thread``, ``nthread``, ``nthreads``
+-  ``num_threads``:raw-html:`<a id="num_threads" title="Permalink to this parameter" class="headerlink" href="#num_threads">&#x1F517;</a>`, default = ``0``, type = int, aliases: ``num_thread``, ``nthread``, ``nthreads``
 
    -  number of threads for LightGBM
 
@@ -167,7 +167,7 @@ Core Parameters
 
    -  for parallel learning, do not use all CPU cores because this will cause poor performance for the network communication
 
--  ``device_type``:raw-html:`<a id="device_type title="Permalink to this parameter" class="headerlink" href="#device_type">&#x1F517;</a>`, default = ``cpu``, type = enum, options: ``cpu``, ``gpu``, aliases: ``device``
+-  ``device_type``:raw-html:`<a id="device_type" title="Permalink to this parameter" class="headerlink" href="#device_type">&#x1F517;</a>`, default = ``cpu``, type = enum, options: ``cpu``, ``gpu``, aliases: ``device``
 
    -  device for the tree learning, you can use GPU to achieve the faster learning
 
@@ -177,7 +177,7 @@ Core Parameters
 
    -  **Note**: refer to `Installation Guide <./Installation-Guide.rst#build-gpu-version>`__ to build LightGBM with GPU support
 
--  ``seed``:raw-html:`<a id="seed title="Permalink to this parameter" class="headerlink" href="#seed">&#x1F517;</a>`, default = ``0``, type = int, aliases: ``random_seed``
+-  ``seed``:raw-html:`<a id="seed" title="Permalink to this parameter" class="headerlink" href="#seed">&#x1F517;</a>`, default = ``0``, type = int, aliases: ``random_seed``
 
    -  this seed is used to generate other seeds, e.g. ``data_random_seed``, ``feature_fraction_seed``
 
@@ -186,21 +186,21 @@ Core Parameters
 Learning Control Parameters
 ---------------------------
 
--  ``max_depth``:raw-html:`<a id="max_depth title="Permalink to this parameter" class="headerlink" href="#max_depth">&#x1F517;</a>`, default = ``-1``, type = int
+-  ``max_depth``:raw-html:`<a id="max_depth" title="Permalink to this parameter" class="headerlink" href="#max_depth">&#x1F517;</a>`, default = ``-1``, type = int
 
    -  limit the max depth for tree model. This is used to deal with over-fitting when ``#data`` is small. Tree still grows leaf-wise
 
    -  ``< 0`` means no limit
 
--  ``min_data_in_leaf``:raw-html:`<a id="min_data_in_leaf title="Permalink to this parameter" class="headerlink" href="#min_data_in_leaf">&#x1F517;</a>`, default = ``20``, type = int, aliases: ``min_data_per_leaf``, ``min_data``, ``min_child_samples``, constraints: ``min_data_in_leaf >= 0``
+-  ``min_data_in_leaf``:raw-html:`<a id="min_data_in_leaf" title="Permalink to this parameter" class="headerlink" href="#min_data_in_leaf">&#x1F517;</a>`, default = ``20``, type = int, aliases: ``min_data_per_leaf``, ``min_data``, ``min_child_samples``, constraints: ``min_data_in_leaf >= 0``
 
    -  minimal number of data in one leaf. Can be used to deal with over-fitting
 
--  ``min_sum_hessian_in_leaf``:raw-html:`<a id="min_sum_hessian_in_leaf title="Permalink to this parameter" class="headerlink" href="#min_sum_hessian_in_leaf">&#x1F517;</a>`, default = ``1e-3``, type = double, aliases: ``min_sum_hessian_per_leaf``, ``min_sum_hessian``, ``min_hessian``, ``min_child_weight``, constraints: ``min_sum_hessian_in_leaf >= 0.0``
+-  ``min_sum_hessian_in_leaf``:raw-html:`<a id="min_sum_hessian_in_leaf" title="Permalink to this parameter" class="headerlink" href="#min_sum_hessian_in_leaf">&#x1F517;</a>`, default = ``1e-3``, type = double, aliases: ``min_sum_hessian_per_leaf``, ``min_sum_hessian``, ``min_hessian``, ``min_child_weight``, constraints: ``min_sum_hessian_in_leaf >= 0.0``
 
    -  minimal sum hessian in one leaf. Like ``min_data_in_leaf``, it can be used to deal with over-fitting
 
--  ``bagging_fraction``:raw-html:`<a id="bagging_fraction title="Permalink to this parameter" class="headerlink" href="#bagging_fraction">&#x1F517;</a>`, default = ``1.0``, type = double, aliases: ``sub_row``, ``subsample``, ``bagging``, constraints: ``0.0 < bagging_fraction <= 1.0``
+-  ``bagging_fraction``:raw-html:`<a id="bagging_fraction" title="Permalink to this parameter" class="headerlink" href="#bagging_fraction">&#x1F517;</a>`, default = ``1.0``, type = double, aliases: ``sub_row``, ``subsample``, ``bagging``, constraints: ``0.0 < bagging_fraction <= 1.0``
 
    -  like ``feature_fraction``, but this will randomly select part of data without resampling
 
@@ -210,7 +210,7 @@ Learning Control Parameters
 
    -  **Note**: to enable bagging, ``bagging_freq`` should be set to a non zero value as well
 
--  ``bagging_freq``:raw-html:`<a id="bagging_freq title="Permalink to this parameter" class="headerlink" href="#bagging_freq">&#x1F517;</a>`, default = ``0``, type = int, aliases: ``subsample_freq``
+-  ``bagging_freq``:raw-html:`<a id="bagging_freq" title="Permalink to this parameter" class="headerlink" href="#bagging_freq">&#x1F517;</a>`, default = ``0``, type = int, aliases: ``subsample_freq``
 
    -  frequency for bagging
 
@@ -218,11 +218,11 @@ Learning Control Parameters
 
    -  **Note**: to enable bagging, ``bagging_fraction`` should be set to value smaller than ``1.0`` as well
 
--  ``bagging_seed``:raw-html:`<a id="bagging_seed title="Permalink to this parameter" class="headerlink" href="#bagging_seed">&#x1F517;</a>`, default = ``3``, type = int, aliases: ``bagging_fraction_seed``
+-  ``bagging_seed``:raw-html:`<a id="bagging_seed" title="Permalink to this parameter" class="headerlink" href="#bagging_seed">&#x1F517;</a>`, default = ``3``, type = int, aliases: ``bagging_fraction_seed``
 
    -  random seed for bagging
 
--  ``feature_fraction``:raw-html:`<a id="feature_fraction title="Permalink to this parameter" class="headerlink" href="#feature_fraction">&#x1F517;</a>`, default = ``1.0``, type = double, aliases: ``sub_feature``, ``colsample_bytree``, constraints: ``0.0 < feature_fraction <= 1.0``
+-  ``feature_fraction``:raw-html:`<a id="feature_fraction" title="Permalink to this parameter" class="headerlink" href="#feature_fraction">&#x1F517;</a>`, default = ``1.0``, type = double, aliases: ``sub_feature``, ``colsample_bytree``, constraints: ``0.0 < feature_fraction <= 1.0``
 
    -  LightGBM will randomly select part of features on each iteration if ``feature_fraction`` smaller than ``1.0``. For example, if you set it to ``0.8``, LightGBM will select 80% of features before training each tree
 
@@ -230,17 +230,17 @@ Learning Control Parameters
 
    -  can be used to deal with over-fitting
 
--  ``feature_fraction_seed``:raw-html:`<a id="feature_fraction_seed title="Permalink to this parameter" class="headerlink" href="#feature_fraction_seed">&#x1F517;</a>`, default = ``2``, type = int
+-  ``feature_fraction_seed``:raw-html:`<a id="feature_fraction_seed" title="Permalink to this parameter" class="headerlink" href="#feature_fraction_seed">&#x1F517;</a>`, default = ``2``, type = int
 
    -  random seed for ``feature_fraction``
 
--  ``early_stopping_round``:raw-html:`<a id="early_stopping_round title="Permalink to this parameter" class="headerlink" href="#early_stopping_round">&#x1F517;</a>`, default = ``0``, type = int, aliases: ``early_stopping_rounds``, ``early_stopping``
+-  ``early_stopping_round``:raw-html:`<a id="early_stopping_round" title="Permalink to this parameter" class="headerlink" href="#early_stopping_round">&#x1F517;</a>`, default = ``0``, type = int, aliases: ``early_stopping_rounds``, ``early_stopping``
 
    -  will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds
 
    -  ``<= 0`` means disable
 
--  ``max_delta_step``:raw-html:`<a id="max_delta_step title="Permalink to this parameter" class="headerlink" href="#max_delta_step">&#x1F517;</a>`, default = ``0.0``, type = double, aliases: ``max_tree_output``, ``max_leaf_output``
+-  ``max_delta_step``:raw-html:`<a id="max_delta_step" title="Permalink to this parameter" class="headerlink" href="#max_delta_step">&#x1F517;</a>`, default = ``0.0``, type = double, aliases: ``max_tree_output``, ``max_leaf_output``
 
    -  used to limit the max output of tree leaves
 
@@ -248,25 +248,25 @@ Learning Control Parameters
 
    -  the final max output of leaves is ``learning_rate * max_delta_step``
 
--  ``lambda_l1``:raw-html:`<a id="lambda_l1 title="Permalink to this parameter" class="headerlink" href="#lambda_l1">&#x1F517;</a>`, default = ``0.0``, type = double, aliases: ``reg_alpha``, constraints: ``lambda_l1 >= 0.0``
+-  ``lambda_l1``:raw-html:`<a id="lambda_l1" title="Permalink to this parameter" class="headerlink" href="#lambda_l1">&#x1F517;</a>`, default = ``0.0``, type = double, aliases: ``reg_alpha``, constraints: ``lambda_l1 >= 0.0``
 
    -  L1 regularization
 
--  ``lambda_l2``:raw-html:`<a id="lambda_l2 title="Permalink to this parameter" class="headerlink" href="#lambda_l2">&#x1F517;</a>`, default = ``0.0``, type = double, aliases: ``reg_lambda``, constraints: ``lambda_l2 >= 0.0``
+-  ``lambda_l2``:raw-html:`<a id="lambda_l2" title="Permalink to this parameter" class="headerlink" href="#lambda_l2">&#x1F517;</a>`, default = ``0.0``, type = double, aliases: ``reg_lambda``, constraints: ``lambda_l2 >= 0.0``
 
    -  L2 regularization
 
--  ``min_gain_to_split``:raw-html:`<a id="min_gain_to_split title="Permalink to this parameter" class="headerlink" href="#min_gain_to_split">&#x1F517;</a>`, default = ``0.0``, type = double, aliases: ``min_split_gain``, constraints: ``min_gain_to_split >= 0.0``
+-  ``min_gain_to_split``:raw-html:`<a id="min_gain_to_split" title="Permalink to this parameter" class="headerlink" href="#min_gain_to_split">&#x1F517;</a>`, default = ``0.0``, type = double, aliases: ``min_split_gain``, constraints: ``min_gain_to_split >= 0.0``
 
    -  the minimal gain to perform split
 
--  ``drop_rate``:raw-html:`<a id="drop_rate title="Permalink to this parameter" class="headerlink" href="#drop_rate">&#x1F517;</a>`, default = ``0.1``, type = double, constraints: ``0.0 <= drop_rate <= 1.0``
+-  ``drop_rate``:raw-html:`<a id="drop_rate" title="Permalink to this parameter" class="headerlink" href="#drop_rate">&#x1F517;</a>`, default = ``0.1``, type = double, constraints: ``0.0 <= drop_rate <= 1.0``
 
    -  used only in ``dart``
 
    -  dropout rate
 
--  ``max_drop``:raw-html:`<a id="max_drop title="Permalink to this parameter" class="headerlink" href="#max_drop">&#x1F517;</a>`, default = ``50``, type = int
+-  ``max_drop``:raw-html:`<a id="max_drop" title="Permalink to this parameter" class="headerlink" href="#max_drop">&#x1F517;</a>`, default = ``50``, type = int
 
    -  used only in ``dart``
 
@@ -274,75 +274,75 @@ Learning Control Parameters
 
    -  ``<=0`` means no limit
 
--  ``skip_drop``:raw-html:`<a id="skip_drop title="Permalink to this parameter" class="headerlink" href="#skip_drop">&#x1F517;</a>`, default = ``0.5``, type = double, constraints: ``0.0 <= skip_drop <= 1.0``
+-  ``skip_drop``:raw-html:`<a id="skip_drop" title="Permalink to this parameter" class="headerlink" href="#skip_drop">&#x1F517;</a>`, default = ``0.5``, type = double, constraints: ``0.0 <= skip_drop <= 1.0``
 
    -  used only in ``dart``
 
    -  probability of skipping drop
 
--  ``xgboost_dart_mode``:raw-html:`<a id="xgboost_dart_mode title="Permalink to this parameter" class="headerlink" href="#xgboost_dart_mode">&#x1F517;</a>`, default = ``false``, type = bool
+-  ``xgboost_dart_mode``:raw-html:`<a id="xgboost_dart_mode" title="Permalink to this parameter" class="headerlink" href="#xgboost_dart_mode">&#x1F517;</a>`, default = ``false``, type = bool
 
    -  used only in ``dart``
 
    -  set this to ``true``, if you want to use xgboost dart mode
 
--  ``uniform_drop``:raw-html:`<a id="uniform_drop title="Permalink to this parameter" class="headerlink" href="#uniform_drop">&#x1F517;</a>`, default = ``false``, type = bool
+-  ``uniform_drop``:raw-html:`<a id="uniform_drop" title="Permalink to this parameter" class="headerlink" href="#uniform_drop">&#x1F517;</a>`, default = ``false``, type = bool
 
    -  used only in ``dart``
 
    -  set this to ``true``, if you want to use uniform drop
 
--  ``drop_seed``:raw-html:`<a id="drop_seed title="Permalink to this parameter" class="headerlink" href="#drop_seed">&#x1F517;</a>`, default = ``4``, type = int
+-  ``drop_seed``:raw-html:`<a id="drop_seed" title="Permalink to this parameter" class="headerlink" href="#drop_seed">&#x1F517;</a>`, default = ``4``, type = int
 
    -  used only in ``dart``
 
    -  random seed to choose dropping models
 
--  ``top_rate``:raw-html:`<a id="top_rate title="Permalink to this parameter" class="headerlink" href="#top_rate">&#x1F517;</a>`, default = ``0.2``, type = double, constraints: ``0.0 <= top_rate <= 1.0``
+-  ``top_rate``:raw-html:`<a id="top_rate" title="Permalink to this parameter" class="headerlink" href="#top_rate">&#x1F517;</a>`, default = ``0.2``, type = double, constraints: ``0.0 <= top_rate <= 1.0``
 
    -  used only in ``goss``
 
    -  the retain ratio of large gradient data
 
--  ``other_rate``:raw-html:`<a id="other_rate title="Permalink to this parameter" class="headerlink" href="#other_rate">&#x1F517;</a>`, default = ``0.1``, type = double, constraints: ``0.0 <= other_rate <= 1.0``
+-  ``other_rate``:raw-html:`<a id="other_rate" title="Permalink to this parameter" class="headerlink" href="#other_rate">&#x1F517;</a>`, default = ``0.1``, type = double, constraints: ``0.0 <= other_rate <= 1.0``
 
    -  used only in ``goss``
 
    -  the retain ratio of small gradient data
 
--  ``min_data_per_group``:raw-html:`<a id="min_data_per_group title="Permalink to this parameter" class="headerlink" href="#min_data_per_group">&#x1F517;</a>`, default = ``100``, type = int, constraints: ``min_data_per_group > 0``
+-  ``min_data_per_group``:raw-html:`<a id="min_data_per_group" title="Permalink to this parameter" class="headerlink" href="#min_data_per_group">&#x1F517;</a>`, default = ``100``, type = int, constraints: ``min_data_per_group > 0``
 
    -  minimal number of data per categorical group
 
--  ``max_cat_threshold``:raw-html:`<a id="max_cat_threshold title="Permalink to this parameter" class="headerlink" href="#max_cat_threshold">&#x1F517;</a>`, default = ``32``, type = int, constraints: ``max_cat_threshold > 0``
+-  ``max_cat_threshold``:raw-html:`<a id="max_cat_threshold" title="Permalink to this parameter" class="headerlink" href="#max_cat_threshold">&#x1F517;</a>`, default = ``32``, type = int, constraints: ``max_cat_threshold > 0``
 
    -  used for the categorical features
 
    -  limit the max threshold points in categorical features
 
--  ``cat_l2``:raw-html:`<a id="cat_l2 title="Permalink to this parameter" class="headerlink" href="#cat_l2">&#x1F517;</a>`, default = ``10.0``, type = double, constraints: ``cat_l2 >= 0.0``
+-  ``cat_l2``:raw-html:`<a id="cat_l2" title="Permalink to this parameter" class="headerlink" href="#cat_l2">&#x1F517;</a>`, default = ``10.0``, type = double, constraints: ``cat_l2 >= 0.0``
 
    -  used for the categorical features
 
    -  L2 regularization in categorcial split
 
--  ``cat_smooth``:raw-html:`<a id="cat_smooth title="Permalink to this parameter" class="headerlink" href="#cat_smooth">&#x1F517;</a>`, default = ``10.0``, type = double, constraints: ``cat_smooth >= 0.0``
+-  ``cat_smooth``:raw-html:`<a id="cat_smooth" title="Permalink to this parameter" class="headerlink" href="#cat_smooth">&#x1F517;</a>`, default = ``10.0``, type = double, constraints: ``cat_smooth >= 0.0``
 
    -  used for the categorical features
 
    -  this can reduce the effect of noises in categorical features, especially for categories with few data
 
--  ``max_cat_to_onehot``:raw-html:`<a id="max_cat_to_onehot title="Permalink to this parameter" class="headerlink" href="#max_cat_to_onehot">&#x1F517;</a>`, default = ``4``, type = int, constraints: ``max_cat_to_onehot > 0``
+-  ``max_cat_to_onehot``:raw-html:`<a id="max_cat_to_onehot" title="Permalink to this parameter" class="headerlink" href="#max_cat_to_onehot">&#x1F517;</a>`, default = ``4``, type = int, constraints: ``max_cat_to_onehot > 0``
 
    -  when number of categories of one feature smaller than or equal to ``max_cat_to_onehot``, one-vs-other split algorithm will be used
 
--  ``top_k``:raw-html:`<a id="top_k title="Permalink to this parameter" class="headerlink" href="#top_k">&#x1F517;</a>`, default = ``20``, type = int, aliases: ``topk``, constraints: ``top_k > 0``
+-  ``top_k``:raw-html:`<a id="top_k" title="Permalink to this parameter" class="headerlink" href="#top_k">&#x1F517;</a>`, default = ``20``, type = int, aliases: ``topk``, constraints: ``top_k > 0``
 
    -  used in `Voting parallel <./Parallel-Learning-Guide.rst#choose-appropriate-parallel-algorithm>`__
 
    -  set this to larger value for more accurate result, but it will slow down the training speed
 
--  ``monotone_constraints``:raw-html:`<a id="monotone_constraints title="Permalink to this parameter" class="headerlink" href="#monotone_constraints">&#x1F517;</a>`, default = ``None``, type = multi-int, aliases: ``mc``, ``monotone_constraint``
+-  ``monotone_constraints``:raw-html:`<a id="monotone_constraints" title="Permalink to this parameter" class="headerlink" href="#monotone_constraints">&#x1F517;</a>`, default = ``None``, type = multi-int, aliases: ``mc``, ``monotone_constraint``
 
    -  used for constraints of monotonic features
 
@@ -350,13 +350,13 @@ Learning Control Parameters
 
    -  you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
 
--  ``feature_contri``:raw-html:`<a id="feature_contri title="Permalink to this parameter" class="headerlink" href="#feature_contri">&#x1F517;</a>`, default = ``None``, type = multi-double, aliases: ``fc``, ``fp``, ``feature_penalty``
+-  ``feature_contri``:raw-html:`<a id="feature_contri" title="Permalink to this parameter" class="headerlink" href="#feature_contri">&#x1F517;</a>`, default = ``None``, type = multi-double, aliases: ``fc``, ``fp``, ``feature_penalty``
 
    -  used to control feature's split gain, will use ``gain[i] = max(0, feature_contri[i]) * gain[i]`` to replace the split gain of i-th feature
 
    -  you need to specify all features in order
 
--  ``forcedsplits_filename``:raw-html:`<a id="forcedsplits_filename title="Permalink to this parameter" class="headerlink" href="#forcedsplits_filename">&#x1F517;</a>`, default = ``""``, type = string, aliases: ``fs``, ``forced_splits_filename``, ``forced_splits_file``, ``forced_splits``
+-  ``forcedsplits_filename``:raw-html:`<a id="forcedsplits_filename" title="Permalink to this parameter" class="headerlink" href="#forcedsplits_filename">&#x1F517;</a>`, default = ``""``, type = string, aliases: ``fs``, ``forced_splits_filename``, ``forced_splits_file``, ``forced_splits``
 
    -  path to a ``.json`` file that specifies splits to force at the top of every decision tree before best-first learning commences
 
@@ -369,13 +369,13 @@ Learning Control Parameters
 IO Parameters
 -------------
 
--  ``verbosity``:raw-html:`<a id="verbosity title="Permalink to this parameter" class="headerlink" href="#verbosity">&#x1F517;</a>`, default = ``1``, type = int, aliases: ``verbose``
+-  ``verbosity``:raw-html:`<a id="verbosity" title="Permalink to this parameter" class="headerlink" href="#verbosity">&#x1F517;</a>`, default = ``1``, type = int, aliases: ``verbose``
 
    -  controls the level of LightGBM's verbosity
 
    -  ``< 0``: Fatal, ``= 0``: Error (Warn), ``> 0``: Info
 
--  ``max_bin``:raw-html:`<a id="max_bin title="Permalink to this parameter" class="headerlink" href="#max_bin">&#x1F517;</a>`, default = ``255``, type = int, constraints: ``max_bin > 1``
+-  ``max_bin``:raw-html:`<a id="max_bin" title="Permalink to this parameter" class="headerlink" href="#max_bin">&#x1F517;</a>`, default = ``255``, type = int, constraints: ``max_bin > 1``
 
    -  max number of bins that feature values will be bucketed in
 
@@ -383,13 +383,13 @@ IO Parameters
 
    -  LightGBM will auto compress memory according to ``max_bin``. For example, LightGBM will use ``uint8_t`` for feature value if ``max_bin=255``
 
--  ``min_data_in_bin``:raw-html:`<a id="min_data_in_bin title="Permalink to this parameter" class="headerlink" href="#min_data_in_bin">&#x1F517;</a>`, default = ``3``, type = int, constraints: ``min_data_in_bin > 0``
+-  ``min_data_in_bin``:raw-html:`<a id="min_data_in_bin" title="Permalink to this parameter" class="headerlink" href="#min_data_in_bin">&#x1F517;</a>`, default = ``3``, type = int, constraints: ``min_data_in_bin > 0``
 
    -  minimal number of data inside one bin
 
    -  use this to avoid one-data-one-bin (potential over-fitting)
 
--  ``bin_construct_sample_cnt``:raw-html:`<a id="bin_construct_sample_cnt title="Permalink to this parameter" class="headerlink" href="#bin_construct_sample_cnt">&#x1F517;</a>`, default = ``200000``, type = int, aliases: ``subsample_for_bin``, constraints: ``bin_construct_sample_cnt > 0``
+-  ``bin_construct_sample_cnt``:raw-html:`<a id="bin_construct_sample_cnt" title="Permalink to this parameter" class="headerlink" href="#bin_construct_sample_cnt">&#x1F517;</a>`, default = ``200000``, type = int, aliases: ``subsample_for_bin``, constraints: ``bin_construct_sample_cnt > 0``
 
    -  number of data that sampled to construct histogram bins
 
@@ -397,23 +397,23 @@ IO Parameters
 
    -  set this to larger value if data is very sparse
 
--  ``histogram_pool_size``:raw-html:`<a id="histogram_pool_size title="Permalink to this parameter" class="headerlink" href="#histogram_pool_size">&#x1F517;</a>`, default = ``-1.0``, type = double
+-  ``histogram_pool_size``:raw-html:`<a id="histogram_pool_size" title="Permalink to this parameter" class="headerlink" href="#histogram_pool_size">&#x1F517;</a>`, default = ``-1.0``, type = double
 
    -  max cache size in MB for historical histogram
 
    -  ``< 0`` means no limit
 
--  ``data_random_seed``:raw-html:`<a id="data_random_seed title="Permalink to this parameter" class="headerlink" href="#data_random_seed">&#x1F517;</a>`, default = ``1``, type = int
+-  ``data_random_seed``:raw-html:`<a id="data_random_seed" title="Permalink to this parameter" class="headerlink" href="#data_random_seed">&#x1F517;</a>`, default = ``1``, type = int
 
    -  random seed for data partition in parallel learning (excluding the ``feature_parallel`` mode)
 
--  ``output_model``:raw-html:`<a id="output_model title="Permalink to this parameter" class="headerlink" href="#output_model">&#x1F517;</a>`, default = ``LightGBM_model.txt``, type = string, aliases: ``model_output``, ``model_out``
+-  ``output_model``:raw-html:`<a id="output_model" title="Permalink to this parameter" class="headerlink" href="#output_model">&#x1F517;</a>`, default = ``LightGBM_model.txt``, type = string, aliases: ``model_output``, ``model_out``
 
    -  filename of output model in training
 
    -  **Note**: can be used only in CLI version
 
--  ``snapshot_freq``:raw-html:`<a id="snapshot_freq title="Permalink to this parameter" class="headerlink" href="#snapshot_freq">&#x1F517;</a>`, default = ``-1``, type = int
+-  ``snapshot_freq``:raw-html:`<a id="snapshot_freq" title="Permalink to this parameter" class="headerlink" href="#snapshot_freq">&#x1F517;</a>`, default = ``-1``, type = int
 
    -  frequency of saving model file snapshot
 
@@ -421,7 +421,7 @@ IO Parameters
 
    -  **Note**: can be used only in CLI version
 
--  ``input_model``:raw-html:`<a id="input_model title="Permalink to this parameter" class="headerlink" href="#input_model">&#x1F517;</a>`, default = ``""``, type = string, aliases: ``model_input``, ``model_in``
+-  ``input_model``:raw-html:`<a id="input_model" title="Permalink to this parameter" class="headerlink" href="#input_model">&#x1F517;</a>`, default = ``""``, type = string, aliases: ``model_input``, ``model_in``
 
    -  filename of input model
 
@@ -431,13 +431,13 @@ IO Parameters
 
    -  **Note**: can be used only in CLI version
 
--  ``output_result``:raw-html:`<a id="output_result title="Permalink to this parameter" class="headerlink" href="#output_result">&#x1F517;</a>`, default = ``LightGBM_predict_result.txt``, type = string, aliases: ``predict_result``, ``prediction_result``
+-  ``output_result``:raw-html:`<a id="output_result" title="Permalink to this parameter" class="headerlink" href="#output_result">&#x1F517;</a>`, default = ``LightGBM_predict_result.txt``, type = string, aliases: ``predict_result``, ``prediction_result``
 
    -  filename of prediction result in ``prediction`` task
 
    -  **Note**: can be used only in CLI version
 
--  ``initscore_filename``:raw-html:`<a id="initscore_filename title="Permalink to this parameter" class="headerlink" href="#initscore_filename">&#x1F517;</a>`, default = ``""``, type = string, aliases: ``init_score_filename``, ``init_score_file``, ``init_score``, ``input_init_score``
+-  ``initscore_filename``:raw-html:`<a id="initscore_filename" title="Permalink to this parameter" class="headerlink" href="#initscore_filename">&#x1F517;</a>`, default = ``""``, type = string, aliases: ``init_score_filename``, ``init_score_file``, ``init_score``, ``input_init_score``
 
    -  path of file with training initial scores
 
@@ -445,7 +445,7 @@ IO Parameters
 
    -  **Note**: can be used only in CLI version
 
--  ``valid_data_initscores``:raw-html:`<a id="valid_data_initscores title="Permalink to this parameter" class="headerlink" href="#valid_data_initscores">&#x1F517;</a>`, default = ``""``, type = string, aliases: ``valid_data_init_scores``, ``valid_init_score_file``, ``valid_init_score``
+-  ``valid_data_initscores``:raw-html:`<a id="valid_data_initscores" title="Permalink to this parameter" class="headerlink" href="#valid_data_initscores">&#x1F517;</a>`, default = ``""``, type = string, aliases: ``valid_data_init_scores``, ``valid_init_score_file``, ``valid_init_score``
 
    -  path(s) of file(s) with validation initial scores
 
@@ -455,19 +455,19 @@ IO Parameters
 
    -  **Note**: can be used only in CLI version
 
--  ``pre_partition``:raw-html:`<a id="pre_partition title="Permalink to this parameter" class="headerlink" href="#pre_partition">&#x1F517;</a>`, default = ``false``, type = bool, aliases: ``is_pre_partition``
+-  ``pre_partition``:raw-html:`<a id="pre_partition" title="Permalink to this parameter" class="headerlink" href="#pre_partition">&#x1F517;</a>`, default = ``false``, type = bool, aliases: ``is_pre_partition``
 
    -  used for parallel learning (excluding the ``feature_parallel`` mode)
 
    -  ``true`` if training data are pre-partitioned, and different machines use different partitions
 
--  ``enable_bundle``:raw-html:`<a id="enable_bundle title="Permalink to this parameter" class="headerlink" href="#enable_bundle">&#x1F517;</a>`, default = ``true``, type = bool, aliases: ``is_enable_bundle``, ``bundle``
+-  ``enable_bundle``:raw-html:`<a id="enable_bundle" title="Permalink to this parameter" class="headerlink" href="#enable_bundle">&#x1F517;</a>`, default = ``true``, type = bool, aliases: ``is_enable_bundle``, ``bundle``
 
    -  set this to ``false`` to disable Exclusive Feature Bundling (EFB), which is described in `LightGBM: A Highly Efficient Gradient Boosting Decision Tree <https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision-tree>`__
 
    -  **Note**: disabling this may cause the slow training speed for sparse datasets
 
--  ``max_conflict_rate``:raw-html:`<a id="max_conflict_rate title="Permalink to this parameter" class="headerlink" href="#max_conflict_rate">&#x1F517;</a>`, default = ``0.0``, type = double, constraints: ``0.0 <= max_conflict_rate < 1.0``
+-  ``max_conflict_rate``:raw-html:`<a id="max_conflict_rate" title="Permalink to this parameter" class="headerlink" href="#max_conflict_rate">&#x1F517;</a>`, default = ``0.0``, type = double, constraints: ``0.0 <= max_conflict_rate < 1.0``
 
    -  max conflict rate for bundles in EFB
 
@@ -475,45 +475,45 @@ IO Parameters
 
    -  set this to a larger value to achieve faster speed
 
--  ``is_enable_sparse``:raw-html:`<a id="is_enable_sparse title="Permalink to this parameter" class="headerlink" href="#is_enable_sparse">&#x1F517;</a>`, default = ``true``, type = bool, aliases: ``is_sparse``, ``enable_sparse``, ``sparse``
+-  ``is_enable_sparse``:raw-html:`<a id="is_enable_sparse" title="Permalink to this parameter" class="headerlink" href="#is_enable_sparse">&#x1F517;</a>`, default = ``true``, type = bool, aliases: ``is_sparse``, ``enable_sparse``, ``sparse``
 
    -  used to enable/disable sparse optimization
 
--  ``sparse_threshold``:raw-html:`<a id="sparse_threshold title="Permalink to this parameter" class="headerlink" href="#sparse_threshold">&#x1F517;</a>`, default = ``0.8``, type = double, constraints: ``0.0 < sparse_threshold <= 1.0``
+-  ``sparse_threshold``:raw-html:`<a id="sparse_threshold" title="Permalink to this parameter" class="headerlink" href="#sparse_threshold">&#x1F517;</a>`, default = ``0.8``, type = double, constraints: ``0.0 < sparse_threshold <= 1.0``
 
    -  the threshold of zero elements precentage for treating a feature as a sparse one
 
--  ``use_missing``:raw-html:`<a id="use_missing title="Permalink to this parameter" class="headerlink" href="#use_missing">&#x1F517;</a>`, default = ``true``, type = bool
+-  ``use_missing``:raw-html:`<a id="use_missing" title="Permalink to this parameter" class="headerlink" href="#use_missing">&#x1F517;</a>`, default = ``true``, type = bool
 
    -  set this to ``false`` to disable the special handle of missing value
 
--  ``zero_as_missing``:raw-html:`<a id="zero_as_missing title="Permalink to this parameter" class="headerlink" href="#zero_as_missing">&#x1F517;</a>`, default = ``false``, type = bool
+-  ``zero_as_missing``:raw-html:`<a id="zero_as_missing" title="Permalink to this parameter" class="headerlink" href="#zero_as_missing">&#x1F517;</a>`, default = ``false``, type = bool
 
    -  set this to ``true`` to treat all zero as missing values (including the unshown values in libsvm/sparse matrics)
 
    -  set this to ``false`` to use ``na`` for representing missing values
 
--  ``two_round``:raw-html:`<a id="two_round title="Permalink to this parameter" class="headerlink" href="#two_round">&#x1F517;</a>`, default = ``false``, type = bool, aliases: ``two_round_loading``, ``use_two_round_loading``
+-  ``two_round``:raw-html:`<a id="two_round" title="Permalink to this parameter" class="headerlink" href="#two_round">&#x1F517;</a>`, default = ``false``, type = bool, aliases: ``two_round_loading``, ``use_two_round_loading``
 
    -  set this to ``true`` if data file is too big to fit in memory
 
    -  by default, LightGBM will map data file to memory and load features from memory. This will provide faster data loading speed, but may cause run out of memory error when the data file is very big
 
--  ``save_binary``:raw-html:`<a id="save_binary title="Permalink to this parameter" class="headerlink" href="#save_binary">&#x1F517;</a>`, default = ``false``, type = bool, aliases: ``is_save_binary``, ``is_save_binary_file``
+-  ``save_binary``:raw-html:`<a id="save_binary" title="Permalink to this parameter" class="headerlink" href="#save_binary">&#x1F517;</a>`, default = ``false``, type = bool, aliases: ``is_save_binary``, ``is_save_binary_file``
 
    -  if ``true``, LightGBM will save the dataset (including validation data) to a binary file. This speed ups the data loading for the next time
 
--  ``enable_load_from_binary_file``:raw-html:`<a id="enable_load_from_binary_file title="Permalink to this parameter" class="headerlink" href="#enable_load_from_binary_file">&#x1F517;</a>`, default = ``true``, type = bool, aliases: ``load_from_binary_file``, ``binary_load``, ``load_binary``
+-  ``enable_load_from_binary_file``:raw-html:`<a id="enable_load_from_binary_file" title="Permalink to this parameter" class="headerlink" href="#enable_load_from_binary_file">&#x1F517;</a>`, default = ``true``, type = bool, aliases: ``load_from_binary_file``, ``binary_load``, ``load_binary``
 
    -  set this to ``true`` to enable autoloading from previous saved binary datasets
 
    -  set this to ``false`` to ignore binary datasets
 
--  ``header``:raw-html:`<a id="header title="Permalink to this parameter" class="headerlink" href="#header">&#x1F517;</a>`, default = ``false``, type = bool, aliases: ``has_header``
+-  ``header``:raw-html:`<a id="header" title="Permalink to this parameter" class="headerlink" href="#header">&#x1F517;</a>`, default = ``false``, type = bool, aliases: ``has_header``
 
    -  set this to ``true`` if input data has header
 
--  ``label_column``:raw-html:`<a id="label_column title="Permalink to this parameter" class="headerlink" href="#label_column">&#x1F517;</a>`, default = ``""``, type = int or string, aliases: ``label``
+-  ``label_column``:raw-html:`<a id="label_column" title="Permalink to this parameter" class="headerlink" href="#label_column">&#x1F517;</a>`, default = ``""``, type = int or string, aliases: ``label``
 
    -  used to specify the label column
 
@@ -521,7 +521,7 @@ IO Parameters
 
    -  add a prefix ``name:`` for column name, e.g. ``label=name:is_click``
 
--  ``weight_column``:raw-html:`<a id="weight_column title="Permalink to this parameter" class="headerlink" href="#weight_column">&#x1F517;</a>`, default = ``""``, type = int or string, aliases: ``weight``
+-  ``weight_column``:raw-html:`<a id="weight_column" title="Permalink to this parameter" class="headerlink" href="#weight_column">&#x1F517;</a>`, default = ``""``, type = int or string, aliases: ``weight``
 
    -  used to specify the weight column
 
@@ -531,7 +531,7 @@ IO Parameters
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0, and weight is column\_1, the correct parameter is ``weight=0``
 
--  ``group_column``:raw-html:`<a id="group_column title="Permalink to this parameter" class="headerlink" href="#group_column">&#x1F517;</a>`, default = ``""``, type = int or string, aliases: ``group``, ``group_id``, ``query_column``, ``query``, ``query_id``
+-  ``group_column``:raw-html:`<a id="group_column" title="Permalink to this parameter" class="headerlink" href="#group_column">&#x1F517;</a>`, default = ``""``, type = int or string, aliases: ``group``, ``group_id``, ``query_column``, ``query``, ``query_id``
 
    -  used to specify the query/group id column
 
@@ -543,7 +543,7 @@ IO Parameters
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0 and query\_id is column\_1, the correct parameter is ``query=0``
 
--  ``ignore_column``:raw-html:`<a id="ignore_column title="Permalink to this parameter" class="headerlink" href="#ignore_column">&#x1F517;</a>`, default = ``""``, type = multi-int or string, aliases: ``ignore_feature``, ``blacklist``
+-  ``ignore_column``:raw-html:`<a id="ignore_column" title="Permalink to this parameter" class="headerlink" href="#ignore_column">&#x1F517;</a>`, default = ``""``, type = multi-int or string, aliases: ``ignore_feature``, ``blacklist``
 
    -  used to specify some ignoring columns in training
 
@@ -555,7 +555,7 @@ IO Parameters
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
 
--  ``categorical_feature``:raw-html:`<a id="categorical_feature title="Permalink to this parameter" class="headerlink" href="#categorical_feature">&#x1F517;</a>`, default = ``""``, type = multi-int or string, aliases: ``cat_feature``, ``categorical_column``, ``cat_column``
+-  ``categorical_feature``:raw-html:`<a id="categorical_feature" title="Permalink to this parameter" class="headerlink" href="#categorical_feature">&#x1F517;</a>`, default = ``""``, type = multi-int or string, aliases: ``cat_feature``, ``categorical_column``, ``cat_column``
 
    -  used to specify categorical features
 
@@ -571,7 +571,7 @@ IO Parameters
 
    -  **Note**: the negative values will be treated as **missing values**
 
--  ``predict_raw_score``:raw-html:`<a id="predict_raw_score title="Permalink to this parameter" class="headerlink" href="#predict_raw_score">&#x1F517;</a>`, default = ``false``, type = bool, aliases: ``is_predict_raw_score``, ``predict_rawscore``, ``raw_score``
+-  ``predict_raw_score``:raw-html:`<a id="predict_raw_score" title="Permalink to this parameter" class="headerlink" href="#predict_raw_score">&#x1F517;</a>`, default = ``false``, type = bool, aliases: ``is_predict_raw_score``, ``predict_rawscore``, ``raw_score``
 
    -  used only in ``prediction`` task
 
@@ -579,13 +579,13 @@ IO Parameters
 
    -  set this to ``false`` to predict transformed scores
 
--  ``predict_leaf_index``:raw-html:`<a id="predict_leaf_index title="Permalink to this parameter" class="headerlink" href="#predict_leaf_index">&#x1F517;</a>`, default = ``false``, type = bool, aliases: ``is_predict_leaf_index``, ``leaf_index``
+-  ``predict_leaf_index``:raw-html:`<a id="predict_leaf_index" title="Permalink to this parameter" class="headerlink" href="#predict_leaf_index">&#x1F517;</a>`, default = ``false``, type = bool, aliases: ``is_predict_leaf_index``, ``leaf_index``
 
    -  used only in ``prediction`` task
 
    -  set this to ``true`` to predict with leaf index of all trees
 
--  ``predict_contrib``:raw-html:`<a id="predict_contrib title="Permalink to this parameter" class="headerlink" href="#predict_contrib">&#x1F517;</a>`, default = ``false``, type = bool, aliases: ``is_predict_contrib``, ``contrib``
+-  ``predict_contrib``:raw-html:`<a id="predict_contrib" title="Permalink to this parameter" class="headerlink" href="#predict_contrib">&#x1F517;</a>`, default = ``false``, type = bool, aliases: ``is_predict_contrib``, ``contrib``
 
    -  used only in ``prediction`` task
 
@@ -593,7 +593,7 @@ IO Parameters
 
    -  produces ``#features + 1`` values where the last value is the expected value of the model output over the training data
 
--  ``num_iteration_predict``:raw-html:`<a id="num_iteration_predict title="Permalink to this parameter" class="headerlink" href="#num_iteration_predict">&#x1F517;</a>`, default = ``-1``, type = int
+-  ``num_iteration_predict``:raw-html:`<a id="num_iteration_predict" title="Permalink to this parameter" class="headerlink" href="#num_iteration_predict">&#x1F517;</a>`, default = ``-1``, type = int
 
    -  used only in ``prediction`` task
 
@@ -601,25 +601,25 @@ IO Parameters
 
    -  ``<= 0`` means no limit
 
--  ``pred_early_stop``:raw-html:`<a id="pred_early_stop title="Permalink to this parameter" class="headerlink" href="#pred_early_stop">&#x1F517;</a>`, default = ``false``, type = bool
+-  ``pred_early_stop``:raw-html:`<a id="pred_early_stop" title="Permalink to this parameter" class="headerlink" href="#pred_early_stop">&#x1F517;</a>`, default = ``false``, type = bool
 
    -  used only in ``prediction`` task
 
    -  if ``true``, will use early-stopping to speed up the prediction. May affect the accuracy
 
--  ``pred_early_stop_freq``:raw-html:`<a id="pred_early_stop_freq title="Permalink to this parameter" class="headerlink" href="#pred_early_stop_freq">&#x1F517;</a>`, default = ``10``, type = int
+-  ``pred_early_stop_freq``:raw-html:`<a id="pred_early_stop_freq" title="Permalink to this parameter" class="headerlink" href="#pred_early_stop_freq">&#x1F517;</a>`, default = ``10``, type = int
 
    -  used only in ``prediction`` task
 
    -  the frequency of checking early-stopping prediction
 
--  ``pred_early_stop_margin``:raw-html:`<a id="pred_early_stop_margin title="Permalink to this parameter" class="headerlink" href="#pred_early_stop_margin">&#x1F517;</a>`, default = ``10.0``, type = double
+-  ``pred_early_stop_margin``:raw-html:`<a id="pred_early_stop_margin" title="Permalink to this parameter" class="headerlink" href="#pred_early_stop_margin">&#x1F517;</a>`, default = ``10.0``, type = double
 
    -  used only in ``prediction`` task
 
    -  the threshold of margin in early-stopping prediction
 
--  ``convert_model_language``:raw-html:`<a id="convert_model_language title="Permalink to this parameter" class="headerlink" href="#convert_model_language">&#x1F517;</a>`, default = ``""``, type = string
+-  ``convert_model_language``:raw-html:`<a id="convert_model_language" title="Permalink to this parameter" class="headerlink" href="#convert_model_language">&#x1F517;</a>`, default = ``""``, type = string
 
    -  used only in ``convert_model`` task
 
@@ -629,7 +629,7 @@ IO Parameters
 
    -  **Note**: can be used only in CLI version
 
--  ``convert_model``:raw-html:`<a id="convert_model title="Permalink to this parameter" class="headerlink" href="#convert_model">&#x1F517;</a>`, default = ``gbdt_prediction.cpp``, type = string, aliases: ``convert_model_file``
+-  ``convert_model``:raw-html:`<a id="convert_model" title="Permalink to this parameter" class="headerlink" href="#convert_model">&#x1F517;</a>`, default = ``gbdt_prediction.cpp``, type = string, aliases: ``convert_model_file``
 
    -  used only in ``convert_model`` task
 
@@ -640,11 +640,11 @@ IO Parameters
 Objective Parameters
 --------------------
 
--  ``num_class``:raw-html:`<a id="num_class title="Permalink to this parameter" class="headerlink" href="#num_class">&#x1F517;</a>`, default = ``1``, type = int, aliases: ``num_classes``, constraints: ``num_class > 0``
+-  ``num_class``:raw-html:`<a id="num_class" title="Permalink to this parameter" class="headerlink" href="#num_class">&#x1F517;</a>`, default = ``1``, type = int, aliases: ``num_classes``, constraints: ``num_class > 0``
 
    -  used only in ``multi-class`` classification application
 
--  ``is_unbalance``:raw-html:`<a id="is_unbalance title="Permalink to this parameter" class="headerlink" href="#is_unbalance">&#x1F517;</a>`, default = ``false``, type = bool, aliases: ``unbalanced_sets``
+-  ``is_unbalance``:raw-html:`<a id="is_unbalance" title="Permalink to this parameter" class="headerlink" href="#is_unbalance">&#x1F517;</a>`, default = ``false``, type = bool, aliases: ``unbalanced_sets``
 
    -  used only in ``binary`` application
 
@@ -652,7 +652,7 @@ Objective Parameters
 
    -  **Note**: this parameter cannot be used at the same time with ``scale_pos_weight``, choose only **one** of them
 
--  ``scale_pos_weight``:raw-html:`<a id="scale_pos_weight title="Permalink to this parameter" class="headerlink" href="#scale_pos_weight">&#x1F517;</a>`, default = ``1.0``, type = double, constraints: ``scale_pos_weight > 0.0``
+-  ``scale_pos_weight``:raw-html:`<a id="scale_pos_weight" title="Permalink to this parameter" class="headerlink" href="#scale_pos_weight">&#x1F517;</a>`, default = ``1.0``, type = double, constraints: ``scale_pos_weight > 0.0``
 
    -  used only in ``binary`` application
 
@@ -660,19 +660,19 @@ Objective Parameters
 
    -  **Note**: this parameter cannot be used at the same time with ``is_unbalance``, choose only **one** of them
 
--  ``sigmoid``:raw-html:`<a id="sigmoid title="Permalink to this parameter" class="headerlink" href="#sigmoid">&#x1F517;</a>`, default = ``1.0``, type = double, constraints: ``sigmoid > 0.0``
+-  ``sigmoid``:raw-html:`<a id="sigmoid" title="Permalink to this parameter" class="headerlink" href="#sigmoid">&#x1F517;</a>`, default = ``1.0``, type = double, constraints: ``sigmoid > 0.0``
 
    -  used only in ``binary`` and ``multiclassova`` classification and in ``lambdarank`` applications
 
    -  parameter for the sigmoid function
 
--  ``boost_from_average``:raw-html:`<a id="boost_from_average title="Permalink to this parameter" class="headerlink" href="#boost_from_average">&#x1F517;</a>`, default = ``true``, type = bool
+-  ``boost_from_average``:raw-html:`<a id="boost_from_average" title="Permalink to this parameter" class="headerlink" href="#boost_from_average">&#x1F517;</a>`, default = ``true``, type = bool
 
    -  used only in ``regression``, ``binary`` and ``cross-entropy`` applications
 
    -  adjusts initial score to the mean of labels for faster convergence
 
--  ``reg_sqrt``:raw-html:`<a id="reg_sqrt title="Permalink to this parameter" class="headerlink" href="#reg_sqrt">&#x1F517;</a>`, default = ``false``, type = bool
+-  ``reg_sqrt``:raw-html:`<a id="reg_sqrt" title="Permalink to this parameter" class="headerlink" href="#reg_sqrt">&#x1F517;</a>`, default = ``false``, type = bool
 
    -  used only in ``regression`` application
 
@@ -680,25 +680,25 @@ Objective Parameters
 
    -  might be useful in case of large-range labels
 
--  ``alpha``:raw-html:`<a id="alpha title="Permalink to this parameter" class="headerlink" href="#alpha">&#x1F517;</a>`, default = ``0.9``, type = double, constraints: ``alpha > 0.0``
+-  ``alpha``:raw-html:`<a id="alpha" title="Permalink to this parameter" class="headerlink" href="#alpha">&#x1F517;</a>`, default = ``0.9``, type = double, constraints: ``alpha > 0.0``
 
    -  used only in ``huber`` and ``quantile`` ``regression`` applications
 
    -  parameter for `Huber loss <https://en.wikipedia.org/wiki/Huber_loss>`__ and `Quantile regression <https://en.wikipedia.org/wiki/Quantile_regression>`__
 
--  ``fair_c``:raw-html:`<a id="fair_c title="Permalink to this parameter" class="headerlink" href="#fair_c">&#x1F517;</a>`, default = ``1.0``, type = double, constraints: ``fair_c > 0.0``
+-  ``fair_c``:raw-html:`<a id="fair_c" title="Permalink to this parameter" class="headerlink" href="#fair_c">&#x1F517;</a>`, default = ``1.0``, type = double, constraints: ``fair_c > 0.0``
 
    -  used only in ``fair`` ``regression`` application
 
    -  parameter for `Fair loss <https://www.kaggle.com/c/allstate-claims-severity/discussion/24520>`__
 
--  ``poisson_max_delta_step``:raw-html:`<a id="poisson_max_delta_step title="Permalink to this parameter" class="headerlink" href="#poisson_max_delta_step">&#x1F517;</a>`, default = ``0.7``, type = double, constraints: ``poisson_max_delta_step > 0.0``
+-  ``poisson_max_delta_step``:raw-html:`<a id="poisson_max_delta_step" title="Permalink to this parameter" class="headerlink" href="#poisson_max_delta_step">&#x1F517;</a>`, default = ``0.7``, type = double, constraints: ``poisson_max_delta_step > 0.0``
 
    -  used only in ``poisson`` ``regression`` application
 
    -  parameter for `Poisson regression <https://en.wikipedia.org/wiki/Poisson_regression>`__ to safeguard optimization
 
--  ``tweedie_variance_power``:raw-html:`<a id="tweedie_variance_power title="Permalink to this parameter" class="headerlink" href="#tweedie_variance_power">&#x1F517;</a>`, default = ``1.5``, type = double, constraints: ``1.0 <= tweedie_variance_power < 2.0``
+-  ``tweedie_variance_power``:raw-html:`<a id="tweedie_variance_power" title="Permalink to this parameter" class="headerlink" href="#tweedie_variance_power">&#x1F517;</a>`, default = ``1.5``, type = double, constraints: ``1.0 <= tweedie_variance_power < 2.0``
 
    -  used only in ``tweedie`` ``regression`` application
 
@@ -708,13 +708,13 @@ Objective Parameters
 
    -  set this closer to ``1`` to shift towards a **Poisson** distribution
 
--  ``max_position``:raw-html:`<a id="max_position title="Permalink to this parameter" class="headerlink" href="#max_position">&#x1F517;</a>`, default = ``20``, type = int, constraints: ``max_position > 0``
+-  ``max_position``:raw-html:`<a id="max_position" title="Permalink to this parameter" class="headerlink" href="#max_position">&#x1F517;</a>`, default = ``20``, type = int, constraints: ``max_position > 0``
 
    -  used only in ``lambdarank`` application
 
    -  optimizes `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ at this position
 
--  ``label_gain``:raw-html:`<a id="label_gain title="Permalink to this parameter" class="headerlink" href="#label_gain">&#x1F517;</a>`, default = ``0,1,3,7,15,31,63,...,2^30-1``, type = multi-double
+-  ``label_gain``:raw-html:`<a id="label_gain" title="Permalink to this parameter" class="headerlink" href="#label_gain">&#x1F517;</a>`, default = ``0,1,3,7,15,31,63,...,2^30-1``, type = multi-double
 
    -  used only in ``lambdarank`` application
 
@@ -725,7 +725,7 @@ Objective Parameters
 Metric Parameters
 -----------------
 
--  ``metric``:raw-html:`<a id="metric title="Permalink to this parameter" class="headerlink" href="#metric">&#x1F517;</a>`, default = ``""``, type = multi-enum, aliases: ``metrics``, ``metric_types``
+-  ``metric``:raw-html:`<a id="metric" title="Permalink to this parameter" class="headerlink" href="#metric">&#x1F517;</a>`, default = ``""``, type = multi-enum, aliases: ``metrics``, ``metric_types``
 
    -  metric(s) to be evaluated on the evaluation sets **in addition** to what is provided in the training arguments
 
@@ -777,15 +777,15 @@ Metric Parameters
 
    -  support multiple metrics, separated by ``,``
 
--  ``metric_freq``:raw-html:`<a id="metric_freq title="Permalink to this parameter" class="headerlink" href="#metric_freq">&#x1F517;</a>`, default = ``1``, type = int, aliases: ``output_freq``, constraints: ``metric_freq > 0``
+-  ``metric_freq``:raw-html:`<a id="metric_freq" title="Permalink to this parameter" class="headerlink" href="#metric_freq">&#x1F517;</a>`, default = ``1``, type = int, aliases: ``output_freq``, constraints: ``metric_freq > 0``
 
    -  frequency for metric output
 
--  ``is_provide_training_metric``:raw-html:`<a id="is_provide_training_metric title="Permalink to this parameter" class="headerlink" href="#is_provide_training_metric">&#x1F517;</a>`, default = ``false``, type = bool, aliases: ``training_metric``, ``is_training_metric``, ``train_metric``
+-  ``is_provide_training_metric``:raw-html:`<a id="is_provide_training_metric" title="Permalink to this parameter" class="headerlink" href="#is_provide_training_metric">&#x1F517;</a>`, default = ``false``, type = bool, aliases: ``training_metric``, ``is_training_metric``, ``train_metric``
 
    -  set this to ``true`` to output metric result over training dataset
 
--  ``eval_at``:raw-html:`<a id="eval_at title="Permalink to this parameter" class="headerlink" href="#eval_at">&#x1F517;</a>`, default = ``1,2,3,4,5``, type = multi-int, aliases: ``ndcg_eval_at``, ``ndcg_at``
+-  ``eval_at``:raw-html:`<a id="eval_at" title="Permalink to this parameter" class="headerlink" href="#eval_at">&#x1F517;</a>`, default = ``1,2,3,4,5``, type = multi-int, aliases: ``ndcg_eval_at``, ``ndcg_at``
 
    -  used only with ``ndcg`` and ``map`` metrics
 
@@ -794,48 +794,48 @@ Metric Parameters
 Network Parameters
 ------------------
 
--  ``num_machines``:raw-html:`<a id="num_machines title="Permalink to this parameter" class="headerlink" href="#num_machines">&#x1F517;</a>`, default = ``1``, type = int, aliases: ``num_machine``, constraints: ``num_machines > 0``
+-  ``num_machines``:raw-html:`<a id="num_machines" title="Permalink to this parameter" class="headerlink" href="#num_machines">&#x1F517;</a>`, default = ``1``, type = int, aliases: ``num_machine``, constraints: ``num_machines > 0``
 
    -  the number of machines for parallel learning application
 
    -  this parameter is needed to be set in both **socket** and **mpi** versions
 
--  ``local_listen_port``:raw-html:`<a id="local_listen_port title="Permalink to this parameter" class="headerlink" href="#local_listen_port">&#x1F517;</a>`, default = ``12400``, type = int, aliases: ``local_port``, ``port``, constraints: ``local_listen_port > 0``
+-  ``local_listen_port``:raw-html:`<a id="local_listen_port" title="Permalink to this parameter" class="headerlink" href="#local_listen_port">&#x1F517;</a>`, default = ``12400``, type = int, aliases: ``local_port``, ``port``, constraints: ``local_listen_port > 0``
 
    -  TCP listen port for local machines
 
    -  **Note**: don't forget to allow this port in firewall settings before training
 
--  ``time_out``:raw-html:`<a id="time_out title="Permalink to this parameter" class="headerlink" href="#time_out">&#x1F517;</a>`, default = ``120``, type = int, constraints: ``time_out > 0``
+-  ``time_out``:raw-html:`<a id="time_out" title="Permalink to this parameter" class="headerlink" href="#time_out">&#x1F517;</a>`, default = ``120``, type = int, constraints: ``time_out > 0``
 
    -  socket time-out in minutes
 
--  ``machine_list_filename``:raw-html:`<a id="machine_list_filename title="Permalink to this parameter" class="headerlink" href="#machine_list_filename">&#x1F517;</a>`, default = ``""``, type = string, aliases: ``machine_list_file``, ``machine_list``, ``mlist``
+-  ``machine_list_filename``:raw-html:`<a id="machine_list_filename" title="Permalink to this parameter" class="headerlink" href="#machine_list_filename">&#x1F517;</a>`, default = ``""``, type = string, aliases: ``machine_list_file``, ``machine_list``, ``mlist``
 
    -  path of file that lists machines for this parallel learning application
 
    -  each line contains one IP and one port for one machine. The format is ``ip port`` (space as a separator)
 
--  ``machines``:raw-html:`<a id="machines title="Permalink to this parameter" class="headerlink" href="#machines">&#x1F517;</a>`, default = ``""``, type = string, aliases: ``workers``, ``nodes``
+-  ``machines``:raw-html:`<a id="machines" title="Permalink to this parameter" class="headerlink" href="#machines">&#x1F517;</a>`, default = ``""``, type = string, aliases: ``workers``, ``nodes``
 
    -  list of machines in the following format: ``ip1:port1,ip2:port2``
 
 GPU Parameters
 --------------
 
--  ``gpu_platform_id``:raw-html:`<a id="gpu_platform_id title="Permalink to this parameter" class="headerlink" href="#gpu_platform_id">&#x1F517;</a>`, default = ``-1``, type = int
+-  ``gpu_platform_id``:raw-html:`<a id="gpu_platform_id" title="Permalink to this parameter" class="headerlink" href="#gpu_platform_id">&#x1F517;</a>`, default = ``-1``, type = int
 
    -  OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform
 
    -  ``-1`` means the system-wide default platform
 
--  ``gpu_device_id``:raw-html:`<a id="gpu_device_id title="Permalink to this parameter" class="headerlink" href="#gpu_device_id">&#x1F517;</a>`, default = ``-1``, type = int
+-  ``gpu_device_id``:raw-html:`<a id="gpu_device_id" title="Permalink to this parameter" class="headerlink" href="#gpu_device_id">&#x1F517;</a>`, default = ``-1``, type = int
 
    -  OpenCL device ID in the specified platform. Each GPU in the selected platform has a unique device ID
 
    -  ``-1`` means the default device in the selected platform
 
--  ``gpu_use_dp``:raw-html:`<a id="gpu_use_dp title="Permalink to this parameter" class="headerlink" href="#gpu_use_dp">&#x1F517;</a>`, default = ``false``, type = bool
+-  ``gpu_use_dp``:raw-html:`<a id="gpu_use_dp" title="Permalink to this parameter" class="headerlink" href="#gpu_use_dp">&#x1F517;</a>`, default = ``false``, type = bool
 
    -  set this to ``true`` to use double precision math on GPU (by default single precision is used)
 
