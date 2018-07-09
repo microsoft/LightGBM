@@ -37,8 +37,8 @@ For the setting details, please refer to `Parameters <./Parameters.rst>`__.
 Weight and Query/Group Data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-LightGBM also supports weighted training, it needs an additional `weight data <./Parameters.rst#weight_column>`__.
-And it needs an additional `query data <./Parameters.rst#group_column>`_ for ranking task.
+LightGBM also supports weighted training, it needs an additional `weight data <./Parameters.rst#weight-data>`__.
+And it needs an additional `query data <./Parameters.rst#query-data>`_ for ranking task.
 
 Also, weight and query data could be specified as columns in training data in the same manner as label.
 

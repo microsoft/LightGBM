@@ -858,8 +858,11 @@ LightGBM supports continued training with initial scores. It uses an additional 
 
 It means the initial score of the first data row is ``0.5``, second is ``-0.1``, and so on.
 The initial score file corresponds with data file line by line, and has per score per line.
+
 And if the name of data file is ``train.txt``, the initial score file should be named as ``train.txt.init`` and in the same folder as the data file.
 In this case LightGBM will auto load initial score file if it exists.
+
+Otherwise, you should specify the path to the custom named file with initial scores by the ``initscore_filename`` `parameter <#initscore_filename>`__.
 
 Weight Data
 ~~~~~~~~~~~
@@ -875,10 +878,11 @@ LightGBM supports weighted training. It uses an additional file to store weight 
 
 It means the weight of the first data row is ``1.0``, second is ``0.5``, and so on.
 The weight file corresponds with data file line by line, and has per weight per line.
+
 And if the name of data file is ``train.txt``, the weight file should be named as ``train.txt.weight`` and placed in the same folder as the data file.
 In this case LightGBM will load the weight file automatically if it exists.
 
-Also, you can include weight column in your data file. Please refer to parameter ``weight`` in above.
+Also, you can include weight column in your data file. Please refer to the ``weight`` `parameter <#weight_column>`__ in above.
 
 Query Data
 ~~~~~~~~~~
@@ -900,6 +904,6 @@ It means first ``27`` lines samples belong to one query and next ``18`` lines be
 If the name of data file is ``train.txt``, the query file should be named as ``train.txt.query`` and placed in the same folder as the data file.
 In this case LightGBM will load the query file automatically if it exists.
 
-Also, you can include query/group id column in your data file. Please refer to parameter ``group`` in above.
+Also, you can include query/group id column in your data file. Please refer to the ``group`` `parameter <#group_column>`__ in above.
 
 .. _Laurae++ Interactive Documentation: https://sites.google.com/view/lauraepp/parameters
