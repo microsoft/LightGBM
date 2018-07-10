@@ -16,8 +16,6 @@ phases:
         PYTHON_VERSION: 2.7
       pylint: 
         TASK: pylint
-      doc:
-        TASK: check-docs
       inference:
         TASK: if-else
       sdist:
