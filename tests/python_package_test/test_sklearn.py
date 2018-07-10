@@ -174,8 +174,10 @@ class TestSklearn(unittest.TestCase):
         importances_split = clf.feature_importances_
         clf.set_params(importance_type='gain')
         importances_gain = clf.feature_importances_
-        # Test that the largest element is NOT the same, the smallest can be the same, i.e. zero  
-        self.assertNotEqual(sorted(importances_split, reverse=True)[0], sorted(importances_gain, reverse=True)[0])
+        # Test that the largest element is NOT the same, the smallest can be the same, i.e. zero
+        importance_split_top1 = sorted(importances_split, reverse=True)[0]
+        importance_gain_top1  = sorted(importances_gain,  reverse=True)[0]
+        self.assertNotEqual(importance_split_top1, importance_gain_top1)
         
     def test_sklearn_backward_compatibility(self):
         iris = load_iris()
