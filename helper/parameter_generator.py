@@ -147,7 +147,7 @@ def GenParameterDescription(sections, descriptions, params_rst):
                 checks_str = ', constraints: ``{0} {1} {2}``'.format(name, sign, number)
             else:
                 checks_str = ''
-            main_desc = '-  ``{0}``, default = ``{1}``, type = {2}{3}{4}{5}'.format(name, default, param_type, options_str, aliases_str, checks_str)
+            main_desc = '-  ``{0}`` :raw-html:`<a id="{0}" title="Permalink to this parameter" href="#{0}">&#x1F517;&#xFE0E;</a>`, default = ``{1}``, type = {2}{3}{4}{5}'.format(name, default, param_type, options_str, aliases_str, checks_str)
             params_to_write.append(main_desc)
             params_to_write.extend([' ' * 3 * int(desc[0][-1]) + '-  ' + desc[1] for desc in param_desc['desc']])
 

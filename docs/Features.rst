@@ -201,9 +201,9 @@ LightGBM supports the following metrics:
 
 -  MAP
 
--  Multi class log loss
+-  Multi-class log loss
 
--  Multi class error rate
+-  Multi-class error rate
 
 -  Fair
 
