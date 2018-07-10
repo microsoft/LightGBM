@@ -1,20 +1,22 @@
 import os
 import sys
-import distutils
-from distutils import file_util
+
+from distutils.file_util import copy_file
+
 
 if __name__ == "__main__":
     source = sys.argv[1]
-    if not os.path.exists("runtimes/linux-x64/native"):
-        os.makedirs("runtimes/linux-x64/native")
-    if not os.path.exists("runtimes/osx-x64/native"):
-        os.makedirs("runtimes/osx-x64/native")
-    if not os.path.exists("runtimes/win-x64/native"):
-        os.makedirs("runtimes/win-x64/native")
-    distutils.file_util.copy_file(source+"/lib_lightgbm.so", "runtimes/linux-x64/native/lib_lightgbm.so")
-    distutils.file_util.copy_file(source+"/lib_lightgbm.dylib", "runtimes/osx-x64/native/lib_lightgbm.dylib")
-    distutils.file_util.copy_file(source+"/lib_lightgbm.dll", "runtimes/win-x64/native/lib_lightgbm.dll")
-    version = open('../VERSION.txt').read().strip()
+    current_dir = os.path.abspath(os.path.dirname(__file__))
+    if not os.path.exists(os.path.join(current_dir, "runtimes/linux-x64/native")):
+        os.makedirs(os.path.join(current_dir, "runtimes/linux-x64/native"))
+    if not os.path.exists(os.path.join(current_dir, "runtimes/osx-x64/native")):
+        os.makedirs(os.path.join(current_dir, "runtimes/osx-x64/native"))
+    if not os.path.exists(os.path.join(current_dir, "runtimes/win-x64/native")):
+        os.makedirs(os.path.join(current_dir, "runtimes/win-x64/native"))
+    copy_file(os.path.join(source, "lib_lightgbm.so"), os.path.join(current_dir, "runtimes/linux-x64/native/lib_lightgbm.so"))
+    copy_file(os.path.join(source, "lib_lightgbm.dylib"), os.path.join(current_dir, "runtimes/osx-x64/native/lib_lightgbm.dylib"))
+    copy_file(os.path.join(source, "lib_lightgbm.dll"), os.path.join(current_dir, "runtimes/win-x64/native/lib_lightgbm.dll"))
+    version = open(os.path.join(current_dir, '../VERSION.txt')).read().strip()
     nuget_str = '''<?xml version="1.0"?>
     <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
     <metadata>
@@ -35,6 +37,5 @@ if __name__ == "__main__":
         </files>
     </package>
     ''' % (version)
-    nuget_file = open("LightGBM.nuspec", "w")
-    nuget_file.write(nuget_str)
-    nuget_file.close()
+    with open(os.path.join(current_dir, "LightGBM.nuspec"), "w") as nuget_file:
+        nuget_file.write(nuget_str)
