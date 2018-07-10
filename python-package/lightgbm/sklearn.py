@@ -613,7 +613,7 @@ class LGBMModel(_LGBMModelBase):
         ----
         Feature importance in sklearn interface used to normalize to 1,
         it's deprecated after 2.0.4 and is the same as Booster.feature_importance() now.
-        ``importance_type`` attribute specified in the constructor is passed to the function
+        ``importance_type`` attribute is passed to the function
         to configure the type of importance values to be extracted.
         """
         if self._n_features is None:
