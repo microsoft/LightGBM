@@ -29,6 +29,7 @@ Examples include:
     - Create data for learning with sklearn interface 
     - Basic train and predict with sklearn interface
     - Feature importances with sklearn interface
+    - Self-defined eval metric with sklearn interface
     - Find best parameters for the model with sklearn's GridSearchCV
 - [advanced_example.py](https://github.com/Microsoft/LightGBM/blob/master/examples/python-guide/advanced_example.py)
     - Set feature names
