@@ -37,11 +37,13 @@ print('The rmse of prediction is:', mean_squared_error(y_test, y_pred) ** 0.5)
 # feature importances
 print('Feature importances:', list(gbm.feature_importances_))
 
+
 # self-defined eval metric
 # f(y_true: array, y_pred: array) -> name: string, eval_result: float, is_higher_better: bool
 # Root Mean Squared Logarithmic Error (RMSLE)
 def rmsle(y_true, y_pred):
     return 'RMSLE', np.sqrt(np.mean(np.power(np.log1p(y_pred) - np.log1p(y_true), 2))), False
+
 
 print('Start training with custom eval function...')
 # train
