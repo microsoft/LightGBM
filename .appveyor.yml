@@ -1,4 +1,4 @@
-version: 2.1.2.{build}
+﻿version: 2.1.2.{build}
 
 configuration:  # A trick to construct a build matrix
   - 3.5
@@ -34,21 +34,18 @@ install:
   - activate test-env
 
 build_script:
-  - mkdir build && cd build
+  - mkdir %APPVEYOR_BUILD_FOLDER%/build && cd %APPVEYOR_BUILD_FOLDER%/build
   - cmake -DCMAKE_GENERATOR_PLATFORM=x64 .. && cmake --build . --target ALL_BUILD --config Release
-  - cd ..
 
 test_script:
-  - pytest tests/c_api_test/test_.py
-  - cd python-package && python setup.py sdist --formats gztar
-  - cd dist
+  - pytest %APPVEYOR_BUILD_FOLDER%/tests/c_api_test/test_.py
+  - python %APPVEYOR_BUILD_FOLDER%/python-package/setup.py sdist --formats gztar
   - IF "%COMPILER%"=="MINGW" (
-    pip install lightgbm-%LGB_VER%.tar.gz --install-option=--mingw -v)
+    pip install %APPVEYOR_BUILD_FOLDER%/python-package/dist/lightgbm-%LGB_VER%.tar.gz --install-option=--mingw -v)
     ELSE (
-    pip install lightgbm-%LGB_VER%.tar.gz -v)
-  - cd ../..
-  - pytest tests/python_package_test
-  - cd examples/python-guide
+    pip install %APPVEYOR_BUILD_FOLDER%/python-package/dist/lightgbm-%LGB_VER%.tar.gz -v)
+  - pytest %APPVEYOR_BUILD_FOLDER%/tests/python_package_test
+  - cd %APPVEYOR_BUILD_FOLDER%/examples/python-guide
   - ps: >-
       @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"  # prevent interactive window mode
   - ps: >-
@@ -57,7 +54,7 @@ test_script:
         if ($LastExitCode -ne 0) { $host.SetShouldExit($LastExitCode) }
       }  # run all examples
   - IF "%COMPILER%"=="MINGW" appveyor exit  # skip all further steps
-  - cd ../../python-package && python setup.py bdist_wheel --plat-name=win-amd64 --universal
+  - python %APPVEYOR_BUILD_FOLDER%/python-package/setup.py bdist_wheel --plat-name=win-amd64 --universal
 
 after_test:
   - cd ../.nuget

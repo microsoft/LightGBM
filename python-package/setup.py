@@ -243,7 +243,7 @@ if __name__ == "__main__":
         distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt'),
                                       os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'))
     version = open(os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt')).read().strip()
-    readme = open(os.path.join(CURRENT_DIR, 'lightgbm', 'README.rst')).read()
+    readme = open(os.path.join(CURRENT_DIR, 'README.rst')).read()
 
     sys.path.insert(0, CURRENT_DIR)
 
