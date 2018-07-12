@@ -48,6 +48,8 @@ def copy_files(use_gpu=False):
                                       os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.sln"))
         distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "windows", "LightGBM.vcxproj"),
                                       os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.vcxproj"))
+        distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "windows", "LightGBM.vcxproj.filters"),
+                                      os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.vcxproj.filters"))
         if use_gpu:
             copy_files_helper('compute')
         distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeLists.txt"),
