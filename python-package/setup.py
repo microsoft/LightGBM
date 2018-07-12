@@ -19,8 +19,7 @@ from setuptools.command.sdist import sdist
 
 
 def find_lib():
-    CURRENT_DIR = os.path.dirname(__file__)
-    libpath_py = os.path.join(CURRENT_DIR, 'lightgbm/libpath.py')
+    libpath_py = os.path.join(CURRENT_DIR, 'lightgbm', 'libpath.py')
     libpath = {'__file__': libpath_py}
     exec(compile(open(libpath_py, "rb").read(), libpath_py, 'exec'), libpath, libpath)
 
@@ -32,25 +31,29 @@ def find_lib():
 def copy_files(use_gpu=False):
 
     def copy_files_helper(folder_name):
-        src = os.path.join('..', folder_name)
+        src = os.path.join(CURRENT_DIR, os.path.pardir, folder_name)
         if os.path.exists(src):
-            dst = os.path.join('./compile', folder_name)
+            dst = os.path.join(CURRENT_DIR, 'compile', folder_name)
             shutil.rmtree(dst, ignore_errors=True)
             distutils.dir_util.copy_tree(src, dst)
         else:
             raise Exception('Cannot copy {} folder'.format(src))
 
-    if not os.path.isfile('./_IS_SOURCE_PACKAGE.txt'):
+    if not os.path.isfile(os.path.join(CURRENT_DIR, '_IS_SOURCE_PACKAGE.txt')):
         copy_files_helper('include')
         copy_files_helper('src')
-        if not os.path.exists("./compile/windows/"):
-            os.makedirs("./compile/windows/")
-        distutils.file_util.copy_file("../windows/LightGBM.sln", "./compile/windows/LightGBM.sln")
-        distutils.file_util.copy_file("../windows/LightGBM.vcxproj", "./compile/windows/LightGBM.vcxproj")
+        if not os.path.exists(os.path.join(CURRENT_DIR, "compile", "windows")):
+            os.makedirs(os.path.join(CURRENT_DIR, "compile", "windows"))
+        distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "windows", "LightGBM.sln"),
+                                      os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.sln"))
+        distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "windows", "LightGBM.vcxproj"),
+                                      os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.vcxproj"))
         if use_gpu:
             copy_files_helper('compute')
-        distutils.file_util.copy_file("../CMakeLists.txt", "./compile/")
-        distutils.file_util.copy_file("../LICENSE", "./")
+        distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeLists.txt"),
+                                      os.path.join(CURRENT_DIR, "compile", "CMakeLists.txt"))
+        distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "LICENSE"),
+                                      os.path.join(CURRENT_DIR, "LICENSE"))
 
 
 def clear_path(path):
@@ -67,15 +70,15 @@ def clear_path(path):
 def silent_call(cmd, raise_error=False, error_msg=''):
     try:
         output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-        with open(path_log, "ab") as log:
+        with open(LOG_PATH, "ab") as log:
             log.write(output)
         return 0
     except Exception as err:
         if isinstance(err, subprocess.CalledProcessError):
-            with open(path_log, "ab") as log:
+            with open(LOG_PATH, "ab") as log:
                 log.write(err.output)
         if raise_error:
-            raise Exception("\n".join((error_msg, log_notice)))
+            raise Exception("\n".join((error_msg, LOG_NOTICE)))
         return 1
 
 
@@ -84,10 +87,10 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, use_hdfs=False,
                 boost_librarydir=None, opencl_include_dir=None,
                 opencl_library=None):
 
-    if os.path.exists("build_cpp"):
-        shutil.rmtree("build_cpp")
-    os.makedirs("build_cpp")
-    os.chdir("build_cpp")
+    if os.path.exists(os.path.join(CURRENT_DIR, "build_cpp")):
+        shutil.rmtree(os.path.join(CURRENT_DIR, "build_cpp"))
+    os.makedirs(os.path.join(CURRENT_DIR, "build_cpp"))
+    os.chdir(os.path.join(CURRENT_DIR, "build_cpp"))
 
     logger.info("Starting to compile the library.")
 
@@ -121,19 +124,20 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, use_hdfs=False,
                         error_msg='Please install MinGW first')
         else:
             status = 1
-            lib_path = "../compile/windows/x64/DLL/lib_lightgbm.dll"
+            lib_path = os.path.join(CURRENT_DIR, "compile", "windows", "x64", "DLL", "lib_lightgbm.dll")
             if not use_gpu and not use_hdfs:
                 logger.info("Starting to compile with MSBuild from existing solution file.")
                 platform_toolsets = ("v141", "v140")
                 for pt in platform_toolsets:
-                    status = silent_call(["MSBuild", "../compile/windows/LightGBM.sln",
+                    status = silent_call(["MSBuild",
+                                          os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.sln"),
                                           "/p:Configuration=DLL",
                                           "/p:Platform=x64",
                                           "/p:PlatformToolset={0}".format(pt)])
                     if status == 0 and os.path.exists(lib_path):
                         break
                     else:
-                        clear_path("../compile/windows/x64")
+                        clear_path(os.path.join(CURRENT_DIR, "compile", "windows", "x64"))
                 if status != 0 or not os.path.exists(lib_path):
                     logger.warning("Compilation with MSBuild from existing solution file failed.")
             if status != 0 or not os.path.exists(lib_path):
@@ -144,10 +148,10 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, use_hdfs=False,
                     if status == 0:
                         break
                     else:
-                        clear_path("./")
+                        clear_path(os.path.join(CURRENT_DIR, "build_cpp"))
                 if status != 0:
                     raise Exception("\n".join(('Please install Visual Studio or MS Build and all required dependencies first',
-                                    log_notice)))
+                                    LOG_NOTICE)))
                 silent_call(["cmake", "--build", ".", "--target", "_lightgbm", "--config", "Release"], raise_error=True,
                             error_msg='Please install CMake first')
     else:  # Linux, Darwin (macOS), etc.
@@ -155,7 +159,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, use_hdfs=False,
         silent_call(cmake_cmd, raise_error=True, error_msg='Please install CMake and all required dependencies first')
         silent_call(["make", "_lightgbm"], raise_error=True,
                     error_msg='An error has occurred while building lightgbm library file')
-    os.chdir("..")
+    os.chdir(CURRENT_DIR)
 
 
 class CustomInstallLib(install_lib):
@@ -200,7 +204,7 @@ class CustomInstall(install):
         self.precompile = 0
 
     def run(self):
-        open(path_log, 'wb').close()
+        open(LOG_PATH, 'wb').close()
         if not self.precompile:
             copy_files(use_gpu=self.gpu)
             compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_mpi=self.mpi, use_hdfs=self.hdfs,
@@ -208,39 +212,40 @@ class CustomInstall(install):
                         boost_include_dir=self.boost_include_dir, boost_librarydir=self.boost_librarydir,
                         opencl_include_dir=self.opencl_include_dir, opencl_library=self.opencl_library)
         install.run(self)
-        if os.path.isfile(path_log):
-            os.remove(path_log)
+        if os.path.isfile(LOG_PATH):
+            os.remove(LOG_PATH)
 
 
 class CustomSdist(sdist):
 
     def run(self):
         copy_files(use_gpu=True)
-        open("./_IS_SOURCE_PACKAGE.txt", 'w').close()
-        if os.path.exists("./lightgbm/Release/"):
-            shutil.rmtree('./lightgbm/Release/')
-        if os.path.exists("./lightgbm/windows/x64/"):
-            shutil.rmtree('./lightgbm/windows/x64/')
-        if os.path.isfile('./lightgbm/lib_lightgbm.so'):
-            os.remove('./lightgbm/lib_lightgbm.so')
+        open(os.path.join(CURRENT_DIR, '_IS_SOURCE_PACKAGE.txt'), 'w').close()
+        if os.path.exists(os.path.join(CURRENT_DIR, 'lightgbm', 'Release')):
+            shutil.rmtree(os.path.join(CURRENT_DIR, 'lightgbm', 'Release'))
+        if os.path.exists(os.path.join(CURRENT_DIR, 'lightgbm', 'windows', 'x64')):
+            shutil.rmtree(os.path.join(CURRENT_DIR, 'lightgbm', 'windows', 'x64'))
+        if os.path.isfile(os.path.join(CURRENT_DIR, 'lightgbm', 'lib_lightgbm.so')):
+            os.remove(os.path.join(CURRENT_DIR, 'lightgbm', 'lib_lightgbm.so'))
         sdist.run(self)
-        if os.path.isfile('./_IS_SOURCE_PACKAGE.txt'):
-            os.remove('./_IS_SOURCE_PACKAGE.txt')
+        if os.path.isfile(os.path.join(CURRENT_DIR, '_IS_SOURCE_PACKAGE.txt')):
+            os.remove(os.path.join(CURRENT_DIR, '_IS_SOURCE_PACKAGE.txt'))
 
 
 if __name__ == "__main__":
     if (8 * struct.calcsize("P")) != 64:
         raise Exception('Cannot install LightGBM in 32-bit Python, please use 64-bit Python instead.')
 
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    path_log = os.path.join(os.path.expanduser('~'), 'LightGBM_compilation.log')
-    log_notice = "The full version of error log was saved into {0}".format(path_log)
-    if os.path.isfile(os.path.join('..', 'VERSION.txt')):
-        distutils.file_util.copy_file(os.path.join('..', 'VERSION.txt'),
-                                      os.path.join('.', 'lightgbm'))
-    version = open(os.path.join(dir_path, 'lightgbm', 'VERSION.txt')).read().strip()
+    CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
+    LOG_PATH = os.path.join(os.path.expanduser('~'), 'LightGBM_compilation.log')
+    LOG_NOTICE = "The full version of error log was saved into {0}".format(LOG_PATH)
+    if os.path.isfile(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt')):
+        distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt'),
+                                      os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'))
+    version = open(os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt')).read().strip()
+    readme = open(os.path.join(CURRENT_DIR, 'lightgbm', 'README.rst')).read()
 
-    sys.path.insert(0, '.')
+    sys.path.insert(0, CURRENT_DIR)
 
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger('LightGBM')
@@ -248,7 +253,7 @@ if __name__ == "__main__":
     setup(name='lightgbm',
           version=version,
           description='LightGBM Python Package',
-          long_description=open('README.rst').read(),
+          long_description=readme,
           install_requires=[
               'numpy',
               'scipy',
