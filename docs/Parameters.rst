@@ -127,7 +127,7 @@ Core Parameters
 
    -  number of boosting iterations
 
-   -  **Note**: for Python/R-package, **this parameter is ignored**, use ``num_boost_round`` (Python) or ``nrounds`` (R) input arguments of ``train`` and ``cv`` methods instead
+   -  **Note**: for R-package, **this parameter is ignored**, use ``nrounds`` input arguments of ``train`` and ``cv`` methods instead
 
    -  **Note**: internally, LightGBM constructs ``num_class * num_iterations`` trees for multi-class classification problems
 
