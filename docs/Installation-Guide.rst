@@ -87,7 +87,25 @@ Also you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 macOS
 ~~~~~
 
-LightGBM depends on **OpenMP** for compiling, which isn't supported by Apple Clang.
+LightGBM can use Apple Clang, or GCC/G++ to build in macOS.
+
+Apple Clang
+***********
+
+1. Install `CMake`_ (3.12 or higher).
+
+2. Run the following commands:
+
+   .. code::
+
+     brew install libomp
+     git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+     mkdir build ; cd build
+     cmake ..
+     make -j4
+
+GCC/G++
+*******
 
 Please install **gcc/g++** by using the following commands:
 
