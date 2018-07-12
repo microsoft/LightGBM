@@ -59,14 +59,6 @@ test_script:
   - IF "%COMPILER%"=="MINGW" appveyor exit  # skip all further steps
   - cd ../../python-package && python setup.py bdist_wheel --plat-name=win-amd64 --universal
 
-after_test:
-  - cd ../.nuget
-  - python create_nuget.py
-  - nuget.exe pack LightGBM.nuspec
-
-nuget:
-  project_feed: true
-
 artifacts:
 - path: Release/lib_lightgbm.dll
   name: Library
@@ -74,15 +66,13 @@ artifacts:
   name: Exe
 - path: python-package/dist/*
   name: Pip
-- path: .nuget/*.nupkg
-  name: Nuget
 
 deploy:
   release: $(APPVEYOR_REPO_TAG_NAME)
   provider: GitHub
   auth_token:
     secure: KR44XwtxY0cLlVpQwY726BvC6gzT0cYTf0ahJ4cSvvS0UVoSJxkR900ICfVXHRoT
-  artifact: Library,Exe,Pip,Nuget
+  artifact: Library,Exe,Pip
   force_update: true
   draft: true
   on:

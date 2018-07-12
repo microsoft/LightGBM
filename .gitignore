@@ -181,6 +181,7 @@ BundleArtifacts/
 ClientBin/
 ~$*
 *~
+.*.swp
 *.dbmdl
 *.dbproj.schemaview
 *.pfx

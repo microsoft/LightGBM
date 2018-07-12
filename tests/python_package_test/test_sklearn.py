@@ -166,6 +166,19 @@ class TestSklearn(unittest.TestCase):
         importances = clf.feature_importances_
         self.assertEqual(len(importances), 4)
 
+    def test_feature_importances_type(self):
+        clf = lgb.LGBMClassifier(n_estimators=100)
+        data = load_iris()
+        clf.fit(data.data, data.target)
+        clf.set_params(importance_type='split')
+        importances_split = clf.feature_importances_
+        clf.set_params(importance_type='gain')
+        importances_gain = clf.feature_importances_
+        # Test that the largest element is NOT the same, the smallest can be the same, i.e. zero
+        importance_split_top1 = sorted(importances_split, reverse=True)[0]
+        importance_gain_top1 = sorted(importances_gain, reverse=True)[0]
+        self.assertNotEqual(importance_split_top1, importance_gain_top1)
+
     def test_sklearn_backward_compatibility(self):
         iris = load_iris()
         X_train, X_test, y_train, y_test = train_test_split(iris.data, iris.target, test_size=0.2, random_state=42)
