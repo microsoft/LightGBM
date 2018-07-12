@@ -123,6 +123,8 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"train_metric", "is_provide_training_metric"},
   {"ndcg_eval_at", "eval_at"},
   {"ndcg_at", "eval_at"},
+  {"map_eval_at", "eval_at"},
+  {"map_at", "eval_at"},
   {"num_machine", "num_machines"},
   {"local_port", "local_listen_port"},
   {"port", "local_listen_port"},
