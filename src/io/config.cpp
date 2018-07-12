@@ -214,15 +214,13 @@ void Config::CheckParamConflict() {
       Log::Fatal("Number of classes must be 1 for non-multiclass training");
     }
   }
-  if (is_provide_training_metric || !valid.empty()) {
-    for (std::string metric_type : metric) {
-      bool metric_type_multiclass = (CheckMultiClassObjective(metric_type) 
-                                     || metric_type == std::string("multi_logloss")
-                                     || metric_type == std::string("multi_error"));
-      if ((objective_type_multiclass && !metric_type_multiclass)
-        || (!objective_type_multiclass && metric_type_multiclass)) {
-        Log::Fatal("Objective and metrics don't match");
-      }
+  for (std::string metric_type : metric) {
+    bool metric_type_multiclass = (CheckMultiClassObjective(metric_type) 
+                                    || metric_type == std::string("multi_logloss")
+                                    || metric_type == std::string("multi_error"));
+    if ((objective_type_multiclass && !metric_type_multiclass)
+      || (!objective_type_multiclass && metric_type_multiclass)) {
+      Log::Fatal("Multiclass qbjective and metrics don't match");
     }
   }
 
