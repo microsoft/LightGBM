@@ -11,10 +11,7 @@ source activate test-env
 cd $TRAVIS_BUILD_DIR
 
 if [[ $TASK == "check-docs" ]]; then
-    if [[ $TRAVIS_OS_NAME != "osx" ]]; then
-        sudo apt-get install linkchecker
-    fi
-    if [[ ${PYTHON_VERSION} == "2.7" ]]; then
+    if [[ $PYTHON_VERSION == "2.7" ]]; then
         conda install mock
     fi
     conda install sphinx "sphinx_rtd_theme>=0.3"  # html5validator
@@ -30,6 +27,7 @@ if [[ $TASK == "check-docs" ]]; then
     sed -i -e 's;\(\.\/[^.]*\.\)rst\([^[:space:]]*\);\1html\2;g' {} \;  # emulate js function
 #    html5validator --root ./_build/html/ || exit -1
     if [[ $TRAVIS_OS_NAME != "osx" ]]; then
+        sudo apt-get install linkchecker
         linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
     fi
     # check the consistency of parameters' descriptions and other stuff
