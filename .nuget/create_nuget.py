@@ -7,16 +7,19 @@ from distutils.file_util import copy_file
 if __name__ == "__main__":
     source = sys.argv[1]
     current_dir = os.path.abspath(os.path.dirname(__file__))
-    if not os.path.exists(os.path.join(current_dir, "runtimes/linux-x64/native")):
-        os.makedirs(os.path.join(current_dir, "runtimes/linux-x64/native"))
-    if not os.path.exists(os.path.join(current_dir, "runtimes/osx-x64/native")):
-        os.makedirs(os.path.join(current_dir, "runtimes/osx-x64/native"))
-    if not os.path.exists(os.path.join(current_dir, "runtimes/win-x64/native")):
-        os.makedirs(os.path.join(current_dir, "runtimes/win-x64/native"))
-    copy_file(os.path.join(source, "lib_lightgbm.so"), os.path.join(current_dir, "runtimes/linux-x64/native/lib_lightgbm.so"))
-    copy_file(os.path.join(source, "lib_lightgbm.dylib"), os.path.join(current_dir, "runtimes/osx-x64/native/lib_lightgbm.dylib"))
-    copy_file(os.path.join(source, "lib_lightgbm.dll"), os.path.join(current_dir, "runtimes/win-x64/native/lib_lightgbm.dll"))
-    version = open(os.path.join(current_dir, '../VERSION.txt')).read().strip()
+    linux_folder_path = os.path.join(current_dir, "runtimes", "linux-x64", "native")
+    if not os.path.exists(linux_folder_path):
+        os.makedirs(linux_folder_path)
+    osx_folder_path = os.path.join(current_dir, "runtimes", "osx-x64", "native")
+    if not os.path.exists(osx_folder_path):
+        os.makedirs(osx_folder_path)
+    windows_folder_path = os.path.join(current_dir, "runtimes", "win-x64", "native")
+    if not os.path.exists(windows_folder_path):
+        os.makedirs(windows_folder_path)
+    copy_file(os.path.join(source, "lib_lightgbm.so"), os.path.join(linux_folder_path, "lib_lightgbm.so"))
+    copy_file(os.path.join(source, "lib_lightgbm.dylib"), os.path.join(osx_folder_path, "lib_lightgbm.dylib"))
+    copy_file(os.path.join(source, "lib_lightgbm.dll"), os.path.join(windows_folder_path, "lib_lightgbm.dll"))
+    version = open(os.path.join(current_dir, os.path.pardir, 'VERSION.txt')).read().strip()
     nuget_str = '''<?xml version="1.0"?>
     <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
     <metadata>
@@ -36,6 +39,6 @@ if __name__ == "__main__":
         <file src="runtimes\**" target="runtimes"/>
         </files>
     </package>
-    ''' % (version)
+    ''' % version
     with open(os.path.join(current_dir, "LightGBM.nuspec"), "w") as nuget_file:
         nuget_file.write(nuget_str)
