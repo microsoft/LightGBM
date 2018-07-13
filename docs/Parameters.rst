@@ -785,11 +785,11 @@ Metric Parameters
 
    -  set this to ``true`` to output metric result over training dataset
 
--  ``eval_at`` :raw-html:`<a id="eval_at" title="Permalink to this parameter" href="#eval_at">&#x1F517;&#xFE0E;</a>`, default = ``1,2,3,4,5``, type = multi-int, aliases: ``ndcg_eval_at``, ``ndcg_at``
+-  ``eval_at`` :raw-html:`<a id="eval_at" title="Permalink to this parameter" href="#eval_at">&#x1F517;&#xFE0E;</a>`, default = ``1,2,3,4,5``, type = multi-int, aliases: ``ndcg_eval_at``, ``ndcg_at``, ``map_eval_at``, ``map_at``
 
    -  used only with ``ndcg`` and ``map`` metrics
 
-   -  `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ evaluation positions, separated by ``,``
+   -  `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ and `MAP <https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/>`__ evaluation positions, separated by ``,``
 
 Network Parameters
 ------------------
