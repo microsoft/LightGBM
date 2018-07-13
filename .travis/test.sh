@@ -19,10 +19,12 @@ if [[ $TASK == "check-docs" ]]; then
     fi
     conda install sphinx "sphinx_rtd_theme>=0.3"  # html5validator
     pip install rstcheck
+    # check reStructuredText formatting
     cd $TRAVIS_BUILD_DIR/python-package
     rstcheck --report warning `find . -type f -name "*.rst"` || exit -1
     cd $TRAVIS_BUILD_DIR/docs
     rstcheck --report warning --ignore-directives=autoclass,autofunction `find . -type f -name "*.rst"` || exit -1
+    # build docs and check them for broken links
     make html || exit -1
     find ./_build/html/ -type f -name '*.html' -exec \
     sed -i -e 's;\(\.\/[^.]*\.\)rst\([^[:space:]]*\);\1html\2;g' {} \;  # emulate js function
@@ -30,6 +32,12 @@ if [[ $TASK == "check-docs" ]]; then
     if [[ $TRAVIS_OS_NAME != "osx" ]]; then
         linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
     fi
+    # check the consistency of parameters' descriptions and other stuff
+    cp $TRAVIS_BUILD_DIR/docs/Parameters.rst $TRAVIS_BUILD_DIR/docs/Parameters-backup.rst
+    cp $TRAVIS_BUILD_DIR/src/io/config_auto.cpp $TRAVIS_BUILD_DIR/src/io/config_auto-backup.cpp
+    python $TRAVIS_BUILD_DIR/helper/parameter_generator.py || exit -1
+    diff $TRAVIS_BUILD_DIR/docs/Parameters-backup.rst $TRAVIS_BUILD_DIR/docs/Parameters.rst || exit -1
+    diff $TRAVIS_BUILD_DIR/src/io/config_auto-backup.cpp $TRAVIS_BUILD_DIR/src/io/config_auto.cpp || exit -1
     exit 0
 fi
 
