@@ -93,6 +93,8 @@ Apple Clang (9.0 or higher)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 1. Install `CMake`_ (3.12 or higher).
+   .. code::
+     brew install --HEAD cmake
 
 2. Run the following commands:
 
