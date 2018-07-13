@@ -1,7 +1,9 @@
 # coding: utf-8
 # pylint: disable = invalid-name, C0111
-import lightgbm as lgb
+import numpy as np
 import pandas as pd
+import lightgbm as lgb
+
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV
 
@@ -34,6 +36,27 @@ print('The rmse of prediction is:', mean_squared_error(y_test, y_pred) ** 0.5)
 
 # feature importances
 print('Feature importances:', list(gbm.feature_importances_))
+
+
+# self-defined eval metric
+# f(y_true: array, y_pred: array) -> name: string, eval_result: float, is_higher_better: bool
+# Root Mean Squared Logarithmic Error (RMSLE)
+def rmsle(y_true, y_pred):
+    return 'RMSLE', np.sqrt(np.mean(np.power(np.log1p(y_pred) - np.log1p(y_true), 2))), False
+
+
+print('Start training with custom eval function...')
+# train
+gbm.fit(X_train, y_train,
+        eval_set=[(X_test, y_test)],
+        eval_metric=rmsle,
+        early_stopping_rounds=5)
+
+print('Start predicting...')
+# predict
+y_pred = gbm.predict(X_test, num_iteration=gbm.best_iteration_)
+# eval
+print('The rmsle of prediction is:', rmsle(y_test, y_pred)[1])
 
 # other scikit-learn modules
 estimator = lgb.LGBMRegressor(num_leaves=31)
