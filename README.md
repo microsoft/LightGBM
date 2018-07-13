@@ -1,9 +1,9 @@
 LightGBM, Light Gradient Boosting Machine
 =========================================
 
-[![Build Status](https://lightgbm.visualstudio.com/LightGBM-Build/_apis/build/status/LightGBM-Build-CI&branchName=master)]()
-[![Build Status](https://travis-ci.org/Microsoft/LightGBM.svg?branch=master)](https://travis-ci.org/Microsoft/LightGBM)
-[![Windows Build Status](https://ci.appveyor.com/api/projects/status/1ys5ot401m0fep6l/branch/master?svg=true)](https://ci.appveyor.com/project/guolinke/lightgbm/branch/master)
+[![VSTS Build Status](https://lightgbm.visualstudio.com/LightGBM-Build/_apis/build/status/LightGBM-Build-CI?branchName=master)](https://lightgbm.visualstudio.com/LightGBM-Build/_build/latest?definitionId=7&branchName=master)
+[![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/1ys5ot401m0fep6l/branch/master?svg=true)](https://ci.appveyor.com/project/guolinke/lightgbm/branch/master)
+[![Travis Build Status](https://travis-ci.org/Microsoft/LightGBM.svg?branch=master)](https://travis-ci.org/Microsoft/LightGBM)
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](https://lightgbm.readthedocs.io/)
 [![GitHub Issues](https://img.shields.io/github/issues/Microsoft/LightGBM.svg)](https://github.com/Microsoft/LightGBM/issues)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Microsoft/LightGBM/blob/master/LICENSE)
