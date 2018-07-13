@@ -37,7 +37,7 @@ def copy_files(use_gpu=False):
             shutil.rmtree(dst, ignore_errors=True)
             distutils.dir_util.copy_tree(src, dst)
         else:
-            raise Exception('Cannot copy {} folder'.format(src))
+            raise Exception('Cannot copy {0} folder'.format(src))
 
     if not os.path.isfile(os.path.join(CURRENT_DIR, '_IS_SOURCE_PACKAGE.txt')):
         copy_files_helper('include')
@@ -48,8 +48,6 @@ def copy_files(use_gpu=False):
                                       os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.sln"))
         distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "windows", "LightGBM.vcxproj"),
                                       os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.vcxproj"))
-        distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "windows", "LightGBM.vcxproj.filters"),
-                                      os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.vcxproj.filters"))
         if use_gpu:
             copy_files_helper('compute')
         distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, "CMakeLists.txt"),
