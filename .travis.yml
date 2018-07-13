@@ -17,6 +17,7 @@ env:
     - PYTHON_VERSION=3.6
   matrix:
     - TASK=regular
+    - TASK=clang
     - TASK=mpi PYTHON_VERSION=2.7
     - TASK=pylint
     - TASK=check-docs
@@ -28,6 +29,8 @@ env:
 
 matrix:
   exclude:
+    - os: linux
+      env: TASK=clang
     - os: osx
       env: TASK=gpu METHOD=source
     - os: osx

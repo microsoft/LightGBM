@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ $TRAVIS_OS_NAME == "osx" ]]; then
+if [[ $TRAVIS_OS_NAME == "osx" ]] && [[ $TASK != "clang" ]]; then
     export CXX=g++-8
     export CC=gcc-8
 fi
