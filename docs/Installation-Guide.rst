@@ -87,9 +87,9 @@ Also you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 macOS
 ~~~~~
 
-LightGBM can use Apple Clang (9.0 or higher), or GCC/G++ to build in macOS.
+LightGBM can use Apple Clang (8.1 or higher), or GCC/G++ to build in macOS.
 
-Apple Clang (9.0 or higher)
+Apple Clang (8.1 or higher)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 1. Install `CMake`_ (3.12 or higher).
@@ -350,12 +350,16 @@ LightGBM uses **CMake** to build. Run the following commands:
 macOS
 ^^^^^
 
-LightGBM can use Apple Clang (9.0 or higher), or GCC/G++ to build in macOS.
+LightGBM can use Apple Clang (8.1 or higher), or GCC/G++ to build in macOS.
 
-Apple Clang (9.0 or higher)
+Apple Clang (8.1 or higher)
 ***************************
 
-1. Install `CMake`_ (3.12 or higher).
+1. Install `CMake`_ (3.12 or higher):
+
+   .. code::
+
+     brew install --HEAD cmake
 
 2. Run the following commands:
 
