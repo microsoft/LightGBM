@@ -24,7 +24,7 @@ if [[ $TASK == "check-docs" ]]; then
     # build docs and check them for broken links
     make html || exit -1
     find ./_build/html/ -type f -name '*.html' -exec \
-    sed -i -e 's;\(\.\/[^.]*\.\)rst\([^[:space:]]*\);\1html\2;g' {} \;  # emulate js function
+    sed -i'.bak' -e 's;\(\.\/[^.]*\.\)rst\([^[:space:]]*\);\1html\2;g' {} \;  # emulate js function
 #    html5validator --root ./_build/html/ || exit -1
     if [[ $TRAVIS_OS_NAME != "osx" ]]; then
         sudo apt-get install linkchecker
@@ -75,7 +75,7 @@ fi
 
 if [[ $TASK == "gpu" ]]; then
     conda install --yes -c conda-forge boost
-    sed -i 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $TRAVIS_BUILD_DIR/include/LightGBM/config.h
+    sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $TRAVIS_BUILD_DIR/include/LightGBM/config.h
     grep -q 'std::string device_type = "gpu"' $TRAVIS_BUILD_DIR/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
         cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
