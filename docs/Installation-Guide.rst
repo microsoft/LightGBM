@@ -92,8 +92,10 @@ LightGBM can use Apple Clang (8.1 or higher), or GCC/G++ to build in macOS.
 Apple Clang (8.1 or higher)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1. Install `CMake`_ (3.12 or higher).
+1. Install `CMake`_ (3.12 or higher):
+
    .. code::
+
      brew install --HEAD cmake
 
 2. Run the following commands:
