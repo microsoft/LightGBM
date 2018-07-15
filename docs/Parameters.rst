@@ -589,7 +589,7 @@ IO Parameters
 
    -  used only in ``prediction`` task
 
-   -  set this to ``true`` to estimate `SHAP values <https://arxiv.org/abs/1706.06060>`__, which represent how each feature contributs to each prediction
+   -  set this to ``true`` to estimate `SHAP values <https://arxiv.org/abs/1706.06060>`__, which represent how each feature contributes to each prediction
 
    -  produces ``#features + 1`` values where the last value is the expected value of the model output over the training data
 

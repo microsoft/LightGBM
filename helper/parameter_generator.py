@@ -222,8 +222,9 @@ def GenParameterCode(config_hpp, config_out_cpp):
 
 
 if __name__ == "__main__":
-    config_hpp = os.path.join(os.path.pardir, 'include', 'LightGBM', 'config.h')
-    config_out_cpp = os.path.join(os.path.pardir, 'src', 'io', 'config_auto.cpp')
-    params_rst = os.path.join(os.path.pardir, 'docs', 'Parameters.rst')
+    current_dir = os.path.abspath(os.path.dirname(__file__))
+    config_hpp = os.path.join(current_dir, os.path.pardir, 'include', 'LightGBM', 'config.h')
+    config_out_cpp = os.path.join(current_dir, os.path.pardir, 'src', 'io', 'config_auto.cpp')
+    params_rst = os.path.join(current_dir, os.path.pardir, 'docs', 'Parameters.rst')
     sections, descriptions = GenParameterCode(config_hpp, config_out_cpp)
     GenParameterDescription(sections, descriptions, params_rst)
