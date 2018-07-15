@@ -47,7 +47,7 @@ fi
 
 if [[ $TASK == "if-else" ]]; then
     conda install numpy
-    mkdir build && cd build && cmake .. && make lightgbm || exit -1
+    mkdir $TRAVIS_BUILD_DIR/build && cd $TRAVIS_BUILD_DIR/build && cmake .. && make lightgbm || exit -1
     cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
     cd $TRAVIS_BUILD_DIR/build && make lightgbm || exit -1
     cd $TRAVIS_BUILD_DIR/tests/cpp_test && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py || exit -1
@@ -85,7 +85,7 @@ if [[ $TASK == "gpu" ]]; then
     fi
 fi
 
-mkdir build && cd build
+mkdir $TRAVIS_BUILD_DIR/build && cd $TRAVIS_BUILD_DIR/build
 
 if [[ $TASK == "mpi" ]]; then
     cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
