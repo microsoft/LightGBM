@@ -546,7 +546,7 @@ public:
 
   // alias = is_predict_contrib, contrib
   // desc = used only in ``prediction`` task
-  // desc = set this to ``true`` to estimate `SHAP values <https://arxiv.org/abs/1706.06060>`__, which represent how each feature contributs to each prediction
+  // desc = set this to ``true`` to estimate `SHAP values <https://arxiv.org/abs/1706.06060>`__, which represent how each feature contributes to each prediction
   // desc = produces ``#features + 1`` values where the last value is the expected value of the model output over the training data
   bool predict_contrib = false;
 
