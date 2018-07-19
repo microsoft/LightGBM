@@ -1097,7 +1097,7 @@ class Dataset(object):
 
     def _set_predictor(self, predictor):
         """
-        Set predictor for continued training, not recommand for user to call this function.
+        Set predictor for continued training, not recommended for user to call this function.
         Please set init_model in engine.train or engine.cv
         """
         if predictor is self._predictor:
