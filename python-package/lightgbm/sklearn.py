@@ -397,9 +397,6 @@ class LGBMModel(_LGBMModelBase):
             self._fobj = None
         evals_result = {}
         params = self.get_params()
-        # sklearn interface has another naming convention
-        params.setdefault('seed', params.pop('random_state'))
-        params.setdefault('nthread', params.pop('n_jobs'))
         # user can set verbose with kwargs, it has higher priority
         if 'verbose' not in params and self.silent:
             params['verbose'] = 0

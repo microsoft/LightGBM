@@ -140,7 +140,7 @@ lgb.cv <- function(params = list(),
     begin_iteration <- predictor$current_iter() + 1
   }
   # Check for number of rounds passed as parameter - in case there are multiple ones, take only the first one
-  n_trees <- c("num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds")
+  n_trees <- c("num_iterations", "num_iteration", "n_iter", "num_tree", "num_trees", "num_round", "num_rounds", "num_boost_round", "n_estimators")
   if (any(names(params) %in% n_trees)) {
     end_iteration <- begin_iteration + params[[which(names(params) %in% n_trees)[1]]] - 1
   } else {
