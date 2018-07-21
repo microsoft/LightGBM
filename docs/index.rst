@@ -6,7 +6,7 @@
 Welcome to LightGBM's documentation!
 ====================================
 
-LightGBM is a gradient boosting framework that uses tree based learning algorithms. It is designed to be distributed and efficient with the following advantages:
+**LightGBM** is a gradient boosting framework that uses tree based learning algorithms. It is designed to be distributed and efficient with the following advantages:
 
 - Faster training speed and higher efficiency
 - Lower memory usage
