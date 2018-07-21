@@ -382,3 +382,6 @@ lightgbm.model
 # duplicate version file
 python-package/lightgbm/VERSION.txt
 .Rproj.user
+
+#auto-generated sources
+src/io/config_auto.cpp
