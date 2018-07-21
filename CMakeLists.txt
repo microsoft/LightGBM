@@ -159,8 +159,18 @@ file(GLOB SOURCES
     src/treelearner/*.cpp
 )
 
+find_package(Python REQUIRED)
+add_custom_target(
+    config_auto
+    COMMAND python ${PROJECT_SOURCE_DIR}/helper/parameter_generator.py
+)
+
 add_executable(lightgbm src/main.cpp ${SOURCES})
 add_library(_lightgbm SHARED src/c_api.cpp src/lightgbm_R.cpp  ${SOURCES})
+
+add_dependencies(lightgbm config_auto)
+add_dependencies(_lightgbm config_auto)
+
 
 if(USE_SWIG)
   set_property(SOURCE swig/lightgbmlib.i PROPERTY CPLUSPLUS ON)
