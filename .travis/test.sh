@@ -3,6 +3,9 @@
 if [[ $TRAVIS_OS_NAME == "osx" ]] && [[ $COMPILER == "gcc" ]]; then
     export CXX=g++-8
     export CC=gcc-8
+elif [[ $TRAVIS_OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
+    export CXX=clang++
+    export CC=clang
 fi
 
 conda create -q -n test-env python=$PYTHON_VERSION
