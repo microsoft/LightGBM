@@ -27,6 +27,9 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
   endif()
   cmake_minimum_required(VERSION 3.12)
 elseif(MSVC)
+  if(MSVC_VERSION LESS 1900)
+    message(STATUS "The compiler ${CMAKE_CXX_COMPILER} doesn't support required C++11 features. Please use a newer MSVC.")
+  endif()
   cmake_minimum_required(VERSION 3.8)
 endif()
 
@@ -89,7 +92,7 @@ if(USE_GPU)
     find_package(Boost 1.56.0 COMPONENTS filesystem system REQUIRED)
     if (WIN32)
         # disable autolinking in boost
-        add_definitions( -DBOOST_ALL_NO_LIB )
+        add_definitions(-DBOOST_ALL_NO_LIB)
     endif()
     include_directories(${Boost_INCLUDE_DIRS})
     ADD_DEFINITIONS(-DUSE_GPU)
@@ -113,10 +116,6 @@ if(WIN32 AND MINGW)
 endif()
 
 if(MSVC)
-    if(MSVC_VERSION LESS 1900)
-        message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a newer MSVC.")
-    endif()
-
     SET(variables
         CMAKE_C_FLAGS_DEBUG
         CMAKE_C_FLAGS_MINSIZEREL
