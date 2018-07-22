@@ -193,7 +193,7 @@ class LGBMModel(_LGBMModelBase):
             Number of parallel threads.
         silent : bool, optional (default=True)
             Whether to print messages while running boosting.
-        importance_type : str, optional (default='split')
+        importance_type : string, optional (default='split')
             The type of feature importance to be filled into ``feature_importances_``.
             If "split", result contains numbers of times the feature is used in a model.
             If "gain", result contains total gains of splits which use the feature.
