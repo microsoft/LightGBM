@@ -5,15 +5,12 @@ dist: trusty
 git:
   submodules: true
 
-compiler:
-  - gcc
-
 os:
   - linux
   - osx
 
 env:
-  global:
+  global:  # default values
     - COMPILER=gcc
     - PYTHON_VERSION=3.6
   matrix:
