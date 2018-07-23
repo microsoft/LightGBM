@@ -132,4 +132,4 @@ htmlhelp_basename = 'LightGBMdoc'
 
 
 def setup(app):
-    app.add_javascript("js/rst_links_fix.js")
+    app.add_javascript("js/script.js")
