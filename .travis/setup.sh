@@ -7,12 +7,13 @@ if [[ $TRAVIS_OS_NAME == "osx" ]]; then
     else
         rm '/usr/local/include/c++'
 #        brew cask uninstall oclint  #  reserve variant to deal with conflict link
-        if [[ $TASK == "mpi" ]]; then
-            brew install open-mpi
-        else
+        if [[ $TASK != "mpi" ]]; then
             brew install gcc
         fi
 #        brew link --overwrite gcc  # previous variant to deal with conflict link
+    fi
+    if [[ $TASK == "mpi" ]]; then
+        brew install open-mpi
     fi
     wget -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
 else  # Linux
