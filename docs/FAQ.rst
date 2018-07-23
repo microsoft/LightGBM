@@ -112,6 +112,22 @@ LightGBM
 
 --------------
 
+-  **Question 10**: LightGBM crashes randomly with the error like this.
+
+   ::
+       OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized.
+       OMP: Hint: This means that multiple copies of the OpenMP runtime have been linked into the program. That is dangerous, since it can degrade performance or cause incorrect results. The best thing to do is to ensure that only a single OpenMP runtime is linked into the process, e.g. by avoiding static linking of the OpenMP runtime in any library. As an unsafe, unsupported, undocumented workaround you can set the environment variable KMP_DUPLICATE_LIB_OK=TRUE to allow the program to continue to execute, but that may cause crashes or silently produce incorrect results. For more information, please see http://www.intel.com/software/products/support/.
+
+-  **Solution 10**: File extensions in the error message may differ depending on the operating system.
+   This error means that you have multiple OpenMP libraries installed on your machine and they conflict with each other.
+
+   If you are using Python, then it is highly likely that the error is caused by the `numpy` package from `conda` which includes the `mkl` package which in turn conflicts with the system-wide library.
+   In this case you can update the `numpy` package in conda or replace the conda's OpenMP library instance with system-wide one by creating a symlink to it in conda environment folder ``$CONDA_PREFIX/lib``.
+
+   If this is not your case, then you should find conflicting OpenMP library installations on your own and leave only one of them.
+
+--------------
+
 R-package
 ~~~~~~~~~
 
