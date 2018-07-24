@@ -121,8 +121,13 @@ LightGBM
 -  **Solution 10**: File extensions in the error message may differ depending on the operating system.
    This error means that you have multiple OpenMP libraries installed on your machine and they conflict with each other.
 
-   If you are using Python, then it is highly likely that the error is caused by the `numpy` package from `conda` which includes the `mkl` package which in turn conflicts with the system-wide library.
-   In this case you can update the `numpy` package in conda or replace the conda's OpenMP library instance with system-wide one by creating a symlink to it in conda environment folder ``$CONDA_PREFIX/lib``.
+   If you are using Python distributed by Conda, then it is highly likely that the error is caused by the `numpy` package from Conda which includes the `mkl` package which in turn conflicts with the system-wide library.
+   In this case you can update the `numpy` package in Conda or replace the Conda's OpenMP library instance with system-wide one by creating a symlink to it in Conda environment folder ``$CONDA_PREFIX/lib``.
+
+   Assuming you are using macOS with Homebrew, the command which overwrites OpenMP library files in the current active Conda environment with symlinks to the system-wide library ones installed by Homebrew:
+
+   ::
+       ln -sf `ls -d "$(brew --cellar libomp)"/*/lib`/* $CONDA_PREFIX/lib
 
    If this is not your case, then you should find conflicting OpenMP library installations on your own and leave only one of them.
 
