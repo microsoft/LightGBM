@@ -13,6 +13,10 @@ OPTION(USE_SWIG "Enable SWIG to generate Java API" OFF)
 OPTION(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
 OPTION(USE_R35 "Set to ON if your R version is not smaller than 3.5" OFF)
 
+if(APPLE)
+    OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
+endif()
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.2")
     message(FATAL_ERROR "Insufficient gcc version")
@@ -31,10 +35,6 @@ elseif(MSVC)
     message(STATUS "The compiler ${CMAKE_CXX_COMPILER} doesn't support required C++11 features. Please use a newer MSVC.")
   endif()
   cmake_minimum_required(VERSION 3.8)
-endif()
-
-if(APPLE)
-    OPTION(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
 endif()
 
 if(USE_SWIG)
