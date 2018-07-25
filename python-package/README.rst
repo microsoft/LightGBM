@@ -9,7 +9,7 @@ Installation
 Preparation
 '''''''''''
 
-Note: 32-bit Python is not supported. Please install 64-bit version.
+32-bit Python is not supported. Please install 64-bit version.
 
 `setuptools <https://pypi.org/project/setuptools>`_ is needed.
 
@@ -52,7 +52,7 @@ All remarks from `Build from Sources section <#build-from-sources>`__ are actual
 
 For **Windows** users, compilation with **MinGW-w64** is not supported and `CMake`_ (version 3.8 or higher) is strongly required.
 
-Note: **MPI** libraries are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-mpi-version>`__.
+**MPI** libraries are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-mpi-version>`__.
 
 Build GPU Version
 ~~~~~~~~~~~~~~~~~
@@ -65,7 +65,7 @@ All remarks from `Build from Sources section <#build-from-sources>`__ are actual
 
 For **Windows** users, `CMake`_ (version 3.8 or higher) is strongly required.
 
-Note: **Boost** and **OpenCL** are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version>`__. You need to add ``OpenCL_INCLUDE_DIR`` to the environmental variable **'PATH'** and export ``BOOST_ROOT`` before installation. Alternatively, you may pass options to **CMake** via ``pip`` options, like
+**Boost** and **OpenCL** are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version>`__. You need to add ``OpenCL_INCLUDE_DIR`` to the environmental variable **'PATH'** and export ``BOOST_ROOT`` before installation. Alternatively, you may pass options to **CMake** via ``pip`` options, like
 
 .. code:: sh
 
@@ -94,7 +94,7 @@ Build HDFS Version
 
     pip install lightgbm --install-option=--hdfs
 
-Note: Installation process of HDFS version is **untested**.
+Note that the installation process of HDFS version is **untested**.
 
 Build with MinGW-w64 on Windows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -103,7 +103,7 @@ Build with MinGW-w64 on Windows
 
     pip install lightgbm --install-option=--mingw
 
-Note: `CMake`_ and `MinGW-w64 <https://mingw-w64.org/>`_ should be installed first.
+`CMake`_ and `MinGW-w64 <https://mingw-w64.org/>`_ should be installed first.
 
 It is recommended to use **Visual Studio** for its better multithreading efficiency in **Windows** for many-core systems (see `FAQ <https://github.com/Microsoft/LightGBM/blob/master/docs/FAQ.rst#lightgbm>`__ Question 4 and Question 8).
 
@@ -131,7 +131,7 @@ Run ``python setup.py install --gpu`` to enable GPU support. All remarks from `B
 
 Run ``python setup.py install --hdfs`` to enable HDFS support. All remarks from `Build HDFS Version section <#build-hdfs-version>`__ are actual in this case.
 
-If you get any errors during installation or due to any other reason, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then just run ``python setup.py install --precompile``.
+If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then just run ``python setup.py install --precompile``.
 
 Troubleshooting
 ---------------
