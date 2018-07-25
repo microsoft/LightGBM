@@ -9,18 +9,18 @@ Installation
 Preparation
 '''''''''''
 
-`setuptools <https://pypi.org/project/setuptools>`_ is needed.
-
-For macOS users, gcc with OpenMP support must be installed first. Refer to `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#macos>`__ for installing gcc with OpenMP support.
-
 Note: 32-bit Python is not supported. Please install 64-bit version.
 
+`setuptools <https://pypi.org/project/setuptools>`_ is needed.
+
 Install from `PyPI <https://pypi.org/project/lightgbm>`_ Using ``pip``
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-For Windows users, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if Visual Studio (2015 or 2017) is not installed.
+For **Windows** users, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if **Visual Studio** (2015 or 2017) is not installed.
 
-For macOS users, latest versions of LightGBM are built with **g++-8** and cannot be launched on systems with **g++-7** and earlier. You should update your **g++** compiler if you don't want to build from sources or install LightGBM 2.1.1 which is the last version built with **g++-7**.
+For **macOS** users, **gcc** with **OpenMP** support must be installed first. Refer to `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc>`__ for installation of **gcc** with **OpenMP** support.
+
+For **macOS** users, latest versions of LightGBM are built with **gcc-8** and cannot be launched on systems with **gcc-7** and earlier. You should update your **gcc** compiler if you don't want to build from sources or install LightGBM 2.1.1 which is the last version built with **gcc-7**.
 
 Install `wheel <http://pythonwheels.com>`_ via ``pip install wheel`` first. After that download the wheel file and install from it:
 
@@ -35,11 +35,11 @@ Build from Sources
 
     pip install --no-binary :all: lightgbm
 
-For Linux and macOS users, installation from sources requires installed `CMake <https://cmake.org/>`_.
+For **Linux** and **macOS** users, installation from sources requires installed `CMake`_.
 
-For macOS users, you need to specify compilers by runnig ``export CXX=g++-7 CC=gcc-7`` (replace 7 with version of gcc installed on your machine) first.
+For **macOS** users, you can perform installation either with **Apple Clang** or **gcc**. In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#apple-clang>`__) first and **CMake** version 3.12 or higher is required. In case you prefer **gcc**, you need to specify compilers by running ``export CXX=g++-7 CC=gcc-7`` (replace 7 with version of **gcc** installed on your machine) first.
 
-For Windows users, Visual Studio (or `MS Build <https://visualstudio.microsoft.com/downloads/>`_) is needed. If you get any errors during installation, you may need to install `CMake <https://cmake.org/>`_ (version 3.8 or higher).
+For **Windows** users, **Visual Studio** (or `MS Build <https://visualstudio.microsoft.com/downloads/>`_) is needed. If you get any errors during installation, you may need to install `CMake`_ (version 3.8 or higher).
 
 Build MPI Version
 ~~~~~~~~~~~~~~~~~
@@ -48,9 +48,11 @@ Build MPI Version
 
     pip install lightgbm --install-option=--mpi
 
-For Windows users, compilation with MinGW-w64 is not supported and `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case.
+All remarks from `Build from Sources section <#build-from-sources>`__ are actual in this case.
 
-Note: MPI libraries are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-mpi-version>`__.
+For **Windows** users, compilation with **MinGW-w64** is not supported and `CMake`_ (version 3.8 or higher) is strongly required.
+
+Note: **MPI** libraries are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-mpi-version>`__.
 
 Build GPU Version
 ~~~~~~~~~~~~~~~~~
@@ -59,11 +61,11 @@ Build GPU Version
 
     pip install lightgbm --install-option=--gpu
 
-For Windows users, `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case.
+All remarks from `Build from Sources section <#build-from-sources>`__ are actual in this case.
 
-Note: Boost and OpenCL are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version>`__. You need to add ``OpenCL_INCLUDE_DIR`` to the environmental variable **'PATH'** and export ``BOOST_ROOT`` before installation.
+For **Windows** users, `CMake`_ (version 3.8 or higher) is strongly required.
 
-Also you may pass options to CMake via pip options, like
+Note: **Boost** and **OpenCL** are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version>`__. You need to add ``OpenCL_INCLUDE_DIR`` to the environmental variable **'PATH'** and export ``BOOST_ROOT`` before installation. Alternatively, you may pass options to **CMake** via ``pip`` options, like
 
 .. code:: sh
 
@@ -92,7 +94,7 @@ Build HDFS Version
 
     pip install lightgbm --install-option=--hdfs
 
-For Windows users, `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case.
+Note: Installation process of HDFS version is **untested**.
 
 Build with MinGW-w64 on Windows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -101,38 +103,33 @@ Build with MinGW-w64 on Windows
 
     pip install lightgbm --install-option=--mingw
 
-Note: `CMake <https://cmake.org/>`_ and `MinGW-w64 <https://mingw-w64.org/>`_ should be installed first.
+Note: `CMake`_ and `MinGW-w64 <https://mingw-w64.org/>`_ should be installed first.
 
 Install from GitHub
 '''''''''''''''''''
 
-For Linux and macOS users, installation from GitHub requires installed `CMake <https://cmake.org/>`_.
+All remarks from `Build from Sources section <#build-from-sources>`__ are actual in this case.
 
-For Windows users, Visual Studio (or `MS Build <https://visualstudio.microsoft.com/downloads/>`_) is needed. If you get any errors during installation and there is the warning ``WARNING:LightGBM:Compilation with MSBuild from existing solution file failed.`` in the log, you should install `CMake <https://cmake.org/>`_ (version 3.8 or higher).
+For **Windows** users, if you get any errors during installation and there is the warning ``WARNING:LightGBM:Compilation with MSBuild from existing solution file failed.`` in the log, you should install `CMake`_ (version 3.8 or higher).
 
 .. code:: sh
 
     git clone --recursive https://github.com/Microsoft/LightGBM.git
     cd LightGBM/python-package
-    # export CXX=g++-7 CC=gcc-7  # for macOS users only (replace 7 with version of gcc installed on your machine)
+    # export CXX=g++-7 CC=gcc-7  # macOS users, if you decided to compile with gcc, don't forget to specify compilers (replace 7 with version of gcc installed on your machine)
     python setup.py install
 
-Note: ``sudo`` (or administrator rights in Windows) may be needed to perform the command.
+Note: ``sudo`` (or administrator rights in **Windows**) may be needed to perform the command.
 
-Run ``python setup.py install --mpi`` to enable MPI support. For Windows users, compilation with MinGW-w64 is not supported and `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case. MPI libraries are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-mpi-version>`__.
+Run ``python setup.py install --mpi`` to enable **MPI** support. All remarks from `Build MPI Version section <#build-mpi-version>`__ are actual in this case.
 
-Run ``python setup.py install --mingw`` if you want to use MinGW-w64 on Windows instead of Visual Studio. `CMake <https://cmake.org/>`_ and `MinGW-w64 <https://mingw-w64.org/>`_ should be installed first.
+Run ``python setup.py install --mingw``, if you want to use **MinGW-w64** on **Windows** instead of **Visual Studio**. All remarks from `Build with MinGW-w64 on Windows section <#build-with-mingw-w64-on-windows>`__ are actual in this case.
 
-Run ``python setup.py install --gpu`` to enable GPU support. For Windows users, `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case. Boost and OpenCL are needed: details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version>`__. You can pass additional options to CMake: ``python setup.py install --gpu --opencl-include-dir=/usr/local/cuda/include/``, see `Build GPU Version <#build-gpu-version>`__ for complete list of them.
+Run ``python setup.py install --gpu`` to enable GPU support. All remarks from `Build GPU Version section <#build-gpu-version>`__ are actual in this case. To pass additional options to **CMake** use the following syntax: ``python setup.py install --gpu --opencl-include-dir=/usr/local/cuda/include/``, see `Build GPU Version section <#build-gpu-version>`__ for the complete list of them.
 
-Run ``python setup.py install --hdfs`` to enable HDFS support. For Windows users, `CMake <https://cmake.org/>`_ (version 3.8 or higher) is strongly required in this case.
+Run ``python setup.py install --hdfs`` to enable HDFS support. All remarks from `Build HDFS Version section <#build-hdfs-version>`__ are actual in this case.
 
-If you get any errors during installation or due to any other reason, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then run ``python setup.py install --precompile``.
-
-Examples
---------
-
-Refer to the walk through examples in `Python guide folder <https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide>`_.
+If you get any errors during installation or due to any other reason, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then just run ``python setup.py install --precompile``.
 
 Troubleshooting
 ---------------
@@ -140,6 +137,11 @@ Troubleshooting
 In case you are facing any errors during the installation process, you can examine ``$HOME/LightGBM_compilation.log`` file, in which all operations are logged, to get more details about occurred problem. Also, please attach this file to the issue on GitHub to help faster indicate the cause of the error.
 
 Refer to `FAQ <https://github.com/Microsoft/LightGBM/tree/master/docs/FAQ.rst>`_.
+
+Examples
+--------
+
+Refer to the walk through examples in `Python guide folder <https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide>`_.
 
 Developments
 ------------
@@ -162,3 +164,5 @@ E501 (line too long) and W503 (line break occurred before a binary operator) can
    :target: https://pypi.org/project/lightgbm
 .. |PyPI Version| image:: https://img.shields.io/pypi/v/lightgbm.svg
    :target: https://pypi.org/project/lightgbm
+
+.. _CMake: https://cmake.org/
