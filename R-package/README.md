@@ -24,7 +24,7 @@ For users who wants to install online with GPU or want to choose a specific comp
 
 #### macOS Preparation
 
-gcc with OpenMP support must be installed first. Refer to [Installation-Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#macos) for installing gcc with OpenMP support.
+You can perform installation either with **Apple Clang** or **gcc**. In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in [Installation Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#apple-clang)) first and **CMake** version 3.12 or higher is required. In case you prefer **gcc**, you need to install it (details for installation can be found in [Installation Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc)) and specify compilers by running ``export CXX=g++-7 CC=gcc-7`` (replace 7 with version of **gcc** installed on your machine) first.
 
 ### Install
 
@@ -33,7 +33,7 @@ Install LightGBM R-package with the following command:
 ```sh
 git clone --recursive https://github.com/Microsoft/LightGBM
 cd LightGBM/R-package
-# export CXX=g++-7 CC=gcc-7  # for macOS (replace 7 with version of gcc installed on your machine)
+# export CXX=g++-7 CC=gcc-7  # macOS users, if you decided to compile with gcc, don't forget to specify compilers (replace 7 with version of gcc installed on your machine)
 R CMD INSTALL --build . --no-multiarch
 ```
 
@@ -43,7 +43,7 @@ Or build a self-contained R-package which can be installed afterwards:
 git clone --recursive https://github.com/Microsoft/LightGBM
 cd LightGBM/R-package
 Rscript build_package.R
-# export CXX=g++-7 CC=gcc-7  # for macOS (replace 7 with version of gcc installed on your machine)
+# export CXX=g++-7 CC=gcc-7  # macOS users, if you decided to compile with gcc, don't forget to specify compilers (replace 7 with version of gcc installed on your machine)
 R CMD INSTALL lightgbm_2.1.1.tar.gz --no-multiarch
 ``` 
 
