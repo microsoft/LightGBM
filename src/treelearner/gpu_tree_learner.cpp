@@ -442,7 +442,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
     queue_.enqueue_write_buffer(device_features_->get_buffer(),
                         i * num_data_ * sizeof(Feature4), num_data_ * sizeof(Feature4), host4);
     #if GPU_DEBUG >= 1
-    printf("first example of feature-group tuple is: %d %d %d %d\n", host4[0].s0, host4[0].s1, host4[0].s2, host4[0].s3);
+    printf("first example of feature-group tuple is: %d %d %d %d\n", host4[0].s[0], host4[0].s[1], host4[0].s[2], host4[0].s[3]);
     printf("Feature-groups copied to device with multipliers ");
     for (int l = 0; l < dword_features_; ++l) {
       printf("%d ", dev_bin_mult[l]);
@@ -1031,12 +1031,21 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
     printf("Comparing histogram for feature %d size %d, %lu bins\n", dense_feature_group_index, num_data, size);
     std::copy(current_histogram, current_histogram + size, gpu_histogram);
     std::memset(current_histogram, 0, train_data_->FeatureGroupNumBin(dense_feature_group_index) * sizeof(HistogramBinEntry));
-    train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
-      num_data != num_data_ ? smaller_leaf_splits_->data_indices() : nullptr,
-      num_data,
-      num_data != num_data_ ? ordered_gradients_.data() : gradients_,
-      num_data != num_data_ ? ordered_hessians_.data() : hessians_,
-      current_histogram); 
+    if (num_data != num_data_) {
+      train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
+        smaller_leaf_splits_->data_indices(),
+        num_data,
+        ordered_gradients_.data(),
+        ordered_hessians_.data(),
+        current_histogram);
+    }
+    else {
+      train_data_->FeatureGroupBin(dense_feature_group_index)->ConstructHistogram(
+        num_data,
+        gradients_,
+        hessians_,
+        current_histogram);
+    }
     CompareHistograms(gpu_histogram, current_histogram, size, dense_feature_group_index);
     std::copy(gpu_histogram, gpu_histogram + size, current_histogram);
     delete [] gpu_histogram;
