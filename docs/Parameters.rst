@@ -73,7 +73,7 @@ Core Parameters
 
       -  ``tweedie``, Tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed <https://en.wikipedia.org/wiki/Tweedie_distribution#Applications>`__
 
-   -  ``binary``, binary `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__ classification (or logistic regression). Requires labels in {0, 1}; see ``xentropy`` for general probability labels in [0, 1]
+   -  ``binary``, binary `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__ classification (or logistic regression). Requires labels in {0, 1}; see ``cross-entropy`` application for general probability labels in [0, 1]
 
    -  multi-class classification application
 
@@ -109,13 +109,13 @@ Core Parameters
 
    -  ``goss``, Gradient-based One-Side Sampling
 
--  ``data`` :raw-html:`<a id="data" title="Permalink to this parameter" href="#data">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``train``, ``train_data``, ``data_filename``
+-  ``data`` :raw-html:`<a id="data" title="Permalink to this parameter" href="#data">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``train``, ``train_data``, ``train_data_file``, ``data_filename``
 
    -  path of training data, LightGBM will train from this data
 
    -  **Note**: can be used only in CLI version
 
--  ``valid`` :raw-html:`<a id="valid" title="Permalink to this parameter" href="#valid">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``test``, ``valid_data``, ``valid_data_file``, ``test_data``, ``valid_filenames``
+-  ``valid`` :raw-html:`<a id="valid" title="Permalink to this parameter" href="#valid">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``test``, ``valid_data``, ``valid_data_file``, ``test_data``, ``test_data_file``, ``valid_filenames``
 
    -  path(s) of validation/test data, LightGBM will output metrics for these data
 
@@ -123,7 +123,7 @@ Core Parameters
 
    -  **Note**: can be used only in CLI version
 
--  ``num_iterations`` :raw-html:`<a id="num_iterations" title="Permalink to this parameter" href="#num_iterations">&#x1F517;&#xFE0E;</a>`, default = ``100``, type = int, aliases: ``num_iteration``, ``num_tree``, ``num_trees``, ``num_round``, ``num_rounds``, ``num_boost_round``, ``n_estimators``, constraints: ``num_iterations >= 0``
+-  ``num_iterations`` :raw-html:`<a id="num_iterations" title="Permalink to this parameter" href="#num_iterations">&#x1F517;&#xFE0E;</a>`, default = ``100``, type = int, aliases: ``num_iteration``, ``n_iter``, ``num_tree``, ``num_trees``, ``num_round``, ``num_rounds``, ``num_boost_round``, ``n_estimators``, constraints: ``num_iterations >= 0``
 
    -  number of boosting iterations
 
@@ -131,17 +131,17 @@ Core Parameters
 
    -  **Note**: internally, LightGBM constructs ``num_class * num_iterations`` trees for multi-class classification problems
 
--  ``learning_rate`` :raw-html:`<a id="learning_rate" title="Permalink to this parameter" href="#learning_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.1``, type = double, aliases: ``shrinkage_rate``, constraints: ``learning_rate > 0.0``
+-  ``learning_rate`` :raw-html:`<a id="learning_rate" title="Permalink to this parameter" href="#learning_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.1``, type = double, aliases: ``shrinkage_rate``, ``eta``, constraints: ``learning_rate > 0.0``
 
    -  shrinkage rate
 
    -  in ``dart``, it also affects on normalization weights of dropped trees
 
--  ``num_leaves`` :raw-html:`<a id="num_leaves" title="Permalink to this parameter" href="#num_leaves">&#x1F517;&#xFE0E;</a>`, default = ``31``, type = int, aliases: ``num_leaf``, constraints: ``num_leaves > 1``
+-  ``num_leaves`` :raw-html:`<a id="num_leaves" title="Permalink to this parameter" href="#num_leaves">&#x1F517;&#xFE0E;</a>`, default = ``31``, type = int, aliases: ``num_leaf``, ``max_leaves``, ``max_leaf``, constraints: ``num_leaves > 1``
 
    -  max number of leaves in one tree
 
--  ``tree_learner`` :raw-html:`<a id="tree_learner" title="Permalink to this parameter" href="#tree_learner">&#x1F517;&#xFE0E;</a>`, default = ``serial``, type = enum, options: ``serial``, ``feature``, ``data``, ``voting``, aliases: ``tree``, ``tree_learner_type``
+-  ``tree_learner`` :raw-html:`<a id="tree_learner" title="Permalink to this parameter" href="#tree_learner">&#x1F517;&#xFE0E;</a>`, default = ``serial``, type = enum, options: ``serial``, ``feature``, ``data``, ``voting``, aliases: ``tree``, ``tree_type``, ``tree_learner_type``
 
    -  ``serial``, single machine tree learner
 
@@ -153,7 +153,7 @@ Core Parameters
 
    -  refer to `Parallel Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
 
--  ``num_threads`` :raw-html:`<a id="num_threads" title="Permalink to this parameter" href="#num_threads">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``num_thread``, ``nthread``, ``nthreads``
+-  ``num_threads`` :raw-html:`<a id="num_threads" title="Permalink to this parameter" href="#num_threads">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``num_thread``, ``nthread``, ``nthreads``, ``n_jobs``
 
    -  number of threads for LightGBM
 
@@ -177,7 +177,7 @@ Core Parameters
 
    -  **Note**: refer to `Installation Guide <./Installation-Guide.rst#build-gpu-version>`__ to build LightGBM with GPU support
 
--  ``seed`` :raw-html:`<a id="seed" title="Permalink to this parameter" href="#seed">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``random_seed``
+-  ``seed`` :raw-html:`<a id="seed" title="Permalink to this parameter" href="#seed">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``random_seed``, ``random_state``
 
    -  this seed is used to generate other seeds, e.g. ``data_random_seed``, ``feature_fraction_seed``
 
@@ -252,7 +252,7 @@ Learning Control Parameters
 
    -  L1 regularization
 
--  ``lambda_l2`` :raw-html:`<a id="lambda_l2" title="Permalink to this parameter" href="#lambda_l2">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``reg_lambda``, constraints: ``lambda_l2 >= 0.0``
+-  ``lambda_l2`` :raw-html:`<a id="lambda_l2" title="Permalink to this parameter" href="#lambda_l2">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``reg_lambda``, ``lambda``, constraints: ``lambda_l2 >= 0.0``
 
    -  L2 regularization
 
@@ -260,17 +260,17 @@ Learning Control Parameters
 
    -  the minimal gain to perform split
 
--  ``drop_rate`` :raw-html:`<a id="drop_rate" title="Permalink to this parameter" href="#drop_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.1``, type = double, constraints: ``0.0 <= drop_rate <= 1.0``
+-  ``drop_rate`` :raw-html:`<a id="drop_rate" title="Permalink to this parameter" href="#drop_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.1``, type = double, aliases: ``rate_drop``, constraints: ``0.0 <= drop_rate <= 1.0``
 
    -  used only in ``dart``
 
-   -  dropout rate
+   -  dropout rate: a fraction of previous trees to drop during the dropout
 
 -  ``max_drop`` :raw-html:`<a id="max_drop" title="Permalink to this parameter" href="#max_drop">&#x1F517;&#xFE0E;</a>`, default = ``50``, type = int
 
    -  used only in ``dart``
 
-   -  max number of dropped trees on one iteration
+   -  max number of dropped trees during one boosting iteration
 
    -  ``<=0`` means no limit
 
@@ -278,7 +278,7 @@ Learning Control Parameters
 
    -  used only in ``dart``
 
-   -  probability of skipping drop
+   -  probability of skipping the dropout procedure during a boosting iteration
 
 -  ``xgboost_dart_mode`` :raw-html:`<a id="xgboost_dart_mode" title="Permalink to this parameter" href="#xgboost_dart_mode">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
@@ -350,7 +350,7 @@ Learning Control Parameters
 
    -  you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
 
--  ``feature_contri`` :raw-html:`<a id="feature_contri" title="Permalink to this parameter" href="#feature_contri">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = multi-double, aliases: ``fc``, ``fp``, ``feature_penalty``
+-  ``feature_contri`` :raw-html:`<a id="feature_contri" title="Permalink to this parameter" href="#feature_contri">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = multi-double, aliases: ``feature_contrib``, ``fc``, ``fp``, ``feature_penalty``
 
    -  used to control feature's split gain, will use ``gain[i] = max(0, feature_contri[i]) * gain[i]`` to replace the split gain of i-th feature
 
@@ -397,13 +397,13 @@ IO Parameters
 
    -  set this to larger value if data is very sparse
 
--  ``histogram_pool_size`` :raw-html:`<a id="histogram_pool_size" title="Permalink to this parameter" href="#histogram_pool_size">&#x1F517;&#xFE0E;</a>`, default = ``-1.0``, type = double
+-  ``histogram_pool_size`` :raw-html:`<a id="histogram_pool_size" title="Permalink to this parameter" href="#histogram_pool_size">&#x1F517;&#xFE0E;</a>`, default = ``-1.0``, type = double, aliases: ``hist_pool_size``
 
    -  max cache size in MB for historical histogram
 
    -  ``< 0`` means no limit
 
--  ``data_random_seed`` :raw-html:`<a id="data_random_seed" title="Permalink to this parameter" href="#data_random_seed">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int
+-  ``data_random_seed`` :raw-html:`<a id="data_random_seed" title="Permalink to this parameter" href="#data_random_seed">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``data_seed``
 
    -  random seed for data partition in parallel learning (excluding the ``feature_parallel`` mode)
 
@@ -413,7 +413,7 @@ IO Parameters
 
    -  **Note**: can be used only in CLI version
 
--  ``snapshot_freq`` :raw-html:`<a id="snapshot_freq" title="Permalink to this parameter" href="#snapshot_freq">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int
+-  ``snapshot_freq`` :raw-html:`<a id="snapshot_freq" title="Permalink to this parameter" href="#snapshot_freq">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int, aliases: ``save_period``
 
    -  frequency of saving model file snapshot
 
@@ -431,7 +431,7 @@ IO Parameters
 
    -  **Note**: can be used only in CLI version
 
--  ``output_result`` :raw-html:`<a id="output_result" title="Permalink to this parameter" href="#output_result">&#x1F517;&#xFE0E;</a>`, default = ``LightGBM_predict_result.txt``, type = string, aliases: ``predict_result``, ``prediction_result``
+-  ``output_result`` :raw-html:`<a id="output_result" title="Permalink to this parameter" href="#output_result">&#x1F517;&#xFE0E;</a>`, default = ``LightGBM_predict_result.txt``, type = string, aliases: ``predict_result``, ``prediction_result``, ``predict_name``, ``prediction_name``, ``pred_name``, ``name_pred``
 
    -  filename of prediction result in ``prediction`` task
 
@@ -644,7 +644,7 @@ Objective Parameters
 
    -  used only in ``multi-class`` classification application
 
--  ``is_unbalance`` :raw-html:`<a id="is_unbalance" title="Permalink to this parameter" href="#is_unbalance">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``unbalanced_sets``
+-  ``is_unbalance`` :raw-html:`<a id="is_unbalance" title="Permalink to this parameter" href="#is_unbalance">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``unbalance``, ``unbalanced_sets``
 
    -  used only in ``binary`` application
 
@@ -729,7 +729,7 @@ Metric Parameters
 
    -  metric(s) to be evaluated on the evaluation sets **in addition** to what is provided in the training arguments
 
-      -  ``""`` (empty string or not specific) means that metric corresponding to specified ``objective`` will be used (this is possible only for pre-defined objective functions, otherwise no evaluation metric will be added)
+      -  ``""`` (empty string or not specified) means that metric corresponding to specified ``objective`` will be used (this is possible only for pre-defined objective functions, otherwise no evaluation metric will be added)
 
       -  ``"None"`` (string, **not** a ``None`` value) means that no metric will be registered, aliases: ``na``
 
