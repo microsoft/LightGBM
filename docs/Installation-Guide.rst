@@ -72,6 +72,8 @@ The exe and dll files will be in ``LightGBM/`` folder.
 
 **Note**: You may need to run the ``cmake -G "MinGW Makefiles" ..`` one more time if met ``sh.exe was found in your PATH`` error.
 
+It is recommended to use **Visual Studio** for its better multithreading efficiency in **Windows** for many-core systems (see `FAQ <./FAQ.rst#lightgbm>`__ Question 4 and Question 8).
+
 Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
 Linux
