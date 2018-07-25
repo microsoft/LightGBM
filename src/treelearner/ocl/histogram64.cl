@@ -375,9 +375,11 @@ R""()
     for (uint i = subglobal_tid; i < num_data; i += subglobal_size) {
         // prefetch the next iteration variables
         // we don't need bondary check because we have made the buffer larger
-        stat1_next = ordered_gradients[i + subglobal_size];
+        if (i + subglobal_size < num_data)
+            stat1_next = ordered_gradients[i + subglobal_size];
         #if CONST_HESSIAN == 0
-        stat2_next = ordered_hessians[i + subglobal_size];
+        if (i + subglobal_size < num_data)
+            stat2_next = ordered_hessians[i + subglobal_size];
         #endif
         #ifdef IGNORE_INDICES
         // we need to check to bounds here
@@ -385,7 +387,8 @@ R""()
         // start load next feature as early as possible
         feature4_next = feature_data[ind_next];
         #else
-        ind_next = data_indices[i + subglobal_size];
+        if (i + subglobal_size < num_data)
+            ind_next = data_indices[i + subglobal_size];
         #endif
         #if CONST_HESSIAN == 0
         // swap gradient and hessian for threads 4, 5, 6, 7
