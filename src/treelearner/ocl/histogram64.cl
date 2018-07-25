@@ -387,8 +387,7 @@ R""()
         // start load next feature as early as possible
         feature4_next = feature_data[ind_next];
         #else
-        if (i + subglobal_size < num_data)
-            ind_next = data_indices[i + subglobal_size];
+        ind_next = data_indices[i + subglobal_size];
         #endif
         #if CONST_HESSIAN == 0
         // swap gradient and hessian for threads 4, 5, 6, 7
