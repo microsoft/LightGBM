@@ -37,7 +37,7 @@ Build from Sources
 
 For **Linux** and **macOS** users, installation from sources requires installed `CMake`_.
 
-For **macOS** users, you can perform installation either with **Apple Clang** or **gcc**. In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#apple-clang>`__) first and **CMake** version 3.12 or higher is required. In case you prefer **gcc**, you need to install it (details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc>`__) and specify compilers by running ``export CXX=g++-7 CC=gcc-7`` (replace 7 with version of **gcc** installed on your machine) first.
+For **macOS** users, you can perform installation either with **Apple Clang** or **gcc**. In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#apple-clang>`__) first and **CMake** version 3.12 or higher is required. In case you prefer **gcc**, you need to install it (details for installation can be found in `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc>`__) and specify compilers by running ``export CXX=g++-7 CC=gcc-7`` (replace "7" with version of **gcc** installed on your machine) first.
 
 For **Windows** users, **Visual Studio** (or `MS Build <https://visualstudio.microsoft.com/downloads/>`_) is needed. If you get any errors during installation, you may need to install `CMake`_ (version 3.8 or higher).
 
@@ -118,7 +118,7 @@ For **Windows** users, if you get any errors during installation and there is th
 
     git clone --recursive https://github.com/Microsoft/LightGBM.git
     cd LightGBM/python-package
-    # export CXX=g++-7 CC=gcc-7  # macOS users, if you decided to compile with gcc, don't forget to specify compilers (replace 7 with version of gcc installed on your machine)
+    # export CXX=g++-7 CC=gcc-7  # macOS users, if you decided to compile with gcc, don't forget to specify compilers (replace "7" with version of gcc installed on your machine)
     python setup.py install
 
 Note: ``sudo`` (or administrator rights in **Windows**) may be needed to perform the command.
