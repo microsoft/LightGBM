@@ -165,18 +165,6 @@ private:
   boost::compute::context ctx_;
   /*! \brief GPU command queue object */
   boost::compute::command_queue queue_;
-  /*! \brief GPU kernel for 256 bins */
-  const char *kernel256_src_ = 
-  #include "ocl/histogram256.cl"
-  ;
-  /*! \brief GPU kernel for 64 bins */
-  const char *kernel64_src_ = 
-  #include "ocl/histogram64.cl"
-  ;
-  /*! \brief GPU kernel for 16 bins */
-  const char *kernel16_src_ = 
-  #include "ocl/histogram16.cl"
-  ;
   /*! \brief Currently used kernel source */
   std::string kernel_source_;
   /*! \brief Currently used kernel name */
