@@ -144,7 +144,7 @@ def loglikelood(preds, train_data):
 
 
 # self-defined eval metric
-# f(preds: array, train_data: Dataset) -> name: string, value: array, is_higher_better: bool
+# f(preds: array, train_data: Dataset) -> name: string, eval_result: float, is_higher_better: bool
 # binary error
 def binary_error(preds, train_data):
     labels = train_data.get_label()

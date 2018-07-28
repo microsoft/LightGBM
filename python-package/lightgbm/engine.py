@@ -45,7 +45,7 @@ def train(params, train_set, num_boost_round=100,
         If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         Note: should return (eval_name, eval_result, is_higher_better) or list of such tuples.
         To ignore the default metric in params, set it to the string ``"None"``
-    init_model : string or None, optional (default=None)
+    init_model : string, Booster or None, optional (default=None)
         Filename of LightGBM model or Booster instance used for continue training.
     feature_name : list of strings or 'auto', optional (default="auto")
         Feature names.
@@ -98,7 +98,8 @@ def train(params, train_set, num_boost_round=100,
         The trained Booster model.
     """
     # create predictor first
-    for alias in ["num_boost_round", "num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds", "n_estimators"]:
+    for alias in ["num_iterations", "num_iteration", "n_iter", "num_tree", "num_trees",
+                  "num_round", "num_rounds", "num_boost_round", "n_estimators"]:
         if alias in params:
             num_boost_round = int(params.pop(alias))
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
@@ -268,7 +269,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
                 raise LightGBMError('Scikit-learn is required for lambdarank cv.')
             # lambdarank task, split according to groups
             group_info = full_data.get_group().astype(int)
-            flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
+            flatted_group = np.repeat(range_(len(group_info)), repeats=group_info)
             group_kfold = _LGBMGroupKFold(n_splits=nfold)
             folds = group_kfold.split(X=np.zeros(num_data), groups=flatted_group)
         elif stratified:
@@ -352,7 +353,7 @@ def cv(params, train_set, num_boost_round=100,
         If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         Note: should return (eval_name, eval_result, is_higher_better) or list of such tuples.
         To ignore the default metric in params, set it to the string ``"None"``
-    init_model : string or None, optional (default=None)
+    init_model : string, Booster or None, optional (default=None)
         Filename of LightGBM model or Booster instance used for continue training.
     feature_name : list of strings or 'auto', optional (default="auto")
         Feature names.
@@ -396,7 +397,8 @@ def cv(params, train_set, num_boost_round=100,
     if not isinstance(train_set, Dataset):
         raise TypeError("Traninig only accepts Dataset object")
 
-    for alias in ["num_boost_round", "num_iterations", "num_iteration", "num_tree", "num_trees", "num_round", "num_rounds", "n_estimators"]:
+    for alias in ["num_iterations", "num_iteration", "n_iter", "num_tree", "num_trees",
+                  "num_round", "num_rounds", "num_boost_round", "n_estimators"]:
         if alias in params:
             warnings.warn("Found `{}` in params. Will use it instead of argument".format(alias))
             num_boost_round = params.pop(alias)

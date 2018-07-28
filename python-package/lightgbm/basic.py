@@ -660,12 +660,8 @@ class Dataset(object):
                 warnings.warn('{0} keyword has been found in `params` and will be ignored. '
                               'Please use {0} argument of the Dataset constructor to pass this parameter.'.format(key))
         self.predictor = predictor
-        if "verbosity" in params:
-            params.setdefault("verbose", params.pop("verbosity"))
         if silent:
             params["verbose"] = 0
-        elif "verbose" not in params:
-            params["verbose"] = 1
         # get categorical features
         if categorical_feature is not None:
             categorical_indices = set()
@@ -1097,7 +1093,7 @@ class Dataset(object):
 
     def _set_predictor(self, predictor):
         """
-        Set predictor for continued training, not recommand for user to call this function.
+        Set predictor for continued training, not recommended for user to call this function.
         Please set init_model in engine.train or engine.cv
         """
         if predictor is self._predictor:
@@ -1340,12 +1336,8 @@ class Booster(object):
         self.best_iteration = -1
         self.best_score = {}
         params = {} if params is None else params
-        if "verbosity" in params:
-            params.setdefault("verbose", params.pop("verbosity"))
         if silent:
             params["verbose"] = 0
-        elif "verbose" not in params:
-            params["verbose"] = 1
         if train_set is not None:
             # Training task
             if not isinstance(train_set, Dataset):

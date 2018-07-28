@@ -10,7 +10,7 @@ from io import BytesIO
 import numpy as np
 
 from .basic import Booster
-from .compat import MATPLOTLIB_INSTALLED, GRAPHVIZ_INSTALLED, string_type
+from .compat import MATPLOTLIB_INSTALLED, GRAPHVIZ_INSTALLED, range_, string_type
 from .sklearn import LGBMModel
 
 
@@ -216,7 +216,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
             raise KeyError('No given metric in eval results.')
         results = metrics_for_one[metric]
     num_iteration, max_result, min_result = len(results), max(results), min(results)
-    x_ = range(num_iteration)
+    x_ = range_(num_iteration)
     ax.plot(x_, results, label=name)
 
     for name in dataset_names:
