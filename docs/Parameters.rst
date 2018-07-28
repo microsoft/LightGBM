@@ -731,7 +731,7 @@ Metric Parameters
 
       -  ``""`` (empty string or not specified) means that metric corresponding to specified ``objective`` will be used (this is possible only for pre-defined objective functions, otherwise no evaluation metric will be added)
 
-      -  ``"None"`` (string, **not** a ``None`` value) means that no metric will be registered, aliases: ``na``
+      -  ``"None"`` (string, **not** a ``None`` value) means that no metric will be registered, aliases: ``na``, ``null``, ``custom``
 
       -  ``l1``, absolute loss, aliases: ``mean_absolute_error``, ``mae``, ``regression_l1``
 
