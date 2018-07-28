@@ -317,7 +317,7 @@ namespace LightGBM {
         }
       }
       num_bin_ = 0;
-      int rest_cnt = num_sample_values - na_cnt;
+      int rest_cnt = total_sample_cnt - na_cnt;
       if (rest_cnt > 0) {
         // sort by counts
         Common::SortForPair<int, int>(counts_int, distinct_values_int, 0, true);
