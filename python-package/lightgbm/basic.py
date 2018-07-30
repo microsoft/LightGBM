@@ -1961,7 +1961,7 @@ class Booster(object):
         self.__get_eval_info()
         ret = []
         if self.__num_inner_eval > 0:
-            result = np.array([0.0 for _ in range_(self.__num_inner_eval)], dtype=np.float64)
+            result = np.zeros(self.__num_inner_eval, dtype=np.float64)
             tmp_out_len = ctypes.c_int(0)
             _safe_call(_LIB.LGBM_BoosterGetEval(
                 self.handle,
@@ -1997,8 +1997,7 @@ class Booster(object):
                 n_preds = self.train_set.num_data() * self.__num_class
             else:
                 n_preds = self.valid_sets[data_idx - 1].num_data() * self.__num_class
-            self.__inner_predict_buffer[data_idx] = \
-                np.array([0.0 for _ in range_(n_preds)], dtype=np.float64, copy=False)
+            self.__inner_predict_buffer[data_idx] = np.zeros(n_preds, dtype=np.float64)
         # avoid to predict many time in one iteration
         if not self.__is_predicted_cur_iter[data_idx]:
             tmp_out_len = ctypes.c_int64(0)
