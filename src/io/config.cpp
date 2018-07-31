@@ -216,12 +216,12 @@ void Config::CheckParamConflict() {
     }
   }
   for (std::string metric_type : metric) {
-    bool metric_custom = metric_type == std::string("none") || metric_type == std::string("null") 
+    bool metric_custom_or_none = metric_type == std::string("none") || metric_type == std::string("null") 
                          || metric_type == std::string("custom") || metric_type == std::string("na");
-    bool metric_type_multiclass = (CheckMultiClassObjective(metric_type) 
+    bool metric_type_multiclass = (CheckMultiClassObjective(metric_type)
                                    || metric_type == std::string("multi_logloss")
                                    || metric_type == std::string("multi_error")
-                                   || metric_custom);
+                                   || (metric_custom_or_none && num_class_check > 1));
     if ((objective_type_multiclass && !metric_type_multiclass)
       || (!objective_type_multiclass && metric_type_multiclass)) {
       Log::Fatal("Multiclass objective and metrics don't match");
