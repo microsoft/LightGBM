@@ -98,17 +98,28 @@ LightGBM
 
 --------------
 
--  **Question 8**: CPU usage is low (like 10%) in Windows when using LightGBM on very large datasets with many core systems.
+-  **Question 8**: CPU usage is low (like 10%) in Windows when using LightGBM on very large datasets with many-core systems.
 
 -  **Solution 8**: Please use `Visual Studio <https://visualstudio.microsoft.com/downloads/>`__
    as it may be `10x faster than MinGW <https://github.com/Microsoft/LightGBM/issues/749>`__ especially for very large trees.
 
 --------------
 
--  **Question 9**: When I'm trying to specify a categorical column with the ``categorical_feature`` parameter, I get a segmentation fault.
+-  **Question 9**: When I'm trying to specify a categorical column with the ``categorical_feature`` parameter,
+   I get the following sequence of errors, but there are no negative values in the column.
+
+   ::
+
+       [LightGBM] [Warning] Met negative value in categorical features, will convert it to NaN
+       [LightGBM] [Fatal] Cannot construct Dataset since there are no useful features.
+       It should be at least two unique rows.
+       If the num_row (num_data) is small, you can set min_data=1 and min_data_in_bin=1 to fix this.
+       Otherwise, please make sure you are using the right dataset
 
 -  **Solution 9**: The column you're trying to pass via ``categorical_feature`` likely contains very large values.
-   Categorical features in LightGBM are limited by int32 range, so you cannot pass values that are greater than ``Int32.MaxValue`` (2147483647) as categorical features (see `Microsoft/LightGBM#1359 <https://github.com/Microsoft/LightGBM/issues/1359>`__). You should convert them to integers ranging from zero to the number of categories first.
+   Categorical features in LightGBM are limited by int32 range,
+   so you cannot pass values that are greater than ``Int32.MaxValue`` (2147483647) as categorical features (see `Microsoft/LightGBM#1359 <https://github.com/Microsoft/LightGBM/issues/1359>`__).
+   You should convert them to integers ranging from zero to the number of categories first.
 
 --------------
 

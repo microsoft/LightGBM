@@ -4,6 +4,7 @@
 from __future__ import absolute_import
 
 import distutils
+import io
 import logging
 import os
 import shutil
@@ -242,8 +243,8 @@ if __name__ == "__main__":
     if os.path.isfile(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt')):
         distutils.file_util.copy_file(os.path.join(CURRENT_DIR, os.path.pardir, 'VERSION.txt'),
                                       os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'))
-    version = open(os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt')).read().strip()
-    readme = open(os.path.join(CURRENT_DIR, 'README.rst')).read()
+    version = io.open(os.path.join(CURRENT_DIR, 'lightgbm', 'VERSION.txt'), encoding='utf-8').read().strip()
+    readme = io.open(os.path.join(CURRENT_DIR, 'README.rst'), encoding='utf-8').read()
 
     sys.path.insert(0, CURRENT_DIR)
 

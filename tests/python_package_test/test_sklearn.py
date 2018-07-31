@@ -179,17 +179,6 @@ class TestSklearn(unittest.TestCase):
         importance_gain_top1 = sorted(importances_gain, reverse=True)[0]
         self.assertNotEqual(importance_split_top1, importance_gain_top1)
 
-    def test_sklearn_backward_compatibility(self):
-        iris = load_iris()
-        X_train, X_test, y_train, y_test = train_test_split(iris.data, iris.target, test_size=0.2, random_state=42)
-
-        # Tests that `seed` is the same as `random_state`
-        clf_1 = lgb.sklearn.LGBMClassifier(seed=42, subsample=0.6, colsample_bytree=0.8)
-        clf_2 = lgb.sklearn.LGBMClassifier(random_state=42, subsample=0.6, colsample_bytree=0.8)
-        y_pred_1 = clf_1.fit(X_train, y_train).predict_proba(X_test)
-        y_pred_2 = clf_2.fit(X_train, y_train).predict_proba(X_test)
-        np.testing.assert_allclose(y_pred_1, y_pred_2)
-
     # sklearn <0.19 cannot accept instance, but many tests could be passed only with min_data=1 and min_data_in_bin=1
     @unittest.skipIf(not sklearn_at_least_019, 'scikit-learn version is less than 0.19')
     def test_sklearn_integration(self):
