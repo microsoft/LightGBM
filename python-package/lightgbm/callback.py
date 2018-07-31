@@ -127,7 +127,9 @@ def reset_parameter(**kwargs):
         """internal function"""
         new_parameters = {}
         for key, value in kwargs.items():
-            if key in ['num_class', 'boosting_type', 'metric']:
+            if key in ['num_class', 'num_classes',
+                       'boosting', 'boost', 'boosting_type',
+                       'metric', 'metrics', 'metric_types']:
                 raise RuntimeError("cannot reset {} during training".format(repr(key)))
             if isinstance(value, list):
                 if len(value) != env.end_iteration - env.begin_iteration:

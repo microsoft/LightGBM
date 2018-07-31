@@ -1370,19 +1370,21 @@ class Booster(object):
             self.__get_eval_info()
             self.pandas_categorical = train_set.pandas_categorical
             # set network if necessary
-            if "machines" in params:
-                machines = params["machines"]
-                if isinstance(machines, string_type):
-                    num_machines = len(machines.split(','))
-                elif isinstance(machines, (list, set)):
-                    num_machines = len(machines)
-                    machines = ','.join(machines)
-                else:
-                    raise ValueError("Invalid machines in params.")
-                self.set_network(machines,
-                                 local_listen_port=params.get("local_listen_port", 12400),
-                                 listen_time_out=params.get("listen_time_out", 120),
-                                 num_machines=params.get("num_machines", num_machines))
+            for alias in ["machines", "workers", "nodes"]:
+                if alias in params:
+                    machines = params[alias]
+                    if isinstance(machines, string_type):
+                        num_machines = len(machines.split(','))
+                    elif isinstance(machines, (list, set)):
+                        num_machines = len(machines)
+                        machines = ','.join(machines)
+                    else:
+                        raise ValueError("Invalid machines in params.")
+                    self.set_network(machines,
+                                     local_listen_port=params.get("local_listen_port", 12400),
+                                     listen_time_out=params.get("listen_time_out", 120),
+                                     num_machines=params.get("num_machines", num_machines))
+                    break
         elif model_file is not None:
             # Prediction task
             out_num_iterations = ctypes.c_int(0)
@@ -1521,7 +1523,7 @@ class Booster(object):
         params : dict
             New parameters for Booster.
         """
-        if 'metric' in params:
+        if any(metric_alias in params for metric_alias in ('metric', 'metrics', 'metric_types')):
             self.__need_reload_eval_info = True
         params_str = param_dict_to_str(params)
         if params_str:
