@@ -226,10 +226,10 @@ void Dataset::Construct(
     }
   }
   if (used_features.empty()) {
-    Log::Fatal("Cannot construct Dataset since there are not useful features.\n"
+    Log::Fatal("Cannot construct Dataset since there are no useful features.\n"
                "It should be at least two unique rows.\n"
                "If the num_row (num_data) is small, you can set min_data=1 and min_data_in_bin=1 to fix this.\n"
-               "Otherwise please make sure you are using the right dataset");
+               "Otherwise, please make sure you are using the right dataset");
   }
   auto features_in_group = NoGroup(used_features);
 

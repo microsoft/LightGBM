@@ -110,7 +110,7 @@ public:
   // descl2 = ``mape``, `MAPE loss <https://en.wikipedia.org/wiki/Mean_absolute_percentage_error>`__, aliases: ``mean_absolute_percentage_error``
   // descl2 = ``gamma``, Gamma regression with log-link. It might be useful, e.g., for modeling insurance claims severity, or for any target that might be `gamma-distributed <https://en.wikipedia.org/wiki/Gamma_distribution#Applications>`__
   // descl2 = ``tweedie``, Tweedie regression with log-link. It might be useful, e.g., for modeling total loss in insurance, or for any target that might be `tweedie-distributed <https://en.wikipedia.org/wiki/Tweedie_distribution#Applications>`__
-  // desc = ``binary``, binary `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__ classification (or logistic regression). Requires labels in {0, 1}; see ``xentropy`` for general probability labels in [0, 1]
+  // desc = ``binary``, binary `log loss <https://en.wikipedia.org/wiki/Cross_entropy>`__ classification (or logistic regression). Requires labels in {0, 1}; see ``cross-entropy`` application for general probability labels in [0, 1]
   // desc = multi-class classification application
   // descl2 = ``multiclass``, `softmax <https://en.wikipedia.org/wiki/Softmax_function>`__ objective function, aliases: ``softmax``
   // descl2 = ``multiclassova``, `One-vs-All <https://en.wikipedia.org/wiki/Multiclass_classification#One-vs.-rest>`__ binary objective function, aliases: ``multiclass_ova``, ``ova``, ``ovr``
@@ -135,33 +135,33 @@ public:
   // desc = ``goss``, Gradient-based One-Side Sampling
   std::string boosting = "gbdt";
 
-  // alias = train, train_data, data_filename
+  // alias = train, train_data, train_data_file, data_filename
   // desc = path of training data, LightGBM will train from this data
   // desc = **Note**: can be used only in CLI version
   std::string data = "";
 
-  // alias = test, valid_data, valid_data_file, test_data, valid_filenames
+  // alias = test, valid_data, valid_data_file, test_data, test_data_file, valid_filenames
   // default = ""
   // desc = path(s) of validation/test data, LightGBM will output metrics for these data
   // desc = support multiple validation data, separated by ``,``
   // desc = **Note**: can be used only in CLI version
   std::vector<std::string> valid;
 
-  // alias = num_iteration, num_tree, num_trees, num_round, num_rounds, num_boost_round, n_estimators
+  // alias = num_iteration, n_iter, num_tree, num_trees, num_round, num_rounds, num_boost_round, n_estimators
   // check = >=0
   // desc = number of boosting iterations
   // desc = **Note**: for R-package, **this parameter is ignored**, use ``nrounds`` input arguments of ``train`` and ``cv`` methods instead
   // desc = **Note**: internally, LightGBM constructs ``num_class * num_iterations`` trees for multi-class classification problems
   int num_iterations = 100;
 
-  // alias = shrinkage_rate
+  // alias = shrinkage_rate, eta
   // check = >0.0
   // desc = shrinkage rate
   // desc = in ``dart``, it also affects on normalization weights of dropped trees
   double learning_rate = 0.1;
 
   // default = 31
-  // alias = num_leaf
+  // alias = num_leaf, max_leaves, max_leaf
   // check = >1
   // desc = max number of leaves in one tree
   int num_leaves = kDefaultNumLeaves;
@@ -169,7 +169,7 @@ public:
   // [doc-only]
   // type = enum
   // options = serial, feature, data, voting
-  // alias = tree, tree_learner_type
+  // alias = tree, tree_type, tree_learner_type
   // desc = ``serial``, single machine tree learner
   // desc = ``feature``, feature parallel tree learner, aliases: ``feature_parallel``
   // desc = ``data``, data parallel tree learner, aliases: ``data_parallel``
@@ -177,7 +177,7 @@ public:
   // desc = refer to `Parallel Learning Guide <./Parallel-Learning-Guide.rst>`__ to get more details
   std::string tree_learner = "serial";
 
-  // alias = num_thread, nthread, nthreads
+  // alias = num_thread, nthread, nthreads, n_jobs
   // desc = number of threads for LightGBM
   // desc = ``0`` means default number of threads in OpenMP
   // desc = for the best speed, set this to the number of **real CPU cores**, not the number of threads (most CPUs use `hyper-threading <https://en.wikipedia.org/wiki/Hyper-threading>`__ to generate 2 threads per CPU core)
@@ -197,7 +197,7 @@ public:
   std::string device_type = "cpu";
 
   // [doc-only]
-  // alias = random_seed
+  // alias = random_seed, random_state
   // desc = this seed is used to generate other seeds, e.g. ``data_random_seed``, ``feature_fraction_seed``
   // desc = will be overridden, if you set other seeds
   int seed = 0;
@@ -266,7 +266,7 @@ public:
   // desc = L1 regularization
   double lambda_l1 = 0.0;
 
-  // alias = reg_lambda
+  // alias = reg_lambda, lambda
   // check = >=0.0
   // desc = L2 regularization
   double lambda_l2 = 0.0;
@@ -276,21 +276,22 @@ public:
   // desc = the minimal gain to perform split
   double min_gain_to_split = 0.0;
 
+  // alias = rate_drop
   // check = >=0.0
   // check = <=1.0
   // desc = used only in ``dart``
-  // desc = dropout rate
+  // desc = dropout rate: a fraction of previous trees to drop during the dropout
   double drop_rate = 0.1;
 
   // desc = used only in ``dart``
-  // desc = max number of dropped trees on one iteration
+  // desc = max number of dropped trees during one boosting iteration
   // desc = ``<=0`` means no limit
   int max_drop = 50;
 
   // check = >=0.0
   // check = <=1.0
   // desc = used only in ``dart``
-  // desc = probability of skipping drop
+  // desc = probability of skipping the dropout procedure during a boosting iteration
   double skip_drop = 0.5;
 
   // desc = used only in ``dart``
@@ -355,7 +356,7 @@ public:
   std::vector<int8_t> monotone_constraints;
 
   // type = multi-double
-  // alias = fc, fp, feature_penalty
+  // alias = feature_contrib, fc, fp, feature_penalty
   // default = None
   // desc = used to control feature's split gain, will use ``gain[i] = max(0, feature_contri[i]) * gain[i]`` to replace the split gain of i-th feature
   // desc = you need to specify all features in order
@@ -395,10 +396,12 @@ public:
   // desc = set this to larger value if data is very sparse
   int bin_construct_sample_cnt = 200000;
 
+  // alias = hist_pool_size
   // desc = max cache size in MB for historical histogram
   // desc = ``< 0`` means no limit
   double histogram_pool_size = -1.0;
 
+  // alias = data_seed
   // desc = random seed for data partition in parallel learning (excluding the ``feature_parallel`` mode)
   int data_random_seed = 1;
 
@@ -407,6 +410,7 @@ public:
   // desc = **Note**: can be used only in CLI version
   std::string output_model = "LightGBM_model.txt";
 
+  // alias = save_period
   // desc = frequency of saving model file snapshot
   // desc = set this to positive value to enable this function. For example, the model file will be snapshotted at each iteration if ``snapshot_freq=1``
   // desc = **Note**: can be used only in CLI version
@@ -419,7 +423,7 @@ public:
   // desc = **Note**: can be used only in CLI version
   std::string input_model = "";
 
-  // alias = predict_result, prediction_result
+  // alias = predict_result, prediction_result, predict_name, prediction_name, pred_name, name_pred
   // desc = filename of prediction result in ``prediction`` task
   // desc = **Note**: can be used only in CLI version
   std::string output_result = "LightGBM_predict_result.txt";
@@ -588,7 +592,7 @@ public:
   // desc = used only in ``multi-class`` classification application
   int num_class = 1;
 
-  // alias = unbalanced_sets
+  // alias = unbalance, unbalanced_sets
   // desc = used only in ``binary`` application
   // desc = set this to ``true`` if training data are unbalance
   // desc = **Note**: this parameter cannot be used at the same time with ``scale_pos_weight``, choose only **one** of them
@@ -658,8 +662,8 @@ public:
   // default = ""
   // type = multi-enum
   // desc = metric(s) to be evaluated on the evaluation sets **in addition** to what is provided in the training arguments
-  // descl2 = ``""`` (empty string or not specific) means that metric corresponding to specified ``objective`` will be used (this is possible only for pre-defined objective functions, otherwise no evaluation metric will be added)
-  // descl2 = ``"None"`` (string, **not** a ``None`` value) means that no metric will be registered, aliases: ``na``
+  // descl2 = ``""`` (empty string or not specified) means that metric corresponding to specified ``objective`` will be used (this is possible only for pre-defined objective functions, otherwise no evaluation metric will be added)
+  // descl2 = ``"None"`` (string, **not** a ``None`` value) means that no metric will be registered, aliases: ``na``, ``null``, ``custom``
   // descl2 = ``l1``, absolute loss, aliases: ``mean_absolute_error``, ``mae``, ``regression_l1``
   // descl2 = ``l2``, square loss, aliases: ``mean_squared_error``, ``mse``, ``regression_l2``, ``regression``
   // descl2 = ``l2_root``, root square loss, aliases: ``root_mean_squared_error``, ``rmse``

@@ -660,12 +660,8 @@ class Dataset(object):
                 warnings.warn('{0} keyword has been found in `params` and will be ignored. '
                               'Please use {0} argument of the Dataset constructor to pass this parameter.'.format(key))
         self.predictor = predictor
-        if "verbosity" in params:
-            params.setdefault("verbose", params.pop("verbosity"))
         if silent:
             params["verbose"] = 0
-        elif "verbose" not in params:
-            params["verbose"] = 1
         # get categorical features
         if categorical_feature is not None:
             categorical_indices = set()
@@ -1340,12 +1336,8 @@ class Booster(object):
         self.best_iteration = -1
         self.best_score = {}
         params = {} if params is None else params
-        if "verbosity" in params:
-            params.setdefault("verbose", params.pop("verbosity"))
         if silent:
             params["verbose"] = 0
-        elif "verbose" not in params:
-            params["verbose"] = 1
         if train_set is not None:
             # Training task
             if not isinstance(train_set, Dataset):
@@ -1378,19 +1370,21 @@ class Booster(object):
             self.__get_eval_info()
             self.pandas_categorical = train_set.pandas_categorical
             # set network if necessary
-            if "machines" in params:
-                machines = params["machines"]
-                if isinstance(machines, string_type):
-                    num_machines = len(machines.split(','))
-                elif isinstance(machines, (list, set)):
-                    num_machines = len(machines)
-                    machines = ','.join(machines)
-                else:
-                    raise ValueError("Invalid machines in params.")
-                self.set_network(machines,
-                                 local_listen_port=params.get("local_listen_port", 12400),
-                                 listen_time_out=params.get("listen_time_out", 120),
-                                 num_machines=params.get("num_machines", num_machines))
+            for alias in ["machines", "workers", "nodes"]:
+                if alias in params:
+                    machines = params[alias]
+                    if isinstance(machines, string_type):
+                        num_machines = len(machines.split(','))
+                    elif isinstance(machines, (list, set)):
+                        num_machines = len(machines)
+                        machines = ','.join(machines)
+                    else:
+                        raise ValueError("Invalid machines in params.")
+                    self.set_network(machines,
+                                     local_listen_port=params.get("local_listen_port", 12400),
+                                     listen_time_out=params.get("listen_time_out", 120),
+                                     num_machines=params.get("num_machines", num_machines))
+                    break
         elif model_file is not None:
             # Prediction task
             out_num_iterations = ctypes.c_int(0)
@@ -1529,7 +1523,7 @@ class Booster(object):
         params : dict
             New parameters for Booster.
         """
-        if 'metric' in params:
+        if any(metric_alias in params for metric_alias in ('metric', 'metrics', 'metric_types')):
             self.__need_reload_eval_info = True
         params_str = param_dict_to_str(params)
         if params_str:
@@ -1969,7 +1963,7 @@ class Booster(object):
         self.__get_eval_info()
         ret = []
         if self.__num_inner_eval > 0:
-            result = np.array([0.0 for _ in range_(self.__num_inner_eval)], dtype=np.float64)
+            result = np.zeros(self.__num_inner_eval, dtype=np.float64)
             tmp_out_len = ctypes.c_int(0)
             _safe_call(_LIB.LGBM_BoosterGetEval(
                 self.handle,
@@ -2005,8 +1999,7 @@ class Booster(object):
                 n_preds = self.train_set.num_data() * self.__num_class
             else:
                 n_preds = self.valid_sets[data_idx - 1].num_data() * self.__num_class
-            self.__inner_predict_buffer[data_idx] = \
-                np.array([0.0 for _ in range_(n_preds)], dtype=np.float64, copy=False)
+            self.__inner_predict_buffer[data_idx] = np.zeros(n_preds, dtype=np.float64)
         # avoid to predict many time in one iteration
         if not self.__is_predicted_cur_iter[data_idx]:
             tmp_out_len = ctypes.c_int64(0)

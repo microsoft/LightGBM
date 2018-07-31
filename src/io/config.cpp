@@ -202,7 +202,8 @@ bool CheckMultiClassObjective(const std::string& objective) {
 void Config::CheckParamConflict() {
   // check if objective, metric, and num_class match
   int num_class_check = num_class;
-  bool objective_custom = objective == std::string("none") || objective == std::string("null") || objective == std::string("custom");
+  bool objective_custom = objective == std::string("none") || objective == std::string("null") 
+                                       || objective == std::string("custom") || objective == std::string("na");
   bool objective_type_multiclass = CheckMultiClassObjective(objective) || (objective_custom && num_class_check > 1);
   
   if (objective_type_multiclass) {
@@ -215,12 +216,15 @@ void Config::CheckParamConflict() {
     }
   }
   for (std::string metric_type : metric) {
-    bool metric_type_multiclass = (CheckMultiClassObjective(metric_type) 
-                                    || metric_type == std::string("multi_logloss")
-                                    || metric_type == std::string("multi_error"));
+    bool metric_custom_or_none = metric_type == std::string("none") || metric_type == std::string("null") 
+                                 || metric_type == std::string("custom") || metric_type == std::string("na");
+    bool metric_type_multiclass = (CheckMultiClassObjective(metric_type)
+                                   || metric_type == std::string("multi_logloss")
+                                   || metric_type == std::string("multi_error")
+                                   || (metric_custom_or_none && num_class_check > 1));
     if ((objective_type_multiclass && !metric_type_multiclass)
-      || (!objective_type_multiclass && metric_type_multiclass)) {
-      Log::Fatal("Multiclass qbjective and metrics don't match");
+        || (!objective_type_multiclass && metric_type_multiclass)) {
+      Log::Fatal("Multiclass objective and metrics don't match");
     }
   }
 
