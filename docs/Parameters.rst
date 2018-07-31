@@ -127,8 +127,6 @@ Core Parameters
 
    -  number of boosting iterations
 
-   -  **Note**: for R-package, **this parameter is ignored**, use ``nrounds`` input arguments of ``train`` and ``cv`` methods instead
-
    -  **Note**: internally, LightGBM constructs ``num_class * num_iterations`` trees for multi-class classification problems
 
 -  ``learning_rate`` :raw-html:`<a id="learning_rate" title="Permalink to this parameter" href="#learning_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.1``, type = double, aliases: ``shrinkage_rate``, ``eta``, constraints: ``learning_rate > 0.0``

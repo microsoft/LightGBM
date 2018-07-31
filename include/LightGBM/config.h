@@ -150,7 +150,6 @@ public:
   // alias = num_iteration, n_iter, num_tree, num_trees, num_round, num_rounds, num_boost_round, n_estimators
   // check = >=0
   // desc = number of boosting iterations
-  // desc = **Note**: for R-package, **this parameter is ignored**, use ``nrounds`` input arguments of ``train`` and ``cv`` methods instead
   // desc = **Note**: internally, LightGBM constructs ``num_class * num_iterations`` trees for multi-class classification problems
   int num_iterations = 100;
 
