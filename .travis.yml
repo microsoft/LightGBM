@@ -8,6 +8,9 @@ git:
 compiler:
   - gcc
 
+osx_image:
+  - xcode9.2
+
 os:
   - linux
   - osx
