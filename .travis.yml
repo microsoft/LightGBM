@@ -8,10 +8,12 @@ git:
 compiler:
   - gcc
 
+osx_image:
+  - xcode9.3
+
 os:
   - linux
   - osx
-    osx_image: xcode9.3
 
 env:
   global:
