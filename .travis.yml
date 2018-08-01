@@ -9,7 +9,7 @@ compiler:
   - gcc
 
 osx_image:
-  - xcode9.3
+  - xcode9.2
 
 os:
   - linux
