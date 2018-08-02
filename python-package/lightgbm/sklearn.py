@@ -678,12 +678,12 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
             if self._objective not in ova_aliases and not callable(self._objective):
                 self._objective = "multiclass"
             if eval_metric == 'logloss' or eval_metric == 'binary_logloss':
-                eval_metric = "multi_logloss"
+                eval_metric = "multiclass"
             elif eval_metric == 'error' or eval_metric == 'binary_error':
                 eval_metric = "multi_error"
         else:
             if eval_metric == 'logloss' or eval_metric == 'multi_logloss':
-                eval_metric = 'binary_logloss'
+                eval_metric = 'binary'
             elif eval_metric == 'error' or eval_metric == 'multi_error':
                 eval_metric = 'binary_error'
 
