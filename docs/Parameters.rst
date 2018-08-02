@@ -727,7 +727,7 @@ Metric Parameters
 
 -  ``metric`` :raw-html:`<a id="metric" title="Permalink to this parameter" href="#metric">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = multi-enum, aliases: ``metrics``, ``metric_types``
 
-   -  metric(s) to be evaluated on the evaluation sets **in addition** to what is provided in the training arguments
+   -  metric(s) to be evaluated on the evaluation set(s)
 
       -  ``""`` (empty string or not specified) means that metric corresponding to specified ``objective`` will be used (this is possible only for pre-defined objective functions, otherwise no evaluation metric will be added)
 

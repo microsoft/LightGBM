@@ -11,7 +11,7 @@ from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckConsistentLength,
                      _LGBMCheckClassificationTargets, _LGBMComputeSampleWeight,
-                     argc_, range_, DataFrame, LGBMDeprecationWarning)
+                     argc_, range_, string_type, DataFrame, LGBMDeprecationWarning)
 from .engine import train
 
 
@@ -316,7 +316,7 @@ class LGBMModel(_LGBMModelBase):
         group : array-like or None, optional (default=None)
             Group data of training data.
         eval_set : list or None, optional (default=None)
-            A list of (X, y) tuple pairs to use as a validation sets for early-stopping.
+            A list of (X, y) tuple pairs to use as a validation sets.
         eval_names : list of strings or None, optional (default=None)
             Names of eval_set.
         eval_sample_weight : list of arrays or None, optional (default=None)
@@ -333,9 +333,10 @@ class LGBMModel(_LGBMModelBase):
             In either case, the ``metric`` from the model parameters will be evaluated and used as well.
         early_stopping_rounds : int or None, optional (default=None)
             Activates early stopping. The model will train until the validation score stops improving.
-            If there's more than one, will check all of them except the training data.
-            Validation error needs to decrease at least every ``early_stopping_rounds`` round(s)
+            Validation score needs to improve at least every ``early_stopping_rounds`` round(s)
             to continue training.
+            Requires at least one validation data and one metric.
+            If there's more than one, will check all of them. But the training data is ignored anyway.
         verbose : bool, optional (default=True)
             If True and an evaluation set is used, writes the evaluation progress.
         feature_name : list of strings or 'auto', optional (default="auto")
@@ -416,7 +417,15 @@ class LGBMModel(_LGBMModelBase):
             feval = _eval_function_wrapper(eval_metric)
         else:
             feval = None
-            params['metric'] = eval_metric
+            # register default metric for consistency with callable eval_metric case
+            original_metric = self._objective if isinstance(self._objective, string_type) else None
+            # concatenate metric from params (if provided) and eval_metric
+            for metric_alias in ['metric', 'metrics', 'metric_types']:
+                if metric_alias in params:
+                    original_metric = params.pop(metric_alias)
+            original_metric = [original_metric] if isinstance(original_metric, (string_type, type(None))) else original_metric
+            eval_metric = [eval_metric] if isinstance(eval_metric, (string_type, type(None))) else eval_metric
+            params['metric'] = original_metric + eval_metric
 
         if not isinstance(X, DataFrame):
             X, y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
