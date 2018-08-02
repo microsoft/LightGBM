@@ -1709,7 +1709,7 @@ class Booster(object):
         return [item for i in range_(1, self.__num_dataset)
                 for item in self.__inner_eval(self.name_valid_sets[i - 1], i, feval)]
 
-    def save_model(self, filename, num_iteration=-1):
+    def save_model(self, filename, start_iteration=0, num_iteration=-1):
         """Save Booster to file.
 
         Parameters
@@ -1724,6 +1724,7 @@ class Booster(object):
             num_iteration = self.best_iteration
         _safe_call(_LIB.LGBM_BoosterSaveModel(
             self.handle,
+            ctypes.c_int(start_iteration),
             ctypes.c_int(num_iteration),
             c_str(filename)))
         _save_pandas_categorical(filename, self.pandas_categorical)
@@ -1747,7 +1748,10 @@ class Booster(object):
             print('Finished loading model, total used %d iterations' % (int(out_num_iterations.value)))
         self.__num_class = out_num_class.value
 
-    def _save_model_to_string(self, num_iteration=-1):
+    def dump_model_to_string(self, start_iteration=0, num_iteration=-1):
+        return self._save_model_to_string(start_iteration, num_iteration)
+
+    def _save_model_to_string(self, start_iteration=0, num_iteration=-1):
         """[Private] Save model to string"""
         if num_iteration <= 0:
             num_iteration = self.best_iteration
@@ -1757,6 +1761,7 @@ class Booster(object):
         ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
         _safe_call(_LIB.LGBM_BoosterSaveModelToString(
             self.handle,
+            ctypes.c_int(start_iteration),
             ctypes.c_int(num_iteration),
             ctypes.c_int64(buffer_len),
             ctypes.byref(tmp_out_len),
@@ -1768,13 +1773,14 @@ class Booster(object):
             ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
             _safe_call(_LIB.LGBM_BoosterSaveModelToString(
                 self.handle,
+                ctypes.c_int(start_iteration),
                 ctypes.c_int(num_iteration),
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
         return string_buffer.value.decode()
 
-    def dump_model(self, num_iteration=-1):
+    def dump_model(self, start_iteration=0, num_iteration=-1):
         """Dump Booster to json format.
 
         Parameters
@@ -1796,6 +1802,7 @@ class Booster(object):
         ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
         _safe_call(_LIB.LGBM_BoosterDumpModel(
             self.handle,
+            ctypes.c_int(start_iteration),
             ctypes.c_int(num_iteration),
             ctypes.c_int64(buffer_len),
             ctypes.byref(tmp_out_len),
@@ -1807,6 +1814,7 @@ class Booster(object):
             ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
             _safe_call(_LIB.LGBM_BoosterDumpModel(
                 self.handle,
+                ctypes.c_int(start_iteration),
                 ctypes.c_int(num_iteration),
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),

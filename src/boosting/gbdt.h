@@ -211,10 +211,11 @@ public:
 
   /*!
   * \brief Dump model to json format string
+  * \param start_iteration The model will be saved start from
   * \param num_iteration Number of iterations that want to dump, -1 means dump all
   * \return Json format string of model
   */
-  std::string DumpModel(int num_iteration) const override;
+  std::string DumpModel(int start_iteration, int num_iteration) const override;
 
   /*!
   * \brief Translate model to if-else statement
@@ -233,18 +234,20 @@ public:
 
   /*!
   * \brief Save model to file
+  * \param start_iteration The model will be saved start from
   * \param num_iterations Number of model that want to save, -1 means save all
   * \param filename Filename that want to save to
   * \return is_finish Is training finished or not
   */
-  virtual bool SaveModelToFile(int num_iterations, const char* filename) const override;
+  virtual bool SaveModelToFile(int start_iteration, int num_iterations, const char* filename) const override;
 
   /*!
   * \brief Save model to string
+  * \param start_iteration The model will be saved start from
   * \param num_iterations Number of model that want to save, -1 means save all
   * \return Non-empty string if succeeded
   */
-  virtual std::string SaveModelToString(int num_iterations) const override;
+  virtual std::string SaveModelToString(int start_iteration, int num_iterations) const override;
 
   /*!
   * \brief Restore from a serialized buffer
