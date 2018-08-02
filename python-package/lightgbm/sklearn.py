@@ -385,7 +385,7 @@ class LGBMModel(_LGBMModelBase):
         """
         if self._objective is None:
             if isinstance(self, LGBMRegressor):
-                self._objective = "regression"
+                self._objective = "regression_l2"
             elif isinstance(self, LGBMClassifier):
                 self._objective = "binary"
             elif isinstance(self, LGBMRanker):
@@ -633,7 +633,7 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
     def fit(self, X, y,
             sample_weight=None, init_score=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
-            eval_init_score=None, eval_metric="l2", early_stopping_rounds=None,
+            eval_init_score=None, eval_metric="regression_l2", early_stopping_rounds=None,
             verbose=True, feature_name='auto', categorical_feature='auto', callbacks=None):
 
         super(LGBMRegressor, self).fit(X, y, sample_weight=sample_weight,
@@ -653,7 +653,7 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
                    + _base_doc[_base_doc.find('eval_init_score :'):])
     _base_doc = fit.__doc__
     fit.__doc__ = (_base_doc[:_base_doc.find('eval_metric :')]
-                   + 'eval_metric : string, list of strings, callable or None, optional (default="l2")\n'
+                   + 'eval_metric : string, list of strings, callable or None, optional (default="regression_l2")\n'
                    + _base_doc[_base_doc.find('            If string, it should be a built-in evaluation metric to use.'):])
 
 
