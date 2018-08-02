@@ -407,7 +407,7 @@ class LGBMModel(_LGBMModelBase):
         if self._n_classes is not None and self._n_classes > 2:
             params['num_class'] = self._n_classes
         if hasattr(self, '_eval_at'):
-            params['ndcg_eval_at'] = self._eval_at
+            params['eval_at'] = self._eval_at
         params['objective'] = self._objective
         if self._fobj:
             params['objective'] = 'None'  # objective = nullptr for unknown objective
@@ -809,5 +809,5 @@ class LGBMRanker(LGBMModel):
                    + 'eval_metric : string, list of strings, callable or None, optional (default="ndcg")\n'
                    + _base_doc[_base_doc.find('            If string, it should be a built-in evaluation metric to use.'):_base_doc.find('early_stopping_rounds :')]
                    + 'eval_at : list of int, optional (default=[1])\n'
-                     '            The evaluation positions of NDCG.\n'
+                     '            The evaluation positions of the specified metric.\n'
                    + _base_doc[_base_doc.find('        early_stopping_rounds :'):])
