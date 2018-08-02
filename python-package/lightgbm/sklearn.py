@@ -440,6 +440,17 @@ class LGBMModel(_LGBMModelBase):
 
         valid_sets = []
         if eval_set is not None:
+
+            def _get_meta_data(collection, i):
+                if collection is None:
+                    return None
+                elif isinstance(collection, list):
+                    return collection[i] if len(collection) > i else None
+                elif isinstance(collection, dict):
+                    return collection.get(i, None)
+                else:
+                    raise TypeError('eval_sample_weight, eval_class_weight, eval_init_score, and eval_group should be dict or list')
+
             if isinstance(eval_set, tuple):
                 eval_set = [eval_set]
             for i, valid_data in enumerate(eval_set):
@@ -447,24 +458,15 @@ class LGBMModel(_LGBMModelBase):
                 if valid_data[0] is X and valid_data[1] is y:
                     valid_set = train_set
                 else:
-                    def get_meta_data(collection, i):
-                        if collection is None:
-                            return None
-                        elif isinstance(collection, list):
-                            return collection[i] if len(collection) > i else None
-                        elif isinstance(collection, dict):
-                            return collection.get(i, None)
-                        else:
-                            raise TypeError('eval_sample_weight, eval_class_weight, eval_init_score, and eval_group should be dict or list')
-                    valid_weight = get_meta_data(eval_sample_weight, i)
-                    if get_meta_data(eval_class_weight, i) is not None:
-                        valid_class_sample_weight = _LGBMComputeSampleWeight(get_meta_data(eval_class_weight, i), valid_data[1])
+                    valid_weight = _get_meta_data(eval_sample_weight, i)
+                    if _get_meta_data(eval_class_weight, i) is not None:
+                        valid_class_sample_weight = _LGBMComputeSampleWeight(_get_meta_data(eval_class_weight, i), valid_data[1])
                         if valid_weight is None or len(valid_weight) == 0:
                             valid_weight = valid_class_sample_weight
                         else:
                             valid_weight = np.multiply(valid_weight, valid_class_sample_weight)
-                    valid_init_score = get_meta_data(eval_init_score, i)
-                    valid_group = get_meta_data(eval_group, i)
+                    valid_init_score = _get_meta_data(eval_init_score, i)
+                    valid_group = _get_meta_data(eval_group, i)
                     valid_set = _construct_dataset(valid_data[0], valid_data[1], valid_weight, valid_init_score, valid_group, params)
                 valid_sets.append(valid_set)
 
