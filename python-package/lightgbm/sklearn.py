@@ -188,7 +188,7 @@ class LGBMModel(_LGBMModelBase):
             L2 regularization term on weights.
         random_state : int or None, optional (default=None)
             Random number seed.
-            Will use default seeds in c++ code if set to None.
+            If None, default seeds in C++ code will be used.
         n_jobs : int, optional (default=-1)
             Number of parallel threads.
         silent : bool, optional (default=True)
