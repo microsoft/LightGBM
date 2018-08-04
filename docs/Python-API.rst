@@ -26,18 +26,22 @@ Scikit-learn API
 
 .. autoclass:: lightgbm.LGBMModel
     :members:
+    :inherited-members:
     :show-inheritance:
 
 .. autoclass:: lightgbm.LGBMClassifier
     :members:
+    :inherited-members:
     :show-inheritance:
 
 .. autoclass:: lightgbm.LGBMRegressor
     :members:
+    :inherited-members:
     :show-inheritance:
 
 .. autoclass:: lightgbm.LGBMRanker
     :members:
+    :inherited-members:
     :show-inheritance:
 
 

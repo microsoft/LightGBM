@@ -160,7 +160,7 @@ class LGBMModel(_LGBMModelBase):
         objective : string, callable or None, optional (default=None)
             Specify the learning task and the corresponding learning objective or
             a custom objective function to be used (see note below).
-            default: 'regression' for LGBMRegressor, 'binary' or 'multiclass' for LGBMClassifier, 'lambdarank' for LGBMRanker.
+            Default: 'regression' for LGBMRegressor, 'binary' or 'multiclass' for LGBMClassifier, 'lambdarank' for LGBMRanker.
         class_weight : dict, 'balanced' or None, optional (default=None)
             Weights associated with classes in the form ``{class_label: weight}``.
             Use this parameter only for multi-class classification task;
@@ -329,8 +329,9 @@ class LGBMModel(_LGBMModelBase):
             Group data of eval data.
         eval_metric : string, list of strings, callable or None, optional (default=None)
             If string, it should be a built-in evaluation metric to use.
-            If callable, it should be a custom evaluation metric, see note for more details.
+            If callable, it should be a custom evaluation metric, see note below for more details.
             In either case, the ``metric`` from the model parameters will be evaluated and used as well.
+            Default: 'l2' for LGBMRegressor, 'logloss' for LGBMClassifier, 'ndcg' for LGBMRanker.
         early_stopping_rounds : int or None, optional (default=None)
             Activates early stopping. The model will train until the validation score stops improving.
             Validation score needs to improve at least every ``early_stopping_rounds`` round(s)
@@ -385,7 +386,7 @@ class LGBMModel(_LGBMModelBase):
         """
         if self._objective is None:
             if isinstance(self, LGBMRegressor):
-                self._objective = "regression_l2"
+                self._objective = "regression"
             elif isinstance(self, LGBMClassifier):
                 self._objective = "binary"
             elif isinstance(self, LGBMRanker):
@@ -419,10 +420,19 @@ class LGBMModel(_LGBMModelBase):
             feval = None
             # register default metric for consistency with callable eval_metric case
             original_metric = self._objective if isinstance(self._objective, string_type) else None
-            # concatenate metric from params (if provided) and eval_metric
+            if original_metric is None:
+                # try to deduce from class instance
+                if isinstance(self, LGBMRegressor):
+                    original_metric = "l2"
+                elif isinstance(self, LGBMClassifier):
+                    original_metric = "multi_logloss" if self._n_classes > 2 else "binary_logloss"
+                elif isinstance(self, LGBMRanker):
+                    original_metric = "ndcg"
+            # overwrite default metric by explicitly set metric
             for metric_alias in ['metric', 'metrics', 'metric_types']:
                 if metric_alias in params:
                     original_metric = params.pop(metric_alias)
+            # concatenate metric from params (if provided) and eval_metric
             original_metric = [original_metric] if isinstance(original_metric, (string_type, type(None))) else original_metric
             eval_metric = [eval_metric] if isinstance(eval_metric, (string_type, type(None))) else eval_metric
             params['metric'] = original_metric + eval_metric
@@ -633,7 +643,7 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
     def fit(self, X, y,
             sample_weight=None, init_score=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
-            eval_init_score=None, eval_metric="regression_l2", early_stopping_rounds=None,
+            eval_init_score=None, eval_metric=None, early_stopping_rounds=None,
             verbose=True, feature_name='auto', categorical_feature='auto', callbacks=None):
 
         super(LGBMRegressor, self).fit(X, y, sample_weight=sample_weight,
@@ -651,10 +661,6 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
     _base_doc = LGBMModel.fit.__doc__
     fit.__doc__ = (_base_doc[:_base_doc.find('eval_class_weight :')]
                    + _base_doc[_base_doc.find('eval_init_score :'):])
-    _base_doc = fit.__doc__
-    fit.__doc__ = (_base_doc[:_base_doc.find('eval_metric :')]
-                   + 'eval_metric : string, list of strings, callable or None, optional (default="regression_l2")\n'
-                   + _base_doc[_base_doc.find('            If string, it should be a built-in evaluation metric to use.'):])
 
 
 class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
@@ -663,7 +669,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
     def fit(self, X, y,
             sample_weight=None, init_score=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
-            eval_class_weight=None, eval_init_score=None, eval_metric="logloss",
+            eval_class_weight=None, eval_init_score=None, eval_metric=None,
             early_stopping_rounds=None, verbose=True,
             feature_name='auto', categorical_feature='auto', callbacks=None):
         _LGBMCheckClassificationTargets(y)
@@ -678,12 +684,12 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
             if self._objective not in ova_aliases and not callable(self._objective):
                 self._objective = "multiclass"
             if eval_metric == 'logloss' or eval_metric == 'binary_logloss':
-                eval_metric = "multiclass"
+                eval_metric = "multi_logloss"
             elif eval_metric == 'error' or eval_metric == 'binary_error':
                 eval_metric = "multi_error"
         else:
             if eval_metric == 'logloss' or eval_metric == 'multi_logloss':
-                eval_metric = 'binary'
+                eval_metric = 'binary_logloss'
             elif eval_metric == 'error' or eval_metric == 'multi_error':
                 eval_metric = 'binary_error'
 
@@ -709,10 +715,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
                                         callbacks=callbacks)
         return self
 
-    _base_doc = LGBMModel.fit.__doc__
-    fit.__doc__ = (_base_doc[:_base_doc.find('eval_metric :')]
-                   + 'eval_metric : string, list of strings, callable or None, optional (default="logloss")\n'
-                   + _base_doc[_base_doc.find('            If string, it should be a built-in evaluation metric to use.'):])
+    fit.__doc__ = LGBMModel.fit.__doc__
 
     def predict(self, X, raw_score=False, num_iteration=-1,
                 pred_leaf=False, pred_contrib=False, **kwargs):
@@ -723,6 +726,8 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         else:
             class_index = np.argmax(result, axis=1)
             return self._le.inverse_transform(class_index)
+
+    predict.__doc__ = LGBMModel.predict.__doc__
 
     def predict_proba(self, X, raw_score=False, num_iteration=-1,
                       pred_leaf=False, pred_contrib=False, **kwargs):
@@ -780,7 +785,7 @@ class LGBMRanker(LGBMModel):
     def fit(self, X, y,
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
-            eval_init_score=None, eval_group=None, eval_metric='ndcg',
+            eval_init_score=None, eval_group=None, eval_metric=None,
             eval_at=[1], early_stopping_rounds=None, verbose=True,
             feature_name='auto', categorical_feature='auto', callbacks=None):
         # check group data
@@ -814,9 +819,8 @@ class LGBMRanker(LGBMModel):
     fit.__doc__ = (_base_doc[:_base_doc.find('eval_class_weight :')]
                    + _base_doc[_base_doc.find('eval_init_score :'):])
     _base_doc = fit.__doc__
-    fit.__doc__ = (_base_doc[:_base_doc.find('eval_metric :')]
-                   + 'eval_metric : string, list of strings, callable or None, optional (default="ndcg")\n'
-                   + _base_doc[_base_doc.find('            If string, it should be a built-in evaluation metric to use.'):_base_doc.find('early_stopping_rounds :')]
+    _before_early_stop, _early_stop, _after_early_stop = _base_doc.partition('early_stopping_rounds :')
+    fit.__doc__ = (_before_early_stop
                    + 'eval_at : list of int, optional (default=[1])\n'
-                     '            The evaluation positions of NDCG.\n'
-                   + _base_doc[_base_doc.find('        early_stopping_rounds :'):])
+                   + ' ' * 12 + 'The evaluation positions of NDCG.\n'
+                   + ' ' * 8 + _early_stop + _after_early_stop)

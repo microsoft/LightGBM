@@ -198,7 +198,7 @@ Validation score needs to improve at least every ``early_stopping_rounds`` to co
 If early stopping occurs, the model will have an additional field: ``bst.best_iteration``.
 Note that ``train()`` will return a model from the best iteration.
 
-This works with both metrics to minimize (L2, log loss, etc.) and to maximize (NDCG, AUC).
+This works with both metrics to minimize (L2, log loss, etc.) and to maximize (NDCG, AUC, etc.).
 Note that if you specify more than one evaluation metric, all of them will be used for early stopping.
 
 Prediction
