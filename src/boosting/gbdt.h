@@ -70,6 +70,29 @@ public:
     num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
   }
 
+  void ShuffleModels() override {
+    // tmp move to other vector
+    auto original_models = std::move(models_);
+    int total_iter = static_cast<int>(models_.size()) / num_tree_per_iteration_;
+    std::vector<int> indices(total_iter);
+    for (int i = 0; i < total_iter; ++i) {
+      indices[i] = i;
+    }
+    Random tmp_rand(config_->bagging_seed + 17);
+    for (int i = 0; i < total_iter - 1; ++i) {
+      int j = tmp_rand.NextShort(i + 1, total_iter);
+      std::swap(indices[i], indices[j]);
+    }
+    models_ = std::vector<std::unique_ptr<Tree>>();
+    for (int i = 0; i < total_iter; ++i) {
+      for (int j = 0; j < num_tree_per_iteration_; ++j) {
+        int tree_idx = indices[i] * num_tree_per_iteration_ + j;
+        auto new_tree = std::unique_ptr<Tree>(new Tree(*(original_models[tree_idx].get())));
+        models_.push_back(std::move(new_tree));
+      }
+    }
+  }
+
   /*!
   * \brief Reset the training data
   * \param train_data New Training data

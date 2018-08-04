@@ -377,6 +377,11 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterLoadModelFromString(
 LIGHTGBM_C_EXPORT int LGBM_BoosterFree(BoosterHandle handle);
 
 /*!
+* \brief Shuffle Models
+*/
+LIGHTGBM_C_EXPORT int LGBM_BoosterShuffleModels(BoosterHandle handle);
+
+/*!
 * \brief Merge model in two booster to first handle
 * \param handle handle, will merge other handle to this
 * \param other_handle

@@ -1729,6 +1729,11 @@ class Booster(object):
             c_str(filename)))
         _save_pandas_categorical(filename, self.pandas_categorical)
 
+    def shuffle_models(self):
+        """Shuffle models
+        """
+        _safe_call(_LIB.LGBM_BoosterShuffleModels(self.handle)
+
     def _load_model_from_string(self, model_str, verbose=True):
         """[Private] Load model from string"""
         if self.handle is not None:

@@ -265,6 +265,11 @@ public:
     dynamic_cast<GBDTBase*>(boosting_.get())->SetLeafValue(tree_idx, leaf_idx, val);
   }
 
+  void ShuffleModels() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    boosting_->ShuffleModels();
+  }
+
   int GetEvalCounts() const {
     int ret = 0;
     for (const auto& metric : train_metric_) {
@@ -882,6 +887,13 @@ int LGBM_BoosterLoadModelFromString(
 int LGBM_BoosterFree(BoosterHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<Booster*>(handle);
+  API_END();
+}
+
+int LGBM_BoosterShuffleModels(BoosterHandle handle) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  ref_booster->ShuffleModels();
   API_END();
 }
 
