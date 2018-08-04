@@ -1732,7 +1732,7 @@ class Booster(object):
     def shuffle_models(self):
         """Shuffle models
         """
-        _safe_call(_LIB.LGBM_BoosterShuffleModels(self.handle)
+        _safe_call(_LIB.LGBM_BoosterShuffleModels(self.handle))
 
     def _load_model_from_string(self, model_str, verbose=True):
         """[Private] Load model from string"""

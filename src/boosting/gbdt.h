@@ -71,14 +71,13 @@ public:
   }
 
   void ShuffleModels() override {
-    // tmp move to other vector
-    auto original_models = std::move(models_);
     int total_iter = static_cast<int>(models_.size()) / num_tree_per_iteration_;
+    auto original_models = std::move(models_);
     std::vector<int> indices(total_iter);
     for (int i = 0; i < total_iter; ++i) {
       indices[i] = i;
     }
-    Random tmp_rand(config_->bagging_seed + 17);
+    Random tmp_rand(17);
     for (int i = 0; i < total_iter - 1; ++i) {
       int j = tmp_rand.NextShort(i + 1, total_iter);
       std::swap(indices[i], indices[j]);
