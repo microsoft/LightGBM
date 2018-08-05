@@ -1420,7 +1420,7 @@ class Booster(object):
         return self.__deepcopy__(None)
 
     def __deepcopy__(self, _):
-        model_str = self._save_model_to_string()
+        model_str = self._save_model_to_string(num_iteration=-1)
         booster = Booster({'model_str': model_str})
         booster.pandas_categorical = self.pandas_categorical
         return booster
@@ -1431,7 +1431,7 @@ class Booster(object):
         this.pop('train_set', None)
         this.pop('valid_sets', None)
         if handle is not None:
-            this["handle"] = self._save_model_to_string()
+            this["handle"] = self._save_model_to_string(num_iteration=-1)
         return this
 
     def __setstate__(self, state):
@@ -1709,18 +1709,19 @@ class Booster(object):
         return [item for i in range_(1, self.__num_dataset)
                 for item in self.__inner_eval(self.name_valid_sets[i - 1], i, feval)]
 
-    def save_model(self, filename, num_iteration=-1):
+    def save_model(self, filename, num_iteration=None):
         """Save Booster to file.
 
         Parameters
         ----------
         filename : string
             Filename to save Booster.
-        num_iteration: int, optional (default=-1)
-            Index of the iteration that should to saved.
-            If <0, the best iteration (if exists) is saved.
+        num_iteration : int or None, optional (default=None)
+            Index of the iteration that should be saved.
+            If None, if the best iteration exists, it is saved; otherwise, all iterations are saved.
+            If <= 0, all iterations are saved.
         """
-        if num_iteration <= 0:
+        if num_iteration is None:
             num_iteration = self.best_iteration
         _safe_call(_LIB.LGBM_BoosterSaveModel(
             self.handle,
@@ -1747,9 +1748,9 @@ class Booster(object):
             print('Finished loading model, total used %d iterations' % (int(out_num_iterations.value)))
         self.__num_class = out_num_class.value
 
-    def _save_model_to_string(self, num_iteration=-1):
+    def _save_model_to_string(self, num_iteration=None):
         """[Private] Save model to string"""
-        if num_iteration <= 0:
+        if num_iteration is None:
             num_iteration = self.best_iteration
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
@@ -1774,21 +1775,22 @@ class Booster(object):
                 ptr_string_buffer))
         return string_buffer.value.decode()
 
-    def dump_model(self, num_iteration=-1):
+    def dump_model(self, num_iteration=None):
         """Dump Booster to json format.
 
         Parameters
         ----------
-        num_iteration: int, optional (default=-1)
-            Index of the iteration that should to dumped.
-            If <0, the best iteration (if exists) is dumped.
+        num_iteration : int or None, optional (default=None)
+            Index of the iteration that should be dumped.
+            If None, if the best iteration exists, it is dumped; otherwise, all iterations are dumped.
+            If <= 0, all iterations are dumped.
 
         Returns
         -------
         json_repr : dict
             Json format of Booster.
         """
-        if num_iteration <= 0:
+        if num_iteration is None:
             num_iteration = self.best_iteration
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
@@ -1813,7 +1815,7 @@ class Booster(object):
                 ptr_string_buffer))
         return json.loads(string_buffer.value.decode())
 
-    def predict(self, data, num_iteration=-1, raw_score=False, pred_leaf=False, pred_contrib=False,
+    def predict(self, data, num_iteration=None, raw_score=False, pred_leaf=False, pred_contrib=False,
                 data_has_header=False, is_reshape=True, pred_parameter=None, **kwargs):
         """Make a prediction.
 
@@ -1822,9 +1824,11 @@ class Booster(object):
         data : string, numpy array or scipy.sparse
             Data source for prediction.
             If string, it represents the path to txt file.
-        num_iteration : int, optional (default=-1)
-            Iteration used for prediction.
-            If <0, the best iteration (if exists) is used for prediction.
+        num_iteration : int or None, optional (default=None)
+            Limit number of iterations in the prediction.
+            If None, if the best iteration exists, it is used; otherwise, all iterations are used.
+            If <= 0, all iterations are used (no limits).
+
         raw_score : bool, optional (default=False)
             Whether to predict raw scores.
         pred_leaf : bool, optional (default=False)
@@ -1853,7 +1857,7 @@ class Booster(object):
         else:
             pred_parameter = kwargs
         predictor = self._to_predictor(pred_parameter)
-        if num_iteration <= 0:
+        if num_iteration is None:
             num_iteration = self.best_iteration
         return predictor.predict(data, num_iteration, raw_score, pred_leaf, pred_contrib, data_has_header, is_reshape)
 

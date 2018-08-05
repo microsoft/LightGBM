@@ -489,7 +489,7 @@ class LGBMModel(_LGBMModelBase):
         del train_set, valid_sets
         return self
 
-    def predict(self, X, raw_score=False, num_iteration=-1,
+    def predict(self, X, raw_score=False, num_iteration=None,
                 pred_leaf=False, pred_contrib=False, **kwargs):
         """Return the predicted value for each sample.
 
@@ -499,9 +499,10 @@ class LGBMModel(_LGBMModelBase):
             Input features matrix.
         raw_score : bool, optional (default=False)
             Whether to predict raw scores.
-        num_iteration : int, optional (default=-1)
+        num_iteration : int or None, optional (default=None)
             Limit number of iterations in the prediction.
-            If <= 0, uses all trees (no limits).
+            If None, if the best iteration exists, it is used; otherwise, all trees are used.
+            If <= 0, all trees are used (no limits).
         pred_leaf : bool, optional (default=False)
             Whether to predict leaf index.
         pred_contrib : bool, optional (default=False)
@@ -527,6 +528,8 @@ class LGBMModel(_LGBMModelBase):
                              "match the input. Model n_features_ is %s and "
                              "input n_features is %s "
                              % (self._n_features, n_features))
+        if num_iteration is None:
+            num_iteration = self.best_iteration_ if self.best_iteration_ is not None else -1
         return self.booster_.predict(X, raw_score=raw_score, num_iteration=num_iteration,
                                      pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
 
@@ -705,7 +708,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
                    + 'eval_metric : string, list of strings, callable or None, optional (default="logloss")\n'
                    + _base_doc[_base_doc.find('            If string, it should be a built-in evaluation metric to use.'):])
 
-    def predict(self, X, raw_score=False, num_iteration=-1,
+    def predict(self, X, raw_score=False, num_iteration=None,
                 pred_leaf=False, pred_contrib=False, **kwargs):
         result = self.predict_proba(X, raw_score, num_iteration,
                                     pred_leaf, pred_contrib, **kwargs)
@@ -715,7 +718,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
             class_index = np.argmax(result, axis=1)
             return self._le.inverse_transform(class_index)
 
-    def predict_proba(self, X, raw_score=False, num_iteration=-1,
+    def predict_proba(self, X, raw_score=False, num_iteration=None,
                       pred_leaf=False, pred_contrib=False, **kwargs):
         """Return the predicted probability for each class for each sample.
 
@@ -725,9 +728,10 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
             Input features matrix.
         raw_score : bool, optional (default=False)
             Whether to predict raw scores.
-        num_iteration : int, optional (default=-1)
+        num_iteration : int or None, optional (default=None)
             Limit number of iterations in the prediction.
-            If <= 0, uses all trees (no limits).
+            If None, if the best iteration exists, it is used; otherwise, all trees are used.
+            If <= 0, all trees are used (no limits).
         pred_leaf : bool, optional (default=False)
             Whether to predict leaf index.
         pred_contrib : bool, optional (default=False)
