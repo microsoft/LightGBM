@@ -432,7 +432,7 @@ class LGBMModel(_LGBMModelBase):
             for metric_alias in ['metric', 'metrics', 'metric_types']:
                 if metric_alias in params:
                     original_metric = params.pop(metric_alias)
-            # concatenate metric from params (if provided) and eval_metric
+            # concatenate metric from params (or default if not provided in params) and eval_metric
             original_metric = [original_metric] if isinstance(original_metric, (string_type, type(None))) else original_metric
             eval_metric = [eval_metric] if isinstance(eval_metric, (string_type, type(None))) else eval_metric
             params['metric'] = set(original_metric + eval_metric)
