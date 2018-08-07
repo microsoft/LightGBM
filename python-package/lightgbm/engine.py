@@ -38,13 +38,14 @@ def train(params, train_set, num_boost_round=100,
         Names of ``valid_sets``.
     fobj : callable or None, optional (default=None)
         Customized objective function.
-    feval : callable, string or None, optional (default=None)
+    feval : callable or None, optional (default=None)
         Customized evaluation function.
         Should accept two parameters: preds, train_data.
         For multi-class task, the preds is group by class_id first, then group by row_id.
         If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         Note: should return (eval_name, eval_result, is_higher_better) or list of such tuples.
-        To ignore the default metric in params, set it to the string ``"None"``
+        To ignore the default metric corresponding to the used objective,
+        set the ``metric`` parameter to the string ``"None"`` in ``params``.
     init_model : string, Booster or None, optional (default=None)
         Filename of LightGBM model or Booster instance used for continue training.
     feature_name : list of strings or 'auto', optional (default="auto")
@@ -347,13 +348,14 @@ def cv(params, train_set, num_boost_round=100,
         If not None, the metric in ``params`` will be overridden.
     fobj : callable or None, optional (default=None)
         Custom objective function.
-    feval : callable, string or None, optional (default=None)
+    feval : callable or None, optional (default=None)
         Customized evaluation function.
         Should accept two parameters: preds, train_data.
         For multi-class task, the preds is group by class_id first, then group by row_id.
         If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         Note: should return (eval_name, eval_result, is_higher_better) or list of such tuples.
-        To ignore the default metric in params, set it to the string ``"None"``
+        To ignore the default metric corresponding to the used objective,
+        set ``metrics`` to the string ``"None"``.
     init_model : string, Booster or None, optional (default=None)
         Filename of LightGBM model or Booster instance used for continue training.
     feature_name : list of strings or 'auto', optional (default="auto")
