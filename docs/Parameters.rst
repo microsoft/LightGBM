@@ -567,7 +567,7 @@ IO Parameters
 
    -  **Note**: all values should be less than ``Int32.MaxValue`` (2147483647)
 
-   -  **Note**: the negative values will be treated as **missing values**
+   -  **Note**: all negative values will be treated as **missing values**
 
 -  ``predict_raw_score`` :raw-html:`<a id="predict_raw_score" title="Permalink to this parameter" href="#predict_raw_score">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``is_predict_raw_score``, ``predict_rawscore``, ``raw_score``
 
