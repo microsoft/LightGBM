@@ -126,7 +126,7 @@ lgb.prepare_rules2 <- function(data, rules = NULL) {
       }
       
     }
-    
+
   } else {
     
     # Must use existing rules
