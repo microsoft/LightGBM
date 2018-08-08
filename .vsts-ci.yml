@@ -135,6 +135,7 @@ phases:
         cd ..
         pytest tests/c_api_test/test_.py
         cp Release/lib_lightgbm.dll $env:BUILD_ARTIFACTSTAGINGDIRECTORY
+        cp Release/lightgbm.exe $env:BUILD_ARTIFACTSTAGINGDIRECTORY
       } 
       elseif ("$env:TASK" -eq "sdist"){
         cd python-package; python setup.py sdist --formats gztar
