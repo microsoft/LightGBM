@@ -7,13 +7,13 @@ from distutils.file_util import copy_file
 if __name__ == "__main__":
     source = sys.argv[1]
     current_dir = os.path.abspath(os.path.dirname(__file__))
-    linux_folder_path = os.path.join(current_dir,"lib", "netstandard2.0", "runtimes", "linux-x64", "native")
+    linux_folder_path = os.path.join(current_dir, "runtimes", "linux-x64", "native")
     if not os.path.exists(linux_folder_path):
         os.makedirs(linux_folder_path)
-    osx_folder_path = os.path.join(current_dir, "lib", "netstandard2.0", "runtimes", "osx-x64", "native")
+    osx_folder_path = os.path.join(current_dir, "runtimes", "osx-x64", "native")
     if not os.path.exists(osx_folder_path):
         os.makedirs(osx_folder_path)
-    windows_folder_path = os.path.join(current_dir, "lib", "netstandard2.0", "runtimes", "win-x64", "native")
+    windows_folder_path = os.path.join(current_dir, "runtimes", "win-x64", "native")
     if not os.path.exists(windows_folder_path):
         os.makedirs(windows_folder_path)
     net46_folder_path = os.path.join(current_dir, "lib", "net46")
@@ -43,6 +43,7 @@ if __name__ == "__main__":
     </metadata>
         <files>
         <file src="lib\**" target="lib"/>
+        <file src="runtimes\**" target="runtimes"/>
         </files>
     </package>
     ''' % version
