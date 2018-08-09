@@ -16,6 +16,9 @@ if __name__ == "__main__":
     windows_folder_path = os.path.join(current_dir, "runtimes", "win-x64", "native")
     if not os.path.exists(windows_folder_path):
         os.makedirs(windows_folder_path)
+    build_folder_path = os.path.join(current_dir, "build")
+    if not os.path.exists(build_folder_path):
+        os.makedirs(build_folder_path)
     copy_file(os.path.join(source, "lib_lightgbm.so"), os.path.join(linux_folder_path, "lib_lightgbm.so"))
     copy_file(os.path.join(source, "lib_lightgbm.dylib"), os.path.join(osx_folder_path, "lib_lightgbm.dylib"))
     copy_file(os.path.join(source, "lib_lightgbm.dll"), os.path.join(windows_folder_path, "lib_lightgbm.dll"))
