@@ -52,6 +52,9 @@ if __name__ == "__main__":
                             Exists('packages.$(MSBuildProjectName).config')">
         <Content Include="$(MSBuildThisFileDirectory)\..\runtimes\win-x64\native\*.dll"
                 Condition="'$(PlatformTarget)' == 'x64'">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <Visible>false</Visible>
+        </Content>
         <Content Include="$(MSBuildThisFileDirectory)\..\runtimes\win-x64\native\*.exe"
                 Condition="'$(PlatformTarget)' == 'x64'">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
