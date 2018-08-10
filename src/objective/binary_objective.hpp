@@ -95,7 +95,7 @@ public:
         const double label_weight = label_weights_[is_pos];
         // calculate gradients and hessians
         double response = label * score[i];
-        if (reponse < 0) {
+        if (response < 0) {
           response = -label * sigmoid_ / (1.0f + std::exp(sigmoid_ * response));
         } else {
           response = std::exp(-sigmoid_ * response);
@@ -114,7 +114,7 @@ public:
         const double label_weight = label_weights_[is_pos];
         // calculate gradients and hessians
         double response = label * score[i];
-        if (reponse < 0) {
+        if (response < 0) {
           response = -label * sigmoid_ / (1.0f + std::exp(sigmoid_ * response));
         } else {
           response = std::exp(-sigmoid_ * response);
