@@ -1716,6 +1716,8 @@ class Booster(object):
         ----------
         filename : string
             Filename to save Booster.
+        start_iteration: int, optional (default=0)
+            Start index of the iteration that should to saved.
         num_iteration: int, optional (default=-1)
             Index of the iteration that should to saved.
             If <0, the best iteration (if exists) is saved.
@@ -1790,6 +1792,8 @@ class Booster(object):
 
         Parameters
         ----------
+        start_iteration: int, optional (default=0)
+            Start index of the iteration that should to dumped.
         num_iteration: int, optional (default=-1)
             Index of the iteration that should to dumped.
             If <0, the best iteration (if exists) is dumped.
