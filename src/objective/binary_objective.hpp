@@ -98,7 +98,7 @@ public:
         if (reponse < 0) {
           response = -label * sigmoid_ / (1.0f + std::exp(sigmoid_ * response));
         } else {
-          response = std::exp(-sigmoid_ * response)
+          response = std::exp(-sigmoid_ * response);
           response = -label * sigmoid_ * response / (1.0f + response);
         }
         const double abs_response = fabs(response);
@@ -117,7 +117,7 @@ public:
         if (reponse < 0) {
           response = -label * sigmoid_ / (1.0f + std::exp(sigmoid_ * response));
         } else {
-          response = std::exp(-sigmoid_ * response)
+          response = std::exp(-sigmoid_ * response);
           response = -label * sigmoid_ * response / (1.0f + response);
         }
         const double abs_response = fabs(response);
