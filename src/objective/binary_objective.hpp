@@ -94,7 +94,13 @@ public:
         const int label = label_val_[is_pos];
         const double label_weight = label_weights_[is_pos];
         // calculate gradients and hessians
-        const double response = -label * sigmoid_ / (1.0f + std::exp(label * sigmoid_ * score[i]));
+        double response = label * score[i];
+        if (response < 0) {
+          response = -label * sigmoid_ / (1.0f + std::exp(sigmoid_ * response));
+        } else {
+          response = std::exp(-sigmoid_ * response);
+          response = -label * sigmoid_ * response / (1.0f + response);
+        }
         const double abs_response = fabs(response);
         gradients[i] = static_cast<score_t>(response * label_weight);
         hessians[i] = static_cast<score_t>(abs_response * (sigmoid_ - abs_response) * label_weight);
@@ -107,7 +113,13 @@ public:
         const int label = label_val_[is_pos];
         const double label_weight = label_weights_[is_pos];
         // calculate gradients and hessians
-        const double response = -label * sigmoid_ / (1.0f + std::exp(label * sigmoid_ * score[i]));
+        double response = label * score[i];
+        if (response < 0) {
+          response = -label * sigmoid_ / (1.0f + std::exp(sigmoid_ * response));
+        } else {
+          response = std::exp(-sigmoid_ * response);
+          response = -label * sigmoid_ * response / (1.0f + response);
+        }
         const double abs_response = fabs(response);
         gradients[i] = static_cast<score_t>(response * label_weight  * weights_[i]);
         hessians[i] = static_cast<score_t>(abs_response * (sigmoid_ - abs_response) * label_weight * weights_[i]);
@@ -143,7 +155,12 @@ public:
   }
 
   void ConvertOutput(const double* input, double* output) const override {
-    output[0] = 1.0f / (1.0f + std::exp(-sigmoid_ * input[0]));
+    if (input[0] >= 0) {
+      output[0] = 1.0f / (1.0f + std::exp(-sigmoid_ * input[0]));
+    } else {
+      output[0] = std::exp(sigmoid_ * input[0]);
+      output[0] = output[0] / (1.0f +  output[0]);
+    }
   }
 
   std::string ToString() const override {
