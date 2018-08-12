@@ -283,7 +283,7 @@ References
 
 .. _On Grouping for Maximum Homogeneity: https://www.researchgate.net/publication/242580910_On_Grouping_for_Maximum_Homogeneity
 
-.. _Optimization of collective communication operations in MPICH: http://www.mcs.anl.gov/~thakur/papers/ijhpca-coll.pdf
+.. _Optimization of collective communication operations in MPICH: http://wwwi10.lrr.in.tum.de/~gerndt/home/Teaching/HPCSeminar/mpich_multi_coll.pdf
 
 .. _A Communication-Efficient Parallel Algorithm for Decision Tree: http://papers.nips.cc/paper/6381-a-communication-efficient-parallel-algorithm-for-decision-tree
 
