@@ -111,19 +111,31 @@ Apple Clang (9.0 or higher)
 GCC/G++
 ^^^^^^^
 
-Please install **gcc/g++** by using the following commands:
+For Homebrew users:
 
 .. code::
 
+  # install gcc, g++ and cmake
   brew install cmake
   brew install gcc
 
-Then install LightGBM:
+  # install LightGBM:
+  git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+  export CXX=g++-7 CC=gcc-7  # replace 7 with version of gcc installed on your machine
+  mkdir build ; cd build
+  cmake ..
+  make -j4
+
+For MacPorts users:
 
 .. code::
 
+  # install gcc, g++ and cmake:
+  port install gcc-7 cmake
+
+  # install LightGBM:
   git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
-  export CXX=g++-7 CC=gcc-7  # replace 7 with version of gcc installed on your machine
+  export CXX=g++-mp-7 CC=gcc-mp-7  # replace 7 with version of gcc installed on your machine
   mkdir build ; cd build
   cmake ..
   make -j4
@@ -204,22 +216,37 @@ Then run the following commands:
 macOS
 ^^^^^
 
-Install **Open MPI** first:
+For Homebrew users:
 
 .. code::
 
+  # install Open MPI first:
   brew install open-mpi
   brew install cmake
 
-Then run the following commands:
-
-.. code::
-
+  # install LightGBM:
   git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
   export CXX=g++-7 CC=gcc-7  # replace 7 with version of gcc installed on your machine
   mkdir build ; cd build
   cmake -DUSE_MPI=ON ..
   make -j4
+  
+For MacPorts users:
+  
+.. code::
+
+  port install gcc7 cmake
+
+  # install Open MPI first:
+  port install open-mpi
+
+  # install LightGBM:
+  git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+  export CXX=g++-mp-7 CC=gcc-mp-7  # replace 7 with version of gcc installed on your machine
+  mkdir build ; cd build
+  cmake -DUSE_MPI=ON ..
+  make -j4
+
 
 Build GPU Version
 ~~~~~~~~~~~~~~~~~
