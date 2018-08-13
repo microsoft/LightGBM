@@ -52,7 +52,7 @@ News
 More detailed update logs : [Key Events](https://github.com/Microsoft/LightGBM/blob/master/docs/Key-Events.md).
 
 
-External (unofficial) Repositories
+External (Unofficial) Repositories
 ----------------------------------
 
 Julia-package: https://github.com/Allardvm/LightGBM.jl

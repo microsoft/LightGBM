@@ -5,18 +5,17 @@ dist: trusty
 git:
   submodules: true
 
-compiler:
-  - gcc
-
 os:
   - linux
   - osx
 
 env:
-  global:
+  global:  # default values
+    - COMPILER=gcc
     - PYTHON_VERSION=3.6
   matrix:
     - TASK=regular
+    - TASK=regular COMPILER=clang
     - TASK=mpi PYTHON_VERSION=2.7
     - TASK=pylint
     - TASK=check-docs
@@ -46,6 +45,7 @@ before_install:
   - export LGB_VER=$(head -n 1 VERSION.txt)
   - export AMDAPPSDK=$HOME/AMDAPPSDK
   - export LD_LIBRARY_PATH="$AMDAPPSDK/lib/x86_64:$LD_LIBRARY_PATH"
+  - export LD_LIBRARY_PATH="/usr/local/clang/lib:$LD_LIBRARY_PATH"  # fix error "libomp.so: cannot open shared object file: No such file or directory" on Linux with Clang
   - export OPENCL_VENDOR_PATH=$AMDAPPSDK/etc/OpenCL/vendors
 
 install:
