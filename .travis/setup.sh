@@ -1,6 +1,7 @@
 #!/bin/bash
 
 if [[ $TRAVIS_OS_NAME == "osx" ]]; then
+    sudo softwareupdate -i "Command Line Tools (macOS High Sierra version 10.13) for Xcode-9.3"  # fix "fatal error: _stdio.h: No such file or directory"
     rm '/usr/local/include/c++'
 #    brew cask uninstall oclint  #  reserve variant to deal with conflict link
     if [[ $TASK == "mpi" ]]; then
