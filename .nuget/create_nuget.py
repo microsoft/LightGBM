@@ -66,11 +66,11 @@ if __name__ == "__main__":
     target_str = '''
     <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
-        <EnableMLUnsupportedPlatformTargetCheck Condition="'$(EnableMLUnsupportedPlatformTargetCheck)' == ''">true</EnableMLUnsupportedPlatformTargetCheck>
+        <EnableLightGBMUnsupportedPlatformTargetCheck Condition="'$(EnableLightGBMUnsupportedPlatformTargetCheck)' == ''">true</EnableLightGBMUnsupportedPlatformTargetCheck>
     </PropertyGroup>
-    <Target Name="_CheckForUnsupportedPlatformTarget"
-            Condition="'$(EnableMLUnsupportedPlatformTargetCheck)' == 'true'"
-            AfterTargets="_CheckForInvalidConfigurationAndPlatform">
+    <Target Name="_LightGBMCheckForUnsupportedPlatformTarget"
+            Condition="'$(EnableLightGBMUnsupportedPlatformTargetCheck)' == 'true'"
+            AfterTargets="_LightGBMCheckForInvalidConfigurationAndPlatform">
         <Error Condition="'$(PlatformTarget)' != 'x64' AND
                         ('$(OutputType)' == 'Exe' OR '$(OutputType)'=='WinExe') AND
                         !('$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(PlatformTarget)' == '')"
