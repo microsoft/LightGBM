@@ -1,14 +1,8 @@
 #ifndef LIGHTGBM_C_API_H_
 #define LIGHTGBM_C_API_H_
 
-#include <LightGBM/meta.h>
-#include <LightGBM/utils/log.h>
-
 #include <cstdint>
-#include <exception>
-#include <stdexcept>
 #include <cstring>
-#include <string>
 
 /*!
 * To avoid type conversion on large data, most of our expose interface support both for float_32 and float_64.
@@ -783,6 +777,12 @@ LIGHTGBM_C_EXPORT int LGBM_NetworkInitWithFunctions(int num_machines, int rank,
                                                     void* reduce_scatter_ext_fun, 
                                                     void* allgather_ext_fun);
 
+
+#if defined(_MSC_VER)
+#define THREAD_LOCAL __declspec(thread) 
+#else
+#define THREAD_LOCAL thread_local
+#endif
 // exception handle and error msg
 static char* LastErrorMsg() { static THREAD_LOCAL char err_msg[512] = "Everything is fine"; return err_msg; }
 
@@ -790,22 +790,5 @@ static char* LastErrorMsg() { static THREAD_LOCAL char err_msg[512] = "Everythin
 inline void LGBM_SetLastError(const char* msg) {
   std::strcpy(LastErrorMsg(), msg);
 }
-
-inline int LGBM_APIHandleException(const std::exception& ex) {
-  LGBM_SetLastError(ex.what());
-  return -1;
-}
-inline int LGBM_APIHandleException(const std::string& ex) {
-  LGBM_SetLastError(ex.c_str());
-  return -1;
-}
-
-#define API_BEGIN() try {
-
-#define API_END() } \
-catch(std::exception& ex) { return LGBM_APIHandleException(ex); } \
-catch(std::string& ex) { return LGBM_APIHandleException(ex); } \
-catch(...) { return LGBM_APIHandleException("unknown exception"); } \
-return 0;
 
 #endif // LIGHTGBM_C_API_H_
