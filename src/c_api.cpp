@@ -1,9 +1,9 @@
-#include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/c_api.h>
 
+#include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/threading.h>
-#include <LightGBM/c_api.h>
 #include <LightGBM/dataset_loader.h>
 #include <LightGBM/dataset.h>
 #include <LightGBM/boosting.h>

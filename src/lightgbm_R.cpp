@@ -1,17 +1,18 @@
+#include <LightGBM/lightgbm_R.h>
+
+#include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/utils/text_reader.h>
+#include <LightGBM/utils/common.h>
+
 #include <vector>
 #include <string>
 #include <utility>
 #include <cstring>
 #include <cstdio>
 #include <sstream>
-#include <LightGBM/utils/openmp_wrapper.h>
 #include <cstdint>
 #include <memory>
 
-#include <LightGBM/utils/text_reader.h>
-#include <LightGBM/utils/common.h>
-
-#include <LightGBM/lightgbm_R.h>
 
 #define COL_MAJOR (0)
 
