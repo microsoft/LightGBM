@@ -70,7 +70,7 @@ if __name__ == "__main__":
     </PropertyGroup>
     <Target Name="_LightGBMCheckForUnsupportedPlatformTarget"
             Condition="'$(EnableLightGBMUnsupportedPlatformTargetCheck)' == 'true'"
-            AfterTargets="_LightGBMCheckForInvalidConfigurationAndPlatform">
+            AfterTargets="_CheckForInvalidConfigurationAndPlatform">
         <Error Condition="'$(PlatformTarget)' != 'x64' AND
                         ('$(OutputType)' == 'Exe' OR '$(OutputType)'=='WinExe') AND
                         !('$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(PlatformTarget)' == '')"
