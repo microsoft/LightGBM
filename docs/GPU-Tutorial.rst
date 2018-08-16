@@ -192,7 +192,7 @@ Huan Zhang, Si Si and Cho-Jui Hsieh. "`GPU Acceleration for Large-scale Tree Boo
 
 .. _Microsoft Azure cloud computing platform: https://azure.microsoft.com/
 
-.. _AMDGPU-Pro: http://support.amd.com/en-us/download/linux
+.. _AMDGPU-Pro: https://www.amd.com/en/support
 
 .. _Python-package Examples: https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide
 
