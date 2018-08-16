@@ -234,7 +234,7 @@ public:
 
   template<class T>
   static void GlobalSum(std::vector<T>& local) {
-    std::vector<T> global;
+    std::vector<T> global(local.size(), 0);
     Allreduce(reinterpret_cast<char*>(local.data()),
               static_cast<comm_size_t>(sizeof(T) * local.size()), sizeof(T),
               reinterpret_cast<char*>(global.data()),
