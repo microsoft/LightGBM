@@ -1,10 +1,10 @@
 #ifndef LIGHTGBM_NETWORK_LINKERS_H_
 #define LIGHTGBM_NETWORK_LINKERS_H_
 
-
+#include <LightGBM/network.h>
 #include <LightGBM/meta.h>
 #include <LightGBM/config.h>
-#include <LightGBM/network.h>
+
 
 #include <algorithm>
 #include <chrono>
