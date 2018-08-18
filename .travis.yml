@@ -14,7 +14,7 @@ env:
     - COMPILER=gcc
     - PYTHON_VERSION=3.7
   matrix:
-    - TASK=regular
+    - TASK=regular PYTHON_VERSION=3.6
     - TASK=regular COMPILER=clang
     - TASK=mpi
     - TASK=pylint
