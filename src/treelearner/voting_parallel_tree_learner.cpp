@@ -3,7 +3,6 @@
 #include <LightGBM/utils/common.h>
 
 #include <cstring>
-
 #include <tuple>
 #include <vector>
 

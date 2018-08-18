@@ -1,14 +1,20 @@
 Installation Guide
 ==================
 
-Here is the guide for the build of CLI version.
+Here is the guide for the build of LightGBM CLI version.
 
 For the build of Python-package and R-package, please refer to `Python-package`_ and `R-package`_ folders respectively.
 
 Windows
 ~~~~~~~
 
-LightGBM can use Visual Studio, MSBuild with CMake or MinGW to build in Windows.
+On Windows LightGBM can be built using
+
+- **Visual Studio**;
+
+- **CMake** and **MSBuild**;
+
+- **CMake** and **MinGW**.
 
 Visual Studio (or MSBuild)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -22,16 +28,16 @@ With GUI
 
 3. Go to ``LightGBM-master/windows`` folder.
 
-4. Open ``LightGBM.sln`` file with Visual Studio, choose ``Release`` configuration and click ``BUILD``->\ ``Build Solution (Ctrl+Shift+B)``.
+4. Open ``LightGBM.sln`` file with **Visual Studio**, choose ``Release`` configuration and click ``BUILD`` -> ``Build Solution (Ctrl+Shift+B)``.
 
-   If you have errors about **Platform Toolset**, go to ``PROJECT``->\ ``Properties``->\ ``Configuration Properties``->\ ``General`` and select the toolset installed on your machine.
+   If you have errors about **Platform Toolset**, go to ``PROJECT`` -> ``Properties`` -> ``Configuration Properties`` -> ``General`` and select the toolset installed on your machine.
 
 The exe file will be in ``LightGBM-master/windows/x64/Release`` folder.
 
 From Command Line
 *****************
 
-1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (**MSBuild** is not needed if **Visual Studio** (2015 or newer) is installed).
+1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (**MSBuild** is not needed if **Visual Studio** (2015 or newer) is already installed).
 
 2. Run the following commands:
 
@@ -46,8 +52,8 @@ From Command Line
 
 The exe and dll files will be in ``LightGBM/Release`` folder.
 
-MinGW64
-^^^^^^^
+MinGW-w64
+^^^^^^^^^
 
 1. Install `Git for Windows`_, `CMake`_ and `MinGW-w64`_.
 
@@ -66,69 +72,87 @@ The exe and dll files will be in ``LightGBM/`` folder.
 
 **Note**: You may need to run the ``cmake -G "MinGW Makefiles" ..`` one more time if met ``sh.exe was found in your PATH`` error.
 
-Also you may want to read `gcc Tips <./gcc-Tips.rst>`__.
+It is recommended to use **Visual Studio** for its better multithreading efficiency in **Windows** for many-core systems (see `FAQ <./FAQ.rst#lightgbm>`__ Question 4 and Question 8).
+
+Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
 Linux
 ~~~~~
 
-LightGBM uses **CMake** to build. Run the following commands:
+On Linux LightGBM can be built using **CMake** and **gcc** or **Clang**.
 
-.. code::
-
-  git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
-  mkdir build ; cd build
-  cmake ..
-  make -j4
-
-**Note**: glibc >= 2.14 is required.
-
-Also you may want to read `gcc Tips <./gcc-Tips.rst>`__.
-
-macOS
-~~~~~
-
-LightGBM can use Apple Clang (9.0 or higher), or GCC/G++ to build in macOS.
-
-Apple Clang (9.0 or higher)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-1. Install `CMake`_ (3.12 or higher):
-
-   .. code::
-
-     brew install --HEAD cmake
+1. Install `CMake`_.
 
 2. Run the following commands:
 
    .. code::
 
-     brew install libomp
      git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
      mkdir build ; cd build
      cmake ..
      make -j4
 
-GCC/G++
-^^^^^^^
+**Note**: glibc >= 2.14 is required.
 
-Please install **gcc/g++** by using the following commands:
+Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
-.. code::
+macOS
+~~~~~
 
-  brew install cmake
-  brew install gcc
+On macOS LightGBM can be built using **CMake** and **Apple Clang** or **gcc**.
 
-Then install LightGBM:
+Apple Clang
+^^^^^^^^^^^
 
-.. code::
+Only **Apple Clang** version 8.1 or higher is supported.
 
-  git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
-  export CXX=g++-7 CC=gcc-7  # replace 7 with version of gcc installed on your machine
-  mkdir build ; cd build
-  cmake ..
-  make -j4
+1. Install `CMake`_ (3.12 or higher):
 
-Also you may want to read `gcc Tips <./gcc-Tips.rst>`__.
+   .. code::
+
+     brew install cmake
+
+2. Install **OpenMP**:
+
+   .. code::
+
+     brew install libomp
+
+3. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+     mkdir build ; cd build
+     cmake ..
+     make -j4
+
+gcc
+^^^
+
+1. Install `CMake`_ (3.2 or higher):
+
+   .. code::
+
+     brew install cmake
+
+2. Install **gcc**:
+
+   .. code::
+
+     brew install gcc
+
+3. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+     export CXX=g++-7 CC=gcc-7  # replace "7" with version of gcc installed on your machine
+     mkdir build ; cd build
+     cmake ..
+     make -j4
+
+Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
 Docker
 ~~~~~~
@@ -138,13 +162,19 @@ Refer to `Docker folder <https://github.com/Microsoft/LightGBM/tree/master/docke
 Build MPI Version
 ~~~~~~~~~~~~~~~~~
 
-The default build version of LightGBM is based on socket. LightGBM also supports `MPI`_.
-MPI is a high performance communication approach with `RDMA`_ support.
+The default build version of LightGBM is based on socket. LightGBM also supports MPI.
+`MPI`_ is a high performance communication approach with `RDMA`_ support.
 
 If you need to run a parallel learning application with high performance communication, you can build the LightGBM with MPI support.
 
 Windows
 ^^^^^^^
+
+On Windows MPI version of LightGBM can be built using
+
+- **MS MPI** and **Visual Studio**;
+
+- **MS MPI**, **CMake** and **MSBuild**.
 
 With GUI
 ********
@@ -157,9 +187,9 @@ With GUI
 
 4. Go to ``LightGBM-master/windows`` folder.
 
-5. Open ``LightGBM.sln`` file with Visual Studio, choose ``Release_mpi`` configuration and click ``BUILD``->\ ``Build Solution (Ctrl+Shift+B)``.
+5. Open ``LightGBM.sln`` file with **Visual Studio**, choose ``Release_mpi`` configuration and click ``BUILD`` -> ``Build Solution (Ctrl+Shift+B)``.
 
-   If you have errors about **Platform Toolset**, go to ``PROJECT``->\ ``Properties``->\ ``Configuration Properties``->\ ``General`` and select the toolset installed on your machine.
+   If you have errors about **Platform Toolset**, go to ``PROJECT`` -> ``Properties`` -> ``Configuration Properties`` -> ``General`` and select the toolset installed on your machine.
 
 The exe file will be in ``LightGBM-master/windows/x64/Release_mpi`` folder.
 
@@ -168,7 +198,7 @@ From Command Line
 
 1. You need to install `MS MPI`_ first. Both ``msmpisdk.msi`` and ``MSMpiSetup.exe`` are needed.
 
-2. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (MSBuild is not needed if **Visual Studio** (2015 or newer) is installed).
+2. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (**MSBuild** is not needed if **Visual Studio** (2015 or newer) is already installed).
 
 3. Run the following commands:
 
@@ -188,38 +218,90 @@ The exe and dll files will be in ``LightGBM/Release`` folder.
 Linux
 ^^^^^
 
-You need to install `Open MPI`_ first.
+On Linux MPI version of LightGBM can be built using **Open MPI**, **CMake** and **gcc** or **Clang**.
 
-Then run the following commands:
+1. Install `Open MPI`_.
 
-.. code::
+2. Install `CMake`_.
 
-  git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
-  mkdir build ; cd build
-  cmake -DUSE_MPI=ON ..
-  make -j4
+3. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+     mkdir build ; cd build
+     cmake -DUSE_MPI=ON ..
+     make -j4
 
 **Note**: glibc >= 2.14 is required.
 
 macOS
 ^^^^^
 
-Install **Open MPI** first:
+On macOS MPI version of LightGBM can be built using **Open MPI**, **CMake** and **Apple Clang** or **gcc**.
 
-.. code::
+Apple Clang
+***********
 
-  brew install open-mpi
-  brew install cmake
+Only **Apple Clang** version 8.1 or higher is supported.
 
-Then run the following commands:
+1. Install `CMake`_ (3.12 or higher):
 
-.. code::
+   .. code::
 
-  git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
-  export CXX=g++-7 CC=gcc-7  # replace 7 with version of gcc installed on your machine
-  mkdir build ; cd build
-  cmake -DUSE_MPI=ON ..
-  make -j4
+     brew install cmake
+
+2. Install **OpenMP**:
+
+   .. code::
+
+     brew install libomp
+
+3. Install **Open MPI**:
+
+   .. code::
+
+     brew install open-mpi
+
+4. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+     mkdir build ; cd build
+     cmake -DUSE_MPI=ON ..
+     make -j4
+
+gcc
+***
+
+1. Install `CMake`_ (3.2 or higher):
+
+   .. code::
+
+     brew install cmake
+
+2. Install **gcc**:
+
+   .. code::
+
+     brew install gcc
+
+3. Install **Open MPI**:
+
+   .. code::
+
+     brew install open-mpi
+
+4. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+     export CXX=g++-7 CC=gcc-7  # replace "7" with version of gcc installed on your machine
+     mkdir build ; cd build
+     cmake -DUSE_MPI=ON ..
+     make -j4
 
 Build GPU Version
 ~~~~~~~~~~~~~~~~~
@@ -227,19 +309,21 @@ Build GPU Version
 Linux
 ^^^^^
 
+On Linux GPU version of LightGBM can be built using **OpenCL**, **Boost**, **CMake** and **gcc** or **Clang**.
+
 The following dependencies should be installed before compilation:
 
--  OpenCL 1.2 headers and libraries, which is usually provided by GPU manufacture.
+-  **OpenCL** 1.2 headers and libraries, which is usually provided by GPU manufacture.
 
    The generic OpenCL ICD packages (for example, Debian package ``cl-icd-libopencl1`` and ``cl-icd-opencl-dev``) can also be used.
 
--  libboost 1.56 or later (1.61 or later recommended).
+-  **libboost** 1.56 or later (1.61 or later is recommended).
 
    We use Boost.Compute as the interface to GPU, which is part of the Boost library since version 1.61. However, since we include the source code of Boost.Compute as a submodule, we only require the host has Boost 1.56 or later installed. We also use Boost.Align for memory allocation. Boost.Compute requires Boost.System and Boost.Filesystem to store offline kernel cache.
 
    The following Debian packages should provide necessary Boost libraries: ``libboost-dev``, ``libboost-system-dev``, ``libboost-filesystem-dev``.
 
--  CMake 3.2 or later.
+-  **CMake** 3.2 or later.
 
 To build LightGBM GPU version, run the following commands:
 
@@ -255,11 +339,13 @@ To build LightGBM GPU version, run the following commands:
 Windows
 ^^^^^^^
 
-If you use **MinGW**, the build procedure are similar to the build in Linux. Refer to `GPU Windows Compilation <./GPU-Windows.rst>`__ to get more details.
+On Windows GPU version of LightGBM can be built using **OpenCL**, **Boost**, **CMake** and **MSBuild** or **MinGW**.
 
-Following procedure is for the MSVC (Microsoft Visual C++) build.
+If you use **MinGW**, the build procedure is similar to the build on Linux. Refer to `GPU Windows Compilation <./GPU-Windows.rst>`__ to get more details.
 
-1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (MSBuild is not needed if **Visual Studio** (2015 or newer) is installed).
+Following procedure is for the **MSVC** (Microsoft Visual C++) build.
+
+1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (**MSBuild** is not needed if **Visual Studio** (2015 or newer) is installed).
 
 2. Install **OpenCL** for Windows. The installation depends on the brand (NVIDIA, AMD, Intel) of your GPU card.
 
@@ -292,7 +378,7 @@ Following procedure is for the MSVC (Microsoft Visual C++) build.
      cmake -DCMAKE_GENERATOR_PLATFORM=x64 -DUSE_GPU=1 ..
      cmake --build . --target ALL_BUILD --config Release
 
-   **Note**: ``C:\local\boost_1_64_0\`` and ``C:\local\boost_1_64_0\lib64-msvc-14.0`` are locations of your Boost binaries. You also can set them to the environment variable to avoid ``Set ...`` commands when build.
+   **Note**: ``C:\local\boost_1_64_0\`` and ``C:\local\boost_1_64_0\lib64-msvc-14.0`` are locations of your **Boost** binaries. You also can set them to the environment variable to avoid ``Set ...`` commands when build.
 
 Docker
 ^^^^^^
@@ -302,92 +388,23 @@ Refer to `GPU Docker folder <https://github.com/Microsoft/LightGBM/tree/master/d
 Build HDFS Version
 ~~~~~~~~~~~~~~~~~~
 
-Windows
-^^^^^^^
-
-Visual Studio (or MSBuild)
-**************************
-
-1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (**MSBuild** is not needed if **Visual Studio** (2015 or newer) is installed).
-
-2. Run the following commands:
-
-   .. code::
-
-     git clone --recursive https://github.com/Microsoft/LightGBM
-     cd LightGBM
-     mkdir build
-     cd build
-     cmake -DCMAKE_GENERATOR_PLATFORM=x64 -DUSE_HDFS=ON ..
-     cmake --build . --target ALL_BUILD --config Release
-
-MinGW64
-*******
-
-1. Install `Git for Windows`_, `CMake`_ and `MinGW-w64`_.
-
-2. Run the following commands:
-
-   .. code::
-
-     git clone --recursive https://github.com/Microsoft/LightGBM
-     cd LightGBM
-     mkdir build
-     cd build
-     cmake -G "MinGW Makefiles" -DUSE_HDFS=ON ..
-     mingw32-make.exe -j4
+**Note**: Installation process of HDFS version is untested.
 
 Linux
 ^^^^^
 
-LightGBM uses **CMake** to build. Run the following commands:
+On Linux HDFS version of LightGBM can be built using **CMake** and **gcc** or **Clang**.
 
-.. code::
-
-  git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
-  mkdir build ; cd build
-  cmake -DUSE_HDFS=ON ..
-  make -j4
-
-macOS
-^^^^^
-
-LightGBM can use Apple Clang (9.0 or higher), or GCC/G++ to build in macOS.
-
-Apple Clang (9.0 or higher)
-***************************
-
-1. Install `CMake`_ (3.12 or higher).
+1. Install `CMake`_.
 
 2. Run the following commands:
 
    .. code::
 
-     brew install libomp
      git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
      mkdir build ; cd build
      cmake -DUSE_HDFS=ON ..
      make -j4
-
-GCC/G++
-*******
-
-Please install **gcc/g++** by using the following commands:
-
-.. code::
-
-  brew install cmake
-  brew install gcc
-
-Then install LightGBM:
-
-.. code::
-
-  git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
-  export CXX=g++-7 CC=gcc-7  # replace 7 with version of gcc installed on your machine
-  mkdir build ; cd build
-  cmake -DUSE_HDFS=ON ..
-  make -j4
 
 Build Java Wrapper
 ~~~~~~~~~~~~~~~~~~
@@ -395,18 +412,20 @@ Build Java Wrapper
 Linux
 ^^^^^
 
-You need to install `SWIG`_ and **Java** first.
+On Linux Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMake** and **gcc** or **Clang**.
 
-Then run the following commands:
+1. Install `CMake`_, `SWIG`_ and **Java**.
 
-.. code::
+2. Run the following commands:
 
-  git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
-  mkdir build ; cd build
-  cmake -DUSE_SWIG=ON ..
-  make -j4
+   .. code::
 
-This will generate a JAR file containing the LightGBM `C API <./Development-Guide.rst#c-api>`__ wrapped by SWIG.
+     git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+     mkdir build ; cd build
+     cmake -DUSE_SWIG=ON ..
+     make _lightgbm_swig -j4
+
+This will generate a JAR file containing the LightGBM `C API <./Development-Guide.rst#c-api>`__ wrapped by **SWIG**.
 
 .. _Python-package: https://github.com/Microsoft/LightGBM/tree/master/python-package
 

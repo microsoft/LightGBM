@@ -1,9 +1,10 @@
-#include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/c_api.h>
 
+#include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/threading.h>
-#include <LightGBM/c_api.h>
+#include <LightGBM/utils/log.h>
 #include <LightGBM/dataset_loader.h>
 #include <LightGBM/dataset.h>
 #include <LightGBM/boosting.h>
@@ -25,6 +26,23 @@
 #include "./application/predictor.hpp"
 
 namespace LightGBM {
+
+inline int LGBM_APIHandleException(const std::exception& ex) {
+  LGBM_SetLastError(ex.what());
+  return -1;
+}
+inline int LGBM_APIHandleException(const std::string& ex) {
+  LGBM_SetLastError(ex.c_str());
+  return -1;
+}
+
+#define API_BEGIN() try {
+
+#define API_END() } \
+catch(std::exception& ex) { return LGBM_APIHandleException(ex); } \
+catch(std::string& ex) { return LGBM_APIHandleException(ex); } \
+catch(...) { return LGBM_APIHandleException("unknown exception"); } \
+return 0;
 
 class Booster {
 public:
