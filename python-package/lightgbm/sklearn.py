@@ -531,8 +531,6 @@ class LGBMModel(_LGBMModelBase):
                              "match the input. Model n_features_ is %s and "
                              "input n_features is %s "
                              % (self._n_features, n_features))
-        if num_iteration is None:
-            num_iteration = self.best_iteration_ if self.best_iteration_ is not None else -1
         return self.booster_.predict(X, raw_score=raw_score, num_iteration=num_iteration,
                                      pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
 
