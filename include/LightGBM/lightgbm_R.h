@@ -1,11 +1,10 @@
 #ifndef LIGHTGBM_R_H_
 #define LIGHTGBM_R_H_
 
-#include <LightGBM/utils/log.h>
+#include "R_object_helper.h"
+
 #include <cstdint>
 #include <LightGBM/c_api.h>
-
-#include "R_object_helper.h"
 
 
 /*!

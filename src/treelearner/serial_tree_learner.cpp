@@ -1,8 +1,9 @@
 #include "serial_tree_learner.h"
 
-#include <LightGBM/utils/array_args.h>
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
+
+#include <LightGBM/utils/array_args.h>
 
 #include <algorithm>
 #include <vector>
