@@ -1,9 +1,11 @@
 #ifndef LIGHTGBM_BIN_H_
 #define LIGHTGBM_BIN_H_
 
-#include <LightGBM/utils/common.h>
-
 #include <LightGBM/meta.h>
+
+#include <LightGBM/utils/common.h>
+#include <LightGBM/utils/file_io.h>
+
 
 #include <vector>
 #include <functional>

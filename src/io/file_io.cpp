@@ -1,5 +1,5 @@
-#include <LightGBM/utils/log.h>
 #include <LightGBM/utils/file_io.h>
+#include <LightGBM/utils/log.h>
 
 #include <algorithm>
 #include <sstream>

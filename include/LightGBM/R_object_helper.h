@@ -7,6 +7,7 @@
 #define R_OBJECT_HELPER_H_
 
 #include <cstdint>
+#include <cstdio>
 
 #define TYPE_BITS 5
 // use .Internal(internalsID()) to uuid
