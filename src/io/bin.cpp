@@ -1,6 +1,7 @@
+#include <LightGBM/bin.h>
+
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/file_io.h>
-#include <LightGBM/bin.h>
 
 #include "dense_bin.hpp"
 #include "dense_nbits_bin.hpp"
@@ -317,7 +318,7 @@ namespace LightGBM {
         }
       }
       num_bin_ = 0;
-      int rest_cnt = total_sample_cnt - na_cnt;
+      int rest_cnt = static_cast<int>(total_sample_cnt - na_cnt);
       if (rest_cnt > 0) {
         // sort by counts
         Common::SortForPair<int, int>(counts_int, distinct_values_int, 0, true);

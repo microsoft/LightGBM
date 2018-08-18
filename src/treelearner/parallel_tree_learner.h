@@ -1,14 +1,13 @@
 #ifndef LIGHTGBM_TREELEARNER_PARALLEL_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNER_PARALLEL_TREE_LEARNER_H_
 
-#include <LightGBM/utils/array_args.h>
-
-#include <LightGBM/network.h>
 #include "serial_tree_learner.h"
 #include "gpu_tree_learner.h"
+#include <LightGBM/network.h>
+
+#include <LightGBM/utils/array_args.h>
 
 #include <cstring>
-
 #include <vector>
 #include <memory>
 
