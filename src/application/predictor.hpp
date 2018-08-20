@@ -241,7 +241,7 @@ private:
         buf[features[i].first] = features[i].second;
       }
     }
-    return std::move(buf);
+    return buf;
   }
 
   /*! \brief Boosting model */
