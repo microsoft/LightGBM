@@ -1358,7 +1358,7 @@ RowPairFunctionFromDenseMatric(const void* data, int num_row, int num_col, int d
 }
 
 std::function<std::vector<std::pair<int, double>>(int idx)>
-RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, const void* data, int data_type, int64_t nindptr, int64_t nelem) {
+RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, const void* data, int data_type, int64_t , int64_t ) {
   if (data_type == C_API_DTYPE_FLOAT32) {
     const float* data_ptr = reinterpret_cast<const float*>(data);
     if (indptr_type == C_API_DTYPE_INT32) {
@@ -1414,7 +1414,7 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const int32_t* indices, 
 }
 
 std::function<std::pair<int, double>(int idx)>
-IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indices, const void* data, int data_type, int64_t ncol_ptr, int64_t nelem, int col_idx) {
+IterateFunctionFromCSC(const void* col_ptr, int col_ptr_type, const int32_t* indices, const void* data, int data_type, int64_t ncol_ptr, int64_t , int col_idx) {
   CHECK(col_idx < ncol_ptr && col_idx >= 0);
   if (data_type == C_API_DTYPE_FLOAT32) {
     const float* data_ptr = reinterpret_cast<const float*>(data);

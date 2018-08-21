@@ -136,7 +136,7 @@ public:
   */
   INDEX_T ReadAllLines() {
     return ReadAllAndProcess(
-      [](INDEX_T, const char* buffer, size_t size) {
+      [this](INDEX_T, const char* buffer, size_t size) {
       lines_.emplace_back(buffer, size);
     });
   }
@@ -221,7 +221,7 @@ public:
 
   INDEX_T CountLine() {
     return ReadAllAndProcess(
-      [](INDEX_T, const char*, size_t) {
+      [this](INDEX_T, const char*, size_t) {
     });
   }
 
