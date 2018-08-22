@@ -1421,7 +1421,7 @@ class Booster(object):
         return self.__deepcopy__(None)
 
     def __deepcopy__(self, _):
-        model_str = self.mode_to_string(num_iteration=-1)
+        model_str = self.model_to_string(num_iteration=-1)
         booster = Booster({'model_str': model_str})
         booster.pandas_categorical = self.pandas_categorical
         return booster
@@ -1432,7 +1432,7 @@ class Booster(object):
         this.pop('train_set', None)
         this.pop('valid_sets', None)
         if handle is not None:
-            this["handle"] = self.mode_to_string(num_iteration=-1)
+            this["handle"] = self.model_to_string(num_iteration=-1)
         return this
 
     def __setstate__(self, state):
@@ -1757,7 +1757,7 @@ class Booster(object):
             print('Finished loading model, total used %d iterations' % (int(out_num_iterations.value)))
         self.__num_class = out_num_class.value
 
-    def mode_to_string(self, num_iteration=None, start_iteration=0):
+    def model_to_string(self, num_iteration=None, start_iteration=0):
         """Save Booster to string.
 
         Parameters
