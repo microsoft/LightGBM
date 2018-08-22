@@ -1401,7 +1401,7 @@ class Booster(object):
             self.__num_class = out_num_class.value
             self.pandas_categorical = _load_pandas_categorical(model_file)
         elif 'model_str' in params:
-            self._load_model_from_string(params['model_str'])
+            self.model_from_string(params['model_str'])
         else:
             raise TypeError('Need at least one training dataset or model file to create booster instance')
 
@@ -1734,12 +1734,25 @@ class Booster(object):
         _save_pandas_categorical(filename, self.pandas_categorical)
 
     def shuffle_models(self):
-        """Shuffle models
+        """Shuffle models.
         """
         _safe_call(_LIB.LGBM_BoosterShuffleModels(self.handle))
 
-    def _load_model_from_string(self, model_str, verbose=True):
-        """[Private] Load model from string"""
+    def model_from_string(self, model_str, verbose=True):
+        """Load Booster from a string.
+
+        Parameters
+        ----------
+        model_str: string
+            Model will be loaded from this string.
+        verbose: Bool, optional (default=True)
+            Set to False to disable log when loading model.
+
+        Returns
+        -------
+        result: string
+            String representation of Booster.
+        """
         if self.handle is not None:
             _safe_call(_LIB.LGBM_BoosterFree(self.handle))
         self._free_buffer()
@@ -1767,12 +1780,12 @@ class Booster(object):
             If None, if the best iteration exists, it is saved; otherwise, all iterations are saved.
             If <= 0, all iterations are saved.
         start_iteration: int, optional (default=0)
-            Start index of the iteration that should to saved.
+            Start index of the iteration that should be saved.
 
         Returns
         -------
         result: string
-            string of model string.
+            String representation of Booster.
         """
         if num_iteration is None:
             num_iteration = self.best_iteration
@@ -1811,7 +1824,7 @@ class Booster(object):
             If None, if the best iteration exists, it is dumped; otherwise, all iterations are dumped.
             If <= 0, all iterations are dumped.
         start_iteration: int, optional (default=0)
-            Start index of the iteration that should to dumped
+            Start index of the iteration that should be dumped
 
         Returns
         -------
