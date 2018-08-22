@@ -1722,7 +1722,7 @@ class Booster(object):
             If None, if the best iteration exists, it is saved; otherwise, all iterations are saved.
             If <= 0, all iterations are saved.
         start_iteration: int, optional (default=0)
-            Start index of the iteration that should to saved.
+            Start index of the iteration that should be saved.
         """
         if num_iteration is None:
             num_iteration = self.best_iteration
@@ -1745,13 +1745,13 @@ class Booster(object):
         ----------
         model_str: string
             Model will be loaded from this string.
-        verbose: Bool, optional (default=True)
+        verbose: bool, optional (default=True)
             Set to False to disable log when loading model.
 
         Returns
         -------
-        result: string
-            String representation of Booster.
+        result: Booster
+            Loaded Booster object.
         """
         if self.handle is not None:
             _safe_call(_LIB.LGBM_BoosterFree(self.handle))
@@ -1769,6 +1769,7 @@ class Booster(object):
         if verbose:
             print('Finished loading model, total used %d iterations' % (int(out_num_iterations.value)))
         self.__num_class = out_num_class.value
+        return self
 
     def model_to_string(self, num_iteration=None, start_iteration=0):
         """Save Booster to string.
@@ -1824,7 +1825,7 @@ class Booster(object):
             If None, if the best iteration exists, it is dumped; otherwise, all iterations are dumped.
             If <= 0, all iterations are dumped.
         start_iteration: int, optional (default=0)
-            Start index of the iteration that should be dumped
+            Start index of the iteration that should be dumped.
 
         Returns
         -------
