@@ -184,7 +184,7 @@ def convert_from_sliced_object(data):
     """fix the memory of multi-dimensional sliced object"""
     if data.base is not None and isinstance(data, np.ndarray) and isinstance(data.base, np.ndarray):
         if not data.flags.c_contiguous:
-            warnings.warn("Usage subset(sliced data) of np.ndarray is not recommended due to it will double the peak memory cost in LightGBM.")
+            warnings.warn("Usage of np.ndarray subset (sliced data) is not recommended due to it will double the peak memory cost in LightGBM.")
             return np.copy(data)
     return data
 
@@ -607,9 +607,9 @@ class Dataset(object):
             If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
             All values in categorical features should be less than int32 max value (2147483647).
             All negative values in categorical features will be treated as missing values.
-        params: dict or None, optional (default=None)
+        params : dict or None, optional (default=None)
             Other parameters.
-        free_raw_data: bool, optional (default=True)
+        free_raw_data : bool, optional (default=True)
             If True, raw data is freed after constructing inner Dataset.
         """
         self.handle = None
@@ -639,6 +639,7 @@ class Dataset(object):
         if self.handle is not None:
             _safe_call(_LIB.LGBM_DatasetFree(self.handle))
             self.handle = None
+        return self
 
     def _lazy_init(self, data, label=None, reference=None,
                    weight=None, group=None, init_score=None, predictor=None,
@@ -646,7 +647,7 @@ class Dataset(object):
                    categorical_feature='auto', params=None):
         if data is None:
             self.handle = None
-            return
+            return self
         if reference is not None:
             self.pandas_categorical = reference.pandas_categorical
             categorical_feature = reference.categorical_feature
@@ -747,7 +748,7 @@ class Dataset(object):
         elif self.predictor is not None:
             raise TypeError('wrong predictor type {}'.format(type(self.predictor).__name__))
         # set feature names
-        self.set_feature_name(feature_name)
+        return self.set_feature_name(feature_name)
 
     def __init_from_np2d(self, mat, params_str, ref_dataset):
         """
@@ -773,6 +774,7 @@ class Dataset(object):
             c_str(params_str),
             ref_dataset,
             ctypes.byref(self.handle)))
+        return self
 
     def __init_from_list_np2d(self, mats, params_str, ref_dataset):
         """
@@ -821,6 +823,7 @@ class Dataset(object):
             c_str(params_str),
             ref_dataset,
             ctypes.byref(self.handle)))
+        return self
 
     def __init_from_csr(self, csr, params_str, ref_dataset):
         """
@@ -845,6 +848,7 @@ class Dataset(object):
             c_str(params_str),
             ref_dataset,
             ctypes.byref(self.handle)))
+        return self
 
     def __init_from_csc(self, csc, params_str, ref_dataset):
         """
@@ -869,6 +873,7 @@ class Dataset(object):
             c_str(params_str),
             ref_dataset,
             ctypes.byref(self.handle)))
+        return self
 
     def construct(self):
         """Lazy init.
@@ -876,7 +881,7 @@ class Dataset(object):
         Returns
         -------
         self : Dataset
-            Returns self.
+            Constructed Dataset object.
         """
         if self.handle is None:
             if self.reference is not None:
@@ -928,13 +933,13 @@ class Dataset(object):
             Init score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
-        params: dict or None, optional (default=None)
+        params : dict or None, optional (default=None)
             Other parameters.
 
         Returns
         -------
-        self : Dataset
-            Returns self.
+        valid : Dataset
+            Validation Dataset with reference to self.
         """
         ret = Dataset(data, label=label, reference=self,
                       weight=weight, group=group, init_score=init_score,
@@ -950,7 +955,7 @@ class Dataset(object):
         ----------
         used_indices : list of int
             Indices used to create the subset.
-        params: dict or None, optional (default=None)
+        params : dict or None, optional (default=None)
             Other parameters.
 
         Returns
@@ -974,10 +979,16 @@ class Dataset(object):
         ----------
         filename : string
             Name of the output file.
+
+        Returns
+        -------
+        self : Dataset
+            Returns self.
         """
         _safe_call(_LIB.LGBM_DatasetSaveBinary(
             self.construct().handle,
             c_str(filename)))
+        return self
 
     def _update_params(self, params):
         if not self.params:
@@ -985,20 +996,27 @@ class Dataset(object):
         else:
             self.params_back_up = copy.deepcopy(self.params)
             self.params.update(params)
+        return self
 
     def _reverse_update_params(self):
         self.params = copy.deepcopy(self.params_back_up)
         self.params_back_up = None
+        return self
 
     def set_field(self, field_name, data):
         """Set property into the Dataset.
 
         Parameters
         ----------
-        field_name: string
+        field_name : string
             The field name of the information.
-        data: list, numpy array or None
+        data : list, numpy array or None
             The array of data to be set.
+
+        Returns
+        -------
+        self : Dataset
+            Dataset with set property.
         """
         if self.handle is None:
             raise Exception("Cannot set %s before construct dataset" % field_name)
@@ -1010,7 +1028,7 @@ class Dataset(object):
                 None,
                 ctypes.c_int(0),
                 ctypes.c_int(FIELD_TYPE_MAPPER[field_name])))
-            return
+            return self
         dtype = np.float32
         if field_name == 'group':
             dtype = np.int32
@@ -1031,13 +1049,14 @@ class Dataset(object):
             ptr_data,
             ctypes.c_int(len(data)),
             ctypes.c_int(type_data)))
+        return self
 
     def get_field(self, field_name):
         """Get property from the Dataset.
 
         Parameters
         ----------
-        field_name: string
+        field_name : string
             The field name of the information.
 
         Returns
@@ -1076,19 +1095,25 @@ class Dataset(object):
         ----------
         categorical_feature : list of int or strings
             Names or indices of categorical features.
+
+        Returns
+        -------
+        self : Dataset
+            Dataset with set categorical features.
         """
         if self.categorical_feature == categorical_feature:
-            return
+            return self
         if self.data is not None:
             if self.categorical_feature is None:
                 self.categorical_feature = categorical_feature
-                self._free_handle()
+                return self._free_handle()
             elif categorical_feature == 'auto':
                 warnings.warn('Using categorical_feature in Dataset.')
+                return self
             else:
                 warnings.warn('categorical_feature in Dataset is overridden. New categorical_feature is {}'.format(sorted(list(categorical_feature))))
                 self.categorical_feature = categorical_feature
-                self._free_handle()
+                return self._free_handle()
         else:
             raise LightGBMError("Cannot set categorical feature after freed raw data, set free_raw_data=False when construct Dataset to avoid this.")
 
@@ -1098,10 +1123,10 @@ class Dataset(object):
         Please set init_model in engine.train or engine.cv
         """
         if predictor is self._predictor:
-            return
+            return self
         if self.data is not None:
             self._predictor = predictor
-            self._free_handle()
+            return self._free_handle()
         else:
             raise LightGBMError("Cannot set predictor after freed raw data, set free_raw_data=False when construct Dataset to avoid this.")
 
@@ -1112,16 +1137,19 @@ class Dataset(object):
         ----------
         reference : Dataset
             Reference that is used as a template to consturct the current Dataset.
+
+        Returns
+        -------
+        self : Dataset
+            Dataset with set reference.
         """
-        self.set_categorical_feature(reference.categorical_feature)
-        self.set_feature_name(reference.feature_name)
-        self._set_predictor(reference._predictor)
+        self.set_categorical_feature(reference.categorical_feature).set_feature_name(reference.feature_name)._set_predictor(reference._predictor)
         # we're done if self and reference share a common upstrem reference
         if self.get_ref_chain().intersection(reference.get_ref_chain()):
-            return
+            return self
         if self.data is not None:
             self.reference = reference
-            self._free_handle()
+            return self._free_handle()
         else:
             raise LightGBMError("Cannot set reference after freed raw data, set free_raw_data=False when construct Dataset to avoid this.")
 
@@ -1132,6 +1160,11 @@ class Dataset(object):
         ----------
         feature_name : list of strings
             Feature names.
+
+        Returns
+        -------
+        self : Dataset
+            Dataset with set feature name.
         """
         if feature_name != 'auto':
             self.feature_name = feature_name
@@ -1143,19 +1176,26 @@ class Dataset(object):
                 self.handle,
                 c_array(ctypes.c_char_p, c_feature_name),
                 ctypes.c_int(len(feature_name))))
+        return self
 
     def set_label(self, label):
         """Set label of Dataset
 
         Parameters
         ----------
-        label: list, numpy array or None
+        label : list, numpy array or None
             The label information to be set into Dataset.
+
+        Returns
+        -------
+        self : Dataset
+            Dataset with set label.
         """
         self.label = label
         if self.handle is not None:
             label = list_to_1d_numpy(label, name='label')
             self.set_field('label', label)
+        return self
 
     def set_weight(self, weight):
         """Set weight of each instance.
@@ -1164,6 +1204,11 @@ class Dataset(object):
         ----------
         weight : list, numpy array or None
             Weight to be set for each data point.
+
+        Returns
+        -------
+        self : Dataset
+            Dataset with set weight.
         """
         if weight is not None and np.all(weight == 1):
             weight = None
@@ -1171,6 +1216,7 @@ class Dataset(object):
         if self.handle is not None and weight is not None:
             weight = list_to_1d_numpy(weight, name='weight')
             self.set_field('weight', weight)
+        return self
 
     def set_init_score(self, init_score):
         """Set init score of Booster to start from.
@@ -1179,11 +1225,17 @@ class Dataset(object):
         ----------
         init_score : list, numpy array or None
             Init score for Booster.
+
+        Returns
+        -------
+        self : Dataset
+            Dataset with set init score.
         """
         self.init_score = init_score
         if self.handle is not None and init_score is not None:
             init_score = list_to_1d_numpy(init_score, np.float64, name='init_score')
             self.set_field('init_score', init_score)
+        return self
 
     def set_group(self, group):
         """Set group size of Dataset (used for ranking).
@@ -1192,18 +1244,24 @@ class Dataset(object):
         ----------
         group : list, numpy array or None
             Group size of each group.
+
+        Returns
+        -------
+        self : Dataset
+            Dataset with set group.
         """
         self.group = group
         if self.handle is not None and group is not None:
             group = list_to_1d_numpy(group, np.int32, name='group')
             self.set_field('group', group)
+        return self
 
     def get_label(self):
         """Get the label of the Dataset.
 
         Returns
         -------
-        label : numpy array
+        label : numpy array or None
             The label information from the Dataset.
         """
         if self.label is None:
@@ -1215,7 +1273,7 @@ class Dataset(object):
 
         Returns
         -------
-        weight : numpy array
+        weight : numpy array or None
             Weight for each data point from the Dataset.
         """
         if self.weight is None:
@@ -1227,7 +1285,7 @@ class Dataset(object):
 
         Returns
         -------
-        init_score : numpy array
+        init_score : numpy array or None
             Init score of Booster.
         """
         if self.init_score is None:
@@ -1239,17 +1297,14 @@ class Dataset(object):
 
         Returns
         -------
-        group : numpy array
+        group : numpy array or None
             Group size of each group.
         """
         if self.group is None:
             self.group = self.get_field('group')
             if self.group is not None:
                 # group data from LightGBM is boundaries data, need to convert to group size
-                new_group = []
-                for i in range_(len(self.group) - 1):
-                    new_group.append(self.group[i + 1] - self.group[i])
-                self.group = new_group
+                self.group = np.diff(self.group)
         return self.group
 
     def num_data(self):
@@ -1309,7 +1364,7 @@ class Dataset(object):
                     break
             else:
                 break
-        return(ref_chain)
+        return ref_chain
 
 
 class Booster(object):
@@ -1319,7 +1374,7 @@ class Booster(object):
 
         Parameters
         ----------
-        params: dict or None, optional (default=None)
+        params : dict or None, optional (default=None)
             Parameters for Booster.
         train_set : Dataset or None, optional (default=None)
             Training dataset.
@@ -1448,14 +1503,22 @@ class Booster(object):
         self.__dict__.update(state)
 
     def free_dataset(self):
-        """Free Booster's Datasets."""
+        """Free Booster's Datasets.
+
+        Returns
+        -------
+        self : Booster
+            Booster without Datasets.
+        """
         self.__dict__.pop('train_set', None)
         self.__dict__.pop('valid_sets', None)
         self.__num_dataset = 0
+        return self
 
     def _free_buffer(self):
         self.__inner_predict_buffer = []
         self.__is_predicted_cur_iter = []
+        return self
 
     def set_network(self, machines, local_listen_port=12400,
                     listen_time_out=120, num_machines=1):
@@ -1463,35 +1526,54 @@ class Booster(object):
 
         Parameters
         ----------
-        machines: list, set or string
+        machines : list, set or string
             Names of machines.
-        local_listen_port: int, optional (default=12400)
+        local_listen_port : int, optional (default=12400)
             TCP listen port for local machines.
-        listen_time_out: int, optional (default=120)
+        listen_time_out : int, optional (default=120)
             Socket time-out in minutes.
-        num_machines: int, optional (default=1)
+        num_machines : int, optional (default=1)
             The number of machines for parallel learning application.
+
+        Returns
+        -------
+        self : Booster
+            Booster with set network.
         """
         _safe_call(_LIB.LGBM_NetworkInit(c_str(machines),
                                          ctypes.c_int(local_listen_port),
                                          ctypes.c_int(listen_time_out),
                                          ctypes.c_int(num_machines)))
         self.network = True
+        return self
 
     def free_network(self):
-        """Free network."""
+        """Free Booster's network.
+
+        Returns
+        -------
+        self : Booster
+            Booster with freed network.
+        """
         _safe_call(_LIB.LGBM_NetworkFree())
         self.network = False
+        return self
 
     def set_train_data_name(self, name):
         """Set the name to the training Dataset.
 
         Parameters
         ----------
-        name: string
-            Name for training Dataset.
+        name : string
+            Name for the training Dataset.
+
+        Returns
+        -------
+        self : Booster
+            Booster with set training Dataset name.
         """
         self.__train_data_name = name
+        return self
 
     def add_valid(self, data, name):
         """Add validation data.
@@ -1502,6 +1584,11 @@ class Booster(object):
             Validation data.
         name : string
             Name of validation data.
+
+        Returns
+        -------
+        self : Booster
+            Booster with set validation data.
         """
         if not isinstance(data, Dataset):
             raise TypeError('Validation data should be Dataset instance, met {}'.format(type(data).__name__))
@@ -1515,6 +1602,7 @@ class Booster(object):
         self.__num_dataset += 1
         self.__inner_predict_buffer.append(None)
         self.__is_predicted_cur_iter.append(False)
+        return self
 
     def reset_parameter(self, params):
         """Reset parameters of Booster.
@@ -1523,6 +1611,11 @@ class Booster(object):
         ----------
         params : dict
             New parameters for Booster.
+
+        Returns
+        -------
+        self : Booster
+            Booster with new parameters.
         """
         if any(metric_alias in params for metric_alias in ('metric', 'metrics', 'metric_types')):
             self.__need_reload_eval_info = True
@@ -1531,9 +1624,10 @@ class Booster(object):
             _safe_call(_LIB.LGBM_BoosterResetParameter(
                 self.handle,
                 c_str(params_str)))
+        return self
 
     def update(self, train_set=None, fobj=None):
-        """Update for one iteration.
+        """Update Booster for one iteration.
 
         Parameters
         ----------
@@ -1575,28 +1669,29 @@ class Booster(object):
             return is_finished.value == 1
         else:
             if not self.__set_objective_to_none:
-                self.reset_parameter({"objective": "none"})
-                self.__set_objective_to_none = True
+                self.reset_parameter({"objective": "none"}).__set_objective_to_none = True
             grad, hess = fobj(self.__inner_predict(0), self.train_set)
             return self.__boost(grad, hess)
 
     def __boost(self, grad, hess):
         """
-        Boost the booster for one iteration, with customized gradient statistics.
-        Note: for multi-class task, the score is group by class_id first, then group by row_id
-              if you want to get i-th row score in j-th class, the access way is score[j*num_data+i]
-              and you should group grad and hess in this way as well
+        Boost Booster for one iteration with customized gradient statistics.
+
+        Note: For multi-class task, the score is group by class_id first, then group by row_id.
+              If you want to get i-th row score in j-th class, the access way is score[j * num_data + i]
+              and you should group grad and hess in this way as well.
 
         Parameters
         ----------
-        grad : 1d numpy or 1d list
-            The first order of gradient.
+        grad : 1d numpy array or list
+            The first order derivative (gradient).
         hess : 1d numpy or 1d list
-            The second order of gradient.
+            The second order derivative (Hessian).
 
         Returns
         -------
-        is_finished, bool
+        is_finished : bool
+            Whether the boost was successfully finished.
         """
         grad = list_to_1d_numpy(grad, name='gradient')
         hess = list_to_1d_numpy(hess, name='hessian')
@@ -1614,10 +1709,17 @@ class Booster(object):
         return is_finished.value == 1
 
     def rollback_one_iter(self):
-        """Rollback one iteration."""
+        """Rollback one iteration.
+
+        Returns
+        -------
+        self : Booster
+            Booster with rolled back one iteration.
+        """
         _safe_call(_LIB.LGBM_BoosterRollbackOneIter(
             self.handle))
         self.__is_predicted_cur_iter = [False for _ in range_(self.__num_dataset)]
+        return self
 
     def current_iteration(self):
         """Get the index of the current iteration.
@@ -1651,7 +1753,7 @@ class Booster(object):
 
         Returns
         -------
-        result: list
+        result : list
             List with evaluation results.
         """
         if not isinstance(data, Dataset):
@@ -1685,7 +1787,7 @@ class Booster(object):
 
         Returns
         -------
-        result: list
+        result : list
             List with evaluation results.
         """
         return self.__inner_eval(self.__train_data_name, 0, feval)
@@ -1704,7 +1806,7 @@ class Booster(object):
 
         Returns
         -------
-        result: list
+        result : list
             List with evaluation results.
         """
         return [item for i in range_(1, self.__num_dataset)
@@ -1721,8 +1823,13 @@ class Booster(object):
             Index of the iteration that should be saved.
             If None, if the best iteration exists, it is saved; otherwise, all iterations are saved.
             If <= 0, all iterations are saved.
-        start_iteration: int, optional (default=0)
+        start_iteration : int, optional (default=0)
             Start index of the iteration that should be saved.
+
+        Returns
+        -------
+        self : Booster
+            Returns self.
         """
         if num_iteration is None:
             num_iteration = self.best_iteration
@@ -1732,25 +1839,32 @@ class Booster(object):
             ctypes.c_int(num_iteration),
             c_str(filename)))
         _save_pandas_categorical(filename, self.pandas_categorical)
+        return self
 
     def shuffle_models(self):
         """Shuffle models.
+
+        Returns
+        -------
+        self : Booster
+            Booster with shuffled models.
         """
         _safe_call(_LIB.LGBM_BoosterShuffleModels(self.handle))
+        return self
 
     def model_from_string(self, model_str, verbose=True):
         """Load Booster from a string.
 
         Parameters
         ----------
-        model_str: string
+        model_str : string
             Model will be loaded from this string.
-        verbose: bool, optional (default=True)
-            Set to False to disable log when loading model.
+        verbose : bool, optional (default=True)
+            Whether to print messages while loading model.
 
         Returns
         -------
-        result: Booster
+        self : Booster
             Loaded Booster object.
         """
         if self.handle is not None:
@@ -1767,7 +1881,7 @@ class Booster(object):
             self.handle,
             ctypes.byref(out_num_class)))
         if verbose:
-            print('Finished loading model, total used %d iterations' % (int(out_num_iterations.value)))
+            print('Finished loading model, total used %d iterations' % int(out_num_iterations.value))
         self.__num_class = out_num_class.value
         return self
 
@@ -1780,12 +1894,12 @@ class Booster(object):
             Index of the iteration that should be saved.
             If None, if the best iteration exists, it is saved; otherwise, all iterations are saved.
             If <= 0, all iterations are saved.
-        start_iteration: int, optional (default=0)
+        start_iteration : int, optional (default=0)
             Start index of the iteration that should be saved.
 
         Returns
         -------
-        result: string
+        str_repr : string
             String representation of Booster.
         """
         if num_iteration is None:
@@ -1816,7 +1930,7 @@ class Booster(object):
         return string_buffer.value.decode()
 
     def dump_model(self, num_iteration=None, start_iteration=0):
-        """Dump Booster to json format.
+        """Dump Booster to JSON format.
 
         Parameters
         ----------
@@ -1824,13 +1938,13 @@ class Booster(object):
             Index of the iteration that should be dumped.
             If None, if the best iteration exists, it is dumped; otherwise, all iterations are dumped.
             If <= 0, all iterations are dumped.
-        start_iteration: int, optional (default=0)
+        start_iteration : int, optional (default=0)
             Start index of the iteration that should be dumped.
 
         Returns
         -------
         json_repr : dict
-            Json format of Booster.
+            JSON format of Booster.
         """
         if num_iteration is None:
             num_iteration = self.best_iteration
@@ -1990,8 +2104,7 @@ class Booster(object):
             importance_type_int = 1
         else:
             importance_type_int = -1
-        num_feature = self.num_feature()
-        result = np.array([0 for _ in range_(num_feature)], dtype=np.float64)
+        result = np.zeros(self.num_feature(), dtype=np.float64)
         _safe_call(_LIB.LGBM_BoosterFeatureImportance(
             self.handle,
             ctypes.c_int(iteration),
@@ -2004,7 +2117,7 @@ class Booster(object):
 
     def __inner_eval(self, data_name, data_idx, feval=None):
         """
-        Evaulate training or validation data
+        Evaluate training or validation data
         """
         if data_idx >= self.__num_dataset:
             raise ValueError("Data_idx should be smaller than number of dataset")
@@ -2102,7 +2215,7 @@ class Booster(object):
         -------
         value : string or None
             The attribute value.
-            Returns None if attribute do not exist.
+            Returns None if attribute does not exist.
         """
         return self.__attr.get(key, None)
 
@@ -2114,11 +2227,17 @@ class Booster(object):
         **kwargs
             The attributes to set.
             Setting a value to None deletes an attribute.
+
+        Returns
+        -------
+        self : Booster
+            Booster with set attribute.
         """
         for key, value in kwargs.items():
             if value is not None:
                 if not isinstance(value, string_type):
-                    raise ValueError("Set attr only accepts strings")
+                    raise ValueError("Only string values are accepted")
                 self.__attr[key] = value
             else:
                 self.__attr.pop(key, None)
+        return self
