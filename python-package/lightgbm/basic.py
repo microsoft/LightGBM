@@ -1421,7 +1421,7 @@ class Booster(object):
         return self.__deepcopy__(None)
 
     def __deepcopy__(self, _):
-        model_str = self._save_model_to_string(num_iteration=-1)
+        model_str = self.mode_to_string(num_iteration=-1)
         booster = Booster({'model_str': model_str})
         booster.pandas_categorical = self.pandas_categorical
         return booster
@@ -1432,7 +1432,7 @@ class Booster(object):
         this.pop('train_set', None)
         this.pop('valid_sets', None)
         if handle is not None:
-            this["handle"] = self._save_model_to_string(num_iteration=-1)
+            this["handle"] = self.mode_to_string(num_iteration=-1)
         return this
 
     def __setstate__(self, state):
@@ -1710,19 +1710,19 @@ class Booster(object):
         return [item for i in range_(1, self.__num_dataset)
                 for item in self.__inner_eval(self.name_valid_sets[i - 1], i, feval)]
 
-    def save_model(self, filename, start_iteration=0, num_iteration=None):
+    def save_model(self, filename, num_iteration=None, start_iteration=0):
         """Save Booster to file.
 
         Parameters
         ----------
         filename : string
             Filename to save Booster.
-        start_iteration: int, optional (default=0)
-            Start index of the iteration that should to saved.
         num_iteration : int or None, optional (default=None)
             Index of the iteration that should be saved.
             If None, if the best iteration exists, it is saved; otherwise, all iterations are saved.
             If <= 0, all iterations are saved.
+        start_iteration: int, optional (default=0)
+            Start index of the iteration that should to saved.
         """
         if num_iteration is None:
             num_iteration = self.best_iteration
@@ -1757,11 +1757,23 @@ class Booster(object):
             print('Finished loading model, total used %d iterations' % (int(out_num_iterations.value)))
         self.__num_class = out_num_class.value
 
-    def dump_model_to_string(self, start_iteration=0, num_iteration=-1):
-        return self._save_model_to_string(start_iteration, num_iteration)
+    def mode_to_string(self, num_iteration=None, start_iteration=0):
+        """Save Booster to string.
 
-    def _save_model_to_string(self, start_iteration=0, num_iteration=None):
-        """[Private] Save model to string"""
+        Parameters
+        ----------
+        num_iteration : int or None, optional (default=None)
+            Index of the iteration that should be saved.
+            If None, if the best iteration exists, it is saved; otherwise, all iterations are saved.
+            If <= 0, all iterations are saved.
+        start_iteration: int, optional (default=0)
+            Start index of the iteration that should to saved.
+
+        Returns
+        -------
+        result: string
+            string of model string.
+        """
         if num_iteration is None:
             num_iteration = self.best_iteration
         buffer_len = 1 << 20
@@ -1789,17 +1801,17 @@ class Booster(object):
                 ptr_string_buffer))
         return string_buffer.value.decode()
 
-    def dump_model(self, start_iteration=0, num_iteration=None):
+    def dump_model(self, num_iteration=None, start_iteration=0):
         """Dump Booster to json format.
 
         Parameters
         ----------
-        start_iteration: int, optional (default=0)
-            Start index of the iteration that should to dumped
         num_iteration : int or None, optional (default=None)
             Index of the iteration that should be dumped.
             If None, if the best iteration exists, it is dumped; otherwise, all iterations are dumped.
             If <= 0, all iterations are dumped.
+        start_iteration: int, optional (default=0)
+            Start index of the iteration that should to dumped
 
         Returns
         -------
