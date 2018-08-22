@@ -2,6 +2,10 @@
 #define LIGHTGBM_UTILS_FILE_IO_H_
 
 #include <memory>
+#include <iostream>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 namespace LightGBM{
 
