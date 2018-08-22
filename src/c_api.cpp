@@ -253,8 +253,8 @@ public:
     boosting_->GetPredictAt(data_idx, out_result, out_len);
   }
 
-  void SaveModelToFile(int num_iteration, const char* filename) {
-    boosting_->SaveModelToFile(num_iteration, filename);
+  void SaveModelToFile(int start_iteration, int num_iteration, const char* filename) {
+    boosting_->SaveModelToFile(start_iteration, num_iteration, filename);
   }
 
   void LoadModelFromString(const char* model_str) {
@@ -262,12 +262,12 @@ public:
     boosting_->LoadModelFromString(model_str, len);
   }
 
-  std::string SaveModelToString(int num_iteration) {
-    return boosting_->SaveModelToString(num_iteration);
+  std::string SaveModelToString(int start_iteration, int num_iteration) {
+    return boosting_->SaveModelToString(start_iteration, num_iteration);
   }
 
-  std::string DumpModel(int num_iteration) {
-    return boosting_->DumpModel(num_iteration);
+  std::string DumpModel(int start_iteration,int num_iteration) {
+    return boosting_->DumpModel(start_iteration, num_iteration);
   }
 
   std::vector<double> FeatureImportance(int num_iteration, int importance_type) {
@@ -281,6 +281,11 @@ public:
   void SetLeafValue(int tree_idx, int leaf_idx, double val) {
     std::lock_guard<std::mutex> lock(mutex_);
     dynamic_cast<GBDTBase*>(boosting_.get())->SetLeafValue(tree_idx, leaf_idx, val);
+  }
+
+  void ShuffleModels() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    boosting_->ShuffleModels();
   }
 
   int GetEvalCounts() const {
@@ -903,6 +908,13 @@ int LGBM_BoosterFree(BoosterHandle handle) {
   API_END();
 }
 
+int LGBM_BoosterShuffleModels(BoosterHandle handle) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  ref_booster->ShuffleModels();
+  API_END();
+}
+
 int LGBM_BoosterMerge(BoosterHandle handle,
                       BoosterHandle other_handle) {
   API_BEGIN();
@@ -1188,22 +1200,24 @@ int LGBM_BoosterPredictForMat(BoosterHandle handle,
 }
 
 int LGBM_BoosterSaveModel(BoosterHandle handle,
+                          int start_iteration,
                           int num_iteration,
                           const char* filename) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  ref_booster->SaveModelToFile(num_iteration, filename);
+  ref_booster->SaveModelToFile(start_iteration, num_iteration, filename);
   API_END();
 }
 
 int LGBM_BoosterSaveModelToString(BoosterHandle handle,
+                                  int start_iteration,
                                   int num_iteration,
                                   int64_t buffer_len, 
                                   int64_t* out_len,
                                   char* out_str) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  std::string model = ref_booster->SaveModelToString(num_iteration);
+  std::string model = ref_booster->SaveModelToString(start_iteration, num_iteration);
   *out_len = static_cast<int64_t>(model.size()) + 1;
   if (*out_len <= buffer_len) {
     std::memcpy(out_str, model.c_str(), *out_len);
@@ -1212,13 +1226,14 @@ int LGBM_BoosterSaveModelToString(BoosterHandle handle,
 }
 
 int LGBM_BoosterDumpModel(BoosterHandle handle,
+                          int start_iteration,
                           int num_iteration,
                           int64_t buffer_len,
                           int64_t* out_len,
                           char* out_str) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  std::string model = ref_booster->DumpModel(num_iteration);
+  std::string model = ref_booster->DumpModel(start_iteration, num_iteration);
   *out_len = static_cast<int64_t>(model.size()) + 1;
   if (*out_len <= buffer_len) {
     std::memcpy(out_str, model.c_str(), *out_len);

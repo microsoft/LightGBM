@@ -225,7 +225,7 @@ def test_booster():
         LIB.LGBM_BoosterGetEval(booster, 0, ctypes.byref(out_len), result.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
         if i % 10 == 0:
             print('%d Iteration test AUC %f' % (i, result[0]))
-    LIB.LGBM_BoosterSaveModel(booster, -1, c_str('model.txt'))
+    LIB.LGBM_BoosterSaveModel(booster, 0, -1, c_str('model.txt'))
     LIB.LGBM_BoosterFree(booster)
     test_free_dataset(train)
     test_free_dataset(test)
