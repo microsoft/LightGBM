@@ -49,11 +49,16 @@ if(USE_SWIG)
   set(SWIG_MODULE_JAVA_LANGUAGE "JAVA")
   set(SWIG_MODULE_JAVA_SWIG_LANGUAGE_FLAG "java")
   set(CMAKE_SWIG_OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/java")
-  FILE(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/linux/x86_64")
   include_directories(Java_INCLUDE_DIRS)
   include_directories(JNI_INCLUDE_DIRS)
   include_directories($ENV{JAVA_HOME}/include)
-  include_directories($ENV{JAVA_HOME}/include/linux)
+  if(WIN32)
+      FILE(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/windows/x86_64")
+      include_directories($ENV{JAVA_HOME}/include/win32)
+  else()
+      FILE(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/linux/x86_64")
+      include_directories($ENV{JAVA_HOME}/include/linux)
+  endif()
 endif(USE_SWIG)
 
 if(USE_R35)
@@ -164,21 +169,40 @@ file(GLOB SOURCES
 add_executable(lightgbm src/main.cpp ${SOURCES})
 add_library(_lightgbm SHARED src/c_api.cpp src/lightgbm_R.cpp  ${SOURCES})
 
+if(MSVC)
+    set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
+endif(MSVC)
+
 if(USE_SWIG)
   set_property(SOURCE swig/lightgbmlib.i PROPERTY CPLUSPLUS ON)
   LIST(APPEND swig_options -package com.microsoft.ml.lightgbm)
   set_property(SOURCE swig/lightgbmlib.i PROPERTY SWIG_FLAGS "${swig_options}")
   swig_add_module(_lightgbm_swig java swig/lightgbmlib.i)
   swig_link_libraries(_lightgbm_swig _lightgbm)
-  add_custom_command(TARGET _lightgbm_swig POST_BUILD
-    COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-    COMMAND cp "${PROJECT_SOURCE_DIR}/*.so" com/microsoft/ml/lightgbm/linux/x86_64
-    COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
+  # needed to ensure linux build does not have lib specified twice, eg liblib_lightgbm_swig
+  set_target_properties(_lightgbm_swig PROPERTIES PREFIX "")
+  # needed in latest version of cmake for VS and MINGW builds to ensure output dll has lib prefix
+  set_target_properties(_lightgbm_swig PROPERTIES OUTPUT_NAME "lib_lightgbm_swig")
+  if(WIN32)
+    if(MINGW OR CYGWIN)
+        add_custom_command(TARGET _lightgbm_swig POST_BUILD
+            COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
+            COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${PROJECT_SOURCE_DIR}/lib_lightgbm.dll" com/microsoft/ml/lightgbm/windows/x86_64
+            COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.dll" com/microsoft/ml/lightgbm/windows/x86_64
+            COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
+    else()
+        add_custom_command(TARGET _lightgbm_swig POST_BUILD
+            COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
+            COMMAND cp "${PROJECT_SOURCE_DIR}/Release/*.dll" com/microsoft/ml/lightgbm/windows/x86_64
+            COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
+    endif()
+  else()
+    add_custom_command(TARGET _lightgbm_swig POST_BUILD
+	    COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
+	    COMMAND cp "${PROJECT_SOURCE_DIR}/*.so" com/microsoft/ml/lightgbm/linux/x86_64
+	    COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com)
+  endif()
 endif(USE_SWIG)
-
-if(MSVC)
-    set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
-endif(MSVC)
 
 if(USE_MPI)
   TARGET_LINK_LIBRARIES(lightgbm ${MPI_CXX_LIBRARIES})
