@@ -652,6 +652,6 @@ class TestEngine(unittest.TestCase):
                         verbose_eval=False,
                         evals_result=evals_result)
         err_pred = log_loss(y_test, gbm.predict(X_test))
-        new_gbm = gbm.refit(X_test)
+        new_gbm = gbm.refit(X_test, y_test)
         new_err_pred = log_loss(y_test, new_gbm.predict(X_test))
         assert err_pred > new_err_pred 
