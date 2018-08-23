@@ -1913,11 +1913,10 @@ class Booster(object):
         Parameters
         ----------
         data : string, numpy array or scipy.sparse
-            Data source for prediction.
+            Data source for refit.
             If string, it represents the path to txt file.
-        data : string, numpy array or scipy.sparse
-            Data source for prediction.
-            If string, it represents the path to txt file.
+        label : numpy array
+            Label for refit.
         decay_rate : float (default=0.9)
             Decay rate of refit, will use ``leaf_output = decay_rate * old_leaf_output + (1.0 - decay_rate) * new_leaf_output`` to refit trees.
 
