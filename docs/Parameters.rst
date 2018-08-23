@@ -49,7 +49,7 @@ Core Parameters
 
    -  ``refit``, for refitting existing models with new data, aliases: ``refit_tree``
 
-   -  **Note**: can be used only in CLI version
+   -  **Note**: can be used only in CLI version and python-package
 
 -  ``objective`` :raw-html:`<a id="objective" title="Permalink to this parameter" href="#objective">&#x1F517;&#xFE0E;</a>`, default = ``regression``, type = enum, options: ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gammma``, ``tweedie``, ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``, aliases: ``objective_type``, ``app``, ``application``
 
@@ -366,7 +366,9 @@ Learning Control Parameters
 
 -  ``refit_decay_rate`` :raw-html:`<a id="refit_decay_rate" title="Permalink to this parameter" href="#refit_decay_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.9``, type = double, constraints: ``0.0 <= refit_decay_rate <= 1.0``
 
-   -  Decay rate of "refit" task, will use ``leaf_output = refit_decay_rate * old_leaf_output + (1.0 - refit_decay_rate) * new_leaf_output`` to refit trees.
+   -  decay rate of ``refit`` task, will use ``leaf_output = refit_decay_rate * old_leaf_output + (1.0 - refit_decay_rate) * new_leaf_output`` to refit trees
+
+   -  used only in ``refit`` task
 
 IO Parameters
 -------------

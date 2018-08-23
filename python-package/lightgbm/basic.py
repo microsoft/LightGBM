@@ -1908,22 +1908,22 @@ class Booster(object):
         return predictor.predict(data, num_iteration, raw_score, pred_leaf, pred_contrib, data_has_header, is_reshape)
 
     def refit(self, data, label, decay_rate=0.9):
-        """Refit the existing tree by new data
+        """Refit the existing Booster by new data.
 
         Parameters
         ----------
         data : string, numpy array or scipy.sparse
             Data source for refit.
             If string, it represents the path to txt file.
-        label : numpy array
+        label : list or numpy 1-D array
             Label for refit.
-        decay_rate : float (default=0.9)
+        decay_rate : float, optional (default=0.9)
             Decay rate of refit, will use ``leaf_output = decay_rate * old_leaf_output + (1.0 - decay_rate) * new_leaf_output`` to refit trees.
 
         Returns
         -------
         result : Booster
-            A new Booster
+            Refitted Booster.
         """
         predictor = self._to_predictor()
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)

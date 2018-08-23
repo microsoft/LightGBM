@@ -640,8 +640,7 @@ class TestEngine(unittest.TestCase):
         params = {
             'objective': 'binary',
             'metric': 'binary_logloss',
-            'verbose': -1,
-            'num_iteration': 50  # test num_iteration in dict here
+            'verbose': -1
         }
         lgb_train = lgb.Dataset(X_train, y_train)
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
@@ -654,4 +653,4 @@ class TestEngine(unittest.TestCase):
         err_pred = log_loss(y_test, gbm.predict(X_test))
         new_gbm = gbm.refit(X_test, y_test)
         new_err_pred = log_loss(y_test, new_gbm.predict(X_test))
-        assert err_pred > new_err_pred
+        self.assertGreater(err_pred, new_err_pred)
