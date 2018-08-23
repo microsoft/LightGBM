@@ -368,6 +368,13 @@ public:
   // desc = see `this file <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
   std::string forcedsplits_filename = "";
 
+  // type = double
+  // default = 0.9
+  // check = >=0.0
+  // check = <=1.0
+  // desc = Decay rate of "refit" task, will use ``leaf_output = refit_decay_rate * old_leaf_output + (1.0 - refit_decay_rate) * new_leaf_output`` to refit trees.
+  double refit_decay_rate = 0.9;
+
   #pragma endregion
 
   #pragma region IO Parameters

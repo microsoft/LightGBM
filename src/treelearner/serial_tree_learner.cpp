@@ -238,7 +238,9 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* 
     }
     double output = FeatureHistogram::CalculateSplittedLeafOutput(sum_grad, sum_hess,
                                                                   config_->lambda_l1, config_->lambda_l2, config_->max_delta_step);
-    tree->SetLeafOutput(i, output* tree->shrinkage());
+    auto old_leaf_output = tree->LeafOutput(i);
+    auto new_leaf_output = output * tree->shrinkage();
+    tree->SetLeafOutput(i, config_->refit_decay_rate * old_leaf_output + (1.0 - config_->refit_decay_rate) * new_leaf_output);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
