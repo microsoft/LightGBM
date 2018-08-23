@@ -428,6 +428,13 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumClasses(BoosterHandle handle, int* out_l
 LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished);
 
 /*!
+* \brief Refit the tree model using the new data (online learning)
+* \param handle handle
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_BoosterRefit(BoosterHandle handle, const int32_t* leaf_preds, int32_t nrow, int32_t ncol);
+
+/*!
 * \brief update the model, by directly specify gradient and second order gradient,
 *       this can be used to support customized loss function
 * \param handle handle
