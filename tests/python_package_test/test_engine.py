@@ -654,4 +654,4 @@ class TestEngine(unittest.TestCase):
         err_pred = log_loss(y_test, gbm.predict(X_test))
         new_gbm = gbm.refit(X_test, y_test)
         new_err_pred = log_loss(y_test, new_gbm.predict(X_test))
-        assert err_pred > new_err_pred 
+        assert err_pred > new_err_pred
