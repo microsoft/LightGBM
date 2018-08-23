@@ -224,7 +224,7 @@ public:
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
-    *out_len = nrow * num_pred_in_one_row;
+    *out_len = num_pred_in_one_row * nrow;
   }
 
   void Predict(int num_iteration, int predict_type, const char* data_filename,
@@ -1088,8 +1088,8 @@ int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
                                int64_t* out_len) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  *out_len = static_cast<int64_t>(num_row * ref_booster->GetBoosting()->NumPredictOneRow(
-    num_iteration, predict_type == C_API_PREDICT_LEAF_INDEX, predict_type == C_API_PREDICT_CONTRIB));
+  *out_len = static_cast<int64_t>(num_row) * ref_booster->GetBoosting()->NumPredictOneRow(
+    num_iteration, predict_type == C_API_PREDICT_LEAF_INDEX, predict_type == C_API_PREDICT_CONTRIB);
   API_END();
 }
 
