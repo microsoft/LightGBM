@@ -184,11 +184,10 @@ public:
 
   void Refit(const int32_t* leaf_preds, int32_t nrow, int32_t ncol) {
     std::lock_guard<std::mutex> lock(mutex_);
-    std::vector<std::vector<int32_t>> v_leaf_preds;
-    #pragma omp parallel for schedule(static)
+    std::vector<std::vector<int32_t>> v_leaf_preds(nrow, std::vector<int32_t>(ncol, 0));
     for (int i = 0; i < nrow; ++i) {
       for (int j = 0; j < ncol; ++j) {
-        v_leaf_preds[i][j] = leaf_preds[i * nrow + j];
+        v_leaf_preds[i][j] = leaf_preds[i * ncol + j];
       }
     }
     boosting_->RefitTree(v_leaf_preds);

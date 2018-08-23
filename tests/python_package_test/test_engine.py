@@ -633,3 +633,25 @@ class TestEngine(unittest.TestCase):
         }
         constrained_model = lgb.train(params, trainset)
         assert is_correctly_constrained(constrained_model)
+
+    def test_refit(self):
+        X, y = load_breast_cancer(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {
+            'objective': 'binary',
+            'metric': 'binary_logloss',
+            'verbose': -1,
+            'num_iteration': 50  # test num_iteration in dict here
+        }
+        lgb_train = lgb.Dataset(X_train, y_train)
+        lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+        evals_result = {}
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=20,
+                        valid_sets=lgb_eval,
+                        verbose_eval=False,
+                        evals_result=evals_result)
+        err_pred = log_loss(y_test, gbm.predict(X_test))
+        new_gbm = gbm.refit(X_test)
+        new_err_pred = log_loss(y_test, new_gbm.predict(X_test))
+        assert err_pred > new_err_pred 
