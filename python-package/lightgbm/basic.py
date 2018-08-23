@@ -1404,7 +1404,7 @@ class Booster(object):
             self.model_from_string(params['model_str'])
         else:
             raise TypeError('Need at least one training dataset or model file to create booster instance')
-        self.params = params
+        self.params = params.copy()
 
     def __del__(self):
         try:
