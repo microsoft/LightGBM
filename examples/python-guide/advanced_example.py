@@ -64,7 +64,7 @@ print('7th feature name is:', repr(lgb_train.feature_name[6]))
 # save model to file
 gbm.save_model('model.txt')
 
-# dump model to json (and save to file)
+# dump model to JSON (and save to file)
 print('Dump model to JSON...')
 model_json = gbm.dump_model()
 
