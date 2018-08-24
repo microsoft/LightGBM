@@ -644,7 +644,6 @@ class TestEngine(unittest.TestCase):
             'min_data': 10
         }
         lgb_train = lgb.Dataset(X_train, y_train)
-        evals_result = {}
         gbm = lgb.train(params, lgb_train,
                         num_boost_round=20,
                         verbose_eval=False)
