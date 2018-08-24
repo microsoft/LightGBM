@@ -784,7 +784,7 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
       CHECK(bag_cnt == num_data_);
       bag_mapper = bag_indices;
     }
-    std::vector<int> n_nozerocntleaf_per_worker(tree->num_leaves(), 1);
+    std::vector<int> n_nozeroworker_perleaf(tree->num_leaves(), 1);
     #pragma omp parallel for schedule(static)
     for (int i = 0; i < tree->num_leaves(); ++i) {
       const double output = static_cast<double>(tree->LeafOutput(i));
@@ -797,7 +797,7 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
       } else {
         CHECK(Network::num_machines() > 1);
         tree->SetLeafOutput(i, 0.0);
-        n_nozerocntleaf_per_worker[i] = 0;
+        n_nozeroworker_perleaf[i] = 0;
       }
     }
     if (Network::num_machines() > 1) {
@@ -806,9 +806,9 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
         outputs[i] = static_cast<double>(tree->LeafOutput(i));
       }
       Network::GlobalSum(outputs);
-      Network::GlobalSum(n_nozerocntleaf_per_worker);
+      Network::GlobalSum(n_nozeroworker_perleaf);
       for (int i = 0; i < tree->num_leaves(); ++i) {
-        tree->SetLeafOutput(i, outputs[i] / n_nozerocntleaf_per_worker[i]);
+        tree->SetLeafOutput(i, outputs[i] / n_nozeroworker_perleaf[i]);
       }
     } 
   }
