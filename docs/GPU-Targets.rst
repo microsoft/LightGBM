@@ -29,7 +29,7 @@ Legend:
 --------------
 
 Query OpenCL Devices in Your System
-===============
+===================================
 
 Your system might have multiple GPUs from different vendors ("platforms") installed. Setting up LightGBM GPU device requries two parameters: OpenCL Platform ID (``gpu_platform_id``) and OpenCL Device ID (``gpu_device_id``). Generally speaking, each vendor provides a OpenCL Platform, and devices from the same vendor have different device IDs under that platform. For example, if your system has a Intel Integrated GPU and two discrete GPUs from AMD, you will have two OpenCL platforms (with ``gpu_platform_id=0`` and ``gpu_platform_id=1``). If the platform 0 is Intel, it has one device (``gpu_device_id=0``) representing the Intel GPU; If the platform 1 is AMD, it has two devices (``gpu_device_id=0``, ``gpu_device_id=1``) representing the two AMD GPUs. If you have a discrete GPU by AMD/NVIDIA and an integrated GPU by Intel, make sure to select the correct ``gpu_platform_id`` to use the discrete GPU as it usually provides better performance.
 
