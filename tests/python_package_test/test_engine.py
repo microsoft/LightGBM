@@ -637,7 +637,6 @@ class TestEngine(unittest.TestCase):
     def test_refit(self):
         X, y = load_breast_cancer(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-        X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_size=0.3, random_state=24)
         params = {
             'objective': 'binary',
             'metric': 'binary_logloss',
@@ -645,11 +644,9 @@ class TestEngine(unittest.TestCase):
             'min_data': 10
         }
         lgb_train = lgb.Dataset(X_train, y_train)
-        lgb_eval = lgb.Dataset(X_valid, y_valid, reference=lgb_train)
         evals_result = {}
         gbm = lgb.train(params, lgb_train,
                         num_boost_round=20,
-                        valid_sets=lgb_eval,
                         verbose_eval=False)
         err_pred = log_loss(y_test, gbm.predict(X_test))
         new_gbm = gbm.refit(X_test, y_test)
