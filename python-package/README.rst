@@ -22,6 +22,8 @@ For **macOS** users, **gcc** with **OpenMP** support must be installed first. Re
 
 For **macOS** users, latest versions of LightGBM are built with **gcc-8** and cannot be launched on systems with **gcc-7** and earlier. You should update your **gcc** compiler if you don't want to build from sources or install LightGBM 2.1.1 which is the last version built with **gcc-7**.
 
+For **macOS** users, starting from version 2.1.4, the library file in distribution wheels will be built by the **Apple Clang** compiler. This means that you won't need to install the **gcc** compiler anymore. Instead of that you'll need to install the **OpenMP** library, which is required for running LightGBM on the system with the **Apple Clang** compiler. You can install the **OpenMP** library by the following command: ``brew install libomp``.
+
 Install `wheel <http://pythonwheels.com>`_ via ``pip install wheel`` first. After that download the wheel file and install from it:
 
 .. code:: sh
