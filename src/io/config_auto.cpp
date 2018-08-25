@@ -199,6 +199,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "monotone_constraints",
   "feature_contri",
   "forcedsplits_filename",
+  "refit_decay_rate",
   "verbosity",
   "max_bin",
   "min_data_in_bin",
@@ -367,6 +368,10 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   }
 
   GetString(params, "forcedsplits_filename", &forcedsplits_filename);
+
+  GetDouble(params, "refit_decay_rate", &refit_decay_rate);
+  CHECK(refit_decay_rate >=0.0);
+  CHECK(refit_decay_rate <=1.0);
 
   GetInt(params, "verbosity", &verbosity);
 
@@ -554,6 +559,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[monotone_constraints: " << Common::Join(Common::ArrayCast<int8_t, int>(monotone_constraints),",") << "]\n";
   str_buf << "[feature_contri: " << Common::Join(feature_contri,",") << "]\n";
   str_buf << "[forcedsplits_filename: " << forcedsplits_filename << "]\n";
+  str_buf << "[refit_decay_rate: " << refit_decay_rate << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
   str_buf << "[min_data_in_bin: " << min_data_in_bin << "]\n";

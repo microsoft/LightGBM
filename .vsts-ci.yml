@@ -81,12 +81,8 @@ phases:
         PYTHON_VERSION: 3.5
   steps:
   - script: |
-      test -n $CC  && unset CC
-      test -n $CXX && unset CXX
-      rm '/usr/local/include/c++'
-      brew install gcc@8
-      export CXX=g++-8
-      export CC=gcc-8
+      brew install libomp
+      brew reinstall cmake
       wget -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
       bash conda.sh -b -p $HOME/miniconda
       export PATH=$HOME/miniconda/bin:$PATH

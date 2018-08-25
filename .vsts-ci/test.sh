@@ -42,6 +42,10 @@ fi
 
 conda install -q -y -n $CONDA_ENV numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest
 
+if [[ $AGENT_OS == "Darwin" ]] ; then
+    ln -sf `ls -d "$(brew --cellar libomp)"/*/lib`/* $CONDA_PREFIX/lib || exit -1  # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
+fi
+
 if [[ $TASK == "sdist" ]]; then
     cd ${BUILD_REPOSITORY_LOCALPATH}/python-package && python setup.py sdist || exit -1
     pip install ${BUILD_REPOSITORY_LOCALPATH}/python-package/dist/lightgbm-$LGB_VER.tar.gz -v || exit -1

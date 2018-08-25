@@ -238,7 +238,9 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* 
     }
     double output = FeatureHistogram::CalculateSplittedLeafOutput(sum_grad, sum_hess,
                                                                   config_->lambda_l1, config_->lambda_l2, config_->max_delta_step);
-    tree->SetLeafOutput(i, output* tree->shrinkage());
+    auto old_leaf_output = tree->LeafOutput(i);
+    auto new_leaf_output = output * tree->shrinkage();
+    tree->SetLeafOutput(i, config_->refit_decay_rate * old_leaf_output + (1.0 - config_->refit_decay_rate) * new_leaf_output);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
@@ -785,6 +787,7 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
       bag_mapper = bag_indices;
     }
     std::vector<int> n_nozeroworker_perleaf(tree->num_leaves(), 1);
+    int num_machines = Network::num_machines();
     #pragma omp parallel for schedule(static)
     for (int i = 0; i < tree->num_leaves(); ++i) {
       const double output = static_cast<double>(tree->LeafOutput(i));
@@ -795,12 +798,12 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
         const double new_output = obj->RenewTreeOutput(output, prediction, index_mapper, bag_mapper, cnt_leaf_data);
         tree->SetLeafOutput(i, new_output);
       } else {
-        CHECK(Network::num_machines() > 1);
+        CHECK(num_machines > 1);
         tree->SetLeafOutput(i, 0.0);
         n_nozeroworker_perleaf[i] = 0;
       }
     }
-    if (Network::num_machines() > 1) {
+    if (num_machines > 1) {
       std::vector<double> outputs(tree->num_leaves());
       for (int i = 0; i < tree->num_leaves(); ++i) {
         outputs[i] = static_cast<double>(tree->LeafOutput(i));
