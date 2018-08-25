@@ -489,7 +489,7 @@ class _InnerPredictor(object):
         if len(mat.shape) != 2:
             raise ValueError('Input numpy.ndarray or list must be 2 dimensional')
 
-        def inner_predict(mat, num_iteration, predict_type):
+        def inner_predict(mat, num_iteration, predict_type, preds=None):
             if mat.dtype == np.float32 or mat.dtype == np.float64:
                 data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
             else:
@@ -497,7 +497,10 @@ class _InnerPredictor(object):
                 data = np.array(mat.reshape(mat.size), dtype=np.float32)
             ptr_data, type_ptr_data, _ = c_float_array(data)
             n_preds = self.__get_num_preds(num_iteration, mat.shape[0], predict_type)
-            preds = np.zeros(n_preds, dtype=np.float64)
+            if preds is None:
+                preds = np.zeros(n_preds, dtype=np.float64)
+            elif len(preds.shape) != 1 or len(preds) != n_preds:
+                raise ValueError("Wrong length of pre-allocated predict array")
             out_num_preds = ctypes.c_int64(0)
             _safe_call(_LIB.LGBM_BoosterPredictForMat(
                 self.handle,
@@ -524,7 +527,7 @@ class _InnerPredictor(object):
             cur_iter = 0
             for chunk, n_preds_chunk in zip_(np.array_split(mat, sections), n_preds):
                 # avoid memory consumption by arrays concatenation operations
-                preds[cur_iter:cur_iter + n_preds_chunk] = inner_predict(chunk, num_iteration, predict_type)[0]
+                inner_predict(chunk, num_iteration, predict_type, preds[cur_iter:cur_iter + n_preds_chunk])
                 cur_iter += n_preds_chunk
             return preds, nrow
         else:
