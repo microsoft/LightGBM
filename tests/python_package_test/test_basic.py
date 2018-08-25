@@ -33,6 +33,11 @@ class TestBasic(unittest.TestCase):
             bst.update()
             if i % 10 == 0:
                 print(bst.eval_train(), bst.eval_valid())
+
+        self.assertEqual(bst.current_iteration(), 30)
+        self.assertEqual(bst.num_trees(), 30)
+        self.assertEqual(bst.num_model_per_iteration(), 1)
+
         bst.save_model("model.txt")
         pred_from_matr = bst.predict(X_test)
         with tempfile.NamedTemporaryFile() as f:
