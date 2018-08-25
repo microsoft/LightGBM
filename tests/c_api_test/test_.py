@@ -253,5 +253,12 @@ def test_booster():
         c_str(''),
         ctypes.byref(num_preb),
         preb.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
-    LIB.LGBM_BoosterPredictForFile(booster2, c_str(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.test')), 0, 0, 50, c_str(''), c_str('preb.txt'))
+    LIB.LGBM_BoosterPredictForFile(
+        booster2,
+        c_str(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.test')),
+        0,
+        0,
+        50,
+        c_str(''),
+        c_str('preb.txt'))
     LIB.LGBM_BoosterFree(booster2)
