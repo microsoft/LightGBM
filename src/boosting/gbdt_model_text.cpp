@@ -12,7 +12,7 @@ namespace LightGBM {
 
 const std::string kModelVersion = "v2";
 
-std::string GBDT::DumpModel(int num_iteration) const {
+std::string GBDT::DumpModel(int start_iteration, int num_iteration) const {
   std::stringstream str_buf;
 
   str_buf << "{";
@@ -29,11 +29,16 @@ std::string GBDT::DumpModel(int num_iteration) const {
 
   str_buf << "\"tree_info\":[";
   int num_used_model = static_cast<int>(models_.size());
+  int total_iteration = num_used_model / num_tree_per_iteration_;
+  start_iteration = std::max(start_iteration, 0);
+  start_iteration = std::min(start_iteration, total_iteration);
   if (num_iteration > 0) {
-    num_used_model = std::min(num_iteration * num_tree_per_iteration_, num_used_model);
+    int end_iteration = start_iteration + num_iteration;
+    num_used_model = std::min(end_iteration * num_tree_per_iteration_ , num_used_model);
   }
-  for (int i = 0; i < num_used_model; ++i) {
-    if (i > 0) {
+  int start_model = start_iteration * num_tree_per_iteration_;
+  for (int i = start_model; i < num_used_model; ++i) {
+    if (i > start_model) {
       str_buf << ",";
     }
     str_buf << "{";
@@ -232,7 +237,7 @@ bool GBDT::SaveModelToIfElse(int num_iteration, const char* filename) const {
   return (bool)output_file;
 }
 
-std::string GBDT::SaveModelToString(int num_iteration) const {
+std::string GBDT::SaveModelToString(int start_iteration, int num_iteration) const {
   std::stringstream ss;
 
   // output model type
@@ -259,24 +264,31 @@ std::string GBDT::SaveModelToString(int num_iteration) const {
   ss << "feature_infos=" << Common::Join(feature_infos_, " ") << '\n';
 
   int num_used_model = static_cast<int>(models_.size());
+  int total_iteration = num_used_model / num_tree_per_iteration_;
+  start_iteration = std::max(start_iteration, 0);
+  start_iteration = std::min(start_iteration, total_iteration);
   if (num_iteration > 0) {
-    num_used_model = std::min(num_iteration * num_tree_per_iteration_, num_used_model);
+    int end_iteration = start_iteration + num_iteration;
+    num_used_model = std::min(end_iteration * num_tree_per_iteration_, num_used_model);
   }
 
-  std::vector<std::string> tree_strs(num_used_model);
-  std::vector<size_t> tree_sizes(num_used_model);
+  int start_model = start_iteration * num_tree_per_iteration_;
+
+  std::vector<std::string> tree_strs(num_used_model - start_model);
+  std::vector<size_t> tree_sizes(num_used_model - start_model);
   // output tree models
   #pragma omp parallel for schedule(static)
-  for (int i = 0; i < num_used_model; ++i) {
-    tree_strs[i] = "Tree=" + std::to_string(i) + '\n';
-    tree_strs[i] += models_[i]->ToString() + '\n';
-    tree_sizes[i] = tree_strs[i].size();
+  for (int i = start_model; i < num_used_model; ++i) {
+    const int idx = i - start_model;
+    tree_strs[idx] = "Tree=" + std::to_string(idx) + '\n';
+    tree_strs[idx] += models_[i]->ToString() + '\n';
+    tree_sizes[idx] = tree_strs[idx].size();
   }
 
   ss << "tree_sizes=" << Common::Join(tree_sizes, " ") << '\n';
   ss << '\n';
 
-  for (int i = 0; i < num_used_model; ++i) {
+  for (int i = 0; i < num_used_model - start_model; ++i) {
     ss << tree_strs[i];
     tree_strs[i].clear();
   }
@@ -313,11 +325,11 @@ std::string GBDT::SaveModelToString(int num_iteration) const {
   return ss.str();
 }
 
-bool GBDT::SaveModelToFile(int num_iteration, const char* filename) const {
+bool GBDT::SaveModelToFile(int start_iteration, int num_iteration, const char* filename) const {
   /*! \brief File to write models */
   std::ofstream output_file;
   output_file.open(filename, std::ios::out | std::ios::binary);
-  std::string str_to_write = SaveModelToString(num_iteration);
+  std::string str_to_write = SaveModelToString(start_iteration, num_iteration);
   output_file.write(str_to_write.c_str(), str_to_write.size());
   output_file.close();
 

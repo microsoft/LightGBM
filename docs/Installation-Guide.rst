@@ -5,6 +5,24 @@ Here is the guide for the build of LightGBM CLI version.
 
 For the build of Python-package and R-package, please refer to `Python-package`_ and `R-package`_ folders respectively.
 
+**Contents**
+
+-  `Windows <#windows>`__
+
+-  `Linux <#linux>`__
+
+-  `macOS <#macos>`__
+
+-  `Docker <#docker>`__
+
+-  `MPI Version <#build-mpi-version>`__
+
+-  `GPU Version <#build-gpu-version>`__
+
+-  `HDFS Version <#build-hdfs-version>`__
+
+-  `Java Wrapper <#build-java-wrapper>`__
+
 Windows
 ~~~~~~~
 

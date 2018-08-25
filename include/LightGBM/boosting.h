@@ -44,6 +44,11 @@ public:
   */
   virtual void MergeFrom(const Boosting* other) = 0;
 
+  /*!
+  * \brief Shuffle Existing Models
+  */
+  virtual void ShuffleModels() = 0;
+
   virtual void ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* objective_function,
                                  const std::vector<const Metric*>& training_metrics) = 0;
 
@@ -163,10 +168,11 @@ public:
 
   /*!
   * \brief Dump model to json format string
+  * \param start_iteration The model will be saved start from
   * \param num_iteration Number of iterations that want to dump, -1 means dump all
   * \return Json format string of model
   */
-  virtual std::string DumpModel(int num_iteration) const = 0;
+  virtual std::string DumpModel(int start_iteration, int num_iteration) const = 0;
 
   /*!
   * \brief Translate model to if-else statement
@@ -185,19 +191,21 @@ public:
 
   /*!
   * \brief Save model to file
+  * \param start_iteration The model will be saved start from
   * \param num_iterations Number of model that want to save, -1 means save all
   * \param is_finish Is training finished or not
   * \param filename Filename that want to save to
   * \return true if succeeded
   */
-  virtual bool SaveModelToFile(int num_iterations, const char* filename) const = 0;
+  virtual bool SaveModelToFile(int start_iteration, int num_iterations, const char* filename) const = 0;
 
   /*!
   * \brief Save model to string
+  * \param start_iteration The model will be saved start from
   * \param num_iterations Number of model that want to save, -1 means save all
   * \return Non-empty string if succeeded
   */
-  virtual std::string SaveModelToString(int num_iterations) const = 0;
+  virtual std::string SaveModelToString(int start_iteration, int num_iterations) const = 0;
 
   /*!
   * \brief Restore from a serialized string

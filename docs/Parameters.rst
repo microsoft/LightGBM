@@ -49,7 +49,7 @@ Core Parameters
 
    -  ``refit``, for refitting existing models with new data, aliases: ``refit_tree``
 
-   -  **Note**: can be used only in CLI version
+   -  **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent functions
 
 -  ``objective`` :raw-html:`<a id="objective" title="Permalink to this parameter" href="#objective">&#x1F517;&#xFE0E;</a>`, default = ``regression``, type = enum, options: ``regression``, ``regression_l1``, ``huber``, ``fair``, ``poisson``, ``quantile``, ``mape``, ``gammma``, ``tweedie``, ``binary``, ``multiclass``, ``multiclassova``, ``xentropy``, ``xentlambda``, ``lambdarank``, aliases: ``objective_type``, ``app``, ``application``
 
@@ -363,6 +363,12 @@ Learning Control Parameters
    -  categorical splits are forced in a one-hot fashion, with ``left`` representing the split containing the feature value and ``right`` representing other values
 
    -  see `this file <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
+
+-  ``refit_decay_rate`` :raw-html:`<a id="refit_decay_rate" title="Permalink to this parameter" href="#refit_decay_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.9``, type = double, constraints: ``0.0 <= refit_decay_rate <= 1.0``
+
+   -  decay rate of ``refit`` task, will use ``leaf_output = refit_decay_rate * old_leaf_output + (1.0 - refit_decay_rate) * new_leaf_output`` to refit trees
+
+   -  used only in ``refit`` task in CLI version or as argument in ``refit`` function in language-specific package
 
 IO Parameters
 -------------

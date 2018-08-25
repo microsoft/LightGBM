@@ -93,7 +93,7 @@ public:
   // desc = ``predict``, for prediction, aliases: ``prediction``, ``test``
   // desc = ``convert_model``, for converting model file into if-else format, see more information in `IO Parameters <#io-parameters>`__
   // desc = ``refit``, for refitting existing models with new data, aliases: ``refit_tree``
-  // desc = **Note**: can be used only in CLI version
+  // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent functions
   TaskType task = TaskType::kTrain;
 
   // [doc-only]
@@ -367,6 +367,12 @@ public:
   // desc = categorical splits are forced in a one-hot fashion, with ``left`` representing the split containing the feature value and ``right`` representing other values
   // desc = see `this file <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
   std::string forcedsplits_filename = "";
+
+  // check = >=0.0
+  // check = <=1.0
+  // desc = decay rate of ``refit`` task, will use ``leaf_output = refit_decay_rate * old_leaf_output + (1.0 - refit_decay_rate) * new_leaf_output`` to refit trees
+  // desc = used only in ``refit`` task in CLI version or as argument in ``refit`` function in language-specific package
+  double refit_decay_rate = 0.9;
 
   #pragma endregion
 

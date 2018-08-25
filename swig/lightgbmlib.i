@@ -16,11 +16,12 @@
 
 %inline %{
   char * LGBM_BoosterSaveModelToStringSWIG(BoosterHandle handle,
+					   int start_iteration,
 					   int num_iteration,
 					   int64_t buffer_len,
 					   int64_t* out_len) {
     char* dst = new char[buffer_len];
-    int result = LGBM_BoosterSaveModelToString(handle, num_iteration, buffer_len, out_len, dst);
+    int result = LGBM_BoosterSaveModelToString(handle, start_iteration, num_iteration, buffer_len, out_len, dst);
     if (result != 0) {
       return nullptr;
     }

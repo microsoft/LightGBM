@@ -330,7 +330,7 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
     if (snapshot_freq > 0
         && (iter + 1) % snapshot_freq == 0) {
       std::string snapshot_out = model_output_path + ".snapshot_iter_" + std::to_string(iter + 1);
-      SaveModelToFile(-1, snapshot_out.c_str());
+      SaveModelToFile(0, -1, snapshot_out.c_str());
     }
   }
 }
@@ -348,6 +348,7 @@ void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) 
       #pragma omp parallel for schedule(static)
       for (int i = 0; i < num_data_; ++i) {
         leaf_pred[i] = tree_leaf_prediction[i][model_index];
+        CHECK(leaf_pred[i] < models_[model_index]->num_leaves());
       }
       size_t bias = static_cast<size_t>(tree_id) * num_data_;
       auto grad = gradients_.data() + bias;

@@ -23,24 +23,24 @@ def _objective_function_wrapper(func):
 
     Parameters
     ----------
-    func: callable
+    func : callable
         Expects a callable with signature ``func(y_true, y_pred)`` or ``func(y_true, y_pred, group):
-            y_true: array-like of shape = [n_samples]
+            y_true : array-like of shape = [n_samples]
                 The target values.
-            y_pred: array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class)
+            y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class)
                 The predicted values.
-            group: array-like
+            group : array-like
                 Group/query data, used for ranking task.
 
     Returns
     -------
-    new_func: callable
+    new_func : callable
         The new objective function as expected by ``lightgbm.engine.train``.
         The signature is ``new_func(preds, dataset)``:
 
-        preds: array-like of shape = [n_samples] or shape = [n_samples * n_classes]
+        preds : array-like of shape = [n_samples] or shape = [n_samples * n_classes]
             The predicted values.
-        dataset: ``dataset``
+        dataset : ``dataset``
             The training set from which the labels will be extracted using
             ``dataset.get_label()``.
     """
@@ -82,31 +82,31 @@ def _eval_function_wrapper(func):
 
     Parameters
     ----------
-    func: callable
+    func : callable
         Expects a callable with following functions:
             ``func(y_true, y_pred)``,
             ``func(y_true, y_pred, weight)``
          or ``func(y_true, y_pred, weight, group)``
             and return (eval_name->str, eval_result->float, is_bigger_better->Bool):
 
-            y_true: array-like of shape = [n_samples]
+            y_true : array-like of shape = [n_samples]
                 The target values.
-            y_pred: array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class)
+            y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class)
                 The predicted values.
-            weight: array_like of shape = [n_samples]
+            weight : array_like of shape = [n_samples]
                 The weight of samples.
-            group: array-like
+            group : array-like
                 Group/query data, used for ranking task.
 
     Returns
     -------
-    new_func: callable
+    new_func : callable
         The new eval function as expected by ``lightgbm.engine.train``.
         The signature is ``new_func(preds, dataset)``:
 
-        preds: array-like of shape = [n_samples] or shape = [n_samples * n_classes]
+        preds : array-like of shape = [n_samples] or shape = [n_samples * n_classes]
             The predicted values.
-        dataset: ``dataset``
+        dataset : ``dataset``
             The training set from which the labels will be extracted using
             ``dataset.get_label()``.
     """
@@ -232,15 +232,15 @@ class LGBMModel(_LGBMModelBase):
         ``objective(y_true, y_pred) -> grad, hess`` or
         ``objective(y_true, y_pred, group) -> grad, hess``:
 
-            y_true: array-like of shape = [n_samples]
+            y_true : array-like of shape = [n_samples]
                 The target values.
-            y_pred: array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The predicted values.
-            group: array-like
+            group : array-like
                 Group/query data, used for ranking task.
-            grad: array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            grad : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The value of the gradient for each sample point.
-            hess: array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
+            hess : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The value of the second derivative for each sample point.
 
         For multi-class task, the y_pred is group by class_id first, then group by row_id.
@@ -367,19 +367,19 @@ class LGBMModel(_LGBMModelBase):
         Returns (eval_name, eval_result, is_bigger_better) or
         list of (eval_name, eval_result, is_bigger_better)
 
-            y_true: array-like of shape = [n_samples]
+            y_true : array-like of shape = [n_samples]
                 The target values.
-            y_pred: array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class)
+            y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class)
                 The predicted values.
-            weight: array-like of shape = [n_samples]
+            weight : array-like of shape = [n_samples]
                 The weight of samples.
-            group: array-like
+            group : array-like
                 Group/query data, used for ranking task.
-            eval_name: string
+            eval_name : string
                 The name of evaluation.
-            eval_result: float
+            eval_result : float
                 The eval result.
-            is_bigger_better: bool
+            is_bigger_better : bool
                 Is eval result bigger better, e.g. AUC is bigger_better.
 
         For multi-class task, the y_pred is group by class_id first, then group by row_id.
@@ -453,8 +453,7 @@ class LGBMModel(_LGBMModelBase):
 
         def _construct_dataset(X, y, sample_weight, init_score, group, params):
             ret = Dataset(X, label=y, weight=sample_weight, group=group, params=params)
-            ret.set_init_score(init_score)
-            return ret
+            return ret.set_init_score(init_score)
 
         train_set = _construct_dataset(X, y, sample_weight, init_score, group, params)
 

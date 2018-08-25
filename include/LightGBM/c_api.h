@@ -372,6 +372,11 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterLoadModelFromString(
 LIGHTGBM_C_EXPORT int LGBM_BoosterFree(BoosterHandle handle);
 
 /*!
+* \brief Shuffle Models
+*/
+LIGHTGBM_C_EXPORT int LGBM_BoosterShuffleModels(BoosterHandle handle);
+
+/*!
 * \brief Merge model in two booster to first handle
 * \param handle handle, will merge other handle to this
 * \param other_handle
@@ -421,6 +426,16 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumClasses(BoosterHandle handle, int* out_l
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished);
+
+/*!
+* \brief Refit the tree model using the new data (online learning)
+* \param handle handle
+* \param leaf_preds 
+* \param nrow number of rows of leaf_preds
+* \param ncol number of columns of leaf_preds
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_BoosterRefit(BoosterHandle handle, const int32_t* leaf_preds, int32_t nrow, int32_t ncol);
 
 /*!
 * \brief update the model, by directly specify gradient and second order gradient,
@@ -682,6 +697,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(BoosterHandle handle,
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel(BoosterHandle handle,
+                                            int start_iteration,
                                             int num_iteration,
                                             const char* filename);
 
@@ -695,6 +711,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel(BoosterHandle handle,
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(BoosterHandle handle,
+                                                    int start_iteration,
                                                     int num_iteration,
                                                     int64_t buffer_len,
                                                     int64_t* out_len,
@@ -710,6 +727,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(BoosterHandle handle,
 * \return 0 when succeed, -1 when failure happens
 */
 LIGHTGBM_C_EXPORT int LGBM_BoosterDumpModel(BoosterHandle handle,
+                                            int start_iteration,
                                             int num_iteration,
                                             int64_t buffer_len,
                                             int64_t* out_len,

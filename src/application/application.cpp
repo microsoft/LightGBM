@@ -203,7 +203,7 @@ void Application::InitTrain() {
 void Application::Train() {
   Log::Info("Started training...");
   boosting_->Train(config_.snapshot_freq, config_.output_model);
-  boosting_->SaveModelToFile(-1, config_.output_model.c_str());
+  boosting_->SaveModelToFile(0, -1, config_.output_model.c_str());
   // convert model to if-else statement code
   if (config_.convert_model_language == std::string("cpp")) {
     boosting_->SaveModelToIfElse(-1, config_.convert_model.c_str());
@@ -237,7 +237,7 @@ void Application::Predict() {
     boosting_->Init(&config_, train_data_.get(), objective_fun_.get(),
                     Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
     boosting_->RefitTree(pred_leaf);
-    boosting_->SaveModelToFile(-1, config_.output_model.c_str());
+    boosting_->SaveModelToFile(0, -1, config_.output_model.c_str());
     Log::Info("Finished RefitTree");
   } else {
     // create predictor
