@@ -999,6 +999,20 @@ int LGBM_BoosterGetCurrentIteration(BoosterHandle handle, int* out_iteration) {
   API_END();
 }
 
+int LGBM_BoosterNumModelPerIteration(BoosterHandle handle, int* out_tree_per_iteration) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_tree_per_iteration = ref_booster->GetBoosting()->NumModelPerIteration();
+  API_END();
+}
+
+int LGBM_BoosterNumberOfTotalModel(BoosterHandle handle, int* out_models) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  *out_models = ref_booster->GetBoosting()->NumberOfTotalModel();
+  API_END();
+}
+
 int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int* out_len) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
