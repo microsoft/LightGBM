@@ -590,7 +590,7 @@ class TestEngine(unittest.TestCase):
         # test sliced CSR
         stacked_csr = csr_matrix(stacked_features)
         sliced_csr = stacked_csr[2:102, 2:7]
-        assertTrue(np.all(sliced_csr == features))
+        self.assertTrue(np.all(sliced_csr == features))
         sliced_pred = train_and_get_predictions(sliced_csr, sliced_labels)
         np.testing.assert_almost_equal(origin_pred, sliced_pred)
 
@@ -632,7 +632,7 @@ class TestEngine(unittest.TestCase):
             'monotone_constraints': '1,-1'
         }
         constrained_model = lgb.train(params, trainset)
-        assertTrue(is_correctly_constrained(constrained_model))
+        self.assertTrue(is_correctly_constrained(constrained_model))
 
     def test_refit(self):
         X, y = load_breast_cancer(True)
