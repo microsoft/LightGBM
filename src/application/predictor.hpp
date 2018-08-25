@@ -220,7 +220,7 @@ private:
   }
 
   void ClearPredictBuffer(double* pred_buf, size_t buf_size, const std::vector<std::pair<int, double>>& features) {
-    if (features.size() < static_cast<size_t>(buf_size / 2)) {
+    if (features.size() > static_cast<size_t>(buf_size / 2)) {
       std::memset(pred_buf, 0, sizeof(double)*(buf_size));
     } else {
       int loop_size = static_cast<int>(features.size());
