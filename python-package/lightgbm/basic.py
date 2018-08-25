@@ -1459,6 +1459,7 @@ class Booster(object):
             self.model_from_string(params['model_str'])
         else:
             raise TypeError('Need at least one training dataset or model file to create booster instance')
+        self.params = params.copy()
 
     def __del__(self):
         try:
@@ -1624,6 +1625,7 @@ class Booster(object):
             _safe_call(_LIB.LGBM_BoosterResetParameter(
                 self.handle,
                 c_str(params_str)))
+        self.params.update(params)
         return self
 
     def update(self, train_set=None, fobj=None):
@@ -2018,6 +2020,43 @@ class Booster(object):
         if num_iteration is None:
             num_iteration = self.best_iteration
         return predictor.predict(data, num_iteration, raw_score, pred_leaf, pred_contrib, data_has_header, is_reshape)
+
+    def refit(self, data, label, decay_rate=0.9):
+        """Refit the existing Booster by new data.
+
+        Parameters
+        ----------
+        data : string, numpy array or scipy.sparse
+            Data source for refit.
+            If string, it represents the path to txt file.
+        label : list or numpy 1-D array
+            Label for refit.
+        decay_rate : float, optional (default=0.9)
+            Decay rate of refit, will use ``leaf_output = decay_rate * old_leaf_output + (1.0 - decay_rate) * new_leaf_output`` to refit trees.
+
+        Returns
+        -------
+        result : Booster
+            Refitted Booster.
+        """
+        predictor = self._to_predictor()
+        leaf_preds = predictor.predict(data, -1, pred_leaf=True)
+        nrow = leaf_preds.shape[0]
+        ncol = leaf_preds.shape[1]
+        train_set = Dataset(data, label)
+        new_booster = Booster(self.params, train_set, silent=True)
+        # Copy models
+        _safe_call(_LIB.LGBM_BoosterMerge(
+            new_booster.handle,
+            predictor.handle))
+        leaf_preds = leaf_preds.reshape(-1)
+        ptr_data, type_ptr_data, _ = c_int_array(leaf_preds)
+        _safe_call(_LIB.LGBM_BoosterRefit(
+            new_booster.handle,
+            ptr_data,
+            ctypes.c_int(nrow),
+            ctypes.c_int(ncol)))
+        return new_booster
 
     def get_leaf_output(self, tree_id, leaf_id):
         """Get the output of a leaf.

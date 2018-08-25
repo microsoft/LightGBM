@@ -348,6 +348,7 @@ void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) 
       #pragma omp parallel for schedule(static)
       for (int i = 0; i < num_data_; ++i) {
         leaf_pred[i] = tree_leaf_prediction[i][model_index];
+        CHECK(leaf_pred[i] < models_[model_index]->num_leaves());
       }
       size_t bias = static_cast<size_t>(tree_id) * num_data_;
       auto grad = gradients_.data() + bias;
