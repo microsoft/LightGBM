@@ -125,10 +125,7 @@ def train(params, train_set, num_boost_round=100,
     if not isinstance(train_set, Dataset):
         raise TypeError("Training only accepts Dataset object")
 
-    train_set._update_params(params)
-    train_set._set_predictor(predictor)
-    train_set.set_feature_name(feature_name)
-    train_set.set_categorical_feature(categorical_feature)
+    train_set._update_params(params)._set_predictor(predictor).set_feature_name(feature_name).set_categorical_feature(categorical_feature)
 
     is_valid_contain_train = False
     train_data_name = "training"
@@ -148,9 +145,7 @@ def train(params, train_set, num_boost_round=100,
                 continue
             if not isinstance(valid_data, Dataset):
                 raise TypeError("Traninig only accepts Dataset object")
-            valid_data._update_params(params)
-            valid_data.set_reference(train_set)
-            reduced_valid_sets.append(valid_data)
+            reduced_valid_sets.append(valid_data._update_params(params).set_reference(train_set))
             if valid_names is not None and len(valid_names) > i:
                 name_valid_sets.append(valid_names[i])
             else:
@@ -230,8 +225,7 @@ def train(params, train_set, num_boost_round=100,
     for dataset_name, eval_name, score, _ in evaluation_result_list:
         booster.best_score[dataset_name][eval_name] = score
     if not keep_training_booster:
-        booster.model_from_string(booster.model_to_string(), False)
-        booster.free_dataset()
+        booster.model_from_string(booster.model_to_string(), False).free_dataset()
     return booster
 
 
@@ -421,10 +415,7 @@ def cv(params, train_set, num_boost_round=100,
         predictor = init_model._to_predictor()
     else:
         predictor = None
-    train_set._update_params(params)
-    train_set._set_predictor(predictor)
-    train_set.set_feature_name(feature_name)
-    train_set.set_categorical_feature(categorical_feature)
+    train_set._update_params(params)._set_predictor(predictor).set_feature_name(feature_name).set_categorical_feature(categorical_feature)
 
     if metrics is not None:
         params['metric'] = metrics
