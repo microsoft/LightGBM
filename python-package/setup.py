@@ -126,7 +126,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, use_hdfs=False,
         else:
             status = 1
             lib_path = os.path.join(CURRENT_DIR, "compile", "windows", "x64", "DLL", "lib_lightgbm.dll")
-            if not use_gpu and not use_hdfs:
+            if not any((use_gpu, use_mpi, use_hdfs)):
                 logger.info("Starting to compile with MSBuild from existing solution file.")
                 platform_toolsets = ("v141", "v140")
                 for pt in platform_toolsets:
