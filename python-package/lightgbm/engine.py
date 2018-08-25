@@ -38,13 +38,14 @@ def train(params, train_set, num_boost_round=100,
         Names of ``valid_sets``.
     fobj : callable or None, optional (default=None)
         Customized objective function.
-    feval : callable, string or None, optional (default=None)
+    feval : callable or None, optional (default=None)
         Customized evaluation function.
         Should accept two parameters: preds, train_data.
         For multi-class task, the preds is group by class_id first, then group by row_id.
         If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         Note: should return (eval_name, eval_result, is_higher_better) or list of such tuples.
-        To ignore the default metric in params, set it to the string ``"None"``
+        To ignore the default metric corresponding to the used objective,
+        set the ``metric`` parameter to the string ``"None"`` in ``params``.
     init_model : string, Booster or None, optional (default=None)
         Filename of LightGBM model or Booster instance used for continue training.
     feature_name : list of strings or 'auto', optional (default="auto")
@@ -55,7 +56,8 @@ def train(params, train_set, num_boost_round=100,
         If list of int, interpreted as indices.
         If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
         If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
-        All values should be less than int32 max value (2147483647).
+        All values in categorical features should be less than int32 max value (2147483647).
+        All negative values in categorical features will be treated as missing values.
     early_stopping_rounds: int or None, optional (default=None)
         Activates early stopping. The model will train until the validation score stops improving.
         Requires at least one validation data and one metric. If there's more than one, will check all of them except the training data.
@@ -228,7 +230,7 @@ def train(params, train_set, num_boost_round=100,
     for dataset_name, eval_name, score, _ in evaluation_result_list:
         booster.best_score[dataset_name][eval_name] = score
     if not keep_training_booster:
-        booster._load_model_from_string(booster._save_model_to_string(), False)
+        booster.model_from_string(booster.model_to_string(), False)
         booster.free_dataset()
     return booster
 
@@ -346,13 +348,14 @@ def cv(params, train_set, num_boost_round=100,
         If not None, the metric in ``params`` will be overridden.
     fobj : callable or None, optional (default=None)
         Custom objective function.
-    feval : callable, string or None, optional (default=None)
+    feval : callable or None, optional (default=None)
         Customized evaluation function.
         Should accept two parameters: preds, train_data.
         For multi-class task, the preds is group by class_id first, then group by row_id.
         If you want to get i-th row preds in j-th class, the access way is preds[j * num_data + i].
         Note: should return (eval_name, eval_result, is_higher_better) or list of such tuples.
-        To ignore the default metric in params, set it to the string ``"None"``
+        To ignore the default metric corresponding to the used objective,
+        set ``metrics`` to the string ``"None"``.
     init_model : string, Booster or None, optional (default=None)
         Filename of LightGBM model or Booster instance used for continue training.
     feature_name : list of strings or 'auto', optional (default="auto")
@@ -363,7 +366,8 @@ def cv(params, train_set, num_boost_round=100,
         If list of int, interpreted as indices.
         If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
         If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
-        All values should be less than int32 max value (2147483647).
+        All values in categorical features should be less than int32 max value (2147483647).
+        All negative values in categorical features will be treated as missing values.
     early_stopping_rounds: int or None, optional (default=None)
         Activates early stopping. CV error needs to decrease at least
         every ``early_stopping_rounds`` round(s) to continue.

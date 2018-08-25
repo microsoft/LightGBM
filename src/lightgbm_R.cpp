@@ -1,17 +1,19 @@
+#include <LightGBM/lightgbm_R.h>
+
+#include <LightGBM/utils/log.h>
+#include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/utils/text_reader.h>
+#include <LightGBM/utils/common.h>
+
 #include <vector>
 #include <string>
 #include <utility>
 #include <cstring>
 #include <cstdio>
 #include <sstream>
-#include <LightGBM/utils/openmp_wrapper.h>
 #include <cstdint>
 #include <memory>
 
-#include <LightGBM/utils/text_reader.h>
-#include <LightGBM/utils/common.h>
-
-#include <LightGBM/lightgbm_R.h>
 
 #define COL_MAJOR (0)
 
@@ -595,7 +597,7 @@ LGBM_SE LGBM_BoosterSaveModel_R(LGBM_SE handle,
   LGBM_SE filename,
   LGBM_SE call_state) {
   R_API_BEGIN();
-  CHECK_CALL(LGBM_BoosterSaveModel(R_GET_PTR(handle), R_AS_INT(num_iteration), R_CHAR_PTR(filename)));
+  CHECK_CALL(LGBM_BoosterSaveModel(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_CHAR_PTR(filename)));
   R_API_END();
 }
 
@@ -608,7 +610,7 @@ LGBM_SE LGBM_BoosterSaveModelToString_R(LGBM_SE handle,
   R_API_BEGIN();
   int64_t out_len = 0;
   std::vector<char> inner_char_buf(R_AS_INT(buffer_len));
-  CHECK_CALL(LGBM_BoosterSaveModelToString(R_GET_PTR(handle), R_AS_INT(num_iteration), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
+  CHECK_CALL(LGBM_BoosterSaveModelToString(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
   EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
   R_API_END();
 }
@@ -622,7 +624,7 @@ LGBM_SE LGBM_BoosterDumpModel_R(LGBM_SE handle,
   R_API_BEGIN();
   int64_t out_len = 0;
   std::vector<char> inner_char_buf(R_AS_INT(buffer_len));
-  CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), R_AS_INT(num_iteration), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
+  CHECK_CALL(LGBM_BoosterDumpModel(R_GET_PTR(handle), 0, R_AS_INT(num_iteration), R_AS_INT(buffer_len), &out_len, inner_char_buf.data()));
   EncodeChar(out_str, inner_char_buf.data(), buffer_len, actual_len, static_cast<size_t>(out_len));
   R_API_END();
 }

@@ -150,7 +150,6 @@ public:
   // alias = num_iteration, n_iter, num_tree, num_trees, num_round, num_rounds, num_boost_round, n_estimators
   // check = >=0
   // desc = number of boosting iterations
-  // desc = **Note**: for Python/R-package, **this parameter is ignored**, use ``num_boost_round`` (Python) or ``nrounds`` (R) input arguments of ``train`` and ``cv`` methods instead
   // desc = **Note**: internally, LightGBM constructs ``num_class * num_iterations`` trees for multi-class classification problems
   int num_iterations = 100;
 
@@ -534,7 +533,7 @@ public:
   // desc = **Note**: only supports categorical with ``int`` type
   // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
   // desc = **Note**: all values should be less than ``Int32.MaxValue`` (2147483647)
-  // desc = **Note**: the negative values will be treated as **missing values**
+  // desc = **Note**: all negative values will be treated as **missing values**
   std::string categorical_feature = "";
 
   // alias = is_predict_raw_score, predict_rawscore, raw_score

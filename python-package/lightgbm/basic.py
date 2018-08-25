@@ -605,7 +605,8 @@ class Dataset(object):
             If list of int, interpreted as indices.
             If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
             If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
-            All values should be less than int32 max value (2147483647).
+            All values in categorical features should be less than int32 max value (2147483647).
+            All negative values in categorical features will be treated as missing values.
         params: dict or None, optional (default=None)
             Other parameters.
         free_raw_data: bool, optional (default=True)
@@ -1400,7 +1401,7 @@ class Booster(object):
             self.__num_class = out_num_class.value
             self.pandas_categorical = _load_pandas_categorical(model_file)
         elif 'model_str' in params:
-            self._load_model_from_string(params['model_str'])
+            self.model_from_string(params['model_str'])
         else:
             raise TypeError('Need at least one training dataset or model file to create booster instance')
 
@@ -1420,7 +1421,7 @@ class Booster(object):
         return self.__deepcopy__(None)
 
     def __deepcopy__(self, _):
-        model_str = self._save_model_to_string()
+        model_str = self.model_to_string(num_iteration=-1)
         booster = Booster({'model_str': model_str})
         booster.pandas_categorical = self.pandas_categorical
         return booster
@@ -1431,7 +1432,7 @@ class Booster(object):
         this.pop('train_set', None)
         this.pop('valid_sets', None)
         if handle is not None:
-            this["handle"] = self._save_model_to_string()
+            this["handle"] = self.model_to_string(num_iteration=-1)
         return this
 
     def __setstate__(self, state):
@@ -1709,27 +1710,49 @@ class Booster(object):
         return [item for i in range_(1, self.__num_dataset)
                 for item in self.__inner_eval(self.name_valid_sets[i - 1], i, feval)]
 
-    def save_model(self, filename, num_iteration=-1):
+    def save_model(self, filename, num_iteration=None, start_iteration=0):
         """Save Booster to file.
 
         Parameters
         ----------
         filename : string
             Filename to save Booster.
-        num_iteration: int, optional (default=-1)
-            Index of the iteration that should to saved.
-            If <0, the best iteration (if exists) is saved.
+        num_iteration : int or None, optional (default=None)
+            Index of the iteration that should be saved.
+            If None, if the best iteration exists, it is saved; otherwise, all iterations are saved.
+            If <= 0, all iterations are saved.
+        start_iteration: int, optional (default=0)
+            Start index of the iteration that should be saved.
         """
-        if num_iteration <= 0:
+        if num_iteration is None:
             num_iteration = self.best_iteration
         _safe_call(_LIB.LGBM_BoosterSaveModel(
             self.handle,
+            ctypes.c_int(start_iteration),
             ctypes.c_int(num_iteration),
             c_str(filename)))
         _save_pandas_categorical(filename, self.pandas_categorical)
 
-    def _load_model_from_string(self, model_str, verbose=True):
-        """[Private] Load model from string"""
+    def shuffle_models(self):
+        """Shuffle models.
+        """
+        _safe_call(_LIB.LGBM_BoosterShuffleModels(self.handle))
+
+    def model_from_string(self, model_str, verbose=True):
+        """Load Booster from a string.
+
+        Parameters
+        ----------
+        model_str: string
+            Model will be loaded from this string.
+        verbose: bool, optional (default=True)
+            Set to False to disable log when loading model.
+
+        Returns
+        -------
+        result: Booster
+            Loaded Booster object.
+        """
         if self.handle is not None:
             _safe_call(_LIB.LGBM_BoosterFree(self.handle))
         self._free_buffer()
@@ -1746,10 +1769,26 @@ class Booster(object):
         if verbose:
             print('Finished loading model, total used %d iterations' % (int(out_num_iterations.value)))
         self.__num_class = out_num_class.value
+        return self
 
-    def _save_model_to_string(self, num_iteration=-1):
-        """[Private] Save model to string"""
-        if num_iteration <= 0:
+    def model_to_string(self, num_iteration=None, start_iteration=0):
+        """Save Booster to string.
+
+        Parameters
+        ----------
+        num_iteration : int or None, optional (default=None)
+            Index of the iteration that should be saved.
+            If None, if the best iteration exists, it is saved; otherwise, all iterations are saved.
+            If <= 0, all iterations are saved.
+        start_iteration: int, optional (default=0)
+            Start index of the iteration that should be saved.
+
+        Returns
+        -------
+        result: string
+            String representation of Booster.
+        """
+        if num_iteration is None:
             num_iteration = self.best_iteration
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
@@ -1757,6 +1796,7 @@ class Booster(object):
         ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
         _safe_call(_LIB.LGBM_BoosterSaveModelToString(
             self.handle,
+            ctypes.c_int(start_iteration),
             ctypes.c_int(num_iteration),
             ctypes.c_int64(buffer_len),
             ctypes.byref(tmp_out_len),
@@ -1768,27 +1808,31 @@ class Booster(object):
             ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
             _safe_call(_LIB.LGBM_BoosterSaveModelToString(
                 self.handle,
+                ctypes.c_int(start_iteration),
                 ctypes.c_int(num_iteration),
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
         return string_buffer.value.decode()
 
-    def dump_model(self, num_iteration=-1):
+    def dump_model(self, num_iteration=None, start_iteration=0):
         """Dump Booster to json format.
 
         Parameters
         ----------
-        num_iteration: int, optional (default=-1)
-            Index of the iteration that should to dumped.
-            If <0, the best iteration (if exists) is dumped.
+        num_iteration : int or None, optional (default=None)
+            Index of the iteration that should be dumped.
+            If None, if the best iteration exists, it is dumped; otherwise, all iterations are dumped.
+            If <= 0, all iterations are dumped.
+        start_iteration: int, optional (default=0)
+            Start index of the iteration that should be dumped.
 
         Returns
         -------
         json_repr : dict
             Json format of Booster.
         """
-        if num_iteration <= 0:
+        if num_iteration is None:
             num_iteration = self.best_iteration
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
@@ -1796,6 +1840,7 @@ class Booster(object):
         ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
         _safe_call(_LIB.LGBM_BoosterDumpModel(
             self.handle,
+            ctypes.c_int(start_iteration),
             ctypes.c_int(num_iteration),
             ctypes.c_int64(buffer_len),
             ctypes.byref(tmp_out_len),
@@ -1807,13 +1852,14 @@ class Booster(object):
             ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
             _safe_call(_LIB.LGBM_BoosterDumpModel(
                 self.handle,
+                ctypes.c_int(start_iteration),
                 ctypes.c_int(num_iteration),
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
         return json.loads(string_buffer.value.decode())
 
-    def predict(self, data, num_iteration=-1, raw_score=False, pred_leaf=False, pred_contrib=False,
+    def predict(self, data, num_iteration=None, raw_score=False, pred_leaf=False, pred_contrib=False,
                 data_has_header=False, is_reshape=True, pred_parameter=None, **kwargs):
         """Make a prediction.
 
@@ -1822,9 +1868,11 @@ class Booster(object):
         data : string, numpy array or scipy.sparse
             Data source for prediction.
             If string, it represents the path to txt file.
-        num_iteration : int, optional (default=-1)
-            Iteration used for prediction.
-            If <0, the best iteration (if exists) is used for prediction.
+        num_iteration : int or None, optional (default=None)
+            Limit number of iterations in the prediction.
+            If None, if the best iteration exists, it is used; otherwise, all iterations are used.
+            If <= 0, all iterations are used (no limits).
+
         raw_score : bool, optional (default=False)
             Whether to predict raw scores.
         pred_leaf : bool, optional (default=False)
@@ -1853,7 +1901,7 @@ class Booster(object):
         else:
             pred_parameter = kwargs
         predictor = self._to_predictor(pred_parameter)
-        if num_iteration <= 0:
+        if num_iteration is None:
             num_iteration = self.best_iteration
         return predictor.predict(data, num_iteration, raw_score, pred_leaf, pred_contrib, data_has_header, is_reshape)
 

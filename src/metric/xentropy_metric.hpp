@@ -1,12 +1,11 @@
 #ifndef LIGHTGBM_METRIC_XENTROPY_METRIC_HPP_
 #define LIGHTGBM_METRIC_XENTROPY_METRIC_HPP_
 
+#include <LightGBM/metric.h>
 #include <LightGBM/meta.h>
 
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/common.h>
-
-#include <LightGBM/metric.h>
 
 #include <algorithm>
 #include <vector>

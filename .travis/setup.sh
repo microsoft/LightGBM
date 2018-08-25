@@ -1,17 +1,23 @@
 #!/bin/bash
 
 if [[ $TRAVIS_OS_NAME == "osx" ]]; then
-    sudo softwareupdate -i "Command Line Tools (macOS High Sierra version 10.13) for Xcode-9.3"  # fix "fatal error: _stdio.h: No such file or directory"
-    rm '/usr/local/include/c++'
-#    brew cask uninstall oclint  #  reserve variant to deal with conflict link
+    if  [[ $COMPILER == "clang" ]]; then
+        brew install libomp
+        brew reinstall cmake  # CMake >=3.12 is needed to find OpenMP at macOS
+    else
+        sudo softwareupdate -i "Command Line Tools (macOS High Sierra version 10.13) for Xcode-9.3"  # fix "fatal error: _stdio.h: No such file or directory"
+        rm '/usr/local/include/c++'
+#        brew cask uninstall oclint  #  reserve variant to deal with conflict link
+        if [[ $TASK != "mpi" ]]; then
+            brew install gcc
+        fi
+#        brew link --overwrite gcc  # previous variant to deal with conflict link
+    fi
     if [[ $TASK == "mpi" ]]; then
         brew install open-mpi
-    else
-        brew install gcc
     fi
-#    brew link --overwrite gcc  # previous variant to deal with conflict link
     wget -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
-else
+else  # Linux
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get install -y libopenmpi-dev openmpi-bin
     fi

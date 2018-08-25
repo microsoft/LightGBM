@@ -21,7 +21,7 @@ Categorical Feature Support
    `described here <./Features.rst#optimal-split-for-categorical-features>`_. This often performs better than one-hot encoding.
 
 -  Use ``categorical_feature`` to specify the categorical features.
-   Refer to the parameter ``categorical_feature`` in `Parameters <./Parameters.rst>`__.
+   Refer to the parameter ``categorical_feature`` in `Parameters <./Parameters.rst#categorical_feature>`__.
 
 -  Categorical features must be encoded as non-negative integers (``int``) less than ``Int32.MaxValue`` (2147483647).
    It is best to use a contiguous range of integers.

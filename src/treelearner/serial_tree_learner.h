@@ -1,10 +1,10 @@
 #ifndef LIGHTGBM_TREELEARNER_SERIAL_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNER_SERIAL_TREE_LEARNER_H_
+#include <LightGBM/tree_learner.h>
 
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/array_args.h>
 
-#include <LightGBM/tree_learner.h>
 #include <LightGBM/dataset.h>
 #include <LightGBM/tree.h>
 

@@ -330,7 +330,7 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
     if (snapshot_freq > 0
         && (iter + 1) % snapshot_freq == 0) {
       std::string snapshot_out = model_output_path + ".snapshot_iter_" + std::to_string(iter + 1);
-      SaveModelToFile(-1, snapshot_out.c_str());
+      SaveModelToFile(0, -1, snapshot_out.c_str());
     }
   }
 }

@@ -84,7 +84,7 @@ public:
     last_line_ = "";
     INDEX_T total_cnt = 0;
     PipelineReader::Read(filename_, skip_bytes_,
-      [this, &total_cnt, &process_fun]
+      [&]
     (const char* buffer_process, size_t read_cnt) {
       size_t cnt = 0;
       size_t i = 0;
@@ -136,7 +136,7 @@ public:
   */
   INDEX_T ReadAllLines() {
     return ReadAllAndProcess(
-      [this](INDEX_T, const char* buffer, size_t size) {
+      [=](INDEX_T, const char* buffer, size_t size) {
       lines_.emplace_back(buffer, size);
     });
   }
@@ -162,7 +162,7 @@ public:
   INDEX_T SampleFromFile(Random& random, INDEX_T sample_cnt, std::vector<std::string>* out_sampled_data) {
     INDEX_T cur_sample_cnt = 0;
     return ReadAllAndProcess(
-      [this, &random, &cur_sample_cnt, &sample_cnt, &out_sampled_data]
+      [&]
     (INDEX_T line_idx, const char* buffer, size_t size) {
       if (cur_sample_cnt < sample_cnt) {
         out_sampled_data->emplace_back(buffer, size);
@@ -185,7 +185,7 @@ public:
   INDEX_T ReadAndFilterLines(const std::function<bool(INDEX_T)>& filter_fun, std::vector<INDEX_T>* out_used_data_indices) {
     out_used_data_indices->clear();
     INDEX_T total_cnt = ReadAllAndProcess(
-      [this, &out_used_data_indices, &filter_fun]
+      [&]
     (INDEX_T line_idx , const char* buffer, size_t size) {
       bool is_used = filter_fun(line_idx);
       if (is_used) { out_used_data_indices->push_back(line_idx); }
@@ -199,7 +199,7 @@ public:
     INDEX_T cur_sample_cnt = 0;
     out_used_data_indices->clear();
     INDEX_T total_cnt = ReadAllAndProcess(
-      [this, &out_used_data_indices, &filter_fun, &random, &cur_sample_cnt, &sample_cnt, &out_sampled_data]
+      [&]
     (INDEX_T line_idx, const char* buffer, size_t size) {
       bool is_used = filter_fun(line_idx);
       if (is_used) { out_used_data_indices->push_back(line_idx); }
@@ -221,7 +221,7 @@ public:
 
   INDEX_T CountLine() {
     return ReadAllAndProcess(
-      [this](INDEX_T, const char*, size_t) {
+      [=](INDEX_T, const char*, size_t) {
     });
   }
 
@@ -230,7 +230,7 @@ public:
     INDEX_T total_cnt = 0;
     INDEX_T used_cnt = 0;
     PipelineReader::Read(filename_, skip_bytes_,
-      [this, &total_cnt, &process_fun,&used_cnt, &filter_fun]
+      [&]
     (const char* buffer_process, size_t read_cnt) {
       size_t cnt = 0;
       size_t i = 0;

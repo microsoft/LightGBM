@@ -1,6 +1,9 @@
 #ifndef LIGHTGBM_METRIC_H_
 #define LIGHTGBM_METRIC_H_
 
+#include <LightGBM/utils/log.h>
+#include <LightGBM/utils/common.h>
+
 #include <LightGBM/meta.h>
 #include <LightGBM/config.h>
 #include <LightGBM/dataset.h>
