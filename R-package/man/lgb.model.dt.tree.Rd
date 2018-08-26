@@ -9,7 +9,7 @@ lgb.model.dt.tree(model, num_iteration = NULL)
 \arguments{
 \item{model}{object of class \code{lgb.Booster}}
 
-\item{num_iteration}{number of iterations you want to predict with. NULL or 
+\item{num_iteration}{number of iterations you want to predict with. NULL or
 <= 0 means use best iteration}
 }
 \value{

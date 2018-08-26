@@ -40,10 +40,10 @@ Build and install R-package with the following commands:
 ```sh
 git clone --recursive https://github.com/Microsoft/LightGBM
 cd LightGBM
-./build_r.sh
+Rscript build_r.R
 ```
 
-The `build_r.sh` script builds the package in a temporary directory called `lightgbm_r`. It will destroy and recreate that directory each time you run the script.
+The `build_r.R` script builds the package in a temporary directory called `lightgbm_r`. It will destroy and recreate that directory each time you run the script.
 
 Note: for the build with Visual Studio/MSBuild in Windows, you should use the Windows CMD or Powershell.
 
@@ -51,15 +51,7 @@ Windows users may need to run with administrator rights (either R or the command
 
 Set `use_gpu` to `TRUE` in `R-package/src/install.libs.R` to enable the build with GPU support. You will need to install Boost and OpenCL first: details for installation can be found in [Installation-Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version).
 
-You can also install directly from R using the repository with `devtools`:
-
-```r
-library(devtools)
-options(devtools.install.args = "--no-multiarch") # if you have 64-bit R only, you can skip this
-install_github("Microsoft/LightGBM", subdir = "R-package")
-```
-
-If you are using a precompiled dll/lib locally, you can move the dll/lib into LightGBM root folder, modify `LightGBM/R-package/src/install.libs.R`'s 2nd line (change `use_precompile <- FALSE` to `use_precompile <- TRUE`), and install R-package as usual. **NOTE: If your R version is not smaller than 3.5.0, you should set `DUSE_R35=ON` in CMake options when build precompiled dll/lib**.
+If you are using a precompiled dll/lib locally, you can move the dll/lib into LightGBM root folder, modify `LightGBM/R-package/src/install.libs.R`'s 2nd line (change `use_precompile <- FALSE` to `use_precompile <- TRUE`), and install R-package as usual. **NOTE: If your R version is not smaller than 3.5.0, you should set `DUSE_R35=ON` in cmake options when build precompiled dll/lib**.
 
 When your package installation is done, you can check quickly if your LightGBM R-package is working by running the following:
 
