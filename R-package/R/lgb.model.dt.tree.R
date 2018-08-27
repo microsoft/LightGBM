@@ -1,16 +1,16 @@
 #' Parse a LightGBM model json dump
-#' 
+#'
 #' Parse a LightGBM model json dump into a \code{data.table} structure.
-#' 
+#'
 #' @param model object of class \code{lgb.Booster}
-#' @param num_iteration number of iterations you want to predict with. NULL or 
+#' @param num_iteration number of iterations you want to predict with. NULL or
 #'                      <= 0 means use best iteration
-#' 
+#'
 #' @return
 #' A \code{data.table} with detailed information about model trees' nodes and leafs.
-#' 
+#'
 #' The columns of the \code{data.table} are:
-#' 
+#'
 #' \itemize{
 #'  \item \code{tree_index}: ID of a tree in a model (integer)
 #'  \item \code{split_index}: ID of a node in a tree (integer)
@@ -28,11 +28,11 @@
 #'  \item \code{leaf_value}: Leaf value
 #'  \item \code{leaf_count}: The number of observation collected by a leaf
 #' }
-#' 
+#'
 #' @examples
 #' \dontrun{
 #' library(lightgbm)
-#' 
+#'
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -45,43 +45,45 @@
 #'
 #' tree_dt <- lgb.model.dt.tree(model)
 #' }
-#' 
+#'
 #' @importFrom magrittr %>%
-#' @importFrom data.table :=
+#' @importFrom data.table := data.table
+#' @importFrom jsonlite fromJSON
 #' @export
 lgb.model.dt.tree <- function(model, num_iteration = NULL) {
-  
+
   # Dump json model first
   json_model <- lgb.dump(model, num_iteration = num_iteration)
-  
+
   # Parse json model second
   parsed_json_model <- jsonlite::fromJSON(json_model,
                                           simplifyVector = TRUE,
                                           simplifyDataFrame = FALSE,
                                           simplifyMatrix = FALSE,
                                           flatten = FALSE)
-  
+
   # Parse tree model third
   tree_list <- lapply(parsed_json_model$tree_info, single.tree.parse)
-  
+
   # Combine into single data.table fourth
   tree_dt <- data.table::rbindlist(tree_list, use.names = TRUE)
-  
+
   # Lookup sequence
   tree_dt[, split_feature := Lookup(split_feature,
                                     seq.int(from = 0, to = parsed_json_model$max_feature_idx),
                                     parsed_json_model$feature_names)]
-  
+
   # Return tree
   return(tree_dt)
-  
+
 }
 
+#' @importFrom data.table data.table rbindlist
 single.tree.parse <- function(lgb_tree) {
-  
+
   # Traverse tree function
   pre_order_traversal <- function(env = NULL, tree_node_leaf, current_depth = 0L, parent_index = NA_integer_) {
-    
+
     if (is.null(env)) {
       # Setup initial default data.table with default types
       env <- new.env(parent = emptyenv())
@@ -103,10 +105,10 @@ single.tree.parse <- function(lgb_tree) {
       # start tree traversal
       pre_order_traversal(env, tree_node_leaf, current_depth, parent_index)
     } else {
-      
+
       # Check if split index is not null in leaf
       if (!is.null(tree_node_leaf$split_index)) {
-        
+
         # update data.table
         env$single_tree_dt <- data.table::rbindlist(l = list(env$single_tree_dt,
                                                              c(tree_node_leaf[c("split_index",
@@ -121,7 +123,7 @@ single.tree.parse <- function(lgb_tree) {
                                                                "node_parent" = parent_index)),
                                                     use.names = TRUE,
                                                     fill = TRUE)
-        
+
         # Traverse tree again both left and right
         pre_order_traversal(env,
                             tree_node_leaf$left_child,
@@ -131,9 +133,9 @@ single.tree.parse <- function(lgb_tree) {
                             tree_node_leaf$right_child,
                             current_depth = current_depth + 1L,
                             parent_index = tree_node_leaf$split_index)
-        
+
       } else if (!is.null(tree_node_leaf$leaf_index)) {
-        
+
         # update data.table
         env$single_tree_dt <- data.table::rbindlist(l = list(env$single_tree_dt,
                                                              c(tree_node_leaf[c("leaf_index",
@@ -143,29 +145,30 @@ single.tree.parse <- function(lgb_tree) {
                                                                "leaf_parent" = parent_index)),
                                                     use.names = TRUE,
                                                     fill = TRUE)
-        
+
       }
-      
+
     }
     return(env$single_tree_dt)
   }
-  
+
   # Traverse structure
   single_tree_dt <- pre_order_traversal(tree_node_leaf = lgb_tree$tree_structure)
-  
+
   # Store index
   single_tree_dt[, tree_index := lgb_tree$tree_index]
-  
+
   # Return tree
   return(single_tree_dt)
-  
+
 }
 
+#' @importFrom magrittr %>% extract inset
 Lookup <- function(key, key_lookup, value_lookup, missing = NA) {
-  
+
   # Match key by looked up key
   match(key, key_lookup) %>%
     magrittr::extract(value_lookup, .) %>%
     magrittr::inset(. , is.na(.), missing)
-  
+
 }
