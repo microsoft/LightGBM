@@ -528,6 +528,13 @@ class LGBMModel(_LGBMModelBase):
             Whether to predict leaf index.
         pred_contrib : bool, optional (default=False)
             Whether to predict feature contributions.
+
+            Note
+            ----
+            If you want to get more explanation for your model's predictions using SHAP values
+            like SHAP interaction values,
+            you can install shap package (https://github.com/slundberg/shap).
+
         **kwargs : other parameters for the prediction
 
         Returns
@@ -750,6 +757,13 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
             Whether to predict leaf index.
         pred_contrib : bool, optional (default=False)
             Whether to predict feature contributions.
+
+            Note
+            ----
+            If you want to get more explanation for your model's predictions using SHAP values
+            like SHAP interaction values,
+            you can install shap package (https://github.com/slundberg/shap).
+
         **kwargs : other parameters for the prediction
 
         Returns

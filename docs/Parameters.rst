@@ -597,6 +597,8 @@ IO Parameters
 
    -  produces ``#features + 1`` values where the last value is the expected value of the model output over the training data
 
+   -  **Note**: if you want to get more explanation for your model's predictions using SHAP values like SHAP interaction values, you can install `shap package <https://github.com/slundberg/shap>`__
+
 -  ``num_iteration_predict`` :raw-html:`<a id="num_iteration_predict" title="Permalink to this parameter" href="#num_iteration_predict">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int
 
    -  used only in ``prediction`` task

@@ -2023,6 +2023,13 @@ class Booster(object):
             Whether to predict leaf index.
         pred_contrib : bool, optional (default=False)
             Whether to predict feature contributions.
+
+            Note
+            ----
+            If you want to get more explanation for your model's predictions using SHAP values
+            like SHAP interaction values,
+            you can install shap package (https://github.com/slundberg/shap).
+
         data_has_header : bool, optional (default=False)
             Whether the data has header.
             Used only if data is string.
