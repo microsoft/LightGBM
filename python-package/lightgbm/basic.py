@@ -537,32 +537,51 @@ class _InnerPredictor(object):
         """
         Predict for a csr data
         """
+        def inner_predict(csr, num_iteration, predict_type, preds=None):
+            nrow = len(csr.indptr) - 1
+            n_preds = self.__get_num_preds(num_iteration, nrow, predict_type)
+            if preds is None:
+                preds = np.zeros(n_preds, dtype=np.float64)
+            elif len(preds.shape) != 1 or len(preds) != n_preds:
+                raise ValueError("Wrong length of pre-allocated predict array")
+            out_num_preds = ctypes.c_int64(0)
+
+            ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
+            ptr_data, type_ptr_data, _ = c_float_array(csr.data)
+
+            _safe_call(_LIB.LGBM_BoosterPredictForCSR(
+                self.handle,
+                ptr_indptr,
+                ctypes.c_int32(type_ptr_indptr),
+                csr.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+                ptr_data,
+                ctypes.c_int(type_ptr_data),
+                ctypes.c_int64(len(csr.indptr)),
+                ctypes.c_int64(len(csr.data)),
+                ctypes.c_int64(csr.shape[1]),
+                ctypes.c_int(predict_type),
+                ctypes.c_int(num_iteration),
+                c_str(self.pred_parameter),
+                ctypes.byref(out_num_preds),
+                preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
+            if n_preds != out_num_preds.value:
+                raise ValueError("Wrong length for predict results")
+            return preds, nrow
+
         nrow = len(csr.indptr) - 1
-        n_preds = self.__get_num_preds(num_iteration, nrow, predict_type)
-        preds = np.zeros(n_preds, dtype=np.float64)
-        out_num_preds = ctypes.c_int64(0)
-
-        ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
-        ptr_data, type_ptr_data, _ = c_float_array(csr.data)
-
-        _safe_call(_LIB.LGBM_BoosterPredictForCSR(
-            self.handle,
-            ptr_indptr,
-            ctypes.c_int32(type_ptr_indptr),
-            csr.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
-            ptr_data,
-            ctypes.c_int(type_ptr_data),
-            ctypes.c_int64(len(csr.indptr)),
-            ctypes.c_int64(len(csr.data)),
-            ctypes.c_int64(csr.shape[1]),
-            ctypes.c_int(predict_type),
-            ctypes.c_int(num_iteration),
-            c_str(self.pred_parameter),
-            ctypes.byref(out_num_preds),
-            preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
-        if n_preds != out_num_preds.value:
-            raise ValueError("Wrong length for predict results")
-        return preds, nrow
+        if nrow > MAX_INT32:
+            sections = [0] + list(np.arange(start=MAX_INT32, stop=nrow, step=MAX_INT32)) + [nrow]
+            # __get_num_preds() cannot work with nrow > MAX_INT32, so calculate overall number of predictions piecemeal
+            n_preds = [self.__get_num_preds(num_iteration, i, predict_type) for i in np.diff(sections)]
+            n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
+            preds = np.zeros(sum(n_preds), dtype=np.float64)
+            for (start_idx, end_idx), (start_idx_pred, end_idx_pred) in zip_(zip_(sections, sections[1:]),
+                                                                             zip_(n_preds_sections, n_preds_sections[1:])):
+                # avoid memory consumption by arrays concatenation operations
+                inner_predict(csr[start_idx:end_idx], num_iteration, predict_type, preds[start_idx_pred:end_idx_pred])
+            return preds, nrow
+        else:
+            return inner_predict(csr, num_iteration, predict_type)
 
     def __pred_for_csc(self, csc, num_iteration, predict_type):
         """
