@@ -524,11 +524,11 @@ class _InnerPredictor(object):
             # __get_num_preds() cannot work with nrow > MAX_INT32, so calculate overall number of predictions piecemeal
             n_preds = [self.__get_num_preds(num_iteration, i, predict_type) for i in np.diff([0] + list(sections) + [nrow])]
             preds = np.zeros(sum(n_preds), dtype=np.float64)
-            cur_iter = 0
+            cur_idx = 0
             for chunk, n_preds_chunk in zip_(np.array_split(mat, sections), n_preds):
                 # avoid memory consumption by arrays concatenation operations
-                inner_predict(chunk, num_iteration, predict_type, preds[cur_iter:cur_iter + n_preds_chunk])
-                cur_iter += n_preds_chunk
+                inner_predict(chunk, num_iteration, predict_type, preds[cur_idx:cur_idx + n_preds_chunk])
+                cur_idx += n_preds_chunk
             return preds, nrow
         else:
             return inner_predict(mat, num_iteration, predict_type)
