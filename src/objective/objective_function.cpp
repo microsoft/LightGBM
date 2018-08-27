@@ -40,7 +40,7 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new RegressionGammaLoss(config);
   } else if (type == std::string("tweedie")) {
     return new RegressionTweedieLoss(config);
-  } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom")) {
+  } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom") || type == std::string("na")) {
     return nullptr;
   }
   Log::Fatal("Unknown objective type name: %s", type.c_str());
@@ -79,7 +79,7 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new RegressionGammaLoss(strs);
   } else if (type == std::string("tweedie")) {
     return new RegressionTweedieLoss(strs);
-  } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom")) {
+  } else if (type == std::string("none") || type == std::string("null") || type == std::string("custom") || type == std::string("na")) {
     return nullptr;
   }
   Log::Fatal("Unknown objective type name: %s", type.c_str());

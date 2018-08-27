@@ -49,9 +49,10 @@ CVBooster <- R6Class(
 #'        type str represents feature names
 #' @param early_stopping_rounds int
 #'        Activates early stopping.
-#'        Requires at least one validation data and one metric
-#'        If there's more than one, will check all of them except the training data
-#'        Returns the model with (best_iter + early_stopping_rounds)
+#'        CV score needs to improve at least every early_stopping_rounds round(s) to continue.
+#'        Requires at least one metric.
+#'        If there's more than one, will check all of them.
+#'        Returns the model with (best_iter + early_stopping_rounds).
 #'        If early stopping occurs, the model will have 'best_iter' field
 #' @param callbacks list of callback functions
 #'        List of callback functions that are applied at each iteration.

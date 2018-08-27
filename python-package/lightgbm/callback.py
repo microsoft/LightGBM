@@ -153,8 +153,11 @@ def early_stopping(stopping_rounds, verbose=True):
     Note
     ----
     Activates early stopping.
+    The model will train until the validation score stops improving.
+    Validation score needs to improve at least every ``early_stopping_rounds`` round(s)
+    to continue training.
     Requires at least one validation data and one metric.
-    If there's more than one, will check all of them except the training data.
+    If there's more than one, will check all of them. But the training data is ignored anyway.
 
     Parameters
     ----------

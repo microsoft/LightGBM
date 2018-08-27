@@ -29,7 +29,7 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
     return new BinaryErrorMetric(config);
   } else if (type == std::string("auc")) {
     return new AUCMetric(config);
-  } else if (type == std::string("ndcg")) {
+  } else if (type == std::string("ndcg") || type == std::string("lambdarank")) {
     return new NDCGMetric(config);
   } else if (type == std::string("map") || type == std::string("mean_average_precision")) {
     return new MapMetric(config);

@@ -60,7 +60,10 @@ def train(params, train_set, num_boost_round=100,
         All negative values in categorical features will be treated as missing values.
     early_stopping_rounds: int or None, optional (default=None)
         Activates early stopping. The model will train until the validation score stops improving.
-        Requires at least one validation data and one metric. If there's more than one, will check all of them except the training data.
+        Validation score needs to improve at least every ``early_stopping_rounds`` round(s)
+        to continue training.
+        Requires at least one validation data and one metric.
+        If there's more than one, will check all of them. But the training data is ignored anyway.
         If early stopping occurs, the model will add ``best_iteration`` field.
     evals_result: dict or None, optional (default=None)
         This dictionary used to store all evaluation results of all the items in ``valid_sets``.
@@ -363,8 +366,10 @@ def cv(params, train_set, num_boost_round=100,
         All values in categorical features should be less than int32 max value (2147483647).
         All negative values in categorical features will be treated as missing values.
     early_stopping_rounds: int or None, optional (default=None)
-        Activates early stopping. CV error needs to decrease at least
-        every ``early_stopping_rounds`` round(s) to continue.
+        Activates early stopping.
+        CV score needs to improve at least every ``early_stopping_rounds`` round(s)
+        to continue.
+        Requires at least one metric. If there's more than one, will check all of them.
         Last entry in evaluation history is the one from best iteration.
     fpreproc : callable or None, optional (default=None)
         Preprocessing function that takes (dtrain, dtest, params)

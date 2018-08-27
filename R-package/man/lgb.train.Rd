@@ -67,9 +67,10 @@ type str represents feature names}
 
 \item{early_stopping_rounds}{int
 Activates early stopping.
-Requires at least one validation data and one metric
-If there's more than one, will check all of them except the training data
-Returns the model with (best_iter + early_stopping_rounds)
+CV score needs to improve at least every early_stopping_rounds round(s) to continue.
+Requires at least one metric.
+If there's more than one, will check all of them.
+Returns the model with (best_iter + early_stopping_rounds).
 If early stopping occurs, the model will have 'best_iter' field}
 
 \item{callbacks}{list of callback functions
@@ -127,9 +128,11 @@ type str represents feature names}
 
 \item{early_stopping_rounds}{int
 Activates early stopping.
-Requires at least one validation data and one metric
-If there's more than one, will check all of them except the training data
-Returns the model with (best_iter + early_stopping_rounds)
+The model will train until the validation score stops improving.
+Validation score needs to improve at least every early_stopping_rounds round(s) to continue training.
+Requires at least one validation data and one metric.
+If there's more than one, will check all of them. But the training data is ignored anyway.
+Returns the model with (best_iter + early_stopping_rounds).
 If early stopping occurs, the model will have 'best_iter' field}
 
 \item{callbacks}{list of callback functions
