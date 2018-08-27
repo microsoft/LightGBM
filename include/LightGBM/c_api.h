@@ -466,6 +466,20 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterRollbackOneIter(BoosterHandle handle);
 LIGHTGBM_C_EXPORT int LGBM_BoosterGetCurrentIteration(BoosterHandle handle, int* out_iteration);
 
 /*!
+* \brief Get number of tree per iteration
+* \param out_tree_per_iteration number of tree per iteration
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_BoosterNumModelPerIteration(BoosterHandle handle, int* out_tree_per_iteration);
+
+/*!
+* \brief Get number of weak sub-models
+* \param out_models number of weak sub-models
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT int LGBM_BoosterNumberOfTotalModel(BoosterHandle handle, int* out_models);
+
+/*!
 * \brief Get number of eval
 * \param out_len total number of eval results
 * \return 0 when succeed, -1 when failure happens

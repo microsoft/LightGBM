@@ -1737,6 +1737,34 @@ class Booster(object):
             ctypes.byref(out_cur_iter)))
         return out_cur_iter.value
 
+    def num_model_per_iteration(self):
+        """Get number of models per iteration.
+
+        Returns
+        -------
+        model_per_iter : int
+            The number of models per iteration.
+        """
+        model_per_iter = ctypes.c_int(0)
+        _safe_call(_LIB.LGBM_BoosterNumModelPerIteration(
+            self.handle,
+            ctypes.byref(model_per_iter)))
+        return model_per_iter.value
+
+    def num_trees(self):
+        """Get number of weak sub-models.
+
+        Returns
+        -------
+        num_trees : int
+            The number of weak sub-models.
+        """
+        num_trees = ctypes.c_int(0)
+        _safe_call(_LIB.LGBM_BoosterNumberOfTotalModel(
+            self.handle,
+            ctypes.byref(num_trees)))
+        return num_trees.value
+
     def eval(self, data, name, feval=None):
         """Evaluate for data.
 
