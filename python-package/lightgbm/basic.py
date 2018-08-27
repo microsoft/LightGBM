@@ -588,6 +588,8 @@ class _InnerPredictor(object):
         Predict for a csc data
         """
         nrow = csc.shape[0]
+        if nrow > MAX_INT32:
+            return self.__pred_for_csr(csc.tocsr(), num_iteration, predict_type)
         n_preds = self.__get_num_preds(num_iteration, nrow, predict_type)
         preds = np.zeros(n_preds, dtype=np.float64)
         out_num_preds = ctypes.c_int64(0)
