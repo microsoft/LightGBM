@@ -431,29 +431,24 @@ class _InnerPredictor(object):
                 preds = [float(token) for line in lines for token in line.split('\t')]
                 preds = np.array(preds, dtype=np.float64, copy=False)
         elif isinstance(data, scipy.sparse.csr_matrix):
-            preds, nrow = self.__pred_for_csr(data, num_iteration,
-                                              predict_type)
+            preds, nrow = self.__pred_for_csr(data, num_iteration, predict_type)
         elif isinstance(data, scipy.sparse.csc_matrix):
-            preds, nrow = self.__pred_for_csc(data, num_iteration,
-                                              predict_type)
+            preds, nrow = self.__pred_for_csc(data, num_iteration, predict_type)
         elif isinstance(data, np.ndarray):
-            preds, nrow = self.__pred_for_np2d(data, num_iteration,
-                                               predict_type)
+            preds, nrow = self.__pred_for_np2d(data, num_iteration, predict_type)
         elif isinstance(data, list):
             try:
                 data = np.array(data)
             except BaseException:
                 raise ValueError('Cannot convert data list to numpy array.')
-            preds, nrow = self.__pred_for_np2d(data, num_iteration,
-                                               predict_type)
+            preds, nrow = self.__pred_for_np2d(data, num_iteration, predict_type)
         else:
             try:
                 warnings.warn('Converting data to scipy sparse matrix.')
                 csr = scipy.sparse.csr_matrix(data)
             except BaseException:
                 raise TypeError('Cannot predict data for type {}'.format(type(data).__name__))
-            preds, nrow = self.__pred_for_csr(csr, num_iteration,
-                                              predict_type)
+            preds, nrow = self.__pred_for_csr(csr, num_iteration, predict_type)
         if pred_leaf:
             preds = preds.astype(np.int32)
         if is_reshape and preds.size != nrow:
@@ -523,12 +518,11 @@ class _InnerPredictor(object):
             sections = np.arange(start=MAX_INT32, stop=nrow, step=MAX_INT32)
             # __get_num_preds() cannot work with nrow > MAX_INT32, so calculate overall number of predictions piecemeal
             n_preds = [self.__get_num_preds(num_iteration, i, predict_type) for i in np.diff([0] + list(sections) + [nrow])]
+            n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
             preds = np.zeros(sum(n_preds), dtype=np.float64)
-            cur_idx = 0
-            for chunk, n_preds_chunk in zip_(np.array_split(mat, sections), n_preds):
+            for chunk, (start_idx_pred, end_idx_pred) in zip_(np.array_split(mat, sections), zip_(n_preds_sections, n_preds_sections[1:])):
                 # avoid memory consumption by arrays concatenation operations
-                inner_predict(chunk, num_iteration, predict_type, preds[cur_idx:cur_idx + n_preds_chunk])
-                cur_idx += n_preds_chunk
+                inner_predict(chunk, num_iteration, predict_type, preds[start_idx_pred:end_idx_pred])
             return preds, nrow
         else:
             return inner_predict(mat, num_iteration, predict_type)
