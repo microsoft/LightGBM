@@ -88,7 +88,7 @@ MinGW-w64
 
 The exe and dll files will be in ``LightGBM/`` folder.
 
-**Note**: You may need to run the ``cmake -G "MinGW Makefiles" ..`` one more time if met ``sh.exe was found in your PATH`` error.
+**Note**: You may need to run the ``cmake -G "MinGW Makefiles" ..`` one more time if you encounter the ``sh.exe was found in your PATH`` error.
 
 It is recommended to use **Visual Studio** for its better multithreading efficiency in **Windows** for many-core systems (see `FAQ <./FAQ.rst#lightgbm>`__ Question 4 and Question 8).
 
@@ -474,7 +474,7 @@ MinGW-w64
 
 The jar file will be in ``LightGBM/build`` folder and the dll files will be in ``LightGBM/`` folder.
 
-**Note**: You may need to run the ``cmake -G "MinGW Makefiles" -DUSE_SWIG=ON ..`` one more time if met ``sh.exe was found in your PATH`` error.
+**Note**: You may need to run the ``cmake -G "MinGW Makefiles" -DUSE_SWIG=ON ..`` one more time if you encounter the ``sh.exe was found in your PATH`` error.
 
 It is recommended to use **MSBuild (Visual Studio)** for its better multithreading efficiency in **Windows** for many-core systems (see `FAQ <./FAQ.rst#lightgbm>`__ Question 4 and Question 8).
 
