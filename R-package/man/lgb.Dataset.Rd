@@ -32,7 +32,6 @@ Construct lgb.Dataset object from dense matrix, sparse matrix
 or local file (that was created previously by saving an \code{lgb.Dataset}).
 }
 \examples{
-\dontrun{
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
@@ -40,6 +39,5 @@ dtrain <- lgb.Dataset(train$data, label = train$label)
 lgb.Dataset.save(dtrain, "lgb.Dataset.data")
 dtrain <- lgb.Dataset("lgb.Dataset.data")
 lgb.Dataset.construct(dtrain)
-}
 
 }

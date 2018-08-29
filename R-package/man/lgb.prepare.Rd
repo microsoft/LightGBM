@@ -16,7 +16,6 @@ The cleaned dataset. It must be converted to a matrix format (\code{as.matrix}) 
 Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors and characters are converted to numeric without integers. Please use \code{lgb.prepare_rules} if you want to apply this transformation to other datasets.
 }
 \examples{
-\dontrun{
 library(lightgbm)
 data(iris)
 
@@ -46,6 +45,5 @@ str(lightgbm::lgb.prepare(data = iris))
 # $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
 # $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
 # $ Species     : num  1 1 1 1 1 1 1 1 1 1 ...
-}
 
 }

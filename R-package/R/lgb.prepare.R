@@ -7,7 +7,6 @@
 #' @return The cleaned dataset. It must be converted to a matrix format (\code{as.matrix}) for input in lgb.Dataset.
 #' 
 #' @examples
-#' \dontrun{
 #' library(lightgbm)
 #' data(iris)
 #' 
@@ -37,7 +36,6 @@
 #' # $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
 #' # $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
 #' # $ Species     : num  1 1 1 1 1 1 1 1 1 1 ...
-#' }
 #' 
 #' @export
 lgb.prepare <- function(data) {

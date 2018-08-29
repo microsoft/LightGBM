@@ -26,7 +26,6 @@
 #' @return a trained booster model \code{lgb.Booster}.
 #' 
 #' @examples
-#' \dontrun{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -43,7 +42,6 @@
 #'                    min_data = 1,
 #'                    learning_rate = 1,
 #'                    early_stopping_rounds = 10)
-#' }
 #' 
 #' @export
 lgb.train <- function(params = list(),

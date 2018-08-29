@@ -24,14 +24,13 @@ Get a new \code{lgb.Dataset} containing the specified rows of
 original lgb.Dataset object
 }
 \examples{
-\dontrun{
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
 
 dsub <- lightgbm::slice(dtrain, 1:42)
+lgb.Dataset.construct(dsub)
 labels <- lightgbm::getinfo(dsub, "label")
-}
 
 }

@@ -55,7 +55,6 @@ CVBooster <- R6::R6Class(
 #' @return a trained model \code{lgb.CVBooster}.
 #' 
 #' @examples
-#' \dontrun{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -68,7 +67,6 @@ CVBooster <- R6::R6Class(
 #'                 min_data = 1,
 #'                 learning_rate = 1,
 #'                 early_stopping_rounds = 10)
-#' }
 #' @export
 lgb.cv <- function(params = list(),
                    data,

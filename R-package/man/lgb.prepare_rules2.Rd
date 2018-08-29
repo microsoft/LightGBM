@@ -18,7 +18,6 @@ A list with the cleaned dataset (\code{data}) and the rules (\code{rules}). The 
 Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors and characters are converted to numeric (specifically: integer). In addition, keeps rules created so you can convert other datasets using this converter. This is useful if you have a specific need for integer dataset instead of numeric dataset. Note that there are programs which do not support integer-only input. Consider this as a half memory technique which is dangerous, especially for LightGBM.
 }
 \examples{
-\dontrun{
 library(lightgbm)
 data(iris)
 
@@ -75,7 +74,5 @@ str(newest_iris$data) # SUCCESS!
 # $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
 # $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
 # $ Species     : int  3 3 3 3 3 3 3 3 3 3 ...
-
-}
 
 }

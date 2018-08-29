@@ -29,7 +29,6 @@ NULL invisibly.
 Attempts to save a model using RDS. Has an additional parameter (\code{raw}) which decides whether to save the raw model or not.
 }
 \examples{
-\dontrun{
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
@@ -39,14 +38,14 @@ test <- agaricus.test
 dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
 params <- list(objective = "regression", metric = "l2")
 valids <- list(test = dtest)
-model <- lgb.train(params,
-                   dtrain,
-                   100,
-                   valids,
-                   min_data = 1,
-                   learning_rate = 1,
-                   early_stopping_rounds = 10)
+model <- lgb.train(
+    params
+    , dtrain
+    , 100
+    , valids
+    , min_data = 1
+    , learning_rate = 1
+    , early_stopping_rounds = 10
+)
 saveRDS.lgb.Booster(model, "model.rds")
-}
-
 }

@@ -19,12 +19,10 @@ Save \code{lgb.Dataset} to a binary file
 }
 \examples{
 
-\dontrun{
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
 lgb.Dataset.save(dtrain, "data.bin")
-}
 
 }
