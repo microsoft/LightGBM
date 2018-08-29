@@ -88,7 +88,7 @@ MinGW-w64
 
 The exe and dll files will be in ``LightGBM/`` folder.
 
-**Note**: You may need to run the ``cmake -G "MinGW Makefiles" ..`` one more time if met ``sh.exe was found in your PATH`` error.
+**Note**: You may need to run the ``cmake -G "MinGW Makefiles" ..`` one more time if you encounter the ``sh.exe was found in your PATH`` error.
 
 It is recommended to use **Visual Studio** for its better multithreading efficiency in **Windows** for many-core systems (see `FAQ <./FAQ.rst#lightgbm>`__ Question 4 and Question 8).
 
@@ -427,12 +427,65 @@ On Linux HDFS version of LightGBM can be built using **CMake** and **gcc** or **
 Build Java Wrapper
 ~~~~~~~~~~~~~~~~~~
 
+By the following instructions you can generate a JAR file containing the LightGBM `C API <./Development-Guide.rst#c-api>`__ wrapped by **SWIG**.
+
+Windows
+^^^^^^^
+
+On Windows Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMake** and **MSBuild** or **MinGW**.
+
+MSBuild
+*******
+
+1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (**MSBuild** is not needed if **Visual Studio** (2015 or newer) is already installed).
+
+2. Install `SWIG`_ and **Java** (also make sure that ``JAVA_HOME`` is set properly).
+
+3. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/Microsoft/LightGBM
+     cd LightGBM
+     mkdir build
+     cd build
+     cmake -DCMAKE_GENERATOR_PLATFORM=x64 -DUSE_SWIG=ON ..
+     cmake --build . --target ALL_BUILD --config Release
+
+The jar file will be in ``LightGBM/build`` folder and the dll files will be in ``LightGBM/Release`` folder.
+
+MinGW-w64
+*********
+
+1. Install `Git for Windows`_, `CMake`_ and `MinGW-w64`_.
+
+2. Install `SWIG`_ and **Java** (also make sure that ``JAVA_HOME`` is set properly).
+
+3. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/Microsoft/LightGBM
+     cd LightGBM
+     mkdir build
+     cd build
+     cmake -G "MinGW Makefiles" -DUSE_SWIG=ON ..
+     mingw32-make.exe -j4
+
+The jar file will be in ``LightGBM/build`` folder and the dll files will be in ``LightGBM/`` folder.
+
+**Note**: You may need to run the ``cmake -G "MinGW Makefiles" -DUSE_SWIG=ON ..`` one more time if you encounter the ``sh.exe was found in your PATH`` error.
+
+It is recommended to use **MSBuild (Visual Studio)** for its better multithreading efficiency in **Windows** for many-core systems (see `FAQ <./FAQ.rst#lightgbm>`__ Question 4 and Question 8).
+
+Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
+
 Linux
 ^^^^^
 
 On Linux Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMake** and **gcc** or **Clang**.
 
-1. Install `CMake`_, `SWIG`_ and **Java**.
+1. Install `CMake`_, `SWIG`_ and **Java** (also make sure that ``JAVA_HOME`` is set properly).
 
 2. Run the following commands:
 
@@ -441,9 +494,7 @@ On Linux Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMake
      git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
      mkdir build ; cd build
      cmake -DUSE_SWIG=ON ..
-     make _lightgbm_swig -j4
-
-This will generate a JAR file containing the LightGBM `C API <./Development-Guide.rst#c-api>`__ wrapped by **SWIG**.
+     make -j4
 
 .. _Python-package: https://github.com/Microsoft/LightGBM/tree/master/python-package
 
