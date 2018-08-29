@@ -16,7 +16,7 @@ import scipy.sparse
 from .compat import (DataFrame, LGBMDeprecationWarning, Series,
                      decode_string, integer_types,
                      json, json_default_with_numpy,
-                     numeric_types, range_, string_type)
+                     numeric_types, range_, zip_, string_type)
 from .libpath import find_lib_path
 
 
@@ -31,11 +31,6 @@ def _load_lib():
 
 
 _LIB = _load_lib()
-
-
-class LightGBMError(Exception):
-    """Error throwed by LightGBM"""
-    pass
 
 
 def _safe_call(ret):
@@ -158,6 +153,13 @@ class _temp_file(object):
             f.writelines(lines)
 
 
+class LightGBMError(Exception):
+    """Error throwed by LightGBM"""
+    pass
+
+
+MAX_INT32 = (1 << 31) - 1
+
 """marco definition of data type in c_api of LightGBM"""
 C_API_DTYPE_FLOAT32 = 0
 C_API_DTYPE_FLOAT64 = 1
@@ -178,6 +180,11 @@ FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
                      "weight": C_API_DTYPE_FLOAT32,
                      "init_score": C_API_DTYPE_FLOAT64,
                      "group": C_API_DTYPE_INT32}
+
+PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
+                       'int64': 'int', 'uint8': 'int', 'uint16': 'int',
+                       'uint32': 'int', 'uint64': 'int', 'float16': 'float',
+                       'float32': 'float', 'float64': 'float', 'bool': 'int'}
 
 
 def convert_from_sliced_object(data):
@@ -229,12 +236,6 @@ def c_int_array(data):
     else:
         raise TypeError("Unknown type({})".format(type(data).__name__))
     return (ptr_data, type_data, data)  # return `data` to avoid the temporary copy is freed
-
-
-PANDAS_DTYPE_MAPPER = {'int8': 'int', 'int16': 'int', 'int32': 'int',
-                       'int64': 'int', 'uint8': 'int', 'uint16': 'int',
-                       'uint32': 'int', 'uint64': 'int', 'float16': 'float',
-                       'float32': 'float', 'float64': 'float', 'bool': 'int'}
 
 
 def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
@@ -430,29 +431,24 @@ class _InnerPredictor(object):
                 preds = [float(token) for line in lines for token in line.split('\t')]
                 preds = np.array(preds, dtype=np.float64, copy=False)
         elif isinstance(data, scipy.sparse.csr_matrix):
-            preds, nrow = self.__pred_for_csr(data, num_iteration,
-                                              predict_type)
+            preds, nrow = self.__pred_for_csr(data, num_iteration, predict_type)
         elif isinstance(data, scipy.sparse.csc_matrix):
-            preds, nrow = self.__pred_for_csc(data, num_iteration,
-                                              predict_type)
+            preds, nrow = self.__pred_for_csc(data, num_iteration, predict_type)
         elif isinstance(data, np.ndarray):
-            preds, nrow = self.__pred_for_np2d(data, num_iteration,
-                                               predict_type)
+            preds, nrow = self.__pred_for_np2d(data, num_iteration, predict_type)
         elif isinstance(data, list):
             try:
                 data = np.array(data)
             except BaseException:
                 raise ValueError('Cannot convert data list to numpy array.')
-            preds, nrow = self.__pred_for_np2d(data, num_iteration,
-                                               predict_type)
+            preds, nrow = self.__pred_for_np2d(data, num_iteration, predict_type)
         else:
             try:
                 warnings.warn('Converting data to scipy sparse matrix.')
                 csr = scipy.sparse.csr_matrix(data)
             except BaseException:
                 raise TypeError('Cannot predict data for type {}'.format(type(data).__name__))
-            preds, nrow = self.__pred_for_csr(csr, num_iteration,
-                                              predict_type)
+            preds, nrow = self.__pred_for_csr(csr, num_iteration, predict_type)
         if pred_leaf:
             preds = preds.astype(np.int32)
         if is_reshape and preds.size != nrow:
@@ -467,6 +463,11 @@ class _InnerPredictor(object):
         """
         Get size of prediction result
         """
+        if nrow > MAX_INT32:
+            raise LightGBMError('LightGBM cannot perform prediction for data'
+                                'with number of rows greater than MAX_INT32 (%d).\n'
+                                'You can split your data into chunks'
+                                'and then concatenate predictions for them' % MAX_INT32)
         n_preds = ctypes.c_int64(0)
         _safe_call(_LIB.LGBM_BoosterCalcNumPredict(
             self.handle,
@@ -483,68 +484,106 @@ class _InnerPredictor(object):
         if len(mat.shape) != 2:
             raise ValueError('Input numpy.ndarray or list must be 2 dimensional')
 
-        if mat.dtype == np.float32 or mat.dtype == np.float64:
-            data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
+        def inner_predict(mat, num_iteration, predict_type, preds=None):
+            if mat.dtype == np.float32 or mat.dtype == np.float64:
+                data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
+            else:
+                """change non-float data to float data, need to copy"""
+                data = np.array(mat.reshape(mat.size), dtype=np.float32)
+            ptr_data, type_ptr_data, _ = c_float_array(data)
+            n_preds = self.__get_num_preds(num_iteration, mat.shape[0], predict_type)
+            if preds is None:
+                preds = np.zeros(n_preds, dtype=np.float64)
+            elif len(preds.shape) != 1 or len(preds) != n_preds:
+                raise ValueError("Wrong length of pre-allocated predict array")
+            out_num_preds = ctypes.c_int64(0)
+            _safe_call(_LIB.LGBM_BoosterPredictForMat(
+                self.handle,
+                ptr_data,
+                ctypes.c_int(type_ptr_data),
+                ctypes.c_int(mat.shape[0]),
+                ctypes.c_int(mat.shape[1]),
+                ctypes.c_int(C_API_IS_ROW_MAJOR),
+                ctypes.c_int(predict_type),
+                ctypes.c_int(num_iteration),
+                c_str(self.pred_parameter),
+                ctypes.byref(out_num_preds),
+                preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
+            if n_preds != out_num_preds.value:
+                raise ValueError("Wrong length for predict results")
+            return preds, mat.shape[0]
+
+        nrow = mat.shape[0]
+        if nrow > MAX_INT32:
+            sections = np.arange(start=MAX_INT32, stop=nrow, step=MAX_INT32)
+            # __get_num_preds() cannot work with nrow > MAX_INT32, so calculate overall number of predictions piecemeal
+            n_preds = [self.__get_num_preds(num_iteration, i, predict_type) for i in np.diff([0] + list(sections) + [nrow])]
+            n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
+            preds = np.zeros(sum(n_preds), dtype=np.float64)
+            for chunk, (start_idx_pred, end_idx_pred) in zip_(np.array_split(mat, sections), zip_(n_preds_sections, n_preds_sections[1:])):
+                # avoid memory consumption by arrays concatenation operations
+                inner_predict(chunk, num_iteration, predict_type, preds[start_idx_pred:end_idx_pred])
+            return preds, nrow
         else:
-            """change non-float data to float data, need to copy"""
-            data = np.array(mat.reshape(mat.size), dtype=np.float32)
-        ptr_data, type_ptr_data, _ = c_float_array(data)
-        n_preds = self.__get_num_preds(num_iteration, mat.shape[0],
-                                       predict_type)
-        preds = np.zeros(n_preds, dtype=np.float64)
-        out_num_preds = ctypes.c_int64(0)
-        _safe_call(_LIB.LGBM_BoosterPredictForMat(
-            self.handle,
-            ptr_data,
-            ctypes.c_int(type_ptr_data),
-            ctypes.c_int(mat.shape[0]),
-            ctypes.c_int(mat.shape[1]),
-            ctypes.c_int(C_API_IS_ROW_MAJOR),
-            ctypes.c_int(predict_type),
-            ctypes.c_int(num_iteration),
-            c_str(self.pred_parameter),
-            ctypes.byref(out_num_preds),
-            preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
-        if n_preds != out_num_preds.value:
-            raise ValueError("Wrong length for predict results")
-        return preds, mat.shape[0]
+            return inner_predict(mat, num_iteration, predict_type)
 
     def __pred_for_csr(self, csr, num_iteration, predict_type):
         """
         Predict for a csr data
         """
+        def inner_predict(csr, num_iteration, predict_type, preds=None):
+            nrow = len(csr.indptr) - 1
+            n_preds = self.__get_num_preds(num_iteration, nrow, predict_type)
+            if preds is None:
+                preds = np.zeros(n_preds, dtype=np.float64)
+            elif len(preds.shape) != 1 or len(preds) != n_preds:
+                raise ValueError("Wrong length of pre-allocated predict array")
+            out_num_preds = ctypes.c_int64(0)
+
+            ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
+            ptr_data, type_ptr_data, _ = c_float_array(csr.data)
+
+            _safe_call(_LIB.LGBM_BoosterPredictForCSR(
+                self.handle,
+                ptr_indptr,
+                ctypes.c_int32(type_ptr_indptr),
+                csr.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+                ptr_data,
+                ctypes.c_int(type_ptr_data),
+                ctypes.c_int64(len(csr.indptr)),
+                ctypes.c_int64(len(csr.data)),
+                ctypes.c_int64(csr.shape[1]),
+                ctypes.c_int(predict_type),
+                ctypes.c_int(num_iteration),
+                c_str(self.pred_parameter),
+                ctypes.byref(out_num_preds),
+                preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
+            if n_preds != out_num_preds.value:
+                raise ValueError("Wrong length for predict results")
+            return preds, nrow
+
         nrow = len(csr.indptr) - 1
-        n_preds = self.__get_num_preds(num_iteration, nrow, predict_type)
-        preds = np.zeros(n_preds, dtype=np.float64)
-        out_num_preds = ctypes.c_int64(0)
-
-        ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
-        ptr_data, type_ptr_data, _ = c_float_array(csr.data)
-
-        _safe_call(_LIB.LGBM_BoosterPredictForCSR(
-            self.handle,
-            ptr_indptr,
-            ctypes.c_int32(type_ptr_indptr),
-            csr.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
-            ptr_data,
-            ctypes.c_int(type_ptr_data),
-            ctypes.c_int64(len(csr.indptr)),
-            ctypes.c_int64(len(csr.data)),
-            ctypes.c_int64(csr.shape[1]),
-            ctypes.c_int(predict_type),
-            ctypes.c_int(num_iteration),
-            c_str(self.pred_parameter),
-            ctypes.byref(out_num_preds),
-            preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
-        if n_preds != out_num_preds.value:
-            raise ValueError("Wrong length for predict results")
-        return preds, nrow
+        if nrow > MAX_INT32:
+            sections = [0] + list(np.arange(start=MAX_INT32, stop=nrow, step=MAX_INT32)) + [nrow]
+            # __get_num_preds() cannot work with nrow > MAX_INT32, so calculate overall number of predictions piecemeal
+            n_preds = [self.__get_num_preds(num_iteration, i, predict_type) for i in np.diff(sections)]
+            n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
+            preds = np.zeros(sum(n_preds), dtype=np.float64)
+            for (start_idx, end_idx), (start_idx_pred, end_idx_pred) in zip_(zip_(sections, sections[1:]),
+                                                                             zip_(n_preds_sections, n_preds_sections[1:])):
+                # avoid memory consumption by arrays concatenation operations
+                inner_predict(csr[start_idx:end_idx], num_iteration, predict_type, preds[start_idx_pred:end_idx_pred])
+            return preds, nrow
+        else:
+            return inner_predict(csr, num_iteration, predict_type)
 
     def __pred_for_csc(self, csc, num_iteration, predict_type):
         """
         Predict for a csc data
         """
         nrow = csc.shape[0]
+        if nrow > MAX_INT32:
+            return self.__pred_for_csr(csc.tocsr(), num_iteration, predict_type)
         n_preds = self.__get_num_preds(num_iteration, nrow, predict_type)
         preds = np.zeros(n_preds, dtype=np.float64)
         out_num_preds = ctypes.c_int64(0)
