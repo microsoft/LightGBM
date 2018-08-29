@@ -19,8 +19,8 @@ class Metric;
 * \brief The main entrance of LightGBM. this application has two tasks:
 *        Train and Predict.
 *        Train task will train a new model
-*        Predict task will predicting the scores of test data using exsiting model,
-*        and saving the score to disk.
+*        Predict task will predict the scores of test data using existing model,
+*        and save the score to disk.
 */
 class Application {
 public:
@@ -29,19 +29,12 @@ public:
   /*! \brief Destructor */
   ~Application();
 
-  /*! \brief To call this funciton  to run application*/
+  /*! \brief To call this funciton to run application*/
   inline void Run();
 
 private:
-  /*! 
-  * \brief Global Sync by minimal, will return minimal T across nodes
-  * \param local Local data
-  * \return minimal values across nodes 
-  */
-  template<typename T>
-  T GlobalSyncUpByMin(T& local);
 
-  /*! \brief Load parametes from command line and config file*/
+  /*! \brief Load parameters from command line and config file*/
   void LoadParameters(int argc, char** argv);
 
   /*! \brief Load data, including training data and validation data*/
@@ -59,8 +52,11 @@ private:
   /*! \brief Main predicting logic */
   void Predict();
 
+  /*! \brief Main Convert model logic */
+  void ConvertModel();
+
   /*! \brief All configs */
-  OverallConfig config_;
+  Config config_;
   /*! \brief Training data */
   std::unique_ptr<Dataset> train_data_;
   /*! \brief Validation data */
@@ -77,9 +73,11 @@ private:
 
 
 inline void Application::Run() {
-  if (config_.task_type == TaskType::kPredict) {
+  if (config_.task == TaskType::kPredict || config_.task == TaskType::KRefitTree) {
     InitPredict();
     Predict();
+  } else if (config_.task == TaskType::kConvertModel) {
+    ConvertModel();
   } else {
     InitTrain();
     Train();

@@ -1,9 +1,13 @@
 #ifndef LIGHTGBM_METRIC_H_
 #define LIGHTGBM_METRIC_H_
 
+#include <LightGBM/utils/log.h>
+#include <LightGBM/utils/common.h>
+
 #include <LightGBM/meta.h>
 #include <LightGBM/config.h>
 #include <LightGBM/dataset.h>
+#include <LightGBM/objective_function.h>
 
 #include <vector>
 
@@ -33,7 +37,7 @@ public:
   * \brief Calcaluting and printing metric result
   * \param score Current prediction score
   */
-  virtual std::vector<double> Eval(const double* score) const = 0;
+  virtual std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const = 0;
 
   Metric() = default;
   /*! \brief Disable copy */
@@ -46,7 +50,7 @@ public:
   * \param type Specific type of metric
   * \param config Config for metric
   */
-  LIGHTGBM_EXPORT static Metric* CreateMetric(const std::string& type, const MetricConfig& config);
+  LIGHTGBM_EXPORT static Metric* CreateMetric(const std::string& type, const Config& config);
 
 };
 
@@ -55,11 +59,14 @@ public:
 */
 class DCGCalculator {
 public:
+  
+  static void DefaultEvalAt(std::vector<int>* eval_at);
+  static void DefaultLabelGain(std::vector<double>* label_gain);
   /*!
   * \brief Initial logic
   * \param label_gain Gain for labels, default is 2^i - 1
   */
-  static void Init(std::vector<double> label_gain);
+  static void Init(const std::vector<double>& label_gain);
 
   /*!
   * \brief Calculate the DCG score at position k
@@ -69,7 +76,7 @@ public:
   * \param num_data Number of data
   * \return The DCG score
   */
-  static double CalDCGAtK(data_size_t k, const float* label,
+  static double CalDCGAtK(data_size_t k, const label_t* label,
     const double* score, data_size_t num_data);
 
   /*!
@@ -81,7 +88,7 @@ public:
   * \param out Output result
   */
   static void CalDCG(const std::vector<data_size_t>& ks,
-    const float* label, const double* score,
+    const label_t* label, const double* score,
     data_size_t num_data, std::vector<double>* out);
 
   /*!
@@ -92,7 +99,14 @@ public:
   * \return The max DCG score
   */
   static double CalMaxDCGAtK(data_size_t k,
-    const float* label, data_size_t num_data);
+    const label_t* label, data_size_t num_data);
+
+  /*!
+  * \brief Check the label range for NDCG and lambdarank
+  * \param label Pointer of label
+  * \param num_data Number of data
+  */
+  static void CheckLabel(const label_t* label, data_size_t num_data);
 
   /*!
   * \brief Calculate the Max DCG score at multi position
@@ -102,7 +116,7 @@ public:
   * \param out Output result
   */
   static void CalMaxDCG(const std::vector<data_size_t>& ks,
-    const float* label, data_size_t num_data, std::vector<double>* out);
+    const label_t* label, data_size_t num_data, std::vector<double>* out);
 
   /*!
   * \brief Get discount score of position k
@@ -112,8 +126,6 @@ public:
   inline static double GetDiscount(data_size_t k) { return discount_[k]; }
 
 private:
-  /*! \brief True if inited, avoid init multi times */
-  static bool is_inited_;
   /*! \brief store gains for different label */
   static std::vector<double> label_gain_;
   /*! \brief store discount score for different position */

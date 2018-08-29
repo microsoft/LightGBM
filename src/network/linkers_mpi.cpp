@@ -3,7 +3,8 @@
 
 namespace LightGBM {
 
-Linkers::Linkers(NetworkConfig config) {
+Linkers::Linkers(Config) {
+  is_init_ = false;
   int argc = 0;
   char**argv = nullptr;
   int flag = 0;
@@ -17,13 +18,15 @@ Linkers::Linkers(NetworkConfig config) {
   MPI_SAFE_CALL(MPI_Barrier(MPI_COMM_WORLD));
   bruck_map_ = BruckMap::Construct(rank_, num_machines_);
   recursive_halving_map_ = RecursiveHalvingMap::Construct(rank_, num_machines_);
+  is_init_ = true;
 }
 
 Linkers::~Linkers() {
-  MPI_SAFE_CALL(MPI_Finalize());
+  if (is_init_) {
+    MPI_SAFE_CALL(MPI_Finalize());
+  }
 }
 
 
 }  // namespace LightGBM
 #endif // USE_MPI
-

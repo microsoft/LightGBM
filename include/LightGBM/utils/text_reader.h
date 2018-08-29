@@ -28,36 +28,29 @@ public:
   TextReader(const char* filename, bool is_skip_first_line):
     filename_(filename), is_skip_first_line_(is_skip_first_line){
     if (is_skip_first_line_) {
-      FILE* file;
-#ifdef _MSC_VER
-      fopen_s(&file, filename, "r");
-#else
-      file = fopen(filename, "r");
-#endif
-      if (file == NULL) {
+      auto reader = VirtualFileReader::Make(filename);
+      if (!reader->Init()) {
         Log::Fatal("Could not open %s", filename);
       }
       std::stringstream str_buf;
-      int read_c = -1;
-      read_c = fgetc(file);
-      while (read_c != EOF) {
-        char tmp_ch = static_cast<char>(read_c);
-        if (tmp_ch == '\n' || tmp_ch == '\r') {
+      char read_c;
+      size_t nread = reader->Read(&read_c, 1);
+      while (nread == 1) {
+        if (read_c == '\n' || read_c == '\r') {
           break;
         }
-        str_buf << tmp_ch;
+        str_buf << read_c;
         ++skip_bytes_;
-        read_c = fgetc(file);
+        nread = reader->Read(&read_c, 1);
       }
-      if (static_cast<char>(read_c) == '\r') {
-        read_c = fgetc(file);
-        ++skip_bytes_;
-      }
-      if (static_cast<char>(read_c) == '\n') {
-        read_c = fgetc(file);
+      if (read_c == '\r') {
+        reader->Read(&read_c, 1);
         ++skip_bytes_;
       }
-      fclose(file);
+      if (read_c == '\n') {
+        reader->Read(&read_c, 1);
+        ++skip_bytes_;
+      }
       first_line_ = str_buf.str();
       Log::Debug("Skipped header \"%s\" in file %s", first_line_.c_str(), filename_);
     }
@@ -91,7 +84,7 @@ public:
     last_line_ = "";
     INDEX_T total_cnt = 0;
     PipelineReader::Read(filename_, skip_bytes_,
-      [this, &total_cnt, &process_fun]
+      [&]
     (const char* buffer_process, size_t read_cnt) {
       size_t cnt = 0;
       size_t i = 0;
@@ -123,7 +116,7 @@ public:
         }
       }
       if (last_i != read_cnt) {
-        last_line_ = std::string(buffer_process + last_i, read_cnt - last_i);
+        last_line_.append(buffer_process + last_i, read_cnt - last_i);
       }
       return cnt;
     });
@@ -143,15 +136,33 @@ public:
   */
   INDEX_T ReadAllLines() {
     return ReadAllAndProcess(
-      [this](INDEX_T, const char* buffer, size_t size) {
+      [=](INDEX_T, const char* buffer, size_t size) {
       lines_.emplace_back(buffer, size);
     });
+  }
+
+  std::vector<char> ReadContent(size_t* out_len) {
+    std::vector<char> ret;
+    *out_len = 0;
+    auto reader = VirtualFileReader::Make(filename_);
+    if (!reader->Init()) {
+      return ret;
+    }
+    const size_t buffer_size = 16 * 1024 * 1024;
+    auto buffer_read = std::vector<char>(buffer_size);
+    size_t read_cnt = 0;
+    do {
+      read_cnt = reader->Read(buffer_read.data(), buffer_size);
+      ret.insert(ret.end(), buffer_read.begin(), buffer_read.begin() + read_cnt);
+      *out_len += read_cnt;
+    } while (read_cnt > 0);
+    return ret;
   }
 
   INDEX_T SampleFromFile(Random& random, INDEX_T sample_cnt, std::vector<std::string>* out_sampled_data) {
     INDEX_T cur_sample_cnt = 0;
     return ReadAllAndProcess(
-      [this, &random, &cur_sample_cnt, &sample_cnt, &out_sampled_data]
+      [&]
     (INDEX_T line_idx, const char* buffer, size_t size) {
       if (cur_sample_cnt < sample_cnt) {
         out_sampled_data->emplace_back(buffer, size);
@@ -174,7 +185,7 @@ public:
   INDEX_T ReadAndFilterLines(const std::function<bool(INDEX_T)>& filter_fun, std::vector<INDEX_T>* out_used_data_indices) {
     out_used_data_indices->clear();
     INDEX_T total_cnt = ReadAllAndProcess(
-      [this, &out_used_data_indices, &filter_fun]
+      [&]
     (INDEX_T line_idx , const char* buffer, size_t size) {
       bool is_used = filter_fun(line_idx);
       if (is_used) { out_used_data_indices->push_back(line_idx); }
@@ -188,7 +199,7 @@ public:
     INDEX_T cur_sample_cnt = 0;
     out_used_data_indices->clear();
     INDEX_T total_cnt = ReadAllAndProcess(
-      [this, &out_used_data_indices, &filter_fun, &random, &cur_sample_cnt, &sample_cnt, &out_sampled_data]
+      [&]
     (INDEX_T line_idx, const char* buffer, size_t size) {
       bool is_used = filter_fun(line_idx);
       if (is_used) { out_used_data_indices->push_back(line_idx); }
@@ -210,7 +221,7 @@ public:
 
   INDEX_T CountLine() {
     return ReadAllAndProcess(
-      [this](INDEX_T, const char*, size_t) {
+      [=](INDEX_T, const char*, size_t) {
     });
   }
 
@@ -219,7 +230,7 @@ public:
     INDEX_T total_cnt = 0;
     INDEX_T used_cnt = 0;
     PipelineReader::Read(filename_, skip_bytes_,
-      [this, &total_cnt, &process_fun,&used_cnt, &filter_fun]
+      [&]
     (const char* buffer_process, size_t read_cnt) {
       size_t cnt = 0;
       size_t i = 0;
@@ -260,7 +271,7 @@ public:
       process_fun(start_idx, lines_);
       lines_.clear();
       if (last_i != read_cnt) {
-        last_line_ = std::string(buffer_process + last_i, read_cnt - last_i);
+        last_line_.append(buffer_process + last_i, read_cnt - last_i);
       }
       return cnt;
     });
@@ -313,4 +324,3 @@ private:
 }  // namespace LightGBM
 
 #endif   // LightGBM_UTILS_TEXT_READER_H_
-

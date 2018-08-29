@@ -14,24 +14,30 @@ lgb.save(booster, filename, num_iteration = NULL)
 \item{num_iteration}{number of iteration want to predict with, NULL or <= 0 means use best iteration}
 }
 \value{
-booster
+lgb.Booster
 }
 \description{
 Save LightGBM model
 }
 \examples{
 \dontrun{
-  library(lightgbm)
-  data(agaricus.train, package='lightgbm')
-  train <- agaricus.train
-  dtrain <- lgb.Dataset(train$data, label=train$label)
-  data(agaricus.test, package='lightgbm')
-  test <- agaricus.test
-  dtest <- lgb.Dataset.create.valid(dtrain, test$data, label=test$label)
-  params <- list(objective="regression", metric="l2")
-  valids <- list(test=dtest)
-  model <- lgb.train(params, dtrain, 100, valids, min_data=1, learning_rate=1, early_stopping_rounds=10)
-  lgb.save(model, "model.txt")
-}
+library(lightgbm)
+data(agaricus.train, package = "lightgbm")
+train <- agaricus.train
+dtrain <- lgb.Dataset(train$data, label = train$label)
+data(agaricus.test, package = "lightgbm")
+test <- agaricus.test
+dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
+params <- list(objective = "regression", metric = "l2")
+valids <- list(test = dtest)
+model <- lgb.train(params,
+                   dtrain,
+                   100,
+                   valids,
+                   min_data = 1,
+                   learning_rate = 1,
+                   early_stopping_rounds = 10)
+lgb.save(model, "model.txt")
 }
 
+}

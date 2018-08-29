@@ -1,0 +1,96 @@
+Quick Start
+===========
+
+This is a quick start guide for LightGBM CLI version.
+
+Follow the `Installation Guide <./Installation-Guide.rst>`__ to install LightGBM first.
+
+**List of other helpful links**
+
+-  `Parameters <./Parameters.rst>`__
+
+-  `Parameters Tuning <./Parameters-Tuning.rst>`__
+
+-  `Python-package Quick Start <./Python-Intro.rst>`__
+
+-  `Python API <./Python-API.rst>`__
+
+Training Data Format
+--------------------
+
+LightGBM supports input data files with `CSV`_, `TSV`_ and `LibSVM`_ formats.
+
+Files could be both with and without headers.
+
+Label column could be specified both by index and by name.
+
+Some columns could be ignored.
+
+Categorical Feature Support
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+LightGBM can use categorical features directly (without one-hot encoding).
+The experiment on `Expo data`_ shows about 8x speed-up compared with one-hot encoding.
+
+For the setting details, please refer to `Parameters <./Parameters.rst#categorical_feature>`__.
+
+Weight and Query/Group Data
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+LightGBM also supports weighted training, it needs an additional `weight data <./Parameters.rst#weight-data>`__.
+And it needs an additional `query data <./Parameters.rst#query-data>`_ for ranking task.
+
+Also, weight and query data could be specified as columns in training data in the same manner as label.
+
+Parameters Quick Look
+---------------------
+
+The parameters format is ``key1=value1 key2=value2 ...``.
+
+Parameters can be set both in config file and command line.
+If one parameter appears in both command line and config file, LightGBM will use the parameter from the command line.
+
+The most important parameters which new users should take a look to are located into `Core Parameters <./Parameters.rst#core-parameters>`__
+and the top of `Learning Control Parameters <./Parameters.rst#learning-control-parameters>`__
+sections of the full detailed list of `LightGBM's parameters <./Parameters.rst>`__.
+
+Run LightGBM
+------------
+
+For Windows:
+
+::
+
+    lightgbm.exe config=your_config_file other_args ...
+
+For Unix:
+
+::
+
+    ./lightgbm config=your_config_file other_args ...
+
+Parameters can be set both in config file and command line, and the parameters in command line have higher priority than in config file.
+For example, following command line will keep ``num_trees=10`` and ignore the same parameter in config file.
+
+::
+
+    ./lightgbm config=train.conf num_trees=10
+
+Examples
+--------
+
+-  `Binary Classification <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification>`__
+
+-  `Regression <https://github.com/Microsoft/LightGBM/tree/master/examples/regression>`__
+
+-  `Lambdarank <https://github.com/Microsoft/LightGBM/tree/master/examples/lambdarank>`__
+
+-  `Parallel Learning <https://github.com/Microsoft/LightGBM/tree/master/examples/parallel_learning>`__
+
+.. _CSV: https://en.wikipedia.org/wiki/Comma-separated_values
+
+.. _TSV: https://en.wikipedia.org/wiki/Tab-separated_values
+
+.. _LibSVM: https://www.csie.ntu.edu.tw/~cjlin/libsvm/
+
+.. _Expo data: http://stat-computing.org/dataexpo/2009/

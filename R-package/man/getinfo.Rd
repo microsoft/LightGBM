@@ -34,15 +34,17 @@ The \code{name} field can be one of the following:
 }
 \examples{
 \dontrun{
-  data(agaricus.train, package='lightgbm')
-  train <- agaricus.train
-  dtrain <- lgb.Dataset(train$data, label=train$label)
-  lgb.Dataset.construct(dtrain)
-  labels <- getinfo(dtrain, 'label')
-  setinfo(dtrain, 'label', 1-labels)
+library(lightgbm)
+data(agaricus.train, package = "lightgbm")
+train <- agaricus.train
+dtrain <- lgb.Dataset(train$data, label = train$label)
+lgb.Dataset.construct(dtrain)
 
-  labels2 <- getinfo(dtrain, 'label')
-  stopifnot(all(labels2 == 1-labels))
-}
+labels <- lightgbm::getinfo(dtrain, "label")
+lightgbm::setinfo(dtrain, "label", 1 - labels)
+
+labels2 <- lightgbm::getinfo(dtrain, "label")
+stopifnot(all(labels2 == 1 - labels))
 }
 
+}

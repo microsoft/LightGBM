@@ -10,14 +10,16 @@ from .compat import range_
 
 class EarlyStopException(Exception):
     """Exception of early stopping.
+
     Parameters
     ----------
     best_iteration : int
         The best iteration stopped.
     """
-    def __init__(self, best_iteration):
+    def __init__(self, best_iteration, best_score):
         super(EarlyStopException, self).__init__()
         self.best_iteration = best_iteration
+        self.best_score = best_score
 
 
 # Callback environment used by callbacks
@@ -45,20 +47,19 @@ def _format_eval_result(value, show_stdv=True):
 
 
 def print_evaluation(period=1, show_stdv=True):
-    """Create a callback that print evaluation result.
+    """Create a callback that prints the evaluation results.
 
     Parameters
     ----------
-    period : int
-        The period to log the evaluation results
-
-    show_stdv : bool, optional
-        Whether show stdv if provided
+    period : int, optional (default=1)
+        The period to print the evaluation results.
+    show_stdv : bool, optional (default=True)
+        Whether to show stdv (if provided).
 
     Returns
     -------
     callback : function
-        A callback that print evaluation every period iterations.
+        The callback that prints the evaluation results every ``period`` iteration(s).
     """
     def callback(env):
         """internal function"""
@@ -70,7 +71,7 @@ def print_evaluation(period=1, show_stdv=True):
 
 
 def record_evaluation(eval_result):
-    """Create a call back that records the evaluation history into eval_result.
+    """Create a callback that records the evaluation history into ``eval_result``.
 
     Parameters
     ----------
@@ -80,7 +81,7 @@ def record_evaluation(eval_result):
     Returns
     -------
     callback : function
-        The requested callback function.
+        The callback that records the evaluation history into the passed dictionary.
     """
     if not isinstance(eval_result, dict):
         raise TypeError('Eval_result should be a dictionary')
@@ -102,28 +103,33 @@ def record_evaluation(eval_result):
 
 
 def reset_parameter(**kwargs):
-    """Reset parameter after first iteration
+    """Create a callback that resets the parameter after the first iteration.
 
-    NOTE: the initial parameter will still take in-effect on first iteration.
+    Note
+    ----
+    The initial parameter will still take in-effect on first iteration.
 
     Parameters
     ----------
     **kwargs: value should be list or function
         List of parameters for each boosting round
-        or a customized function that calculates learning_rate in terms of
-        current number of round (e.g. yields learning rate decay)
-        - list l: parameter = l[current_round]
-        - function f: parameter = f(current_round)
+        or a customized function that calculates the parameter in terms of
+        current number of round (e.g. yields learning rate decay).
+        If list lst, parameter = lst[current_round].
+        If function func, parameter = func(current_round).
+
     Returns
     -------
     callback : function
-        The requested callback function.
+        The callback that resets the parameter after the first iteration.
     """
     def callback(env):
         """internal function"""
         new_parameters = {}
         for key, value in kwargs.items():
-            if key in ['num_class', 'boosting_type', 'metric']:
+            if key in ['num_class', 'num_classes',
+                       'boosting', 'boost', 'boosting_type',
+                       'metric', 'metrics', 'metric_types']:
                 raise RuntimeError("cannot reset {} during training".format(repr(key)))
             if isinstance(value, list):
                 if len(value) != env.end_iteration - env.begin_iteration:
@@ -143,26 +149,32 @@ def reset_parameter(**kwargs):
 
 def early_stopping(stopping_rounds, verbose=True):
     """Create a callback that activates early stopping.
+
+    Note
+    ----
     Activates early stopping.
-    Requires at least one validation data and one metric
-    If there's more than one, will check all of them
+    The model will train until the validation score stops improving.
+    Validation score needs to improve at least every ``early_stopping_rounds`` round(s)
+    to continue training.
+    Requires at least one validation data and one metric.
+    If there's more than one, will check all of them. But the training data is ignored anyway.
 
     Parameters
     ----------
     stopping_rounds : int
-       The stopping rounds before the trend occur.
+       The possible number of rounds without the trend occurrence.
 
-    verbose : optional, bool
-        Whether to print message about early stopping information.
+    verbose : bool, optional (default=True)
+        Whether to print message with early stopping information.
 
     Returns
     -------
     callback : function
-        The requested callback function.
+        The callback that activates early stopping.
     """
     best_score = []
     best_iter = []
-    best_msg = []
+    best_score_list = []
     cmp_op = []
 
     def init(env):
@@ -171,13 +183,12 @@ def early_stopping(stopping_rounds, verbose=True):
             raise ValueError('For early stopping, at least one dataset and eval metric is required for evaluation')
 
         if verbose:
-            msg = "Train until valid scores didn't improve in {} rounds."
+            msg = "Training until validation scores don't improve for {} rounds."
             print(msg.format(stopping_rounds))
 
         for eval_ret in env.evaluation_result_list:
             best_iter.append(0)
-            if verbose:
-                best_msg.append(None)
+            best_score_list.append(None)
             if eval_ret[3]:
                 best_score.append(float('-inf'))
                 cmp_op.append(gt)
@@ -189,21 +200,21 @@ def early_stopping(stopping_rounds, verbose=True):
         """internal function"""
         if not cmp_op:
             init(env)
-        best_msg_buffer = None
         for i in range_(len(env.evaluation_result_list)):
             score = env.evaluation_result_list[i][2]
             if cmp_op[i](score, best_score[i]):
                 best_score[i] = score
                 best_iter[i] = env.iteration
-                if verbose:
-                    if not best_msg_buffer:
-                        best_msg_buffer = '[%d]\t%s' % (
-                            env.iteration + 1, '\t'.join([_format_eval_result(x) for x in env.evaluation_result_list]))
-                    best_msg[i] = best_msg_buffer
+                best_score_list[i] = env.evaluation_result_list
             elif env.iteration - best_iter[i] >= stopping_rounds:
-                env.model.set_attr(best_iteration=str(best_iter[i]))
                 if verbose:
-                    print('Early stopping, best iteration is:\n' + best_msg[i])
-                raise EarlyStopException(best_iter[i])
+                    print('Early stopping, best iteration is:\n[%d]\t%s' % (
+                        best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
+                raise EarlyStopException(best_iter[i], best_score_list[i])
+            if env.iteration == env.end_iteration - 1:
+                if verbose:
+                    print('Did not meet early stopping. Best iteration is:\n[%d]\t%s' % (
+                        best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
+                raise EarlyStopException(best_iter[i], best_score_list[i])
     callback.order = 30
     return callback

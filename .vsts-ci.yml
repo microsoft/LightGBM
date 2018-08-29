@@ -1,0 +1,195 @@
+phases:
+###########################################
+- phase: Linux
+###########################################
+  variables:
+    PYTHON_VERSION: 3.6
+    CONDA_ENV: test-env
+  queue:
+    name: 'Hosted Linux Preview'
+    parallel: 9
+    matrix:
+      regular:
+        TASK: regular
+      mpi:
+        TASK: mpi
+        PYTHON_VERSION: 2.7
+      pylint: 
+        TASK: pylint
+      inference:
+        TASK: if-else
+      sdist:
+        TASK: sdist
+        PYTHON_VERSION: 3.4
+      bdist:
+        TASK: bdist
+        PYTHON_VERSION: 3.5
+      gpu_1:
+        TASK: gpu 
+        METHOD: source
+      gpu_2:
+        TASK: gpu 
+        METHOD: pip
+  steps:
+  - task: CondaEnvironment@0
+    inputs:
+      environmentName: $(CONDA_ENV)
+      packageSpecs: 'python=$(PYTHON_VERSION)' # Optional
+      createOptions: '-q'
+  - script: | 
+      sudo apt-get update
+      export LGB_VER=$(head -n 1 VERSION.txt)
+      export AMDAPPSDK=$HOME/AMDAPPSDK
+      export LD_LIBRARY_PATH="$AMDAPPSDK/lib/x86_64:$LD_LIBRARY_PATH"
+      export OPENCL_VENDOR_PATH=$AMDAPPSDK/etc/OpenCL/vendors
+      if [[ $TASK == "mpi" ]]; then
+          sudo apt-get install -y libopenmpi-dev openmpi-bin
+      fi
+      if [[ $TASK == "gpu" ]]; then
+          sudo apt-get install --no-install-recommends -y ocl-icd-opencl-dev libboost-dev libboost-system-dev libboost-filesystem-dev
+          wget -q https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
+          tar -xjf AMD-APP-SDK*.tar.bz2
+          mkdir -p $OPENCL_VENDOR_PATH
+          sh AMD-APP-SDK*.sh --tar -xf -C $AMDAPPSDK
+          mv $AMDAPPSDK/lib/x86_64/sdk/* $AMDAPPSDK/lib/x86_64/
+          echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
+      fi
+      bash .vsts-ci/test.sh
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
+      artifactName: PackageAssets
+      artifactType: container
+###########################################
+- phase: MacOS
+###########################################
+  variables:
+    PYTHON_VERSION: 3.6
+    CONDA_ENV: test-env
+  queue:
+    name: 'Hosted macOS Preview'
+    parallel: 3
+    matrix:
+      regular:
+        TASK: regular
+        PYTHON_VERSION: 2.7
+      sdist:
+        TASK: sdist
+        PYTHON_VERSION: 3.4
+      bdist:
+        TASK: bdist
+        PYTHON_VERSION: 3.5
+  steps:
+  - script: |
+      brew install libomp
+      brew reinstall cmake
+      wget -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
+      bash conda.sh -b -p $HOME/miniconda
+      export PATH=$HOME/miniconda/bin:$PATH
+      conda config --set always_yes yes --set changeps1 no
+      conda create -q -n $CONDA_ENV python=$PYTHON_VERSION
+      source activate $CONDA_ENV
+      export LGB_VER=$(head -n 1 VERSION.txt)
+      bash .vsts-ci/test.sh
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
+      artifactName: PackageAssets
+      artifactType: container
+###########################################
+- phase: Windows
+###########################################
+  variables:
+    PYTHON_VERSION: 3.6
+    CONDA_ENV: test-env
+  queue:
+    name: 'Hosted VS2017'
+    parallel: 4
+    matrix:
+      regular:
+        TASK: regular
+      sdist:
+        TASK: sdist
+        PYTHON_VERSION: 2.7
+      bdist:
+        TASK: bdist
+        PYTHON_VERSION: 3.5
+      # mingw:
+      #   TASK: mingw
+  steps:
+  - task: CondaEnvironment@0
+    inputs:
+      environmentName: $(CONDA_ENV)
+      packageSpecs: 'python=$(PYTHON_VERSION)' # Optional
+      createOptions: '-q'
+  - powershell: |
+      conda install -q -y -n $env:CONDA_ENV numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest
+      if ("$env:TASK" -eq "regular") {
+        mkdir build; cd build
+        cmake -DCMAKE_GENERATOR_PLATFORM=x64 .. ; cmake --build . --target ALL_BUILD --config Release
+        cd ../python-package; python setup.py install -p
+        cd ..
+        pytest tests/c_api_test/test_.py
+        cp Release/lib_lightgbm.dll $env:BUILD_ARTIFACTSTAGINGDIRECTORY
+        cp Release/lightgbm.exe $env:BUILD_ARTIFACTSTAGINGDIRECTORY
+      } 
+      elseif ("$env:TASK" -eq "sdist"){
+        cd python-package; python setup.py sdist --formats gztar
+        cd dist; pip install @(Get-ChildItem *.gz) -v 
+        cd ../..
+      }
+      # elseif ("$env:TASK" -eq "mingw"){
+      #   cd python-package; python setup.py sdist --formats gztar
+      #   cd dist; pip install @(Get-ChildItem *.gz) --install-option=--mingw -v
+      #   cd ../..
+      # }
+      else {
+        cd python-package
+        python setup.py bdist_wheel --plat-name=win-amd64 --universal
+        cd dist; pip install @(Get-ChildItem *.whl)
+        cp @(Get-ChildItem *.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
+        cd ../..
+      }
+      pytest tests/python_package_test
+      cd examples/python-guide
+      @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"
+      (Get-Content "plot_example.py").replace('graph.render(view=True)', 'graph.render(view=False)') | Set-Content "plot_example.py"
+      foreach ($file in @(Get-ChildItem *.py)) {
+        python $file
+        if ($LastExitCode -ne 0) { $host.SetShouldExit($LastExitCode) }
+      }  # run all examples
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
+      artifactName: PackageAssets
+      artifactType: container
+
+################################################################################
+- phase: Package
+################################################################################
+  dependsOn:
+  - Linux
+  - MacOS
+  - Windows
+  queue:
+    name: 'Hosted VS2017'
+  steps:
+  # Download all agent packages from all previous phases
+  - task: DownloadBuildArtifacts@0
+    displayName: Download package assets
+    inputs:
+      artifactName: PackageAssets
+      downloadPath: $(Build.SourcesDirectory)/binaries
+  - powershell: |
+      $client = new-object System.Net.WebClient
+      $client.DownloadFile("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe",".nuget/nuget.exe")
+  - script: |
+      cd .nuget
+      python create_nuget.py %BUILD_SOURCESDIRECTORY%/binaries/PackageAssets
+      nuget.exe pack LightGBM.nuspec
+      xcopy *.nupkg %BUILD_ARTIFACTSTAGINGDIRECTORY%
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
+      artifactName: Nuget
+      artifactType: container

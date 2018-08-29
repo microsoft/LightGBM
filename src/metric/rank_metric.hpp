@@ -1,11 +1,10 @@
 #ifndef LIGHTGBM_METRIC_RANK_METRIC_HPP_
 #define LIGHTGBM_METRIC_RANK_METRIC_HPP_
 
-#include <LightGBM/utils/common.h>
-#include <LightGBM/utils/log.h>
-
 #include <LightGBM/metric.h>
 
+#include <LightGBM/utils/common.h>
+#include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
 #include <sstream>
@@ -15,17 +14,17 @@ namespace LightGBM {
 
 class NDCGMetric:public Metric {
 public:
-  explicit NDCGMetric(const MetricConfig& config) {
+  explicit NDCGMetric(const Config& config) {
     // get eval position
-    for (auto k : config.eval_at) {
-      eval_at_.push_back(static_cast<data_size_t>(k));
-    }
-    eval_at_.shrink_to_fit();
+    eval_at_ = config.eval_at;
+    auto label_gain = config.label_gain;
+    DCGCalculator::DefaultEvalAt(&eval_at_);
+    DCGCalculator::DefaultLabelGain(&label_gain);
     // initialize DCG calculator
-    DCGCalculator::Init(config.label_gain);
+    DCGCalculator::Init(label_gain);
     // get number of threads
-#pragma omp parallel
-#pragma omp master
+    #pragma omp parallel
+    #pragma omp master
     {
       num_threads_ = omp_get_num_threads();
     }
@@ -40,6 +39,7 @@ public:
     num_data_ = num_data;
     // get label
     label_ = metadata.label();
+    DCGCalculator::CheckLabel(label_, num_data_);
     // get query boundaries
     query_boundaries_ = metadata.query_boundaries();
     if (query_boundaries_ == nullptr) {
@@ -56,12 +56,14 @@ public:
         sum_query_weights_ += query_weights_[i];
       }
     }
+    inverse_max_dcgs_.resize(num_queries_);
     // cache the inverse max DCG for all querys, used to calculate NDCG
+    #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_queries_; ++i) {
-      inverse_max_dcgs_.emplace_back(eval_at_.size(), 0.0f);
+      inverse_max_dcgs_[i].resize(eval_at_.size(), 0.0f);
       DCGCalculator::CalMaxDCG(eval_at_, label_ + query_boundaries_[i],
-        query_boundaries_[i + 1] - query_boundaries_[i],
-        &inverse_max_dcgs_[i]);
+                               query_boundaries_[i + 1] - query_boundaries_[i],
+                               &inverse_max_dcgs_[i]);
       for (size_t j = 0; j < inverse_max_dcgs_[i].size(); ++j) {
         if (inverse_max_dcgs_[i][j] > 0.0f) {
           inverse_max_dcgs_[i][j] = 1.0f / inverse_max_dcgs_[i][j];
@@ -82,7 +84,7 @@ public:
     return 1.0f;
   }
 
-  std::vector<double> Eval(const double* score) const override {
+  std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
     // some buffers for multi-threading sum up
     std::vector<std::vector<double>> result_buffer_;
     for (int i = 0; i < num_threads_; ++i) {
@@ -90,7 +92,7 @@ public:
     }
     std::vector<double> tmp_dcg(eval_at_.size(), 0.0f);
     if (query_weights_ == nullptr) {
-#pragma omp parallel for schedule(guided) firstprivate(tmp_dcg)
+      #pragma omp parallel for schedule(static) firstprivate(tmp_dcg)
       for (data_size_t i = 0; i < num_queries_; ++i) {
         const int tid = omp_get_thread_num();
         // if all doc in this query are all negative, let its NDCG=1
@@ -101,8 +103,8 @@ public:
         } else {
           // calculate DCG
           DCGCalculator::CalDCG(eval_at_, label_ + query_boundaries_[i],
-            score + query_boundaries_[i],
-            query_boundaries_[i + 1] - query_boundaries_[i], &tmp_dcg);
+                                score + query_boundaries_[i],
+                                query_boundaries_[i + 1] - query_boundaries_[i], &tmp_dcg);
           // calculate NDCG
           for (size_t j = 0; j < eval_at_.size(); ++j) {
             result_buffer_[tid][j] += tmp_dcg[j] * inverse_max_dcgs_[i][j];
@@ -110,7 +112,7 @@ public:
         }
       }
     } else {
-#pragma omp parallel for schedule(guided) firstprivate(tmp_dcg)
+      #pragma omp parallel for schedule(static) firstprivate(tmp_dcg)
       for (data_size_t i = 0; i < num_queries_; ++i) {
         const int tid = omp_get_thread_num();
         // if all doc in this query are all negative, let its NDCG=1
@@ -121,8 +123,8 @@ public:
         } else {
           // calculate DCG
           DCGCalculator::CalDCG(eval_at_, label_ + query_boundaries_[i],
-            score + query_boundaries_[i],
-            query_boundaries_[i + 1] - query_boundaries_[i], &tmp_dcg);
+                                score + query_boundaries_[i],
+                                query_boundaries_[i + 1] - query_boundaries_[i], &tmp_dcg);
           // calculate NDCG
           for (size_t j = 0; j < eval_at_.size(); ++j) {
             result_buffer_[tid][j] += tmp_dcg[j] * inverse_max_dcgs_[i][j] * query_weights_[i];
@@ -145,7 +147,7 @@ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
-  const float* label_;
+  const label_t* label_;
   /*! \brief Name of test set */
   std::vector<std::string> name_;
   /*! \brief Query boundaries information */
@@ -153,7 +155,7 @@ private:
   /*! \brief Number of queries */
   data_size_t num_queries_;
   /*! \brief Weights of queries */
-  const float* query_weights_;
+  const label_t* query_weights_;
   /*! \brief Sum weights of queries */
   double sum_query_weights_;
   /*! \brief Evaluate position of NDCG */

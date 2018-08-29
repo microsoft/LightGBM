@@ -28,33 +28,40 @@ public:
   * \brief Initialization logic
   * \param config Config for boosting
   * \param train_data Training data
-  * \param object_function Training objective function
+  * \param objective_function Training objective function
   * \param training_metrics Training metrics
   * \param output_model_filename Filename of output model
   */
-  void Init(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function,
-    const std::vector<const Metric*>& training_metrics) override {
-    GBDT::Init(config, train_data, object_function, training_metrics);
-    random_for_drop_ = Random(gbdt_config_->drop_seed);
+  void Init(const Config* config, const Dataset* train_data,
+            const ObjectiveFunction* objective_function,
+            const std::vector<const Metric*>& training_metrics) override {
+    GBDT::Init(config, train_data, objective_function, training_metrics);
+    random_for_drop_ = Random(config_->drop_seed);
     sum_weight_ = 0.0f;
   }
+
+  void ResetConfig(const Config* config) override {
+    GBDT::ResetConfig(config);
+    random_for_drop_ = Random(config_->drop_seed);
+    sum_weight_ = 0.0f;
+  }
+
   /*!
   * \brief one training iteration
   */
-  bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override {
+  bool TrainOneIter(const score_t* gradient, const score_t* hessian) override {
     is_update_score_cur_iter_ = false;
-    GBDT::TrainOneIter(gradient, hessian, false);
+    bool ret = GBDT::TrainOneIter(gradient, hessian);
+    if (ret) {
+      return ret;
+    }
     // normalize
     Normalize();
-    if (!gbdt_config_->uniform_drop) {
+    if (!config_->uniform_drop) {
       tree_weight_.push_back(shrinkage_rate_);
       sum_weight_ += shrinkage_rate_;
     }
-    if (is_eval) {
-      return EvalAndCheckEarlyStopping();
-    } else {
-      return false;
-    }
+    return false;
   }
 
   /*!
@@ -78,46 +85,52 @@ private:
   */
   void DroppingTrees() {
     drop_index_.clear();
-    bool is_skip = random_for_drop_.NextFloat() < gbdt_config_->skip_drop;
-    // select dropping tree indexes based on drop_rate and tree weights
+    bool is_skip = random_for_drop_.NextFloat() < config_->skip_drop;
+    // select dropping tree indices based on drop_rate and tree weights
     if (!is_skip) {
-      double drop_rate = gbdt_config_->drop_rate;
-      if (!gbdt_config_->uniform_drop) {
+      double drop_rate = config_->drop_rate;
+      if (!config_->uniform_drop) {
         double inv_average_weight = static_cast<double>(tree_weight_.size()) / sum_weight_;
-        if (gbdt_config_->max_drop > 0) {
-          drop_rate = std::min(drop_rate, gbdt_config_->max_drop * inv_average_weight / sum_weight_);
+        if (config_->max_drop > 0) {
+          drop_rate = std::min(drop_rate, config_->max_drop * inv_average_weight / sum_weight_);
         }
         for (int i = 0; i < iter_; ++i) {
           if (random_for_drop_.NextFloat() < drop_rate * tree_weight_[i] * inv_average_weight) {
-            drop_index_.push_back(i);
+            drop_index_.push_back(num_init_iteration_ + i);
+            if (drop_index_.size() >= static_cast<size_t>(config_->max_drop)) {
+              break;
+            }
           }
         }
       } else {
-        if (gbdt_config_->max_drop > 0) {
-          drop_rate = std::min(drop_rate, gbdt_config_->max_drop / static_cast<double>(iter_));
+        if (config_->max_drop > 0) {
+          drop_rate = std::min(drop_rate, config_->max_drop / static_cast<double>(iter_));
         }
         for (int i = 0; i < iter_; ++i) {
           if (random_for_drop_.NextFloat() < drop_rate) {
-            drop_index_.push_back(i);
+            drop_index_.push_back(num_init_iteration_ + i);
+            if (drop_index_.size() >= static_cast<size_t>(config_->max_drop)) {
+              break;
+            }
           }
         }
       }
     }
     // drop trees
     for (auto i : drop_index_) {
-      for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-        auto curr_tree = i * num_class_ + curr_class;
+      for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+        auto curr_tree = i * num_tree_per_iteration_ + cur_tree_id;
         models_[curr_tree]->Shrinkage(-1.0);
-        train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
+        train_score_updater_->AddScore(models_[curr_tree].get(), cur_tree_id);
       }
     }
-    if (!gbdt_config_->xgboost_dart_mode) {
-      shrinkage_rate_ = gbdt_config_->learning_rate / (1.0f + static_cast<double>(drop_index_.size()));
+    if (!config_->xgboost_dart_mode) {
+      shrinkage_rate_ = config_->learning_rate / (1.0f + static_cast<double>(drop_index_.size()));
     } else {
       if (drop_index_.empty()) {
-        shrinkage_rate_ = gbdt_config_->learning_rate;
+        shrinkage_rate_ = config_->learning_rate;
       } else {
-        shrinkage_rate_ = gbdt_config_->learning_rate / (gbdt_config_->learning_rate + static_cast<double>(drop_index_.size()));
+        shrinkage_rate_ = config_->learning_rate / (config_->learning_rate + static_cast<double>(drop_index_.size()));
       }
     }
   }
@@ -133,40 +146,40 @@ private:
   */
   void Normalize() {
     double k = static_cast<double>(drop_index_.size());
-    if (!gbdt_config_->xgboost_dart_mode) {
+    if (!config_->xgboost_dart_mode) {
       for (auto i : drop_index_) {
-        for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-          auto curr_tree = i * num_class_ + curr_class;
+        for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+          auto curr_tree = i * num_tree_per_iteration_ + cur_tree_id;
           // update validation score
           models_[curr_tree]->Shrinkage(1.0f / (k + 1.0f));
           for (auto& score_updater : valid_score_updater_) {
-            score_updater->AddScore(models_[curr_tree].get(), curr_class);
+            score_updater->AddScore(models_[curr_tree].get(), cur_tree_id);
           }
           // update training score
           models_[curr_tree]->Shrinkage(-k);
-          train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
+          train_score_updater_->AddScore(models_[curr_tree].get(), cur_tree_id);
         }
-        if (!gbdt_config_->uniform_drop) {
+        if (!config_->uniform_drop) {
           sum_weight_ -= tree_weight_[i] * (1.0f / (k + 1.0f));
           tree_weight_[i] *= (k / (k + 1.0f));
         }
       }
     } else {
       for (auto i : drop_index_) {
-        for (int curr_class = 0; curr_class < num_class_; ++curr_class) {
-          auto curr_tree = i * num_class_ + curr_class;
+        for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+          auto curr_tree = i * num_tree_per_iteration_ + cur_tree_id;
           // update validation score
           models_[curr_tree]->Shrinkage(shrinkage_rate_);
           for (auto& score_updater : valid_score_updater_) {
-            score_updater->AddScore(models_[curr_tree].get(), curr_class);
+            score_updater->AddScore(models_[curr_tree].get(), cur_tree_id);
           }
           // update training score
-          models_[curr_tree]->Shrinkage(-k / gbdt_config_->learning_rate);
-          train_score_updater_->AddScore(models_[curr_tree].get(), curr_class);
+          models_[curr_tree]->Shrinkage(-k / config_->learning_rate);
+          train_score_updater_->AddScore(models_[curr_tree].get(), cur_tree_id);
         }
-        if (!gbdt_config_->uniform_drop) {
-          sum_weight_ -= tree_weight_[i] * (1.0f / (k + gbdt_config_->learning_rate));;
-          tree_weight_[i] *= (k / (k + gbdt_config_->learning_rate));
+        if (!config_->uniform_drop) {
+          sum_weight_ -= tree_weight_[i] * (1.0f / (k + config_->learning_rate));;
+          tree_weight_[i] *= (k / (k + config_->learning_rate));
         }
       }
     }
@@ -175,7 +188,7 @@ private:
   std::vector<double> tree_weight_;
   /*! \brief sum weights of all trees */
   double sum_weight_;
-  /*! \brief The indexes of dropping trees */
+  /*! \brief The indices of dropping trees */
   std::vector<int> drop_index_;
   /*! \brief Random generator, used to select dropping trees */
   Random random_for_drop_;

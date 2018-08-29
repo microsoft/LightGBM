@@ -1,13 +1,13 @@
 #ifndef LIGHTGBM_TREELEARNER_PARALLEL_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNER_PARALLEL_TREE_LEARNER_H_
 
+#include "serial_tree_learner.h"
+#include "gpu_tree_learner.h"
+#include <LightGBM/network.h>
+
 #include <LightGBM/utils/array_args.h>
 
-#include <LightGBM/network.h>
-#include "serial_tree_learner.h"
-
 #include <cstring>
-
 #include <vector>
 #include <memory>
 
@@ -18,15 +18,16 @@ namespace LightGBM {
 *        Different machine will find best split on different features, then sync global best split
 *        It is recommonded used when #data is small or #feature is large
 */
-class FeatureParallelTreeLearner: public SerialTreeLearner {
+template <typename TREELEARNER_T>
+class FeatureParallelTreeLearner: public TREELEARNER_T {
 public:
-  explicit FeatureParallelTreeLearner(const TreeConfig* tree_config);
+  explicit FeatureParallelTreeLearner(const Config* config);
   ~FeatureParallelTreeLearner();
-  void Init(const Dataset* train_data) override;
+  void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
 protected:
   void BeforeTrain() override;
-  void FindBestSplitsForLeaves() override;
+  void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
 private:
   /*! \brief rank of local machine */
   int rank_;
@@ -43,16 +44,17 @@ private:
 *        Workers use local data to construct histograms locally, then sync up global histograms.
 *        It is recommonded used when #data is large or #feature is small
 */
-class DataParallelTreeLearner: public SerialTreeLearner {
+template <typename TREELEARNER_T>
+class DataParallelTreeLearner: public TREELEARNER_T {
 public:
-  explicit DataParallelTreeLearner(const TreeConfig* tree_config);
+  explicit DataParallelTreeLearner(const Config* config);
   ~DataParallelTreeLearner();
-  void Init(const Dataset* train_data) override;
-  void ResetConfig(const TreeConfig* tree_config) override;
+  void Init(const Dataset* train_data, bool is_constant_hessian) override;
+  void ResetConfig(const Config* config) override;
 protected:
   void BeforeTrain() override;
-  void FindBestThresholds() override;
-  void FindBestSplitsForLeaves() override;
+  void FindBestSplits() override;
+  void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
   void Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) override;
 
   inline data_size_t GetGlobalDataCountInLeaf(int leaf_idx) const override {
@@ -76,15 +78,15 @@ private:
        use this to mark local aggregate features*/
   std::vector<bool> is_feature_aggregated_;
   /*! \brief Block start index for reduce scatter */
-  std::vector<int> block_start_;
+  std::vector<comm_size_t> block_start_;
   /*! \brief Block size for reduce scatter */
-  std::vector<int> block_len_;
+  std::vector<comm_size_t> block_len_;
   /*! \brief Write positions for feature histograms */
-  std::vector<int> buffer_write_start_pos_;
+  std::vector<comm_size_t> buffer_write_start_pos_;
   /*! \brief Read positions for local feature histograms */
-  std::vector<int> buffer_read_start_pos_;
+  std::vector<comm_size_t> buffer_read_start_pos_;
   /*! \brief Size for reduce scatter */
-  int reduce_scatter_size_;
+  comm_size_t reduce_scatter_size_;
   /*! \brief Store global number of data in leaves  */
   std::vector<data_size_t> global_data_count_in_leaf_;
 };
@@ -95,17 +97,18 @@ private:
 * Here using voting to reduce features, and only aggregate histograms for selected features.
 * When #data is large and #feature is large, you can use this to have better speed-up
 */
-class VotingParallelTreeLearner: public SerialTreeLearner {
+template <typename TREELEARNER_T>
+class VotingParallelTreeLearner: public TREELEARNER_T {
 public:
-  explicit VotingParallelTreeLearner(const TreeConfig* tree_config);
+  explicit VotingParallelTreeLearner(const Config* config);
   ~VotingParallelTreeLearner() { }
-  void Init(const Dataset* train_data) override;
-  void ResetConfig(const TreeConfig* tree_config) override;
+  void Init(const Dataset* train_data, bool is_constant_hessian) override;
+  void ResetConfig(const Config* config) override;
 protected:
   void BeforeTrain() override;
-  bool BeforeFindBestSplit(int left_leaf, int right_leaf) override;
-  void FindBestThresholds() override;
-  void FindBestSplitsForLeaves() override;
+  bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) override;
+  void FindBestSplits() override;
+  void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
   void Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) override;
 
   inline data_size_t GetGlobalDataCountInLeaf(int leaf_idx) const override {
@@ -121,7 +124,7 @@ protected:
   * \param splits All splits from local voting
   * \param out Result of gobal voting, only store feature indices
   */
-  void GlobalVoting(int leaf_idx, const std::vector<SplitInfo>& splits,
+  void GlobalVoting(int leaf_idx, const std::vector<LightSplitInfo>& splits,
     std::vector<int>* out);
   /*!
   * \brief Copy local histgram to buffer
@@ -133,7 +136,7 @@ protected:
 
 private:
   /*! \brief Tree config used in local mode */
-  TreeConfig local_tree_config_;
+  Config local_config_;
   /*! \brief Voting size */
   int top_k_;
   /*! \brief Rank of local machine*/
@@ -151,15 +154,15 @@ private:
   use this to mark local aggregate features*/
   std::vector<bool> larger_is_feature_aggregated_;
   /*! \brief Block start index for reduce scatter */
-  std::vector<int> block_start_;
+  std::vector<comm_size_t> block_start_;
   /*! \brief Block size for reduce scatter */
-  std::vector<int> block_len_;
+  std::vector<comm_size_t> block_len_;
   /*! \brief Read positions for feature histgrams at smaller leaf */
-  std::vector<int> smaller_buffer_read_start_pos_;
+  std::vector<comm_size_t> smaller_buffer_read_start_pos_;
   /*! \brief Read positions for feature histgrams at larger leaf */
-  std::vector<int> larger_buffer_read_start_pos_;
+  std::vector<comm_size_t> larger_buffer_read_start_pos_;
   /*! \brief Size for reduce scatter */
-  int reduce_scatter_size_;
+  comm_size_t reduce_scatter_size_;
   /*! \brief Store global number of data in leaves  */
   std::vector<data_size_t> global_data_count_in_leaf_;
   /*! \brief Store global split information for smaller leaf  */
@@ -170,8 +173,37 @@ private:
   std::unique_ptr<FeatureHistogram[]> smaller_leaf_histogram_array_global_;
   /*! \brief Store global histogram for larger leaf  */
   std::unique_ptr<FeatureHistogram[]> larger_leaf_histogram_array_global_;
+
+  std::vector<HistogramBinEntry> smaller_leaf_histogram_data_;
+  std::vector<HistogramBinEntry> larger_leaf_histogram_data_;
+  std::vector<FeatureMetainfo> feature_metas_;
 };
+
+// To-do: reduce the communication cost by using bitset to communicate.
+inline void SyncUpGlobalBestSplit(char* input_buffer_, char* output_buffer_, SplitInfo* smaller_best_split, SplitInfo* larger_best_split, int max_cat_threshold) {
+  // sync global best info
+  int size = SplitInfo::Size(max_cat_threshold);
+  smaller_best_split->CopyTo(input_buffer_);
+  larger_best_split->CopyTo(input_buffer_ + size);
+  Network::Allreduce(input_buffer_, size * 2, size, output_buffer_, 
+                     [] (const char* src, char* dst, int size, comm_size_t len) {
+    comm_size_t used_size = 0;
+    LightSplitInfo p1, p2;
+    while (used_size < len) {
+      p1.CopyFrom(src);
+      p2.CopyFrom(dst);
+      if (p1 > p2) {
+        std::memcpy(dst, src, size);
+      }
+      src += size;
+      dst += size;
+      used_size += size;
+    }
+  });
+  // copy back
+  smaller_best_split->CopyFrom(output_buffer_);
+  larger_best_split->CopyFrom(output_buffer_ + size);
+}
 
 }  // namespace LightGBM
 #endif   // LightGBM_TREELEARNER_PARALLEL_TREE_LEARNER_H_
-

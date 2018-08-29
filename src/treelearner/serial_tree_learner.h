@@ -1,16 +1,16 @@
 #ifndef LIGHTGBM_TREELEARNER_SERIAL_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNER_SERIAL_TREE_LEARNER_H_
+#include <LightGBM/tree_learner.h>
 
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/array_args.h>
 
-#include <LightGBM/tree_learner.h>
 #include <LightGBM/dataset.h>
 #include <LightGBM/tree.h>
-#include <LightGBM/feature.h>
+
 #include "feature_histogram.hpp"
-#include "data_partition.hpp"
 #include "split_info.hpp"
+#include "data_partition.hpp"
 #include "leaf_splits.hpp"
 
 #include <cstdio>
@@ -18,6 +18,13 @@
 #include <random>
 #include <cmath>
 #include <memory>
+#ifdef USE_GPU
+// Use 4KBytes aligned allocator for ordered gradients and ordered hessians when GPU is enabled.
+// This is necessary to pin the two arrays in memory and make transferring faster.
+#include <boost/align/aligned_allocator.hpp>
+#endif
+
+using namespace json11;
 
 namespace LightGBM {
 
@@ -26,26 +33,34 @@ namespace LightGBM {
 */
 class SerialTreeLearner: public TreeLearner {
 public:
-  explicit SerialTreeLearner(const TreeConfig* tree_config);
+  explicit SerialTreeLearner(const Config* config);
 
   ~SerialTreeLearner();
 
-  void Init(const Dataset* train_data) override;
+  void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
   void ResetTrainingData(const Dataset* train_data) override;
 
-  void ResetConfig(const TreeConfig* tree_config) override;
+  void ResetConfig(const Config* config) override;
 
-  Tree* Train(const score_t* gradients, const score_t *hessians) override;
+  Tree* Train(const score_t* gradients, const score_t *hessians, bool is_constant_hessian,
+              Json& forced_split_json) override;
+
+  Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
+
+  Tree* FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
+                          const score_t* gradients, const score_t* hessians) override;
 
   void SetBaggingData(const data_size_t* used_indices, data_size_t num_data) override {
     data_partition_->SetUsedDataIndices(used_indices, num_data);
   }
 
-  void AddPredictionToScore(double* out_score) const override {
-    #pragma omp parallel for schedule(guided)
-    for (int i = 0; i < data_partition_->num_leaves(); ++i) {
-      double output = static_cast<double>(last_trained_tree_->LeafOutput(i));
+  void AddPredictionToScore(const Tree* tree, double* out_score) const override {
+    if (tree->num_leaves() <= 1) { return; }
+    CHECK(tree->num_leaves() <= data_partition_->num_leaves());
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < tree->num_leaves(); ++i) {
+      double output = static_cast<double>(tree->LeafOutput(i));
       data_size_t cnt_leaf_data = 0;
       auto tmp_idx = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
       for (data_size_t j = 0; j < cnt_leaf_data; ++j) {
@@ -53,6 +68,9 @@ public:
       }
     }
   }
+
+  void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, const double* prediction,
+                       data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
 
 protected:
   /*!
@@ -63,21 +81,13 @@ protected:
   /*!
   * \brief Some initial works before FindBestSplit
   */
-  virtual bool BeforeFindBestSplit(int left_leaf, int right_leaf);
+  virtual bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf);
 
+  virtual void FindBestSplits();
 
-  /*!
-  * \brief Find best thresholds for all features, using multi-threading.
-  *  The result will be stored in smaller_leaf_splits_ and larger_leaf_splits_.
-  *  This function will be called in FindBestSplit.
-  */
-  virtual void FindBestThresholds();
+  virtual void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract);
 
-  /*!
-  * \brief Find best features for leaves from smaller_leaf_splits_ and larger_leaf_splits_.
-  *  This function will be called after FindBestThresholds.
-  */
-  inline virtual void FindBestSplitsForLeaves();
+  virtual void FindBestSplitsFromHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract);
 
   /*!
   * \brief Partition tree and data according best split.
@@ -88,21 +98,18 @@ protected:
   */
   virtual void Split(Tree* tree, int best_leaf, int* left_leaf, int* right_leaf);
 
+  /* Force splits with forced_split_json dict and then return num splits forced.*/
+  virtual int32_t ForceSplits(Tree* tree, Json& forced_split_json, int* left_leaf,
+                              int* right_leaf, int* cur_depth, 
+                              bool *aborted_last_force_split);
+
+
   /*!
   * \brief Get the number of data in a leaf
   * \param leaf_idx The index of leaf
   * \return The number of data in the leaf_idx leaf
   */
   inline virtual data_size_t GetGlobalDataCountInLeaf(int leaf_idx) const;
-
-  /*!
-  * \brief Find best features for leaf from leaf_splits
-  * \param leaf_splits
-  */
-  inline void FindBestSplitForLeaf(LeafSplits* leaf_splits);
-
-  /*! \brief Last trained decision tree */
-  const Tree* last_trained_tree_;
   /*! \brief number of data */
   data_size_t num_data_;
   /*! \brief number of features */
@@ -118,7 +125,7 @@ protected:
   /*! \brief used for generate used features */
   Random random_;
   /*! \brief used for sub feature training, is_feature_used_[i] = false means don't used feature i */
-  std::vector<bool> is_feature_used_;
+  std::vector<int8_t> is_feature_used_;
   /*! \brief pointer to histograms array of parent of current leaves */
   FeatureHistogram* parent_leaf_histogram_array_;
   /*! \brief pointer to histograms array of smaller leaf */
@@ -133,21 +140,20 @@ protected:
   std::unique_ptr<LeafSplits> smaller_leaf_splits_;
   /*! \brief stores best thresholds for all feature for larger leaf */
   std::unique_ptr<LeafSplits> larger_leaf_splits_;
+  std::vector<int> valid_feature_indices_;
 
+#ifdef USE_GPU
+  /*! \brief gradients of current iteration, ordered for cache optimized, aligned to 4K page */
+  std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_gradients_;
+  /*! \brief hessians of current iteration, ordered for cache optimized, aligned to 4K page */
+  std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_hessians_;
+#else
   /*! \brief gradients of current iteration, ordered for cache optimized */
   std::vector<score_t> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized */
   std::vector<score_t> ordered_hessians_;
+#endif
 
-  /*! \brief Pointer to ordered_gradients_, use this to avoid copy at BeforeTrain */
-  const score_t* ptr_to_ordered_gradients_smaller_leaf_;
-  /*! \brief Pointer to ordered_hessians_, use this to avoid copy at BeforeTrain*/
-  const score_t* ptr_to_ordered_hessians_smaller_leaf_;
-
-  /*! \brief Pointer to ordered_gradients_, use this to avoid copy at BeforeTrain */
-  const score_t* ptr_to_ordered_gradients_larger_leaf_;
-  /*! \brief Pointer to ordered_hessians_, use this to avoid copy at BeforeTrain*/
-  const score_t* ptr_to_ordered_hessians_larger_leaf_;
   /*! \brief Store ordered bin */
   std::vector<std::unique_ptr<OrderedBin>> ordered_bins_;
   /*! \brief True if has ordered bin */
@@ -157,36 +163,18 @@ protected:
   /*! \brief used to cache historical histogram to speed up*/
   HistogramPool histogram_pool_;
   /*! \brief config of tree learner*/
-  const TreeConfig* tree_config_;
+  const Config* config_;
+  int num_threads_;
+  std::vector<int> ordered_bin_indices_;
+  bool is_constant_hessian_;
 };
 
-
-
-inline void SerialTreeLearner::FindBestSplitsForLeaves() {
-  FindBestSplitForLeaf(smaller_leaf_splits_.get());
-  FindBestSplitForLeaf(larger_leaf_splits_.get());
-}
-
-inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leafIdx) const {
-  if (leafIdx >= 0) {
-    return data_partition_->leaf_count(leafIdx);
+inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leaf_idx) const {
+  if (leaf_idx >= 0) {
+    return data_partition_->leaf_count(leaf_idx);
   } else {
     return 0;
   }
-}
-
-inline void SerialTreeLearner::FindBestSplitForLeaf(LeafSplits* leaf_splits) {
-  if (leaf_splits == nullptr || leaf_splits->LeafIndex() < 0) {
-    return;
-  }
-  std::vector<double> gains;
-  for (size_t i = 0; i < leaf_splits->BestSplitPerFeature().size(); ++i) {
-    gains.push_back(leaf_splits->BestSplitPerFeature()[i].gain);
-  }
-  int best_feature = static_cast<int>(ArrayArgs<double>::ArgMax(gains));
-  int leaf = leaf_splits->LeafIndex();
-  best_split_per_leaf_[leaf] = leaf_splits->BestSplitPerFeature()[best_feature];
-  best_split_per_leaf_[leaf].feature = best_feature;
 }
 
 }  // namespace LightGBM

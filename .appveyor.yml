@@ -1,0 +1,76 @@
+﻿version: 2.1.2.{build}
+
+configuration:  # a trick to construct a build matrix
+  - 3.5
+  - 3.6
+
+environment:
+  matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      COMPILER: MSVC
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      COMPILER: MINGW
+
+clone_depth: 50
+
+install:
+  - git submodule update --init --recursive  # get `compute` folder
+  - set PATH=%PATH:C:\Program Files\Git\usr\bin;=%  # delete sh.exe from PATH (mingw32-make fix)
+  - set PATH=C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1\mingw64\bin;%PATH%
+  - set PYTHON_VERSION=%CONFIGURATION%
+  - ps: >-
+      switch ($env:PYTHON_VERSION) {
+          "2.7" {$env:MINICONDA = """C:\Miniconda-x64"""}
+          "3.4" {$env:MINICONDA = """C:\Miniconda34-x64"""}
+          "3.5" {$env:MINICONDA = """C:\Miniconda35-x64"""}
+          "3.6" {$env:MINICONDA = """C:\Miniconda36-x64"""}
+          default {$env:MINICONDA = """C:\Miniconda36-x64"""}
+      }
+  - set PATH=%MINICONDA%;%MINICONDA%\Scripts;%PATH%
+  - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda create -q -n test-env python=%PYTHON_VERSION% numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest
+  - activate test-env
+
+build_script:
+  - mkdir %APPVEYOR_BUILD_FOLDER%\build && cd %APPVEYOR_BUILD_FOLDER%\build
+  - cmake -DCMAKE_GENERATOR_PLATFORM=x64 .. && cmake --build . --target ALL_BUILD --config Release
+
+test_script:
+  - pytest %APPVEYOR_BUILD_FOLDER%\tests\c_api_test\test_.py
+  - cd %APPVEYOR_BUILD_FOLDER%\python-package && python setup.py sdist --formats gztar
+  - IF "%COMPILER%"=="MINGW" (
+    pip install %APPVEYOR_BUILD_FOLDER%\python-package\dist\lightgbm-%LGB_VER%.tar.gz --install-option=--mingw -v)
+    ELSE (
+    pip install %APPVEYOR_BUILD_FOLDER%\python-package\dist\lightgbm-%LGB_VER%.tar.gz -v)
+  - pytest %APPVEYOR_BUILD_FOLDER%\tests\python_package_test
+  - cd %APPVEYOR_BUILD_FOLDER%\examples\python-guide
+  - ps: >-
+      @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"  # prevent interactive window mode
+  - ps: >-
+      foreach ($file in @(Get-ChildItem *.py)) {
+        python $file
+        if ($LastExitCode -ne 0) { $host.SetShouldExit($LastExitCode) }
+      }  # run all examples
+  - IF "%COMPILER%"=="MINGW" appveyor exit  # skip all further steps
+  - cd %APPVEYOR_BUILD_FOLDER%\python-package && python setup.py bdist_wheel --plat-name=win-amd64 --universal
+
+artifacts:
+- path: Release/lib_lightgbm.dll
+  name: Library
+- path: Release/lightgbm.exe
+  name: Exe
+- path: python-package/dist/*
+  name: Pip
+
+deploy:
+  release: $(APPVEYOR_REPO_TAG_NAME)
+  provider: GitHub
+  auth_token:
+    secure: KR44XwtxY0cLlVpQwY726BvC6gzT0cYTf0ahJ4cSvvS0UVoSJxkR900ICfVXHRoT
+  artifact: Library,Exe,Pip
+  force_update: true
+  draft: true
+  on:
+    appveyor_repo_tag: true

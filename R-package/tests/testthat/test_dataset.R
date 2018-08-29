@@ -26,6 +26,8 @@ test_that("lgb.Dataset: basic construction, saving, loading", {
 
 test_that("lgb.Dataset: getinfo & setinfo", {
   dtest <- lgb.Dataset(test_data)
+  dtest$construct()
+  
   setinfo(dtest, 'label', test_label)
   labels <- getinfo(dtest, 'label')
   expect_equal(test_label, getinfo(dtest, 'label'))
@@ -60,9 +62,23 @@ test_that("lgb.Dataset: colnames", {
 
 test_that("lgb.Dataset: nrow is correct for a very sparse matrix", {
   nr <- 1000
-  x <- rsparsematrix(nr, 100, density=0.0005)
+  x <- Matrix::rsparsematrix(nr, 100, density=0.0005)
   # we want it very sparse, so that last rows are empty
   expect_lt(max(x@i), nr)
   dtest <- lgb.Dataset(x)
   expect_equal(dim(dtest), dim(x))
+})
+
+test_that("lgb.Dataset: Dataset should be able to construct from matrix and return non-null handle", {
+  rawData <- matrix(runif(1000),ncol=10)
+  handle <- NA_real_
+  ref_handle <- NULL
+  handle <- lightgbm:::lgb.call("LGBM_DatasetCreateFromMat_R"
+                                , ret = handle
+                                , rawData
+                                , nrow(rawData)
+                                , ncol(rawData)
+                                , lightgbm:::lgb.params2str(params=list())
+                                , ref_handle)
+  expect_false(is.na(handle))
 })

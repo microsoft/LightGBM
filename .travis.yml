@@ -2,38 +2,71 @@ language: cpp
 sudo: required
 dist: trusty
 
+git:
+  submodules: true
+
+os:
+  - linux
+  - osx
+
+env:
+  global:  # default values
+    - COMPILER=gcc
+    - PYTHON_VERSION=3.7
+  matrix:
+    - TASK=regular PYTHON_VERSION=3.6
+    - TASK=regular COMPILER=clang
+    - TASK=mpi
+    - TASK=pylint
+    - TASK=check-docs
+    - TASK=if-else
+    - TASK=sdist PYTHON_VERSION=2.7
+    - TASK=bdist
+    - TASK=gpu METHOD=source PYTHON_VERSION=3.5
+    - TASK=gpu METHOD=pip PYTHON_VERSION=3.6
+
+matrix:
+  exclude:
+    - os: osx
+      env: TASK=gpu METHOD=source PYTHON_VERSION=3.5
+    - os: osx
+      env: TASK=gpu METHOD=pip PYTHON_VERSION=3.6
+    - os: osx
+      env: TASK=if-else
+    - os: osx
+      env: TASK=pylint
+    - os: osx
+      env: TASK=check-docs
+
 before_install:
-- test -n $CC  && unset CC
-- test -n $CXX && unset CXX
-- wget -O conda.sh https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-- chmod +x conda.sh
-- bash conda.sh -b -p $HOME/miniconda
-- export PATH="$HOME/miniconda/bin:$PATH"
-- conda config --set always_yes yes --set changeps1 no
-- conda update -q conda
+  - test -n $CC  && unset CC
+  - test -n $CXX && unset CXX
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - export LGB_VER=$(head -n 1 VERSION.txt)
+  - export AMDAPPSDK=$HOME/AMDAPPSDK
+  - export LD_LIBRARY_PATH="$AMDAPPSDK/lib/x86_64:$LD_LIBRARY_PATH"
+  - export LD_LIBRARY_PATH="/usr/local/clang/lib:$LD_LIBRARY_PATH"  # fix error "libomp.so: cannot open shared object file: No such file or directory" on Linux with Clang
+  - export OPENCL_VENDOR_PATH=$AMDAPPSDK/etc/OpenCL/vendors
 
 install:
-- sudo apt-get install -y libopenmpi-dev openmpi-bin build-essential
-- conda install --yes atlas numpy scipy scikit-learn pandas matplotlib
-- pip install pep8
-
+  - bash .travis/setup.sh
 
 script:
-- cd $TRAVIS_BUILD_DIR
-- mkdir build && cd build && cmake .. && make -j
-- cd $TRAVIS_BUILD_DIR/tests/c_api_test && python test.py
-- cd $TRAVIS_BUILD_DIR/python-package && python setup.py install
-- cd $TRAVIS_BUILD_DIR/tests/python_package_test && python test_basic.py && python test_engine.py && python test_sklearn.py && python test_plotting.py
-- cd $TRAVIS_BUILD_DIR && pep8 --ignore=E501 .
-- rm -rf build && mkdir build && cd build && cmake -DUSE_MPI=ON ..&& make -j
-- cd $TRAVIS_BUILD_DIR/tests/c_api_test && python test.py
-- cd $TRAVIS_BUILD_DIR/python-package && python setup.py install
-- cd $TRAVIS_BUILD_DIR/tests/python_package_test && python test_basic.py && python test_engine.py && python test_sklearn.py && python test_plotting.py
+  - bash .travis/test.sh
 
 notifications:
   email: false
 
-matrix:
-  include:
-    - compiler: gcc
-    - compiler: clang
+deploy:
+  provider: releases
+  api-key:
+    secure: "idU9Fb/yUz7VsVOEb0vGR8qqxcvXr4eh1tMzkKiMWLRx5XNeq7RCUzfKAPMIizFkML9zdMh/5vPtZ1Zs++3oWPpbZE2/o4CURoE+BvwDUyEDrKTdNSGoWgWZq0QLjfahj/PR8ObWlU+XCHqRQzKXlwbynwwUGRpOJrlEY0To5Kt9gTV5W8MxSlW7xFU2TTmMa499IZut38OuenJ3Nm9mTe6MCHFW4Y5uGp/gwNuBYfqzwUXDi6h/cJiJJD5drwtNnSneFZ2PZplrKxJxSJdSQ2aHttU+Wr8xogi9hLI/H6OA4UYCF69HrWOLSggplkZt6qUzaG7UfYyid4m6YbeKMUQRNBuGXhYVGr5qkyAzqXiOesGAef550346pWEZNGPLfNnKAwqPgkp8Q8tV9i0srjzyttqFAlLqhA76yST3kuX+QS0VGepSUTV+kkfxCaHZagxtX9Xve5RNybu4B44UmHWIGJnS6ijYpxWKwvWnMmBCIezFbZYyqsiXYC+9d5RfBgNFQ4PlRfmY0vnJlwUhx1AnyL9jsxnthwl9CNczo4mgBqnCSXxlhXNHz6ToMQuhgdhnqm5+qqJzI5/eUugxh8CW18qZTZBkrnL4DxEMm+bQ2QT8O07ZHrEDPKPXxQw7tBsphWvECetJ4DxXfNaf59GrY+eD6TFZuxurB5Vvo6s="
+  file_glob: true
+  file: python-package/dist/*.whl
+  skip_cleanup: true
+  draft: true
+  tag_name: $TRAVIS_TAG
+  on:
+    condition: "$TASK = bdist"
+    tags: true
+    all_branches: true

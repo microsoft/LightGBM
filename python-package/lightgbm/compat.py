@@ -12,6 +12,7 @@ is_py3 = (sys.version_info[0] == 3)
 
 """compatibility between python2 and python3"""
 if is_py3:
+    zip_ = zip
     string_type = str
     numeric_types = (int, float, bool)
     integer_types = (int, )
@@ -20,7 +21,11 @@ if is_py3:
     def argc_(func):
         """return number of arguments of a function"""
         return len(inspect.signature(func).parameters)
+
+    def decode_string(bytestring):
+        return bytestring.decode('utf-8')
 else:
+    from itertools import izip as zip_
     string_type = basestring
     numeric_types = (int, long, float, bool)
     integer_types = (int, long)
@@ -29,6 +34,9 @@ else:
     def argc_(func):
         """return number of arguments of a function"""
         return len(inspect.getargspec(func).args)
+
+    def decode_string(bytestring):
+        return bytestring
 
 """json"""
 try:
@@ -51,34 +59,73 @@ def json_default_with_numpy(obj):
 """pandas"""
 try:
     from pandas import Series, DataFrame
+    PANDAS_INSTALLED = True
 except ImportError:
+    PANDAS_INSTALLED = False
+
     class Series(object):
         pass
 
     class DataFrame(object):
         pass
 
+"""matplotlib"""
+try:
+    import matplotlib
+    MATPLOTLIB_INSTALLED = True
+except ImportError:
+    MATPLOTLIB_INSTALLED = False
+
+"""graphviz"""
+try:
+    import graphviz
+    GRAPHVIZ_INSTALLED = True
+except ImportError:
+    GRAPHVIZ_INSTALLED = False
+
 """sklearn"""
 try:
     from sklearn.base import BaseEstimator
     from sklearn.base import RegressorMixin, ClassifierMixin
     from sklearn.preprocessing import LabelEncoder
-    from sklearn.utils import deprecated
+    from sklearn.utils.class_weight import compute_sample_weight
+    from sklearn.utils.multiclass import check_classification_targets
+    from sklearn.utils.validation import check_X_y, check_array, check_consistent_length
     try:
-        from sklearn.model_selection import StratifiedKFold
+        from sklearn.model_selection import StratifiedKFold, GroupKFold
+        from sklearn.exceptions import NotFittedError
     except ImportError:
-        from sklearn.cross_validation import StratifiedKFold
+        from sklearn.cross_validation import StratifiedKFold, GroupKFold
+        from sklearn.utils.validation import NotFittedError
     SKLEARN_INSTALLED = True
-    LGBMModelBase = BaseEstimator
-    LGBMRegressorBase = RegressorMixin
-    LGBMClassifierBase = ClassifierMixin
-    LGBMLabelEncoder = LabelEncoder
-    LGBMDeprecated = deprecated
-    LGBMStratifiedKFold = StratifiedKFold
+    _LGBMModelBase = BaseEstimator
+    _LGBMRegressorBase = RegressorMixin
+    _LGBMClassifierBase = ClassifierMixin
+    _LGBMLabelEncoder = LabelEncoder
+    LGBMNotFittedError = NotFittedError
+    _LGBMStratifiedKFold = StratifiedKFold
+    _LGBMGroupKFold = GroupKFold
+    _LGBMCheckXY = check_X_y
+    _LGBMCheckArray = check_array
+    _LGBMCheckConsistentLength = check_consistent_length
+    _LGBMCheckClassificationTargets = check_classification_targets
+    _LGBMComputeSampleWeight = compute_sample_weight
 except ImportError:
     SKLEARN_INSTALLED = False
-    LGBMModelBase = object
-    LGBMClassifierBase = object
-    LGBMRegressorBase = object
-    LGBMLabelEncoder = None
-    LGBMStratifiedKFold = None
+    _LGBMModelBase = object
+    _LGBMClassifierBase = object
+    _LGBMRegressorBase = object
+    _LGBMLabelEncoder = None
+    LGBMNotFittedError = ValueError
+    _LGBMStratifiedKFold = None
+    _LGBMGroupKFold = None
+    _LGBMCheckXY = None
+    _LGBMCheckArray = None
+    _LGBMCheckConsistentLength = None
+    _LGBMCheckClassificationTargets = None
+    _LGBMComputeSampleWeight = None
+
+
+# DeprecationWarning is not shown by default, so let's create our own with higher level
+class LGBMDeprecationWarning(UserWarning):
+    pass

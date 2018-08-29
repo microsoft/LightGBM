@@ -10,6 +10,7 @@ from io import BytesIO
 import numpy as np
 
 from .basic import Booster
+from .compat import MATPLOTLIB_INSTALLED, GRAPHVIZ_INSTALLED, range_, string_type
 from .sklearn import LGBMModel
 
 
@@ -24,49 +25,54 @@ def plot_importance(booster, ax=None, height=0.2,
                     xlabel='Feature importance', ylabel='Features',
                     importance_type='split', max_num_features=None,
                     ignore_zero=True, figsize=None, grid=True, **kwargs):
-    """Plot model feature importances.
+    """Plot model's feature importances.
 
     Parameters
     ----------
     booster : Booster or LGBMModel
-        Booster or LGBMModel instance
-    ax : matplotlib Axes
-        Target axes instance. If None, new figure and axes will be created.
-    height : float
-        Bar height, passed to ax.barh()
-    xlim : tuple of 2 elements
-        Tuple passed to axes.xlim()
-    ylim : tuple of 2 elements
-        Tuple passed to axes.ylim()
-    title : str
-        Axes title. Pass None to disable.
-    xlabel : str
-        X axis title label. Pass None to disable.
-    ylabel : str
-        Y axis title label. Pass None to disable.
-    importance_type : str
-        How the importance is calculated: "split" or "gain"
-        "split" is the number of times a feature is used in a model
-        "gain" is the total gain of splits which use the feature
-    max_num_features : int
+        Booster or LGBMModel instance which feature importance should be plotted.
+    ax : matplotlib.axes.Axes or None, optional (default=None)
+        Target axes instance.
+        If None, new figure and axes will be created.
+    height : float, optional (default=0.2)
+        Bar height, passed to ``ax.barh()``.
+    xlim : tuple of 2 elements or None, optional (default=None)
+        Tuple passed to ``ax.xlim()``.
+    ylim : tuple of 2 elements or None, optional (default=None)
+        Tuple passed to ``ax.ylim()``.
+    title : string or None, optional (default="Feature importance")
+        Axes title.
+        If None, title is disabled.
+    xlabel : string or None, optional (default="Feature importance")
+        X-axis title label.
+        If None, title is disabled.
+    ylabel : string or None, optional (default="Features")
+        Y-axis title label.
+        If None, title is disabled.
+    importance_type : string, optional (default="split")
+        How the importance is calculated.
+        If "split", result contains numbers of times the feature is used in a model.
+        If "gain", result contains total gains of splits which use the feature.
+    max_num_features : int or None, optional (default=None)
         Max number of top features displayed on plot.
-        If None or smaller than 1, all features will be displayed.
-    ignore_zero : bool
-        Ignore features with zero importance
-    figsize : tuple of 2 elements
-        Figure size
-    grid : bool
-        Whether add grid for axes
-    **kwargs :
-        Other keywords passed to ax.barh()
+        If None or <1, all features will be displayed.
+    ignore_zero : bool, optional (default=True)
+        Whether to ignore features with zero importance.
+    figsize : tuple of 2 elements or None, optional (default=None)
+        Figure size.
+    grid : bool, optional (default=True)
+        Whether to add a grid for axes.
+    **kwargs : other parameters
+        Other parameters passed to ``ax.barh()``.
 
     Returns
     -------
-    ax : matplotlib Axes
+    ax : matplotlib.axes.Axes
+        The plot with model's feature importances.
     """
-    try:
+    if MATPLOTLIB_INSTALLED:
         import matplotlib.pyplot as plt
-    except ImportError:
+    else:
         raise ImportError('You must install matplotlib to plot importance.')
 
     if isinstance(booster, LGBMModel):
@@ -78,7 +84,7 @@ def plot_importance(booster, ax=None, height=0.2,
     feature_name = booster.feature_name()
 
     if not len(importance):
-        raise ValueError('Booster feature_importances are empty.')
+        raise ValueError("Booster's feature_importance is empty.")
 
     tuples = sorted(zip(feature_name, importance), key=lambda x: x[1])
     if ignore_zero:
@@ -133,38 +139,44 @@ def plot_metric(booster, metric=None, dataset_names=None,
     Parameters
     ----------
     booster : dict or LGBMModel
-        Evals_result recorded by lightgbm.train() or LGBMModel instance
-    metric : str or None
+        Dictionary returned from ``lightgbm.train()`` or LGBMModel instance.
+    metric : string or None, optional (default=None)
         The metric name to plot.
         Only one metric supported because different metrics have various scales.
-        Pass None to pick `first` one (according to dict hashcode).
-    dataset_names : None or list of str
-        List of the dataset names to plot.
-        Pass None to plot all datasets.
-    ax : matplotlib Axes
-        Target axes instance. If None, new figure and axes will be created.
-    xlim : tuple of 2 elements
-        Tuple passed to axes.xlim()
-    ylim : tuple of 2 elements
-        Tuple passed to axes.ylim()
-    title : str
-        Axes title. Pass None to disable.
-    xlabel : str
-        X axis title label. Pass None to disable.
-    ylabel : str
-        Y axis title label. Pass None to disable. Pass 'auto' to use `metric`.
-    figsize : tuple of 2 elements
-        Figure size
-    grid : bool
-        Whether add grid for axes
+        If None, first metric picked from dictionary (according to hashcode).
+    dataset_names : list of strings or None, optional (default=None)
+        List of the dataset names which are used to calculate metric to plot.
+        If None, all datasets are used.
+    ax : matplotlib.axes.Axes or None, optional (default=None)
+        Target axes instance.
+        If None, new figure and axes will be created.
+    xlim : tuple of 2 elements or None, optional (default=None)
+        Tuple passed to ``ax.xlim()``.
+    ylim : tuple of 2 elements or None, optional (default=None)
+        Tuple passed to ``ax.ylim()``.
+    title : string or None, optional (default="Metric during training")
+        Axes title.
+        If None, title is disabled.
+    xlabel : string or None, optional (default="Iterations")
+        X-axis title label.
+        If None, title is disabled.
+    ylabel : string or None, optional (default="auto")
+        Y-axis title label.
+        If 'auto', metric name is used.
+        If None, title is disabled.
+    figsize : tuple of 2 elements or None, optional (default=None)
+        Figure size.
+    grid : bool, optional (default=True)
+        Whether to add a grid for axes.
 
     Returns
     -------
-    ax : matplotlib Axes
+    ax : matplotlib.axes.Axes
+        The plot with metric's history over the training.
     """
-    try:
+    if MATPLOTLIB_INSTALLED:
         import matplotlib.pyplot as plt
-    except ImportError:
+    else:
         raise ImportError('You must install matplotlib to plot metric.')
 
     if isinstance(booster, LGBMModel):
@@ -204,7 +216,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
             raise KeyError('No given metric in eval results.')
         results = metrics_for_one[metric]
     num_iteration, max_result, min_result = len(results), max(results), min(results)
-    x_ = range(num_iteration)
+    x_ = range_(num_iteration)
     ax.plot(x_, results, label=name)
 
     for name in dataset_names:
@@ -241,88 +253,121 @@ def plot_metric(booster, metric=None, dataset_names=None,
     return ax
 
 
-def _to_graphviz(graph, tree_info, show_info, feature_names):
-    """Convert specified tree to graphviz instance."""
+def _to_graphviz(tree_info, show_info, feature_names, precision=None,
+                 name=None, comment=None, filename=None, directory=None,
+                 format=None, engine=None, encoding=None, graph_attr=None,
+                 node_attr=None, edge_attr=None, body=None, strict=False):
+    """Convert specified tree to graphviz instance.
+
+    See:
+      - http://graphviz.readthedocs.io/en/stable/api.html#digraph
+    """
+    if GRAPHVIZ_INSTALLED:
+        from graphviz import Digraph
+    else:
+        raise ImportError('You must install graphviz to plot tree.')
+
+    def float2str(value, precision=None):
+        return "{0:.{1}f}".format(value, precision) \
+            if precision is not None and not isinstance(value, string_type) else str(value)
 
     def add(root, parent=None, decision=None):
         """recursively add node or edge"""
         if 'split_index' in root:  # non-leaf
-            name = 'split' + str(root['split_index'])
+            name = 'split{0}'.format(root['split_index'])
             if feature_names is not None:
-                label = 'split_feature_name:' + str(feature_names[root['split_feature']])
+                label = 'split_feature_name: {0}'.format(feature_names[root['split_feature']])
             else:
-                label = 'split_feature_index:' + str(root['split_feature'])
-            label += '\nthreshold:' + str(root['threshold'])
+                label = 'split_feature_index: {0}'.format(root['split_feature'])
+            label += r'\nthreshold: {0}'.format(float2str(root['threshold'], precision))
             for info in show_info:
-                if info in {'split_gain', 'internal_value', 'internal_count'}:
-                    label += '\n' + info + ':' + str(root[info])
+                if info in {'split_gain', 'internal_value'}:
+                    label += r'\n{0}: {1}'.format(info, float2str(root[info], precision))
+                elif info == 'internal_count':
+                    label += r'\n{0}: {1}'.format(info, root[info])
             graph.node(name, label=label)
-            if root['decision_type'] == 'no_greater':
+            if root['decision_type'] == '<=':
                 l_dec, r_dec = '<=', '>'
-            elif root['decision_type'] == 'is':
+            elif root['decision_type'] == '==':
                 l_dec, r_dec = 'is', "isn't"
             else:
                 raise ValueError('Invalid decision type in tree model.')
             add(root['left_child'], name, l_dec)
             add(root['right_child'], name, r_dec)
         else:  # leaf
-            name = 'left' + str(root['leaf_index'])
-            label = 'leaf_value:' + str(root['leaf_value'])
+            name = 'leaf{0}'.format(root['leaf_index'])
+            label = 'leaf_index: {0}'.format(root['leaf_index'])
+            label += r'\nleaf_value: {0}'.format(float2str(root['leaf_value'], precision))
             if 'leaf_count' in show_info:
-                label += '\nleaf_count:' + str(root['leaf_count'])
+                label += r'\nleaf_count: {0}'.format(root['leaf_count'])
             graph.node(name, label=label)
         if parent is not None:
             graph.edge(parent, name, decision)
 
+    graph = Digraph(name=name, comment=comment, filename=filename, directory=directory,
+                    format=format, engine=engine, encoding=encoding, graph_attr=graph_attr,
+                    node_attr=node_attr, edge_attr=edge_attr, body=body, strict=strict)
     add(tree_info['tree_structure'])
+
     return graph
 
 
-def plot_tree(booster, ax=None, tree_index=0, figsize=None,
-              graph_attr=None, node_attr=None, edge_attr=None,
-              show_info=None):
-    """Plot specified tree.
+def create_tree_digraph(booster, tree_index=0, show_info=None, precision=None,
+                        name=None, comment=None, filename=None, directory=None,
+                        format=None, engine=None, encoding=None, graph_attr=None,
+                        node_attr=None, edge_attr=None, body=None, strict=False):
+    """Create a digraph representation of specified tree.
+
+    Note
+    ----
+    For more information please visit
+    http://graphviz.readthedocs.io/en/stable/api.html#digraph.
 
     Parameters
     ----------
-    booster : Booster, LGBMModel
+    booster : Booster or LGBMModel
         Booster or LGBMModel instance.
-    ax : matplotlib Axes
-        Target axes instance. If None, new figure and axes will be created.
-    tree_index : int, default 0
-        Specify tree index of target tree.
-    figsize : tuple of 2 elements
-        Figure size.
-    graph_attr : dict
-        Mapping of (attribute, value) pairs for the graph.
-    node_attr : dict
+    tree_index : int, optional (default=0)
+        The index of a target tree to convert.
+    show_info : list of strings or None, optional (default=None)
+        What information should be shown in nodes.
+        Possible values of list items: 'split_gain', 'internal_value', 'internal_count', 'leaf_count'.
+    precision : int or None, optional (default=None)
+        Used to restrict the display of floating point values to a certain precision.
+    name : string or None, optional (default=None)
+        Graph name used in the source code.
+    comment : string or None, optional (default=None)
+        Comment added to the first line of the source.
+    filename : string or None, optional (default=None)
+        Filename for saving the source.
+        If None, ``name`` + '.gv' is used.
+    directory : string or None, optional (default=None)
+        (Sub)directory for source saving and rendering.
+    format : string or None, optional (default=None)
+        Rendering output format ('pdf', 'png', ...).
+    engine : string or None, optional (default=None)
+        Layout command used ('dot', 'neato', ...).
+    encoding : string or None, optional (default=None)
+        Encoding for saving the source.
+    graph_attr : dict, list of tuples or None, optional (default=None)
+        Mapping of (attribute, value) pairs set for the graph.
+        All attributes and values must be strings or bytes-like objects.
+    node_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for all nodes.
-    edge_attr : dict
+        All attributes and values must be strings or bytes-like objects.
+    edge_attr : dict, list of tuples or None, optional (default=None)
         Mapping of (attribute, value) pairs set for all edges.
-    show_info : list
-        Information shows on nodes.
-        options: 'split_gain', 'internal_value', 'internal_count' or 'leaf_count'.
+        All attributes and values must be strings or bytes-like objects.
+    body : list of strings or None, optional (default=None)
+        Lines to add to the graph body.
+    strict : bool, optional (default=False)
+        Whether rendering should merge multi-edges.
 
     Returns
     -------
-    ax : matplotlib Axes
+    graph : graphviz.Digraph
+        The digraph representation of specified tree.
     """
-    try:
-        import matplotlib.pyplot as plt
-        import matplotlib.image as image
-    except ImportError:
-        raise ImportError('You must install matplotlib to plot tree.')
-
-    try:
-        from graphviz import Digraph
-    except ImportError:
-        raise ImportError('You must install graphviz to plot tree.')
-
-    if ax is None:
-        if figsize is not None:
-            check_not_tuple_of_2_elements(figsize, 'figsize')
-        _, ax = plt.subplots(1, 1, figsize=figsize)
-
     if isinstance(booster, LGBMModel):
         booster = booster.booster_
     elif not isinstance(booster, Booster):
@@ -340,14 +385,81 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
     else:
         raise IndexError('tree_index is out of range.')
 
-    graph = Digraph(graph_attr=graph_attr, node_attr=node_attr, edge_attr=edge_attr)
-
     if show_info is None:
         show_info = []
-    ret = _to_graphviz(graph, tree_info, show_info, feature_names)
+
+    graph = _to_graphviz(tree_info, show_info, feature_names, precision,
+                         name=name, comment=comment, filename=filename, directory=directory,
+                         format=format, engine=engine, encoding=encoding, graph_attr=graph_attr,
+                         node_attr=node_attr, edge_attr=edge_attr, body=body, strict=strict)
+
+    return graph
+
+
+def plot_tree(booster, ax=None, tree_index=0, figsize=None,
+              graph_attr=None, node_attr=None, edge_attr=None,
+              show_info=None, precision=None):
+    """Plot specified tree.
+
+    Note
+    ----
+    It is preferable to use ``create_tree_digraph()`` because of its lossless quality
+    and returned objects can be also rendered and displayed directly inside a Jupyter notebook.
+
+    Parameters
+    ----------
+    booster : Booster or LGBMModel
+        Booster or LGBMModel instance to be plotted.
+    ax : matplotlib.axes.Axes or None, optional (default=None)
+        Target axes instance.
+        If None, new figure and axes will be created.
+    tree_index : int, optional (default=0)
+        The index of a target tree to plot.
+    figsize : tuple of 2 elements or None, optional (default=None)
+        Figure size.
+    graph_attr : dict, list of tuples or None, optional (default=None)
+        Mapping of (attribute, value) pairs set for the graph.
+        All attributes and values must be strings or bytes-like objects.
+    node_attr : dict, list of tuples or None, optional (default=None)
+        Mapping of (attribute, value) pairs set for all nodes.
+        All attributes and values must be strings or bytes-like objects.
+    edge_attr : dict, list of tuples or None, optional (default=None)
+        Mapping of (attribute, value) pairs set for all edges.
+        All attributes and values must be strings or bytes-like objects.
+    show_info : list of strings or None, optional (default=None)
+        What information should be shown in nodes.
+        Possible values of list items: 'split_gain', 'internal_value', 'internal_count', 'leaf_count'.
+    precision : int or None, optional (default=None)
+        Used to restrict the display of floating point values to a certain precision.
+
+    Returns
+    -------
+    ax : matplotlib.axes.Axes
+        The plot with single tree.
+    """
+    if MATPLOTLIB_INSTALLED:
+        import matplotlib.pyplot as plt
+        import matplotlib.image as image
+    else:
+        raise ImportError('You must install matplotlib to plot tree.')
+
+    if ax is None:
+        if figsize is not None:
+            check_not_tuple_of_2_elements(figsize, 'figsize')
+        _, ax = plt.subplots(1, 1, figsize=figsize)
+
+    graph = create_tree_digraph(
+        booster=booster,
+        tree_index=tree_index,
+        show_info=show_info,
+        precision=precision,
+        graph_attr=graph_attr,
+        node_attr=node_attr,
+        edge_attr=edge_attr
+    )
 
     s = BytesIO()
-    s.write(ret.pipe(format='png'))
+    s.write(graph.pipe(format='png'))
     s.seek(0)
     img = image.imread(s)
 

@@ -2,7 +2,7 @@
 #define LIGHTGBM_TREELEARNER_DATA_PARTITION_HPP_
 
 #include <LightGBM/meta.h>
-#include <LightGBM/feature.h>
+#include <LightGBM/dataset.h>
 
 #include <LightGBM/utils/openmp_wrapper.h>
 
@@ -24,8 +24,8 @@ public:
     temp_left_indices_.resize(num_data_);
     temp_right_indices_.resize(num_data_);
     used_data_indices_ = nullptr;
-#pragma omp parallel
-#pragma omp master
+    #pragma omp parallel
+    #pragma omp master
     {
       num_threads_ = omp_get_num_threads();
     }
@@ -55,14 +55,12 @@ public:
   * \brief Init, will put all data on the root(leaf_idx = 0)
   */
   void Init() {
-    for (int i = 0; i < num_leaves_; ++i) {
-      leaf_count_[i] = 0;
-    }
-    leaf_begin_[0] = 0;
+    std::fill(leaf_begin_.begin(), leaf_begin_.end(), 0);
+    std::fill(leaf_count_.begin(), leaf_count_.end(), 0);
     if (used_data_indices_ == nullptr) {
       // if using all data
       leaf_count_[0] = num_data_;
-#pragma omp parallel for schedule(static)
+      #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         indices_[i] = i;
       }
@@ -70,6 +68,21 @@ public:
       // if bagging
       leaf_count_[0] = used_data_count_;
       std::memcpy(indices_.data(), used_data_indices_, used_data_count_ * sizeof(data_size_t));
+    }
+  }
+
+  void ResetByLeafPred(const std::vector<int>& leaf_pred, int num_leaves) {
+    ResetLeaves(num_leaves);
+    std::vector<std::vector<data_size_t>> indices_per_leaf(num_leaves_);
+    for (data_size_t i = 0; i < static_cast<data_size_t>(leaf_pred.size()); ++i) {
+      indices_per_leaf[leaf_pred[i]].push_back(i);
+    }
+    data_size_t offset = 0;
+    for (int i = 0; i < num_leaves_; ++i) {
+      leaf_begin_[i] = offset;
+      leaf_count_[i] = static_cast<data_size_t>(indices_per_leaf[i].size());
+      std::copy(indices_per_leaf[i].begin(), indices_per_leaf[i].end(), indices_.begin() + leaf_begin_[i]);
+      offset += leaf_count_[i];
     }
   }
 
@@ -93,8 +106,8 @@ public:
   * \param threshold threshold that want to split
   * \param right_leaf index of right leaf
   */
-  void Split(int leaf, const Bin* feature_bins, unsigned int threshold, int right_leaf) {
-    const data_size_t min_inner_size = 1000;
+  void Split(int leaf, const Dataset* dataset, int feature, const uint32_t* threshold, int num_threshold, bool default_left, int right_leaf) {
+    const data_size_t min_inner_size = 512;
     // get leaf boundary
     const data_size_t begin = leaf_begin_[leaf];
     const data_size_t cnt = leaf_count_[leaf];
@@ -102,8 +115,10 @@ public:
     data_size_t inner_size = (cnt + num_threads_ - 1) / num_threads_;
     if (inner_size < min_inner_size) { inner_size = min_inner_size; }
     // split data multi-threading
-#pragma omp parallel for schedule(static, 1)
+    OMP_INIT_EX();
+    #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < num_threads_; ++i) {
+      OMP_LOOP_EX_BEGIN();
       left_cnts_buf_[i] = 0;
       right_cnts_buf_[i] = 0;
       data_size_t cur_start = i * inner_size;
@@ -111,12 +126,14 @@ public:
       data_size_t cur_cnt = inner_size;
       if (cur_start + cur_cnt > cnt) { cur_cnt = cnt - cur_start; }
       // split data inner, reduce the times of function called
-      data_size_t cur_left_count = feature_bins->Split(threshold, indices_.data() + begin + cur_start, cur_cnt,
-        temp_left_indices_.data() + cur_start, temp_right_indices_.data() + cur_start);
+      data_size_t cur_left_count = dataset->Split(feature, threshold, num_threshold, default_left, indices_.data() + begin + cur_start, cur_cnt,
+                                                  temp_left_indices_.data() + cur_start, temp_right_indices_.data() + cur_start);
       offsets_buf_[i] = cur_start;
       left_cnts_buf_[i] = cur_left_count;
       right_cnts_buf_[i] = cur_cnt - cur_left_count;
+      OMP_LOOP_EX_END();
     }
+    OMP_THROW_EX();
     data_size_t left_cnt = 0;
     left_write_pos_buf_[0] = 0;
     right_write_pos_buf_[0] = 0;
@@ -126,15 +143,15 @@ public:
     }
     left_cnt = left_write_pos_buf_[num_threads_ - 1] + left_cnts_buf_[num_threads_ - 1];
     // copy back indices of right leaf to indices_
-#pragma omp parallel for schedule(static, 1)
+    #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < num_threads_; ++i) {
       if (left_cnts_buf_[i] > 0) {
-        std::memcpy(indices_.data() + begin + left_write_pos_buf_[i], 
-          temp_left_indices_.data() + offsets_buf_[i], left_cnts_buf_[i] * sizeof(data_size_t));
+        std::memcpy(indices_.data() + begin + left_write_pos_buf_[i],
+                    temp_left_indices_.data() + offsets_buf_[i], left_cnts_buf_[i] * sizeof(data_size_t));
       }
       if (right_cnts_buf_[i] > 0) {
-        std::memcpy(indices_.data() + begin + left_cnt + right_write_pos_buf_[i], 
-          temp_right_indices_.data() + offsets_buf_[i], right_cnts_buf_[i] * sizeof(data_size_t));
+        std::memcpy(indices_.data() + begin + left_cnt + right_write_pos_buf_[i],
+                    temp_right_indices_.data() + offsets_buf_[i], right_cnts_buf_[i] * sizeof(data_size_t));
       }
     }
     // update leaf boundary

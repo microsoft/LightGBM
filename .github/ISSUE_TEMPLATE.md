@@ -1,15 +1,26 @@
-Please search your question on previous issues, stackoverflow or other search engines before you open a new one.
+<!--
+Please search your question on previous issues, Stack Overflow (https://stackoverflow.com/questions/tagged/lightgbm) or other search engines before you open a new one.
+-->
 
-For bugs and unexpected issues, please provide following information, so that we could reproduce on our system.
+<!--
+For bugs and unexpected issues, please provide the following information, so that we could reproduce them on our system.
+-->
 
 ## Environment info
+
 Operating System:
+
 CPU:
+
 C++/Python/R version:
 
-## Error Message:
+## Error message
+
+<!-- Paste error log here -->
 
 ## Reproducible examples
+
+<!-- Paste examples here -->
 
 ## Steps to reproduce
 

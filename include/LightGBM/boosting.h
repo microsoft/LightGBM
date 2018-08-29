@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 
 namespace LightGBM {
 
@@ -13,6 +14,7 @@ namespace LightGBM {
 class Dataset;
 class ObjectiveFunction;
 class Metric;
+struct PredictionEarlyStopInstance;
 
 /*!
 * \brief The interface for Boosting
@@ -26,30 +28,33 @@ public:
   * \brief Initialization logic
   * \param config Configs for boosting
   * \param train_data Training data
-  * \param object_function Training objective function
+  * \param objective_function Training objective function
   * \param training_metrics Training metric
   */
   virtual void Init(
-    const BoostingConfig* config,
+    const Config* config,
     const Dataset* train_data,
-    const ObjectiveFunction* object_function,
+    const ObjectiveFunction* objective_function,
     const std::vector<const Metric*>& training_metrics) = 0;
 
   /*!
   * \brief Merge model from other boosting object
-           Will insert to the front of current boosting object
+  Will insert to the front of current boosting object
   * \param other
   */
   virtual void MergeFrom(const Boosting* other) = 0;
 
   /*!
-  * \brief Reset training data for current boosting
-  * \param config Configs for boosting
-  * \param train_data Training data
-  * \param object_function Training objective function
-  * \param training_metrics Training metric
+  * \brief Shuffle Existing Models
   */
-  virtual void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* object_function, const std::vector<const Metric*>& training_metrics) = 0;
+  virtual void ShuffleModels() = 0;
+
+  virtual void ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* objective_function,
+                                 const std::vector<const Metric*>& training_metrics) = 0;
+
+  virtual void ResetConfig(const Config* config) = 0;
+
+
 
   /*!
   * \brief Add a validation data
@@ -57,16 +62,22 @@ public:
   * \param valid_metrics Metric for validation data
   */
   virtual void AddValidDataset(const Dataset* valid_data,
-    const std::vector<const Metric*>& valid_metrics) = 0;
+                               const std::vector<const Metric*>& valid_metrics) = 0;
+
+  virtual void Train(int snapshot_freq, const std::string& model_output_path) = 0;
+
+  /*!
+  * \brief Update the tree output by new training data
+  */
+  virtual void RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) = 0;
 
   /*!
   * \brief Training logic
-  * \param gradient nullptr for using default objective, otherwise use self-defined boosting
-  * \param hessian nullptr for using default objective, otherwise use self-defined boosting
-  * \param is_eval true if need evaluation or early stop
-  * \return True if meet early stopping or cannot boosting
+  * \param gradients nullptr for using default objective, otherwise use self-defined boosting
+  * \param hessians nullptr for using default objective, otherwise use self-defined boosting
+  * \return True if cannot train anymore
   */
-  virtual bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) = 0;
+  virtual bool TrainOneIter(const score_t* gradients, const score_t* hessians) = 0;
 
   /*!
   * \brief Rollback one iteration
@@ -78,10 +89,6 @@ public:
   */
   virtual int GetCurrentIteration() const = 0;
 
-  /*!
-  * \brief Eval metrics and check is met early stopping or not
-  */
-  virtual bool EvalAndCheckEarlyStopping() = 0;
   /*!
   * \brief Get evaluation result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
@@ -99,67 +106,122 @@ public:
   /*!
   * \brief Get prediction result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
-  * \return out_len lenght of returned score
+  * \return out_len length of returned score
   */
   virtual int64_t GetNumPredictAt(int data_idx) const = 0;
+
   /*!
   * \brief Get prediction result at data_idx data
   * \param data_idx 0: training data, 1: 1st validation data
   * \param result used to store prediction result, should allocate memory before call this function
-  * \param out_len lenght of returned score
+  * \param out_len length of returned score
   */
   virtual void GetPredictAt(int data_idx, double* result, int64_t* out_len) = 0;
+
+  virtual int NumPredictOneRow(int num_iteration, bool is_pred_leaf, bool is_pred_contrib) const = 0;
 
   /*!
   * \brief Prediction for one record, not sigmoid transform
   * \param feature_values Feature value on this record
-  * \return Prediction result for this record
+  * \param output Prediction result for this record
+  * \param early_stop Early stopping instance. If nullptr, no early stopping is applied and all models are evaluated.
   */
-  virtual std::vector<double> PredictRaw(const double* feature_values) const = 0;
+  virtual void PredictRaw(const double* features, double* output,
+                          const PredictionEarlyStopInstance* early_stop) const = 0;
+
+  virtual void PredictRawByMap(const std::unordered_map<int, double>& features, double* output,
+                               const PredictionEarlyStopInstance* early_stop) const = 0;
+
 
   /*!
   * \brief Prediction for one record, sigmoid transformation will be used if needed
   * \param feature_values Feature value on this record
-  * \return Prediction result for this record
+  * \param output Prediction result for this record
+  * \param early_stop Early stopping instance. If nullptr, no early stopping is applied and all models are evaluated.
   */
-  virtual std::vector<double> Predict(const double* feature_values) const = 0;
-  
+  virtual void Predict(const double* features, double* output,
+                       const PredictionEarlyStopInstance* early_stop) const = 0;
+
+  virtual void PredictByMap(const std::unordered_map<int, double>& features, double* output,
+                            const PredictionEarlyStopInstance* early_stop) const = 0;
+
+
   /*!
-  * \brief Predtion for one record with leaf index
+  * \brief Prediction for one record with leaf index
   * \param feature_values Feature value on this record
-  * \return Predicted leaf index for this record
+  * \param output Prediction result for this record
   */
-  virtual std::vector<int> PredictLeafIndex(
-    const double* feature_values) const = 0;
+  virtual void PredictLeafIndex(
+    const double* features, double* output) const = 0;
+
+  virtual void PredictLeafIndexByMap(
+    const std::unordered_map<int, double>& features, double* output) const = 0;
+
+  /*!
+  * \brief Feature contributions for the model's prediction of one record
+  * \param feature_values Feature value on this record
+  * \param output Prediction result for this record
+  * \param early_stop Early stopping instance. If nullptr, no early stopping is applied and all models are evaluated.
+  */
+  virtual void PredictContrib(const double* features, double* output,
+                              const PredictionEarlyStopInstance* early_stop) const = 0;
 
   /*!
   * \brief Dump model to json format string
+  * \param start_iteration The model will be saved start from
+  * \param num_iteration Number of iterations that want to dump, -1 means dump all
   * \return Json format string of model
   */
-  virtual std::string DumpModel(int num_iteration) const = 0;
+  virtual std::string DumpModel(int start_iteration, int num_iteration) const = 0;
+
+  /*!
+  * \brief Translate model to if-else statement
+  * \param num_iteration Number of iterations that want to translate, -1 means translate all
+  * \return if-else format codes of model
+  */
+  virtual std::string ModelToIfElse(int num_iteration) const = 0;
+
+  /*!
+  * \brief Translate model to if-else statement
+  * \param num_iteration Number of iterations that want to translate, -1 means translate all
+  * \param filename Filename that want to save to
+  * \return is_finish Is training finished or not
+  */
+  virtual bool SaveModelToIfElse(int num_iteration, const char* filename) const = 0;
 
   /*!
   * \brief Save model to file
-  * \param num_used_model Number of model that want to save, -1 means save all
+  * \param start_iteration The model will be saved start from
+  * \param num_iterations Number of model that want to save, -1 means save all
   * \param is_finish Is training finished or not
   * \param filename Filename that want to save to
   * \return true if succeeded
   */
-  virtual bool SaveModelToFile(int num_iterations, const char* filename) const = 0;
+  virtual bool SaveModelToFile(int start_iteration, int num_iterations, const char* filename) const = 0;
 
   /*!
   * \brief Save model to string
-  * \param num_used_model Number of model that want to save, -1 means save all
+  * \param start_iteration The model will be saved start from
+  * \param num_iterations Number of model that want to save, -1 means save all
   * \return Non-empty string if succeeded
   */
-  virtual std::string SaveModelToString(int num_iterations) const = 0;
+  virtual std::string SaveModelToString(int start_iteration, int num_iterations) const = 0;
 
   /*!
   * \brief Restore from a serialized string
-  * \param model_str The string of model
+  * \param buffer The content of model
+  * \param len The length of buffer
   * \return true if succeeded
   */
-  virtual bool LoadModelFromString(const std::string& model_str) = 0;
+  virtual bool LoadModelFromString(const char* buffer, size_t len) = 0;
+
+  /*!
+  * \brief Calculate feature importances
+  * \param num_iteration Number of model that want to use for feature importance, -1 means use all
+  * \param importance_type: 0 for split, 1 for gain
+  * \return vector of feature_importance
+  */
+  virtual std::vector<double> FeatureImportance(int num_iteration, int importance_type) const = 0;
 
   /*!
   * \brief Get max feature index of this model
@@ -184,18 +246,29 @@ public:
   * \return Number of weak sub-models
   */
   virtual int NumberOfTotalModel() const = 0;
-  
+
+  /*!
+  * \brief Get number of models per iteration
+  * \return Number of models per iteration
+  */
+  virtual int NumModelPerIteration() const = 0;
+
   /*!
   * \brief Get number of classes
   * \return Number of classes
   */
   virtual int NumberOfClasses() const = 0;
 
+  /*! \brief The prediction should be accurate or not. True will disable early stopping for prediction. */
+  virtual bool NeedAccuratePrediction() const = 0;
+
   /*!
-  * \brief Set number of used model for prediction
+  * \brief Initial work for the prediction
+  * \param num_iteration number of used iteration
+  * \param is_pred_contrib
   */
-  virtual void SetNumIterationForPred(int num_iteration) = 0;
-  
+  virtual void InitPredict(int num_iteration, bool is_pred_contrib) = 0;
+
   /*!
   * \brief Name of submodel
   */
@@ -212,19 +285,19 @@ public:
   /*!
   * \brief Create boosting object
   * \param type Type of boosting
+  * \param format Format of model
   * \param config config for boosting
   * \param filename name of model file, if existing will continue to train from this model
   * \return The boosting object
   */
   static Boosting* CreateBoosting(const std::string& type, const char* filename);
 
-  /*!
-  * \brief Create boosting object from model file
-  * \param filename name of model file
-  * \return The boosting object
-  */
-  static Boosting* CreateBoosting(const char* filename);
+};
 
+class GBDTBase : public Boosting {
+public:
+  virtual double GetLeafValue(int tree_idx, int leaf_idx) const = 0;
+  virtual void SetLeafValue(int tree_idx, int leaf_idx, double val) = 0;
 };
 
 }  // namespace LightGBM

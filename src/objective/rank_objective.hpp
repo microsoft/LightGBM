@@ -18,15 +18,12 @@ namespace LightGBM {
 */
 class LambdarankNDCG: public ObjectiveFunction {
 public:
-  explicit LambdarankNDCG(const ObjectiveConfig& config) {
+  explicit LambdarankNDCG(const Config& config) {
     sigmoid_ = static_cast<double>(config.sigmoid);
+    label_gain_ = config.label_gain;
     // initialize DCG calculator
-    DCGCalculator::Init(config.label_gain);
-    // copy lable gain to local
-    for (auto gain : config.label_gain) {
-      label_gain_.push_back(static_cast<double>(gain));
-    }
-    label_gain_.shrink_to_fit();
+    DCGCalculator::DefaultLabelGain(&label_gain_);
+    DCGCalculator::Init(label_gain_);
     // will optimize NDCG@optimize_pos_at_
     optimize_pos_at_ = config.max_position;
     sigmoid_table_.clear();
@@ -35,6 +32,11 @@ public:
       Log::Fatal("Sigmoid param %f should be greater than zero", sigmoid_);
     }
   }
+
+  explicit LambdarankNDCG(const std::vector<std::string>&) {
+
+  }
+
   ~LambdarankNDCG() {
 
   }
@@ -42,6 +44,7 @@ public:
     num_data_ = num_data;
     // get label
     label_ = metadata.label();
+    DCGCalculator::CheckLabel(label_, num_data_);
     // get weights
     weights_ = metadata.weights();
     // get boundries
@@ -52,6 +55,7 @@ public:
     num_queries_ = metadata.num_queries();
     // cache inverse max DCG, avoid computation many times
     inverse_max_dcgs_.resize(num_queries_);
+#pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_queries_; ++i) {
       inverse_max_dcgs_[i] = DCGCalculator::CalMaxDCGAtK(optimize_pos_at_,
         label_ + query_boundaries_[i],
@@ -82,7 +86,7 @@ public:
     // get max DCG on current query
     const double inverse_max_dcg = inverse_max_dcgs_[query_id];
     // add pointers with offset
-    const float* label = label_ + start;
+    const label_t* label = label_ + start;
     score += start;
     lambdas += start;
     hessians += start;
@@ -157,8 +161,8 @@ public:
     // if need weights
     if (weights_ != nullptr) {
       for (data_size_t i = 0; i < cnt; ++i) {
-        lambdas[i] *= weights_[start + i];
-        hessians[i] *= weights_[start + i];
+        lambdas[i] = static_cast<score_t>(lambdas[i] * weights_[start + i]);
+        hessians[i] = static_cast<score_t>(hessians[i] * weights_[start + i]);
       }
     }
   }
@@ -195,6 +199,14 @@ public:
     return "lambdarank";
   }
 
+  std::string ToString() const override {
+    std::stringstream str_buf;
+    str_buf << GetName();
+    return str_buf.str();
+  }
+
+  bool NeedAccuratePrediction() const override { return false; }
+
 private:
   /*! \brief Gains for labels */
   std::vector<double> label_gain_;
@@ -209,9 +221,9 @@ private:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */
-  const float* label_;
+  const label_t* label_;
   /*! \brief Pointer of weights */
-  const float* weights_;
+  const label_t* weights_;
   /*! \brief Query boundries */
   const data_size_t* query_boundaries_;
   /*! \brief Cache result for sigmoid transform to speed up */

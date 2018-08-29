@@ -1,0 +1,16 @@
+[checking]
+recursionlevel=1
+anchors=1
+sslverify=0
+
+[filtering]
+ignore=
+  public.tableau.com
+  http://www.intel.com/software/products/support
+ignorewarnings=http-robots-denied,https-certificate-error
+
+[output]
+# Set to 1 if you want see the full output, not only warnings and errors
+verbose=0
+
+[AnchorCheck]

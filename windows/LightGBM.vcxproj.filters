@@ -96,13 +96,7 @@
     <ClInclude Include="..\src\treelearner\data_partition.hpp">
       <Filter>src\treelearner</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\treelearner\feature_histogram.hpp">
-      <Filter>src\treelearner</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\treelearner\leaf_splits.hpp">
-      <Filter>src\treelearner</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\treelearner\split_info.hpp">
       <Filter>src\treelearner</Filter>
     </ClInclude>
     <ClInclude Include="..\include\LightGBM\application.h">
@@ -120,9 +114,6 @@
     <ClInclude Include="..\include\LightGBM\dataset.h">
       <Filter>include\LightGBM</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\LightGBM\feature.h">
-      <Filter>include\LightGBM</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\LightGBM\meta.h">
       <Filter>include\LightGBM</Filter>
     </ClInclude>
@@ -133,6 +124,9 @@
       <Filter>include\LightGBM</Filter>
     </ClInclude>
     <ClInclude Include="..\include\LightGBM\objective_function.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\prediction_early_stop.h">
       <Filter>include\LightGBM</Filter>
     </ClInclude>
     <ClInclude Include="..\include\LightGBM\tree.h">
@@ -170,6 +164,48 @@
     </ClInclude>
     <ClInclude Include="..\src\boosting\dart.hpp">
       <Filter>src\boosting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\feature_group.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\treelearner\feature_histogram.hpp">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\treelearner\split_info.hpp">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\boosting\goss.hpp">
+      <Filter>src\boosting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\io\dense_nbits_bin.hpp">
+      <Filter>src\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\openmp_wrapper.h">
+      <Filter>include\LightGBM\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\metric\map_metric.hpp">
+      <Filter>src\metric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\lightgbm_R.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\R_object_helper.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\boosting\rf.hpp">
+      <Filter>src\boosting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\objective\xentropy_objective.hpp">
+      <Filter>src\objective</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\metric\xentropy_metric.hpp">
+      <Filter>src\metric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\file_io.h">
+      <Filter>include\LightGBM\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\json11.hpp">
+      <Filter>include\LightGBM\utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -244,6 +280,27 @@
     </ClCompile>
     <ClCompile Include="..\src\treelearner\voting_parallel_tree_learner.cpp">
       <Filter>src\treelearner</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\boosting\gbdt_prediction.cpp">
+      <Filter>src\boosting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\boosting\prediction_early_stop.cpp">
+      <Filter>src\boosting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\lightgbm_R.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\boosting\gbdt_model_text.cpp">
+      <Filter>src\boosting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\io\file_io.cpp">
+      <Filter>src\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\io\json11.cpp">
+      <Filter>src\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\io\config_auto.cpp">
+      <Filter>src\io</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

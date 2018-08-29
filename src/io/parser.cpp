@@ -69,29 +69,50 @@ enum DataType {
   LIBSVM
 };
 
-Parser* Parser::CreateParser(const char* filename, bool has_header, int num_features, int label_idx) {
-  std::ifstream tmp_file;
-  tmp_file.open(filename);
-  if (!tmp_file.is_open()) {
-    Log::Fatal("Data file %s doesn't exist'", filename);
+void getline(std::stringstream& ss, std::string& line, const VirtualFileReader* reader, std::vector<char>& buffer, size_t buffer_size) {
+  std::getline(ss, line);
+  while (ss.eof()) {
+    size_t read_len = reader->Read(buffer.data(), buffer_size);
+    if (read_len <= 0) {
+      break;
+    }
+    ss.clear();
+    ss.str(std::string(buffer.data(), read_len));
+    std::string tmp;
+    std::getline(ss, tmp);
+    line += tmp;
+  }
+}
+
+Parser* Parser::CreateParser(const char* filename, bool header, int num_features, int label_idx) {
+  auto reader = VirtualFileReader::Make(filename);
+  if (!reader->Init()) {
+    Log::Fatal("Data file %s doesn't exist", filename);
   }
   std::string line1, line2;
-  if (has_header) {
+  size_t buffer_size = 64 * 1024;
+  auto buffer = std::vector<char>(buffer_size);
+  size_t read_len = reader->Read(buffer.data(), buffer_size);
+  if (read_len <= 0) {
+    Log::Fatal("Data file %s couldn't be read", filename);
+  }
+
+  std::stringstream tmp_file(std::string(buffer.data(), read_len));
+  if (header) {
     if (!tmp_file.eof()) {
-      std::getline(tmp_file, line1);
+      getline(tmp_file, line1, reader.get(), buffer, buffer_size);
     }
   }
   if (!tmp_file.eof()) {
-    std::getline(tmp_file, line1);
+    getline(tmp_file, line1, reader.get(), buffer, buffer_size);
   } else {
     Log::Fatal("Data file %s should have at least one line", filename);
   }
   if (!tmp_file.eof()) {
-    std::getline(tmp_file, line2);
+    getline(tmp_file, line2, reader.get(), buffer, buffer_size);
   } else {
     Log::Warning("Data file %s only has one line", filename);
   }
-  tmp_file.close();
   int comma_cnt = 0, comma_cnt2 = 0;
   int tab_cnt = 0, tab_cnt2 = 0;
   int colon_cnt = 0, colon_cnt2 = 0;
@@ -116,8 +137,10 @@ Parser* Parser::CreateParser(const char* filename, bool has_header, int num_feat
       type = DataType::LIBSVM;
     } else if (tab_cnt == tab_cnt2 && tab_cnt > 0) {
       type = DataType::TSV;
+      CHECK(tab_cnt == tab_cnt2);
     } else if (comma_cnt == comma_cnt2 && comma_cnt > 0) {
       type = DataType::CSV;
+      CHECK(comma_cnt == comma_cnt2);
     }
   }
   if (type == DataType::INVALID) {
@@ -130,11 +153,11 @@ Parser* Parser::CreateParser(const char* filename, bool has_header, int num_feat
   }
   else if (type == DataType::TSV) {
     label_idx = GetLabelIdxForTSV(line1, num_features, label_idx);
-    ret.reset(new TSVParser(label_idx));
+    ret.reset(new TSVParser(label_idx, tab_cnt + 1));
   }
   else if (type == DataType::CSV) {
     label_idx = GetLabelIdxForCSV(line1, num_features, label_idx);
-    ret.reset(new CSVParser(label_idx));
+    ret.reset(new CSVParser(label_idx, comma_cnt + 1));
   }
 
   if (label_idx < 0) {

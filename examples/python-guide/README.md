@@ -1,37 +1,59 @@
-Python Package Example
-=====================
-Here is an example for LightGBM to use python package.
+Python-package Examples
+=======================
 
-***You should install lightgbm (both c++ and python verion) first.***
+Here is an example for LightGBM to use Python-package.
 
-For the installation, check the wiki [here](https://github.com/Microsoft/LightGBM/wiki/Installation-Guide).
+You should install LightGBM [Python-package](https://github.com/Microsoft/LightGBM/tree/master/python-package) first.
 
-You also need scikit-learn, pandas and matplotlib (only for plot example) to run the examples, but they are not required for the package itself. You can install them with pip:
+You also need scikit-learn, pandas, matplotlib (only for plot example), and scipy (only for logistic regression example) to run the examples, but they are not required for the package itself. You can install them with pip:
+
 ```
-pip install scikit-learn pandas matplotlib -U
+pip install scikit-learn pandas matplotlib scipy -U
 ```
 
 Now you can run examples in this folder, for example:
+
 ```
 python simple_example.py
 ```
-Examples including:
+
+Examples include:
+
 - [simple_example.py](https://github.com/Microsoft/LightGBM/blob/master/examples/python-guide/simple_example.py)
     - Construct Dataset
     - Basic train and predict
     - Eval during training 
     - Early stopping
     - Save model to file
-    - Dump model to json format
-    - Feature importances
 - [sklearn_example.py](https://github.com/Microsoft/LightGBM/blob/master/examples/python-guide/sklearn_example.py)
+    - Create data for learning with sklearn interface 
     - Basic train and predict with sklearn interface
     - Feature importances with sklearn interface
+    - Self-defined eval metric with sklearn interface
+    - Find best parameters for the model with sklearn's GridSearchCV
 - [advanced_example.py](https://github.com/Microsoft/LightGBM/blob/master/examples/python-guide/advanced_example.py)
     - Set feature names
     - Directly use categorical features without one-hot encoding
+    - Dump model to json format
+    - Get feature importances
+    - Get feature names
+    - Load model to predict
+    - Dump and load model with pickle
     - Load model file to continue training
     - Change learning rates during training
+    - Change any parameters during training
     - Self-defined objective function
     - Self-defined eval metric
     - Callback function
+- [logistic_regression.py](https://github.com/Microsoft/LightGBM/blob/master/examples/python-guide/logistic_regression.py)
+    - Use objective `xentropy` or `binary`
+    - Use `xentropy` with binary labels or probability labels
+    - Use `binary` only with binary labels
+    - Compare speed of `xentropy` versus `binary`
+- [plot_example.py](https://github.com/Microsoft/LightGBM/blob/master/examples/python-guide/plot_example.py)
+    - Construct Dataset
+    - Train and record eval results for further plotting
+    - Plot metrics recorded during training
+    - Plot feature importances
+    - Plot one specified tree
+    - Plot one specified tree with Graphviz
