@@ -20,7 +20,7 @@
 #'  \item \code{leaf_index}: ID of a leaf in a tree (integer)
 #'  \item \code{leaf_parent}: ID of the parent node for current leaf (integer)
 #'  \item \code{split_gain}: Split gain of a node
-#'  \item \code{threshold}: Spliting threshold value of a node
+#'  \item \code{threshold}: Splitting threshold value of a node
 #'  \item \code{decision_type}: Decision type of a node
 #'  \item \code{default_left}: Determine how to handle NA value, TRUE -> Left, FALSE -> Right
 #'  \item \code{internal_value}: Node value
@@ -47,7 +47,7 @@
 #' }
 #'
 #' @importFrom magrittr %>%
-#' @importFrom data.table := data.table
+#' @importFrom data.table := data.table rbindlist
 #' @importFrom jsonlite fromJSON
 #' @export
 lgb.model.dt.tree <- function(model, num_iteration = NULL) {
@@ -77,6 +77,7 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
   return(tree_dt)
 
 }
+
 
 #' @importFrom data.table data.table rbindlist
 single.tree.parse <- function(lgb_tree) {

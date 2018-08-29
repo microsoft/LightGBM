@@ -21,7 +21,7 @@ constructed sub dataset
 }
 \description{
 Get a new \code{lgb.Dataset} containing the specified rows of
-orginal lgb.Dataset object
+original lgb.Dataset object
 }
 \examples{
 \dontrun{

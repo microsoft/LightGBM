@@ -22,30 +22,28 @@ For users who wants to install online with GPU or want to choose a specific comp
 
 **Warning for Windows users**: it is recommended to use *Visual Studio* for its better multi-threading efficiency in Windows for many core systems. For very simple systems (dual core computers or worse), MinGW64 is recommended for maximum performance. If you do not know what to choose, it is recommended to use [Visual Studio](https://visualstudio.microsoft.com/downloads/), the default compiler. **Do not try using MinGW in Windows on many core systems. It may result in 10x slower results than Visual Studio.**
 
-#### macOS Preparation
+#### Mac OS Preparation
 
 You can perform installation either with **Apple Clang** or **gcc**. In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in [Installation Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#apple-clang)) first and **CMake** version 3.12 or higher is required. In case you prefer **gcc**, you need to install it (details for installation can be found in [Installation Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc)) and specify compilers by running ``export CXX=g++-7 CC=gcc-7`` (replace "7" with version of **gcc** installed on your machine) first.
 
-### Install
+Mac users may need to set some environment variables to tell R to use `gcc` and `g++`. If you install these from Homebrew, your versions of `g++` and `gcc` are most likely in `/usr/local/bin`, as shown below.
 
-Install LightGBM R-package with the following command:
-
-```sh
-git clone --recursive https://github.com/Microsoft/LightGBM
-cd LightGBM/R-package
-# export CXX=g++-7 CC=gcc-7  # macOS users, if you decided to compile with gcc, don't forget to specify compilers (replace "7" with version of gcc installed on your machine)
-R CMD INSTALL --build . --no-multiarch
+```
+# replace 8 with version of gcc installed on your machine
+export CXX=/usr/local/bin/g++-8 CC=/usr/local/bin/gcc-8
 ```
 
-Or build a self-contained R-package which can be installed afterwards:
+### Install
+
+Build and install R-package with the following commands:
 
 ```sh
 git clone --recursive https://github.com/Microsoft/LightGBM
-cd LightGBM/R-package
-Rscript build_package.R
-# export CXX=g++-7 CC=gcc-7  # macOS users, if you decided to compile with gcc, don't forget to specify compilers (replace "7" with version of gcc installed on your machine)
-R CMD INSTALL lightgbm_2.1.1.tar.gz --no-multiarch
-``` 
+cd LightGBM
+Rscript build_r.R
+```
+
+The `build_r.R` script builds the package in a temporary directory called `lightgbm_r`. It will destroy and recreate that directory each time you run the script.
 
 Note: for the build with Visual Studio/MSBuild in Windows, you should use the Windows CMD or Powershell.
 
@@ -53,15 +51,7 @@ Windows users may need to run with administrator rights (either R or the command
 
 Set `use_gpu` to `TRUE` in `R-package/src/install.libs.R` to enable the build with GPU support. You will need to install Boost and OpenCL first: details for installation can be found in [Installation-Guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version).
 
-You can also install directly from R using the repository with `devtools`:
-
-```r
-library(devtools)
-options(devtools.install.args = "--no-multiarch") # if you have 64-bit R only, you can skip this
-install_github("Microsoft/LightGBM", subdir = "R-package")
-```
-
-If you are using a precompiled dll/lib locally, you can move the dll/lib into LightGBM root folder, modify `LightGBM/R-package/src/install.libs.R`'s 2nd line (change `use_precompile <- FALSE` to `use_precompile <- TRUE`), and install R-package as usual. **NOTE: If your R version is not smaller than 3.5.0, you should set `DUSE_R35=ON` in CMake options when build precompiled dll/lib**.
+If you are using a precompiled dll/lib locally, you can move the dll/lib into LightGBM root folder, modify `LightGBM/R-package/src/install.libs.R`'s 2nd line (change `use_precompile <- FALSE` to `use_precompile <- TRUE`), and install R-package as usual. **NOTE: If your R version is not smaller than 3.5.0, you should set `DUSE_R35=ON` in cmake options when build precompiled dll/lib**.
 
 When your package installation is done, you can check quickly if your LightGBM R-package is working by running the following:
 

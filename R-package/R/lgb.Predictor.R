@@ -1,6 +1,8 @@
 
 #' @importFrom methods is
-Predictor <- R6Class(
+#' @importFrom R6 R6Class
+Predictor <- R6::R6Class(
+
   classname = "lgb.Predictor",
   cloneable = FALSE,
   public = list(

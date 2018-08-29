@@ -1,1 +1,12 @@
 ^build_package.R$
+\.gitkeep$
+
+# Objects created by compilation
+\.o$
+\.so$
+\.dll$
+\.out$
+\.bin$
+
+# Code copied in at build time
+^src/CMakeLists.txt$

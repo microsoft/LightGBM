@@ -15,7 +15,7 @@ readRDS.lgb.Booster(file = "", refhook = NULL)
 lgb.Booster.
 }
 \description{
-Attemps to load a model using RDS.
+Attempts to load a model using RDS.
 }
 \examples{
 \dontrun{

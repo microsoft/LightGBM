@@ -1,6 +1,6 @@
 #' readRDS for lgb.Booster models
 #'
-#' Attemps to load a model using RDS.
+#' Attempts to load a model using RDS.
 #' 
 #' @param file a connection or the name of the file where the R object is saved to or read from.
 #' @param refhook a hook function for handling reference objects.

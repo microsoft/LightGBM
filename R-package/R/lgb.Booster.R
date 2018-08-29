@@ -1,4 +1,5 @@
-Booster <- R6Class(
+#' @importFrom R6 R6Class
+Booster <- R6::R6Class(
   classname = "lgb.Booster",
   cloneable = FALSE,
   public = list(
@@ -654,13 +655,15 @@ Booster <- R6Class(
 #' 
 #' @rdname predict.lgb.Booster
 #' @export
-predict.lgb.Booster <- function(object, data,
-                        num_iteration = NULL,
-                        rawscore = FALSE,
-                        predleaf = FALSE,
-                        predcontrib = FALSE,
-                        header = FALSE,
-                        reshape = FALSE, ...) {
+predict.lgb.Booster <- function(object,
+                                data,
+                                num_iteration = NULL,
+                                rawscore = FALSE,
+                                predleaf = FALSE,
+                                predcontrib = FALSE,
+                                header = FALSE,
+                                reshape = FALSE, 
+                                ...) {
   
   # Check booster existence
   if (!lgb.is.Booster(object)) {

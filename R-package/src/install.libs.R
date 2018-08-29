@@ -14,32 +14,18 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     || R_int_UUID == "2fdf6c18-697a-4ba7-b8ef-11c0d92f1327")){
   print("Warning: unmatched R_INTERNALS_UUID, may cannot run normally.")   
 }
+
+# Move in CMakeLists.txt
+if (!file.copy("../inst/bin/CMakeLists.txt", "CMakeLists.txt", overwrite = TRUE)){
+  stop("Copying CMakeLists failed")
+}
+
 # Check for precompilation
 if (!use_precompile) {
 
   # Check repository content
   source_dir <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
   setwd(source_dir)
-  
-  if (!file.exists("_IS_FULL_PACKAGE")) {
-    unlink("./include", recursive = TRUE)
-    unlink("./src", recursive = TRUE)
-    unlink("./compute", recursive = TRUE)
-    unlink("./build", recursive = TRUE)
-    if (!file.copy("./../../include", "./", overwrite = TRUE, recursive = TRUE)) {
-      stop("Cannot find folder LightGBM/include")
-    }
-    if (!file.copy("./../../src", "./", overwrite = TRUE, recursive = TRUE)) {
-      stop("Cannot find folder LightGBM/src")
-    }
-    if (!file.copy("./../../compute", "./", overwrite = TRUE, recursive = TRUE)) {
-      print("Cannot find folder LightGBM/compute, disabling GPU build.")
-      use_gpu <- FALSE
-    }
-    if (!file.copy("./../../CMakeLists.txt", "./", overwrite = TRUE, recursive = TRUE)) {
-      stop("Cannot find file LightGBM/CMakeLists.txt")
-    }
-  }
   
   # Prepare building package
   build_dir <- file.path(source_dir, "build", fsep = "/")

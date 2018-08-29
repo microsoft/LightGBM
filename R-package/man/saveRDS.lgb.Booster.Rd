@@ -26,7 +26,7 @@ saveRDS.lgb.Booster(object, file = "", ascii = FALSE, version = NULL,
 NULL invisibly.
 }
 \description{
-Attemps to save a model using RDS. Has an additional parameter (\code{raw}) which decides whether to save the raw model or not.
+Attempts to save a model using RDS. Has an additional parameter (\code{raw}) which decides whether to save the raw model or not.
 }
 \examples{
 \dontrun{

@@ -1,6 +1,8 @@
 
 #' @importFrom methods is
-Dataset <- R6Class(
+#' @importFrom R6 R6Class
+Dataset <- R6::R6Class(
+
   classname = "lgb.Dataset",
   cloneable = FALSE,
   public = list(
@@ -854,8 +856,8 @@ dimnames.lgb.Dataset <- function(x) {
 #' Slice a dataset
 #'
 #' Get a new \code{lgb.Dataset} containing the specified rows of
-#' orginal lgb.Dataset object
-#'
+#' original lgb.Dataset object
+#' 
 #' @param dataset Object of class "lgb.Dataset"
 #' @param idxset a integer vector of indices of rows needed
 #' @param ... other parameters (currently not used)

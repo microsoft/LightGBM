@@ -1,39 +1,28 @@
 #' @title Main training logic for LightGBM
 #' @name lgb.train
-#' @param params List of parameters
-#' @param data a \code{lgb.Dataset} object, used for training
-#' @param nrounds number of training rounds
+#' @description Logic to train with LightGBM
+#' @inheritParams lgb_shared_params
 #' @param valids a list of \code{lgb.Dataset} objects, used for validation
 #' @param obj objective function, can be character or custom objective function. Examples include 
 #'        \code{regression}, \code{regression_l1}, \code{huber},
 #'        \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
-#' @param boosting boosting type. \code{gbdt}, \code{dart}
-#' @param num_leaves number of leaves in one tree. defaults to 127
-#' @param max_depth Limit the max depth for tree model. This is used to deal with overfit when #data is small. 
-#'        Tree still grow by leaf-wise.
-#' @param num_threads Number of threads for LightGBM. For the best speed, set this to the number of real CPU cores, not the number of threads (most CPU using hyper-threading to generate 2 threads per CPU core).
 #' @param eval evaluation function, can be (a list of) character or custom eval function
-#' @param verbose verbosity for output, if <= 0, also will disable the print of evalutaion during training
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals} 
-#' @param eval_freq evalutaion output frequency, only effect when verbose > 0
-#' @param init_model path of model file of \code{lgb.Booster} object, will continue training from this model
 #' @param colnames feature names, if not null, will use this to overwrite the names in dataset
 #' @param categorical_feature list of str or int
 #'        type int represents index,
 #'        type str represents feature names
-#' @param early_stopping_rounds int
-#'        Activates early stopping.
-#'        The model will train until the validation score stops improving.
-#'        Validation score needs to improve at least every early_stopping_rounds round(s) to continue training.
-#'        Requires at least one validation data and one metric.
-#'        If there's more than one, will check all of them. But the training data is ignored anyway.
-#'        Returns the model with (best_iter + early_stopping_rounds).
-#'        If early stopping occurs, the model will have 'best_iter' field
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model into a predictor model which frees up memory and the original datasets
-#' @param callbacks list of callback functions
-#'        List of callback functions that are applied at each iteration.
-#' @param ... other parameters, see Parameters.rst for more information
-#' 
+#' @param ... other parameters, see Parameters.rst for more information. A few key parameters:
+#'            \itemize{
+#'                \item{boosting}{Boosting type. \code{"gbdt"} or \code{"dart"}}
+#'                \item{num_leaves}{number of leaves in one tree. defaults to 127}
+#'                \item{max_depth}{Limit the max depth for tree model. This is used to deal with 
+#'                                 overfit when #data is small. Tree still grow by leaf-wise.}
+#'                \item{num_threads}{Number of threads for LightGBM. For the best speed, set this to
+#'                                   the number of real CPU cores, not the number of threads (most 
+#'                                   CPU using hyper-threading to generate 2 threads per CPU core).}
+#'            }
 #' @return a trained booster model \code{lgb.Booster}.
 #' 
 #' @examples
@@ -55,8 +44,6 @@
 #'                    learning_rate = 1,
 #'                    early_stopping_rounds = 10)
 #' }
-#' 
-#' @rdname lgb.train
 #' 
 #' @export
 lgb.train <- function(params = list(),
