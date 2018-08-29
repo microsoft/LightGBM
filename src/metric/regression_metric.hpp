@@ -286,6 +286,10 @@ public:
 
   inline static double LossOnPoint(label_t label, double score, const Config& config) {
     const double rho = config.tweedie_variance_power;
+    const double eps = 1e-10f;
+    if (score < eps) {
+      score = eps;
+    }
     const double a = label * std::exp((1 - rho) * std::log(score)) / (1 - rho);
     const double b = std::exp((2 - rho) * std::log(score)) / (2 - rho);
     return -a + b;
