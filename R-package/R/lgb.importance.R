@@ -30,7 +30,7 @@
 #' tree_imp1 <- lgb.importance(model, percentage = TRUE)
 #' tree_imp2 <- lgb.importance(model, percentage = FALSE)
 #' 
-#' @importFrom magrittr %>% %T>%
+#' @importFrom magrittr %>% %T>% extract
 #' @importFrom data.table :=
 #' @export
 lgb.importance <- function(model, percentage = TRUE) {
