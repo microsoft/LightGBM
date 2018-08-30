@@ -702,7 +702,7 @@ class Dataset(object):
                               'Please use {0} argument of the Dataset constructor to pass this parameter.'.format(key))
         self.predictor = predictor
         if silent:
-            params["verbose"] = 0
+            params["verbose"] = -1
         # get categorical features
         if categorical_feature is not None:
             categorical_indices = set()
@@ -1432,7 +1432,7 @@ class Booster(object):
         self.best_score = {}
         params = {} if params is None else params
         if silent:
-            params["verbose"] = 0
+            params["verbose"] = -1
         if train_set is not None:
             # Training task
             if not isinstance(train_set, Dataset):
