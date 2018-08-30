@@ -2117,7 +2117,7 @@ class Booster(object):
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow = leaf_preds.shape[0]
         ncol = leaf_preds.shape[1]
-        train_set = Dataset(data, label)
+        train_set = Dataset(data, label, silent=True)
         new_booster = Booster(self.params, train_set, silent=True)
         # Copy models
         _safe_call(_LIB.LGBM_BoosterMerge(
