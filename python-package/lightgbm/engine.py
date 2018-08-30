@@ -118,9 +118,9 @@ def train(params, train_set, num_boost_round=100,
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
     if isinstance(init_model, string_type):
-        predictor = _InnerPredictor(model_file=init_model)
+        predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
     elif isinstance(init_model, Booster):
-        predictor = init_model._to_predictor()
+        predictor = init_model._to_predictor(dict(init_model.params, **params))
     else:
         predictor = None
     init_iteration = predictor.num_total_iteration if predictor is not None else 0
@@ -415,9 +415,9 @@ def cv(params, train_set, num_boost_round=100,
     if num_boost_round <= 0:
         raise ValueError("num_boost_round should be greater than zero.")
     if isinstance(init_model, string_type):
-        predictor = _InnerPredictor(model_file=init_model)
+        predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
     elif isinstance(init_model, Booster):
-        predictor = init_model._to_predictor()
+        predictor = init_model._to_predictor(dict(init_model.params, **params))
     else:
         predictor = None
     train_set._update_params(params)._set_predictor(predictor).set_feature_name(feature_name).set_categorical_feature(categorical_feature)
