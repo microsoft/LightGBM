@@ -373,6 +373,7 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
 # Creates CV folds stratified by the values of y.
 # It was borrowed from caret::lgb.stratified.folds and simplified
 # by always returning an unnamed list of fold indices.
+#' @importFrom stats quantile
 lgb.stratified.folds <- function(y, k = 10) {
   
   ## Group the numeric data based on their magnitudes

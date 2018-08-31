@@ -38,6 +38,7 @@
 #' 
 #' tree_interpretation <- lgb.interprete(model, test$data, 1:5)
 #' 
+#' @importFrom data.table as.data.table
 #' @importFrom magrittr %>% %T>%
 #' @export
 lgb.interprete <- function(model,
@@ -76,6 +77,7 @@ lgb.interprete <- function(model,
   
 }
 
+#' @importFrom data.table data.table
 single.tree.interprete <- function(tree_dt,
                                    tree_id,
                                    leaf_id) {
@@ -119,6 +121,8 @@ single.tree.interprete <- function(tree_dt,
   
 }
 
+#' @importFrom data.table rbindlist
+#' @importFrom magrittr %>% extract
 multiple.tree.interprete <- function(tree_dt,
                                      tree_index,
                                      leaf_index) {
@@ -134,6 +138,7 @@ multiple.tree.interprete <- function(tree_dt,
   
 }
 
+#' @importFrom data.table set setnames
 single.row.interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index_mat) {
   
   # Prepare vector list
