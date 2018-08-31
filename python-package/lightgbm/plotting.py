@@ -348,14 +348,14 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=None,
                        'old_node_attr', 'old_edge_attr', 'old_body']:
         param = locals().get(param_name)
         if param is not None:
-            warnings.warn('{0} parameter is deprecated and will be removed in 2.2 version.\n'
-                          'Please use **kwargs to pass this parameter.'.format(param_name),
+            warnings.warn('{0} parameter is deprecated and will be removed in 2.3 version.\n'
+                          'Please use **kwargs to pass {1} parameter.'.format(param_name, param_name[4:]),
                           LGBMDeprecationWarning)
             if param_name[4:] not in kwargs:
                 kwargs[param_name[4:]] = param
     if locals().get('strict'):
-        warnings.warn('old_strict parameter is deprecated and will be removed in 2.2 version.\n'
-                      'Please use **kwargs to pass this parameter.',
+        warnings.warn('old_strict parameter is deprecated and will be removed in 2.3 version.\n'
+                      'Please use **kwargs to pass strict parameter.',
                       LGBMDeprecationWarning)
         if 'strict' not in kwargs:
             kwargs['strict'] = True
@@ -424,8 +424,8 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
     for param_name in ['old_graph_attr', 'old_node_attr', 'old_edge_attr']:
         param = locals().get(param_name)
         if param is not None:
-            warnings.warn('{0} parameter is deprecated and will be removed in 2.2 version.\n'
-                          'Please use **kwargs to pass this parameter.'.format(param_name),
+            warnings.warn('{0} parameter is deprecated and will be removed in 2.3 version.\n'
+                          'Please use **kwargs to pass {1} parameter.'.format(param_name, param_name[4:]),
                           LGBMDeprecationWarning)
             if param_name[4:] not in kwargs:
                 kwargs[param_name[4:]] = param
