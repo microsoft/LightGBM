@@ -701,7 +701,8 @@ class Dataset(object):
                 warnings.warn('{0} keyword has been found in `params` and will be ignored. '
                               'Please use {0} argument of the Dataset constructor to pass this parameter.'.format(key))
         self.predictor = predictor
-        if silent:
+        # user can set verbose with params, it has higher priority
+        if not any(verbose_alias in params for verbose_alias in ('verbose', 'verbosity')) and silent:
             params["verbose"] = -1
         # get categorical features
         if categorical_feature is not None:
@@ -1431,7 +1432,8 @@ class Booster(object):
         self.best_iteration = -1
         self.best_score = {}
         params = {} if params is None else params
-        if silent:
+        # user can set verbose with params, it has higher priority
+        if not any(verbose_alias in params for verbose_alias in ('verbose', 'verbosity')) and silent:
             params["verbose"] = -1
         if train_set is not None:
             # Training task
