@@ -23,6 +23,7 @@ member of the core team according the relevant area of expertise by mentioning t
 -  `@guolinke <https://github.com/guolinke>`__ (C++ code / R-package / Python-package)
 -  `@chivee <https://github.com/chivee>`__ (C++ code / Python-package)
 -  `@Laurae2 <https://github.com/Laurae2>`__ (R-package)
+-  `@jameslamb <https://github.com/jameslamb>`__ (R-package)
 -  `@wxchan <https://github.com/wxchan>`__ (Python-package)
 -  `@henry0312 <https://github.com/henry0312>`__ (Python-package)
 -  `@StrikerRUS <https://github.com/StrikerRUS>`__ (Python-package)
