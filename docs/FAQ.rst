@@ -1,8 +1,7 @@
 LightGBM FAQ
 ============
 
-Contents
-~~~~~~~~
+**Contents**
 
 -  `Critical <#critical>`__
 
@@ -35,9 +34,9 @@ Please include as much of the following information as possible when submitting 
 
 -  Is it specific to a wrapper? (R or Python?)
 
--  Is it specific to the compiler? (gcc versions? MinGW versions?)
+-  Is it specific to the compiler? (gcc or Clang version? MinGW or Visual Studio version?)
 
--  Is it specific to your Operating System? (Windows? Linux?)
+-  Is it specific to your Operating System? (Windows? Linux? macOS?)
 
 -  Are you able to reproduce this issue with a simple case?
 
