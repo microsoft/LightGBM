@@ -25,7 +25,6 @@ vector of evaluation result
 Get record evaluation result from booster
 }
 \examples{
-\dontrun{
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
@@ -43,6 +42,5 @@ model <- lgb.train(params,
                    learning_rate = 1,
                    early_stopping_rounds = 10)
 lgb.get.eval.result(model, "test", "l2")
-}
 
 }

@@ -633,7 +633,6 @@ Booster <- R6::R6Class(
 #' number of columns corresponding to the number of trees.
 #' 
 #' @examples
-#' \dontrun{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -651,7 +650,6 @@ Booster <- R6::R6Class(
 #'                    learning_rate = 1,
 #'                    early_stopping_rounds = 10)
 #' preds <- predict(model, test$data)
-#' }
 #' 
 #' @rdname predict.lgb.Booster
 #' @export
@@ -692,7 +690,6 @@ predict.lgb.Booster <- function(object,
 #' @return lgb.Booster
 #' 
 #' @examples
-#' \dontrun{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -713,7 +710,6 @@ predict.lgb.Booster <- function(object,
 #' load_booster <- lgb.load(filename = "model.txt")
 #' model_string <- model$save_model_to_string(NULL) # saves best iteration
 #' load_booster_from_str <- lgb.load(model_str = model_string)
-#' }
 #' 
 #' @rdname lgb.load
 #' @export
@@ -752,7 +748,6 @@ lgb.load <- function(filename = NULL, model_str = NULL){
 #' @return lgb.Booster
 #' 
 #' @examples
-#' \dontrun{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -770,7 +765,6 @@ lgb.load <- function(filename = NULL, model_str = NULL){
 #'                    learning_rate = 1,
 #'                    early_stopping_rounds = 10)
 #' lgb.save(model, "model.txt")
-#' }
 #' 
 #' @rdname lgb.save
 #' @export
@@ -801,7 +795,6 @@ lgb.save <- function(booster, filename, num_iteration = NULL){
 #' @return json format of model
 #' 
 #' @examples
-#' \dontrun{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -819,7 +812,6 @@ lgb.save <- function(booster, filename, num_iteration = NULL){
 #'                    learning_rate = 1,
 #'                    early_stopping_rounds = 10)
 #' json_model <- lgb.dump(model)
-#' }
 #' 
 #' @rdname lgb.dump
 #' @export
@@ -847,7 +839,6 @@ lgb.dump <- function(booster, num_iteration = NULL){
 #' @return vector of evaluation result
 #' 
 #' @examples
-#' \dontrun{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -865,7 +856,6 @@ lgb.dump <- function(booster, num_iteration = NULL){
 #'                    learning_rate = 1,
 #'                    early_stopping_rounds = 10)
 #' lgb.get.eval.result(model, "test", "l2")
-#' }
 #' 
 #' @rdname lgb.get.eval.result
 #' @export

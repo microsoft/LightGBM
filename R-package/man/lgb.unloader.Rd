@@ -20,7 +20,6 @@ NULL invisibly.
 Attempts to unload LightGBM packages so you can remove objects cleanly without having to restart R. This is useful for instance if an object becomes stuck for no apparent reason and you do not want to restart R to fix the lost object.
 }
 \examples{
-\dontrun{
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
@@ -43,6 +42,5 @@ gc() # Not needed if wipe = TRUE
 
 library(lightgbm)
 # Do whatever you want again with LightGBM without object clashing
-}
 
 }

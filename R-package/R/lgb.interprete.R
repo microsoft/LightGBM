@@ -17,8 +17,6 @@
 #' For multiclass classification, a \code{list} of \code{data.table} with the Feature column and Contribution columns to each class.
 #' 
 #' @examples
-#' \dontrun{
-#' library(lightgbm)
 #' Sigmoid <- function(x) 1 / (1 + exp(-x))
 #' Logit <- function(x) log(x / (1 - x))
 #' data(agaricus.train, package = "lightgbm")
@@ -27,15 +25,18 @@
 #' setinfo(dtrain, "init_score", rep(Logit(mean(train$label)), length(train$label)))
 #' data(agaricus.test, package = "lightgbm")
 #' test <- agaricus.test
-#'
-#' params = list(objective = "binary",
-#'               learning_rate = 0.01, num_leaves = 63, max_depth = -1,
-#'               min_data_in_leaf = 1, min_sum_hessian_in_leaf = 1)
-#'               model <- lgb.train(params, dtrain, 20)
+#' 
+#' params <- list(
+#'     objective = "binary"
+#'     , learning_rate = 0.01
+#'     , num_leaves = 63
+#'     , max_depth = -1
+#'     , min_data_in_leaf = 1
+#'     , min_sum_hessian_in_leaf = 1
+#' )
 #' model <- lgb.train(params, dtrain, 20)
-#'
+#' 
 #' tree_interpretation <- lgb.interprete(model, test$data, 1:5)
-#' }
 #' 
 #' @importFrom magrittr %>% %T>%
 #' @export
