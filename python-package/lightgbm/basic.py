@@ -2097,7 +2097,7 @@ class Booster(object):
             num_iteration = self.best_iteration
         return predictor.predict(data, num_iteration, raw_score, pred_leaf, pred_contrib, data_has_header, is_reshape)
 
-    def refit(self, data, label, decay_rate=0.9):
+    def refit(self, data, label, decay_rate=0.9, **kwargs):
         """Refit the existing Booster by new data.
 
         Parameters
@@ -2109,6 +2109,8 @@ class Booster(object):
             Label for refit.
         decay_rate : float, optional (default=0.9)
             Decay rate of refit, will use ``leaf_output = decay_rate * old_leaf_output + (1.0 - decay_rate) * new_leaf_output`` to refit trees.
+        **kwargs : other parameters for refit
+            These parameters will be passed to ``predict`` method.
 
         Returns
         -------
@@ -2116,9 +2118,8 @@ class Booster(object):
             Refitted Booster.
         """
         predictor = self._to_predictor()
-        leaf_preds = predictor.predict(data, -1, pred_leaf=True)
-        nrow = leaf_preds.shape[0]
-        ncol = leaf_preds.shape[1]
+        leaf_preds = predictor.predict(data, -1, pred_leaf=True, **kwargs)
+        nrow, ncol = leaf_preds.shape
         train_set = Dataset(data, label, silent=True)
         new_booster = Booster(self.params, train_set, silent=True)
         # Copy models

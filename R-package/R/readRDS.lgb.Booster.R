@@ -8,7 +8,6 @@
 #' @return lgb.Booster.
 #' 
 #' @examples
-#' \dontrun{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -27,7 +26,6 @@
 #'                    early_stopping_rounds = 10)
 #' saveRDS.lgb.Booster(model, "model.rds")
 #' new_model <- readRDS.lgb.Booster("model.rds")
-#' }
 #' 
 #' @export
 readRDS.lgb.Booster <- function(file = "", refhook = NULL) {

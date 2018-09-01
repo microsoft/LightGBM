@@ -16,7 +16,6 @@ The cleaned dataset. It must be converted to a matrix format (\code{as.matrix}) 
 Attempts to prepare a clean dataset to prepare to put in a lgb.Dataset. Factors and characters are converted to numeric (specifically: integer). Please use \code{lgb.prepare_rules2} if you want to apply this transformation to other datasets. This is useful if you have a specific need for integer dataset instead of numeric dataset. Note that there are programs which do not support integer-only input. Consider this as a half memory technique which is dangerous, especially for LightGBM.
 }
 \examples{
-\dontrun{
 library(lightgbm)
 data(iris)
 
@@ -28,7 +27,8 @@ str(iris)
 # $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
 # $ Species     : Factor w/ 3 levels "setosa","versicolor",..: 1 1 1 1 ...
 
-str(lgb.prepare2(data = iris)) # Convert all factors/chars to integer
+# Convert all factors/chars to integer
+str(lgb.prepare2(data = iris))
 # 'data.frame':	150 obs. of  5 variables:
 # $ Sepal.Length: num  5.1 4.9 4.7 4.6 5 5.4 4.6 5 4.4 4.9 ...
 # $ Sepal.Width : num  3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
@@ -46,7 +46,5 @@ str(lightgbm::lgb.prepare2(data = iris))
 # $ Petal.Length: num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
 # $ Petal.Width : num  0.2 0.2 0.2 0.2 0.2 0.4 0.3 0.2 0.2 0.1 ...
 # $ Species     : int  1 1 1 1 1 1 1 1 1 1 ...
-
-}
 
 }

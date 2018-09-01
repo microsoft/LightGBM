@@ -29,7 +29,6 @@ The graph represents each feature as a horizontal bar of length proportional to 
 Features are shown ranked in a decreasing contribution order.
 }
 \examples{
-\dontrun{
 library(lightgbm)
 Sigmoid <- function(x) {1 / (1 + exp(-x))}
 Logit <- function(x) {log(x / (1 - x))}
@@ -40,7 +39,7 @@ setinfo(dtrain, "init_score", rep(Logit(mean(train$label)), length(train$label))
 data(agaricus.test, package = "lightgbm")
 test <- agaricus.test
 
-params = list(objective = "binary",
+params <- list(objective = "binary",
               learning_rate = 0.01, num_leaves = 63, max_depth = -1,
               min_data_in_leaf = 1, min_sum_hessian_in_leaf = 1)
               model <- lgb.train(params, dtrain, 20)
@@ -48,5 +47,4 @@ model <- lgb.train(params, dtrain, 20)
 
 tree_interpretation <- lgb.interprete(model, test$data, 1:5)
 lgb.plot.interpretation(tree_interpretation[[1]], top_n = 10)
-}
 }

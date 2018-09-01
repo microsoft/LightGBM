@@ -55,7 +55,6 @@ CVBooster <- R6::R6Class(
 #' @return a trained model \code{lgb.CVBooster}.
 #' 
 #' @examples
-#' \dontrun{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -68,7 +67,6 @@ CVBooster <- R6::R6Class(
 #'                 min_data = 1,
 #'                 learning_rate = 1,
 #'                 early_stopping_rounds = 10)
-#' }
 #' @export
 lgb.cv <- function(params = list(),
                    data,
@@ -375,6 +373,7 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
 # Creates CV folds stratified by the values of y.
 # It was borrowed from caret::lgb.stratified.folds and simplified
 # by always returning an unnamed list of fold indices.
+#' @importFrom stats quantile
 lgb.stratified.folds <- function(y, k = 10) {
   
   ## Group the numeric data based on their magnitudes

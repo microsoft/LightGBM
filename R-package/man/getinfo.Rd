@@ -33,7 +33,6 @@ The \code{name} field can be one of the following:
 }
 }
 \examples{
-\dontrun{
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
@@ -45,6 +44,5 @@ lightgbm::setinfo(dtrain, "label", 1 - labels)
 
 labels2 <- lightgbm::getinfo(dtrain, "label")
 stopifnot(all(labels2 == 1 - labels))
-}
 
 }

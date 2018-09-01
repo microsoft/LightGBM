@@ -17,20 +17,23 @@
 #' and silently returns a processed data.table with \code{top_n} features sorted by defined importance.
 #' 
 #' @examples
-#' \dontrun{
-#' data(agaricus.train, package = "lightgbm")
-#' train <- agaricus.train
-#' dtrain <- lgb.Dataset(train$data, label = train$label)
-#'
-#' params = list(objective = "binary",
-#'               learning_rate = 0.01, num_leaves = 63, max_depth = -1,
-#'               min_data_in_leaf = 1, min_sum_hessian_in_leaf = 1)
-#'               model <- lgb.train(params, dtrain, 20)
-#' model <- lgb.train(params, dtrain, 20)
-#'
-#' tree_imp <- lgb.importance(model, percentage = TRUE)
-#' lgb.plot.importance(tree_imp, top_n = 10, measure = "Gain")
-#' }
+# data(agaricus.train, package = "lightgbm")
+# train <- agaricus.train
+# dtrain <- lgb.Dataset(train$data, label = train$label)
+# 
+# params <- list(
+#     objective = "binary"
+#     , learning_rate = 0.01
+#     , num_leaves = 63
+#     , max_depth = -1
+#     , min_data_in_leaf = 1
+#     , min_sum_hessian_in_leaf = 1
+# )
+# 
+# model <- lgb.train(params, dtrain, 20)
+# 
+# tree_imp <- lgb.importance(model, percentage = TRUE)
+# lgb.plot.importance(tree_imp, top_n = 10, measure = "Gain")
 #' @importFrom graphics barplot par
 #' @export
 lgb.plot.importance <- function(tree_imp,

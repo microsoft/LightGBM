@@ -29,19 +29,3 @@ Plot previously calculated feature importance: Gain, Cover and Frequency, as a b
 The graph represents each feature as a horizontal bar of length proportional to the defined importance of a feature.
 Features are shown ranked in a decreasing importance order.
 }
-\examples{
-\dontrun{
-data(agaricus.train, package = "lightgbm")
-train <- agaricus.train
-dtrain <- lgb.Dataset(train$data, label = train$label)
-
-params = list(objective = "binary",
-              learning_rate = 0.01, num_leaves = 63, max_depth = -1,
-              min_data_in_leaf = 1, min_sum_hessian_in_leaf = 1)
-              model <- lgb.train(params, dtrain, 20)
-model <- lgb.train(params, dtrain, 20)
-
-tree_imp <- lgb.importance(model, percentage = TRUE)
-lgb.plot.importance(tree_imp, top_n = 10, measure = "Gain")
-}
-}

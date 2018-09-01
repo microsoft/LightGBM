@@ -16,13 +16,12 @@
 #' }
 #' 
 #' @examples
-#' \dontrun{
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
 #'
-#' params = list(objective = "binary",
+#' params <- list(objective = "binary",
 #'               learning_rate = 0.01, num_leaves = 63, max_depth = -1,
 #'               min_data_in_leaf = 1, min_sum_hessian_in_leaf = 1)
 #'               model <- lgb.train(params, dtrain, 20)
@@ -30,9 +29,8 @@
 #'
 #' tree_imp1 <- lgb.importance(model, percentage = TRUE)
 #' tree_imp2 <- lgb.importance(model, percentage = FALSE)
-#' }
 #' 
-#' @importFrom magrittr %>% %T>%
+#' @importFrom magrittr %>% %T>% extract
 #' @importFrom data.table :=
 #' @export
 lgb.importance <- function(model, percentage = TRUE) {

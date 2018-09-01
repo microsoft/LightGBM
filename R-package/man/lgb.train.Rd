@@ -69,7 +69,6 @@ a trained booster model \code{lgb.Booster}.
 Logic to train with LightGBM
 }
 \examples{
-\dontrun{
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
@@ -86,6 +85,5 @@ model <- lgb.train(params,
                    min_data = 1,
                    learning_rate = 1,
                    early_stopping_rounds = 10)
-}
 
 }

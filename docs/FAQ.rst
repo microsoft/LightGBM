@@ -1,8 +1,7 @@
 LightGBM FAQ
 ============
 
-Contents
-~~~~~~~~
+**Contents**
 
 -  `Critical <#critical>`__
 
@@ -24,6 +23,7 @@ member of the core team according the relevant area of expertise by mentioning t
 -  `@guolinke <https://github.com/guolinke>`__ (C++ code / R-package / Python-package)
 -  `@chivee <https://github.com/chivee>`__ (C++ code / Python-package)
 -  `@Laurae2 <https://github.com/Laurae2>`__ (R-package)
+-  `@jameslamb <https://github.com/jameslamb>`__ (R-package)
 -  `@wxchan <https://github.com/wxchan>`__ (Python-package)
 -  `@henry0312 <https://github.com/henry0312>`__ (Python-package)
 -  `@StrikerRUS <https://github.com/StrikerRUS>`__ (Python-package)
@@ -35,9 +35,9 @@ Please include as much of the following information as possible when submitting 
 
 -  Is it specific to a wrapper? (R or Python?)
 
--  Is it specific to the compiler? (gcc versions? MinGW versions?)
+-  Is it specific to the compiler? (gcc or Clang version? MinGW or Visual Studio version?)
 
--  Is it specific to your Operating System? (Windows? Linux?)
+-  Is it specific to your Operating System? (Windows? Linux? macOS?)
 
 -  Are you able to reproduce this issue with a simple case?
 
