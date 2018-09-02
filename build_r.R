@@ -1,5 +1,5 @@
-
-# for macOS (replace 7 with version of gcc installed on your machine)
+# for macOS users who have decided to use gcc
+# (replace 8 with version of gcc installed on your machine)
 # NOTE: your gcc / g++ from Homebrew is probably in /usr/local/bin
 #export CXX=/usr/local/bin/g++-8 CC=/usr/local/bin/gcc-8
 # Sys.setenv("CXX" = "/usr/local/bin/g++-8")
