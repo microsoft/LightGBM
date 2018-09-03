@@ -97,7 +97,7 @@ Predictor <- R6::R6Class(
           lgb.c_str(tmp_filename))
 
         # Get predictions from file
-        preds <- read.delim(tmp_filename, header = FALSE, seq = "\t")
+        preds <- read.delim(tmp_filename, header = FALSE, sep = "\t")
         num_row <- nrow(preds)
         preds <- as.vector(t(preds))
 
