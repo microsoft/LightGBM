@@ -96,8 +96,8 @@ public:
 
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
       std::unique_ptr<Tree> new_tree(new Tree(2));
+      size_t bias = static_cast<size_t>(cur_tree_id)* num_data_;
       if (class_need_train_[cur_tree_id]) {
-        size_t bias = static_cast<size_t>(cur_tree_id)* num_data_;
 
         auto grad = gradients + bias;
         auto hess = hessians + bias;
@@ -117,6 +117,8 @@ public:
       }
 
       if (new_tree->num_leaves() > 1) {
+        tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, train_score_updater_->score() + bias,
+          num_data_, bag_data_indices_.data(), bag_data_cnt_);
         // update score
         MultiplyScore(cur_tree_id, (iter_ + num_init_iteration_));
         ConvertTreeOutput(new_tree.get());
