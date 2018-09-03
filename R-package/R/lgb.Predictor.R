@@ -79,8 +79,8 @@ Predictor <- R6::R6Class(
       # Set temporary variable
       num_row <- 0L
 
-      # Check if data is a file name
-      if (is.character(data)) {
+      # Check if data is a file name and not a matrix
+      if (is.character(data) & !is.matrix(data)) {
 
         # Data is a filename, create a temporary file with a "lightgbm_" pattern in it
         tmp_filename <- tempfile(pattern = "lightgbm_")
