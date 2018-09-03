@@ -539,6 +539,7 @@ public:
   // desc = **Note**: only supports categorical with ``int`` type
   // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
   // desc = **Note**: all values should be less than ``Int32.MaxValue`` (2147483647)
+  // desc = **Note**: using large values could be memory consuming. Tree decision rule works best when categorical features are presented by consecutive integers started from zero
   // desc = **Note**: all negative values will be treated as **missing values**
   std::string categorical_feature = "";
 
