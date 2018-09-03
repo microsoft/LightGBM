@@ -320,6 +320,11 @@ namespace LightGBM {
       num_bin_ = 0;
       int rest_cnt = static_cast<int>(total_sample_cnt - na_cnt);
       if (rest_cnt > 0) {
+        const int SPARSE_RATIO = 100;
+        if (distinct_values_int.back() / SPARSE_RATIO > static_cast<int>(distinct_values_int.size())) {
+          Log::Warning("Met categorical feature which contains sparse values. "
+                       "Consider renumbering to consecutive integers started from zero");
+        }
         // sort by counts
         Common::SortForPair<int, int>(counts_int, distinct_values_int, 0, true);
         // avoid first bin is zero
