@@ -508,7 +508,7 @@ On Linux Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMake
 
 .. _CMake: https://cmake.org/
 
-.. _MSBuild: https://visualstudio.microsoft.com/downloads/
+.. _VS Build Tools: https://visualstudio.microsoft.com/downloads/
 
 .. _MinGW-w64: https://mingw-w64.org/doku.php/download
 
