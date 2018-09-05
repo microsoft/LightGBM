@@ -30,12 +30,12 @@ On Windows LightGBM can be built using
 
 - **Visual Studio**;
 
-- **CMake** and **MSBuild**;
+- **CMake** and **VS Build Tools**;
 
 - **CMake** and **MinGW**.
 
-Visual Studio (or MSBuild)
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+Visual Studio (or VS Build Tools)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 With GUI
 ********
@@ -55,7 +55,7 @@ The exe file will be in ``LightGBM-master/windows/x64/Release`` folder.
 From Command Line
 *****************
 
-1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (**MSBuild** is not needed if **Visual Studio** (2015 or newer) is already installed).
+1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is already installed).
 
 2. Run the following commands:
 
@@ -192,7 +192,7 @@ On Windows MPI version of LightGBM can be built using
 
 - **MS MPI** and **Visual Studio**;
 
-- **MS MPI**, **CMake** and **MSBuild**.
+- **MS MPI**, **CMake** and **VS Build Tools**.
 
 With GUI
 ********
@@ -216,7 +216,7 @@ From Command Line
 
 1. You need to install `MS MPI`_ first. Both ``msmpisdk.msi`` and ``MSMpiSetup.exe`` are needed.
 
-2. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (**MSBuild** is not needed if **Visual Studio** (2015 or newer) is already installed).
+2. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is already installed).
 
 3. Run the following commands:
 
@@ -357,13 +357,13 @@ To build LightGBM GPU version, run the following commands:
 Windows
 ^^^^^^^
 
-On Windows GPU version of LightGBM can be built using **OpenCL**, **Boost**, **CMake** and **MSBuild** or **MinGW**.
+On Windows GPU version of LightGBM can be built using **OpenCL**, **Boost**, **CMake** and **VS Build Tools** or **MinGW**.
 
 If you use **MinGW**, the build procedure is similar to the build on Linux. Refer to `GPU Windows Compilation <./GPU-Windows.rst>`__ to get more details.
 
 Following procedure is for the **MSVC** (Microsoft Visual C++) build.
 
-1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (**MSBuild** is not needed if **Visual Studio** (2015 or newer) is installed).
+1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is installed).
 
 2. Install **OpenCL** for Windows. The installation depends on the brand (NVIDIA, AMD, Intel) of your GPU card.
 
@@ -432,12 +432,12 @@ By the following instructions you can generate a JAR file containing the LightGB
 Windows
 ^^^^^^^
 
-On Windows Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMake** and **MSBuild** or **MinGW**.
+On Windows Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMake** and **VS Build Tools** or **MinGW**.
 
-MSBuild
-*******
+VS Build Tools
+**************
 
-1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `MSBuild`_ (**MSBuild** is not needed if **Visual Studio** (2015 or newer) is already installed).
+1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is already installed).
 
 2. Install `SWIG`_ and **Java** (also make sure that ``JAVA_HOME`` is set properly).
 
@@ -476,7 +476,7 @@ The jar file will be in ``LightGBM/build`` folder and the dll files will be in `
 
 **Note**: You may need to run the ``cmake -G "MinGW Makefiles" -DUSE_SWIG=ON ..`` one more time if you encounter the ``sh.exe was found in your PATH`` error.
 
-It is recommended to use **MSBuild (Visual Studio)** for its better multithreading efficiency in **Windows** for many-core systems (see `FAQ <./FAQ.rst#lightgbm>`__ Question 4 and Question 8).
+It is recommended to use **VS Build Tools (Visual Studio)** for its better multithreading efficiency in **Windows** for many-core systems (see `FAQ <./FAQ.rst#lightgbm>`__ Question 4 and Question 8).
 
 Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
@@ -508,7 +508,7 @@ On Linux Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMake
 
 .. _CMake: https://cmake.org/
 
-.. _MSBuild: https://visualstudio.microsoft.com/downloads/
+.. _VS Build Tools: https://visualstudio.microsoft.com/downloads/
 
 .. _MinGW-w64: https://mingw-w64.org/doku.php/download
 
