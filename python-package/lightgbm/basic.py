@@ -701,8 +701,9 @@ class Dataset(object):
                 warnings.warn('{0} keyword has been found in `params` and will be ignored. '
                               'Please use {0} argument of the Dataset constructor to pass this parameter.'.format(key))
         self.predictor = predictor
-        if silent:
-            params["verbose"] = 0
+        # user can set verbose with params, it has higher priority
+        if not any(verbose_alias in params for verbose_alias in ('verbose', 'verbosity')) and silent:
+            params["verbose"] = -1
         # get categorical features
         if categorical_feature is not None:
             categorical_indices = set()
@@ -1431,8 +1432,9 @@ class Booster(object):
         self.best_iteration = -1
         self.best_score = {}
         params = {} if params is None else params
-        if silent:
-            params["verbose"] = 0
+        # user can set verbose with params, it has higher priority
+        if not any(verbose_alias in params for verbose_alias in ('verbose', 'verbosity')) and silent:
+            params["verbose"] = -1
         if train_set is not None:
             # Training task
             if not isinstance(train_set, Dataset):
@@ -2118,7 +2120,7 @@ class Booster(object):
         predictor = self._to_predictor()
         leaf_preds = predictor.predict(data, -1, pred_leaf=True, **kwargs)
         nrow, ncol = leaf_preds.shape
-        train_set = Dataset(data, label)
+        train_set = Dataset(data, label, silent=True)
         new_booster = Booster(self.params, train_set, silent=True)
         # Copy models
         _safe_call(_LIB.LGBM_BoosterMerge(

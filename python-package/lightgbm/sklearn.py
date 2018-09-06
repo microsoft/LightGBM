@@ -402,7 +402,7 @@ class LGBMModel(_LGBMModelBase):
         params = self.get_params()
         # user can set verbose with kwargs, it has higher priority
         if not any(verbose_alias in params for verbose_alias in ('verbose', 'verbosity')) and self.silent:
-            params['verbose'] = 0
+            params['verbose'] = -1
         params.pop('silent', None)
         params.pop('importance_type', None)
         params.pop('n_estimators', None)

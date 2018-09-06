@@ -380,7 +380,7 @@ public:
 
   // alias = verbose
   // desc = controls the level of LightGBM's verbosity
-  // desc = ``< 0``: Fatal, ``= 0``: Error (Warn), ``> 0``: Info
+  // desc = ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
   int verbosity = 1;
 
   // check = >1

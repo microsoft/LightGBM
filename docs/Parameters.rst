@@ -377,7 +377,7 @@ IO Parameters
 
    -  controls the level of LightGBM's verbosity
 
-   -  ``< 0``: Fatal, ``= 0``: Error (Warn), ``> 0``: Info
+   -  ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
 
 -  ``max_bin`` :raw-html:`<a id="max_bin" title="Permalink to this parameter" href="#max_bin">&#x1F517;&#xFE0E;</a>`, default = ``255``, type = int, constraints: ``max_bin > 1``
 
