@@ -495,11 +495,11 @@ class TestEngine(unittest.TestCase):
         lgb_train = lgb.Dataset(X, y)
         gbm0 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False)
         pred0 = list(gbm0.predict(X_test))
-        lgb_train = lgb.Dataset(X, y)
+        lgb_train = lgb.Dataset(X, pd.DataFrame(y))  # also test that label can be one-column pd.DataFrame
         gbm1 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
                          categorical_feature=[0])
         pred1 = list(gbm1.predict(X_test))
-        lgb_train = lgb.Dataset(X, y)
+        lgb_train = lgb.Dataset(X, pd.Series(y))  # also test that label can be pd.Series
         gbm2 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
                          categorical_feature=['A'])
         pred2 = list(gbm2.predict(X_test))
