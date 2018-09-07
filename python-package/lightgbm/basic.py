@@ -945,6 +945,8 @@ class Dataset(object):
                         ctypes.c_int(used_indices.shape[0]),
                         c_str(params_str),
                         ctypes.byref(self.handle)))
+                    if self.group is not None:
+                        self.set_group(self.group)
                     if self.get_label() is None:
                         raise ValueError("Label should not be None.")
             else:
