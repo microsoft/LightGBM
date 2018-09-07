@@ -51,6 +51,11 @@ public:
     weights_ = metadata.weights();
     data_size_t cnt_positive = 0;
     data_size_t cnt_negative = 0;
+    // REMOVEME: remove the warning after 2.3 version release
+    Log::Warning("Starting from the 2.1.2 version, default value for "
+                 "the \"boost_from_average\" parameter in \"binary\" objective is true.\n"
+                 "This may cause significantly different results comparing to the previous versions of LightGBM.\n" 
+                 "Try to set boost_from_average=false, if your old models produce bad results");
     // count for positive and negative samples
     #pragma omp parallel for schedule(static) reduction(+:cnt_positive, cnt_negative)
     for (data_size_t i = 0; i < num_data_; ++i) {
