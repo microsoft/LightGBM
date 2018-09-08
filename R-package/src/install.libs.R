@@ -10,9 +10,9 @@ if (.Machine$sizeof.pointer != 8){
 R_int_UUID <- .Internal(internalsID())
 R_ver <- as.double(R.Version()$major) + as.double(R.Version()$minor)/10
 
-if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262" 
+if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     || R_int_UUID == "2fdf6c18-697a-4ba7-b8ef-11c0d92f1327")){
-  print("Warning: unmatched R_INTERNALS_UUID, may cannot run normally.")   
+  print("Warning: unmatched R_INTERNALS_UUID, may cannot run normally.")
 }
 
 # Move in CMakeLists.txt
@@ -26,17 +26,17 @@ if (!use_precompile) {
   # Check repository content
   source_dir <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
   setwd(source_dir)
-  
+
   # Prepare building package
   build_dir <- file.path(source_dir, "build", fsep = "/")
   dir.create(build_dir, recursive = TRUE, showWarnings = FALSE)
   setwd(build_dir)
-  
+
   # Prepare installation steps
   cmake_cmd <- "cmake "
   build_cmd <- "make _lightgbm"
   lib_folder <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
-  
+
   if (use_gpu) {
     cmake_cmd <- paste0(cmake_cmd, " -DUSE_GPU=ON ")
   }
@@ -76,12 +76,12 @@ if (!use_precompile) {
       }
     }
   }
-  
+
   # Install
   system(paste0(cmake_cmd, " .."))
   system(build_cmd)
   src <- file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/")
-  
+
 } else {
 
   # Has precompiled package
@@ -89,11 +89,11 @@ if (!use_precompile) {
   if (file.exists(file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/"))) {
     src <- file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/")
   } else if (file.exists(file.path(lib_folder, paste0("Release/lib_lightgbm", SHLIB_EXT), fsep = "/"))) {
-    src <- file.path(lib_folder, paste0("Release/lib_lightgbm", SHLIB_EXT), fsep = "/") 
+    src <- file.path(lib_folder, paste0("Release/lib_lightgbm", SHLIB_EXT), fsep = "/")
   } else {
     src <- file.path(lib_folder, paste0("/windows/x64/DLL/lib_lightgbm", SHLIB_EXT), fsep = "/") # Expected result: installation will fail if it is not here or any other
   }
-  
+
 }
 
 # Check installation correctness

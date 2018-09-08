@@ -36,35 +36,35 @@ preds_builtin <- predict(model_builtin, test[, 1:4], rawscore = TRUE)
 # User defined objective function, given prediction, return gradient and second order gradient
 custom_multiclass_obj = function(preds, dtrain) {
     labels = getinfo(dtrain, "label")
-    
+
     # preds is a matrix with rows corresponding to samples and colums corresponding to choices
     preds = matrix(preds, nrow = length(labels))
-    
+
     # to prevent overflow, normalize preds by row
     preds = preds - apply(preds, 1, max)
     prob = exp(preds) / rowSums(exp(preds))
-    
+
     # compute gradient
     grad = prob
     grad[cbind(1:length(labels), labels + 1)] = grad[cbind(1:length(labels), labels + 1)] - 1
-    
+
     # compute hessian (approximation)
     hess = 2 * prob * (1 - prob)
-    
+
     return(list(grad = grad, hess = hess))
 }
 
-# define custom metric 
+# define custom metric
 custom_multiclass_metric = function(preds, dtrain) {
     labels = getinfo(dtrain, "label")
     preds = matrix(preds, nrow = length(labels))
     preds = preds - apply(preds, 1, max)
     prob = exp(preds) / rowSums(exp(preds))
-    
+
     return(list(name = "error",
                 value = -mean(log(prob[cbind(1:length(labels), labels + 1)])),
                 higher_better = FALSE))
-    
+
 }
 
 model_custom <- lgb.train(list(),

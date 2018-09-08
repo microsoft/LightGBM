@@ -23,7 +23,7 @@ lgb.cv(params = list(), data, nrounds = 10, nfold = 3, label = NULL,
 
 \item{weight}{vector of response values. If not NULL, will set to dataset}
 
-\item{obj}{objective function, can be character or custom objective function. Examples include 
+\item{obj}{objective function, can be character or custom objective function. Examples include
 \code{regression}, \code{regression_l1}, \code{huber},
 \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}}
 
@@ -66,10 +66,10 @@ List of callback functions that are applied at each iteration.}
 \itemize{
     \item{boosting}{Boosting type. \code{"gbdt"} or \code{"dart"}}
     \item{num_leaves}{number of leaves in one tree. defaults to 127}
-    \item{max_depth}{Limit the max depth for tree model. This is used to deal with 
+    \item{max_depth}{Limit the max depth for tree model. This is used to deal with
                      overfit when #data is small. Tree still grow by leaf-wise.}
     \item{num_threads}{Number of threads for LightGBM. For the best speed, set this to
-                       the number of real CPU cores, not the number of threads (most 
+                       the number of real CPU cores, not the number of threads (most
                        CPU using hyper-threading to generate 2 threads per CPU core).}
 }}
 }
