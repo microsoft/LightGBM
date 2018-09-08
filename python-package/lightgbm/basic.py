@@ -2123,7 +2123,7 @@ class Booster(object):
         result : Booster
             Refitted Booster.
         """
-        predictor = self._to_predictor()
+        predictor = self._to_predictor(self.params)
         leaf_preds = predictor.predict(data, -1, pred_leaf=True, **kwargs)
         nrow, ncol = leaf_preds.shape
         train_set = Dataset(data, label, silent=True)
