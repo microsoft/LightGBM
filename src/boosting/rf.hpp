@@ -98,7 +98,7 @@ public:
       for (data_size_t i = 0; i < train_data->num_data(); ++i) {
         OMP_LOOP_EX_BEGIN();
         double label = label_ptr[i];
-        gradients_[i* num_tree_per_iteration_ + static_cast<int>(label)] = -1;
+        gradients_[i + static_cast<int>(label) * num_data_] = -1;
         OMP_LOOP_EX_END();
       }
       OMP_THROW_EX();
