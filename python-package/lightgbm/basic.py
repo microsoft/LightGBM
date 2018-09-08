@@ -78,7 +78,8 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     elif isinstance(data, Series):
         return data.values.astype(dtype)
     else:
-        raise TypeError("Wrong type({}) for {}, should be list or numpy array".format(type(data).__name__, name))
+        raise TypeError("Wrong type({0}) for {1}.\n"
+                        "It should be list, numpy 1-D array or pandas Series".format(type(data).__name__, name))
 
 
 def cfloat32_array_to_numpy(cptr, length):
@@ -288,7 +289,7 @@ def _label_from_pandas(label):
         label_dtypes = label.dtypes
         if not all(dtype.name in PANDAS_DTYPE_MAPPER for dtype in label_dtypes):
             raise ValueError('DataFrame.dtypes for label must be int, float or bool')
-        label = label.values.astype('float')
+        label = label.values.astype('float').flatten()
     return label
 
 
@@ -382,7 +383,7 @@ class _InnerPredictor(object):
 
         Parameters
         ----------
-        data : string/numpy array/scipy.sparse
+        data : string, numpy array, pandas DataFrame or scipy.sparse
             Data source for prediction
             When data type is string, it represents the path of txt file
         num_iteration : int
@@ -621,18 +622,18 @@ class Dataset(object):
 
         Parameters
         ----------
-        data : string, numpy array, scipy.sparse or list of numpy arrays
+        data : string, numpy array, pandas DataFrame, scipy.sparse or list of numpy arrays
             Data source of Dataset.
             If string, it represents the path to txt file.
-        label : list, numpy 1-D array or None, optional (default=None)
+        label : list, numpy 1-D array, pandas one-column DataFrame/Series or None, optional (default=None)
             Label of the data.
         reference : Dataset or None, optional (default=None)
             If this is Dataset for validation, training data should be used as reference.
-        weight : list, numpy 1-D array or None, optional (default=None)
+        weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Weight for each instance.
-        group : list, numpy 1-D array or None, optional (default=None)
+        group : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Group/query size for Dataset.
-        init_score : list, numpy 1-D array or None, optional (default=None)
+        init_score : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Init score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
@@ -965,16 +966,16 @@ class Dataset(object):
 
         Parameters
         ----------
-        data : string, numpy array or scipy.sparse
+        data : string, numpy array, pandas DataFrame, scipy.sparse or list of numpy arrays
             Data source of Dataset.
             If string, it represents the path to txt file.
-        label : list or numpy 1-D array, optional (default=None)
-            Label of the training data.
-        weight : list, numpy 1-D array or None, optional (default=None)
+        label : list, numpy 1-D array, pandas one-column DataFrame/Series or None, optional (default=None)
+            Label of the data.
+        weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Weight for each instance.
-        group : list, numpy 1-D array or None, optional (default=None)
+        group : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Group/query size for Dataset.
-        init_score : list, numpy 1-D array or None, optional (default=None)
+        init_score : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Init score for Dataset.
         silent : bool, optional (default=False)
             Whether to print messages during construction.
@@ -1055,7 +1056,7 @@ class Dataset(object):
         ----------
         field_name : string
             The field name of the information.
-        data : list, numpy array or None
+        data : list, numpy 1-D array, pandas Series or None
             The array of data to be set.
 
         Returns
@@ -1228,7 +1229,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        label : list, numpy array or None
+        label : list, numpy 1-D array, pandas one-column DataFrame/Series or None
             The label information to be set into Dataset.
 
         Returns
@@ -1238,7 +1239,7 @@ class Dataset(object):
         """
         self.label = label
         if self.handle is not None:
-            label = list_to_1d_numpy(label, name='label')
+            label = list_to_1d_numpy(_label_from_pandas(label), name='label')
             self.set_field('label', label)
         return self
 
@@ -1247,7 +1248,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        weight : list, numpy array or None
+        weight : list, numpy 1-D array, pandas Series or None
             Weight to be set for each data point.
 
         Returns
@@ -1268,7 +1269,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        init_score : list, numpy array or None
+        init_score : list, numpy 1-D array, pandas Series or None
             Init score for Booster.
 
         Returns
@@ -1287,7 +1288,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        group : list, numpy array or None
+        group : list, numpy 1-D array, pandas Series or None
             Group size of each group.
 
         Returns
@@ -2055,7 +2056,7 @@ class Booster(object):
 
         Parameters
         ----------
-        data : string, numpy array or scipy.sparse
+        data : string, numpy array, pandas DataFrame or scipy.sparse
             Data source for prediction.
             If string, it represents the path to txt file.
         num_iteration : int or None, optional (default=None)
@@ -2107,10 +2108,10 @@ class Booster(object):
 
         Parameters
         ----------
-        data : string, numpy array or scipy.sparse
+        data : string, numpy array, pandas DataFrame or scipy.sparse
             Data source for refit.
             If string, it represents the path to txt file.
-        label : list or numpy 1-D array
+        label : list, numpy 1-D array or pandas one-column DataFrame/Series
             Label for refit.
         decay_rate : float, optional (default=0.9)
             Decay rate of refit, will use ``leaf_output = decay_rate * old_leaf_output + (1.0 - decay_rate) * new_leaf_output`` to refit trees.
