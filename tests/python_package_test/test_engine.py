@@ -714,7 +714,7 @@ class TestEngine(unittest.TestCase):
         lgb_train = lgb.Dataset(X, y)
         evals_result = {}
         gbm = lgb.train(params, lgb_train,
-                        num_boost_round=20,
+                        num_boost_round=40,
                         verbose_eval=False,
                         evals_result=evals_result)
         pred = gbm.predict(X)
