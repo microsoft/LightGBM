@@ -678,3 +678,45 @@ class TestEngine(unittest.TestCase):
         new_gbm = gbm.refit(X_test, y_test)
         new_err_pred = log_loss(y_test, new_gbm.predict(X_test))
         self.assertGreater(err_pred, new_err_pred)
+    
+    def test_mape_rf(self):
+        X, y = load_boston(True)
+        params = {
+            'boosting_type': 'rf',
+            'objective': 'mape',
+            'verbose': -1,
+            'bagging_freq': 1,
+            'bagging_fraction': 0.8,
+            'feature_fraction': 0.8,
+            'boost_from_average': False
+        }
+        lgb_train = lgb.Dataset(X, y)
+        evals_result = {}
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=20,
+                        verbose_eval=False,
+                        evals_result=evals_result)
+        pred = gbm.predict(X)
+        pred_mean = pred.mean()
+        self.assertGreater(pred_mean, 20)
+
+    def test_mape_dart(self):
+        X, y = load_boston(True)
+        params = {
+            'boosting_type': 'dart',
+            'objective': 'mape',
+            'verbose': -1,
+            'bagging_freq': 1,
+            'bagging_fraction': 0.8,
+            'feature_fraction': 0.8,
+            'boost_from_average': False
+        }
+        lgb_train = lgb.Dataset(X, y)
+        evals_result = {}
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=20,
+                        verbose_eval=False,
+                        evals_result=evals_result)
+        pred = gbm.predict(X)
+        pred_mean = pred.mean()
+        self.assertGreater(pred_mean, 18)
