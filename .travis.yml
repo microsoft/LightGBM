@@ -56,17 +56,3 @@ script:
 
 notifications:
   email: false
-
-deploy:
-  provider: releases
-  api-key:
-    secure: "idU9Fb/yUz7VsVOEb0vGR8qqxcvXr4eh1tMzkKiMWLRx5XNeq7RCUzfKAPMIizFkML9zdMh/5vPtZ1Zs++3oWPpbZE2/o4CURoE+BvwDUyEDrKTdNSGoWgWZq0QLjfahj/PR8ObWlU+XCHqRQzKXlwbynwwUGRpOJrlEY0To5Kt9gTV5W8MxSlW7xFU2TTmMa499IZut38OuenJ3Nm9mTe6MCHFW4Y5uGp/gwNuBYfqzwUXDi6h/cJiJJD5drwtNnSneFZ2PZplrKxJxSJdSQ2aHttU+Wr8xogi9hLI/H6OA4UYCF69HrWOLSggplkZt6qUzaG7UfYyid4m6YbeKMUQRNBuGXhYVGr5qkyAzqXiOesGAef550346pWEZNGPLfNnKAwqPgkp8Q8tV9i0srjzyttqFAlLqhA76yST3kuX+QS0VGepSUTV+kkfxCaHZagxtX9Xve5RNybu4B44UmHWIGJnS6ijYpxWKwvWnMmBCIezFbZYyqsiXYC+9d5RfBgNFQ4PlRfmY0vnJlwUhx1AnyL9jsxnthwl9CNczo4mgBqnCSXxlhXNHz6ToMQuhgdhnqm5+qqJzI5/eUugxh8CW18qZTZBkrnL4DxEMm+bQ2QT8O07ZHrEDPKPXxQw7tBsphWvECetJ4DxXfNaf59GrY+eD6TFZuxurB5Vvo6s="
-  file_glob: true
-  file: python-package/dist/*.whl
-  skip_cleanup: true
-  draft: true
-  tag_name: $TRAVIS_TAG
-  on:
-    condition: "$TASK = bdist"
-    tags: true
-    all_branches: true
