@@ -161,8 +161,8 @@ phases:
         if ($LastExitCode -ne 0) { $host.SetShouldExit($LastExitCode) }
       }  # run all examples
   - task: PublishBuildArtifacts@1
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/tags/*'))
     inputs:
-      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/tags/*'))
       pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
       artifactName: PackageAssets
       artifactType: container
