@@ -672,13 +672,12 @@ class TestEngine(unittest.TestCase):
         }
         lgb_train = lgb.Dataset(X_train, y_train)
         gbm = lgb.train(params, lgb_train,
-                        num_boost_round=20,
-                        verbose_eval=False)
+                        num_boost_round=20)
         err_pred = log_loss(y_test, gbm.predict(X_test))
         new_gbm = gbm.refit(X_test, y_test)
         new_err_pred = log_loss(y_test, new_gbm.predict(X_test))
         self.assertGreater(err_pred, new_err_pred)
-    
+
     def test_mape_rf(self):
         X, y = load_boston(True)
         params = {
@@ -691,11 +690,8 @@ class TestEngine(unittest.TestCase):
             'boost_from_average': False
         }
         lgb_train = lgb.Dataset(X, y)
-        evals_result = {}
         gbm = lgb.train(params, lgb_train,
-                        num_boost_round=20,
-                        verbose_eval=False,
-                        evals_result=evals_result)
+                        num_boost_round=20)
         pred = gbm.predict(X)
         pred_mean = pred.mean()
         self.assertGreater(pred_mean, 20)
@@ -712,11 +708,8 @@ class TestEngine(unittest.TestCase):
             'boost_from_average': False
         }
         lgb_train = lgb.Dataset(X, y)
-        evals_result = {}
         gbm = lgb.train(params, lgb_train,
-                        num_boost_round=40,
-                        verbose_eval=False,
-                        evals_result=evals_result)
+                        num_boost_round=40)
         pred = gbm.predict(X)
         pred_mean = pred.mean()
         self.assertGreater(pred_mean, 18)
