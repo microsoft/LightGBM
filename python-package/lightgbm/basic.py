@@ -934,6 +934,9 @@ class Dataset(object):
                     # construct subset
                     used_indices = list_to_1d_numpy(self.used_indices, np.int32, name='used_indices')
                     assert used_indices.flags.c_contiguous
+                    if self.reference.group is not None:
+                        group_info = np.array(self.reference.group).astype(int)
+                        _, self.group = np.unique(np.repeat(range_(len(group_info)), repeats=group_info)[self.used_indices], return_counts=True)
                     self.handle = ctypes.c_void_p()
                     params_str = param_dict_to_str(self.params)
                     _safe_call(_LIB.LGBM_DatasetGetSubset(
@@ -942,6 +945,8 @@ class Dataset(object):
                         ctypes.c_int(used_indices.shape[0]),
                         c_str(params_str),
                         ctypes.byref(self.handle)))
+                    if self.group is not None:
+                        self.set_group(self.group)
                     if self.get_label() is None:
                         raise ValueError("Label should not be None.")
             else:
