@@ -64,13 +64,3 @@ artifacts:
 - path: python-package/dist/*
   name: Pip
 
-deploy:
-  release: $(APPVEYOR_REPO_TAG_NAME)
-  provider: GitHub
-  auth_token:
-    secure: KR44XwtxY0cLlVpQwY726BvC6gzT0cYTf0ahJ4cSvvS0UVoSJxkR900ICfVXHRoT
-  artifact: Library,Exe,Pip
-  force_update: true
-  draft: true
-  on:
-    appveyor_repo_tag: true
