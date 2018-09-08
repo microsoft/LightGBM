@@ -20,11 +20,11 @@ Training Data Format
 
 LightGBM supports input data files with `CSV`_, `TSV`_ and `LibSVM`_ formats.
 
-Files could be both with and without headers.
+Files could be both with and without `headers <./Parameters.rst#header>`__.
 
-Label column could be specified both by index and by name.
+`Label column <./Parameters.rst#label_column>`__ could be specified both by index and by name.
 
-Some columns could be ignored.
+Some columns could be `ignored <./Parameters.rst#ignore_column>`__.
 
 Categorical Feature Support
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -32,7 +32,7 @@ Categorical Feature Support
 LightGBM can use categorical features directly (without one-hot encoding).
 The experiment on `Expo data`_ shows about 8x speed-up compared with one-hot encoding.
 
-For the setting details, please refer to `Parameters <./Parameters.rst#categorical_feature>`__.
+For the setting details, please refer to the ``categorical_feature`` `parameter <./Parameters.rst#categorical_feature>`__.
 
 Weight and Query/Group Data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -40,7 +40,7 @@ Weight and Query/Group Data
 LightGBM also supports weighted training, it needs an additional `weight data <./Parameters.rst#weight-data>`__.
 And it needs an additional `query data <./Parameters.rst#query-data>`_ for ranking task.
 
-Also, weight and query data could be specified as columns in training data in the same manner as label.
+Also, `weight <./Parameters.rst#weight_column>`__ and `query <./Parameters.rst#group_column>`__ data could be specified as columns in training data in the same manner as label.
 
 Parameters Quick Look
 ---------------------
@@ -57,24 +57,16 @@ sections of the full detailed list of `LightGBM's parameters <./Parameters.rst>`
 Run LightGBM
 ------------
 
-For Windows:
-
 ::
 
-    lightgbm.exe config=your_config_file other_args ...
-
-For Unix:
-
-::
-
-    ./lightgbm config=your_config_file other_args ...
+    "./lightgbm" config=your_config_file other_args ...
 
 Parameters can be set both in config file and command line, and the parameters in command line have higher priority than in config file.
-For example, following command line will keep ``num_trees=10`` and ignore the same parameter in config file.
+For example, the following command line will keep ``num_trees=10`` and ignore the same parameter in config file.
 
 ::
 
-    ./lightgbm config=train.conf num_trees=10
+    "./lightgbm" config=train.conf num_trees=10
 
 Examples
 --------
