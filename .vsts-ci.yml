@@ -1,10 +1,10 @@
+variables:
+  PYTHON_VERSION: 3.6
+  CONDA_ENV: test-env
 phases:
 ###########################################
 - phase: Linux
 ###########################################
-  variables:
-    PYTHON_VERSION: 3.6
-    CONDA_ENV: test-env
   queue:
     name: 'Hosted Linux Preview'
     parallel: 9
@@ -34,7 +34,7 @@ phases:
   - task: CondaEnvironment@0
     inputs:
       environmentName: $(CONDA_ENV)
-      packageSpecs: 'python=$(PYTHON_VERSION)' # Optional
+      packageSpecs: 'python=$(PYTHON_VERSION)'
       createOptions: '-q'
   - script: | 
       sudo apt-get update
@@ -64,9 +64,6 @@ phases:
 ###########################################
 - phase: MacOS
 ###########################################
-  variables:
-    PYTHON_VERSION: 3.6
-    CONDA_ENV: test-env
   queue:
     name: 'Hosted macOS Preview'
     parallel: 3
@@ -101,9 +98,6 @@ phases:
 ###########################################
 - phase: Windows
 ###########################################
-  variables:
-    PYTHON_VERSION: 3.6
-    CONDA_ENV: test-env
   queue:
     name: 'Hosted VS2017'
     parallel: 4
@@ -122,7 +116,7 @@ phases:
   - task: CondaEnvironment@0
     inputs:
       environmentName: $(CONDA_ENV)
-      packageSpecs: 'python=$(PYTHON_VERSION)' # Optional
+      packageSpecs: 'python=$(PYTHON_VERSION)'
       createOptions: '-q'
   - powershell: |
       conda install -q -y -n $env:CONDA_ENV numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest
@@ -167,9 +161,9 @@ phases:
       artifactName: PackageAssets
       artifactType: container
 
-################################################################################
+###########################################
 - phase: Package
-################################################################################
+###########################################
   dependsOn:
   - Linux
   - MacOS
