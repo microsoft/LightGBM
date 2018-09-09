@@ -6,7 +6,7 @@ import unittest
 
 import lightgbm as lgb
 import numpy as np
-from sklearn.datasets import load_breast_cancer, dump_svmlight_file
+from sklearn.datasets import load_breast_cancer, dump_svmlight_file, load_svmlight_file
 from sklearn.model_selection import train_test_split
 
 
@@ -78,3 +78,14 @@ class TestBasic(unittest.TestCase):
 
         train_data.construct()
         valid_data.construct()
+
+    def test_subset_group(self):
+        X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.train'))
+        q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.train.query'))
+        lgb_train = lgb.Dataset(X_train, y_train, group=q_train)
+        self.assertEqual(len(lgb_train.get_group()), 201)
+        subset = lgb_train.subset(list(lgb.compat.range_(10))).construct()
+        subset_group = subset.get_group()
+        self.assertEqual(len(subset_group), 2)
+        self.assertEqual(subset_group[0], 1)
+        self.assertEqual(subset_group[1], 9)
