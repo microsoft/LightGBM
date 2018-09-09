@@ -7,7 +7,6 @@ import sys
 from platform import system
 
 import numpy as np
-import pytest
 from scipy import sparse
 
 
@@ -57,8 +56,7 @@ def c_str(string):
     return ctypes.c_char_p(string.encode('ascii'))
 
 
-@pytest.mark.skip
-def test_load_from_file(filename, reference):
+def load_from_file(filename, reference):
     ref = None
     if reference is not None:
         ref = reference
@@ -76,13 +74,11 @@ def test_load_from_file(filename, reference):
     return handle
 
 
-@pytest.mark.skip
-def test_save_to_binary(handle, filename):
+def save_to_binary(handle, filename):
     LIB.LGBM_DatasetSaveBinary(handle, c_str(filename))
 
 
-@pytest.mark.skip
-def test_load_from_csr(filename, reference):
+def load_from_csr(filename, reference):
     data = []
     label = []
     inp = open(filename, 'r')
@@ -119,8 +115,7 @@ def test_load_from_csr(filename, reference):
     return handle
 
 
-@pytest.mark.skip
-def test_load_from_csc(filename, reference):
+def load_from_csc(filename, reference):
     data = []
     label = []
     inp = open(filename, 'r')
@@ -157,8 +152,7 @@ def test_load_from_csc(filename, reference):
     return handle
 
 
-@pytest.mark.skip
-def test_load_from_mat(filename, reference):
+def load_from_mat(filename, reference):
     data = []
     label = []
     inp = open(filename, 'r')
@@ -192,28 +186,27 @@ def test_load_from_mat(filename, reference):
     return handle
 
 
-@pytest.mark.skip
-def test_free_dataset(handle):
+def free_dataset(handle):
     LIB.LGBM_DatasetFree(handle)
 
 
 def test_dataset():
-    train = test_load_from_file(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.train'), None)
-    test = test_load_from_mat(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.test'), train)
-    test_free_dataset(test)
-    test = test_load_from_csr(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.test'), train)
-    test_free_dataset(test)
-    test = test_load_from_csc(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.test'), train)
-    test_free_dataset(test)
-    test_save_to_binary(train, 'train.binary.bin')
-    test_free_dataset(train)
-    train = test_load_from_file('train.binary.bin', None)
-    test_free_dataset(train)
+    train = load_from_file(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.train'), None)
+    test = load_from_mat(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.test'), train)
+    free_dataset(test)
+    test = load_from_csr(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.test'), train)
+    free_dataset(test)
+    test = load_from_csc(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.test'), train)
+    free_dataset(test)
+    save_to_binary(train, 'train.binary.bin')
+    free_dataset(train)
+    train = load_from_file('train.binary.bin', None)
+    free_dataset(train)
 
 
 def test_booster():
-    train = test_load_from_mat(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.train'), None)
-    test = test_load_from_mat(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.test'), train)
+    train = load_from_mat(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.train'), None)
+    test = load_from_mat(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/binary_classification/binary.test'), train)
     booster = ctypes.c_void_p()
     LIB.LGBM_BoosterCreate(train, c_str("app=binary metric=auc num_leaves=31 verbose=0"), ctypes.byref(booster))
     LIB.LGBM_BoosterAddValidData(booster, test)
@@ -227,8 +220,8 @@ def test_booster():
             print('%d Iteration test AUC %f' % (i, result[0]))
     LIB.LGBM_BoosterSaveModel(booster, 0, -1, c_str('model.txt'))
     LIB.LGBM_BoosterFree(booster)
-    test_free_dataset(train)
-    test_free_dataset(test)
+    free_dataset(train)
+    free_dataset(test)
     booster2 = ctypes.c_void_p()
     num_total_model = ctypes.c_long()
     LIB.LGBM_BoosterCreateFromModelfile(c_str('model.txt'), ctypes.byref(num_total_model), ctypes.byref(booster2))
