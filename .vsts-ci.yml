@@ -56,6 +56,7 @@ phases:
       fi
       bash .vsts-ci/test.sh
   - task: PublishBuildArtifacts@1
+    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
     inputs:
       pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
       artifactName: PackageAssets
@@ -92,6 +93,7 @@ phases:
       export LGB_VER=$(head -n 1 VERSION.txt)
       bash .vsts-ci/test.sh
   - task: PublishBuildArtifacts@1
+    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
     inputs:
       pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
       artifactName: PackageAssets
@@ -159,6 +161,7 @@ phases:
         if ($LastExitCode -ne 0) { $host.SetShouldExit($LastExitCode) }
       }  # run all examples
   - task: PublishBuildArtifacts@1
+    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
     inputs:
       pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
       artifactName: PackageAssets
@@ -171,6 +174,7 @@ phases:
   - Linux
   - MacOS
   - Windows
+  condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
   queue:
     name: 'Hosted VS2017'
   steps:
