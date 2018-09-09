@@ -5,7 +5,7 @@ library(data.table)
 library(lightgbm)
 
 # Load data and look at the structure
-# 
+#
 # Classes 'data.table' and 'data.frame':	4521 obs. of  17 variables:
 # $ age      : int  30 33 35 30 59 35 36 39 41 43 ...
 # $ job      : chr  "unemployed" "services" "management" "management" ...
@@ -34,7 +34,7 @@ bank_test <- bank[4001:4521, ]
 # We must now transform the data to fit in LightGBM
 # For this task, we use lgb.prepare
 # The function transforms the data into a fittable data
-# 
+#
 # Classes 'data.table' and 'data.frame':	521 obs. of  17 variables:
 # $ age      : int  53 36 58 26 34 55 55 34 41 38 ...
 # $ job      : num  1 10 10 9 10 2 2 3 3 4 ...

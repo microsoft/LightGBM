@@ -1,7 +1,7 @@
 #' saveRDS for lgb.Booster models
 #'
 #' Attempts to save a model using RDS. Has an additional parameter (\code{raw}) which decides whether to save the raw model or not.
-#' 
+#'
 #' @param object R object to serialize.
 #' @param file a connection or the name of the file where the R object is saved to or read from.
 #' @param ascii a logical. If TRUE or NA, an ASCII representation is written; otherwise (default), a binary one is used. See the comments in the help for save.
@@ -9,9 +9,9 @@
 #' @param compress a logical specifying whether saving to a named file is to use "gzip" compression, or one of \code{"gzip"}, \code{"bzip2"} or \code{"xz"} to indicate the type of compression to be used. Ignored if file is a connection.
 #' @param refhook a hook function for handling reference objects.
 #' @param raw whether to save the model in a raw variable or not, recommended to leave it to \code{TRUE}.
-#' 
+#'
 #' @return NULL invisibly.
-#' 
+#'
 #' @examples
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
@@ -40,13 +40,13 @@ saveRDS.lgb.Booster <- function(object,
                                 compress = TRUE,
                                 refhook = NULL,
                                 raw = TRUE) {
-  
+
   # Check if object has a raw value (and if the user wants to store the raw)
   if (is.na(object$raw) && raw) {
-    
+
     # Save model
     object$save()
-    
+
     # Save RDS
     saveRDS(object,
             file = file,
@@ -54,12 +54,12 @@ saveRDS.lgb.Booster <- function(object,
             version = version,
             compress = compress,
             refhook = refhook)
-    
+
     # Free model from memory
     object$raw <- NA
-    
+
   } else {
-    
+
     # Save as usual
     saveRDS(object,
             file = file,
@@ -67,7 +67,7 @@ saveRDS.lgb.Booster <- function(object,
             version = version,
             compress = compress,
             refhook = refhook)
-    
+
   }
-  
+
 }

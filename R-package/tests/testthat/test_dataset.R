@@ -10,10 +10,10 @@ test_label <- agaricus.test$label[1:100]
 test_that("lgb.Dataset: basic construction, saving, loading", {
   # from sparse matrix
   dtest1 <- lgb.Dataset(test_data, label=test_label)
-  # from dense matrix 
+  # from dense matrix
   dtest2 <- lgb.Dataset(as.matrix(test_data), label=test_label)
   expect_equal(getinfo(dtest1, 'label'), getinfo(dtest2, 'label'))
-  
+
   # save to a local file
   tmp_file <- tempfile('lgb.Dataset_')
   lgb.Dataset.save(dtest1, tmp_file)
@@ -27,14 +27,14 @@ test_that("lgb.Dataset: basic construction, saving, loading", {
 test_that("lgb.Dataset: getinfo & setinfo", {
   dtest <- lgb.Dataset(test_data)
   dtest$construct()
-  
+
   setinfo(dtest, 'label', test_label)
   labels <- getinfo(dtest, 'label')
   expect_equal(test_label, getinfo(dtest, 'label'))
-  
+
   expect_true(length(getinfo(dtest, 'weight')) == 0)
   expect_true(length(getinfo(dtest, 'init_score')) == 0)
-  
+
   # any other label should error
   expect_error(setinfo(dtest, 'asdf', test_label))
 })

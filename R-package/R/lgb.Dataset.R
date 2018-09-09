@@ -393,11 +393,11 @@ Dataset <- R6::R6Class(
 
       # Check for info name and handle
       if (is.null(private$info[[name]])) {
-        
+
         if (lgb.is.null.handle(private$handle)){
           stop("Cannot perform getinfo before constructing Dataset.")
         }
-        
+
         # Get field size of info
         info_len <- 0L
         info_len <- lgb.call("LGBM_DatasetGetFieldSize_R",
@@ -850,7 +850,7 @@ dimnames.lgb.Dataset <- function(x) {
 #'
 #' Get a new \code{lgb.Dataset} containing the specified rows of
 #' original lgb.Dataset object
-#' 
+#'
 #' @param dataset Object of class "lgb.Dataset"
 #' @param idxset a integer vector of indices of rows needed
 #' @param ... other parameters (currently not used)
