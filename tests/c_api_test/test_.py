@@ -16,8 +16,13 @@ def find_lib_path():
         return []
 
     curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
-    dll_path = [curr_path, os.path.join(curr_path, '../../'), os.path.join(curr_path, '../../lib/')]
+    dll_path = [curr_path, os.path.join(curr_path, '../../'),
+                os.path.join(curr_path, '../../python-package/lightgbm/compile'),
+                os.path.join(curr_path, '../../python-package/compile'),
+                os.path.join(curr_path, '../../lib/')]
     if system() in ('Windows', 'Microsoft'):
+        dll_path.append(os.path.join(curr_path, '../../python-package/compile/Release/'))
+        dll_path.append(os.path.join(curr_path, '../../python-package/compile/windows/x64/DLL/'))
         dll_path.append(os.path.join(curr_path, '../../Release/'))
         dll_path.append(os.path.join(curr_path, '../../windows/x64/DLL/'))
         dll_path = [os.path.join(p, 'lib_lightgbm.dll') for p in dll_path]
