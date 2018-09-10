@@ -16,7 +16,7 @@ clone_depth: 50
 install:
   - git submodule update --init --recursive  # get `compute` folder
   - set PATH=%PATH:C:\Program Files\Git\usr\bin;=%  # delete sh.exe from PATH (mingw32-make fix)
-  - set PATH=C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1\mingw64\bin;%PATH%
+  - set PATH=C:\mingw-w64\x86_64-7.3.0-posix-seh-rt_v5-rev0\mingw64\bin;%PATH%
   - set PYTHON_VERSION=%CONFIGURATION%
   - ps: >-
       switch ($env:PYTHON_VERSION) {
@@ -41,7 +41,7 @@ build_script:
     python setup.py install)
 
 test_script:
-  - pytest %APPVEYOR_BUILD_FOLDER%\tests
+  - pytest %APPVEYOR_BUILD_FOLDER%\tests\python_package_test
   - cd %APPVEYOR_BUILD_FOLDER%\examples\python-guide
   - ps: >-
       @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"  # prevent interactive window mode
