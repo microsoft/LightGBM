@@ -424,9 +424,16 @@ class TestEngine(unittest.TestCase):
         # lambdarank
         X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.train'))
         q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.train.query'))
-        params_lambdarank = {'objective': 'lambdarank', 'verbose': -1}
+        params_lambdarank = {'objective': 'lambdarank', 'verbose': -1, 'eval_at': 3}
         lgb_train = lgb.Dataset(X_train, y_train, group=q_train)
-        lgb.cv(params_lambdarank, lgb_train, num_boost_round=10, nfold=3, stratified=False, metrics='l2', verbose_eval=False)
+        # ... with NDCG (default) metric
+        cv_res = lgb.cv(params_lambdarank, lgb_train, num_boost_round=10, nfold=3, stratified=False, verbose_eval=False)
+        self.assertEqual(len(cv_res), 2)
+        self.assertFalse(np.isnan(cv_res['ndcg@3-mean']).any())
+        # ... with l2 metric
+        cv_res = lgb.cv(params_lambdarank, lgb_train, num_boost_round=10, nfold=3, stratified=False, metrics='l2', verbose_eval=False)
+        self.assertEqual(len(cv_res), 2)
+        self.assertFalse(np.isnan(cv_res['l2-mean']).any())
 
     def test_feature_name(self):
         X, y = load_boston(True)
