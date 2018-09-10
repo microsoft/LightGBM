@@ -100,60 +100,24 @@ phases:
 ###########################################
   queue:
     name: 'Hosted VS2017'
-    parallel: 4
+    parallel: 3
     matrix:
       regular:
         TASK: regular
+        PYTHON_VERSION: 3.5
       sdist:
         TASK: sdist
         PYTHON_VERSION: 2.7
       bdist:
         TASK: bdist
-        PYTHON_VERSION: 3.5
-      # mingw:
-      #   TASK: mingw
   steps:
   - task: CondaEnvironment@0
     inputs:
+      updateConda: true
       environmentName: $(CONDA_ENV)
-      packageSpecs: 'python=$(PYTHON_VERSION)'
+      packageSpecs: 'python=$(PYTHON_VERSION) numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest'
       createOptions: '-q'
-  - powershell: |
-      conda install -q -y -n $env:CONDA_ENV numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest
-      if ("$env:TASK" -eq "regular") {
-        mkdir build; cd build
-        cmake -DCMAKE_GENERATOR_PLATFORM=x64 .. ; cmake --build . --target ALL_BUILD --config Release
-        cd ../python-package; python setup.py install -p
-        cd ..
-        pytest tests/c_api_test/test_.py
-        cp Release/lib_lightgbm.dll $env:BUILD_ARTIFACTSTAGINGDIRECTORY
-        cp Release/lightgbm.exe $env:BUILD_ARTIFACTSTAGINGDIRECTORY
-      } 
-      elseif ("$env:TASK" -eq "sdist"){
-        cd python-package; python setup.py sdist --formats gztar
-        cd dist; pip install @(Get-ChildItem *.gz) -v 
-        cd ../..
-      }
-      # elseif ("$env:TASK" -eq "mingw"){
-      #   cd python-package; python setup.py sdist --formats gztar
-      #   cd dist; pip install @(Get-ChildItem *.gz) --install-option=--mingw -v
-      #   cd ../..
-      # }
-      else {
-        cd python-package
-        python setup.py bdist_wheel --plat-name=win-amd64 --universal
-        cd dist; pip install @(Get-ChildItem *.whl)
-        cp @(Get-ChildItem *.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
-        cd ../..
-      }
-      pytest tests/python_package_test
-      cd examples/python-guide
-      @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"
-      (Get-Content "plot_example.py").replace('graph.render(view=True)', 'graph.render(view=False)') | Set-Content "plot_example.py"
-      foreach ($file in @(Get-ChildItem *.py)) {
-        python $file
-        if ($LastExitCode -ne 0) { $host.SetShouldExit($LastExitCode) }
-      }  # run all examples
+  - powershell: $(Build.SourcesDirectory)/.vsts-ci/test_windows.ps1
   - task: PublishBuildArtifacts@1
     condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
     inputs:
@@ -180,14 +144,14 @@ phases:
       downloadPath: $(Build.SourcesDirectory)/binaries
   - powershell: |
       $client = new-object System.Net.WebClient
-      $client.DownloadFile("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe",".nuget/nuget.exe")
+      $client.DownloadFile("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe", "$(Build.SourcesDirectory)/.nuget/nuget.exe")
   - script: |
-      cd .nuget
+      cd %BUILD_SOURCESDIRECTORY%/.nuget
       python create_nuget.py %BUILD_SOURCESDIRECTORY%/binaries/PackageAssets
       nuget.exe pack LightGBM.nuspec
       xcopy *.nupkg %BUILD_ARTIFACTSTAGINGDIRECTORY%
   - task: PublishBuildArtifacts@1
     inputs:
-      pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: Nuget
       artifactType: container
