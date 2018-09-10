@@ -2,8 +2,7 @@
 
 image: Visual Studio 2015
 platform: x64
-configuration:  # a trick to construct a build matrix
-  - 3.5
+configuration:  # a trick to construct a build matrix with multiple Python versions
   - 3.6
 
 environment:

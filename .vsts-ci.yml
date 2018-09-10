@@ -110,6 +110,7 @@ phases:
         PYTHON_VERSION: 2.7
       bdist:
         TASK: bdist
+        PYTHON_VERSION: 3.6
   steps:
   - task: CondaEnvironment@0
     inputs:
@@ -121,7 +122,7 @@ phases:
   - task: PublishBuildArtifacts@1
     condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
     inputs:
-      pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: PackageAssets
       artifactType: container
 
