@@ -16,12 +16,13 @@ env:
   matrix:
     - TASK=regular PYTHON_VERSION=3.6
     - TASK=regular COMPILER=clang
-    - TASK=mpi
     - TASK=pylint
     - TASK=check-docs
     - TASK=if-else
     - TASK=sdist PYTHON_VERSION=2.7
     - TASK=bdist
+    - TASK=mpi METHOD=source
+    - TASK=mpi METHOD=pip
     - TASK=gpu METHOD=source PYTHON_VERSION=3.5
     - TASK=gpu METHOD=pip PYTHON_VERSION=3.6
 

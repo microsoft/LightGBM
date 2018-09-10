@@ -95,9 +95,12 @@ fi
 mkdir $TRAVIS_BUILD_DIR/build && cd $TRAVIS_BUILD_DIR/build
 
 if [[ $TASK == "mpi" ]]; then
-    cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
-    pip install $TRAVIS_BUILD_DIR/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--mpi || exit -1
-    cd $TRAVIS_BUILD_DIR/build
+    if [[ $METHOD == "pip" ]]; then
+        cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
+        pip install $TRAVIS_BUILD_DIR/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--mpi || exit -1
+        pytest $TRAVIS_BUILD_DIR/tests/python_package_test || exit -1
+        exit 0
+    fi
     cmake -DUSE_MPI=ON ..
 elif [[ $TASK == "gpu" ]]; then
     cmake -DUSE_GPU=ON -DBOOST_ROOT=$HOME/miniconda/envs/test-env/ -DOpenCL_INCLUDE_DIR=$AMDAPPSDK/include/ ..
