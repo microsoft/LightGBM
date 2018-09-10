@@ -1,5 +1,5 @@
 variables:
-  PYTHON_VERSION: 3.6
+  PYTHON_VERSION: 3.7
   CONDA_ENV: test-env
 phases:
 ###########################################
@@ -11,54 +11,51 @@ phases:
     matrix:
       regular:
         TASK: regular
-      mpi:
-        TASK: mpi
-        PYTHON_VERSION: 2.7
-      pylint: 
+      sdist:
+        TASK: sdist
+        PYTHON_VERSION: 3.5
+      bdist:
+        TASK: bdist
+        PYTHON_VERSION: 3.6
+      pylint:
         TASK: pylint
       inference:
         TASK: if-else
-      sdist:
-        TASK: sdist
-        PYTHON_VERSION: 3.4
-      bdist:
-        TASK: bdist
-        PYTHON_VERSION: 3.5
-      gpu_1:
-        TASK: gpu 
+      mpi_source:
+        TASK: mpi
         METHOD: source
-      gpu_2:
-        TASK: gpu 
+        PYTHON_VERSION: 2.7
+      mpi_pip:
+        TASK: mpi
         METHOD: pip
+      gpu_source:
+        TASK: gpu
+        METHOD: source
+        PYTHON_VERSION: 3.6
+      gpu_pip:
+        TASK: gpu
+        METHOD: pip
+        PYTHON_VERSION: 3.5
   steps:
   - task: CondaEnvironment@0
     inputs:
+      updateConda: true
       environmentName: $(CONDA_ENV)
       packageSpecs: 'python=$(PYTHON_VERSION)'
       createOptions: '-q'
-  - script: | 
-      sudo apt-get update
-      export LGB_VER=$(head -n 1 VERSION.txt)
-      export AMDAPPSDK=$HOME/AMDAPPSDK
-      export LD_LIBRARY_PATH="$AMDAPPSDK/lib/x86_64:$LD_LIBRARY_PATH"
-      export OPENCL_VENDOR_PATH=$AMDAPPSDK/etc/OpenCL/vendors
-      if [[ $TASK == "mpi" ]]; then
-          sudo apt-get install -y libopenmpi-dev openmpi-bin
-      fi
-      if [[ $TASK == "gpu" ]]; then
-          sudo apt-get install --no-install-recommends -y ocl-icd-opencl-dev libboost-dev libboost-system-dev libboost-filesystem-dev
-          wget -q https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
-          tar -xjf AMD-APP-SDK*.tar.bz2
-          mkdir -p $OPENCL_VENDOR_PATH
-          sh AMD-APP-SDK*.sh --tar -xf -C $AMDAPPSDK
-          mv $AMDAPPSDK/lib/x86_64/sdk/* $AMDAPPSDK/lib/x86_64/
-          echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
-      fi
-      bash .vsts-ci/test.sh
+  - script: |
+      echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
+      echo "##vso[task.setvariable variable=AMDAPPSDK]$AGENT_HOMEDIRECTORY/AMDAPPSDK"
+      echo "##vso[task.setvariable variable=LD_LIBRARY_PATH]$AMDAPPSDK/lib/x86_64:$LD_LIBRARY_PATH"
+      echo "##vso[task.setvariable variable=OPENCL_VENDOR_PATH]$AMDAPPSDK/etc/OpenCL/vendors"
+      chmod 777 $BUILD_SOURCESDIRECTORY/.vsts-ci/setup.sh
+      chmod 777 $BUILD_SOURCESDIRECTORY/.vsts-ci/test.sh
+  - bash: $(Build.SourcesDirectory)/.vsts-ci/setup.sh
+  - bash: $(Build.SourcesDirectory)/.vsts-ci/test.sh
   - task: PublishBuildArtifacts@1
-    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+#    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
     inputs:
-      pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: PackageAssets
       artifactType: container
 ###########################################
@@ -90,7 +87,7 @@ phases:
       export LGB_VER=$(head -n 1 VERSION.txt)
       bash .vsts-ci/test.sh
   - task: PublishBuildArtifacts@1
-    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+#    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
     inputs:
       pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
       artifactName: PackageAssets
@@ -104,6 +101,7 @@ phases:
     matrix:
       regular:
         TASK: regular
+        PYTHON_VERSION: 3.6
       sdist:
         TASK: sdist
         PYTHON_VERSION: 2.7
@@ -155,7 +153,7 @@ phases:
         if ($LastExitCode -ne 0) { $host.SetShouldExit($LastExitCode) }
       }  # run all examples
   - task: PublishBuildArtifacts@1
-    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+#    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
     inputs:
       pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
       artifactName: PackageAssets
@@ -168,7 +166,7 @@ phases:
   - Linux
   - MacOS
   - Windows
-  condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+#  condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
   queue:
     name: 'Hosted VS2017'
   steps:

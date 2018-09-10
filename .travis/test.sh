@@ -119,5 +119,6 @@ if [[ $TASK == "regular" ]]; then
 import matplotlib\
 matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
+    sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
     for f in *.py; do python $f || exit -1; done  # run all examples
 fi
