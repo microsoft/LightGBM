@@ -76,7 +76,7 @@ elif [[ $TASK == "bdist" ]]; then
         cd $TRAVIS_BUILD_DIR/python-package && python setup.py bdist_wheel --plat-name=manylinux1_x86_64 --universal || exit -1
     fi
     pip install $TRAVIS_BUILD_DIR/python-package/dist/*.whl || exit -1
-    pytest $TRAVIS_BUILD_DIR/tests/python_package_test || exit -1
+    pytest $TRAVIS_BUILD_DIR/tests || exit -1
     exit 0
 fi
 
@@ -111,7 +111,7 @@ fi
 make _lightgbm || exit -1
 
 cd $TRAVIS_BUILD_DIR/python-package && python setup.py install --precompile || exit -1
-pytest $TRAVIS_BUILD_DIR || exit -1
+pytest $TRAVIS_BUILD_DIR/tests || exit -1
 
 if [[ $TASK == "regular" ]]; then
     cd $TRAVIS_BUILD_DIR/examples/python-guide

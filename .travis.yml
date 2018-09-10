@@ -11,16 +11,14 @@ os:
 
 env:
   global:  # default values
-    - COMPILER=gcc
+    - COMPILER=clang
     - PYTHON_VERSION=3.7
   matrix:
     - TASK=regular PYTHON_VERSION=3.6
-    - TASK=regular COMPILER=clang
-    - TASK=pylint
-    - TASK=check-docs
-    - TASK=if-else
     - TASK=sdist PYTHON_VERSION=2.7
     - TASK=bdist
+    - TASK=pylint
+    - TASK=check-docs
     - TASK=mpi METHOD=source
     - TASK=mpi METHOD=pip
     - TASK=gpu METHOD=source PYTHON_VERSION=3.5
@@ -32,8 +30,6 @@ matrix:
       env: TASK=gpu METHOD=source PYTHON_VERSION=3.5
     - os: osx
       env: TASK=gpu METHOD=pip PYTHON_VERSION=3.6
-    - os: osx
-      env: TASK=if-else
     - os: osx
       env: TASK=pylint
     - os: osx
