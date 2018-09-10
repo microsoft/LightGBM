@@ -1,22 +1,22 @@
 ﻿version: 2.1.2.{build}
 
+image: Visual Studio 2015
+platform: x64
 configuration:  # a trick to construct a build matrix
   - 3.5
   - 3.6
 
 environment:
   matrix:
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-      COMPILER: MSVC
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      COMPILER: MINGW
+    - COMPILER: MSVC
+    - COMPILER: MINGW
 
 clone_depth: 50
 
 install:
   - git submodule update --init --recursive  # get `compute` folder
   - set PATH=%PATH:C:\Program Files\Git\usr\bin;=%  # delete sh.exe from PATH (mingw32-make fix)
-  - set PATH=C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1\mingw64\bin;%PATH%
+  - set PATH=C:\mingw-w64\x86_64-7.3.0-posix-seh-rt_v5-rev0\mingw64\bin;%PATH%
   - set PYTHON_VERSION=%CONFIGURATION%
   - ps: >-
       switch ($env:PYTHON_VERSION) {
@@ -34,16 +34,13 @@ install:
   - activate test-env
 
 build_script:
-  - mkdir %APPVEYOR_BUILD_FOLDER%\build && cd %APPVEYOR_BUILD_FOLDER%\build
-  - cmake -DCMAKE_GENERATOR_PLATFORM=x64 .. && cmake --build . --target ALL_BUILD --config Release
+  - cd %APPVEYOR_BUILD_FOLDER%\python-package
+  - IF "%COMPILER%"=="MINGW" (
+    python setup.py install --mingw)
+    ELSE (
+    python setup.py install)
 
 test_script:
-  - pytest %APPVEYOR_BUILD_FOLDER%\tests\c_api_test\test_.py
-  - cd %APPVEYOR_BUILD_FOLDER%\python-package && python setup.py sdist --formats gztar
-  - IF "%COMPILER%"=="MINGW" (
-    pip install %APPVEYOR_BUILD_FOLDER%\python-package\dist\lightgbm-%LGB_VER%.tar.gz --install-option=--mingw -v)
-    ELSE (
-    pip install %APPVEYOR_BUILD_FOLDER%\python-package\dist\lightgbm-%LGB_VER%.tar.gz -v)
   - pytest %APPVEYOR_BUILD_FOLDER%\tests\python_package_test
   - cd %APPVEYOR_BUILD_FOLDER%\examples\python-guide
   - ps: >-
@@ -54,13 +51,7 @@ test_script:
         if ($LastExitCode -ne 0) { $host.SetShouldExit($LastExitCode) }
       }  # run all examples
   - IF "%COMPILER%"=="MINGW" appveyor exit  # skip all further steps
-  - cd %APPVEYOR_BUILD_FOLDER%\python-package && python setup.py bdist_wheel --plat-name=win-amd64 --universal
 
 artifacts:
-- path: Release/lib_lightgbm.dll
+- path: python-package\compile\windows\x64\DLL\lib_lightgbm.dll
   name: Library
-- path: Release/lightgbm.exe
-  name: Exe
-- path: python-package/dist/*
-  name: Pip
-
