@@ -119,6 +119,7 @@ phases:
       packageSpecs: 'python=$(PYTHON_VERSION) numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest'
       createOptions: '-q'
   - powershell: $(Build.SourcesDirectory)/.vsts-ci/test_windows.ps1
+    displayName: Test
   - task: PublishBuildArtifacts@1
     condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
     inputs:
@@ -146,11 +147,13 @@ phases:
   - powershell: |
       $client = new-object System.Net.WebClient
       $client.DownloadFile("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe", "$(Build.SourcesDirectory)/.nuget/nuget.exe")
+    displayName: 'Download NuGet application'
   - script: |
       cd %BUILD_SOURCESDIRECTORY%/.nuget
       python create_nuget.py %BUILD_SOURCESDIRECTORY%/binaries/PackageAssets
       nuget.exe pack LightGBM.nuspec
       xcopy *.nupkg %BUILD_ARTIFACTSTAGINGDIRECTORY%
+    displayName: 'Build NuGet package'
   - task: PublishBuildArtifacts@1
     inputs:
       pathtoPublish: '$(Build.ArtifactStagingDirectory)'
