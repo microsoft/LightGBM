@@ -44,6 +44,7 @@ test_script:
   - cd %APPVEYOR_BUILD_FOLDER%\examples\python-guide
   - ps: >-
       @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"  # prevent interactive window mode
+      (Get-Content "plot_example.py").replace('graph.render(view=True)', 'graph.render(view=False)') | Set-Content "plot_example.py"
   - ps: >-
       foreach ($file in @(Get-ChildItem *.py)) {
         python $file
