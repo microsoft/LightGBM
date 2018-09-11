@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [[ $AGENT_OS == "Linux" ]] && [[ $COMPILER == "clang" ]]; then
+    export CXX=clang++
+    export CC=clang
+fi
+
 cd $BUILD_SOURCESDIRECTORY
 
 if [[ $TASK == "pylint" ]]; then
