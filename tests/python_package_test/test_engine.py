@@ -294,6 +294,33 @@ class TestEngine(unittest.TestCase):
         self.assertLess(ret, 0.2)
         self.assertAlmostEqual(evals_result['valid_0']['multi_logloss'][-1], ret, places=5)
 
+    def test_multiclass_rf(self):
+        X, y = load_digits(10, True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {
+            'boosting_type': 'rf',
+            'objective': 'multiclass',
+            'metric': 'multi_logloss',
+            'bagging_freq': 1,
+            'bagging_fraction': 0.6,
+            'feature_fraction': 0.6,
+            'num_class': 10,
+            'num_leaves': 50,
+            'min_data': 1,
+            'verbose': -1
+        }
+        lgb_train = lgb.Dataset(X_train, y_train, params=params)
+        lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, params=params)
+        evals_result = {}
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=100,
+                        valid_sets=lgb_eval,
+                        verbose_eval=False,
+                        evals_result=evals_result)
+        ret = multi_logloss(y_test, gbm.predict(X_test))
+        self.assertLess(ret, 0.4)
+        self.assertAlmostEqual(evals_result['valid_0']['multi_logloss'][-1], ret, places=5)
+
     def test_multiclass_prediction_early_stopping(self):
         X, y = load_digits(10, True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -652,9 +679,44 @@ class TestEngine(unittest.TestCase):
         }
         lgb_train = lgb.Dataset(X_train, y_train)
         gbm = lgb.train(params, lgb_train,
-                        num_boost_round=20,
-                        verbose_eval=False)
+                        num_boost_round=20)
         err_pred = log_loss(y_test, gbm.predict(X_test))
         new_gbm = gbm.refit(X_test, y_test)
         new_err_pred = log_loss(y_test, new_gbm.predict(X_test))
         self.assertGreater(err_pred, new_err_pred)
+
+    def test_mape_rf(self):
+        X, y = load_boston(True)
+        params = {
+            'boosting_type': 'rf',
+            'objective': 'mape',
+            'verbose': -1,
+            'bagging_freq': 1,
+            'bagging_fraction': 0.8,
+            'feature_fraction': 0.8,
+            'boost_from_average': False
+        }
+        lgb_train = lgb.Dataset(X, y)
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=20)
+        pred = gbm.predict(X)
+        pred_mean = pred.mean()
+        self.assertGreater(pred_mean, 20)
+
+    def test_mape_dart(self):
+        X, y = load_boston(True)
+        params = {
+            'boosting_type': 'dart',
+            'objective': 'mape',
+            'verbose': -1,
+            'bagging_freq': 1,
+            'bagging_fraction': 0.8,
+            'feature_fraction': 0.8,
+            'boost_from_average': False
+        }
+        lgb_train = lgb.Dataset(X, y)
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=40)
+        pred = gbm.predict(X)
+        pred_mean = pred.mean()
+        self.assertGreater(pred_mean, 18)
