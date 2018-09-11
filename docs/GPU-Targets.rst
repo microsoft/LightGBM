@@ -24,16 +24,17 @@ You can find below a table of correspondence:
 
 Legend:
 
-- \* AMD APP SDK is deprecated. On Windows, OpenCL is included in AMD graphics driver. On Linux, newer generation AMD cards are supported by the `ROCm`_ driver.
+\* AMD APP SDK is deprecated. On Windows, OpenCL is included in AMD graphics driver. On Linux, newer generation AMD cards are supported by the `ROCm`_ driver. You can download an archived copy of AMD APP SDK for Linux from `our GitHub repo`_.
+
 
 --------------
 
 Query OpenCL Devices in Your System
 ===================================
 
-Your system might have multiple GPUs from different vendors ("platforms") installed. Setting up LightGBM GPU device requries two parameters: OpenCL Platform ID (``gpu_platform_id``) and OpenCL Device ID (``gpu_device_id``). Generally speaking, each vendor provides a OpenCL Platform, and devices from the same vendor have different device IDs under that platform. For example, if your system has a Intel Integrated GPU and two discrete GPUs from AMD, you will have two OpenCL platforms (with ``gpu_platform_id=0`` and ``gpu_platform_id=1``). If the platform 0 is Intel, it has one device (``gpu_device_id=0``) representing the Intel GPU; If the platform 1 is AMD, it has two devices (``gpu_device_id=0``, ``gpu_device_id=1``) representing the two AMD GPUs. If you have a discrete GPU by AMD/NVIDIA and an integrated GPU by Intel, make sure to select the correct ``gpu_platform_id`` to use the discrete GPU as it usually provides better performance.
+Your system might have multiple GPUs from different vendors ("platforms") installed. Setting up LightGBM GPU device requries two parameters: `OpenCL Platform ID <./Parameters.rst#gpu_platform_id>`__ (``gpu_platform_id``) and `OpenCL Device ID <./Parameters.rst#gpu_device_id>`__ (``gpu_device_id``). Generally speaking, each vendor provides a OpenCL Platform, and devices from the same vendor have different device IDs under that platform. For example, if your system has an Intel integrated GPU and two discrete GPUs from AMD, you will have two OpenCL platforms (with ``gpu_platform_id=0`` and ``gpu_platform_id=1``). If the platform 0 is Intel, it has one device (``gpu_device_id=0``) representing the Intel GPU; if the platform 1 is AMD, it has two devices (``gpu_device_id=0``, ``gpu_device_id=1``) representing the two AMD GPUs. If you have a discrete GPU by AMD/NVIDIA and an integrated GPU by Intel, make sure to select the correct ``gpu_platform_id`` to use the discrete GPU as it usually provides better performance.
 
-On Windows, OpenCL devices can be queried using `GPUCapsViewer`_, under the OpenCL tab. Note that the platform and device ID reported by this utility start from 0. So you should minus the reported IDs by 1.
+On Windows, OpenCL devices can be queried using `GPUCapsViewer`_, under the OpenCL tab. Note that the platform and device ID reported by this utility start from 1. So you should minus the reported IDs by 1.
 
 On Linux, OpenCL devices can be listed using the ``clinfo`` command. On Ubuntu, you can install ``clinfo`` by executing ``sudo apt-get install clinfo``.
 
@@ -72,7 +73,7 @@ We provide test R code below, but you can use the language of your choice with t
                        learning_rate = 1,
                        early_stopping_rounds = 10)
 
-Make sure you list the OpenCL devices in your system and set ``gpu_platform_id`` and ``gpu_device_id`` correctly. In the following examples, our system has 1 GPU platform (``gpu_platform_id = 0``) from AMD APP SDK. The first device ``gpu_device_id = 0`` is a GPU Device (AMD Oland), and the second device ``gpu_device_id = 1`` is the x86 CPU backend.
+Make sure you list the OpenCL devices in your system and set ``gpu_platform_id`` and ``gpu_device_id`` correctly. In the following examples, our system has 1 GPU platform (``gpu_platform_id = 0``) from AMD APP SDK. The first device ``gpu_device_id = 0`` is a GPU device (AMD Oland), and the second device ``gpu_device_id = 1`` is the x86 CPU backend.
 
 Example of using GPU (``gpu_platform_id = 0`` and ``gpu_device_id = 0`` in our system):
 
@@ -109,7 +110,7 @@ Example of using GPU (``gpu_platform_id = 0`` and ``gpu_device_id = 0`` in our s
     [LightGBM] [Info] Trained a tree with leaves=7 and max_depth=5
     [2]:    test's rmse:0
 
-Running on OpenCL CPU backend devices are in generally slow, and we observe crashes on some Windows and macOS systems. Make sure you check the ``Using GPU Device`` line in the log and it is not using a CPU. The above log shows that we are using ``Oland`` GPU From AMD and not CPU.
+Running on OpenCL CPU backend devices are in generally slow, and we observe crashes on some Windows and macOS systems. Make sure you check the ``Using GPU Device`` line in the log and it is not using a CPU. The above log shows that we are using ``Oland`` GPU from AMD and not CPU.
 
 Example of using CPU (``gpu_platform_id = 0``, ``gpu_device_id = 1``). The GPU device reported is ``Intel(R) Core(TM) i7-4600U CPU``, so it is using the CPU backend rather than a real GPU.
 
@@ -165,4 +166,3 @@ Known issues:
 .. _clinfo: https://github.com/Oblomov/clinfo
 
 .. _GPUCapsViewer: http://www.ozone3d.net/gpu_caps_viewer/
-
