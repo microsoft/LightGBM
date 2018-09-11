@@ -23,6 +23,13 @@ else  # Linux
     fi
     if [[ $TASK == "gpu" ]]; then
         sudo apt-get install -y ocl-icd-opencl-dev
+        wget -q https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
+        tar -xjf AMD-APP-SDK*.tar.bz2
+        mkdir -p $OPENCL_VENDOR_PATH
+        mkdir -p $AMDAPPSDK_PATH
+        sh AMD-APP-SDK*.sh --tar -xf -C $AMDAPPSDK_PATH
+        mv $AMDAPPSDK_PATH/lib/x86_64/sdk/* $AMDAPPSDK_PATH/lib/x86_64/
+        echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
     wget -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-Linux-x86_64.sh
 fi
@@ -30,12 +37,3 @@ fi
 sh conda.sh -b -p $HOME/miniconda
 conda config --set always_yes yes --set changeps1 no
 conda update -q conda
-
-if [[ $TASK == "gpu" ]] && [[ $TRAVIS_OS_NAME == "linux" ]]; then
-    wget https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
-    tar -xjf AMD-APP-SDK*.tar.bz2
-    mkdir -p $OPENCL_VENDOR_PATH
-    sh AMD-APP-SDK*.sh --tar -xf -C $AMDAPPSDK
-    mv $AMDAPPSDK/lib/x86_64/sdk/* $AMDAPPSDK/lib/x86_64/
-    echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
-fi

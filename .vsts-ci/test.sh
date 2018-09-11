@@ -2,8 +2,6 @@
 
 cd $BUILD_SOURCESDIRECTORY
 
-clang++ --version
-
 if [[ $TASK == "pylint" ]]; then
     conda install -y -n $CONDA_ENV pycodestyle
     pycodestyle --ignore=E501,W503 --exclude=./compute,./docs,./.nuget . || exit -1
@@ -50,7 +48,7 @@ if [[ $TASK == "gpu" ]]; then
     grep -q 'std::string device_type = "gpu"' $BUILD_SOURCESDIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_SOURCESDIRECTORY/python-package && python setup.py sdist || exit -1
-        pip install $BUILD_SOURCESDIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--opencl-include-dir=$AMDAPPSDK/include/" || exit -1
+        pip install $BUILD_SOURCESDIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--opencl-include-dir=$AMDAPPSDK_PATH/include/" || exit -1
         pytest $BUILD_SOURCESDIRECTORY/tests/python_package_test || exit -1
         exit 0
     fi
@@ -67,7 +65,7 @@ if [[ $TASK == "mpi" ]]; then
     fi
     cmake -DUSE_MPI=ON ..
 elif [[ $TASK == "gpu" ]]; then
-    cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK/include/ ..
+    cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
 else
     cmake ..
 fi
