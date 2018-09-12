@@ -1,6 +1,9 @@
 #!/bin/bash
 
-if [[ $AGENT_OS == "Linux" ]] && [[ $COMPILER == "clang" ]]; then
+if [[ $AGENT_OS == "Darwin" ]] && [[ $COMPILER == "gcc" ]]; then
+    export CXX=g++-8
+    export CC=gcc-8
+elif [[ $AGENT_OS == "Linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CXX=clang++
     export CC=clang
 fi
@@ -36,15 +39,15 @@ if [[ $TASK == "sdist" ]]; then
     exit 0
 elif [[ $TASK == "bdist" ]]; then
     if [[ $AGENT_OS == "Darwin" ]]; then
-        cd ${BUILD_REPOSITORY_LOCALPATH}/python-package && python setup.py bdist_wheel --plat-name=macdarwin --universal || exit -1
-        cp dist/lightgbm-$LGB_VER-py2.py3-none-macdarwin.whl ${BUILD_ARTIFACTSTAGINGDIRECTORY}/lightgbm-$LGB_VER-py2.py3-none-macosx_10_6_x86_64.macosx_10_7_x86_64.macosx_10_8_x86_64.macosx_10_9_x86_64.macosx_10_10_x86_64.macosx_10_11_x86_64.macosx_10_12_x86_64.macosx_10_13_x86_64.whl
+        cd $BUILD_REPOSITORY_LOCALPATH/python-package && python setup.py bdist_wheel --plat-name=macdarwin --universal || exit -1
         mv dist/lightgbm-$LGB_VER-py2.py3-none-macdarwin.whl dist/lightgbm-$LGB_VER-py2.py3-none-macosx_10_6_x86_64.macosx_10_7_x86_64.macosx_10_8_x86_64.macosx_10_9_x86_64.macosx_10_10_x86_64.macosx_10_11_x86_64.macosx_10_12_x86_64.macosx_10_13_x86_64.whl
+        cp dist/lightgbm-$LGB_VER-py2.py3-none-macosx_10_6_x86_64.macosx_10_7_x86_64.macosx_10_8_x86_64.macosx_10_9_x86_64.macosx_10_10_x86_64.macosx_10_11_x86_64.macosx_10_12_x86_64.macosx_10_13_x86_64.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
     else
         cd $BUILD_SOURCESDIRECTORY/python-package && python setup.py bdist_wheel --plat-name=manylinux1_x86_64 --universal || exit -1
         cp dist/lightgbm-$LGB_VER-py2.py3-none-manylinux1_x86_64.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
     fi
     pip install $BUILD_SOURCESDIRECTORY/python-package/dist/*.whl || exit -1
-    pytest $BUILD_SOURCESDIRECTORY/tests/python_package_test || exit -1
+    pytest $BUILD_SOURCESDIRECTORY/tests || exit -1
     exit 0
 fi
 
@@ -82,7 +85,7 @@ pytest $BUILD_SOURCESDIRECTORY/tests || exit -1
 
 if [[ $TASK == "regular" ]]; then
     if [[ $AGENT_OS == "Darwin" ]]; then
-        cp ${BUILD_REPOSITORY_LOCALPATH}/lib_lightgbm.so ${BUILD_ARTIFACTSTAGINGDIRECTORY}/lib_lightgbm.dylib
+        cp $BUILD_REPOSITORY_LOCALPATH/lib_lightgbm.so $BUILD_ARTIFACTSTAGINGDIRECTORY/lib_lightgbm.dylib
     else
         cp $BUILD_SOURCESDIRECTORY/lib_lightgbm.so $BUILD_ARTIFACTSTAGINGDIRECTORY/lib_lightgbm.so
     fi
