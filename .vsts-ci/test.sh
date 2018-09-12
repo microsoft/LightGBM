@@ -27,7 +27,7 @@ fi
 
 conda install -q -y -n $CONDA_ENV numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest
 
-if [[ $AGENT_OS == "Darwin" ]] ; then
+if [[ $AGENT_OS == "Darwin" ]] && [[ $COMPILER == "clang" ]]; then
     ln -sf `ls -d "$(brew --cellar libomp)"/*/lib`/* $CONDA_PREFIX/lib || exit -1  # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
 fi
 
