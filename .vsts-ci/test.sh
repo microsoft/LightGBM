@@ -1,29 +1,11 @@
 #!/bin/bash
 
-cd ${BUILD_REPOSITORY_LOCALPATH}
-
-if [[ $TASK == "check-docs" ]]; then
-    if [[ $AGENT_OS == "Linux" ]]; then
-        sudo apt-get install linkchecker -y
-    fi
-    if [[ ${PYTHON_VERSION} == "2.7" ]]; then
-        conda install -y -n $CONDA_ENV mock
-    fi
-    conda install -y -n $CONDA_ENV sphinx "sphinx_rtd_theme>=0.3"  # html5validator
-    pip install rstcheck
-    cd ${BUILD_REPOSITORY_LOCALPATH}/python-package
-    rstcheck --report warning `find . -type f -name "*.rst"` || exit -1
-    cd ${BUILD_REPOSITORY_LOCALPATH}/docs
-    rstcheck --report warning --ignore-directives=autoclass,autofunction `find . -type f -name "*.rst"` || exit -1
-    make html || exit -1
-    find ./_build/html/ -type f -name '*.html' -exec \
-    sed -i -e 's;\(\.\/[^.]*\.\)rst\([^[:space:]]*\);\1html\2;g' {} \;  # emulate js function
-#    html5validator --root ./_build/html/ || exit -1
-    if [[ $AGENT_OS == "Linux" ]]; then
-        linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
-    fi
-    exit 0
+if [[ $AGENT_OS == "Linux" ]] && [[ $COMPILER == "clang" ]]; then
+    export CXX=clang++
+    export CC=clang
 fi
+
+cd $BUILD_SOURCESDIRECTORY
 
 if [[ $TASK == "pylint" ]]; then
     conda install -y -n $CONDA_ENV pycodestyle
@@ -33,10 +15,10 @@ fi
 
 if [[ $TASK == "if-else" ]]; then
     conda install -y -n $CONDA_ENV numpy
-    mkdir build && cd build && cmake .. && make lightgbm || exit -1
-    cd ${BUILD_REPOSITORY_LOCALPATH}/tests/cpp_test && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
-    cd ${BUILD_REPOSITORY_LOCALPATH}/build && make lightgbm || exit -1
-    cd ${BUILD_REPOSITORY_LOCALPATH}/tests/cpp_test && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py || exit -1
+    mkdir $BUILD_SOURCESDIRECTORY/build && cd $BUILD_SOURCESDIRECTORY/build && cmake .. && make lightgbm || exit -1
+    cd $BUILD_SOURCESDIRECTORY/tests/cpp_test && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
+    cd $BUILD_SOURCESDIRECTORY/build && make lightgbm || exit -1
+    cd $BUILD_SOURCESDIRECTORY/tests/cpp_test && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py || exit -1
     exit 0
 fi
 
@@ -47,10 +29,10 @@ if [[ $AGENT_OS == "Darwin" ]] ; then
 fi
 
 if [[ $TASK == "sdist" ]]; then
-    cd ${BUILD_REPOSITORY_LOCALPATH}/python-package && python setup.py sdist || exit -1
-    pip install ${BUILD_REPOSITORY_LOCALPATH}/python-package/dist/lightgbm-$LGB_VER.tar.gz -v || exit -1
-    cp ${BUILD_REPOSITORY_LOCALPATH}/python-package/dist/lightgbm-$LGB_VER.tar.gz ${BUILD_ARTIFACTSTAGINGDIRECTORY}/lightgbm-$LGB_VER.tar.gz
-    pytest ${BUILD_REPOSITORY_LOCALPATH}/tests/python_package_test || exit -1
+    cd $BUILD_SOURCESDIRECTORY/python-package && python setup.py sdist || exit -1
+    pip install $BUILD_SOURCESDIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v || exit -1
+    cp $BUILD_SOURCESDIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz $BUILD_ARTIFACTSTAGINGDIRECTORY
+    pytest $BUILD_SOURCESDIRECTORY/tests/python_package_test || exit -1
     exit 0
 elif [[ $TASK == "bdist" ]]; then
     if [[ $AGENT_OS == "Darwin" ]]; then
@@ -58,55 +40,57 @@ elif [[ $TASK == "bdist" ]]; then
         cp dist/lightgbm-$LGB_VER-py2.py3-none-macdarwin.whl ${BUILD_ARTIFACTSTAGINGDIRECTORY}/lightgbm-$LGB_VER-py2.py3-none-macosx_10_6_x86_64.macosx_10_7_x86_64.macosx_10_8_x86_64.macosx_10_9_x86_64.macosx_10_10_x86_64.macosx_10_11_x86_64.macosx_10_12_x86_64.macosx_10_13_x86_64.whl
         mv dist/lightgbm-$LGB_VER-py2.py3-none-macdarwin.whl dist/lightgbm-$LGB_VER-py2.py3-none-macosx_10_6_x86_64.macosx_10_7_x86_64.macosx_10_8_x86_64.macosx_10_9_x86_64.macosx_10_10_x86_64.macosx_10_11_x86_64.macosx_10_12_x86_64.macosx_10_13_x86_64.whl
     else
-        cd ${BUILD_REPOSITORY_LOCALPATH}/python-package && python setup.py bdist_wheel --plat-name=manylinux1_x86_64 --universal || exit -1
-        cp dist/lightgbm-$LGB_VER-py2.py3-none-manylinux1_x86_64.whl ${BUILD_ARTIFACTSTAGINGDIRECTORY}/lightgbm-$LGB_VER-py2.py3-none-manylinux1_x86_64.whl
+        cd $BUILD_SOURCESDIRECTORY/python-package && python setup.py bdist_wheel --plat-name=manylinux1_x86_64 --universal || exit -1
+        cp dist/lightgbm-$LGB_VER-py2.py3-none-manylinux1_x86_64.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
     fi
-    pip install ${BUILD_REPOSITORY_LOCALPATH}/python-package/dist/*.whl || exit -1
-    pytest ${BUILD_REPOSITORY_LOCALPATH}/tests/python_package_test || exit -1
-    
+    pip install $BUILD_SOURCESDIRECTORY/python-package/dist/*.whl || exit -1
+    pytest $BUILD_SOURCESDIRECTORY/tests/python_package_test || exit -1
     exit 0
 fi
 
 if [[ $TASK == "gpu" ]]; then
-    sed -i 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' ${BUILD_REPOSITORY_LOCALPATH}/include/LightGBM/config.h
-    grep -q 'std::string device_type = "gpu"' ${BUILD_REPOSITORY_LOCALPATH}/include/LightGBM/config.h || exit -1  # make sure that changes were really done
+    sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $BUILD_SOURCESDIRECTORY/include/LightGBM/config.h
+    grep -q 'std::string device_type = "gpu"' $BUILD_SOURCESDIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
-        cd ${BUILD_REPOSITORY_LOCALPATH}/python-package && python setup.py sdist || exit -1
-        pip install ${BUILD_REPOSITORY_LOCALPATH}/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--opencl-include-dir=$AMDAPPSDK/include/" || exit -1
-        pytest ${BUILD_REPOSITORY_LOCALPATH}/tests/python_package_test || exit -1
+        cd $BUILD_SOURCESDIRECTORY/python-package && python setup.py sdist || exit -1
+        pip install $BUILD_SOURCESDIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--opencl-include-dir=$AMDAPPSDK_PATH/include/" || exit -1
+        pytest $BUILD_SOURCESDIRECTORY/tests/python_package_test || exit -1
         exit 0
     fi
 fi
 
-mkdir build && cd build
+mkdir $BUILD_SOURCESDIRECTORY/build && cd $BUILD_SOURCESDIRECTORY/build
 
 if [[ $TASK == "mpi" ]]; then
-    cd ${BUILD_REPOSITORY_LOCALPATH}/python-package && python setup.py sdist || exit -1
-    pip install ${BUILD_REPOSITORY_LOCALPATH}/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--mpi || exit -1
-    cd ${BUILD_REPOSITORY_LOCALPATH}/build
+    if [[ $METHOD == "pip" ]]; then
+        cd $BUILD_SOURCESDIRECTORY/python-package && python setup.py sdist || exit -1
+        pip install $BUILD_SOURCESDIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--mpi || exit -1
+        pytest $BUILD_SOURCESDIRECTORY/tests/python_package_test || exit -1
+        exit 0
+    fi
     cmake -DUSE_MPI=ON ..
 elif [[ $TASK == "gpu" ]]; then
-    cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK/include/ ..
+    cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
 else
     cmake ..
 fi
 
 make _lightgbm || exit -1
 
-cd ${BUILD_REPOSITORY_LOCALPATH}/python-package && python setup.py install --precompile || exit -1
-pytest ${BUILD_REPOSITORY_LOCALPATH} || exit -1
+cd $BUILD_SOURCESDIRECTORY/python-package && python setup.py install --precompile || exit -1
+pytest $BUILD_SOURCESDIRECTORY/tests || exit -1
 
 if [[ $TASK == "regular" ]]; then
     if [[ $AGENT_OS == "Darwin" ]]; then
         cp ${BUILD_REPOSITORY_LOCALPATH}/lib_lightgbm.so ${BUILD_ARTIFACTSTAGINGDIRECTORY}/lib_lightgbm.dylib
     else
-        cp ${BUILD_REPOSITORY_LOCALPATH}/lib_lightgbm.so ${BUILD_ARTIFACTSTAGINGDIRECTORY}/lib_lightgbm.so
+        cp $BUILD_SOURCESDIRECTORY/lib_lightgbm.so $BUILD_ARTIFACTSTAGINGDIRECTORY/lib_lightgbm.so
     fi
-    cd ${BUILD_REPOSITORY_LOCALPATH}/examples/python-guide
+    cd $BUILD_SOURCESDIRECTORY/examples/python-guide
     sed -i'.bak' '/import lightgbm as lgb/a\
 import matplotlib\
 matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
-    sed -i 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
+    sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
     for f in *.py; do python $f || exit -1; done  # run all examples
 fi

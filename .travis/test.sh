@@ -76,7 +76,7 @@ elif [[ $TASK == "bdist" ]]; then
         cd $TRAVIS_BUILD_DIR/python-package && python setup.py bdist_wheel --plat-name=manylinux1_x86_64 --universal || exit -1
     fi
     pip install $TRAVIS_BUILD_DIR/python-package/dist/*.whl || exit -1
-    pytest $TRAVIS_BUILD_DIR/tests/python_package_test || exit -1
+    pytest $TRAVIS_BUILD_DIR/tests || exit -1
     exit 0
 fi
 
@@ -86,7 +86,7 @@ if [[ $TASK == "gpu" ]]; then
     grep -q 'std::string device_type = "gpu"' $TRAVIS_BUILD_DIR/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
         cd $TRAVIS_BUILD_DIR/python-package && python setup.py sdist || exit -1
-        pip install $TRAVIS_BUILD_DIR/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--boost-root=$HOME/miniconda/envs/test-env/" --install-option="--opencl-include-dir=$AMDAPPSDK/include/" || exit -1
+        pip install $TRAVIS_BUILD_DIR/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--boost-root=$HOME/miniconda/envs/test-env/" --install-option="--opencl-include-dir=$AMDAPPSDK_PATH/include/" || exit -1
         pytest $TRAVIS_BUILD_DIR/tests/python_package_test || exit -1
         exit 0
     fi
@@ -103,7 +103,7 @@ if [[ $TASK == "mpi" ]]; then
     fi
     cmake -DUSE_MPI=ON ..
 elif [[ $TASK == "gpu" ]]; then
-    cmake -DUSE_GPU=ON -DBOOST_ROOT=$HOME/miniconda/envs/test-env/ -DOpenCL_INCLUDE_DIR=$AMDAPPSDK/include/ ..
+    cmake -DUSE_GPU=ON -DBOOST_ROOT=$HOME/miniconda/envs/test-env/ -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
 else
     cmake ..
 fi
@@ -111,7 +111,7 @@ fi
 make _lightgbm || exit -1
 
 cd $TRAVIS_BUILD_DIR/python-package && python setup.py install --precompile || exit -1
-pytest $TRAVIS_BUILD_DIR || exit -1
+pytest $TRAVIS_BUILD_DIR/tests || exit -1
 
 if [[ $TASK == "regular" ]]; then
     cd $TRAVIS_BUILD_DIR/examples/python-guide
@@ -119,5 +119,6 @@ if [[ $TASK == "regular" ]]; then
 import matplotlib\
 matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
+    sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
     for f in *.py; do python $f || exit -1; done  # run all examples
 fi
