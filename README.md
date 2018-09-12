@@ -1,7 +1,7 @@
 LightGBM, Light Gradient Boosting Machine
 =========================================
 
-[![VSTS Build Status](https://lightgbm.visualstudio.com/LightGBM-Build/_apis/build/status/LightGBM-Build-CI?branchName=master)](https://lightgbm.visualstudio.com/LightGBM-Build/_build/latest?definitionId=7&branchName=master)
+[![Azure Pipelines Build Status](https://lightgbm-ci.visualstudio.com/lightgbm-ci/_apis/build/status/Microsoft.LightGBM?branchName=master)](https://lightgbm-ci.visualstudio.com/lightgbm-ci/_build/latest?definitionId=1)
 [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/1ys5ot401m0fep6l/branch/master?svg=true)](https://ci.appveyor.com/project/guolinke/lightgbm/branch/master)
 [![Travis Build Status](https://travis-ci.org/Microsoft/LightGBM.svg?branch=master)](https://travis-ci.org/Microsoft/LightGBM)
 [![Documentation Status](https://readthedocs.org/projects/lightgbm/badge/?version=latest)](https://lightgbm.readthedocs.io/)

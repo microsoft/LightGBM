@@ -646,6 +646,7 @@ class Dataset(object):
             If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
             If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
             All values in categorical features should be less than int32 max value (2147483647).
+            Large values could be memory consuming. Consider to use consecutive integers started from zero.
             All negative values in categorical features will be treated as missing values.
         params : dict or None, optional (default=None)
             Other parameters.

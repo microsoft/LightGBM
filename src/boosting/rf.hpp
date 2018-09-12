@@ -38,16 +38,16 @@ public:
       CHECK(train_data->metadata().init_score() == nullptr);
     }
     // cannot use RF for multi-class. 
-    CHECK(num_tree_per_iteration_ == 1);
+    CHECK(num_tree_per_iteration_ == num_class_);
     // not shrinkage rate for the RF
     shrinkage_rate_ = 1.0f;
     // only boosting one time
-    Boosting();
+    GetRFTargets(train_data);
     if (is_use_subset_ && bag_data_cnt_ < num_data_) {
-      size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
-      tmp_grad_.resize(total_size);
-      tmp_hess_.resize(total_size);
+      tmp_grad_.resize(num_data_);
+      tmp_hess_.resize(num_data_);
     }
+    tmp_score_.resize(num_data_, 0.0f);
   }
 
   void ResetConfig(const Config* config) override {
@@ -67,72 +67,80 @@ public:
       }
     }
     // cannot use RF for multi-class.
-    CHECK(num_tree_per_iteration_ == 1);
+    CHECK(num_tree_per_iteration_ == num_class_);
     // only boosting one time
-    Boosting();
+    GetRFTargets(train_data);
     if (is_use_subset_ && bag_data_cnt_ < num_data_) {
-      size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
-      tmp_grad_.resize(total_size);
-      tmp_hess_.resize(total_size);
+      tmp_grad_.resize(num_data_);
+      tmp_hess_.resize(num_data_);
+    }
+    tmp_score_.resize(num_data_, 0.0f);
+  }
+
+  void GetRFTargets(const Dataset* train_data) {
+    auto label_ptr = train_data->metadata().label();
+    std::fill(hessians_.begin(), hessians_.end(), 1);
+    if (num_tree_per_iteration_ == 1) {
+      OMP_INIT_EX();
+      #pragma omp parallel for schedule(static,1)
+      for (data_size_t i = 0; i < train_data->num_data(); ++i) {
+        OMP_LOOP_EX_BEGIN();
+        double label = label_ptr[i];
+        gradients_[i] = static_cast<score_t>(-label);
+        OMP_LOOP_EX_END();
+      }
+      OMP_THROW_EX();
+    }
+    else {
+      std::fill(gradients_.begin(), gradients_.end(), 0);
+      OMP_INIT_EX();
+      #pragma omp parallel for schedule(static,1)
+      for (data_size_t i = 0; i < train_data->num_data(); ++i) {
+        OMP_LOOP_EX_BEGIN();
+        double label = label_ptr[i];
+        gradients_[i + static_cast<int>(label) * num_data_] = -1;
+        OMP_LOOP_EX_END();
+      }
+      OMP_THROW_EX();
     }
   }
 
   void Boosting() override {
-    if (objective_function_ == nullptr) {
-      Log::Fatal("No object function provided");
-    }
-    std::vector<double> tmp_score(num_tree_per_iteration_ * num_data_, 0.0f);
-    objective_function_->
-      GetGradients(tmp_score.data(), gradients_.data(), hessians_.data());
+
   }
 
   bool TrainOneIter(const score_t* gradients, const score_t* hessians) override {
     // bagging logic
     Bagging(iter_);
-    if (gradients == nullptr || hessians == nullptr) {
-      gradients = gradients_.data();
-      hessians = hessians_.data();
-    }
+    CHECK(gradients == nullptr);
+    CHECK(hessians == nullptr);
 
+    gradients = gradients_.data();
+    hessians = hessians_.data();
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
       std::unique_ptr<Tree> new_tree(new Tree(2));
-      if (class_need_train_[cur_tree_id]) {
-        size_t bias = static_cast<size_t>(cur_tree_id)* num_data_;
+      size_t bias = static_cast<size_t>(cur_tree_id)* num_data_;
+      auto grad = gradients + bias;
+      auto hess = hessians + bias;
 
-        auto grad = gradients + bias;
-        auto hess = hessians + bias;
-
-        // need to copy gradients for bagging subset.
-        if (is_use_subset_ && bag_data_cnt_ < num_data_) {
-          for (int i = 0; i < bag_data_cnt_; ++i) {
-            tmp_grad_[bias + i] = grad[bag_data_indices_[i]];
-            tmp_hess_[bias + i] = hess[bag_data_indices_[i]];
-          }
-          grad = tmp_grad_.data() + bias;
-          hess = tmp_hess_.data() + bias;
+      // need to copy gradients for bagging subset.
+      if (is_use_subset_ && bag_data_cnt_ < num_data_) {
+        for (int i = 0; i < bag_data_cnt_; ++i) {
+          tmp_grad_[i] = grad[bag_data_indices_[i]];
+          tmp_hess_[i] = hess[bag_data_indices_[i]];
         }
-
-        new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_,
-                       forced_splits_json_));
+        grad = tmp_grad_.data();
+        hess = tmp_hess_.data();
       }
-
+      new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_,
+        forced_splits_json_));
       if (new_tree->num_leaves() > 1) {
+        tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, tmp_score_.data(),
+          num_data_, bag_data_indices_.data(), bag_data_cnt_);
         // update score
         MultiplyScore(cur_tree_id, (iter_ + num_init_iteration_));
-        ConvertTreeOutput(new_tree.get());
         UpdateScore(new_tree.get(), cur_tree_id);
         MultiplyScore(cur_tree_id, 1.0 / (iter_ + num_init_iteration_ + 1));
-      } else {
-        // only add default score one-time
-        if (!class_need_train_[cur_tree_id] && models_.size() < static_cast<size_t>(num_tree_per_iteration_)) {
-          double output = class_default_output_[cur_tree_id];
-          objective_function_->ConvertOutput(&output, &output);
-          new_tree->AsConstantTree(output);
-          train_score_updater_->AddScore(output, cur_tree_id);
-          for (auto& score_updater : valid_score_updater_) {
-            score_updater->AddScore(output, cur_tree_id);
-          }
-        }
       }
       // add model
       models_.push_back(std::move(new_tree));
@@ -169,15 +177,6 @@ public:
     }
   }
 
-  void ConvertTreeOutput(Tree* tree) {
-    tree->Shrinkage(1.0f);
-    for (int i = 0; i < tree->num_leaves(); ++i) {
-      double output = tree->LeafOutput(i);
-      objective_function_->ConvertOutput(&output, &output);
-      tree->SetLeafOutput(i, output);
-    }
-  }
-
   void AddValidDataset(const Dataset* valid_data,
                        const std::vector<const Metric*>& valid_metrics) override {
     GBDT::AddValidDataset(valid_data, valid_metrics);
@@ -201,6 +200,7 @@ private:
 
   std::vector<score_t> tmp_grad_;
   std::vector<score_t> tmp_hess_;
+  std::vector<double> tmp_score_;
 
 };
 
