@@ -31,7 +31,7 @@ fi
 if [[ $TASK == "sdist" ]]; then
     cd $BUILD_SOURCESDIRECTORY/python-package && python setup.py sdist || exit -1
     pip install $BUILD_SOURCESDIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v || exit -1
-    cp $BUILD_SOURCESDIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz $BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbm-$LGB_VER.tar.gz
+    cp $BUILD_SOURCESDIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz $BUILD_ARTIFACTSTAGINGDIRECTORY
     pytest $BUILD_SOURCESDIRECTORY/tests/python_package_test || exit -1
     exit 0
 elif [[ $TASK == "bdist" ]]; then
