@@ -59,31 +59,39 @@ phases:
 ###########################################
 - phase: MacOS
 ###########################################
+  variables:
+    COMPILER: gcc
   queue:
     name: 'Hosted macOS Preview'
     parallel: 3
     matrix:
       regular:
         TASK: regular
-        PYTHON_VERSION: 2.7
+        PYTHON_VERSION: 3.6
       sdist:
         TASK: sdist
-        PYTHON_VERSION: 3.4
+        PYTHON_VERSION: 3.5
       bdist:
         TASK: bdist
-        PYTHON_VERSION: 3.5
   steps:
   - script: |
-      brew install libomp
-      brew reinstall cmake
-      wget -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
-      bash conda.sh -b -p $HOME/miniconda
-      export PATH=$HOME/miniconda/bin:$PATH
-      conda config --set always_yes yes --set changeps1 no
-      conda create -q -n $CONDA_ENV python=$PYTHON_VERSION
-      source activate $CONDA_ENV
-      export LGB_VER=$(head -n 1 VERSION.txt)
-      bash .vsts-ci/test.sh
+      sudo chmod -R 777 /usr/local/miniconda/envs
+    displayName: 'Fix for conda error on macOS'
+  - task: CondaEnvironment@0
+    inputs:
+      updateConda: true
+      environmentName: $(CONDA_ENV)
+      packageSpecs: 'python=$(PYTHON_VERSION)'
+      createOptions: '-q'
+  - script: |
+      echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
+      chmod +x $BUILD_SOURCESDIRECTORY/.vsts-ci/setup.sh
+      chmod +x $BUILD_SOURCESDIRECTORY/.vsts-ci/test.sh
+    displayName: 'Set variables'
+  - bash: $(Build.SourcesDirectory)/.vsts-ci/setup.sh
+    displayName: Setup
+  - bash: $(Build.SourcesDirectory)/.vsts-ci/test.sh
+    displayName: Test
   - task: PublishBuildArtifacts@1
     condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
     inputs:
