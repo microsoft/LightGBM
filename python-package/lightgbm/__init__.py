@@ -36,7 +36,7 @@ __all__ = ['Dataset', 'Booster',
            'plot_importance', 'plot_metric', 'plot_tree', 'create_tree_digraph']
 
 if system() == 'Darwin':
-    warnings.warn("Starting from version 2.1.4, the library file in distribution wheels for macOS "
+    warnings.warn("Starting from version 2.2.1, the library file in distribution wheels for macOS "
                   "will be built by the Apple Clang compiler.\n"
                   "This means that in case of installing LightGBM from PyPI via the ``pip install lightgbm`` command, "
                   "you won't need to install the gcc compiler anymore.\n"
