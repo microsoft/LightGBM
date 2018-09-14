@@ -38,6 +38,12 @@ matrix:
 before_install:
   - test -n $CC  && unset CC
   - test -n $CXX && unset CXX
+  - export HOME_DIRECTORY="$HOME"
+  - if [[ $TRAVIS_OS_NAME == "osx" ]]; then
+        export OS_NAME="macos";
+    else
+        export OS_NAME="linux";
+    fi
   - export PATH="$HOME/miniconda/bin:$PATH"
   - export LGB_VER=$(head -n 1 VERSION.txt)
   - export AMDAPPSDK_PATH=$HOME/AMDAPPSDK
@@ -46,7 +52,7 @@ before_install:
   - export OPENCL_VENDOR_PATH=$AMDAPPSDK_PATH/etc/OpenCL/vendors
 
 install:
-  - bash .travis/setup.sh
+  - bash .ci/setup.sh
 
 script:
   - bash .travis/test.sh
