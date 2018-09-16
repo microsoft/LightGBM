@@ -5,21 +5,9 @@
 # Sys.setenv("CXX" = "/usr/local/bin/g++-8")
 # Sys.setenv("CC" = "/usr/local/bin/gcc-8")
 
-# Identify R-packages required for build_r.R to complete
-pkgs = list(
-    installed = rownames(installed.packages()),
-    required = c("testthat", "roxygen2", "devtools")
-)
-pkgs$missing = setdiff(pkgs$required, pkgs$installed)
-if(length(pkgs$missing) > 0){
-    pkgs_string = paste0("    ", pkgs$missing, "\n")
-    message = paste0(
-        "The following R-packages are required for ",
-        "the LightGBM R-package install: \n",
-        paste0(pkgs_string, collapse = ''),
-        "Please try `Rscript build_r.R` again after installing them.")
-    stop(message)
-}
+library(testthat)
+library(roxygen2)
+library(devtools)
 
 # R returns FALSE (not a non-zero exit code) if a file copy operation
 # breaks. Let's fix that
