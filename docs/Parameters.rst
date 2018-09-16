@@ -837,11 +837,15 @@ GPU Parameters
 
    -  ``-1`` means the system-wide default platform
 
+   -  **Note**: refer to `GPU Targets <./GPU-Targets.rst#query-opencl-devices-in-your-system>`__ for more details
+
 -  ``gpu_device_id`` :raw-html:`<a id="gpu_device_id" title="Permalink to this parameter" href="#gpu_device_id">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int
 
    -  OpenCL device ID in the specified platform. Each GPU in the selected platform has a unique device ID
 
    -  ``-1`` means the default device in the selected platform
+
+   -  **Note**: refer to `GPU Targets <./GPU-Targets.rst#query-opencl-devices-in-your-system>`__ for more details
 
 -  ``gpu_use_dp`` :raw-html:`<a id="gpu_use_dp" title="Permalink to this parameter" href="#gpu_use_dp">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
