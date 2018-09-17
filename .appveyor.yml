@@ -1,4 +1,4 @@
-﻿version: 2.2.{build}
+﻿version: 2.2.0.{build}
 
 configuration:  # a trick to construct a build matrix
   - 3.5
