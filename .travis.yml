@@ -39,12 +39,14 @@ before_install:
   - test -n $CC  && unset CC
   - test -n $CXX && unset CXX
   - export HOME_DIRECTORY="$HOME"
+  - export BUILD_DIRECTORY="$TRAVIS_BUILD_DIR"
   - if [[ $TRAVIS_OS_NAME == "osx" ]]; then
         export OS_NAME="macos";
     else
         export OS_NAME="linux";
     fi
   - export PATH="$HOME/miniconda/bin:$PATH"
+  - export CONDA_ENV="test-env"
   - export LGB_VER=$(head -n 1 VERSION.txt)
   - export AMDAPPSDK_PATH=$HOME/AMDAPPSDK
   - export LD_LIBRARY_PATH="$AMDAPPSDK_PATH/lib/x86_64:$LD_LIBRARY_PATH"
@@ -55,7 +57,7 @@ install:
   - bash .ci/setup.sh
 
 script:
-  - bash .travis/test.sh
+  - bash .ci/test.sh
 
 notifications:
   email: false
