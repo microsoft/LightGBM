@@ -64,7 +64,7 @@ phases:
 - phase: MacOS
 ###########################################
   variables:
-    COMPILER: gcc
+    COMPILER: clang
   queue:
     name: 'Hosted macOS Preview'
     parallel: 3
