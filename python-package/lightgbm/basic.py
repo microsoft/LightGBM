@@ -2083,9 +2083,6 @@ class Booster(object):
             Used only if data is string.
         is_reshape : bool, optional (default=True)
             If True, result is reshaped to [nrow, ncol].
-        pred_parameter : dict or None, optional (default=None)
-            Deprecated.
-            Other parameters for the prediction.
         **kwargs : other parameters for the prediction
 
         Returns
@@ -2093,13 +2090,7 @@ class Booster(object):
         result : numpy array
             Prediction result.
         """
-        if pred_parameter:
-            warnings.warn("pred_parameter is deprecated and will be removed in 2.2 version.\n"
-                          "Please use kwargs instead.", LGBMDeprecationWarning)
-            pred_parameter.update(kwargs)
-        else:
-            pred_parameter = kwargs
-        predictor = self._to_predictor(pred_parameter)
+        predictor = self._to_predictor(kwargs)
         if num_iteration is None:
             num_iteration = self.best_iteration
         return predictor.predict(data, num_iteration, raw_score, pred_leaf, pred_contrib, data_has_header, is_reshape)
