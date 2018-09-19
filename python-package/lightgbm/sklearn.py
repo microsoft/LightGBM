@@ -155,7 +155,7 @@ class LGBMModel(_LGBMModelBase):
             Note, that this will ignore the ``learning_rate`` argument in training.
         n_estimators : int, optional (default=100)
             Number of boosted trees to fit.
-        subsample_for_bin : int, optional (default=50000)
+        subsample_for_bin : int, optional (default=200000)
             Number of samples for constructing bins.
         objective : string, callable or None, optional (default=None)
             Specify the learning task and the corresponding learning objective or
