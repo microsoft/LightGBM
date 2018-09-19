@@ -12,7 +12,7 @@ import numpy as np
 from . import callback
 from .basic import Booster, Dataset, LightGBMError, _InnerPredictor
 from .compat import (SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold,
-                     integer_types, range_, string_type)
+                     integer_types, range_, zip_, string_type)
 
 
 def train(params, train_set, num_boost_round=100,
@@ -187,7 +187,7 @@ def train(params, train_set, num_boost_round=100,
         booster = Booster(params=params, train_set=train_set)
         if is_valid_contain_train:
             booster.set_train_data_name(train_data_name)
-        for valid_set, name_valid_set in zip(reduced_valid_sets, name_valid_sets):
+        for valid_set, name_valid_set in zip_(reduced_valid_sets, name_valid_sets):
             booster.add_valid(valid_set, name_valid_set)
     finally:
         train_set._reverse_update_params()
@@ -285,7 +285,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             kstep = int(num_data / nfold)
             test_id = [randidx[i: i + kstep] for i in range_(0, num_data, kstep)]
             train_id = [np.concatenate([test_id[i] for i in range_(nfold) if k != i]) for k in range_(nfold)]
-            folds = zip(train_id, test_id)
+            folds = zip_(train_id, test_id)
 
     ret = CVBooster()
     for train_idx, test_idx in folds:
