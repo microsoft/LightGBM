@@ -16,7 +16,10 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
 }
 
 # Move in CMakeLists.txt
-if (!file.copy("../inst/bin/CMakeLists.txt", "CMakeLists.txt", overwrite = TRUE)){
+if (!file.copy(file.path(R_PACKAGE_SOURCE, "../CMakeLists.txt", fsep = "/"),
+               file.path(R_PACKAGE_SOURCE, "CMakeLists.txt", fsep = "/"),
+               overwrite = TRUE)
+    ){
   stop("Copying CMakeLists failed")
 }
 
