@@ -21,6 +21,7 @@ import os
 import sys
 import sphinx
 from sphinx.errors import VersionRequirementError
+import datetime
 
 curr_path = os.path.dirname(os.path.realpath(__file__))
 libpath = os.path.join(curr_path, '../python-package/')
@@ -71,7 +72,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'LightGBM'
-copyright = '2017, Microsoft Corporation'
+copyright = '%s, Microsoft Corporation' %(str(datetime.datetime.now().year))
 author = 'Microsoft Corporation'
 
 # The version info for the project you're documenting, acts as replacement for
