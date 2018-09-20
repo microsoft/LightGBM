@@ -283,6 +283,9 @@ class TestEngine(unittest.TestCase):
                         evals_result=evals_result)
         pred = gbm.predict(X_train)
         np.testing.assert_almost_equal(pred, y)
+        ret = roc_auc_score(y_train, pred)
+        self.assertGreater(ret, 0.999)
+        self.assertAlmostEqual(evals_result['valid_0']['auc'][-1], ret, places=5)
 
     def test_multiclass(self):
         X, y = load_digits(10, True)
