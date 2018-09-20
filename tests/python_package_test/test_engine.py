@@ -210,7 +210,7 @@ class TestEngine(unittest.TestCase):
         self.assertAlmostEqual(pred[0], pred[1], places=5)
         self.assertAlmostEqual(pred[-1], pred[0], places=5)
         ret = roc_auc_score(y_train, pred)
-        self.assertGreater(ret, 0.999)
+        self.assertGreater(ret, 0.83)
         self.assertAlmostEqual(evals_result['valid_0']['auc'][-1], ret, places=5)
 
     def test_categorical_handle(self):
