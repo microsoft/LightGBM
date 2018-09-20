@@ -21,7 +21,6 @@ import datetime
 import os
 import sys
 import sphinx
-
 from sphinx.errors import VersionRequirementError
 
 curr_path = os.path.dirname(os.path.realpath(__file__))
