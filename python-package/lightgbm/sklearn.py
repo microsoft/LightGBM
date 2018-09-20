@@ -560,36 +560,6 @@ class LGBMModel(_LGBMModelBase):
         return self.booster_.predict(X, raw_score=raw_score, num_iteration=num_iteration,
                                      pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
 
-    def apply(self, X, num_iteration=0):
-        """Return the predicted leaf every tree for each sample.
-
-        Parameters
-        ----------
-        X : array-like or sparse matrix of shape = [n_samples, n_features]
-            Input features matrix.
-        num_iteration : int, optional (default=0)
-            Limit number of iterations in the prediction; defaults to 0 (use all trees).
-
-        Returns
-        -------
-        X_leaves : array-like of shape = [n_samples, n_trees]
-            The predicted leaf every tree for each sample.
-        """
-        warnings.warn('apply method is deprecated and will be removed in 2.2 version.\n'
-                      'Please use pred_leaf parameter of predict method instead.',
-                      LGBMDeprecationWarning)
-        if self._n_features is None:
-            raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
-        if not isinstance(X, DataFrame):
-            X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
-        n_features = X.shape[1]
-        if self._n_features != n_features:
-            raise ValueError("Number of features of the model must "
-                             "match the input. Model n_features_ is %s and "
-                             "input n_features is %s "
-                             % (self._n_features, n_features))
-        return self.booster_.predict(X, pred_leaf=True, num_iteration=num_iteration)
-
     @property
     def n_features_(self):
         """Get the number of features of fitted model."""
