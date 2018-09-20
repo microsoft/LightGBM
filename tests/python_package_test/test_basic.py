@@ -13,7 +13,8 @@ from sklearn.model_selection import train_test_split
 class TestBasic(unittest.TestCase):
 
     def test(self):
-        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=2)
+        X_train, X_test, y_train, y_test = train_test_split(*load_breast_cancer(True),
+                                                            test_size=0.1, random_state=2)
         train_data = lgb.Dataset(X_train, label=y_train)
         valid_data = train_data.create_valid(X_test, label=y_test)
 
@@ -80,8 +81,10 @@ class TestBasic(unittest.TestCase):
         valid_data.construct()
 
     def test_subset_group(self):
-        X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.train'))
-        q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.train.query'))
+        X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                           '../../examples/lambdarank/rank.train'))
+        q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                          '../../examples/lambdarank/rank.train.query'))
         lgb_train = lgb.Dataset(X_train, y_train, group=q_train)
         self.assertEqual(len(lgb_train.get_group()), 201)
         subset = lgb_train.subset(list(lgb.compat.range_(10))).construct()
