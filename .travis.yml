@@ -41,10 +41,10 @@ before_install:
   - export BUILD_DIRECTORY="$TRAVIS_BUILD_DIR"
   - if [[ $TRAVIS_OS_NAME == "osx" ]]; then
         export OS_NAME="macos";
-        export COMPILER="gcc"
+        export COMPILER="gcc";
     else
         export OS_NAME="linux";
-        export COMPILER="clang"
+        export COMPILER="clang";
     fi
   - export PATH="$HOME/miniconda/bin:$PATH"
   - export CONDA_ENV="test-env"
