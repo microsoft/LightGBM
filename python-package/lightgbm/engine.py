@@ -262,7 +262,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
     num_data = full_data.num_data()
     if folds is not None:
         if not hasattr(folds, '__iter__') and not hasattr(folds, 'split'):
-            raise AttributeError("folds should be a generator or iterator of (train_idx, test_idx) tuples"
+            raise AttributeError("folds should be a generator or iterator of (train_idx, test_idx) tuples "
                                  "or scikit-learn splitter object with split method")
         if hasattr(folds, 'split'):
             group_info = full_data.get_group()
