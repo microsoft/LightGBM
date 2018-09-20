@@ -17,7 +17,8 @@ if GRAPHVIZ_INSTALLED:
 class TestBasic(unittest.TestCase):
 
     def setUp(self):
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(*load_breast_cancer(True), test_size=0.1, random_state=1)
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(*load_breast_cancer(True),
+                                                                                test_size=0.1, random_state=1)
         self.train_data = lgb.Dataset(self.X_train, self.y_train)
         self.params = {
             "objective": "binary",
