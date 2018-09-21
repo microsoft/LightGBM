@@ -350,6 +350,13 @@ public:
   */
   virtual const char* SubModelName() const override { return "tree"; }
 
+  /*!
+  * \brief Get the trees contained in this boosting class. Used for MOJO writing.
+  */
+  inline const std::vector<std::unique_ptr<Tree>>& GetTrees() const override {
+    return models_;
+  }
+
 protected:
 
   /*!
