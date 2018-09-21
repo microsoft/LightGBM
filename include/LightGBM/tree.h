@@ -134,7 +134,7 @@ public:
 
   inline int split_right_child(int split_idx) const { return right_child_[split_idx]; }
 
-  inline int_8 split_decision_type(int split_idx) const { return decidion_type_[split_idx]; }
+  inline int8_t split_decision_type(int split_idx) const { return decision_type_[split_idx]; }
 
   /*! \brief Get the number of data points that fall at or below this node*/
   inline int data_count(int node) const { return node >= 0 ? internal_count_[node] : leaf_count_[~node]; }
