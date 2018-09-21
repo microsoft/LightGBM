@@ -3,6 +3,7 @@
 
 #include <LightGBM/meta.h>
 #include <LightGBM/config.h>
+#include <LightGBM/tree.h>
 
 #include <vector>
 #include <string>
@@ -292,6 +293,7 @@ public:
   */
   static Boosting* CreateBoosting(const std::string& type, const char* filename);
 
+virtual const std::vector<std::unique_ptr<Tree>>& GetTrees() const = 0;
 };
 
 class GBDTBase : public Boosting {

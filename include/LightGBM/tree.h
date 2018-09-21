@@ -128,6 +128,14 @@ public:
 
   inline double split_gain(int split_idx) const { return split_gain_[split_idx]; }
 
+  inline double split_threshold(int split_idx) const { return threshold_[split_idx]; }
+
+  inline int split_left_child(int split_idx) const { return left_child_[split_idx]; }
+
+  inline int split_right_child(int split_idx) const { return right_child_[split_idx]; }
+
+  inline int_8 split_decision_type(int split_idx) const { return decidion_type_[split_idx]; }
+
   /*! \brief Get the number of data points that fall at or below this node*/
   inline int data_count(int node) const { return node >= 0 ? internal_count_[node] : leaf_count_[~node]; }
 
