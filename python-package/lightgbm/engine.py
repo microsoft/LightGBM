@@ -261,8 +261,17 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
     full_data = full_data.construct()
     num_data = full_data.num_data()
     if folds is not None:
-        if not hasattr(folds, '__iter__'):
-            raise AttributeError("folds should be a generator or iterator of (train_idx, test_idx)")
+        if not hasattr(folds, '__iter__') and not hasattr(folds, 'split'):
+            raise AttributeError("folds should be a generator or iterator of (train_idx, test_idx) tuples "
+                                 "or scikit-learn splitter object with split method")
+        if hasattr(folds, 'split'):
+            group_info = full_data.get_group()
+            if group_info is not None:
+                group_info = group_info.astype(int)
+                flatted_group = np.repeat(range_(len(group_info)), repeats=group_info)
+            else:
+                flatted_group = np.zeros(num_data, dtype=int)
+            folds = folds.split(X=np.zeros(num_data), y=full_data.get_label(), groups=flatted_group)
     else:
         if 'objective' in params and params['objective'] == 'lambdarank':
             if not SKLEARN_INSTALLED:
@@ -332,8 +341,11 @@ def cv(params, train_set, num_boost_round=100,
         Data to be trained on.
     num_boost_round : int, optional (default=100)
         Number of boosting iterations.
-    folds : a generator or iterator of (train_idx, test_idx) tuples or None, optional (default=None)
-        The train and test indices for the each fold.
+    folds : a generator or iterator of (train_idx, test_idx) tuples, scikit-learn splitter object or None, optional (default=None)
+        If generator or iterator, it should yield the train and test indices for the each fold.
+        If object, it should be one of the scikit-learn splitter classes
+        (http://scikit-learn.org/stable/modules/classes.html#splitter-classes)
+        and have ``split`` method.
         This argument has highest priority over other data split arguments.
     nfold : int, optional (default=5)
         Number of folds in CV.
