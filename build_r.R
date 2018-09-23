@@ -1,4 +1,4 @@
-# Fr macOS users who have decided to use gcc
+# For macOS users who have decided to use gcc
 # (replace 8 with version of gcc installed on your machine)
 # NOTE: your gcc / g++ from Homebrew is probably in /usr/local/bin
 #export CXX=/usr/local/bin/g++-8 CC=/usr/local/bin/gcc-8
