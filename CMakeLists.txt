@@ -8,7 +8,7 @@ PROJECT(lightgbm)
 
 OPTION(USE_MPI "MPI based parallel learning" OFF)
 OPTION(USE_OPENMP "Enable OpenMP" ON)
-OPTION(USE_GPU "Enable GPU-acclerated training (EXPERIMENTAL)" OFF)
+OPTION(USE_GPU "Enable GPU-accelerated training (EXPERIMENTAL)" OFF)
 OPTION(USE_SWIG "Enable SWIG to generate Java API" OFF)
 OPTION(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
 OPTION(USE_R35 "Set to ON if your R version is not smaller than 3.5" OFF)
