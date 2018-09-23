@@ -31,8 +31,8 @@ result <- file.copy(from = "include/",
 .handle_result(result)
 
 result <- file.copy(from = "src/",
-                    to = file.path("lightgbm_r", "src/")
-                    , recursive = TRUE,
+                    to = file.path("lightgbm_r", "src/"),
+                    recursive = TRUE,
                     overwrite = TRUE)
 .handle_result(result)
 
