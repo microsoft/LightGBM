@@ -10,7 +10,7 @@ For bugs and unexpected issues, please provide the following information, so tha
 
 Operating System:
 
-CPU:
+CPU/GPU model:
 
 C++/Python/R version:
 
