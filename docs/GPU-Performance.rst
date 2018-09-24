@@ -194,7 +194,7 @@ Further Reading
 You can find more details about the GPU algorithm and benchmarks in the
 following article:
 
-Huan Zhang, Si Si and Cho-Jui Hsieh. `GPU Acceleration for Large-scale Tree Boosting`_. arXiv:1706.08359, 2017.
+Huan Zhang, Si Si and Cho-Jui Hsieh. `GPU Acceleration for Large-scale Tree Boosting`_. SysML Conference, 2018.
 
 .. _link1: https://archive.ics.uci.edu/ml/datasets/HIGGS
 
