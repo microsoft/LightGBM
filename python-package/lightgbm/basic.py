@@ -704,8 +704,9 @@ class Dataset(object):
         self.data_has_header = False
         # process for args
         params = {} if params is None else params
-        args_names = getattr(self.__class__, '_lazy_init').__code__
-                     .co_varnames[:getattr(self.__class__, '_lazy_init').__code__.co_argcount]
+        args_names = (getattr(self.__class__, '_lazy_init')
+                      .__code__
+                      .co_varnames[:getattr(self.__class__, '_lazy_init').__code__.co_argcount])
         for key, _ in params.items():
             if key in args_names:
                 warnings.warn('{0} keyword has been found in `params` and will be ignored.\n'
@@ -1205,8 +1206,9 @@ class Dataset(object):
         self : Dataset
             Dataset with set reference.
         """
-        self.set_categorical_feature(reference.categorical_feature)
-            .set_feature_name(reference.feature_name)._set_predictor(reference._predictor)
+        self.set_categorical_feature(reference.categorical_feature) \
+            .set_feature_name(reference.feature_name) \
+            ._set_predictor(reference._predictor)
         # we're done if self and reference share a common upstrem reference
         if self.get_ref_chain().intersection(reference.get_ref_chain()):
             return self
