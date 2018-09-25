@@ -2132,7 +2132,7 @@ class Booster(object):
             ctypes.c_int(nrow),
             ctypes.c_int(ncol)))
         new_booster.network = self.network
-        new_booster.__attr = self.__attr
+        new_booster.__attr = self.__attr.copy()
         return new_booster
 
     def get_leaf_output(self, tree_id, leaf_id):
