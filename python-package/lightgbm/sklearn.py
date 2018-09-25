@@ -469,7 +469,8 @@ class LGBMModel(_LGBMModelBase):
                 elif isinstance(collection, dict):
                     return collection.get(i, None)
                 else:
-                    raise TypeError('eval_sample_weight, eval_class_weight, eval_init_score, and eval_group should be dict or list')
+                    raise TypeError('eval_sample_weight, eval_class_weight, eval_init_score, and eval_group '
+                                    'should be dict or list')
 
             if isinstance(eval_set, tuple):
                 eval_set = [eval_set]
@@ -480,14 +481,16 @@ class LGBMModel(_LGBMModelBase):
                 else:
                     valid_weight = _get_meta_data(eval_sample_weight, i)
                     if _get_meta_data(eval_class_weight, i) is not None:
-                        valid_class_sample_weight = _LGBMComputeSampleWeight(_get_meta_data(eval_class_weight, i), valid_data[1])
+                        valid_class_sample_weight = _LGBMComputeSampleWeight(_get_meta_data(eval_class_weight, i),
+                                                                             valid_data[1])
                         if valid_weight is None or len(valid_weight) == 0:
                             valid_weight = valid_class_sample_weight
                         else:
                             valid_weight = np.multiply(valid_weight, valid_class_sample_weight)
                     valid_init_score = _get_meta_data(eval_init_score, i)
                     valid_group = _get_meta_data(eval_group, i)
-                    valid_set = _construct_dataset(valid_data[0], valid_data[1], valid_weight, valid_init_score, valid_group, params)
+                    valid_set = _construct_dataset(valid_data[0], valid_data[1],
+                                                   valid_weight, valid_init_score, valid_group, params)
                 valid_sets.append(valid_set)
 
         self._Booster = train(params, train_set,
@@ -786,8 +789,10 @@ class LGBMRanker(LGBMModel):
                 raise ValueError("Eval_group cannot be None when eval_set is not None")
             elif len(eval_group) != len(eval_set):
                 raise ValueError("Length of eval_group should be equal to eval_set")
-            elif (isinstance(eval_group, dict) and any(i not in eval_group or eval_group[i] is None for i in range_(len(eval_group)))) \
-                    or (isinstance(eval_group, list) and any(group is None for group in eval_group)):
+            elif (isinstance(eval_group, dict)
+                  and any(i not in eval_group or eval_group[i] is None for i in range_(len(eval_group)))
+                  or isinstance(eval_group, list)
+                  and any(group is None for group in eval_group)):
                 raise ValueError("Should set group for all eval datasets for ranking task; "
                                  "if you use dict, the index should start from 0")
 
