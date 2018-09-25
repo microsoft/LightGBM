@@ -134,7 +134,7 @@ def param_dict_to_str(data):
     return ' '.join(pairs)
 
 
-class _temp_file(object):
+class _TempFile(object):
     def __enter__(self):
         with NamedTemporaryFile(prefix="lightgbm_tmp_", delete=True) as f:
             self.name = f.name
@@ -421,7 +421,7 @@ class _InnerPredictor(object):
             num_iteration = self.num_total_iteration
 
         if isinstance(data, string_type):
-            with _temp_file() as f:
+            with _TempFile() as f:
                 _safe_call(_LIB.LGBM_BoosterPredictForFile(
                     self.handle,
                     c_str(data),
