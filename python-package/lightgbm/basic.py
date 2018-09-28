@@ -1961,7 +1961,8 @@ class Booster(object):
         self : Booster
             Booster with shuffled models.
         """
-        _safe_call(_LIB.LGBM_BoosterShuffleModels(self.handle,
+        _safe_call(_LIB.LGBM_BoosterShuffleModels(
+            self.handle,
             ctypes.c_int(start_iter),
             ctypes.c_int(end_iter)))
         return self
