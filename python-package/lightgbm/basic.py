@@ -1945,15 +1945,25 @@ class Booster(object):
         _save_pandas_categorical(filename, self.pandas_categorical)
         return self
 
-    def shuffle_models(self):
+    def shuffle_models(self, start_iteration=0, end_iteration=-1):
         """Shuffle models.
+
+        Parameters
+        ----------
+        start_iteration : int, optional (default=0)
+            Index of the iteration that will start to shuffle.
+        end_iteration : int, optional (default=-1)
+            The last iteration that will be shuffled.
+            If <= 0, means the last iterations.
 
         Returns
         -------
         self : Booster
             Booster with shuffled models.
         """
-        _safe_call(_LIB.LGBM_BoosterShuffleModels(self.handle))
+        _safe_call(_LIB.LGBM_BoosterShuffleModels(self.handle,
+            ctypes.c_int(start_iter),
+            ctypes.c_int(end_iter)))
         return self
 
     def model_from_string(self, model_str, verbose=True):
