@@ -1736,7 +1736,7 @@ class Booster(object):
         is_finished = ctypes.c_int(0)
         if fobj is None:
             if self.__set_objective_to_none:
-                raise ValueError('Cannot update due to null objective function.')
+                raise LightGBMError('Cannot update due to null objective function.')
             _safe_call(_LIB.LGBM_BoosterUpdateOneIter(
                 self.handle,
                 ctypes.byref(is_finished)))
@@ -2144,6 +2144,8 @@ class Booster(object):
         result : Booster
             Refitted Booster.
         """
+        if self.__set_objective_to_none:
+            raise LightGBMError('Cannot refit due to null objective function.')
         predictor = self._to_predictor(kwargs)
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
