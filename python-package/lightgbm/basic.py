@@ -1954,7 +1954,7 @@ class Booster(object):
             Index of the iteration that will start to shuffle.
         end_iteration : int, optional (default=-1)
             The last iteration that will be shuffled.
-            If <= 0, means the last iterations.
+            If <= 0, means the last iteration.
 
         Returns
         -------

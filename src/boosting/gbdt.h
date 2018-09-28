@@ -76,7 +76,7 @@ public:
     if (end_iter <= 0) {
       end_iter = total_iter;
     }
-    end_iter = std::min(total_iter, start_iter);
+    end_iter = std::min(total_iter, end_iter);
     auto original_models = std::move(models_);
     std::vector<int> indices(total_iter);
     for (int i = 0; i < total_iter; ++i) {
