@@ -19,7 +19,7 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
     if [[ $PYTHON_VERSION == "2.7" ]]; then
         conda -y -n $CONDA_ENV mock
     fi
-    conda install -y -n $CONDA_ENV sphinx "sphinx_rtd_theme>=0.3"  # html5validator
+    conda install -y -n $CONDA_ENV "sphinx<1.8" "sphinx_rtd_theme>=0.3"  # html5validator
     pip install rstcheck
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
