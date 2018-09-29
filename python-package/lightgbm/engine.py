@@ -129,7 +129,10 @@ def train(params, train_set, num_boost_round=100,
     if not isinstance(train_set, Dataset):
         raise TypeError("Training only accepts Dataset object")
 
-    train_set._update_params(params)._set_predictor(predictor).set_feature_name(feature_name).set_categorical_feature(categorical_feature)
+    train_set._update_params(params) \
+             ._set_predictor(predictor) \
+             .set_feature_name(feature_name) \
+             .set_categorical_feature(categorical_feature)
 
     is_valid_contain_train = False
     train_data_name = "training"
@@ -341,7 +344,7 @@ def cv(params, train_set, num_boost_round=100,
         Data to be trained on.
     num_boost_round : int, optional (default=100)
         Number of boosting iterations.
-    folds : a generator or iterator of (train_idx, test_idx) tuples, scikit-learn splitter object or None, optional (default=None)
+    folds : generator or iterator of (train_idx, test_idx) tuples, scikit-learn splitter object or None, optional (default=None)
         If generator or iterator, it should yield the train and test indices for the each fold.
         If object, it should be one of the scikit-learn splitter classes
         (http://scikit-learn.org/stable/modules/classes.html#splitter-classes)
@@ -434,7 +437,10 @@ def cv(params, train_set, num_boost_round=100,
         predictor = init_model._to_predictor(dict(init_model.params, **params))
     else:
         predictor = None
-    train_set._update_params(params)._set_predictor(predictor).set_feature_name(feature_name).set_categorical_feature(categorical_feature)
+    train_set._update_params(params) \
+             ._set_predictor(predictor) \
+             .set_feature_name(feature_name) \
+             .set_categorical_feature(categorical_feature)
 
     if metrics is not None:
         params['metric'] = metrics

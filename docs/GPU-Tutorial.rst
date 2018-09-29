@@ -188,7 +188,7 @@ Reference
 
 Please kindly cite the following article in your publications if you find the GPU acceleration useful:
 
-Huan Zhang, Si Si and Cho-Jui Hsieh. "`GPU Acceleration for Large-scale Tree Boosting`_." arXiv:1706.08359, 2017.
+Huan Zhang, Si Si and Cho-Jui Hsieh. "`GPU Acceleration for Large-scale Tree Boosting`_." SysML Conference, 2018.
 
 .. _Microsoft Azure cloud computing platform: https://azure.microsoft.com/
 

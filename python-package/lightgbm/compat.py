@@ -90,7 +90,8 @@ try:
     from sklearn.preprocessing import LabelEncoder
     from sklearn.utils.class_weight import compute_sample_weight
     from sklearn.utils.multiclass import check_classification_targets
-    from sklearn.utils.validation import check_X_y, check_array, check_consistent_length
+    from sklearn.utils.validation import (assert_all_finite, check_X_y,
+                                          check_array, check_consistent_length)
     try:
         from sklearn.model_selection import StratifiedKFold, GroupKFold
         from sklearn.exceptions import NotFittedError
@@ -108,6 +109,7 @@ try:
     _LGBMCheckXY = check_X_y
     _LGBMCheckArray = check_array
     _LGBMCheckConsistentLength = check_consistent_length
+    _LGBMAssertAllFinite = assert_all_finite
     _LGBMCheckClassificationTargets = check_classification_targets
     _LGBMComputeSampleWeight = compute_sample_weight
 except ImportError:
@@ -122,6 +124,7 @@ except ImportError:
     _LGBMCheckXY = None
     _LGBMCheckArray = None
     _LGBMCheckConsistentLength = None
+    _LGBMAssertAllFinite = None
     _LGBMCheckClassificationTargets = None
     _LGBMComputeSampleWeight = None
 

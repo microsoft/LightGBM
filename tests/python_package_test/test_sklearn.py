@@ -6,19 +6,16 @@ import unittest
 
 import lightgbm as lgb
 import numpy as np
+from sklearn import __version__ as sk_version
 from sklearn.base import clone
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
                               load_iris, load_svmlight_file)
+from sklearn.exceptions import SkipTestWarning
 from sklearn.externals import joblib
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.utils.estimator_checks import (_yield_all_checks, SkipTest,
                                             check_parameters_default_constructible)
-try:
-    from sklearn.utils.estimator_checks import check_no_fit_attributes_set_in_init
-    sklearn_at_least_019 = True
-except ImportError:
-    sklearn_at_least_019 = False
 
 
 def multi_error(y_true, y_pred):
@@ -189,17 +186,17 @@ class TestSklearn(unittest.TestCase):
         self.assertNotEqual(importance_split_top1, importance_gain_top1)
 
     # sklearn <0.19 cannot accept instance, but many tests could be passed only with min_data=1 and min_data_in_bin=1
-    @unittest.skipIf(not sklearn_at_least_019, 'scikit-learn version is less than 0.19')
+    @unittest.skipIf(sk_version < '0.19.0', 'scikit-learn version is less than 0.19')
     def test_sklearn_integration(self):
         # we cannot use `check_estimator` directly since there is no skip test mechanism
         for name, estimator in ((lgb.sklearn.LGBMClassifier.__name__, lgb.sklearn.LGBMClassifier),
                                 (lgb.sklearn.LGBMRegressor.__name__, lgb.sklearn.LGBMRegressor)):
             check_parameters_default_constructible(name, estimator)
-            check_no_fit_attributes_set_in_init(name, estimator)
             # we cannot leave default params (see https://github.com/Microsoft/LightGBM/issues/833)
             estimator = estimator(min_child_samples=1, min_data_in_bin=1)
             for check in _yield_all_checks(name, estimator):
-                if check.__name__ == 'check_estimators_nan_inf':
+                check_name = check.func.__name__ if hasattr(check, 'func') else check.__name__
+                if check_name == 'check_estimators_nan_inf':
                     continue  # skip test because LightGBM deals with nan
                 try:
                     check(name, estimator)

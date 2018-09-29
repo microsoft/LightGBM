@@ -47,7 +47,7 @@ public:
       tmp_grad_.resize(num_data_);
       tmp_hess_.resize(num_data_);
     }
-    tmp_score_.resize(num_data_, 0.0f);
+    tmp_score_.resize(num_data_, 0.0);
   }
 
   void ResetConfig(const Config* config) override {
@@ -74,31 +74,31 @@ public:
       tmp_grad_.resize(num_data_);
       tmp_hess_.resize(num_data_);
     }
-    tmp_score_.resize(num_data_, 0.0f);
+    tmp_score_.resize(num_data_, 0.0);
   }
 
   void GetRFTargets(const Dataset* train_data) {
     auto label_ptr = train_data->metadata().label();
-    std::fill(hessians_.begin(), hessians_.end(), 1);
+    std::fill(hessians_.begin(), hessians_.end(), 1.0f);
     if (num_tree_per_iteration_ == 1) {
       OMP_INIT_EX();
       #pragma omp parallel for schedule(static,1)
       for (data_size_t i = 0; i < train_data->num_data(); ++i) {
         OMP_LOOP_EX_BEGIN();
-        double label = label_ptr[i];
+        score_t label = label_ptr[i];
         gradients_[i] = static_cast<score_t>(-label);
         OMP_LOOP_EX_END();
       }
       OMP_THROW_EX();
     }
     else {
-      std::fill(gradients_.begin(), gradients_.end(), 0);
+      std::fill(gradients_.begin(), gradients_.end(), 0.0f);
       OMP_INIT_EX();
       #pragma omp parallel for schedule(static,1)
       for (data_size_t i = 0; i < train_data->num_data(); ++i) {
         OMP_LOOP_EX_BEGIN();
-        double label = label_ptr[i];
-        gradients_[i + static_cast<int>(label) * num_data_] = -1;
+        score_t label = label_ptr[i];
+        gradients_[i + static_cast<int>(label) * num_data_] = -1.0f;
         OMP_LOOP_EX_END();
       }
       OMP_THROW_EX();
