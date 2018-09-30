@@ -36,6 +36,7 @@ else  # Linux
     fi
     if [[ $TASK == "gpu" ]]; then
         if [[ $AZURE == "true" ]]; then
+            sudo add-apt-repository ppa:boost-latest/ppa
             sudo apt-get update
             sudo apt-get install --no-install-recommends -y libboost-dev libboost-system-dev libboost-filesystem-dev
         fi
