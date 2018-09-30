@@ -7,7 +7,7 @@ phases:
 ###########################################
   variables:
     COMPILER: gcc
-    _PREVIEW_VSTS_DOCKER_IMAGE: lightgbm/vsts-ubuntu14.04
+    _PREVIEW_VSTS_DOCKER_IMAGE: lightgbm/vsts-agent:ubuntu-14.04
   queue:
     name: 'Hosted Ubuntu 1604'
     parallel: 6
@@ -32,7 +32,7 @@ phases:
         PYTHON_VERSION: 3.6
   steps:
   - script: |
-      sudo chmod -R 777 /usr/usr/miniconda/envs
+      sudo chmod -R 777 /usr/local/miniconda/envs
     displayName: 'Fix for conda error on linux'
   - task: CondaEnvironment@0
     inputs:
