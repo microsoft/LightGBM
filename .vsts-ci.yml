@@ -3,14 +3,14 @@ variables:
   CONDA_ENV: test-env
 phases:
 ###########################################
-- phase: Linux_build
+- phase: Linux
 ###########################################
   variables:
     COMPILER: gcc
-    _PREVIEW_VSTS_DOCKER_IMAGE: microsoft/vsts-agent:ubuntu-14.04
+    _PREVIEW_VSTS_DOCKER_IMAGE: lightgbm/vsts-ubuntu14.04
   queue:
     name: 'Hosted Ubuntu 1604'
-    parallel: 3
+    parallel: 6
     matrix:
       regular:
         TASK: regular
@@ -20,9 +20,19 @@ phases:
       bdist:
         TASK: bdist
         PYTHON_VERSION: 3.6
+      inference:
+        TASK: if-else
+      mpi_source:
+        TASK: mpi
+        METHOD: source
+        PYTHON_VERSION: 2.7
+      gpu_source:
+        TASK: gpu
+        METHOD: source
+        PYTHON_VERSION: 3.6
   steps:
   - script: |
-      sudo chmod -R 777 /usr/share/miniconda/envs
+      sudo chmod -R 777 /usr/usr/miniconda/envs
     displayName: 'Fix for conda error on linux'
   - task: CondaEnvironment@0
     inputs:
@@ -52,48 +62,6 @@ phases:
       pathtoPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: PackageAssets
       artifactType: container
-###########################################
-- phase: Linux_test
-###########################################
-  variables:
-    COMPILER: gcc
-  queue:
-    name: 'Hosted Linux Preview'
-    parallel: 3
-    matrix:
-      inference:
-        TASK: if-else
-      mpi_source:
-        TASK: mpi
-        METHOD: source
-        PYTHON_VERSION: 2.7
-      gpu_source:
-        TASK: gpu
-        METHOD: source
-        PYTHON_VERSION: 3.6
-  steps:
-  - task: CondaEnvironment@0
-    inputs:
-      updateConda: true
-      environmentName: $(CONDA_ENV)
-      packageSpecs: 'python=$(PYTHON_VERSION)'
-      createOptions: '-q'
-  - script: |
-      echo "##vso[task.setvariable variable=HOME_DIRECTORY]$AGENT_HOMEDIRECTORY"
-      echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
-      echo "##vso[task.setvariable variable=OS_NAME]linux"
-      echo "##vso[task.setvariable variable=AZURE]true"
-      echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
-      AMDAPPSDK_PATH=$AGENT_HOMEDIRECTORY/AMDAPPSDK
-      echo "##vso[task.setvariable variable=AMDAPPSDK_PATH]$AMDAPPSDK_PATH"
-      LD_LIBRARY_PATH=$AMDAPPSDK_PATH/lib/x86_64:$LD_LIBRARY_PATH
-      echo "##vso[task.setvariable variable=LD_LIBRARY_PATH]$LD_LIBRARY_PATH"
-      echo "##vso[task.setvariable variable=OPENCL_VENDOR_PATH]$AMDAPPSDK_PATH/etc/OpenCL/vendors"
-    displayName: 'Set variables'
-  - bash: $(Build.SourcesDirectory)/.ci/setup.sh
-    displayName: Setup
-  - bash: $(Build.SourcesDirectory)/.ci/test.sh
-    displayName: Test
 ###########################################
 - phase: MacOS
 ###########################################
@@ -174,7 +142,7 @@ phases:
 - phase: Package
 ###########################################
   dependsOn:
-  - Linux_build
+  - Linux
   - MacOS
   - Windows
   condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
