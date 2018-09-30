@@ -34,11 +34,13 @@ else  # Linux
     if [[ $TASK == "gpu" ]]; then
         sudo apt-get install --no-install-recommends -y ocl-icd-opencl-dev
         cd $HOME_DIRECTORY
-        sudo chmod -R 777 $HOME_DIRECTORY
+        sudo chmod 777 $HOME_DIRECTORY
         wget https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
         tar -xjf AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
         mkdir -p $OPENCL_VENDOR_PATH
         mkdir -p $AMDAPPSDK_PATH
+        sudo chmod 777 $OPENCL_VENDOR_PATH
+        sudo chmod 777 $AMDAPPSDK_PATH
         sh AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2 --tar -xf -C $AMDAPPSDK_PATH
         mv $AMDAPPSDK_PATH/lib/x86_64/sdk/* $AMDAPPSDK_PATH/lib/x86_64/
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
