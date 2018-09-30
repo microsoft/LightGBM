@@ -35,11 +35,6 @@ else  # Linux
         sudo apt-get install -y libopenmpi-dev openmpi-bin
     fi
     if [[ $TASK == "gpu" ]]; then
-        if [[ $AZURE == "true" ]]; then
-            sudo add-apt-repository ppa:boost-latest/ppa
-            sudo apt-get update
-            sudo apt-get install --no-install-recommends -y libboost-dev libboost-system-dev libboost-filesystem-dev
-        fi
         sudo apt-get install --no-install-recommends -y ocl-icd-opencl-dev
         cd $HOME_DIRECTORY
         wget -q https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2

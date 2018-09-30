@@ -92,18 +92,12 @@ elif [[ $TASK == "bdist" ]]; then
 fi
 
 if [[ $TASK == "gpu" ]]; then
-    if [[ $TRAVIS == "true" ]]; then
-        conda install -y -n $CONDA_ENV -c conda-forge boost
-    fi
+    conda install -y -n $CONDA_ENV -c conda-forge boost
     sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $BUILD_DIRECTORY/include/LightGBM/config.h
     grep -q 'std::string device_type = "gpu"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
-        if [[ $AZURE == "true" ]]; then
-            pip install $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--opencl-include-dir=$AMDAPPSDK_PATH/include/" || exit -1
-        else
-            pip install $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--boost-root=$CONDA_PREFIX" --install-option="--opencl-include-dir=$AMDAPPSDK_PATH/include/" || exit -1
-        fi
+        pip install $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--boost-root=$CONDA_PREFIX" --install-option="--opencl-include-dir=$AMDAPPSDK_PATH/include/" || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     fi
@@ -120,11 +114,7 @@ if [[ $TASK == "mpi" ]]; then
     fi
     cmake -DUSE_MPI=ON ..
 elif [[ $TASK == "gpu" ]]; then
-    if [[ $AZURE == "true" ]]; then
-        cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
-    else
-        cmake -DUSE_GPU=ON -DBOOST_ROOT=$CONDA_PREFIX -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
-    fi
+    cmake -DUSE_GPU=ON -DBOOST_ROOT=$CONDA_PREFIX -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
 else
     cmake ..
 fi
