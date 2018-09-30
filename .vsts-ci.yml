@@ -7,7 +7,7 @@ phases:
 ###########################################
   variables:
     COMPILER: gcc
-    _PREVIEW_VSTS_DOCKER_IMAGE: microsoft/vsts-agent:ubuntu-14.04-standard
+    _PREVIEW_VSTS_DOCKER_IMAGE: microsoft/vsts-agent:ubuntu-14.04
   queue:
     name: 'Hosted Ubuntu 1604'
     parallel: 3
