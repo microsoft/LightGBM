@@ -35,10 +35,10 @@ else  # Linux
         sudo apt-get install --no-install-recommends -y ocl-icd-opencl-dev
         cd $HOME_DIRECTORY
         wget -q https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
-        tar -xjf AMD-APP-SDK*.tar.bz2
+        tar -xjf AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
         mkdir -p $OPENCL_VENDOR_PATH
         mkdir -p $AMDAPPSDK_PATH
-        sh AMD-APP-SDK*.sh --tar -xf -C $AMDAPPSDK_PATH
+        sh AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2 --tar -xf -C $AMDAPPSDK_PATH
         mv $AMDAPPSDK_PATH/lib/x86_64/sdk/* $AMDAPPSDK_PATH/lib/x86_64/
         echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
     fi
