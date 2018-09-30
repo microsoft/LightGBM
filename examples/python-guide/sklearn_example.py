@@ -66,7 +66,7 @@ param_grid = {
     'n_estimators': [20, 40]
 }
 
-gbm = GridSearchCV(estimator, param_grid)
+gbm = GridSearchCV(estimator, param_grid, cv=3)
 
 gbm.fit(X_train, y_train)
 
