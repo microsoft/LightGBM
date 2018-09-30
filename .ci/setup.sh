@@ -22,21 +22,27 @@ if [[ $OS_NAME == "macos" ]]; then
         wget -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
     fi
 else  # Linux
-    if [[ $AZURE == "true" ]] && [[ $COMPILER == "clang" ]]; then
-        update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-6.0 100
-        update-alternatives --install /usr/bin/clang clang /usr/bin/clang-6.0 100
+    if [[ $AZURE == "true" ]]; then
         sudo apt-get update
+    fi
+    if [[ $AZURE == "true" ]] && [[ $COMPILER == "clang" ]]; then
+        sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-6.0 100
+        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-6.0 100
         sudo apt-get install libomp-dev
+    elif [[ $AZURE == "true" ]] && [[ $COMPILER == "gcc" ]]; then
+        # downgrade gcc version
+        sudo apt-get remove gcc
+        sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+        sudo apt-get update
+        sudo apt-get install g++-4.8
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 100
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 100
     fi
     if [[ $TASK == "mpi" ]]; then
-        if [[ $AZURE == "true" ]]; then
-            sudo apt-get update
-        fi
         sudo apt-get install -y libopenmpi-dev openmpi-bin
     fi
     if [[ $TASK == "gpu" ]]; then
         if [[ $AZURE == "true" ]]; then
-            sudo apt-get update
             sudo apt-get install --no-install-recommends -y libboost-dev libboost-system-dev libboost-filesystem-dev
         fi
         sudo apt-get install --no-install-recommends -y ocl-icd-opencl-dev
