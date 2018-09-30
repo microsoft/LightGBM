@@ -22,16 +22,13 @@ if [[ $OS_NAME == "macos" ]]; then
         wget -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
     fi
 else  # Linux
+    sudo apt-get update
     if [[ $AZURE == "true" ]] && [[ $COMPILER == "clang" ]]; then
         update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-6.0 100
         update-alternatives --install /usr/bin/clang clang /usr/bin/clang-6.0 100
-        sudo apt-get update
         sudo apt-get install libomp-dev
     fi
     if [[ $TASK == "mpi" ]]; then
-        if [[ $AZURE == "true" ]]; then
-            sudo apt-get update
-        fi
         sudo apt-get install -y libopenmpi-dev openmpi-bin
     fi
     if [[ $TASK == "gpu" ]]; then
