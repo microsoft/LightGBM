@@ -548,6 +548,9 @@ class _InnerPredictor(object):
             ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
             ptr_data, type_ptr_data, _ = c_float_array(csr.data)
 
+            assert csr.shape[1] <= np.iinfo(np.int32).max
+            csr.indices = csr.indices.astype(np.int32, copy=False)
+
             _safe_call(_LIB.LGBM_BoosterPredictForCSR(
                 self.handle,
                 ptr_indptr,
@@ -595,6 +598,9 @@ class _InnerPredictor(object):
 
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
         ptr_data, type_ptr_data, _ = c_float_array(csc.data)
+
+        assert csc.shape[0] <= np.iinfo(np.int32).max
+        csc.indices = csc.indices.astype(np.int32, copy=False)
 
         _safe_call(_LIB.LGBM_BoosterPredictForCSC(
             self.handle,
@@ -888,6 +894,9 @@ class Dataset(object):
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
         ptr_data, type_ptr_data, _ = c_float_array(csr.data)
 
+        assert csr.shape[1] <= np.iinfo(np.int32).max
+        csr.indices = csr.indices.astype(np.int32, copy=False)
+
         _safe_call(_LIB.LGBM_DatasetCreateFromCSR(
             ptr_indptr,
             ctypes.c_int(type_ptr_indptr),
@@ -912,6 +921,9 @@ class Dataset(object):
 
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
         ptr_data, type_ptr_data, _ = c_float_array(csc.data)
+
+        assert csc.shape[0] <= np.iinfo(np.int32).max
+        csc.indices = csc.indices.astype(np.int32, copy=False)
 
         _safe_call(_LIB.LGBM_DatasetCreateFromCSC(
             ptr_indptr,
