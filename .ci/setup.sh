@@ -22,14 +22,12 @@ if [[ $OS_NAME == "macos" ]]; then
         wget -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
     fi
 else  # Linux
-    if [[ $AZURE == "true" ]]; then
-        sudo apt-get update
-    fi
+    sudo apt-get update
     if [[ $AZURE == "true" ]] && [[ $COMPILER == "clang" ]]; then
         sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-6.0 100
         sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-6.0 100
         sudo apt-get install libomp-dev
-    elif [[ $AZURE == "true" ]] && [[ $COMPILER == "gcc" ]]; then
+    elif [[ $AZURE == "true" ]] && [[ $COMPILER == "gcc" ]] && [[ $TASK != "gpu" ]]; then
         # downgrade gcc version
         sudo apt-get remove gcc
         sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
