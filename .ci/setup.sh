@@ -29,15 +29,15 @@ else  # Linux
         sudo apt-get install libomp-dev
     elif [[ $AZURE == "true" ]] && [[ $COMPILER == "gcc" ]] && [[ $TASK != "gpu" ]]; then
         # downgrade gcc version
-        sudo apt-get remove gcc
+        sudo apt-get remove -y gcc
         sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
         sudo apt-get update
-        sudo apt-get install g++-4.8
+        sudo apt-get install --no-install-recommends -y g++-4.8
         sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 100
         sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 100
     fi
     if [[ $TASK == "mpi" ]]; then
-        sudo apt-get install -y libopenmpi-dev openmpi-bin
+        sudo apt-get install --no-install-recommends -y libopenmpi-dev openmpi-bin
     fi
     if [[ $TASK == "gpu" ]]; then
         if [[ $AZURE == "true" ]]; then
