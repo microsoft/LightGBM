@@ -18,11 +18,11 @@ We used 5 datasets to conduct our comparison experiments. Details of data are li
 +-----------+-----------------------+------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
 | Yahoo LTR | Learning to rank      | `link <https://webscope.sandbox.yahoo.com/catalog.php?datatype=c>`__   | 473,134     | 700      | set1.train as train, set1.test as test       |
 +-----------+-----------------------+------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
-| MS LTR    | Learning to rank      | `link <http://research.microsoft.com/en-us/projects/mslr/>`__          | 2,270,296   | 137      | {S1,S2,S3} as train set, {S5} as test set    |
+| MS LTR    | Learning to rank      | `link <http://research.microsoft.com/en-us/projects/mslr/>`__          | 2,570,296   | 230      | {S1,S2,S3} as train set, {S5} as test set    |
 +-----------+-----------------------+------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
-| Expo      | Binary classification | `link <http://stat-computing.org/dataexpo/2009/>`__                    | 11,000,000  | 700      | last 1,000,000 samples were used as test set |
+| Expo      | Binary classification | `link <http://stat-computing.org/dataexpo/2009/>`__                    | 11,400,000  | 750      | last 1,000,000 samples were used as test set |
 +-----------+-----------------------+------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
-| Allstate  | Binary classification | `link <https://www.kaggle.com/c/ClaimPredictionChallenge>`__           | 13,184,290  | 4228     | last 1,000,000 samples were used as test set |
+| Allstate  | Binary classification | `link <https://www.kaggle.com/c/ClaimPredictionChallenge>`__           | 13,194,290  | 4228     | last 1,000,000 samples were used as test set |
 +-----------+-----------------------+------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
 
 Environment
