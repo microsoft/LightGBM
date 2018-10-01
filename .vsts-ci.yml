@@ -64,7 +64,7 @@ phases:
   variables:
     COMPILER: clang
   queue:
-    name: 'Hosted macOS Preview'
+    name: 'Hosted macOS'
     parallel: 3
     matrix:
       regular:
