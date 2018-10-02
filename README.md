@@ -14,13 +14,13 @@ LightGBM, Light Gradient Boosting Machine
 
 LightGBM is a gradient boosting framework that uses tree based learning algorithms. It is designed to be distributed and efficient with the following advantages:
 
-- Faster training speed and higher efficiency
-- Lower memory usage
-- Better accuracy
-- Parallel and GPU learning supported
-- Capable of handling large-scale data
+- Faster training speed and higher efficiency.
+- Lower memory usage.
+- Better accuracy.
+- Parallel and GPU learning supported.
+- Capable of handling large-scale data.
 
-For more details, please refer to [Features](https://github.com/Microsoft/LightGBM/blob/master/docs/Features.rst). Benefit from these advantages, LightGBM is being widely-used in many [winning solutions](https://github.com/Microsoft/LightGBM/blob/master/examples/README.md#machine-learning-challenge-winning-solutions) of machine learning competitions.
+For further details, please refer to [Features](https://github.com/Microsoft/LightGBM/blob/master/docs/Features.rst). Benefits from these advantages, LightGBM is being widely-used in many [winning solutions](https://github.com/Microsoft/LightGBM/blob/master/examples/README.md#machine-learning-challenge-winning-solutions) of machine learning competitions.
 
 [Comparison experiments](https://github.com/Microsoft/LightGBM/blob/master/docs/Experiments.rst#comparison-experiment) on public datasets show that LightGBM can outperform existing boosting frameworks on both efficiency and accuracy, with significantly lower memory consumption. What's more, the [parallel experiments](https://github.com/Microsoft/LightGBM/blob/master/docs/Experiments.rst#parallel-experiment) show that LightGBM can achieve a linear speed-up by using multiple machines for training in specific settings. 
 
@@ -69,9 +69,9 @@ Our primary documentation is at https://lightgbm.readthedocs.io/ and is generate
 
 Next you may want to read:
 
-* [**Examples**](https://github.com/Microsoft/LightGBM/tree/master/examples) showing command line usage of common tasks
-* [**Features**](https://github.com/Microsoft/LightGBM/blob/master/docs/Features.rst) and algorithms supported by LightGBM
-* [**Parameters**](https://github.com/Microsoft/LightGBM/blob/master/docs/Parameters.rst) is an exhaustive list of customization you can make
+* [**Examples**](https://github.com/Microsoft/LightGBM/tree/master/examples) showing command line usage of common tasks.
+* [**Features**](https://github.com/Microsoft/LightGBM/blob/master/docs/Features.rst) and algorithms supported by LightGBM.
+* [**Parameters**](https://github.com/Microsoft/LightGBM/blob/master/docs/Parameters.rst) is an exhaustive list of customization you can make.
 * [**Parallel Learning**](https://github.com/Microsoft/LightGBM/blob/master/docs/Parallel-Learning-Guide.rst) and [**GPU Learning**](https://github.com/Microsoft/LightGBM/blob/master/docs/GPU-Tutorial.rst) can speed up computation
 * [**Laurae++ interactive documentation**](https://sites.google.com/view/lauraepp/parameters) is a detailed guide for hyperparameters
 
