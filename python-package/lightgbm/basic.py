@@ -549,6 +549,9 @@ class _InnerPredictor(object):
             ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
             ptr_data, type_ptr_data, _ = c_float_array(csr.data)
 
+            assert csr.shape[1] <= MAX_INT32
+            csr.indices = csr.indices.astype(np.int32, copy=False)
+
             _safe_call(_LIB.LGBM_BoosterPredictForCSR(
                 self.handle,
                 ptr_indptr,
@@ -596,6 +599,9 @@ class _InnerPredictor(object):
 
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
         ptr_data, type_ptr_data, _ = c_float_array(csc.data)
+
+        assert csc.shape[0] <= MAX_INT32
+        csc.indices = csc.indices.astype(np.int32, copy=False)
 
         _safe_call(_LIB.LGBM_BoosterPredictForCSC(
             self.handle,
@@ -889,6 +895,9 @@ class Dataset(object):
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
         ptr_data, type_ptr_data, _ = c_float_array(csr.data)
 
+        assert csr.shape[1] <= MAX_INT32
+        csr.indices = csr.indices.astype(np.int32, copy=False)
+
         _safe_call(_LIB.LGBM_DatasetCreateFromCSR(
             ptr_indptr,
             ctypes.c_int(type_ptr_indptr),
@@ -913,6 +922,9 @@ class Dataset(object):
 
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
         ptr_data, type_ptr_data, _ = c_float_array(csc.data)
+
+        assert csc.shape[0] <= MAX_INT32
+        csc.indices = csc.indices.astype(np.int32, copy=False)
 
         _safe_call(_LIB.LGBM_DatasetCreateFromCSC(
             ptr_indptr,
@@ -1737,7 +1749,7 @@ class Booster(object):
         is_finished = ctypes.c_int(0)
         if fobj is None:
             if self.__set_objective_to_none:
-                raise ValueError('Cannot update due to null objective function.')
+                raise LightGBMError('Cannot update due to null objective function.')
             _safe_call(_LIB.LGBM_BoosterUpdateOneIter(
                 self.handle,
                 ctypes.byref(is_finished)))
@@ -2156,6 +2168,8 @@ class Booster(object):
         result : Booster
             Refitted Booster.
         """
+        if self.__set_objective_to_none:
+            raise LightGBMError('Cannot refit due to null objective function.')
         predictor = self._to_predictor(copy.deepcopy(kwargs))
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
@@ -2172,6 +2186,8 @@ class Booster(object):
             ptr_data,
             ctypes.c_int(nrow),
             ctypes.c_int(ncol)))
+        new_booster.network = self.network
+        new_booster.__attr = self.__attr.copy()
         return new_booster
 
     def get_leaf_output(self, tree_id, leaf_id):
