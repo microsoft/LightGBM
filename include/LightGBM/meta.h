@@ -62,10 +62,6 @@ typedef void(*AllgatherFunction)(char* input, comm_size_t input_size, const comm
 #define __func__ __FUNCTION__
 #endif
 
-#ifdef GCC
-__asm__(".symver lgamma, lgamma@GLIBC_2.2.5");
-#endif
-
 }  // namespace LightGBM
 
 #endif   // LightGBM_META_H_
