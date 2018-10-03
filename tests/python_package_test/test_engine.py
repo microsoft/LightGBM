@@ -451,7 +451,8 @@ class TestEngine(unittest.TestCase):
         lgb_train = lgb.Dataset(X_train, y_train)
         # shuffle = False, override metric in params
         params_with_metric = {'metric': 'l2', 'verbose': -1}
-        cv_res = lgb.cv(params_with_metric, lgb_train, num_boost_round=10, nfold=3, stratified=False, shuffle=False,
+        cv_res = lgb.cv(params_with_metric, lgb_train, num_boost_round=10,
+                        nfold=3, stratified=False, shuffle=False,
                         metrics='l1', verbose_eval=False)
         self.assertIn('l1-mean', cv_res)
         self.assertNotIn('l2-mean', cv_res)
@@ -465,10 +466,10 @@ class TestEngine(unittest.TestCase):
         # self defined folds
         tss = TimeSeriesSplit(3)
         folds = tss.split(X_train)
-        cv_res_gen = lgb.cv(params, lgb_train, num_boost_round=10, folds=folds,
-                            metrics='l2', verbose_eval=False)
-        cv_res_obj = lgb.cv(params, lgb_train, num_boost_round=10, folds=tss,
-                            metrics='l2', verbose_eval=False)
+        cv_res_gen = lgb.cv(params_with_metric, lgb_train, num_boost_round=10, folds=folds,
+                            verbose_eval=False)
+        cv_res_obj = lgb.cv(params_with_metric, lgb_train, num_boost_round=10, folds=tss,
+                            verbose_eval=False)
         np.testing.assert_almost_equal(cv_res_gen['l2-mean'], cv_res_obj['l2-mean'])
         # lambdarank
         X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -477,21 +478,21 @@ class TestEngine(unittest.TestCase):
                                           '../../examples/lambdarank/rank.train.query'))
         params_lambdarank = {'objective': 'lambdarank', 'verbose': -1, 'eval_at': 3}
         lgb_train = lgb.Dataset(X_train, y_train, group=q_train)
-        # ... with NDCG (default) metric
-        cv_res_lambda = lgb.cv(params_lambdarank, lgb_train, num_boost_round=10, nfold=3,
-                               verbose_eval=False)
-        self.assertEqual(len(cv_res_lambda), 2)
-        self.assertFalse(np.isnan(cv_res_lambda['ndcg@3-mean']).any())
         # ... with l2 metric
         cv_res_lambda = lgb.cv(params_lambdarank, lgb_train, num_boost_round=10, nfold=3,
                                metrics='l2', verbose_eval=False)
         self.assertEqual(len(cv_res_lambda), 2)
         self.assertFalse(np.isnan(cv_res_lambda['l2-mean']).any())
+        # ... with NDCG (default) metric
+        cv_res_lambda = lgb.cv(params_lambdarank, lgb_train, num_boost_round=10, nfold=3,
+                               verbose_eval=False)
+        self.assertEqual(len(cv_res_lambda), 2)
+        self.assertFalse(np.isnan(cv_res_lambda['ndcg@3-mean']).any())
         # self defined folds with lambdarank
         cv_res_lambda_obj = lgb.cv(params_lambdarank, lgb_train, num_boost_round=10,
                                    folds=GroupKFold(n_splits=3),
-                                   metrics='l2', verbose_eval=False)
-        np.testing.assert_almost_equal(cv_res_lambda['l2-mean'], cv_res_lambda_obj['l2-mean'])
+                                   verbose_eval=False)
+        np.testing.assert_almost_equal(cv_res_lambda['ndcg@3-mean'], cv_res_lambda_obj['ndcg@3-mean'])
 
     def test_feature_name(self):
         X, y = load_boston(True)

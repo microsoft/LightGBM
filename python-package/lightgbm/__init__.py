@@ -35,11 +35,12 @@ __all__ = ['Dataset', 'Booster',
            'print_evaluation', 'record_evaluation', 'reset_parameter', 'early_stopping',
            'plot_importance', 'plot_metric', 'plot_tree', 'create_tree_digraph']
 
+# REMOVEME: remove warning after 2.3.0 version release
 if system() == 'Darwin':
     warnings.warn("Starting from version 2.2.1, the library file in distribution wheels for macOS "
-                  "will be built by the Apple Clang compiler.\n"
+                  "is built by the Apple Clang (Xcode_9.4.1) compiler.\n"
                   "This means that in case of installing LightGBM from PyPI via the ``pip install lightgbm`` command, "
-                  "you won't need to install the gcc compiler anymore.\n"
-                  "Instead of that, you'll need to install the OpenMP library, "
+                  "you don't need to install the gcc compiler anymore.\n"
+                  "Instead of that, you need to install the OpenMP library, "
                   "which is required for running LightGBM on the system with the Apple Clang compiler.\n"
-                  "You can install the OpenMP library by the following command: ``brew install libomp``.", FutureWarning)
+                  "You can install the OpenMP library by the following command: ``brew install libomp``.", UserWarning)

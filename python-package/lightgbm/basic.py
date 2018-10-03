@@ -13,10 +13,11 @@ from tempfile import NamedTemporaryFile
 import numpy as np
 import scipy.sparse
 
-from .compat import (DataFrame, LGBMDeprecationWarning, Series,
-                     decode_string, integer_types,
+from .compat import (DataFrame, Series,
+                     decode_string, string_type,
+                     integer_types, numeric_types,
                      json, json_default_with_numpy,
-                     numeric_types, range_, zip_, string_type)
+                     range_, zip_)
 from .libpath import find_lib_path
 
 
@@ -548,6 +549,9 @@ class _InnerPredictor(object):
             ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
             ptr_data, type_ptr_data, _ = c_float_array(csr.data)
 
+            assert csr.shape[1] <= MAX_INT32
+            csr.indices = csr.indices.astype(np.int32, copy=False)
+
             _safe_call(_LIB.LGBM_BoosterPredictForCSR(
                 self.handle,
                 ptr_indptr,
@@ -595,6 +599,9 @@ class _InnerPredictor(object):
 
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
         ptr_data, type_ptr_data, _ = c_float_array(csc.data)
+
+        assert csc.shape[0] <= MAX_INT32
+        csc.indices = csc.indices.astype(np.int32, copy=False)
 
         _safe_call(_LIB.LGBM_BoosterPredictForCSC(
             self.handle,
@@ -888,6 +895,9 @@ class Dataset(object):
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
         ptr_data, type_ptr_data, _ = c_float_array(csr.data)
 
+        assert csr.shape[1] <= MAX_INT32
+        csr.indices = csr.indices.astype(np.int32, copy=False)
+
         _safe_call(_LIB.LGBM_DatasetCreateFromCSR(
             ptr_indptr,
             ctypes.c_int(type_ptr_indptr),
@@ -912,6 +922,9 @@ class Dataset(object):
 
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
         ptr_data, type_ptr_data, _ = c_float_array(csc.data)
+
+        assert csc.shape[0] <= MAX_INT32
+        csc.indices = csc.indices.astype(np.int32, copy=False)
 
         _safe_call(_LIB.LGBM_DatasetCreateFromCSC(
             ptr_indptr,
@@ -1458,7 +1471,7 @@ class Booster(object):
         self.__set_objective_to_none = False
         self.best_iteration = -1
         self.best_score = {}
-        params = {} if params is None else params
+        params = {} if params is None else copy.deepcopy(params)
         # user can set verbose with params, it has higher priority
         if not any(verbose_alias in params for verbose_alias in ('verbose', 'verbosity')) and silent:
             params["verbose"] = -1
@@ -1528,7 +1541,7 @@ class Booster(object):
             self.model_from_string(params['model_str'])
         else:
             raise TypeError('Need at least one training dataset or model file to create booster instance')
-        self.params = params.copy()
+        self.params = params
 
     def __del__(self):
         try:
@@ -1736,7 +1749,7 @@ class Booster(object):
         is_finished = ctypes.c_int(0)
         if fobj is None:
             if self.__set_objective_to_none:
-                raise ValueError('Cannot update due to null objective function.')
+                raise LightGBMError('Cannot update due to null objective function.')
             _safe_call(_LIB.LGBM_BoosterUpdateOneIter(
                 self.handle,
                 ctypes.byref(is_finished)))
@@ -2127,7 +2140,7 @@ class Booster(object):
         result : numpy array
             Prediction result.
         """
-        predictor = self._to_predictor(kwargs)
+        predictor = self._to_predictor(copy.deepcopy(kwargs))
         if num_iteration is None:
             num_iteration = self.best_iteration
         return predictor.predict(data, num_iteration,
@@ -2155,7 +2168,9 @@ class Booster(object):
         result : Booster
             Refitted Booster.
         """
-        predictor = self._to_predictor(kwargs)
+        if self.__set_objective_to_none:
+            raise LightGBMError('Cannot refit due to null objective function.')
+        predictor = self._to_predictor(copy.deepcopy(kwargs))
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
         train_set = Dataset(data, label, silent=True)
@@ -2171,6 +2186,8 @@ class Booster(object):
             ptr_data,
             ctypes.c_int(nrow),
             ctypes.c_int(ncol)))
+        new_booster.network = self.network
+        new_booster.__attr = self.__attr.copy()
         return new_booster
 
     def get_leaf_output(self, tree_id, leaf_id):
