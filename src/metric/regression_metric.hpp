@@ -252,7 +252,7 @@ public:
     const double theta = -1.0 / score;
     const double a = psi;
     const double b = -std::log(-theta);
-    const double c = 1. / psi * std::log(label / psi) - std::log(label) - std::lgamma(1.0 / psi);
+    const double c = 1. / psi * std::log(label / psi) - std::log(label) - 0; // 0 = std::lgamma(1.0 / psi) = std::lgamma(1.0);
     return -((label * theta - b) / a + c);
   }
   inline static const char* Name() {
