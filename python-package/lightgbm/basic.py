@@ -13,10 +13,11 @@ from tempfile import NamedTemporaryFile
 import numpy as np
 import scipy.sparse
 
-from .compat import (DataFrame, LGBMDeprecationWarning, Series,
-                     decode_string, integer_types,
+from .compat import (DataFrame, Series,
+                     decode_string, string_type,
+                     integer_types, numeric_types,
                      json, json_default_with_numpy,
-                     numeric_types, range_, zip_, string_type)
+                     range_, zip_)
 from .libpath import find_lib_path
 
 
@@ -1470,7 +1471,7 @@ class Booster(object):
         self.__set_objective_to_none = False
         self.best_iteration = -1
         self.best_score = {}
-        params = {} if params is None else params
+        params = {} if params is None else copy.deepcopy(params)
         # user can set verbose with params, it has higher priority
         if not any(verbose_alias in params for verbose_alias in ('verbose', 'verbosity')) and silent:
             params["verbose"] = -1
@@ -1540,7 +1541,7 @@ class Booster(object):
             self.model_from_string(params['model_str'])
         else:
             raise TypeError('Need at least one training dataset or model file to create booster instance')
-        self.params = params.copy()
+        self.params = params
 
     def __del__(self):
         try:
@@ -2139,7 +2140,7 @@ class Booster(object):
         result : numpy array
             Prediction result.
         """
-        predictor = self._to_predictor(kwargs)
+        predictor = self._to_predictor(copy.deepcopy(kwargs))
         if num_iteration is None:
             num_iteration = self.best_iteration
         return predictor.predict(data, num_iteration,
@@ -2169,7 +2170,7 @@ class Booster(object):
         """
         if self.__set_objective_to_none:
             raise LightGBMError('Cannot refit due to null objective function.')
-        predictor = self._to_predictor(kwargs)
+        predictor = self._to_predictor(copy.deepcopy(kwargs))
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
         train_set = Dataset(data, label, silent=True)

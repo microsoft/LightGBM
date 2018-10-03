@@ -4,6 +4,7 @@
 from __future__ import absolute_import
 
 import collections
+import copy
 import warnings
 from operator import attrgetter
 
@@ -12,7 +13,7 @@ import numpy as np
 from . import callback
 from .basic import Booster, Dataset, LightGBMError, _InnerPredictor
 from .compat import (SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold,
-                     integer_types, range_, zip_, string_type)
+                     string_type, integer_types, range_, zip_)
 
 
 def train(params, train_set, num_boost_round=100,
@@ -104,6 +105,7 @@ def train(params, train_set, num_boost_round=100,
         The trained Booster model.
     """
     # create predictor first
+    params = copy.deepcopy(params)
     for alias in ["num_iterations", "num_iteration", "n_iter", "num_tree", "num_trees",
                   "num_round", "num_rounds", "num_boost_round", "n_estimators"]:
         if alias in params:
@@ -417,6 +419,7 @@ def cv(params, train_set, num_boost_round=100,
     if not isinstance(train_set, Dataset):
         raise TypeError("Traninig only accepts Dataset object")
 
+    params = copy.deepcopy(params)
     for alias in ["num_iterations", "num_iteration", "n_iter", "num_tree", "num_trees",
                   "num_round", "num_rounds", "num_boost_round", "n_estimators"]:
         if alias in params:
