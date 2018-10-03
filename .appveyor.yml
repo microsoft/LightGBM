@@ -23,7 +23,8 @@ install:
           "3.4" {$env:MINICONDA = """C:\Miniconda34-x64"""}
           "3.5" {$env:MINICONDA = """C:\Miniconda35-x64"""}
           "3.6" {$env:MINICONDA = """C:\Miniconda36-x64"""}
-          default {$env:MINICONDA = """C:\Miniconda36-x64"""}
+          "3.7" {$env:MINICONDA = """C:\Miniconda37-x64"""}
+          default {$env:MINICONDA = """C:\Miniconda37-x64"""}
       }
   - set PATH=%MINICONDA%;%MINICONDA%\Scripts;%PATH%
   - set SKLEARN_SITE_JOBLIB=true  # temp fix for joblib warning in examples
