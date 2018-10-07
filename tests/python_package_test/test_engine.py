@@ -739,7 +739,7 @@ class TestEngine(unittest.TestCase):
         pred = gbm.predict(X)
         pred_mean = pred.mean()
         self.assertGreater(pred_mean, 18)
-    
+
     def test_constant_features_regression(self):
         x = [1, 1, 1, 1]
         y = [0, 10, 0, 10]
@@ -795,4 +795,3 @@ class TestEngine(unittest.TestCase):
         self.assertAlmostEqual(pred[1], 0.5, places=5)
         self.assertAlmostEqual(pred[0], 0.5, places=5)
         self.assertAlmostEqual(pred[1], 0.5, places=5)
-
