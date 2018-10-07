@@ -227,15 +227,10 @@ void Dataset::Construct(
   }
   if (used_features.empty()) {
     Log::Warning("There are not meaningful features, as all feature values are constant.");
-    num_features_ = 0;
-    num_groups_ = 0;
-    group_bin_boundaries_.clear();
-    group_bin_boundaries_.push_back(0);
-    return;
   }
   auto features_in_group = NoGroup(used_features);
 
-  if (io_config.enable_bundle) {
+  if (io_config.enable_bundle && !used_features.empty()) {
     features_in_group = FastFeatureBundling(bin_mappers,
                                             sample_non_zero_indices, num_per_col, total_sample_cnt,
                                             used_features, io_config.max_conflict_rate,
