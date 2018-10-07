@@ -120,6 +120,29 @@ public:
 
   bool NeedAccuratePrediction() const override { return false; }
 
+  double BoostFromScore(int class_id) const override {
+    double suml = 0.0f;
+    double sumw = 0.0f;
+    if (weights_ != nullptr) {
+      #pragma omp parallel for schedule(static) reduction(+:suml,sumw)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        suml += (static_cast<int>(label_[i]) == class_id) * weights_[i];
+        sumw += weights_[i];
+      }
+    }
+    else {
+      sumw = static_cast<double>(num_data_);
+      #pragma omp parallel for schedule(static) reduction(+:suml)
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        suml += (static_cast<int>(label_[i]) == class_id);
+      }
+    }
+    double pavg = suml / sumw;
+    pavg = std::min(pavg, 1.0 - kEpsilon);
+    pavg = std::max<double>(pavg, kEpsilon);
+    return std::log(pavg / (1.0f - pavg));
+  }
+
 private:
   /*! \brief Number of data */
   data_size_t num_data_;
@@ -211,6 +234,10 @@ public:
   int NumPredictOneRow() const override { return num_class_; }
 
   bool NeedAccuratePrediction() const override { return false; }
+
+  double BoostFromScore(int class_id) const override {
+    return binary_loss_[class_id]->BoostFromScore(0);
+  }
 
 private:
   /*! \brief Number of data */

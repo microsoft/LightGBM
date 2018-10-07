@@ -104,7 +104,7 @@ public:
   }
 
   // implement custom average to boost from (if enabled among options)
-  double BoostFromScore() const override {
+  double BoostFromScore(int) const override {
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {
@@ -229,7 +229,7 @@ public:
     return str_buf.str();
   }
 
-  double BoostFromScore() const override {
+  double BoostFromScore(int) const override {
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {

@@ -226,10 +226,12 @@ void Dataset::Construct(
     }
   }
   if (used_features.empty()) {
-    Log::Fatal("Cannot construct Dataset since there are no useful features.\n"
-               "It should be at least two unique rows.\n"
-               "If the num_row (num_data) is small, you can set min_data=1 and min_data_in_bin=1 to fix this.\n"
-               "Otherwise, please make sure you are using the right dataset");
+    Log::Warning("There are not meaningful features, as all feature values are constant.");
+    num_features_ = 0;
+    num_groups_ = 0;
+    group_bin_boundaries_.clear();
+    group_bin_boundaries_.push_back(0);
+    return;
   }
   auto features_in_group = NoGroup(used_features);
 
@@ -323,14 +325,16 @@ void Dataset::Construct(
 
 void Dataset::FinishLoad() {
   if (is_finish_load_) { return; }
-  OMP_INIT_EX();
-  #pragma omp parallel for schedule(guided)
-  for (int i = 0; i < num_groups_; ++i) {
-    OMP_LOOP_EX_BEGIN();
-    feature_groups_[i]->bin_data_->FinishLoad();
-    OMP_LOOP_EX_END();
+  if (num_groups_ > 0) {
+    OMP_INIT_EX();
+#pragma omp parallel for schedule(guided)
+    for (int i = 0; i < num_groups_; ++i) {
+      OMP_LOOP_EX_BEGIN();
+      feature_groups_[i]->bin_data_->FinishLoad();
+      OMP_LOOP_EX_END();
+    }
+    OMP_THROW_EX();
   }
-  OMP_THROW_EX();
   is_finish_load_ = true;
 }
 

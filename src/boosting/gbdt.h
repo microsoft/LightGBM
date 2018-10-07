@@ -407,7 +407,7 @@ protected:
   */
   std::string OutputMetric(int iter);
 
-  double BoostFromAverage();
+  double BoostFromAverage(int class_id);
 
   /*! \brief current iteration */
   int iter_;

@@ -739,3 +739,60 @@ class TestEngine(unittest.TestCase):
         pred = gbm.predict(X)
         pred_mean = pred.mean()
         self.assertGreater(pred_mean, 18)
+    
+    def test_constant_features_regression(self):
+        x = [1, 1, 1, 1]
+        y = [0, 10, 0, 10]
+
+        X_train = np.array(x).reshape(len(x), 1)
+        y_train = np.array(y)
+        lgb_train = lgb.Dataset(X_train, y_train)
+        lgb_eval = lgb.Dataset(X_train, y_train)
+
+        params = {
+            'objective': 'regression',
+            'verbose': -1,
+            'min_data': 1,
+            'num_leaves': 2,
+            'learning_rate': 1,
+            'min_data_in_bin': 1,
+            'boost_from_average': False
+        }
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=2,
+                        valid_sets=lgb_eval,
+                        verbose_eval=True)
+        pred = gbm.predict(X_train)
+        self.assertAlmostEqual(pred[0], 5, places=5)
+        self.assertAlmostEqual(pred[1], 5, places=5)
+        self.assertAlmostEqual(pred[0], 5, places=5)
+        self.assertAlmostEqual(pred[1], 5, places=5)
+
+    def test_constant_features_binary(self):
+        x = [1, 1, 1, 1]
+        y = [0, 1, 0, 1]
+
+        X_train = np.array(x).reshape(len(x), 1)
+        y_train = np.array(y)
+        lgb_train = lgb.Dataset(X_train, y_train)
+        lgb_eval = lgb.Dataset(X_train, y_train)
+
+        params = {
+            'objective': 'binary',
+            'verbose': -1,
+            'min_data': 1,
+            'num_leaves': 2,
+            'learning_rate': 1,
+            'min_data_in_bin': 1,
+            'boost_from_average': True
+        }
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=2,
+                        valid_sets=lgb_eval,
+                        verbose_eval=True)
+        pred = gbm.predict(X_train)
+        self.assertAlmostEqual(pred[0], 0.5, places=5)
+        self.assertAlmostEqual(pred[1], 0.5, places=5)
+        self.assertAlmostEqual(pred[0], 0.5, places=5)
+        self.assertAlmostEqual(pred[1], 0.5, places=5)
+
