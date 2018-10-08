@@ -85,15 +85,15 @@ Traditional Algorithm
 
 Feature parallel aims to parallelize the "Find Best Split" in the decision tree. The procedure of traditional feature parallel is:
 
-1. Partition data vertically (different machines have different feature set)
+1. Partition data vertically (different machines have different feature set).
 
-2. Workers find local best split point {feature, threshold} on local feature set
+2. Workers find local best split point {feature, threshold} on local feature set.
 
-3. Communicate local best splits with each other and get the best one
+3. Communicate local best splits with each other and get the best one.
 
-4. Worker with best split to perform split, then send the split result of data to other workers
+4. Worker with best split to perform split, then send the split result of data to other workers.
 
-5. Other workers split data according received data
+5. Other workers split data according received data.
 
 The shortcomings of traditional feature parallel:
 
@@ -111,11 +111,11 @@ And ``#data`` won't be larger, so it is reasonable to hold the full data in ever
 
 The procedure of feature parallel in LightGBM:
 
-1. Workers find local best split point {feature, threshold} on local feature set
+1. Workers find local best split point {feature, threshold} on local feature set.
 
-2. Communicate local best splits with each other and get the best one
+2. Communicate local best splits with each other and get the best one.
 
-3. Perform best split
+3. Perform best split.
 
 However, this feature parallel algorithm still suffers from computation overhead for "split" when ``#data`` is large.
 So it will be better to use data parallel when ``#data`` is large.
@@ -128,13 +128,13 @@ Traditional Algorithm
 
 Data parallel aims to parallelize the whole decision learning. The procedure of data parallel is:
 
-1. Partition data horizontally
+1. Partition data horizontally.
 
-2. Workers use local data to construct local histograms
+2. Workers use local data to construct local histograms.
 
-3. Merge global histograms from all local histograms
+3. Merge global histograms from all local histograms.
 
-4. Find best split from merged global histograms, then perform splits
+4. Find best split from merged global histograms, then perform splits.
 
 The shortcomings of traditional data parallel:
 
