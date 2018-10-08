@@ -24,6 +24,7 @@ def multi_logloss(y_true, y_pred):
     return np.mean([-math.log(y_pred[i][y]) for i, y in enumerate(y_true)])
 
 
+@pytest.mark.skip(reason="Need to pass parameters.")
 def test_constant_features(y_true, expected_pred, more_params):
     X_train = np.ones((len(y_true), 1))
     y_train = np.array(y_true)
