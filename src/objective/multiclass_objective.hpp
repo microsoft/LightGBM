@@ -43,7 +43,7 @@ public:
     label_ = metadata.label();
     weights_ = metadata.weights();
     label_int_.resize(num_data_);
-    weighted_classes_.resize(num_class_, 0.0);
+    class_init_probs_.resize(num_class_, 0.0);
     double sum_weight = 0.0;
     for (int i = 0; i < num_data_; ++i) {
       label_int_[i] = static_cast<int>(label_[i]);
@@ -51,9 +51,9 @@ public:
         Log::Fatal("Label must be in [0, %d), but found %d in label", num_class_, label_int_[i]);
       }
       if (weights_ == nullptr) {
-        weighted_classes_[label_int_[i]] += 1.0;
+        class_init_probs_[label_int_[i]] += 1.0;
       } else {
-        weighted_classes_[label_int_[i]] += weights_[i];
+        class_init_probs_[label_int_[i]] += weights_[i];
         sum_weight += weights_[i];
       }
     }
@@ -61,7 +61,7 @@ public:
       sum_weight = num_data_;
     }
     for (int i = 0; i < num_class_; ++i) {
-      weighted_classes_[i] /= sum_weight;
+      class_init_probs_[i] /= sum_weight;
     }
   }
 
@@ -135,12 +135,12 @@ public:
   bool NeedAccuratePrediction() const override { return false; }
 
   double BoostFromScore(int class_id) const override {
-    return weighted_classes_[class_id];
+    return std::log(std::max<double>(kEpsilon, class_init_probs_[class_id]));
   }
 
   bool ClassNeedTrain(int class_id) const override { 
-    if (std::fabs(weighted_classes_[class_id]) <= kEpsilon 
-        || std::fabs(weighted_classes_[class_id]) >= 1.0 - kEpsilon) {
+    if (std::fabs(class_init_probs_[class_id]) <= kEpsilon 
+        || std::fabs(class_init_probs_[class_id]) >= 1.0 - kEpsilon) {
       return false;
     } else {
       return true;
@@ -158,7 +158,7 @@ private:
   std::vector<int> label_int_;
   /*! \brief Weights for data */
   const label_t* weights_;
-  std::vector<double> weighted_classes_;
+  std::vector<double> class_init_probs_;
 };
 
 /*!
