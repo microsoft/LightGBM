@@ -740,27 +740,28 @@ class TestEngine(unittest.TestCase):
         pred_mean = pred.mean()
         self.assertGreater(pred_mean, 18)
 
-    @unittest.skip('Need to pass parameters.')
-    def test_constant_features(self, y_true, expected_pred, more_params):
-        X_train = np.ones((len(y_true), 1))
-        y_train = np.array(y_true)
-        params = {
-            'objective': 'regression',
-            'num_class': 1,
-            'verbose': -1,
-            'min_data': 1,
-            'num_leaves': 2,
-            'learning_rate': 1,
-            'min_data_in_bin': 1,
-            'boost_from_average': True
-        }
-        params.update(more_params)
-        lgb_train = lgb.Dataset(X_train, y_train, params=params)
-        gbm = lgb.train(params, lgb_train,
-                        num_boost_round=2)
-        pred = gbm.predict(X_train)
-        for i in range(pred.shape[0]):
-            np.testing.assert_almost_equal(pred[i], expected_pred)
+    @staticmethod
+    def test_constant_features(y_true=None, expected_pred=None, more_params=None):
+        if y_true is not None and expected_pred is not None:
+            X_train = np.ones((len(y_true), 1))
+            y_train = np.array(y_true)
+            params = {
+                'objective': 'regression',
+                'num_class': 1,
+                'verbose': -1,
+                'min_data': 1,
+                'num_leaves': 2,
+                'learning_rate': 1,
+                'min_data_in_bin': 1,
+                'boost_from_average': True
+            }
+            params.update(more_params)
+            lgb_train = lgb.Dataset(X_train, y_train, params=params)
+            gbm = lgb.train(params, lgb_train,
+                            num_boost_round=2)
+            pred = gbm.predict(X_train)
+            for i in range(pred.shape[0]):
+                np.testing.assert_almost_equal(pred[i], expected_pred)
 
     def test_constant_features_regression(self):
         params = {
