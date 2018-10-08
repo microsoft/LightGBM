@@ -741,13 +741,9 @@ class TestEngine(unittest.TestCase):
         self.assertGreater(pred_mean, 18)
 
     def test_constant_features_regression(self):
-        x = [1, 1, 1, 1]
-        y = [0, 10, 0, 10]
-
-        X_train = np.array(x).reshape(len(x), 1)
-        y_train = np.array(y)
+        X_train = np.ones((4, 1))
+        y_train = np.array([0, 10, 0, 10])
         lgb_train = lgb.Dataset(X_train, y_train)
-        lgb_eval = lgb.Dataset(X_train, y_train)
 
         params = {
             'objective': 'regression',
@@ -759,23 +755,14 @@ class TestEngine(unittest.TestCase):
             'boost_from_average': False
         }
         gbm = lgb.train(params, lgb_train,
-                        num_boost_round=2,
-                        valid_sets=lgb_eval,
-                        verbose_eval=True)
+                        num_boost_round=2)
         pred = gbm.predict(X_train)
-        self.assertAlmostEqual(pred[0], 5, places=5)
-        self.assertAlmostEqual(pred[1], 5, places=5)
-        self.assertAlmostEqual(pred[0], 5, places=5)
-        self.assertAlmostEqual(pred[1], 5, places=5)
+        np.testing.assert_almost_equal(pred, np.mean(y_train))
 
     def test_constant_features_binary(self):
-        x = [1, 1, 1, 1]
-        y = [0, 1, 0, 1]
-
-        X_train = np.array(x).reshape(len(x), 1)
-        y_train = np.array(y)
+        X_train = np.ones((4, 1))
+        y_train = np.array([0, 1, 0, 1])
         lgb_train = lgb.Dataset(X_train, y_train)
-        lgb_eval = lgb.Dataset(X_train, y_train)
 
         params = {
             'objective': 'binary',
@@ -787,11 +774,6 @@ class TestEngine(unittest.TestCase):
             'boost_from_average': True
         }
         gbm = lgb.train(params, lgb_train,
-                        num_boost_round=2,
-                        valid_sets=lgb_eval,
-                        verbose_eval=True)
+                        num_boost_round=2)
         pred = gbm.predict(X_train)
-        self.assertAlmostEqual(pred[0], 0.5, places=5)
-        self.assertAlmostEqual(pred[1], 0.5, places=5)
-        self.assertAlmostEqual(pred[0], 0.5, places=5)
-        self.assertAlmostEqual(pred[1], 0.5, places=5)
+        np.testing.assert_almost_equal(pred, np.mean(y_train))

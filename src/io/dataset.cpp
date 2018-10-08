@@ -226,7 +226,7 @@ void Dataset::Construct(
     }
   }
   if (used_features.empty()) {
-    Log::Warning("There are not meaningful features, as all feature values are constant.");
+    Log::Warning("There are no meaningful features, as all feature values are constant.");
   }
   auto features_in_group = NoGroup(used_features);
 
