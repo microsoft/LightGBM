@@ -145,6 +145,10 @@ public:
     return initscore;
   }
 
+  bool ClassNeedTrain(int /*class_id*/) const override { 
+    return num_data_ > 0; 
+  }
+
   const char* GetName() const override {
     return "binary";
   }

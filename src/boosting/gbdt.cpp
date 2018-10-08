@@ -107,45 +107,11 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   // if need bagging, create buffer
   ResetBaggingConfig(config_.get(), true);
 
-  // reset config for tree learner
   class_need_train_ = std::vector<bool>(num_tree_per_iteration_, true);
   if (objective_function_ != nullptr && objective_function_->SkipEmptyClass()) {
     CHECK(num_tree_per_iteration_ == num_class_);
-
-    class_default_output_ = std::vector<double>(num_tree_per_iteration_, 0.0f);
-    auto label = train_data_->metadata().label();
-    if (num_tree_per_iteration_ > 1) {
-      // multi-class
-      std::vector<data_size_t> cnt_per_class(num_tree_per_iteration_, 0);
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        int index = static_cast<int>(label[i]);
-        CHECK(index < num_tree_per_iteration_);
-        ++cnt_per_class[index];
-      }
-      for (int i = 0; i < num_tree_per_iteration_; ++i) {
-        if (cnt_per_class[i] == num_data_) {
-          class_need_train_[i] = false;
-          class_default_output_[i] = -std::log(kEpsilon);
-        } else if (cnt_per_class[i] == 0) {
-          class_need_train_[i] = false;
-          class_default_output_[i] = -std::log(1.0f / kEpsilon - 1.0f);
-        }
-      }
-    } else {
-      // binary class
-      data_size_t cnt_pos = 0;
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        if (label[i] > 0) {
-          ++cnt_pos;
-        }
-      }
-      if (cnt_pos == 0) {
-        class_need_train_[0] = false;
-        class_default_output_[0] = -std::log(1.0f / kEpsilon - 1.0f);
-      } else if (cnt_pos == num_data_) {
-        class_need_train_[0] = false;
-        class_default_output_[0] = -std::log(kEpsilon);
-      }
+    for (int i = 0; i < num_class_; ++i) {
+      class_need_train_[i] = objective_function_->ClassNeedTrain(i);
     }
   }
 }
@@ -382,7 +348,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
     const size_t bias = static_cast<size_t>(cur_tree_id) * num_data_;
     std::unique_ptr<Tree> new_tree(new Tree(2));
-    if (class_need_train_[cur_tree_id]) {
+    if (class_need_train_[cur_tree_id] && train_data_->num_features() > 0) {
       auto grad = gradients + bias;
       auto hess = hessians + bias;
       // need to copy gradients for bagging subset.
@@ -394,9 +360,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
         grad = gradients_.data() + bias;
         hess = hessians_.data() + bias;
       }
-      if (train_data_->num_features() > 0) {
-        new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_, forced_splits_json_));
-      }
+      new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_, forced_splits_json_));
     }
 
     if (new_tree->num_leaves() > 1) {
@@ -415,9 +379,10 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
       if (models_.size() < static_cast<size_t>(num_tree_per_iteration_)) {
         double output = 0.0;
         if (!class_need_train_[cur_tree_id]) {
-          output = class_default_output_[cur_tree_id];
-        }
-        else {
+          if (objective_function_ != nullptr) {
+            output = objective_function_->BoostFromScore(cur_tree_id);
+          }
+        } else {
           output = init_scores[cur_tree_id];
         }
         new_tree->AsConstantTree(output);

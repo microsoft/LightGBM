@@ -43,11 +43,25 @@ public:
     label_ = metadata.label();
     weights_ = metadata.weights();
     label_int_.resize(num_data_);
+    weighted_classes_.resize(num_class_, 0.0);
+    double sum_weight = 0.0;
     for (int i = 0; i < num_data_; ++i) {
       label_int_[i] = static_cast<int>(label_[i]);
       if (label_int_[i] < 0 || label_int_[i] >= num_class_) {
         Log::Fatal("Label must be in [0, %d), but found %d in label", num_class_, label_int_[i]);
       }
+      if (weights_ == nullptr) {
+        weighted_classes_[label_int_[i]] += 1.0;
+      } else {
+        weighted_classes_[label_int_[i]] += weights_[i];
+        sum_weight += weights_[i];
+      }
+    }
+    if (weights_ == nullptr) {
+      sum_weight = num_data_;
+    }
+    for (int i = 0; i < num_class_; ++i) {
+      weighted_classes_[i] /= sum_weight;
     }
   }
 
@@ -121,26 +135,16 @@ public:
   bool NeedAccuratePrediction() const override { return false; }
 
   double BoostFromScore(int class_id) const override {
-    double suml = 0.0f;
-    double sumw = 0.0f;
-    if (weights_ != nullptr) {
-      #pragma omp parallel for schedule(static) reduction(+:suml,sumw)
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        suml += (static_cast<int>(label_[i]) == class_id) * weights_[i];
-        sumw += weights_[i];
-      }
+    return weighted_classes_[class_id];
+  }
+
+  bool ClassNeedTrain(int class_id) const override { 
+    if (std::fabs(weighted_classes_[class_id]) <= kEpsilon 
+        || std::fabs(weighted_classes_[class_id]) >= 1.0 - kEpsilon) {
+      return false;
+    } else {
+      return true;
     }
-    else {
-      sumw = static_cast<double>(num_data_);
-      #pragma omp parallel for schedule(static) reduction(+:suml)
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        suml += (static_cast<int>(label_[i]) == class_id);
-      }
-    }
-    double pavg = suml / sumw;
-    pavg = std::min(pavg, 1.0 - kEpsilon);
-    pavg = std::max<double>(pavg, kEpsilon);
-    return std::log(pavg / (1.0f - pavg));
   }
 
 private:
@@ -154,6 +158,7 @@ private:
   std::vector<int> label_int_;
   /*! \brief Weights for data */
   const label_t* weights_;
+  std::vector<double> weighted_classes_;
 };
 
 /*!
@@ -237,6 +242,10 @@ public:
 
   double BoostFromScore(int class_id) const override {
     return binary_loss_[class_id]->BoostFromScore(0);
+  }
+
+  bool ClassNeedTrain(int class_id) const override {
+    return binary_loss_[class_id]->ClassNeedTrain(0);
   }
 
 private:
