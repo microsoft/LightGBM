@@ -740,8 +740,7 @@ class TestEngine(unittest.TestCase):
         pred_mean = pred.mean()
         self.assertGreater(pred_mean, 18)
 
-    @staticmethod
-    def test_constant_features(y_true=None, expected_pred=None, more_params=None):
+    def test_constant_features(self, y_true=None, expected_pred=None, more_params=None):
         if y_true is not None and expected_pred is not None:
             X_train = np.ones((len(y_true), 1))
             y_train = np.array(y_true)
