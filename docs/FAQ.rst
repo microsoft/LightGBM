@@ -106,7 +106,7 @@ LightGBM
 --------------
 
 -  **Question 9**: When I'm trying to specify a categorical column with the ``categorical_feature`` parameter,
-   I get the following sequence of errors, but there are no negative values in the column.
+   I get the following sequence of warnings, but there are no negative values in the column.
 
    ::
 
