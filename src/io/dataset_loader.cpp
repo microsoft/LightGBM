@@ -629,9 +629,6 @@ void DatasetLoader::CheckDataset(const Dataset* dataset) {
   if (dataset->num_data_ <= 0) {
     Log::Fatal("Data file %s is empty", dataset->data_filename_.c_str());
   }
-  if (dataset->feature_groups_.empty()) {
-    Log::Fatal("No usable features in data file %s", dataset->data_filename_.c_str());
-  }
   if (dataset->feature_names_.size() != static_cast<size_t>(dataset->num_total_features_)) {
     Log::Fatal("Size of feature name error, should be %d, got %d", dataset->num_total_features_,
                static_cast<int>(dataset->feature_names_.size()));

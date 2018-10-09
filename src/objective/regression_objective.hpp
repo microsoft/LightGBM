@@ -139,7 +139,7 @@ public:
     }
   }
 
-  double BoostFromScore() const override {
+  double BoostFromScore(int) const override {
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {
@@ -201,7 +201,7 @@ public:
     }
   }
 
-  double BoostFromScore() const override {
+  double BoostFromScore(int) const override {
     const double alpha = 0.5;
     if (weights_ != nullptr) {
       #define data_reader(i) (label_[i])
@@ -436,8 +436,8 @@ public:
     return "poisson";
   }
 
-  double BoostFromScore() const override {
-    return std::log(RegressionL2loss::BoostFromScore());
+  double BoostFromScore(int) const override {
+    return std::log(RegressionL2loss::BoostFromScore(0));
   }
 
   bool IsConstantHessian() const override {
@@ -493,7 +493,7 @@ public:
     return "quantile";
   }
 
-  double BoostFromScore() const override {
+  double BoostFromScore(int) const override {
     if (weights_ != nullptr) {
       #define data_reader(i) (label_[i])
       #define weight_reader(i) (weights_[i])
@@ -600,7 +600,7 @@ public:
     }
   }
 
-  double BoostFromScore() const override {
+  double BoostFromScore(int) const override {
     const double alpha = 0.5;
     #define data_reader(i) (label_[i])
     #define weight_reader(i) (label_weight_[i])

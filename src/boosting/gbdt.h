@@ -407,7 +407,7 @@ protected:
   */
   std::string OutputMetric(int iter);
 
-  double BoostFromAverage();
+  double BoostFromAverage(int class_id);
 
   /*! \brief current iteration */
   int iter_;
@@ -481,7 +481,6 @@ protected:
   std::unique_ptr<Dataset> tmp_subset_;
   bool is_use_subset_;
   std::vector<bool> class_need_train_;
-  std::vector<double> class_default_output_;
   bool is_constant_hessian_;
   std::unique_ptr<ObjectiveFunction> loaded_objective_;
   bool average_output_;

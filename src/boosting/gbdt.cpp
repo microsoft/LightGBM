@@ -18,15 +18,6 @@
 
 namespace LightGBM {
 
-#ifdef TIMETAG
-std::chrono::duration<double, std::milli> boosting_time;
-std::chrono::duration<double, std::milli> train_score_time;
-std::chrono::duration<double, std::milli> out_of_bag_score_time;
-std::chrono::duration<double, std::milli> valid_score_time;
-std::chrono::duration<double, std::milli> metric_time;
-std::chrono::duration<double, std::milli> bagging_time;
-std::chrono::duration<double, std::milli> tree_time;
-#endif // TIMETAG
 
 GBDT::GBDT() : iter_(0),
 train_data_(nullptr),
@@ -50,21 +41,12 @@ need_re_bagging_(false) {
 }
 
 GBDT::~GBDT() {
-  #ifdef TIMETAG
-  Log::Info("GBDT::boosting costs %f", boosting_time * 1e-3);
-  Log::Info("GBDT::train_score costs %f", train_score_time * 1e-3);
-  Log::Info("GBDT::out_of_bag_score costs %f", out_of_bag_score_time * 1e-3);
-  Log::Info("GBDT::valid_score costs %f", valid_score_time * 1e-3);
-  Log::Info("GBDT::metric costs %f", metric_time * 1e-3);
-  Log::Info("GBDT::bagging costs %f", bagging_time * 1e-3);
-  Log::Info("GBDT::tree costs %f", tree_time * 1e-3);
-  #endif
+
 }
 
 void GBDT::Init(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
                 const std::vector<const Metric*>& training_metrics) {
   CHECK(train_data != nullptr);
-  CHECK(train_data->num_features() > 0);
   train_data_ = train_data;
   iter_ = 0;
   num_iteration_for_pred_ = 0;
@@ -125,45 +107,11 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   // if need bagging, create buffer
   ResetBaggingConfig(config_.get(), true);
 
-  // reset config for tree learner
   class_need_train_ = std::vector<bool>(num_tree_per_iteration_, true);
   if (objective_function_ != nullptr && objective_function_->SkipEmptyClass()) {
     CHECK(num_tree_per_iteration_ == num_class_);
-
-    class_default_output_ = std::vector<double>(num_tree_per_iteration_, 0.0f);
-    auto label = train_data_->metadata().label();
-    if (num_tree_per_iteration_ > 1) {
-      // multi-class
-      std::vector<data_size_t> cnt_per_class(num_tree_per_iteration_, 0);
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        int index = static_cast<int>(label[i]);
-        CHECK(index < num_tree_per_iteration_);
-        ++cnt_per_class[index];
-      }
-      for (int i = 0; i < num_tree_per_iteration_; ++i) {
-        if (cnt_per_class[i] == num_data_) {
-          class_need_train_[i] = false;
-          class_default_output_[i] = -std::log(kEpsilon);
-        } else if (cnt_per_class[i] == 0) {
-          class_need_train_[i] = false;
-          class_default_output_[i] = -std::log(1.0f / kEpsilon - 1.0f);
-        }
-      }
-    } else {
-      // binary class
-      data_size_t cnt_pos = 0;
-      for (data_size_t i = 0; i < num_data_; ++i) {
-        if (label[i] > 0) {
-          ++cnt_pos;
-        }
-      }
-      if (cnt_pos == 0) {
-        class_need_train_[0] = false;
-        class_default_output_[0] = -std::log(1.0f / kEpsilon - 1.0f);
-      } else if (cnt_pos == num_data_) {
-        class_need_train_[0] = false;
-        class_default_output_[0] = -std::log(kEpsilon);
-      }
+    for (int i = 0; i < num_class_; ++i) {
+      class_need_train_[i] = objective_function_->ClassNeedTrain(i);
     }
   }
 }
@@ -294,27 +242,6 @@ void GBDT::Bagging(int iter) {
   }
 }
 
-/* If the custom "average" is implemented it will be used inplace of the label average (if enabled)
-*
-* An improvement to this is to have options to explicitly choose
-* (i) standard average
-* (ii) custom average if available
-* (iii) any user defined scalar bias (e.g. using a new option "init_score" that overrides (i) and (ii) )
-*
-* (i) and (ii) could be selected as say "auto_init_score" = 0 or 1 etc..
-*
-*/
-double ObtainAutomaticInitialScore(const ObjectiveFunction* fobj) {
-  double init_score = 0.0f;
-  if (fobj != nullptr) {
-    init_score = fobj->BoostFromScore();
-  }
-  if (Network::num_machines() > 1) {
-    init_score = Network::GlobalSyncUpByMean(init_score);
-  }
-  return init_score;
-}
-
 void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
   bool is_finished = false;
   auto start_time = std::chrono::steady_clock::now();
@@ -360,17 +287,36 @@ void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) 
   }
 }
 
-double GBDT::BoostFromAverage() {
+/* If the custom "average" is implemented it will be used inplace of the label average (if enabled)
+*
+* An improvement to this is to have options to explicitly choose
+* (i) standard average
+* (ii) custom average if available
+* (iii) any user defined scalar bias (e.g. using a new option "init_score" that overrides (i) and (ii) )
+*
+* (i) and (ii) could be selected as say "auto_init_score" = 0 or 1 etc..
+*
+*/
+double ObtainAutomaticInitialScore(const ObjectiveFunction* fobj, int class_id) {
+  double init_score = 0.0;
+  if (fobj != nullptr) {
+    init_score = fobj->BoostFromScore(class_id);
+  }
+  if (Network::num_machines() > 1) {
+    init_score = Network::GlobalSyncUpByMean(init_score);
+  }
+  return init_score;
+}
+
+double GBDT::BoostFromAverage(int class_id) {
   // boosting from average label; or customized "average" if implemented for the current objective
-  if (models_.empty() && !train_score_updater_->has_init_score()
-      && num_class_ <= 1
-      && objective_function_ != nullptr) {
-    if (config_->boost_from_average) {
-      double init_score = ObtainAutomaticInitialScore(objective_function_);
+  if (models_.empty() && !train_score_updater_->has_init_score() && objective_function_ != nullptr) {
+    if (config_->boost_from_average || (train_data_ != nullptr && train_data_->num_features() == 0)) {
+      double init_score = ObtainAutomaticInitialScore(objective_function_, class_id);
       if (std::fabs(init_score) > kEpsilon) {
-        train_score_updater_->AddScore(init_score, 0);
+        train_score_updater_->AddScore(init_score, class_id);
         for (auto& score_updater : valid_score_updater_) {
-          score_updater->AddScore(init_score, 0);
+          score_updater->AddScore(init_score, class_id);
         }
         Log::Info("Start training from score %lf", init_score);
         return init_score;
@@ -385,46 +331,26 @@ double GBDT::BoostFromAverage() {
 }
 
 bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
-  double init_score = 0.0f;
+  std::vector<double> init_scores(num_tree_per_iteration_, 0.0);
   // boosting first
   if (gradients == nullptr || hessians == nullptr) {
-    init_score = BoostFromAverage();
-    #ifdef TIMETAG
-    auto start_time = std::chrono::steady_clock::now();
-    #endif
-
+    for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+      init_scores[cur_tree_id] = BoostFromAverage(cur_tree_id);
+    }
     Boosting();
     gradients = gradients_.data();
     hessians = hessians_.data();
-
-    #ifdef TIMETAG
-    boosting_time += std::chrono::steady_clock::now() - start_time;
-    #endif
   }
-
-  #ifdef TIMETAG
-  auto start_time = std::chrono::steady_clock::now();
-  #endif
-
   // bagging logic
   Bagging(iter_);
 
-  #ifdef TIMETAG
-  bagging_time += std::chrono::steady_clock::now() - start_time;
-  #endif
-
   bool should_continue = false;
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-
-    #ifdef TIMETAG
-    start_time = std::chrono::steady_clock::now();
-    #endif
     const size_t bias = static_cast<size_t>(cur_tree_id) * num_data_;
     std::unique_ptr<Tree> new_tree(new Tree(2));
-    if (class_need_train_[cur_tree_id]) {
+    if (class_need_train_[cur_tree_id] && train_data_->num_features() > 0) {
       auto grad = gradients + bias;
       auto hess = hessians + bias;
-
       // need to copy gradients for bagging subset.
       if (is_use_subset_ && bag_data_cnt_ < num_data_) {
         for (int i = 0; i < bag_data_cnt_; ++i) {
@@ -434,13 +360,8 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
         grad = gradients_.data() + bias;
         hess = hessians_.data() + bias;
       }
-
       new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_, forced_splits_json_));
     }
-
-    #ifdef TIMETAG
-    tree_time += std::chrono::steady_clock::now() - start_time;
-    #endif
 
     if (new_tree->num_leaves() > 1) {
       should_continue = true;
@@ -450,13 +371,20 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
       new_tree->Shrinkage(shrinkage_rate_);
       // update score
       UpdateScore(new_tree.get(), cur_tree_id);
-      if (std::fabs(init_score) > kEpsilon) {
-        new_tree->AddBias(init_score);
+      if (std::fabs(init_scores[cur_tree_id]) > kEpsilon) {
+        new_tree->AddBias(init_scores[cur_tree_id]);
       }
     } else {
       // only add default score one-time
-      if (!class_need_train_[cur_tree_id] && models_.size() < static_cast<size_t>(num_tree_per_iteration_)) {
-        auto output = class_default_output_[cur_tree_id];
+      if (models_.size() < static_cast<size_t>(num_tree_per_iteration_)) {
+        double output = 0.0;
+        if (!class_need_train_[cur_tree_id]) {
+          if (objective_function_ != nullptr) {
+            output = objective_function_->BoostFromScore(cur_tree_id);
+          }
+        } else {
+          output = init_scores[cur_tree_id];
+        }
         new_tree->AsConstantTree(output);
         // updates scores
         train_score_updater_->AddScore(output, cur_tree_id);
@@ -471,8 +399,10 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
 
   if (!should_continue) {
     Log::Warning("Stopped training because there are no more leaves that meet the split requirements");
-    for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-      models_.pop_back();
+    if (models_.size() > static_cast<size_t>(num_tree_per_iteration_)) {
+      for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+        models_.pop_back();
+      }
     }
     return true;
   }
@@ -501,17 +431,9 @@ void GBDT::RollbackOneIter() {
 
 bool GBDT::EvalAndCheckEarlyStopping() {
   bool is_met_early_stopping = false;
-
-  #ifdef TIMETAG
-  auto start_time = std::chrono::steady_clock::now();
-  #endif
-
   // print message for metric
   auto best_msg = OutputMetric(iter_);
 
-  #ifdef TIMETAG
-  metric_time += std::chrono::steady_clock::now() - start_time;
-  #endif
 
   is_met_early_stopping = !best_msg.empty();
   if (is_met_early_stopping) {
@@ -528,52 +450,24 @@ bool GBDT::EvalAndCheckEarlyStopping() {
 
 void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
 
-  #ifdef TIMETAG
-  auto start_time = std::chrono::steady_clock::now();
-  #endif
-
   // update training score
   if (!is_use_subset_) {
     train_score_updater_->AddScore(tree_learner_.get(), tree, cur_tree_id);
-
-    #ifdef TIMETAG
-    train_score_time += std::chrono::steady_clock::now() - start_time;
-    #endif
-
-    #ifdef TIMETAG
-    start_time = std::chrono::steady_clock::now();
-    #endif
 
     // we need to predict out-of-bag scores of data for boosting
     if (num_data_ - bag_data_cnt_ > 0) {
       train_score_updater_->AddScore(tree, bag_data_indices_.data() + bag_data_cnt_, num_data_ - bag_data_cnt_, cur_tree_id);
     }
 
-    #ifdef TIMETAG
-    out_of_bag_score_time += std::chrono::steady_clock::now() - start_time;
-    #endif
-
   } else {
     train_score_updater_->AddScore(tree, cur_tree_id);
-
-    #ifdef TIMETAG
-    train_score_time += std::chrono::steady_clock::now() - start_time;
-    #endif
   }
 
-
-  #ifdef TIMETAG
-  start_time = std::chrono::steady_clock::now();
-  #endif
 
   // update validation score
   for (auto& score_updater : valid_score_updater_) {
     score_updater->AddScore(tree, cur_tree_id);
   }
-
-  #ifdef TIMETAG
-  valid_score_time += std::chrono::steady_clock::now() - start_time;
-  #endif
 }
 
 std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* score) const {
