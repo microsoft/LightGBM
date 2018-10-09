@@ -316,7 +316,7 @@ class LGBMModel(_LGBMModelBase):
         group : array-like or None, optional (default=None)
             Group data of training data.
         eval_set : list or None, optional (default=None)
-            A list of (X, y) tuple pairs to use as a validation set.
+            A list of (X, y) tuple pairs to use as validation sets.
         eval_names : list of strings or None, optional (default=None)
             Names of eval_set.
         eval_sample_weight : list of arrays or None, optional (default=None)
