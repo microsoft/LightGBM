@@ -42,7 +42,9 @@ public:
                                  const data_size_t*,
                                  data_size_t) const { return ori_output; }
 
-  virtual double BoostFromScore() const { return 0.0f; }
+  virtual double BoostFromScore(int /*class_id*/) const { return 0.0; }
+
+  virtual bool ClassNeedTrain(int /*class_id*/) const { return true; }
 
   virtual bool SkipEmptyClass() const { return false; }
 

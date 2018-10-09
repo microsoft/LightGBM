@@ -104,7 +104,7 @@ public:
   }
 
   // implement custom average to boost from (if enabled among options)
-  double BoostFromScore() const override {
+  double BoostFromScore(int) const override {
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {
@@ -121,6 +121,8 @@ public:
       }
     }
     double pavg = suml / sumw;
+    pavg = std::min(pavg, 1.0 - kEpsilon);
+    pavg = std::max<double>(pavg, kEpsilon);
     double initscore = std::log(pavg / (1.0f - pavg));
     Log::Info("[%s:%s]: pavg = %f -> initscore = %f",  GetName(), __func__, pavg, initscore);
     return initscore;
@@ -229,7 +231,7 @@ public:
     return str_buf.str();
   }
 
-  double BoostFromScore() const override {
+  double BoostFromScore(int) const override {
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {

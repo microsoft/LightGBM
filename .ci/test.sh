@@ -78,7 +78,8 @@ if [[ $TASK == "sdist" ]]; then
 elif [[ $TASK == "bdist" ]]; then
     if [[ $OS_NAME == "macos" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=macosx --universal || exit -1
-        mv dist/lightgbm-$LGB_VER-py2.py3-none-macosx.whl dist/lightgbm-$LGB_VER-py2.py3-none-macosx_10_6_x86_64.macosx_10_7_x86_64.macosx_10_8_x86_64.macosx_10_9_x86_64.macosx_10_10_x86_64.macosx_10_11_x86_64.macosx_10_12_x86_64.macosx_10_13_x86_64.whl
+        cp dist/lightgbm-$LGB_VER-py2.py3-none-macosx.whl dist/lightgbm-$LGB_VER-py2.py3-none-macosx_10_6_x86_64.macosx_10_7_x86_64.macosx_10_8_x86_64.macosx_10_9_x86_64.macosx_10_10_x86_64.whl
+        mv dist/lightgbm-$LGB_VER-py2.py3-none-macosx.whl dist/lightgbm-$LGB_VER-py2.py3-none-macosx_10_11_x86_64.macosx_10_12_x86_64.macosx_10_13_x86_64.macosx_10_14_x86_64.whl
         if [[ $AZURE == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py2.py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
