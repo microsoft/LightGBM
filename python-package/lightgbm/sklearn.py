@@ -316,7 +316,7 @@ class LGBMModel(_LGBMModelBase):
         group : array-like or None, optional (default=None)
             Group data of training data.
         eval_set : list or None, optional (default=None)
-            A list of (X, y) tuple pairs to use as a validation sets.
+            A list of (X, y) tuple pairs to use as a validation set.
         eval_names : list of strings or None, optional (default=None)
             Names of eval_set.
         eval_sample_weight : list of arrays or None, optional (default=None)
@@ -349,7 +349,7 @@ class LGBMModel(_LGBMModelBase):
             If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
             If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
             All values in categorical features should be less than int32 max value (2147483647).
-            Large values could be memory consuming. Consider to use consecutive integers started from zero.
+            Large values could be memory consuming. Consider using consecutive integers starting from zero.
             All negative values in categorical features will be treated as missing values.
         callbacks : list of callback functions or None, optional (default=None)
             List of callback functions that are applied at each iteration.

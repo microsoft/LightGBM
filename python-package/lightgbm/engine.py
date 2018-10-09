@@ -58,7 +58,7 @@ def train(params, train_set, num_boost_round=100,
         If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
         If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
         All values in categorical features should be less than int32 max value (2147483647).
-        Large values could be memory consuming. Consider to use consecutive integers started from zero.
+        Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
     early_stopping_rounds: int or None, optional (default=None)
         Activates early stopping. The model will train until the validation score stops improving.
@@ -347,7 +347,7 @@ def cv(params, train_set, num_boost_round=100,
     num_boost_round : int, optional (default=100)
         Number of boosting iterations.
     folds : generator or iterator of (train_idx, test_idx) tuples, scikit-learn splitter object or None, optional (default=None)
-        If generator or iterator, it should yield the train and test indices for the each fold.
+        If generator or iterator, it should yield the train and test indices for each fold.
         If object, it should be one of the scikit-learn splitter classes
         (http://scikit-learn.org/stable/modules/classes.html#splitter-classes)
         and have ``split`` method.
@@ -382,7 +382,7 @@ def cv(params, train_set, num_boost_round=100,
         If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
         If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
         All values in categorical features should be less than int32 max value (2147483647).
-        Large values could be memory consuming. Consider to use consecutive integers started from zero.
+        Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
     early_stopping_rounds: int or None, optional (default=None)
         Activates early stopping.
