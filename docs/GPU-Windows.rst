@@ -75,7 +75,7 @@ OpenCL SDK Installation
 -----------------------
 
 Installing the appropriate OpenCL SDK requires you to download the correct vendor source SDK.
-You need to know on what you are going to use LightGBM!:
+You need to know what you are going to use LightGBM!:
 
 -  For running on Intel, get `Intel SDK for OpenCL`_ (NOT RECOMMENDED)
 
