@@ -760,8 +760,7 @@ class TestEngine(unittest.TestCase):
             gbm = lgb.train(params, lgb_train,
                             num_boost_round=2)
             pred = gbm.predict(X_train)
-            for i in range(pred.shape[0]):
-                np.testing.assert_almost_equal(pred[i], expected_pred)
+            self.assertTrue(np.allclose(pred, expected_pred))
 
     def test_constant_features_regression(self):
         params = {
