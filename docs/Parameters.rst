@@ -485,7 +485,7 @@ IO Parameters
 
 -  ``sparse_threshold`` :raw-html:`<a id="sparse_threshold" title="Permalink to this parameter" href="#sparse_threshold">&#x1F517;&#xFE0E;</a>`, default = ``0.8``, type = double, constraints: ``0.0 < sparse_threshold <= 1.0``
 
-   -  the threshold of zero elements precentage for treating a feature as a sparse one
+   -  the threshold of zero elements percentage for treating a feature as a sparse one
 
 -  ``use_missing`` :raw-html:`<a id="use_missing" title="Permalink to this parameter" href="#use_missing">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
 
@@ -493,7 +493,7 @@ IO Parameters
 
 -  ``zero_as_missing`` :raw-html:`<a id="zero_as_missing" title="Permalink to this parameter" href="#zero_as_missing">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
-   -  set this to ``true`` to treat all zero as missing values (including the unshown values in libsvm/sparse matrics)
+   -  set this to ``true`` to treat all zero as missing values (including the unshown values in libsvm/sparse matrices)
 
    -  set this to ``false`` to use ``na`` for representing missing values
 
@@ -573,7 +573,7 @@ IO Parameters
 
    -  **Note**: all values should be less than ``Int32.MaxValue`` (2147483647)
 
-   -  **Note**: using large values could be memory consuming. Tree decision rule works best when categorical features are presented by consecutive integers started from zero
+   -  **Note**: using large values could be memory consuming. Tree decision rule works best when categorical features are presented by consecutive integers starting from zero
 
    -  **Note**: all negative values will be treated as **missing values**
 
@@ -656,7 +656,7 @@ Objective Parameters
 
    -  used only in ``binary`` application
 
-   -  set this to ``true`` if training data are unbalance
+   -  set this to ``true`` if training data are unbalanced
 
    -  **Note**: this parameter cannot be used at the same time with ``scale_pos_weight``, choose only **one** of them
 
@@ -872,7 +872,7 @@ It means the initial score of the first data row is ``0.5``, second is ``-0.1``,
 The initial score file corresponds with data file line by line, and has per score per line.
 
 And if the name of data file is ``train.txt``, the initial score file should be named as ``train.txt.init`` and in the same folder as the data file.
-In this case LightGBM will auto load initial score file if it exists.
+In this case, LightGBM will auto load initial score file if it exists.
 
 Otherwise, you should specify the path to the custom named file with initial scores by the ``initscore_filename`` `parameter <#initscore_filename>`__.
 
@@ -892,7 +892,7 @@ It means the weight of the first data row is ``1.0``, second is ``0.5``, and so 
 The weight file corresponds with data file line by line, and has per weight per line.
 
 And if the name of data file is ``train.txt``, the weight file should be named as ``train.txt.weight`` and placed in the same folder as the data file.
-In this case LightGBM will load the weight file automatically if it exists.
+In this case, LightGBM will load the weight file automatically if it exists.
 
 Also, you can include weight column in your data file. Please refer to the ``weight_column`` `parameter <#weight_column>`__ in above.
 
@@ -914,7 +914,7 @@ It means first ``27`` lines samples belong to one query and next ``18`` lines be
 **Note**: data should be ordered by the query.
 
 If the name of data file is ``train.txt``, the query file should be named as ``train.txt.query`` and placed in the same folder as the data file.
-In this case LightGBM will load the query file automatically if it exists.
+In this case, LightGBM will load the query file automatically if it exists.
 
 Also, you can include query/group id column in your data file. Please refer to the ``group_column`` `parameter <#group_column>`__ in above.
 

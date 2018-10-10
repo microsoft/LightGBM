@@ -112,11 +112,11 @@ or
 
 And you can use ``Dataset.set_init_score()`` to set initial score, and ``Dataset.set_group()`` to set group/query data for ranking tasks.
 
-**Memory efficent usage:**
+**Memory efficient usage:**
 
 The ``Dataset`` object in LightGBM is very memory-efficient, due to it only need to save discrete bins.
 However, Numpy/Array/Pandas object is memory cost.
-If you concern about your memory consumption, you can save memory according to following:
+If you concern about your memory consumption, you can save memory according to the following:
 
 1. Let ``free_raw_data=True`` (default is ``True``) when constructing the ``Dataset``
 
@@ -204,7 +204,7 @@ Note that if you specify more than one evaluation metric, all of them will be us
 Prediction
 ----------
 
-A model that has been trained or loaded can perform predictions on data sets:
+A model that has been trained or loaded can perform predictions on datasets:
 
 .. code:: python
 

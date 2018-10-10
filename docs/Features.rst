@@ -93,7 +93,7 @@ Feature parallel aims to parallelize the "Find Best Split" in the decision tree.
 
 4. Worker with best split to perform split, then send the split result of data to other workers.
 
-5. Other workers split data according received data.
+5. Other workers split data according to received data.
 
 The shortcomings of traditional feature parallel:
 
