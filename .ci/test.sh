@@ -8,10 +8,8 @@ elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CC=clang
 fi
 
-if [[ $TRAVIS == "true" ]]; then
-    conda create -q -y -n $CONDA_ENV python=$PYTHON_VERSION
-    source activate $CONDA_ENV
-fi
+conda create -q -y -n $CONDA_ENV python=$PYTHON_VERSION
+source activate $CONDA_ENV
 
 cd $BUILD_DIRECTORY
 
@@ -21,7 +19,7 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
     fi
     # sphinx >=1.8 is incompatible with rstcheck
     conda install -y -n $CONDA_ENV "sphinx<1.8" "sphinx_rtd_theme>=0.3"  # html5validator
-    pip install rstcheck
+    pip install --user rstcheck
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
     rstcheck --report warning `find . -type f -name "*.rst"` || exit -1
@@ -64,12 +62,12 @@ fi
 conda install -q -y -n $CONDA_ENV numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
-    ln -sf `ls -d "$(brew --cellar libomp)"/*/lib`/* $CONDA_PREFIX/lib || exit -1  # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
+    sudo ln -sf `ls -d "$(brew --cellar libomp)"/*/lib`/* $CONDA_PREFIX/lib || exit -1  # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
 fi
 
 if [[ $TASK == "sdist" ]]; then
     cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
-    pip install $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v || exit -1
+    pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v || exit -1
     if [[ $AZURE == "true" ]]; then
         cp $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz $BUILD_ARTIFACTSTAGINGDIRECTORY
     fi
@@ -89,7 +87,7 @@ elif [[ $TASK == "bdist" ]]; then
             cp dist/lightgbm-$LGB_VER-py2.py3-none-manylinux1_x86_64.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
     fi
-    pip install $BUILD_DIRECTORY/python-package/dist/*.whl || exit -1
+    pip install --user $BUILD_DIRECTORY/python-package/dist/*.whl || exit -1
     pytest $BUILD_DIRECTORY/tests || exit -1
     exit 0
 fi
@@ -103,9 +101,9 @@ if [[ $TASK == "gpu" ]]; then
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
         if [[ $AZURE == "true" ]]; then
-            pip install $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--opencl-include-dir=$AMDAPPSDK_PATH/include/" || exit -1
+            pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--opencl-include-dir=$AMDAPPSDK_PATH/include/" || exit -1
         else
-            pip install $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--boost-root=$CONDA_PREFIX" --install-option="--opencl-include-dir=$AMDAPPSDK_PATH/include/" || exit -1
+            pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--boost-root=$CONDA_PREFIX" --install-option="--opencl-include-dir=$AMDAPPSDK_PATH/include/" || exit -1
         fi
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
@@ -117,7 +115,7 @@ mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
 if [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
-        pip install $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--mpi || exit -1
+        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--mpi || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     fi
@@ -134,7 +132,7 @@ fi
 
 make _lightgbm || exit -1
 
-cd $BUILD_DIRECTORY/python-package && python setup.py install --precompile || exit -1
+cd $BUILD_DIRECTORY/python-package && python setup.py install --precompile --user || exit -1
 pytest $BUILD_DIRECTORY/tests || exit -1
 
 if [[ $TASK == "regular" ]]; then
