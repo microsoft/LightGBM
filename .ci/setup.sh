@@ -60,6 +60,7 @@ fi
 
 if [[ $TRAVIS == "true" ]]; then
     sh conda.sh -b -p $HOME_DIRECTORY/miniconda
-    conda config --set always_yes yes --set changeps1 no
-    conda update -q conda
 fi
+
+conda config --set always_yes yes --set changeps1 no
+conda update -q conda

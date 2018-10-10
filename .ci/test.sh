@@ -8,10 +8,8 @@ elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CC=clang
 fi
 
-if [[ $TRAVIS == "true" ]]; then
-    conda create -q -y -n $CONDA_ENV python=$PYTHON_VERSION
-    source activate $CONDA_ENV
-fi
+conda create -q -y -n $CONDA_ENV python=$PYTHON_VERSION
+source activate $CONDA_ENV
 
 cd $BUILD_DIRECTORY
 
