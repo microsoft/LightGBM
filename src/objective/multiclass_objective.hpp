@@ -43,11 +43,25 @@ public:
     label_ = metadata.label();
     weights_ = metadata.weights();
     label_int_.resize(num_data_);
+    class_init_probs_.resize(num_class_, 0.0);
+    double sum_weight = 0.0;
     for (int i = 0; i < num_data_; ++i) {
       label_int_[i] = static_cast<int>(label_[i]);
       if (label_int_[i] < 0 || label_int_[i] >= num_class_) {
         Log::Fatal("Label must be in [0, %d), but found %d in label", num_class_, label_int_[i]);
       }
+      if (weights_ == nullptr) {
+        class_init_probs_[label_int_[i]] += 1.0;
+      } else {
+        class_init_probs_[label_int_[i]] += weights_[i];
+        sum_weight += weights_[i];
+      }
+    }
+    if (weights_ == nullptr) {
+      sum_weight = num_data_;
+    }
+    for (int i = 0; i < num_class_; ++i) {
+      class_init_probs_[i] /= sum_weight;
     }
   }
 
@@ -120,6 +134,19 @@ public:
 
   bool NeedAccuratePrediction() const override { return false; }
 
+  double BoostFromScore(int class_id) const override {
+    return std::log(std::max<double>(kEpsilon, class_init_probs_[class_id]));
+  }
+
+  bool ClassNeedTrain(int class_id) const override { 
+    if (std::fabs(class_init_probs_[class_id]) <= kEpsilon 
+        || std::fabs(class_init_probs_[class_id]) >= 1.0 - kEpsilon) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
 private:
   /*! \brief Number of data */
   data_size_t num_data_;
@@ -131,6 +158,7 @@ private:
   std::vector<int> label_int_;
   /*! \brief Weights for data */
   const label_t* weights_;
+  std::vector<double> class_init_probs_;
 };
 
 /*!
@@ -211,6 +239,14 @@ public:
   int NumPredictOneRow() const override { return num_class_; }
 
   bool NeedAccuratePrediction() const override { return false; }
+
+  double BoostFromScore(int class_id) const override {
+    return binary_loss_[class_id]->BoostFromScore(0);
+  }
+
+  bool ClassNeedTrain(int class_id) const override {
+    return binary_loss_[class_id]->ClassNeedTrain(0);
+  }
 
 private:
   /*! \brief Number of data */

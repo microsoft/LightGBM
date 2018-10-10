@@ -11,7 +11,7 @@ import numpy as np
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
                               load_iris, load_svmlight_file)
 from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error
-from sklearn.model_selection import train_test_split, TimeSeriesSplit
+from sklearn.model_selection import train_test_split, TimeSeriesSplit, GroupKFold
 from scipy.sparse import csr_matrix
 
 try:
@@ -438,29 +438,48 @@ class TestEngine(unittest.TestCase):
         lgb_train = lgb.Dataset(X_train, y_train)
         # shuffle = False, override metric in params
         params_with_metric = {'metric': 'l2', 'verbose': -1}
-        lgb.cv(params_with_metric, lgb_train, num_boost_round=10, nfold=3, stratified=False, shuffle=False,
-               metrics='l1', verbose_eval=False)
+        cv_res = lgb.cv(params_with_metric, lgb_train, num_boost_round=10,
+                        nfold=3, stratified=False, shuffle=False,
+                        metrics='l1', verbose_eval=False)
+        self.assertIn('l1-mean', cv_res)
+        self.assertNotIn('l2-mean', cv_res)
+        self.assertEqual(len(cv_res['l1-mean']), 10)
         # shuffle = True, callbacks
-        lgb.cv(params, lgb_train, num_boost_round=10, nfold=3, stratified=False, shuffle=True,
-               metrics='l1', verbose_eval=False,
-               callbacks=[lgb.reset_parameter(learning_rate=lambda i: 0.1 - 0.001 * i)])
+        cv_res = lgb.cv(params, lgb_train, num_boost_round=10, nfold=3, stratified=False, shuffle=True,
+                        metrics='l1', verbose_eval=False,
+                        callbacks=[lgb.reset_parameter(learning_rate=lambda i: 0.1 - 0.001 * i)])
+        self.assertIn('l1-mean', cv_res)
+        self.assertEqual(len(cv_res['l1-mean']), 10)
         # self defined folds
         tss = TimeSeriesSplit(3)
         folds = tss.split(X_train)
-        lgb.cv(params_with_metric, lgb_train, num_boost_round=10, folds=folds, stratified=False, verbose_eval=False)
+        cv_res_gen = lgb.cv(params_with_metric, lgb_train, num_boost_round=10, folds=folds,
+                            verbose_eval=False)
+        cv_res_obj = lgb.cv(params_with_metric, lgb_train, num_boost_round=10, folds=tss,
+                            verbose_eval=False)
+        np.testing.assert_almost_equal(cv_res_gen['l2-mean'], cv_res_obj['l2-mean'])
         # lambdarank
-        X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.train'))
-        q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.train.query'))
+        X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                           '../../examples/lambdarank/rank.train'))
+        q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                          '../../examples/lambdarank/rank.train.query'))
         params_lambdarank = {'objective': 'lambdarank', 'verbose': -1, 'eval_at': 3}
         lgb_train = lgb.Dataset(X_train, y_train, group=q_train)
-        # ... with NDCG (default) metric
-        cv_res = lgb.cv(params_lambdarank, lgb_train, num_boost_round=10, nfold=3, stratified=False, verbose_eval=False)
-        self.assertEqual(len(cv_res), 2)
-        self.assertFalse(np.isnan(cv_res['ndcg@3-mean']).any())
         # ... with l2 metric
-        cv_res = lgb.cv(params_lambdarank, lgb_train, num_boost_round=10, nfold=3, stratified=False, metrics='l2', verbose_eval=False)
-        self.assertEqual(len(cv_res), 2)
-        self.assertFalse(np.isnan(cv_res['l2-mean']).any())
+        cv_res_lambda = lgb.cv(params_lambdarank, lgb_train, num_boost_round=10, nfold=3,
+                               metrics='l2', verbose_eval=False)
+        self.assertEqual(len(cv_res_lambda), 2)
+        self.assertFalse(np.isnan(cv_res_lambda['l2-mean']).any())
+        # ... with NDCG (default) metric
+        cv_res_lambda = lgb.cv(params_lambdarank, lgb_train, num_boost_round=10, nfold=3,
+                               verbose_eval=False)
+        self.assertEqual(len(cv_res_lambda), 2)
+        self.assertFalse(np.isnan(cv_res_lambda['ndcg@3-mean']).any())
+        # self defined folds with lambdarank
+        cv_res_lambda_obj = lgb.cv(params_lambdarank, lgb_train, num_boost_round=10,
+                                   folds=GroupKFold(n_splits=3),
+                                   verbose_eval=False)
+        np.testing.assert_almost_equal(cv_res_lambda['ndcg@3-mean'], cv_res_lambda_obj['ndcg@3-mean'])
 
     def test_feature_name(self):
         X, y = load_boston(True)
@@ -720,3 +739,55 @@ class TestEngine(unittest.TestCase):
         pred = gbm.predict(X)
         pred_mean = pred.mean()
         self.assertGreater(pred_mean, 18)
+
+    def test_constant_features(self, y_true=None, expected_pred=None, more_params=None):
+        if y_true is not None and expected_pred is not None:
+            X_train = np.ones((len(y_true), 1))
+            y_train = np.array(y_true)
+            params = {
+                'objective': 'regression',
+                'num_class': 1,
+                'verbose': -1,
+                'min_data': 1,
+                'num_leaves': 2,
+                'learning_rate': 1,
+                'min_data_in_bin': 1,
+                'boost_from_average': True
+            }
+            params.update(more_params)
+            lgb_train = lgb.Dataset(X_train, y_train, params=params)
+            gbm = lgb.train(params, lgb_train,
+                            num_boost_round=2)
+            pred = gbm.predict(X_train)
+            self.assertTrue(np.allclose(pred, expected_pred))
+
+    def test_constant_features_regression(self):
+        params = {
+            'objective': 'regression'
+        }
+        self.test_constant_features([0.0, 10.0, 0.0, 10.0], 5.0, params)
+        self.test_constant_features([0.0, 1.0, 2.0, 3.0], 1.5, params)
+        self.test_constant_features([-1.0, 1.0, -2.0, 2.0], 0.0, params)
+
+    def test_constant_features_binary(self):
+        params = {
+            'objective': 'binary'
+        }
+        self.test_constant_features([0.0, 10.0, 0.0, 10.0], 0.5, params)
+        self.test_constant_features([0.0, 1.0, 2.0, 3.0], 0.75, params)
+
+    def test_constant_features_multiclass(self):
+        params = {
+            'objective': 'multiclass',
+            'num_class': 3
+        }
+        self.test_constant_features([0.0, 1.0, 2.0, 0.0], [0.5, 0.25, 0.25], params)
+        self.test_constant_features([0.0, 1.0, 2.0, 1.0], [0.25, 0.5, 0.25], params)
+
+    def test_constant_features_multiclassova(self):
+        params = {
+            'objective': 'multiclassova',
+            'num_class': 3
+        }
+        self.test_constant_features([0.0, 1.0, 2.0, 0.0], [0.5, 0.25, 0.25], params)
+        self.test_constant_features([0.0, 1.0, 2.0, 1.0], [0.25, 0.5, 0.25], params)

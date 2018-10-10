@@ -48,7 +48,7 @@ public:
   /*!
   * \brief Shuffle Existing Models
   */
-  virtual void ShuffleModels() = 0;
+  virtual void ShuffleModels(int start_iter, int end_iter) = 0;
 
   virtual void ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* objective_function,
                                  const std::vector<const Metric*>& training_metrics) = 0;

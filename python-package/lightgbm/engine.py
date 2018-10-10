@@ -4,6 +4,7 @@
 from __future__ import absolute_import
 
 import collections
+import copy
 import warnings
 from operator import attrgetter
 
@@ -12,7 +13,7 @@ import numpy as np
 from . import callback
 from .basic import Booster, Dataset, LightGBMError, _InnerPredictor
 from .compat import (SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold,
-                     integer_types, range_, string_type)
+                     string_type, integer_types, range_, zip_)
 
 
 def train(params, train_set, num_boost_round=100,
@@ -57,7 +58,7 @@ def train(params, train_set, num_boost_round=100,
         If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
         If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
         All values in categorical features should be less than int32 max value (2147483647).
-        Large values could be memory consuming. Consider to use consecutive integers started from zero.
+        Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
     early_stopping_rounds: int or None, optional (default=None)
         Activates early stopping. The model will train until the validation score stops improving.
@@ -104,6 +105,7 @@ def train(params, train_set, num_boost_round=100,
         The trained Booster model.
     """
     # create predictor first
+    params = copy.deepcopy(params)
     for alias in ["num_iterations", "num_iteration", "n_iter", "num_tree", "num_trees",
                   "num_round", "num_rounds", "num_boost_round", "n_estimators"]:
         if alias in params:
@@ -129,7 +131,10 @@ def train(params, train_set, num_boost_round=100,
     if not isinstance(train_set, Dataset):
         raise TypeError("Training only accepts Dataset object")
 
-    train_set._update_params(params)._set_predictor(predictor).set_feature_name(feature_name).set_categorical_feature(categorical_feature)
+    train_set._update_params(params) \
+             ._set_predictor(predictor) \
+             .set_feature_name(feature_name) \
+             .set_categorical_feature(categorical_feature)
 
     is_valid_contain_train = False
     train_data_name = "training"
@@ -187,7 +192,7 @@ def train(params, train_set, num_boost_round=100,
         booster = Booster(params=params, train_set=train_set)
         if is_valid_contain_train:
             booster.set_train_data_name(train_data_name)
-        for valid_set, name_valid_set in zip(reduced_valid_sets, name_valid_sets):
+        for valid_set, name_valid_set in zip_(reduced_valid_sets, name_valid_sets):
             booster.add_valid(valid_set, name_valid_set)
     finally:
         train_set._reverse_update_params()
@@ -261,8 +266,17 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
     full_data = full_data.construct()
     num_data = full_data.num_data()
     if folds is not None:
-        if not hasattr(folds, '__iter__'):
-            raise AttributeError("folds should be a generator or iterator of (train_idx, test_idx)")
+        if not hasattr(folds, '__iter__') and not hasattr(folds, 'split'):
+            raise AttributeError("folds should be a generator or iterator of (train_idx, test_idx) tuples "
+                                 "or scikit-learn splitter object with split method")
+        if hasattr(folds, 'split'):
+            group_info = full_data.get_group()
+            if group_info is not None:
+                group_info = group_info.astype(int)
+                flatted_group = np.repeat(range_(len(group_info)), repeats=group_info)
+            else:
+                flatted_group = np.zeros(num_data, dtype=int)
+            folds = folds.split(X=np.zeros(num_data), y=full_data.get_label(), groups=flatted_group)
     else:
         if 'objective' in params and params['objective'] == 'lambdarank':
             if not SKLEARN_INSTALLED:
@@ -285,7 +299,7 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             kstep = int(num_data / nfold)
             test_id = [randidx[i: i + kstep] for i in range_(0, num_data, kstep)]
             train_id = [np.concatenate([test_id[i] for i in range_(nfold) if k != i]) for k in range_(nfold)]
-            folds = zip(train_id, test_id)
+            folds = zip_(train_id, test_id)
 
     ret = CVBooster()
     for train_idx, test_idx in folds:
@@ -332,8 +346,11 @@ def cv(params, train_set, num_boost_round=100,
         Data to be trained on.
     num_boost_round : int, optional (default=100)
         Number of boosting iterations.
-    folds : a generator or iterator of (train_idx, test_idx) tuples or None, optional (default=None)
-        The train and test indices for the each fold.
+    folds : generator or iterator of (train_idx, test_idx) tuples, scikit-learn splitter object or None, optional (default=None)
+        If generator or iterator, it should yield the train and test indices for each fold.
+        If object, it should be one of the scikit-learn splitter classes
+        (http://scikit-learn.org/stable/modules/classes.html#splitter-classes)
+        and have ``split`` method.
         This argument has highest priority over other data split arguments.
     nfold : int, optional (default=5)
         Number of folds in CV.
@@ -365,7 +382,7 @@ def cv(params, train_set, num_boost_round=100,
         If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
         If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
         All values in categorical features should be less than int32 max value (2147483647).
-        Large values could be memory consuming. Consider to use consecutive integers started from zero.
+        Large values could be memory consuming. Consider using consecutive integers starting from zero.
         All negative values in categorical features will be treated as missing values.
     early_stopping_rounds: int or None, optional (default=None)
         Activates early stopping.
@@ -402,6 +419,7 @@ def cv(params, train_set, num_boost_round=100,
     if not isinstance(train_set, Dataset):
         raise TypeError("Traninig only accepts Dataset object")
 
+    params = copy.deepcopy(params)
     for alias in ["num_iterations", "num_iteration", "n_iter", "num_tree", "num_trees",
                   "num_round", "num_rounds", "num_boost_round", "n_estimators"]:
         if alias in params:
@@ -422,7 +440,10 @@ def cv(params, train_set, num_boost_round=100,
         predictor = init_model._to_predictor(dict(init_model.params, **params))
     else:
         predictor = None
-    train_set._update_params(params)._set_predictor(predictor).set_feature_name(feature_name).set_categorical_feature(categorical_feature)
+    train_set._update_params(params) \
+             ._set_predictor(predictor) \
+             .set_feature_name(feature_name) \
+             .set_categorical_feature(categorical_feature)
 
     if metrics is not None:
         params['metric'] = metrics

@@ -70,16 +70,21 @@ public:
     num_iteration_for_pred_ = static_cast<int>(models_.size()) / num_tree_per_iteration_;
   }
 
-  void ShuffleModels() override {
+  void ShuffleModels(int start_iter, int end_iter) override {
     int total_iter = static_cast<int>(models_.size()) / num_tree_per_iteration_;
+    start_iter = std::max(0, start_iter);
+    if (end_iter <= 0) {
+      end_iter = total_iter;
+    }
+    end_iter = std::min(total_iter, end_iter);
     auto original_models = std::move(models_);
     std::vector<int> indices(total_iter);
     for (int i = 0; i < total_iter; ++i) {
       indices[i] = i;
     }
     Random tmp_rand(17);
-    for (int i = 0; i < total_iter - 1; ++i) {
-      int j = tmp_rand.NextShort(i + 1, total_iter);
+    for (int i = start_iter; i < end_iter - 1; ++i) {
+      int j = tmp_rand.NextShort(i + 1, end_iter);
       std::swap(indices[i], indices[j]);
     }
     models_ = std::vector<std::unique_ptr<Tree>>();
@@ -409,7 +414,7 @@ protected:
   */
   std::string OutputMetric(int iter);
 
-  double BoostFromAverage();
+  double BoostFromAverage(int class_id);
 
   /*! \brief current iteration */
   int iter_;
@@ -483,7 +488,6 @@ protected:
   std::unique_ptr<Dataset> tmp_subset_;
   bool is_use_subset_;
   std::vector<bool> class_need_train_;
-  std::vector<double> class_default_output_;
   bool is_constant_hessian_;
   std::unique_ptr<ObjectiveFunction> loaded_objective_;
   bool average_output_;

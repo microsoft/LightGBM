@@ -4,39 +4,43 @@ GPU SDK Correspondence and Device Targeting Table
 GPU Targets Table
 =================
 
-When using OpenCL SDKs, targeting CPU and GPU at the same time is sometimes possible.
-This is especially true for Intel OpenCL SDK and AMD APP SDK.
+OpenCL is a universal massively parallel programming framework that targets to multiple backends (GPU, CPU, FPGA, etc).
+Bascially, to use a device from a vendor, you have to install drivers from that specific vendor.
+Intel and AMD's OpenCL runtime also include x86 CPU target support.
+NVIDIA's OpenCL runtime only supports NVIDIA GPU (No CPU support).
+In general, OpenCL CPU backends are quite slow, and should be used for testing and debugging only.
 
 You can find below a table of correspondence:
 
 +---------------------------+-----------------+-----------------+-----------------+--------------+
 | SDK                       | CPU Intel/AMD   | GPU Intel       | GPU AMD         | GPU NVIDIA   |
 +===========================+=================+=================+=================+==============+
-| `Intel SDK for OpenCL`_   | Supported       | Supported \*    | Supported       | Untested     |
+| `Intel SDK for OpenCL`_   | Supported       | Supported       | Not Supported   | Not Supported|
 +---------------------------+-----------------+-----------------+-----------------+--------------+
-| AMD APP SDK \*\*\*        | Supported       | Untested \*     | Supported       | Fails        |
+| AMD APP SDK \*            | Supported       | Not Supported   | Supported       | Not Supported|
 +---------------------------+-----------------+-----------------+-----------------+--------------+
-| `NVIDIA CUDA Toolkit`_    | Fails    \*\*   | Fails    \*\*   | Fails    \*\*   | Supported    |
+| `NVIDIA CUDA Toolkit`_    | Not Supported   | Not Supported   | Not Supported   | Supported    |
 +---------------------------+-----------------+-----------------+-----------------+--------------+
 
 Legend:
 
--  \* Not usable directly.
--  \*\* Reported as unsupported in public forums.
-- \*\*\* AMD has decided to drop the support for APP SDK and deleted all links to installation packages. You can download the installation package for Linux from `our GitHub repo`_.
+\* AMD APP SDK is deprecated. On Windows, OpenCL is included in AMD graphics driver. On Linux, newer generation AMD cards are supported by the `ROCm`_ driver. You can download an archived copy of AMD APP SDK for Linux from `our GitHub repo`_.
 
-AMD GPUs using Intel SDK for OpenCL is not a typo, nor AMD APP SDK compatibility with CPUs.
 
 --------------
 
-Targeting Table
+Query OpenCL Devices in Your System
+===================================
+
+Your system might have multiple GPUs from different vendors ("platforms") installed. Setting up LightGBM GPU device requries two parameters: `OpenCL Platform ID <./Parameters.rst#gpu_platform_id>`__ (``gpu_platform_id``) and `OpenCL Device ID <./Parameters.rst#gpu_device_id>`__ (``gpu_device_id``). Generally speaking, each vendor provides a OpenCL Platform, and devices from the same vendor have different device IDs under that platform. For example, if your system has an Intel integrated GPU and two discrete GPUs from AMD, you will have two OpenCL platforms (with ``gpu_platform_id=0`` and ``gpu_platform_id=1``). If the platform 0 is Intel, it has one device (``gpu_device_id=0``) representing the Intel GPU; if the platform 1 is AMD, it has two devices (``gpu_device_id=0``, ``gpu_device_id=1``) representing the two AMD GPUs. If you have a discrete GPU by AMD/NVIDIA and an integrated GPU by Intel, make sure to select the correct ``gpu_platform_id`` to use the discrete GPU as it usually provides better performance.
+
+On Windows, OpenCL devices can be queried using `GPUCapsViewer`_, under the OpenCL tab. Note that the platform and device ID reported by this utility start from 1. So you should minus the reported IDs by 1.
+
+On Linux, OpenCL devices can be listed using the ``clinfo`` command. On Ubuntu, you can install ``clinfo`` by executing ``sudo apt-get install clinfo``.
+
+
+Examples
 ===============
-
-We present the following scenarii:
-
--  CPU, no GPU
--  Single CPU and GPU (even with integrated graphics)
--  Multiple CPU/GPU
 
 We provide test R code below, but you can use the language of your choice with the examples of your choices:
 
@@ -69,75 +73,9 @@ We provide test R code below, but you can use the language of your choice with t
                        learning_rate = 1,
                        early_stopping_rounds = 10)
 
-Using a bad ``gpu_device_id`` is not critical, as it will fallback to:
+Make sure you list the OpenCL devices in your system and set ``gpu_platform_id`` and ``gpu_device_id`` correctly. In the following examples, our system has 1 GPU platform (``gpu_platform_id = 0``) from AMD APP SDK. The first device ``gpu_device_id = 0`` is a GPU device (AMD Oland), and the second device ``gpu_device_id = 1`` is the x86 CPU backend.
 
--  ``gpu_device_id = 0`` if using ``gpu_platform_id = 0``
--  ``gpu_device_id = 1`` if using ``gpu_platform_id = 1``
-
-However, using a bad combination of ``gpu_platform_id`` and ``gpu_device_id`` will lead to a **crash** (you will lose your entire session content).
-Beware of it.
-
-Your system might have multiple GPUs from different vendors ("platforms") installed. You can use the `clinfo`_ utility to identify the GPUs on each platform. On Ubuntu, you can install ``clinfo`` by executing ``sudo apt-get install clinfo``. On Windows, you can find a list of your OpenCL devices using the utility `GPUCapsViewer`_. If you have a discrete GPU by AMD/NVIDIA and an integrated GPU by Intel, make sure to select the correct ``gpu_platform_id`` to use the discrete GPU.
-
-
-CPU Only Architectures
-----------------------
-
-When you have a single device (one CPU), OpenCL usage is straightforward: ``gpu_platform_id = 0``, ``gpu_device_id = 0``
-
-This will use the CPU with OpenCL, even though it says it says GPU.
-
-Example:
-
-.. code:: r
-
-    > params <- list(objective = "regression",
-    +                metric = "rmse",
-    +                device = "gpu",
-    +                gpu_platform_id = 0,
-    +                gpu_device_id = 0,
-    +                nthread = 1,
-    +                boost_from_average = FALSE,
-    +                num_tree_per_iteration = 10,
-    +                max_bin = 32)
-    > model <- lgb.train(params,
-    +                    dtrain,
-    +                    2,
-    +                    valids,
-    +                    min_data = 1,
-    +                    learning_rate = 1,
-    +                    early_stopping_rounds = 10)
-    [LightGBM] [Info] This is the GPU trainer!!
-    [LightGBM] [Info] Total Bins 232
-    [LightGBM] [Info] Number of data: 6513, number of used features: 116
-    [LightGBM] [Info] Using requested OpenCL platform 0 device 1
-    [LightGBM] [Info] Using GPU Device: Intel(R) Core(TM) i7-4600U CPU @ 2.10GHz, Vendor: GenuineIntel
-    [LightGBM] [Info] Compiling OpenCL Kernel with 16 bins...
-    [LightGBM] [Info] GPU programs have been built
-    [LightGBM] [Info] Size of histogram bin entry: 12
-    [LightGBM] [Info] 40 dense feature groups (0.12 MB) transfered to GPU in 0.004540 secs. 76 sparse feature groups.
-    [LightGBM] [Info] No further splits with positive gain, best gain: -inf
-    [LightGBM] [Info] Trained a tree with leaves=16 and max_depth=8
-    [1]:    test's rmse:1.10643e-17 
-    [LightGBM] [Info] No further splits with positive gain, best gain: -inf
-    [LightGBM] [Info] Trained a tree with leaves=7 and max_depth=5
-    [2]:    test's rmse:0
-
-Single CPU and GPU (even with integrated graphics)
---------------------------------------------------
-
-If you have integrated graphics card (Intel HD Graphics) and a dedicated graphics card (AMD, NVIDIA),
-the dedicated graphics card will automatically override the integrated graphics card.
-The workaround is to disable your dedicated graphics card to be able to use your integrated graphics card.
-
-When you have multiple devices (one CPU and one GPU), the order is usually the following:
-
--  GPU: ``gpu_platform_id = 0``, ``gpu_device_id = 0``,
-   sometimes it is usable using ``gpu_platform_id = 1``, ``gpu_device_id = 1`` but at your own risk!
-
--  CPU: ``gpu_platform_id = 0``, ``gpu_device_id = 1``
-
-Example of GPU (``gpu_platform_id = 0``, ``gpu_device_id = 0``):
+Example of using GPU (``gpu_platform_id = 0`` and ``gpu_device_id = 0`` in our system):
 
 .. code:: r
 
@@ -172,7 +110,9 @@ Example of GPU (``gpu_platform_id = 0``, ``gpu_device_id = 0``):
     [LightGBM] [Info] Trained a tree with leaves=7 and max_depth=5
     [2]:    test's rmse:0
 
-Example of CPU (``gpu_platform_id = 0``, ``gpu_device_id = 1``):
+Running on OpenCL CPU backend devices are in generally slow, and we observe crashes on some Windows and macOS systems. Make sure you check the ``Using GPU Device`` line in the log and it is not using a CPU. The above log shows that we are using ``Oland`` GPU from AMD and not CPU.
+
+Example of using CPU (``gpu_platform_id = 0``, ``gpu_device_id = 1``). The GPU device reported is ``Intel(R) Core(TM) i7-4600U CPU``, so it is using the CPU backend rather than a real GPU.
 
 .. code:: r
 
@@ -207,85 +147,17 @@ Example of CPU (``gpu_platform_id = 0``, ``gpu_device_id = 1``):
     [LightGBM] [Info] No further splits with positive gain, best gain: -inf
     [LightGBM] [Info] Trained a tree with leaves=7 and max_depth=5
     [2]:    test's rmse:0
+    
 
-When using a wrong ``gpu_device_id``, it will automatically fallback to ``gpu_device_id = 0``:
+Known issues:
 
-.. code:: r
+- Using a bad combination of ``gpu_platform_id`` and ``gpu_device_id`` can potentially lead to a **crash** due to OpenCL driver issues on some machines (you will lose your entire session content). Beware of it.
 
-    > params <- list(objective = "regression",
-    +                metric = "rmse",
-    +                device = "gpu",
-    +                gpu_platform_id = 0,
-    +                gpu_device_id = 9999,
-    +                nthread = 1,
-    +                boost_from_average = FALSE,
-    +                num_tree_per_iteration = 10,
-    +                max_bin = 32)
-    > model <- lgb.train(params,
-    +                    dtrain,
-    +                    2,
-    +                    valids,
-    +                    min_data = 1,
-    +                    learning_rate = 1,
-    +                    early_stopping_rounds = 10)
-    [LightGBM] [Info] This is the GPU trainer!!
-    [LightGBM] [Info] Total Bins 232
-    [LightGBM] [Info] Number of data: 6513, number of used features: 116
-    [LightGBM] [Info] Using GPU Device: Oland, Vendor: Advanced Micro Devices, Inc.
-    [LightGBM] [Info] Compiling OpenCL Kernel with 16 bins...
-    [LightGBM] [Info] GPU programs have been built
-    [LightGBM] [Info] Size of histogram bin entry: 12
-    [LightGBM] [Info] 40 dense feature groups (0.12 MB) transfered to GPU in 0.004211 secs. 76 sparse feature groups.
-    [LightGBM] [Info] No further splits with positive gain, best gain: -inf
-    [LightGBM] [Info] Trained a tree with leaves=16 and max_depth=8
-    [1]:    test's rmse:1.10643e-17 
-    [LightGBM] [Info] No further splits with positive gain, best gain: -inf
-    [LightGBM] [Info] Trained a tree with leaves=7 and max_depth=5
-    [2]:    test's rmse:0
-
-Do not ever run under the following scenario as it is known to crash even if it says it is using the CPU because it is NOT the case:
-
--  One CPU and one GPU
--  ``gpu_platform_id = 1``, ``gpu_device_id = 0``
-
-.. code:: r
-
-    > params <- list(objective = "regression",
-    +                metric = "rmse",
-    +                device = "gpu",
-    +                gpu_platform_id = 1,
-    +                gpu_device_id = 0,
-    +                nthread = 1,
-    +                boost_from_average = FALSE,
-    +                num_tree_per_iteration = 10,
-    +                max_bin = 32)
-    > model <- lgb.train(params,
-    +                    dtrain,
-    +                    2,
-    +                    valids,
-    +                    min_data = 1,
-    +                    learning_rate = 1,
-    +                    early_stopping_rounds = 10)
-    [LightGBM] [Info] This is the GPU trainer!!
-    [LightGBM] [Info] Total Bins 232
-    [LightGBM] [Info] Number of data: 6513, number of used features: 116
-    [LightGBM] [Info] Using requested OpenCL platform 1 device 0
-    [LightGBM] [Info] Using GPU Device: Intel(R) Core(TM) i7-4600U CPU @ 2.10GHz, Vendor: Intel(R) Corporation
-    [LightGBM] [Info] Compiling OpenCL Kernel with 16 bins...
-    terminate called after throwing an instance of 'boost::exception_detail::clone_impl<boost::exception_detail::error_info_injector<boost::compute::opencl_error> >'
-      what():  Invalid Program
-
-    This application has requested the Runtime to terminate it in an unusual way.
-    Please contact the application's support team for more information.
-
-Multiple CPU and GPU
---------------------
-
-If you have multiple devices (multiple CPUs and multiple GPUs),
-you will have to test different ``gpu_device_id`` and different ``gpu_platform_id`` values to find out the values which suits the CPU/GPU you want to use.
-Keep in mind that using the integrated graphics card is not directly possible without disabling every dedicated graphics card.
+- On some systems, if you have integrated graphics card (Intel HD Graphics) and a dedicated graphics card (AMD, NVIDIA), the dedicated graphics card will automatically override the integrated graphics card. The workaround is to disable your dedicated graphics card to be able to use your integrated graphics card.
 
 .. _Intel SDK for OpenCL: https://software.intel.com/en-us/articles/opencl-drivers
+
+.. _ROCm: https://rocm.github.io/
 
 .. _our GitHub repo: https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
 

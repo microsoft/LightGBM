@@ -746,10 +746,12 @@ public:
 
   // desc = OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform
   // desc = ``-1`` means the system-wide default platform
+  // desc = **Note**: refer to `GPU Targets <./GPU-Targets.rst#query-opencl-devices-in-your-system>`__ for more details
   int gpu_platform_id = -1;
 
   // desc = OpenCL device ID in the specified platform. Each GPU in the selected platform has a unique device ID
   // desc = ``-1`` means the default device in the selected platform
+  // desc = **Note**: refer to `GPU Targets <./GPU-Targets.rst#query-opencl-devices-in-your-system>`__ for more details
   int gpu_device_id = -1;
 
   // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used)

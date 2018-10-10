@@ -117,8 +117,8 @@ void Network::AllreduceByAllGather(char* input, comm_size_t input_size, int type
 void Network::Allgather(char* input, comm_size_t send_size, char* output) {
   if (num_machines_ <= 1) {
     Log::Fatal("Please initilize the network interface first");
+    return;
   }
-  if (num_machines_ <= 1) { return; }
   // assign blocks
   block_start_[0] = 0;
   block_len_[0] = send_size;

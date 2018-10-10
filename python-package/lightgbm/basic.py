@@ -13,10 +13,11 @@ from tempfile import NamedTemporaryFile
 import numpy as np
 import scipy.sparse
 
-from .compat import (DataFrame, LGBMDeprecationWarning, Series,
-                     decode_string, integer_types,
+from .compat import (DataFrame, Series,
+                     decode_string, string_type,
+                     integer_types, numeric_types,
                      json, json_default_with_numpy,
-                     numeric_types, range_, zip_, string_type)
+                     range_, zip_)
 from .libpath import find_lib_path
 
 
@@ -134,7 +135,7 @@ def param_dict_to_str(data):
     return ' '.join(pairs)
 
 
-class _temp_file(object):
+class _TempFile(object):
     def __enter__(self):
         with NamedTemporaryFile(prefix="lightgbm_tmp_", delete=True) as f:
             self.name = f.name
@@ -192,7 +193,8 @@ def convert_from_sliced_object(data):
     """fix the memory of multi-dimensional sliced object"""
     if data.base is not None and isinstance(data, np.ndarray) and isinstance(data.base, np.ndarray):
         if not data.flags.c_contiguous:
-            warnings.warn("Usage of np.ndarray subset (sliced data) is not recommended due to it will double the peak memory cost in LightGBM.")
+            warnings.warn("Usage of np.ndarray subset (sliced data) is not recommended "
+                          "due to it will double the peak memory cost in LightGBM.")
             return np.copy(data)
     return data
 
@@ -251,7 +253,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
         else:
             if len(cat_cols) != len(pandas_categorical):
                 raise ValueError('train and valid dataset categorical_feature do not match.')
-            for col, category in zip(cat_cols, pandas_categorical):
+            for col, category in zip_(cat_cols, pandas_categorical):
                 if list(data[col].cat.categories) != list(category):
                     data[col] = data[col].cat.set_categories(category)
         if len(cat_cols):  # cat_cols is pandas Index object
@@ -271,7 +273,8 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
             bad_fields = [data.columns[i] for i, dtype in
                           enumerate(data_dtypes) if dtype.name not in PANDAS_DTYPE_MAPPER]
 
-            msg = """DataFrame.dtypes for data must be int, float or bool. Did not expect the data types in fields """
+            msg = ("DataFrame.dtypes for data must be int, float or bool.\n"
+                   "Did not expect the data types in fields ")
             raise ValueError(msg + ', '.join(bad_fields))
         data = data.values.astype('float')
     else:
@@ -295,7 +298,8 @@ def _label_from_pandas(label):
 
 def _save_pandas_categorical(file_name, pandas_categorical):
     with open(file_name, 'a') as f:
-        f.write('\npandas_categorical:' + json.dumps(pandas_categorical, default=json_default_with_numpy) + '\n')
+        f.write('\npandas_categorical:'
+                + json.dumps(pandas_categorical, default=json_default_with_numpy) + '\n')
 
 
 def _load_pandas_categorical(file_name):
@@ -316,7 +320,7 @@ class _InnerPredictor(object):
     Note: Can convert from Booster, but cannot convert to Booster
     """
     def __init__(self, model_file=None, booster_handle=None, pred_parameter=None):
-        """Initialize the _InnerPredictor. Not expose to user
+        """Initialize the _InnerPredictor. Not exposed to user
 
         Parameters
         ----------
@@ -418,7 +422,7 @@ class _InnerPredictor(object):
             num_iteration = self.num_total_iteration
 
         if isinstance(data, string_type):
-            with _temp_file() as f:
+            with _TempFile() as f:
                 _safe_call(_LIB.LGBM_BoosterPredictForFile(
                     self.handle,
                     c_str(data),
@@ -521,7 +525,8 @@ class _InnerPredictor(object):
             n_preds = [self.__get_num_preds(num_iteration, i, predict_type) for i in np.diff([0] + list(sections) + [nrow])]
             n_preds_sections = np.array([0] + n_preds, dtype=np.intp).cumsum()
             preds = np.zeros(sum(n_preds), dtype=np.float64)
-            for chunk, (start_idx_pred, end_idx_pred) in zip_(np.array_split(mat, sections), zip_(n_preds_sections, n_preds_sections[1:])):
+            for chunk, (start_idx_pred, end_idx_pred) in zip_(np.array_split(mat, sections),
+                                                              zip_(n_preds_sections, n_preds_sections[1:])):
                 # avoid memory consumption by arrays concatenation operations
                 inner_predict(chunk, num_iteration, predict_type, preds[start_idx_pred:end_idx_pred])
             return preds, nrow
@@ -543,6 +548,9 @@ class _InnerPredictor(object):
 
             ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
             ptr_data, type_ptr_data, _ = c_float_array(csr.data)
+
+            assert csr.shape[1] <= MAX_INT32
+            csr.indices = csr.indices.astype(np.int32, copy=False)
 
             _safe_call(_LIB.LGBM_BoosterPredictForCSR(
                 self.handle,
@@ -592,6 +600,9 @@ class _InnerPredictor(object):
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
         ptr_data, type_ptr_data, _ = c_float_array(csc.data)
 
+        assert csc.shape[0] <= MAX_INT32
+        csc.indices = csc.indices.astype(np.int32, copy=False)
+
         _safe_call(_LIB.LGBM_BoosterPredictForCSC(
             self.handle,
             ptr_indptr,
@@ -618,7 +629,7 @@ class Dataset(object):
                  weight=None, group=None, init_score=None, silent=False,
                  feature_name='auto', categorical_feature='auto', params=None,
                  free_raw_data=True):
-        """Constract Dataset.
+        """Construct Dataset.
 
         Parameters
         ----------
@@ -646,7 +657,7 @@ class Dataset(object):
             If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
             If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
             All values in categorical features should be less than int32 max value (2147483647).
-            Large values could be memory consuming. Consider to use consecutive integers started from zero.
+            Large values could be memory consuming. Consider using consecutive integers starting from zero.
             All negative values in categorical features will be treated as missing values.
         params : dict or None, optional (default=None)
             Other parameters.
@@ -692,16 +703,22 @@ class Dataset(object):
         if reference is not None:
             self.pandas_categorical = reference.pandas_categorical
             categorical_feature = reference.categorical_feature
-        data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data, feature_name, categorical_feature, self.pandas_categorical)
+        data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data,
+                                                                                             feature_name,
+                                                                                             categorical_feature,
+                                                                                             self.pandas_categorical)
         label = _label_from_pandas(label)
         self.data_has_header = False
         # process for args
         params = {} if params is None else params
-        args_names = getattr(self.__class__, '_lazy_init').__code__.co_varnames[:getattr(self.__class__, '_lazy_init').__code__.co_argcount]
+        args_names = (getattr(self.__class__, '_lazy_init')
+                      .__code__
+                      .co_varnames[:getattr(self.__class__, '_lazy_init').__code__.co_argcount])
         for key, _ in params.items():
             if key in args_names:
-                warnings.warn('{0} keyword has been found in `params` and will be ignored. '
-                              'Please use {0} argument of the Dataset constructor to pass this parameter.'.format(key))
+                warnings.warn('{0} keyword has been found in `params` and will be ignored.\n'
+                              'Please use {0} argument of the Dataset constructor to pass this parameter.'
+                              .format(key))
         self.predictor = predictor
         # user can set verbose with params, it has higher priority
         if not any(verbose_alias in params for verbose_alias in ('verbose', 'verbosity')) and silent:
@@ -878,6 +895,9 @@ class Dataset(object):
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
         ptr_data, type_ptr_data, _ = c_float_array(csr.data)
 
+        assert csr.shape[1] <= MAX_INT32
+        csr.indices = csr.indices.astype(np.int32, copy=False)
+
         _safe_call(_LIB.LGBM_DatasetCreateFromCSR(
             ptr_indptr,
             ctypes.c_int(type_ptr_indptr),
@@ -902,6 +922,9 @@ class Dataset(object):
 
         ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
         ptr_data, type_ptr_data, _ = c_float_array(csc.data)
+
+        assert csc.shape[0] <= MAX_INT32
+        csc.indices = csc.indices.astype(np.int32, copy=False)
 
         _safe_call(_LIB.LGBM_DatasetCreateFromCSC(
             ptr_indptr,
@@ -930,7 +953,8 @@ class Dataset(object):
                 if self.used_indices is None:
                     # create valid
                     self._lazy_init(self.data, label=self.label, reference=self.reference,
-                                    weight=self.weight, group=self.group, init_score=self.init_score, predictor=self._predictor,
+                                    weight=self.weight, group=self.group,
+                                    init_score=self.init_score, predictor=self._predictor,
                                     silent=self.silent, feature_name=self.feature_name, params=self.params)
                 else:
                     # construct subset
@@ -938,7 +962,8 @@ class Dataset(object):
                     assert used_indices.flags.c_contiguous
                     if self.reference.group is not None:
                         group_info = np.array(self.reference.group).astype(int)
-                        _, self.group = np.unique(np.repeat(range_(len(group_info)), repeats=group_info)[self.used_indices], return_counts=True)
+                        _, self.group = np.unique(np.repeat(range_(len(group_info)), repeats=group_info)[self.used_indices],
+                                                  return_counts=True)
                     self.handle = ctypes.c_void_p()
                     params_str = param_dict_to_str(self.params)
                     _safe_call(_LIB.LGBM_DatasetGetSubset(
@@ -954,8 +979,9 @@ class Dataset(object):
             else:
                 # create train
                 self._lazy_init(self.data, label=self.label,
-                                weight=self.weight, group=self.group, init_score=self.init_score,
-                                predictor=self._predictor, silent=self.silent, feature_name=self.feature_name,
+                                weight=self.weight, group=self.group,
+                                init_score=self.init_score, predictor=self._predictor,
+                                silent=self.silent, feature_name=self.feature_name,
                                 categorical_feature=self.categorical_feature, params=self.params)
             if self.free_raw_data:
                 self.data = None
@@ -1020,7 +1046,7 @@ class Dataset(object):
         return ret
 
     def save_binary(self, filename):
-        """Save Dataset to binary file.
+        """Save Dataset to a binary file.
 
         Parameters
         ----------
@@ -1158,11 +1184,13 @@ class Dataset(object):
                 warnings.warn('Using categorical_feature in Dataset.')
                 return self
             else:
-                warnings.warn('categorical_feature in Dataset is overridden. New categorical_feature is {}'.format(sorted(list(categorical_feature))))
+                warnings.warn('categorical_feature in Dataset is overridden.\n'
+                              'New categorical_feature is {}'.format(sorted(list(categorical_feature))))
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
         else:
-            raise LightGBMError("Cannot set categorical feature after freed raw data, set free_raw_data=False when construct Dataset to avoid this.")
+            raise LightGBMError("Cannot set categorical feature after freed raw data, "
+                                "set free_raw_data=False when construct Dataset to avoid this.")
 
     def _set_predictor(self, predictor):
         """
@@ -1175,7 +1203,8 @@ class Dataset(object):
             self._predictor = predictor
             return self._free_handle()
         else:
-            raise LightGBMError("Cannot set predictor after freed raw data, set free_raw_data=False when construct Dataset to avoid this.")
+            raise LightGBMError("Cannot set predictor after freed raw data, "
+                                "set free_raw_data=False when construct Dataset to avoid this.")
 
     def set_reference(self, reference):
         """Set reference Dataset.
@@ -1183,14 +1212,16 @@ class Dataset(object):
         Parameters
         ----------
         reference : Dataset
-            Reference that is used as a template to consturct the current Dataset.
+            Reference that is used as a template to construct the current Dataset.
 
         Returns
         -------
         self : Dataset
             Dataset with set reference.
         """
-        self.set_categorical_feature(reference.categorical_feature).set_feature_name(reference.feature_name)._set_predictor(reference._predictor)
+        self.set_categorical_feature(reference.categorical_feature) \
+            .set_feature_name(reference.feature_name) \
+            ._set_predictor(reference._predictor)
         # we're done if self and reference share a common upstrem reference
         if self.get_ref_chain().intersection(reference.get_ref_chain()):
             return self
@@ -1198,7 +1229,8 @@ class Dataset(object):
             self.reference = reference
             return self._free_handle()
         else:
-            raise LightGBMError("Cannot set reference after freed raw data, set free_raw_data=False when construct Dataset to avoid this.")
+            raise LightGBMError("Cannot set reference after freed raw data, "
+                                "set free_raw_data=False when construct Dataset to avoid this.")
 
     def set_feature_name(self, feature_name):
         """Set feature name.
@@ -1217,7 +1249,8 @@ class Dataset(object):
             self.feature_name = feature_name
         if self.handle is not None and feature_name is not None and feature_name != 'auto':
             if len(feature_name) != self.num_feature():
-                raise ValueError("Length of feature_name({}) and num_feature({}) don't match".format(len(feature_name), self.num_feature()))
+                raise ValueError("Length of feature_name({}) and num_feature({}) don't match"
+                                 .format(len(feature_name), self.num_feature()))
             c_feature_name = [c_str(name) for name in feature_name]
             _safe_call(_LIB.LGBM_DatasetSetFeatureNames(
                 self.handle,
@@ -1438,14 +1471,15 @@ class Booster(object):
         self.__set_objective_to_none = False
         self.best_iteration = -1
         self.best_score = {}
-        params = {} if params is None else params
+        params = {} if params is None else copy.deepcopy(params)
         # user can set verbose with params, it has higher priority
         if not any(verbose_alias in params for verbose_alias in ('verbose', 'verbosity')) and silent:
             params["verbose"] = -1
         if train_set is not None:
             # Training task
             if not isinstance(train_set, Dataset):
-                raise TypeError('Training data should be Dataset instance, met {}'.format(type(train_set).__name__))
+                raise TypeError('Training data should be Dataset instance, met {}'
+                                .format(type(train_set).__name__))
             params_str = param_dict_to_str(params)
             # construct booster object
             self.handle = ctypes.c_void_p()
@@ -1507,7 +1541,7 @@ class Booster(object):
             self.model_from_string(params['model_str'])
         else:
             raise TypeError('Need at least one training dataset or model file to create booster instance')
-        self.params = params.copy()
+        self.params = params
 
     def __del__(self):
         try:
@@ -1640,9 +1674,11 @@ class Booster(object):
             Booster with set validation data.
         """
         if not isinstance(data, Dataset):
-            raise TypeError('Validation data should be Dataset instance, met {}'.format(type(data).__name__))
+            raise TypeError('Validation data should be Dataset instance, met {}'
+                            .format(type(data).__name__))
         if data._predictor is not self.__init_predictor:
-            raise LightGBMError("Add validation data failed, you should use same predictor for these data")
+            raise LightGBMError("Add validation data failed, "
+                                "you should use same predictor for these data")
         _safe_call(_LIB.LGBM_BoosterAddValidData(
             self.handle,
             data.construct().handle))
@@ -1700,9 +1736,11 @@ class Booster(object):
         # need reset training data
         if train_set is not None and train_set is not self.train_set:
             if not isinstance(train_set, Dataset):
-                raise TypeError('Training data should be Dataset instance, met {}'.format(type(train_set).__name__))
+                raise TypeError('Training data should be Dataset instance, met {}'
+                                .format(type(train_set).__name__))
             if train_set._predictor is not self.__init_predictor:
-                raise LightGBMError("Replace training data failed, you should use same predictor for these data")
+                raise LightGBMError("Replace training data failed, "
+                                    "you should use same predictor for these data")
             self.train_set = train_set
             _safe_call(_LIB.LGBM_BoosterResetTrainingData(
                 self.handle,
@@ -1711,7 +1749,7 @@ class Booster(object):
         is_finished = ctypes.c_int(0)
         if fobj is None:
             if self.__set_objective_to_none:
-                raise ValueError('Cannot update due to null objective function.')
+                raise LightGBMError('Cannot update due to null objective function.')
             _safe_call(_LIB.LGBM_BoosterUpdateOneIter(
                 self.handle,
                 ctypes.byref(is_finished)))
@@ -1748,7 +1786,8 @@ class Booster(object):
         assert grad.flags.c_contiguous
         assert hess.flags.c_contiguous
         if len(grad) != len(hess):
-            raise ValueError("Lengths of gradient({}) and hessian({}) don't match".format(len(grad), len(hess)))
+            raise ValueError("Lengths of gradient({}) and hessian({}) don't match"
+                             .format(len(grad), len(hess)))
         is_finished = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterUpdateOneIterCustom(
             self.handle,
@@ -1919,15 +1958,26 @@ class Booster(object):
         _save_pandas_categorical(filename, self.pandas_categorical)
         return self
 
-    def shuffle_models(self):
+    def shuffle_models(self, start_iteration=0, end_iteration=-1):
         """Shuffle models.
+
+        Parameters
+        ----------
+        start_iteration : int, optional (default=0)
+            Index of the iteration that will start to shuffle.
+        end_iteration : int, optional (default=-1)
+            The last iteration that will be shuffled.
+            If <= 0, means the last iteration.
 
         Returns
         -------
         self : Booster
             Booster with shuffled models.
         """
-        _safe_call(_LIB.LGBM_BoosterShuffleModels(self.handle))
+        _safe_call(_LIB.LGBM_BoosterShuffleModels(
+            self.handle,
+            ctypes.c_int(start_iter),
+            ctypes.c_int(end_iter)))
         return self
 
     def model_from_string(self, model_str, verbose=True):
@@ -2051,7 +2101,8 @@ class Booster(object):
                 ptr_string_buffer))
         return json.loads(string_buffer.value.decode())
 
-    def predict(self, data, num_iteration=None, raw_score=False, pred_leaf=False, pred_contrib=False,
+    def predict(self, data, num_iteration=None,
+                raw_score=False, pred_leaf=False, pred_contrib=False,
                 data_has_header=False, is_reshape=True, pred_parameter=None, **kwargs):
         """Make a prediction.
 
@@ -2064,7 +2115,6 @@ class Booster(object):
             Limit number of iterations in the prediction.
             If None, if the best iteration exists, it is used; otherwise, all iterations are used.
             If <= 0, all iterations are used (no limits).
-
         raw_score : bool, optional (default=False)
             Whether to predict raw scores.
         pred_leaf : bool, optional (default=False)
@@ -2083,9 +2133,6 @@ class Booster(object):
             Used only if data is string.
         is_reshape : bool, optional (default=True)
             If True, result is reshaped to [nrow, ncol].
-        pred_parameter : dict or None, optional (default=None)
-            Deprecated.
-            Other parameters for the prediction.
         **kwargs : other parameters for the prediction
 
         Returns
@@ -2093,16 +2140,12 @@ class Booster(object):
         result : numpy array
             Prediction result.
         """
-        if pred_parameter:
-            warnings.warn("pred_parameter is deprecated and will be removed in 2.2 version.\n"
-                          "Please use kwargs instead.", LGBMDeprecationWarning)
-            pred_parameter.update(kwargs)
-        else:
-            pred_parameter = kwargs
-        predictor = self._to_predictor(pred_parameter)
+        predictor = self._to_predictor(copy.deepcopy(kwargs))
         if num_iteration is None:
             num_iteration = self.best_iteration
-        return predictor.predict(data, num_iteration, raw_score, pred_leaf, pred_contrib, data_has_header, is_reshape)
+        return predictor.predict(data, num_iteration,
+                                 raw_score, pred_leaf, pred_contrib,
+                                 data_has_header, is_reshape)
 
     def refit(self, data, label, decay_rate=0.9, **kwargs):
         """Refit the existing Booster by new data.
@@ -2115,7 +2158,8 @@ class Booster(object):
         label : list, numpy 1-D array or pandas one-column DataFrame/Series
             Label for refit.
         decay_rate : float, optional (default=0.9)
-            Decay rate of refit, will use ``leaf_output = decay_rate * old_leaf_output + (1.0 - decay_rate) * new_leaf_output`` to refit trees.
+            Decay rate of refit,
+            will use ``leaf_output = decay_rate * old_leaf_output + (1.0 - decay_rate) * new_leaf_output`` to refit trees.
         **kwargs : other parameters for refit
             These parameters will be passed to ``predict`` method.
 
@@ -2124,7 +2168,9 @@ class Booster(object):
         result : Booster
             Refitted Booster.
         """
-        predictor = self._to_predictor(kwargs)
+        if self.__set_objective_to_none:
+            raise LightGBMError('Cannot refit due to null objective function.')
+        predictor = self._to_predictor(copy.deepcopy(kwargs))
         leaf_preds = predictor.predict(data, -1, pred_leaf=True)
         nrow, ncol = leaf_preds.shape
         train_set = Dataset(data, label, silent=True)
@@ -2140,6 +2186,8 @@ class Booster(object):
             ptr_data,
             ctypes.c_int(nrow),
             ctypes.c_int(ncol)))
+        new_booster.network = self.network
+        new_booster.__attr = self.__attr.copy()
         return new_booster
 
     def get_leaf_output(self, tree_id, leaf_id):
@@ -2257,7 +2305,8 @@ class Booster(object):
             if tmp_out_len.value != self.__num_inner_eval:
                 raise ValueError("Wrong length of eval results")
             for i in range_(self.__num_inner_eval):
-                ret.append((data_name, self.__name_inner_eval[i], result[i], self.__higher_better_inner_eval[i]))
+                ret.append((data_name, self.__name_inner_eval[i],
+                            result[i], self.__higher_better_inner_eval[i]))
         if feval is not None:
             if data_idx == 0:
                 cur_data = self.train_set

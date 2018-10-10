@@ -10,8 +10,8 @@ from .basic import Dataset, LightGBMError
 from .compat import (SKLEARN_INSTALLED, _LGBMClassifierBase,
                      LGBMNotFittedError, _LGBMLabelEncoder, _LGBMModelBase,
                      _LGBMRegressorBase, _LGBMCheckXY, _LGBMCheckArray, _LGBMCheckConsistentLength,
-                     _LGBMCheckClassificationTargets, _LGBMComputeSampleWeight,
-                     argc_, range_, string_type, DataFrame, LGBMDeprecationWarning)
+                     _LGBMAssertAllFinite, _LGBMCheckClassificationTargets, _LGBMComputeSampleWeight,
+                     argc_, range_, string_type, DataFrame)
 from .engine import train
 
 
@@ -155,7 +155,7 @@ class LGBMModel(_LGBMModelBase):
             Note, that this will ignore the ``learning_rate`` argument in training.
         n_estimators : int, optional (default=100)
             Number of boosted trees to fit.
-        subsample_for_bin : int, optional (default=50000)
+        subsample_for_bin : int, optional (default=200000)
             Number of samples for constructing bins.
         objective : string, callable or None, optional (default=None)
             Specify the learning task and the corresponding learning objective or
@@ -316,7 +316,7 @@ class LGBMModel(_LGBMModelBase):
         group : array-like or None, optional (default=None)
             Group data of training data.
         eval_set : list or None, optional (default=None)
-            A list of (X, y) tuple pairs to use as a validation sets.
+            A list of (X, y) tuple pairs to use as validation sets.
         eval_names : list of strings or None, optional (default=None)
             Names of eval_set.
         eval_sample_weight : list of arrays or None, optional (default=None)
@@ -349,7 +349,7 @@ class LGBMModel(_LGBMModelBase):
             If list of strings, interpreted as feature names (need to specify ``feature_name`` as well).
             If 'auto' and data is pandas DataFrame, pandas categorical columns are used.
             All values in categorical features should be less than int32 max value (2147483647).
-            Large values could be memory consuming. Consider to use consecutive integers started from zero.
+            Large values could be memory consuming. Consider using consecutive integers starting from zero.
             All negative values in categorical features will be treated as missing values.
         callbacks : list of callback functions or None, optional (default=None)
             List of callback functions that are applied at each iteration.
@@ -469,7 +469,8 @@ class LGBMModel(_LGBMModelBase):
                 elif isinstance(collection, dict):
                     return collection.get(i, None)
                 else:
-                    raise TypeError('eval_sample_weight, eval_class_weight, eval_init_score, and eval_group should be dict or list')
+                    raise TypeError('eval_sample_weight, eval_class_weight, eval_init_score, and eval_group '
+                                    'should be dict or list')
 
             if isinstance(eval_set, tuple):
                 eval_set = [eval_set]
@@ -480,14 +481,16 @@ class LGBMModel(_LGBMModelBase):
                 else:
                     valid_weight = _get_meta_data(eval_sample_weight, i)
                     if _get_meta_data(eval_class_weight, i) is not None:
-                        valid_class_sample_weight = _LGBMComputeSampleWeight(_get_meta_data(eval_class_weight, i), valid_data[1])
+                        valid_class_sample_weight = _LGBMComputeSampleWeight(_get_meta_data(eval_class_weight, i),
+                                                                             valid_data[1])
                         if valid_weight is None or len(valid_weight) == 0:
                             valid_weight = valid_class_sample_weight
                         else:
                             valid_weight = np.multiply(valid_weight, valid_class_sample_weight)
                     valid_init_score = _get_meta_data(eval_init_score, i)
                     valid_group = _get_meta_data(eval_group, i)
-                    valid_set = _construct_dataset(valid_data[0], valid_data[1], valid_weight, valid_init_score, valid_group, params)
+                    valid_set = _construct_dataset(valid_data[0], valid_data[1],
+                                                   valid_weight, valid_init_score, valid_group, params)
                 valid_sets.append(valid_set)
 
         self._Booster = train(params, train_set,
@@ -559,36 +562,6 @@ class LGBMModel(_LGBMModelBase):
                              % (self._n_features, n_features))
         return self.booster_.predict(X, raw_score=raw_score, num_iteration=num_iteration,
                                      pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
-
-    def apply(self, X, num_iteration=0):
-        """Return the predicted leaf every tree for each sample.
-
-        Parameters
-        ----------
-        X : array-like or sparse matrix of shape = [n_samples, n_features]
-            Input features matrix.
-        num_iteration : int, optional (default=0)
-            Limit number of iterations in the prediction; defaults to 0 (use all trees).
-
-        Returns
-        -------
-        X_leaves : array-like of shape = [n_samples, n_trees]
-            The predicted leaf every tree for each sample.
-        """
-        warnings.warn('apply method is deprecated and will be removed in 2.2 version.\n'
-                      'Please use pred_leaf parameter of predict method instead.',
-                      LGBMDeprecationWarning)
-        if self._n_features is None:
-            raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
-        if not isinstance(X, DataFrame):
-            X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
-        n_features = X.shape[1]
-        if self._n_features != n_features:
-            raise ValueError("Number of features of the model must "
-                             "match the input. Model n_features_ is %s and "
-                             "input n_features is %s "
-                             % (self._n_features, n_features))
-        return self.booster_.predict(X, pred_leaf=True, num_iteration=num_iteration)
 
     @property
     def n_features_(self):
@@ -683,6 +656,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
             eval_class_weight=None, eval_init_score=None, eval_metric=None,
             early_stopping_rounds=None, verbose=True,
             feature_name='auto', categorical_feature='auto', callbacks=None):
+        _LGBMAssertAllFinite(y)
         _LGBMCheckClassificationTargets(y)
         self._le = _LGBMLabelEncoder().fit(y)
         _y = self._le.transform(y)
@@ -816,8 +790,10 @@ class LGBMRanker(LGBMModel):
                 raise ValueError("Eval_group cannot be None when eval_set is not None")
             elif len(eval_group) != len(eval_set):
                 raise ValueError("Length of eval_group should be equal to eval_set")
-            elif (isinstance(eval_group, dict) and any(i not in eval_group or eval_group[i] is None for i in range_(len(eval_group)))) \
-                    or (isinstance(eval_group, list) and any(group is None for group in eval_group)):
+            elif (isinstance(eval_group, dict)
+                  and any(i not in eval_group or eval_group[i] is None for i in range_(len(eval_group)))
+                  or isinstance(eval_group, list)
+                  and any(group is None for group in eval_group)):
                 raise ValueError("Should set group for all eval datasets for ranking task; "
                                  "if you use dict, the index should start from 0")
 

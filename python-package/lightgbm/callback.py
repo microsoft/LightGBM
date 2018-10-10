@@ -133,7 +133,8 @@ def reset_parameter(**kwargs):
                 raise RuntimeError("cannot reset {} during training".format(repr(key)))
             if isinstance(value, list):
                 if len(value) != env.end_iteration - env.begin_iteration:
-                    raise ValueError("Length of list {} has to equal to 'num_boost_round'.".format(repr(key)))
+                    raise ValueError("Length of list {} has to equal to 'num_boost_round'."
+                                     .format(repr(key)))
                 new_param = value[env.iteration - env.begin_iteration]
             else:
                 new_param = value(env.iteration - env.begin_iteration)
@@ -180,7 +181,8 @@ def early_stopping(stopping_rounds, verbose=True):
     def init(env):
         """internal function"""
         if not env.evaluation_result_list:
-            raise ValueError('For early stopping, at least one dataset and eval metric is required for evaluation')
+            raise ValueError('For early stopping, '
+                             'at least one dataset and eval metric is required for evaluation')
 
         if verbose:
             msg = "Training until validation scores don't improve for {} rounds."
