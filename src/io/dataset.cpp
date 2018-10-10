@@ -162,8 +162,8 @@ std::vector<std::vector<int>> FastFeatureBundling(std::vector<std::unique_ptr<Bi
     sorted_idx.emplace_back(i);
   }
   // sort by non zero cnt, bigger first
-  std::sort(sorted_idx.begin(), sorted_idx.end(),
-            [&feature_non_zero_cnt](int a, int b) {
+  std::stable_sort(sorted_idx.begin(), sorted_idx.end(),
+                   [&feature_non_zero_cnt](int a, int b) {
     return feature_non_zero_cnt[a] > feature_non_zero_cnt[b];
   });
 
