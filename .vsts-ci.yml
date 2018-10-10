@@ -1,15 +1,16 @@
 variables:
   PYTHON_VERSION: 3.7
   CONDA_ENV: test-env
-phases:
+jobs:
 ###########################################
-- phase: Linux
+- job: Linux
 ###########################################
   variables:
     COMPILER: gcc
-  queue:
-    name: 'Hosted Linux Preview'
-    parallel: 6
+  pool:
+    vmImage: 'ubuntu-16.04'
+  strategy:
+    maxParallel: 6
     matrix:
       regular:
         TASK: regular
@@ -30,12 +31,9 @@ phases:
         METHOD: source
         PYTHON_VERSION: 3.6
   steps:
-  - task: CondaEnvironment@0
+  - task: CondaEnvironment@1
     inputs:
       updateConda: true
-      environmentName: $(CONDA_ENV)
-      packageSpecs: 'python=$(PYTHON_VERSION)'
-      createOptions: '-q'
   - script: |
       echo "##vso[task.setvariable variable=HOME_DIRECTORY]$AGENT_HOMEDIRECTORY"
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -59,13 +57,14 @@ phases:
       artifactName: PackageAssets
       artifactType: container
 ###########################################
-- phase: MacOS
+- job: MacOS
 ###########################################
   variables:
     COMPILER: clang
-  queue:
-    name: 'Hosted macOS'
-    parallel: 3
+  pool:
+    vmImage: 'macOS-10.13'
+  strategy:
+    maxParallel: 3
     matrix:
       regular:
         TASK: regular
@@ -76,15 +75,9 @@ phases:
       bdist:
         TASK: bdist
   steps:
-  - script: |
-      sudo chmod -R 777 /usr/local/miniconda/envs
-    displayName: 'Fix for conda error on macOS'
-  - task: CondaEnvironment@0
+  - task: CondaEnvironment@1
     inputs:
       updateConda: true
-      environmentName: $(CONDA_ENV)
-      packageSpecs: 'python=$(PYTHON_VERSION)'
-      createOptions: '-q'
   - script: |
       echo "##vso[task.setvariable variable=HOME_DIRECTORY]$AGENT_HOMEDIRECTORY"
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -103,11 +96,12 @@ phases:
       artifactName: PackageAssets
       artifactType: container
 ###########################################
-- phase: Windows
+- job: Windows
 ###########################################
-  queue:
-    name: 'Hosted VS2017'
-    parallel: 3
+  pool:
+    vmImage: 'vs2017-win2016'
+  strategy:
+    maxParallel: 3
     matrix:
       regular:
         TASK: regular
@@ -119,8 +113,9 @@ phases:
         TASK: bdist
         PYTHON_VERSION: 3.6
   steps:
-  - task: CondaEnvironment@0
+  - task: CondaEnvironment@1
     inputs:
+      createCustomEnvironment: true
       updateConda: true
       environmentName: $(CONDA_ENV)
       packageSpecs: 'python=$(PYTHON_VERSION) numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest'
@@ -135,15 +130,15 @@ phases:
       artifactType: container
 
 ###########################################
-- phase: Package
+- job: Package
 ###########################################
   dependsOn:
   - Linux
   - MacOS
   - Windows
   condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
-  queue:
-    name: 'Hosted VS2017'
+  pool:
+    vmImage: 'vs2017-win2016'
   steps:
   # Download all agent packages from all previous phases
   - task: DownloadBuildArtifacts@0

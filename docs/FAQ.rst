@@ -56,7 +56,7 @@ LightGBM
 
 --------------
 
--  **Question 2**: On datasets with million of features, training does not start (or starts after a very long time).
+-  **Question 2**: On datasets with millions of features, training does not start (or starts after a very long time).
 
 -  **Solution 2**: Use a smaller value for ``bin_construct_sample_cnt`` and a larger value for ``min_data``.
 

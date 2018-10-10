@@ -625,11 +625,11 @@ inline static void SortForPair(std::vector<T1>& keys, std::vector<T2>& values, s
     arr.emplace_back(keys[i], values[i]);
   }
   if (!is_reverse) {
-    std::sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
+    std::stable_sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
       return a.first < b.first;
     });
   } else {
-    std::sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
+    std::stable_sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
       return a.first > b.first;
     });
   }

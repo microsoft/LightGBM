@@ -304,9 +304,9 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration) cons
     }
   }
   // sort the importance
-  std::sort(pairs.begin(), pairs.end(),
-            [](const std::pair<size_t, std::string>& lhs,
-               const std::pair<size_t, std::string>& rhs) {
+  std::stable_sort(pairs.begin(), pairs.end(),
+                   [](const std::pair<size_t, std::string>& lhs,
+                      const std::pair<size_t, std::string>& rhs) {
     return lhs.first > rhs.first;
   });
   ss << '\n' << "feature importances:" << '\n';
