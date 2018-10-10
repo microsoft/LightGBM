@@ -61,9 +61,7 @@ if [[ $TASK == "if-else" ]]; then
     exit 0
 fi
 
-if [[ $TRAVIS == "true" ]]; then
-    conda install -q -y -n $CONDA_ENV numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest
-fi
+conda install -q -y -n $CONDA_ENV numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     sudo ln -sf `ls -d "$(brew --cellar libomp)"/*/lib`/* $CONDA_PREFIX/lib || exit -1  # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
