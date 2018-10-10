@@ -40,7 +40,7 @@ namespace LightGBM {
   for (data_size_t i = 0; i < cnt_data; ++i) {\
     sorted_idx[i] = i;\
   }\
-  std::sort(sorted_idx.begin(), sorted_idx.end(), [=](data_size_t a, data_size_t b) {return data_reader(a) < data_reader(b); });\
+  std::stable_sort(sorted_idx.begin(), sorted_idx.end(), [=](data_size_t a, data_size_t b) {return data_reader(a) < data_reader(b); });\
   std::vector<double> weighted_cdf(cnt_data);\
   weighted_cdf[0] = weight_reader(sorted_idx[0]);\
   for (data_size_t i = 1; i < cnt_data; ++i) {\

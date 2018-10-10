@@ -235,7 +235,7 @@ namespace LightGBM {
     std::vector<double> distinct_values;
     std::vector<int> counts;
 
-    std::sort(values, values + num_sample_values);
+    std::stable_sort(values, values + num_sample_values);
 
     // push zero in the front
     if (num_sample_values == 0 || (values[0] > 0.0f && zero_cnt > 0)) {
