@@ -57,10 +57,14 @@ class TestSklearn(unittest.TestCase):
         self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['multi_logloss'][gbm.best_iteration_ - 1], places=5)
 
     def test_lambdarank(self):
-        X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.train'))
-        X_test, y_test = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.test'))
-        q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.train.query'))
-        q_test = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../examples/lambdarank/rank.test.query'))
+        X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                           '../../examples/lambdarank/rank.train'))
+        X_test, y_test = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                         '../../examples/lambdarank/rank.test'))
+        q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                          '../../examples/lambdarank/rank.train.query'))
+        q_test = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                         '../../examples/lambdarank/rank.test.query'))
         gbm = lgb.LGBMRanker()
         gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_test, y_test)],
                 eval_group=[q_test], eval_at=[1, 3], early_stopping_rounds=5, verbose=False,
@@ -74,6 +78,7 @@ class TestSklearn(unittest.TestCase):
             grad = (y_pred - y_true)
             hess = np.ones(len(y_true))
             return grad, hess
+
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(n_estimators=50, silent=True, objective=objective_ls)
@@ -88,10 +93,11 @@ class TestSklearn(unittest.TestCase):
             grad = y_pred - y_true
             hess = y_pred * (1.0 - y_pred)
             return grad, hess
-        X, y = load_digits(2, True)
 
         def binary_error(y_test, y_pred):
             return np.mean([int(p > 0.5) != y for y, p in zip(y_test, y_pred)])
+
+        X, y = load_digits(2, True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMClassifier(n_estimators=50, silent=True, objective=logregobj)
         gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
