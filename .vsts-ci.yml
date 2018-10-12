@@ -69,7 +69,7 @@ jobs:
   steps:
   - task: CondaEnvironment@1
     inputs:
-      updateConda: true
+      updateConda: false
   - script: |
       echo "##vso[task.setvariable variable=HOME_DIRECTORY]$AGENT_HOMEDIRECTORY"
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -148,13 +148,8 @@ jobs:
       createCustomEnvironment: true
       updateConda: true
       environmentName: $(CONDA_ENV)
-      packageSpecs: 'python=$(PYTHON_VERSION) numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest'
+      packageSpecs: 'python=$(PYTHON_VERSION) numpy nose matplotlib python-graphviz pytest scipy scikit-learn pandas'
       createOptions: '-q'
-  # - powershell: |
-  #     mkdir D:/lightgbm/test-env
-  #     conda create -p D:/lightgbm/test-env -q -y python=$env:PYTHON_VERSION numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest joblib
-  #     activate D:/lightgbm/test-env
-  #   displayName: Install packages
   - powershell: $(Build.SourcesDirectory)/.ci/test_windows.ps1
     displayName: Test
   - task: PublishBuildArtifacts@1
