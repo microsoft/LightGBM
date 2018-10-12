@@ -32,6 +32,7 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
     sed -i'.bak' -e 's;\(\.\/[^.]*\.\)rst\([^[:space:]]*\);\1html\2;g' {} \;  # emulate js function
 #    html5validator --root ./_build/html/ || exit -1
     if [[ $OS_NAME == "linux" ]]; then
+        sudo apt-get update
         sudo apt-get install linkchecker
         linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
     fi
