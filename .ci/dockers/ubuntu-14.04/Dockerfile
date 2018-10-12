@@ -37,6 +37,7 @@ RUN curl -sL https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.
  && rm miniconda.sh \
  && chmod -R 777 /usr/local/miniconda \
  && /usr/local/miniconda/bin/conda install python=3 -q -y \
+ && /usr/local/miniconda/bin/conda install mkl qt -q -y \
  && /usr/local/miniconda/bin/conda clean -a -y
 ENV CONDA=/usr/local/miniconda
 
