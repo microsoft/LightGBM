@@ -1,6 +1,6 @@
 function Check-Output {
-  param( [int]$ExitCode )
-  if ($ExitCode -ne 0) {
+  param( [int]$ExitCode )
+  if ($ExitCode -ne 0) {
     $host.SetShouldExit($ExitCode)
     Exit -1
   }

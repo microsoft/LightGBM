@@ -22,28 +22,27 @@ if [[ $OS_NAME == "macos" ]]; then
         wget -O conda.sh https://repo.continuum.io/miniconda/Miniconda${PYTHON_VERSION:0:1}-latest-MacOSX-x86_64.sh
     fi
 else  # Linux
-    sudo apt-get update
     if [[ $AZURE == "true" ]] && [[ $COMPILER == "clang" ]]; then
+        sudo apt-get update
         sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-6.0 100
         sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-6.0 100
         sudo apt-get install libomp-dev
-    elif [[ $AZURE == "true" ]] && [[ $COMPILER == "gcc" ]] && [[ $TASK != "gpu" ]]; then
-        # downgrade gcc version
-        sudo apt-get remove -y gcc || exit -1
-        sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-        sudo apt-get update
-        sudo apt-get install --no-install-recommends -y g++-4.8 || exit -1
-        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 100
-        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 100
+    # elif [[ $AZURE == "true" ]] && [[ $COMPILER == "gcc" ]] && [[ $TASK != "gpu" ]]; then
+    #     # downgrade gcc version
+    #     sudo apt-get remove -y gcc || exit -1
+    #     sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+    #     sudo apt-get update
+    #     sudo apt-get install --no-install-recommends -y g++-4.8 || exit -1
+    #     sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 100
+    #     sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 100
     fi
     if [[ $TASK == "mpi" ]]; then
+        sudo apt-get update
         sudo apt-get install --no-install-recommends -y libopenmpi-dev openmpi-bin
     fi
     if [[ $TASK == "gpu" ]]; then
-        if [[ $AZURE == "true" ]]; then
-            sudo apt-get install --no-install-recommends -y libboost-dev libboost-system-dev libboost-filesystem-dev
-        fi
-        sudo apt-get install --no-install-recommends -y ocl-icd-opencl-dev
+        sudo apt-get update
+        sudo apt-get install --no-install-recommends -y libboost1.58-dev libboost-system1.58-dev libboost-filesystem1.58-dev ocl-icd-opencl-dev
         cd $HOME_DIRECTORY
         wget -q https://github.com/Microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
         tar -xjf AMD-APP-SDK*.tar.bz2
