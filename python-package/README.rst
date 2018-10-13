@@ -151,8 +151,8 @@ Examples
 
 Refer to the walk through examples in `Python guide folder <https://github.com/Microsoft/LightGBM/tree/master/examples/python-guide>`_.
 
-Developments
-------------
+Development Guide
+-----------------
 
 The code style of Python-package follows `PEP 8 <https://www.python.org/dev/peps/pep-0008/>`_. If you would like to make a contribution and not familiar with PEP 8, please check the PEP 8 style guide first. Otherwise, the check won't pass. You should be careful about:
 
@@ -165,6 +165,8 @@ The code style of Python-package follows `PEP 8 <https://www.python.org/dev/peps
 - E302 expected 2 blank lines in front of and at the end of a function or a class
 
 E501 (line too long) and W503 (line break occurred before a binary operator) can be ignored.
+
+Documentation strings (docstrings) are written in the NumPy style.
 
 .. |License| image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://github.com/Microsoft/LightGBM/blob/master/LICENSE

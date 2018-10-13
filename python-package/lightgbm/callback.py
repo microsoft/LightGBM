@@ -1,5 +1,6 @@
 # coding: utf-8
 # pylint: disable = invalid-name, W0105, C0301
+"""Callbacks library."""
 from __future__ import absolute_import
 
 import collections
@@ -9,14 +10,18 @@ from .compat import range_
 
 
 class EarlyStopException(Exception):
-    """Exception of early stopping.
+    """Exception of early stopping."""
 
-    Parameters
-    ----------
-    best_iteration : int
-        The best iteration stopped.
-    """
     def __init__(self, best_iteration, best_score):
+        """Create early stopping exception.
+
+        Parameters
+        ----------
+        best_iteration : int
+            The best iteration stopped.
+        best_score : float
+            The score of the best iteration.
+        """
         super(EarlyStopException, self).__init__()
         self.best_iteration = best_iteration
         self.best_score = best_score
@@ -34,7 +39,7 @@ CallbackEnv = collections.namedtuple(
 
 
 def _format_eval_result(value, show_stdv=True):
-    """format metric string"""
+    """Format metric string."""
     if len(value) == 4:
         return '%s\'s %s: %g' % (value[0], value[1], value[2])
     elif len(value) == 5:
@@ -61,13 +66,12 @@ def print_evaluation(period=1, show_stdv=True):
     callback : function
         The callback that prints the evaluation results every ``period`` iteration(s).
     """
-    def callback(env):
-        """internal function"""
+    def _callback(env):
         if period > 0 and env.evaluation_result_list and (env.iteration + 1) % period == 0:
             result = '\t'.join([_format_eval_result(x, show_stdv) for x in env.evaluation_result_list])
             print('[%d]\t%s' % (env.iteration + 1, result))
-    callback.order = 10
-    return callback
+    _callback.order = 10
+    return _callback
 
 
 def record_evaluation(eval_result):
@@ -87,19 +91,17 @@ def record_evaluation(eval_result):
         raise TypeError('Eval_result should be a dictionary')
     eval_result.clear()
 
-    def init(env):
-        """internal function"""
+    def _init(env):
         for data_name, _, _, _ in env.evaluation_result_list:
             eval_result.setdefault(data_name, collections.defaultdict(list))
 
-    def callback(env):
-        """internal function"""
+    def _callback(env):
         if not eval_result:
-            init(env)
+            _init(env)
         for data_name, eval_name, result, _ in env.evaluation_result_list:
             eval_result[data_name][eval_name].append(result)
-    callback.order = 20
-    return callback
+    _callback.order = 20
+    return _callback
 
 
 def reset_parameter(**kwargs):
@@ -111,7 +113,7 @@ def reset_parameter(**kwargs):
 
     Parameters
     ----------
-    **kwargs: value should be list or function
+    **kwargs : value should be list or function
         List of parameters for each boosting round
         or a customized function that calculates the parameter in terms of
         current number of round (e.g. yields learning rate decay).
@@ -123,8 +125,7 @@ def reset_parameter(**kwargs):
     callback : function
         The callback that resets the parameter after the first iteration.
     """
-    def callback(env):
-        """internal function"""
+    def _callback(env):
         new_parameters = {}
         for key, value in kwargs.items():
             if key in ['num_class', 'num_classes',
@@ -143,9 +144,9 @@ def reset_parameter(**kwargs):
         if new_parameters:
             env.model.reset_parameter(new_parameters)
             env.params.update(new_parameters)
-    callback.before_iteration = True
-    callback.order = 10
-    return callback
+    _callback.before_iteration = True
+    _callback.order = 10
+    return _callback
 
 
 def early_stopping(stopping_rounds, verbose=True):
@@ -164,7 +165,6 @@ def early_stopping(stopping_rounds, verbose=True):
     ----------
     stopping_rounds : int
        The possible number of rounds without the trend occurrence.
-
     verbose : bool, optional (default=True)
         Whether to print message with early stopping information.
 
@@ -178,8 +178,7 @@ def early_stopping(stopping_rounds, verbose=True):
     best_score_list = []
     cmp_op = []
 
-    def init(env):
-        """internal function"""
+    def _init(env):
         if not env.evaluation_result_list:
             raise ValueError('For early stopping, '
                              'at least one dataset and eval metric is required for evaluation')
@@ -198,10 +197,9 @@ def early_stopping(stopping_rounds, verbose=True):
                 best_score.append(float('inf'))
                 cmp_op.append(lt)
 
-    def callback(env):
-        """internal function"""
+    def _callback(env):
         if not cmp_op:
-            init(env)
+            _init(env)
         for i in range_(len(env.evaluation_result_list)):
             score = env.evaluation_result_list[i][2]
             if cmp_op[i](score, best_score[i]):
@@ -218,5 +216,5 @@ def early_stopping(stopping_rounds, verbose=True):
                     print('Did not meet early stopping. Best iteration is:\n[%d]\t%s' % (
                         best_iter[i] + 1, '\t'.join([_format_eval_result(x) for x in best_score_list[i]])))
                 raise EarlyStopException(best_iter[i], best_score_list[i])
-    callback.order = 30
-    return callback
+    _callback.order = 30
+    return _callback

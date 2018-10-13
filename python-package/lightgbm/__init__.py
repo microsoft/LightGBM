@@ -1,7 +1,7 @@
 # coding: utf-8
 """LightGBM, Light Gradient Boosting Machine.
 
-Contributors: https://github.com/Microsoft/LightGBM/graphs/contributors
+Contributors: https://github.com/Microsoft/LightGBM/graphs/contributors.
 """
 from __future__ import absolute_import
 

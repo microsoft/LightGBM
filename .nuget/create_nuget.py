@@ -1,3 +1,5 @@
+# coding: utf-8
+"""Script for generating files with NuGet package metadata."""
 import os
 import sys
 
