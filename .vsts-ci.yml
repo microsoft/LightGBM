@@ -146,18 +146,16 @@ jobs:
     inputs:
       artifactName: PackageAssets
       downloadPath: $(Build.SourcesDirectory)/binaries
-  - powershell: |
-      $client = new-object System.Net.WebClient
-      $client.DownloadFile("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe", "$(Build.SourcesDirectory)/.nuget/nuget.exe")
-    displayName: 'Download NuGet application'
   - script: |
-      cd %BUILD_SOURCESDIRECTORY%/.nuget
-      python create_nuget.py %BUILD_SOURCESDIRECTORY%/binaries/PackageAssets
-      nuget.exe pack LightGBM.nuspec
-      xcopy *.nupkg %BUILD_ARTIFACTSTAGINGDIRECTORY%
-    displayName: 'Build NuGet package'
+      python %BUILD_SOURCESDIRECTORY%/.nuget/create_nuget.py %BUILD_SOURCESDIRECTORY%/binaries/PackageAssets
+    displayName: 'Create NuGet configuration files'
+  - task: NuGetCommand@2
+    inputs:
+      command: pack
+      packagesToPack: '$(Build.SourcesDirectory)/.nuget/*.nuspec'
+      packDestination: '$(Build.ArtifactStagingDirectory)'
   - task: PublishBuildArtifacts@1
     inputs:
       pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-      artifactName: Nuget
+      artifactName: NuGet
       artifactType: container
