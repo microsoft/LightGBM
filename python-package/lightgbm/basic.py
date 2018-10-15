@@ -154,7 +154,7 @@ class _TempFile(object):
 
 
 class LightGBMError(Exception):
-    """Error throwed by LightGBM."""
+    """Error thrown by LightGBM."""
 
     pass
 
