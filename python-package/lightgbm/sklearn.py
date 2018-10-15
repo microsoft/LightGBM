@@ -31,7 +31,7 @@ def _objective_function_wrapper(func):
 
             y_true : array-like of shape = [n_samples]
                 The target values.
-            y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class)
+            y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The predicted values.
             group : array-like
                 Group/query data, used for ranking task.
@@ -42,7 +42,7 @@ def _objective_function_wrapper(func):
         The new objective function as expected by ``lightgbm.engine.train``.
         The signature is ``new_func(preds, dataset)``:
 
-            preds : array-like of shape = [n_samples] or shape = [n_samples * n_classes]
+            preds : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The predicted values.
             dataset : Dataset
                 The training set from which the labels will be extracted using ``dataset.get_label()``.
@@ -97,7 +97,7 @@ def _eval_function_wrapper(func):
 
             y_true : array-like of shape = [n_samples]
                 The target values.
-            y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class)
+            y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The predicted values.
             weight : array-like of shape = [n_samples]
                 The weight of samples.
@@ -110,7 +110,7 @@ def _eval_function_wrapper(func):
         The new eval function as expected by ``lightgbm.engine.train``.
         The signature is ``new_func(preds, dataset)``:
 
-            preds : array-like of shape = [n_samples] or shape = [n_samples * n_classes]
+            preds : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The predicted values.
             dataset : Dataset
                 The training set from which the labels will be extracted using ``dataset.get_label()``.
@@ -401,7 +401,7 @@ class LGBMModel(_LGBMModelBase):
 
             y_true : array-like of shape = [n_samples]
                 The target values.
-            y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class)
+            y_pred : array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task)
                 The predicted values.
             weight : array-like of shape = [n_samples]
                 The weight of samples.
