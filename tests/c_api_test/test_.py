@@ -16,7 +16,8 @@ def find_lib_path():
         return []
 
     curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
-    dll_path = [curr_path, os.path.join(curr_path, '../../'),
+    dll_path = [curr_path,
+                os.path.join(curr_path, '../../'),
                 os.path.join(curr_path, '../../python-package/lightgbm/compile'),
                 os.path.join(curr_path, '../../python-package/compile'),
                 os.path.join(curr_path, '../../lib/')]
