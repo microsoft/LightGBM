@@ -195,7 +195,6 @@ Early stopping requires at least one set in ``valid_sets``. If there is more tha
 The model will train until the validation score stops improving.
 Validation score needs to improve at least every ``early_stopping_rounds`` to continue training.
 
-If early stopping occurs, the model will have an additional field: ``bst.best_iteration``.
 Note that ``train()`` will return a model from the best iteration.
 
 This works with both metrics to minimize (L2, log loss, etc.) and to maximize (NDCG, AUC, etc.).
