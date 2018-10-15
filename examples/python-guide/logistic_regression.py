@@ -1,7 +1,6 @@
 # coding: utf-8
 # pylint: disable = invalid-name, C0111
-"""
-Comparison of `binary` and `xentropy` objectives.
+"""Comparison of `binary` and `xentropy` objectives.
 
 BLUF: The `xentropy` objective does logistic regression and generalizes
 to the case where labels are probabilistic (i.e. numbers between 0 and 1).

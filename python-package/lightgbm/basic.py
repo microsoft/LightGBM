@@ -1413,7 +1413,7 @@ class Dataset(object):
     def get_ref_chain(self, ref_limit=100):
         """Get a chain of Dataset objects.
 
-        Starts with r, then going to r.reference if exists,
+        Starts with r, then goes to r.reference (if exists),
         then to r.reference.reference, etc.
         until we hit ``ref_limit`` or a reference loop.
 
