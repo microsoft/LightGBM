@@ -133,6 +133,10 @@ fi
 make _lightgbm || exit -1
 
 cd $BUILD_DIRECTORY/python-package && python setup.py install --precompile --user || exit -1
+if [[ $AZURE == "true" ]]; then
+    sudo xcode-select -s /Applications/Xcode_10.app/Contents/Developer
+fi
+gcc --version
 pytest $BUILD_DIRECTORY/tests || exit -1
 
 if [[ $TASK == "regular" ]]; then
