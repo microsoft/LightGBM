@@ -66,8 +66,9 @@ def train(params, train_set, num_boost_round=100,
         to continue training.
         Requires at least one validation data and one metric.
         If there's more than one, will check all of them. But the training data is ignored anyway.
-        If early stopping occurs, the model will add ``best_iteration`` field.
-    evals_result : dict or None, optional (default=None)
+        The index of iteration that has the best performance will be saved in the ``best_iteration`` field
+        if early stopping logic is enabled by setting ``early_stopping_rounds``.
+    evals_result: dict or None, optional (default=None)
         This dictionary used to store all evaluation results of all the items in ``valid_sets``.
 
         Example
