@@ -4,6 +4,9 @@ if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
         brew reinstall cmake  # CMake >=3.12 is needed to find OpenMP at macOS
+        if [[ $AZURE == "true" ]]; then
+            sudo xcode-select -s /Applications/Xcode_8.3.1.app/Contents/Developer
+        fi
     else
         if [[ $TRAVIS == "true" ]]; then
             sudo softwareupdate -i "Command Line Tools (macOS High Sierra version 10.13) for Xcode-9.3"  # fix "fatal error: _stdio.h: No such file or directory"
