@@ -45,8 +45,9 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
 fi
 
 if [[ $TASK == "pylint" ]]; then
-    conda install -y -n $CONDA_ENV pycodestyle
+    conda install -y -n $CONDA_ENV pycodestyle pydocstyle
     pycodestyle --ignore=E501,W503 --exclude=./compute,./.nuget . || exit -1
+    pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^compute|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
     exit 0
 fi
 
