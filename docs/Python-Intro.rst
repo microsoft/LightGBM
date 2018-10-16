@@ -195,7 +195,7 @@ Early stopping requires at least one set in ``valid_sets``. If there is more tha
 The model will train until the validation score stops improving.
 Validation score needs to improve at least every ``early_stopping_rounds`` to continue training.
 
-The index of iteration that has best performance will be saved in the ``best_iteration`` field if early stopping logic is enabled by setting ``early_stopping_rounds``.
+The index of iteration that has the best performance will be saved in the ``best_iteration`` field if early stopping logic is enabled by setting ``early_stopping_rounds``.
 Note that ``train()`` will return a model from the best iteration.
 
 This works with both metrics to minimize (L2, log loss, etc.) and to maximize (NDCG, AUC, etc.).
