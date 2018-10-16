@@ -16,7 +16,8 @@ def find_lib_path():
         return []
 
     curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
-    dll_path = [curr_path, os.path.join(curr_path, '../../'),
+    dll_path = [curr_path,
+                os.path.join(curr_path, '../../'),
                 os.path.join(curr_path, '../../python-package/lightgbm/compile'),
                 os.path.join(curr_path, '../../python-package/compile'),
                 os.path.join(curr_path, '../../lib/')]
@@ -31,7 +32,7 @@ def find_lib_path():
     lib_path = [p for p in dll_path if os.path.exists(p) and os.path.isfile(p)]
     if not lib_path:
         dll_path = [os.path.realpath(p) for p in dll_path]
-        raise Exception('Cannot find lightgbm library in following paths: ' + '\n'.join(dll_path))
+        raise Exception('Cannot find lightgbm library file in following paths:\n' + '\n'.join(dll_path))
     return lib_path
 
 

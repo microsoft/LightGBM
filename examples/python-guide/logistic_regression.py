@@ -1,6 +1,7 @@
 # coding: utf-8
 # pylint: disable = invalid-name, C0111
-'''
+"""Comparison of `binary` and `xentropy` objectives.
+
 BLUF: The `xentropy` objective does logistic regression and generalizes
 to the case where labels are probabilistic (i.e. numbers between 0 and 1).
 
@@ -9,7 +10,7 @@ Details: Both `binary` and `xentropy` minimize the log loss and use
 between them with default settings is that `binary` may achieve a slight
 speed improvement by assuming that the labels are binary instead of
 probabilistic.
-'''
+"""
 
 import time
 
@@ -46,19 +47,28 @@ DATA = {
 #################
 # Set up a couple of utilities for our experiments
 def log_loss(preds, labels):
-    ''' logarithmic loss with non-necessarily-binary labels '''
+    """Logarithmic loss with non-necessarily-binary labels."""
     log_likelihood = np.sum(labels * np.log(preds)) / len(preds)
     return -log_likelihood
 
 
 def experiment(objective, label_type, data):
-    '''
-    Measure performance of an objective
-    :param objective: (str) 'binary' or 'xentropy'
-    :param label_type: (str) 'binary' or 'probability'
-    :param data: DATA
-    :return: dict with experiment summary stats
-    '''
+    """Measure performance of an objective.
+
+    Parameters
+    ----------
+    objective : string 'binary' or 'xentropy'
+        Objective function.
+    label_type : string 'binary' or 'probability'
+        Type of the label.
+    data : dict
+        Data for training.
+
+    Returns
+    -------
+    result : dict
+        Experiment summary stats.
+    """
     np.random.seed(0)
     nrounds = 5
     lgb_data = data['lgb_with_' + label_type + '_labels']
