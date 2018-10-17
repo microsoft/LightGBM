@@ -1,6 +1,10 @@
 variables:
   PYTHON_VERSION: 3.7
   CONDA_ENV: test-env
+resources:
+  containers:
+  - container: ubuntu1404
+    image: lightgbm/vsts-agent:ubuntu-14.04
 jobs:
 ###########################################
 - job: Linux
@@ -9,8 +13,9 @@ jobs:
     COMPILER: gcc
   pool:
     vmImage: 'ubuntu-16.04'
+  container: ubuntu1404
   strategy:
-    maxParallel: 6
+    maxParallel: 5
     matrix:
       regular:
         TASK: regular
@@ -26,6 +31,37 @@ jobs:
         TASK: mpi
         METHOD: source
         PYTHON_VERSION: 2.7
+  steps:
+  - task: CondaEnvironment@1
+    inputs:
+      updateConda: true
+  - script: |
+      echo "##vso[task.setvariable variable=HOME_DIRECTORY]$AGENT_HOMEDIRECTORY"
+      echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
+      echo "##vso[task.setvariable variable=OS_NAME]linux"
+      echo "##vso[task.setvariable variable=AZURE]true"
+      echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
+    displayName: 'Set variables'
+  - bash: $(Build.SourcesDirectory)/.ci/setup.sh
+    displayName: Setup
+  - bash: $(Build.SourcesDirectory)/.ci/test.sh
+    displayName: Test
+  - task: PublishBuildArtifacts@1
+    condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
+    inputs:
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: PackageAssets
+      artifactType: container
+###########################################
+- job: Linux_gpu
+###########################################
+  variables:
+    COMPILER: gcc
+  pool:
+    vmImage: 'ubuntu-16.04'
+  strategy:
+    maxParallel: 1
+    matrix:
       gpu_source:
         TASK: gpu
         METHOD: source
@@ -50,12 +86,6 @@ jobs:
     displayName: Setup
   - bash: $(Build.SourcesDirectory)/.ci/test.sh
     displayName: Test
-  - task: PublishBuildArtifacts@1
-    condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
-    inputs:
-      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-      artifactName: PackageAssets
-      artifactType: container
 ###########################################
 - job: MacOS
 ###########################################
@@ -118,7 +148,7 @@ jobs:
       createCustomEnvironment: true
       updateConda: true
       environmentName: $(CONDA_ENV)
-      packageSpecs: 'python=$(PYTHON_VERSION) numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest'
+      packageSpecs: 'python=$(PYTHON_VERSION) numpy nose matplotlib python-graphviz pytest scipy scikit-learn pandas'
       createOptions: '-q'
   - powershell: $(Build.SourcesDirectory)/.ci/test_windows.ps1
     displayName: Test

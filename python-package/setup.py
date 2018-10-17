@@ -162,7 +162,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, use_hdfs=False,
     else:  # Linux, Darwin (macOS), etc.
         logger.info("Starting to compile with CMake.")
         silent_call(cmake_cmd, raise_error=True, error_msg='Please install CMake and all required dependencies first')
-        silent_call(["make", "_lightgbm"], raise_error=True,
+        silent_call(["make", "_lightgbm", "-j4"], raise_error=True,
                     error_msg='An error has occurred while building lightgbm library file')
     os.chdir(CURRENT_DIR)
 

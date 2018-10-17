@@ -32,6 +32,7 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
     sed -i'.bak' -e 's;\(\.\/[^.]*\.\)rst\([^[:space:]]*\);\1html\2;g' {} \;  # emulate js function
 #    html5validator --root ./_build/html/ || exit -1
     if [[ $OS_NAME == "linux" ]]; then
+        sudo apt-get update
         sudo apt-get install linkchecker
         linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit -1
     fi
@@ -53,9 +54,9 @@ fi
 
 if [[ $TASK == "if-else" ]]; then
     conda install -y -n $CONDA_ENV numpy
-    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make lightgbm || exit -1
+    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make lightgbm -j4 || exit -1
     cd $BUILD_DIRECTORY/tests/cpp_test && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
-    cd $BUILD_DIRECTORY/build && make lightgbm || exit -1
+    cd $BUILD_DIRECTORY/build && make lightgbm -j4 || exit -1
     cd $BUILD_DIRECTORY/tests/cpp_test && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py || exit -1
     exit 0
 fi
@@ -94,18 +95,11 @@ elif [[ $TASK == "bdist" ]]; then
 fi
 
 if [[ $TASK == "gpu" ]]; then
-    if [[ $TRAVIS == "true" ]]; then
-        conda install -y -n $CONDA_ENV -c conda-forge boost
-    fi
     sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $BUILD_DIRECTORY/include/LightGBM/config.h
     grep -q 'std::string device_type = "gpu"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
-        if [[ $AZURE == "true" ]]; then
-            pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--opencl-include-dir=$AMDAPPSDK_PATH/include/" || exit -1
-        else
-            pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--boost-root=$CONDA_PREFIX" --install-option="--opencl-include-dir=$AMDAPPSDK_PATH/include/" || exit -1
-        fi
+        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--opencl-include-dir=$AMDAPPSDK_PATH/include/" || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     fi
@@ -122,16 +116,12 @@ if [[ $TASK == "mpi" ]]; then
     fi
     cmake -DUSE_MPI=ON ..
 elif [[ $TASK == "gpu" ]]; then
-    if [[ $AZURE == "true" ]]; then
-        cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
-    else
-        cmake -DUSE_GPU=ON -DBOOST_ROOT=$CONDA_PREFIX -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
-    fi
+    cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
 else
     cmake ..
 fi
 
-make _lightgbm || exit -1
+make _lightgbm -j4 || exit -1
 
 cd $BUILD_DIRECTORY/python-package && python setup.py install --precompile --user || exit -1
 pytest $BUILD_DIRECTORY/tests || exit -1
