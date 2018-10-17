@@ -31,7 +31,7 @@ install:
   - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  - conda create -q -n test-env python=%PYTHON_VERSION% numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest joblib
+  - conda create -q -n test-env python=%PYTHON_VERSION% matplotlib nose numpy pandas pytest python-graphviz scikit-learn scipy joblib
   - activate test-env
 
 build_script:
