@@ -27,20 +27,15 @@ else  # Linux
         sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-6.0 100
         sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-6.0 100
         sudo apt-get install libomp-dev
-    # elif [[ $AZURE == "true" ]] && [[ $COMPILER == "gcc" ]] && [[ $TASK != "gpu" ]]; then
-    #     # downgrade gcc version
-    #     sudo apt-get remove -y gcc || exit -1
-    #     sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-    #     sudo apt-get update
-    #     sudo apt-get install --no-install-recommends -y g++-4.8 || exit -1
-    #     sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 100
-    #     sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 100
     fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y libopenmpi-dev openmpi-bin
     fi
     if [[ $TASK == "gpu" ]]; then
+        if [[ $TRAVIS == "true" ]]; then
+            sudo add-apt-repository ppa:kzemek/boost -y
+        fi
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y libboost1.58-dev libboost-system1.58-dev libboost-filesystem1.58-dev ocl-icd-opencl-dev
         cd $HOME_DIRECTORY

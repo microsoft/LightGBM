@@ -2,11 +2,6 @@ language: cpp
 sudo: required
 dist: trusty
 
-addons:
-  apt:
-    sources:
-    - sourceline: 'ppa:kzemek/boost'
-
 git:
   submodules: true
 
