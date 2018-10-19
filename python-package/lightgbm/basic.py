@@ -2213,7 +2213,8 @@ class Booster(object):
     def _to_predictor(self, pred_parameter=None):
         """Convert to predictor."""
         predictor = _InnerPredictor(booster_handle=self.handle, pred_parameter=pred_parameter)
-        predictor.pandas_categorical = self.pandas_categorical
+        if hasattr(self, 'pandas_categorical'):
+            predictor.pandas_categorical = self.pandas_categorical
         return predictor
 
     def num_feature(self):
