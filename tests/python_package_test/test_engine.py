@@ -560,27 +560,27 @@ class TestEngine(unittest.TestCase):
         }
         lgb_train = lgb.Dataset(X, y)
         gbm0 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False)
-        pred0 = list(gbm0.predict(X_test))
+        pred0 = gbm0.predict(X_test)
         lgb_train = lgb.Dataset(X, pd.DataFrame(y))  # also test that label can be one-column pd.DataFrame
         gbm1 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
                          categorical_feature=[0])
-        pred1 = list(gbm1.predict(X_test))
+        pred1 = gbm1.predict(X_test)
         lgb_train = lgb.Dataset(X, pd.Series(y))  # also test that label can be pd.Series
         gbm2 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
                          categorical_feature=['A'])
-        pred2 = list(gbm2.predict(X_test))
+        pred2 = gbm2.predict(X_test)
         lgb_train = lgb.Dataset(X, y)
         gbm3 = lgb.train(params, lgb_train, num_boost_round=10, verbose_eval=False,
                          categorical_feature=['A', 'B', 'C', 'D'])
-        pred3 = list(gbm3.predict(X_test))
+        pred3 = gbm3.predict(X_test)
         gbm3.save_model('categorical.model')
         gbm4 = lgb.Booster(model_file='categorical.model')
-        pred4 = list(gbm4.predict(X_test))
+        pred4 = gbm4.predict(X_test)
         model_str = gbm4.model_to_string()
         gbm4.model_from_string(model_str, False)
-        pred5 = list(gbm4.predict(X_test))
+        pred5 = gbm4.predict(X_test)
         gbm5 = lgb.Booster({'model_str': model_str})
-        pred6 = list(gbm5.predict(X_test))
+        pred6 = gbm5.predict(X_test)
         np.testing.assert_almost_equal(pred0, pred1)
         np.testing.assert_almost_equal(pred0, pred2)
         np.testing.assert_almost_equal(pred0, pred3)
