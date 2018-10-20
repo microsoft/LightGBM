@@ -2094,7 +2094,9 @@ class Booster(object):
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
-        return json.loads(string_buffer.value.decode())
+        ret = json.loads(string_buffer.value.decode())
+        ret['pandas_categorical'] = self.pandas_categorical
+        return ret
 
     def predict(self, data, num_iteration=None,
                 raw_score=False, pred_leaf=False, pred_contrib=False,
