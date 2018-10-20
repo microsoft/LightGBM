@@ -1568,7 +1568,6 @@ class Booster(object):
     def __deepcopy__(self, _):
         model_str = self.model_to_string(num_iteration=-1)
         booster = Booster({'model_str': model_str})
-        booster.pandas_categorical = self.pandas_categorical
         return booster
 
     def __getstate__(self):
