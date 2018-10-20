@@ -295,15 +295,27 @@ def _label_from_pandas(label):
     return label
 
 
-def _save_pandas_categorical(file_name, pandas_categorical):
-    with open(file_name, 'a') as f:
-        f.write('\npandas_categorical:'
-                + json.dumps(pandas_categorical, default=json_default_with_numpy) + '\n')
+def _dump_pandas_categorical(pandas_categorical, file_name=None):
+    pandas_str = ('\npandas_categorical:'
+                  + json.dumps(pandas_categorical, default=json_default_with_numpy)
+                  + '\n')
+    if file_name is not None:
+        with open(file_name, 'a') as f:
+            f.write(pandas_str)
+    return pandas_str
 
 
-def _load_pandas_categorical(file_name):
-    with open(file_name, 'r') as f:
-        lines = f.readlines()
+def _load_pandas_categorical(file_name=None, model_str=None):
+    if file_name is not None:
+        with open(file_name, 'r') as f:
+            lines = f.readlines()
+            last_line = lines[-1]
+            if last_line.strip() == "":
+                last_line = lines[-2]
+            if last_line.startswith('pandas_categorical:'):
+                return json.loads(last_line[len('pandas_categorical:'):])
+    elif model_str is not None:
+        lines = model_str.split('\n')
         last_line = lines[-1]
         if last_line.strip() == "":
             last_line = lines[-2]
@@ -350,7 +362,7 @@ class _InnerPredictor(object):
                 ctypes.byref(out_num_class)))
             self.num_class = out_num_class.value
             self.num_total_iteration = out_num_iterations.value
-            self.pandas_categorical = _load_pandas_categorical(model_file)
+            self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
         elif booster_handle is not None:
             self.__is_manage_handle = False
             self.handle = booster_handle
@@ -1531,9 +1543,9 @@ class Booster(object):
                 self.handle,
                 ctypes.byref(out_num_class)))
             self.__num_class = out_num_class.value
-            self.pandas_categorical = _load_pandas_categorical(model_file)
+            self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
         elif 'model_str' in params:
-            self.model_from_string(params['model_str'])
+            self.model_from_string(params['model_str'], False)
         else:
             raise TypeError('Need at least one training dataset or model file to create booster instance')
         self.params = params
@@ -1950,7 +1962,7 @@ class Booster(object):
             ctypes.c_int(start_iteration),
             ctypes.c_int(num_iteration),
             c_str(filename)))
-        _save_pandas_categorical(filename, self.pandas_categorical)
+        _dump_pandas_categorical(self.pandas_categorical, filename)
         return self
 
     def shuffle_models(self, start_iteration=0, end_iteration=-1):
@@ -2006,6 +2018,7 @@ class Booster(object):
         if verbose:
             print('Finished loading model, total used %d iterations' % int(out_num_iterations.value))
         self.__num_class = out_num_class.value
+        self.pandas_categorical = _load_pandas_categorical(model_str=model_str)
         return self
 
     def model_to_string(self, num_iteration=None, start_iteration=0):
@@ -2050,7 +2063,9 @@ class Booster(object):
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
-        return string_buffer.value.decode()
+        ret = string_buffer.value.decode()
+        ret += _dump_pandas_categorical(self.pandas_categorical)
+        return ret
 
     def dump_model(self, num_iteration=None, start_iteration=0):
         """Dump Booster to JSON format.
