@@ -8,15 +8,15 @@ if lgb.compat.MATPLOTLIB_INSTALLED:
 else:
     raise ImportError('You need to install matplotlib for plot_example.py.')
 
+print('Loading data...')
 # load or create your dataset
-print('Load data...')
 df_train = pd.read_csv('../regression/regression.train', header=None, sep='\t')
 df_test = pd.read_csv('../regression/regression.test', header=None, sep='\t')
 
-y_train = df_train[0].values
-y_test = df_test[0].values
-X_train = df_train.drop(0, axis=1).values
-X_test = df_test.drop(0, axis=1).values
+y_train = df_train[0]
+y_test = df_test[0]
+X_train = df_train.drop(0, axis=1)
+X_test = df_test.drop(0, axis=1)
 
 # create dataset for lightgbm
 lgb_train = lgb.Dataset(X_train, y_train)
@@ -31,29 +31,29 @@ params = {
 
 evals_result = {}  # to record eval results for plotting
 
-print('Start training...')
+print('Starting training...')
 # train
 gbm = lgb.train(params,
                 lgb_train,
                 num_boost_round=100,
                 valid_sets=[lgb_train, lgb_test],
-                feature_name=['f' + str(i + 1) for i in range(28)],
+                feature_name=['f' + str(i + 1) for i in range(X_train.shape[-1])],
                 categorical_feature=[21],
                 evals_result=evals_result,
                 verbose_eval=10)
 
-print('Plot metrics recorded during training...')
+print('Plotting metrics recorded during training...')
 ax = lgb.plot_metric(evals_result, metric='l1')
 plt.show()
 
-print('Plot feature importances...')
+print('Plotting feature importances...')
 ax = lgb.plot_importance(gbm, max_num_features=10)
 plt.show()
 
-print('Plot 84th tree...')  # one tree use categorical feature to split
+print('Plotting 84th tree...')  # one tree use categorical feature to split
 ax = lgb.plot_tree(gbm, tree_index=83, figsize=(20, 8), show_info=['split_gain'])
 plt.show()
 
-print('Plot 84th tree with graphviz...')
+print('Plotting 84th tree with graphviz...')
 graph = lgb.create_tree_digraph(gbm, tree_index=83, name='Tree84')
 graph.render(view=True)
