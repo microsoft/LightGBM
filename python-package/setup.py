@@ -88,8 +88,8 @@ def silent_call(cmd, raise_error=False, error_msg=''):
 
 
 def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, nomp=False,
-                use_hdfs=False, boost_root=None, boost_dir=None, 
-                boost_include_dir=None, boost_librarydir=None, 
+                use_hdfs=False, boost_root=None, boost_dir=None,
+                boost_include_dir=None, boost_librarydir=None,
                 opencl_include_dir=None, opencl_library=None):
 
     if os.path.exists(os.path.join(CURRENT_DIR, "build_cpp")):
