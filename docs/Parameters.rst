@@ -362,7 +362,7 @@ Learning Control Parameters
 
    -  categorical splits are forced in a one-hot fashion, with ``left`` representing the split containing the feature value and ``right`` representing other values
 
-   -  NOTE: the forced split logic will be ignored if the split makes gain worse
+   -  **Note**: the forced split logic will be ignored, if the split makes gain worse
 
    -  see `this file <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
 
