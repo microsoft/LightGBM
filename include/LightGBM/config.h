@@ -365,7 +365,7 @@ public:
   // desc = path to a ``.json`` file that specifies splits to force at the top of every decision tree before best-first learning commences
   // desc = ``.json`` file can be arbitrarily nested, and each split contains ``feature``, ``threshold`` fields, as well as ``left`` and ``right`` fields representing subsplits
   // desc = categorical splits are forced in a one-hot fashion, with ``left`` representing the split containing the feature value and ``right`` representing other values
-  // desc = Note: the forced split logic will be ignored if the split makes gain worse
+  // desc = NOTE: the forced split logic will be ignored if the split makes gain worse
   // desc = see `this file <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
   std::string forcedsplits_filename = "";
 
