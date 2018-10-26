@@ -67,6 +67,9 @@ jobs:
         METHOD: source
         PYTHON_VERSION: 3.6
   steps:
+  - script: |
+      sudo chmod -R 777 /usr/share/miniconda
+    displayName: 'Fix for conda error on Linux'
   - task: CondaEnvironment@1
     inputs:
       updateConda: true
@@ -105,6 +108,9 @@ jobs:
       bdist:
         TASK: bdist
   steps:
+  - script: |
+      sudo chmod -R 777 /usr/local/miniconda
+    displayName: 'Fix for conda error on macOS'
   - task: CondaEnvironment@1
     inputs:
       updateConda: true
