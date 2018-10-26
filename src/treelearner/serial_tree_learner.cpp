@@ -688,11 +688,15 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, Json& forced_split_json, int*
     right = Json();
     if ((pair.first).object_items().count("left") > 0) {
       left = (pair.first)["left"];
-      q.push(std::make_pair(left, *left_leaf));
+      if (left.object_items().count("feature") > 0 && left.object_items().count("threshold") > 0) {
+        q.push(std::make_pair(left, *left_leaf));
+      }
     }
     if ((pair.first).object_items().count("right") > 0) {
       right = (pair.first)["right"];
-      q.push(std::make_pair(right, *right_leaf));
+      if (right.object_items().count("feature") > 0 && right.object_items().count("threshold") > 0) {
+        q.push(std::make_pair(right, *right_leaf));
+      }
     }
     result_count++;
     *(cur_depth) = std::max(*(cur_depth), tree->leaf_depth(*left_leaf));
