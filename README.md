@@ -65,7 +65,7 @@ JPMML: https://github.com/jpmml/jpmml-lightgbm
 Get Started and Documentation
 -----------------------------
 
-Install by following the [guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst) for the command line program, [Python-package](https://github.com/Microsoft/LightGBM/tree/master/python-package) or [R-package](https://github.com/Microsoft/LightGBM/tree/master/R-package). Then please see the [Quick Start](https://github.com/Microsoft/LightGBM/blob/master/docs/Quick-Start.rst) guide.
+Install by following [guide](https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst) for the command line program, [Python-package](https://github.com/Microsoft/LightGBM/tree/master/python-package) or [R-package](https://github.com/Microsoft/LightGBM/tree/master/R-package). Then please see the [Quick Start](https://github.com/Microsoft/LightGBM/blob/master/docs/Quick-Start.rst) guide.
 
 Our primary documentation is at https://lightgbm.readthedocs.io/ and is generated from this repository.
 
