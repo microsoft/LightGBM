@@ -369,8 +369,17 @@ class LGBMModel(_LGBMModelBase):
             to continue training.
             Requires at least one validation data and one metric.
             If there's more than one, will check all of them. But the training data is ignored anyway.
-        verbose : bool, optional (default=True)
-            If True and an evaluation set is used, writes the evaluation progress.
+        verbose : bool or int, optional (default=True)
+            Requires at least one evaluation data.
+            If True, the eval metric on the eval set is printed at each boosting stage.
+            If int, the eval metric on the eval set is printed at every ``verbose`` boosting stage.
+            The last boosting stage or the boosting stage found by using ``early_stopping_rounds`` is also printed.
+
+            Example
+            -------
+            With ``verbose`` = 4 and at least one item in ``eval_set``,
+            an evaluation metric is printed every 4 (instead of 1) boosting stages.
+
         feature_name : list of strings or 'auto', optional (default='auto')
             Feature names.
             If 'auto' and data is pandas DataFrame, data columns names are used.
