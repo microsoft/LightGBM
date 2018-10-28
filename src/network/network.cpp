@@ -23,8 +23,10 @@ THREAD_LOCAL ReduceScatterFunction Network::reduce_scatter_ext_fun_ = nullptr;
 THREAD_LOCAL AllgatherFunction Network::allgather_ext_fun_ = nullptr;
 
 
-void Network::Init(Config config) {
-  if (config.num_machines > 1) {
+void Network::Init(Config config)
+{
+  if (config.num_machines > 1)
+  {
     linkers_.reset(new Linkers(config));
     rank_ = linkers_->rank();
     num_machines_ = linkers_->num_machines();
@@ -39,8 +41,10 @@ void Network::Init(Config config) {
 }
 
 void Network::Init(int num_machines, int rank,
-                   ReduceScatterFunction reduce_scatter_ext_fun, AllgatherFunction allgather_ext_fun) {
-  if (num_machines > 1) {
+                   ReduceScatterFunction reduce_scatter_ext_fun, AllgatherFunction allgather_ext_fun)
+{
+  if (num_machines > 1)
+  {
     rank_ = rank;
     num_machines_ = num_machines;
     block_start_ = std::vector<comm_size_t>(num_machines_);
@@ -53,7 +57,8 @@ void Network::Init(int num_machines, int rank,
   }
 }
 
-void Network::Dispose() {
+void Network::Dispose()
+{
   num_machines_ = 1;
   rank_ = 0;
   linkers_.reset(new Linkers());
@@ -61,8 +66,10 @@ void Network::Dispose() {
   allgather_ext_fun_ = nullptr;
 }
 
-void Network::Allreduce(char* input, comm_size_t input_size, int type_size, char* output, const ReduceFunction& reducer) {
-  if (num_machines_ <= 1) {
+void Network::Allreduce(char* input, comm_size_t input_size, int type_size, char* output, const ReduceFunction& reducer)
+ {
+  if (num_machines_ <= 1)
+  {
     Log::Fatal("Please initilize the network interface first");
   }
   comm_size_t count = input_size / type_size;
