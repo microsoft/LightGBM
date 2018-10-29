@@ -119,4 +119,4 @@ Huan Zhang, Si Si and Cho-Jui Hsieh. "[GPU Acceleration for Large-scale Tree Boo
 
 ## License
 
-This project is licensed under the terms of the MIT license. See [LICENSE](LICENSE) for addtional details.
+This project is licensed under the terms of the MIT license. See [LICENSE](https://github.com/Microsoft/LightGBM/blob/master/LICENSE) for addtional details.
