@@ -703,6 +703,7 @@ public:
 
   // alias = training_metric, is_training_metric, train_metric
   // desc = set this to ``true`` to output metric result over training dataset
+  // desc = **Note**: can be used only in CLI version
   bool is_provide_training_metric = false;
 
   // type = multi-int
