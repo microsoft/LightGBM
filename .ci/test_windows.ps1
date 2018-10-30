@@ -37,6 +37,6 @@ if ($env:TASK -eq "regular") {
     python $file ; Check-Output $LastExitCode
   }  # run all examples
   cd $env:BUILD_SOURCESDIRECTORY/examples/python-guide/notebooks
-  conda install -y -n $env:CONDA_ENV notebook ipywidgets
+  conda install -y -n $env:CONDA_ENV ipywidgets notebook
   jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb ; Check-Output $LastExitCode  # run all notebooks
 }

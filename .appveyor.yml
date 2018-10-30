@@ -53,5 +53,5 @@ test_script:
         if ($LastExitCode -ne 0) { $host.SetShouldExit($LastExitCode) }
       }  # run all examples
   - cd %APPVEYOR_BUILD_FOLDER%\examples\python-guide\notebooks
-  - conda install -y -n test-env notebook ipywidgets
+  - conda install -y -n test-env ipywidgets notebook
   - jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb  # run all notebooks
