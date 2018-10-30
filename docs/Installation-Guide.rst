@@ -197,7 +197,7 @@ On Windows MPI version of LightGBM can be built using
 With GUI
 ********
 
-1. You need to install `MS MPI`_ first. Both ``msmpisdk.msi`` and ``MSMpiSetup.exe`` are needed.
+1. You need to install `MS MPI`_ first. Both ``msmpisdk.msi`` and ``msmpisetup.exe`` are needed.
 
 2. Install `Visual Studio`_ (2015 or newer).
 
@@ -214,7 +214,7 @@ The exe file will be in ``LightGBM-master/windows/x64/Release_mpi`` folder.
 From Command Line
 *****************
 
-1. You need to install `MS MPI`_ first. Both ``msmpisdk.msi`` and ``MSMpiSetup.exe`` are needed.
+1. You need to install `MS MPI`_ first. Both ``msmpisdk.msi`` and ``msmpisetup.exe`` are needed.
 
 2. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is already installed).
 
@@ -516,7 +516,7 @@ On Linux Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMake
 
 .. _RDMA: https://en.wikipedia.org/wiki/Remote_direct_memory_access
 
-.. _MS MPI: https://www.microsoft.com/en-us/download/details.aspx?id=49926
+.. _MS MPI: https://www.microsoft.com/en-us/download/details.aspx?id=57467
 
 .. _Open MPI: https://www.open-mpi.org/
 
