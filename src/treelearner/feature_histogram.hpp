@@ -299,13 +299,11 @@ public:
     data_size_t right_count = 0;
 
     // set values
-    bool use_na_as_missing;
-    bool skip_default_bin;
+    bool use_na_as_missing = false;
+    bool skip_default_bin = false;
     if (meta_->missing_type == MissingType::Zero) {
       skip_default_bin = true;
-      use_na_as_missing = false;
-    } else {
-      skip_default_bin = false;
+    } else if (meta_->missing_type == MissingType::NaN) {
       use_na_as_missing = true;
     }
 
