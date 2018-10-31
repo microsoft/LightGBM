@@ -39,7 +39,7 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
     # check the consistency of parameters' descriptions and other stuff
     cp $BUILD_DIRECTORY/docs/Parameters.rst $BUILD_DIRECTORY/docs/Parameters-backup.rst
     cp $BUILD_DIRECTORY/src/io/config_auto.cpp $BUILD_DIRECTORY/src/io/config_auto-backup.cpp
-    python $BUILD_DIRECTORY/helper/parameter_generator.py || exit -1
+    python $BUILD_DIRECTORY/helpers/parameter_generator.py || exit -1
     diff $BUILD_DIRECTORY/docs/Parameters-backup.rst $BUILD_DIRECTORY/docs/Parameters.rst || exit -1
     diff $BUILD_DIRECTORY/src/io/config_auto-backup.cpp $BUILD_DIRECTORY/src/io/config_auto.cpp || exit -1
     exit 0
