@@ -15,6 +15,8 @@ For the build of Python-package and R-package, please refer to `Python-package`_
 
 -  `Docker <#docker>`__
 
+- `Threadless Version (not Recommended) <#build-threadless-version-not-recommended>`__
+
 -  `MPI Version <#build-mpi-version>`__
 
 -  `GPU Version <#build-gpu-version>`__
@@ -176,6 +178,151 @@ Docker
 ~~~~~~
 
 Refer to `Docker folder <https://github.com/Microsoft/LightGBM/tree/master/docker>`__.
+
+Build Threadless Version (not Recommended)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The default build version of LightGBM is based on OpenMP.
+However, you can build the LightGBM without OpenMP support, but it is **strongly not recommended**.
+
+Windows
+^^^^^^^
+
+On Windows version of LightGBM without OpenMP support can be built using
+
+- **Visual Studio**;
+
+- **CMake** and **VS Build Tools**;
+
+- **CMake** and **MinGW**.
+
+Visual Studio (or VS Build Tools)
+*********************************
+
+With GUI
+--------
+
+1. Install `Visual Studio`_ (2015 or newer).
+
+2. Download `zip archive`_ and unzip it.
+
+3. Go to ``LightGBM-master/windows`` folder.
+
+4. Open ``LightGBM.sln`` file with **Visual Studio**.
+
+5. Go to ``PROJECT`` -> ``Properties`` -> ``Configuration Properties`` -> ``C/C++`` -> ``Language`` and change the ``OpenMP Support`` property to ``No (/openmp-)``.
+
+6. Get back to the project's main screen, then choose ``Release`` configuration and click ``BUILD`` -> ``Build Solution (Ctrl+Shift+B)``.
+
+   If you have errors about **Platform Toolset**, go to ``PROJECT`` -> ``Properties`` -> ``Configuration Properties`` -> ``General`` and select the toolset installed on your machine.
+
+The exe file will be in ``LightGBM-master/windows/x64/Release`` folder.
+
+From Command Line
+-----------------
+
+1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is already installed).
+
+2. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/Microsoft/LightGBM
+     cd LightGBM
+     mkdir build
+     cd build
+     cmake -DCMAKE_GENERATOR_PLATFORM=x64 -DUSE_OPENMP=OFF ..
+     cmake --build . --target ALL_BUILD --config Release
+
+The exe and dll files will be in ``LightGBM/Release`` folder.
+
+MinGW-w64
+*********
+
+1. Install `Git for Windows`_, `CMake`_ and `MinGW-w64`_.
+
+2. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/Microsoft/LightGBM
+     cd LightGBM
+     mkdir build
+     cd build
+     cmake -G "MinGW Makefiles" -DUSE_OPENMP=OFF ..
+     mingw32-make.exe -j4
+
+The exe and dll files will be in ``LightGBM/`` folder.
+
+**Note**: You may need to run the ``cmake -G "MinGW Makefiles" -DUSE_OPENMP=OFF ..`` one more time if you encounter the ``sh.exe was found in your PATH`` error.
+
+Linux
+^^^^^
+
+On Linux version of LightGBM without OpenMP support can be built using **CMake** and **gcc** or **Clang**.
+
+1. Install `CMake`_.
+
+2. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+     mkdir build ; cd build
+     cmake -DUSE_OPENMP=OFF ..
+     make -j4
+
+**Note**: glibc >= 2.14 is required.
+
+macOS
+^^^^^
+
+On macOS version of LightGBM without OpenMP support can be built using **CMake** and **Apple Clang** or **gcc**.
+
+Apple Clang
+***********
+
+Only **Apple Clang** version 8.1 or higher is supported.
+
+1. Install `CMake`_ (3.12 or higher):
+
+   .. code::
+
+     brew install cmake
+
+2. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+     mkdir build ; cd build
+     cmake -DUSE_OPENMP=OFF ..
+     make -j4
+
+gcc
+***
+
+1. Install `CMake`_ (3.2 or higher):
+
+   .. code::
+
+     brew install cmake
+
+2. Install **gcc**:
+
+   .. code::
+
+     brew install gcc
+
+3. Run the following commands:
+
+   .. code::
+
+     git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
+     export CXX=g++-7 CC=gcc-7  # replace "7" with version of gcc installed on your machine
+     mkdir build ; cd build
+     cmake -DUSE_OPENMP=OFF ..
+     make -j4
 
 Build MPI Version
 ~~~~~~~~~~~~~~~~~
