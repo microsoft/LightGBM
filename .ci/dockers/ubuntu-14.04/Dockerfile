@@ -24,6 +24,16 @@ RUN apt-get update \
     build-essential \
  && rm -rf /var/lib/apt/lists/*
 
+# Install clang 6.0
+RUN add-apt-repository ppa:ubuntu-toolchain-r/test -y \
+ && cd /tmp \
+ && wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - \
+ && add-apt-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-6.0 main" -y \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends \
+    clang-6.0 \
+ && rm -rf /var/lib/apt/lists/*
+
 # Install CMake
 RUN curl -sL https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.sh -o cmake.sh \
  && chmod +x cmake.sh \

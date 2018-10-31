@@ -334,7 +334,7 @@ public:
     // gain with split is worse than without split
     if (std::isnan(current_gain) || current_gain <= min_gain_shift) {
       output->gain = kMinScore;
-      Log::Warning("Gain with forced split worse than without split");
+      Log::Warning("'Forced Split' will be ignored since the gain getting worse. ");
       return;
     };
 
@@ -391,7 +391,7 @@ public:
                            meta_->config->max_delta_step);
     if (std::isnan(current_gain) || current_gain <= min_gain_shift) {
       output->gain = kMinScore;
-      Log::Warning("Gain with forced split worse than without split");
+      Log::Warning("'Forced Split' will be ignored since the gain getting worse. ");
       return;
     }
 

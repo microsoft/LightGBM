@@ -87,10 +87,10 @@ def silent_call(cmd, raise_error=False, error_msg=''):
         return 1
 
 
-def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, use_hdfs=False,
-                boost_root=None, boost_dir=None, boost_include_dir=None,
-                boost_librarydir=None, opencl_include_dir=None,
-                opencl_library=None):
+def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, nomp=False,
+                use_hdfs=False, boost_root=None, boost_dir=None,
+                boost_include_dir=None, boost_librarydir=None,
+                opencl_include_dir=None, opencl_library=None):
 
     if os.path.exists(os.path.join(CURRENT_DIR, "build_cpp")):
         shutil.rmtree(os.path.join(CURRENT_DIR, "build_cpp"))
@@ -116,6 +116,8 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, use_hdfs=False,
             cmake_cmd.append("-DOpenCL_LIBRARY={0}".format(opencl_library))
     if use_mpi:
         cmake_cmd.append("-DUSE_MPI=ON")
+    if nomp:
+        cmake_cmd.append("-DUSE_OPENMP=OFF")
     if use_hdfs:
         cmake_cmd.append("-DUSE_HDFS=ON")
     if system() in ('Windows', 'Microsoft'):
@@ -184,6 +186,7 @@ class CustomInstall(install):
         ('mingw', 'm', 'Compile with MinGW'),
         ('gpu', 'g', 'Compile GPU version'),
         ('mpi', None, 'Compile MPI version'),
+        ('nomp', None, 'Compile without openmp'),
         ('hdfs', 'h', 'Compile HDFS version'),
         ('precompile', 'p', 'Use precompiled library'),
         ('boost-root=', None, 'Boost preferred installation prefix'),
@@ -207,13 +210,14 @@ class CustomInstall(install):
         self.mpi = 0
         self.hdfs = 0
         self.precompile = 0
+        self.nomp = 0
 
     def run(self):
         open(LOG_PATH, 'wb').close()
         if not self.precompile:
             copy_files(use_gpu=self.gpu)
-            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_mpi=self.mpi, use_hdfs=self.hdfs,
-                        boost_root=self.boost_root, boost_dir=self.boost_dir,
+            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_mpi=self.mpi, nomp=self.nomp,
+                        use_hdfs=self.hdfs, boost_root=self.boost_root, boost_dir=self.boost_dir,
                         boost_include_dir=self.boost_include_dir, boost_librarydir=self.boost_librarydir,
                         opencl_include_dir=self.opencl_include_dir, opencl_library=self.opencl_library)
         install.run(self)

@@ -362,6 +362,8 @@ Learning Control Parameters
 
    -  categorical splits are forced in a one-hot fashion, with ``left`` representing the split containing the feature value and ``right`` representing other values
 
+   -  **Note**: the forced split logic will be ignored, if the split makes gain worse
+
    -  see `this file <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
 
 -  ``refit_decay_rate`` :raw-html:`<a id="refit_decay_rate" title="Permalink to this parameter" href="#refit_decay_rate">&#x1F517;&#xFE0E;</a>`, default = ``0.9``, type = double, constraints: ``0.0 <= refit_decay_rate <= 1.0``
@@ -792,6 +794,8 @@ Metric Parameters
 -  ``is_provide_training_metric`` :raw-html:`<a id="is_provide_training_metric" title="Permalink to this parameter" href="#is_provide_training_metric">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool, aliases: ``training_metric``, ``is_training_metric``, ``train_metric``
 
    -  set this to ``true`` to output metric result over training dataset
+
+   -  **Note**: can be used only in CLI version
 
 -  ``eval_at`` :raw-html:`<a id="eval_at" title="Permalink to this parameter" href="#eval_at">&#x1F517;&#xFE0E;</a>`, default = ``1,2,3,4,5``, type = multi-int, aliases: ``ndcg_eval_at``, ``ndcg_at``, ``map_eval_at``, ``map_at``
 

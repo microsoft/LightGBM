@@ -143,6 +143,16 @@ LightGBM
 
 --------------
 
+-  **Question 11**: LightGBM hangs when multithreading (OpenMP) and using forking in Linux at the same time.
+
+-  **Solution 11**: Use ``nthreads=1`` to disable multithreading of LightGBM. There is a bug with OpenMP which hangs forked sessions with multithreading activated. A more expensive solution is to use new processes instead of using fork, however keep in mind it is creating new processes where you have to copy memory and load libraries (example: if you want to fork 16 times your current process, then you will require to make 16 copies of your dataset in memory). See (`Microsoft/LightGBM#1789 <https://github.com/Microsoft/LightGBM/issues/1789#issuecomment-433713383>`__).
+   
+   An alternative, if multithreading is really necessary inside the forked sessions, would be to compile LightGBM with Intel toolchain. Intel compilers are unaffected by this bug.
+   
+   For C/C++ users, any OpenMP feature cannot be used before the fork happens. If an OpenMP feature is used before the fork happens (ex: using OpenMP for forking), OpenMP will hang inside the forked sessions. Use new processes instead and copy memory as required by creating new processes instead of forking (or, use Intel compilers).
+
+--------------
+
 R-package
 ~~~~~~~~~
 
