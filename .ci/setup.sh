@@ -29,7 +29,7 @@ else  # Linux
         sudo apt-get update
         sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-6.0 100
         sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-6.0 100
-        sudo apt-get install libomp-dev
+        sudo apt-get install --no-install-recommends -y libomp-dev
     fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
