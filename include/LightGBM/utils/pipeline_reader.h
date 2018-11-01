@@ -9,6 +9,7 @@
 #include <thread>
 #include <memory>
 #include <algorithm>
+#include <vector>
 #include "file_io.h"
 
 namespace LightGBM{

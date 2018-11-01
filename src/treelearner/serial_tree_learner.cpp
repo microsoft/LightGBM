@@ -322,8 +322,7 @@ void SerialTreeLearner::BeforeTrain() {
       const data_size_t* indices = data_partition_->indices();
       data_size_t begin = data_partition_->leaf_begin(0);
       data_size_t end = begin + data_partition_->leaf_count(0);
-      data_size_t loop_size = end - begin;
-      #pragma omp parallel for schedule(static, 512) if(loop_size >= 1024)
+      #pragma omp parallel for schedule(static, 512) if(end - begin >= 1024)
       for (data_size_t i = begin; i < end; ++i) {
         is_data_in_leaf_[indices[i]] = 1;
       }
@@ -336,7 +335,7 @@ void SerialTreeLearner::BeforeTrain() {
         OMP_LOOP_EX_END();
       }
       OMP_THROW_EX();
-      #pragma omp parallel for schedule(static, 512) if(loop_size >= 1024)
+      #pragma omp parallel for schedule(static, 512) if(end - begin >= 1024)
       for (data_size_t i = begin; i < end; ++i) {
         is_data_in_leaf_[indices[i]] = 0;
       }
@@ -397,13 +396,12 @@ bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int
     char mark = 1;
     data_size_t begin = data_partition_->leaf_begin(left_leaf);
     data_size_t end = begin + left_cnt;
-    data_size_t loop_size = end - begin;
     if (left_cnt > right_cnt) {
       begin = data_partition_->leaf_begin(right_leaf);
       end = begin + right_cnt;
       mark = 0;
     }
-    #pragma omp parallel for schedule(static, 512) if(loop_size >= 1024)
+    #pragma omp parallel for schedule(static, 512) if(end - begin >= 1024)
     for (data_size_t i = begin; i < end; ++i) {
       is_data_in_leaf_[indices[i]] = 1;
     }
@@ -416,7 +414,7 @@ bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
-    #pragma omp parallel for schedule(static, 512) if(loop_size >= 1024)
+    #pragma omp parallel for schedule(static, 512) if(end - begin >= 1024)
     for (data_size_t i = begin; i < end; ++i) {
       is_data_in_leaf_[indices[i]] = 0;
     }
