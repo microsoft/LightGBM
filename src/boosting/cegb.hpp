@@ -2,6 +2,9 @@
 #define LIGHTGBM_BOOSTING_CEGB_H_
 
 #include <LightGBM/boosting.h>
+#include <LightGBM/tree_learner.h>
+
+#include "../treelearner/serial_tree_learner.h"
 #include "score_updater.hpp"
 #include "gbdt.h"
 
@@ -39,17 +42,33 @@ public:
 
   void ResetTrainingData(const BoostingConfig* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
                          const std::vector<const Metric*>& training_metrics) override {
+    InitTreeLearner(config);
     GBDT::ResetTrainingData(config, train_data, objective_function, training_metrics);
-  }
-  /*!
-  * \brief one training iteration
-  */
-  bool TrainOneIter(const score_t* gradient, const score_t* hessian, bool is_eval) override {
-    bool gbdt_res = GBDT::TrainOneIter(gradient, hessian, is_eval);
-    return gbdt_res;
+    ResetFeatureTracking();
   }
 
 private:
+    std::vector<bool> lazy_feature_used;
+    std::vector<bool> coupled_feature_used;
+
+  void ResetFeatureTracking()
+  {
+    lazy_feature_used.clear();
+    lazy_feature_used.resize(train_data_->num_total_features() * train_data_->num_data());
+    coupled_feature_used.clear();
+    coupled_feature_used.resize(train_data_->num_total_features());
+  }
+
+  void InitTreeLearner(const BoostingConfig* config)
+  {
+    if (config->device_type != std::string("cpu"))
+      Log::Fatal("CEGB currently only supports CPU tree learner, '%s' is unsupported.", config->device_type);
+    if (config->tree_learner_type != std::string("serial"))
+      Log::Fatal("CEGB currently only supports serial tree learner, '%s' is unsupported.", config->tree_learner_type);
+    if (tree_learner_ != nullptr)
+      return;
+    tree_learner_ = std::unique_ptr<TreeLearner>((TreeLearner *)new SerialTreeLearner(&config->tree_config));
+  }
 };
 
 }  // namespace LightGBM
