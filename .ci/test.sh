@@ -18,7 +18,7 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
         conda -y -n $CONDA_ENV mock
     fi
     # sphinx >=1.8 is incompatible with rstcheck
-    conda install -y -n $CONDA_ENV "sphinx<1.8" "sphinx_rtd_theme>=0.3"  # html5validator
+    conda install -y -n $CONDA_ENV "sphinx<1.8" "sphinx_rtd_theme>=0.3"
     pip install --user rstcheck
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
@@ -30,7 +30,6 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
     make html || exit -1
     find ./_build/html/ -type f -name '*.html' -exec \
     sed -i'.bak' -e 's;\(\.\/[^.]*\.\)rst\([^[:space:]]*\);\1html\2;g' {} \;  # emulate js function
-#    html5validator --root ./_build/html/ || exit -1
     if [[ $OS_NAME == "linux" ]]; then
         sudo apt-get update
         sudo apt-get install linkchecker
@@ -94,6 +93,8 @@ elif [[ $TASK == "bdist" ]]; then
     exit 0
 fi
 
+mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
+
 if [[ $TASK == "gpu" ]]; then
     sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $BUILD_DIRECTORY/include/LightGBM/config.h
     grep -q 'std::string device_type = "gpu"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
@@ -103,11 +104,8 @@ if [[ $TASK == "gpu" ]]; then
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     fi
-fi
-
-mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
-
-if [[ $TASK == "mpi" ]]; then
+    cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
+elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--mpi || exit -1
@@ -115,8 +113,6 @@ if [[ $TASK == "mpi" ]]; then
         exit 0
     fi
     cmake -DUSE_MPI=ON ..
-elif [[ $TASK == "gpu" ]]; then
-    cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
 else
     cmake ..
 fi
