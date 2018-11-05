@@ -186,7 +186,7 @@ class CustomInstall(install):
         ('mingw', 'm', 'Compile with MinGW'),
         ('gpu', 'g', 'Compile GPU version'),
         ('mpi', None, 'Compile MPI version'),
-        ('nomp', None, 'Compile without openmp'),
+        ('nomp', None, 'Compile version without OpenMP support'),
         ('hdfs', 'h', 'Compile HDFS version'),
         ('precompile', 'p', 'Use precompiled library'),
         ('boost-root=', None, 'Boost preferred installation prefix'),
