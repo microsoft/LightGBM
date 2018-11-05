@@ -25,7 +25,7 @@ def find_lib():
     exec(compile(open(libpath_py, "rb").read(), libpath_py, 'exec'), libpath, libpath)
 
     LIB_PATH = [os.path.relpath(path, CURRENT_DIR) for path in libpath['find_lib_path']()]
-    logging.info("Installing lib_lightgbm from: %s" % LIB_PATH)
+    logger.info("Installing lib_lightgbm from: %s" % LIB_PATH)
     return LIB_PATH
 
 
