@@ -48,8 +48,8 @@ namespace LightGBM {
   }\
   double threshold = weighted_cdf[cnt_data - 1] * alpha;\
   size_t pos = std::upper_bound(weighted_cdf.begin(), weighted_cdf.end(), threshold) - weighted_cdf.begin();\
-  if (pos == 0) {\
-    return data_reader(sorted_idx[0]);\
+  if (pos == 0 || pos == cnt_data - 1) {\
+    return data_reader(sorted_idx[pos]);\
   }\
   CHECK(threshold >= weighted_cdf[pos - 1]);\
   CHECK(threshold < weighted_cdf[pos]);\
