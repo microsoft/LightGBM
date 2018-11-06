@@ -47,6 +47,17 @@ For **macOS** users, you can perform installation either with **Apple Clang** or
 
 For **Windows** users, **Visual Studio** (or `VS Build Tools <https://visualstudio.microsoft.com/downloads/>`_) is needed. If you get any errors during installation, you may need to install `CMake`_ (version 3.8 or higher).
 
+Build Threadless Version
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code:: sh
+
+    pip install lightgbm --install-option=--nomp
+
+All remarks, except the **OpenMP** requirement for macOS users, from `Build from Sources section <#build-from-sources>`__ are actual in this case.
+
+It is **strongly not recommended** to use this version of LightGBM!
+
 Build MPI Version
 ~~~~~~~~~~~~~~~~~
 
@@ -128,6 +139,8 @@ For **Windows** users, if you get any errors during installation and there is th
     python setup.py install
 
 Note: ``sudo`` (or administrator rights in **Windows**) may be needed to perform the command.
+
+Run ``python setup.py install --nomp`` to disable **OpenMP** support. All remarks from `Build Threadless Version section <#build-threadless-version>`__ are actual in this case.
 
 Run ``python setup.py install --mpi`` to enable **MPI** support. All remarks from `Build MPI Version section <#build-mpi-version>`__ are actual in this case.
 
