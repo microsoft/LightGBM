@@ -9,11 +9,9 @@ if [[ $OS_NAME == "macos" ]]; then
         fi
     else
         if [[ $TRAVIS == "true" ]]; then
-            # Fix "fatal error: _stdio.h: No such file or directory"
-            softwareupdate -i "Command Line Tools (macOS High Sierra version 10.13) for Xcode-9.4"
-            rm '/usr/local/include/c++'
+#            rm '/usr/local/include/c++'  # previous variant to deal with conflict link
 #            brew cask uninstall oclint  #  reserve variant to deal with conflict link
-#            brew link --overwrite gcc  # previous variant to deal with conflict link
+            brew link --overwrite gcc
         fi
         if [[ $TASK != "mpi" ]]; then
             brew install gcc
