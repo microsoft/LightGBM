@@ -86,6 +86,9 @@ public:
   }
 
   data_size_t BaggingHelper(Random& cur_rand, data_size_t start, data_size_t cnt, data_size_t* buffer, data_size_t* buffer_right) {
+    if (cnt <= 0) { 
+      return 0;
+    }
     std::vector<score_t> tmp_gradients(cnt, 0.0f);
     for (data_size_t i = 0; i < cnt; ++i) {
       for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
