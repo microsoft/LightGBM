@@ -75,13 +75,13 @@ OpenCL SDK Installation
 -----------------------
 
 Installing the appropriate OpenCL SDK requires you to download the correct vendor source SDK.
-You need to know what you are going to use LightGBM!:
+You need to know what you are going to use LightGBM!
 
--  For running on Intel, get `Intel SDK for OpenCL`_ (NOT RECOMMENDED)
+-  For running on Intel, get `Intel SDK for OpenCL`_ (NOT RECOMMENDED).
 
--  For running on AMD, get AMD APP SDK
+-  For running on AMD, get AMD APP SDK.
 
--  For running on NVIDIA, get `CUDA Toolkit`_
+-  For running on NVIDIA, get `CUDA Toolkit`_.
 
 Further reading and correspondence table (especially if you intend to use cross-platform devices,
 like Intel CPU with AMD APP SDK): `GPU SDK Correspondence and Device Targeting Table <./GPU-Targets.rst>`__.
