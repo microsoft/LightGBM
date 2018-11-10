@@ -8,6 +8,7 @@ git:
 os:
   - linux
   - osx
+osx_image: xcode10.1
 
 env:
   global:  # default values
