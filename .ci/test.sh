@@ -17,8 +17,7 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
     if [[ $PYTHON_VERSION == "2.7" ]]; then
         conda -y -n $CONDA_ENV mock
     fi
-    # sphinx >=1.8 is incompatible with rstcheck
-    conda install -y -n $CONDA_ENV "sphinx<1.8" "sphinx_rtd_theme>=0.3"
+    conda install -y -n $CONDA_ENV sphinx "sphinx_rtd_theme>=0.3"
     pip install --user rstcheck
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
@@ -26,7 +25,6 @@ if [[ $TRAVIS == "true" ]] && [[ $TASK == "check-docs" ]]; then
     cd $BUILD_DIRECTORY/docs
     rstcheck --report warning --ignore-directives=autoclass,autofunction `find . -type f -name "*.rst"` || exit -1
     # build docs and check them for broken links
-    conda update -y -n $CONDA_ENV sphinx
     make html || exit -1
     find ./_build/html/ -type f -name '*.html' -exec \
     sed -i'.bak' -e 's;\(\.\/[^.]*\.\)rst\([^[:space:]]*\);\1html\2;g' {} \;  # emulate js function
