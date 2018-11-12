@@ -18,16 +18,16 @@ Critical
 
 Please post an issue in `Microsoft/LightGBM repository <https://github.com/Microsoft/LightGBM/issues>`__ for any
 LightGBM issues you encounter. For critical issues (crash, prediction error, nonsense outputs...), you may also ping a
-member of the core team according the relevant area of expertise by mentioning them with the arobase (@) symbol:
+member of the core team according to the relevant area of expertise by mentioning them with the arobase (@) symbol:
 
--  `@guolinke <https://github.com/guolinke>`__ (C++ code / R-package / Python-package)
--  `@chivee <https://github.com/chivee>`__ (C++ code / Python-package)
--  `@Laurae2 <https://github.com/Laurae2>`__ (R-package)
--  `@jameslamb <https://github.com/jameslamb>`__ (R-package)
--  `@wxchan <https://github.com/wxchan>`__ (Python-package)
--  `@henry0312 <https://github.com/henry0312>`__ (Python-package)
--  `@StrikerRUS <https://github.com/StrikerRUS>`__ (Python-package)
--  `@huanzhang12 <https://github.com/huanzhang12>`__ (GPU support)
+-  `@guolinke <https://github.com/guolinke>`__ **Guolin Ke** (C++ code / R-package / Python-package)
+-  `@chivee <https://github.com/chivee>`__ **Qiwei Ye** (C++ code / Python-package)
+-  `@Laurae2 <https://github.com/Laurae2>`__ **Damien Soukhavong** (R-package)
+-  `@jameslamb <https://github.com/jameslamb>`__ **James Lamb** (R-package)
+-  `@wxchan <https://github.com/wxchan>`__ **Wenxuan Chen** (Python-package)
+-  `@henry0312 <https://github.com/henry0312>`__ **Tsukasa Omoto** (Python-package)
+-  `@StrikerRUS <https://github.com/StrikerRUS>`__ **Nikita Titov** (Python-package)
+-  `@huanzhang12 <https://github.com/huanzhang12>`__ **Huan Zhang** (GPU support)
 
 Please include as much of the following information as possible when submitting a critical issue:
 
@@ -56,7 +56,7 @@ LightGBM
 
 --------------
 
--  **Question 2**: On datasets with million of features, training does not start (or starts after a very long time).
+-  **Question 2**: On datasets with millions of features, training does not start (or starts after a very long time).
 
 -  **Solution 2**: Use a smaller value for ``bin_construct_sample_cnt`` and a larger value for ``min_data``.
 
@@ -140,6 +140,16 @@ LightGBM
        ln -sf `ls -d "$(brew --cellar libomp)"/*/lib`/* $CONDA_PREFIX/lib
 
    If this is not your case, then you should find conflicting OpenMP library installations on your own and leave only one of them.
+
+--------------
+
+-  **Question 11**: LightGBM hangs when multithreading (OpenMP) and using forking in Linux at the same time.
+
+-  **Solution 11**: Use ``nthreads=1`` to disable multithreading of LightGBM. There is a bug with OpenMP which hangs forked sessions with multithreading activated. A more expensive solution is to use new processes instead of using fork, however keep in mind it is creating new processes where you have to copy memory and load libraries (example: if you want to fork 16 times your current process, then you will require to make 16 copies of your dataset in memory). See (`Microsoft/LightGBM#1789 <https://github.com/Microsoft/LightGBM/issues/1789#issuecomment-433713383>`__).
+   
+   An alternative, if multithreading is really necessary inside the forked sessions, would be to compile LightGBM with Intel toolchain. Intel compilers are unaffected by this bug.
+   
+   For C/C++ users, any OpenMP feature cannot be used before the fork happens. If an OpenMP feature is used before the fork happens (ex: using OpenMP for forking), OpenMP will hang inside the forked sessions. Use new processes instead and copy memory as required by creating new processes instead of forking (or, use Intel compilers).
 
 --------------
 

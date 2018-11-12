@@ -112,11 +112,11 @@ or
 
 And you can use ``Dataset.set_init_score()`` to set initial score, and ``Dataset.set_group()`` to set group/query data for ranking tasks.
 
-**Memory efficent usage:**
+**Memory efficient usage:**
 
 The ``Dataset`` object in LightGBM is very memory-efficient, due to it only need to save discrete bins.
 However, Numpy/Array/Pandas object is memory cost.
-If you concern about your memory consumption, you can save memory according to following:
+If you concern about your memory consumption, you can save memory according to the following:
 
 1. Let ``free_raw_data=True`` (default is ``True``) when constructing the ``Dataset``
 
@@ -195,7 +195,7 @@ Early stopping requires at least one set in ``valid_sets``. If there is more tha
 The model will train until the validation score stops improving.
 Validation score needs to improve at least every ``early_stopping_rounds`` to continue training.
 
-If early stopping occurs, the model will have an additional field: ``bst.best_iteration``.
+The index of iteration that has the best performance will be saved in the ``best_iteration`` field if early stopping logic is enabled by setting ``early_stopping_rounds``.
 Note that ``train()`` will return a model from the best iteration.
 
 This works with both metrics to minimize (L2, log loss, etc.) and to maximize (NDCG, AUC, etc.).
@@ -204,7 +204,7 @@ Note that if you specify more than one evaluation metric, all of them will be us
 Prediction
 ----------
 
-A model that has been trained or loaded can perform predictions on data sets:
+A model that has been trained or loaded can perform predictions on datasets:
 
 .. code:: python
 

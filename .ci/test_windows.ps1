@@ -1,6 +1,6 @@
 function Check-Output {
-  param( [int]$ExitCode )
-  if ($ExitCode -ne 0) {
+  param( [int]$ExitCode )
+  if ($ExitCode -ne 0) {
     $host.SetShouldExit($ExitCode)
     Exit -1
   }
@@ -36,4 +36,7 @@ if ($env:TASK -eq "regular") {
   foreach ($file in @(Get-ChildItem *.py)) {
     python $file ; Check-Output $LastExitCode
   }  # run all examples
+  cd $env:BUILD_SOURCESDIRECTORY/examples/python-guide/notebooks
+  conda install -y -n $env:CONDA_ENV ipywidgets notebook
+  jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb ; Check-Output $LastExitCode  # run all notebooks
 }

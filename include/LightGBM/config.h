@@ -365,6 +365,7 @@ public:
   // desc = path to a ``.json`` file that specifies splits to force at the top of every decision tree before best-first learning commences
   // desc = ``.json`` file can be arbitrarily nested, and each split contains ``feature``, ``threshold`` fields, as well as ``left`` and ``right`` fields representing subsplits
   // desc = categorical splits are forced in a one-hot fashion, with ``left`` representing the split containing the feature value and ``right`` representing other values
+  // desc = **Note**: the forced split logic will be ignored, if the split makes gain worse
   // desc = see `this file <https://github.com/Microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
   std::string forcedsplits_filename = "";
 
@@ -470,13 +471,13 @@ public:
 
   // check = >0.0
   // check = <=1.0
-  // desc = the threshold of zero elements precentage for treating a feature as a sparse one
+  // desc = the threshold of zero elements percentage for treating a feature as a sparse one
   double sparse_threshold = 0.8;
 
   // desc = set this to ``false`` to disable the special handle of missing value
   bool use_missing = true;
 
-  // desc = set this to ``true`` to treat all zero as missing values (including the unshown values in libsvm/sparse matrics)
+  // desc = set this to ``true`` to treat all zero as missing values (including the unshown values in libsvm/sparse matrices)
   // desc = set this to ``false`` to use ``na`` for representing missing values
   bool zero_as_missing = false;
 
@@ -539,7 +540,7 @@ public:
   // desc = **Note**: only supports categorical with ``int`` type
   // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
   // desc = **Note**: all values should be less than ``Int32.MaxValue`` (2147483647)
-  // desc = **Note**: using large values could be memory consuming. Tree decision rule works best when categorical features are presented by consecutive integers started from zero
+  // desc = **Note**: using large values could be memory consuming. Tree decision rule works best when categorical features are presented by consecutive integers starting from zero
   // desc = **Note**: all negative values will be treated as **missing values**
   std::string categorical_feature = "";
 
@@ -601,7 +602,7 @@ public:
 
   // alias = unbalance, unbalanced_sets
   // desc = used only in ``binary`` application
-  // desc = set this to ``true`` if training data are unbalance
+  // desc = set this to ``true`` if training data are unbalanced
   // desc = **Note**: this parameter cannot be used at the same time with ``scale_pos_weight``, choose only **one** of them
   bool is_unbalance = false;
 
@@ -702,6 +703,7 @@ public:
 
   // alias = training_metric, is_training_metric, train_metric
   // desc = set this to ``true`` to output metric result over training dataset
+  // desc = **Note**: can be used only in CLI version
   bool is_provide_training_metric = false;
 
   // type = multi-int

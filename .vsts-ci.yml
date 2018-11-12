@@ -1,15 +1,21 @@
 variables:
   PYTHON_VERSION: 3.7
   CONDA_ENV: test-env
-phases:
+resources:
+  containers:
+  - container: ubuntu1404
+    image: lightgbm/vsts-agent:ubuntu-14.04
+jobs:
 ###########################################
-- phase: Linux
+- job: Linux
 ###########################################
   variables:
     COMPILER: gcc
-  queue:
-    name: 'Hosted Linux Preview'
-    parallel: 6
+  pool:
+    vmImage: 'ubuntu-16.04'
+  container: ubuntu1404
+  strategy:
+    maxParallel: 5
     matrix:
       regular:
         TASK: regular
@@ -25,17 +31,48 @@ phases:
         TASK: mpi
         METHOD: source
         PYTHON_VERSION: 2.7
+  steps:
+  - task: CondaEnvironment@1
+    inputs:
+      updateConda: true
+  - script: |
+      echo "##vso[task.setvariable variable=HOME_DIRECTORY]$AGENT_HOMEDIRECTORY"
+      echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
+      echo "##vso[task.setvariable variable=OS_NAME]linux"
+      echo "##vso[task.setvariable variable=AZURE]true"
+      echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
+    displayName: 'Set variables'
+  - bash: $(Build.SourcesDirectory)/.ci/setup.sh
+    displayName: Setup
+  - bash: $(Build.SourcesDirectory)/.ci/test.sh
+    displayName: Test
+  - task: PublishBuildArtifacts@1
+    condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
+    inputs:
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: PackageAssets
+      artifactType: container
+###########################################
+- job: Linux_gpu
+###########################################
+  variables:
+    COMPILER: gcc
+  pool:
+    vmImage: 'ubuntu-16.04'
+  strategy:
+    maxParallel: 1
+    matrix:
       gpu_source:
         TASK: gpu
         METHOD: source
         PYTHON_VERSION: 3.6
   steps:
-  - task: CondaEnvironment@0
+  - script: |
+      sudo chmod -R 777 /usr/share/miniconda
+    displayName: 'Fix for conda error on Linux'
+  - task: CondaEnvironment@1
     inputs:
       updateConda: true
-      environmentName: $(CONDA_ENV)
-      packageSpecs: 'python=$(PYTHON_VERSION)'
-      createOptions: '-q'
   - script: |
       echo "##vso[task.setvariable variable=HOME_DIRECTORY]$AGENT_HOMEDIRECTORY"
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -52,20 +89,15 @@ phases:
     displayName: Setup
   - bash: $(Build.SourcesDirectory)/.ci/test.sh
     displayName: Test
-  - task: PublishBuildArtifacts@1
-    condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
-    inputs:
-      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-      artifactName: PackageAssets
-      artifactType: container
 ###########################################
-- phase: MacOS
+- job: MacOS
 ###########################################
   variables:
     COMPILER: clang
-  queue:
-    name: 'Hosted macOS'
-    parallel: 3
+  pool:
+    vmImage: 'macOS-10.13'
+  strategy:
+    maxParallel: 3
     matrix:
       regular:
         TASK: regular
@@ -77,14 +109,11 @@ phases:
         TASK: bdist
   steps:
   - script: |
-      sudo chmod -R 777 /usr/local/miniconda/envs
+      sudo chmod -R 777 /usr/local/miniconda
     displayName: 'Fix for conda error on macOS'
-  - task: CondaEnvironment@0
+  - task: CondaEnvironment@1
     inputs:
       updateConda: true
-      environmentName: $(CONDA_ENV)
-      packageSpecs: 'python=$(PYTHON_VERSION)'
-      createOptions: '-q'
   - script: |
       echo "##vso[task.setvariable variable=HOME_DIRECTORY]$AGENT_HOMEDIRECTORY"
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -103,11 +132,12 @@ phases:
       artifactName: PackageAssets
       artifactType: container
 ###########################################
-- phase: Windows
+- job: Windows
 ###########################################
-  queue:
-    name: 'Hosted VS2017'
-    parallel: 3
+  pool:
+    vmImage: 'vs2017-win2016'
+  strategy:
+    maxParallel: 3
     matrix:
       regular:
         TASK: regular
@@ -119,11 +149,12 @@ phases:
         TASK: bdist
         PYTHON_VERSION: 3.6
   steps:
-  - task: CondaEnvironment@0
+  - task: CondaEnvironment@1
     inputs:
+      createCustomEnvironment: true
       updateConda: true
       environmentName: $(CONDA_ENV)
-      packageSpecs: 'python=$(PYTHON_VERSION) numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest'
+      packageSpecs: 'python=$(PYTHON_VERSION) matplotlib nose numpy pandas pytest python-graphviz scikit-learn scipy'
       createOptions: '-q'
   - powershell: $(Build.SourcesDirectory)/.ci/test_windows.ps1
     displayName: Test
@@ -135,15 +166,15 @@ phases:
       artifactType: container
 
 ###########################################
-- phase: Package
+- job: Package
 ###########################################
   dependsOn:
   - Linux
   - MacOS
   - Windows
   condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
-  queue:
-    name: 'Hosted VS2017'
+  pool:
+    vmImage: 'vs2017-win2016'
   steps:
   # Download all agent packages from all previous phases
   - task: DownloadBuildArtifacts@0
@@ -151,18 +182,16 @@ phases:
     inputs:
       artifactName: PackageAssets
       downloadPath: $(Build.SourcesDirectory)/binaries
-  - powershell: |
-      $client = new-object System.Net.WebClient
-      $client.DownloadFile("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe", "$(Build.SourcesDirectory)/.nuget/nuget.exe")
-    displayName: 'Download NuGet application'
   - script: |
-      cd %BUILD_SOURCESDIRECTORY%/.nuget
-      python create_nuget.py %BUILD_SOURCESDIRECTORY%/binaries/PackageAssets
-      nuget.exe pack LightGBM.nuspec
-      xcopy *.nupkg %BUILD_ARTIFACTSTAGINGDIRECTORY%
-    displayName: 'Build NuGet package'
+      python %BUILD_SOURCESDIRECTORY%/.nuget/create_nuget.py %BUILD_SOURCESDIRECTORY%/binaries/PackageAssets
+    displayName: 'Create NuGet configuration files'
+  - task: NuGetCommand@2
+    inputs:
+      command: pack
+      packagesToPack: '$(Build.SourcesDirectory)/.nuget/*.nuspec'
+      packDestination: '$(Build.ArtifactStagingDirectory)'
   - task: PublishBuildArtifacts@1
     inputs:
       pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-      artifactName: Nuget
+      artifactName: NuGet
       artifactType: container

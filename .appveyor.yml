@@ -1,4 +1,4 @@
-﻿version: 2.2.2.{build}
+﻿version: 2.2.3.{build}
 
 image: Visual Studio 2015
 platform: x64
@@ -31,7 +31,7 @@ install:
   - ps: $env:LGB_VER = (Get-Content VERSION.txt).trim()
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  - conda create -q -n test-env python=%PYTHON_VERSION% numpy nose scipy scikit-learn pandas matplotlib python-graphviz pytest joblib
+  - conda create -q -n test-env python=%PYTHON_VERSION% joblib matplotlib nose numpy pandas pytest python-graphviz scikit-learn scipy
   - activate test-env
 
 build_script:
@@ -52,8 +52,6 @@ test_script:
         python $file
         if ($LastExitCode -ne 0) { $host.SetShouldExit($LastExitCode) }
       }  # run all examples
-  - IF "%COMPILER%"=="MINGW" appveyor exit  # skip all further steps
-
-artifacts:
-- path: python-package\compile\windows\x64\DLL\lib_lightgbm.dll
-  name: Library
+  - cd %APPVEYOR_BUILD_FOLDER%\examples\python-guide\notebooks
+  - conda install -y -n test-env ipywidgets notebook
+  - jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb  # run all notebooks

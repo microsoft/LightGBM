@@ -299,13 +299,11 @@ public:
     data_size_t right_count = 0;
 
     // set values
-    bool use_na_as_missing;
-    bool skip_default_bin;
+    bool use_na_as_missing = false;
+    bool skip_default_bin = false;
     if (meta_->missing_type == MissingType::Zero) {
       skip_default_bin = true;
-      use_na_as_missing = false;
-    } else {
-      skip_default_bin = false;
+    } else if (meta_->missing_type == MissingType::NaN) {
       use_na_as_missing = true;
     }
 
@@ -336,7 +334,7 @@ public:
     // gain with split is worse than without split
     if (std::isnan(current_gain) || current_gain <= min_gain_shift) {
       output->gain = kMinScore;
-      Log::Warning("Gain with forced split worse than without split");
+      Log::Warning("'Forced Split' will be ignored since the gain getting worse. ");
       return;
     };
 
@@ -393,7 +391,7 @@ public:
                            meta_->config->max_delta_step);
     if (std::isnan(current_gain) || current_gain <= min_gain_shift) {
       output->gain = kMinScore;
-      Log::Warning("Gain with forced split worse than without split");
+      Log::Warning("'Forced Split' will be ignored since the gain getting worse. ");
       return;
     }
 

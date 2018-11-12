@@ -100,8 +100,8 @@ public:
     for (data_size_t i = 0; i < cnt; ++i) {
       sorted_idx.emplace_back(i);
     }
-    std::sort(sorted_idx.begin(), sorted_idx.end(),
-             [score](data_size_t a, data_size_t b) { return score[a] > score[b]; });
+    std::stable_sort(sorted_idx.begin(), sorted_idx.end(),
+                     [score](data_size_t a, data_size_t b) { return score[a] > score[b]; });
     // get best and worst score
     const double best_score = score[sorted_idx[0]];
     data_size_t worst_idx = cnt - 1;

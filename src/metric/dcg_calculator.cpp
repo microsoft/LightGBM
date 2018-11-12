@@ -44,7 +44,7 @@ void DCGCalculator::Init(const std::vector<double>& input_label_gain) {
   }
   discount_.resize(kMaxPosition);
   for (data_size_t i = 0; i < kMaxPosition; ++i) {
-    discount_[i] = 1.0f / std::log2(2.0f + i);
+    discount_[i] = 1.0 / std::log2(2.0 + i);
   }
 }
 
@@ -111,8 +111,8 @@ double DCGCalculator::CalDCGAtK(data_size_t k, const label_t* label,
   for (data_size_t i = 0; i < num_data; ++i) {
     sorted_idx[i] = i;
   }
-  std::sort(sorted_idx.begin(), sorted_idx.end(),
-           [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
+  std::stable_sort(sorted_idx.begin(), sorted_idx.end(),
+                   [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
 
   if (k > num_data) { k = num_data; }
   double dcg = 0.0f;
@@ -131,8 +131,8 @@ void DCGCalculator::CalDCG(const std::vector<data_size_t>& ks, const label_t* la
   for (data_size_t i = 0; i < num_data; ++i) {
     sorted_idx[i] = i;
   }
-  std::sort(sorted_idx.begin(), sorted_idx.end(),
-            [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
+  std::stable_sort(sorted_idx.begin(), sorted_idx.end(),
+                   [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
 
   double cur_result = 0.0f;
   data_size_t cur_left = 0;

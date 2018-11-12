@@ -1,6 +1,6 @@
 # coding: utf-8
 # pylint: disable = C0103
-"""Plotting Library."""
+"""Plotting library."""
 from __future__ import absolute_import
 
 import warnings
@@ -15,17 +15,24 @@ from .compat import (MATPLOTLIB_INSTALLED, GRAPHVIZ_INSTALLED, LGBMDeprecationWa
 from .sklearn import LGBMModel
 
 
-def check_not_tuple_of_2_elements(obj, obj_name='obj'):
-    """check object is not tuple or does not have 2 elements"""
+def _check_not_tuple_of_2_elements(obj, obj_name='obj'):
+    """Check object is not tuple or does not have 2 elements."""
     if not isinstance(obj, tuple) or len(obj) != 2:
         raise TypeError('%s must be a tuple of 2 elements.' % obj_name)
+
+
+def _float2str(value, precision=None):
+    return ("{0:.{1}f}".format(value, precision)
+            if precision is not None and not isinstance(value, string_type)
+            else str(value))
 
 
 def plot_importance(booster, ax=None, height=0.2,
                     xlim=None, ylim=None, title='Feature importance',
                     xlabel='Feature importance', ylabel='Features',
                     importance_type='split', max_num_features=None,
-                    ignore_zero=True, figsize=None, grid=True, **kwargs):
+                    ignore_zero=True, figsize=None, grid=True,
+                    precision=None, **kwargs):
     """Plot model's feature importances.
 
     Parameters
@@ -63,7 +70,9 @@ def plot_importance(booster, ax=None, height=0.2,
         Figure size.
     grid : bool, optional (default=True)
         Whether to add a grid for axes.
-    **kwargs : other parameters
+    precision : int or None, optional (default=None)
+        Used to restrict the display of floating point values to a certain precision.
+    **kwargs
         Other parameters passed to ``ax.barh()``.
 
     Returns
@@ -96,26 +105,28 @@ def plot_importance(booster, ax=None, height=0.2,
 
     if ax is None:
         if figsize is not None:
-            check_not_tuple_of_2_elements(figsize, 'figsize')
+            _check_not_tuple_of_2_elements(figsize, 'figsize')
         _, ax = plt.subplots(1, 1, figsize=figsize)
 
     ylocs = np.arange(len(values))
     ax.barh(ylocs, values, align='center', height=height, **kwargs)
 
     for x, y in zip_(values, ylocs):
-        ax.text(x + 1, y, x, va='center')
+        ax.text(x + 1, y,
+                _float2str(x, precision) if importance_type == 'gain' else x,
+                va='center')
 
     ax.set_yticks(ylocs)
     ax.set_yticklabels(labels)
 
     if xlim is not None:
-        check_not_tuple_of_2_elements(xlim, 'xlim')
+        _check_not_tuple_of_2_elements(xlim, 'xlim')
     else:
         xlim = (0, max(values) * 1.1)
     ax.set_xlim(xlim)
 
     if ylim is not None:
-        check_not_tuple_of_2_elements(ylim, 'ylim')
+        _check_not_tuple_of_2_elements(ylim, 'ylim')
     else:
         ylim = (-1, len(values))
     ax.set_ylim(ylim)
@@ -194,7 +205,7 @@ def plot_metric(booster, metric=None, dataset_names=None,
 
     if ax is None:
         if figsize is not None:
-            check_not_tuple_of_2_elements(figsize, 'figsize')
+            _check_not_tuple_of_2_elements(figsize, 'figsize')
         _, ax = plt.subplots(1, 1, figsize=figsize)
 
     if dataset_names is None:
@@ -229,13 +240,13 @@ def plot_metric(booster, metric=None, dataset_names=None,
     ax.legend(loc='best')
 
     if xlim is not None:
-        check_not_tuple_of_2_elements(xlim, 'xlim')
+        _check_not_tuple_of_2_elements(xlim, 'xlim')
     else:
         xlim = (0, num_iteration)
     ax.set_xlim(xlim)
 
     if ylim is not None:
-        check_not_tuple_of_2_elements(ylim, 'ylim')
+        _check_not_tuple_of_2_elements(ylim, 'ylim')
     else:
         range_result = max_result - min_result
         ylim = (min_result - range_result * 0.2, max_result + range_result * 0.2)
@@ -265,22 +276,18 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, **kwargs):
     else:
         raise ImportError('You must install graphviz to plot tree.')
 
-    def float2str(value, precision=None):
-        return "{0:.{1}f}".format(value, precision) \
-            if precision is not None and not isinstance(value, string_type) else str(value)
-
     def add(root, parent=None, decision=None):
-        """recursively add node or edge"""
+        """Recursively add node or edge."""
         if 'split_index' in root:  # non-leaf
             name = 'split{0}'.format(root['split_index'])
             if feature_names is not None:
                 label = 'split_feature_name: {0}'.format(feature_names[root['split_feature']])
             else:
                 label = 'split_feature_index: {0}'.format(root['split_feature'])
-            label += r'\nthreshold: {0}'.format(float2str(root['threshold'], precision))
+            label += r'\nthreshold: {0}'.format(_float2str(root['threshold'], precision))
             for info in show_info:
                 if info in {'split_gain', 'internal_value'}:
-                    label += r'\n{0}: {1}'.format(info, float2str(root[info], precision))
+                    label += r'\n{0}: {1}'.format(info, _float2str(root[info], precision))
                 elif info == 'internal_count':
                     label += r'\n{0}: {1}'.format(info, root[info])
             graph.node(name, label=label)
@@ -295,7 +302,7 @@ def _to_graphviz(tree_info, show_info, feature_names, precision=None, **kwargs):
         else:  # leaf
             name = 'leaf{0}'.format(root['leaf_index'])
             label = 'leaf_index: {0}'.format(root['leaf_index'])
-            label += r'\nleaf_value: {0}'.format(float2str(root['leaf_value'], precision))
+            label += r'\nleaf_value: {0}'.format(_float2str(root['leaf_value'], precision))
             if 'leaf_count' in show_info:
                 label += r'\nleaf_count: {0}'.format(root['leaf_count'])
             graph.node(name, label=label)
@@ -322,7 +329,7 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=None,
     Parameters
     ----------
     booster : Booster or LGBMModel
-        Booster or LGBMModel instance.
+        Booster or LGBMModel instance to be converted.
     tree_index : int, optional (default=0)
         The index of a target tree to convert.
     show_info : list of strings or None, optional (default=None)
@@ -330,7 +337,7 @@ def create_tree_digraph(booster, tree_index=0, show_info=None, precision=None,
         Possible values of list items: 'split_gain', 'internal_value', 'internal_count', 'leaf_count'.
     precision : int or None, optional (default=None)
         Used to restrict the display of floating point values to a certain precision.
-    **kwargs : other parameters
+    **kwargs
         Other parameters passed to ``Digraph`` constructor.
         Check https://graphviz.readthedocs.io/en/stable/api.html#digraph for the full list of supported parameters.
 
@@ -407,7 +414,7 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
         Possible values of list items: 'split_gain', 'internal_value', 'internal_count', 'leaf_count'.
     precision : int or None, optional (default=None)
         Used to restrict the display of floating point values to a certain precision.
-    **kwargs : other parameters
+    **kwargs
         Other parameters passed to ``Digraph`` constructor.
         Check https://graphviz.readthedocs.io/en/stable/api.html#digraph for the full list of supported parameters.
 
@@ -433,7 +440,7 @@ def plot_tree(booster, ax=None, tree_index=0, figsize=None,
 
     if ax is None:
         if figsize is not None:
-            check_not_tuple_of_2_elements(figsize, 'figsize')
+            _check_not_tuple_of_2_elements(figsize, 'figsize')
         _, ax = plt.subplots(1, 1, figsize=figsize)
 
     graph = create_tree_digraph(booster=booster, tree_index=tree_index,
