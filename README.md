@@ -64,6 +64,8 @@ Treelite (model compiler for efficient deployment): https://github.com/dmlc/tree
 
 ONNXMLTools (ONNX converter): https://github.com/onnx/onnxmltools
 
+SHAP (model output explainer): https://github.com/slundberg/shap
+
 MMLSpark (Spark-package): https://github.com/Azure/mmlspark
 
 ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
