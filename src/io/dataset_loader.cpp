@@ -381,10 +381,19 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     dataset->monotone_types_.clear();
   }
 
-  const double* tmp_ptr_feature_penalty = reinterpret_cast<const double*>(mem_ptr);
-  dataset->feature_penalty_.clear();
-  for (int i = 0; i < dataset->num_features_; ++i) {
-    dataset->feature_penalty_.push_back(tmp_ptr_feature_penalty[i]);
+  if(!config_.feature_contri.empty()){
+    CHECK(dataset->num_features_ == config_.feature_contri.size());
+    dataset->feature_penalty_.resize(dataset->num_features_);
+    for(int i = 0; i < dataset->num_features_; ++i){
+      dataset->feature_penalty_[dataset->InnerFeatureIndex(i)] = config_.feature_contri[i];
+    }
+  }
+  else{
+    const double* tmp_ptr_feature_penalty = reinterpret_cast<const double*>(mem_ptr);
+    dataset->feature_penalty_.clear();
+    for (int i = 0; i < dataset->num_features_; ++i) {
+      dataset->feature_penalty_.push_back(tmp_ptr_feature_penalty[i]);
+    }
   }
   mem_ptr += sizeof(double) * (dataset->num_features_);
 
