@@ -19,7 +19,7 @@ Using Intel Ivy Bridge CPU on 1M x 1K Bosch dataset, the performance increases a
 
 You can find more details on the experimentation below:
 
--  `Laurae++/Benchmarks <https://sites.google.com/view/lauraepp/new-benchmarks/old-benchmarks>`__
+-  `Laurae++/Benchmarks <https://sites.google.com/view/lauraepp/benchmarks/xgb-vs-lgb-feb-2017>`__
 
 -  `Laurae2/gbt\_benchmarks <https://github.com/Laurae2/gbt_benchmarks>`__
 
