@@ -32,10 +32,8 @@ jobs:
         METHOD: source
         PYTHON_VERSION: 2.7
   steps:
-  - task: CondaEnvironment@1
-    inputs:
-      updateConda: true
   - script: |
+      echo "##vso[task.setvariable variable=PATH]$CONDA/bin:$PATH"
       echo "##vso[task.setvariable variable=HOME_DIRECTORY]$AGENT_HOMEDIRECTORY"
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       echo "##vso[task.setvariable variable=OS_NAME]linux"
@@ -67,12 +65,9 @@ jobs:
         METHOD: source
         PYTHON_VERSION: 3.6
   steps:
-  - script: |
-      sudo chmod -R 777 /usr/share/miniconda
-    displayName: 'Fix for conda error on Linux'
   - task: CondaEnvironment@1
     inputs:
-      updateConda: true
+      updateConda: false
   - script: |
       echo "##vso[task.setvariable variable=HOME_DIRECTORY]$AGENT_HOMEDIRECTORY"
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -108,12 +103,9 @@ jobs:
       bdist:
         TASK: bdist
   steps:
-  - script: |
-      sudo chmod -R 777 /usr/local/miniconda
-    displayName: 'Fix for conda error on macOS'
   - task: CondaEnvironment@1
     inputs:
-      updateConda: true
+      updateConda: false
   - script: |
       echo "##vso[task.setvariable variable=HOME_DIRECTORY]$AGENT_HOMEDIRECTORY"
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
