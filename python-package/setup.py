@@ -242,8 +242,6 @@ class CustomSdist(sdist):
 
 
 if __name__ == "__main__":
-    if (8 * struct.calcsize("P")) != 64:
-        raise Exception('Cannot install LightGBM in 32-bit Python, please use 64-bit Python instead.')
 
     CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
     LOG_PATH = os.path.join(os.path.expanduser('~'), 'LightGBM_compilation.log')
