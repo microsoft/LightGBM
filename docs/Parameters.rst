@@ -561,6 +561,8 @@ IO Parameters
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
 
+   -  **Note**: despite the fact that specified columns will be completely ignored during the training, they still should have a valid format allowing LightGBM to load file successfully
+
 -  ``categorical_feature`` :raw-html:`<a id="categorical_feature" title="Permalink to this parameter" href="#categorical_feature">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = multi-int or string, aliases: ``cat_feature``, ``categorical_column``, ``cat_column``
 
    -  used to specify categorical features
