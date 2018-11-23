@@ -46,7 +46,7 @@ result <- file.copy(from = "CMakeLists.txt",
 .handle_result(result)
 
 # rebuild documentation
-devtools::document(pkg = "lightgbm_r")
+# devtools::document(pkg = "lightgbm_r")
 
 # Build the package
 # NOTE: --keep-empty-dirs is necessary to keep the deep paths expected
