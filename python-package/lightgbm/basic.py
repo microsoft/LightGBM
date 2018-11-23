@@ -1390,7 +1390,7 @@ class Dataset(object):
             if isinstance(self.data, np.ndarray) or scipy.sparse.issparse(self.data):
                 self.data = self.data[self.used_indices, :]
             elif isinstance(self.data, DataFrame):
-                self.data = self.data.iloc[self.used_indices]
+                self.data = self.data.iloc[self.used_indices].copy()
             self.need_slice = False
         return self.data
 
