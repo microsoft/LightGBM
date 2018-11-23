@@ -53,14 +53,24 @@ News
 
 More detailed update logs : [Key Events](https://github.com/Microsoft/LightGBM/blob/master/docs/Key-Events.md).
 
-
 External (Unofficial) Repositories
 ----------------------------------
 
 Julia-package: https://github.com/Allardvm/LightGBM.jl
 
-JPMML: https://github.com/jpmml/jpmml-lightgbm
+JPMML (Java PMML converter): https://github.com/jpmml/jpmml-lightgbm
 
+Treelite (model compiler for efficient deployment): https://github.com/dmlc/treelite
+
+ONNXMLTools (ONNX converter): https://github.com/onnx/onnxmltools
+
+SHAP (model output explainer): https://github.com/slundberg/shap
+
+MMLSpark (Spark-package): https://github.com/Azure/mmlspark
+
+ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
+
+Dask-LightGBM (distributed and parallel Python-package): https://github.com/dask/dask-lightgbm
 
 Get Started and Documentation
 -----------------------------
@@ -117,6 +127,7 @@ Qi Meng, Guolin Ke, Taifeng Wang, Wei Chen, Qiwei Ye, Zhi-Ming Ma, Tie-Yan Liu. 
 
 Huan Zhang, Si Si and Cho-Jui Hsieh. "[GPU Acceleration for Large-scale Tree Boosting](https://arxiv.org/abs/1706.08359)". SysML Conference, 2018.
 
-## License
+License
+-------
 
 This project is licensed under the terms of the MIT license. See [LICENSE](https://github.com/Microsoft/LightGBM/blob/master/LICENSE) for addtional details.
