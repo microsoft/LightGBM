@@ -197,8 +197,10 @@ public:
 
   // [doc-only]
   // alias = random_seed, random_state
-  // desc = this seed is used to generate other seeds, e.g. ``data_random_seed``, ``feature_fraction_seed``
-  // desc = will be overridden, if you set other seeds
+  // default = None
+  // desc = this seed is used to generate other seeds, e.g. ``data_random_seed``, ``feature_fraction_seed``, etc.
+  // desc = by default, this seed is unused in favor of default values of other seeds
+  // desc = this seed has lower priority in comparison with other seeds, which means that it will be overridden, if you set other seeds explicitly
   int seed = 0;
 
   #pragma endregion
