@@ -1067,7 +1067,8 @@ class Dataset(object):
 
     def _update_params(self, params):
         if self.handle is not None:
-            key_lists = ["min_data", "min_data_in_leaf", "min_data_per_leaf", "min_child_samples",
+            key_lists = [
+                "min_data", "min_data_in_leaf", "min_data_per_leaf", "min_child_samples",
                 "bin_construct_sample_cnt", "subsample_for_bin",
                 "max_bin", "min_data_in_bin",
                 "enable_bundle", "is_enable_bundle", "bundle",
