@@ -41,6 +41,7 @@ CVBooster <- R6::R6Class(
 #'        type str represents feature names
 #' @param callbacks list of callback functions
 #'        List of callback functions that are applied at each iteration.
+#' @param free_boosters Boolean, setting it to TRUE (the default value) will free the Booster objects in cv-folds
 #' @param ... other parameters, see Parameters.rst for more information. A few key parameters:
 #'            \itemize{
 #'                \item{boosting}{Boosting type. \code{"gbdt"} or \code{"dart"}}
@@ -87,6 +88,7 @@ lgb.cv <- function(params = list(),
                    categorical_feature = NULL,
                    early_stopping_rounds = NULL,
                    callbacks = list(),
+                   free_boosters = TRUE,
                    ...) {
 
   # Setup temporary variables
@@ -303,7 +305,9 @@ lgb.cv <- function(params = list(),
     if (env$met_early_stop) break
 
   }
-
+  if (free_boosters) {
+    cv_booster$boosters = NULL
+  }
   # Return booster
   return(cv_booster)
 
