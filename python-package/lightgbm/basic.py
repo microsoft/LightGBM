@@ -1066,6 +1066,24 @@ class Dataset(object):
         return self
 
     def _update_params(self, params):
+        if self.handle is not None:
+            key_lists = ["min_data", "min_data_in_leaf", "min_data_per_leaf", "min_child_samples",
+                "bin_construct_sample_cnt", "subsample_for_bin",
+                "max_bin", "min_data_in_bin",
+                "enable_bundle", "is_enable_bundle", "bundle",
+                "max_conflict_rate",
+                "is_enable_sparse", "sparse", "is_sparse", "enable_sparse",
+                "sparse_threshold",
+                "use_missing",
+                "zero_as_missing",
+                "categorical_feature", "cat_feature", "categorical_column", "cat_column",
+                "monotone_constraints", "monotone_constraint", "mc"
+            ]
+            for key in params:
+                if key in key_lists:
+                    if key not in self.params or self.params[key] != params[key]:
+                        warnings.warn('Cannot update parameter [{}] after construct Dataset. Please re-declare a new Dataset object with new parameters.'.format(key))
+
         if not self.params:
             self.params = params
         else:
