@@ -139,7 +139,8 @@ Quick installation of LightGBM can be done using:
 
     devtools::install_github("Microsoft/LightGBM", subdir = "R-package")
     
----------------------------
+--------------
+
 Download the prebuilt Boost
 ---------------------------
 
