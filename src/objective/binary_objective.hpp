@@ -65,10 +65,11 @@ public:
         ++cnt_negative;
       }
     }
+    need_train_ = true;
     if (cnt_negative == 0 || cnt_positive == 0) {
       Log::Warning("Contains only one class");
       // not need to boost.
-      num_data_ = 0;
+      need_train_ = false;
     }
     Log::Info("Number of positive: %d, number of negative: %d", cnt_positive, cnt_negative);
     // use -1 for negative class, and 1 for positive class
@@ -91,6 +92,9 @@ public:
   }
 
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
+    if (!need_train_) {
+      return;
+    }
     if (weights_ == nullptr) {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
@@ -146,7 +150,7 @@ public:
   }
 
   bool ClassNeedTrain(int /*class_id*/) const override { 
-    return num_data_ > 0; 
+    return need_train_;
   }
 
   const char* GetName() const override {
@@ -185,6 +189,7 @@ private:
   const label_t* weights_;
   double scale_pos_weight_;
   std::function<bool(label_t)> is_pos_;
+  bool need_train_;
 };
 
 }  // namespace LightGBM
