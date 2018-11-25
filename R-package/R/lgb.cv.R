@@ -41,7 +41,7 @@ CVBooster <- R6::R6Class(
 #'        type str represents feature names
 #' @param callbacks list of callback functions
 #'        List of callback functions that are applied at each iteration.
-#' @param free_boosters Boolean, setting it to TRUE (the default value) will free the Booster objects in cv-folds
+#' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model into a predictor model which frees up memory and the original datasets
 #' @param ... other parameters, see Parameters.rst for more information. A few key parameters:
 #'            \itemize{
 #'                \item{boosting}{Boosting type. \code{"gbdt"} or \code{"dart"}}
@@ -88,7 +88,7 @@ lgb.cv <- function(params = list(),
                    categorical_feature = NULL,
                    early_stopping_rounds = NULL,
                    callbacks = list(),
-                   free_boosters = TRUE,
+                   reset_data = FALSE,
                    ...) {
 
   # Setup temporary variables
@@ -305,8 +305,18 @@ lgb.cv <- function(params = list(),
     if (env$met_early_stop) break
 
   }
-  if (free_boosters) {
-    cv_booster$boosters = NULL
+  if (reset_data) {
+    lapply(cv_booster$boosters, function(fd) {
+      # Store temporarily model data elsewhere
+      booster_old <- list(best_iter = fd$booster$best_iter,
+                          best_score = fd$booster$best_score,
+                          record_evals = fd$booster$record_evals)
+      # Reload model
+      fd$booster <- lgb.load(model_str = fd$booster$save_model_to_string())
+      fd$booster$best_iter <- booster_old$best_iter
+      fd$booster$best_score <- booster_old$best_score
+      fd$booster$record_evals <- booster_old$record_evals
+    })
   }
   # Return booster
   return(cv_booster)
