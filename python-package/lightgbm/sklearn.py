@@ -796,7 +796,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
         """
         result = super(LGBMClassifier, self).predict(X, raw_score, num_iteration,
                                                      pred_leaf, pred_contrib, **kwargs)
-        if self._n_classes > 2 or pred_leaf or pred_contrib:
+        if self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:
             return result
         else:
             return np.vstack((1. - result, result)).transpose()

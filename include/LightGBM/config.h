@@ -197,8 +197,10 @@ public:
 
   // [doc-only]
   // alias = random_seed, random_state
-  // desc = this seed is used to generate other seeds, e.g. ``data_random_seed``, ``feature_fraction_seed``
-  // desc = will be overridden, if you set other seeds
+  // default = None
+  // desc = this seed is used to generate other seeds, e.g. ``data_random_seed``, ``feature_fraction_seed``, etc.
+  // desc = by default, this seed is unused in favor of default values of other seeds
+  // desc = this seed has lower priority in comparison with other seeds, which means that it will be overridden, if you set other seeds explicitly
   int seed = 0;
 
   #pragma endregion
@@ -530,6 +532,7 @@ public:
   // desc = add a prefix ``name:`` for column name, e.g. ``ignore_column=name:c1,c2,c3`` means c1, c2 and c3 will be ignored
   // desc = **Note**: works only in case of loading data directly from file
   // desc = **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
+  // desc = **Note**: despite the fact that specified columns will be completely ignored during the training, they still should have a valid format allowing LightGBM to load file successfully
   std::string ignore_column = "";
 
   // type = multi-int or string

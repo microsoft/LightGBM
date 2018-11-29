@@ -175,11 +175,13 @@ Core Parameters
 
    -  **Note**: refer to `Installation Guide <./Installation-Guide.rst#build-gpu-version>`__ to build LightGBM with GPU support
 
--  ``seed`` :raw-html:`<a id="seed" title="Permalink to this parameter" href="#seed">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``random_seed``, ``random_state``
+-  ``seed`` :raw-html:`<a id="seed" title="Permalink to this parameter" href="#seed">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = int, aliases: ``random_seed``, ``random_state``
 
-   -  this seed is used to generate other seeds, e.g. ``data_random_seed``, ``feature_fraction_seed``
+   -  this seed is used to generate other seeds, e.g. ``data_random_seed``, ``feature_fraction_seed``, etc.
 
-   -  will be overridden, if you set other seeds
+   -  by default, this seed is unused in favor of default values of other seeds
+
+   -  this seed has lower priority in comparison with other seeds, which means that it will be overridden, if you set other seeds explicitly
 
 Learning Control Parameters
 ---------------------------
@@ -560,6 +562,8 @@ IO Parameters
    -  **Note**: works only in case of loading data directly from file
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``
+
+   -  **Note**: despite the fact that specified columns will be completely ignored during the training, they still should have a valid format allowing LightGBM to load file successfully
 
 -  ``categorical_feature`` :raw-html:`<a id="categorical_feature" title="Permalink to this parameter" href="#categorical_feature">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = multi-int or string, aliases: ``cat_feature``, ``categorical_column``, ``cat_column``
 
