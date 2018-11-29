@@ -645,7 +645,7 @@ On Linux Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMake
      cmake -DUSE_SWIG=ON ..
      make -j4
 
-.. |download artifacts| image:: https://img.shields.io/badge/artifacts-link%20is%20available%20only%20on%20Read%20the%20Docs%20site-lightgrey.svg
+.. |download artifacts| image:: ./_static/images/artifacts-not-available.svg
    :target: https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html
 
 .. _Python-package: https://github.com/Microsoft/LightGBM/tree/master/python-package
