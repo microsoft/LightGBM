@@ -33,7 +33,7 @@ $(function() {
         function modifyBadge(src, href) {
             $('img[alt="download artifacts"]').each(function() {
                 this.src = src;
-                this.parentNodehref = href;
+                this.parentNode.href = href;
             });
         }
         /* Initialize artifacts badge */
