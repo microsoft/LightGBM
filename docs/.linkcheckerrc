@@ -7,6 +7,7 @@ sslverify=0
 ignore=
   public.tableau.com
   http://www.intel.com/software/products/support
+  https://img.shields.io/badge/artifacts-link%20is%20available%20only%20on%20Read%20the%20Docs%20site-lightgrey.svg
 ignorewarnings=http-robots-denied,https-certificate-error
 
 [output]
