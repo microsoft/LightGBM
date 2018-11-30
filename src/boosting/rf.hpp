@@ -27,7 +27,7 @@ public:
   void Init(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
             const std::vector<const Metric*>& training_metrics) override {
     CHECK(config->bagging_freq > 0 && config->bagging_fraction < 1.0f && config->bagging_fraction > 0.0f);
-    CHECK(config->feature_fraction < 1.0f && config->feature_fraction > 0.0f);
+    CHECK(config->feature_fraction <= 1.0f && config->feature_fraction > 0.0f);
     GBDT::Init(config, train_data, objective_function, training_metrics);
 
     if (num_init_iteration_ > 0) {
