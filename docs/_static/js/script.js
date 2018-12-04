@@ -39,7 +39,7 @@ $(function() {
         /* Initialize artifacts badge */
         modifyBadge('./_static/images/artifacts-fetching.svg', '#');
         /* Fetch latest buildId and construct artifacts badge */
-        $.getJSON('https://dev.azure.com/lightgbm-ci/lightgbm-ci/_apis/build/builds?branchName=refs/heads/master&resultFilter=succeeded&%24top=1&api-version=5.0-preview.5', function(data) {
+        $.getJSON('https://dev.azure.com/lightgbm-ci/lightgbm-ci/_apis/build/builds?branchName=refs/heads/master&resultFilter=succeeded&queryOrder=finishTimeDescending&%24top=1&api-version=5.0-preview.5', function(data) {
             modifyBadge('./_static/images/artifacts-download.svg',
                         'https://dev.azure.com/lightgbm-ci/lightgbm-ci/_apis/build/builds/' + data['value'][0]['id'] + '/artifacts?artifactName=PackageAssets&api-version=5.0-preview.5&%24format=zip');
             });
