@@ -4,6 +4,7 @@
 from __future__ import absolute_import
 
 import collections
+import warnings
 from operator import gt, lt
 
 from .compat import range_
@@ -198,8 +199,17 @@ def early_stopping(stopping_rounds, verbose=True):
                 cmp_op.append(lt)
 
     def _callback(env):
+        enabled = not any((boost_alias in env.params
+                           and env.params[boost_alias] == 'dart') for boost_alias in ('boosting',
+                                                                                      'boosting_type',
+                                                                                      'boost'))
         if not cmp_op:
-            _init(env)
+            if not enabled:
+                warnings.warn('Early stopping is not available in dart mode')
+            else:
+                _init(env)
+        if not enabled:
+            return
         for i in range_(len(env.evaluation_result_list)):
             score = env.evaluation_result_list[i][2]
             if cmp_op[i](score, best_score[i]):
