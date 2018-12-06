@@ -80,7 +80,7 @@ public:
   }
   
   bool EvalAndCheckEarlyStopping() override {
-    OutputMetric(iter_);
+    GBDT::OutputMetric(iter_);
     return false;
   }
 

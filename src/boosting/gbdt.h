@@ -360,7 +360,7 @@ protected:
   /*!
   * \brief Print eval result and check early stopping
   */
-  bool EvalAndCheckEarlyStopping();
+  virtual bool EvalAndCheckEarlyStopping();
 
   /*!
   * \brief reset config for bagging
