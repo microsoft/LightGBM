@@ -975,7 +975,8 @@ class Dataset(object):
                         ctypes.c_int(used_indices.shape[0]),
                         c_str(params_str),
                         ctypes.byref(self.handle)))
-                    self.data = self.get_data()
+                    self.data = self.reference.data
+                    self.get_data()
                     if self.group is not None:
                         self.set_group(self.group)
                     if self.get_label() is None:
@@ -1042,7 +1043,7 @@ class Dataset(object):
         """
         if params is None:
             params = self.params
-        ret = Dataset(self.data, reference=self, feature_name=self.feature_name,
+        ret = Dataset(None, reference=self, feature_name=self.feature_name,
                       categorical_feature=self.categorical_feature, params=params,
                       free_raw_data=self.free_raw_data)
         ret._predictor = self._predictor
@@ -1386,6 +1387,8 @@ class Dataset(object):
         data : string, numpy array, pandas DataFrame, scipy.sparse, list of numpy arrays or None
             Raw data used in the Dataset construction.
         """
+        if self.handle is None:
+            raise Exception("Cannot get data before construct Dataset")
         if self.data is not None and self.used_indices is not None and self.need_slice:
             if isinstance(self.data, np.ndarray) or scipy.sparse.issparse(self.data):
                 self.data = self.data[self.used_indices, :]
