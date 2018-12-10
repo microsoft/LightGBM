@@ -78,6 +78,11 @@ public:
     *out_len = static_cast<int64_t>(train_score_updater_->num_data()) * num_class_;
     return train_score_updater_->score();
   }
+  
+  bool EvalAndCheckEarlyStopping() override {
+    GBDT::OutputMetric(iter_);
+    return false;
+  }
 
 private:
   /*!
