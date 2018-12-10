@@ -1,7 +1,9 @@
 $(function() {
-    $('a[href^="./"][href*=".rst"]').attr('href', (i, val) => { return val.replace('.rst', '.html'); });  /* Replace '.rst' with '.html' in all internal links like './[Something].rst[#anchor]' */
+    /* Replace '.rst' with '.html' in all internal links like './[Something].rst[#anchor]' */
+    $('a[href^="./"][href*=".rst"]').attr('href', (i, val) => { return val.replace('.rst', '.html'); });
 
-    $('.wy-nav-content').each(function () { this.style.setProperty('max-width', 'none', 'important'); });  /* Use wider container for the page content */
+    /* Use wider container for the page content */
+    $('.wy-nav-content').each(function() { this.style.setProperty('max-width', 'none', 'important'); });
 
     /* Collapse specified sections in the installation guide */
     if(window.location.pathname.toLocaleLowerCase().indexOf('installation-guide') != -1) {
@@ -26,5 +28,20 @@ $(function() {
         $('.wy-menu.wy-menu-vertical li a.reference.internal').click(function() {
             uncollapse($($(this).attr('href')));
         });
+
+        /* Modify src and href attrs of artifacts badge */
+        function modifyBadge(src, href) {
+            $('img[alt="download artifacts"]').each(function() {
+                this.src = src;
+                this.parentNode.href = href;
+            });
+        }
+        /* Initialize artifacts badge */
+        modifyBadge('./_static/images/artifacts-fetching.svg', '#');
+        /* Fetch latest buildId and construct artifacts badge */
+        $.getJSON('https://dev.azure.com/lightgbm-ci/lightgbm-ci/_apis/build/builds?branchName=refs/heads/master&resultFilter=succeeded&queryOrder=finishTimeDescending&%24top=1&api-version=5.0-preview.5', function(data) {
+            modifyBadge('./_static/images/artifacts-download.svg',
+                        'https://dev.azure.com/lightgbm-ci/lightgbm-ci/_apis/build/builds/' + data['value'][0]['id'] + '/artifacts?artifactName=PackageAssets&api-version=5.0-preview.5&%24format=zip');
+            });
     }
 });
