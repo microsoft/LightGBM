@@ -1391,6 +1391,9 @@ class Dataset(object):
                 self.data = self.data[self.used_indices, :]
             elif isinstance(self.data, DataFrame):
                 self.data = self.data.iloc[self.used_indices].copy()
+            else:
+                warnings.warn("Cannot subset {} type of raw data.\n"
+                              "Returning original raw data".format(type(self.data).__name__))
             self.need_slice = False
         return self.data
 
