@@ -1078,7 +1078,8 @@ class Dataset(object):
                 "use_missing",
                 "zero_as_missing",
                 "categorical_feature", "cat_feature", "categorical_column", "cat_column",
-                "monotone_constraints", "monotone_constraint", "mc"
+                "monotone_constraints", "monotone_constraint", "mc",
+                "feature_contrib", "fc", "feature_contri", "fp", "feature_penalty"
             ]
             for key in params:
                 if key in key_lists:
