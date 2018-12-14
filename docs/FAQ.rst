@@ -211,7 +211,7 @@ Python-package
    If you set ``free_raw_data=True`` (default), the raw data (with Python data struct) will be freed.
    So, if you want to:
 
-   -  get label (or weight/init\_score/group) before constructing a dataset, it's same as get ``self.label``;
+   -  get label (or weight/init\_score/group/data) before constructing a dataset, it's same as get ``self.label``;
 
    -  set label (or weight/init\_score/group) before constructing a dataset, it's same as ``self.label=some_label_array``;
 
