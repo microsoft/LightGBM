@@ -52,7 +52,7 @@ public:
 
   void ResetConfig(const Config* config) override {
     CHECK(config->bagging_freq > 0 && config->bagging_fraction < 1.0f && config->bagging_fraction > 0.0f);
-    CHECK(config->feature_fraction < 1.0f && config->feature_fraction > 0.0f);
+    CHECK(config->feature_fraction <= 1.0f && config->feature_fraction > 0.0f);
     GBDT::ResetConfig(config);
     // not shrinkage rate for the RF
     shrinkage_rate_ = 1.0f;
