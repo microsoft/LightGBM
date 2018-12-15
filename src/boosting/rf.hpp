@@ -82,16 +82,16 @@ public:
       init_scores_[cur_tree_id] = BoostFromAverage(cur_tree_id, false);
     }
     size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
-    tmp_scores_.resize(total_size, 0.0f);
+    std::vector<double> tmp_scores(total_size, 0.0f);
     #pragma omp parallel for schedule(static)
     for (int j = 0; j < num_tree_per_iteration_; ++j) {
       size_t bias = static_cast<size_t>(j)* num_data_;
       for (data_size_t i = 0; i < num_data_; ++i) {
-        tmp_scores_[bias + i] = init_scores_[j];
+        tmp_scores[bias + i] = init_scores_[j];
       }
     }
     objective_function_->
-      GetGradients(tmp_scores_.data(), gradients_.data(), hessians_.data());
+      GetGradients(tmp_scores.data(), gradients_.data(), hessians_.data());
   }
 
   bool TrainOneIter(const score_t* gradients, const score_t* hessians) override {
@@ -125,7 +125,7 @@ public:
       }
 
       if (new_tree->num_leaves() > 1) {
-        tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, tmp_scores_.data() + bias,
+        tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, init_scores_[cur_tree_id],
           num_data_, bag_data_indices_.data(), bag_data_cnt_);
         if (std::fabs(init_scores_[cur_tree_id]) > kEpsilon) {
           new_tree->AddBias(init_scores_[cur_tree_id]);
@@ -205,7 +205,6 @@ private:
 
   std::vector<score_t> tmp_grad_;
   std::vector<score_t> tmp_hess_;
-  std::vector<double> tmp_scores_;
   std::vector<double> init_scores_;
 
 };
