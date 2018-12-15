@@ -28,6 +28,12 @@ result <- file.copy(from = "R-package/./",
                     overwrite = TRUE)
 .handle_result(result)
 
+result <- file.copy(from = "compute/include/boost/",
+                    to = file.path("include", "boost/"),
+                    recursive = TRUE,
+                    overwrite = TRUE)
+.handle_result(result)
+
 result <- file.copy(from = "include/",
                     to = file.path("lightgbm_r", "src/"),
                     recursive = TRUE,
