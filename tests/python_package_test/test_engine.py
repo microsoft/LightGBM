@@ -735,7 +735,7 @@ class TestEngine(unittest.TestCase):
             'boost_from_average': True
         }
         lgb_train = lgb.Dataset(X, y)
-        gbm = lgb.train(params, lgb_train, num_boost_round=30)
+        gbm = lgb.train(params, lgb_train, num_boost_round=20)
         pred = gbm.predict(X)
         pred_mean = pred.mean()
         self.assertGreater(pred_mean, 19)
