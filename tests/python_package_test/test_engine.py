@@ -738,7 +738,7 @@ class TestEngine(unittest.TestCase):
         gbm = lgb.train(params, lgb_train, num_boost_round=20)
         pred = gbm.predict(X)
         pred_mean = pred.mean()
-        self.assertGreater(pred_mean, 19)
+        self.assertGreater(pred_mean, 20)
 
     def test_mape_dart(self):
         X, y = load_boston(True)
