@@ -313,10 +313,12 @@ double GBDT::BoostFromAverage(int class_id, bool update_scorer) {
   if (models_.empty() && !train_score_updater_->has_init_score() && objective_function_ != nullptr) {
     if (config_->boost_from_average || (train_data_ != nullptr && train_data_->num_features() == 0)) {
       double init_score = ObtainAutomaticInitialScore(objective_function_, class_id);
-      if (std::fabs(init_score) > kEpsilon && update_scorer) {
-        train_score_updater_->AddScore(init_score, class_id);
-        for (auto& score_updater : valid_score_updater_) {
-          score_updater->AddScore(init_score, class_id);
+      if (std::fabs(init_score) > kEpsilon) {
+        if (update_scorer) {
+          train_score_updater_->AddScore(init_score, class_id);
+          for (auto& score_updater : valid_score_updater_) {
+            score_updater->AddScore(init_score, class_id);
+          }
         }
         Log::Info("Start training from score %lf", init_score);
         return init_score;
