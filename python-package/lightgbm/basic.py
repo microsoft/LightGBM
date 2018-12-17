@@ -1472,7 +1472,6 @@ class Booster(object):
         """
         self.handle = None
         self.network = False
-        self.__need_reload_eval_info = True
         self.__train_data_name = "training"
         self.__attr = {}
         self.__set_objective_to_none = False
@@ -1528,7 +1527,7 @@ class Booster(object):
             # buffer for inner predict
             self.__inner_predict_buffer = [None]
             self.__is_predicted_cur_iter = [False]
-            self.__get_eval_info()
+            self.__get_eval_info(0)  # init by train data (data_idx=0)
             self.pandas_categorical = train_set.pandas_categorical
         elif model_file is not None:
             # Prediction task
@@ -1708,8 +1707,6 @@ class Booster(object):
         self : Booster
             Booster with new parameters.
         """
-        if any(metric_alias in params for metric_alias in ('metric', 'metrics', 'metric_types')):
-            self.__need_reload_eval_info = True
         params_str = param_dict_to_str(params)
         if params_str:
             _safe_call(_LIB.LGBM_BoosterResetParameter(
@@ -2310,7 +2307,7 @@ class Booster(object):
         """Evaluate training or validation data."""
         if data_idx >= self.__num_dataset:
             raise ValueError("Data_idx should be smaller than number of dataset")
-        self.__get_eval_info()
+        self.__get_eval_info(data_idx)
         ret = []
         if self.__num_inner_eval > 0:
             result = np.zeros(self.__num_inner_eval, dtype=np.float64)
@@ -2363,31 +2360,31 @@ class Booster(object):
             self.__is_predicted_cur_iter[data_idx] = True
         return self.__inner_predict_buffer[data_idx]
 
-    def __get_eval_info(self):
+    def __get_eval_info(self, data_idx):
         """Get inner evaluation count and names."""
-        if self.__need_reload_eval_info:
-            self.__need_reload_eval_info = False
-            out_num_eval = ctypes.c_int(0)
-            # Get num of inner evals
-            _safe_call(_LIB.LGBM_BoosterGetEvalCounts(
+        out_num_eval = ctypes.c_int(0)
+        # Get num of inner evals
+        _safe_call(_LIB.LGBM_BoosterGetEvalCounts(
+            self.handle,
+            ctypes.c_int(data_idx),
+            ctypes.byref(out_num_eval)))
+        self.__num_inner_eval = out_num_eval.value
+        if self.__num_inner_eval > 0:
+            # Get name of evals
+            tmp_out_len = ctypes.c_int(0)
+            string_buffers = [ctypes.create_string_buffer(255) for i in range_(self.__num_inner_eval)]
+            ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))
+            _safe_call(_LIB.LGBM_BoosterGetEvalNames(
                 self.handle,
-                ctypes.byref(out_num_eval)))
-            self.__num_inner_eval = out_num_eval.value
-            if self.__num_inner_eval > 0:
-                # Get name of evals
-                tmp_out_len = ctypes.c_int(0)
-                string_buffers = [ctypes.create_string_buffer(255) for i in range_(self.__num_inner_eval)]
-                ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))
-                _safe_call(_LIB.LGBM_BoosterGetEvalNames(
-                    self.handle,
-                    ctypes.byref(tmp_out_len),
-                    ptr_string_buffers))
-                if self.__num_inner_eval != tmp_out_len.value:
-                    raise ValueError("Length of eval names doesn't equal with num_evals")
-                self.__name_inner_eval = \
-                    [string_buffers[i].value.decode() for i in range_(self.__num_inner_eval)]
-                self.__higher_better_inner_eval = \
-                    [name.startswith(('auc', 'ndcg@', 'map@')) for name in self.__name_inner_eval]
+                ctypes.c_int(data_idx),
+                ctypes.byref(tmp_out_len),
+                ptr_string_buffers))
+            if self.__num_inner_eval != tmp_out_len.value:
+                raise ValueError("Length of eval names doesn't equal with num_evals")
+            self.__name_inner_eval = \
+                [string_buffers[i].value.decode() for i in range_(self.__num_inner_eval)]
+            self.__higher_better_inner_eval = \
+                [name.startswith(('auc', 'ndcg@', 'map@')) for name in self.__name_inner_eval]
 
     def attr(self, key):
         """Get attribute string from the Booster.

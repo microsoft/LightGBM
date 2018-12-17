@@ -68,9 +68,9 @@ void GetObjectiveType(const std::unordered_map<std::string, std::string>& params
   }
 }
 
-void GetMetricType(const std::unordered_map<std::string, std::string>& params, std::vector<std::string>* metric) {
+void GetTrainMetricType(const std::unordered_map<std::string, std::string>& params, std::vector<std::string>* metric) {
   std::string value;
-  if (Config::GetString(params, "metric", &value)) {
+  if (Config::GetString(params, "train_metric", &value)) {
     // clear old metrics
     metric->clear();
     // to lower
@@ -98,6 +98,31 @@ void GetMetricType(const std::unordered_map<std::string, std::string>& params, s
     }
   }
 }
+
+void GetValidMetricType(const std::unordered_map<std::string, std::string>& params, std::vector<std::string>* metric) {
+  std::string value;
+  if (Config::GetString(params, "valid_metric", &value)) {
+    // clear old metrics
+    metric->clear();
+    // to lower
+    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
+    // split
+    std::vector<std::string> metrics = Common::Split(value.c_str(), ',');
+    // remove duplicate
+    std::unordered_set<std::string> metric_sets;
+    for (auto& met : metrics) {
+      std::transform(met.begin(), met.end(), met.begin(), Common::tolower);
+      if (metric_sets.count(met) <= 0) {
+        metric_sets.insert(met);
+      }
+    }
+    for (auto& met : metric_sets) {
+      metric->push_back(met);
+    }
+    metric->shrink_to_fit();
+  }
+}
+
 
 void GetTaskType(const std::unordered_map<std::string, std::string>& params, TaskType* task) {
   std::string value;
@@ -164,7 +189,8 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
 
   GetTaskType(params, &task);
   GetBoostingType(params, &boosting);
-  GetMetricType(params, &metric);
+  GetTrainMetricType(params, &train_metric);
+  GetValidMetricType(params, &valid_metric);
   GetObjectiveType(params, &objective);
   GetDeviceType(params, &device_type);
   GetTreeLearnerType(params, &tree_learner);
@@ -215,7 +241,7 @@ void Config::CheckParamConflict() {
       Log::Fatal("Number of classes must be 1 for non-multiclass training");
     }
   }
-  for (std::string metric_type : metric) {
+  for (std::string metric_type : train_metric) {
     bool metric_custom_or_none = metric_type == std::string("none") || metric_type == std::string("null") 
                                  || metric_type == std::string("custom") || metric_type == std::string("na");
     bool metric_type_multiclass = (CheckMultiClassObjective(metric_type)
@@ -227,6 +253,19 @@ void Config::CheckParamConflict() {
       Log::Fatal("Multiclass objective and metrics don't match");
     }
   }
+  for (std::string metric_type : valid_metric) {
+    bool metric_custom_or_none = metric_type == std::string("none") || metric_type == std::string("null") 
+                                 || metric_type == std::string("custom") || metric_type == std::string("na");
+    bool metric_type_multiclass = (CheckMultiClassObjective(metric_type)
+                                   || metric_type == std::string("multi_logloss")
+                                   || metric_type == std::string("multi_error")
+                                   || (metric_custom_or_none && num_class_check > 1));
+    if ((objective_type_multiclass && !metric_type_multiclass)
+        || (!objective_type_multiclass && metric_type_multiclass)) {
+      Log::Fatal("Multiclass objective and metrics don't match");
+    }
+  }
+
 
   if (num_machines > 1) {
     is_parallel = true;
@@ -270,7 +309,8 @@ std::string Config::ToString() const {
   std::stringstream str_buf;
   str_buf << "[boosting: " << boosting << "]\n";
   str_buf << "[objective: " << objective << "]\n";
-  str_buf << "[metric: " << Common::Join(metric, ",") << "]\n";
+  str_buf << "[train_metric: " << Common::Join(train_metric, ",") << "]\n";
+  str_buf << "[valid_metric: " << Common::Join(valid_metric, ",") << "]\n";
   str_buf << "[tree_learner: " << tree_learner << "]\n";
   str_buf << "[device_type: " << device_type << "]\n";
   str_buf << SaveMembersToString();

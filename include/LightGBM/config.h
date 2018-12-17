@@ -697,7 +697,8 @@ public:
   // descl2 = ``xentlambda``, "intensity-weighted" cross-entropy, aliases: ``cross_entropy_lambda``
   // descl2 = ``kldiv``, `Kullback-Leibler divergence <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence>`__, aliases: ``kullback_leibler``
   // desc = support multiple metrics, separated by ``,``
-  std::vector<std::string> metric;
+  std::vector<std::string> train_metric;
+  std::vector<std::string> valid_metric;
 
   // check = >0
   // alias = output_freq

@@ -484,7 +484,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterNumberOfTotalModel(BoosterHandle handle, int* 
 * \param out_len total number of eval results
 * \return 0 when succeed, -1 when failure happens
 */
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int* out_len);
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int data_idx, int* out_len);
 
 /*!
 * \brief Get name of eval
@@ -492,7 +492,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int* out_l
 * \param out_strs names of eval result, need to pre-allocate memory before call this
 * \return 0 when succeed, -1 when failure happens
 */
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalNames(BoosterHandle handle, int* out_len, char** out_strs);
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetEvalNames(BoosterHandle handle, int data_idx, int* out_len, char** out_strs);
 
 /*!
 * \brief Get name of features

@@ -103,7 +103,7 @@ public:
 
     // create training metric
     train_metric_.clear();
-    for (auto metric_type : config_.metric) {
+    for (auto metric_type : config_.train_metric) {
       auto metric = std::unique_ptr<Metric>(
         Metric::CreateMetric(metric_type, config_));
       if (metric == nullptr) { continue; }
@@ -164,7 +164,7 @@ public:
   void AddValidData(const Dataset* valid_data) {
     std::lock_guard<std::mutex> lock(mutex_);
     valid_metrics_.emplace_back();
-    for (auto metric_type : config_.metric) {
+    for (auto metric_type : config_.valid_metric) {
       auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_));
       if (metric == nullptr) { continue; }
       metric->Init(valid_data->metadata(), valid_data->num_data());
@@ -297,21 +297,41 @@ public:
     boosting_->ShuffleModels(start_iter, end_iter);
   }
 
-  int GetEvalCounts() const {
+  int GetEvalCounts(int data_idx) const {
     int ret = 0;
-    for (const auto& metric : train_metric_) {
-      ret += static_cast<int>(metric->GetName().size());
+    if (data_idx == 0) {
+        for (const auto& metric : train_metric_) {
+          ret += static_cast<int>(metric->GetName().size());
+        }
+    } else {
+        for (size_t i = 0; i < valid_metrics_.size(); ++i) {
+          for (size_t j = 0; j < valid_metrics_[i].size(); ++j) {
+            ret += static_cast<int>(valid_metrics_[i][j]->GetName().size());
+          }
+        }
     }
     return ret;
   }
 
-  int GetEvalNames(char** out_strs) const {
+  int GetEvalNames(int data_idx, char** out_strs) const {
     int idx = 0;
-    for (const auto& metric : train_metric_) {
-      for (const auto& name : metric->GetName()) {
-        std::memcpy(out_strs[idx], name.c_str(), name.size() + 1);
-        ++idx;
-      }
+    if (data_idx == 0) {
+        for (const auto& metric : train_metric_) {
+          for (const auto& name : metric->GetName()) {
+            std::memcpy(out_strs[idx], name.c_str(), name.size() + 1);
+            ++idx;
+          }
+        }
+    } else {
+        for (size_t i = 0; i < valid_metrics_.size(); ++i) {
+          for (size_t j = 0; j < valid_metrics_[i].size(); ++j) {
+              auto& metric = valid_metrics_[i][j];
+              for (const auto& name : metric->GetName()) {
+                std::memcpy(out_strs[idx], name.c_str(), name.size() + 1);
+                ++idx;
+              }
+          }
+        }
     }
     return idx;
   }
@@ -1029,17 +1049,17 @@ int LGBM_BoosterNumberOfTotalModel(BoosterHandle handle, int* out_models) {
   API_END();
 }
 
-int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int* out_len) {
+int LGBM_BoosterGetEvalCounts(BoosterHandle handle, int data_idx, int* out_len) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  *out_len = ref_booster->GetEvalCounts();
+  *out_len = ref_booster->GetEvalCounts(data_idx);
   API_END();
 }
 
-int LGBM_BoosterGetEvalNames(BoosterHandle handle, int* out_len, char** out_strs) {
+int LGBM_BoosterGetEvalNames(BoosterHandle handle, int data_idx, int* out_len, char** out_strs) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
-  *out_len = ref_booster->GetEvalNames(out_strs);
+  *out_len = ref_booster->GetEvalNames(data_idx, out_strs);
   API_END();
 }
 

@@ -426,11 +426,12 @@ LGBM_SE LGBM_BoosterGetEvalNames_R(LGBM_SE handle,
   LGBM_SE buf_len,
   LGBM_SE actual_len,
   LGBM_SE eval_names,
-  LGBM_SE call_state) {
+  LGBM_SE call_state,
+  LGBM_SE data_idx) {
 
   R_API_BEGIN();
   int len;
-  CHECK_CALL(LGBM_BoosterGetEvalCounts(R_GET_PTR(handle), &len));
+  CHECK_CALL(LGBM_BoosterGetEvalCounts(R_GET_PTR(handle), R_AS_INT(data_idx), &len));
   std::vector<std::vector<char>> names(len);
   std::vector<char*> ptr_names(len);
   for (int i = 0; i < len; ++i) {
@@ -438,7 +439,7 @@ LGBM_SE LGBM_BoosterGetEvalNames_R(LGBM_SE handle,
     ptr_names[i] = names[i].data();
   }
   int out_len;
-  CHECK_CALL(LGBM_BoosterGetEvalNames(R_GET_PTR(handle), &out_len, ptr_names.data()));
+  CHECK_CALL(LGBM_BoosterGetEvalNames(R_GET_PTR(handle), R_AS_INT(data_idx), &out_len, ptr_names.data()));
   CHECK(out_len == len);
   auto merge_names = Common::Join<char*>(ptr_names, "\t");
   EncodeChar(eval_names, merge_names.c_str(), buf_len, actual_len, merge_names.size() + 1);
@@ -451,7 +452,7 @@ LGBM_SE LGBM_BoosterGetEval_R(LGBM_SE handle,
   LGBM_SE call_state) {
   R_API_BEGIN();
   int len;
-  CHECK_CALL(LGBM_BoosterGetEvalCounts(R_GET_PTR(handle), &len));
+  CHECK_CALL(LGBM_BoosterGetEvalCounts(R_GET_PTR(handle), R_AS_INT(data_idx), &len));
   double* ptr_ret = R_REAL_PTR(out_result);
   int out_len;
   CHECK_CALL(LGBM_BoosterGetEval(R_GET_PTR(handle), R_AS_INT(data_idx), &out_len, ptr_ret));
