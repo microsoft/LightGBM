@@ -308,15 +308,17 @@ double ObtainAutomaticInitialScore(const ObjectiveFunction* fobj, int class_id) 
   return init_score;
 }
 
-double GBDT::BoostFromAverage(int class_id) {
+double GBDT::BoostFromAverage(int class_id, bool update_scorer) {
   // boosting from average label; or customized "average" if implemented for the current objective
   if (models_.empty() && !train_score_updater_->has_init_score() && objective_function_ != nullptr) {
     if (config_->boost_from_average || (train_data_ != nullptr && train_data_->num_features() == 0)) {
       double init_score = ObtainAutomaticInitialScore(objective_function_, class_id);
       if (std::fabs(init_score) > kEpsilon) {
-        train_score_updater_->AddScore(init_score, class_id);
-        for (auto& score_updater : valid_score_updater_) {
-          score_updater->AddScore(init_score, class_id);
+        if (update_scorer) {
+          train_score_updater_->AddScore(init_score, class_id);
+          for (auto& score_updater : valid_score_updater_) {
+            score_updater->AddScore(init_score, class_id);
+          }
         }
         Log::Info("Start training from score %lf", init_score);
         return init_score;
@@ -335,7 +337,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   // boosting first
   if (gradients == nullptr || hessians == nullptr) {
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
-      init_scores[cur_tree_id] = BoostFromAverage(cur_tree_id);
+      init_scores[cur_tree_id] = BoostFromAverage(cur_tree_id, true);
     }
     Boosting();
     gradients = gradients_.data();
@@ -597,7 +599,7 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
     num_data = valid_score_updater_[used_idx]->num_data();
     *out_len = static_cast<int64_t>(num_data) * num_class_;
   }
-  if (objective_function_ != nullptr && !average_output_) {
+  if (objective_function_ != nullptr) {
     #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_data; ++i) {
       std::vector<double> tree_pred(num_tree_per_iteration_);

@@ -732,7 +732,7 @@ class TestEngine(unittest.TestCase):
             'bagging_freq': 1,
             'bagging_fraction': 0.8,
             'feature_fraction': 0.8,
-            'boost_from_average': False
+            'boost_from_average': True
         }
         lgb_train = lgb.Dataset(X, y)
         gbm = lgb.train(params, lgb_train, num_boost_round=20)
