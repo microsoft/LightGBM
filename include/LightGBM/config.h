@@ -698,6 +698,10 @@ public:
   // descl2 = ``kldiv``, `Kullback-Leibler divergence <https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence>`__, aliases: ``kullback_leibler``
   // desc = support multiple metrics, separated by ``,``
   std::vector<std::string> train_metric;
+
+  // type = multi-enum
+  // default = ""
+  // desc = metric(s) to be evaluated on the evaluation set(s)
   std::vector<std::string> valid_metric;
 
   // check = >0
@@ -705,7 +709,7 @@ public:
   // desc = frequency for metric output
   int metric_freq = 1;
 
-  // alias = training_metric, is_training_metric, train_metric
+  // alias = training_metric, is_training_metric
   // desc = set this to ``true`` to output metric result over training dataset
   // desc = **Note**: can be used only in CLI version
   bool is_provide_training_metric = false;
