@@ -739,7 +739,7 @@ Objective Parameters
 Metric Parameters
 -----------------
 
--  ``train_metric`` :raw-html:`<a id="train_metric" title="Permalink to this parameter" href="#train_metric">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = multi-enum, aliases: ``metrics``, ``metric_types``
+-  ``train_metric`` :raw-html:`<a id="train_metric" title="Permalink to this parameter" href="#train_metric">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = multi-enum
 
    -  metric(s) to be evaluated on the evaluation set(s)
 

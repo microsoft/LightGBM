@@ -135,8 +135,6 @@ std::unordered_map<std::string, std::string> Config::alias_table({
   {"num_classes", "num_class"},
   {"unbalance", "is_unbalance"},
   {"unbalanced_sets", "is_unbalance"},
-  {"metrics", "train_metric"},
-  {"metric_types", "train_metric"},
   {"output_freq", "metric_freq"},
   {"training_metric", "is_provide_training_metric"},
   {"is_training_metric", "is_provide_training_metric"},
@@ -491,10 +489,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
     label_gain = Common::StringToArray<double>(tmp_str, ',');
   }
 
-  if (GetString(params, "valid_metric", &tmp_str)) {
-    valid_metric = Common::Split(tmp_str.c_str(), ',');
-  }
-
   GetInt(params, "metric_freq", &metric_freq);
   CHECK(metric_freq >0);
 
@@ -613,7 +607,6 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[tweedie_variance_power: " << tweedie_variance_power << "]\n";
   str_buf << "[max_position: " << max_position << "]\n";
   str_buf << "[label_gain: " << Common::Join(label_gain,",") << "]\n";
-  str_buf << "[valid_metric: " << Common::Join(valid_metric,",") << "]\n";
   str_buf << "[metric_freq: " << metric_freq << "]\n";
   str_buf << "[is_provide_training_metric: " << is_provide_training_metric << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at,",") << "]\n";

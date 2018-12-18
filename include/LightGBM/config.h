@@ -669,7 +669,6 @@ public:
   #pragma region Metric Parameters
 
   // [doc-only]
-  // alias = metrics, metric_types
   // default = ""
   // type = multi-enum
   // desc = metric(s) to be evaluated on the evaluation set(s)
@@ -699,6 +698,7 @@ public:
   // desc = support multiple metrics, separated by ``,``
   std::vector<std::string> train_metric;
 
+  // [doc-only]
   // type = multi-enum
   // default = ""
   // desc = metric(s) to be evaluated on the evaluation set(s)
