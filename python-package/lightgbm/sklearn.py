@@ -477,7 +477,7 @@ class LGBMModel(_LGBMModelBase):
             # concatenate metric from params (or default if not provided in params) and eval_metric
             original_metric = [original_metric] if isinstance(original_metric, (string_type, type(None))) else original_metric
             eval_metric = [eval_metric] if isinstance(eval_metric, (string_type, type(None))) else eval_metric
-            params['metric'] = set(original_metric + eval_metric)
+            params['valid_metric'] = set(original_metric + eval_metric)  # TODO: train_metric
 
         if not isinstance(X, DataFrame):
             X, y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
@@ -518,6 +518,7 @@ class LGBMModel(_LGBMModelBase):
                 # reduce cost for prediction training data
                 if valid_data[0] is X and valid_data[1] is y:
                     valid_set = train_set
+                    # params['train_metric'] = set(original_metric + eval_metric)
                 else:
                     valid_weight = _get_meta_data(eval_sample_weight, i)
                     if _get_meta_data(eval_class_weight, i) is not None:
