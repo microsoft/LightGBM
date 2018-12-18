@@ -30,7 +30,7 @@ class TestEngine(unittest.TestCase):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'objective': 'binary',
-            'metric': 'binary_logloss',
+            'valid_metric': 'binary_logloss',
             'verbose': -1,
             'num_iteration': 50  # test num_iteration in dict here
         }
@@ -57,7 +57,7 @@ class TestEngine(unittest.TestCase):
             'bagging_fraction': 0.5,
             'feature_fraction': 0.5,
             'num_leaves': 50,
-            'metric': 'binary_logloss',
+            'valid_metric': 'binary_logloss',
             'verbose': -1
         }
         lgb_train = lgb.Dataset(X_train, y_train)
@@ -76,7 +76,7 @@ class TestEngine(unittest.TestCase):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
-            'metric': 'l2',
+            'valid_metric': 'l2',
             'verbose': -1
         }
         lgb_train = lgb.Dataset(X_train, y_train)
@@ -102,7 +102,7 @@ class TestEngine(unittest.TestCase):
         lgb_eval = lgb.Dataset(X_train, y_train)
 
         params = {
-            'metric': 'l2',
+            'valid_metric': 'l2',
             'verbose': -1,
             'boost_from_average': False
         }
@@ -127,7 +127,7 @@ class TestEngine(unittest.TestCase):
 
         params = {
             'objective': 'regression',
-            'metric': 'auc',
+            'valid_metric': 'auc',
             'verbose': -1,
             'boost_from_average': False,
             'min_data': 1,
@@ -159,7 +159,7 @@ class TestEngine(unittest.TestCase):
 
         params = {
             'objective': 'regression',
-            'metric': 'auc',
+            'valid_metric': 'auc',
             'verbose': -1,
             'boost_from_average': False,
             'min_data': 1,
@@ -191,7 +191,7 @@ class TestEngine(unittest.TestCase):
 
         params = {
             'objective': 'regression',
-            'metric': 'auc',
+            'valid_metric': 'auc',
             'verbose': -1,
             'boost_from_average': False,
             'min_data': 1,
@@ -224,7 +224,7 @@ class TestEngine(unittest.TestCase):
 
         params = {
             'objective': 'regression',
-            'metric': 'auc',
+            'valid_metric': 'auc',
             'verbose': -1,
             'boost_from_average': False,
             'min_data': 1,
@@ -261,7 +261,7 @@ class TestEngine(unittest.TestCase):
 
         params = {
             'objective': 'regression',
-            'metric': 'auc',
+            'valid_metric': 'auc',
             'verbose': -1,
             'boost_from_average': False,
             'min_data': 1,
@@ -292,7 +292,7 @@ class TestEngine(unittest.TestCase):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'objective': 'multiclass',
-            'metric': 'multi_logloss',
+            'valid_metric': 'multi_logloss',
             'num_class': 10,
             'verbose': -1
         }
@@ -314,7 +314,7 @@ class TestEngine(unittest.TestCase):
         params = {
             'boosting_type': 'rf',
             'objective': 'multiclass',
-            'metric': 'multi_logloss',
+            'valid_metric': 'multi_logloss',
             'bagging_freq': 1,
             'bagging_fraction': 0.6,
             'feature_fraction': 0.6,
@@ -365,7 +365,7 @@ class TestEngine(unittest.TestCase):
         X, y = load_breast_cancer(True)
         params = {
             'objective': 'binary',
-            'metric': 'binary_logloss',
+            'valid_metric': 'binary_logloss',
             'verbose': -1
         }
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -397,7 +397,7 @@ class TestEngine(unittest.TestCase):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'objective': 'regression',
-            'metric': 'l1',
+            'valid_metric': 'l1',
             'verbose': -1
         }
         lgb_train = lgb.Dataset(X_train, y_train, free_raw_data=False)
@@ -426,7 +426,7 @@ class TestEngine(unittest.TestCase):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         params = {
             'objective': 'multiclass',
-            'metric': 'multi_logloss',
+            'valid_metric': 'multi_logloss',
             'num_class': 3,
             'verbose': -1
         }
@@ -450,7 +450,7 @@ class TestEngine(unittest.TestCase):
         params = {'verbose': -1}
         lgb_train = lgb.Dataset(X_train, y_train)
         # shuffle = False, override metric in params
-        params_with_metric = {'metric': 'l2', 'verbose': -1}
+        params_with_metric = {'valid_metric': 'l2', 'verbose': -1}
         cv_res = lgb.cv(params_with_metric, lgb_train, num_boost_round=10,
                         nfold=3, stratified=False, shuffle=False,
                         metrics='l1', verbose_eval=False)
@@ -595,7 +595,7 @@ class TestEngine(unittest.TestCase):
         # take subsets and train
         tmp_dat_train = tmp_dat.subset(np.arange(80))
         tmp_dat_val = tmp_dat.subset(np.arange(80, 100)).subset(np.arange(18))
-        params = {'objective': 'regression_l2', 'metric': 'rmse'}
+        params = {'objective': 'regression_l2', 'train_metric': 'rmse', 'valid_metric': 'rmse'}
         evals_result = {}
         gbm = lgb.train(params, tmp_dat_train, num_boost_round=20,
                         valid_sets=[tmp_dat_train, tmp_dat_val], evals_result=evals_result)

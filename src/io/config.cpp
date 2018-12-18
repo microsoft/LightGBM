@@ -121,6 +121,13 @@ void GetValidMetricType(const std::unordered_map<std::string, std::string>& para
     }
     metric->shrink_to_fit();
   }
+  // add names of objective function if not providing metric
+  if (metric->empty() && value.size() == 0) {
+    if (Config::GetString(params, "objective", &value)) {
+      std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
+      metric->push_back(value);
+    }
+  }
 }
 
 
