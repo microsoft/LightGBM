@@ -25,7 +25,8 @@ lgb_test = lgb.Dataset(X_test, y_test, reference=lgb_train)
 # specify your configurations as a dict
 params = {
     'num_leaves': 5,
-    'metric': ('l1', 'l2'),
+    'train_metric': ('l1', 'l2'),
+    'valid_metric': ('l1', 'l2'),
     'verbose': 0
 }
 
