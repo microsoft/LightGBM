@@ -82,7 +82,8 @@ class TestSklearn(unittest.TestCase):
         X, y = load_boston(True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(n_estimators=50, silent=True, objective=objective_ls)
-        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], eval_metric='regression',
+                early_stopping_rounds=5, verbose=False)
         ret = mean_squared_error(y_test, gbm.predict(X_test))
         self.assertLess(ret, 100)
         self.assertAlmostEqual(ret, gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1], places=5)
@@ -100,7 +101,8 @@ class TestSklearn(unittest.TestCase):
         X, y = load_digits(2, True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMClassifier(n_estimators=50, silent=True, objective=logregobj)
-        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=5, verbose=False)
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], eval_metric='binary_error',
+                early_stopping_rounds=5, verbose=False)
         ret = binary_error(y_test, gbm.predict(X_test))
         self.assertLess(ret, 0.1)
 
@@ -279,3 +281,13 @@ class TestSklearn(unittest.TestCase):
         self.assertRaises(AssertionError,
                           np.testing.assert_allclose,
                           res_engine, res_sklearn_params)
+
+    def test_regressor_train_and_valid_metric(self):
+        X, y = load_boston(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        gbm = lgb.LGBMRegressor(n_estimators=10, silent=True)
+        gbm.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_test, y_test)],
+                eval_train_metric='l2', eval_valid_metric=['l1', 'l2'], verbose=False)
+        self.assertTrue('l2' in gbm.evals_result_['training'])
+        self.assertTrue('l1' in gbm.evals_result_['valid_1'])
+        self.assertTrue('l2' in gbm.evals_result_['valid_1'])

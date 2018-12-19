@@ -330,7 +330,8 @@ class LGBMModel(_LGBMModelBase):
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_class_weight=None, eval_init_score=None, eval_group=None,
-            eval_metric=None, early_stopping_rounds=None, verbose=True,
+            eval_metric=None, eval_train_metric=None, eval_valid_metric=None,
+            early_stopping_rounds=None, verbose=True,
             feature_name='auto', categorical_feature='auto', callbacks=None):
         """Build a gradient boosting model from the training set (X, y).
 
@@ -460,24 +461,29 @@ class LGBMModel(_LGBMModelBase):
             feval = _eval_function_wrapper(eval_metric)
         else:
             feval = None
-            # register default metric for consistency with callable eval_metric case
-            original_metric = self._objective if isinstance(self._objective, string_type) else None
-            if original_metric is None:
-                # try to deduce from class instance
-                if isinstance(self, LGBMRegressor):
-                    original_metric = "l2"
-                elif isinstance(self, LGBMClassifier):
-                    original_metric = "multi_logloss" if self._n_classes > 2 else "binary_logloss"
-                elif isinstance(self, LGBMRanker):
-                    original_metric = "ndcg"
-            # overwrite default metric by explicitly set metric
-            for metric_alias in ['metric', 'metrics', 'metric_types']:
-                if metric_alias in params:
-                    original_metric = params.pop(metric_alias)
-            # concatenate metric from params (or default if not provided in params) and eval_metric
-            original_metric = [original_metric] if isinstance(original_metric, (string_type, type(None))) else original_metric
-            eval_metric = [eval_metric] if isinstance(eval_metric, (string_type, type(None))) else eval_metric
-            params['metric'] = set(original_metric + eval_metric)  # TODO: train_metric
+            if eval_metric:
+                params['metric'] = eval_metric
+            else:
+                params['train_metric'] = eval_train_metric
+                params['valid_metric'] = eval_valid_metric
+            # # register default metric for consistency with callable eval_metric case
+            # original_metric = self._objective if isinstance(self._objective, string_type) else None
+            # if original_metric is None:
+            #     # try to deduce from class instance
+            #     if isinstance(self, LGBMRegressor):
+            #         original_metric = "l2"
+            #     elif isinstance(self, LGBMClassifier):
+            #         original_metric = "multi_logloss" if self._n_classes > 2 else "binary_logloss"
+            #     elif isinstance(self, LGBMRanker):
+            #         original_metric = "ndcg"
+            # # overwrite default metric by explicitly set metric
+            # for metric_alias in ['metric', 'metrics', 'metric_types']:
+            #     if metric_alias in params:
+            #         original_metric = params.pop(metric_alias)
+            # # concatenate metric from params (or default if not provided in params) and eval_metric
+            # original_metric = [original_metric] if isinstance(original_metric, (string_type, type(None))) else original_metric
+            # eval_metric = [eval_metric] if isinstance(eval_metric, (string_type, type(None))) else eval_metric
+            # params['metric'] = set(original_metric + eval_metric)  # TODO: train_metric
 
         if not isinstance(X, DataFrame):
             X, y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
@@ -518,7 +524,6 @@ class LGBMModel(_LGBMModelBase):
                 # reduce cost for prediction training data
                 if valid_data[0] is X and valid_data[1] is y:
                     valid_set = train_set
-                    # params['train_metric'] = set(original_metric + eval_metric)
                 else:
                     valid_weight = _get_meta_data(eval_sample_weight, i)
                     if _get_meta_data(eval_class_weight, i) is not None:
@@ -669,7 +674,8 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
     def fit(self, X, y,
             sample_weight=None, init_score=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
-            eval_init_score=None, eval_metric=None, early_stopping_rounds=None,
+            eval_init_score=None, eval_metric=None, eval_train_metric=None,
+            eval_valid_metric=None, early_stopping_rounds=None,
             verbose=True, feature_name='auto', categorical_feature='auto', callbacks=None):
         """Docstring is inherited from the LGBMModel."""
         super(LGBMRegressor, self).fit(X, y, sample_weight=sample_weight,
@@ -678,6 +684,8 @@ class LGBMRegressor(LGBMModel, _LGBMRegressorBase):
                                        eval_sample_weight=eval_sample_weight,
                                        eval_init_score=eval_init_score,
                                        eval_metric=eval_metric,
+                                       eval_train_metric=eval_train_metric,
+                                       eval_valid_metric=eval_valid_metric,
                                        early_stopping_rounds=early_stopping_rounds,
                                        verbose=verbose, feature_name=feature_name,
                                        categorical_feature=categorical_feature,
@@ -696,6 +704,7 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
             sample_weight=None, init_score=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_class_weight=None, eval_init_score=None, eval_metric=None,
+            eval_train_metric=None, eval_valid_metric=None,
             early_stopping_rounds=None, verbose=True,
             feature_name='auto', categorical_feature='auto', callbacks=None):
         """Docstring is inherited from the LGBMModel."""
@@ -711,15 +720,17 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
             ova_aliases = ("multiclassova", "multiclass_ova", "ova", "ovr")
             if self._objective not in ova_aliases and not callable(self._objective):
                 self._objective = "multiclass"
-            if eval_metric in ('logloss', 'binary_logloss'):
-                eval_metric = "multi_logloss"
-            elif eval_metric in ('error', 'binary_error'):
-                eval_metric = "multi_error"
+            for _metric in (eval_metric, eval_train_metric, eval_valid_metric):
+                if _metric in ('logloss', 'binary_logloss'):
+                    _metric = "multi_logloss"
+                elif _metric in ('error', 'binary_error'):
+                    _metric = "multi_error"
         else:
-            if eval_metric in ('logloss', 'multi_logloss'):
-                eval_metric = 'binary_logloss'
-            elif eval_metric in ('error', 'multi_error'):
-                eval_metric = 'binary_error'
+            for _metric in (eval_metric, eval_train_metric, eval_valid_metric):
+                if _metric in ('logloss', 'multi_logloss'):
+                    _metric = 'binary_logloss'
+                elif _metric in ('error', 'multi_error'):
+                    _metric = 'binary_error'
 
         if eval_set is not None:
             if isinstance(eval_set, tuple):
@@ -737,6 +748,8 @@ class LGBMClassifier(LGBMModel, _LGBMClassifierBase):
                                         eval_class_weight=eval_class_weight,
                                         eval_init_score=eval_init_score,
                                         eval_metric=eval_metric,
+                                        eval_train_metric=eval_train_metric,
+                                        eval_valid_metric=eval_valid_metric,
                                         early_stopping_rounds=early_stopping_rounds,
                                         verbose=verbose, feature_name=feature_name,
                                         categorical_feature=categorical_feature,
@@ -824,7 +837,8 @@ class LGBMRanker(LGBMModel):
             sample_weight=None, init_score=None, group=None,
             eval_set=None, eval_names=None, eval_sample_weight=None,
             eval_init_score=None, eval_group=None, eval_metric=None,
-            eval_at=[1], early_stopping_rounds=None, verbose=True,
+            eval_train_metric=None, eval_valid_metric=None, eval_at=[1],
+            early_stopping_rounds=None, verbose=True,
             feature_name='auto', categorical_feature='auto', callbacks=None):
         """Docstring is inherited from the LGBMModel."""
         # check group data
@@ -850,6 +864,8 @@ class LGBMRanker(LGBMModel):
                                     eval_sample_weight=eval_sample_weight,
                                     eval_init_score=eval_init_score, eval_group=eval_group,
                                     eval_metric=eval_metric,
+                                    eval_train_metric=eval_train_metric,
+                                    eval_valid_metric=eval_valid_metric,
                                     early_stopping_rounds=early_stopping_rounds,
                                     verbose=verbose, feature_name=feature_name,
                                     categorical_feature=categorical_feature,
