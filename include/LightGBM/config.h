@@ -704,6 +704,12 @@ public:
   // desc = metric(s) to be evaluated on the evaluation set(s)
   std::vector<std::string> valid_metric;
 
+  // [doc-only]
+  // type = multi-enum
+  // default = ""
+  // desc = dummpy parameter
+  std::vector<std::string> metric;
+
   // check = >0
   // alias = output_freq
   // desc = frequency for metric output

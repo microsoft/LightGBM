@@ -795,6 +795,10 @@ Metric Parameters
 
    -  metric(s) to be evaluated on the evaluation set(s)
 
+-  ``metric`` :raw-html:`<a id="metric" title="Permalink to this parameter" href="#metric">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = multi-enum
+
+   -  dummpy parameter
+
 -  ``metric_freq`` :raw-html:`<a id="metric_freq" title="Permalink to this parameter" href="#metric_freq">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``output_freq``, constraints: ``metric_freq > 0``
 
    -  frequency for metric output

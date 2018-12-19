@@ -68,9 +68,12 @@ void GetObjectiveType(const std::unordered_map<std::string, std::string>& params
   }
 }
 
-void GetTrainMetricType(const std::unordered_map<std::string, std::string>& params, std::vector<std::string>* metric) {
+
+void SetMetircType(const std::unordered_map<std::string, std::string>& params,
+                   const std::string& name,
+                   std::vector<std::string>* metric) {
   std::string value;
-  if (Config::GetString(params, "train_metric", &value)) {
+  if (Config::GetString(params, name, &value)) {
     // clear old metrics
     metric->clear();
     // to lower
@@ -90,46 +93,43 @@ void GetTrainMetricType(const std::unordered_map<std::string, std::string>& para
     }
     metric->shrink_to_fit();
   }
-  // add names of objective function if not providing metric
-  if (metric->empty() && value.size() == 0) {
-    if (Config::GetString(params, "objective", &value)) {
-      std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
-      metric->push_back(value);
-    }
-  }
 }
 
-void GetValidMetricType(const std::unordered_map<std::string, std::string>& params, std::vector<std::string>* metric) {
+void SetDefaultMetircType(const std::unordered_map<std::string, std::string>& params,
+                          std::vector<std::string>* metric) {
   std::string value;
-  if (Config::GetString(params, "valid_metric", &value)) {
-    // clear old metrics
-    metric->clear();
-    // to lower
-    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
-    // split
-    std::vector<std::string> metrics = Common::Split(value.c_str(), ',');
-    // remove duplicate
-    std::unordered_set<std::string> metric_sets;
-    for (auto& met : metrics) {
-      std::transform(met.begin(), met.end(), met.begin(), Common::tolower);
-      if (metric_sets.count(met) <= 0) {
-        metric_sets.insert(met);
-      }
-    }
-    for (auto& met : metric_sets) {
-      metric->push_back(met);
-    }
-    metric->shrink_to_fit();
-  }
   // add names of objective function if not providing metric
-  if (metric->empty() && value.size() == 0) {
-    if (Config::GetString(params, "objective", &value)) {
-      std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
-      metric->push_back(value);
-    }
+  if (Config::GetString(params, "objective", &value)) {
+    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
+    metric->push_back(value);
   }
 }
 
+void GetMetricType(const std::unordered_map<std::string, std::string>& params,
+                   std::vector<std::string>* train_metric, std::vector<std::string>* valid_metric) {
+  if (params.count("metric") > 0) {
+    //printf("HOGE\n");
+    //printf("metric: %s\n", params.at("metric").c_str());
+    SetMetircType(params, "metric", train_metric);
+    SetMetircType(params, "metric", valid_metric);
+  } else {
+    //printf("FOOO\n");
+    if (params.count("train_metric") > 0) {
+      //printf("train_metric: %s\n", params.at("train_metric").c_str());
+      SetMetircType(params, "train_metric", train_metric);
+    }
+    if (params.count("valid_metric") > 0) {
+      //printf("valid_metric: %s\n", params.at("valid_metric").c_str());
+      SetMetircType(params, "valid_metric", valid_metric);
+    }
+  }
+  if (train_metric->empty()) {
+    SetDefaultMetircType(params, train_metric);
+  }
+  if (valid_metric->empty()) {
+    SetDefaultMetircType(params, valid_metric);
+  }
+}
 
 void GetTaskType(const std::unordered_map<std::string, std::string>& params, TaskType* task) {
   std::string value;
@@ -196,8 +196,7 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
 
   GetTaskType(params, &task);
   GetBoostingType(params, &boosting);
-  GetTrainMetricType(params, &train_metric);
-  GetValidMetricType(params, &valid_metric);
+  GetMetricType(params, &train_metric, &valid_metric);
   GetObjectiveType(params, &objective);
   GetDeviceType(params, &device_type);
   GetTreeLearnerType(params, &tree_learner);

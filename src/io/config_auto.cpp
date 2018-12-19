@@ -248,6 +248,7 @@ std::unordered_set<std::string> Config::parameter_set({
   "label_gain",
   "train_metric",
   "valid_metric",
+  "metric",
   "metric_freq",
   "is_provide_training_metric",
   "eval_at",
