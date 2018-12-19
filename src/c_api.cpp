@@ -300,15 +300,13 @@ public:
   int GetEvalCounts(int data_idx) const {
     int ret = 0;
     if (data_idx == 0) {
-        for (const auto& metric : train_metric_) {
-          ret += static_cast<int>(metric->GetName().size());
-        }
+      for (const auto& metric : train_metric_) {
+        ret += static_cast<int>(metric->GetName().size());
+      }
     } else {
-        for (size_t i = 0; i < valid_metrics_.size(); ++i) {
-          for (size_t j = 0; j < valid_metrics_[i].size(); ++j) {
-            ret += static_cast<int>(valid_metrics_[i][j]->GetName().size());
-          }
-        }
+      for (size_t j = 0; j < valid_metrics_[data_idx - 1].size(); ++j) {
+        ret += static_cast<int>(valid_metrics_[data_idx - 1][j]->GetName().size());
+      }
     }
     return ret;
   }
@@ -316,22 +314,20 @@ public:
   int GetEvalNames(int data_idx, char** out_strs) const {
     int idx = 0;
     if (data_idx == 0) {
-        for (const auto& metric : train_metric_) {
-          for (const auto& name : metric->GetName()) {
-            std::memcpy(out_strs[idx], name.c_str(), name.size() + 1);
-            ++idx;
-          }
+      for (const auto& metric : train_metric_) {
+        for (const auto& name : metric->GetName()) {
+          std::memcpy(out_strs[idx], name.c_str(), name.size() + 1);
+          ++idx;
         }
+      }
     } else {
-        for (size_t i = 0; i < valid_metrics_.size(); ++i) {
-          for (size_t j = 0; j < valid_metrics_[i].size(); ++j) {
-              auto& metric = valid_metrics_[i][j];
-              for (const auto& name : metric->GetName()) {
-                std::memcpy(out_strs[idx], name.c_str(), name.size() + 1);
-                ++idx;
-              }
-          }
+      for (size_t j = 0; j < valid_metrics_[data_idx - 1].size(); ++j) {
+        auto& metric = valid_metrics_[data_idx - 1][j];
+        for (const auto& name : metric->GetName()) {
+          std::memcpy(out_strs[idx], name.c_str(), name.size() + 1);
+          ++idx;
         }
+      }
     }
     return idx;
   }
