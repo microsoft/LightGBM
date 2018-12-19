@@ -808,3 +808,23 @@ class TestEngine(unittest.TestCase):
         }
         self.test_constant_features([0.0, 1.0, 2.0, 0.0], [0.5, 0.25, 0.25], params)
         self.test_constant_features([0.0, 1.0, 2.0, 1.0], [0.25, 0.5, 0.25], params)
+
+    def test_train_and_valid_metric(self):
+        X, y = load_boston(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        params = {
+            'train_metric': ['l2'],
+            'valid_metric': ['l1', 'l2'],
+            'verbose': -1
+        }
+        lgb_train = lgb.Dataset(X_train, y_train)
+        lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+        evals_result = {}
+        gbm = lgb.train(params, lgb_train,
+                        num_boost_round=50,
+                        valid_sets=[lgb_train, lgb_eval],
+                        verbose_eval=False,
+                        evals_result=evals_result)
+        self.assertTrue('l2' in evals_result['training'])
+        self.assertTrue('l1' in evals_result['valid_1'])
+        self.assertTrue('l2' in evals_result['valid_1'])
