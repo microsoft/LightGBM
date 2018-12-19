@@ -104,10 +104,7 @@ class TestBasic(unittest.TestCase):
     @unittest.skipIf(not MATPLOTLIB_INSTALLED, 'matplotlib is not installed')
     def test_plot_metrics(self):
         test_data = lgb.Dataset(self.X_test, self.y_test, reference=self.train_data)
-        self.params.update({
-            "train_metric": ["binary_logloss", "binary_error"],
-            "valid_metric": ["binary_logloss", "binary_error"]
-        })
+        self.params.update({"metric": {"binary_logloss", "binary_error"}})
 
         evals_result0 = {}
         gbm0 = lgb.train(self.params, self.train_data,

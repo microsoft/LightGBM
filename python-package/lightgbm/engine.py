@@ -446,7 +446,7 @@ def cv(params, train_set, num_boost_round=100,
              .set_categorical_feature(categorical_feature)
 
     if metrics is not None:
-        params['valid_metric'] = metrics
+        params['metric'] = metrics
 
     results = collections.defaultdict(list)
     cvfolds = _make_n_folds(train_set, folds=folds, nfold=nfold,

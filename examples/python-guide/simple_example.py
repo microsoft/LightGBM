@@ -22,7 +22,7 @@ lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
 params = {
     'boosting_type': 'gbdt',
     'objective': 'regression',
-    'valid_metric': {'l2', 'l1'},
+    'metric': {'l2', 'l1'},
     'num_leaves': 31,
     'learning_rate': 0.05,
     'feature_fraction': 0.9,

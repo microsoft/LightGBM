@@ -36,7 +36,7 @@ lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train,
 params = {
     'boosting_type': 'gbdt',
     'objective': 'binary',
-    'train_metric': 'binary_logloss',
+    'metric': 'binary_logloss',
     'num_leaves': 31,
     'learning_rate': 0.05,
     'feature_fraction': 0.9,
