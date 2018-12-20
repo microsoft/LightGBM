@@ -739,7 +739,7 @@ Objective Parameters
 Metric Parameters
 -----------------
 
--  ``train_metric`` :raw-html:`<a id="train_metric" title="Permalink to this parameter" href="#train_metric">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = multi-enum
+-  ``metric`` :raw-html:`<a id="metric" title="Permalink to this parameter" href="#metric">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = multi-enum, aliases: ``metrics``, ``metric_types``
 
    -  metric(s) to be evaluated on the evaluation set(s)
 
@@ -791,13 +791,13 @@ Metric Parameters
 
    -  support multiple metrics, separated by ``,``
 
--  ``valid_metric`` :raw-html:`<a id="valid_metric" title="Permalink to this parameter" href="#valid_metric">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = multi-enum
+-  ``train_metric`` :raw-html:`<a id="train_metric" title="Permalink to this parameter" href="#train_metric">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = multi-enum
 
    -  metric(s) to be evaluated on the evaluation set(s)
 
--  ``metric`` :raw-html:`<a id="metric" title="Permalink to this parameter" href="#metric">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = multi-enum
+-  ``valid_metric`` :raw-html:`<a id="valid_metric" title="Permalink to this parameter" href="#valid_metric">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = multi-enum
 
-   -  dummpy parameter
+   -  metric(s) to be evaluated on the evaluation set(s)
 
 -  ``metric_freq`` :raw-html:`<a id="metric_freq" title="Permalink to this parameter" href="#metric_freq">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``output_freq``, constraints: ``metric_freq > 0``
 
