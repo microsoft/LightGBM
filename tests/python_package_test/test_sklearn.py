@@ -297,7 +297,39 @@ class TestSklearn(unittest.TestCase):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(n_estimators=10, silent=True)
         gbm.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_test, y_test)],
-                eval_train_metric='l2', eval_valid_metric=['l1', 'l2'], verbose=False)
-        self.assertTrue('l2' in gbm.evals_result_['training'])
-        self.assertTrue('l1' in gbm.evals_result_['valid_1'])
-        self.assertTrue('l2' in gbm.evals_result_['valid_1'])
+                eval_train_metric='l2', eval_valid_metric=['l1', 'l2'],
+                early_stopping_rounds=5, verbose=False)
+        self.assertIn('l2', gbm.evals_result_['training'])
+        self.assertIn('l1', gbm.evals_result_['valid_1'])
+        self.assertIn('l2', gbm.evals_result_['valid_1'])
+
+    def test_classifier_train_and_valid_metric(self):
+        X, y = load_breast_cancer(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        gbm = lgb.LGBMClassifier(n_estimators=10, silent=True)
+        gbm.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_test, y_test)],
+                eval_train_metric='binary_error', eval_valid_metric=['binary_logloss', 'binary_error'],
+                early_stopping_rounds=5, verbose=False)
+        self.assertIn('binary_error', gbm.evals_result_['training'])
+        self.assertIn('binary_error', gbm.evals_result_['valid_1'])
+        self.assertIn('binary_logloss', gbm.evals_result_['valid_1'])
+
+    def test_ranker_train_and_valid_metric(self):
+        X_train, y_train = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                           '../../examples/lambdarank/rank.train'))
+        X_test, y_test = load_svmlight_file(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                         '../../examples/lambdarank/rank.test'))
+        q_train = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                          '../../examples/lambdarank/rank.train.query'))
+        q_test = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                         '../../examples/lambdarank/rank.test.query'))
+        gbm = lgb.LGBMRanker(n_estimators=10, silent=True)
+        gbm.fit(X_train, y_train, group=q_train, eval_set=[(X_train, y_train), (X_test, y_test)],
+                eval_group=[q_train, q_test], eval_at=[1, 3],
+                eval_train_metric='ndcg', eval_valid_metric=['l2', 'ndcg'],
+                early_stopping_rounds=5, verbose=False)
+        self.assertIn('ndcg@1', gbm.evals_result_['training'])
+        self.assertIn('ndcg@3', gbm.evals_result_['training'])
+        self.assertIn('ndcg@1', gbm.evals_result_['valid_1'])
+        self.assertIn('ndcg@3', gbm.evals_result_['valid_1'])
+        self.assertIn('l2', gbm.evals_result_['valid_1'])
