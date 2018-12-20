@@ -821,10 +821,12 @@ class TestEngine(unittest.TestCase):
         lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
         evals_result = {}
         gbm = lgb.train(params, lgb_train,
-                        num_boost_round=50,
-                        valid_sets=[lgb_train, lgb_eval],
+                        num_boost_round=10,
+                        valid_sets=[lgb_train, lgb_eval, lgb_eval],
                         verbose_eval=False,
                         evals_result=evals_result)
         self.assertTrue('l2' in evals_result['training'])
         self.assertTrue('l1' in evals_result['valid_1'])
         self.assertTrue('l2' in evals_result['valid_1'])
+        self.assertTrue('l1' in evals_result['valid_2'])
+        self.assertTrue('l2' in evals_result['valid_2'])
