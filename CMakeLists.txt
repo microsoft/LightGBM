@@ -75,7 +75,44 @@ else()
 endif(USE_MPI)
 
 if(USE_OPENMP)
-    find_package(OpenMP REQUIRED)
+    find_package(OpenMP)
+
+    # If OpenMP wasn't found, try if we can find it in the default Macports location
+    if((NOT OPENMP_FOUND) AND (NOT OPENMP_CXX_FOUND) AND EXISTS "/opt/local/lib/libomp/libomp.dylib")
+        set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I/opt/local/include/libomp/")
+        set(OpenMP_C_LIB_NAMES omp)
+        set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I/opt/local/include/libomp/")
+        set(OpenMP_CXX_LIB_NAMES omp)
+        set(OpenMP_omp_LIBRARY /opt/local/lib/libomp/libomp.dylib)
+
+        find_package(OpenMP)
+        if (OPENMP_FOUND OR OPENMP_CXX_FOUND)
+            message(STATUS "Found libomp in macports default location.")
+        else()
+            message(FATAL_ERROR "Didn't find libomp. Tried macports default location but also didn't find it.")
+        endif()
+    endif()
+
+    # If OpenMP wasn't found, try if we can find it in the default Homebrew location
+    if((NOT OPENMP_FOUND) AND (NOT OPENMP_CXX_FOUND) AND EXISTS "/usr/local/opt/libomp/lib/libomp.dylib")
+        set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include")
+        set(OpenMP_C_LIB_NAMES omp)
+        set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include")
+        set(OpenMP_CXX_LIB_NAMES omp)
+        set(OpenMP_omp_LIBRARY /usr/local/opt/libomp/lib/libomp.dylib)
+
+        find_package(OpenMP)
+        if (OPENMP_FOUND OR OPENMP_CXX_FOUND)
+            message(STATUS "Found libomp in homebrew default location.")
+        else()
+            message(FATAL_ERROR "Didn't find libomp. Tried homebrew default location but also didn't find it.")
+        endif()
+    endif()
+
+    if((NOT OPENMP_FOUND) AND (NOT OPENMP_CXX_FOUND))
+        message(FATAL_ERROR "Did not find OpenMP.")
+    endif()
+
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 else()
     # Ignore unknown #pragma warning
@@ -211,8 +248,8 @@ endif(USE_MPI)
 
 if(USE_OPENMP)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-        TARGET_LINK_LIBRARIES(lightgbm ${OpenMP_libomp_LIBRARY})
-        TARGET_LINK_LIBRARIES(_lightgbm ${OpenMP_libomp_LIBRARY})
+        TARGET_LINK_LIBRARIES(lightgbm ${OpenMP_CXX_FLAGS} ${OpenMP_libomp_LIBRARY})
+        TARGET_LINK_LIBRARIES(_lightgbm ${OpenMP_CXX_FLAGS} ${OpenMP_libomp_LIBRARY})
     endif()
 endif(USE_OPENMP)
 
