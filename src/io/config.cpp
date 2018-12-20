@@ -108,18 +108,13 @@ void SetDefaultMetircType(const std::unordered_map<std::string, std::string>& pa
 void GetMetricType(const std::unordered_map<std::string, std::string>& params,
                    std::vector<std::string>* train_metric, std::vector<std::string>* valid_metric) {
   if (params.count("metric") > 0) {
-    //printf("HOGE\n");
-    //printf("metric: %s\n", params.at("metric").c_str());
     SetMetircType(params, "metric", train_metric);
     SetMetircType(params, "metric", valid_metric);
   } else {
-    //printf("FOOO\n");
     if (params.count("train_metric") > 0) {
-      //printf("train_metric: %s\n", params.at("train_metric").c_str());
       SetMetircType(params, "train_metric", train_metric);
     }
     if (params.count("valid_metric") > 0) {
-      //printf("valid_metric: %s\n", params.at("valid_metric").c_str());
       SetMetircType(params, "valid_metric", valid_metric);
     }
   }
