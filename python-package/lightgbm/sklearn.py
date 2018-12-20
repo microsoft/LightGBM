@@ -466,24 +466,6 @@ class LGBMModel(_LGBMModelBase):
             else:
                 params['train_metric'] = eval_train_metric
                 params['valid_metric'] = eval_valid_metric
-            # # register default metric for consistency with callable eval_metric case
-            # original_metric = self._objective if isinstance(self._objective, string_type) else None
-            # if original_metric is None:
-            #     # try to deduce from class instance
-            #     if isinstance(self, LGBMRegressor):
-            #         original_metric = "l2"
-            #     elif isinstance(self, LGBMClassifier):
-            #         original_metric = "multi_logloss" if self._n_classes > 2 else "binary_logloss"
-            #     elif isinstance(self, LGBMRanker):
-            #         original_metric = "ndcg"
-            # # overwrite default metric by explicitly set metric
-            # for metric_alias in ['metric', 'metrics', 'metric_types']:
-            #     if metric_alias in params:
-            #         original_metric = params.pop(metric_alias)
-            # # concatenate metric from params (or default if not provided in params) and eval_metric
-            # original_metric = [original_metric] if isinstance(original_metric, (string_type, type(None))) else original_metric
-            # eval_metric = [eval_metric] if isinstance(eval_metric, (string_type, type(None))) else eval_metric
-            # params['metric'] = set(original_metric + eval_metric)  # TODO: train_metric
 
         if not isinstance(X, DataFrame):
             _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
