@@ -221,7 +221,7 @@ void Dataset::Construct(
   // get num_features
   std::vector<int> used_features;
   for (int i = 0; i < static_cast<int>(bin_mappers.size()); ++i) {
-    if (bin_mappers[i] != nullptr && !bin_mappers[i]->is_trival()) {
+    if (bin_mappers[i] != nullptr && !bin_mappers[i]->is_trivial()) {
       used_features.emplace_back(i);
     }
   }

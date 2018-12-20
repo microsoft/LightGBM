@@ -211,15 +211,15 @@ Python-package
    If you set ``free_raw_data=True`` (default), the raw data (with Python data struct) will be freed.
    So, if you want to:
 
-   -  get label (or weight/init\_score/group) before constructing a dataset, it's same as get ``self.label``
+   -  get label (or weight/init\_score/group/data) before constructing a dataset, it's same as get ``self.label``;
 
-   -  set label (or weight/init\_score/group) before constructing a dataset, it's same as ``self.label=some_label_array``
+   -  set label (or weight/init\_score/group) before constructing a dataset, it's same as ``self.label=some_label_array``;
 
    -  get num\_data (or num\_feature) before constructing a dataset, you can get data with ``self.data``.
-      Then, if your data is ``numpy.ndarray``, use some code like ``self.data.shape``
+      Then, if your data is ``numpy.ndarray``, use some code like ``self.data.shape``. But do not do this after subsetting the Dataset, because you'll get always ``None``;
 
    -  set predictor (or reference/categorical feature) after constructing a dataset,
-      you should set ``free_raw_data=False`` or init a Dataset object with the same raw data
+      you should set ``free_raw_data=False`` or init a Dataset object with the same raw data.
 
 --------------
 
