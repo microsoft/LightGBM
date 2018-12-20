@@ -364,6 +364,12 @@ class LGBMModel(_LGBMModelBase):
             If callable, it should be a custom evaluation metric, see note below for more details.
             In either case, the ``metric`` from the model parameters will be evaluated and used as well.
             Default: 'l2' for LGBMRegressor, 'logloss' for LGBMClassifier, 'ndcg' for LGBMRanker.
+        eval_train_metric : string, list of strings, callable or None, optional (default=None)
+            metric(s) to be evaluated on the train set passed into ``eval_set``
+            if ``metric`` is set, ``eval_train_metric`` will be overwritten
+        eval_valid_metric : string, list of strings, callable or None, optional (default=None)
+            metric(s) to be evaluated on the valid set passed into ``eval_set``
+            if ``metric`` is set, ``eval_valid_metric`` will be overwritten
         early_stopping_rounds : int or None, optional (default=None)
             Activates early stopping. The model will train until the validation score stops improving.
             Validation score needs to improve at least every ``early_stopping_rounds`` round(s)
@@ -462,6 +468,7 @@ class LGBMModel(_LGBMModelBase):
         else:
             feval = None
             if eval_metric:
+                # for backward compatibility, `metric` is prefered to `train_metric` and `valid_metric`
                 params['metric'] = eval_metric
             else:
                 params['train_metric'] = eval_train_metric

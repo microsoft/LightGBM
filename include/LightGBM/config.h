@@ -702,13 +702,15 @@ public:
   // [doc-only]
   // default = ""
   // type = multi-enum
-  // desc = metric(s) to be evaluated on the evaluation set(s)
+  // desc = metric(s) to be evaluated on the train set passed into evaluation set
+  // desc = if ``metric`` is set, ``train_metric`` will be overwritten
   std::vector<std::string> train_metric;
 
   // [doc-only]
   // default = ""
   // type = multi-enum
-  // desc = metric(s) to be evaluated on the evaluation set(s)
+  // desc = metric(s) to be evaluated on the valid set passed into evaluation set
+  // desc = if ``metric`` is set, ``valid_metric`` will be overwritten
   std::vector<std::string> valid_metric;
 
   // check = >0

@@ -108,6 +108,7 @@ void SetDefaultMetircType(const std::unordered_map<std::string, std::string>& pa
 void GetMetricType(const std::unordered_map<std::string, std::string>& params,
                    std::vector<std::string>* train_metric, std::vector<std::string>* valid_metric) {
   if (params.count("metric") > 0) {
+    // for backward compatibility, `metric` is prefered to `train_metric` and `valid_metric`
     SetMetircType(params, "metric", train_metric);
     SetMetircType(params, "metric", valid_metric);
   } else {

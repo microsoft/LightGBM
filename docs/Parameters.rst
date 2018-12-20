@@ -793,11 +793,15 @@ Metric Parameters
 
 -  ``train_metric`` :raw-html:`<a id="train_metric" title="Permalink to this parameter" href="#train_metric">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = multi-enum
 
-   -  metric(s) to be evaluated on the evaluation set(s)
+   -  metric(s) to be evaluated on the train set passed into evaluation set
+
+   -  if ``metric`` is set, ``train_metric`` will be overwritten
 
 -  ``valid_metric`` :raw-html:`<a id="valid_metric" title="Permalink to this parameter" href="#valid_metric">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = multi-enum
 
-   -  metric(s) to be evaluated on the evaluation set(s)
+   -  metric(s) to be evaluated on the valid set passed into evaluation set
+
+   -  if ``metric`` is set, ``valid_metric`` will be overwritten
 
 -  ``metric_freq`` :raw-html:`<a id="metric_freq" title="Permalink to this parameter" href="#metric_freq">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``output_freq``, constraints: ``metric_freq > 0``
 
