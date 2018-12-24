@@ -147,7 +147,7 @@ Only **Apple Clang** version 8.1 or higher is supported.
      git clone --recursive https://github.com/Microsoft/LightGBM ; cd LightGBM
      mkdir build ; cd build
 
-     # For Mojave
+     # For Mojave (10.14)
      cmake \
        -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include" \
        -DOpenMP_C_LIB_NAMES="omp" \
@@ -156,7 +156,7 @@ Only **Apple Clang** version 8.1 or higher is supported.
        -DOpenMP_omp_LIBRARY=/usr/local/opt/libomp/lib/libomp.dylib \
        ..
 
-     # For High Sierra or earlier
+     # For High Sierra or earlier (<= 10.13)
      cmake ..
 
      make -j4
