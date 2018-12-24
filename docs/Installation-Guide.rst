@@ -149,11 +149,11 @@ Only **Apple Clang** version 8.1 or higher is supported.
 
      # For Mojave (10.14)
      cmake \
-       -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include" \
+       -DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" \
        -DOpenMP_C_LIB_NAMES="omp" \
-       -DOpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include" \
+       -DOpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" \
        -DOpenMP_CXX_LIB_NAMES="omp" \
-       -DOpenMP_omp_LIBRARY=/usr/local/opt/libomp/lib/libomp.dylib \
+       -DOpenMP_omp_LIBRARY=$(brew --prefix libomp)/lib/libomp.dylib \
        ..
 
      # For High Sierra or earlier (<= 10.13)
