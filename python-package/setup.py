@@ -125,11 +125,11 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, nomp=False,
             # Apple Clang
             # https://github.com/Homebrew/homebrew-core/pull/20589
             cmake_cmd.extend([
-                '-DOpenMP_C_FLAGS="-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include"',
-                '-DOpenMP_C_LIB_NAMES="omp"',
-                '-DOpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include"',
-                '-DOpenMP_CXX_LIB_NAMES="omp"',
-                '-DOpenMP_"omp"_LIBRARY=/usr/local/opt/libomp/lib/libomp.dylib'
+                '-DOpenMP_C_FLAGS=-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include',
+                '-DOpenMP_C_LIB_NAMES=omp',
+                '-DOpenMP_CXX_FLAGS=-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include',
+                '-DOpenMP_CXX_LIB_NAMES=omp',
+                '-DOpenMP_omp_LIBRARY=/usr/local/opt/libomp/lib/libomp.dylib'
             ])
     if use_hdfs:
         cmake_cmd.append("-DUSE_HDFS=ON")
