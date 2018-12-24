@@ -25,7 +25,7 @@ namespace LightGBM {
   BinMapper::BinMapper(const BinMapper& other) {
     num_bin_ = other.num_bin_;
     missing_type_ = other.missing_type_;
-    is_trival_ = other.is_trival_;
+    is_trivial_ = other.is_trivial_;
     sparse_rate_ = other.sparse_rate_;
     bin_type_ = other.bin_type_;
     if (bin_type_ == BinType::NumericalBin) {
@@ -376,24 +376,24 @@ namespace LightGBM {
       }
     }
 
-    // check trival(num_bin_ == 1) feature
+    // check trivial(num_bin_ == 1) feature
     if (num_bin_ <= 1) {
-      is_trival_ = true;
+      is_trivial_ = true;
     } else {
-      is_trival_ = false;
+      is_trivial_ = false;
     }
     // check useless bin
-    if (!is_trival_ && NeedFilter(cnt_in_bin, static_cast<int>(total_sample_cnt), min_split_data, bin_type_)) {
-      is_trival_ = true;
+    if (!is_trivial_ && NeedFilter(cnt_in_bin, static_cast<int>(total_sample_cnt), min_split_data, bin_type_)) {
+      is_trivial_ = true;
     }
 
-    if (!is_trival_) {
+    if (!is_trivial_) {
       default_bin_ = ValueToBin(0);
       if (bin_type_ == BinType::CategoricalBin) {
         CHECK(default_bin_ > 0);
       }
     }
-    if (!is_trival_) {
+    if (!is_trivial_) {
       // calculate sparse rate
       sparse_rate_ = static_cast<double>(cnt_in_bin[default_bin_]) / static_cast<double>(total_sample_cnt);
     } else {
@@ -420,8 +420,8 @@ namespace LightGBM {
     buffer += sizeof(num_bin_);
     std::memcpy(buffer, &missing_type_, sizeof(missing_type_));
     buffer += sizeof(missing_type_);
-    std::memcpy(buffer, &is_trival_, sizeof(is_trival_));
-    buffer += sizeof(is_trival_);
+    std::memcpy(buffer, &is_trivial_, sizeof(is_trivial_));
+    buffer += sizeof(is_trivial_);
     std::memcpy(buffer, &sparse_rate_, sizeof(sparse_rate_));
     buffer += sizeof(sparse_rate_);
     std::memcpy(buffer, &bin_type_, sizeof(bin_type_));
@@ -444,8 +444,8 @@ namespace LightGBM {
     buffer += sizeof(num_bin_);
     std::memcpy(&missing_type_, buffer, sizeof(missing_type_));
     buffer += sizeof(missing_type_);
-    std::memcpy(&is_trival_, buffer, sizeof(is_trival_));
-    buffer += sizeof(is_trival_);
+    std::memcpy(&is_trivial_, buffer, sizeof(is_trivial_));
+    buffer += sizeof(is_trivial_);
     std::memcpy(&sparse_rate_, buffer, sizeof(sparse_rate_));
     buffer += sizeof(sparse_rate_);
     std::memcpy(&bin_type_, buffer, sizeof(bin_type_));
@@ -472,7 +472,7 @@ namespace LightGBM {
   void BinMapper::SaveBinaryToFile(const VirtualFileWriter* writer) const {
     writer->Write(&num_bin_, sizeof(num_bin_));
     writer->Write(&missing_type_, sizeof(missing_type_));
-    writer->Write(&is_trival_, sizeof(is_trival_));
+    writer->Write(&is_trivial_, sizeof(is_trivial_));
     writer->Write(&sparse_rate_, sizeof(sparse_rate_));
     writer->Write(&bin_type_, sizeof(bin_type_));
     writer->Write(&min_val_, sizeof(min_val_));
@@ -486,7 +486,7 @@ namespace LightGBM {
   }
 
   size_t BinMapper::SizesInByte() const {
-    size_t ret = sizeof(num_bin_) + sizeof(missing_type_) + sizeof(is_trival_) + sizeof(sparse_rate_)
+    size_t ret = sizeof(num_bin_) + sizeof(missing_type_) + sizeof(is_trivial_) + sizeof(sparse_rate_)
       + sizeof(bin_type_) + sizeof(min_val_) + sizeof(max_val_) + sizeof(default_bin_);
     if (bin_type_ == BinType::NumericalBin) {
       ret += sizeof(double) *  num_bin_;

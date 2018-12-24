@@ -732,7 +732,7 @@ class TestEngine(unittest.TestCase):
             'bagging_freq': 1,
             'bagging_fraction': 0.8,
             'feature_fraction': 0.8,
-            'boost_from_average': False
+            'boost_from_average': True
         }
         lgb_train = lgb.Dataset(X, y)
         gbm = lgb.train(params, lgb_train, num_boost_round=20)
@@ -808,3 +808,23 @@ class TestEngine(unittest.TestCase):
         }
         self.test_constant_features([0.0, 1.0, 2.0, 0.0], [0.5, 0.25, 0.25], params)
         self.test_constant_features([0.0, 1.0, 2.0, 1.0], [0.25, 0.5, 0.25], params)
+
+    def test_fpreproc(self):
+        def preprocess_data(dtrain, dtest, params):
+            train_data = dtrain.construct().get_data()
+            test_data = dtest.construct().get_data()
+            train_data[:, 0] += 1
+            test_data[:, 0] += 1
+            dtrain.label[-5:] = 3
+            dtest.label[-5:] = 3
+            dtrain = lgb.Dataset(train_data, dtrain.label)
+            dtest = lgb.Dataset(test_data, dtest.label, reference=dtrain)
+            params['num_class'] = 4
+            return dtrain, dtest, params
+
+        X, y = load_iris(True)
+        dataset = lgb.Dataset(X, y, free_raw_data=False)
+        params = {'objective': 'multiclass', 'num_class': 3, 'verbose': -1}
+        results = lgb.cv(params, dataset, num_boost_round=10, fpreproc=preprocess_data)
+        self.assertIn('multi_logloss-mean', results)
+        self.assertEqual(len(results['multi_logloss-mean']), 10)
