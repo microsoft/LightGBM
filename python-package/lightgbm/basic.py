@@ -1078,7 +1078,7 @@ class Dataset(object):
     def _reverse_update_params(self):
         self.params = copy.deepcopy(self.params_back_up)
         self.params_back_up = None
-        if self.handle is not None and params is not None:
+        if self.handle is not None and self.params is not None:
             _safe_call(_LIB.LGBM_DatasetUpdateParam(self.handle, c_str(self.params)))
         return self
 
