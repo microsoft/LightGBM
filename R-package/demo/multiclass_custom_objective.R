@@ -15,17 +15,12 @@ test <- as.matrix(iris[c(41:50, 91:100, 141:150), ])
 
 dtrain <- lgb.Dataset(data = train[, 1:4], label = train[, 5])
 dtest <- lgb.Dataset.create.valid(dtrain, data = test[, 1:4], label = test[, 5])
-
-# Built-in method uses class mean as initial score by default
-# Set to zero for equivalence with custom objective function
-setinfo(dtrain, "init_score", matrix(0, nrow = nrow(dtrain), ncol = 3))
-setinfo(dtest,  "init_score", matrix(0, nrow = nrow(dtest), ncol = 3))
-
 valids <- list(train = dtrain, test = dtest)
 
 # Method 1 of training with built-in multiclass objective
 model_builtin <- lgb.train(list(),
                            dtrain,
+                           boost_from_average = FALSE,
                            100,
                            valids,
                            min_data = 1,
