@@ -87,3 +87,4 @@ probs_custom <- exp(preds_custom) / rowSums(exp(preds_custom))
 # compare predictions
 stopifnot(identical(probs_builtin, probs_custom))
 stopifnot(identical(preds_builtin, preds_custom))
+
