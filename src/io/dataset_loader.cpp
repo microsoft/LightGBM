@@ -370,10 +370,22 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   }
   mem_ptr += sizeof(int) * (dataset->num_groups_);
 
-  const int8_t* tmp_ptr_monotone_type = reinterpret_cast<const int8_t*>(mem_ptr);
-  dataset->monotone_types_.clear();
-  for (int i = 0; i < dataset->num_features_; ++i) {
-    dataset->monotone_types_.push_back(tmp_ptr_monotone_type[i]);
+  if(!config_.monotone_constraints.empty()){
+    CHECK(dataset->num_total_features_ == config_.monotone_constraints.size());
+    dataset->monotone_types_.resize(dataset->num_features_);
+    for(int i = 0; i < dataset->num_total_features_; ++i){
+      int inner_fidx = dataset->InnerFeatureIndex(i);
+      if(inner_fidx >= 0) {
+	dataset->monotone_types_[inner_fidx] = config_.monotone_constraints[i];
+      }
+    }
+  }
+  else {
+    const int8_t* tmp_ptr_monotone_type = reinterpret_cast<const int8_t*>(mem_ptr);
+    dataset->monotone_types_.clear();
+    for (int i = 0; i < dataset->num_features_; ++i) {
+      dataset->monotone_types_.push_back(tmp_ptr_monotone_type[i]);
+    }
   }
   mem_ptr += sizeof(int8_t) * (dataset->num_features_);
 
@@ -391,7 +403,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
       }
     }
   }
-  else{
+  else {
     const double* tmp_ptr_feature_penalty = reinterpret_cast<const double*>(mem_ptr);
     dataset->feature_penalty_.clear();
     for (int i = 0; i < dataset->num_features_; ++i) {
