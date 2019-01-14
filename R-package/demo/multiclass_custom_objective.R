@@ -18,6 +18,8 @@ dtest <- lgb.Dataset.create.valid(dtrain, data = test[, 1:4], label = test[, 5])
 valids <- list(train = dtrain, test = dtest)
 
 # Method 1 of training with built-in multiclass objective
+# Note: need to turn off boost from average to match custom objective
+# (https://github.com/Microsoft/LightGBM/issues/1846)
 model_builtin <- lgb.train(list(),
                            dtrain,
                            boost_from_average = FALSE,
