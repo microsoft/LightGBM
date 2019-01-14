@@ -382,10 +382,13 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   }
 
   if(!config_.feature_contri.empty()){
-    CHECK(dataset->num_features_ == config_.feature_contri.size());
+    CHECK(dataset->num_total_features_ == config_.feature_contri.size());
     dataset->feature_penalty_.resize(dataset->num_features_);
-    for(int i = 0; i < dataset->num_features_; ++i){
-      dataset->feature_penalty_[dataset->InnerFeatureIndex(i)] = config_.feature_contri[i];
+    for(int i = 0; i < dataset->num_total_features_; ++i){
+      int inner_fidx = dataset->InnerFeatureIndex(i);
+      if(inner_fidx >= 0) {
+	dataset->feature_penalty_[inner_fidx] = config_.feature_contri[i];
+      }
     }
   }
   else{
