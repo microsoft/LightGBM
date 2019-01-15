@@ -370,13 +370,13 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   }
   mem_ptr += sizeof(int) * (dataset->num_groups_);
 
-  if(!config_.monotone_constraints.empty()){
+  if(!config_.monotone_constraints.empty()) {
     CHECK(dataset->num_total_features_ == config_.monotone_constraints.size());
     dataset->monotone_types_.resize(dataset->num_features_);
     for(int i = 0; i < dataset->num_total_features_; ++i){
       int inner_fidx = dataset->InnerFeatureIndex(i);
       if(inner_fidx >= 0) {
-	dataset->monotone_types_[inner_fidx] = config_.monotone_constraints[i];
+        dataset->monotone_types_[inner_fidx] = config_.monotone_constraints[i];
       }
     }
   }
@@ -393,13 +393,13 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     dataset->monotone_types_.clear();
   }
 
-  if(!config_.feature_contri.empty()){
+  if(!config_.feature_contri.empty()) {
     CHECK(dataset->num_total_features_ == config_.feature_contri.size());
     dataset->feature_penalty_.resize(dataset->num_features_);
     for(int i = 0; i < dataset->num_total_features_; ++i){
       int inner_fidx = dataset->InnerFeatureIndex(i);
       if(inner_fidx >= 0) {
-	dataset->feature_penalty_[inner_fidx] = config_.feature_contri[i];
+        dataset->feature_penalty_[inner_fidx] = config_.feature_contri[i];
       }
     }
   }
