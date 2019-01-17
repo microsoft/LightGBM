@@ -1170,7 +1170,7 @@ class TestEngine(unittest.TestCase):
             res = get_cv_result(params_obj_class_1_verbose, fobj=custom_obj, feval=custom_metric)
             self.assertEqual(len(res), 2)
             self.assertIn('error-mean', res)
-            # multiclass metric alias with custom one with invalid class_num 
+            # multiclass metric alias with custom one with invalid class_num
             self.assertRaises(lgb.basic.LightGBMError, get_cv_result,
                               params_obj_class_1_verbose, metrics=obj_multi_alias,
                               fobj=custom_obj, feval=custom_metric)
