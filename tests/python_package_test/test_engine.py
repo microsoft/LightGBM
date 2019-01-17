@@ -831,15 +831,10 @@ class TestEngine(unittest.TestCase):
 
     def test_metrics(self):
         def custom_obj(preds, train_data):
-            labels = train_data.get_label()
-            preds = 1.0 / (1.0 + np.exp(-preds))
-            grad = preds - labels
-            hess = preds * (1.0 - preds)
-            return grad, hess
+            return np.zeros(preds.shape), np.zeros(preds.shape)
 
         def custom_metric(preds, train_data):
-            labels = train_data.get_label()
-            return 'error', np.mean(labels != (preds > 0.5)), False
+            return 'error', 0, False
 
         X, y = load_digits(2, True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
