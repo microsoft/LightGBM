@@ -38,7 +38,7 @@ __all__ = ['Dataset', 'Booster',
 # REMOVEME: remove warning after 2.3.0 version release
 if system() == 'Darwin':
     warnings.warn("Starting from version 2.2.1, the library file in distribution wheels for macOS "
-                  "is built by the Apple Clang (Xcode_8.3.1) compiler.\n"
+                  "is built by the Apple Clang (Xcode_8.3.3) compiler.\n"
                   "This means that in case of installing LightGBM from PyPI via the ``pip install lightgbm`` command, "
                   "you don't need to install the gcc compiler anymore.\n"
                   "Instead of that, you need to install the OpenMP library, "
