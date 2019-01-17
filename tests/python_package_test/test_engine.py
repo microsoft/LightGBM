@@ -1141,3 +1141,70 @@ class TestEngine(unittest.TestCase):
         train_booster(params=params_metric_none_verbose, fobj=custom_obj, feval=custom_metric)
         self.assertEqual(len(evals_result), 1)
         self.assertIn('error', evals_result['valid_0'])
+
+        X, y = load_digits(3, True)
+        lgb_train = lgb.Dataset(X, y, silent=True)
+
+        obj_multi_aliases = ['multiclass', 'softmax', 'multiclassova', 'multiclass_ova', 'ova', 'ovr']
+        for obj_multi_alias in obj_multi_aliases:
+            params_obj_class_3_verbose = {'objective': obj_multi_alias, 'num_class': 3, 'verbose': -1}
+            params_obj_class_1_verbose = {'objective': obj_multi_alias, 'num_class': 1, 'verbose': -1}
+            params_obj_verbose = {'objective': obj_multi_alias, 'verbose': -1}
+            # multiclass default metric
+            res = get_cv_result(params_obj_class_3_verbose)
+            self.assertEqual(len(res), 2)
+            self.assertIn('multi_logloss-mean', res)
+            # multiclass default metric with custom one
+            res = get_cv_result(params_obj_class_3_verbose, feval=custom_metric)
+            self.assertEqual(len(res), 4)
+            self.assertIn('multi_logloss-mean', res)
+            self.assertIn('error-mean', res)
+            # multiclass metric alias with custom one for custom objective
+            res = get_cv_result(params_obj_class_3_verbose, fobj=custom_obj, feval=custom_metric)
+            self.assertEqual(len(res), 2)
+            self.assertIn('error-mean', res)
+            # no metric for invalid class_num
+            res = get_cv_result(params_obj_class_1_verbose, fobj=custom_obj)
+            self.assertEqual(len(res), 0)
+            # custom metric for invalid class_num
+            res = get_cv_result(params_obj_class_1_verbose, fobj=custom_obj, feval=custom_metric)
+            self.assertEqual(len(res), 2)
+            self.assertIn('error-mean', res)
+            # multiclass metric alias with custom one with invalid class_num 
+            self.assertRaises(lgb.basic.LightGBMError, get_cv_result,
+                              params_obj_class_1_verbose, metrics=obj_multi_alias,
+                              fobj=custom_obj, feval=custom_metric)
+            # multiclass default metric without num_class
+            self.assertRaises(lgb.basic.LightGBMError, get_cv_result,
+                              params_obj_verbose)
+            for metric_multi_alias in obj_multi_aliases + ['multi_logloss']:
+                # multiclass metric alias
+                res = get_cv_result(params_obj_class_3_verbose, metrics=metric_multi_alias)
+                self.assertEqual(len(res), 2)
+                self.assertIn('multi_logloss-mean', res)
+            # multiclass metric
+            res = get_cv_result(params_obj_class_3_verbose, metrics='multi_error')
+            self.assertEqual(len(res), 2)
+            self.assertIn('multi_error-mean', res)
+            # non-valid metric for multiclass objective
+            self.assertRaises(lgb.basic.LightGBMError, get_cv_result,
+                              params_obj_class_3_verbose, metrics='binary_logloss')
+        params_class_3_verbose = {'num_class': 3, 'verbose': -1}
+        # non-default num_class for default objective
+        self.assertRaises(lgb.basic.LightGBMError, get_cv_result,
+                          params_class_3_verbose)
+        # no metric with non-default num_class for custom objective
+        res = get_cv_result(params_class_3_verbose, fobj=custom_obj)
+        self.assertEqual(len(res), 0)
+        for metric_multi_alias in obj_multi_aliases + ['multi_logloss']:
+            # multiclass metric alias for custom objective
+            res = get_cv_result(params_class_3_verbose, metrics=metric_multi_alias, fobj=custom_obj)
+            self.assertEqual(len(res), 2)
+            self.assertIn('multi_logloss-mean', res)
+        # multiclass metric for custom objective
+        res = get_cv_result(params_class_3_verbose, metrics='multi_error', fobj=custom_obj)
+        self.assertEqual(len(res), 2)
+        self.assertIn('multi_error-mean', res)
+        # binary metric with non-default num_class for custom objective
+        self.assertRaises(lgb.basic.LightGBMError, get_cv_result,
+                          params_class_3_verbose, metrics='binary_error', fobj=custom_obj)
