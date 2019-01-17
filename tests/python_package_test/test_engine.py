@@ -863,11 +863,11 @@ class TestEngine(unittest.TestCase):
         params_metric_none_verbose = {'metric': 'None', 'verbose': -1}
 
         def get_cv_result(params=params_obj_verbose, **kwargs):
-            return lgb.cv(params, lgb_train, num_boost_round=10, verbose_eval=False, **kwargs)
+            return lgb.cv(params, lgb_train, num_boost_round=5, verbose_eval=False, **kwargs)
 
         def train_booster(params=params_obj_verbose, **kwargs):
             lgb.train(params, lgb_train,
-                      num_boost_round=10,
+                      num_boost_round=5,
                       valid_sets=[lgb_valid],
                       evals_result=evals_result,
                       verbose_eval=False, **kwargs)
