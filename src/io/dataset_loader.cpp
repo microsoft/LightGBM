@@ -371,7 +371,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   mem_ptr += sizeof(int) * (dataset->num_groups_);
 
   if(!config_.monotone_constraints.empty()) {
-    CHECK(dataset->num_total_features_ == config_.monotone_constraints.size());
+    CHECK(static_cast<size_t>(dataset->num_total_features_) == config_.monotone_constraints.size());
     dataset->monotone_types_.resize(dataset->num_features_);
     for(int i = 0; i < dataset->num_total_features_; ++i){
       int inner_fidx = dataset->InnerFeatureIndex(i);
@@ -394,7 +394,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   }
 
   if(!config_.feature_contri.empty()) {
-    CHECK(dataset->num_total_features_ == config_.feature_contri.size());
+    CHECK(static_cast<size_t>(dataset->num_total_features_) == config_.feature_contri.size());
     dataset->feature_penalty_.resize(dataset->num_features_);
     for(int i = 0; i < dataset->num_total_features_; ++i){
       int inner_fidx = dataset->InnerFeatureIndex(i);

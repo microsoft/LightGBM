@@ -158,7 +158,7 @@ std::vector<std::vector<int>> FastFeatureBundling(std::vector<std::unique_ptr<Bi
   // sort by non zero cnt
   std::vector<int> sorted_idx;
   sorted_idx.reserve(used_features.size());
-  for (int i = 0; i < used_features.size(); ++i) {
+  for (int i = 0; i < static_cast<int>(used_features.size()); ++i) {
     sorted_idx.emplace_back(i);
   }
   // sort by non zero cnt, bigger first
