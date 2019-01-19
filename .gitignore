@@ -390,3 +390,6 @@ R-package/src/src/
 lightgbm_r/*
 lightgbm*.tar.gz
 lightgbm.Rcheck/
+
+# Files generate by aspell
+**/*.bak
