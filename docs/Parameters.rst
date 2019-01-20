@@ -175,11 +175,13 @@ Core Parameters
 
    -  **Note**: refer to `Installation Guide <./Installation-Guide.rst#build-gpu-version>`__ to build LightGBM with GPU support
 
--  ``seed`` :raw-html:`<a id="seed" title="Permalink to this parameter" href="#seed">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``random_seed``, ``random_state``
+-  ``seed`` :raw-html:`<a id="seed" title="Permalink to this parameter" href="#seed">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = int, aliases: ``random_seed``, ``random_state``
 
-   -  this seed is used to generate other seeds, e.g. ``data_random_seed``, ``feature_fraction_seed``
+   -  this seed is used to generate other seeds, e.g. ``data_random_seed``, ``feature_fraction_seed``, etc.
 
-   -  will be overridden, if you set other seeds
+   -  by default, this seed is unused in favor of default values of other seeds
+
+   -  this seed has lower priority in comparison with other seeds, which means that it will be overridden, if you set other seeds explicitly
 
 Learning Control Parameters
 ---------------------------

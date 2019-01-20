@@ -145,7 +145,7 @@ LightGBM
 
 -  **Question 11**: LightGBM hangs when multithreading (OpenMP) and using forking in Linux at the same time.
 
--  **Solution 11**: Use ``nthreads=1`` to disable multithreading of LightGBM. There is a bug with OpenMP which hangs forked sessions with multithreading activated. A more expensive solution is to use new processes instead of using fork, however keep in mind it is creating new processes where you have to copy memory and load libraries (example: if you want to fork 16 times your current process, then you will require to make 16 copies of your dataset in memory). See (`Microsoft/LightGBM#1789 <https://github.com/Microsoft/LightGBM/issues/1789#issuecomment-433713383>`__).
+-  **Solution 11**: Use ``nthreads=1`` to disable multithreading of LightGBM. There is a bug with OpenMP which hangs forked sessions with multithreading activated. A more expensive solution is to use new processes instead of using fork, however, keep in mind it is creating new processes where you have to copy memory and load libraries (example: if you want to fork 16 times your current process, then you will require to make 16 copies of your dataset in memory) (see `Microsoft/LightGBM#1789 <https://github.com/Microsoft/LightGBM/issues/1789#issuecomment-433713383>`__).
    
    An alternative, if multithreading is really necessary inside the forked sessions, would be to compile LightGBM with Intel toolchain. Intel compilers are unaffected by this bug.
    
@@ -211,12 +211,24 @@ Python-package
    If you set ``free_raw_data=True`` (default), the raw data (with Python data struct) will be freed.
    So, if you want to:
 
-   -  get label (or weight/init\_score/group) before constructing a dataset, it's same as get ``self.label``
+   -  get label (or weight/init\_score/group/data) before constructing a dataset, it's same as get ``self.label``;
 
-   -  set label (or weight/init\_score/group) before constructing a dataset, it's same as ``self.label=some_label_array``
+   -  set label (or weight/init\_score/group) before constructing a dataset, it's same as ``self.label=some_label_array``;
 
    -  get num\_data (or num\_feature) before constructing a dataset, you can get data with ``self.data``.
-      Then, if your data is ``numpy.ndarray``, use some code like ``self.data.shape``
+      Then, if your data is ``numpy.ndarray``, use some code like ``self.data.shape``. But do not do this after subsetting the Dataset, because you'll get always ``None``;
 
    -  set predictor (or reference/categorical feature) after constructing a dataset,
-      you should set ``free_raw_data=False`` or init a Dataset object with the same raw data
+      you should set ``free_raw_data=False`` or init a Dataset object with the same raw data.
+
+--------------
+
+-  **Question 3**: I encounter segmentation faults (segfaults) randomly after installing LightGBM from PyPI using ``pip install lightgbm``.
+
+-  **Solution 3**: We are doing our best to provide universal wheels which have high running speed and are compatible with any hardware, OS, compiler, etc. at the same time.
+   However, sometimes it's just impossible to guarantee the possibility of usage of LightGBM in any specific environment (see `Microsoft/LightGBM#1743 <https://github.com/Microsoft/LightGBM/issues/1743>`__).
+
+   Therefore, the first thing you should try in case of segfaults is **compiling from the source** using ``pip install --no-binary :all: lightgbm``.
+   For the OS-specific prerequisites see `this guide <https://github.com/Microsoft/LightGBM/blob/master/python-package/README.rst#build-from-sources>`__.
+
+   Also, feel free to post a new issue in our GitHub repository. We always look at each case individually and try to find a root cause.

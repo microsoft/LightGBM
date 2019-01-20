@@ -52,7 +52,8 @@ void GBDT::Predict(const double* features, double* output, const PredictionEarly
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
       output[k] /= num_iteration_for_pred_;
     }
-  } else if (objective_function_ != nullptr) {
+  }
+  if (objective_function_ != nullptr) {
     objective_function_->ConvertOutput(output, output);
   }
 }
@@ -63,7 +64,8 @@ void GBDT::PredictByMap(const std::unordered_map<int, double>& features, double*
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
       output[k] /= num_iteration_for_pred_;
     }
-  } else if (objective_function_ != nullptr) {
+  }
+  if (objective_function_ != nullptr) {
     objective_function_->ConvertOutput(output, output);
   }
 }

@@ -15,19 +15,19 @@ namespace LightGBM {
 /*!
 * \brief Rondom Forest implementation
 */
-class RF: public GBDT {
+class RF : public GBDT {
 public:
 
-  RF() : GBDT() { 
+  RF() : GBDT() {
     average_output_ = true;
   }
 
   ~RF() {}
 
   void Init(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
-            const std::vector<const Metric*>& training_metrics) override {
+    const std::vector<const Metric*>& training_metrics) override {
     CHECK(config->bagging_freq > 0 && config->bagging_fraction < 1.0f && config->bagging_fraction > 0.0f);
-    CHECK(config->feature_fraction < 1.0f && config->feature_fraction > 0.0f);
+    CHECK(config->feature_fraction <= 1.0f && config->feature_fraction > 0.0f);
     GBDT::Init(config, train_data, objective_function, training_metrics);
 
     if (num_init_iteration_ > 0) {
@@ -37,76 +37,61 @@ public:
     } else {
       CHECK(train_data->metadata().init_score() == nullptr);
     }
-    // cannot use RF for multi-class. 
     CHECK(num_tree_per_iteration_ == num_class_);
     // not shrinkage rate for the RF
     shrinkage_rate_ = 1.0f;
     // only boosting one time
-    GetRFTargets(train_data);
+    Boosting();
     if (is_use_subset_ && bag_data_cnt_ < num_data_) {
       tmp_grad_.resize(num_data_);
       tmp_hess_.resize(num_data_);
     }
-    tmp_score_.resize(num_data_, 0.0);
   }
 
   void ResetConfig(const Config* config) override {
     CHECK(config->bagging_freq > 0 && config->bagging_fraction < 1.0f && config->bagging_fraction > 0.0f);
-    CHECK(config->feature_fraction < 1.0f && config->feature_fraction > 0.0f);
+    CHECK(config->feature_fraction <= 1.0f && config->feature_fraction > 0.0f);
     GBDT::ResetConfig(config);
     // not shrinkage rate for the RF
     shrinkage_rate_ = 1.0f;
   }
 
   void ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* objective_function,
-                         const std::vector<const Metric*>& training_metrics) override {
+    const std::vector<const Metric*>& training_metrics) override {
     GBDT::ResetTrainingData(train_data, objective_function, training_metrics);
     if (iter_ + num_init_iteration_ > 0) {
       for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
         train_score_updater_->MultiplyScore(1.0f / (iter_ + num_init_iteration_), cur_tree_id);
       }
     }
-    // cannot use RF for multi-class.
     CHECK(num_tree_per_iteration_ == num_class_);
     // only boosting one time
-    GetRFTargets(train_data);
+    Boosting();
     if (is_use_subset_ && bag_data_cnt_ < num_data_) {
       tmp_grad_.resize(num_data_);
       tmp_hess_.resize(num_data_);
     }
-    tmp_score_.resize(num_data_, 0.0);
-  }
-
-  void GetRFTargets(const Dataset* train_data) {
-    auto label_ptr = train_data->metadata().label();
-    std::fill(hessians_.begin(), hessians_.end(), 1.0f);
-    if (num_tree_per_iteration_ == 1) {
-      OMP_INIT_EX();
-      #pragma omp parallel for schedule(static,1)
-      for (data_size_t i = 0; i < train_data->num_data(); ++i) {
-        OMP_LOOP_EX_BEGIN();
-        score_t label = label_ptr[i];
-        gradients_[i] = static_cast<score_t>(-label);
-        OMP_LOOP_EX_END();
-      }
-      OMP_THROW_EX();
-    }
-    else {
-      std::fill(gradients_.begin(), gradients_.end(), 0.0f);
-      OMP_INIT_EX();
-      #pragma omp parallel for schedule(static,1)
-      for (data_size_t i = 0; i < train_data->num_data(); ++i) {
-        OMP_LOOP_EX_BEGIN();
-        score_t label = label_ptr[i];
-        gradients_[i + static_cast<int>(label) * num_data_] = -1.0f;
-        OMP_LOOP_EX_END();
-      }
-      OMP_THROW_EX();
-    }
   }
 
   void Boosting() override {
-
+    if (objective_function_ == nullptr) {
+      Log::Fatal("No object function provided");
+    }
+    init_scores_.resize(num_tree_per_iteration_, 0.0);
+    for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+      init_scores_[cur_tree_id] = BoostFromAverage(cur_tree_id, false);
+    }
+    size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+    std::vector<double> tmp_scores(total_size, 0.0f);
+    #pragma omp parallel for schedule(static)
+    for (int j = 0; j < num_tree_per_iteration_; ++j) {
+      size_t bias = static_cast<size_t>(j)* num_data_;
+      for (data_size_t i = 0; i < num_data_; ++i) {
+        tmp_scores[bias + i] = init_scores_[j];
+      }
+    }
+    objective_function_->
+      GetGradients(tmp_scores.data(), gradients_.data(), hessians_.data());
   }
 
   bool TrainOneIter(const score_t* gradients, const score_t* hessians) override {
@@ -120,27 +105,51 @@ public:
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
       std::unique_ptr<Tree> new_tree(new Tree(2));
       size_t bias = static_cast<size_t>(cur_tree_id)* num_data_;
-      auto grad = gradients + bias;
-      auto hess = hessians + bias;
+      if (class_need_train_[cur_tree_id]) {
 
-      // need to copy gradients for bagging subset.
-      if (is_use_subset_ && bag_data_cnt_ < num_data_) {
-        for (int i = 0; i < bag_data_cnt_; ++i) {
-          tmp_grad_[i] = grad[bag_data_indices_[i]];
-          tmp_hess_[i] = hess[bag_data_indices_[i]];
+        auto grad = gradients + bias;
+        auto hess = hessians + bias;
+
+        // need to copy gradients for bagging subset.
+        if (is_use_subset_ && bag_data_cnt_ < num_data_) {
+          for (int i = 0; i < bag_data_cnt_; ++i) {
+            tmp_grad_[i] = grad[bag_data_indices_[i]];
+            tmp_hess_[i] = hess[bag_data_indices_[i]];
+          }
+          grad = tmp_grad_.data();
+          hess = tmp_hess_.data();
         }
-        grad = tmp_grad_.data();
-        hess = tmp_hess_.data();
+
+        new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_,
+          forced_splits_json_));
       }
-      new_tree.reset(tree_learner_->Train(grad, hess, is_constant_hessian_,
-        forced_splits_json_));
+
       if (new_tree->num_leaves() > 1) {
-        tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, tmp_score_.data(),
+        tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, init_scores_[cur_tree_id],
           num_data_, bag_data_indices_.data(), bag_data_cnt_);
+        if (std::fabs(init_scores_[cur_tree_id]) > kEpsilon) {
+          new_tree->AddBias(init_scores_[cur_tree_id]);
+        }
         // update score
         MultiplyScore(cur_tree_id, (iter_ + num_init_iteration_));
         UpdateScore(new_tree.get(), cur_tree_id);
         MultiplyScore(cur_tree_id, 1.0 / (iter_ + num_init_iteration_ + 1));
+      } else {
+        // only add default score one-time
+        if (models_.size() < static_cast<size_t>(num_tree_per_iteration_)) {
+          double output = 0.0;
+          if (!class_need_train_[cur_tree_id]) {
+            if (objective_function_ != nullptr) {
+              output = objective_function_->BoostFromScore(cur_tree_id);
+            } else {
+              output = init_scores_[cur_tree_id];
+            }
+          }
+          new_tree->AsConstantTree(output);
+          MultiplyScore(cur_tree_id, (iter_ + num_init_iteration_));
+          UpdateScore(new_tree.get(), cur_tree_id);
+          MultiplyScore(cur_tree_id, 1.0 / (iter_ + num_init_iteration_ + 1));
+        }
       }
       // add model
       models_.push_back(std::move(new_tree));
@@ -178,7 +187,7 @@ public:
   }
 
   void AddValidDataset(const Dataset* valid_data,
-                       const std::vector<const Metric*>& valid_metrics) override {
+    const std::vector<const Metric*>& valid_metrics) override {
     GBDT::AddValidDataset(valid_data, valid_metrics);
     if (iter_ + num_init_iteration_ > 0) {
       for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
@@ -192,15 +201,11 @@ public:
     return true;
   };
 
-  std::vector<double> EvalOneMetric(const Metric* metric, const double* score) const override {
-    return metric->Eval(score, nullptr);
-  }
-
 private:
 
   std::vector<score_t> tmp_grad_;
   std::vector<score_t> tmp_hess_;
-  std::vector<double> tmp_score_;
+  std::vector<double> init_scores_;
 
 };
 

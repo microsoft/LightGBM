@@ -14,6 +14,8 @@ CPU/GPU model:
 
 C++/Python/R version:
 
+LightGBM version or commit hash:
+
 ## Error message
 
 <!-- Paste error log here -->
