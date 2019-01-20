@@ -2007,8 +2007,8 @@ class Booster(object):
         """
         _safe_call(_LIB.LGBM_BoosterShuffleModels(
             self.handle,
-            ctypes.c_int(start_iter),
-            ctypes.c_int(end_iter)))
+            ctypes.c_int(start_iteration),
+            ctypes.c_int(end_iteration)))
         return self
 
     def model_from_string(self, model_str, verbose=True):
