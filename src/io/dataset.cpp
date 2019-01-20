@@ -149,16 +149,16 @@ std::vector<std::vector<int>> FastFeatureBundling(std::vector<std::unique_ptr<Bi
   // filter is based on sampling data, so decrease its range
   const data_size_t filter_cnt = static_cast<data_size_t>(static_cast<double>(0.95 * min_data) / num_data * total_sample_cnt);
   const data_size_t max_error_cnt = static_cast<data_size_t>(total_sample_cnt * max_conflict_rate);
-  int cur_used_feature_cnt = 0;
   std::vector<size_t> feature_non_zero_cnt;
+  feature_non_zero_cnt.reserve(used_features.size());
   // put dense feature first
   for (auto fidx : used_features) {
     feature_non_zero_cnt.emplace_back(num_per_col[fidx]);
-    ++cur_used_feature_cnt;
   }
   // sort by non zero cnt
   std::vector<int> sorted_idx;
-  for (int i = 0; i < cur_used_feature_cnt; ++i) {
+  sorted_idx.reserve(used_features.size());
+  for (int i = 0; i < static_cast<int>(used_features.size()); ++i) {
     sorted_idx.emplace_back(i);
   }
   // sort by non zero cnt, bigger first
@@ -168,6 +168,7 @@ std::vector<std::vector<int>> FastFeatureBundling(std::vector<std::unique_ptr<Bi
   });
 
   std::vector<int> feature_order_by_cnt;
+  feature_order_by_cnt.reserve(sorted_idx.size());
   for (auto sidx : sorted_idx) {
     feature_order_by_cnt.push_back(used_features[sidx]);
   }

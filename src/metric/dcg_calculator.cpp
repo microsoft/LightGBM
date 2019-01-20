@@ -39,7 +39,7 @@ void DCGCalculator::DefaultLabelGain(std::vector<double>* label_gain) {
 
 void DCGCalculator::Init(const std::vector<double>& input_label_gain) {
   label_gain_.resize(input_label_gain.size());
-  for(size_t i = 0;i < input_label_gain.size();++i){
+  for (size_t i = 0; i < input_label_gain.size(); ++i) {
     label_gain_[i] = static_cast<double>(input_label_gain[i]);
   }
   discount_.resize(kMaxPosition);

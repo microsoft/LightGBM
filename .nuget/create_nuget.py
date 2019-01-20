@@ -1,5 +1,6 @@
 # coding: utf-8
 """Script for generating files with NuGet package metadata."""
+import datetime
 import os
 import sys
 
@@ -37,7 +38,7 @@ if __name__ == "__main__":
         <projectUrl>https://github.com/Microsoft/LightGBM</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>A fast, distributed, high performance gradient boosting framework</description>
-        <copyright>Copyright 2018 @ Microsoft</copyright>
+        <copyright>Copyright %d @ Microsoft</copyright>
         <tags>machine-learning data-mining distributed native boosting gbdt</tags>
         <dependencies> </dependencies>
     </metadata>
@@ -46,7 +47,7 @@ if __name__ == "__main__":
         <file src="runtimes\**" target="runtimes"/>
         </files>
     </package>
-    ''' % version
+    ''' % (version, datetime.datetime.now().year)
     prop_str = '''
     <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <ItemGroup Condition="Exists('packages.config') OR
