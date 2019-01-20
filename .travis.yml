@@ -1,5 +1,4 @@
 language: cpp
-sudo: required
 dist: trusty
 
 git:
@@ -38,7 +37,6 @@ matrix:
 before_install:
   - test -n $CC  && unset CC
   - test -n $CXX && unset CXX
-  - export HOMEBREW_LOGS="$HOME/brew_logs"  # brew hotfix 
   - export HOME_DIRECTORY="$HOME"
   - export BUILD_DIRECTORY="$TRAVIS_BUILD_DIR"
   - if [[ $TRAVIS_OS_NAME == "osx" ]]; then

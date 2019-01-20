@@ -167,7 +167,7 @@ Adjust ``C:\boost`` if you install it elsewhere.
 
 We can now start downloading and compiling the required Boost libraries:
 
--  Download `Boost`_ (boost\_1\_63\_0.zip)
+-  Download `Boost`_ (for example, the filename for 1.63.0 version is ``boost_1_63_0.zip``)
 
 -  Extract the archive to ``C:\boost``
 
@@ -220,7 +220,7 @@ This is what you should (approximately) get at the end of Boost compilation:
 
 If you are getting an error:
 
--  Wipe your boost directory
+-  Wipe your Boost directory
 
 -  Close the command prompt
 
@@ -228,7 +228,7 @@ If you are getting an error:
    ``C:\boost\boost-build\bin``, ``C:\boost\boost-build\include\boost`` to
    your PATH (adjust accordingly if you use another folder)
 
--  Do the boost compilation steps again (extract => command prompt => ``cd`` => ``bootstrap`` => ``b2`` => ``cd`` => ``b2``
+-  Do the Boost compilation steps again (extract => command prompt => ``cd`` => ``bootstrap`` => ``b2`` => ``cd`` => ``b2``
 
 --------------
 
@@ -268,7 +268,7 @@ Installing CMake requires one download first and then a lot of configuration for
    :align: center
    :target: ./_static/images/screenshot-downloading-cmake.png
 
--  Download `CMake`_ 3.8.0
+-  Download `CMake`_ (3.8 or higher)
 
 -  Install CMake
 
@@ -572,7 +572,7 @@ And open an issue in GitHub `here`_ with that log.
 
 .. _this: http://iweb.dl.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/mingw-w64-install.exe
 
-.. _Boost: http://www.boost.org/users/history/version_1_63_0.html
+.. _Boost: https://www.boost.org/users/history/
 
 .. _link: https://git-scm.com/download/win
 
