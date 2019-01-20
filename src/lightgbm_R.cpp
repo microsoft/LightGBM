@@ -466,7 +466,7 @@ LGBM_SE LGBM_BoosterGetNumPredict_R(LGBM_SE handle,
   R_API_BEGIN();
   int64_t len;
   CHECK_CALL(LGBM_BoosterGetNumPredict(R_GET_PTR(handle), R_AS_INT(data_idx), &len));
-  R_INT_PTR(out)[0] = static_cast<int>(len);
+  R_INT64_PTR(out)[0] = len;
   R_API_END();
 }
 
