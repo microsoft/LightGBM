@@ -152,7 +152,7 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   str_buf << "\t\t\t" << "output[k] /= num_iteration_for_pred_;" << '\n';
   str_buf << "\t\t" << "}" << '\n';
   str_buf << "\t" << "}" << '\n';
-  str_buf << "\t" << "else if (objective_function_ != nullptr) {" << '\n';
+  str_buf << "\t" << "if (objective_function_ != nullptr) {" << '\n';
   str_buf << "\t\t" << "objective_function_->ConvertOutput(output, output);" << '\n';
   str_buf << "\t" << "}" << '\n';
   str_buf << "}" << '\n';
@@ -166,7 +166,7 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   str_buf << "\t\t\t" << "output[k] /= num_iteration_for_pred_;" << '\n';
   str_buf << "\t\t" << "}" << '\n';
   str_buf << "\t" << "}" << '\n';
-  str_buf << "\t" << "else if (objective_function_ != nullptr) {" << '\n';
+  str_buf << "\t" << "if (objective_function_ != nullptr) {" << '\n';
   str_buf << "\t\t" << "objective_function_->ConvertOutput(output, output);" << '\n';
   str_buf << "\t" << "}" << '\n';
   str_buf << "}" << '\n';

@@ -5,7 +5,7 @@ if [[ $OS_NAME == "macos" ]]; then
         brew install libomp
         brew upgrade cmake  # CMake >=3.12 is needed to find OpenMP at macOS
         if [[ $AZURE == "true" ]]; then
-            sudo xcode-select -s /Applications/Xcode_8.3.1.app/Contents/Developer
+            sudo xcode-select -s /Applications/Xcode_8.3.3.app/Contents/Developer
         fi
     else
         if [[ $TRAVIS == "true" ]]; then

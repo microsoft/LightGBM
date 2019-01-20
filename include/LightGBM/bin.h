@@ -92,8 +92,8 @@ public:
   inline int num_bin() const { return num_bin_; }
   /*! \brief Missing Type */
   inline MissingType missing_type() const { return missing_type_; }
-  /*! \brief True if bin is trival (contains only one bin) */
-  inline bool is_trival() const { return is_trival_; }
+  /*! \brief True if bin is trivial (contains only one bin) */
+  inline bool is_trivial() const { return is_trivial_; }
   /*! \brief Sparsity of this bin ( num_zero_bins / num_data ) */
   inline double sparse_rate() const { return sparse_rate_; }
   /*!
@@ -190,8 +190,8 @@ private:
   MissingType missing_type_;
   /*! \brief Store upper bound for each bin */
   std::vector<double> bin_upper_bound_;
-  /*! \brief True if this feature is trival */
-  bool is_trival_;
+  /*! \brief True if this feature is trivial */
+  bool is_trivial_;
   /*! \brief Sparse rate of this bins( num_bin0/num_data ) */
   double sparse_rate_;
   /*! \brief Type of this bin */

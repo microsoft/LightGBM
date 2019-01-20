@@ -5,10 +5,10 @@
 \title{Main training logic for LightGBM}
 \usage{
 lgb.train(params = list(), data, nrounds = 10, valids = list(),
-  obj = NULL, eval = NULL, verbose = 1, record = TRUE, eval_freq = 1L,
-  init_model = NULL, colnames = NULL, categorical_feature = NULL,
-  early_stopping_rounds = NULL, callbacks = list(), reset_data = FALSE,
-  ...)
+  obj = NULL, eval = NULL, verbose = 1, record = TRUE,
+  eval_freq = 1L, init_model = NULL, colnames = NULL,
+  categorical_feature = NULL, early_stopping_rounds = NULL,
+  callbacks = list(), reset_data = FALSE, ...)
 }
 \arguments{
 \item{params}{List of parameters}
