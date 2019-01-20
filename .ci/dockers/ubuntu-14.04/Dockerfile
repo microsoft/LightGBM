@@ -35,7 +35,7 @@ RUN add-apt-repository ppa:ubuntu-toolchain-r/test -y \
  && rm -rf /var/lib/apt/lists/*
 
 # Install CMake
-RUN curl -sL https://cmake.org/files/v3.12/cmake-3.12.0-Linux-x86_64.sh -o cmake.sh \
+RUN curl -sL https://cmake.org/files/v3.13/cmake-3.13.2-Linux-x86_64.sh -o cmake.sh \
  && chmod +x cmake.sh \
  && ./cmake.sh --prefix=/usr/local --exclude-subdir \
  && rm cmake.sh

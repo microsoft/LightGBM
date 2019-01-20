@@ -40,6 +40,12 @@ result <- file.copy(from = "src/",
                     overwrite = TRUE)
 .handle_result(result)
 
+result <- file.copy(from = "compute/",
+                    to = file.path("lightgbm_r", "src/"),
+                    recursive = TRUE,
+                    overwrite = TRUE)
+.handle_result(result)
+
 result <- file.copy(from = "CMakeLists.txt",
                     to = file.path("lightgbm_r", "inst", "bin/"),
                     overwrite = TRUE)

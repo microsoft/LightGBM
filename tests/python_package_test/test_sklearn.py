@@ -279,3 +279,13 @@ class TestSklearn(unittest.TestCase):
         self.assertRaises(AssertionError,
                           np.testing.assert_allclose,
                           res_engine, res_sklearn_params)
+
+    def test_evaluate_train_set(self):
+        X, y = load_boston(True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        gbm = lgb.LGBMRegressor(n_estimators=10, silent=True)
+        gbm.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_test, y_test)], verbose=False)
+        self.assertIn('training', gbm.evals_result_)
+        self.assertIn('l2', gbm.evals_result_['training'])
+        self.assertIn('valid_1', gbm.evals_result_)
+        self.assertIn('l2', gbm.evals_result_['valid_1'])

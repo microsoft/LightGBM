@@ -12,6 +12,8 @@
 #' @param categorical_feature list of str or int
 #'        type int represents index,
 #'        type str represents feature names
+#' @param callbacks list of callback functions
+#'        List of callback functions that are applied at each iteration.
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model into a predictor model which frees up memory and the original datasets
 #' @param ... other parameters, see Parameters.rst for more information. A few key parameters:
 #'            \itemize{

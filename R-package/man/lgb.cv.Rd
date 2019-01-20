@@ -4,11 +4,13 @@
 \alias{lgb.cv}
 \title{Main CV logic for LightGBM}
 \usage{
-lgb.cv(params = list(), data, nrounds = 10, nfold = 3, label = NULL,
-  weight = NULL, obj = NULL, eval = NULL, verbose = 1, record = TRUE,
-  eval_freq = 1L, showsd = TRUE, stratified = TRUE, folds = NULL,
-  init_model = NULL, colnames = NULL, categorical_feature = NULL,
-  early_stopping_rounds = NULL, callbacks = list(), ...)
+lgb.cv(params = list(), data, nrounds = 10, nfold = 3,
+  label = NULL, weight = NULL, obj = NULL, eval = NULL,
+  verbose = 1, record = TRUE, eval_freq = 1L, showsd = TRUE,
+  stratified = TRUE, folds = NULL, init_model = NULL,
+  colnames = NULL, categorical_feature = NULL,
+  early_stopping_rounds = NULL, callbacks = list(),
+  reset_data = FALSE, ...)
 }
 \arguments{
 \item{params}{List of parameters}
@@ -61,6 +63,8 @@ If early stopping occurs, the model will have 'best_iter' field}
 
 \item{callbacks}{list of callback functions
 List of callback functions that are applied at each iteration.}
+
+\item{reset_data}{Boolean, setting it to TRUE (not the default value) will transform the booster model into a predictor model which frees up memory and the original datasets}
 
 \item{...}{other parameters, see Parameters.rst for more information. A few key parameters:
 \itemize{

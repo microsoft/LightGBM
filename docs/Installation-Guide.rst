@@ -5,6 +5,8 @@ Here is the guide for the build of LightGBM CLI version.
 
 For the build of Python-package and R-package, please refer to `Python-package`_ and `R-package`_ folders respectively.
 
+Also you can download artifacts of the latest successful build in master branch: |download artifacts|.
+
 **Contents**
 
 -  `Windows <#windows>`__
@@ -522,7 +524,7 @@ Following procedure is for the **MSVC** (Microsoft Visual C++) build.
 
    Further reading and correspondence table: `GPU SDK Correspondence and Device Targeting Table <./GPU-Targets.rst>`__.
 
-3. Install `Boost Binary`_.
+3. Install `Boost Binaries`_.
 
    **Note**: Match your Visual C++ version:
    
@@ -534,8 +536,8 @@ Following procedure is for the **MSVC** (Microsoft Visual C++) build.
 
    .. code::
 
-     Set BOOST_ROOT=C:\local\boost_1_64_0\
-     Set BOOST_LIBRARYDIR=C:\local\boost_1_64_0\lib64-msvc-14.0
+     Set BOOST_ROOT=C:\local\boost_1_63_0\
+     Set BOOST_LIBRARYDIR=C:\local\boost_1_63_0\lib64-msvc-14.0
      git clone --recursive https://github.com/Microsoft/LightGBM
      cd LightGBM
      mkdir build
@@ -543,7 +545,7 @@ Following procedure is for the **MSVC** (Microsoft Visual C++) build.
      cmake -DCMAKE_GENERATOR_PLATFORM=x64 -DUSE_GPU=1 ..
      cmake --build . --target ALL_BUILD --config Release
 
-   **Note**: ``C:\local\boost_1_64_0\`` and ``C:\local\boost_1_64_0\lib64-msvc-14.0`` are locations of your **Boost** binaries. You also can set them to the environment variable to avoid ``Set ...`` commands when build.
+   **Note**: ``C:\local\boost_1_63_0\`` and ``C:\local\boost_1_63_0\lib64-msvc-14.0`` are locations of your **Boost** binaries (assuming you've downloaded 1.63.0 version). You also can set them to the environment variable to avoid ``Set ...`` commands when build.
 
 Docker
 ^^^^^^
@@ -643,6 +645,9 @@ On Linux Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMake
      cmake -DUSE_SWIG=ON ..
      make -j4
 
+.. |download artifacts| image:: ./_static/images/artifacts-not-available.svg
+   :target: https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html
+
 .. _Python-package: https://github.com/Microsoft/LightGBM/tree/master/python-package
 
 .. _R-package: https://github.com/Microsoft/LightGBM/tree/master/R-package
@@ -671,6 +676,6 @@ On Linux Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMake
 
 .. _CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 
-.. _Boost Binary: https://sourceforge.net/projects/boost/files/boost-binaries/1.64.0/
+.. _Boost Binaries: https://bintray.com/boostorg/release/boost-binaries/_latestVersion#files
 
 .. _SWIG: http://www.swig.org/download.html
