@@ -575,6 +575,8 @@ public:
     return bufs;
   }
 
+  void ResetConfig(const char* parameters);
+
   /*! \brief Get Number of data */
   inline data_size_t num_data() const { return num_data_; }
 
@@ -615,6 +617,11 @@ private:
   std::vector<int8_t> monotone_types_;
   std::vector<double> feature_penalty_;
   bool is_finish_load_;
+  int max_bin_;
+  int bin_construct_sample_cnt_;
+  int min_data_in_bin_;
+  bool use_missing_;
+  bool zero_as_missing_;
 };
 
 }  // namespace LightGBM
