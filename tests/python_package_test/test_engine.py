@@ -830,19 +830,29 @@ class TestEngine(unittest.TestCase):
         self.assertIn('multi_logloss-mean', results)
         self.assertEqual(len(results['multi_logloss-mean']), 10)
 
-    @unittest.skipIf(psutil.virtual_memory().free / 1024 / 1024 / 1024 < 3, 'not enough RAM')
+    @unittest.skipIf(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, 'not enough RAM')
     def test_model_size(self):
         X, y = load_boston(True)
         data = lgb.Dataset(X, y)
         bst = lgb.train({'verbose': -1}, data, num_boost_round=2)
         y_pred = bst.predict(X)
         model_str = bst.model_to_string()
-        one_tree = model_str[model_str.find('Tree=1'):model_str.find('end of trees')].replace('Tree=1',
-                                                                                              'Tree={}')
-        begin, sep, end = model_str.rpartition('end of trees')
-        multiplier = int(2**31 / len(one_tree)) + 1
-        new_model_str = begin + (one_tree * multiplier).format(*range(2, multiplier + 2)) + sep + end
+        one_tree = model_str[model_str.find('Tree=1'):model_str.find('end of trees')]
+        one_tree_size = len(one_tree)
+        one_tree = one_tree.replace('Tree=1', 'Tree={}')
+        multiplier = int(2**31 / (one_tree_size + len(str(one_tree_size)) + 1))
+        total_trees = multiplier + 2
+        tree_sizes = model_str[model_str.find('tree_sizes'):model_str.find('Tree=0')].strip()
+        new_model_str = (model_str[:model_str.find('tree_sizes')]
+                         + tree_sizes
+                         + ' '
+                         + ' '.join(str(one_tree_size + len(str(i)) - 1) for i in range(2, total_trees))
+                         + '\n\n'
+                         + model_str[model_str.find('Tree=0'):model_str.find('end of trees')]
+                         + (one_tree * multiplier).format(*range(2, total_trees))
+                         + model_str[model_str.find('end of trees'):])
         self.assertGreater(len(new_model_str), 2**31)
         bst.model_from_string(new_model_str, verbose=False)
-        y_pred_new = bst.predict(X)
+        self.assertEqual(bst.num_trees(), total_trees)
+        y_pred_new = bst.predict(X, num_iteration=2)
         np.testing.assert_allclose(y_pred, y_pred_new)
