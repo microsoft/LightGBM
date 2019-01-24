@@ -3,6 +3,7 @@
 import copy
 import math
 import os
+import psutil
 import unittest
 
 import lightgbm as lgb
@@ -828,3 +829,20 @@ class TestEngine(unittest.TestCase):
         results = lgb.cv(params, dataset, num_boost_round=10, fpreproc=preprocess_data)
         self.assertIn('multi_logloss-mean', results)
         self.assertEqual(len(results['multi_logloss-mean']), 10)
+
+    @unittest.skipIf(psutil.virtual_memory().free / 1024 / 1024 / 1024 < 3, 'not enough RAM')
+    def test_model_size(self):
+        X, y = load_boston(True)
+        data = lgb.Dataset(X, y)
+        bst = lgb.train({'verbose': -1}, data, num_boost_round=2)
+        y_pred = bst.predict(X)
+        model_str = bst.model_to_string()
+        one_tree = model_str[model_str.find('Tree=1'):model_str.find('end of trees')].replace('Tree=1',
+                                                                                              'Tree={}')
+        begin, sep, end = model_str.rpartition('end of trees')
+        multiplier = int(2**31 / len(one_tree)) + 1
+        new_model_str = begin + (one_tree * multiplier).format(*range(2, multiplier + 2)) + sep + end
+        self.assertGreater(len(new_model_str), 2**31)
+        bst.model_from_string(new_model_str, verbose=False)
+        y_pred_new = bst.predict(X)
+        np.testing.assert_allclose(y_pred, y_pred_new)
