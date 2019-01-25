@@ -309,6 +309,14 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetField(DatasetHandle handle,
                                            const void** out_ptr,
                                            int* out_type);
 
+
+/*!
+* \brief Update parameters for a Dataset
+* \param handle a instance of data matrix
+* \param parameters parameters
+*/
+LIGHTGBM_C_EXPORT int LGBM_DatasetUpdateParam(DatasetHandle handle, const char* parameters);
+
 /*!
 * \brief get number of data.
 * \param handle the handle to the dataset

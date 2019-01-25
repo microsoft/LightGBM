@@ -79,9 +79,11 @@ You need to know what you are going to use LightGBM!
 
 -  For running on Intel, get `Intel SDK for OpenCL`_ (NOT RECOMMENDED).
 
--  For running on AMD, get AMD APP SDK.
+-  For running on AMD, get `AMD APP SDK`_ (you may want to replace the ``OpenCL.dll`` from GPU driver package with the one from the SDK, if the one shipped with the driver lacks some functions).
 
 -  For running on NVIDIA, get `CUDA Toolkit`_.
+
+-  Or you can try to use `Khronos official OpenCL headers`_, the CMake module would automatically find the OpenCL library used in your system, though the result may be not portable.
 
 Further reading and correspondence table (especially if you intend to use cross-platform devices,
 like Intel CPU with AMD APP SDK): `GPU SDK Correspondence and Device Targeting Table <./GPU-Targets.rst>`__.
@@ -138,6 +140,13 @@ Quick installation of LightGBM can be done using:
 .. code:: r
 
     devtools::install_github("Microsoft/LightGBM", subdir = "R-package")
+    
+--------------
+
+Download the prebuilt Boost
+---------------------------
+
+Download  `Prebuilt Boost x86_64`_ or `Prebuilt Boost i686`_ and unpack them with `7zip`_, alternatively you can build Boost from source.
 
 --------------
 
@@ -570,9 +579,19 @@ And open an issue in GitHub `here`_ with that log.
 
 .. _CUDA Toolkit: https://developer.nvidia.com/cuda-downloads
 
+.. _AMD APP SDK: https://github.com/fireice-uk/xmr-stak/issues/1511
+
+.. _Khronos official OpenCL headers: https://github.com/KhronosGroup/OpenCL-Headers
+
 .. _this: http://iweb.dl.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/mingw-w64-install.exe
 
 .. _Boost: https://www.boost.org/users/history/
+
+.. _Prebuilt Boost x86_64: https://dl.fedoraproject.org/pub/fedora/linux/releases/29/Everything/x86_64/os/Packages/m/mingw64-boost-static-1.66.0-2.fc29.noarch.rpm
+
+.. _Prebuilt Boost i686: https://dl.fedoraproject.org/pub/fedora/linux/releases/29/Everything/x86_64/os/Packages/m/mingw32-boost-static-1.66.0-2.fc29.noarch.rpm
+
+.. _7zip: https://www.7-zip.org/download.html
 
 .. _link: https://git-scm.com/download/win
 
