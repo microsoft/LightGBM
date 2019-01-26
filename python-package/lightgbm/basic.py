@@ -402,7 +402,7 @@ class _InnerPredictor(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame or scipy.sparse
+        data : string, numpy array, pandas DataFrame, H2O DataTable, or scipy.sparse
             Data source for prediction.
             When data type is string, it represents the path of txt file.
         num_iteration : int, optional (default=-1)
@@ -645,7 +645,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, scipy.sparse or list of numpy arrays
+        data : string, numpy array, pandas DataFrame, scipy.sparse, H2O DataTable, or list of numpy arrays
             Data source of Dataset.
             If string, it represents the path to txt file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
@@ -1402,6 +1402,8 @@ class Dataset(object):
                 self.data = self.data[self.used_indices, :]
             elif isinstance(self.data, DataFrame):
                 self.data = self.data.iloc[self.used_indices].copy()
+            elif isinstance(self.data, DataTable):
+                self.data = self.data[self.used_indices, :]
             else:
                 warnings.warn("Cannot subset {} type of raw data.\n"
                               "Returning original raw data".format(type(self.data).__name__))
