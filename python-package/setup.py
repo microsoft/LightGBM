@@ -118,8 +118,22 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, nomp=False,
         cmake_cmd.append("-DUSE_MPI=ON")
     if nomp:
         cmake_cmd.append("-DUSE_OPENMP=OFF")
+    if system() == 'Darwin' and not nomp:
+        cc = os.environ.get('CC')
+        cxx = os.environ.get('CXX')
+        if not (cc and cc.startswith('gcc') and cxx and cxx.startswith('g++')):
+            # Apple Clang
+            # https://github.com/Homebrew/homebrew-core/pull/20589
+            cmake_cmd.extend([
+                '-DOpenMP_C_FLAGS=-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include',
+                '-DOpenMP_C_LIB_NAMES=omp',
+                '-DOpenMP_CXX_FLAGS=-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include',
+                '-DOpenMP_CXX_LIB_NAMES=omp',
+                '-DOpenMP_omp_LIBRARY=/usr/local/opt/libomp/lib/libomp.dylib'
+            ])
     if use_hdfs:
         cmake_cmd.append("-DUSE_HDFS=ON")
+
     if system() in ('Windows', 'Microsoft'):
         if use_mingw:
             if use_mpi:
