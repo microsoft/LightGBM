@@ -13,7 +13,7 @@ from tempfile import NamedTemporaryFile
 import numpy as np
 import scipy.sparse
 
-from .compat import (DataFrame, Series,
+from .compat import (DataFrame, Series, DataTable,
                      decode_string, string_type,
                      integer_types, numeric_types,
                      json, json_default_with_numpy,
@@ -464,6 +464,8 @@ class _InnerPredictor(object):
             except BaseException:
                 raise ValueError('Cannot convert data list to numpy array.')
             preds, nrow = self.__pred_for_np2d(data, num_iteration, predict_type)
+        elif isinstance(data, DataTable):
+            preds, nrow = self.__pred_for_np2d(data.to_numpy(), num_iteration, predict_type)
         else:
             try:
                 warnings.warn('Converting data to scipy sparse matrix.')
@@ -782,6 +784,8 @@ class Dataset(object):
             self.__init_from_np2d(data, params_str, ref_dataset)
         elif isinstance(data, list) and len(data) > 0 and all(isinstance(x, np.ndarray) for x in data):
             self.__init_from_list_np2d(data, params_str, ref_dataset)
+        elif isinstance(data, DataTable):
+            self.__init_from_np2d(data.to_numpy(), params_str, ref_dataset)
         else:
             try:
                 csr = scipy.sparse.csr_matrix(data)
