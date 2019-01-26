@@ -479,7 +479,7 @@ class LGBMModel(_LGBMModelBase):
             eval_metric = [eval_metric] if isinstance(eval_metric, (string_type, type(None))) else eval_metric
             params['metric'] = set(original_metric + eval_metric)
 
-        if not isinstance(X, DataFrame) and not isinstance(X, DataTable):
+        if not isinstance(X, (DataFrame, DataTable)):
             _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
             _LGBMCheckConsistentLength(_X, _y, sample_weight)
         else:
@@ -595,7 +595,7 @@ class LGBMModel(_LGBMModelBase):
         """
         if self._n_features is None:
             raise LGBMNotFittedError("Estimator not fitted, call `fit` before exploiting the model.")
-        if not isinstance(X, DataFrame) and not isinstance(X, DataTable):
+        if not isinstance(X, (DataFrame, DataTable)):
             X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
         n_features = X.shape[1]
         if self._n_features != n_features:
