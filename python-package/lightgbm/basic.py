@@ -402,7 +402,7 @@ class _InnerPredictor(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, H2O DataTable, or scipy.sparse
+        data : string, numpy array, pandas DataFrame, H2O DataTable or scipy.sparse
             Data source for prediction.
             When data type is string, it represents the path of txt file.
         num_iteration : int, optional (default=-1)
@@ -645,7 +645,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, scipy.sparse, H2O DataTable, or list of numpy arrays
+        data : string, numpy array, pandas DataFrame, H2O DataTable, scipy.sparse or list of numpy arrays
             Data source of Dataset.
             If string, it represents the path to txt file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
@@ -1002,7 +1002,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame, scipy.sparse or list of numpy arrays
+        data : string, numpy array, pandas DataFrame, H2O DataTable, scipy.sparse or list of numpy arrays
             Data source of Dataset.
             If string, it represents the path to txt file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
@@ -1392,7 +1392,7 @@ class Dataset(object):
 
         Returns
         -------
-        data : string, numpy array, pandas DataFrame, scipy.sparse, list of numpy arrays or None
+        data : string, numpy array, pandas DataFrame, H2O DataTable, scipy.sparse, list of numpy arrays or None
             Raw data used in the Dataset construction.
         """
         if self.handle is None:
@@ -2155,7 +2155,7 @@ class Booster(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame or scipy.sparse
+        data : string, numpy array, pandas DataFrame, H2O DataTable or scipy.sparse
             Data source for prediction.
             If string, it represents the path to txt file.
         num_iteration : int or None, optional (default=None)
@@ -2200,7 +2200,7 @@ class Booster(object):
 
         Parameters
         ----------
-        data : string, numpy array, pandas DataFrame or scipy.sparse
+        data : string, numpy array, pandas DataFrame, H2O DataTable or scipy.sparse
             Data source for refit.
             If string, it represents the path to txt file.
         label : list, numpy 1-D array or pandas Series / one-column DataFrame
