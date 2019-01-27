@@ -16,7 +16,7 @@ Preparation
 Install from `PyPI <https://pypi.org/project/lightgbm>`_ Using ``pip``
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-For **Windows** users, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if **Visual Studio** (2015 or 2017) is not installed.
+For **Windows** users, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if **Visual Studio** (2015 or newer) is not installed.
 
 For **Linux** users, **glibc** >= 2.14 is required.
 
