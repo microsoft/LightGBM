@@ -139,7 +139,7 @@ Install from GitHub
 
 All remarks from `Build from Sources section <#build-from-sources>`__ are actual in this case.
 
-For **macOS** users who compiles with **Apple Clang**, to pass **OpenMP** paths to **CMake** use the following syntax: ``python setup.py install --openmp-include-dir=/usr/local/opt/libomp/include/ --openmp-library=/usr/local/opt/libomp/lib/libomp.dylib``.
+For **macOS** users who compile with **Apple Clang**, to pass **OpenMP** paths to **CMake** use the following syntax: ``python setup.py install --openmp-include-dir=/usr/local/opt/libomp/include/ --openmp-library=/usr/local/opt/libomp/lib/libomp.dylib``.
 
 For **Windows** users, if you get any errors during installation and there is the warning ``WARNING:LightGBM:Compilation with MSBuild from existing solution file failed.`` in the log, you should install `CMake`_ (version 3.8 or higher).
 
