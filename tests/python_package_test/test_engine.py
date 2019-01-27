@@ -3,16 +3,16 @@
 import copy
 import math
 import os
+import random
 import unittest
 
 import lightgbm as lgb
-import random
 import numpy as np
+from scipy.sparse import csr_matrix
 from sklearn.datasets import (load_boston, load_breast_cancer, load_digits,
                               load_iris, load_svmlight_file)
 from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
 from sklearn.model_selection import train_test_split, TimeSeriesSplit, GroupKFold
-from scipy.sparse import csr_matrix
 
 try:
     import cPickle as pickle
@@ -828,3 +828,383 @@ class TestEngine(unittest.TestCase):
         results = lgb.cv(params, dataset, num_boost_round=10, fpreproc=preprocess_data)
         self.assertIn('multi_logloss-mean', results)
         self.assertEqual(len(results['multi_logloss-mean']), 10)
+
+    def test_metrics(self):
+        def custom_obj(preds, train_data):
+            return np.zeros(preds.shape), np.zeros(preds.shape)
+
+        def custom_metric(preds, train_data):
+            return 'error', 0, False
+
+        X, y = load_digits(2, True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+        lgb_train = lgb.Dataset(X_train, y_train, silent=True)
+        lgb_valid = lgb.Dataset(X_test, y_test, reference=lgb_train, silent=True)
+
+        evals_result = {}
+        params_verbose = {'verbose': -1}
+        params_obj_verbose = {'objective': 'binary', 'verbose': -1}
+        params_obj_metric_log_verbose = {'objective': 'binary', 'metric': 'binary_logloss', 'verbose': -1}
+        params_obj_metric_err_verbose = {'objective': 'binary', 'metric': 'binary_error', 'verbose': -1}
+        params_obj_metric_inv_verbose = {'objective': 'binary', 'metric': 'invalid_metric', 'verbose': -1}
+        params_obj_metric_multi_verbose = {'objective': 'binary',
+                                           'metric': ['binary_logloss', 'binary_error'],
+                                           'verbose': -1}
+        params_obj_metric_none_verbose = {'objective': 'binary', 'metric': 'None', 'verbose': -1}
+        params_metric_log_verbose = {'metric': 'binary_logloss', 'verbose': -1}
+        params_metric_err_verbose = {'metric': 'binary_error', 'verbose': -1}
+        params_metric_inv_verbose = {'metric_types': 'invalid_metric', 'verbose': -1}
+        params_metric_multi_verbose = {'metric': ['binary_logloss', 'binary_error'], 'verbose': -1}
+        params_metric_none_verbose = {'metric': 'None', 'verbose': -1}
+
+        def get_cv_result(params=params_obj_verbose, **kwargs):
+            return lgb.cv(params, lgb_train, num_boost_round=5, verbose_eval=False, **kwargs)
+
+        def train_booster(params=params_obj_verbose, **kwargs):
+            lgb.train(params, lgb_train,
+                      num_boost_round=5,
+                      valid_sets=[lgb_valid],
+                      evals_result=evals_result,
+                      verbose_eval=False, **kwargs)
+
+        # no fobj, no feval
+        # default metric
+        res = get_cv_result()
+        self.assertEqual(len(res), 2)
+        self.assertIn('binary_logloss-mean', res)
+
+        # non-default metric in params
+        res = get_cv_result(params=params_obj_metric_err_verbose)
+        self.assertEqual(len(res), 2)
+        self.assertIn('binary_error-mean', res)
+
+        # default metric in args
+        res = get_cv_result(metrics='binary_logloss')
+        self.assertEqual(len(res), 2)
+        self.assertIn('binary_logloss-mean', res)
+
+        # non-default metric in args
+        res = get_cv_result(metrics='binary_error')
+        self.assertEqual(len(res), 2)
+        self.assertIn('binary_error-mean', res)
+
+        # metric in args overwrites one in params
+        res = get_cv_result(params=params_obj_metric_inv_verbose, metrics='binary_error')
+        self.assertEqual(len(res), 2)
+        self.assertIn('binary_error-mean', res)
+
+        # multiple metrics in params
+        res = get_cv_result(params=params_obj_metric_multi_verbose)
+        self.assertEqual(len(res), 4)
+        self.assertIn('binary_logloss-mean', res)
+        self.assertIn('binary_error-mean', res)
+
+        # multiple metrics in args
+        res = get_cv_result(metrics=['binary_logloss', 'binary_error'])
+        self.assertEqual(len(res), 4)
+        self.assertIn('binary_logloss-mean', res)
+        self.assertIn('binary_error-mean', res)
+
+        # remove default metric by 'None' in list
+        res = get_cv_result(metrics=['None'])
+        self.assertEqual(len(res), 0)
+
+        # remove default metric by 'None' aliases
+        for na_alias in ('None', 'na', 'null', 'custom'):
+            res = get_cv_result(metrics=na_alias)
+            self.assertEqual(len(res), 0)
+
+        # fobj, no feval
+        # no default metric
+        res = get_cv_result(params=params_verbose, fobj=custom_obj)
+        self.assertEqual(len(res), 0)
+
+        # metric in params
+        res = get_cv_result(params=params_metric_err_verbose, fobj=custom_obj)
+        self.assertEqual(len(res), 2)
+        self.assertIn('binary_error-mean', res)
+
+        # metric in args
+        res = get_cv_result(params=params_verbose, fobj=custom_obj, metrics='binary_error')
+        self.assertEqual(len(res), 2)
+        self.assertIn('binary_error-mean', res)
+
+        # metric in args overwrites its' alias in params
+        res = get_cv_result(params=params_metric_inv_verbose, fobj=custom_obj, metrics='binary_error')
+        self.assertEqual(len(res), 2)
+        self.assertIn('binary_error-mean', res)
+
+        # multiple metrics in params
+        res = get_cv_result(params=params_metric_multi_verbose, fobj=custom_obj)
+        self.assertEqual(len(res), 4)
+        self.assertIn('binary_logloss-mean', res)
+        self.assertIn('binary_error-mean', res)
+
+        # multiple metrics in args
+        res = get_cv_result(params=params_verbose, fobj=custom_obj,
+                            metrics=['binary_logloss', 'binary_error'])
+        self.assertEqual(len(res), 4)
+        self.assertIn('binary_logloss-mean', res)
+        self.assertIn('binary_error-mean', res)
+
+        # no fobj, feval
+        # default metric with custom one
+        res = get_cv_result(feval=custom_metric)
+        self.assertEqual(len(res), 4)
+        self.assertIn('binary_logloss-mean', res)
+        self.assertIn('error-mean', res)
+
+        # non-default metric in params with custom one
+        res = get_cv_result(params=params_obj_metric_err_verbose, feval=custom_metric)
+        self.assertEqual(len(res), 4)
+        self.assertIn('binary_error-mean', res)
+        self.assertIn('error-mean', res)
+
+        # default metric in args with custom one
+        res = get_cv_result(metrics='binary_logloss', feval=custom_metric)
+        self.assertEqual(len(res), 4)
+        self.assertIn('binary_logloss-mean', res)
+        self.assertIn('error-mean', res)
+
+        # non-default metric in args with custom one
+        res = get_cv_result(metrics='binary_error', feval=custom_metric)
+        self.assertEqual(len(res), 4)
+        self.assertIn('binary_error-mean', res)
+        self.assertIn('error-mean', res)
+
+        # metric in args overwrites one in params, custom one is evaluated too
+        res = get_cv_result(params=params_obj_metric_inv_verbose, metrics='binary_error', feval=custom_metric)
+        self.assertEqual(len(res), 4)
+        self.assertIn('binary_error-mean', res)
+        self.assertIn('error-mean', res)
+
+        # multiple metrics in params with custom one
+        res = get_cv_result(params=params_obj_metric_multi_verbose, feval=custom_metric)
+        self.assertEqual(len(res), 6)
+        self.assertIn('binary_logloss-mean', res)
+        self.assertIn('binary_error-mean', res)
+        self.assertIn('error-mean', res)
+
+        # multiple metrics in args with custom one
+        res = get_cv_result(metrics=['binary_logloss', 'binary_error'], feval=custom_metric)
+        self.assertEqual(len(res), 6)
+        self.assertIn('binary_logloss-mean', res)
+        self.assertIn('binary_error-mean', res)
+        self.assertIn('error-mean', res)
+
+        # custom metric is evaluated despite 'None' is passed
+        res = get_cv_result(metrics=['None'], feval=custom_metric)
+        self.assertEqual(len(res), 2)
+        self.assertIn('error-mean', res)
+
+        # fobj, feval
+        # no default metric, only custom one
+        res = get_cv_result(params=params_verbose, fobj=custom_obj, feval=custom_metric)
+        self.assertEqual(len(res), 2)
+        self.assertIn('error-mean', res)
+
+        # metric in params with custom one
+        res = get_cv_result(params=params_metric_err_verbose, fobj=custom_obj, feval=custom_metric)
+        self.assertEqual(len(res), 4)
+        self.assertIn('binary_error-mean', res)
+        self.assertIn('error-mean', res)
+
+        # metric in args with custom one
+        res = get_cv_result(params=params_verbose, fobj=custom_obj,
+                            feval=custom_metric, metrics='binary_error')
+        self.assertEqual(len(res), 4)
+        self.assertIn('binary_error-mean', res)
+        self.assertIn('error-mean', res)
+
+        # metric in args overwrites one in params, custom one is evaluated too
+        res = get_cv_result(params=params_metric_inv_verbose, fobj=custom_obj,
+                            feval=custom_metric, metrics='binary_error')
+        self.assertEqual(len(res), 4)
+        self.assertIn('binary_error-mean', res)
+        self.assertIn('error-mean', res)
+
+        # multiple metrics in params with custom one
+        res = get_cv_result(params=params_metric_multi_verbose, fobj=custom_obj, feval=custom_metric)
+        self.assertEqual(len(res), 6)
+        self.assertIn('binary_logloss-mean', res)
+        self.assertIn('binary_error-mean', res)
+        self.assertIn('error-mean', res)
+
+        # multiple metrics in args with custom one
+        res = get_cv_result(params=params_verbose, fobj=custom_obj, feval=custom_metric,
+                            metrics=['binary_logloss', 'binary_error'])
+        self.assertEqual(len(res), 6)
+        self.assertIn('binary_logloss-mean', res)
+        self.assertIn('binary_error-mean', res)
+        self.assertIn('error-mean', res)
+
+        # custom metric is evaluated despite 'None' is passed
+        res = get_cv_result(params=params_metric_none_verbose, fobj=custom_obj, feval=custom_metric)
+        self.assertEqual(len(res), 2)
+        self.assertIn('error-mean', res)
+
+        # no fobj, no feval
+        # default metric
+        train_booster()
+        self.assertEqual(len(evals_result['valid_0']), 1)
+        self.assertIn('binary_logloss', evals_result['valid_0'])
+
+        # default metric in params
+        train_booster(params=params_obj_metric_log_verbose)
+        self.assertEqual(len(evals_result['valid_0']), 1)
+        self.assertIn('binary_logloss', evals_result['valid_0'])
+
+        # non-default metric in params
+        train_booster(params=params_obj_metric_err_verbose)
+        self.assertEqual(len(evals_result['valid_0']), 1)
+        self.assertIn('binary_error', evals_result['valid_0'])
+
+        # multiple metrics in params
+        train_booster(params=params_obj_metric_multi_verbose)
+        self.assertEqual(len(evals_result['valid_0']), 2)
+        self.assertIn('binary_logloss', evals_result['valid_0'])
+        self.assertIn('binary_error', evals_result['valid_0'])
+
+        # remove default metric by 'None' aliases
+        for na_alias in ('None', 'na', 'null', 'custom'):
+            params = {'objective': 'binary', 'metric': na_alias, 'verbose': -1}
+            train_booster(params=params)
+            self.assertEqual(len(evals_result), 0)
+
+        # fobj, no feval
+        # no default metric
+        train_booster(params=params_verbose, fobj=custom_obj)
+        self.assertEqual(len(evals_result), 0)
+
+        # metric in params
+        train_booster(params=params_metric_log_verbose, fobj=custom_obj)
+        self.assertEqual(len(evals_result['valid_0']), 1)
+        self.assertIn('binary_logloss', evals_result['valid_0'])
+
+        # multiple metrics in params
+        train_booster(params=params_metric_multi_verbose, fobj=custom_obj)
+        self.assertEqual(len(evals_result['valid_0']), 2)
+        self.assertIn('binary_logloss', evals_result['valid_0'])
+        self.assertIn('binary_error', evals_result['valid_0'])
+
+        # no fobj, feval
+        # default metric with custom one
+        train_booster(feval=custom_metric)
+        self.assertEqual(len(evals_result['valid_0']), 2)
+        self.assertIn('binary_logloss', evals_result['valid_0'])
+        self.assertIn('error', evals_result['valid_0'])
+
+        # default metric in params with custom one
+        train_booster(params=params_obj_metric_log_verbose, feval=custom_metric)
+        self.assertEqual(len(evals_result['valid_0']), 2)
+        self.assertIn('binary_logloss', evals_result['valid_0'])
+        self.assertIn('error', evals_result['valid_0'])
+
+        # non-default metric in params with custom one
+        train_booster(params=params_obj_metric_err_verbose, feval=custom_metric)
+        self.assertEqual(len(evals_result['valid_0']), 2)
+        self.assertIn('binary_error', evals_result['valid_0'])
+        self.assertIn('error', evals_result['valid_0'])
+
+        # multiple metrics in params with custom one
+        train_booster(params=params_obj_metric_multi_verbose, feval=custom_metric)
+        self.assertEqual(len(evals_result['valid_0']), 3)
+        self.assertIn('binary_logloss', evals_result['valid_0'])
+        self.assertIn('binary_error', evals_result['valid_0'])
+        self.assertIn('error', evals_result['valid_0'])
+
+        # custom metric is evaluated despite 'None' is passed
+        train_booster(params=params_obj_metric_none_verbose, feval=custom_metric)
+        self.assertEqual(len(evals_result), 1)
+        self.assertIn('error', evals_result['valid_0'])
+
+        # fobj, feval
+        # no default metric, only custom one
+        train_booster(params=params_verbose, fobj=custom_obj, feval=custom_metric)
+        self.assertEqual(len(evals_result['valid_0']), 1)
+        self.assertIn('error', evals_result['valid_0'])
+
+        # metric in params with custom one
+        train_booster(params=params_metric_log_verbose, fobj=custom_obj, feval=custom_metric)
+        self.assertEqual(len(evals_result['valid_0']), 2)
+        self.assertIn('binary_logloss', evals_result['valid_0'])
+        self.assertIn('error', evals_result['valid_0'])
+
+        # multiple metrics in params with custom one
+        train_booster(params=params_metric_multi_verbose, fobj=custom_obj, feval=custom_metric)
+        self.assertEqual(len(evals_result['valid_0']), 3)
+        self.assertIn('binary_logloss', evals_result['valid_0'])
+        self.assertIn('binary_error', evals_result['valid_0'])
+        self.assertIn('error', evals_result['valid_0'])
+
+        # custom metric is evaluated despite 'None' is passed
+        train_booster(params=params_metric_none_verbose, fobj=custom_obj, feval=custom_metric)
+        self.assertEqual(len(evals_result), 1)
+        self.assertIn('error', evals_result['valid_0'])
+
+        X, y = load_digits(3, True)
+        lgb_train = lgb.Dataset(X, y, silent=True)
+
+        obj_multi_aliases = ['multiclass', 'softmax', 'multiclassova', 'multiclass_ova', 'ova', 'ovr']
+        for obj_multi_alias in obj_multi_aliases:
+            params_obj_class_3_verbose = {'objective': obj_multi_alias, 'num_class': 3, 'verbose': -1}
+            params_obj_class_1_verbose = {'objective': obj_multi_alias, 'num_class': 1, 'verbose': -1}
+            params_obj_verbose = {'objective': obj_multi_alias, 'verbose': -1}
+            # multiclass default metric
+            res = get_cv_result(params_obj_class_3_verbose)
+            self.assertEqual(len(res), 2)
+            self.assertIn('multi_logloss-mean', res)
+            # multiclass default metric with custom one
+            res = get_cv_result(params_obj_class_3_verbose, feval=custom_metric)
+            self.assertEqual(len(res), 4)
+            self.assertIn('multi_logloss-mean', res)
+            self.assertIn('error-mean', res)
+            # multiclass metric alias with custom one for custom objective
+            res = get_cv_result(params_obj_class_3_verbose, fobj=custom_obj, feval=custom_metric)
+            self.assertEqual(len(res), 2)
+            self.assertIn('error-mean', res)
+            # no metric for invalid class_num
+            res = get_cv_result(params_obj_class_1_verbose, fobj=custom_obj)
+            self.assertEqual(len(res), 0)
+            # custom metric for invalid class_num
+            res = get_cv_result(params_obj_class_1_verbose, fobj=custom_obj, feval=custom_metric)
+            self.assertEqual(len(res), 2)
+            self.assertIn('error-mean', res)
+            # multiclass metric alias with custom one with invalid class_num
+            self.assertRaises(lgb.basic.LightGBMError, get_cv_result,
+                              params_obj_class_1_verbose, metrics=obj_multi_alias,
+                              fobj=custom_obj, feval=custom_metric)
+            # multiclass default metric without num_class
+            self.assertRaises(lgb.basic.LightGBMError, get_cv_result,
+                              params_obj_verbose)
+            for metric_multi_alias in obj_multi_aliases + ['multi_logloss']:
+                # multiclass metric alias
+                res = get_cv_result(params_obj_class_3_verbose, metrics=metric_multi_alias)
+                self.assertEqual(len(res), 2)
+                self.assertIn('multi_logloss-mean', res)
+            # multiclass metric
+            res = get_cv_result(params_obj_class_3_verbose, metrics='multi_error')
+            self.assertEqual(len(res), 2)
+            self.assertIn('multi_error-mean', res)
+            # non-valid metric for multiclass objective
+            self.assertRaises(lgb.basic.LightGBMError, get_cv_result,
+                              params_obj_class_3_verbose, metrics='binary_logloss')
+        params_class_3_verbose = {'num_class': 3, 'verbose': -1}
+        # non-default num_class for default objective
+        self.assertRaises(lgb.basic.LightGBMError, get_cv_result,
+                          params_class_3_verbose)
+        # no metric with non-default num_class for custom objective
+        res = get_cv_result(params_class_3_verbose, fobj=custom_obj)
+        self.assertEqual(len(res), 0)
+        for metric_multi_alias in obj_multi_aliases + ['multi_logloss']:
+            # multiclass metric alias for custom objective
+            res = get_cv_result(params_class_3_verbose, metrics=metric_multi_alias, fobj=custom_obj)
+            self.assertEqual(len(res), 2)
+            self.assertIn('multi_logloss-mean', res)
+        # multiclass metric for custom objective
+        res = get_cv_result(params_class_3_verbose, metrics='multi_error', fobj=custom_obj)
+        self.assertEqual(len(res), 2)
+        self.assertIn('multi_error-mean', res)
+        # binary metric with non-default num_class for custom objective
+        self.assertRaises(lgb.basic.LightGBMError, get_cv_result,
+                          params_class_3_verbose, metrics='binary_error', fobj=custom_obj)
