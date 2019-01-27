@@ -86,7 +86,7 @@ We set up total 3 settings for experiments. The parameters of these settings are
 
 xgboost grows trees depth-wise and controls model complexity by ``max_depth``.
 LightGBM uses a leaf-wise algorithm instead and controls model complexity by ``num_leaves``.
-So we cannot compare them in the exact same model setting. For the tradeoff, we use xgboost with ``max_depth=8``, which will have max number leaves to 255, to compare with LightGBM with ``num_leves=255``.
+So we cannot compare them in the exact same model setting. For the tradeoff, we use xgboost with ``max_depth=8``, which will have max number leaves to 255, to compare with LightGBM with ``num_leaves=255``.
 
 Other parameters are default values.
 

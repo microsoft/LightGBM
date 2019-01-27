@@ -172,6 +172,16 @@ LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetGetField_R(LGBM_SE handle,
   LGBM_SE call_state);
 
 /*!
+* \brief Update parameters for a Dataset
+* \param handle a instance of data matrix
+* \param parameters parameters
+* \return 0 when succeed, -1 when failure happens
+*/
+LIGHTGBM_C_EXPORT LGBM_SE LGBM_DatasetUpdateParam_R(LGBM_SE handle,
+  LGBM_SE params,
+  LGBM_SE call_state);
+
+/*!
 * \brief get number of data.
 * \param handle the handle to the dataset
 * \param out The address to hold number of data

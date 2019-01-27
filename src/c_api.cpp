@@ -859,6 +859,13 @@ int LGBM_DatasetGetField(DatasetHandle handle,
   API_END();
 }
 
+int LGBM_DatasetUpdateParam(DatasetHandle handle, const char* parameters) {
+  API_BEGIN();
+  auto dataset = reinterpret_cast<Dataset*>(handle);
+  dataset->ResetConfig(parameters);
+  API_END();
+}
+
 int LGBM_DatasetGetNumData(DatasetHandle handle,
                            int* out) {
   API_BEGIN();
