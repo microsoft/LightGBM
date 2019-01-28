@@ -469,7 +469,7 @@ public:
   }
 
   double BoostFromScore(int) const override {
-    return std::log(RegressionL2loss::BoostFromScore(0));
+    return Common::SafeLog(RegressionL2loss::BoostFromScore(0));
   }
 
   bool IsConstantHessian() const override {

@@ -866,6 +866,15 @@ static int Sign(T x) {
   return (x > T(0)) - (x < T(0));
 }
 
+template <typename T>
+static T SafeLog(T x) {
+  if (x > 0) {
+    return std::log(x);
+  } else {
+    return -INFINITY;
+  }
+}
+
 }  // namespace Common
 
 }  // namespace LightGBM

@@ -32,15 +32,15 @@ namespace LightGBM {
     const double log_arg_epsilon = 1.0e-12;
     double a = label;
     if (prob > log_arg_epsilon) {
-      a *= std::log(prob);
+      a *= Common::SafeLog(prob);
     } else {
-      a *= std::log(log_arg_epsilon);
+      a *= Common::SafeLog(log_arg_epsilon);
     }
     double b = 1.0f - label;
     if (1.0f - prob > log_arg_epsilon) {
-      b *= std::log(1.0f - prob);
+      b *= Common::SafeLog(1.0f - prob);
     } else {
-      b *= std::log(log_arg_epsilon);
+      b *= Common::SafeLog(log_arg_epsilon);
     }
     return - (a + b);
   }
@@ -55,9 +55,9 @@ namespace LightGBM {
   // NOTE: x*log(x) = 0 for x=0,1; so only add when in (0, 1); avoid log(0)*0
   inline static double YentLoss(double p) {
     double hp = 0.0;
-    if (p > 0) hp += p * std::log(p);
+    if (p > 0) hp += p * Common::SafeLog(p);
     double q = 1.0f - p;
-    if (q > 0) hp += q * std::log(q);
+    if (q > 0) hp += q * Common::SafeLog(q);
     return hp;
   }
 

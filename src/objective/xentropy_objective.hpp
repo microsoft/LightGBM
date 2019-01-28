@@ -123,7 +123,7 @@ public:
     double pavg = suml / sumw;
     pavg = std::min(pavg, 1.0 - kEpsilon);
     pavg = std::max<double>(pavg, kEpsilon);
-    double initscore = std::log(pavg / (1.0f - pavg));
+    double initscore = Common::SafeLog(pavg / (1.0f - pavg));
     Log::Info("[%s:%s]: pavg = %f -> initscore = %f",  GetName(), __func__, pavg, initscore);
     return initscore;
   }
