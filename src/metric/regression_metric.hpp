@@ -208,7 +208,7 @@ public:
   inline static double LossOnPoint(label_t label, double score, const Config& config) {
     const double x = std::fabs(score - label);
     const double c = config.fair_c;
-    return c * x - c * c * Common::SafeLog(1.0f + x / c);
+    return c * x - c * c * std::log(1.0f + x / c);
   }
 
   inline static const char* Name() {
@@ -227,7 +227,7 @@ public:
     if (score < eps) {
       score = eps;
     }
-    return score - label * Common::SafeLog(score);
+    return score - label * std::log(score);
   }
   inline static const char* Name() {
     return "poisson";
@@ -304,8 +304,8 @@ public:
     if (score < eps) {
       score = eps;
     }
-    const double a = label * std::exp((1 - rho) * Common::SafeLog(score)) / (1 - rho);
-    const double b = std::exp((2 - rho) * Common::SafeLog(score)) / (2 - rho);
+    const double a = label * std::exp((1 - rho) * std::log(score)) / (1 - rho);
+    const double b = std::exp((2 - rho) * std::log(score)) / (2 - rho);
     return -a + b;
   }
   inline static const char* Name() {

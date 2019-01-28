@@ -156,9 +156,9 @@ public:
   inline static double LossOnPoint(label_t label, std::vector<double>& score) {
     size_t k = static_cast<size_t>(label);
     if (score[k] > kEpsilon) {
-      return static_cast<double>(-Common::SafeLog(score[k]));
+      return static_cast<double>(-std::log(score[k]));
     } else {
-      return -Common::SafeLog(kEpsilon);
+      return -std::log(kEpsilon);
     }
   }
 

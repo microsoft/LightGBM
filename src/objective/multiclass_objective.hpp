@@ -135,7 +135,7 @@ public:
   bool NeedAccuratePrediction() const override { return false; }
 
   double BoostFromScore(int class_id) const override {
-    return Common::SafeLog(std::max<double>(kEpsilon, class_init_probs_[class_id]));
+    return std::log(std::max<double>(kEpsilon, class_init_probs_[class_id]));
   }
 
   bool ClassNeedTrain(int class_id) const override { 
