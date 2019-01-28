@@ -93,9 +93,9 @@ except ImportError:
 """datatable"""
 try:
     from datatable import DataTable
-    DT_INSTALLED = True
+    DATATABLE_INSTALLED = True
 except ImportError:
-    DT_INSTALLED = False
+    DATATABLE_INSTALLED = False
 
     class DataTable(object):
         """Dummy class for DataTable."""
