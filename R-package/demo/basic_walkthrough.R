@@ -95,7 +95,7 @@ print(paste("sum(abs(pred2-pred))=", sum(abs(pred2 - pred))))
 #--------------------Advanced features ---------------------------
 # To use advanced features, we need to put data in lgb.Dataset
 dtrain <- lgb.Dataset(data = train$data, label = train$label, free_raw_data = FALSE)
-dtest <- lgb.Dataset(data = test$data, label = test$label, free_raw_data = FALSE)
+dtest <- lgb.Dataset.create.valid(dtrain, data = test$data, label = test$label)
 
 #--------------------Using validation set-------------------------
 # valids is a list of lgb.Dataset, each of them is tagged with name
