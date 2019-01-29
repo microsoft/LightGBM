@@ -1222,13 +1222,17 @@ class TestEngine(unittest.TestCase):
         one_tree = one_tree.replace('Tree=1', 'Tree={}')
         multiplier = 100
         total_trees = multiplier + 2
-        new_model_str = (model_str[:model_str.find('tree_sizes')]
-                         + '\n' * (2**31 - one_tree_size * total_trees)
-                         + model_str[model_str.find('Tree=0'):model_str.find('end of trees')]
-                         + (one_tree * multiplier).format(*range(2, total_trees))
-                         + model_str[model_str.find('end of trees'):])
-        self.assertGreater(len(new_model_str), 2**31)
-        bst.model_from_string(new_model_str, verbose=False)
-        self.assertEqual(bst.num_trees(), total_trees)
-        y_pred_new = bst.predict(X, num_iteration=2)
-        np.testing.assert_allclose(y_pred, y_pred_new)
+        try:
+            new_model_str = (model_str[:model_str.find('tree_sizes')]
+                             + '\n\n'
+                             + model_str[model_str.find('Tree=0'):model_str.find('end of trees')]
+                             + (one_tree * multiplier).format(*range(2, total_trees))
+                             + model_str[model_str.find('end of trees'):]
+                             + ' ' * (2**31 - one_tree_size * total_trees))
+            self.assertGreater(len(new_model_str), 2**31)
+            bst.model_from_string(new_model_str, verbose=False)
+            self.assertEqual(bst.num_trees(), total_trees)
+            y_pred_new = bst.predict(X, num_iteration=2)
+            np.testing.assert_allclose(y_pred, y_pred_new)
+        except MemoryError:
+            self.skipTest('not enough RAM')
