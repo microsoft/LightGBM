@@ -550,3 +550,23 @@ class TestSklearn(unittest.TestCase):
                                  **params).fit(eval_metric='multi_logloss', **params_fit)
         self.assertEqual(len(gbm.evals_result_['training']), 1)
         self.assertIn('binary_logloss', gbm.evals_result_['training'])
+
+    def test_inf_handle(self):
+        nrows = 1000
+        ncols = 10
+        X = np.random.randn(nrows, ncols)
+        y = np.random.randn(nrows) + np.full(nrows, 1e30)
+        weight = np.full(nrows, 1e10)
+        params = {'n_estimators': 20, 'verbose': -1}
+        params_fit = {'X': X, 'y': y, 'sample_weight':weight, 'eval_set': (X, y), 'verbose': False, 'early_stopping_rounds': 5}
+        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
+
+    def test_nan_handle(self):
+        nrows = 1000
+        ncols = 10
+        X = np.random.randn(nrows, ncols)
+        y = np.random.randn(nrows) + np.full(nrows, 1e30)
+        weight = np.zeros(nrows)
+        params = {'n_estimators': 20, 'verbose': -1}
+        params_fit = {'X': X, 'y': y, 'sample_weight':weight, 'eval_set': (X, y), 'verbose': False, 'early_stopping_rounds': 5}
+        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
