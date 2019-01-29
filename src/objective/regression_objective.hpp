@@ -9,6 +9,7 @@
 namespace LightGBM {
 
 #define PercentileFun(T, data_reader, cnt_data, alpha) {\
+  if (cnt_data <= 1) { return  data_reader(0); }\
   std::vector<T> ref_data(cnt_data);\
   for (data_size_t i = 0; i < cnt_data; ++i) {\
     ref_data[i] = data_reader(i);\
@@ -36,6 +37,7 @@ namespace LightGBM {
 }\
 
 #define WeightedPercentileFun(T, data_reader, weight_reader, cnt_data, alpha) {\
+  if (cnt_data <= 1) { return  data_reader(0); }\
   std::vector<data_size_t> sorted_idx(cnt_data);\
   for (data_size_t i = 0; i < cnt_data; ++i) {\
     sorted_idx[i] = i;\
@@ -48,6 +50,7 @@ namespace LightGBM {
   }\
   double threshold = weighted_cdf[cnt_data - 1] * alpha;\
   size_t pos = std::upper_bound(weighted_cdf.begin(), weighted_cdf.end(), threshold) - weighted_cdf.begin();\
+  pos = std::min(pos, static_cast<size_t>(cnt_data -1));\
   if (pos == 0 || pos ==  static_cast<size_t>(cnt_data - 1)) {\
     return data_reader(sorted_idx[pos]);\
   }\
