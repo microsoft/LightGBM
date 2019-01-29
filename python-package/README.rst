@@ -16,13 +16,13 @@ Preparation
 Install from `PyPI <https://pypi.org/project/lightgbm>`_ Using ``pip``
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-For **Windows** users, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if **Visual Studio** (2015 or 2017) is not installed.
+For **Windows** users, `VC runtime <https://go.microsoft.com/fwlink/?LinkId=746572>`_ is needed if **Visual Studio** (2015 or newer) is not installed.
 
 For **Linux** users, **glibc** >= 2.14 is required.
 
 For **macOS** users:
 
-- Starting from version 2.2.1, the library file in distribution wheels is built by the **Apple Clang** (Xcode_8.3.1) compiler. This means that you don't need to install the **gcc** compiler anymore. Instead of that you need to install the **OpenMP** library, which is required for running LightGBM on the system with the **Apple Clang** compiler. You can install the **OpenMP** library by the following command: ``brew install libomp``.
+- Starting from version 2.2.1, the library file in distribution wheels is built by the **Apple Clang** (Xcode_8.3.3) compiler. This means that you don't need to install the **gcc** compiler anymore. Instead of that you need to install the **OpenMP** library, which is required for running LightGBM on the system with the **Apple Clang** compiler. You can install the **OpenMP** library by the following command: ``brew install libomp``.
 
 - For version smaller than 2.2.1 and not smaller than 2.1.2, **gcc-8** with **OpenMP** support must be installed first. Refer to `Installation Guide <https://github.com/Microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc>`__ for installation of **gcc-8** with **OpenMP** support.
 

@@ -1070,6 +1070,8 @@ class Dataset(object):
         return self
 
     def _update_params(self, params):
+        if self.handle is not None and params is not None:
+            _safe_call(_LIB.LGBM_DatasetUpdateParam(self.handle, c_str(param_dict_to_str(params))))
         if not self.params:
             self.params = params
         else:
@@ -1080,6 +1082,8 @@ class Dataset(object):
     def _reverse_update_params(self):
         self.params = copy.deepcopy(self.params_back_up)
         self.params_back_up = None
+        if self.handle is not None and self.params is not None:
+            _safe_call(_LIB.LGBM_DatasetUpdateParam(self.handle, c_str(param_dict_to_str(self.params))))
         return self
 
     def set_field(self, field_name, data):
@@ -2007,8 +2011,8 @@ class Booster(object):
         """
         _safe_call(_LIB.LGBM_BoosterShuffleModels(
             self.handle,
-            ctypes.c_int(start_iter),
-            ctypes.c_int(end_iter)))
+            ctypes.c_int(start_iteration),
+            ctypes.c_int(end_iteration)))
         return self
 
     def model_from_string(self, model_str, verbose=True):

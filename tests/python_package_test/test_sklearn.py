@@ -285,7 +285,268 @@ class TestSklearn(unittest.TestCase):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         gbm = lgb.LGBMRegressor(n_estimators=10, silent=True)
         gbm.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_test, y_test)], verbose=False)
+        self.assertEqual(len(gbm.evals_result_), 2)
         self.assertIn('training', gbm.evals_result_)
+        self.assertEqual(len(gbm.evals_result_['training']), 1)
         self.assertIn('l2', gbm.evals_result_['training'])
         self.assertIn('valid_1', gbm.evals_result_)
+        self.assertEqual(len(gbm.evals_result_['valid_1']), 1)
         self.assertIn('l2', gbm.evals_result_['valid_1'])
+
+    def test_metrics(self):
+        def custom_obj(y_true, y_pred):
+            return np.zeros(y_true.shape), np.zeros(y_true.shape)
+
+        def custom_metric(y_true, y_pred):
+            return 'error', 0, False
+
+        X, y = load_boston(True)
+        params = {'n_estimators': 5, 'verbose': -1}
+        params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
+
+        # no custom objective, no custom metric
+        # default metric
+        gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 1)
+        self.assertIn('l2', gbm.evals_result_['training'])
+
+        # non-default metric
+        gbm = lgb.LGBMRegressor(metric='mape', **params).fit(**params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 1)
+        self.assertIn('mape', gbm.evals_result_['training'])
+
+        # no metric
+        gbm = lgb.LGBMRegressor(metric='None', **params).fit(**params_fit)
+        self.assertIs(gbm.evals_result_, None)
+
+        # non-default metric in eval_metric
+        gbm = lgb.LGBMRegressor(**params).fit(eval_metric='mape', **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 2)
+        self.assertIn('l2', gbm.evals_result_['training'])
+        self.assertIn('mape', gbm.evals_result_['training'])
+
+        # non-default metric with non-default metric in eval_metric
+        gbm = lgb.LGBMRegressor(metric='gamma', **params).fit(eval_metric='mape', **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 2)
+        self.assertIn('gamma', gbm.evals_result_['training'])
+        self.assertIn('mape', gbm.evals_result_['training'])
+
+        # non-default metric with multiple metrics in eval_metric
+        gbm = lgb.LGBMRegressor(metric='gamma',
+                                **params).fit(eval_metric=['l2', 'mape'], **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 3)
+        self.assertIn('gamma', gbm.evals_result_['training'])
+        self.assertIn('l2', gbm.evals_result_['training'])
+        self.assertIn('mape', gbm.evals_result_['training'])
+
+        # default metric for non-default objective
+        gbm = lgb.LGBMRegressor(objective='regression_l1', **params).fit(**params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 1)
+        self.assertIn('l1', gbm.evals_result_['training'])
+
+        # non-default metric for non-default objective
+        gbm = lgb.LGBMRegressor(objective='regression_l1', metric='mape',
+                                **params).fit(**params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 1)
+        self.assertIn('mape', gbm.evals_result_['training'])
+
+        # no metric
+        gbm = lgb.LGBMRegressor(objective='regression_l1', metric='None',
+                                **params).fit(**params_fit)
+        self.assertIs(gbm.evals_result_, None)
+
+        # non-default metric in eval_metric for non-default objective
+        gbm = lgb.LGBMRegressor(objective='regression_l1',
+                                **params).fit(eval_metric='mape', **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 2)
+        self.assertIn('l1', gbm.evals_result_['training'])
+        self.assertIn('mape', gbm.evals_result_['training'])
+
+        # non-default metric with non-default metric in eval_metric for non-default objective
+        gbm = lgb.LGBMRegressor(objective='regression_l1', metric='gamma',
+                                **params).fit(eval_metric='mape', **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 2)
+        self.assertIn('gamma', gbm.evals_result_['training'])
+        self.assertIn('mape', gbm.evals_result_['training'])
+
+        # non-default metric with multiple metrics in eval_metric for non-default objective
+        gbm = lgb.LGBMRegressor(objective='regression_l1', metric='gamma',
+                                **params).fit(eval_metric=['l2', 'mape'], **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 3)
+        self.assertIn('gamma', gbm.evals_result_['training'])
+        self.assertIn('l2', gbm.evals_result_['training'])
+        self.assertIn('mape', gbm.evals_result_['training'])
+
+        # custom objective, no custom metric
+        # default regression metric for custom objective
+        gbm = lgb.LGBMRegressor(objective=custom_obj, **params).fit(**params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 1)
+        self.assertIn('l2', gbm.evals_result_['training'])
+
+        # non-default regression metric for custom objective
+        gbm = lgb.LGBMRegressor(objective=custom_obj, metric='mape', **params).fit(**params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 1)
+        self.assertIn('mape', gbm.evals_result_['training'])
+
+        # multiple regression metrics for custom objective
+        gbm = lgb.LGBMRegressor(objective=custom_obj, metric=['l1', 'gamma'],
+                                **params).fit(**params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 2)
+        self.assertIn('l1', gbm.evals_result_['training'])
+        self.assertIn('gamma', gbm.evals_result_['training'])
+
+        # no metric
+        gbm = lgb.LGBMRegressor(objective=custom_obj, metric='None',
+                                **params).fit(**params_fit)
+        self.assertIs(gbm.evals_result_, None)
+
+        # default regression metric with non-default metric in eval_metric for custom objective
+        gbm = lgb.LGBMRegressor(objective=custom_obj,
+                                **params).fit(eval_metric='mape', **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 2)
+        self.assertIn('l2', gbm.evals_result_['training'])
+        self.assertIn('mape', gbm.evals_result_['training'])
+
+        # non-default regression metric with metric in eval_metric for custom objective
+        gbm = lgb.LGBMRegressor(objective=custom_obj, metric='mape',
+                                **params).fit(eval_metric='gamma', **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 2)
+        self.assertIn('mape', gbm.evals_result_['training'])
+        self.assertIn('gamma', gbm.evals_result_['training'])
+
+        # multiple regression metrics with metric in eval_metric for custom objective
+        gbm = lgb.LGBMRegressor(objective=custom_obj, metric=['l1', 'gamma'],
+                                **params).fit(eval_metric='l2', **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 3)
+        self.assertIn('l1', gbm.evals_result_['training'])
+        self.assertIn('gamma', gbm.evals_result_['training'])
+        self.assertIn('l2', gbm.evals_result_['training'])
+
+        # multiple regression metrics with multiple metrics in eval_metric for custom objective
+        gbm = lgb.LGBMRegressor(objective=custom_obj, metric=['l1', 'gamma'],
+                                **params).fit(eval_metric=['l2', 'mape'], **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 4)
+        self.assertIn('l1', gbm.evals_result_['training'])
+        self.assertIn('gamma', gbm.evals_result_['training'])
+        self.assertIn('l2', gbm.evals_result_['training'])
+        self.assertIn('mape', gbm.evals_result_['training'])
+
+        # no custom objective, custom metric
+        # default metric with custom metric
+        gbm = lgb.LGBMRegressor(**params).fit(eval_metric=custom_metric, **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 2)
+        self.assertIn('l2', gbm.evals_result_['training'])
+        self.assertIn('error', gbm.evals_result_['training'])
+
+        # non-default metric with custom metric
+        gbm = lgb.LGBMRegressor(metric='mape',
+                                **params).fit(eval_metric=custom_metric, **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 2)
+        self.assertIn('mape', gbm.evals_result_['training'])
+        self.assertIn('error', gbm.evals_result_['training'])
+
+        # multiple metrics with custom metric
+        gbm = lgb.LGBMRegressor(metric=['l1', 'gamma'],
+                                **params).fit(eval_metric=custom_metric, **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 3)
+        self.assertIn('l1', gbm.evals_result_['training'])
+        self.assertIn('gamma', gbm.evals_result_['training'])
+        self.assertIn('error', gbm.evals_result_['training'])
+
+        # custom metric (disable default metric)
+        gbm = lgb.LGBMRegressor(metric='None',
+                                **params).fit(eval_metric=custom_metric, **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 1)
+        self.assertIn('error', gbm.evals_result_['training'])
+
+        # default metric for non-default objective with custom metric
+        gbm = lgb.LGBMRegressor(objective='regression_l1',
+                                **params).fit(eval_metric=custom_metric, **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 2)
+        self.assertIn('l1', gbm.evals_result_['training'])
+        self.assertIn('error', gbm.evals_result_['training'])
+
+        # non-default metric for non-default objective with custom metric
+        gbm = lgb.LGBMRegressor(objective='regression_l1', metric='mape',
+                                **params).fit(eval_metric=custom_metric, **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 2)
+        self.assertIn('mape', gbm.evals_result_['training'])
+        self.assertIn('error', gbm.evals_result_['training'])
+
+        # multiple metrics for non-default objective with custom metric
+        gbm = lgb.LGBMRegressor(objective='regression_l1', metric=['l1', 'gamma'],
+                                **params).fit(eval_metric=custom_metric, **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 3)
+        self.assertIn('l1', gbm.evals_result_['training'])
+        self.assertIn('gamma', gbm.evals_result_['training'])
+        self.assertIn('error', gbm.evals_result_['training'])
+
+        # custom metric (disable default metric for non-default objective)
+        gbm = lgb.LGBMRegressor(objective='regression_l1', metric='None',
+                                **params).fit(eval_metric=custom_metric, **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 1)
+        self.assertIn('error', gbm.evals_result_['training'])
+
+        # custom objective, custom metric
+        # custom metric for custom objective
+        gbm = lgb.LGBMRegressor(objective=custom_obj,
+                                **params).fit(eval_metric=custom_metric, **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 1)
+        self.assertIn('error', gbm.evals_result_['training'])
+
+        # non-default regression metric with custom metric for custom objective
+        gbm = lgb.LGBMRegressor(objective=custom_obj, metric='mape',
+                                **params).fit(eval_metric=custom_metric, **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 2)
+        self.assertIn('mape', gbm.evals_result_['training'])
+        self.assertIn('error', gbm.evals_result_['training'])
+
+        # multiple regression metrics with custom metric for custom objective
+        gbm = lgb.LGBMRegressor(objective=custom_obj, metric=['l2', 'mape'],
+                                **params).fit(eval_metric=custom_metric, **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 3)
+        self.assertIn('l2', gbm.evals_result_['training'])
+        self.assertIn('mape', gbm.evals_result_['training'])
+        self.assertIn('error', gbm.evals_result_['training'])
+
+        X, y = load_digits(3, True)
+        params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
+
+        # default metric and invalid binary metric is replaced with multiclass alternative
+        gbm = lgb.LGBMClassifier(**params).fit(eval_metric='binary_error', **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 2)
+        self.assertIn('multi_logloss', gbm.evals_result_['training'])
+        self.assertIn('multi_error', gbm.evals_result_['training'])
+
+        # invalid objective is replaced with default multiclass one
+        # and invalid binary metric is replaced with multiclass alternative
+        gbm = lgb.LGBMClassifier(objective='invalid_obj',
+                                 **params).fit(eval_metric='binary_error', **params_fit)
+        self.assertEqual(gbm.objective_, 'multiclass')
+        self.assertEqual(len(gbm.evals_result_['training']), 2)
+        self.assertIn('multi_logloss', gbm.evals_result_['training'])
+        self.assertIn('multi_error', gbm.evals_result_['training'])
+
+        # default metric for non-default multiclass objective
+        # and invalid binary metric is replaced with multiclass alternative
+        gbm = lgb.LGBMClassifier(objective='ovr',
+                                 **params).fit(eval_metric='binary_error', **params_fit)
+        self.assertEqual(gbm.objective_, 'ovr')
+        self.assertEqual(len(gbm.evals_result_['training']), 2)
+        self.assertIn('multi_logloss', gbm.evals_result_['training'])
+        self.assertIn('multi_error', gbm.evals_result_['training'])
+
+        X, y = load_digits(2, True)
+        params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
+
+        # default metric and invalid multiclass metric is replaced with binary alternative
+        gbm = lgb.LGBMClassifier(**params).fit(eval_metric='multi_error', **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 2)
+        self.assertIn('binary_logloss', gbm.evals_result_['training'])
+        self.assertIn('binary_error', gbm.evals_result_['training'])
+
+        # invalid multiclass metric is replaced with binary alternative for custom objective
+        gbm = lgb.LGBMClassifier(objective=custom_obj,
+                                 **params).fit(eval_metric='multi_logloss', **params_fit)
+        self.assertEqual(len(gbm.evals_result_['training']), 1)
+        self.assertIn('binary_logloss', gbm.evals_result_['training'])

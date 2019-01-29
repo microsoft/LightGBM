@@ -118,8 +118,22 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, nomp=False,
         cmake_cmd.append("-DUSE_MPI=ON")
     if nomp:
         cmake_cmd.append("-DUSE_OPENMP=OFF")
+    if system() == 'Darwin' and not nomp:
+        cc = os.environ.get('CC')
+        cxx = os.environ.get('CXX')
+        if not (cc and cc.startswith('gcc') and cxx and cxx.startswith('g++')):
+            # Apple Clang
+            # https://github.com/Homebrew/homebrew-core/pull/20589
+            cmake_cmd.extend([
+                '-DOpenMP_C_FLAGS=-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include',
+                '-DOpenMP_C_LIB_NAMES=omp',
+                '-DOpenMP_CXX_FLAGS=-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include',
+                '-DOpenMP_CXX_LIB_NAMES=omp',
+                '-DOpenMP_omp_LIBRARY=/usr/local/opt/libomp/lib/libomp.dylib'
+            ])
     if use_hdfs:
         cmake_cmd.append("-DUSE_HDFS=ON")
+
     if system() in ('Windows', 'Microsoft'):
         if use_mingw:
             if use_mpi:
@@ -134,7 +148,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, nomp=False,
             lib_path = os.path.join(CURRENT_DIR, "compile", "windows", "x64", "DLL", "lib_lightgbm.dll")
             if not any((use_gpu, use_mpi, use_hdfs)):
                 logger.info("Starting to compile with MSBuild from existing solution file.")
-                platform_toolsets = ("v141", "v140")
+                platform_toolsets = ("v141", "v140", "v142")
                 for pt in platform_toolsets:
                     status = silent_call(["MSBuild",
                                           os.path.join(CURRENT_DIR, "compile", "windows", "LightGBM.sln"),
@@ -148,7 +162,7 @@ def compile_cpp(use_mingw=False, use_gpu=False, use_mpi=False, nomp=False,
                 if status != 0 or not os.path.exists(lib_path):
                     logger.warning("Compilation with MSBuild from existing solution file failed.")
             if status != 0 or not os.path.exists(lib_path):
-                vs_versions = ("Visual Studio 15 2017 Win64", "Visual Studio 14 2015 Win64")
+                vs_versions = ("Visual Studio 15 2017 Win64", "Visual Studio 14 2015 Win64", "Visual Studio 16 2019")
                 for vs in vs_versions:
                     logger.info("Starting to compile with %s." % vs)
                     status = silent_call(cmake_cmd + ["-G", vs])

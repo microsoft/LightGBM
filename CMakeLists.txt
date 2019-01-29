@@ -211,8 +211,8 @@ endif(USE_MPI)
 
 if(USE_OPENMP)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-        TARGET_LINK_LIBRARIES(lightgbm ${OpenMP_libomp_LIBRARY})
-        TARGET_LINK_LIBRARIES(_lightgbm ${OpenMP_libomp_LIBRARY})
+        TARGET_LINK_LIBRARIES(lightgbm OpenMP::OpenMP_CXX)
+        TARGET_LINK_LIBRARIES(_lightgbm OpenMP::OpenMP_CXX)
     endif()
 endif(USE_OPENMP)
 
