@@ -558,7 +558,7 @@ class TestSklearn(unittest.TestCase):
         y = np.random.randn(nrows) + np.full(nrows, 1e30)
         weight = np.full(nrows, 1e10)
         params = {'n_estimators': 20, 'verbose': -1}
-        params_fit = {'X': X, 'y': y, 'sample_weight':weight, 'eval_set': (X, y), 'verbose': False, 'early_stopping_rounds': 5}
+        params_fit = {'X': X, 'y': y, 'sample_weight': weight, 'eval_set': (X, y), 'verbose': False, 'early_stopping_rounds': 5}
         gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
 
     def test_nan_handle(self):
@@ -568,5 +568,5 @@ class TestSklearn(unittest.TestCase):
         y = np.random.randn(nrows) + np.full(nrows, 1e30)
         weight = np.zeros(nrows)
         params = {'n_estimators': 20, 'verbose': -1}
-        params_fit = {'X': X, 'y': y, 'sample_weight':weight, 'eval_set': (X, y), 'verbose': False, 'early_stopping_rounds': 5}
+        params_fit = {'X': X, 'y': y, 'sample_weight': weight, 'eval_set': (X, y), 'verbose': False, 'early_stopping_rounds': 5}
         gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
