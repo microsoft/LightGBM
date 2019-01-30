@@ -146,7 +146,7 @@ jobs:
       createCustomEnvironment: true
       updateConda: true
       environmentName: $(CONDA_ENV)
-      packageSpecs: 'python=$(PYTHON_VERSION) matplotlib nose numpy pandas pytest python-graphviz scikit-learn scipy'
+      packageSpecs: 'python=$(PYTHON_VERSION) matplotlib nose numpy pandas psutil pytest python-graphviz scikit-learn scipy'
       createOptions: '-q'
   - powershell: $(Build.SourcesDirectory)/.ci/test_windows.ps1
     displayName: Test
