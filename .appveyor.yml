@@ -49,7 +49,7 @@ test_script:
   - ps: >-
       foreach ($file in @(Get-ChildItem *.py)) {
         python $file
-        if ($LastExitCode -ne 0) { $host.SetShouldExit($LastExitCode) }
+        if (!$?) { $host.SetShouldExit(-1) }
       }  # run all examples
   - cd %APPVEYOR_BUILD_FOLDER%\examples\python-guide\notebooks
   - conda install -y -n test-env ipywidgets notebook
