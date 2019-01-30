@@ -45,6 +45,9 @@ public:
         sum_weights_ += weights_[i];
       }
     }
+    for (data_size_t i = 0; i < num_data_; ++i) {
+      PointWiseLossCalculator::CheckLabel(label_[i]);
+    }
   }
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
@@ -90,6 +93,10 @@ public:
   inline static double AverageLoss(double sum_loss, double sum_weights) {
     return sum_loss / sum_weights;
   }
+
+  inline static void CheckLabel(label_t) {
+  }
+
 private:
   /*! \brief Number of data */
   data_size_t num_data_;
@@ -251,12 +258,16 @@ public:
     const double psi = 1.0;
     const double theta = -1.0 / score;
     const double a = psi;
-    const double b = -std::log(-theta);
-    const double c = 1. / psi * std::log(label / psi) - std::log(label) - 0; // 0 = std::lgamma(1.0 / psi) = std::lgamma(1.0);
+    const double b = -Common::SafeLog(-theta);
+    const double c = 1. / psi * Common::SafeLog(label / psi) - Common::SafeLog(label) - 0; // 0 = std::lgamma(1.0 / psi) = std::lgamma(1.0);
     return -((label * theta - b) / a + c);
   }
   inline static const char* Name() {
     return "gamma";
+  }
+
+  inline static void CheckLabel(label_t label) {
+    CHECK(label > 0);
   }
 };
 
@@ -269,13 +280,16 @@ public:
   inline static double LossOnPoint(label_t label, double score, const Config&) {
     const double epsilon = 1.0e-9;
     const double tmp = label / (score + epsilon);
-    return tmp - std::log(tmp) - 1;
+    return tmp - Common::SafeLog(tmp) - 1;
   }
   inline static const char* Name() {
     return "gamma-deviance";
   }
   inline static double AverageLoss(double sum_loss, double) {
     return sum_loss * 2;
+  }
+  inline static void CheckLabel(label_t label) {
+    CHECK(label > 0);
   }
 };
 
