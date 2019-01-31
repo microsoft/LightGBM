@@ -343,6 +343,10 @@ void Dataset::ResetConfig(const char* parameters) {
   if (param.count("zero_as_missing") && io_config.zero_as_missing != zero_as_missing_) {
     Log::Warning("Cannot change zero_as_missing after constructed Dataset handle.");
   }
+  if (param.count("sparse_threshold") && io_config.sparse_threshold != sparse_threshold_) {
+    Log::Warning("Cannot change sparse_threshold after constructed Dataset handle.");
+  }
+
   if (!io_config.monotone_constraints.empty()) {
     CHECK(static_cast<size_t>(num_total_features_) == io_config.monotone_constraints.size());
     monotone_types_.resize(num_features_);
@@ -434,7 +438,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
       1,
       bin_mappers,
       num_data_,
-      dataset->sparse_threshold_,
+      sparse_threshold_,
       is_enable_sparse));
     feature2group_.push_back(i);
     feature2subfeature_.push_back(0);
@@ -621,7 +625,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     writer->Write(binary_file_token, size_of_token);
     // get size of header
     size_t size_of_header = sizeof(num_data_) + sizeof(num_features_) + sizeof(num_total_features_)
-      + sizeof(int) * num_total_features_ + sizeof(label_idx_) + sizeof(num_groups_)
+      + sizeof(int) * num_total_features_ + sizeof(label_idx_) + sizeof(num_groups_) + sizeof(sparse_threshold_)
       + 3 * sizeof(int) * num_features_ + sizeof(uint64_t) * (num_groups_ + 1) + 2 * sizeof(int) * num_groups_ + sizeof(int8_t) * num_features_
       + sizeof(double) * num_features_ + sizeof(int) * 3 + sizeof(bool) * 2;
     // size of feature names
@@ -639,6 +643,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     writer->Write(&min_data_in_bin_, sizeof(min_data_in_bin_));
     writer->Write(&use_missing_, sizeof(use_missing_));
     writer->Write(&zero_as_missing_, sizeof(zero_as_missing_));
+    writer->Write(&sparse_threshold_, sizeof(sparse_threshold_));
     writer->Write(used_feature_map_.data(), sizeof(int) * num_total_features_);
     writer->Write(&num_groups_, sizeof(num_groups_));
     writer->Write(real_feature_idx_.data(), sizeof(int) * num_features_);
