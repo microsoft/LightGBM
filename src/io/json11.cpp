@@ -148,7 +148,6 @@ void Json::dump(string &out) const {
 template <Json::Type tag, typename T>
 class Value : public JsonValue {
 protected:
-
     // Constructors
     explicit Value(const T &value) : m_value(value) {}
     explicit Value(T &&value)      : m_value(move(value)) {}
@@ -345,7 +344,6 @@ namespace {
  * Object that tracks all state of an in-progress parse.
  */
 struct JsonParser final {
-
     /* State
      */
     const string &str;
@@ -397,7 +395,7 @@ struct JsonParser final {
           }
           comment_found = true;
         }
-        else if (str[i] == '*') { // multiline comment
+        else if (str[i] == '*') {  // multiline comment
           i++;
           if (i > str.size()-2)
             return fail("Unexpected end of input inside multi-line comment", false);
@@ -422,14 +420,14 @@ struct JsonParser final {
      */
     void consume_garbage() {
       consume_whitespace();
-      if(strategy == JsonParse::COMMENTS) {
+      if (strategy == JsonParse::COMMENTS) {
         bool comment_found = false;
         do {
           comment_found = consume_comment();
           if (failed) return;
           consume_whitespace();
         }
-        while(comment_found);
+        while (comment_found);
       }
     }
 
@@ -726,7 +724,7 @@ struct JsonParser final {
         return fail("Expected value, got " + esc(ch));
     }
 };
-}//namespace {
+}  // namespace
 
 Json Json::parse(const string &in, string &err, JsonParse strategy) {
     JsonParser parser { in, 0, err, false, strategy };
@@ -784,4 +782,4 @@ bool Json::has_shape(const shape & types, string & err) const {
     return true;
 }
 
-} // namespace json11
+}  // namespace json11

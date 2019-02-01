@@ -63,12 +63,13 @@ protected:
   void FindBestSplits() override;
   void Split(Tree* tree, int best_Leaf, int* left_leaf, int* right_leaf) override;
   void ConstructHistograms(const std::vector<int8_t>& is_feature_used, bool use_subtract) override;
+
 private:
   /*! \brief 4-byte feature tuple used by GPU kernels */
   struct Feature4 {
       uint8_t s[4];
   };
-  
+
   /*! \brief Single precision histogram entiry for GPU */
   struct GPUHistogramBinEntry {
     score_t sum_gradients;
@@ -82,7 +83,7 @@ private:
   * \return Log2 of the best number for workgroups per feature, in range 0...kMaxLogWorkgroupsPerFeature
   */
   int GetNumWorkgroupsPerFeature(data_size_t leaf_num_data);
-  
+
   /*!
   * \brief Initialize GPU device, context and command queues
   *        Also compiles the OpenCL kernel
@@ -100,7 +101,7 @@ private:
   * \brief Compile OpenCL GPU source code to kernel binaries
   */
   void BuildGPUKernels();
-  
+
   /*!
    * \brief Returns OpenCL kernel build log when compiled with option opts
    * \param opts OpenCL build options 
@@ -120,7 +121,7 @@ private:
    * \param use_all_features Set to true to not use feature masks, with a faster kernel
   */
   void GPUHistogram(data_size_t leaf_num_data, bool use_all_features);
-  
+
   /*!
    * \brief Wait for GPU kernel execution and read histogram
    * \param histograms Destination of histogram results from GPU.
@@ -151,7 +152,7 @@ private:
 
 
   /*! brief Log2 of max number of workgroups per feature*/
-  const int kMaxLogWorkgroupsPerFeature = 10; // 2^10
+  const int kMaxLogWorkgroupsPerFeature = 10;  // 2^10
   /*! brief Max total number of workgroups with preallocated workspace.
    *        If we use more than this number of workgroups, we have to reallocate subhistograms */
   int preallocd_max_num_wg_ = 1024;
@@ -166,15 +167,15 @@ private:
   /*! \brief GPU command queue object */
   boost::compute::command_queue queue_;
   /*! \brief GPU kernel for 256 bins */
-  const char *kernel256_src_ = 
+  const char *kernel256_src_ =
   #include "ocl/histogram256.cl"
   ;
   /*! \brief GPU kernel for 64 bins */
-  const char *kernel64_src_ = 
+  const char *kernel64_src_ =
   #include "ocl/histogram64.cl"
   ;
   /*! \brief GPU kernel for 16 bins */
-  const char *kernel16_src_ = 
+  const char *kernel16_src_ =
   #include "ocl/histogram16.cl"
   ;
   /*! \brief Currently used kernel source */
@@ -266,7 +267,7 @@ private:
 // When GPU support is not compiled in, quit with an error message
 
 namespace LightGBM {
-    
+
 class GPUTreeLearner: public SerialTreeLearner {
 public:
   #pragma warning(disable : 4702)
@@ -276,7 +277,7 @@ public:
   }
 };
 
-}
+}  // namespace LightGBM
 
 #endif   // USE_GPU
 

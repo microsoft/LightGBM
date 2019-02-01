@@ -15,7 +15,7 @@ PredictionEarlyStopInstance CreateNone(const PredictionEarlyStopConfig&) {
     [](const double*, int) {
     return false;
   },
-    std::numeric_limits<int>::max() // make sure the lambda is almost never called
+    std::numeric_limits<int>::max()  // make sure the lambda is almost never called
   };
 }
 
@@ -69,7 +69,7 @@ PredictionEarlyStopInstance CreateBinary(const PredictionEarlyStopConfig& config
   };
 }
 
-}
+}  // namespace
 
 namespace LightGBM {
 
@@ -86,4 +86,4 @@ PredictionEarlyStopInstance CreatePredictionEarlyStopInstance(const std::string&
   }
 }
 
-}
+}  // namespace LightGBM

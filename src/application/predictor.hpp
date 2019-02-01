@@ -35,7 +35,6 @@ public:
   Predictor(Boosting* boosting, int num_iteration,
             bool is_raw_score, bool predict_leaf_index, bool predict_contrib,
             bool early_stop, int early_stop_freq, double early_stop_margin) {
-
     early_stop_ = CreatePredictionEarlyStopInstance("none", LightGBM::PredictionEarlyStopConfig());
     if (early_stop && !boosting->NeedAccuratePrediction()) {
       PredictionEarlyStopConfig pred_early_stop_config;
@@ -76,16 +75,16 @@ public:
         }
       };
     } else if (predict_contrib) {
-	    predict_fun_ = [=](const std::vector<std::pair<int, double>>& features, double* output) {
-	      int tid = omp_get_thread_num();
-			CopyToPredictBuffer(predict_buf_[tid].data(), features);
+        predict_fun_ = [=](const std::vector<std::pair<int, double>>& features, double* output) {
+          int tid = omp_get_thread_num();
+          CopyToPredictBuffer(predict_buf_[tid].data(), features);
           // get result for leaf index
           boosting_->PredictContrib(predict_buf_[tid].data(), output, &early_stop_);
           ClearPredictBuffer(predict_buf_[tid].data(), predict_buf_[tid].size(), features);
         };
     } else {
       if (is_raw_score) {
-		predict_fun_ = [=](const std::vector<std::pair<int, double>>& features, double* output) {
+        predict_fun_ = [=](const std::vector<std::pair<int, double>>& features, double* output) {
           int tid = omp_get_thread_num();
           if (num_feature_ > kFeatureThreshold && features.size() < KSparseThreshold) {
             auto buf = CopyToPredictMap(features);
@@ -97,7 +96,7 @@ public:
           }
         };
       } else {
-		predict_fun_ = [=](const std::vector<std::pair<int, double>>& features, double* output) {
+        predict_fun_ = [=](const std::vector<std::pair<int, double>>& features, double* output) {
           int tid = omp_get_thread_num();
           if (num_feature_ > kFeatureThreshold && features.size() < KSparseThreshold) {
             auto buf = CopyToPredictMap(features);
@@ -173,7 +172,7 @@ public:
             (*feature)[i].first = feature_names_map_[(*feature)[i].first];
             ++i;
           } else {
-            //move the non-used features to the end of the feature vector
+            // move the non-used features to the end of the feature vector
             std::swap((*feature)[i], (*feature)[--j]);
           }
         }
@@ -181,8 +180,8 @@ public:
       }
     };
 
-	std::function<void(data_size_t, const std::vector<std::string>&)> process_fun = [&]
-	(data_size_t, const std::vector<std::string>& lines) {
+    std::function<void(data_size_t, const std::vector<std::string>&)> process_fun = [&]
+    (data_size_t, const std::vector<std::string>& lines) {
       std::vector<std::pair<int, double>> oneline_features;
       std::vector<std::string> result_to_write(lines.size());
       OMP_INIT_EX();
@@ -209,7 +208,6 @@ public:
   }
 
 private:
-
   void CopyToPredictBuffer(double* pred_buf, const std::vector<std::pair<int, double>>& features) {
     int loop_size = static_cast<int>(features.size());
     for (int i = 0; i < loop_size; ++i) {

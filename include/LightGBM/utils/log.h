@@ -12,7 +12,7 @@
 namespace LightGBM {
 
 #if defined(_MSC_VER)
-#define THREAD_LOCAL __declspec(thread) 
+#define THREAD_LOCAL __declspec(thread)
 #else
 #define THREAD_LOCAL thread_local
 #endif
@@ -84,7 +84,6 @@ public:
   }
 
 private:
-
   static void Write(LogLevel level, const char* level_str, const char *format, va_list val) {
     if (level <= GetLevel()) {  // omit the message with low level
       // write to STDOUT
@@ -98,7 +97,6 @@ private:
   // a trick to use static variable in header file.
   // May be not good, but avoid to use an additional cpp file
   static LogLevel& GetLevel() { static THREAD_LOCAL LogLevel level = LogLevel::Info; return level; }
-
 };
 
 }  // namespace LightGBM

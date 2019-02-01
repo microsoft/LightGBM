@@ -33,7 +33,6 @@ public:
   inline void Run();
 
 private:
-
   /*! \brief Load parameters from command line and config file*/
   void LoadParameters(int argc, char** argv);
 

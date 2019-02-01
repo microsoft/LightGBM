@@ -19,7 +19,7 @@ public:
     }
     is_unbalance_ = config.is_unbalance;
     scale_pos_weight_ = static_cast<double>(config.scale_pos_weight);
-    if(is_unbalance_ && std::fabs(scale_pos_weight_ - 1.0f) > 1e-6) {
+    if (is_unbalance_ && std::fabs(scale_pos_weight_ - 1.0f) > 1e-6) {
       Log::Fatal("Cannot set is_unbalance and scale_pos_weight at the same time");
     }
     is_pos_ = is_pos;
@@ -54,7 +54,7 @@ public:
     // REMOVEME: remove the warning after 2.4 version release
     Log::Warning("Starting from the 2.1.2 version, default value for "
                  "the \"boost_from_average\" parameter in \"binary\" objective is true.\n"
-                 "This may cause significantly different results comparing to the previous versions of LightGBM.\n" 
+                 "This may cause significantly different results comparing to the previous versions of LightGBM.\n"
                  "Try to set boost_from_average=false, if your old models produce bad results");
     // count for positive and negative samples
     #pragma omp parallel for schedule(static) reduction(+:cnt_positive, cnt_negative)
@@ -123,13 +123,13 @@ public:
       }
     }
   }
-  
+
   // implement custom average to boost from (if enabled among options)
   double BoostFromScore(int) const override {
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {
-      #pragma omp parallel for schedule(static) reduction(+:suml,sumw)
+      #pragma omp parallel for schedule(static) reduction(+:suml, sumw)
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += is_pos_(label_[i]) * weights_[i];
         sumw += weights_[i];
@@ -149,7 +149,7 @@ public:
     return initscore;
   }
 
-  bool ClassNeedTrain(int /*class_id*/) const override { 
+  bool ClassNeedTrain(int /*class_id*/) const override {
     return need_train_;
   }
 

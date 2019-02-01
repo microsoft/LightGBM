@@ -87,7 +87,6 @@ public:
     data_size_t i = start;
     // use data on current leaf to construct histogram
     for (; i < end - rest; i += 4) {
-
       const VAL_T bin0 = ordered_pair_[i].bin;
       const VAL_T bin1 = ordered_pair_[i + 1].bin;
       const VAL_T bin2 = ordered_pair_[i + 2].bin;
@@ -119,7 +118,6 @@ public:
     }
 
     for (; i < end; ++i) {
-
       const VAL_T bin0 = ordered_pair_[i].bin;
 
       const auto g0 = gradient[ordered_pair_[i].ridx];
@@ -129,7 +127,6 @@ public:
       out[bin0].sum_hessians += h0;
       ++out[bin0].cnt;
     }
-
   }
 
   void ConstructHistogram(int leaf, const score_t* gradient,
@@ -141,7 +138,6 @@ public:
     data_size_t i = start;
     // use data on current leaf to construct histogram
     for (; i < end - rest; i += 4) {
-
       const VAL_T bin0 = ordered_pair_[i].bin;
       const VAL_T bin1 = ordered_pair_[i + 1].bin;
       const VAL_T bin2 = ordered_pair_[i + 2].bin;

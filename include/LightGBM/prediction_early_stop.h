@@ -29,4 +29,4 @@ LIGHTGBM_EXPORT PredictionEarlyStopInstance CreatePredictionEarlyStopInstance(co
 
 }   // namespace LightGBM
 
-#endif // LIGHTGBM_PREDICTION_EARLY_STOP_H_
+#endif  // LIGHTGBM_PREDICTION_EARLY_STOP_H_

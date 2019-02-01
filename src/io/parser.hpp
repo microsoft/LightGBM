@@ -44,6 +44,7 @@ public:
   inline int TotalColumns() const override {
     return total_columns_;
   }
+
 private:
   int label_idx_ = 0;
   int total_columns_ = -1;
@@ -79,6 +80,7 @@ public:
   inline int TotalColumns() const override {
     return total_columns_;
   }
+
 private:
   int label_idx_ = 0;
   int total_columns_ = -1;
@@ -118,6 +120,7 @@ public:
   inline int TotalColumns() const override {
     return -1;
   }
+
 private:
   int label_idx_ = 0;
 };

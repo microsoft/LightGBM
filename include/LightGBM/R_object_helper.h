@@ -185,4 +185,4 @@ inline void* R_GET_PTR(LGBM_SE x) {
 
 #endif
 
-#endif // R_OBJECT_HELPER_H_
+#endif  // R_OBJECT_HELPER_H_

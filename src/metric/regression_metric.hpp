@@ -19,7 +19,6 @@ public:
   }
 
   virtual ~RegressionMetric() {
-
   }
 
   const std::vector<std::string>& GetName() const override {
@@ -87,7 +86,6 @@ public:
     }
     double loss = PointWiseLossCalculator::AverageLoss(sum_loss, sum_weights_);
     return std::vector<double>(1, loss);
-
   }
 
   inline static double AverageLoss(double sum_loss, double sum_weights) {
@@ -259,7 +257,7 @@ public:
     const double theta = -1.0 / score;
     const double a = psi;
     const double b = -Common::SafeLog(-theta);
-    const double c = 1. / psi * Common::SafeLog(label / psi) - Common::SafeLog(label) - 0; // 0 = std::lgamma(1.0 / psi) = std::lgamma(1.0);
+    const double c = 1. / psi * Common::SafeLog(label / psi) - Common::SafeLog(label) - 0;  // 0 = std::lgamma(1.0 / psi) = std::lgamma(1.0);
     return -((label * theta - b) / a + c);
   }
   inline static const char* Name() {

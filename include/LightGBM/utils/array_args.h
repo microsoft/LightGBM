@@ -22,7 +22,7 @@ public:
     }
     int step = std::max(1, (static_cast<int>(array.size()) + num_threads - 1) / num_threads);
     std::vector<size_t> arg_maxs(num_threads, 0);
-    #pragma omp parallel for schedule(static,1)
+    #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < num_threads; ++i) {
       size_t start = step * i;
       if (start >= array.size()) { continue; }
@@ -124,7 +124,7 @@ public:
     for (int k = end - 2; k >= q; k--, i++) { std::swap(ref[i], ref[k]); }
     *l = j;
     *r = i;
-  };
+  }
 
   // Note: k refer to index here. e.g. k=0 means get the max number.
   inline static int ArgMaxAtK(std::vector<VAL_T>* arr, int start, int end, int k) {
@@ -184,7 +184,6 @@ public:
     }
     return true;
   }
-
 };
 
 }  // namespace LightGBM

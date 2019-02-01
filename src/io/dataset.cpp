@@ -86,7 +86,7 @@ std::vector<std::vector<int>> FindGroups(const std::vector<std::unique_ptr<BinMa
     bool need_new_group = true;
     std::vector<int> available_groups;
     for (int gid = 0; gid < static_cast<int>(features_in_group.size()); ++gid) {
-      if (group_non_zero_cnt[gid] + cur_non_zero_cnt <= total_sample_cnt + max_error_cnt){
+      if (group_non_zero_cnt[gid] + cur_non_zero_cnt <= total_sample_cnt + max_error_cnt) {
         if (!is_use_gpu || group_num_bin[gid] + bin_mappers[fidx]->num_bin() + (bin_mappers[fidx]->GetDefaultBin() == 0 ? -1 : 0)
             <= gpu_max_bin_per_group) {
           available_groups.push_back(gid);
@@ -188,7 +188,7 @@ std::vector<std::vector<int>> FastFeatureBundling(std::vector<std::unique_ptr<Bi
         cnt_non_zero += static_cast<int>(num_data * (1.0f - bin_mappers[fidx]->sparse_rate()));
       }
       double sparse_rate = 1.0f - static_cast<double>(cnt_non_zero) / (num_data);
-      // take apart small sparse group, due it will not gain on speed 
+      // take apart small sparse group, due it will not gain on speed
       if (sparse_rate >= sparse_threshold && is_enable_sparse) {
         for (size_t j = 0; j < features_in_group[i].size(); ++j) {
           const int fidx = features_in_group[i][j];
@@ -216,7 +216,6 @@ void Dataset::Construct(
   const int* num_per_col,
   size_t total_sample_cnt,
   const Config& io_config) {
-
   num_total_features_ = static_cast<int>(bin_mappers.size());
   sparse_threshold_ = io_config.sparse_threshold;
   // get num_features
@@ -699,7 +698,6 @@ void Dataset::ConstructHistograms(const std::vector<int8_t>& is_feature_used,
                                   score_t* ordered_gradients, score_t* ordered_hessians,
                                   bool is_constant_hessian,
                                   HistogramBinEntry* hist_data) const {
-
   if (leaf_idx < 0 || num_data < 0 || hist_data == nullptr) {
     return;
   }

@@ -12,7 +12,7 @@
 #include <vector>
 #include "file_io.h"
 
-namespace LightGBM{
+namespace LightGBM {
 
 /*!
 * \brief A pipeline file reader, use 2 threads, one read block from file, the other process the block
@@ -24,13 +24,13 @@ public:
   * \param filename Filename of data
   * \process_fun Process function
   */
-  static size_t Read(const char* filename, int skip_bytes, const std::function<size_t (const char*, size_t)>& process_fun) {
+  static size_t Read(const char* filename, int skip_bytes, const std::function<size_t(const char*, size_t)>& process_fun) {
     auto reader = VirtualFileReader::Make(filename);
     if (!reader->Init()) {
       return 0;
     }
     size_t cnt = 0;
-    const size_t buffer_size =  16 * 1024 * 1024 ;
+    const size_t buffer_size =  16 * 1024 * 1024;
     // buffer used for the process_fun
     auto buffer_process = std::vector<char>(buffer_size);
     // buffer used for the file reading
@@ -49,8 +49,7 @@ public:
       std::thread read_worker = std::thread(
         [&] {
         last_read_cnt = reader->Read(buffer_read.data(), buffer_size);
-      }
-      );
+      });
       // start process
       cnt += process_fun(buffer_process.data(), read_cnt);
       // wait for read thread
@@ -61,7 +60,6 @@ public:
     }
     return cnt;
   }
-
 };
 
 }  // namespace LightGBM

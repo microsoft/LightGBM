@@ -29,4 +29,4 @@ Linkers::~Linkers() {
 
 
 }  // namespace LightGBM
-#endif // USE_MPI
+#endif  // USE_MPI
