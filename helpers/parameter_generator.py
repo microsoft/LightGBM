@@ -298,9 +298,9 @@ def gen_parameter_code(config_hpp, config_out_cpp):
             name = y["name"][0]
             if "vector" in param_type:
                 if "int8" in param_type:
-                    str_to_write += "  str_buf << \"[%s: \" << Common::Join(Common::ArrayCast<int8_t, int>(%s),\",\") << \"]\\n\";\n" % (name, name)
+                    str_to_write += "  str_buf << \"[%s: \" << Common::Join(Common::ArrayCast<int8_t, int>(%s), \",\") << \"]\\n\";\n" % (name, name)
                 else:
-                    str_to_write += "  str_buf << \"[%s: \" << Common::Join(%s,\",\") << \"]\\n\";\n" % (name, name)
+                    str_to_write += "  str_buf << \"[%s: \" << Common::Join(%s, \",\") << \"]\\n\";\n" % (name, name)
             else:
                 str_to_write += "  str_buf << \"[%s: \" << %s << \"]\\n\";\n" % (name, name)
     # tails

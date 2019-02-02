@@ -46,7 +46,6 @@ public:
   }
   /*! \brief Destructor */
   ~ScoreUpdater() {
-
   }
 
   inline bool has_init_score() const { return has_init_score_; }
@@ -109,6 +108,7 @@ public:
   ScoreUpdater& operator=(const ScoreUpdater&) = delete;
   /*! \brief Disable copy */
   ScoreUpdater(const ScoreUpdater&) = delete;
+
 private:
   /*! \brief Number of total data */
   data_size_t num_data_;

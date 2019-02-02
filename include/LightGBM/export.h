@@ -14,7 +14,7 @@
 #define LIGHTGBM_EXPORT __declspec(dllexport)
 #define LIGHTGBM_C_EXPORT LIGHTGBM_EXTERN_C __declspec(dllexport)
 #else
-#define LIGHTGBM_EXPORT 
+#define LIGHTGBM_EXPORT
 #define LIGHTGBM_C_EXPORT LIGHTGBM_EXTERN_C
 #endif
 

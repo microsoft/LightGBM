@@ -291,7 +291,6 @@ public:
   * \return The boosting object
   */
   static Boosting* CreateBoosting(const std::string& type, const char* filename);
-
 };
 
 class GBDTBase : public Boosting {

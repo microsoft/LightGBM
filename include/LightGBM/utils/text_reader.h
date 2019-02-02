@@ -26,7 +26,7 @@ public:
   * \param is_skip_first_line True if need to skip header
   */
   TextReader(const char* filename, bool is_skip_first_line):
-    filename_(filename), is_skip_first_line_(is_skip_first_line){
+    filename_(filename), is_skip_first_line_(is_skip_first_line) {
     if (is_skip_first_line_) {
       auto reader = VirtualFileReader::Make(filename);
       if (!reader->Init()) {
@@ -210,7 +210,7 @@ public:
         }
         else {
           const size_t idx = static_cast<size_t>(random.NextInt(0, static_cast<int>(out_used_data_indices->size())));
-          if (idx < static_cast<size_t>(sample_cnt) ) {
+          if (idx < static_cast<size_t>(sample_cnt)) {
             out_sampled_data->operator[](idx) = std::string(buffer, size);
           }
         }
@@ -225,7 +225,7 @@ public:
     });
   }
 
-  INDEX_T ReadAllAndProcessParallelWithFilter(const std::function<void(INDEX_T, const std::vector<std::string>&)>& process_fun, const std::function<bool(INDEX_T,INDEX_T)>& filter_fun) {
+  INDEX_T ReadAllAndProcessParallelWithFilter(const std::function<void(INDEX_T, const std::vector<std::string>&)>& process_fun, const std::function<bool(INDEX_T, INDEX_T)>& filter_fun) {
     last_line_ = "";
     INDEX_T total_cnt = 0;
     INDEX_T used_cnt = 0;
@@ -296,7 +296,7 @@ public:
 
   INDEX_T ReadPartAndProcessParallel(const std::vector<INDEX_T>& used_data_indices, const std::function<void(INDEX_T, const std::vector<std::string>&)>& process_fun) {
     return ReadAllAndProcessParallelWithFilter(process_fun,
-      [&used_data_indices](INDEX_T used_cnt ,INDEX_T total_cnt) {
+      [&used_data_indices](INDEX_T used_cnt, INDEX_T total_cnt) {
       if (static_cast<size_t>(used_cnt) < used_data_indices.size() && total_cnt == used_data_indices[used_cnt]) {
         return true;
       }
@@ -314,7 +314,7 @@ private:
   /*! \brief Buffer for last line */
   std::string last_line_;
   /*! \brief first line */
-  std::string first_line_="";
+  std::string first_line_ = "";
   /*! \brief is skip first line */
   bool is_skip_first_line_ = false;
   /*! \brief is skip first line */

@@ -35,7 +35,6 @@ public:
   }
 
   ~MulticlassSoftmax() {
-
   }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
@@ -138,8 +137,8 @@ public:
     return std::log(std::max<double>(kEpsilon, class_init_probs_[class_id]));
   }
 
-  bool ClassNeedTrain(int class_id) const override { 
-    if (std::fabs(class_init_probs_[class_id]) <= kEpsilon 
+  bool ClassNeedTrain(int class_id) const override {
+    if (std::fabs(class_init_probs_[class_id]) <= kEpsilon
         || std::fabs(class_init_probs_[class_id]) >= 1.0 - kEpsilon) {
       return false;
     } else {
@@ -197,7 +196,6 @@ public:
   }
 
   ~MulticlassOVA() {
-
   }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {

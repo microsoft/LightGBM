@@ -14,7 +14,6 @@ DataParallelTreeLearner<TREELEARNER_T>::DataParallelTreeLearner(const Config* co
 
 template <typename TREELEARNER_T>
 DataParallelTreeLearner<TREELEARNER_T>::~DataParallelTreeLearner() {
-
 }
 
 template <typename TREELEARNER_T>

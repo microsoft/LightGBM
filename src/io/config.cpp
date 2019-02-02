@@ -19,7 +19,7 @@ void Config::KV2Map(std::unordered_map<std::string, std::string>& params, const 
     std::string value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
     if (key.size() > 0) {
       auto value_search = params.find(key);
-      if (value_search == params.end()) { // not set
+      if (value_search == params.end()) {  // not set
         params.emplace(key, value);
       } else {
         Log::Warning("%s is set=%s, %s=%s will be ignored. Current value: %s=%s",
@@ -151,7 +151,6 @@ void GetTreeLearnerType(const std::unordered_map<std::string, std::string>& para
 }
 
 void Config::Set(const std::unordered_map<std::string, std::string>& params) {
-
   // generate seeds by seed.
   if (GetInt(params, "seed", &seed)) {
     Random rand(seed);
@@ -202,10 +201,10 @@ bool CheckMultiClassObjective(const std::string& objective) {
 void Config::CheckParamConflict() {
   // check if objective, metric, and num_class match
   int num_class_check = num_class;
-  bool objective_custom = objective == std::string("none") || objective == std::string("null") 
+  bool objective_custom = objective == std::string("none") || objective == std::string("null")
                                        || objective == std::string("custom") || objective == std::string("na");
   bool objective_type_multiclass = CheckMultiClassObjective(objective) || (objective_custom && num_class_check > 1);
-  
+
   if (objective_type_multiclass) {
     if (num_class_check <= 1) {
       Log::Fatal("Number of classes should be specified and greater than 1 for multiclass training");
@@ -216,7 +215,7 @@ void Config::CheckParamConflict() {
     }
   }
   for (std::string metric_type : metric) {
-    bool metric_custom_or_none = metric_type == std::string("none") || metric_type == std::string("null") 
+    bool metric_custom_or_none = metric_type == std::string("none") || metric_type == std::string("null")
                                  || metric_type == std::string("custom") || metric_type == std::string("na");
     bool metric_type_multiclass = (CheckMultiClassObjective(metric_type)
                                    || metric_type == std::string("multi_logloss")
@@ -259,7 +258,7 @@ void Config::CheckParamConflict() {
   // Check max_depth and num_leaves
   if (max_depth > 0) {
     int full_num_leaves = static_cast<int>(std::pow(2, max_depth));
-    if (full_num_leaves > num_leaves 
+    if (full_num_leaves > num_leaves
         && num_leaves == kDefaultNumLeaves) {
       Log::Warning("Accuracy may be bad since you didn't set num_leaves and 2^max_depth > num_leaves");
     }

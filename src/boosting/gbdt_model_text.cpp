@@ -194,7 +194,7 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   str_buf << "\t" << "}" << '\n';
   str_buf << "}" << '\n';
 
-  //PredictLeafIndexByMap
+  // PredictLeafIndexByMap
   str_buf << "double (*PredictTreeLeafByMapPtr[])(const std::unordered_map<int, double>&) = { ";
   for (int i = 0; i < num_used_model; ++i) {
     if (i > 0) {
@@ -511,7 +511,6 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
 }
 
 std::vector<double> GBDT::FeatureImportance(int num_iteration, int importance_type) const {
-
   int num_used_model = static_cast<int>(models_.size());
   if (num_iteration > 0) {
     num_iteration += 0;

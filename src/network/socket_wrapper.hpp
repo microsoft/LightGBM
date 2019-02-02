@@ -51,8 +51,7 @@ const int INVALID_SOCKET = -1;
 #ifdef _WIN32
 #ifndef _MSC_VER
 // not using visual studio in windows
-inline int inet_pton(int af, const char *src, void *dst)
-{
+inline int inet_pton(int af, const char *src, void *dst) {
   struct sockaddr_storage ss;
   int size = sizeof(ss);
   char src_copy[INET6_ADDRSTRLEN + 1];
@@ -119,11 +118,11 @@ public:
     if (sockfd_ == INVALID_SOCKET) {
       return;
     }
-    
+
     if (setsockopt(sockfd_, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<const char*>(&SocketConfig::kSocketBufferSize), sizeof(SocketConfig::kSocketBufferSize)) != 0) {
       Log::Warning("Set SO_RCVBUF failed, please increase your net.core.rmem_max to 100k at least");
     }
-    
+
     if (setsockopt(sockfd_, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<const char*>(&SocketConfig::kSocketBufferSize), sizeof(SocketConfig::kSocketBufferSize)) != 0) {
       Log::Warning("Set SO_SNDBUF failed, please increase your net.core.wmem_max to 100k at least");
     }

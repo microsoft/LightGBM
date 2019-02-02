@@ -185,7 +185,6 @@ public:
       return local_feature == other_feature;
     }
   }
-
 };
 
 struct LightSplitInfo {
@@ -280,7 +279,6 @@ public:
       return local_feature == other_feature;
     }
   }
-
 };
 
 }  // namespace LightGBM

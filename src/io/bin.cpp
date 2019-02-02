@@ -44,7 +44,6 @@ namespace LightGBM {
   }
 
   BinMapper::~BinMapper() {
-
   }
 
   bool NeedFilter(const std::vector<int>& cnt_in_bin, int total_cnt, int filter_cnt, BinType bin_type) {

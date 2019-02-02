@@ -51,6 +51,7 @@ public:
   ~DataParallelTreeLearner();
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
   void ResetConfig(const Config* config) override;
+
 protected:
   void BeforeTrain() override;
   void FindBestSplits() override;
@@ -104,6 +105,7 @@ public:
   ~VotingParallelTreeLearner() { }
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
   void ResetConfig(const Config* config) override;
+
 protected:
   void BeforeTrain() override;
   bool BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) override;
@@ -185,7 +187,7 @@ inline void SyncUpGlobalBestSplit(char* input_buffer_, char* output_buffer_, Spl
   int size = SplitInfo::Size(max_cat_threshold);
   smaller_best_split->CopyTo(input_buffer_);
   larger_best_split->CopyTo(input_buffer_ + size);
-  Network::Allreduce(input_buffer_, size * 2, size, output_buffer_, 
+  Network::Allreduce(input_buffer_, size * 2, size, output_buffer_,
                      [] (const char* src, char* dst, int size, comm_size_t len) {
     comm_size_t used_size = 0;
     LightSplitInfo p1, p2;
