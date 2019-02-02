@@ -306,22 +306,29 @@ def _dump_pandas_categorical(pandas_categorical, file_name=None):
 
 
 def _load_pandas_categorical(file_name=None, model_str=None):
+    pandas_key = 'pandas_categorical:'
+    offset = -len(pandas_key)
     if file_name is not None:
-        with open(file_name, 'r') as f:
-            lines = f.readlines()
-            last_line = lines[-1]
-            if last_line.strip() == "":
-                last_line = lines[-2]
-            if last_line.startswith('pandas_categorical:'):
-                return json.loads(last_line[len('pandas_categorical:'):])
+        max_offset = -os.path.getsize(file_name)
+        with open(file_name, 'rb') as f:
+            while True:
+                if offset < max_offset:
+                    offset = max_offset
+                f.seek(offset, os.SEEK_END)
+                lines = f.readlines()
+                if len(lines) >= 2:
+                    break
+                offset *= 2
+        last_line = decode_string(lines[-1]).strip()
+        if not last_line.startswith(pandas_key):
+            last_line = decode_string(lines[-2]).strip()
     elif model_str is not None:
-        lines = model_str.split('\n')
-        last_line = lines[-1]
-        if last_line.strip() == "":
-            last_line = lines[-2]
-        if last_line.startswith('pandas_categorical:'):
-            return json.loads(last_line[len('pandas_categorical:'):])
-    return None
+        idx = model_str.rfind('\n', 0, offset)
+        last_line = model_str[idx:].strip()
+    if last_line.startswith(pandas_key):
+        return json.loads(last_line[len(pandas_key):])
+    else:
+        return None
 
 
 class _InnerPredictor(object):

@@ -551,9 +551,11 @@ class TestEngine(unittest.TestCase):
                                "B": np.random.permutation([1, 3] * 30),
                                "C": np.random.permutation([0.1, -0.1, 0.2, 0.2] * 15),
                                "D": np.random.permutation([True, False] * 30)})
+        cat_cols = []
         for col in ["A", "B", "C", "D"]:
             X[col] = X[col].astype('category')
             X_test[col] = X_test[col].astype('category')
+            cat_cols.append(X[col].cat.categories.tolist())
         params = {
             'objective': 'binary',
             'metric': 'binary_logloss',
@@ -588,6 +590,12 @@ class TestEngine(unittest.TestCase):
         np.testing.assert_almost_equal(pred0, pred4)
         np.testing.assert_almost_equal(pred0, pred5)
         np.testing.assert_almost_equal(pred0, pred6)
+        self.assertListEqual(gbm0.pandas_categorical, cat_cols)
+        self.assertListEqual(gbm1.pandas_categorical, cat_cols)
+        self.assertListEqual(gbm2.pandas_categorical, cat_cols)
+        self.assertListEqual(gbm3.pandas_categorical, cat_cols)
+        self.assertListEqual(gbm4.pandas_categorical, cat_cols)
+        self.assertListEqual(gbm5.pandas_categorical, cat_cols)
 
     def test_reference_chain(self):
         X = np.random.normal(size=(100, 2))
