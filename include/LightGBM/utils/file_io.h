@@ -7,13 +7,13 @@
 #include <cstdlib>
 #include <cstring>
 
-namespace LightGBM{
+namespace LightGBM {
 
 /*!
  * \brief An interface for writing files from buffers
  */
 struct VirtualFileWriter {
-  virtual ~VirtualFileWriter() {};
+  virtual ~VirtualFileWriter() {}
   /*!
    * \brief Initialize the writer
    * \return True when the file is available for writes
@@ -48,7 +48,7 @@ struct VirtualFileReader {
    * \brief Constructor
    * \param filename Filename of the data
    */
-  virtual ~VirtualFileReader() {};
+  virtual ~VirtualFileReader() {}
   /*!
    * \brief Initialize the reader
    * \return True when the file is available for read

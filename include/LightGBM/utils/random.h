@@ -93,6 +93,7 @@ public:
     }
     return ret;
   }
+
 private:
   inline int RandInt16() {
     x = (214013 * x + 2531011);

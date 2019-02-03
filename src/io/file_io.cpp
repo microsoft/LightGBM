@@ -8,7 +8,7 @@
 #include <hdfs.h>
 #endif
 
-namespace LightGBM{
+namespace LightGBM {
 
 struct LocalFile : VirtualFileReader, VirtualFileWriter {
   LocalFile(const std::string& filename, const std::string& mode) : filename_(filename), mode_(mode) {}
@@ -148,7 +148,7 @@ std::unordered_map<std::string, hdfsFS> HDFSFile::fs_cache_ = std::unordered_map
 #define WITH_HDFS(x) x
 #else
 #define WITH_HDFS(x) Log::Fatal("HDFS support is not enabled")
-#endif // USE_HDFS
+#endif  // USE_HDFS
 
 std::unique_ptr<VirtualFileReader> VirtualFileReader::Make(const std::string& filename) {
   if (0 == filename.find(kHdfsProto)) {

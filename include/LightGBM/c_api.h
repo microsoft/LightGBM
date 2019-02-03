@@ -813,13 +813,13 @@ LIGHTGBM_C_EXPORT int LGBM_NetworkInit(const char* machines,
 */
 LIGHTGBM_C_EXPORT int LGBM_NetworkFree();
 
-LIGHTGBM_C_EXPORT int LGBM_NetworkInitWithFunctions(int num_machines, int rank, 
-                                                    void* reduce_scatter_ext_fun, 
+LIGHTGBM_C_EXPORT int LGBM_NetworkInitWithFunctions(int num_machines, int rank,
+                                                    void* reduce_scatter_ext_fun,
                                                     void* allgather_ext_fun);
 
 
 #if defined(_MSC_VER)
-#define THREAD_LOCAL __declspec(thread) 
+#define THREAD_LOCAL __declspec(thread)
 #else
 #define THREAD_LOCAL thread_local
 #endif
@@ -831,4 +831,4 @@ inline void LGBM_SetLastError(const char* msg) {
   std::strcpy(LastErrorMsg(), msg);
 }
 
-#endif // LIGHTGBM_C_API_H_
+#endif  // LIGHTGBM_C_API_H_

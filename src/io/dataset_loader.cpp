@@ -18,7 +18,6 @@ DatasetLoader::DatasetLoader(const Config& io_config, const PredictFunction& pre
 }
 
 DatasetLoader::~DatasetLoader() {
-
 }
 
 void DatasetLoader::SetHeader(const char* filename) {
@@ -326,6 +325,8 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   mem_ptr += sizeof(dataset->use_missing_);
   dataset->zero_as_missing_ = *(reinterpret_cast<const bool*>(mem_ptr));
   mem_ptr += sizeof(dataset->zero_as_missing_);
+  dataset->sparse_threshold_ = *(reinterpret_cast<const double*>(mem_ptr));
+  mem_ptr += sizeof(dataset->sparse_threshold_);
   const int* tmp_feature_map = reinterpret_cast<const int*>(mem_ptr);
   dataset->used_feature_map_.clear();
   for (int i = 0; i < dataset->num_total_features_; ++i) {
@@ -380,12 +381,12 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   }
   mem_ptr += sizeof(int) * (dataset->num_groups_);
 
-  if(!config_.monotone_constraints.empty()) {
+  if (!config_.monotone_constraints.empty()) {
     CHECK(static_cast<size_t>(dataset->num_total_features_) == config_.monotone_constraints.size());
     dataset->monotone_types_.resize(dataset->num_features_);
-    for(int i = 0; i < dataset->num_total_features_; ++i){
+    for (int i = 0; i < dataset->num_total_features_; ++i) {
       int inner_fidx = dataset->InnerFeatureIndex(i);
-      if(inner_fidx >= 0) {
+      if (inner_fidx >= 0) {
         dataset->monotone_types_[inner_fidx] = config_.monotone_constraints[i];
       }
     }
@@ -403,12 +404,12 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     dataset->monotone_types_.clear();
   }
 
-  if(!config_.feature_contri.empty()) {
+  if (!config_.feature_contri.empty()) {
     CHECK(static_cast<size_t>(dataset->num_total_features_) == config_.feature_contri.size());
     dataset->feature_penalty_.resize(dataset->num_features_);
-    for(int i = 0; i < dataset->num_total_features_; ++i){
+    for (int i = 0; i < dataset->num_total_features_; ++i) {
       int inner_fidx = dataset->InnerFeatureIndex(i);
-      if(inner_fidx >= 0) {
+      if (inner_fidx >= 0) {
         dataset->feature_penalty_[inner_fidx] = config_.feature_contri[i];
       }
     }
@@ -524,8 +525,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     dataset->feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(
       new FeatureGroup(buffer.data(),
                        *num_global_data,
-                       *used_data_indices)
-      ));
+                       *used_data_indices)));
   }
   dataset->feature_groups_.shrink_to_fit();
   dataset->is_finish_load_ = true;
@@ -780,8 +780,8 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filen
         [this, rank, num_machines, &qid, &query_boundaries, &is_query_used, num_queries]
       (data_size_t line_idx) {
         if (qid >= num_queries) {
-          Log::Fatal("Query id exceeds the range of the query file, \
-                      please ensure the query file is correct");
+          Log::Fatal("Query id exceeds the range of the query file, "
+                     "please ensure the query file is correct");
         }
         if (line_idx >= query_boundaries[qid + 1]) {
           // if is new query
@@ -799,7 +799,6 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filen
 }
 
 void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines, const std::vector<std::string>& sample_data, const Parser* parser, Dataset* dataset) {
-
   std::vector<std::vector<double>> sample_values;
   std::vector<std::vector<int>> sample_indices;
   std::vector<std::pair<int, double>> oneline_features;
@@ -1141,7 +1140,6 @@ std::string DatasetLoader::CheckCanLoadFromBin(const char* filename) {
   } else {
     return std::string();
   }
-
 }
 
-}
+}  // namespace LightGBM

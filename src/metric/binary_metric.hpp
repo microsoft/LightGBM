@@ -20,11 +20,9 @@ template<typename PointWiseLossCalculator>
 class BinaryMetric: public Metric {
 public:
   explicit BinaryMetric(const Config&) {
-
   }
 
   virtual ~BinaryMetric() {
-
   }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
@@ -157,7 +155,6 @@ public:
 class AUCMetric: public Metric {
 public:
   explicit AUCMetric(const Config&) {
-
   }
 
   virtual ~AUCMetric() {

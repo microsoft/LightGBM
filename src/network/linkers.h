@@ -222,9 +222,8 @@ inline void Linkers::Recv(int rank, char* data, int len) const {
   int recv_cnt = 0;
   while (recv_cnt < len) {
     recv_cnt += linkers_[rank]->Recv(data + recv_cnt,
-      //len - recv_cnt
-      std::min(len - recv_cnt, SocketConfig::kMaxReceiveSize)
-    );
+      // len - recv_cnt
+      std::min(len - recv_cnt, SocketConfig::kMaxReceiveSize));
   }
 }
 

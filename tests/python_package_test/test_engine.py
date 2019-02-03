@@ -3,6 +3,7 @@
 import copy
 import math
 import os
+import psutil
 import random
 import unittest
 
@@ -550,9 +551,11 @@ class TestEngine(unittest.TestCase):
                                "B": np.random.permutation([1, 3] * 30),
                                "C": np.random.permutation([0.1, -0.1, 0.2, 0.2] * 15),
                                "D": np.random.permutation([True, False] * 30)})
+        cat_cols = []
         for col in ["A", "B", "C", "D"]:
             X[col] = X[col].astype('category')
             X_test[col] = X_test[col].astype('category')
+            cat_cols.append(X[col].cat.categories.tolist())
         params = {
             'objective': 'binary',
             'metric': 'binary_logloss',
@@ -587,6 +590,12 @@ class TestEngine(unittest.TestCase):
         np.testing.assert_almost_equal(pred0, pred4)
         np.testing.assert_almost_equal(pred0, pred5)
         np.testing.assert_almost_equal(pred0, pred6)
+        self.assertListEqual(gbm0.pandas_categorical, cat_cols)
+        self.assertListEqual(gbm1.pandas_categorical, cat_cols)
+        self.assertListEqual(gbm2.pandas_categorical, cat_cols)
+        self.assertListEqual(gbm3.pandas_categorical, cat_cols)
+        self.assertListEqual(gbm4.pandas_categorical, cat_cols)
+        self.assertListEqual(gbm5.pandas_categorical, cat_cols)
 
     def test_reference_chain(self):
         X = np.random.normal(size=(100, 2))
@@ -1208,3 +1217,30 @@ class TestEngine(unittest.TestCase):
         # binary metric with non-default num_class for custom objective
         self.assertRaises(lgb.basic.LightGBMError, get_cv_result,
                           params_class_3_verbose, metrics='binary_error', fobj=custom_obj)
+
+    @unittest.skipIf(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, 'not enough RAM')
+    def test_model_size(self):
+        X, y = load_boston(True)
+        data = lgb.Dataset(X, y)
+        bst = lgb.train({'verbose': -1}, data, num_boost_round=2)
+        y_pred = bst.predict(X)
+        model_str = bst.model_to_string()
+        one_tree = model_str[model_str.find('Tree=1'):model_str.find('end of trees')]
+        one_tree_size = len(one_tree)
+        one_tree = one_tree.replace('Tree=1', 'Tree={}')
+        multiplier = 100
+        total_trees = multiplier + 2
+        try:
+            new_model_str = (model_str[:model_str.find('tree_sizes')]
+                             + '\n\n'
+                             + model_str[model_str.find('Tree=0'):model_str.find('end of trees')]
+                             + (one_tree * multiplier).format(*range(2, total_trees))
+                             + model_str[model_str.find('end of trees'):]
+                             + ' ' * (2**31 - one_tree_size * total_trees))
+            self.assertGreater(len(new_model_str), 2**31)
+            bst.model_from_string(new_model_str, verbose=False)
+            self.assertEqual(bst.num_trees(), total_trees)
+            y_pred_new = bst.predict(X, num_iteration=2)
+            np.testing.assert_allclose(y_pred, y_pred_new)
+        except MemoryError:
+            self.skipTest('not enough RAM')

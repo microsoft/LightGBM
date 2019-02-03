@@ -103,9 +103,8 @@ protected:
 
   /* Force splits with forced_split_json dict and then return num splits forced.*/
   virtual int32_t ForceSplits(Tree* tree, Json& forced_split_json, int* left_leaf,
-                              int* right_leaf, int* cur_depth, 
+                              int* right_leaf, int* cur_depth,
                               bool *aborted_last_force_split);
-
 
   /*!
   * \brief Get the number of data in a leaf

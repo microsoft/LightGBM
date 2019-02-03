@@ -34,11 +34,9 @@ public:
   }
 
   explicit LambdarankNDCG(const std::vector<std::string>&) {
-
   }
 
   ~LambdarankNDCG() {
-
   }
   void Init(const Metadata& metadata, data_size_t num_data) override {
     num_data_ = num_data;

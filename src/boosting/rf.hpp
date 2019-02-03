@@ -17,7 +17,6 @@ namespace LightGBM {
 */
 class RF : public GBDT {
 public:
-
   RF() : GBDT() {
     average_output_ = true;
   }
@@ -106,7 +105,6 @@ public:
       std::unique_ptr<Tree> new_tree(new Tree(2));
       size_t bias = static_cast<size_t>(cur_tree_id)* num_data_;
       if (class_need_train_[cur_tree_id]) {
-
         auto grad = gradients + bias;
         auto hess = hessians + bias;
 
@@ -202,12 +200,10 @@ public:
   };
 
 private:
-
   std::vector<score_t> tmp_grad_;
   std::vector<score_t> tmp_hess_;
   std::vector<double> init_scores_;
-
 };
 
 }  // namespace LightGBM
-#endif   // LIGHTGBM_BOOSTING_RF_H_
+#endif  // LIGHTGBM_BOOSTING_RF_H_

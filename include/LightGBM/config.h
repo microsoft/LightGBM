@@ -337,7 +337,7 @@ public:
   // desc = used for the categorical features
   // desc = this can reduce the effect of noises in categorical features, especially for categories with few data
   double cat_smooth = 10.0;
-  
+
   // check = >0
   // desc = when number of categories of one feature smaller than or equal to ``max_cat_to_onehot``, one-vs-other split algorithm will be used
   int max_cat_to_onehot = 4;
@@ -362,7 +362,7 @@ public:
   // desc = used to control feature's split gain, will use ``gain[i] = max(0, feature_contri[i]) * gain[i]`` to replace the split gain of i-th feature
   // desc = you need to specify all features in order
   std::vector<double> feature_contri;
-  
+
   // alias = fs, forced_splits_filename, forced_splits_file, forced_splits
   // desc = path to a ``.json`` file that specifies splits to force at the top of every decision tree before best-first learning commences
   // desc = ``.json`` file can be arbitrarily nested, and each split contains ``feature``, ``threshold`` fields, as well as ``left`` and ``right`` fields representing subsplits
@@ -771,6 +771,7 @@ public:
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params);
   static std::unordered_map<std::string, std::string> alias_table;
   static std::unordered_set<std::string> parameter_set;
+
 private:
   void CheckParamConflict();
   void GetMembersFromString(const std::unordered_map<std::string, std::string>& params);
@@ -837,10 +838,10 @@ struct ParameterAlias {
     std::unordered_map<std::string, std::string> tmp_map;
     for (const auto& pair : *params) {
       auto alias = Config::alias_table.find(pair.first);
-      if (alias != Config::alias_table.end()) { // found alias
+      if (alias != Config::alias_table.end()) {  // found alias
         auto alias_set = tmp_map.find(alias->second);
-        if (alias_set != tmp_map.end()) { // alias already set
-                                          // set priority by length & alphabetically to ensure reproducible behavior
+        if (alias_set != tmp_map.end()) {  // alias already set
+                                           // set priority by length & alphabetically to ensure reproducible behavior
           if (alias_set->second.size() < pair.first.size() ||
             (alias_set->second.size() == pair.first.size() && alias_set->second < pair.first)) {
             Log::Warning("%s is set with %s=%s, %s=%s will be ignored. Current value: %s=%s",
@@ -852,7 +853,7 @@ struct ParameterAlias {
                          pair.first.c_str(), pair.second.c_str(), alias->second.c_str(), pair.second.c_str());
             tmp_map[alias->second] = pair.first;
           }
-        } else { // alias not set
+        } else {  // alias not set
           tmp_map.emplace(alias->second, pair.first);
         }
       } else if (Config::parameter_set.find(pair.first) == Config::parameter_set.end()) {
@@ -861,7 +862,7 @@ struct ParameterAlias {
     }
     for (const auto& pair : tmp_map) {
       auto alias = params->find(pair.first);
-      if (alias == params->end()) { // not find
+      if (alias == params->end()) {  // not find
         params->emplace(pair.first, params->at(pair.second));
         params->erase(pair.second);
       } else {

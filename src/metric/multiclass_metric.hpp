@@ -20,11 +20,9 @@ public:
   }
 
   virtual ~MulticlassMetric() {
-
   }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
-
     name_.emplace_back(PointWiseLossCalculator::Name());
     num_data_ = num_data;
     // get label

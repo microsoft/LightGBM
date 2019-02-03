@@ -143,7 +143,7 @@ public:
   * \param use_missing True to enable missing value handle
   * \param zero_as_missing True to use zero as missing value
   */
-  void FindBin(double* values, int num_values, size_t total_sample_cnt, int max_bin, int min_data_in_bin, int min_split_data, BinType bin_type, 
+  void FindBin(double* values, int num_values, size_t total_sample_cnt, int max_bin, int min_data_in_bin, int min_split_data, BinType bin_type,
                bool use_missing, bool zero_as_missing);
 
   /*!
@@ -384,7 +384,7 @@ public:
   * \param gt_indices After called this function. The greater data indices will store on this object.
   * \return The number of less than or equal data.
   */
-  virtual data_size_t Split(uint32_t min_bin, uint32_t max_bin, 
+  virtual data_size_t Split(uint32_t min_bin, uint32_t max_bin,
     uint32_t default_bin, MissingType missing_type, bool default_left, uint32_t threshold,
     data_size_t* data_indices, data_size_t num_data,
     data_size_t* lte_indices, data_size_t* gt_indices) const = 0;

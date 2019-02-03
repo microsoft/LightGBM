@@ -213,7 +213,7 @@ def early_stopping(stopping_rounds, verbose=True):
             return
         for i in range_(len(env.evaluation_result_list)):
             score = env.evaluation_result_list[i][2]
-            if cmp_op[i](score, best_score[i]):
+            if best_score_list[i] is None or cmp_op[i](score, best_score[i]):
                 best_score[i] = score
                 best_iter[i] = env.iteration
                 best_score_list[i] = env.evaluation_result_list
