@@ -70,8 +70,9 @@ my_data_test <- as.matrix(bank_test[, 1:16, with = FALSE])
 # The categorical features can be passed to lgb.train to not copy and paste a lot
 dtrain <- lgb.Dataset(data = my_data_train,
                       label = bank_train$y)
-dtest <- lgb.Dataset(data = my_data_test,
-                     label = bank_test$y)
+dtest <- lgb.Dataset.create.valid(dtrain,
+                                  data = my_data_test,
+                                  label = bank_test$y)
 
 # We can now train a model
 model <- lgb.train(list(objective = "binary",
