@@ -145,7 +145,7 @@ public:
     uint32_t default_bin = bin_mappers_[sub_feature]->GetDefaultBin();
     return bin_data_->GetIterator(min_bin, max_bin, default_bin);
   }
-  
+
   /*!
    * \brief Returns a BinIterator that can access the entire feature group's raw data.
    *        The RawGet() function of the iterator should be called for best efficiency.
@@ -176,7 +176,6 @@ public:
     } else {
       return bin_data_->SplitCategorical(min_bin, max_bin, default_bin, threshold, num_threshold, data_indices, num_data, lte_indices, gt_indices);
     }
-
   }
   /*!
   * \brief From bin to feature value

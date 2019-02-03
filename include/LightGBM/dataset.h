@@ -117,8 +117,7 @@ public:
   * \param idx Index of this record
   * \param value Label value of this record
   */
-  inline void SetLabelAt(data_size_t idx, label_t value)
-  {
+  inline void SetLabelAt(data_size_t idx, label_t value) {
     label_[idx] = value;
   }
 
@@ -127,8 +126,7 @@ public:
   * \param idx Index of this record
   * \param value Weight value of this record
   */
-  inline void SetWeightAt(data_size_t idx, label_t value)
-  {
+  inline void SetWeightAt(data_size_t idx, label_t value) {
     weights_[idx] = value;
   }
 
@@ -137,8 +135,7 @@ public:
   * \param idx Index of this record
   * \param value Query Id value of this record
   */
-  inline void SetQueryAt(data_size_t idx, data_size_t value)
-  {
+  inline void SetQueryAt(data_size_t idx, data_size_t value) {
     queries_[idx] = static_cast<data_size_t>(value);
   }
 
@@ -251,7 +248,6 @@ private:
 /*! \brief Interface for Parser */
 class Parser {
 public:
-
   /*! \brief virtual destructor */
   virtual ~Parser() {}
 
@@ -463,7 +459,7 @@ public:
       return false;
     }
   }
-  
+
   inline int FeatureGroupNumBin(int group) const {
     return feature_groups_[group]->num_total_bin_;
   }
@@ -478,7 +474,7 @@ public:
     const int group = feature2group_[i];
     return feature_groups_[group]->bin_data_.get();
   }
-  
+
   inline const Bin* FeatureGroupBin(int group) const {
     return feature_groups_[group]->bin_data_.get();
   }
@@ -496,7 +492,7 @@ public:
   inline BinIterator* FeatureGroupIterator(int group) const {
     return feature_groups_[group]->FeatureGroupIterator();
   }
-  
+
   inline double RealThreshold(int i, uint32_t threshold) const {
     const int group = feature2group_[i];
     const int sub_feature = feature2subfeature_[i];
@@ -550,13 +546,13 @@ public:
     feature_names_ = std::vector<std::string>(feature_names);
     // replace ' ' in feature_names with '_'
     bool spaceInFeatureName = false;
-    for (auto& feature_name: feature_names_){
-      if (feature_name.find(' ') != std::string::npos){
+    for (auto& feature_name : feature_names_) {
+      if (feature_name.find(' ') != std::string::npos) {
         spaceInFeatureName = true;
         std::replace(feature_name.begin(), feature_name.end(), ' ', '_');
       }
     }
-    if (spaceInFeatureName){
+    if (spaceInFeatureName) {
       Log::Warning("Find whitespaces in feature_names, replace with underlines");
     }
   }

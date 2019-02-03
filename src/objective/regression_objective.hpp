@@ -58,7 +58,11 @@ namespace LightGBM {
   CHECK(threshold < weighted_cdf[pos]);\
   T v1 = data_reader(sorted_idx[pos - 1]);\
   T v2 = data_reader(sorted_idx[pos]);\
-  return static_cast<T>((threshold - weighted_cdf[pos]) / (weighted_cdf[pos + 1] - weighted_cdf[pos]) * (v2 - v1) + v1);\
+  if(weighted_cdf[pos + 1] - weighted_cdf[pos] > kEpsilon){\
+    return static_cast<T>((threshold - weighted_cdf[pos]) / (weighted_cdf[pos + 1] - weighted_cdf[pos]) * (v2 - v1) + v1); \
+  } else {\
+    return static_cast<T>(v2);\
+  }\
 }\
 
 /*!
@@ -78,7 +82,7 @@ public:
       }
     }
   }
-  
+
   ~RegressionL2loss() {
   }
 
@@ -146,7 +150,7 @@ public:
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {
-      #pragma omp parallel for schedule(static) reduction(+:suml,sumw)
+      #pragma omp parallel for schedule(static) reduction(+:suml, sumw)
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += label_[i] * weights_[i];
         sumw += weights_[i];
@@ -221,7 +225,7 @@ public:
 
   bool IsRenewTreeOutput() const override { return true; }
 
-  double RenewTreeOutput(double, const double* pred, 
+  double RenewTreeOutput(double, const double* pred,
                          const data_size_t* index_mapper,
                          const data_size_t* bagging_mapper,
                          data_size_t num_data_in_leaf) const override {
@@ -253,7 +257,7 @@ public:
     }
   }
 
-  double RenewTreeOutput(double, double pred, 
+  double RenewTreeOutput(double, double pred,
                          const data_size_t* index_mapper,
                          const data_size_t* bagging_mapper,
                          data_size_t num_data_in_leaf) const override {
@@ -362,7 +366,6 @@ public:
   }
 
   explicit RegressionFairLoss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
-
   }
 
   ~RegressionFairLoss() {}
@@ -414,7 +417,6 @@ public:
   }
 
   explicit RegressionPoissonLoss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
-
   }
 
   ~RegressionPoissonLoss() {}
@@ -472,7 +474,7 @@ public:
   }
 
   double BoostFromScore(int) const override {
-    return std::log(RegressionL2loss::BoostFromScore(0));
+    return Common::SafeLog(RegressionL2loss::BoostFromScore(0));
   }
 
   bool IsConstantHessian() const override {
@@ -492,7 +494,6 @@ public:
   }
 
   explicit RegressionQuantileloss(const std::vector<std::string>& strs): RegressionL2loss(strs) {
-
   }
 
   ~RegressionQuantileloss() {}
@@ -620,7 +621,6 @@ public:
   }
 
   explicit RegressionMAPELOSS(const std::vector<std::string>& strs) : RegressionL1loss(strs) {
-
   }
 
   ~RegressionMAPELOSS() {}
@@ -727,7 +727,6 @@ public:
 
 private:
   std::vector<label_t> label_weight_;
-
 };
 
 
@@ -741,7 +740,6 @@ public:
   }
 
   explicit RegressionGammaLoss(const std::vector<std::string>& strs) : RegressionPoissonLoss(strs) {
-
   }
 
   ~RegressionGammaLoss() {}
@@ -766,7 +764,6 @@ public:
   const char* GetName() const override {
     return "gamma";
   }
- 
 };
 
 /*!
@@ -779,7 +776,6 @@ public:
   }
 
   explicit RegressionTweedieLoss(const std::vector<std::string>& strs) : RegressionPoissonLoss(strs) {
-
   }
 
   ~RegressionTweedieLoss() {}
@@ -790,7 +786,7 @@ public:
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         gradients[i] = static_cast<score_t>(-label_[i] * std::exp((1 - rho_) * score[i]) + std::exp((2 - rho_) * score[i]));
-        hessians[i] = static_cast<score_t>(-label_[i] * (1 - rho_) * std::exp((1 - rho_) * score[i]) + 
+        hessians[i] = static_cast<score_t>(-label_[i] * (1 - rho_) * std::exp((1 - rho_) * score[i]) +
           (2 - rho_) * std::exp((2 - rho_) * score[i]));
       }
     } else {
@@ -806,6 +802,7 @@ public:
   const char* GetName() const override {
     return "tweedie";
   }
+
 private:
   double rho_;
 };

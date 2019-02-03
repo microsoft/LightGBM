@@ -12,11 +12,11 @@
 
 class ThreadExceptionHelper {
 public:
-  ThreadExceptionHelper() { 
-    ex_ptr_ = nullptr; 
+  ThreadExceptionHelper() {
+    ex_ptr_ = nullptr;
   }
 
-  ~ThreadExceptionHelper() { 
+  ~ThreadExceptionHelper() {
     ReThrow();
   }
   void ReThrow() {
@@ -38,7 +38,6 @@ private:
 
 #define OMP_INIT_EX() ThreadExceptionHelper omp_except_helper
 #define OMP_LOOP_EX_BEGIN() try {
-
 #define OMP_LOOP_EX_END() } \
 catch(std::exception& ex) { Log::Warning(ex.what()); omp_except_helper.CaptureException(); } \
 catch(...) { omp_except_helper.CaptureException();  }
@@ -47,7 +46,7 @@ catch(...) { omp_except_helper.CaptureException();  }
 #else
 
 #ifdef _MSC_VER
-  #pragma warning( disable : 4068 ) // disable unknown pragma warning
+  #pragma warning(disable: 4068)  // disable unknown pragma warning
 #endif
 
 #ifdef __cplusplus
@@ -61,7 +60,7 @@ catch(...) { omp_except_helper.CaptureException();  }
   inline int omp_get_num_threads() {return 1;}
   inline int omp_get_thread_num() {return 0;}
 #ifdef __cplusplus
-}; // extern "C"
+};  // extern "C"
 #endif
 
 #define OMP_INIT_EX()

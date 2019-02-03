@@ -14,7 +14,6 @@ FeatureParallelTreeLearner<TREELEARNER_T>::FeatureParallelTreeLearner(const Conf
 
 template <typename TREELEARNER_T>
 FeatureParallelTreeLearner<TREELEARNER_T>::~FeatureParallelTreeLearner() {
-
 }
 
 template <typename TREELEARNER_T>

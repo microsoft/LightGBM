@@ -37,7 +37,6 @@ inline int LGBM_APIHandleException(const std::string& ex) {
 }
 
 #define API_BEGIN() try {
-
 #define API_END() } \
 catch(std::exception& ex) { return LGBM_APIHandleException(ex); } \
 catch(std::string& ex) { return LGBM_APIHandleException(ex); } \
@@ -77,7 +76,6 @@ public:
     }
     boosting_->Init(&config_, train_data_, objective_fun_.get(),
                     Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
-
   }
 
   void MergeFrom(const Booster* other) {
@@ -86,7 +84,6 @@ public:
   }
 
   ~Booster() {
-
   }
 
   void CreateObjectiveAndMetrics() {
@@ -158,7 +155,6 @@ public:
     }
 
     boosting_->ResetConfig(&config_);
-
   }
 
   void AddValidData(const Dataset* valid_data) {
@@ -275,7 +271,7 @@ public:
     return boosting_->SaveModelToString(start_iteration, num_iteration);
   }
 
-  std::string DumpModel(int start_iteration,int num_iteration) {
+  std::string DumpModel(int start_iteration, int num_iteration) {
     return boosting_->DumpModel(start_iteration, num_iteration);
   }
 
@@ -328,7 +324,6 @@ public:
   const Boosting* GetBoosting() const { return boosting_.get(); }
 
 private:
-
   const Dataset* train_data_;
   std::unique_ptr<Boosting> boosting_;
   /*! \brief All configs */
@@ -343,7 +338,7 @@ private:
   std::mutex mutex_;
 };
 
-}
+}  // namespace LightGBM
 
 using namespace LightGBM;
 
@@ -394,7 +389,7 @@ int LGBM_DatasetCreateFromFile(const char* filename,
   if (config.num_threads > 0) {
     omp_set_num_threads(config.num_threads);
   }
-  DatasetLoader loader(config,nullptr, 1, filename);
+  DatasetLoader loader(config, nullptr, 1, filename);
   if (reference == nullptr) {
     if (Network::num_machines() == 1) {
       *out = loader.LoadFromFile(filename, "");
@@ -545,7 +540,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
   for (int j = 0; j < nmat; ++j) {
     get_row_fun.push_back(RowFunctionFromDenseMatric(data[j], nrow[j], ncol, data_type, is_row_major));
   }
-  
+
   if (reference == nullptr) {
     // sample data first
     Random rand(config.data_random_seed);
@@ -563,7 +558,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
         offset += nrow[j];
         ++j;
       }
-      
+
       auto row = get_row_fun[j](static_cast<int>(idx - offset));
       for (size_t k = 0; k < row.size(); ++k) {
         if (std::fabs(row[k]) > kZeroThreshold || std::isnan(row[k])) {
@@ -1249,7 +1244,7 @@ int LGBM_BoosterSaveModel(BoosterHandle handle,
 int LGBM_BoosterSaveModelToString(BoosterHandle handle,
                                   int start_iteration,
                                   int num_iteration,
-                                  int64_t buffer_len, 
+                                  int64_t buffer_len,
                                   int64_t* out_len,
                                   char* out_str) {
   API_BEGIN();

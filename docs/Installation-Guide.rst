@@ -507,7 +507,7 @@ The following dependencies should be installed before compilation:
 
 -  **OpenCL** 1.2 headers and libraries, which is usually provided by GPU manufacture.
 
-   The generic OpenCL ICD packages (for example, Debian package ``cl-icd-libopencl1`` and ``cl-icd-opencl-dev``) can also be used.
+   The generic OpenCL ICD packages (for example, Debian package ``ocl-icd-libopencl1`` and ``ocl-icd-opencl-dev``) can also be used.
 
 -  **libboost** 1.56 or later (1.61 or later is recommended).
 

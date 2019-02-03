@@ -48,7 +48,6 @@ public:
     temp_right_indices_.resize(num_data_);
   }
   ~DataPartition() {
-
   }
 
   /*!

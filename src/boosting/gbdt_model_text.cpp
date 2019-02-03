@@ -194,7 +194,7 @@ std::string GBDT::ModelToIfElse(int num_iteration) const {
   str_buf << "\t" << "}" << '\n';
   str_buf << "}" << '\n';
 
-  //PredictLeafIndexByMap
+  // PredictLeafIndexByMap
   str_buf << "double (*PredictTreeLeafByMapPtr[])(const std::unordered_map<int, double>&) = { ";
   for (int i = 0; i < num_used_model; ++i) {
     if (i > 0) {
@@ -349,8 +349,8 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
   std::unordered_map<std::string, std::string> key_vals;
   while (p < end) {
     auto line_len = Common::GetLine(p);
-    std::string cur_line(p, line_len);
     if (line_len > 0) {
+      std::string cur_line(p, line_len);
       if (!Common::StartsWith(cur_line, "Tree=")) {
         auto strs = Common::Split(cur_line.c_str(), '=');
         if (strs.size() == 1) {
@@ -442,8 +442,8 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
   if (!key_vals.count("tree_sizes")) {
     while (p < end) {
       auto line_len = Common::GetLine(p);
-      std::string cur_line(p, line_len);
       if (line_len > 0) {
+        std::string cur_line(p, line_len);
         if (Common::StartsWith(cur_line, "Tree=")) {
           p += line_len;
           p = Common::SkipNewLine(p);
@@ -491,8 +491,8 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
   std::stringstream ss;
   while (p < end) {
     auto line_len = Common::GetLine(p);
-    std::string cur_line(p, line_len);
     if (line_len > 0) {
+      std::string cur_line(p, line_len);
       if (cur_line == std::string("parameters:")) {
         is_inparameter = true;
       } else if (cur_line == std::string("end of parameters")) {
@@ -511,7 +511,6 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
 }
 
 std::vector<double> GBDT::FeatureImportance(int num_iteration, int importance_type) const {
-
   int num_used_model = static_cast<int>(models_.size());
   if (num_iteration > 0) {
     num_iteration += 0;

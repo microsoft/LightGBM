@@ -51,7 +51,6 @@ public:
   * \param config Config for metric
   */
   LIGHTGBM_EXPORT static Metric* CreateMetric(const std::string& type, const Config& config);
-
 };
 
 /*!
@@ -59,7 +58,6 @@ public:
 */
 class DCGCalculator {
 public:
-  
   static void DefaultEvalAt(std::vector<int>* eval_at);
   static void DefaultLabelGain(std::vector<double>* label_gain);
   /*!

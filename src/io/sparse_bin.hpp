@@ -41,7 +41,7 @@ public:
   inline uint32_t RawGet(data_size_t idx) override;
   inline VAL_T InnerRawGet(data_size_t idx);
 
-  inline uint32_t Get( data_size_t idx) override {
+  inline uint32_t Get(data_size_t idx) override {
     VAL_T ret = InnerRawGet(idx);
     if (ret >= min_bin_ && ret <= max_bin_) {
       return ret - min_bin_ + bias_;
@@ -51,6 +51,7 @@ public:
   }
 
   inline void Reset(data_size_t idx) override;
+
 private:
   const SparseBin<VAL_T>* bin_data_;
   data_size_t cur_pos_;
@@ -82,7 +83,6 @@ public:
   }
 
   ~SparseBin() {
-
   }
 
   void ReSize(data_size_t num_data) override {
@@ -188,7 +188,7 @@ public:
       if ((default_left && missing_type == MissingType::Zero) || (default_bin <= threshold && missing_type != MissingType::Zero)) {
         default_indices = lte_indices;
         default_count = &lte_count;
-      } 
+      }
       for (data_size_t i = 0; i < num_data; ++i) {
         const data_size_t idx = data_indices[i];
         const VAL_T bin = iterator.InnerRawGet(idx);
@@ -200,7 +200,7 @@ public:
           lte_indices[lte_count++] = idx;
         }
       }
-    } 
+    }
     return lte_count;
   }
 

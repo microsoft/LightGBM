@@ -129,7 +129,7 @@ public:
 
   /*! \brief Get sum of gradients of current leaf */
   double sum_gradients() const { return sum_gradients_; }
-  
+
   /*! \brief Get sum of hessians of current leaf */
   double sum_hessians() const { return sum_hessians_; }
 

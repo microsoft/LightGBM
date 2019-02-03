@@ -10,7 +10,6 @@ namespace LightGBM {
 
 class Threading {
 public:
-
   template<typename INDEX_T>
   static inline void For(INDEX_T start, INDEX_T end, const std::function<void(int, INDEX_T, INDEX_T)>& inner_fun) {
     int num_threads = 1;
@@ -22,7 +21,7 @@ public:
     INDEX_T num_inner = (end - start + num_threads - 1) / num_threads;
     if (num_inner <= 0) { num_inner = 1; }
     OMP_INIT_EX();
-    #pragma omp parallel for schedule(static,1)
+    #pragma omp parallel for schedule(static, 1)
     for (int i = 0; i < num_threads; ++i) {
       OMP_LOOP_EX_BEGIN();
       INDEX_T inner_start = start + num_inner * i;
