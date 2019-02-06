@@ -92,3 +92,31 @@ class TestBasic(unittest.TestCase):
         self.assertEqual(len(subset_group), 2)
         self.assertEqual(subset_group[0], 1)
         self.assertEqual(subset_group[1], 9)
+
+    def test_add_features_throws_if_num_data_unequal(self):
+        X1 = np.random.random((1000, 1))
+        X2 = np.random.random((100, 1))
+        d1 = lgb.Dataset(X1).construct()
+        d2 = lgb.Dataset(X2).construct()
+        with self.assertRaises(lgb.basic.LightGBMError):
+            d1.add_features_from(d2)
+
+    #TODO: Bit messy.
+    def test_add_features_throws_if_datasets_unconstructed(self):
+        X1 = np.random.random((1000, 1))
+        X2 = np.random.random((100, 1))
+        d1 = lgb.Dataset(X1)
+        d2 = lgb.Dataset(X2)
+        with self.assertRaises(ValueError):
+            d1 = lgb.Dataset(X1)
+            d2 = lgb.Dataset(X2)
+            d1.add_features_from(d2)
+        with self.assertRaises(ValueError):
+            d1 = lgb.Dataset(X1).construct()
+            d2 = lgb.Dataset(X2)
+            d1.add_features_from(d2)
+        with self.assertRaises(ValueError):
+            d1 = lgb.Dataset(X1)
+            d2 = lgb.Dataset(X2).construct()            
+            d1.add_features_from(d2)
+
